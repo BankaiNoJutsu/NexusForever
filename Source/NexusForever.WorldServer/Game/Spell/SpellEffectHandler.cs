@@ -193,5 +193,17 @@ namespace NexusForever.WorldServer.Game.Spell
 
             player.TitleManager.AddTitle((ushort)info.Entry.DataBits00);
         }
+        
+        [SpellEffectHandler(SpellEffectType.SummonPet)]
+        private void HandleEffectSummonPet(UnitEntity target, SpellTargetInfo.SpellTargetEffectInfo info)
+        {
+            if (!(target is Player player))
+                return;
+
+            var pet = new Pet(player, info.Entry.DataBits00, info.Entry.SpellId);
+            player.Map.EnqueueAdd(pet, player.Position);
+
+            //parameters.IsUnlimitedDuration = true;
+        }
     }
 }

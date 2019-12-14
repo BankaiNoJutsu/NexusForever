@@ -4,6 +4,7 @@ using System.Linq;
 using NexusForever.Shared;
 using NexusForever.Shared.GameTable.Model;
 using NexusForever.WorldServer.Game.Entity;
+using NexusForever.WorldServer.Game.Prerequisite;
 using NexusForever.WorldServer.Game.Spell.Event;
 using NexusForever.WorldServer.Game.Spell.Static;
 using NexusForever.WorldServer.Network.Message.Model;
@@ -225,6 +226,9 @@ namespace NexusForever.WorldServer.Game.Spell
                     uint effectId = GlobalSpellManager.Instance.NextEffectId;
                     foreach (SpellTargetInfo effectTarget in effectTargets)
                     {
+                        if (!CheckEffectApplyPrerequisites(spell4EffectsEntry, effectTarget.Entity, effectTarget.Flags))
+                            continue;
+
                         var info = new SpellTargetInfo.SpellTargetEffectInfo(effectId, spell4EffectsEntry);
                         effectTarget.Effects.Add(info);
 
@@ -233,6 +237,32 @@ namespace NexusForever.WorldServer.Game.Spell
                     }
                 }
             }
+        }
+
+        private bool CheckEffectApplyPrerequisites(Spell4EffectsEntry spell4EffectsEntry, UnitEntity unit, SpellEffectTargetFlags targetFlags)
+        {
+            // TODO: Possibly update Prereq Manager to handle other Units
+            if (!(unit is Player player))
+                return true;
+
+            if ((targetFlags & SpellEffectTargetFlags.Caster) != 0)
+            {
+                // TODO
+                if (spell4EffectsEntry.PrerequisiteIdCasterApply > 0)
+                {
+                    return PrerequisiteManager.Instance.Meets(player, spell4EffectsEntry.PrerequisiteIdCasterApply);
+                }
+            }
+
+            if ((targetFlags & SpellEffectTargetFlags.Caster) == 0)
+            {
+                if (spell4EffectsEntry.PrerequisiteIdTargetApply > 0)
+                {
+                    return PrerequisiteManager.Instance.Meets(player, spell4EffectsEntry.PrerequisiteIdTargetApply);
+                }
+            }
+
+            return true;
         }
 
         public bool IsMovingInterrupted()
