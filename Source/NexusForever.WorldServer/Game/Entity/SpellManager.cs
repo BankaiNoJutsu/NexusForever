@@ -95,6 +95,19 @@ namespace NexusForever.WorldServer.Game.Entity
 
                 if (GetSpell(spell4Entry.Spell4BaseIdBaseSpell) == null)
                     AddSpell(spell4Entry.Spell4BaseIdBaseSpell);
+
+                // Add Pet Abilities if this Spell has a Pet summoned from it
+                if(spell4Entry.Spell4IdPetSwitch > 0)
+                {
+                    Spell4Entry spell4PetEntry = GameTableManager.Instance.Spell4.GetEntry(spell4Entry.Spell4IdPetSwitch);
+                    if (spell4PetEntry == null)
+                        continue;
+
+                    if (GetSpell(spell4PetEntry.Spell4IdPetSwitch) == null)
+                        AddSpell(spell4PetEntry.Spell4BaseIdBaseSpell);
+                }
+                
+                    
             }
 
             ClassEntry classEntry = GameTableManager.Instance.Class.GetEntry((byte)player.Class);

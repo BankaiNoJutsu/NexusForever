@@ -10,6 +10,7 @@ namespace NexusForever.Shared.Network.Message
         ServerPlayerPet                 = 0x0068,
         ServerAuthEncrypted             = 0x0076,
         ServerLogoutUpdate              = 0x0092,
+        ClientCastActionBarSpell        = 0x0096,
         ClientActivateUnitCast          = 0x0097, // not sure about the name - almost the same as 0x00B3, but also initiates 0x07FD
         ClientCastSpell                 = 0x009A,
         ServerChangeWorld               = 0x00AD,

@@ -26,6 +26,7 @@ namespace NexusForever.WorldServer.Game.Spell
         {
             target.CastSpell(info.Entry.DataBits00, new SpellParameters
             {
+                CharacterSpell         = parameters.CharacterSpell,
                 ParentSpellInfo        = parameters.SpellInfo,
                 RootSpellInfo          = parameters.RootSpellInfo,
                 UserInitiatedSpellCast = false
@@ -200,7 +201,7 @@ namespace NexusForever.WorldServer.Game.Spell
             if (!(target is Player player))
                 return;
 
-            var pet = new Pet(player, info.Entry.DataBits00, info.Entry.SpellId);
+            var pet = new Pet(player, info.Entry.DataBits00, info.Entry.SpellId, parameters.CharacterSpell.SpellInfo.Entry.Spell4BaseIdBaseSpell);
             player.Map.EnqueueAdd(pet, player.Position);
 
             //parameters.IsUnlimitedDuration = true;

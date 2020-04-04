@@ -8,6 +8,7 @@ using NexusForever.WorldServer.Game.Entity.Network;
 using NexusForever.WorldServer.Game.Entity.Network.Model;
 using NexusForever.WorldServer.Game.Entity.Static;
 using NexusForever.WorldServer.Game.Map;
+using NexusForever.WorldServer.Game.Spell;
 using NexusForever.WorldServer.Network.Message.Model;
 using NLog;
 using NetworkPet = NexusForever.WorldServer.Network.Message.Model.Shared.Pet;
@@ -26,9 +27,11 @@ namespace NexusForever.WorldServer.Game.Entity
         public Creature2DisplayGroupEntryEntry Creature2DisplayGroup { get; }
         public uint CastingId { get; private set; }
 
+        private uint spell4BaseId;
+
         private readonly UpdateTimer followTimer = new UpdateTimer(1d);
 
-        public Pet(Player owner, uint creature, uint castingId)
+        public Pet(Player owner, uint creature, uint castingId, uint spell4BaseId)
             : base(EntityType.Pet)
         {
             OwnerGuid               = owner.Guid;
@@ -36,6 +39,7 @@ namespace NexusForever.WorldServer.Game.Entity
             Creature                = GameTableManager.Instance.Creature2.GetEntry(creature);
             Creature2DisplayGroup   = GameTableManager.Instance.Creature2DisplayGroupEntry.Entries.SingleOrDefault(x => x.Creature2DisplayGroupId == Creature.Creature2DisplayGroupId);
             DisplayInfo             = Creature2DisplayGroup?.Creature2DisplayInfoId ?? 0u;
+            this.spell4BaseId       = spell4BaseId;
 
             SetProperty(Property.BaseHealth, 800.0f);
 
@@ -67,6 +71,7 @@ namespace NexusForever.WorldServer.Game.Entity
                 return;
             }
 
+            owner.SpellManager.GetSpell(spell4BaseId).SetPetUnitId(Guid);
             //owner.VanityPetGuid = Guid;
 
             owner.EnqueueToVisible(new Server08B3
@@ -76,6 +81,7 @@ namespace NexusForever.WorldServer.Game.Entity
                 Unknown1 = true
             }, true);
 
+            // TODO: Move ActionBars to Actionbar Manager
             owner.Session.EnqueueMessageEncrypted(new ServerShowActionBar
             {
                 ActionBarShortcutSetId = 299,
@@ -83,6 +89,7 @@ namespace NexusForever.WorldServer.Game.Entity
                 Guid = Guid
             });
 
+            // TODO: Move ActionBars to Actionbar Manager
             owner.Session.EnqueueMessageEncrypted(new ServerShowActionBar
             {
                 ActionBarShortcutSetId = 499,
