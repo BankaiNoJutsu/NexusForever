@@ -107,10 +107,12 @@ namespace NexusForever.WorldServer.Game.Entity
             set => MovementManager.SetPlatform(value);
         }
 
-        /// <summary>
-        /// Guid of the <see cref="VanityPet"/> currently summoned by the <see cref="Player"/>.
-        /// </summary>
-        public uint? VanityPetGuid { get; set; }
+        ///// <summary>
+        ///// Guid of the <see cref="VanityPet"/> currently summoned by the <see cref="Player"/>.
+        ///// </summary>
+        //public uint? VanityPetGuid { get; set; }
+
+        //public List<uint> CombatPetGuids { get; private set; } = new List<uint>();
 
         public bool IsSitting => currentChairGuid != null;
         private uint? currentChairGuid;
@@ -143,6 +145,7 @@ namespace NexusForever.WorldServer.Game.Entity
         public CharacterAchievementManager AchievementManager { get; }
         public SupplySatchelManager SupplySatchelManager { get; }
         public XpManager XpManager { get; }
+        public PetManager PetManager { get; }
 
         public VendorInfo SelectedVendorInfo { get; set; } // TODO unset this when too far away from vendor
 
@@ -152,6 +155,7 @@ namespace NexusForever.WorldServer.Game.Entity
         private LogoutManager logoutManager;
         private PendingTeleport pendingTeleport;
         public bool CanTeleport() => pendingTeleport == null;
+        public bool IsTeleporting() => pendingTeleport != null;
 
         public Player(WorldSession session, CharacterModel model)
             : base(EntityType.Player)
@@ -195,6 +199,7 @@ namespace NexusForever.WorldServer.Game.Entity
             AchievementManager      = new CharacterAchievementManager(this, model);
             SupplySatchelManager    = new SupplySatchelManager(this, model);
             XpManager               = new XpManager(this, model);
+            PetManager              = new PetManager(this);
 
             Session.EntitlementManager.OnNewCharacter(model);
 
@@ -317,12 +322,7 @@ namespace NexusForever.WorldServer.Game.Entity
             base.OnAddToMap(map, guid, vector);
             map.OnAddToMap(this);
 
-            // resummon vanity pet if it existed before teleport
-            if (pendingTeleport?.VanityPetId != null)
-            {
-                var vanityPet = new VanityPet(this, pendingTeleport.VanityPetId.Value);
-                map.EnqueueAdd(vanityPet, Position);
-            }
+            PetManager.OnAddToMap(pendingTeleport);
 
             pendingTeleport = null;
 
@@ -439,6 +439,9 @@ namespace NexusForever.WorldServer.Game.Entity
                 RestBonusXp           = XpManager.RestBonusXp
             };
 
+            foreach (Pet pet in PetManager.GetCombatPets())
+                playerCreate.Pets.Add(pet.GetPetPacket());
+
             foreach (Currency currency in CurrencyManager)
                 playerCreate.Money[(byte)currency.Id - 1] = currency.Amount;
 
@@ -482,13 +485,7 @@ namespace NexusForever.WorldServer.Game.Entity
 
         public override void OnRemoveFromMap()
         {
-            // enqueue removal of existing vanity pet if summoned
-            if (VanityPetGuid != null)
-            {
-                VanityPet pet = GetVisible<VanityPet>(VanityPetGuid.Value);
-                pet?.RemoveFromMap();
-                VanityPetGuid = null;
-            }
+            PetManager.OnRemoveFromMap();
 
             base.OnRemoveFromMap();
 
@@ -651,16 +648,11 @@ namespace NexusForever.WorldServer.Game.Entity
                 // TODO: don't remove player from map if it's the same as destination
             }
 
-            // store vanity pet summoned before teleport so it can be summoned again after being added to the new map
-            uint? vanityPetId = null;
-            if (VanityPetGuid != null)
-            {
-                VanityPet pet = GetVisible<VanityPet>(VanityPetGuid.Value);
-                vanityPetId = pet?.Creature.Id;
-            }
-
             var info = new MapInfo(entry, instanceId, residenceId);
-            pendingTeleport = new PendingTeleport(info, vector, vanityPetId);
+            pendingTeleport = new PendingTeleport(info, vector);
+
+            PetManager.OnTeleport(pendingTeleport);
+
             RemoveFromMap();
         }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Numerics;
 using NexusForever.Shared;
@@ -15,23 +16,24 @@ using NetworkPet = NexusForever.WorldServer.Network.Message.Model.Shared.Pet;
 
 namespace NexusForever.WorldServer.Game.Entity
 {
-    public class Pet : WorldEntity
+    public class Pet : UnitEntity
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
         private const float FollowDistance = 3f;
         private const float FollowMinRecalculateDistance = 5f;
-
-        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+        private float FollowAngle = 1.5f;
 
         public uint OwnerGuid { get; private set; }
         public Creature2Entry Creature { get; }
         public Creature2DisplayGroupEntryEntry Creature2DisplayGroup { get; }
         public uint CastingId { get; private set; }
+        public Spell4Entry Spell4Entry { get; private set; }
 
-        private uint spell4BaseId;
-
+        private bool firstSummon = true;
         private readonly UpdateTimer followTimer = new UpdateTimer(1d);
 
-        public Pet(Player owner, uint creature, uint castingId, uint spell4BaseId)
+        public Pet(Player owner, uint creature, uint castingId, Spell4Entry spellInfo, Spell4EffectsEntry effectsEntry)
             : base(EntityType.Pet)
         {
             OwnerGuid               = owner.Guid;
@@ -39,13 +41,46 @@ namespace NexusForever.WorldServer.Game.Entity
             Creature                = GameTableManager.Instance.Creature2.GetEntry(creature);
             Creature2DisplayGroup   = GameTableManager.Instance.Creature2DisplayGroupEntry.Entries.SingleOrDefault(x => x.Creature2DisplayGroupId == Creature.Creature2DisplayGroupId);
             DisplayInfo             = Creature2DisplayGroup?.Creature2DisplayInfoId ?? 0u;
-            this.spell4BaseId       = spell4BaseId;
 
+            if (owner.PetManager.GetCombatPetGuids().Count() > 0)
+                FollowAngle *= -1f;
+
+            Spell4Entry = spellInfo;
+
+            SetStats(owner, spellInfo, effectsEntry);
+        }
+
+        private void SetStats(Player owner, Spell4Entry spell4Entry, Spell4EffectsEntry spell4EffectsEntry)
+        {
             SetProperty(Property.BaseHealth, 800.0f);
 
             SetStat(Stat.Health, 800u);
-            SetStat(Stat.Level, 3u);
+            SetStat(Stat.Level, owner.Level);
             SetStat(Stat.Sheathed, 0u);
+
+            uint autoAttackBaseId = 0;
+            switch (spell4Entry.Spell4BaseIdBaseSpell)
+            {
+                case 27002: // Artillery Bot
+                    autoAttackBaseId = 20491;
+                    break;
+                case 27021: // Diminisher Bot
+                    autoAttackBaseId = 20399;
+                    break;
+                case 26998: // Repair Bot
+                    autoAttackBaseId = 32801;
+                    break;
+                case 27082: // Bruiser Bot
+                    autoAttackBaseId = 21194;
+                    break;
+                default:
+                    log.Warn($"Auto Attack ID unknown for Pet summoned by Base ID: {spell4Entry.Spell4BaseIdBaseSpell}");
+                    autoAttackBaseId = 4208;
+                    break;
+            }
+
+            SpellInfo autoAttackSpellInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(autoAttackBaseId).GetSpellInfo((byte)spell4Entry.TierIndex);
+            uint autoAttackTimerMs = spell4EffectsEntry.DataBits04;
         }
 
         protected override IEntityModel BuildEntityModel()
@@ -71,66 +106,116 @@ namespace NexusForever.WorldServer.Game.Entity
                 return;
             }
 
-            owner.SpellManager.GetSpell(spell4BaseId).SetPetUnitId(Guid);
-            //owner.VanityPetGuid = Guid;
-
-            owner.EnqueueToVisible(new Server08B3
-            {
-                MountGuid = Guid,
-                Unknown0 = 0,
-                Unknown1 = true
-            }, true);
+            owner.SpellManager.GetSpell(Spell4Entry.Spell4BaseIdBaseSpell).SetPetUnitId(Guid);
+            owner.PetManager.AddPetGuid(SummonedPetType.CombatPet, guid);
 
             // TODO: Move ActionBars to Actionbar Manager
-            owner.Session.EnqueueMessageEncrypted(new ServerShowActionBar
-            {
-                ActionBarShortcutSetId = 299,
-                ShortcutSet = Spell.Static.ShortcutSet.PrimaryPetBar,
-                Guid = Guid
-            });
+            if (owner.PetManager.GetCombatPetGuids().Count() == 1)
+                owner.Session.EnqueueMessageEncrypted(new ServerShowActionBar
+                {
+                    ActionBarShortcutSetId = 299,
+                    ShortcutSet = Spell.Static.ShortcutSet.PrimaryPetBar,
+                    Guid = guid
+                });
 
             // TODO: Move ActionBars to Actionbar Manager
             owner.Session.EnqueueMessageEncrypted(new ServerShowActionBar
             {
                 ActionBarShortcutSetId = 499,
-                ShortcutSet = Spell.Static.ShortcutSet.PetMiniBar0,
-                Guid = Guid
-            });
-
-            owner.Session.EnqueueMessageEncrypted(new ServerPlayerPet
-            {
-                Pet = new NetworkPet
-                {
-                    Guid = Guid,
-                    Stance = 1,
-                    ValidStances = 31,
-                    SummoningSpell = CastingId
-                }
+                ShortcutSet = owner.PetManager.GetCombatPetGuids().Count() == 0 ? Spell.Static.ShortcutSet.PetMiniBar0 : Spell.Static.ShortcutSet.PetMiniBar1,
+                Guid = guid
             });
 
             owner.Session.EnqueueMessageEncrypted(new ServerChangePetStance
             {
-                PetUnitId = Guid,
+                PetUnitId = guid,
                 Stance = 1
             });
 
-            //owner.Session.EnqueueMessageEncrypted(new ServerCombatLog
-            //{
-            //    LogType = 26,
-            //    PetData = new ServerCombatLog.PetLog
-            //    {
-            //        CasterId = owner.Guid,
-            //        TargetId = Guid,
-            //        SpellId = CastingId,
-            //        CombatResult = 8
-            //    }
-            //});
+            followTimer.Reset();
+
+            if (firstSummon)
+            {
+                owner.Session.EnqueueMessageEncrypted(new ServerPlayerPet
+                {
+                    Pet = GetPetPacket()
+                });
+
+                //owner.Session.EnqueueMessageEncrypted(new ServerCombatLog
+                //{
+                //    LogType = 26,
+                //    PetData = new ServerCombatLog.PetLog
+                //    {
+                //        CasterId = owner.Guid,
+                //        TargetId = Guid,
+                //        SpellId = CastingId,
+                //        CombatResult = 8
+                //    }
+                //});
+
+                firstSummon = false;
+            }
+        }
+
+        public void SetOwnerGuid(uint guid)
+        {
+            OwnerGuid = guid;
+        }
+
+        public NetworkPet GetPetPacket()
+        {
+            return new NetworkPet
+            {
+                Guid = Guid,
+                Stance = 1,
+                ValidStances = 31,
+                SummoningSpell = Spell4Entry.Id
+            };
         }
 
         public override void OnEnqueueRemoveFromMap()
         {
             followTimer.Reset(false);
-            OwnerGuid = 0u;
+        }
+
+        public override void OnRemoveFromMap()
+        {
+            Player owner = GetVisible<Player>(OwnerGuid);
+            if (owner == null)
+            {
+                // this shouldn't happen, log it anyway
+                log.Error($"Pet {Guid} has lost it's owner {OwnerGuid}!");
+                return;
+            }
+
+            if (owner.IsTeleporting())
+            {
+                base.OnRemoveFromMap();
+                return;
+            }
+
+            // TODO: Move ActionBars to Actionbar Manager
+            if (owner.PetManager.GetCombatPetGuids().Count() == 1)
+                owner.Session.EnqueueMessageEncrypted(new ServerShowActionBar
+                {
+                    ShortcutSet = Spell.Static.ShortcutSet.PrimaryPetBar
+                });
+
+            // TODO: Move ActionBars to Actionbar Manager
+            owner.Session.EnqueueMessageEncrypted(new ServerShowActionBar
+            {
+                ShortcutSet = owner.PetManager.GetCombatPetGuids().Count() == 0 ? Spell.Static.ShortcutSet.PetMiniBar0 : Spell.Static.ShortcutSet.PetMiniBar1
+            });
+
+            owner.Session.EnqueueMessageEncrypted(new ServerPlayerPetDespawn
+            {
+                Guid = Guid
+            });
+
+            owner.PetManager.RemovePetGuid(SummonedPetType.CombatPet, this);
+            owner.SpellManager.GetSpell(Spell4Entry.Spell4BaseIdBaseSpell).SetPetUnitId(0u);
+
+            base.OnRemoveFromMap();
         }
 
         public override void Update(double lastTick)
@@ -159,9 +244,17 @@ namespace NexusForever.WorldServer.Game.Entity
             if (distance < FollowMinRecalculateDistance)
                 return;
 
-            MovementManager.Follow(owner, FollowDistance);
+            MovementManager.FollowPosition(owner, FollowDistance, FollowAngle);
 
             followTimer.Reset();
+        }
+
+        public Vector3 GetSpawnPosition(Player player)
+        {
+            float angle = -player.Rotation.X + FollowAngle;
+            angle += MathF.PI / 2;
+
+            return player.Position.GetPoint2D(angle, FollowDistance);
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using NexusForever.WorldServer.Game.Entity;
 using NexusForever.WorldServer.Game.Entity.Static;
 using NexusForever.WorldServer.Game.Prerequisite.Static;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace NexusForever.WorldServer.Game.Prerequisite
 {
@@ -100,10 +102,17 @@ namespace NexusForever.WorldServer.Game.Prerequisite
             }
         }
 
-        [PrerequisiteCheck(PrerequisiteType.PetCount)]
+        [PrerequisiteCheck(PrerequisiteType.BuffCount)]
         private static bool PrerequisiteCheckPetCount(Player player, PrerequisiteComparison comparison, uint value, uint objectId)
         {
-            return true;
+            switch (comparison)
+            {
+                case (PrerequisiteComparison)5: // Less Than
+                    return true;
+                default:
+                    log.Warn($"Unhandled PrerequisiteComparison {comparison} for {PrerequisiteType.BuffCount}!");
+                    return false;
+            }
         }
 
         [PrerequisiteCheck(PrerequisiteType.Faction2)]

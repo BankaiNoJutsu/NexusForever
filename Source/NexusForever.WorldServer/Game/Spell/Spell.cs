@@ -89,8 +89,9 @@ namespace NexusForever.WorldServer.Game.Spell
 
         private CastResult CheckCast()
         {
-            if (!CheckPrerequisites())
-                return CastResult.SpellPreRequisites;
+            CastResult preReqResult = CheckPrerequisites();
+            if (preReqResult != CastResult.Ok)
+                return preReqResult;
 
             CastResult ccResult = CheckCCConditions();
             if (ccResult != CastResult.Ok)
@@ -113,11 +114,17 @@ namespace NexusForever.WorldServer.Game.Spell
             return CastResult.Ok;
         }
 
-        private bool CheckPrerequisites()
+        private CastResult CheckPrerequisites()
         {
+            // TODO: Figure out if non Player entities should adhere to same rules
+            if (!(caster is Player player))
+                return CastResult.Ok;
+
             // TODO
             if (parameters.SpellInfo.CasterCastPrerequisites != null)
             {
+                if (!PrerequisiteManager.Instance.Meets(player, parameters.SpellInfo.Entry.PrerequisiteIdCasterCast))
+                    return CastResult.PrereqCasterCast;
             }
 
             // not sure if this should be for explicit and/or implicit targets
@@ -134,7 +141,7 @@ namespace NexusForever.WorldServer.Game.Spell
             {
             }
 
-            return true;
+            return CastResult.Ok;
         }
 
         private CastResult CheckCCConditions()

@@ -188,6 +188,7 @@ namespace NexusForever.Shared.Network.Message
         ServerAuthDenied                = 0x063D,
         ServerOwnedCommodityOrders      = 0x064C,
         ServerOwnedItemAuctions         = 0x064D,
+        ClientPetDismiss                = 0x068A,
         ClientRequestPlayed             = 0x0693,
         ServerPlayerPlayed              = 0x0694,
         ClientPathActivate              = 0x06B2,
@@ -214,6 +215,7 @@ namespace NexusForever.Shared.Network.Message
         ServerRealmFirstAchievement     = 0x075F,
         ServerRealmList                 = 0x0761, // bidirectional? packet has both read and write handlers
         ServerRealmMessages             = 0x0763,
+        ServerPlayerPetDespawn          = 0x077F,
         ClientTitleSet                  = 0x078E,
         ServerNewRealm                  = 0x07A1,
         ClientRealmList                 = 0x07A4,

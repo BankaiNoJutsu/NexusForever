@@ -12,7 +12,7 @@
         Quest       = 6,
         Achievement = 7,
         Path        = 52,
-        PetCount    = 59,
+        BuffCount   = 59,
         SpellBaseId = 214,
         Faction2    = 243,
         BaseFaction = 250

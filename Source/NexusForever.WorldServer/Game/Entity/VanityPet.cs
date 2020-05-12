@@ -64,7 +64,7 @@ namespace NexusForever.WorldServer.Game.Entity
                 return;
             }
 
-            owner.VanityPetGuid = Guid;
+            owner.PetManager.AddPetGuid(SummonedPetType.VanityPet, Guid);
 
             owner.EnqueueToVisible(new Server08B3
             {
