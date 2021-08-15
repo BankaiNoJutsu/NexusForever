@@ -18,8 +18,25 @@ namespace NexusForever.WorldServer.Game.Spell
         [SpellEffectHandler(SpellEffectType.Damage)]
         private void HandleEffectDamage(UnitEntity target, SpellTargetInfo.SpellTargetEffectInfo info)
         {
-            // TODO: calculate damage
-            info.AddDamage((DamageType)info.Entry.DamageType, 1337);
+            if (!target.CanAttack(caster))
+                return;
+
+            // TODO: Merge DamageCalculator, uncomment below lines, and delete the hardcoded values before target takes damage.
+
+            // uint damage = 0;
+            // damage += DamageCalculator.Instance.GetBaseDamageForSpell(caster, info.Entry.ParameterType00, info.Entry.ParameterValue00);
+            // damage += DamageCalculator.Instance.GetBaseDamageForSpell(caster, info.Entry.ParameterType01, info.Entry.ParameterValue01);
+            // damage += DamageCalculator.Instance.GetBaseDamageForSpell(caster, info.Entry.ParameterType02, info.Entry.ParameterValue02);
+            // damage += DamageCalculator.Instance.GetBaseDamageForSpell(caster, info.Entry.ParameterType03, info.Entry.ParameterValue03);
+
+            // DamageCalculator.Instance.CalculateDamage(caster, target, this, info, (DamageType)info.Entry.DamageType, damage);
+
+            info.AddDamage((DamageType)info.Entry.DamageType, 50);
+            info.Damage.ShieldAbsorbAmount = 25;
+            info.Damage.AdjustedDamage = 50;
+            
+            // TODO: Deal damage
+            target.TakeDamage(caster, info.Damage);
         }
 
         [SpellEffectHandler(SpellEffectType.Proxy)]

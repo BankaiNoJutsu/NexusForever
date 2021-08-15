@@ -5,6 +5,7 @@ using NexusForever.Database.World.Model;
 using NexusForever.Shared.GameTable;
 using NexusForever.Shared.GameTable.Model;
 using NexusForever.WorldServer.Game.Entity.Static;
+using NexusForever.WorldServer.Game.Reputation.Static;
 using NexusForever.WorldServer.Game.Spell;
 using NexusForever.WorldServer.Game.Spell.Static;
 using NexusForever.WorldServer.Game.Static;
@@ -94,6 +95,9 @@ namespace NexusForever.WorldServer.Game.Entity
         /// </summary>
         public void CastSpell(SpellParameters parameters)
         {
+            if (!IsAlive)
+                return;
+
             if (parameters == null)
                 throw new ArgumentNullException();
 
@@ -140,6 +144,100 @@ namespace NexusForever.WorldServer.Game.Entity
         {
             Spell.Spell spell = pendingSpells.SingleOrDefault(s => s.CastingId == castingId);
             spell?.CancelCast(CastResult.SpellCancelled);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool CanAttack(UnitEntity target)
+        {
+            if (!IsAlive)
+                return false;
+
+            if (!target.IsValidAttackTarget() || !IsValidAttackTarget())
+                return false;
+
+            // TODO: Disable when PvP is available.
+            if (target is Player && this is Player)
+                return false;
+
+            return GetDispositionTo(target.Faction1) < Disposition.Friendly;
+        }
+
+        /// <summary>
+        /// Returns whether or not this <see cref="UnitEntity"/> is an attackable target.
+        /// </summary>
+        private bool IsValidAttackTarget()
+        {
+            // TODO: Expand on this. There's bound to be flags or states that should prevent an entity from being attacked.
+            return (this is Player || this is NonPlayer);
+        }
+
+        /// <summary>
+        /// Deal damage to this <see cref="UnitEntity"/>
+        /// </summary>
+        public void TakeDamage(UnitEntity attacker, SpellTargetInfo.SpellTargetEffectInfo.DamageDescription damageDescription)
+        {
+            if (!IsAlive || !attacker.IsAlive)
+                return;
+
+            // TODO: Add Threat
+
+            Shield -= damageDescription.ShieldAbsorbAmount;
+            ModifyHealth(-damageDescription.AdjustedDamage);
+
+            if (Health == 0u && attacker != null)
+                Kill(attacker);
+        }
+
+        private void Kill(UnitEntity attacker)
+        {
+            if (Health > 0)
+                throw new InvalidOperationException("Trying to kill entity that has more than 0hp");
+
+            if (DeathState is DeathState.JustSpawned or DeathState.Alive)
+                throw new InvalidOperationException($"DeathState is incorrect! Current DeathState is {DeathState}");
+
+            // Fire Events (OnKill, OnDeath)
+            OnDeath(attacker);
+
+            // Reward XP
+            // Reward Loot
+            // Handle Achievements
+            // Schedule Respawn
+        }
+
+        protected override void OnDeathStateChange(DeathState newState)
+        {
+            switch (newState)
+            {
+                case DeathState.JustDied:
+                    // Clear Threat
+
+                    foreach (Spell.Spell spell in pendingSpells)
+                    {
+                        if (spell.IsCasting)
+                            spell.CancelCast(CastResult.CasterCannotBeDead);
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            base.OnDeathStateChange(newState);
+        }
+
+        protected override void OnDeath(UnitEntity killer)
+        {
+            if (killer is Player player && this is not Player)
+            {
+                player.QuestManager.ObjectiveUpdate(Quest.Static.QuestObjectiveType.KillCreature, CreatureId, 1u);
+                player.QuestManager.ObjectiveUpdate(Quest.Static.QuestObjectiveType.KillCreature2, CreatureId, 1u);
+                player.QuestManager.ObjectiveUpdate(Quest.Static.QuestObjectiveType.KillTargetGroup, CreatureId, 1u);
+                player.QuestManager.ObjectiveUpdate(Quest.Static.QuestObjectiveType.KillTargetGroups, CreatureId, 1u);
+            }
+
+            base.OnDeath(killer);
         }
     }
 }

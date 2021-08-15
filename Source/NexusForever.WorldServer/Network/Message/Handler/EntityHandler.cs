@@ -10,6 +10,7 @@ using NexusForever.Shared.GameTable.Model;
 using NexusForever.WorldServer.Game.Quest.Static;
 using NexusForever.WorldServer.Game;
 using NLog;
+using System;
 
 namespace NexusForever.WorldServer.Network.Message.Handler
 {
@@ -157,6 +158,24 @@ namespace NexusForever.WorldServer.Network.Message.Handler
                 throw new InvalidPacketValueException();
 
             session.Player.Sit(chair);
+        }
+
+        [MessageHandler(GameMessageOpcode.ClientResurrectRequest)]
+        public static void HandleClientResurrectRequest(WorldSession session, ClientResurrectRequest clientResurrectRequest)
+        {
+            WorldEntity entity = session.Player.Map.GetEntity<WorldEntity>(clientResurrectRequest.UnitId);
+            if (entity != null)
+            {
+                if (entity is Player player && session.Player.Guid == entity.Guid)
+                {
+                    player.DoResurrect(clientResurrectRequest.RezType);
+                    return;
+                }
+                else
+                    throw new InvalidOperationException($"Player requested resurrection of an entity that they do not own!");
+            }
+
+            throw new NotImplementedException($"Targeted Entity not found. Can players choose what type of resurrection other players get?");
         }
     }
 }
