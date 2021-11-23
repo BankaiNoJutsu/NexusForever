@@ -212,5 +212,15 @@ namespace NexusForever.WorldServer.Game.Spell
         private void HandleEffectFluff(UnitEntity target, SpellTargetInfo.SpellTargetEffectInfo info)
         {
         }
+
+        [SpellEffectHandler(SpellEffectType.Proc)]
+        private void HandleEffectProc(UnitEntity target, SpellTargetInfo.SpellTargetEffectInfo info)
+        {
+            ProcInfo procInfo = target.ApplyProc(info.Entry);
+            if (procInfo != null)
+                log.Trace($"Applied Proc {info.Entry.Id} for {procInfo.Type} to Entity {target.Guid}.");
+            else
+                log.Trace($"Failed to apply Proc {info.Entry.Id} for {(ProcType)info.Entry.DataBits00} to Entity {target.Guid}.");
+        }
     }
 }

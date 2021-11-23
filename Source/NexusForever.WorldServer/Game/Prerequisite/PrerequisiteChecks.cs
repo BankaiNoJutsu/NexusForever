@@ -123,6 +123,29 @@ namespace NexusForever.WorldServer.Game.Prerequisite
             }
         }
 
+        [PrerequisiteCheck(PrerequisiteType.HasBuff)]
+        private static bool PrerequisiteCheckHasBuff(Player player, PrerequisiteComparison comparison, uint value, uint objectId)
+        {
+            if (value == 0 && objectId == 0)
+                return false;
+
+            Spell4Entry spell4 = GameTableManager.Instance.Spell4.GetEntry(value);
+            if (spell4 == null)
+                throw new InvalidOperationException();
+
+            Spell.Spell buff = null;
+
+            switch (comparison)
+            {
+                case PrerequisiteComparison.Equal:
+                    return player.HasSpell(value, out buff);
+                case PrerequisiteComparison.NotEqual:
+                    return !player.HasSpell(value, out buff);
+                default:
+                    return false;
+            }
+        }
+
         [PrerequisiteCheck(PrerequisiteType.BaseFaction)]
         private static bool PrerequisiteCheckBaseFaction(Player player, PrerequisiteComparison comparison, uint value, uint objectId)
         {

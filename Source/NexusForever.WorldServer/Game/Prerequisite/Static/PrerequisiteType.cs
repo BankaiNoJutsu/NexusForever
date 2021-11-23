@@ -12,10 +12,11 @@
         Quest           = 6,
         Achievement     = 7,
         Prerequisite    = 11,
+        HasBuff         = 50,
         Path            = 52,
         Vital           = 73,
         SpellObj        = 129,
-		    /// <summary>
+	    /// <summary>
         /// Checks for an ObjectId, which is a hashed petflair id.
         /// </summary>
         HoverboardFlair = 190,

@@ -1,12 +1,16 @@
+using System;
 using System.Linq;
+using NexusForever.Shared.GameTable;
+using NexusForever.Shared.GameTable.Model;
 using NexusForever.Shared.Network;
 using NexusForever.Shared.Network.Message;
 using NexusForever.WorldServer.Game.Entity;
 using NexusForever.WorldServer.Game.Entity.Network;
 using NexusForever.WorldServer.Game.Entity.Network.Command;
+using NexusForever.WorldServer.Game.Entity.Static;
+using NexusForever.WorldServer.Game.Loot;
+using NexusForever.WorldServer.Game.Spell;
 using NexusForever.WorldServer.Network.Message.Model;
-using NexusForever.Shared.GameTable;
-using NexusForever.Shared.GameTable.Model;
 using NexusForever.WorldServer.Game.Quest.Static;
 using NexusForever.WorldServer.Game;
 using NLog;
@@ -43,6 +47,22 @@ namespace NexusForever.WorldServer.Network.Message.Handler
                     }
                     case SetRotationCommand setRotation:
                         mover.Rotation = setRotation.Position.Vector;
+                        break;
+                    case SetVelocityCommand setVelocity:
+                        if (mover is not Player && mover is not Vehicle)
+                            return;
+
+                        if (mover is not Vehicle)
+                        {
+                            mover.MovementManager.SetVelocity(setVelocity);
+                            return;
+                        }
+
+                        UnitEntity controlEntity = mover.GetVisible<UnitEntity>(mover.ControllerGuid);
+                        if (controlEntity is null || controlEntity is not Player)
+                            return;
+
+                        controlEntity.MovementManager.SetVelocity(setVelocity);
                         break;
                 }
             }

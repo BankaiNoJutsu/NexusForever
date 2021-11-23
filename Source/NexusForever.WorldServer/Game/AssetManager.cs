@@ -19,7 +19,10 @@ namespace NexusForever.WorldServer.Game
 {
     public sealed class AssetManager : Singleton<AssetManager>
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
         public static ImmutableDictionary<InventoryLocation, uint> InventoryLocationCapacities { get; private set; }
+        public static ImmutableList<ProcType> HandledProcTypes { get; private set; }
 
         /// <summary>
         /// Id to be assigned to the next created character.
@@ -56,6 +59,7 @@ namespace NexusForever.WorldServer.Game
             CacheCharacterCreate();
             CacheCharacterCustomisations();
             CacheInventoryBagCapacities();
+            CacheHandledProcTypes();
             CacheItemDisplaySourceEntries();
             CacheTutorials();
             CacheCreatureTargetGroups();
@@ -116,6 +120,15 @@ namespace NexusForever.WorldServer.Game
             }
 
             InventoryLocationCapacities = entries.ToImmutableDictionary();
+        }
+
+        private void CacheHandledProcTypes()
+        {
+            var entries = new List<ProcType>();
+            foreach (ProcType type in Enum.GetValues(typeof(ProcType)))
+                entries.Add(type);
+
+            HandledProcTypes = entries.ToImmutableList();
         }
 
         private void CacheItemDisplaySourceEntries()

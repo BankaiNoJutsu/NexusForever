@@ -234,7 +234,6 @@ namespace NexusForever.WorldServer.Game.Entity
             player.MovementManager.SetRotation(Rotation);
             player.MovementManager.BroadcastCommands();
 
-
             if (passenger.SeatType == VehicleSeatType.Pilot)
                 player.SetControl(player);
 
