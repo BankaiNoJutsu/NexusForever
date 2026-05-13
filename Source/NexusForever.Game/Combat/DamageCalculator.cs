@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Spell;
+using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
@@ -36,6 +37,8 @@ namespace NexusForever.Game.Combat
         /// </remarks>
         public void CalculateDamage(IUnitEntity attacker, IUnitEntity victim, ISpell spell, ISpellTargetEffectInfo info)
         {
+            SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(info);
+
             IDamageDescription damageDescription = new SpellTargetInfo.SpellTargetEffectInfo.DamageDescription
             {
                 DamageType   = info.Entry.DamageType,
@@ -61,9 +64,24 @@ namespace NexusForever.Game.Combat
                 return;
             }
 
-            uint damage = CalculateBaseDamage(attacker, victim, info.Entry);
+            uint damage = CalculateBaseDamage(attacker, victim, effect);
             damageDescription.RawDamage       = damage;
             damageDescription.RawScaledDamage = damage;
+
+            if (log.IsEnabled(LogLevel.Trace))
+            {
+                log.LogTrace(
+                    "SpellDiagnostics damage-input spell4Id={Spell4Id} castingId={CastingId} spell4EffectId={Spell4EffectId} effectType={EffectType} attacker={AttackerId} victim={VictimId} multiplier={TypeMultiplier} baseValue={TypeBaseValue} parameters={Parameters}",
+                    spell.Parameters.SpellInfo.Entry.Id,
+                    spell.CastingId,
+                    info.Entry.Id,
+                    info.Entry.EffectType,
+                    attacker.Guid,
+                    victim.Guid,
+                    effect.Damage?.TypeMultiplier,
+                    effect.Damage?.TypeBaseValue,
+                    effect.FormatParameters());
+            }
 
             damage = CalculateBaseDamageVariance(damage);
 
@@ -91,38 +109,38 @@ namespace NexusForever.Game.Combat
 
             info.AddDamage(damageDescription);
 
+            if (log.IsEnabled(LogLevel.Trace))
+            {
+                log.LogTrace(
+                    "SpellDiagnostics damage-output spell4Id={Spell4Id} castingId={CastingId} spell4EffectId={Spell4EffectId} rawDamage={RawDamage} adjustedDamage={AdjustedDamage} shieldAbsorb={ShieldAbsorb} combatResult={CombatResult}",
+                    spell.Parameters.SpellInfo.Entry.Id,
+                    spell.CastingId,
+                    info.Entry.Id,
+                    damageDescription.RawDamage,
+                    damageDescription.AdjustedDamage,
+                    damageDescription.ShieldAbsorbAmount,
+                    damageDescription.CombatResult);
+            }
+
             // TODO: Queue Proc Events*/
         }
 
         /// <summary>
         /// Get base damage value for the given <see cref="IUnitEntity"/> with the provided parameter data from the <see cref="Spell4EffectsEntry"/>.
         /// </summary>
-        private uint CalculateBaseDamage(IUnitEntity caster, IUnitEntity target, Spell4EffectsEntry entry)
+        private uint CalculateBaseDamage(IUnitEntity caster, IUnitEntity target, SpellEffectInterpretation effect)
         {
-            float basePropertyDamage = CalculateBasePropertyDamage(caster, entry);
-            float baseEntityDamage   = CalculateBaseEntityDamage(caster, target, entry);
+            Spell4EffectsEntry entry = effect.Entry;
+
+            float basePropertyDamage = CalculateBasePropertyDamage(caster, effect);
+            float baseEntityDamage   = CalculateBaseEntityDamage(caster, target, effect);
 
             float typeMultiplier = 1f;
             float typeBaseDamage = 0;
-            switch (entry.EffectType)
+            if (effect.Damage != null)
             {
-                case SpellEffectType.Transference:
-                {
-                    typeMultiplier = BitConverter.UInt32BitsToSingle(entry.DataBits02);
-                    typeBaseDamage = entry.DataBits03;
-                    break;
-                }
-                case SpellEffectType.Damage:
-                case SpellEffectType.Heal:
-                case SpellEffectType.DistanceDependentDamage:
-                case SpellEffectType.DistributedDamage:
-                case SpellEffectType.HealShields:
-                case SpellEffectType.DamageShields:
-                {
-                    typeMultiplier = BitConverter.UInt32BitsToSingle(entry.DataBits00);
-                    typeBaseDamage = entry.DataBits01;
-                    break;
-                }
+                typeMultiplier = effect.Damage.TypeMultiplier;
+                typeBaseDamage = effect.Damage.TypeBaseValue;
             }
 
             if (caster.Type is not EntityType.Player and not EntityType.Ghost)
@@ -137,7 +155,7 @@ namespace NexusForever.Game.Combat
             return (uint)(propertyMultiplier * baseDamage);
         }
 
-        private float CalculateBasePropertyDamage(IUnitEntity caster, Spell4EffectsEntry entry)
+        private float CalculateBasePropertyDamage(IUnitEntity caster, SpellEffectInterpretation effect)
         {
             float GetProperty(Property property)
             {
@@ -147,10 +165,10 @@ namespace NexusForever.Game.Combat
             GameFormulaEntry forumulaEntry = gameTableManager.GameFormula.GetEntry(1266);
 
             float value = 0f;
-            for (int i = 0; i < 4; i++)
+            foreach (SpellEffectParameter parameter in effect.Parameters)
             {
                 float intermediateValue = 0f;
-                switch (entry.ParameterType[i])
+                switch (parameter.Type)
                 {
                     case SpellEffectParameterType.Brutality:
                         intermediateValue = GetProperty(Property.Strength);
@@ -179,7 +197,7 @@ namespace NexusForever.Game.Combat
                         break;
                 }
 
-                value += intermediateValue * entry.ParameterValue[i];
+                value += intermediateValue * parameter.Value;
             }
 
             if (value >= 0f)
@@ -188,13 +206,13 @@ namespace NexusForever.Game.Combat
                 return MathF.Floor(value);
         }
 
-        private float CalculateBaseEntityDamage(IUnitEntity caster, IUnitEntity target, Spell4EffectsEntry entry)
+        private float CalculateBaseEntityDamage(IUnitEntity caster, IUnitEntity target, SpellEffectInterpretation effect)
         {
             float value = 0f;
-            for (int i = 0; i < 4; i++)
+            foreach (SpellEffectParameter parameter in effect.Parameters)
             {
                 float intermediateValue = 0f;
-                switch (entry.ParameterType[i])
+                switch (parameter.Type)
                 {
                     case SpellEffectParameterType.TargetMaxHealth:
                         intermediateValue = target.MaxHealth;
@@ -215,7 +233,7 @@ namespace NexusForever.Game.Combat
                         intermediateValue = target.MaxShieldCapacity;
                         break;
                     case SpellEffectParameterType.ItemBudget:
-                        intermediateValue = entry.ParameterValue[i];
+                        intermediateValue = parameter.Value;
                         break;
                     case SpellEffectParameterType.TargetCurrentHealth:
                         intermediateValue = target.Health;
@@ -240,7 +258,7 @@ namespace NexusForever.Game.Combat
                         break;
                 }
 
-                value += intermediateValue * entry.ParameterValue[i];
+                value += intermediateValue * parameter.Value;
             }
 
             return value;

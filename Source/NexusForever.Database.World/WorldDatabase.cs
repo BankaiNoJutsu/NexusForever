@@ -40,6 +40,7 @@ namespace NexusForever.Database.World
         {
             return entities
                 .Include(e => e.EntityEvent)
+                .Include(e => e.EntityScript)
                 .Include(e => e.EntitySpline)
                 .Include(e => e.EntityVendor)
                 .Include(e => e.EntityVendorCategory)

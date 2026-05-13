@@ -13,6 +13,9 @@ namespace NexusForever.Aspire.Database.Migrations.Service
 {
     public class WorldDatabaseHostedService : IHostedService
     {
+        private const string NewPlayerExperienceFileName = "New Player Experience.sql";
+        private const ushort NewPlayerExperienceWorldId = 3460;
+
         #region Dependency Injection
 
         private readonly ILogger<WorldDatabaseHostedService> _log;
@@ -69,7 +72,7 @@ namespace NexusForever.Aspire.Database.Migrations.Service
                 catch (Exception ex)
                 {
                     _log.LogError(ex, "Failed to apply world database migration: {FileName}", fileName);
-                    continue;
+                    throw;
                 }
                 _log.LogInformation("Applied world database migration: {FileName}", fileName);
 
@@ -82,6 +85,31 @@ namespace NexusForever.Aspire.Database.Migrations.Service
 
                 await _context.SaveChangesAsync(cancellationToken);
             }
+
+            await ValidateNewPlayerExperienceImport(cancellationToken);
+        }
+
+        private async Task ValidateNewPlayerExperienceImport(CancellationToken cancellationToken)
+        {
+            if (!Directory
+                .GetFiles(_options.Path, NewPlayerExperienceFileName, SearchOption.AllDirectories)
+                .Any())
+            {
+                throw new InvalidOperationException($"WorldDatabase path does not contain required NPE import file: {NewPlayerExperienceFileName}");
+            }
+
+            if (!await _context.Version.AnyAsync(v => v.FileName == NewPlayerExperienceFileName, cancellationToken))
+                throw new InvalidOperationException($"WorldDatabase import did not record required NPE import file: {NewPlayerExperienceFileName}");
+
+            bool hasNpeEntities = await _context.Entity
+                .AnyAsync(e => e.World == NewPlayerExperienceWorldId, cancellationToken);
+            if (!hasNpeEntities)
+                throw new InvalidOperationException($"WorldDatabase import did not create entities for world {NewPlayerExperienceWorldId}.");
+
+            bool hasNpeEntityScripts = await _context.EntityScript
+                .AnyAsync(s => _context.Entity.Any(e => e.Id == s.Id && e.World == NewPlayerExperienceWorldId), cancellationToken);
+            if (!hasNpeEntityScripts)
+                throw new InvalidOperationException($"WorldDatabase import did not create entity_script rows for world {NewPlayerExperienceWorldId}.");
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

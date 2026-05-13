@@ -12,6 +12,7 @@ namespace NexusForever.WorldServer
         public DatabaseConfig Database { get; set; }
         public GameTableConfig GameTable { get; set; }
         public RealmConfig Realm { get; set; }
+        public WorldConfig World { get; set; }
         public ScriptConfig Script { get; set; }
     }
 }

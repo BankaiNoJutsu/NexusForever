@@ -1,5 +1,6 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Combat;
@@ -26,13 +27,15 @@ namespace NexusForever.Game.Spell
             public uint EffectId { get; }
             public bool DropEffect { get; set; } = false;
             public Spell4EffectsEntry Entry { get; }
+            public SpellEffectInterpretation Interpretation { get; }
             public IDamageDescription Damage { get; private set; }
             public List<ICombatLog> CombatLogs { get; private set; } = [];
 
             public SpellTargetEffectInfo(uint effectId, Spell4EffectsEntry entry)
             {
-                EffectId = effectId;
-                Entry    = entry;
+                EffectId       = effectId;
+                Entry          = entry;
+                Interpretation = SpellEffectInterpreter.Interpret(entry);
             }
 
             public void AddDamage(DamageType damageType, uint damage)

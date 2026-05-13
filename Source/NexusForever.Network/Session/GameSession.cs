@@ -56,6 +56,7 @@ namespace NexusForever.Network.Session
 
             var packet = new ServerGamePacket(opcode.Value, message);
             outgoingPackets.Enqueue(packet);
+            LogSpellPacketBoundary("outgoing-queued", opcode.Value, false, message.GetType().Name, packet.Data.Length);
         }
 
         /// <summary>
@@ -80,6 +81,7 @@ namespace NexusForever.Network.Session
                 byte[] data = stream.ToArray();
                 byte[] encrypted = encryption.Encrypt(data, data.Length);
                 EnqueueMessage(BuildEncryptedMessage(encrypted));
+                LogSpellPacketBoundary("outgoing-encrypted-body", opcode.Value, true, message.GetType().Name, encrypted.Length);
             }
 
             log.Trace($"Sent packet {opcode}(0x{opcode:X}).");
@@ -189,6 +191,7 @@ namespace NexusForever.Network.Session
 
                 //IReadable message = serviceScope.ServiceProvider.GetKeyedService<IReadable>(opcode);
                 IReadable message = serviceProvider.GetKeyedService<IReadable>(opcode);
+                LogSpellPacketBoundary("incoming-read", opcode, packet.IsEncrypted, message?.GetType().Name, packet.Data?.Length ?? 0);
                 if (message == null)
                 {
                     log.Warn($"Received unknown packet {opcode}(0x{opcode:X}.");
@@ -242,6 +245,40 @@ namespace NexusForever.Network.Session
             {
                 log.Error(exception);
             }
+        }
+
+        private void LogSpellPacketBoundary(string direction, GameMessageOpcode opcode, bool encrypted, string messageType, int bodyBytes)
+        {
+            if (!log.IsTraceEnabled || !IsSpellEvidenceOpcode(opcode))
+                return;
+
+            log.Trace(
+                "SpellDiagnostics packet-boundary session={0} direction={1} encrypted={2} opcode={3}(0x{4:X}) messageType={5} incomingQueue={6} outgoingQueue={7} bodyBytes={8}",
+                Id,
+                direction,
+                encrypted,
+                opcode,
+                (uint)opcode,
+                messageType,
+                incomingPackets.Count,
+                outgoingPackets.Count,
+                bodyBytes);
+        }
+
+        private static bool IsSpellEvidenceOpcode(GameMessageOpcode opcode)
+        {
+            return opcode is GameMessageOpcode.ClientCastSpell
+                or GameMessageOpcode.ClientCastSpellContinuous
+                or GameMessageOpcode.ClientEntityCommand
+                or GameMessageOpcode.ClientSpellStopCast
+                or GameMessageOpcode.ClientCancelEffect
+                or GameMessageOpcode.ServerCombatLog
+                or GameMessageOpcode.ServerSpellGo
+                or GameMessageOpcode.ServerSpellStart
+                or GameMessageOpcode.ServerSpellCastResult
+                or GameMessageOpcode.ServerSpellFinish
+                or GameMessageOpcode.ServerSpellBuffRemove
+                || ((uint)opcode >= 0x07F4u && (uint)opcode <= 0x0818u);
         }
 
         protected virtual IServiceScope CreateHandlePacketScope()

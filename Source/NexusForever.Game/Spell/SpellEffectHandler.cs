@@ -6,6 +6,7 @@ using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Combat;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Map;
+using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
@@ -43,7 +44,11 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.Proxy)]
         public static void HandleEffectProxy(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            target.CastSpell(info.Entry.DataBits00, new SpellParameters
+            SpellEffectProxySemantics proxy = SpellEffectInterpreter.Interpret(info).Proxy;
+            if (proxy == null || proxy.Spell4Id == 0u)
+                return;
+
+            target.CastSpell(proxy.Spell4Id, new SpellParameters
             {
                 ParentSpellInfo        = spell.Parameters.SpellInfo,
                 RootSpellInfo          = spell.Parameters.RootSpellInfo,
@@ -110,7 +115,11 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.Teleport)]
         public static void HandleEffectTeleport(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            WorldLocation2Entry locationEntry = GameTableManager.Instance.WorldLocation2.GetEntry(info.Entry.DataBits00);
+            SpellEffectTeleportSemantics teleport = SpellEffectInterpreter.Interpret(info).Teleport;
+            if (teleport == null || teleport.WorldLocation2Id == 0u)
+                return;
+
+            WorldLocation2Entry locationEntry = GameTableManager.Instance.WorldLocation2.GetEntry(teleport.WorldLocation2Id);
             if (locationEntry == null)
                 return;
 
@@ -242,13 +251,17 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.UnitPropertyModifier)]
         public static void HandleEffectPropertyModifier(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
+            SpellEffectUnitPropertyModifierSemantics propertyModifier = SpellEffectInterpreter.Interpret(info).UnitPropertyModifier;
+            if (propertyModifier == null)
+                return;
+
             // TODO: I suppose these could be cached somewhere instead of generating them every single effect?
             SpellPropertyModifier modifier = 
-                new SpellPropertyModifier((Property)info.Entry.DataBits00, 
-                    info.Entry.DataBits01, 
-                    BitConverter.UInt32BitsToSingle(info.Entry.DataBits02), 
-                    BitConverter.UInt32BitsToSingle(info.Entry.DataBits03), 
-                    BitConverter.UInt32BitsToSingle(info.Entry.DataBits04));
+                new SpellPropertyModifier(propertyModifier.Property,
+                    propertyModifier.Priority,
+                    propertyModifier.PercentageValue,
+                    propertyModifier.FlatValue,
+                    propertyModifier.LevelScaleValue);
             target.AddSpellModifierProperty(modifier, spell.Parameters.SpellInfo.Entry.Id);
 
             // TODO: Handle removing spell modifiers

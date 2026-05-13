@@ -36,12 +36,14 @@
             "PrecacheBaseMaps": [
                 22,
                 51,
-                1061
+                1061,
+                3460
             ],
             "PrecacheMapSpawns": [
                 22,
                 51,
-                1061
+                1061,
+                3460
             ],
             "SynchronousUpdate": false,
             "GridActionThreshold": 100,
@@ -54,6 +56,9 @@
         "LengthOfInGameDay": 12600,
         "CrossFactionChat": true,
         "MaxPlayers": 50
+    },
+    "World": {
+        "CreatureRespawnSeconds": 30
     },
     "Script": {
         "Enable": true,

@@ -21,10 +21,12 @@ namespace NexusForever.Database.World.Model
         public ushort Faction1 { get; set; }
         public ushort Faction2 { get; set; }
         public byte QuestChecklistIdx { get; set; }
+        public byte Mode { get; set; }
         public ulong ActivePropId { get; set; }
         public ushort WorldSocketId { get; set; }
 
         public EntityEventModel EntityEvent { get; set; }
+        public ICollection<EntityScriptModel> EntityScript { get; set; } = new HashSet<EntityScriptModel>();
         public EntitySplineModel EntitySpline { get; set; }
         public EntityVendorModel EntityVendor { get; set; }
         public ICollection<EntityStatModel> EntityStat { get; set; } = new HashSet<EntityStatModel>();

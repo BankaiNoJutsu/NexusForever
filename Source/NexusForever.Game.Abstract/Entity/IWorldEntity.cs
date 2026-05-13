@@ -21,6 +21,8 @@ namespace NexusForever.Game.Abstract.Entity
         public WorldZoneEntry Zone { get; }
 
         uint EntityId { get; }
+        byte EntityMode { get; }
+        IEnumerable<string> ScriptNames { get; }
         uint CreatureId { get; set; }
         Creature2Entry CreatureEntry { get; }
         uint DisplayInfo { get; set; }

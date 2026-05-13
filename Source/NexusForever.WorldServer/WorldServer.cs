@@ -64,6 +64,8 @@ namespace NexusForever.WorldServer
                         .Bind(hb.Configuration.GetSection("Network"));
                     sc.AddOptions<RealmConfig>()
                         .Bind(hb.Configuration.GetSection("Realm"));
+                    sc.AddOptions<WorldConfig>()
+                        .Bind(hb.Configuration.GetSection("World"));
                     sc.AddOptions<ScriptConfig>()
                         .Bind(hb.Configuration.GetSection("Script"));
 

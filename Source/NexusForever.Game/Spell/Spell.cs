@@ -2,6 +2,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Abstract.Spell.Event;
 using NexusForever.Game.Prerequisite;
+using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Spell.Event;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable.Model;
@@ -261,18 +262,24 @@ namespace NexusForever.Game.Spell
                 foreach (IUnitEntity entity in telegraph.GetTargets())
                     targets.Add(new SpellTargetInfo(SpellEffectTargetFlags.Telegraph, entity));
             }
+
+            SpellEffectDiagnostics.TraceTargetSelection(this, targets, telegraphs.Count);
         }
 
         private void ExecuteEffects()
         {
             foreach (Spell4EffectsEntry spell4EffectsEntry in Parameters.SpellInfo.Effects)
             {
+                SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(spell4EffectsEntry);
+
                 // select targets for effect
                 List<ISpellTargetInfo> effectTargets = targets
                     .Where(t => (t.Flags & (SpellEffectTargetFlags)spell4EffectsEntry.TargetFlags) != 0)
                     .ToList();
 
                 SpellEffectDelegate handler = GlobalSpellManager.Instance.GetEffectHandler((SpellEffectType)spell4EffectsEntry.EffectType);
+                SpellEffectDiagnostics.TraceEffectDispatch(this, effect, effectTargets.Count, handler != null);
+
                 if (handler == null)
                     log.Warn($"Unhandled spell effect {(SpellEffectType)spell4EffectsEntry.EffectType}");
                 else
@@ -285,6 +292,7 @@ namespace NexusForever.Game.Spell
 
                         // TODO: if there is an unhandled exception in the handler, there will be an infinite loop on Execute()
                         handler.Invoke(this, effectTarget.Entity, info);
+                        SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
                     }
                 }
             }
@@ -485,6 +493,12 @@ namespace NexusForever.Game.Spell
                     CombatLog = combatLog
                 }, true);
             }
+
+            SpellEffectDiagnostics.TraceSpellGo(
+                this,
+                serverSpellGo.TargetInfoData.Count,
+                serverSpellGo.TargetInfoData.Sum(t => t.EffectInfoData.Count),
+                combatLogs.Count);
 
             Caster.EnqueueToVisible(serverSpellGo, true);
 

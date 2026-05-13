@@ -35,6 +35,9 @@ namespace NexusForever.Game.Entity
 
         public WorldZoneEntry Zone { get; private set; }
         public uint EntityId { get; protected set; }
+        public byte EntityMode { get; private set; }
+        public IEnumerable<string> ScriptNames => scriptNames;
+        private readonly HashSet<string> scriptNames = [];
 
         public uint CreatureId
         {
@@ -220,6 +223,7 @@ namespace NexusForever.Game.Entity
         public virtual void Initialise(EntityModel model)
         {
             EntityId      = model.Id;
+            EntityMode    = model.Mode;
             CreatureId    = model.Creature;
             Rotation      = new Vector3(model.Rx, model.Ry, model.Rz);
             DisplayInfo   = model.DisplayInfo;
@@ -229,6 +233,10 @@ namespace NexusForever.Game.Entity
             ActivePropId  = model.ActivePropId;
             WorldSocketId = model.WorldSocketId;
             Spline        = model.EntitySpline;
+
+            scriptNames.Clear();
+            foreach (EntityScriptModel scriptModel in model.EntityScript)
+                scriptNames.Add(scriptModel.ScriptName);
 
             foreach (EntityStatModel statModel in model.EntityStat)
                 stats.Add((Stat)statModel.Stat, new StatValue(statModel));

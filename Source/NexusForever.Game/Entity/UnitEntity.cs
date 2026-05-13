@@ -4,8 +4,10 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Combat;
+using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
@@ -15,6 +17,7 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script.Template;
+using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Game;
 
 namespace NexusForever.Game.Entity
@@ -85,6 +88,8 @@ namespace NexusForever.Game.Entity
         /// </summary>
         private UpdateTimer statUpdateTimer = new UpdateTimer(0.25); // TODO: Long-term this should be absorbed into individual timers for each Stat regeneration method
 
+        private UpdateTimer respawnTimer;
+
         private readonly List<ISpell> pendingSpells = new();
 
         private Dictionary<Property, Dictionary</*spell4Id*/uint, ISpellPropertyModifier>> spellProperties = new();
@@ -122,6 +127,8 @@ namespace NexusForever.Game.Entity
         public override void Update(double lastTick)
         {
             base.Update(lastTick);
+
+            HandleRespawn(lastTick);
 
             foreach (ISpell spell in pendingSpells.ToArray())
             {
@@ -416,11 +423,10 @@ namespace NexusForever.Game.Entity
             }
 
             GenerateRewards();
-            // TODO: schedule respawn
+            ClearCombatState();
+            ScheduleRespawn();
 
-            ThreatManager.ClearThreatList();
-
-            deathState = EntityDeathState.Dead;
+            DeathState = EntityDeathState.Dead;
         }
 
         private void GenerateRewards()
@@ -437,16 +443,53 @@ namespace NexusForever.Game.Entity
         {
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillCreature, CreatureId, 1u);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillCreature2, CreatureId, 1u);
+            player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureEntry, CreatureId);
 
-            foreach (uint targetGroupId in AssetManager.Instance.GetTargetGroupsForCreatureId(CreatureId))
+            foreach (uint targetGroupId in AssetManager.Instance.GetTargetGroupsForCreatureId(CreatureId) ?? Enumerable.Empty<uint>())
             {
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroup, targetGroupId, 1u);
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroups, targetGroupId, 1u);
+                player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureGroup, targetGroupId);
             }
 
             // TODO: Reward XP
             // TODO: Reward Loot
-            // TODO: Handle Achievements
+        }
+
+        private void ClearCombatState()
+        {
+            SetTarget((IWorldEntity)null);
+            ThreatManager.ClearThreatList();
+            UpdateCombatState();
+        }
+
+        private void ScheduleRespawn()
+        {
+            if (this is not INonPlayerEntity)
+                return;
+
+            uint respawnSeconds = SharedConfiguration.Instance.Get<WorldConfig>()?.CreatureRespawnSeconds ?? 30u;
+            respawnTimer = new UpdateTimer(respawnSeconds);
+        }
+
+        private void HandleRespawn(double lastTick)
+        {
+            if (respawnTimer == null)
+                return;
+
+            respawnTimer.Update(lastTick);
+            if (!respawnTimer.HasElapsed)
+                return;
+
+            respawnTimer = null;
+            Respawn();
+        }
+
+        private void Respawn()
+        {
+            Health = MaxHealth;
+            Shield = MaxShieldCapacity;
+            DeathState = null;
         }
 
         /// <summary>
