@@ -135,7 +135,7 @@ The current server code already mirrors the core data pipeline:
 4. `GlobalSpellManager` discovers effect handlers through `[SpellEffectHandler(SpellEffectType.X)]` attributes and stores delegates by effect enum.
 5. `Spell.Cast()` checks prerequisites, CC conditions, cooldowns, global cooldown, and charges, then sends `ServerSpellStart` and schedules execution after cast time.
 6. `Spell.Execute()` sets cooldown, selects targets, schedules/executes effects, and consumes charges.
-7. `Spell.SelectTargets()` currently adds caster, explicit target, and telegraph targets, merges duplicate entity entries by target flag, and applies `Spell4AoeTargetConstraints.TargetCount` as a conservative telegraph target cap.
+7. `Spell.SelectTargets()` currently adds caster, explicit target, and telegraph targets, merges duplicate entity entries by target flag, anchors target/position AOEs from decoded target mechanics, and applies `Spell4AoeTargetConstraints.TargetCount` as a conservative telegraph target cap.
 8. `Spell.ExecuteEffects()` walks ordered `Spell4Effects`, filters targets by `targetFlags`, assigns one effect unique id per executed effect pulse, and invokes the registered handler for each selected target.
 9. Effect rows with `delayTime > 0` are scheduled through the spell event queue. Rows with both `tickTime > 0` and `durationTime > 0` pulse centrally from the first tick/delay through the duration window.
 10. `SendSpellGo()` serializes only the newly executed target/effect result batch and combat logs for each immediate, delayed, or periodic pulse. Proxy effects are intentionally suppressed from outgoing target effect serialization.
@@ -164,7 +164,7 @@ Top effect families by row count:
 | 1 | `VitalModifier` | 2,049 | 1,631 | 258 | 190 | 135 |
 | 21 | `SummonCreature` | 1,951 | 1,082 | 277 | 5 | 1,754 |
 
-Current registered handlers cover a little more of the high-volume surface now that `Heal` has a health-heal handler, `Transference`, `DistanceDependentDamage`, and `DistributedDamage` share the decoded damage path, shield heal/damage families mutate shield capacity, `Absorption` creates conservative damage absorb pools, `HealingAbsorption` creates conservative anti-heal pools, `VitalModifier` restores supported vitals conservatively, `SapVital` applies conservative percent-of-max vital restore/drain rows, `ClampVital` caps current health from decoded ratios, `ShieldOverload` shuts down shield regen for simple duration rows, `UnitStateSet` tracks raw duration-backed unit state latches, `SetBusy` tracks activation/object busy latches and paired clear rows, `PersonalDmgHealMod` maps common damage/heal multiplier rows through the property system, `SummonCreature` creates duration-backed NPC summons, `SummonTrap` creates duration-backed trap/probe entities, `SummonVehicle` creates decoded vehicle entities and optionally boards players, `NpcExecutionDelay` preserves duration-backed spell lifetime, `Activate`, `QuestAdvanceObjective`, `AchievementAdvance`, `ReputationModify`, `GiveItemToPlayer`, `GiveSchematic`, and `RewardPropertyModifier` update existing player progression/reward surfaces, `ActionBarSet` shows decoded temporary action bars, `ItemVisualSwap` applies immediate visual display overrides, `DisguiseOutfit` and `MimicDisguise` apply visible appearance changes with duration-backed restoration, `Disembark` routes through the existing vehicle passenger removal path, `CCStateSet` has a timed packet/state shell, `CCStateBreak` can clear tracked CC, `SpellDispel` removes tracked aura-like state by spell class, cooldown/charge families cover the obvious player ability reset/charge rows, `SpellEffectImmunity` and concrete `SpellImmunity` mode `0` centrally block immune effects/spells, `Scale`/`FactionSet` use existing entity update systems, `ModifyInterruptArmor` mutates and expires interrupt armor, `ThreatModification` has a conservative aggro-control shell, `DelayDeath` consumes prevent-death states on fatal damage, `ForceFacing`/`NpcForceFacing` use movement rotation commands, and `ForcedMove` has a conservative velocity handler. Raw handler coverage still overstates behavioral completeness because several covered families are intentionally partial or empty, and major families like `Proc`, `RavelSignal`, and the non-zero `SpellImmunity` modes are not actually restored.
+Current registered handlers cover a little more of the high-volume surface now that `Heal` has a health-heal handler, `Transference`, `DistanceDependentDamage`, and `DistributedDamage` share the decoded damage path, shield heal/damage families mutate shield capacity, `Absorption` creates conservative damage absorb pools, `HealingAbsorption` creates conservative anti-heal pools, `VitalModifier` restores supported vitals conservatively, `SapVital` applies conservative percent-of-max vital restore/drain rows, `ClampVital` caps current health from decoded ratios, `ShieldOverload` shuts down shield regen for simple duration rows, `Proc` registers decoded trigger/chance state, `UnitStateSet` tracks raw duration-backed unit state latches, `SetBusy` tracks activation/object busy latches and paired clear rows, `PersonalDmgHealMod` maps common damage/heal multiplier rows through the property system, `SummonCreature` creates duration-backed NPC summons, `SummonTrap` creates duration-backed trap/probe entities, `SummonVehicle` creates decoded vehicle entities and optionally boards players, `NpcExecutionDelay` preserves duration-backed spell lifetime, `Activate`, `QuestAdvanceObjective`, `AchievementAdvance`, `ReputationModify`, `GiveItemToPlayer`, `GiveSchematic`, and `RewardPropertyModifier` update existing player progression/reward surfaces, `ActionBarSet` shows decoded temporary action bars, `ItemVisualSwap` applies immediate visual display overrides, `DisguiseOutfit` and `MimicDisguise` apply visible appearance changes with duration-backed restoration, `Disembark` routes through the existing vehicle passenger removal path, `CCStateSet` has a timed packet/state shell, `CCStateBreak` can clear tracked CC, `SpellDispel` removes tracked aura-like state by spell class, cooldown/charge families cover the obvious player ability reset/charge rows, `SpellEffectImmunity` and concrete `SpellImmunity` mode `0` centrally block immune effects/spells, `Scale`/`FactionSet` use existing entity update systems, `ModifyInterruptArmor` mutates and expires interrupt armor, `ThreatModification` has a conservative aggro-control shell, `DelayDeath` consumes prevent-death states on fatal damage, `ForceFacing`/`NpcForceFacing` use movement rotation commands, and `ForcedMove` has a conservative velocity handler. Raw handler coverage still overstates behavioral completeness because several covered families are intentionally partial or empty, and major gaps like proc event dispatch, `RavelSignal`, and the non-zero `SpellImmunity` modes are not actually restored.
 
 Registered handlers by row count:
 
@@ -184,6 +184,7 @@ Registered handlers by row count:
 | `SapVital` | 142 | Applies clean percent-of-max restore/drain rows for supported vitals and emits `CombatLogVitalModifier`; parameter, secondary-payload, unsupported vital, and high-scalar rows remain diagnostic-only. |
 | `ClampVital` | 23 | Tracks current-health caps from `DataBits02` ratios, clamps immediately and after later health changes, and removes duration-backed caps; mode/vital fields remain open. |
 | `ShieldOverload` | 55 | Simple all-zero payload rows set shields to zero and suppress normal shield regeneration until duration removal; non-zero payloads remain diagnostic-only. |
+| `Proc` | 3,498 | Decodes trigger event, trigger `Spell4`, chance, target/routing data, cooldown/sentinel, and remaining raw fields; tracks active proc state by effect id and removes duration-backed rows, but does not dispatch trigger events yet. |
 | `UnitStateSet` | 752 | Tracks non-zero raw unit state ids by effect id, removes duration-backed states, and participates in force-remove/dispel cleanup; state-id-specific combat behavior remains open. |
 | `SetBusy` | 571 | Tracks `DataBits00=1` busy rows and clears them through `DataBits00=0` same-spell/context rows or duration cleanup; interaction blocking and packet parity remain open. |
 | `SummonCreature` | 1,951 | Creates `INonPlayerEntity` summons from decoded `Creature2` ids, places them through the map add path, and schedules duration cleanup; ownership/AI/placement payload semantics remain open. |
@@ -256,7 +257,9 @@ Distribution in `spell4effects.targetFlags`:
 | 4 | 16 | 957 |
 | 8 | 16 | 868 |
 
-Current NexusForever target selection is still partial but now uses more of the client target data. It selects caster, explicit target, and telegraph hits; merges duplicate target entries by unit id; validates explicit primary targets against concrete `Spell4` min/max/vertical range and `Spell4TargetAngle` facing cones; applies the evidenced `Spell4ValidTargets` dead-target bit `0x08` for explicit targets; filters telegraph candidates by `Spell4AoeTargetConstraints` min/max range and angle; applies the AOE target count cap; and orders smart AOE candidates for the evidenced `targetSelection=4` lowest-absolute-health and `targetSelection=5` most-missing-health modes. It then lets effect `targetFlags` filter that set.
+Client test spell names give high-confidence labels for several target types: `1` single target, `2` self AOE, `3` target AOE, `4` position AOE, and `5` chain target. The runtime now uses only the structurally safe subset of that mapping: player casts forward the selected target for type `1`, `3`, and `5`; type `3` telegraphs anchor on the primary target position when present; and type `4` telegraphs anchor on the supplied spell position or primary-target fallback when available.
+
+Current NexusForever target selection is still partial but now uses more of the client target data. It selects caster, explicit target, and telegraph hits; merges duplicate target entries by unit id; validates explicit primary targets against concrete `Spell4` min/max/vertical range and `Spell4TargetAngle` facing cones; applies the evidenced `Spell4ValidTargets` dead-target bit `0x08` for explicit targets and telegraph candidates; filters telegraph candidates by `Spell4AoeTargetConstraints` min/max range and angle around the resolved AOE origin; applies the AOE target count cap; and orders smart AOE candidates for the evidenced `targetSelection=4` lowest-absolute-health and `targetSelection=5` most-missing-health modes. It then lets effect `targetFlags` filter that set.
 
 Still-open target acquisition pieces: the full `Spell4TargetMechanics` `targetType/flags` matrix, non-dead `Spell4ValidTargets.targetBitmask` categories, `TargetGroup`, AOE target prerequisites, target apply/suspend prerequisites, phase filters, and remaining preferred-target modes.
 
@@ -980,7 +983,7 @@ Proven from local data/code:
 - Damage/heal/transference-adjacent families share coefficient-vector structure.
 - NexusForever now centrally schedules delayed effect rows and rows with both `tickTime` and `durationTime`; each execution pulse gets its own `ServerSpellGo` batch.
 - Target selection now merges caster/target/telegraph flags per entity so one unit does not receive the same effect multiple times just because it entered the target set through multiple routes.
-- Telegraph target selection now applies `Spell4AoeTargetConstraints.TargetCount` as a conservative cap ordered by distance to the caster.
+- Telegraph target selection now applies `Spell4AoeTargetConstraints.TargetCount` as a conservative cap ordered by distance to the resolved AOE origin. Target-AOE and position-AOE telegraphs use primary-target or supplied-position anchors when those are available instead of always using the caster origin.
 - Health `Heal` effects now use the shared damage-family formula decoder and apply positive health changes.
 - `Transference`, `DistanceDependentDamage`, and `DistributedDamage` now execute through the decoded damage path; transference additionally restores the caster's decoded vital, while distance falloff and target-count splitting remain evidence gaps.
 - Timed `UnitPropertyModifier` effects now remove their property modifier through the spell event queue.
@@ -997,6 +1000,7 @@ Proven from local data/code:
 - `SapVital` now applies clean percent-of-max vital restore/drain rows and emits `sap-vital` diagnostics for ambiguous variants.
 - `ClampVital` now caps current health immediately and after later health changes, with duration-backed cleanup.
 - `ShieldOverload` now drops current shields to zero and pauses shield regeneration for simple duration-backed overload rows.
+- `Proc` now decodes trigger event, trigger `Spell4`, chance, target/routing data, cooldown/sentinel, and raw filter fields into tracked effect-id state with duration-backed cleanup and diagnostics.
 - `UnitStateSet` now tracks raw state ids, expires duration-backed states, and emits `unit-state-set` diagnostics for validation.
 - `SetBusy` now tracks activation/object busy state, handles paired delayed unbusy rows, expires duration-backed rows, and emits `set-busy` diagnostics.
 - `ForceFacing` and `NpcForceFacing` now decode facing context/degree offsets, emit `force-facing` diagnostics, and apply movement rotation commands.
@@ -1020,9 +1024,9 @@ Unknown or still needs sniff/client confirmation:
 - Full `Spell4TargetMechanics.targetType` and `flags` enum names.
 - Full `Spell4ValidTargets.targetBitmask` semantics.
 - `TargetGroup.type/data0..6` semantics.
-- Full `Spell4AoeTargetConstraints.targetSelection`, `angle`, and min/max range semantics beyond the current target-count cap.
+- Full `Spell4AoeTargetConstraints.targetSelection` modes beyond the current distance/health ordering.
 - Condition, CC condition, AOE target prerequisite, and target suspend behavior.
-- Exact packet/result behavior for heal crit/multihit, shields, absorbs, CC diminishing returns/breakout/apply-rules, procs, and force-remove effects.
+- Exact packet/result behavior for heal crit/multihit, shields, absorbs, CC diminishing returns/breakout/apply-rules, proc event dispatch/target routing, and force-remove effects.
 - Exact `VitalModifier` sentinel, parameter-driven, negative/drain, and class-resource-alias behavior.
 - Exact `SapVital` mode table, parameter formulas, high-scalar payloads, unsupported vital aliases, and damage-log parity.
 - Exact `ClampVital` mode/vital fields, stacking priority, and client/combat-log visibility.
@@ -1051,19 +1055,20 @@ The implementation path should stay family-first:
 5. Validate `SapVital` against level-up, medkit, self-destruct, percent-damage, and resource-drain fixtures before widening parameter, secondary-payload, or high-scalar behavior.
 6. Validate `ClampVital` against Laveka, Starmap, Food Sickness, and CQ Treasure fixtures before naming mode/vital fields or stacking rules.
 7. Validate `ShieldOverload` against simple duration rows and non-zero payload diagnostics before widening shield-heal or reboot behavior.
-8. Validate `UnitStateSet` against block, invulnerability, all-spell immunity, barrier, and burrow fixtures before adding state-id-specific combat gates.
-9. Validate `SetBusy` against activation/CSI/object rows before using busy state to suppress interaction or adding packets.
-10. Validate `Absorption` and `HealingAbsorption` against shield and anti-heal fixtures before widening damage-type filtering, stacking, shield-heal scope, or stat packet behavior.
-11. Validate `SummonCreature` against service, turret, follower, and encounter-add fixtures before widening ownership, AI, follow-up spell, or formation behavior.
-12. Validate `NpcExecutionDelay` against short telegraph holds and long encounter holds before connecting it to NPC AI scheduling.
-13. Validate `ModifyInterruptArmor` against temporary and no-remove rows before coupling it to CC apply/breakout behavior.
-14. Validate `ThreatModification` and decode `ThreatTransfer` source/destination before widening aggro-control behavior.
-15. Finish `CCStateSet` and `ForcedMove` behavior beyond packet/timed impulse lifetime: diminishing returns, breakout/interruption rules, forced-move type physics, tether payloads, and apply-rules result mapping.
-16. Finish `UnitPropertyModifier` lifecycle: stack group integration, persistence recheck, refresh rules, and buff remove packet parity.
-17. Expand proxy behavior by variant: plain proxy, linear AE proxy, channel proxy, variable-time channel proxy, random-exclusive proxy.
-18. Validate `Activate` against quest/object sniffs before widening payload semantics beyond objective updates.
-19. Decode target mechanics and valid targets only as required by those priority families.
-20. Use Jabbithole and WorldDatabase joins to choose representative creature/item/rune spells that appear in real content.
-21. Add focused fixtures per family so a handler fix proves improvements across multiple real spells.
+8. Validate `Proc` trigger events, target routing, chance/cooldown timing, and recursion rules against kill, damage, damage-taken, cast, enter-combat, and heal fixtures before enabling event dispatch.
+9. Validate `UnitStateSet` against block, invulnerability, all-spell immunity, barrier, and burrow fixtures before adding state-id-specific combat gates.
+10. Validate `SetBusy` against activation/CSI/object rows before using busy state to suppress interaction or adding packets.
+11. Validate `Absorption` and `HealingAbsorption` against shield and anti-heal fixtures before widening damage-type filtering, stacking, shield-heal scope, or stat packet behavior.
+12. Validate `SummonCreature` against service, turret, follower, and encounter-add fixtures before widening ownership, AI, follow-up spell, or formation behavior.
+13. Validate `NpcExecutionDelay` against short telegraph holds and long encounter holds before connecting it to NPC AI scheduling.
+14. Validate `ModifyInterruptArmor` against temporary and no-remove rows before coupling it to CC apply/breakout behavior.
+15. Validate `ThreatModification` and decode `ThreatTransfer` source/destination before widening aggro-control behavior.
+16. Finish `CCStateSet` and `ForcedMove` behavior beyond packet/timed impulse lifetime: diminishing returns, breakout/interruption rules, forced-move type physics, tether payloads, and apply-rules result mapping.
+17. Finish `UnitPropertyModifier` lifecycle: stack group integration, persistence recheck, refresh rules, and buff remove packet parity.
+18. Expand proxy behavior by variant: plain proxy, linear AE proxy, channel proxy, variable-time channel proxy, random-exclusive proxy.
+19. Validate `Activate` against quest/object sniffs before widening payload semantics beyond objective updates.
+20. Decode target mechanics and valid targets only as required by those priority families.
+21. Use Jabbithole and WorldDatabase joins to choose representative creature/item/rune spells that appear in real content.
+22. Add focused fixtures per family so a handler fix proves improvements across multiple real spells.
 
 The practical next high-leverage target is the rest of target behavior: target mechanics, valid-target decoding, and the advanced `UnitStateSet`/`SetBusy`/`CCStateSet`/`CCStateBreak`/`ForcedMove` pieces that require sniff/client confirmation. Damage, transference, health healing, shield mutation, absorption pools, conservative vital modification, raw unit-state tracking, activation busy tracking, duration-backed creature summoning, NPC execution-delay lifetimes, quest activation updates, timed modifier removal, timed CC shell/break behavior, interrupt armor mutation, threat-list mutation, stealth and aggro-immunity state toggles, conservative forced movement, force-remove cleanup, target-forwarded non-random proxy chaining, delayed despawn/disembark cleanup, and duplicate-safe capped target selection now have enough shared runtime surface to expose the next wave of missing combat behavior.

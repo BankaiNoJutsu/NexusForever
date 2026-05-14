@@ -15,8 +15,8 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 | --- | --- | --- |
 | Structural model | Mostly mapped | `Spell4Base`, concrete `Spell4`, ordered effects, telegraphs, target flags, timing, Jabbithole/world context joins. |
 | Runtime scheduler | Implemented, partial parity | Delay rows and duration-bounded tick rows execute through the spell event queue; duration lifetimes handle known families. |
-| Target acquisition | Partial | Caster, explicit target, telegraph targets, duplicate merge, explicit primary-target range/vertical/facing-angle validation, `Spell4ValidTargets` dead-target bit `0x08`, and AOE target count/range/angle filtering are implemented. `targetSelection=4` lowest-health and `5` most-missing-health ordering are wired from named data witnesses. Full target mechanics, non-dead valid-target masks, groups, AOE prerequisites, and remaining preferred-target modes remain. |
-| Diagnostics | Active | `primary-target-validation`, enriched `target-selection`, `effect-schedule`, `effect-lifetime`, `effect-dispatch`, `effect-result`, `spell-go`, `player-collection`, `housing-teleport`, `support-stuck`, and family diagnostics are available. |
+| Target acquisition | Partial | Caster, explicit target, telegraph targets, duplicate merge, explicit primary-target range/vertical/facing-angle validation, `Spell4ValidTargets` dead-target bit `0x08`, target/position AOE anchoring from `Spell4TargetMechanics`, selected-target forwarding for player single-target/target-AOE/chain casts, and AOE target count/range/angle filtering are implemented. `targetSelection=4` lowest-health and `5` most-missing-health ordering are wired from named data witnesses. Full target mechanics, non-dead valid-target masks, groups, AOE prerequisites, and remaining preferred-target modes remain. |
+| Diagnostics | Active | `primary-target-validation`, enriched `target-selection`, `effect-schedule`, `effect-lifetime`, `effect-dispatch`, `effect-result`, `spell-go`, `proc`, `player-collection`, `housing-teleport`, `support-stuck`, and family diagnostics are available. |
 | Command fixtures | Active | `/spell inspect4` and `/spell cast4` support concrete `Spell4` work. |
 
 ## Implemented Or Partially Implemented Families
@@ -64,6 +64,7 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 | `QuestAdvanceObjective` / `AchievementAdvance` | Conservative | Advances active quest objectives by decoded objective id/progress and grants decoded achievement ids through `AchievementManager`. |
 | `AddSpell` / `GrantXP` / `PathXpModify` / `GrantLevelScaledXP` / `GiveAugmentPowerToPlayer` / `Kill` / `GiveItemToPlayer` / `ReputationModify` / `GiveSchematic` / `RewardPropertyModifier` | Conservative | Teaches resolved player spells, grants flat XP, grants path XP/path levels through `PathManager`, grants level-scaled XP as a percent of the current level span, grants runtime AMP bonus power through `ServerAmpPowerUpdate`, routes kill effects through normal health/death handling, creates decoded inventory items, applies reputation deltas, sends schematic-unlock packets while updating obtain-schematic objectives, and applies duration-backed account reward-property modifiers. Prestige, ability point, inlaid augment unlock, AMP bonus persistence, and schematic persistence surfaces remain incomplete. |
 | `DelayDeath` | Conservative | Tracks prevent-death states, consumes one on fatal damage, leaves the unit at 1 HP, emits `CombatLogDelayDeath`, and casts decoded trigger spells immediately or after `DataBits02`; exact mode semantics and forced-death expiry remain. |
+| `Proc` | Structural | Decodes trigger event, trigger `Spell4`, float-bitcast chance, target data, cooldown/sentinel, and remaining raw fields; tracks proc state by effect id, supports duration cleanup and force-remove/dispel cleanup, and emits `proc` diagnostics. Event dispatch, target-data routing, internal cooldown consumption, and recursion rules remain blocked on sniff/client confirmation. |
 | `DespawnUnit` | Conservative | Delayed non-player map removal; non-zero payload modes remain. |
 | `Disembark` | Conservative | Resolves a player target/owner, safely dismounts mounted players through the existing vehicle path, and emits `CombatLogMount`; `DataBits00` reason/mode values remain unnamed. |
 | `Activate` | Partial | Quest activation objective updates; CSI/script/visibility payload behavior remains. |
@@ -75,7 +76,7 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 | Priority | Family / Area | Why It Matters | Next Action |
 | ---: | --- | --- | --- |
 | 1 | Target mechanics and valid target masks | Affects every family and prevents wrong target application. | Decode valid-target categories and remaining `Spell4AoeTargetConstraints.TargetSelection` modes from high-value fixtures before enforcing broad masks. |
-| 2 | `Proc` | 3,498 rows; likely central to buffs/items/runes. | Build DB fixture table and identify trigger/event payloads. |
+| 2 | `Proc` | 3,498 rows; likely central to buffs/items/runes. | Structural registration is implemented; next blocker is proving the trigger-event enum, `targetData` routing, cooldown/recursion rules, and safe event hooks from sniff/client evidence. |
 | 3 | `RavelSignal` | 5,262 rows; high row count and likely content scripting. | Evidence-only until script/signal receiver surface is found. |
 | 4 | Shield/transference families | Smaller but clear formula semantics. | Validate `HealShields`, `DamageShields`, and `Transference` with shield pot, Warrior/rune, and life-drain fixtures. |
 | 5 | `SapVital` validation | Percent-of-max vital restore/drain rows are now wired conservatively. | Validate level-up/medkit restore rows, self-destruct/damage rows, and resource-drain rows before widening parameter, secondary-payload, or flat/high-scalar behavior. |
@@ -112,7 +113,7 @@ These families were rechecked against the imported `Spell4Effects` data and loca
 | `SummonPet` / `PetCastSpell` | Payloads reference creature and spell ids for combat/class pets. | Vanity pets exist, but combat pet ownership, stance, AI, and lifetime state are not restored. |
 | `ChangePhase` / `ChangePlane` | Bitmask-like payloads and duration rows exist. | Phase/plane visibility is player/world-state sensitive and lacks a general spell-owned state manager. |
 | `ModifyCreatureFlags` | Add/remove-looking rows use values far beyond the current create-flag enum and include names like selection/nameplate/cinematic states. | Needs client/sniff validation before mutating `CreateFlags`; several values would be misnamed if treated as existing enum bits. |
-| `Hazard*`, `FacilityModification`, `RavelSignal`, `Script`, `Proc` | High row counts or clear content-scripting intent. | Require script/proc/hazard/facility managers or receiver graph decoding before safe runtime behavior. |
+| `Hazard*`, `FacilityModification`, `RavelSignal`, `Script` | High row counts or clear content-scripting intent. | Require script/hazard/facility managers or receiver graph decoding before safe runtime behavior. |
 
 ## Verification Loop
 

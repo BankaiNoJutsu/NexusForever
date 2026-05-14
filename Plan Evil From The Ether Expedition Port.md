@@ -14,6 +14,42 @@ Success means a local `dev` build can:
 - run the core expedition phases, doors, interactables, teleports, cutscenes,
   public event objectives, and key combat encounters without server exceptions.
 
+## Implementation Status - 2026-05-14
+
+Implemented in `codex/evil-expedition-port`:
+
+- Milestone A: world schema/model support for `entity_property`,
+  `creature_info_property`, and `creature_info_stat`, plus verified disposable
+  import of `Evil from the Ether.sql`.
+- Milestone B foundation: `CreatureInfo` loading/overrides, entity property
+  overrides, static/public-event entity initialisation, DB-driven named script
+  resolution, and active-prop script filters.
+- Milestone C/D core slice: Evil map/event script, public event phase controller,
+  dynamic grid/volume/turnstile triggers, local teleports, opening and phase
+  cinematics, communicator callbacks, doors/interactables, portals/tethered
+  organisms, Ravenous Reaper, Security Chief Kondovich, and Katja Zarkhov script
+  bindings.
+
+Verification completed:
+
+- `dotnet build Source\NexusForever.Script.Instance\NexusForever.Script.Instance.csproj --configuration Debug`
+- `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --configuration Debug`
+- `dotnet build Source\NexusForever.slnx --configuration Debug`
+- DB script-name coverage check for `Evil from the Ether.sql`: all named DB
+  scripts resolve to compiled `ScriptFilterScriptName` bindings.
+
+Remaining manual/runtime validation:
+
+- Run a live world `3404` smoke with generated map assets and WildStar 16042
+  game tables.
+- Verify phase objective tuning in-game, especially repeated objectives,
+  volume-trigger counts, and final phase transitions.
+- Verify spell effects used by Katja, portals, and tethered organisms degrade
+  cleanly if a current `dev` spell handler is still incomplete.
+- The Katja floating knockback is intentionally simplified to a relocate/remove
+  fallback because the source branch's projectile movement overload is not in
+  current `dev`.
+
 This plan targets a working slice, not a full branch transplant. It should keep
 unrelated branch work such as telemetry rewrites, service removals, API
 restructure, friendship-service churn, tutorial phase work, and broad message

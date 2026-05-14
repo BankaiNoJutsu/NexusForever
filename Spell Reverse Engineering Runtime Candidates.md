@@ -63,7 +63,7 @@ The central scheduler currently handles delayed effects and rows that have both 
 
 ## Target Selection Fixtures
 
-These fixtures validate central target selection: one entity should only appear once with merged `Caster`/`Target`/`Telegraph` flags, explicit targets should obey concrete `Spell4` range/facing gates, and telegraph candidates should respect `Spell4AoeTargetConstraints` range, angle, target count, and smart-selection ordering.
+These fixtures validate central target selection: one entity should only appear once with merged `Caster`/`Target`/`Telegraph` flags, explicit targets should obey concrete `Spell4` range/facing gates, target/position AOEs should anchor away from the caster when context is supplied, and telegraph candidates should respect `Spell4AoeTargetConstraints` range, angle, target count, and smart-selection ordering.
 
 | Fixture | Creature context | Concrete spell | Target evidence | Commands |
 | --- | --- | --- | --- | --- |
@@ -72,6 +72,8 @@ These fixtures validate central target selection: one entity should only appear 
 | Medic Discharge Chain | Celestion, creature `31507`, Celestion Snap Trap, 65 placements | `Spell4=77996`, base `53869`, tier `1` | AOE target count `5`, range `15`; split target flags across telegraph and caster proxy rows. | `/spell inspect4 77996` then `/spell cast4 77996` |
 | Slasher Dash Proxy | Algoroc, creature `13120`, Loftite Crystal, 56 placements | `Spell4=30999`, base `17386`, tier `1` | AOE target count `10`, range `1`; compact dash/knockdown telegraph. | `/spell inspect4 30999` then `/spell cast4 30999` |
 | Vulcan Slam | Auroria, creature `26189`, Biting Boulder, 46 placements | `Spell4=59523`, base `38768`, tier `1` | AOE target count `10`, range `25`; repeated proxy rows with `Target|Telegraph` target flags. | `/spell inspect4 59523` then `/spell cast4 59523` |
+| Target AOE Test | Global spell data | `Spell4=912`, base `912`, tier `1` | Client test row for `targetType=3` target AOE, target count `10`, range `7`, angle `360`; validates primary-target anchoring. | Select a nearby unit, `/spell inspect4 912`, then `/spell cast4 912` |
+| Position AOE Test | Global spell data | `Spell4=915`, base `915`, tier `1` | Client test row for `targetType=4` position AOE, target count `10`, range `7`, angle `360`; item/position-driven casts should anchor on supplied `SpellParameters.Position`. | `/spell inspect4 915`; validate through an item or script path that supplies position |
 | Lowest Health AE Test | Global spell data | `Spell4=27181`, base `13599`, tier `1` | Named witness for `targetSelection=4`: "lowest absolute health in a 30 yd AE". | `/spell inspect4 27181` then `/spell cast4 27181` |
 | Missing Health AE Test | Global spell data | `Spell4=27182`, base `13600`, tier `1` | Named witness for `targetSelection=5`: "unit missing the most health in a 30 yd AE". | `/spell inspect4 27182` then `/spell cast4 27182` |
 
@@ -435,6 +437,21 @@ Most `ShieldOverload` rows have all-zero payload plus a duration. The current ru
 | Unstable Anomaly Diagnostic | Global engineer spell | `Spell4=70005`, base `47081`, tier `1` | Non-zero payload `163/2/0.7`, duration `4500`; validates diagnostic-only branch. | `/spell inspect4 70005` then `/spell cast4 70005` |
 | Shield Shred Diagnostic | Global encounter spell | `Spell4=74912`, base `51249`, tier `1` | Non-zero payload `45192/0/0/1.0/1/60`, no duration; validates skipped secondary payload. | `/spell inspect4 74912` then `/spell cast4 74912` |
 
+## Proc Fixtures
+
+`Proc.DataBits01` resolves to the trigger `Spell4` in the overwhelming majority of rows, and `DataBits02` is a float-bitcast chance. The current runtime registers the decoded proc state and lifetime cleanup only; these fixtures are for proving trigger-event and target-routing behavior before enabling actual event dispatch.
+
+| Fixture | Context | Concrete spell | Proc evidence | Commands |
+| --- | --- | --- | --- | --- |
+| Momentum On Kill | Global item/talent proc | `Spell4=7116`, base `3574`, tier `1` | Trigger event `1`, trigger spell `7117`, chance `1.0`, target data `2`; validates on-kill shell. | `/spell inspect4 7116` then `/spell cast4 7116` |
+| Readiness Enter Combat | Global item/talent proc | `Spell4=4876`, base `2525`, tier `1` | Trigger event `6`, trigger spell `4877`, chance `1.0`, target data `2`; validates enter-combat shell. | `/spell inspect4 4876` then `/spell cast4 4876` |
+| Brutal Damage Proc | Global item special | `Spell4=4046`, base `2019`, tier `1` | Trigger event `12`, trigger spell `4047`, chance `0.15`, target data `4`; validates damage/on-hit shell. | `/spell inspect4 4046` then `/spell cast4 4046` |
+| Bleed Damage Proc | Global item special | `Spell4=4075`, base `2052`, tier `1` | Trigger event `12`, trigger spell `4076`, chance `0.2`, target data `4`, payload `DataBits05=6`. | `/spell inspect4 4075` then `/spell cast4 4075` |
+| Explosive Damage Proc | Global item special | `Spell4=4191`, base `2130`, tier `1` | Trigger event `12`, trigger spell `4192`, chance `0.35`, target data `4`; validates AOE trigger spell routing. | `/spell inspect4 4191` then `/spell cast4 4191` |
+| Warrior Confrontation | Deprecated Warrior proc | `Spell4=1024`, base `1024`, tier `1` | Trigger event `16`, trigger spell `1030`, chance `1.0`, duration `200`; validates damage-taken registration and duration cleanup. | `/spell inspect4 1024` then `/spell cast4 1024` |
+| Sprint Daze | Global movement proc | `Spell4=1316`, base `1316`, tier `1` | Trigger event `16`, trigger spell `40364`, chance `1.0`, target data `33`, extra filter payload in `DataBits06..08`. | `/spell inspect4 1316` then `/spell cast4 1316` |
+| Spellslinger Affinity | Global class proc | `Spell4=39063`, base `23829`, tier `1` | Trigger event `76`, trigger spell `79078`, chance `1.0`, duration `500`, cooldown-like `5000`, target data `17`; validates cooldown/target-route evidence. | `/spell inspect4 39063` then `/spell cast4 39063` |
+
 ## Unit State Set Fixtures
 
 `UnitStateSet.DataBits00` is now decoded as a raw unit state id and tracked for duration cleanup. The current runtime records the state and emits diagnostics, but individual state-id behavior such as block, invulnerability, all-spell immunity, barrier, and burrow targeting is still validation-only.
@@ -594,5 +611,5 @@ ORDER BY spell4_id, orderIndex;
 1. Pick a fixture from `world_runtime_spell_candidates`.
 2. Run `/spell inspect4 <spell4_id>` and save the decoded effect/timing/target output.
 3. Run `/spell cast4 <spell4_id>` against a controlled target.
-4. Compare `SpellDiagnostics effect-schedule`, `effect-lifetime`, `effect-dispatch`, `healing-output`, `healing-absorption-output`, `healing-absorption`, `shield-healing-output`, `shield-damage-output`, `vital-modifier`, `summon-creature`, `summon-trap`, `npc-execution-delay`, `spell-effect-immunity`, `spell-immunity`, `mimic-disguise`, `scale`, `faction-set`, `quest-advance-objective`, `delay-death`, `delay-death-triggered`, `delay-death-trigger-cast`, `force-facing`, `forced-move`, and `spell-go` logs with `ServerSpellStart`, `ServerSpellGo`, combat logs, target state, visible buff/property changes, spawned/despawned world entities, movement commands, and spell lifetime.
+4. Compare `SpellDiagnostics effect-schedule`, `effect-lifetime`, `effect-dispatch`, `healing-output`, `healing-absorption-output`, `healing-absorption`, `shield-healing-output`, `shield-damage-output`, `vital-modifier`, `proc`, `summon-creature`, `summon-trap`, `npc-execution-delay`, `spell-effect-immunity`, `spell-immunity`, `mimic-disguise`, `scale`, `faction-set`, `quest-advance-objective`, `delay-death`, `delay-death-triggered`, `delay-death-trigger-cast`, `force-facing`, `forced-move`, and `spell-go` logs with `ServerSpellStart`, `ServerSpellGo`, combat logs, target state, visible buff/property changes, spawned/despawned world entities, movement commands, and spell lifetime.
 5. Promote a field interpretation only when the SQL row, local runtime behavior, and sniff/client evidence agree.
