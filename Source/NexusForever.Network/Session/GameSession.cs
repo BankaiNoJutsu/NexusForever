@@ -194,7 +194,7 @@ namespace NexusForever.Network.Session
                 LogSpellPacketBoundary("incoming-read", opcode, packet.IsEncrypted, message?.GetType().Name, packet.Data?.Length ?? 0);
                 if (message == null)
                 {
-                    log.Warn($"Received unknown packet {opcode}(0x{opcode:X}.");
+                    log.Warn($"Received unknown packet {opcode}(0x{opcode:X}).");
                     return;
                 }
 

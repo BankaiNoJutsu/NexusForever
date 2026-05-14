@@ -51,7 +51,9 @@ namespace NexusForever.Database.Auth
         public async Task<AccountModel> GetAccountByEmailAsync(string email)
         {
             using var context = new AuthContext(config);
-            return await context.Account.SingleOrDefaultAsync(a => a.Email == email);
+            return await context.Account
+                .Include(a => a.AccountRole)
+                .SingleOrDefaultAsync(a => a.Email == email);
         }
 
         /// <summary>
@@ -63,6 +65,17 @@ namespace NexusForever.Database.Auth
             return await context.Account
                 .Include(a => a.AccountSuspension)
                 .SingleOrDefaultAsync(a => a.Email == email && a.GameToken == gameToken);
+        }
+
+        /// <summary>
+        /// Selects an <see cref="AccountModel"/> asynchronously that matches the supplied game token.
+        /// </summary>
+        public async Task<AccountModel> GetAccountByGameTokenAsync(string gameToken)
+        {
+            using var context = new AuthContext(config);
+            return await context.Account
+                .Include(a => a.AccountRole)
+                .SingleOrDefaultAsync(a => a.GameToken == gameToken);
         }
 
         /// <summary>

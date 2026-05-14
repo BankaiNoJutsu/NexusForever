@@ -45,6 +45,7 @@ namespace NexusForever.Network.Session
             Id = Guid.NewGuid().ToString();
 
             socket = newSocket;
+            socket.NoDelay = true;
             socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, ReceiveDataCallback, null);
 
             log.Trace($"New client {Id} connected from {newSocket.RemoteEndPoint}.");

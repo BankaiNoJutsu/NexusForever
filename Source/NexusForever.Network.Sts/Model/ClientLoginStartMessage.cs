@@ -6,13 +6,14 @@ namespace NexusForever.Network.Sts.Model
     public class ClientLoginStartMessage : IReadable
     {
         public string LoginName { get; private set; }
-        //public string NetAddress { get; private set; }
+        public string NetAddress { get; private set; }
 
         public void Read(XmlDocument document)
         {
             XmlNode rootNode = document["Request"];
-            LoginName = rootNode["LoginName"].GetValue<string>();
-            //NetAddress = rootNode["NetAddress"].GetValue<string>();
+
+            LoginName  = rootNode.GetChildValue<string>("LoginName");
+            NetAddress = rootNode.GetChildValue<string>("NetAddress");
         }
     }
 }
