@@ -138,6 +138,18 @@ namespace NexusForever.Game.Spell.Effect
         uint DataBits08,
         uint DataBits09);
 
+    public sealed record SpellEffectRavelSignalSemantics(
+        uint Mode,
+        uint SignalId,
+        uint DataBits02,
+        uint DataBits03,
+        uint DataBits04,
+        uint DataBits05,
+        uint DataBits06,
+        uint DataBits07,
+        uint DataBits08,
+        uint DataBits09);
+
     public sealed record SpellEffectModifyInterruptArmorSemantics(
         uint Amount,
         bool RemoveOnInterrupt,
@@ -542,6 +554,7 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectSummonVehicleSemantics SummonVehicle { get; internal set; }
         public SpellEffectSummonTrapSemantics SummonTrap { get; internal set; }
         public SpellEffectNpcExecutionDelaySemantics NpcExecutionDelay { get; internal set; }
+        public SpellEffectRavelSignalSemantics RavelSignal { get; internal set; }
         public SpellEffectModifyInterruptArmorSemantics ModifyInterruptArmor { get; internal set; }
         public SpellEffectThreatModificationSemantics ThreatModification { get; internal set; }
         public SpellEffectThreatTransferSemantics ThreatTransfer { get; internal set; }
@@ -604,6 +617,7 @@ namespace NexusForever.Game.Spell.Effect
             || SummonVehicle != null
             || SummonTrap != null
             || NpcExecutionDelay != null
+            || RavelSignal != null
             || ModifyInterruptArmor != null
             || ThreatModification != null
             || ThreatTransfer != null
@@ -783,6 +797,19 @@ namespace NexusForever.Game.Spell.Effect
                     break;
                 case SpellEffectType.NpcExecutionDelay:
                     interpretation.NpcExecutionDelay = new SpellEffectNpcExecutionDelaySemantics(
+                        entry.DataBits00,
+                        entry.DataBits01,
+                        entry.DataBits02,
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05,
+                        entry.DataBits06,
+                        entry.DataBits07,
+                        entry.DataBits08,
+                        entry.DataBits09);
+                    break;
+                case SpellEffectType.RavelSignal:
+                    interpretation.RavelSignal = new SpellEffectRavelSignalSemantics(
                         entry.DataBits00,
                         entry.DataBits01,
                         entry.DataBits02,

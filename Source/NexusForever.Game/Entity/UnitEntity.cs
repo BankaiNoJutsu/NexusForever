@@ -81,6 +81,9 @@ namespace NexusForever.Game.Entity
                 }, true);
 
                 if (value)
+                    ProbeProcEvent("enter-combat", ProcTriggerEventCandidate.EnterCombat, this, this, null, null, null, "after-state-change");
+
+                if (value)
                     scriptCollection?.Invoke<IUnitScript>(s => s.OnEnterCombat());
                 else
                     scriptCollection?.Invoke<IUnitScript>(s => s.OnLeaveCombat());
@@ -400,6 +403,44 @@ namespace NexusForever.Game.Entity
         public bool RemoveProc(uint effectId)
         {
             return procStates.Remove(effectId);
+        }
+
+        public void ProbeProcEvent(string eventName, uint? triggerEvent, IUnitEntity source, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo effectInfo, IDamageDescription damageDescription, string phase)
+        {
+            if (procStates.Count == 0)
+                return;
+
+            uint triggerSpell4Id = spell?.Parameters.SpellInfo.Entry.Id ?? 0u;
+            uint triggerCastingId = spell?.CastingId ?? 0u;
+            uint triggerSpell4EffectId = effectInfo?.Entry.Id ?? 0u;
+
+            foreach (KeyValuePair<uint, ProcState> state in procStates)
+            {
+                SpellEffectDiagnostics.TraceProcProbe(
+                    this,
+                    eventName,
+                    phase,
+                    triggerEvent,
+                    source?.Guid ?? 0u,
+                    target?.Guid ?? 0u,
+                    triggerSpell4Id,
+                    triggerCastingId,
+                    triggerSpell4EffectId,
+                    damageDescription,
+                    state.Key,
+                    state.Value.Spell4Id,
+                    state.Value.CastingId,
+                    state.Value.TriggerEvent,
+                    state.Value.TriggerSpell4Id,
+                    state.Value.Chance,
+                    state.Value.TargetData,
+                    state.Value.CooldownMsOrSentinel,
+                    state.Value.DataBits05,
+                    state.Value.DataBits06,
+                    state.Value.DataBits07,
+                    state.Value.DataBits08,
+                    state.Value.DataBits09);
+            }
         }
 
         public void AddVitalClamp(uint effectId, uint spell4Id, uint castingId, Vital vital, float ratio, uint mode, uint vitalMode)
@@ -1472,8 +1513,20 @@ namespace NexusForever.Game.Entity
             }
 
             var spell = new Spell.Spell(this, parameters);
+            ProbeProcEvent("spell-cast", null, this, ResolveProcProbePrimaryTarget(parameters), spell, null, null, "before-cast");
             spell.Cast();
             pendingSpells.Add(spell);
+        }
+
+        private IUnitEntity ResolveProcProbePrimaryTarget(ISpellParameters parameters)
+        {
+            if (parameters.PrimaryTargetId == 0u)
+                return null;
+
+            if (parameters.PrimaryTargetId == Guid)
+                return this;
+
+            return GetVisible<IGridEntity>(parameters.PrimaryTargetId) as IUnitEntity;
         }
 
         /// <summary>
@@ -1538,11 +1591,17 @@ namespace NexusForever.Game.Entity
             if (!IsAlive || !attacker.IsAlive)
                 return;
 
+            bool wasAlive = IsAlive;
+
             // TODO: Calculate Threat properly
             ThreatManager.UpdateThreat(attacker, (int)damageDescription.RawDamage);
 
             Shield -= damageDescription.ShieldAbsorbAmount;
             ModifyHealth(damageDescription.AdjustedDamage, damageDescription.DamageType, attacker);
+
+            damageDescription.KilledTarget = wasAlive && !IsAlive;
+            if (damageDescription.KilledTarget)
+                attacker.ProbeProcEvent("target-killed", ProcTriggerEventCandidate.KillTarget, attacker, this, null, null, damageDescription, "after-apply");
         }
 
         /// <summary>

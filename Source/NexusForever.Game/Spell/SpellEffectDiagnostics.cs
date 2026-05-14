@@ -323,6 +323,30 @@ namespace NexusForever.Game.Spell
                 executionDelay.DataBits09);
         }
 
+        public static void TraceRavelSignal(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info, SpellEffectRavelSignalSemantics ravelSignal, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics ravel-signal spell4Id={0} castingId={1} target={2} spell4EffectId={3} mode={4} signalId={5} skippedReason={6} dataBits02={7} dataBits03={8} dataBits04={9} dataBits05={10} dataBits06={11} dataBits07={12} dataBits08={13} dataBits09={14}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                info.Entry.Id,
+                ravelSignal.Mode,
+                ravelSignal.SignalId,
+                skippedReason,
+                ravelSignal.DataBits02,
+                ravelSignal.DataBits03,
+                ravelSignal.DataBits04,
+                ravelSignal.DataBits05,
+                ravelSignal.DataBits06,
+                ravelSignal.DataBits07,
+                ravelSignal.DataBits08,
+                ravelSignal.DataBits09);
+        }
+
         public static void TraceModifyInterruptArmor(ISpell spell, IUnitEntity target, SpellEffectModifyInterruptArmorSemantics interruptArmor, uint appliedAmount, bool removed)
         {
             if (!log.IsTraceEnabled)
@@ -745,6 +769,46 @@ namespace NexusForever.Game.Spell
                 proc.DataBits07,
                 proc.DataBits08,
                 proc.DataBits09);
+        }
+
+        public static void TraceProcProbe(IUnitEntity holder, string eventName, string phase, uint? observedTriggerEvent, uint sourceGuid, uint targetGuid, uint triggerSpell4Id, uint triggerCastingId, uint triggerSpell4EffectId, IDamageDescription damage, uint procEffectId, uint procSpell4Id, uint procCastingId, uint procTriggerEvent, uint procTriggerSpell4Id, float procChance, uint procTargetData, uint procCooldownMsOrSentinel, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            bool triggerEventMatches = observedTriggerEvent.HasValue && observedTriggerEvent.Value == procTriggerEvent;
+            log.Trace(
+                "SpellDiagnostics proc-probe event={0} phase={1} holder={2} source={3} target={4} observedTriggerEvent={5} triggerEventMatches={6} procEffectId={7} procSpell4Id={8} procCastingId={9} procTriggerEvent={10} procTriggerSpell4Id={11} procChance={12:R} procTargetData={13} procCooldownMsOrSentinel={14} triggerSpell4Id={15} triggerCastingId={16} triggerSpell4EffectId={17} rawAmount={18} adjustedAmount={19} absorbed={20} shieldAbsorb={21} overkill={22} killedTarget={23} combatResult={24} dataBits05={25} dataBits06={26} dataBits07={27} dataBits08={28} dataBits09={29}",
+                eventName,
+                phase,
+                holder.Guid,
+                sourceGuid,
+                targetGuid,
+                observedTriggerEvent?.ToString() ?? "unknown",
+                triggerEventMatches,
+                procEffectId,
+                procSpell4Id,
+                procCastingId,
+                procTriggerEvent,
+                procTriggerSpell4Id,
+                procChance,
+                procTargetData,
+                procCooldownMsOrSentinel,
+                triggerSpell4Id,
+                triggerCastingId,
+                triggerSpell4EffectId,
+                damage?.RawDamage ?? 0u,
+                damage?.AdjustedDamage ?? 0u,
+                damage?.AbsorbedAmount ?? 0u,
+                damage?.ShieldAbsorbAmount ?? 0u,
+                damage?.OverkillAmount ?? 0u,
+                damage?.KilledTarget ?? false,
+                damage?.CombatResult.ToString() ?? "unknown",
+                dataBits05,
+                dataBits06,
+                dataBits07,
+                dataBits08,
+                dataBits09);
         }
 
         public static void TraceDelayDeathTriggered(IUnitEntity target, uint spell4Id, uint castingId, uint mode, uint triggerSpell4Id, uint triggerDelayMs, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07, uint sourceGuid, uint preventedDamage)

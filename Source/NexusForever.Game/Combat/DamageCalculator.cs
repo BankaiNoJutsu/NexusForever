@@ -113,6 +113,8 @@ namespace NexusForever.Game.Combat
             damageDescription.AdjustedDamage = damage;
 
             info.AddDamage(damageDescription);
+            attacker.ProbeProcEvent("damage-dealt", ProcTriggerEventCandidate.DealDamage, attacker, victim, spell, info, damageDescription, "after-calculate-before-apply");
+            victim.ProbeProcEvent("damage-received", ProcTriggerEventCandidate.ReceiveDamage, attacker, victim, spell, info, damageDescription, "after-calculate-before-apply");
 
             if (log.IsEnabled(LogLevel.Trace))
             {
@@ -128,7 +130,7 @@ namespace NexusForever.Game.Combat
                     damageDescription.CombatResult);
             }
 
-            // TODO: Queue Proc Events*/
+            // Proc firing remains intentionally disabled until proc-probe traces confirm event routing.
         }
 
         public void CalculateHealing(IUnitEntity caster, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo info)
@@ -190,6 +192,11 @@ namespace NexusForever.Game.Combat
                     healDescription.OverkillAmount,
                     healDescription.AbsorbedAmount);
             }
+
+            uint? triggerEvent = caster.Guid != target.Guid ? ProcTriggerEventCandidate.HealOther : null;
+            caster.ProbeProcEvent(caster.Guid == target.Guid ? "heal-self" : "heal-other", triggerEvent, caster, target, spell, info, healDescription, "after-calculate-before-apply");
+            if (caster.Guid != target.Guid)
+                target.ProbeProcEvent("heal-received", null, caster, target, spell, info, healDescription, "after-calculate-before-apply");
         }
 
         public void CalculateShieldHealing(IUnitEntity caster, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo info)
@@ -235,6 +242,11 @@ namespace NexusForever.Game.Combat
                     healDescription.AdjustedDamage,
                     healDescription.OverkillAmount);
             }
+
+            uint? triggerEvent = caster.Guid != target.Guid ? ProcTriggerEventCandidate.HealOther : null;
+            caster.ProbeProcEvent(caster.Guid == target.Guid ? "shield-heal-self" : "shield-heal-other", triggerEvent, caster, target, spell, info, healDescription, "after-calculate-before-apply");
+            if (caster.Guid != target.Guid)
+                target.ProbeProcEvent("shield-heal-received", null, caster, target, spell, info, healDescription, "after-calculate-before-apply");
         }
 
         public void CalculateShieldDamage(IUnitEntity attacker, IUnitEntity victim, ISpell spell, ISpellTargetEffectInfo info)
@@ -279,6 +291,9 @@ namespace NexusForever.Game.Combat
                     damageDescription.ShieldAbsorbAmount,
                     damageDescription.OverkillAmount);
             }
+
+            attacker.ProbeProcEvent("shield-damage-dealt", ProcTriggerEventCandidate.DealDamage, attacker, victim, spell, info, damageDescription, "after-calculate-before-apply");
+            victim.ProbeProcEvent("shield-damage-received", ProcTriggerEventCandidate.ReceiveDamage, attacker, victim, spell, info, damageDescription, "after-calculate-before-apply");
         }
 
         public uint CalculateAbsorption(IUnitEntity caster, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo info)

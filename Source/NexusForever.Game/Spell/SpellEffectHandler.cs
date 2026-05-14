@@ -759,6 +759,16 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TraceNpcExecutionDelay(spell, target, info, executionDelay);
         }
 
+        [SpellEffectHandler(SpellEffectType.RavelSignal)]
+        public static void HandleEffectRavelSignal(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectRavelSignalSemantics ravelSignal = SpellEffectInterpreter.Interpret(info).RavelSignal;
+            if (ravelSignal == null)
+                return;
+
+            SpellEffectDiagnostics.TraceRavelSignal(spell, target, info, ravelSignal, "receiver-not-implemented");
+        }
+
         [SpellEffectHandler(SpellEffectType.ModifyInterruptArmor)]
         public static void HandleEffectModifyInterruptArmor(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
@@ -1782,10 +1792,13 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TraceSupportStuck(spell, target, supportStuck, healthBefore, target.Health, true, null);
 
             if (!target.IsAlive)
+            {
+                spell.Caster.ProbeProcEvent("target-killed", ProcTriggerEventCandidate.KillTarget, spell.Caster, target, spell, info, null, "after-apply");
                 info.AddCombatLog(new CombatLogDeath
                 {
                     UnitId = target.Guid
                 });
+            }
         }
 
         [SpellEffectHandler(SpellEffectType.FullScreenEffect)]
@@ -2410,10 +2423,13 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TraceKill(spell, target, kill, healthBefore, target.Health, true, null);
 
             if (!target.IsAlive)
+            {
+                spell.Caster.ProbeProcEvent("target-killed", ProcTriggerEventCandidate.KillTarget, spell.Caster, target, spell, info, null, "after-apply");
                 info.AddCombatLog(new CombatLogDeath
                 {
                     UnitId = target.Guid
                 });
+            }
         }
 
         [SpellEffectHandler(SpellEffectType.DelayDeath)]

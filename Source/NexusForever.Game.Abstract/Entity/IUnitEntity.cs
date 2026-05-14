@@ -65,6 +65,11 @@ namespace NexusForever.Game.Abstract.Entity
         void AddProc(uint effectId, uint spell4Id, uint castingId, uint triggerEvent, uint triggerSpell4Id, float chance, uint targetData, uint cooldownMsOrSentinel, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09);
         bool RemoveProc(uint effectId);
 
+        /// <summary>
+        /// Emit diagnostic-only evidence for active proc states against an observed runtime event.
+        /// </summary>
+        void ProbeProcEvent(string eventName, uint? triggerEvent, IUnitEntity source, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo effectInfo, IDamageDescription damageDescription, string phase);
+
         void AddVitalClamp(uint effectId, uint spell4Id, uint castingId, Vital vital, float ratio, uint mode, uint vitalMode);
         bool RemoveVitalClamp(uint effectId);
 

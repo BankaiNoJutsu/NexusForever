@@ -310,6 +310,9 @@ namespace NexusForever.WorldServer.Command.Handler
             if (effect.NpcExecutionDelay != null)
                 return $"npc execution delay payload {effect.NpcExecutionDelay.DataBits00}/{effect.NpcExecutionDelay.DataBits01}/{effect.NpcExecutionDelay.DataBits02}/{effect.NpcExecutionDelay.DataBits03}/{effect.NpcExecutionDelay.DataBits04}/{effect.NpcExecutionDelay.DataBits05}/{effect.NpcExecutionDelay.DataBits06}/{effect.NpcExecutionDelay.DataBits07}/{effect.NpcExecutionDelay.DataBits08}/{effect.NpcExecutionDelay.DataBits09}";
 
+            if (effect.RavelSignal != null)
+                return $"ravel signal mode {effect.RavelSignal.Mode}, signal {effect.RavelSignal.SignalId}, data {effect.RavelSignal.DataBits02}/{effect.RavelSignal.DataBits03}/{effect.RavelSignal.DataBits04}/{effect.RavelSignal.DataBits05}/{effect.RavelSignal.DataBits06}/{effect.RavelSignal.DataBits07}/{effect.RavelSignal.DataBits08}/{effect.RavelSignal.DataBits09}";
+
             if (effect.ModifyInterruptArmor != null)
                 return $"modify interrupt armor amount {effect.ModifyInterruptArmor.Amount}, remove on interrupt {effect.ModifyInterruptArmor.RemoveOnInterrupt}, data {effect.ModifyInterruptArmor.DataBits02}/{effect.ModifyInterruptArmor.DataBits03}/{effect.ModifyInterruptArmor.DataBits04}/{effect.ModifyInterruptArmor.DataBits05}";
 
