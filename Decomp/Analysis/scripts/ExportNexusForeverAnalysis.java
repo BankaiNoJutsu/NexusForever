@@ -65,9 +65,16 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		"db\\worldsocket.tbl", "worldsocket", "network_sendmessagebyid",
 		"db\\realmdatacenter.tbl", "realmdatacenter", "realmdatacenterid",
 		"login.realm", "onloginstart", "onloginfinish", "onrequestgametoken",
-		"requestgametoken", "loginstart", "loginfinish", "keydata",
+		"requestgametoken", "consumegametoken", "tokenkeydata", "listmyaccounts",
+		"loginstart", "loginfinish", "keydata", "netaddress", "clientnetaddress",
+		"conntype", "connproducttype", "connappindex", "conndeployment", "connepoch",
+		"producttype", "appindex", "appid", "appids", "notifyflags", "versionflags", "authprovidercode",
+		"accessmask", "aliases", "alias", "userstatus", "servicetimeschedule",
+		"externalaccount", "pccafe", "licenses", "loginname", "gameaccountid",
+		"premastersecret", "authntoken", "serverrand", "serverpublickey", "serversignature",
 		"stsinetsocket", "socketcrypt", "publiceventobjectivetype",
-		"game.publicevent", "game.publiceventobjective", "tspell4idability",
+		"publiceventobjectivenotificationmode", "publiceventobjectivecategory", "publiceventstatus",
+		"defendobjectiveunits", "game.publicevent", "game.publiceventobjective", "tspell4idability",
 		"tunitproperty", "publiceventunitpropertymodifier"
 	};
 
@@ -105,6 +112,7 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		writeFunctions(programDir, listing);
 		writeImports(programDir, functionManager, selection);
 		writeStringsAndXrefs(programDir, listing, referenceManager, functionManager, selection);
+		selectLabeledFunctions(listing, selection);
 		writeSelectedXrefs(programDir, selection, functionManager);
 		writeSelectedDecompiled(programDir, selection, functionManager, maxDecompiled);
 
@@ -217,7 +225,8 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 				String lowerValue = value.toLowerCase(Locale.ROOT);
 				String keyword = firstMatch(lowerValue, INTERESTING_STRING_KEYWORDS);
 				String highValue = firstMatch(lowerValue, HIGH_VALUE_STRING_PATTERNS);
-				boolean interesting = keyword != null;
+				boolean interesting = keyword != null || highValue != null;
+				String matchedKeyword = keyword != null ? keyword : highValue;
 				ArrayList<Reference> refs = referencesTo(referenceManager, data.getMinAddress());
 
 				stringsWriter.printf("%s,%s,%d,%s,%s%n",
@@ -232,7 +241,7 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 						csv(data.getMinAddress().toString()),
 						csv(data.getDataType().getDisplayName()),
 						refs.size(),
-						csv(keyword),
+						csv(matchedKeyword),
 						csv(limit(value)));
 					for (Reference ref : refs) {
 						Function containing =
@@ -242,8 +251,10 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 								selection.add(containing, "target:" + highValue + "@" +
 									data.getMinAddress(), ref.getFromAddress());
 							}
-							selection.add(containing, "string:" + keyword + "@" +
-								data.getMinAddress(), ref.getFromAddress());
+							if (keyword != null) {
+								selection.add(containing, "string:" + keyword + "@" +
+									data.getMinAddress(), ref.getFromAddress());
+							}
 						}
 					}
 				}
@@ -267,6 +278,17 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 						csv(selected.firstXref == null ? "" : selected.firstXref.toString()),
 						csv(reason));
 				}
+			}
+		}
+	}
+
+	private void selectLabeledFunctions(Listing listing, Selection selection) {
+		FunctionIterator iterator = listing.getFunctions(true);
+		while (iterator.hasNext() && !monitor.isCancelled()) {
+			Function function = iterator.next();
+			String comment = function.getComment();
+			if (comment != null && comment.contains("NexusForever:")) {
+				selection.add(function, "label:" + function.getName(), function.getEntryPoint());
 			}
 		}
 	}
@@ -411,6 +433,11 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		}
 
 		int priorityBucket() {
+			for (String reason : reasons) {
+				if (reason.startsWith("label:")) {
+					return -2;
+				}
+			}
 			for (String reason : reasons) {
 				if (reason.startsWith("target:")) {
 					return -1;

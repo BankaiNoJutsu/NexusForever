@@ -2,9 +2,9 @@
 {
     public enum PublicEventObjectiveCategory
     {
-        Main,
-        Optional,
-        PlayerPath,
-        Challenge
+        Main       = 0,
+        Optional   = 1,
+        PlayerPath = 2,
+        Challenge  = 3
     }
 }

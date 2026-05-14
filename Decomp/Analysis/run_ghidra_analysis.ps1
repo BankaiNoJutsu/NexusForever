@@ -4,9 +4,11 @@ param(
     [string] $OutputDir = (Join-Path $PSScriptRoot 'exports'),
     [string] $ProjectDir = (Join-Path $PSScriptRoot 'ghidra_projects'),
     [string] $ToolRoot = "$env:USERPROFILE\.codex\tools\nexusforever-decomp",
+    [string] $LabelMap = (Join-Path $PSScriptRoot 'function_labels.csv'),
     [string[]] $Targets = @('WildStar64.exe', 'Houston64.exe', 'StsConnLib64.MT.dll'),
     [int] $MaxDecompiledFunctions = 200,
     [switch] $AllClientBinaries,
+    [switch] $NoApplyLabels,
     [switch] $ExportOnly
 )
 
@@ -38,19 +40,24 @@ $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 
 $scriptPath = Join-Path $PSScriptRoot 'scripts'
 $projectName = 'NexusForeverClient64'
+$resolvedLabelMap = $null
+if (-not $NoApplyLabels -and (Test-Path -LiteralPath $LabelMap)) {
+    $resolvedLabelMap = (Resolve-Path -LiteralPath $LabelMap).Path
+}
 
 foreach ($target in $Targets) {
     $logPath = Join-Path $logDir ("{0}.ghidra.log" -f ([IO.Path]::GetFileNameWithoutExtension($target)))
+    $ghidraArgs = @(
+        $ProjectDir,
+        $projectName
+    )
+
     if ($ExportOnly) {
         Write-Host "Exporting existing Ghidra program $target"
-        & $analyzeHeadless `
-            $ProjectDir `
-            $projectName `
-            -process $target `
-            -noanalysis `
-            -scriptPath $scriptPath `
-            -postScript ExportNexusForeverAnalysis.java $OutputDir $MaxDecompiledFunctions `
-            2>&1 | Tee-Object -FilePath $logPath
+        $ghidraArgs += @(
+            '-process', $target,
+            '-noanalysis'
+        )
     }
     else {
         $binaryPath = Join-Path $resolvedClientDir $target
@@ -59,17 +66,23 @@ foreach ($target in $Targets) {
         }
 
         Write-Host "Analyzing $binaryPath"
-
-        & $analyzeHeadless `
-            $ProjectDir `
-            $projectName `
-            -import $binaryPath `
-            -overwrite `
-            -analysisTimeoutPerFile 3600 `
-            -scriptPath $scriptPath `
-            -postScript ExportNexusForeverAnalysis.java $OutputDir $MaxDecompiledFunctions `
-            2>&1 | Tee-Object -FilePath $logPath
+        $ghidraArgs += @(
+            '-import', $binaryPath,
+            '-overwrite',
+            '-analysisTimeoutPerFile', '3600'
+        )
     }
+
+    $ghidraArgs += @('-scriptPath', $scriptPath)
+    if ($resolvedLabelMap) {
+        $ghidraArgs += @('-preScript', 'ApplyNexusForeverLabels.java', $resolvedLabelMap)
+    }
+
+    $ghidraArgs += @(
+        '-postScript', 'ExportNexusForeverAnalysis.java', $OutputDir, $MaxDecompiledFunctions
+    )
+
+    & $analyzeHeadless @ghidraArgs 2>&1 | Tee-Object -FilePath $logPath
 
     if ($LASTEXITCODE -ne 0) {
         throw "Ghidra run failed for $target. See $logPath."

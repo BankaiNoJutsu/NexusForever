@@ -49,6 +49,10 @@ Run the default analysis:
 .\Decomp\Analysis\run_ghidra_analysis.ps1
 ```
 
+The runner automatically applies function names from
+`Decomp\Analysis\function_labels.csv` before export. This keeps high-value
+function mapping reproducible even if `ghidra_projects` is deleted and rebuilt.
+
 Run a smaller or larger decompiler export:
 
 ```powershell
@@ -60,6 +64,18 @@ without re-running full analysis:
 
 ```powershell
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly
+```
+
+Re-export or analyze only one binary while iterating on a focused subsystem:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets StsConnLib64.MT.dll -MaxDecompiledFunctions 260
+```
+
+Skip source-controlled labels when testing raw Ghidra output:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -NoApplyLabels
 ```
 
 Analyze every `.exe` and `.dll` in `Decomp\Client64`:
@@ -82,10 +98,17 @@ Per binary:
 - `selected_xrefs.csv` - functions selected because they reference interesting strings or imports.
 - `selected_decompiled.c` - Ghidra C output for the selected functions.
 
+Function labels are maintained in `Decomp\Analysis\function_labels.csv` and
+applied by `scripts\ApplyNexusForeverLabels.java` before `selected_decompiled.c`
+is written.
+
 The Ghidra project is kept under `Decomp\Analysis\ghidra_projects` so the same
 analysis can be opened interactively in Ghidra later.
 
 Logs are written under `Decomp\Analysis\logs`.
+
+The client binaries, Ghidra projects, exports, and logs are reproducible local
+artifacts and are ignored by Git.
 
 See `INITIAL_FINDINGS.md` for the first pass of protocol/data anchors found in
 the generated exports.

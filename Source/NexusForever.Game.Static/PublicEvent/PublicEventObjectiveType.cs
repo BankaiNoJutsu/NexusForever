@@ -15,6 +15,7 @@
         KillOtherTeam                 = 10,
         ControlPointDefend            = 11,
         DefendObjectiveUnit           = 12,
+        DefendObjectiveUnits          = DefendObjectiveUnit,
         TimedWin                      = 13,
         KillClusterTargetGroup        = 14,
         KillClusterEventUnit          = 15,

@@ -2,9 +2,9 @@
 {
     public enum PublicEventStatus
     {
-        Inactive,
-        Active,
-        Succeeded,
-        Failed
+        Inactive  = 0,
+        Active    = 1,
+        Succeeded = 2,
+        Failed    = 3
     }
 }

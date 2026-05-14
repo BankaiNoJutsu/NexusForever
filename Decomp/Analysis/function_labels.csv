@@ -1,0 +1,43 @@
+# program,address,name,comment
+StsConnLib64.MT.dll,18000fd10,StsConn_GetTransactionName,Maps STS transaction ids to transaction names.
+StsConnLib64.MT.dll,1800043d0,StsConn_SendLoginFinish,Builds /Auth/LoginFinish request fields.
+StsConnLib64.MT.dll,180004950,StsConn_SendListMyAccounts,Builds /GameAccount/ListMyAccounts request fields.
+StsConnLib64.MT.dll,180004ac0,StsConn_SendRequestGameToken,Builds /Auth/RequestGameToken request fields.
+StsConnLib64.MT.dll,180004da0,StsConn_SendConsumeGameToken,Builds /Auth/ConsumeGameToken request fields.
+StsConnLib64.MT.dll,180005010,StsConn_SendPresenceLogin,Builds presence login request fields.
+StsConnLib64.MT.dll,1800067d0,StsConn_SendAssociateMyExternalAccount,Builds AssociateMyExternalAccount request fields.
+StsConnLib64.MT.dll,180006fb0,StsConn_SendLoginStart,Builds /Auth/LoginStart request fields.
+StsConnLib64.MT.dll,180007560,StsConn_ParseExternalAccount,Parses ExternalAccount fields.
+StsConnLib64.MT.dll,180008230,StsConn_OnAuthnTokenResponse,Parses AuthnToken reply field.
+StsConnLib64.MT.dll,180008c40,StsConn_ParseUserAccountFields,Parses UserId/UserCenter/UserName/LoginName/UserStatus/Created fields.
+StsConnLib64.MT.dll,18000a150,StsConn_ParseRoles,Parses repeated RoleId elements under a Roles node.
+StsConnLib64.MT.dll,18000a730,StsConn_SendTokenKeyData,Builds /Auth/TokenKeyData request fields after server key material is parsed.
+StsConnLib64.MT.dll,18000b540,StsConn_OnConsumeGameTokenResponse,Parses ConsumeGameToken reply account fields.
+StsConnLib64.MT.dll,18000d130,StsConn_ParseAliases,Parses repeated Alias elements under an Aliases node.
+StsConnLib64.MT.dll,18000d560,StsConn_OnLoginFinishResponse,Parses LoginFinish reply AuthType and account fields.
+StsConnLib64.MT.dll,18002ec10,StsInetSocket_ParseConnectFields,Parses Connect XML/header fields including Address/Location fallback.
+StsConnLib64.MT.dll,18002f410,StsInetSocket_SendConnectEnvelope,Builds /Sts/Connect envelope fields.
+StsConnLib64.MT.dll,180030d80,StsInetSocket_DispatchConnectEnvelope,Dispatches parsed /Sts/Connect envelope to the registered service.
+WildStar64.exe,14022df60,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
+WildStar64.exe,14024bfa0,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
+WildStar64.exe,140332580,Network_SendMessageById,Looks up message metadata by id and dispatches through world socket.
+WildStar64.exe,140333b90,Network_IcmpPing,Sends a single ICMP echo probe and returns response timing/status.
+WildStar64.exe,140333e10,Network_IcmpTraceRoute,Sends ICMP echo probes with increasing TTL values.
+WildStar64.exe,140334f90,Network_ParseEndpointAddress,Resolves host or host:port text into a sockaddr-style endpoint.
+WildStar64.exe,140338f90,NetworkSocket_CreateNonBlockingTcpSocket,Creates a non-blocking TCP socket with TCP_NODELAY enabled.
+WildStar64.exe,1403390d0,NetworkSocket_StartConnect,Starts or completes a non-blocking connect and updates socket state.
+WildStar64.exe,140339820,NetworkSocket_SelectDispatch,Builds select fd_sets and dispatches connect/read/write socket handlers.
+WildStar64.exe,140339db0,NetworkSocket_RecvAvailable,Receives available socket bytes into queued buffers.
+WildStar64.exe,14033a030,NetworkSocket_SendQueued,Sends queued socket buffers and updates send counters.
+WildStar64.exe,14033a5a0,NetworkDriver_SelectInitialise,Initialises Winsock for the select-based network driver.
+WildStar64.exe,14033bb50,NetworkIOCP_CreateSocket,Creates an overlapped TCP socket with send buffer and TCP_NODELAY options.
+WildStar64.exe,14033bf90,NetworkIOCP_PostRecv,Posts an overlapped WSARecv request.
+WildStar64.exe,14033c7e0,NetworkIOCP_SendQueued,Batches queued buffers into an overlapped WSASend request.
+WildStar64.exe,14033ec10,NetworkSocket_DestroyClosesocket,Destructor path that closes the socket and releases buffers.
+WildStar64.exe,14033ece0,NetworkSocket_CloseSocket,Closes an active socket and clears its handle.
+WildStar64.exe,1403dc9f0,WorldSocket_SelectByWorldAndSocket,WorldSocket lookup/selection path near world socket strings.
+WildStar64.exe,14068c2c0,Lua_RegisterPublicEventConstants,Registers public event status/category/objective constants for Lua.
+WildStar64.exe,1406a6160,Lua_GameHousingPlot_GetPlugUpgradeInfo,Housing plot Lua accessor near tSpell4IdAbility anchor.
+Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
+Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
+Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
