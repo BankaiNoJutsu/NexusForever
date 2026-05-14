@@ -7,7 +7,7 @@ and exports in `Decomp\Analysis\exports`.
 
 | Binary | Functions | Strings | Interesting strings | Selected xrefs |
 | --- | ---: | ---: | ---: | ---: |
-| `WildStar64.exe` | 24,968 | 45,034 | 10,925 | 3,247 |
+| `WildStar64.exe` | 24,968 | 45,034 | 10,925 | 3,318 |
 | `Houston64.exe` | 25,129 | 29,460 | 6,317 | 1,952 |
 | `StsConnLib64.MT.dll` | 4,522 | 10,893 | 3,406 | 2,358 |
 
@@ -148,9 +148,9 @@ Sixth follow-up implemented from this pass:
 ### World network send path
 
 `WildStar64.exe` includes `Network_SendMessageById`, selected at
-`exports\WildStar64.exe\selected_decompiled.c:201`. The same export includes
-the surrounding socket/WorldSocket registration area at
-`selected_decompiled.c:1655`.
+`exports\WildStar64.exe\selected_decompiled.c:260`. The same export includes
+the surrounding socket/WorldSocket selection area at
+`selected_decompiled.c:3091`.
 
 The imports also show the expected WinSock path in `WildStar64.exe`:
 `WSAStartup`, `WSASocketW`, `recv`, `send`, `WSARecv`, `WSASend`, `connect`,
@@ -179,14 +179,60 @@ Second WildStar network follow-up implemented from this pass:
   `NetworkIOCP_PostRecv` at `14033bf90`, and
   `NetworkIOCP_SendQueued` at `14033c7e0`.
 - The client sets `TCP_NODELAY` in both socket creation paths around
-  `selected_decompiled.c:625` and `selected_decompiled.c:1323`. NexusForever now
+  `selected_decompiled.c:1766` and `selected_decompiled.c:2464`. NexusForever now
   mirrors that on accepted server sockets with `Socket.NoDelay = true`.
 - `NetworkSocket_SelectDispatch` builds read/write/exception `fd_set`s, calls
   `select`, and dispatches connect/read/write handling around
-  `selected_decompiled.c:796`. This maps the client-side state machine around
+  `selected_decompiled.c:1898`. This maps the client-side state machine around
   socket states `2`, `3`, `4`, and `5` without needing a protocol change.
 - Two diagnostic helpers are now named as well: `Network_IcmpPing` at
   `140333b90` and `Network_IcmpTraceRoute` at `140333e10`.
+
+Third WildStar network follow-up implemented from this pass:
+
+- `Network_SendResolvedMessage` at `140333fc0` is now labelled and selected at
+  `selected_decompiled.c:505`. It calls the message serializer and queues the
+  world socket for later send when serialisation succeeds.
+- `Network_SerialiseResolvedMessage` at `1403355e0` is now labelled and selected
+  at `selected_decompiled.c:749`. The normal send path writes the computed
+  packet byte size as a 32-bit field, then writes the message id as a 16-bit
+  field before invoking the generated payload serializer callback.
+- `Network_SendMessageFailure` at `1403315a0` is now labelled and selected at
+  `selected_decompiled.c:234`. `Network_SendResolvedMessage` calls it with
+  failure reason `0xc` when serialisation returns an error.
+- The serializer computes packet size in bits, rounds to bytes, applies
+  per-message/default size limits, and emits warning/error telemetry around the
+  90% and exceeded-size cases. NexusForever's `ServerGamePacket.Size` now keeps
+  the computed total as a 32-bit value instead of truncating through `ushort`,
+  matching the client's 32-bit size field.
+
+Fourth WildStar network follow-up implemented from this pass:
+
+- The packet-buffer/bit-writer helpers are now labelled:
+  `NetworkPacketBuffer_Create` at `140335530`, `NetworkBitWriter_WriteBits` at
+  `140336380`, `NetworkBitWriter_GetPayloadStartBit` at `1403366f0`, and
+  `NetworkBitWriter_GetBitPosition` at `140336750`.
+- The bucket-specific write helpers are also labelled:
+  `NetworkBitWriter_WriteBits8` at `1403367d0`,
+  `NetworkBitWriter_WriteBits16` at `140336860`,
+  `NetworkBitWriter_WriteBits32` at `1403368f0`, and
+  `NetworkBitWriter_WriteBits64` at `1400a7540`.
+- The write helpers mask the requested low bits, shift them into the current
+  byte/word at the current bit offset, advance the buffer pointer by
+  `(bitOffset + bitCount) >> 3`, and retain `(bitOffset + bitCount) & 7` as the
+  next bit offset. This confirms NexusForever's `GamePacketWriter` bit order is
+  least-significant-bit first and already matches the client writer.
+- The matching read helpers are now labelled:
+  `NetworkBitReader_ReadString` at `140336980`,
+  `NetworkBitReader_ReadWideString` at `140336a40`,
+  `NetworkBitReader_LoadNextSegment` at `140336b00`,
+  `NetworkBitReader_ReadBits` at `140336c60`, and
+  `NetworkBitReader_ReadBitsAcrossSegments` at `140336d60`.
+- `NetworkBitReader_ReadString` and `NetworkBitReader_ReadWideString` use the
+  same one-bit extended-length flag and 7-bit/15-bit length fields that
+  NexusForever's `GamePacketReader.ReadString` and `ReadWideString` use. The
+  scalar bit reader extracts low bits from the current byte at the current bit
+  offset, matching NexusForever's least-significant-bit-first `ReadBits` loop.
 
 ### Client DB table registration
 
@@ -195,8 +241,8 @@ that call into a common loader with the display table name and `DB\*.tbl` path.
 
 Useful examples:
 
-- `WildStar64.exe`: `RealmDataCenter` / `DB\RealmDataCenter.tbl` at `selected_decompiled.c:7`.
-- `WildStar64.exe`: `WorldSocket` / `DB\WorldSocket.tbl` at `selected_decompiled.c:104`.
+- `WildStar64.exe`: `RealmDataCenter` / `DB\RealmDataCenter.tbl` at `selected_decompiled.c:40`.
+- `WildStar64.exe`: `WorldSocket` / `DB\WorldSocket.tbl` at `selected_decompiled.c:137`.
 - `Houston64.exe`: `RealmDataCenter` / `DB\RealmDataCenter.tbl` at `selected_decompiled.c:110`.
 - `Houston64.exe`: `WorldSocket` / `DB\WorldSocket.tbl` at `selected_decompiled.c:207`.
 
@@ -207,7 +253,7 @@ for table names and field consumers, especially `WorldSocket.tbl.sql` and
 ### Public event and spell/data names
 
 `WildStar64.exe` includes public-event enum/name registration around
-`exports\WildStar64.exe\selected_decompiled.c:1926`, including names such as
+`exports\WildStar64.exe\selected_decompiled.c:7987`, including names such as
 `PublicEventObjectiveType_Script`, `PublicEventObjectiveType_ParticipantsInTriggerVolume`,
 and `PublicEventObjectiveType_KillEventObjectiveUnit`.
 
@@ -218,27 +264,122 @@ This is useful evidence for checking:
 - current expedition scripts that update public-event objectives
 
 The selected export also captures `tSpell4IdAbility` at
-`exports\WildStar64.exe\selected_decompiled.c:2521` and `tUnitProperty` at
-`selected_decompiled.c:14625`, which are good anchors for spell effect and unit
+`exports\WildStar64.exe\selected_decompiled.c:8582` and `tUnitProperty` at
+`selected_decompiled.c:20991`, which are good anchors for spell effect and unit
 property interpretation work.
 
 Follow-up implemented from this pass:
 
 - `PublicEventStatus_*` values in the Lua registration match
   `Inactive = 0`, `Active = 1`, `Succeeded = 2`, and `Failed = 3` around
-  `selected_decompiled.c:1990`.
+  `selected_decompiled.c:8051`.
 - `PublicEventObjectiveNotificationMode_*` values match `Normal = 0`,
   `LowTime = 1`, `Warn = 2`, `Serious = 3`, `Critical = 4`, and
-  `Achieving = 5` around `selected_decompiled.c:2026`.
+  `Achieving = 5` around `selected_decompiled.c:8087`.
 - `PublicEventObjectiveCategory_*` values match `Main = 0`, `Optional = 1`,
-  `PlayerPath = 2`, and `Challenge = 3` around `selected_decompiled.c:2080`.
+  `PlayerPath = 2`, and `Challenge = 3` around `selected_decompiled.c:8141`.
 - The client exposes `PublicEventObjectiveType_DefendObjectiveUnits` at value
-  `12` around `selected_decompiled.c:2224`; NexusForever keeps the existing
+  `12` around `selected_decompiled.c:8285`; NexusForever keeps the existing
   singular member and now has a plural alias for client-facing naming parity.
 
 These constants now have explicit values in the static enums where they were
 previously implicit, and the export script keeps these public-event constant
 names as high-value anchors.
+
+### Skill and spell binding follow-up
+
+`Game.Spell` is now labelled as a focused WildStar64 cluster:
+`Lua_GameSpell_Equals` at `1405e7fd0`,
+`Lua_GameSpell_CreateOrWrap` at `1405e8070`,
+`Lua_GameSpell_Gc` at `1405e81b0`, and
+`Lua_RegisterGameSpellBindings` at `1405e8230`. Export-only runs apply these
+names from `function_labels.csv`; the latest run reported 91 applied labels and
+0 missing labels.
+
+`Lua_RegisterGameSpellBindings` starts around
+`exports\WildStar64.exe\selected_decompiled.c:3576`. The registration walks the
+indirect `Game.Spell` method table, then installs spell-facing Lua enums:
+
+- `CodeEnumCastMethod` around `selected_decompiled.c:3734` confirms
+  `Normal = 0`, `Channeled = 1`, `PressHold = 2`,
+  `ChanneledField = 3`, `UNUSED04 = 4`, `ClientSideInteraction = 5`,
+  `RapidTap = 6`, `ChargeRelease = 7`, `Multiphase = 8`, and
+  `Transactional = 9`. The next value is still named through an undecoded data
+  pointer, so NexusForever intentionally leaves it unmapped for now.
+- `CodeEnumSchool` around `selected_decompiled.c:3846` confirms
+  `Spell = 0`, `Melee = 1`, `Ranged = 2`, and `Unarmed = 3`.
+- `CodeEnumAOESelectionType` around `selected_decompiled.c:3998` confirms the
+  existing `AoeSelectionType` order: `None = 0`, `Closest = 1`,
+  `Furthest = 2`, `Random = 3`, `LowestAbsoluteHealth = 4`, and
+  `MissingMostHealth = 5`.
+- `CodeEnumCastResult`, `CodeEnumSpellEffectType`, `CodeEnumSpellTag`,
+  `CombatMessageType`, and `CodeEnumSpellClass` are also registered here, but
+  still need table-name extraction before adding more enum members safely.
+
+The decoded method table at `140c5a480` has 46 `Game.Spell` entries. Besides the
+basic identity and tooltip methods, it maps skill-system and LAS-facing methods
+such as `GetCasterInnateRequirements`, `GetCasterInnateCosts`,
+`GetTargetInnateRequirements`, `GetAbilityCharges`, `IsSelfSpell`,
+`IsFreeformTarget`, `GetLasTierDesc`, `GetLasBonusEachTierDesc`, and
+`GetSpellServiceTokenCost`. The direct callback labels now make those methods
+available in `selected_decompiled.c` without guessing from string proximity.
+
+`Lua_GameSpell_GetCastMethod` at `selected_decompiled.c:6040` and
+`Lua_GameSpell_GetSchool` at `selected_decompiled.c:6079` both resolve the
+`Game.Spell` userdata through the spell service and return numeric enum values.
+`Lua_GameSpell_GetSpellServiceTokenCost` at `selected_decompiled.c:7944` checks
+a spell metadata flag before returning a decoded 15-bit service-token value.
+
+The LAS/action-set bridge is now labelled too. The decoded `ActionSetLib` table
+at `140b75900` maps `IsSlotUnlocked` to `Lua_ActionSetLib_IsSlotUnlocked` at
+`selected_decompiled.c:8607`, `RequestActionSetChanges` to
+`Lua_ActionSetLib_RequestActionSetChanges` at `selected_decompiled.c:8652`, and
+`GetCurrentActionSet` to `Lua_ActionSetLib_GetCurrentActionSet` at
+`selected_decompiled.c:8847`.
+
+`Lua_ActionSetLib_RequestActionSetChanges` builds a Lua result table containing
+`eResult`. It rejects malformed action-set input unless the collected payload is
+exactly `0x30` bytes, which is 12 32-bit entries, and returns
+`LimitedActionSetResult` values already present in NexusForever, including
+`InvalidUnit = 0x17`, `InvalidActionSetTable = 0x19`,
+`PlayerIsDead = 0x1b`, `RestrictedInPVP = 0x1c`, `InCombat = 0x1e`, and
+`UpdateSpellInProgress = 0x26`.
+
+The deeper action-set callbacks are now labelled as well:
+`ActionSet_CheckPvPRestriction` at `selected_decompiled.c:2757`,
+`ActionSet_SendPendingActionSetChanges` at `selected_decompiled.c:2792`,
+`ActionSet_CheckUpdateSpellInProgress` at `selected_decompiled.c:3043`, and
+`ActionSet_ValidateRequestedChanges` at `selected_decompiled.c:3362`.
+`ActionSet_SendPendingActionSetChanges` builds opcode `0xb1`
+(`ClientRequestActionSetChanges`) with 12 actions, the current spec index,
+changed spell/tier pairs, and AMP ids. `ActionSet_ValidateRequestedChanges`
+returns `InvalidActionSetSize = 0x16` unless the list is exactly 12 entries, and
+returns `InvalidSlot = 0x18` when the first eight LAS slots do not use
+`Spell4BaseEntry.WeaponSlot == 5` or when slots 8-11 do use that value.
+
+Follow-up implemented from this pass:
+
+- Expanded the label map from the partial `Game.Spell` cluster to the full
+  46-entry Lua method table, replacing the generic late-binding names with
+  method-specific labels.
+- Added `ActionSetLib` labels for `IsSlotUnlocked`, `RequestActionSetChanges`,
+  and `GetCurrentActionSet`.
+- Added labels for the action-set preflight/send helpers behind
+  `RequestActionSetChanges`.
+- Added `SpellCastMethod` and `SpellSchool` static enums using the client
+  values above.
+- `ISpellBaseInfo` and `SpellBaseInfo` now expose typed `CastMethod` and
+  `School` values from `Spell4BaseEntry.CastMethod` and `Spell4BaseEntry.School`.
+- `/spell inspect` and `/spell inspect4` now print cast method and school next
+  to spell class, which makes skill-system and action-set investigation easier
+  while comparing server data against the client-facing Lua model.
+- `ClientRequestActionSetChangesHandler` now rejects 3-bit action-set indices
+  outside the four server action sets with `LimitedActionSetResult.InvalidSpecIndex`
+  instead of throwing before a client response can be sent.
+- The same handler now applies the client-confirmed 12-action request size and
+  LAS slot `WeaponSlot == 5` validation before mutating the server action set,
+  returning the matching `LimitedActionSetResult` failure when the packet is
+  malformed.
 
 ## Practical Next Steps
 

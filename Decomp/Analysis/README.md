@@ -113,6 +113,10 @@ artifacts and are ignored by Git.
 See `INITIAL_FINDINGS.md` for the first pass of protocol/data anchors found in
 the generated exports.
 
+See [CONTINUATION_GUIDE.md](CONTINUATION_GUIDE.md) for the repeatable map,
+label, implement, and verification workflow to use when continuing the
+client-binary decompile.
+
 ## How To Use The First-Pass Output
 
 Good starting points for packet/data mapping:

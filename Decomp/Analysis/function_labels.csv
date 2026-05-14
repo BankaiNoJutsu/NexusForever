@@ -18,12 +18,28 @@ StsConnLib64.MT.dll,18000d560,StsConn_OnLoginFinishResponse,Parses LoginFinish r
 StsConnLib64.MT.dll,18002ec10,StsInetSocket_ParseConnectFields,Parses Connect XML/header fields including Address/Location fallback.
 StsConnLib64.MT.dll,18002f410,StsInetSocket_SendConnectEnvelope,Builds /Sts/Connect envelope fields.
 StsConnLib64.MT.dll,180030d80,StsInetSocket_DispatchConnectEnvelope,Dispatches parsed /Sts/Connect envelope to the registered service.
+WildStar64.exe,1400a7540,NetworkBitWriter_WriteBits64,Writes up to 64 bits into the packet bitstream.
 WildStar64.exe,14022df60,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 WildStar64.exe,14024bfa0,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
+WildStar64.exe,1403315a0,Network_SendMessageFailure,Handles a failed world-message send attempt.
 WildStar64.exe,140332580,Network_SendMessageById,Looks up message metadata by id and dispatches through world socket.
 WildStar64.exe,140333b90,Network_IcmpPing,Sends a single ICMP echo probe and returns response timing/status.
 WildStar64.exe,140333e10,Network_IcmpTraceRoute,Sends ICMP echo probes with increasing TTL values.
+WildStar64.exe,140333fc0,Network_SendResolvedMessage,Dispatches a resolved message definition through a selected world socket.
 WildStar64.exe,140334f90,Network_ParseEndpointAddress,Resolves host or host:port text into a sockaddr-style endpoint.
+WildStar64.exe,140335530,NetworkPacketBuffer_Create,Creates a packet bitstream buffer for a requested byte capacity.
+WildStar64.exe,1403355e0,Network_SerialiseResolvedMessage,Serialises a resolved message definition into the world socket send queue.
+WildStar64.exe,140336380,NetworkBitWriter_WriteBits,Writes an integer value with a requested bit count into the packet bitstream.
+WildStar64.exe,1403366f0,NetworkBitWriter_GetPayloadStartBit,Returns the current packet bit position before payload serialisation.
+WildStar64.exe,140336750,NetworkBitWriter_GetBitPosition,Returns the current packet bit position after serialisation.
+WildStar64.exe,1403367d0,NetworkBitWriter_WriteBits8,Writes up to 8 bits into the packet bitstream.
+WildStar64.exe,140336860,NetworkBitWriter_WriteBits16,Writes up to 16 bits into the packet bitstream.
+WildStar64.exe,1403368f0,NetworkBitWriter_WriteBits32,Writes up to 32 bits into the packet bitstream.
+WildStar64.exe,140336980,NetworkBitReader_ReadString,Reads a variable-length ASCII string from the packet bitstream.
+WildStar64.exe,140336a40,NetworkBitReader_ReadWideString,Reads a variable-length UTF-16 string from the packet bitstream.
+WildStar64.exe,140336b00,NetworkBitReader_LoadNextSegment,Loads the next packet buffer segment into the bit reader.
+WildStar64.exe,140336c60,NetworkBitReader_ReadBits,Reads an integer value with a requested bit count from the packet bitstream.
+WildStar64.exe,140336d60,NetworkBitReader_ReadBitsAcrossSegments,Reads bits across packet buffer segment boundaries.
 WildStar64.exe,140338f90,NetworkSocket_CreateNonBlockingTcpSocket,Creates a non-blocking TCP socket with TCP_NODELAY enabled.
 WildStar64.exe,1403390d0,NetworkSocket_StartConnect,Starts or completes a non-blocking connect and updates socket state.
 WildStar64.exe,140339820,NetworkSocket_SelectDispatch,Builds select fd_sets and dispatches connect/read/write socket handlers.
@@ -35,9 +51,64 @@ WildStar64.exe,14033bf90,NetworkIOCP_PostRecv,Posts an overlapped WSARecv reques
 WildStar64.exe,14033c7e0,NetworkIOCP_SendQueued,Batches queued buffers into an overlapped WSASend request.
 WildStar64.exe,14033ec10,NetworkSocket_DestroyClosesocket,Destructor path that closes the socket and releases buffers.
 WildStar64.exe,14033ece0,NetworkSocket_CloseSocket,Closes an active socket and clears its handle.
+WildStar64.exe,1403a11c0,ActionSet_CheckPvPRestriction,Checks whether the current PvP state permits action-set changes.
+WildStar64.exe,1403bb480,ActionSet_SendPendingActionSetChanges,Sends or commits a validated action-set change request.
+WildStar64.exe,1403bb8d0,ActionSet_CheckUpdateSpellInProgress,Checks whether a spell/action-set update is already in progress.
 WildStar64.exe,1403dc9f0,WorldSocket_SelectByWorldAndSocket,WorldSocket lookup/selection path near world socket strings.
+WildStar64.exe,1404aacb0,ActionSet_ValidateRequestedChanges,Validates a 12-entry action-set request and returns a LimitedActionSetResult.
+WildStar64.exe,1405e7fd0,Lua_GameSpell_Equals,Game.Spell __eq metamethod.
+WildStar64.exe,1405e8070,Lua_GameSpell_CreateOrWrap,Creates or wraps a Game.Spell Lua userdata value.
+WildStar64.exe,1405e81b0,Lua_GameSpell_Gc,Game.Spell __gc metamethod.
+WildStar64.exe,1405e8230,Lua_RegisterGameSpellBindings,Registers the Game.Spell Lua method/property bindings.
+WildStar64.exe,1405e95f0,Lua_GameSpell_GetId,Game.Spell:GetId Lua method.
+WildStar64.exe,1405e96a0,Lua_GameSpell_GetBaseSpellId,Game.Spell:GetBaseSpellId Lua method.
+WildStar64.exe,1405e9750,Lua_GameSpell_GetName,Game.Spell:GetName Lua method.
+WildStar64.exe,1405e9840,Lua_GameSpell_GetTier,Game.Spell:GetTier Lua method.
+WildStar64.exe,1405e9900,Lua_GameSpell_GetTradeskillRequirements,Game.Spell:GetTradeskillRequirements Lua method.
+WildStar64.exe,1405e9d50,Lua_GameSpell_GetCastTime,Game.Spell:GetCastTime Lua method.
+WildStar64.exe,1405e9e30,Lua_GameSpell_GetCastTimeOverride,Game.Spell:GetCastTimeOverride Lua method.
+WildStar64.exe,1405e9f00,Lua_GameSpell_GetCastInfoString,Game.Spell:GetCastInfoString Lua method.
+WildStar64.exe,1405ea130,Lua_GameSpell_GetCostInfoString,Game.Spell:GetCostInfoString Lua method.
+WildStar64.exe,1405ea360,Lua_GameSpell_GetThresholdTime,Game.Spell:GetThresholdTime Lua method.
+WildStar64.exe,1405ea490,Lua_GameSpell_GetMinimumRange,Game.Spell:GetMinimumRange Lua method.
+WildStar64.exe,1405ea560,Lua_GameSpell_GetMaximumRange,Game.Spell:GetMaximumRange Lua method.
+WildStar64.exe,1405ea630,Lua_GameSpell_GetCooldownTime,Game.Spell:GetCooldownTime Lua method.
+WildStar64.exe,1405ea720,Lua_GameSpell_GetCooldownRemaining,Game.Spell:GetCooldownRemaining Lua method.
+WildStar64.exe,1405ea8a0,Lua_GameSpell_GetGCDTime,Game.Spell:GetGCDTime Lua method.
+WildStar64.exe,1405ea980,Lua_GameSpell_GetCasterInnateCosts,Game.Spell:GetCasterInnateCosts Lua method.
+WildStar64.exe,1405eac30,Lua_GameSpell_GetFlavor,Game.Spell:GetFlavor Lua method.
+WildStar64.exe,1405eaec0,Lua_GameSpell_GetTooltips,Game.Spell:GetTooltips Lua method.
+WildStar64.exe,1405eb290,Lua_GameSpell_GetPrice,Game.Spell:GetPrice Lua method.
+WildStar64.exe,1405eb3c0,Lua_GameSpell_GetRequiredLevel,Game.Spell:GetRequiredLevel Lua method.
+WildStar64.exe,1405eb4e0,Lua_GameSpell_IsNew,Game.Spell:IsNew Lua method.
+WildStar64.exe,1405eb5f0,Lua_GameSpell_SetNewFlag,Game.Spell:SetNewFlag Lua method.
+WildStar64.exe,1405eb710,Lua_GameSpell_IsBeneficial,Game.Spell:IsBeneficial Lua method.
+WildStar64.exe,1405eb7d0,Lua_GameSpell_GetCasterInnateRequirements,Game.Spell:GetCasterInnateRequirements Lua method.
+WildStar64.exe,1405ebab0,Lua_GameSpell_GetTargetInnateRequirements,Game.Spell:GetTargetInnateRequirements Lua method.
+WildStar64.exe,1405ebd60,Lua_GameSpell_GetReagents,Game.Spell:GetReagents Lua method.
+WildStar64.exe,1405ec060,Lua_GameSpell_GetCastMethod,Game.Spell:GetCastMethod Lua method.
+WildStar64.exe,1405ec110,Lua_GameSpell_GetSchool,Game.Spell:GetSchool Lua method.
+WildStar64.exe,1405ec1c0,Lua_GameSpell_GetClass,Game.Spell:GetClass Lua method.
+WildStar64.exe,1405ec270,Lua_GameSpell_GetTargetAngle,Game.Spell:GetTargetAngle Lua method.
+WildStar64.exe,1405ec320,Lua_GameSpell_GetPrerequisites,Game.Spell:GetPrerequisites Lua method.
+WildStar64.exe,1405ece10,Lua_GameSpell_GetRequiredWorldZone,Game.Spell:GetRequiredWorldZone Lua method.
+WildStar64.exe,1405ecf20,Lua_GameSpell_GetAOETargetInfo,Game.Spell:GetAOETargetInfo Lua method.
+WildStar64.exe,1405ed640,Lua_GameSpell_GetChannelData,Game.Spell:GetChannelData Lua method.
+WildStar64.exe,1405eda10,Lua_GameSpell_GetProxyChannelData,Game.Spell:GetProxyChannelData Lua method.
+WildStar64.exe,1405edef0,Lua_GameSpell_GetIcon,Game.Spell:GetIcon Lua method.
+WildStar64.exe,1405edff0,Lua_GameSpell_GetAbilityCharges,Game.Spell:GetAbilityCharges Lua method.
+WildStar64.exe,1405ee4a0,Lua_GameSpell_IsSelfSpell,Game.Spell:IsSelfSpell Lua method.
+WildStar64.exe,1405ee640,Lua_GameSpell_IsFreeformTarget,Game.Spell:IsFreeformTarget Lua method.
+WildStar64.exe,1405ee7b0,Lua_GameSpell_IsMovingInterrupted,Game.Spell:IsMovingInterrupted Lua method.
+WildStar64.exe,1405ee870,Lua_GameSpell_GetLasTierDesc,Game.Spell:GetLasTierDesc Lua method.
+WildStar64.exe,1405eeab0,Lua_GameSpell_GetLasBonusEachTierDesc,Game.Spell:GetLasBonusEachTierDesc Lua method.
+WildStar64.exe,1405eecf0,Lua_GameSpell_ShouldHideCooldownInTooltip,Game.Spell:ShouldHideCooldownInTooltip Lua method.
+WildStar64.exe,1405eedb0,Lua_GameSpell_GetSpellServiceTokenCost,Game.Spell:GetSpellServiceTokenCost Lua method.
 WildStar64.exe,14068c2c0,Lua_RegisterPublicEventConstants,Registers public event status/category/objective constants for Lua.
 WildStar64.exe,1406a6160,Lua_GameHousingPlot_GetPlugUpgradeInfo,Housing plot Lua accessor near tSpell4IdAbility anchor.
+WildStar64.exe,140758020,Lua_ActionSetLib_IsSlotUnlocked,ActionSetLib:IsSlotUnlocked Lua method.
+WildStar64.exe,1407580e0,Lua_ActionSetLib_RequestActionSetChanges,ActionSetLib:RequestActionSetChanges Lua method.
+WildStar64.exe,140758510,Lua_ActionSetLib_GetCurrentActionSet,ActionSetLib:GetCurrentActionSet Lua method.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
