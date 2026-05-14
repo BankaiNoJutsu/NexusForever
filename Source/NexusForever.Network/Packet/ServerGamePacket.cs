@@ -24,7 +24,7 @@ namespace NexusForever.Network.Packet
             }
 
             Opcode = opcode;
-            Size   = (ushort)(HeaderSize + Data.Length);
+            Size   = HeaderSize + (uint)Data.Length;
         }
     }
 }
