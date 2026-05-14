@@ -81,6 +81,11 @@ namespace NexusForever.Game.Entity
             }
         }
 
+        public bool HasFlair(ushort id)
+        {
+            return petFlairs.ContainsKey(id);
+        }
+
         /// <summary>
         /// Renames the pet name for <see cref="PetType"/> and object id.
         /// </summary>

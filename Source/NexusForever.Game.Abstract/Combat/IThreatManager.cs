@@ -26,6 +26,11 @@ namespace NexusForever.Game.Abstract.Combat
         void UpdateThreat(IUnitEntity target, int threat);
 
         /// <summary>
+        /// Set threat for the provided <see cref="IUnitEntity"/> to an absolute value.
+        /// </summary>
+        void SetThreat(IUnitEntity target, uint threat);
+
+        /// <summary>
         /// Clear the threat list and alert all entities that this <see cref="IUnitEntity"/> has forgotten them.
         /// </summary>
         void ClearThreatList();

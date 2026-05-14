@@ -18,6 +18,8 @@ namespace NexusForever.Game.Entity
 {
     public class SpellManager : ISpellManager
     {
+        private const ushort MaxBonusAmpPower = 10;
+
         /// <summary>
         /// Determines which fields need saving for <see cref="ISpellManager"/> when being saved to the database.
         /// </summary>
@@ -50,6 +52,7 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<uint /*spell4BaseId*/, ICharacterSpell> spells = new();
         private readonly Dictionary<uint /*spell4Id*/, double /*cooldown*/> spellCooldowns = new();
         private double globalSpellCooldown;
+        private ushort bonusAmpPower;
 
         private readonly IActionSet[] actionSets = new ActionSet[ActionSet.MaxActionSets];
 
@@ -331,6 +334,24 @@ namespace NexusForever.Game.Entity
             log.Trace($"Global spell cooldown set to {cooldown} seconds.");
         }
 
+        public void AddAmpPower(ushort amount)
+        {
+            if (amount == 0u)
+                return;
+
+            ushort previousBonusAmpPower = bonusAmpPower;
+            bonusAmpPower = (ushort)Math.Min(bonusAmpPower + amount, MaxBonusAmpPower);
+
+            ushort addedPower = (ushort)(bonusAmpPower - previousBonusAmpPower);
+            if (addedPower == 0u)
+                return;
+
+            foreach (IActionSet actionSet in actionSets)
+                actionSet.AddAmpPower(addedPower);
+
+            SendServerAmpPowerUpdate();
+        }
+
         /// <summary>
         /// Return <see cref="IActionSet"/> at supplied index.
         /// </summary>
@@ -366,6 +387,7 @@ namespace NexusForever.Game.Entity
             SendServerAbilityPoints();
             SendServerActionSets();
             SendServerAmpLists();
+            SendServerAmpPowerUpdate();
 
             player.Session.EnqueueMessageEncrypted(new ServerCooldownList
             {
@@ -449,6 +471,14 @@ namespace NexusForever.Game.Entity
                 IActionSet actionSet = GetActionSet(i);
                 player.Session.EnqueueMessageEncrypted(actionSet.BuildServerAmpList());
             }
+        }
+
+        private void SendServerAmpPowerUpdate()
+        {
+            player.Session.EnqueueMessageEncrypted(new ServerAmpPowerUpdate
+            {
+                BonusPower = bonusAmpPower
+            });
         }
     }
 }

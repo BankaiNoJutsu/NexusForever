@@ -153,12 +153,40 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
+        /// Add path levels to the current <see cref="Path"/>.
+        /// </summary>
+        public void AddLevels(uint levels)
+        {
+            if (levels == 0u)
+                throw new ArgumentException("Levels must be greater than 0.");
+
+            Path path = player.Path;
+            uint currentLevel = GetCurrentLevel(path);
+            if (currentLevel >= MaxPathLevel)
+                return;
+
+            uint targetLevel = Math.Min(currentLevel + levels, MaxPathLevel);
+            uint targetXp = GetPathXpForLevel(path, targetLevel);
+            IPathEntry entry = GetPathEntry(path);
+            if (targetXp <= entry.TotalXp)
+                return;
+
+            AddXp(targetXp - entry.TotalXp);
+        }
+
+        /// <summary>
         /// Get the current <see cref="Path"/> level for the <see cref="IPlayer"/>.
         /// </summary>
         private uint GetCurrentLevel(Path path)
         {
             return GameTableManager.Instance.PathLevel.Entries
                 .Last(x => x.PathXP <= paths[path].TotalXp && x.PathTypeEnum == (uint)path).PathLevel;
+        }
+
+        private uint GetPathXpForLevel(Path path, uint level)
+        {
+            return GameTableManager.Instance.PathLevel.Entries
+                .Last(x => x.PathLevel == level && x.PathTypeEnum == (uint)path).PathXP;
         }
 
         /// <summary>

@@ -1,13 +1,19 @@
+using System.Numerics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Abstract.Spell.Event;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Spell.Event;
+using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Combat.CrowdControl;
+using NexusForever.Game.Static.Entity.Movement.Command.State;
 using NexusForever.Game.Static.Spell;
+using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Combat;
 using NexusForever.Network.World.Entity;
+using NexusForever.Network.World.Message.Model.Entity;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
@@ -21,6 +27,7 @@ namespace NexusForever.Game.Spell
     public partial class Spell : ISpell
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+        private const uint ValidTargetDeadMask = 0x08u;
 
         public ISpellParameters Parameters { get; }
         public uint CastingId { get; }
@@ -33,10 +40,13 @@ namespace NexusForever.Game.Spell
 
         private readonly List<ISpellTargetInfo> targets = new();
         private readonly List<ITelegraph> telegraphs = new();
+        private readonly List<PendingSpellGoEffect> pendingSpellGoEffects = new();
 
         private readonly ISpellEventManager events = new SpellEventManager();
 
         private IScriptCollection scriptCollection;
+
+        private sealed record PendingSpellGoEffect(ISpellTargetInfo TargetInfo, ISpellTargetEffectInfo EffectInfo);
 
         public Spell(IUnitEntity caster, ISpellParameters parameters)
         {
@@ -134,6 +144,81 @@ namespace NexusForever.Game.Spell
                     return CastResult.SpellNoCharges;
             }
 
+            CastResult targetResult = CheckPrimaryTarget();
+            if (targetResult != CastResult.Ok)
+                return targetResult;
+
+            return CastResult.Ok;
+        }
+
+        private CastResult CheckPrimaryTarget()
+        {
+            if (Parameters.PrimaryTargetId == 0u)
+                return CastResult.Ok;
+
+            IUnitEntity target = GetPrimaryTargetEntity();
+            if (target == null)
+            {
+                SpellEffectDiagnostics.TracePrimaryTargetValidation(this, null, CastResult.TargetUnknown, 0f, 0f, 0f);
+                return CastResult.TargetUnknown;
+            }
+
+            float horizontalRange = GetHorizontalDistance(Caster.Position, target.Position);
+            float effectiveRange = MathF.Max(0f, horizontalRange - Caster.HitRadius * 0.5f - target.HitRadius * 0.5f);
+            float verticalDelta = MathF.Abs(Caster.Position.Y - target.Position.Y);
+
+            CastResult result = CheckPrimaryTargetValidMask(target);
+            if (result == CastResult.Ok)
+                result = CheckPrimaryTargetAngle(target);
+
+            if (result == CastResult.Ok)
+                result = CheckPrimaryTargetRange(horizontalRange, effectiveRange, verticalDelta);
+
+            SpellEffectDiagnostics.TracePrimaryTargetValidation(this, target.Guid, result, horizontalRange, effectiveRange, verticalDelta);
+            return result;
+        }
+
+        private CastResult CheckPrimaryTargetValidMask(IUnitEntity target)
+        {
+            uint validTargetMask = Parameters.SpellInfo.BaseInfo.ValidTargets?.TargetBitmask ?? 0u;
+            if (validTargetMask == 0u)
+                return CastResult.Ok;
+
+            bool allowsDeadTargets = (validTargetMask & ValidTargetDeadMask) != 0u;
+            bool allowsLivingTargets = (validTargetMask & ~ValidTargetDeadMask) != 0u;
+
+            if (!target.IsAlive && !allowsDeadTargets)
+                return CastResult.TargetCannotBeDead;
+
+            if (target.IsAlive && allowsDeadTargets && !allowsLivingTargets)
+                return CastResult.TargetMustBeDead;
+
+            return CastResult.Ok;
+        }
+
+        private CastResult CheckPrimaryTargetAngle(IUnitEntity target)
+        {
+            float targetAngle = Parameters.SpellInfo.BaseInfo.TargetAngle?.TargetAngle ?? 0f;
+            if (targetAngle <= 0f || targetAngle >= 360f)
+                return CastResult.Ok;
+
+            return IsWithinCasterAngle(target, targetAngle)
+                ? CastResult.Ok
+                : CastResult.TargetOrientation;
+        }
+
+        private CastResult CheckPrimaryTargetRange(float horizontalRange, float effectiveRange, float verticalDelta)
+        {
+            Spell4Entry entry = Parameters.SpellInfo.Entry;
+            if (entry.TargetMinRange > 0f && horizontalRange < entry.TargetMinRange)
+                return CastResult.TargetRangeMin;
+
+            if (entry.TargetMaxRange > 0f && effectiveRange > entry.TargetMaxRange)
+                return CastResult.TargetRangeMax;
+
+            if (entry.TargetVerticalRange > 0f && verticalDelta > entry.TargetVerticalRange)
+                return CastResult.TargetRangeVertical;
+
             return CastResult.Ok;
         }
 
@@ -177,17 +262,212 @@ namespace NexusForever.Game.Spell
 
         private CastResult CheckCCConditions()
         {
-            // TODO: this just looks like a mask for CCState enum
             if (Parameters.SpellInfo.CasterCCConditions != null)
             {
+                CastResult result = CheckCCConditions(Parameters.SpellInfo.CasterCCConditions, Caster, true);
+                if (result != CastResult.Ok)
+                    return result;
             }
 
             // not sure if this should be for explicit and/or implicit targets
-            if (Parameters.SpellInfo.TargetCCConditions != null)
+            if (Parameters.SpellInfo.TargetCCConditions != null && Parameters.PrimaryTargetId != 0u)
             {
+                IUnitEntity target = GetPrimaryTargetEntity();
+                if (target != null)
+                {
+                    CastResult result = CheckCCConditions(Parameters.SpellInfo.TargetCCConditions, target, false);
+                    if (result != CastResult.Ok)
+                        return result;
+                }
             }
 
             return CastResult.Ok;
+        }
+
+        private static CastResult CheckCCConditions(Spell4CCConditionsEntry conditions, IUnitEntity unit, bool caster)
+        {
+            uint conditionMask = conditions.CcStateMask;
+            if (conditionMask == 0u)
+                return CastResult.Ok;
+
+            uint activeMask = unit.ActiveCCStateMask & conditionMask;
+            uint requiredMask = conditions.CcStateFlagsRequired & conditionMask;
+            if (activeMask == requiredMask)
+                return CastResult.Ok;
+
+            bool missingRequiredState = (activeMask & requiredMask) != requiredMask;
+            uint failedMask = missingRequiredState
+                ? requiredMask & ~activeMask
+                : activeMask & ~requiredMask;
+
+            CCState? state = GetFirstCCState(failedMask == 0u ? conditionMask : failedMask);
+            if (state == null)
+                return caster ? CastResult.CasterNotIncontrolOfSelf : CastResult.FailSpecialRestrictions;
+
+            return GetCCConditionCastResult(state.Value, caster, !missingRequiredState);
+        }
+
+        private static CCState? GetFirstCCState(uint mask)
+        {
+            for (int i = 0; i < 32; i++)
+                if ((mask & (1u << i)) != 0u)
+                    return (CCState)i;
+
+            return null;
+        }
+
+        private static CastResult GetCCConditionCastResult(CCState state, bool caster, bool cannotBe)
+        {
+            if (caster)
+                return cannotBe
+                    ? GetCasterCannotBeCCResult(state)
+                    : GetCasterMustBeCCResult(state);
+
+            return cannotBe
+                ? GetTargetCannotBeCCResult(state)
+                : GetTargetMustBeCCResult(state);
+        }
+
+        private static CastResult GetCasterCannotBeCCResult(CCState state)
+        {
+            return state switch
+            {
+                CCState.Stun               => CastResult.CasterCannotBeStun,
+                CCState.Sleep              => CastResult.CasterCannotBeSleep,
+                CCState.Root               => CastResult.CasterCannotBeRoot,
+                CCState.Disarm             => CastResult.CasterCannotBeDisarm,
+                CCState.Silence            => CastResult.CasterCannotBeSilence,
+                CCState.Polymorph          => CastResult.CasterCannotBePolymorph,
+                CCState.Fear               => CastResult.CasterCannotBeFear,
+                CCState.Hold               => CastResult.CasterCannotBeHold,
+                CCState.Knockdown          => CastResult.CasterCannotBeKnockdown,
+                CCState.Vulnerability      => CastResult.CasterCannotBeVulnerability,
+                CCState.VulnerabilityWithAct => CastResult.CCVulnerabilityWithAct,
+                CCState.Disorient          => CastResult.CasterCannotBeDisorient,
+                CCState.Disable            => CastResult.CasterCannotBeDisable,
+                CCState.Taunt              => CastResult.CasterCannotBeTaunt,
+                CCState.DeTaunt            => CastResult.CasterCannotBeDeTaunt,
+                CCState.Blind              => CastResult.CasterCannotBeBlind,
+                CCState.Knockback          => CastResult.CasterCannotBeKnockback,
+                CCState.Pushback           => CastResult.CasterCannotBePushback,
+                CCState.Pull               => CastResult.CasterCannotBePull,
+                CCState.PositionSwitch     => CastResult.CasterCannotBePositionSwitch,
+                CCState.Tether             => CastResult.CasterCannotBeTether,
+                CCState.Snare              => CastResult.CasterCannotBeSnare,
+                CCState.Interrupt          => CastResult.CasterCannotBeInterrupt,
+                CCState.Daze               => CastResult.CasterCannotBeDaze,
+                CCState.Subdue             => CastResult.CasterCannotBeSubdue,
+                CCState.Grounded           => CastResult.CasterCannotBeGrounded,
+                CCState.DisableCinematic   => CastResult.CasterCannotBeDisableCinematic,
+                CCState.AbilityRestriction => CastResult.CasterCannotBeAbilityRestriction,
+                _                          => CastResult.CasterNotIncontrolOfSelf
+            };
+        }
+
+        private static CastResult GetCasterMustBeCCResult(CCState state)
+        {
+            return state switch
+            {
+                CCState.Stun               => CastResult.CasterMustBeStun,
+                CCState.Sleep              => CastResult.CasterMustBeSleep,
+                CCState.Root               => CastResult.CasterMustBeRoot,
+                CCState.Disarm             => CastResult.CasterMustBeDisarm,
+                CCState.Silence            => CastResult.CasterMustBeSilence,
+                CCState.Polymorph          => CastResult.CasterMustBePolymorph,
+                CCState.Fear               => CastResult.CasterMustBeFear,
+                CCState.Hold               => CastResult.CasterMustBeHold,
+                CCState.Knockdown          => CastResult.CasterMustBeKnockdown,
+                CCState.Vulnerability      => CastResult.CasterMustBeVulnerability,
+                CCState.Disorient          => CastResult.CasterMustBeDisorient,
+                CCState.Disable            => CastResult.CasterMustBeDisable,
+                CCState.Taunt              => CastResult.CasterMustBeTaunt,
+                CCState.DeTaunt            => CastResult.CasterMustBeDeTaunt,
+                CCState.Blind              => CastResult.CasterMustBeBlind,
+                CCState.Knockback          => CastResult.CasterMustBeKnockback,
+                CCState.Pushback           => CastResult.CasterMustBePushback,
+                CCState.Pull               => CastResult.CasterMustBePull,
+                CCState.PositionSwitch     => CastResult.CasterMustBePositionSwitch,
+                CCState.Tether             => CastResult.CasterMustBeTether,
+                CCState.Snare              => CastResult.CasterMustBeSnare,
+                CCState.Interrupt          => CastResult.CasterMustBeInterrupt,
+                CCState.Daze               => CastResult.CasterMustBeDaze,
+                CCState.Subdue             => CastResult.CasterMustBeSubdue,
+                CCState.Grounded           => CastResult.CasterMustBeGrounded,
+                CCState.DisableCinematic   => CastResult.CasterMustBeDisableCinematic,
+                CCState.AbilityRestriction => CastResult.CasterMustBeAbilityRestriction,
+                _                          => CastResult.FailSpecialRestrictions
+            };
+        }
+
+        private static CastResult GetTargetCannotBeCCResult(CCState state)
+        {
+            return state switch
+            {
+                CCState.Stun               => CastResult.TargetCannotBeStun,
+                CCState.Sleep              => CastResult.TargetCannotBeSleep,
+                CCState.Root               => CastResult.TargetCannotBeRoot,
+                CCState.Disarm             => CastResult.TargetCannotBeDisarm,
+                CCState.Silence            => CastResult.TargetCannotBeSilence,
+                CCState.Polymorph          => CastResult.TargetCannotBePolymorph,
+                CCState.Fear               => CastResult.TargetCannotBeFear,
+                CCState.Hold               => CastResult.TargetCannotBeHold,
+                CCState.Knockdown          => CastResult.TargetCannotBeKnockdown,
+                CCState.Vulnerability      => CastResult.TargetCannotBeVulnerability,
+                CCState.VulnerabilityWithAct => CastResult.CCVulnerabilityWithAct,
+                CCState.Disorient          => CastResult.TargetCannotBeDisorient,
+                CCState.Disable            => CastResult.TargetCannotBeDisable,
+                CCState.Taunt              => CastResult.TargetCannotBeTaunt,
+                CCState.DeTaunt            => CastResult.TargetCannotBeDeTaunt,
+                CCState.Blind              => CastResult.TargetCannotBeBlind,
+                CCState.Knockback          => CastResult.TargetCannotBeKnockback,
+                CCState.Pushback           => CastResult.TargetCannotBePushback,
+                CCState.Pull               => CastResult.TargetCannotBePull,
+                CCState.PositionSwitch     => CastResult.TargetCannotBePositionSwitch,
+                CCState.Tether             => CastResult.TargetCannotBeTether,
+                CCState.Snare              => CastResult.TargetCannotBeSnare,
+                CCState.Interrupt          => CastResult.TargetCannotBeInterrupt,
+                CCState.Daze               => CastResult.TargetCannotBeDaze,
+                CCState.Subdue             => CastResult.TargetCannotBeSubdue,
+                CCState.Grounded           => CastResult.TargetCannotBeGrounded,
+                CCState.DisableCinematic   => CastResult.TargetCannotBeDisableCinematic,
+                CCState.AbilityRestriction => CastResult.TargetCannotBeAbilityRestriction,
+                _                          => CastResult.FailSpecialRestrictions
+            };
+        }
+
+        private static CastResult GetTargetMustBeCCResult(CCState state)
+        {
+            return state switch
+            {
+                CCState.Stun               => CastResult.TargetMustBeStun,
+                CCState.Sleep              => CastResult.TargetMustBeSleep,
+                CCState.Root               => CastResult.TargetMustBeRoot,
+                CCState.Disarm             => CastResult.TargetMustBeDisarm,
+                CCState.Silence            => CastResult.TargetMustBeSilence,
+                CCState.Polymorph          => CastResult.TargetMustBePolymorph,
+                CCState.Fear               => CastResult.TargetMustBeFear,
+                CCState.Hold               => CastResult.TargetMustBeHold,
+                CCState.Knockdown          => CastResult.TargetMustBeKnockdown,
+                CCState.Vulnerability      => CastResult.TargetMustBeVulnerability,
+                CCState.Disorient          => CastResult.TargetMustBeDisorient,
+                CCState.Disable            => CastResult.TargetMustBeDisable,
+                CCState.Taunt              => CastResult.TargetMustBeTaunt,
+                CCState.DeTaunt            => CastResult.TargetMustBeDeTaunt,
+                CCState.Blind              => CastResult.TargetMustBeBlind,
+                CCState.Knockback          => CastResult.TargetMustBeKnockback,
+                CCState.Pushback           => CastResult.TargetMustBePushback,
+                CCState.Pull               => CastResult.TargetMustBePull,
+                CCState.PositionSwitch     => CastResult.TargetMustBePositionSwitch,
+                CCState.Tether             => CastResult.TargetMustBeTether,
+                CCState.Snare              => CastResult.TargetMustBeSnare,
+                CCState.Interrupt          => CastResult.TargetMustBeInterrupt,
+                CCState.Daze               => CastResult.TargetMustBeDaze,
+                CCState.Subdue             => CastResult.TargetMustBeSubdue,
+                CCState.Grounded           => CastResult.TargetMustBeGrounded,
+                CCState.DisableCinematic   => CastResult.TargetMustBeDisableCinematic,
+                CCState.AbilityRestriction => CastResult.TargetMustBeAbilityRestriction,
+                _                          => CastResult.FailSpecialRestrictions
+            };
         }
 
         private void InitialiseTelegraphs()
@@ -233,8 +513,6 @@ namespace NexusForever.Game.Spell
             SelectTargets();
             ExecuteEffects();
             CostSpell();
-
-            SendSpellGo();
         }
 
         private void CostSpell()
@@ -245,57 +523,614 @@ namespace NexusForever.Game.Spell
 
         private void SelectTargets()
         {
-            targets.Add(new SpellTargetInfo(SpellEffectTargetFlags.Caster, Caster));
+            targets.Clear();
+            AddTarget(SpellEffectTargetFlags.Caster, Caster);
 
             if (Parameters.PrimaryTargetId != 0)
             {
-                IUnitEntity primaryTargetEntity = Caster.GetVisible<IUnitEntity>(Parameters.PrimaryTargetId);
+                IUnitEntity primaryTargetEntity = GetPrimaryTargetEntity();
                 if (primaryTargetEntity != null)
-                    targets.Add(new SpellTargetInfo(SpellEffectTargetFlags.Target, primaryTargetEntity));
+                    AddTarget(SpellEffectTargetFlags.Target, primaryTargetEntity);
             }
 
             if (Caster is IPlayer)
                 InitialiseTelegraphs();
 
-            foreach (ITelegraph telegraph in telegraphs)
-            {
-                foreach (IUnitEntity entity in telegraph.GetTargets())
-                    targets.Add(new SpellTargetInfo(SpellEffectTargetFlags.Telegraph, entity));
-            }
+            foreach (IUnitEntity entity in SelectTelegraphTargets())
+                AddTarget(SpellEffectTargetFlags.Telegraph, entity);
 
             SpellEffectDiagnostics.TraceTargetSelection(this, targets, telegraphs.Count);
         }
 
+        private void AddTarget(SpellEffectTargetFlags flags, IUnitEntity entity)
+        {
+            SpellTargetInfo target = targets.OfType<SpellTargetInfo>().FirstOrDefault(t => t.Entity.Guid == entity.Guid);
+            if (target != null)
+            {
+                target.AddFlags(flags);
+                return;
+            }
+
+            targets.Add(new SpellTargetInfo(flags, entity));
+        }
+
+        private IEnumerable<IUnitEntity> SelectTelegraphTargets()
+        {
+            Dictionary<uint, IUnitEntity> candidates = [];
+            foreach (ITelegraph telegraph in telegraphs)
+            {
+                foreach (IUnitEntity entity in telegraph.GetTargets())
+                    candidates.TryAdd(entity.Guid, entity);
+            }
+
+            Spell4AoeTargetConstraintsEntry constraints = Parameters.SpellInfo.AoeTargetConstraints;
+            IEnumerable<IUnitEntity> constrainedCandidates = candidates.Values
+                .Where(e => MeetsAoeTargetConstraints(e, constraints));
+
+            IEnumerable<IUnitEntity> orderedCandidates = OrderAoeTargetCandidates(constrainedCandidates, constraints);
+
+            uint targetCount = constraints?.TargetCount ?? 0u;
+            if (targetCount > 0u)
+                orderedCandidates = orderedCandidates.Take((int)targetCount);
+
+            return orderedCandidates;
+        }
+
+        private bool MeetsAoeTargetConstraints(IUnitEntity entity, Spell4AoeTargetConstraintsEntry constraints)
+        {
+            if (constraints == null)
+                return true;
+
+            float range = GetHorizontalDistance(Caster.Position, entity.Position);
+            if (constraints.MinRange > 0f && range < constraints.MinRange)
+                return false;
+
+            if (constraints.MaxRange > 0f && range > constraints.MaxRange)
+                return false;
+
+            if (constraints.Angle > 0f && constraints.Angle < 360f && !IsWithinCasterAngle(entity, constraints.Angle))
+                return false;
+
+            return true;
+        }
+
+        private IEnumerable<IUnitEntity> OrderAoeTargetCandidates(IEnumerable<IUnitEntity> candidates, Spell4AoeTargetConstraintsEntry constraints)
+        {
+            if (constraints == null)
+                return OrderByDistance(candidates);
+
+            return constraints.TargetSelection switch
+            {
+                // Client rows explicitly name selection 4 as "lowest absolute health".
+                4 => candidates
+                    .OrderBy(e => e.Health)
+                    .ThenBy(e => Vector3.DistanceSquared(Caster.Position, e.Position)),
+                // Client rows explicitly name selection 5 as "missing the most health".
+                5 => candidates
+                    .OrderByDescending(e => e.MaxHealth > e.Health ? e.MaxHealth - e.Health : 0u)
+                    .ThenBy(e => Vector3.DistanceSquared(Caster.Position, e.Position)),
+                _ => OrderByDistance(candidates)
+            };
+        }
+
+        private IEnumerable<IUnitEntity> OrderByDistance(IEnumerable<IUnitEntity> candidates)
+        {
+            return candidates.OrderBy(e => Vector3.DistanceSquared(Caster.Position, e.Position));
+        }
+
+        private bool IsWithinCasterAngle(IUnitEntity entity, float angleDegrees)
+        {
+            float targetAngle = (Caster.Position.GetAngle(entity.Position) - Caster.Rotation.X).NormaliseRotationRadians();
+            return MathF.Abs(targetAngle.ToDegrees()) <= angleDegrees / 2f;
+        }
+
+        private static float GetHorizontalDistance(Vector3 source, Vector3 target)
+        {
+            return Vector2.Distance(new Vector2(source.X, source.Z), new Vector2(target.X, target.Z));
+        }
+
+        private IUnitEntity GetPrimaryTargetEntity()
+        {
+            if (Parameters.PrimaryTargetId == 0u)
+                return null;
+
+            if (Parameters.PrimaryTargetId == Caster.Guid)
+                return Caster;
+
+            return Caster.GetVisible<IUnitEntity>(Parameters.PrimaryTargetId);
+        }
+
         private void ExecuteEffects()
         {
+            bool scheduledEffects = false;
+
             foreach (Spell4EffectsEntry spell4EffectsEntry in Parameters.SpellInfo.Effects)
             {
                 SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(spell4EffectsEntry);
-
-                // select targets for effect
-                List<ISpellTargetInfo> effectTargets = targets
-                    .Where(t => (t.Flags & (SpellEffectTargetFlags)spell4EffectsEntry.TargetFlags) != 0)
-                    .ToList();
-
-                SpellEffectDelegate handler = GlobalSpellManager.Instance.GetEffectHandler((SpellEffectType)spell4EffectsEntry.EffectType);
-                SpellEffectDiagnostics.TraceEffectDispatch(this, effect, effectTargets.Count, handler != null);
-
-                if (handler == null)
-                    log.Warn($"Unhandled spell effect {(SpellEffectType)spell4EffectsEntry.EffectType}");
-                else
+                if (ScheduleEffect(effect))
                 {
-                    uint effectId = GlobalSpellManager.Instance.NextEffectId;
-                    foreach (SpellTargetInfo effectTarget in effectTargets)
-                    {
-                        var info = new SpellTargetInfo.SpellTargetEffectInfo(effectId, spell4EffectsEntry);
-                        effectTarget.Effects.Add(info);
-
-                        // TODO: if there is an unhandled exception in the handler, there will be an infinite loop on Execute()
-                        handler.Invoke(this, effectTarget.Entity, info);
-                        SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
-                    }
+                    scheduledEffects = true;
+                    continue;
                 }
+
+                ExecuteEffect(effect);
             }
+
+            SendSpellGo(!scheduledEffects);
+        }
+
+        private bool ScheduleEffect(SpellEffectInterpretation effect)
+        {
+            // Tick-only and duration-only rows need more evidence before they are safe to move off the immediate path.
+            if (effect.Timing.TickTime > 0u && effect.Timing.DurationTime > 0u)
+            {
+                uint firstPulseDelay = effect.Timing.DelayTime > 0u
+                    ? effect.Timing.DelayTime
+                    : effect.Timing.TickTime;
+
+                if (firstPulseDelay > effect.Timing.DurationTime)
+                    return false;
+
+                SpellEffectDiagnostics.TraceEffectSchedule(this, effect, firstPulseDelay, effect.Timing.TickTime, effect.Timing.DurationTime, true);
+                ScheduleEffectPulse(effect, firstPulseDelay, firstPulseDelay, effect.Timing.TickTime, effect.Timing.DurationTime);
+                return true;
+            }
+
+            if (effect.Timing.DelayTime > 0u)
+            {
+                SpellEffectDiagnostics.TraceEffectSchedule(this, effect, effect.Timing.DelayTime, 0u, 0u, false);
+                ScheduleEffectPulse(effect, effect.Timing.DelayTime, effect.Timing.DelayTime, 0u, 0u);
+                return true;
+            }
+
+            return false;
+        }
+
+        private void ScheduleEffectPulse(SpellEffectInterpretation effect, uint delayTime, uint elapsedTime, uint tickTime, uint durationTime)
+        {
+            events.EnqueueEvent(new SpellEvent(delayTime / 1000d, () =>
+            {
+                if (ExecuteEffect(effect))
+                    SendSpellGo();
+
+                if (tickTime == 0u || durationTime == 0u)
+                    return;
+
+                uint nextElapsedTime = elapsedTime + tickTime;
+                if (nextElapsedTime <= durationTime)
+                    ScheduleEffectPulse(effect, tickTime, nextElapsedTime, tickTime, durationTime);
+            }));
+        }
+
+        private bool ExecuteEffect(SpellEffectInterpretation effect)
+        {
+            // select targets for effect
+            List<ISpellTargetInfo> effectTargets = targets
+                .Where(t => (t.Flags & (SpellEffectTargetFlags)effect.Entry.TargetFlags) != 0)
+                .ToList();
+
+            SpellEffectDelegate handler = GlobalSpellManager.Instance.GetEffectHandler((SpellEffectType)effect.Entry.EffectType);
+            SpellEffectDiagnostics.TraceEffectDispatch(this, effect, effectTargets.Count, handler != null);
+
+            if (handler == null)
+            {
+                log.Warn($"Unhandled spell effect {(SpellEffectType)effect.Entry.EffectType}");
+                return false;
+            }
+
+            uint effectId = GlobalSpellManager.Instance.NextEffectId;
+            bool executed = false;
+            foreach (SpellTargetInfo effectTarget in effectTargets)
+            {
+                var info = new SpellTargetInfo.SpellTargetEffectInfo(effectId, effect.Entry);
+                effectTarget.Effects.Add(info);
+                pendingSpellGoEffects.Add(new PendingSpellGoEffect(effectTarget, info));
+
+                if (effect.Entry.EffectType != SpellEffectType.SpellImmunity && effectTarget.Entity.IsImmuneToSpell(Parameters.SpellInfo.Entry.Id))
+                {
+                    info.DropEffect = true;
+                    info.AddCombatLog(new CombatLogImmune
+                    {
+                        CastData = new CombatLogCastData
+                        {
+                            CasterId     = Caster.Guid,
+                            TargetId     = effectTarget.Entity.Guid,
+                            SpellId      = Parameters.SpellInfo.Entry.Id,
+                            CombatResult = CombatResult.Hit
+                        }
+                    });
+                    SpellEffectDiagnostics.TraceSpellImmunityBlocked(this, effectTarget.Entity, effect, Parameters.SpellInfo.Entry.Id);
+                    SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
+                    executed = true;
+                    continue;
+                }
+
+                if (effect.Entry.EffectType != SpellEffectType.SpellEffectImmunity && effectTarget.Entity.IsImmuneToSpellEffect(effect.Entry.EffectType))
+                {
+                    info.DropEffect = true;
+                    info.AddCombatLog(new CombatLogImmune
+                    {
+                        CastData = new CombatLogCastData
+                        {
+                            CasterId     = Caster.Guid,
+                            TargetId     = effectTarget.Entity.Guid,
+                            SpellId      = Parameters.SpellInfo.Entry.Id,
+                            CombatResult = CombatResult.Hit
+                        }
+                    });
+                    SpellEffectDiagnostics.TraceSpellEffectImmunityBlocked(this, effectTarget.Entity, effect);
+                    SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
+                    executed = true;
+                    continue;
+                }
+
+                // TODO: if there is an unhandled exception in the handler, there will be an infinite loop on Execute()
+                handler.Invoke(this, effectTarget.Entity, info);
+                ScheduleEffectLifetime(effect, effectTarget.Entity, info);
+                SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
+                executed = true;
+            }
+
+            return executed;
+        }
+
+        private void ScheduleEffectLifetime(SpellEffectInterpretation effect, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            uint durationTime = GetEffectLifetimeDuration(effect);
+            if (durationTime == 0u)
+                return;
+
+            switch (effect.Entry.EffectType)
+            {
+                case SpellEffectType.UnitPropertyModifier:
+                    if (effect.UnitPropertyModifier == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        target.RemoveSpellProperty(effect.UnitPropertyModifier.Property, Parameters.SpellInfo.Entry.Id);
+                        SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.PersonalDmgHealMod:
+                    if (effect.PersonalDmgHealMod == null)
+                        return;
+
+                    if (!SpellHandler.TryResolvePersonalDmgHealModProperty(effect.PersonalDmgHealMod, out Property personalProperty, out _))
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        target.RemoveSpellProperty(personalProperty, Parameters.SpellInfo.Entry.Id);
+                        SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.CCStateSet:
+                    if (effect.CCState == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        if (target.RemoveCCState(effect.CCState.State, info.EffectId))
+                            SendCCStateRemove(target.Guid, effect.CCState.State, info.EffectId);
+                    }));
+                    break;
+                case SpellEffectType.ModifyInterruptArmor:
+                    if (effect.ModifyInterruptArmor == null)
+                        return;
+
+                    uint interruptArmorAmount = info.CombatLogs.OfType<CombatLogModifyInterruptArmor>().LastOrDefault()?.Amount
+                        ?? effect.ModifyInterruptArmor.Amount;
+                    if (interruptArmorAmount == 0u)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        uint removedAmount = Math.Min(target.InterruptArmor, interruptArmorAmount);
+                        target.InterruptArmor -= removedAmount;
+                        SpellEffectDiagnostics.TraceModifyInterruptArmor(this, target, effect.ModifyInterruptArmor, removedAmount, true);
+
+                        if (removedAmount > 0u)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.Absorption:
+                    if (effect.Absorption == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        uint removedAmount = target.RemoveAbsorption(info.EffectId);
+                        SpellEffectDiagnostics.TraceAbsorption(this, target, effect.Absorption, removedAmount, true);
+
+                        if (removedAmount > 0u)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.HealingAbsorption:
+                    if (effect.HealingAbsorption == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        uint removedAmount = target.RemoveHealingAbsorption(info.EffectId);
+                        SpellEffectDiagnostics.TraceHealingAbsorption(this, target, effect.HealingAbsorption, removedAmount, true);
+
+                        if (removedAmount > 0u)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.DelayDeath:
+                    if (effect.DelayDeath == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveDelayDeath(info.EffectId);
+                        SpellEffectDiagnostics.TraceDelayDeath(this, target, effect.DelayDeath, false, removed, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.ClampVital:
+                    if (effect.ClampVital == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveVitalClamp(info.EffectId);
+                        SpellEffectDiagnostics.TraceClampVital(this, target, effect.ClampVital, Vital.Health, target.Health, target.Health, false, removed, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.ShieldOverload:
+                    if (effect.ShieldOverload == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveShieldOverload(info.EffectId);
+                        SpellEffectDiagnostics.TraceShieldOverload(this, target, effect.ShieldOverload, target.Shield, target.Shield, false, removed, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.UnitStateSet:
+                    if (effect.UnitStateSet == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveUnitState(info.EffectId);
+                        SpellEffectDiagnostics.TraceUnitStateSet(this, target, effect.UnitStateSet, false, false, removed, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.SetBusy:
+                    if (effect.SetBusy == null || !effect.SetBusy.Busy)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveBusy(info.EffectId);
+                        SpellEffectDiagnostics.TraceSetBusy(this, target, effect.SetBusy, removed, false, removed, removed ? 1u : 0u, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.ForcedMove:
+                    if (effect.ForcedMove == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        target.MovementManager.SetVelocity(Vector3.Zero, false);
+                        target.MovementManager.SetState(target.MovementManager.GetState() & ~StateFlags.Velocity);
+                    }));
+                    break;
+                case SpellEffectType.Stealth:
+                    if (effect.Stealth == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        if (!target.RemoveStealth(info.EffectId))
+                            return;
+
+                        if (!target.IsStealthed)
+                        {
+                            target.CreateFlags &= ~EntityCreateFlag.IsStealthed;
+                            SendStealthCombatLog(target.Guid, true);
+                        }
+
+                        SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.AggroImmune:
+                    if (effect.AggroImmune == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        if (target.RemoveAggroImmune(info.EffectId))
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.SpellEffectImmunity:
+                    if (effect.SpellEffectImmunity == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveSpellEffectImmunity(info.EffectId);
+                        SpellEffectDiagnostics.TraceSpellEffectImmunity(this, target, effect.SpellEffectImmunity, false, removed, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.SpellImmunity:
+                    if (effect.SpellImmunity == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveSpellImmunity(info.EffectId);
+                        SpellEffectDiagnostics.TraceSpellImmunity(this, target, effect.SpellImmunity, false, removed, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.Scale:
+                    if (effect.Scale == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveScale(info.EffectId);
+                        SpellEffectDiagnostics.TraceScale(this, target, effect.Scale, 0f, false, removed, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.FactionSet:
+                    if (effect.FactionSet == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveFaction(info.EffectId);
+                        SpellEffectDiagnostics.TraceFactionSet(this, target, effect.FactionSet, 0u, false, removed, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.DisguiseOutfit:
+                    if (effect.DisguiseOutfit == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveDisguiseOutfit(info.EffectId);
+                        SpellEffectDiagnostics.TraceDisguiseOutfit(this, target, effect.DisguiseOutfit, 0, false, false, false, removed, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.MimicDisguise:
+                    if (effect.MimicDisguise == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveMimicDisguise(info.EffectId);
+                        SpellEffectDiagnostics.TraceMimicDisguise(this, target, effect.MimicDisguise, Caster.Guid, 0u, 0, 0u, 0, false, false, false, removed, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.RewardPropertyModifier:
+                    if (effect.RewardPropertyModifier == null)
+                        return;
+
+                    IPlayer rewardPlayer = target as IPlayer ?? Caster as IPlayer;
+                    if (rewardPlayer == null)
+                        return;
+
+                    if (!SpellHandler.TryResolveRewardPropertyModifier(
+                        effect.RewardPropertyModifier,
+                        out RewardPropertyEntry rewardPropertyEntry,
+                        out float rewardPropertyValue,
+                        out _))
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        rewardPlayer.Account.RewardPropertyManager.UpdateRewardProperty(
+                            rewardPropertyEntry,
+                            -rewardPropertyValue,
+                            effect.RewardPropertyModifier.Data);
+                        SpellEffectDiagnostics.TraceRewardPropertyModifier(this, target, effect.RewardPropertyModifier, rewardPlayer.Guid, -rewardPropertyValue, false, true, null);
+                        SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.SummonCreature:
+                    if (effect.SummonCreature == null || info.CreatedEntities.Count == 0)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        foreach (IGridEntity entity in info.CreatedEntities)
+                        {
+                            if (entity.InWorld)
+                                entity.RemoveFromMap();
+                        }
+                    }));
+                    break;
+                case SpellEffectType.SummonTrap:
+                    if (effect.SummonTrap == null || info.CreatedEntities.Count == 0)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        foreach (IGridEntity entity in info.CreatedEntities)
+                        {
+                            if (entity.InWorld)
+                                entity.RemoveFromMap();
+                        }
+                    }));
+                    break;
+                case SpellEffectType.NpcExecutionDelay:
+                    if (effect.NpcExecutionDelay == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () => { }));
+                    break;
+            }
+        }
+
+        private static uint GetEffectLifetimeDuration(SpellEffectInterpretation effect)
+        {
+            if (effect.ForcedMove?.DurationTime > 0u)
+                return effect.ForcedMove.DurationTime;
+
+            return effect.Timing.DurationTime;
         }
 
         public bool IsMovingInterrupted()
@@ -327,7 +1162,7 @@ namespace NexusForever.Game.Spell
             {
                 CastingId              = CastingId,
                 CasterId               = Caster.Guid,
-                PrimaryTargetId        = Caster.Guid,
+                PrimaryTargetId        = Parameters.PrimaryTargetId != 0u ? Parameters.PrimaryTargetId : Caster.Guid,
                 Spell4Id               = Parameters.SpellInfo.Entry.Id,
                 RootSpell4Id           = Parameters.RootSpellInfo?.Entry.Id ?? 0,
                 ParentSpell4Id         = Parameters.ParentSpellInfo?.Entry.Id ?? 0,
@@ -340,11 +1175,11 @@ namespace NexusForever.Game.Spell
 
             var unitsCasting = new List<IUnitEntity>();
             if (Parameters.PrimaryTargetId > 0)
-                unitsCasting.Add(Caster.GetVisible<IUnitEntity>(Parameters.PrimaryTargetId));
+                unitsCasting.Add(GetPrimaryTargetEntity());
             else
                 unitsCasting.Add(Caster);
 
-            foreach (IUnitEntity unit in unitsCasting)
+            foreach (IUnitEntity unit in unitsCasting.Where(u => u != null))
             {
                 spellStart.InitialPositionData.Add(new ServerSpellStart.InitialPosition
                 {
@@ -355,7 +1190,7 @@ namespace NexusForever.Game.Spell
                 });
             }
 
-            foreach (IUnitEntity unit in unitsCasting)
+            foreach (IUnitEntity unit in unitsCasting.Where(u => u != null))
             {
                 foreach (ITelegraph telegraph in telegraphs)
                 {
@@ -384,8 +1219,13 @@ namespace NexusForever.Game.Spell
             }, true);
         }
 
-        private void SendSpellGo()
+        private void SendSpellGo(bool sendEmpty = false)
         {
+            List<PendingSpellGoEffect> pendingEffects = pendingSpellGoEffects.ToList();
+            pendingSpellGoEffects.Clear();
+            if (pendingEffects.Count == 0 && !sendEmpty)
+                return;
+
             List<ICombatLog> combatLogs = [];
 
             var serverSpellGo = new ServerSpellGo
@@ -395,12 +1235,14 @@ namespace NexusForever.Game.Spell
                 Phase              = -1
             };
 
-            foreach (ISpellTargetInfo targetInfo in targets
-                .Where(t => t.Effects.Count > 0))
+            foreach (IGrouping<ISpellTargetInfo, PendingSpellGoEffect> targetEffectGroup in pendingEffects.GroupBy(e => e.TargetInfo))
             {
-                if (!targetInfo.Effects.Any(x => x.DropEffect == false))
+                ISpellTargetInfo targetInfo = targetEffectGroup.Key;
+                List<ISpellTargetEffectInfo> targetEffects = targetEffectGroup.Select(e => e.EffectInfo).ToList();
+
+                if (!targetEffects.Any(x => x.DropEffect == false))
                 {
-                    combatLogs.AddRange(targetInfo.Effects.SelectMany(i => i.CombatLogs));
+                    combatLogs.AddRange(targetEffects.SelectMany(i => i.CombatLogs));
                     continue;
                 }
 
@@ -412,7 +1254,7 @@ namespace NexusForever.Game.Spell
                     CombatResult  = CombatResult.Hit
                 };
 
-                foreach (ISpellTargetEffectInfo targetEffectInfo in targetInfo.Effects)
+                foreach (ISpellTargetEffectInfo targetEffectInfo in targetEffects)
                 {
                     if (targetEffectInfo.DropEffect)
                     {
@@ -501,18 +1343,60 @@ namespace NexusForever.Game.Spell
                 combatLogs.Count);
 
             Caster.EnqueueToVisible(serverSpellGo, true);
+            SendPostSpellGoEffectMessages(pendingEffects);
 
+        }
+
+        private void SendPostSpellGoEffectMessages(IEnumerable<PendingSpellGoEffect> pendingEffects)
+        {
+            foreach (PendingSpellGoEffect pendingEffect in pendingEffects)
+            {
+                SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(pendingEffect.EffectInfo);
+                if (effect.CCState == null)
+                    continue;
+
+                Caster.EnqueueToVisible(new ServerEntityCCStateSet
+                {
+                    UnitId              = pendingEffect.TargetInfo.Entity.Guid,
+                    CCType              = effect.CCState.State,
+                    SpellEffectUniqueId = pendingEffect.EffectInfo.EffectId
+                }, true);
+            }
+        }
+
+        private void SendCCStateRemove(uint unitId, CCState state, uint effectId)
+        {
+            Caster.EnqueueToVisible(new ServerEntityCCStateRemove
+            {
+                UnitId              = unitId,
+                CCType              = state,
+                SpellCastUniqueId   = CastingId,
+                SpellEffectUniqueId = effectId,
+                Removed             = true
+            }, true);
         }
 
         private void SendRemoveBuff(uint unitId)
         {
             if (!Parameters.SpellInfo.BaseInfo.HasIcon)
-                throw new InvalidOperationException();
+                return;
 
             Caster.EnqueueToVisible(new ServerSpellBuffRemove
             {
                 CastingId = CastingId,
                 CasterId  = unitId
+            }, true);
+        }
+
+        private void SendStealthCombatLog(uint unitId, bool exiting)
+        {
+            Caster.EnqueueToVisible(new ServerCombatLog
+            {
+                CombatLog = new CombatLogStealth
+                {
+                    UnitId   = unitId,
+                    BExiting = exiting
+                }
             }, true);
         }
     }

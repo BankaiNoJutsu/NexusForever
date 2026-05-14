@@ -25,5 +25,7 @@ namespace NexusForever.Game.Abstract.Spell
         void Cast(bool buttonPressed);
 
         void UseCharge();
+        void SetAbilityCharges(uint charges);
+        void ModifyAbilityCharges(int delta);
     }
 }

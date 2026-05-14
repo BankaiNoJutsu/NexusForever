@@ -52,6 +52,11 @@ namespace NexusForever.Game.Abstract.Entity
         void SetGlobalSpellCooldown(double cooldown);
 
         /// <summary>
+        /// Add bonus AMP power to all action sets.
+        /// </summary>
+        void AddAmpPower(ushort amount);
+
+        /// <summary>
         /// Return <see cref="IActionSet"/> at supplied index.
         /// </summary>
         IActionSet GetActionSet(byte actionSetIndex);

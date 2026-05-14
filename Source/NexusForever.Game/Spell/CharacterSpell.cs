@@ -170,8 +170,25 @@ namespace NexusForever.Game.Spell
             if (AbilityCharges == 0)
                 throw new SpellException("No charges available.");
 
-            AbilityCharges -= 1;
+            ModifyAbilityCharges(-1);
+        }
+
+        public void SetAbilityCharges(uint charges)
+        {
+            if (MaxAbilityCharges == 0u)
+                return;
+
+            AbilityCharges = Math.Clamp(charges, 0u, MaxAbilityCharges);
             SendChargeUpdate();
+        }
+
+        public void ModifyAbilityCharges(int delta)
+        {
+            if (MaxAbilityCharges == 0u)
+                return;
+
+            long value = (long)AbilityCharges + delta;
+            SetAbilityCharges((uint)Math.Clamp(value, 0L, (long)MaxAbilityCharges));
         }
 
         private void SendChargeUpdate()

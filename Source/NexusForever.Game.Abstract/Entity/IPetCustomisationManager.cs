@@ -11,6 +11,11 @@ namespace NexusForever.Game.Abstract.Entity
         void UnlockFlair(ushort id);
 
         /// <summary>
+        /// Returns whether pet flair with supplied id is unlocked.
+        /// </summary>
+        bool HasFlair(ushort id);
+
+        /// <summary>
         /// Renames the pet name for <see cref="PetType"/> and object id.
         /// </summary>
         void RenamePet(PetType type, uint objectId, String name);

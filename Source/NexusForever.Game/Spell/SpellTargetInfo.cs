@@ -30,6 +30,9 @@ namespace NexusForever.Game.Spell
             public SpellEffectInterpretation Interpretation { get; }
             public IDamageDescription Damage { get; private set; }
             public List<ICombatLog> CombatLogs { get; private set; } = [];
+            public IReadOnlyCollection<IGridEntity> CreatedEntities => createdEntities;
+
+            private readonly List<IGridEntity> createdEntities = [];
 
             public SpellTargetEffectInfo(uint effectId, Spell4EffectsEntry entry)
             {
@@ -59,9 +62,14 @@ namespace NexusForever.Game.Spell
             {
                 CombatLogs.Add(combatLog);
             }
+
+            public void AddCreatedEntity(IGridEntity entity)
+            {
+                createdEntities.Add(entity);
+            }
         }
 
-        public SpellEffectTargetFlags Flags { get; }
+        public SpellEffectTargetFlags Flags { get; private set; }
         public IUnitEntity Entity { get; }
         public List<ISpellTargetEffectInfo> Effects { get; } = new List<ISpellTargetEffectInfo>();
 
@@ -69,6 +77,11 @@ namespace NexusForever.Game.Spell
         {
             Flags  = flags;
             Entity = entity;
+        }
+
+        public void AddFlags(SpellEffectTargetFlags flags)
+        {
+            Flags |= flags;
         }
     }
 }

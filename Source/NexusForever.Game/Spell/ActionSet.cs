@@ -263,6 +263,17 @@ namespace NexusForever.Game.Spell
         }
 
         /// <summary>
+        /// Add AMP power to <see cref="IActionSet"/>.
+        /// </summary>
+        public void AddAmpPower(ushort power)
+        {
+            if (power == 0u)
+                return;
+
+            AmpPoints = (byte)Math.Min(AmpPoints + power, MaxAmpPoints);
+        }
+
+        /// <summary>
         /// Add AMP to <see cref="IActionSet"/> from an existing database model.
         /// </summary>
         public void AddAmp(CharacterActionSetAmpModel model)

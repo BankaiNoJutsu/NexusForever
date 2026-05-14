@@ -55,6 +55,26 @@ namespace NexusForever.Game.Combat
                 CreateHostile(target, threat);
         }
 
+        public void SetThreat(IUnitEntity target, uint threat)
+        {
+            IHostileEntity hostile = GetHostile(target.Guid);
+            uint currentThreat = hostile?.Threat ?? 0u;
+            if (currentThreat == threat)
+                return;
+
+            if (threat == 0u)
+            {
+                RemoveHostile(target.Guid);
+                return;
+            }
+
+            int delta = threat > currentThreat
+                ? (int)Math.Min(int.MaxValue, threat - currentThreat)
+                : -(int)Math.Min(int.MaxValue, currentThreat - threat);
+
+            UpdateThreat(target, delta);
+        }
+
         /// <summary>
         /// Instantiates a <see cref="IHostileEntity"/> for the given <see cref="IUnitEntity"/>.
         /// </summary>

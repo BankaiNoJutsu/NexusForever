@@ -64,6 +64,11 @@ namespace NexusForever.Game.Abstract.Spell
         void AddAmp(ushort id);
 
         /// <summary>
+        /// Add AMP power to <see cref="IActionSet"/>.
+        /// </summary>
+        void AddAmpPower(ushort power);
+
+        /// <summary>
         /// Add AMP to <see cref="IActionSet"/> from an existing database model.
         /// </summary>
         void AddAmp(CharacterActionSetAmpModel model);

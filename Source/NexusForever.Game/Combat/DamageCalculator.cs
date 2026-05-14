@@ -86,6 +86,7 @@ namespace NexusForever.Game.Combat
             damage = CalculateBaseDamageVariance(damage);
 
             damage = GetDamageAfterArmorMitigation(victim, info.Entry.DamageType, damage);
+            damage = ApplyDamageTakenMultiplier(victim, info.Entry.DamageType, damage);
 
             // TODO: Add in other attacking modifiers like Armor Pierce, Strikethrough, Multi-Hit, etc.
 
@@ -98,6 +99,10 @@ namespace NexusForever.Game.Combat
                 uint glanceDamage = preGlanceDamage - damage;
                 // TODO: Add CombatLog
             }
+
+            uint absorbedAmount = victim.ConsumeAbsorption(damage, info.Entry.DamageType);
+            damage -= absorbedAmount;
+            damageDescription.AbsorbedAmount = absorbedAmount;
 
             uint shieldedAmount = CalculateShieldAmount(damage, victim);
             damage -= shieldedAmount;
@@ -112,17 +117,244 @@ namespace NexusForever.Game.Combat
             if (log.IsEnabled(LogLevel.Trace))
             {
                 log.LogTrace(
-                    "SpellDiagnostics damage-output spell4Id={Spell4Id} castingId={CastingId} spell4EffectId={Spell4EffectId} rawDamage={RawDamage} adjustedDamage={AdjustedDamage} shieldAbsorb={ShieldAbsorb} combatResult={CombatResult}",
+                    "SpellDiagnostics damage-output spell4Id={Spell4Id} castingId={CastingId} spell4EffectId={Spell4EffectId} rawDamage={RawDamage} adjustedDamage={AdjustedDamage} absorbed={Absorbed} shieldAbsorb={ShieldAbsorb} combatResult={CombatResult}",
                     spell.Parameters.SpellInfo.Entry.Id,
                     spell.CastingId,
                     info.Entry.Id,
                     damageDescription.RawDamage,
                     damageDescription.AdjustedDamage,
+                    damageDescription.AbsorbedAmount,
                     damageDescription.ShieldAbsorbAmount,
                     damageDescription.CombatResult);
             }
 
             // TODO: Queue Proc Events*/
+        }
+
+        public void CalculateHealing(IUnitEntity caster, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo info)
+        {
+            SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(info);
+
+            uint rawHeal = CalculateBaseDamage(caster, target, effect);
+            rawHeal = (uint)(rawHeal
+                * caster.GetPropertyValue(Property.HealingMultiplierOutgoing)
+                * target.GetPropertyValue(Property.HealingMultiplierIncoming));
+
+            long missingHealth = Math.Max(0L, (long)target.MaxHealth - target.Health);
+            uint availableHealing = (uint)Math.Min(rawHeal, missingHealth);
+            uint absorbedHeal = target.ConsumeHealingAbsorption(availableHealing);
+            uint adjustedHeal = availableHealing - absorbedHeal;
+            uint overheal = rawHeal - availableHealing;
+
+            IDamageDescription healDescription = new SpellTargetInfo.SpellTargetEffectInfo.DamageDescription
+            {
+                DamageType       = DamageType.Heal,
+                RawDamage        = rawHeal,
+                RawScaledDamage  = rawHeal,
+                AbsorbedAmount   = absorbedHeal,
+                AdjustedDamage   = adjustedHeal,
+                OverkillAmount   = overheal,
+                CombatResult     = CombatResult.Hit
+            };
+
+            info.AddDamage(healDescription);
+            info.AddCombatLog(new CombatLogHeal
+            {
+                HealAmount = adjustedHeal,
+                Overheal   = overheal,
+                Absorption = absorbedHeal,
+                EffectType = info.Entry.EffectType,
+                CastData   = new CombatLogCastData
+                {
+                    CasterId     = caster.Guid,
+                    TargetId     = target.Guid,
+                    SpellId      = spell.Parameters.SpellInfo.Entry.Id,
+                    CombatResult = CombatResult.Hit
+                }
+            });
+            if (absorbedHeal > 0u)
+                info.AddCombatLog(new CombatLogHealingAbsorption
+                {
+                    Amount = absorbedHeal
+                });
+
+            if (log.IsEnabled(LogLevel.Trace))
+            {
+                log.LogTrace(
+                    "SpellDiagnostics healing-output spell4Id={Spell4Id} castingId={CastingId} spell4EffectId={Spell4EffectId} rawHeal={RawHeal} adjustedHeal={AdjustedHeal} overheal={Overheal} absorbedHeal={AbsorbedHeal}",
+                    spell.Parameters.SpellInfo.Entry.Id,
+                    spell.CastingId,
+                    info.Entry.Id,
+                    healDescription.RawDamage,
+                    healDescription.AdjustedDamage,
+                    healDescription.OverkillAmount,
+                    healDescription.AbsorbedAmount);
+            }
+        }
+
+        public void CalculateShieldHealing(IUnitEntity caster, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo info)
+        {
+            SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(info);
+
+            uint rawHeal = CalculateBaseDamage(caster, target, effect);
+            rawHeal = (uint)(rawHeal
+                * caster.GetPropertyValue(Property.HealingMultiplierOutgoing)
+                * target.GetPropertyValue(Property.HealingMultiplierIncoming));
+
+            long missingShield = Math.Max(0L, (long)target.MaxShieldCapacity - target.Shield);
+            uint adjustedHeal = (uint)Math.Min(rawHeal, missingShield);
+            uint overheal = rawHeal - adjustedHeal;
+
+            IDamageDescription healDescription = new SpellTargetInfo.SpellTargetEffectInfo.DamageDescription
+            {
+                DamageType      = DamageType.Heal,
+                RawDamage       = rawHeal,
+                RawScaledDamage = rawHeal,
+                AdjustedDamage  = adjustedHeal,
+                OverkillAmount  = overheal,
+                CombatResult    = CombatResult.Hit
+            };
+
+            info.AddDamage(healDescription);
+            info.AddCombatLog(new CombatLogHeal
+            {
+                HealAmount = adjustedHeal,
+                Overheal   = overheal,
+                EffectType = info.Entry.EffectType,
+                CastData   = CreateCastData(caster, target, spell)
+            });
+
+            if (log.IsEnabled(LogLevel.Trace))
+            {
+                log.LogTrace(
+                    "SpellDiagnostics shield-healing-output spell4Id={Spell4Id} castingId={CastingId} spell4EffectId={Spell4EffectId} rawHeal={RawHeal} adjustedHeal={AdjustedHeal} overheal={Overheal}",
+                    spell.Parameters.SpellInfo.Entry.Id,
+                    spell.CastingId,
+                    info.Entry.Id,
+                    healDescription.RawDamage,
+                    healDescription.AdjustedDamage,
+                    healDescription.OverkillAmount);
+            }
+        }
+
+        public void CalculateShieldDamage(IUnitEntity attacker, IUnitEntity victim, ISpell spell, ISpellTargetEffectInfo info)
+        {
+            SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(info);
+
+            uint rawDamage = CalculateBaseDamage(attacker, victim, effect);
+            uint adjustedDamage = Math.Min(rawDamage, victim.Shield);
+            uint overkill = rawDamage - adjustedDamage;
+
+            IDamageDescription damageDescription = new SpellTargetInfo.SpellTargetEffectInfo.DamageDescription
+            {
+                DamageType         = info.Entry.DamageType,
+                RawDamage          = rawDamage,
+                RawScaledDamage    = rawDamage,
+                ShieldAbsorbAmount = adjustedDamage,
+                AdjustedDamage     = 0u,
+                OverkillAmount     = overkill,
+                CombatResult       = CombatResult.Hit
+            };
+
+            info.AddDamage(damageDescription);
+            info.AddCombatLog(new CombatLogDamageShield
+            {
+                MitigatedDamage = adjustedDamage,
+                RawDamage       = rawDamage,
+                Shield          = adjustedDamage,
+                Overkill        = overkill,
+                DamageType      = info.Entry.DamageType,
+                EffectType      = info.Entry.EffectType,
+                CastData        = CreateCastData(attacker, victim, spell)
+            });
+
+            if (log.IsEnabled(LogLevel.Trace))
+            {
+                log.LogTrace(
+                    "SpellDiagnostics shield-damage-output spell4Id={Spell4Id} castingId={CastingId} spell4EffectId={Spell4EffectId} rawDamage={RawDamage} adjustedShieldDamage={AdjustedShieldDamage} overkill={Overkill}",
+                    spell.Parameters.SpellInfo.Entry.Id,
+                    spell.CastingId,
+                    info.Entry.Id,
+                    damageDescription.RawDamage,
+                    damageDescription.ShieldAbsorbAmount,
+                    damageDescription.OverkillAmount);
+            }
+        }
+
+        public uint CalculateAbsorption(IUnitEntity caster, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo info)
+        {
+            SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(info);
+            uint amount = CalculateBaseDamage(caster, target, effect);
+            if (amount == 0u && effect.Absorption is { TypeBaseValue: > 0f })
+                amount = (uint)MathF.Ceiling(effect.Absorption.TypeBaseValue);
+
+            if (amount == 0u)
+                return 0u;
+
+            info.AddCombatLog(new CombatLogAbsorption
+            {
+                AbsorptionAmount = amount,
+                CastData         = CreateCastData(caster, target, spell)
+            });
+
+            if (log.IsEnabled(LogLevel.Trace))
+            {
+                log.LogTrace(
+                    "SpellDiagnostics absorption-output spell4Id={Spell4Id} castingId={CastingId} spell4EffectId={Spell4EffectId} amount={Amount} multiplier={TypeMultiplier} baseValue={TypeBaseValue} absorptionType={AbsorptionType} parameters={Parameters}",
+                    spell.Parameters.SpellInfo.Entry.Id,
+                    spell.CastingId,
+                    info.Entry.Id,
+                    amount,
+                    effect.Absorption?.TypeMultiplier,
+                    effect.Absorption?.TypeBaseValue,
+                    effect.Absorption?.AbsorptionType,
+                    effect.FormatParameters());
+            }
+
+            return amount;
+        }
+
+        public uint CalculateHealingAbsorption(IUnitEntity caster, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo info)
+        {
+            SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(info);
+            uint amount = CalculateBaseDamage(caster, target, effect);
+            if (amount == 0u && effect.HealingAbsorption is { TypeBaseValue: > 0f })
+                amount = (uint)MathF.Ceiling(effect.HealingAbsorption.TypeBaseValue);
+
+            if (amount == 0u)
+                return 0u;
+
+            info.AddCombatLog(new CombatLogHealingAbsorption
+            {
+                Amount = amount
+            });
+
+            if (log.IsEnabled(LogLevel.Trace))
+            {
+                log.LogTrace(
+                    "SpellDiagnostics healing-absorption-output spell4Id={Spell4Id} castingId={CastingId} spell4EffectId={Spell4EffectId} amount={Amount} multiplier={TypeMultiplier} baseValue={TypeBaseValue} mode={Mode} parameters={Parameters}",
+                    spell.Parameters.SpellInfo.Entry.Id,
+                    spell.CastingId,
+                    info.Entry.Id,
+                    amount,
+                    effect.HealingAbsorption?.TypeMultiplier,
+                    effect.HealingAbsorption?.TypeBaseValue,
+                    effect.HealingAbsorption?.Mode,
+                    effect.FormatParameters());
+            }
+
+            return amount;
+        }
+
+        private static CombatLogCastData CreateCastData(IUnitEntity caster, IUnitEntity target, ISpell spell)
+        {
+            return new CombatLogCastData
+            {
+                CasterId     = caster.Guid,
+                TargetId     = target.Guid,
+                SpellId      = spell.Parameters.SpellInfo.Entry.Id,
+                CombatResult = CombatResult.Hit
+            };
         }
 
         /// <summary>
@@ -286,6 +518,30 @@ namespace NexusForever.Game.Combat
                 damage = (uint)Math.Round(damage * (1f - Math.Clamp(mitigationPct, 0f, maximumArmorMitigation)));
 
             return damage;
+        }
+
+        private static uint ApplyDamageTakenMultiplier(IUnitEntity victim, DamageType damageType, uint damage)
+        {
+            Property? property = damageType switch
+            {
+                DamageType.Physical => Property.DamageTakenMultiplierPhysical,
+                DamageType.Tech     => Property.DamageTakenMultiplierTech,
+                DamageType.Magic    => Property.DamageTakenMultiplierMagic,
+                _                   => null
+            };
+
+            if (property == null)
+                return damage;
+
+            float multiplier = victim.GetPropertyValue(property.Value);
+            if (!float.IsFinite(multiplier))
+                return damage;
+
+            double adjustedDamage = damage * Math.Max(0d, multiplier);
+            if (adjustedDamage >= uint.MaxValue)
+                return uint.MaxValue;
+
+            return (uint)adjustedDamage;
         }
 
         private bool IsSuccessfulChance(float percentage)
