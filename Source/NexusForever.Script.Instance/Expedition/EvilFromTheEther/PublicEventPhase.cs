@@ -1,0 +1,32 @@
+namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
+{
+    public enum PublicEventPhase
+    {
+        TalkToCaptainWeir,
+        GoToAirlock,
+        OpenMedbay,
+        ScavengeSpareParts,
+        RepairDoor,
+        ActivateMedbayGenerator,
+        GoToPrimaryPowerPlant,
+        KillSecurityChiefKondovich,
+        GoToPrimaryPowerPlant2,
+        RestartMainGenerators,
+        EnterCrewQuarters,
+        DefeatEthericOrganisms,
+        RestoreTeleporter,
+        FindTeleporter,
+        DefeatEthericOrganisms2,
+        TeleportToUpperDeck,
+        GatherInBridgeAccessHall,
+        DefeatTetheredOrganisms,
+        GatherOnTheShadesBridge,
+        DefeatTetheredOrganisms2,
+        ActivateSelfDestruct,
+        DefeatKatjaZarkhov,
+        DefeatKatjaZarkhovFight,
+        PickUpDriveSchematics,
+        EscapeToTheTeleporter,
+        TalkToCaptainWeir2,
+    }
+}
