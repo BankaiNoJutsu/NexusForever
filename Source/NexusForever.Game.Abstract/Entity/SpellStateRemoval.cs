@@ -14,6 +14,7 @@ namespace NexusForever.Game.Abstract.Entity
         SpellEffectImmunity,
         SpellImmunity,
         DelayDeath,
+        Proc,
         VitalClamp,
         ShieldOverload,
         Scale,

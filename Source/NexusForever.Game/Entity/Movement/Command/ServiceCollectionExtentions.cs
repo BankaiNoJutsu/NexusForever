@@ -76,6 +76,7 @@ namespace NexusForever.Game.Entity.Movement.Command
             sc.AddSingleton<IFactoryInterface<IVelocityCommand>, FactoryInterface<IVelocityCommand>>();
             sc.AddTransient<VelocityCommand>();
             sc.AddTransient<VelocityDefaultsCommand>();
+            sc.AddTransient<VelocityKeysCommand>();
         }
     }
 }

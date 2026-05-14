@@ -22,6 +22,46 @@ namespace NexusForever.Database.World.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("NexusForever.Database.World.Model.CreatureInfoPropertyModel", b =>
+                {
+                    b.Property<uint>("CreatureId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<byte>("Property")
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnName("property");
+
+                    b.Property<float>("Value")
+                        .HasColumnType("float")
+                        .HasColumnName("value");
+
+                    b.HasKey("CreatureId", "Property")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("creature_info_property", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.World.Model.CreatureInfoStatModel", b =>
+                {
+                    b.Property<uint>("CreatureId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<byte>("Stat")
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnName("stat");
+
+                    b.Property<float>("Value")
+                        .HasColumnType("float")
+                        .HasColumnName("value");
+
+                    b.HasKey("CreatureId", "Stat")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("creature_info_stat", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.World.Model.DisableModel", b =>
                 {
                     b.Property<byte>("Type")
@@ -199,6 +239,30 @@ namespace NexusForever.Database.World.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("entity", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.World.Model.EntityPropertyModel", b =>
+                {
+                    b.Property<uint>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("id");
+
+                    b.Property<byte>("Property")
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasColumnName("property");
+
+                    b.Property<float>("Value")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(0f)
+                        .HasColumnName("value");
+
+                    b.HasKey("Id", "Property")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("entity_property", (string)null);
                 });
 
             modelBuilder.Entity("NexusForever.Database.World.Model.EntityScriptModel", b =>
@@ -775,6 +839,18 @@ namespace NexusForever.Database.World.Migrations
                     b.Navigation("Entity");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.World.Model.EntityPropertyModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.World.Model.EntityModel", "Entity")
+                        .WithMany("EntityProperty")
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__entity_property_id__entity_id");
+
+                    b.Navigation("Entity");
+                });
+
             modelBuilder.Entity("NexusForever.Database.World.Model.EntityScriptModel", b =>
                 {
                     b.HasOne("NexusForever.Database.World.Model.EntityModel", "Entity")
@@ -909,6 +985,8 @@ namespace NexusForever.Database.World.Migrations
             modelBuilder.Entity("NexusForever.Database.World.Model.EntityModel", b =>
                 {
                     b.Navigation("EntityEvent");
+
+                    b.Navigation("EntityProperty");
 
                     b.Navigation("EntityScript");
 

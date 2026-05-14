@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Velocity;
 using NexusForever.Game.Static.Entity.Movement.Command;
 using NexusForever.Network.World.Entity;
@@ -19,6 +20,7 @@ namespace NexusForever.Game.Entity.Movement.Command.Velocity
         public bool RequiresSynchronisation => command.Command == EntityCommand.SetVelocityKeys;
 
         private IVelocityCommand command;
+        private IMovementManager movementManager;
 
         #region Dependency Injection
 
@@ -35,8 +37,10 @@ namespace NexusForever.Game.Entity.Movement.Command.Velocity
         /// <summary>
         /// Initialise <see cref="IVelocityCommandGroup"/ with default command.
         /// </summary>
-        public void Initialise()
+        public void Initialise(IMovementManager movementManager)
         {
+            this.movementManager = movementManager;
+
             SetVelocityDefaults();
         }
 
@@ -46,6 +50,9 @@ namespace NexusForever.Game.Entity.Movement.Command.Velocity
         public void Update(double lastTick)
         {
             command.Update(lastTick);
+
+            if (command.IsFinalised)
+                Finalise();
         }
 
         /// <summary>
@@ -108,9 +115,15 @@ namespace NexusForever.Game.Entity.Movement.Command.Velocity
         /// <summary>
         /// Set velocity to the interpolated <see cref="Vector3"/> velocity between the supplied times and velocities.
         /// </summary>
-        public void SetVelocityKeys(List<uint> times, List<Vector3> modes)
+        public void SetVelocityKeys(List<uint> times, List<Vector3> velocities)
         {
-            throw new NotImplementedException();
+            Finalise();
+
+            var command = factory.Resolve<VelocityKeysCommand>();
+            command.Initialise(movementManager, times, velocities);
+            this.command = command;
+
+            IsDirty = true;
         }
 
         /// <summary>

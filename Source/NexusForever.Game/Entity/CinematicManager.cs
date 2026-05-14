@@ -62,6 +62,8 @@ namespace NexusForever.Game.Entity
                     break;
                 case CinematicState.Ended:
                     // Player is back in the world. Continue any scripts that may've been paused.
+                    owner.Map?.PublicEventManager.OnCinematicFinish(owner, currentCinematic.CinematicId);
+
                     currentCinematic = null;
                     PlayQueuedCinematic();
                     break;

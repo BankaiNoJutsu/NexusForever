@@ -1,5 +1,6 @@
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
@@ -28,6 +29,18 @@ namespace NexusForever.Game.Entity
         {
             base.Initialise(model);
 
+            InitialiseVendor(model);
+        }
+
+        public override void Initialise(ICreatureInfo creatureInfo, EntityModel model)
+        {
+            base.Initialise(creatureInfo, model);
+
+            InitialiseVendor(model);
+        }
+
+        private void InitialiseVendor(EntityModel model)
+        {
             if (model.EntityVendor != null)
             {
                 CreateFlags |= EntityCreateFlag.HasInteractionPrereq;
@@ -54,17 +67,18 @@ namespace NexusForever.Game.Entity
         {
             float value = base.CalculateDefaultProperty(property);
 
-            Creature2Entry creatureEntry = GameTableManager.Instance.Creature2.GetEntry(CreatureId);
-
-            Creature2ArcheTypeEntry archeTypeEntry = GameTableManager.Instance.Creature2ArcheType.GetEntry(creatureEntry.Creature2ArcheTypeId);
+            Creature2ArcheTypeEntry archeTypeEntry = CreatureInfo?.ArcheTypeEntry
+                ?? GameTableManager.Instance.Creature2ArcheType.GetEntry(CreatureEntry?.Creature2ArcheTypeId ?? 0u);
             if (archeTypeEntry != null)
                 value *= archeTypeEntry.UnitPropertyMultiplier[(uint)property];
 
-            Creature2DifficultyEntry difficultyEntry = GameTableManager.Instance.Creature2Difficulty.GetEntry(creatureEntry.Creature2DifficultyId);
+            Creature2DifficultyEntry difficultyEntry = CreatureInfo?.DifficultyEntry
+                ?? GameTableManager.Instance.Creature2Difficulty.GetEntry(CreatureEntry?.Creature2DifficultyId ?? 0u);
             if (difficultyEntry != null)
                 value *= difficultyEntry.UnitPropertyMultiplier[(uint)property];
 
-            Creature2TierEntry tierEntry = GameTableManager.Instance.Creature2Tier.GetEntry(creatureEntry.Creature2TierId);
+            Creature2TierEntry tierEntry = CreatureInfo?.TierEntry
+                ?? GameTableManager.Instance.Creature2Tier.GetEntry(CreatureEntry?.Creature2TierId ?? 0u);
             if (tierEntry != null)
                 value *= tierEntry.UnitPropertyMultiplier[(uint)property];
 

@@ -66,6 +66,11 @@ namespace NexusForever.Game.Abstract.PublicEvent
         void UpdateObjective(IPlayer player, PublicEventObjectiveType type, uint objectId, int count);
 
         /// <summary>
+        /// Update any objective for any team that meets the supplied type, objectId and count.
+        /// </summary>
+        void UpdateObjective(PublicEventObjectiveType type, uint objectId, int count);
+
+        /// <summary>
         /// Update a specific objective with the supplied objectiveId and count.
         /// </summary>
         void UpdateObjective<T>(T objectiveId, int count) where T : Enum;
@@ -90,6 +95,16 @@ namespace NexusForever.Game.Abstract.PublicEvent
         /// Max value is used for dynamic objectives where the max count can change during the event.
         /// </remarks>
         void ActivateObjective(uint objectiveId, uint max = 0u);
+
+        /// <summary>
+        /// Reset objective with the supplied objectiveId.
+        /// </summary>
+        void ResetObjective<T>(T objectiveId) where T : Enum;
+
+        /// <summary>
+        /// Reset objective with the supplied objectiveId.
+        /// </summary>
+        void ResetObjective(uint objectiveId);
 
         /// <summary>
         /// Update stat for the <see cref="IPlayer"/> with the supplied <see cref="PublicEventStat"/> and value.

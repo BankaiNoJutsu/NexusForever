@@ -35,6 +35,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroup, targetGroupId, 1u); // Updates the objective, but seems to disable all the other targets. TODO: Investigate
 
             entity.OnActivateCast(session.Player);
+            entity.OnActivateSuccess(session.Player);
         }
     }
 }

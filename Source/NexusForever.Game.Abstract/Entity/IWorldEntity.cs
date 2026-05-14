@@ -1,6 +1,7 @@
 using System.Numerics;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Chat;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reputation;
@@ -23,8 +24,10 @@ namespace NexusForever.Game.Abstract.Entity
         uint EntityId { get; }
         byte EntityMode { get; }
         IEnumerable<string> ScriptNames { get; }
+        byte QuestChecklistIdx { get; }
         uint CreatureId { get; set; }
         Creature2Entry CreatureEntry { get; }
+        ICreatureInfo CreatureInfo { get; set; }
         uint DisplayInfo { get; set; }
         Creature2DisplayInfoEntry CreatureDisplayEntry { get; }
         ushort OutfitInfo { get; set; }
@@ -67,14 +70,34 @@ namespace NexusForever.Game.Abstract.Entity
         uint? PlatformGuid { get; }
 
         /// <summary>
+        /// Guid of the <see cref="IWorldEntity"/> that summoned this entity.
+        /// </summary>
+        uint? SummonerGuid { get; set; }
+
+        /// <summary>
+        /// Factory used to summon child entities owned by this <see cref="IWorldEntity"/>.
+        /// </summary>
+        IEntitySummonFactory SummonFactory { get; }
+
+        /// <summary>
         /// Initialise <see cref="IWorldEntity"/> with supplied data.
         /// </summary>
         public void Initialise(uint creatureId);
 
         /// <summary>
+        /// Initialise <see cref="IWorldEntity"/> with supplied <see cref="ICreatureInfo"/>.
+        /// </summary>
+        void Initialise(ICreatureInfo creatureInfo);
+
+        /// <summary>
         /// Initialise <see cref="IWorldEntity"/> from an existing database model.
         /// </summary>
         void Initialise(EntityModel model);
+
+        /// <summary>
+        /// Initialise <see cref="IWorldEntity"/> from supplied <see cref="ICreatureInfo"/> and database model.
+        /// </summary>
+        void Initialise(ICreatureInfo creatureInfo, EntityModel model);
 
         ServerEntityCreate BuildCreatePacket(bool initialCommands);
 
@@ -87,6 +110,16 @@ namespace NexusForever.Game.Abstract.Entity
         /// Invoked when <see cref="IWorldEntity"/> is cast activated.
         /// </summary>
         void OnActivateCast(IPlayer activator);
+
+        /// <summary>
+        /// Invoked when <see cref="IWorldEntity"/>'s activation succeeds.
+        /// </summary>
+        void OnActivateSuccess(IPlayer activator);
+
+        /// <summary>
+        /// Invoked when <see cref="IWorldEntity"/>'s activation fails.
+        /// </summary>
+        void OnActivateFail(IPlayer activator);
 
         /// <summary>
         /// Return a collection of <see cref="IItemVisual"/> for <see cref="IWorldEntity"/>.
@@ -208,6 +241,16 @@ namespace NexusForever.Game.Abstract.Entity
         /// Invoked when <see cref="IWorldEntity"/> is untargeted by another <see cref="IUnitEntity"/>.
         /// </summary>
         void OnUntargeted(IUnitEntity source);
+
+        /// <summary>
+        /// Invoked when this entity summons another <see cref="IWorldEntity"/>.
+        /// </summary>
+        void OnSummon(IWorldEntity entity);
+
+        /// <summary>
+        /// Invoked when this entity unsummons another <see cref="IWorldEntity"/>.
+        /// </summary>
+        void OnUnsummon(IWorldEntity entity);
 
         /// <summary>
         /// Set platform to suppled <see cref="IWorldEntity"/> with optional position and rotation offsets.

@@ -18,6 +18,26 @@
                 && !script.CreatureId.Contains(search.CreatureId.Value))
                 return false;
 
+            if (script.ActivePropId != null)
+            {
+                if (search.ActivePropId == null)
+                    return false;
+
+                if (!script.ActivePropId.Contains(search.ActivePropId.Value))
+                    return false;
+            }
+
+            if (search.ScriptNames != null)
+            {
+                if (script.ScriptName == null)
+                    return false;
+
+                if (!search.ScriptNames.Contains(script.ScriptName))
+                    return false;
+            }
+            else if (script.ScriptName != null)
+                return false;
+
             return true;
         }
     }

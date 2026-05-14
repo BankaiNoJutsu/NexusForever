@@ -235,11 +235,15 @@ namespace NexusForever.Script
         /// </summary>
         public IScriptCollection InitialiseEntityScripts<T>(T entity) where T : IWorldEntity
         {
+            List<string> scriptNames = entity.ScriptNames?.ToList();
+
             IScriptCollection collection = InitialiseOwnedCollection(entity);
             InitialiseScriptCollection(collection, new ScriptFilterSearch()
                 .FilterByScriptType<IOwnedScript<T>>()
                 .FilterById(entity.EntityId)
-                .FilterByCreatureId(entity.CreatureId));
+                .FilterByCreatureId(entity.CreatureId)
+                .FilterByActivePropId(entity.ActivePropId)
+                .FilterByScriptNames(scriptNames));
                 //.FilterByTargetGroupId());
 
             return collection;

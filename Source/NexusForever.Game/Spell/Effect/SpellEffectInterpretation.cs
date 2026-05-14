@@ -251,6 +251,18 @@ namespace NexusForever.Game.Spell.Effect
         uint DataBits04,
         uint DataBits05);
 
+    public sealed record SpellEffectProcSemantics(
+        uint TriggerEvent,
+        uint TriggerSpell4Id,
+        float Chance,
+        uint TargetData,
+        uint CooldownMsOrSentinel,
+        uint DataBits05,
+        uint DataBits06,
+        uint DataBits07,
+        uint DataBits08,
+        uint DataBits09);
+
     public sealed record SpellEffectDelayDeathSemantics(
         uint Mode,
         uint TriggerSpell4Id,
@@ -425,10 +437,12 @@ namespace NexusForever.Game.Spell.Effect
         float DataFloat01,
         float DataFloat02,
         uint DurationTime,
+        float Gravity,
         uint Flags,
         float DataFloat06,
         float DataFloat07,
-        float DataFloat08);
+        float DataFloat08,
+        uint DataBits09);
 
     public sealed record SpellEffectProxySemantics(uint Spell4Id);
 
@@ -542,6 +556,7 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectFactionSetSemantics FactionSet { get; internal set; }
         public SpellEffectAddSpellSemantics AddSpell { get; internal set; }
         public SpellEffectKillSemantics Kill { get; internal set; }
+        public SpellEffectProcSemantics Proc { get; internal set; }
         public SpellEffectDelayDeathSemantics DelayDeath { get; internal set; }
         public SpellEffectClampVitalSemantics ClampVital { get; internal set; }
         public SpellEffectShieldOverloadSemantics ShieldOverload { get; internal set; }
@@ -603,6 +618,7 @@ namespace NexusForever.Game.Spell.Effect
             || FactionSet != null
             || AddSpell != null
             || Kill != null
+            || Proc != null
             || DelayDeath != null
             || ClampVital != null
             || ShieldOverload != null
@@ -905,6 +921,19 @@ namespace NexusForever.Game.Spell.Effect
                         entry.DataBits04,
                         entry.DataBits05);
                     break;
+                case SpellEffectType.Proc:
+                    interpretation.Proc = new SpellEffectProcSemantics(
+                        entry.DataBits00,
+                        entry.DataBits01,
+                        BitConverter.UInt32BitsToSingle(entry.DataBits02),
+                        entry.DataBits03,
+                        entry.DataBits04,
+                        entry.DataBits05,
+                        entry.DataBits06,
+                        entry.DataBits07,
+                        entry.DataBits08,
+                        entry.DataBits09);
+                    break;
                 case SpellEffectType.DelayDeath:
                     interpretation.DelayDeath = new SpellEffectDelayDeathSemantics(
                         entry.DataBits00,
@@ -1152,10 +1181,12 @@ namespace NexusForever.Game.Spell.Effect
                         BitConverter.UInt32BitsToSingle(entry.DataBits01),
                         BitConverter.UInt32BitsToSingle(entry.DataBits02),
                         entry.DataBits03,
+                        BitConverter.UInt32BitsToSingle(entry.DataBits04),
                         entry.DataBits05,
                         BitConverter.UInt32BitsToSingle(entry.DataBits06),
                         BitConverter.UInt32BitsToSingle(entry.DataBits07),
-                        BitConverter.UInt32BitsToSingle(entry.DataBits08));
+                        BitConverter.UInt32BitsToSingle(entry.DataBits08),
+                        entry.DataBits09);
                     break;
                 case SpellEffectType.Damage:
                 case SpellEffectType.Heal:

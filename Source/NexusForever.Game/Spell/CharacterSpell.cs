@@ -10,6 +10,10 @@ namespace NexusForever.Game.Spell
 {
     public class CharacterSpell : ICharacterSpell
     {
+        private const uint TargetTypeSingleTarget = 1u;
+        private const uint TargetTypeTargetAoe = 3u;
+        private const uint TargetTypeChain = 5u;
+
         [Flags]
         public enum UnlockedSpellSaveMask
         {
@@ -161,8 +165,23 @@ namespace NexusForever.Game.Spell
             {
                 CharacterSpell         = this,
                 SpellInfo              = SpellInfo,
+                PrimaryTargetId        = ResolvePrimaryTargetId(),
                 UserInitiatedSpellCast = true
             });
+        }
+
+        private uint ResolvePrimaryTargetId()
+        {
+            uint targetType = BaseInfo.TargetMechanics?.TargetType ?? 0u;
+            if (targetType is not TargetTypeSingleTarget and not TargetTypeTargetAoe and not TargetTypeChain)
+                return 0u;
+
+            if (Owner.TargetGuid == null)
+                return 0u;
+
+            return Owner.GetVisible<IUnitEntity>(Owner.TargetGuid.Value) != null
+                ? Owner.TargetGuid.Value
+                : 0u;
         }
 
         public void UseCharge()

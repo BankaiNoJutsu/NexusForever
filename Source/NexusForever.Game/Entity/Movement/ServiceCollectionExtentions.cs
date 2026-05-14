@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Entity.Movement.AntiTamper;
 using NexusForever.Game.Abstract.Entity.Movement.Generator;
 using NexusForever.Game.Entity.Movement.AntiTamper;
 using NexusForever.Game.Entity.Movement.Command;
+using NexusForever.Game.Entity.Movement.Force;
 using NexusForever.Game.Entity.Movement.Generator;
 using NexusForever.Game.Entity.Movement.Spline;
 
@@ -14,6 +15,7 @@ namespace NexusForever.Game.Entity.Movement
         public static void AddGameEntityMovement(this IServiceCollection sc)
         {
             sc.AddGameEntityMovementCommand();
+            sc.AddGameEntityMovementForce();
             sc.AddGameEntityMovementSpline();
 
             sc.AddTransient<IClientMovementCommandValidator, ClientMovementCommandValidator>();

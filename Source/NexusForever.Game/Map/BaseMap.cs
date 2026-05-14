@@ -2,8 +2,10 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Numerics;
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Search;
@@ -413,7 +415,11 @@ namespace NexusForever.Game.Map
             foreach (EntityModel model in entityCache.GetEntities(gridX, gridZ))
             {
                 IWorldEntity entity = entityFactory.CreateWorldEntity(model.Type);
-                entity.Initialise(model);
+                ICreatureInfo creatureInfo = GetCreatureInfo(model);
+                if (creatureInfo != null)
+                    entity.Initialise(creatureInfo, model);
+                else
+                    entity.Initialise(model);
 
                 var position = new MapPosition
                 {
@@ -423,6 +429,22 @@ namespace NexusForever.Game.Map
                 if (CanEnter(entity, position))
                     EnqueueAdd(entity, position);
             }
+        }
+
+        private ICreatureInfo GetCreatureInfo(EntityModel model)
+        {
+            if (model.Creature == 0u)
+                return null;
+
+            ICreatureInfoManager creatureInfoManager = LegacyServiceProvider.Provider?.GetService<ICreatureInfoManager>();
+            if (creatureInfoManager == null)
+                throw new InvalidOperationException($"CreatureInfoManager is not available while spawning entity {model.Id} for world {model.World}.");
+
+            ICreatureInfo creatureInfo = creatureInfoManager.GetCreatureInfo(model.Creature);
+            if (creatureInfo == null)
+                throw new InvalidOperationException($"Missing creature info for creature {model.Creature} while spawning entity {model.Id} for world {model.World}.");
+
+            return creatureInfo;
         }
 
         private bool CanAddEntity(IGridEntity entity, Vector3 vector)

@@ -40,6 +40,7 @@ namespace NexusForever.Database.World
         {
             return entities
                 .Include(e => e.EntityEvent)
+                .Include(e => e.EntityProperty)
                 .Include(e => e.EntityScript)
                 .Include(e => e.EntitySpline)
                 .Include(e => e.EntityVendor)
@@ -132,6 +133,22 @@ namespace NexusForever.Database.World
         {
             using var context = new WorldContext(config);
             return context.MapEntrance
+                .AsNoTracking()
+                .ToImmutableList();
+        }
+
+        public ImmutableList<CreatureInfoPropertyModel> GetCreatureInfoProperties()
+        {
+            using var context = new WorldContext(config);
+            return context.CreatureInfoProperty
+                .AsNoTracking()
+                .ToImmutableList();
+        }
+
+        public ImmutableList<CreatureInfoStatModel> GetCreatureInfoStats()
+        {
+            using var context = new WorldContext(config);
+            return context.CreatureInfoStat
                 .AsNoTracking()
                 .ToImmutableList();
         }

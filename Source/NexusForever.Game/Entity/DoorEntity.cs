@@ -1,10 +1,13 @@
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Script;
+using NexusForever.Script.Template;
 
 namespace NexusForever.Game.Entity
 {
@@ -27,6 +30,20 @@ namespace NexusForever.Game.Entity
         {
             base.Initialise(model);
 
+            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<IDoorEntity>(this);
+            InitialiseDoorState();
+        }
+
+        public override void Initialise(ICreatureInfo creatureInfo, EntityModel model)
+        {
+            base.Initialise(creatureInfo, model);
+
+            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<IDoorEntity>(this);
+            InitialiseDoorState();
+        }
+
+        private void InitialiseDoorState()
+        {
             SetStat(Stat.StandState, StandState.State0); // Closed on spawn
             SetBaseProperty(Property.BaseHealth, 101f); // Sniffs showed all doors had 101hp for me.
         }
@@ -50,6 +67,8 @@ namespace NexusForever.Game.Entity
                 Guid       = Guid,
                 StandState = StandState.State1
             });
+
+            scriptCollection?.Invoke<IDoorEntityScript>(s => s.OnOpenDoor());
         }
 
         /// <summary>
@@ -63,6 +82,8 @@ namespace NexusForever.Game.Entity
                 Guid       = Guid,
                 StandState = StandState.State0
             });
+
+            scriptCollection?.Invoke<IDoorEntityScript>(s => s.OnDoorClose());
         }
     }
 }

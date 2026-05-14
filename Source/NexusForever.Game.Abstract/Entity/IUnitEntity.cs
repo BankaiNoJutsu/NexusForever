@@ -62,6 +62,9 @@ namespace NexusForever.Game.Abstract.Entity
         void AddDelayDeath(uint effectId, uint spell4Id, uint castingId, uint mode, uint triggerSpell4Id, uint triggerDelayMs, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07);
         bool RemoveDelayDeath(uint effectId);
 
+        void AddProc(uint effectId, uint spell4Id, uint castingId, uint triggerEvent, uint triggerSpell4Id, float chance, uint targetData, uint cooldownMsOrSentinel, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09);
+        bool RemoveProc(uint effectId);
+
         void AddVitalClamp(uint effectId, uint spell4Id, uint castingId, Vital vital, float ratio, uint mode, uint vitalMode);
         bool RemoveVitalClamp(uint effectId);
 

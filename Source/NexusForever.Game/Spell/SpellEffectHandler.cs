@@ -2,6 +2,7 @@ using System.Numerics;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Movement.Force;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Spell;
@@ -21,6 +22,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
+using NexusForever.Game.Static.Spell.Effect;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Combat;
@@ -1065,14 +1067,195 @@ namespace NexusForever.Game.Spell
             if (forcedMove == null)
                 return;
 
-            float speed = ResolveForcedMoveSpeed(forcedMove);
+            SpellEffectForcedMoveType moveType = (SpellEffectForcedMoveType)forcedMove.MovementType;
+            if (UsesVelocityForcedMoveFallback(moveType))
+            {
+                float fallbackSpeed = ResolveForcedMoveSpeed(forcedMove);
+                SpellEffectDiagnostics.TraceForcedMove(spell, target, forcedMove, fallbackSpeed);
+                ApplyVelocityForcedMove(spell, target, forcedMove, fallbackSpeed);
+                return;
+            }
+
+            if (!TryResolveForcedMove(spell, target, forcedMove, out IUnitEntity mover, out Vector3 position, out float angle, out TimeSpan flightTime, out float gravity, out float speed))
+            {
+                SpellEffectDiagnostics.TraceForcedMove(spell, target, forcedMove, 0f);
+                return;
+            }
+
             SpellEffectDiagnostics.TraceForcedMove(spell, target, forcedMove, speed);
+
+            switch (moveType)
+            {
+                case SpellEffectForcedMoveType.PositionForward:
+                case SpellEffectForcedMoveType.PositionBackward:
+                case SpellEffectForcedMoveType.PositionRandom:
+                case SpellEffectForcedMoveType.Unknown8:
+                    ApplyDirectForcedMove(mover, position);
+                    break;
+                case SpellEffectForcedMoveType.KeyForward:
+                case SpellEffectForcedMoveType.KeyBackward:
+                case SpellEffectForcedMoveType.KeyRandom:
+                case SpellEffectForcedMoveType.Unknown9:
+                case SpellEffectForcedMoveType.Unknown10:
+                case SpellEffectForcedMoveType.Unknown11:
+                case SpellEffectForcedMoveType.Unknown12:
+                case SpellEffectForcedMoveType.Unknown13:
+                case SpellEffectForcedMoveType.Unknown15:
+                    ApplyKeyedForcedMove(spell, target, forcedMove, mover, position, angle, flightTime, gravity, speed);
+                    break;
+            }
+        }
+
+        private static bool TryResolveForcedMove(
+            ISpell spell,
+            IUnitEntity target,
+            SpellEffectForcedMoveSemantics forcedMove,
+            out IUnitEntity mover,
+            out Vector3 position,
+            out float angle,
+            out TimeSpan flightTime,
+            out float gravity,
+            out float speed)
+        {
+            mover      = ResolveForcedMoveMover(spell, target, forcedMove);
+            position   = Vector3.Zero;
+            angle      = 0f;
+            flightTime = TimeSpan.FromMilliseconds(forcedMove.DurationTime);
+            gravity    = ResolveForcedMoveGravity(forcedMove, flightTime);
+
+            float distance = ResolveForcedMoveDistance(forcedMove);
+            speed = flightTime > TimeSpan.Zero && distance > 0f
+                ? distance / (float)flightTime.TotalSeconds
+                : ResolveForcedMoveSpeed(forcedMove);
+
+            switch ((SpellEffectForcedMoveType)forcedMove.MovementType)
+            {
+                case SpellEffectForcedMoveType.PositionForward:
+                case SpellEffectForcedMoveType.KeyForward:
+                case SpellEffectForcedMoveType.Unknown11:
+                    angle = -target.Rotation.X - MathF.PI / 2f;
+                    if (forcedMove.DataFloat07 != 0f)
+                        angle -= forcedMove.DataFloat07.ToRadians();
+
+                    position = target.Position.GetPoint2D(angle, distance);
+                    break;
+                case SpellEffectForcedMoveType.PositionBackward:
+                case SpellEffectForcedMoveType.KeyBackward:
+                case SpellEffectForcedMoveType.Unknown12:
+                    angle = -target.Rotation.X + MathF.PI / 2f;
+                    if (forcedMove.DataFloat07 != 0f)
+                        angle += forcedMove.DataFloat07.ToRadians();
+
+                    position = target.Position.GetPoint2D(angle, distance);
+                    break;
+                case SpellEffectForcedMoveType.PositionRandom:
+                case SpellEffectForcedMoveType.KeyRandom:
+                case SpellEffectForcedMoveType.Unknown13:
+                    angle = (float)Random.Shared.NextDouble() * MathF.PI * 2f;
+                    position = target.Position.GetPoint2D(angle, distance);
+                    break;
+                case SpellEffectForcedMoveType.Unknown8:
+                case SpellEffectForcedMoveType.Unknown9:
+                case SpellEffectForcedMoveType.Unknown10:
+                case SpellEffectForcedMoveType.Unknown15:
+                    mover = target;
+                    position = spell.Caster.Position;
+                    angle = target.Position.GetAngle(position);
+                    break;
+                default:
+                    return false;
+            }
+
+            if (!float.IsFinite(position.X) || !float.IsFinite(position.Y) || !float.IsFinite(position.Z))
+                return false;
+
+            float? terrainHeight = mover.Map?.GetTerrainHeight(position.X, position.Z);
+            if (terrainHeight.HasValue && position.Y < terrainHeight.Value)
+                position.Y = terrainHeight.Value;
+
+            return true;
+        }
+
+        private static IUnitEntity ResolveForcedMoveMover(ISpell spell, IUnitEntity target, SpellEffectForcedMoveSemantics forcedMove)
+        {
+            SpellEffectForcedMoveFlags flags = (SpellEffectForcedMoveFlags)forcedMove.Flags;
+            return (flags & SpellEffectForcedMoveFlags.Target) != 0 ? target : spell.Caster;
+        }
+
+        private static float ResolveForcedMoveDistance(SpellEffectForcedMoveSemantics forcedMove)
+        {
+            float minDistance = IsFinitePositive(forcedMove.DataFloat01) ? forcedMove.DataFloat01 : 0f;
+            float maxDistance = IsFinitePositive(forcedMove.DataFloat02) ? forcedMove.DataFloat02 : minDistance;
+
+            if (maxDistance < minDistance)
+                (minDistance, maxDistance) = (maxDistance, minDistance);
+
+            if (maxDistance == minDistance)
+                return minDistance;
+
+            return minDistance + (float)Random.Shared.NextDouble() * (maxDistance - minDistance);
+        }
+
+        private static float ResolveForcedMoveGravity(SpellEffectForcedMoveSemantics forcedMove, TimeSpan flightTime)
+        {
+            float gravity = float.IsFinite(forcedMove.Gravity) ? forcedMove.Gravity : 0f;
+            if (flightTime <= TimeSpan.Zero)
+                return gravity;
+
+            if (!float.IsFinite(forcedMove.DataFloat06) || forcedMove.DataFloat06 == 0f)
+                return gravity;
+
+            float seconds = (float)flightTime.TotalSeconds;
+            return (forcedMove.DataFloat06 * 8f) / (seconds * seconds);
+        }
+
+        private static void ApplyDirectForcedMove(IUnitEntity mover, Vector3 position)
+        {
+            if (mover is IPlayer player)
+                player.TeleportToLocal(position, false);
+            else
+                mover.MovementManager.SetPosition(position, false);
+        }
+
+        private static void ApplyKeyedForcedMove(ISpell spell, IUnitEntity target, SpellEffectForcedMoveSemantics forcedMove, IUnitEntity mover, Vector3 position, float angle, TimeSpan flightTime, float gravity, float fallbackSpeed)
+        {
+            if (!mover.MovementManager.ServerControl)
+            {
+                ApplyDirectForcedMove(mover, position);
+                return;
+            }
+
+            IForcedMovementGenerator forcedMovementGenerator = LegacyServiceProvider.Provider?.GetService<IForcedMovementGenerator>();
+            if (forcedMovementGenerator == null || flightTime <= TimeSpan.Zero)
+            {
+                ApplyVelocityForcedMove(spell, target, forcedMove, fallbackSpeed);
+                return;
+            }
+
+            float spin = forcedMove.DataFloat08 != 0f
+                ? (forcedMove.DataFloat08 * MathF.PI * 2f) / (float)flightTime.TotalSeconds
+                : 0f;
+
+            forcedMovementGenerator.ForceMove(mover, position, new Vector3(angle, 0f, 0f), flightTime, gravity, spin);
+        }
+
+        private static bool UsesVelocityForcedMoveFallback(SpellEffectForcedMoveType moveType)
+        {
+            return moveType
+                is SpellEffectForcedMoveType.KeyVelocity
+                or SpellEffectForcedMoveType.PositionVelocity
+                or SpellEffectForcedMoveType.Unknown14;
+        }
+
+        private static void ApplyVelocityForcedMove(ISpell spell, IUnitEntity target, SpellEffectForcedMoveSemantics forcedMove, float speed)
+        {
             if (speed <= 0f)
                 return;
 
             Vector3 direction = ResolveForcedMoveDirection(spell, target, forcedMove);
-            target.MovementManager.SetState(target.MovementManager.GetState() | StateFlags.Velocity);
-            target.MovementManager.SetVelocity(direction * speed, false);
+            IUnitEntity mover = ResolveForcedMoveMover(spell, target, forcedMove);
+            mover.MovementManager.SetState(mover.MovementManager.GetState() | StateFlags.Velocity);
+            mover.MovementManager.SetVelocity(direction * speed, false);
         }
 
         private static float ResolveForcedMoveSpeed(SpellEffectForcedMoveSemantics forcedMove)
@@ -1096,6 +1279,11 @@ namespace NexusForever.Game.Spell
         private static bool IsUsableForcedMoveMagnitude(float value)
         {
             return float.IsFinite(value) && value > 0f && value < 100f;
+        }
+
+        private static bool IsFinitePositive(float value)
+        {
+            return float.IsFinite(value) && value > 0f;
         }
 
         private static Vector3 ResolveForcedMoveDirection(ISpell spell, IUnitEntity target, SpellEffectForcedMoveSemantics forcedMove)
@@ -1819,6 +2007,43 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.Fluff)]
         public static void HandleEffectFluff(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
+        }
+
+        [SpellEffectHandler(SpellEffectType.Proc)]
+        public static void HandleEffectProc(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectProcSemantics proc = SpellEffectInterpreter.Interpret(info).Proc;
+            if (proc == null)
+                return;
+
+            if (proc.TriggerSpell4Id == 0u || GameTableManager.Instance.Spell4.GetEntry(proc.TriggerSpell4Id) == null)
+            {
+                SpellEffectDiagnostics.TraceProc(spell, target, proc, false, false, "unknown-trigger-spell4");
+                return;
+            }
+
+            if (!float.IsFinite(proc.Chance) || proc.Chance < 0f)
+            {
+                SpellEffectDiagnostics.TraceProc(spell, target, proc, false, false, "invalid-chance");
+                return;
+            }
+
+            target.AddProc(
+                info.EffectId,
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                proc.TriggerEvent,
+                proc.TriggerSpell4Id,
+                proc.Chance,
+                proc.TargetData,
+                proc.CooldownMsOrSentinel,
+                proc.DataBits05,
+                proc.DataBits06,
+                proc.DataBits07,
+                proc.DataBits08,
+                proc.DataBits09);
+
+            SpellEffectDiagnostics.TraceProc(spell, target, proc, true, false, null);
         }
 
         [SpellEffectHandler(SpellEffectType.CCStateBreak)]

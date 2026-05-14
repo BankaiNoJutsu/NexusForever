@@ -28,6 +28,8 @@ namespace NexusForever.Game.Spell
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
         private const uint ValidTargetDeadMask = 0x08u;
+        private const uint TargetTypeTargetAoe = 3u;
+        private const uint TargetTypePositionAoe = 4u;
 
         public ISpellParameters Parameters { get; }
         public uint CastingId { get; }
@@ -180,6 +182,11 @@ namespace NexusForever.Game.Spell
 
         private CastResult CheckPrimaryTargetValidMask(IUnitEntity target)
         {
+            return CheckTargetLivingState(target);
+        }
+
+        private CastResult CheckTargetLivingState(IUnitEntity target)
+        {
             uint validTargetMask = Parameters.SpellInfo.BaseInfo.ValidTargets?.TargetBitmask ?? 0u;
             if (validTargetMask == 0u)
                 return CastResult.Ok;
@@ -194,6 +201,11 @@ namespace NexusForever.Game.Spell
                 return CastResult.TargetMustBeDead;
 
             return CastResult.Ok;
+        }
+
+        private bool IsTargetLivingStateAllowed(IUnitEntity target)
+        {
+            return CheckTargetLivingState(target) == CastResult.Ok;
         }
 
         private CastResult CheckPrimaryTargetAngle(IUnitEntity target)
@@ -473,8 +485,10 @@ namespace NexusForever.Game.Spell
         private void InitialiseTelegraphs()
         {
             telegraphs.Clear();
+            (Vector3 position, Vector3 rotation) = ResolveTelegraphAnchor();
+
             foreach (TelegraphDamageEntry telegraphDamageEntry in Parameters.SpellInfo.Telegraphs)
-                telegraphs.Add(new Telegraph(telegraphDamageEntry, Caster, Caster.Position, Caster.Rotation));
+                telegraphs.Add(new Telegraph(telegraphDamageEntry, Caster, position, rotation));
         }
 
         /// <summary>
@@ -564,10 +578,12 @@ namespace NexusForever.Game.Spell
             }
 
             Spell4AoeTargetConstraintsEntry constraints = Parameters.SpellInfo.AoeTargetConstraints;
+            Vector3 selectionOrigin = GetAoeSelectionOrigin();
+            Vector3 selectionRotation = GetAoeSelectionRotation(selectionOrigin);
             IEnumerable<IUnitEntity> constrainedCandidates = candidates.Values
-                .Where(e => MeetsAoeTargetConstraints(e, constraints));
+                .Where(e => MeetsAoeTargetConstraints(e, constraints, selectionOrigin, selectionRotation));
 
-            IEnumerable<IUnitEntity> orderedCandidates = OrderAoeTargetCandidates(constrainedCandidates, constraints);
+            IEnumerable<IUnitEntity> orderedCandidates = OrderAoeTargetCandidates(constrainedCandidates, constraints, selectionOrigin);
 
             uint targetCount = constraints?.TargetCount ?? 0u;
             if (targetCount > 0u)
@@ -576,57 +592,103 @@ namespace NexusForever.Game.Spell
             return orderedCandidates;
         }
 
-        private bool MeetsAoeTargetConstraints(IUnitEntity entity, Spell4AoeTargetConstraintsEntry constraints)
+        private bool MeetsAoeTargetConstraints(IUnitEntity entity, Spell4AoeTargetConstraintsEntry constraints, Vector3 selectionOrigin, Vector3 selectionRotation)
         {
+            if (!IsTargetLivingStateAllowed(entity))
+                return false;
+
             if (constraints == null)
                 return true;
 
-            float range = GetHorizontalDistance(Caster.Position, entity.Position);
+            float range = GetHorizontalDistance(selectionOrigin, entity.Position);
             if (constraints.MinRange > 0f && range < constraints.MinRange)
                 return false;
 
             if (constraints.MaxRange > 0f && range > constraints.MaxRange)
                 return false;
 
-            if (constraints.Angle > 0f && constraints.Angle < 360f && !IsWithinCasterAngle(entity, constraints.Angle))
+            if (constraints.Angle > 0f && constraints.Angle < 360f && !IsWithinAngle(entity, selectionOrigin, selectionRotation, constraints.Angle))
                 return false;
 
             return true;
         }
 
-        private IEnumerable<IUnitEntity> OrderAoeTargetCandidates(IEnumerable<IUnitEntity> candidates, Spell4AoeTargetConstraintsEntry constraints)
+        private IEnumerable<IUnitEntity> OrderAoeTargetCandidates(IEnumerable<IUnitEntity> candidates, Spell4AoeTargetConstraintsEntry constraints, Vector3 selectionOrigin)
         {
             if (constraints == null)
-                return OrderByDistance(candidates);
+                return OrderByDistance(candidates, selectionOrigin);
 
             return constraints.TargetSelection switch
             {
                 // Client rows explicitly name selection 4 as "lowest absolute health".
                 4 => candidates
                     .OrderBy(e => e.Health)
-                    .ThenBy(e => Vector3.DistanceSquared(Caster.Position, e.Position)),
+                    .ThenBy(e => Vector3.DistanceSquared(selectionOrigin, e.Position)),
                 // Client rows explicitly name selection 5 as "missing the most health".
                 5 => candidates
                     .OrderByDescending(e => e.MaxHealth > e.Health ? e.MaxHealth - e.Health : 0u)
-                    .ThenBy(e => Vector3.DistanceSquared(Caster.Position, e.Position)),
-                _ => OrderByDistance(candidates)
+                    .ThenBy(e => Vector3.DistanceSquared(selectionOrigin, e.Position)),
+                _ => OrderByDistance(candidates, selectionOrigin)
             };
         }
 
-        private IEnumerable<IUnitEntity> OrderByDistance(IEnumerable<IUnitEntity> candidates)
+        private IEnumerable<IUnitEntity> OrderByDistance(IEnumerable<IUnitEntity> candidates, Vector3 selectionOrigin)
         {
-            return candidates.OrderBy(e => Vector3.DistanceSquared(Caster.Position, e.Position));
+            return candidates.OrderBy(e => Vector3.DistanceSquared(selectionOrigin, e.Position));
         }
 
         private bool IsWithinCasterAngle(IUnitEntity entity, float angleDegrees)
         {
-            float targetAngle = (Caster.Position.GetAngle(entity.Position) - Caster.Rotation.X).NormaliseRotationRadians();
+            return IsWithinAngle(entity, Caster.Position, Caster.Rotation, angleDegrees);
+        }
+
+        private static bool IsWithinAngle(IUnitEntity entity, Vector3 origin, Vector3 rotation, float angleDegrees)
+        {
+            float targetAngle = (origin.GetAngle(entity.Position) - rotation.X).NormaliseRotationRadians();
             return MathF.Abs(targetAngle.ToDegrees()) <= angleDegrees / 2f;
         }
 
         private static float GetHorizontalDistance(Vector3 source, Vector3 target)
         {
             return Vector2.Distance(new Vector2(source.X, source.Z), new Vector2(target.X, target.Z));
+        }
+
+        private (Vector3 Position, Vector3 Rotation) ResolveTelegraphAnchor()
+        {
+            uint targetType = Parameters.SpellInfo.BaseInfo.TargetMechanics?.TargetType ?? 0u;
+            IUnitEntity primaryTarget = GetPrimaryTargetEntity();
+
+            if (targetType == TargetTypeTargetAoe && primaryTarget != null)
+                return (primaryTarget.Position, GetRotationToward(primaryTarget.Position));
+
+            if (targetType == TargetTypePositionAoe)
+            {
+                if (Parameters.Position != null)
+                    return (Parameters.Position.Vector, GetRotationToward(Parameters.Position.Vector));
+
+                if (primaryTarget != null)
+                    return (primaryTarget.Position, GetRotationToward(primaryTarget.Position));
+            }
+
+            return (Caster.Position, Caster.Rotation);
+        }
+
+        private Vector3 GetAoeSelectionOrigin()
+        {
+            return telegraphs.Count != 0 ? telegraphs[0].Position : ResolveTelegraphAnchor().Position;
+        }
+
+        private Vector3 GetAoeSelectionRotation(Vector3 selectionOrigin)
+        {
+            return telegraphs.Count != 0 ? telegraphs[0].Rotation : GetRotationToward(selectionOrigin);
+        }
+
+        private Vector3 GetRotationToward(Vector3 position)
+        {
+            if (GetHorizontalDistance(Caster.Position, position) <= 0.001f)
+                return Caster.Rotation;
+
+            return new Vector3(Caster.Position.GetAngle(position), Caster.Rotation.Y, Caster.Rotation.Z);
         }
 
         private IUnitEntity GetPrimaryTargetEntity()
@@ -875,6 +937,20 @@ namespace NexusForever.Game.Spell
                     {
                         bool removed = target.RemoveDelayDeath(info.EffectId);
                         SpellEffectDiagnostics.TraceDelayDeath(this, target, effect.DelayDeath, false, removed, null);
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
+                case SpellEffectType.Proc:
+                    if (effect.Proc == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveProc(info.EffectId);
+                        SpellEffectDiagnostics.TraceProc(this, target, effect.Proc, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);

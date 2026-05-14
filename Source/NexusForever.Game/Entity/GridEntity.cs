@@ -342,14 +342,14 @@ namespace NexusForever.Game.Entity
             return inRangeEntities.ContainsKey(target.Guid);
         }
 
-        private void AddToRange(IGridEntity entity)
+        protected virtual void AddToRange(IGridEntity entity)
         {
             inRangeEntities.Add(entity.Guid, entity);
 
             scriptCollection?.Invoke<IGridEntityScript>(s => s.OnEnterRange(entity));
         }
 
-        private void RemoveFromRange(IGridEntity entity)
+        protected virtual void RemoveFromRange(IGridEntity entity)
         {
             scriptCollection?.Invoke<IGridEntityScript>(s => s.OnExitRange(entity));
 

@@ -41,5 +41,10 @@ namespace NexusForever.Game.Abstract.PublicEvent
         /// This shows the objective to members and allows it to be updated.
         /// </remarks>
         void ActivateObjective();
+
+        /// <summary>
+        /// Reset the objective to its inactive initial state.
+        /// </summary>
+        void ResetObjective();
     }
 }

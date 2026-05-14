@@ -144,6 +144,20 @@ namespace NexusForever.Game.PublicEvent
             SetStatus(PublicEventStatus.Active);
         }
 
+        /// <summary>
+        /// Reset the objective to its inactive initial state.
+        /// </summary>
+        public void ResetObjective()
+        {
+            if (Status != PublicEventStatus.Succeeded)
+                return;
+
+            Count      = 0;
+            DynamicMax = 0;
+
+            SetStatus(PublicEventStatus.Inactive);
+        }
+
         public Network.World.Message.Model.Shared.PublicEventObjective Build()
         {
             return new Network.World.Message.Model.Shared.PublicEventObjective

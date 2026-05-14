@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using NexusForever.Database;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Game;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Chat.Format;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.Matching.Queue;
@@ -52,6 +53,7 @@ namespace NexusForever.WorldServer.Service
         private readonly IMatchingManager matchingManager;
         private readonly IMatchManager matchManager;
         private readonly IPublicEventTemplateManager publicEventManager;
+        private readonly ICreatureInfoManager creatureInfoManager;
         private readonly IChatFormatManager chatFormatManager;
         private readonly IWorldManager worldManager;
 
@@ -65,6 +67,7 @@ namespace NexusForever.WorldServer.Service
             IMatchingManager matchingManager,
             IMatchManager matchManager,
             IPublicEventTemplateManager publicEventManager,
+            ICreatureInfoManager creatureInfoManager,
             IChatFormatManager chatFormatManager,
             IWorldManager worldManager)
         {
@@ -79,6 +82,7 @@ namespace NexusForever.WorldServer.Service
             this.matchingManager    = matchingManager;
             this.matchManager       = matchManager;
             this.publicEventManager = publicEventManager;
+            this.creatureInfoManager = creatureInfoManager;
             this.chatFormatManager  = chatFormatManager;
             this.worldManager       = worldManager;
         }
@@ -111,6 +115,7 @@ namespace NexusForever.WorldServer.Service
             MapIOManager.Instance.Initialise();
             SearchManager.Instance.Initialise();
             EntityManager.Instance.Initialise();
+            creatureInfoManager.Initialise();
             EntityCommandManager.Instance.Initialise();
             EntityCacheManager.Instance.Initialise();
             FactionManager.Instance.Initialise();

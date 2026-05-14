@@ -146,7 +146,7 @@ namespace NexusForever.Game.Abstract.Entity.Movement
         /// <summary>
         /// Set velocity with the supplied <see cref="Vector3"/> key and time values.
         /// </summary>
-        void SetVelocityKeys();
+        void SetVelocityKeys(List<uint> times, List<Vector3> velocities);
 
         /// <summary>
         /// Set velocity with the default values.

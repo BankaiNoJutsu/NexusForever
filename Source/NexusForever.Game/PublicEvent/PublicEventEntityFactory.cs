@@ -4,6 +4,7 @@ using NexusForever.Database;
 using NexusForever.Database.World;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Map;
 
@@ -22,15 +23,18 @@ namespace NexusForever.Game.PublicEvent
 
         private readonly IDatabaseManager databaseManager;
         private readonly IEntityFactory entityFactory;
+        private readonly ICreatureInfoManager creatureInfoManager;
 
         public PublicEventEntityFactory(
             ILogger<PublicEventEntityFactory> log,
             IDatabaseManager databaseManager,
-            IEntityFactory entityFactory)
+            IEntityFactory entityFactory,
+            ICreatureInfoManager creatureInfoManager)
         {
-            this.log             = log;
-            this.databaseManager = databaseManager;
-            this.entityFactory   = entityFactory;
+            this.log                 = log;
+            this.databaseManager     = databaseManager;
+            this.entityFactory       = entityFactory;
+            this.creatureInfoManager = creatureInfoManager;
         }
 
         #endregion
@@ -62,7 +66,11 @@ namespace NexusForever.Game.PublicEvent
             foreach (EntityModel model in models)
             {
                 IWorldEntity entity = entityFactory.CreateWorldEntity(model.Type);
-                entity.Initialise(model);
+                ICreatureInfo creatureInfo = GetCreatureInfo(model, phase);
+                if (creatureInfo != null)
+                    entity.Initialise(creatureInfo, model);
+                else
+                    entity.Initialise(model);
                 entity.Rotation = new Vector3(model.Rx, model.Ry, model.Rz);
 
                 entities.Add(entity);
@@ -78,6 +86,18 @@ namespace NexusForever.Game.PublicEvent
             }
 
             log.LogTrace($"Spawned entities for public event {publicEvent.Id} phase {phase}.");
+        }
+
+        private ICreatureInfo GetCreatureInfo(EntityModel model, uint phase)
+        {
+            if (model.Creature == 0u)
+                return null;
+
+            ICreatureInfo creatureInfo = creatureInfoManager.GetCreatureInfo(model.Creature);
+            if (creatureInfo == null)
+                throw new InvalidOperationException($"Missing creature info for creature {model.Creature} while spawning public event {publicEvent.Id} entity {model.Id} in phase {phase}.");
+
+            return creatureInfo;
         }
 
         /// <summary>

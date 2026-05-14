@@ -1,7 +1,9 @@
 using System.Numerics;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Chat;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Reputation;
@@ -19,6 +21,7 @@ using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Script.Template;
+using NexusForever.Shared;
 
 namespace NexusForever.Game.Entity
 {
@@ -37,6 +40,7 @@ namespace NexusForever.Game.Entity
         public uint EntityId { get; protected set; }
         public byte EntityMode { get; private set; }
         public IEnumerable<string> ScriptNames => scriptNames;
+        public byte QuestChecklistIdx { get; protected set; }
         private readonly HashSet<string> scriptNames = [];
 
         public uint CreatureId
@@ -44,12 +48,14 @@ namespace NexusForever.Game.Entity
             get => CreatureEntry?.Id ?? 0;
             set
             {
+                CreatureInfo  = null;
                 CreatureEntry = GameTableManager.Instance.Creature2.GetEntry(value);
                 SetVisualEmit(true);
             }
         }
 
         public Creature2Entry CreatureEntry { get; private set; }
+        public ICreatureInfo CreatureInfo { get; set; }
 
         public uint DisplayInfo
         {
@@ -184,6 +190,25 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
+        /// Guid of the <see cref="IWorldEntity"/> that summoned this entity.
+        /// </summary>
+        public uint? SummonerGuid { get; set; }
+
+        private IEntitySummonFactory summonFactory;
+
+        /// <summary>
+        /// Factory used to summon child entities owned by this <see cref="IWorldEntity"/>.
+        /// </summary>
+        public IEntitySummonFactory SummonFactory => summonFactory ??= InitialiseSummonFactory();
+
+        private IEntitySummonFactory InitialiseSummonFactory()
+        {
+            IEntitySummonFactory factory = LegacyServiceProvider.Provider?.GetService<IEntitySummonFactory>();
+            factory?.Initialise(this);
+            return factory;
+        }
+
+        /// <summary>
         /// Collection of guids currently passengers on this <see cref="IWorldEntity"/>.
         /// </summary>
         public IEnumerable<uint> PlatformPassengerGuids => platformPassengerGuids;
@@ -214,7 +239,50 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void Initialise(uint creatureId)
         {
+            ICreatureInfo creatureInfo = LegacyServiceProvider.Provider?
+                .GetService<ICreatureInfoManager>()?
+                .GetCreatureInfo(creatureId);
+            if (creatureInfo != null)
+            {
+                Initialise(creatureInfo);
+                return;
+            }
+
             CreatureId = creatureId;
+        }
+
+        /// <summary>
+        /// Initialise <see cref="IWorldEntity"/> with supplied <see cref="ICreatureInfo"/>.
+        /// </summary>
+        public virtual void Initialise(ICreatureInfo creatureInfo)
+        {
+            if (creatureInfo == null)
+                throw new ArgumentNullException(nameof(creatureInfo));
+
+            CreatureInfo  = creatureInfo;
+            CreatureEntry = creatureInfo.Entry;
+            SetVisualEmit(true);
+
+            CreatureDisplayEntry = creatureInfo.GetDisplayInfoEntry();
+            CreatureOutfitEntry  = creatureInfo.GetOutfitInfoEntry();
+            SetVisualEmit(true);
+
+            Faction1 = (Faction)creatureInfo.Entry.FactionId;
+            Faction2 = (Faction)creatureInfo.Entry.FactionId;
+
+            SetStat(Stat.Level, creatureInfo.GetLevel());
+
+            foreach (ICreatureInfoStat stat in creatureInfo.GetStatOverrides())
+                stats[stat.Stat] = CreateStatValue(stat.Stat, stat.Value);
+
+            CalculateDefaultProperties();
+
+            foreach (ICreatureInfoProperty property in creatureInfo.GetPropertyOverrides())
+                SetBaseProperty(property.Property, property.Value);
+
+            // TODO: handle this better
+            Health = MaxHealth;
+            Shield = MaxShieldCapacity;
         }
 
         /// <summary>
@@ -222,8 +290,18 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public virtual void Initialise(EntityModel model)
         {
+            ICreatureInfo creatureInfo = LegacyServiceProvider.Provider?
+                .GetService<ICreatureInfoManager>()?
+                .GetCreatureInfo(model.Creature);
+            if (creatureInfo != null)
+            {
+                Initialise(creatureInfo, model);
+                return;
+            }
+
             EntityId      = model.Id;
             EntityMode    = model.Mode;
+            QuestChecklistIdx = model.QuestChecklistIdx;
             CreatureId    = model.Creature;
             Rotation      = new Vector3(model.Rx, model.Ry, model.Rz);
             DisplayInfo   = model.DisplayInfo;
@@ -243,9 +321,66 @@ namespace NexusForever.Game.Entity
 
             CalculateDefaultProperties();
 
+            foreach (EntityPropertyModel propertyModel in model.EntityProperty)
+                SetBaseProperty(propertyModel.Property, propertyModel.Value);
+
             // TODO: handle this better
             Health = MaxHealth;
             Shield = MaxShieldCapacity;
+        }
+
+        /// <summary>
+        /// Initialise <see cref="IWorldEntity"/> from supplied <see cref="ICreatureInfo"/> and database model.
+        /// </summary>
+        public virtual void Initialise(ICreatureInfo creatureInfo, EntityModel model)
+        {
+            if (creatureInfo == null)
+                throw new ArgumentNullException(nameof(creatureInfo));
+
+            CreatureInfo  = creatureInfo;
+            EntityId      = model.Id;
+            EntityMode    = model.Mode;
+            QuestChecklistIdx = model.QuestChecklistIdx;
+            CreatureEntry = creatureInfo.Entry;
+            SetVisualEmit(true);
+            Rotation      = new Vector3(model.Rx, model.Ry, model.Rz);
+            DisplayInfo   = model.DisplayInfo;
+            OutfitInfo    = model.OutfitInfo;
+            Faction1      = (Faction)model.Faction1;
+            Faction2      = (Faction)model.Faction2;
+            ActivePropId  = model.ActivePropId;
+            WorldSocketId = model.WorldSocketId;
+            Spline        = model.EntitySpline;
+
+            scriptNames.Clear();
+            foreach (EntityScriptModel scriptModel in model.EntityScript)
+                scriptNames.Add(scriptModel.ScriptName);
+
+            foreach (ICreatureInfoStat stat in creatureInfo.GetStatOverrides())
+                stats[stat.Stat] = CreateStatValue(stat.Stat, stat.Value);
+
+            foreach (EntityStatModel statModel in model.EntityStat)
+                stats[(Stat)statModel.Stat] = new StatValue(statModel);
+
+            CalculateDefaultProperties();
+
+            foreach (ICreatureInfoProperty property in creatureInfo.GetPropertyOverrides())
+                SetBaseProperty(property.Property, property.Value);
+
+            foreach (EntityPropertyModel propertyModel in model.EntityProperty)
+                SetBaseProperty(propertyModel.Property, propertyModel.Value);
+
+            // TODO: handle this better
+            Health = MaxHealth;
+            Shield = MaxShieldCapacity;
+        }
+
+        private static IStatValue CreateStatValue(Stat stat, float value)
+        {
+            StatAttribute attribute = EntityManager.Instance.GetStatAttribute(stat);
+            return attribute?.Type == StatType.Integer
+                ? new StatValue(stat, (uint)value)
+                : new StatValue(stat, value);
         }
 
         /// <summary>
@@ -257,6 +392,12 @@ namespace NexusForever.Game.Entity
             MovementManager.SetPosition(vector, false);
 
             base.OnAddToMap(map, guid, vector);
+
+            if (SummonerGuid.HasValue)
+            {
+                IWorldEntity summoner = map.GetEntity<IWorldEntity>(SummonerGuid.Value);
+                summoner?.OnSummon(this);
+            }
 
             UpdateZone(vector);
         }
@@ -275,6 +416,14 @@ namespace NexusForever.Game.Entity
                 worldEntity.SetPlatform(null);
                 worldEntity.MovementManager.SetPosition(Position, false);
                 worldEntity.MovementManager.SetRotation(Rotation, false);
+            }
+
+            summonFactory?.Unsummon();
+
+            if (SummonerGuid.HasValue)
+            {
+                IWorldEntity summoner = Map.GetEntity<IWorldEntity>(SummonerGuid.Value);
+                summoner?.OnUnsummon(this);
             }
 
             base.OnRemoveFromMap();
@@ -388,6 +537,22 @@ namespace NexusForever.Game.Entity
         public virtual void OnActivateCast(IPlayer activator)
         {
             // deliberately empty
+        }
+
+        /// <summary>
+        /// Invoked when <see cref="IWorldEntity"/>'s activation succeeds.
+        /// </summary>
+        public virtual void OnActivateSuccess(IPlayer activator)
+        {
+            scriptCollection?.Invoke<IWorldEntityScript>(s => s.OnActivateSuccess(activator));
+        }
+
+        /// <summary>
+        /// Invoked when <see cref="IWorldEntity"/>'s activation fails.
+        /// </summary>
+        public virtual void OnActivateFail(IPlayer activator)
+        {
+            scriptCollection?.Invoke<IWorldEntityScript>(s => s.OnActivateFail(activator));
         }
 
         /// <summary>
@@ -958,6 +1123,24 @@ namespace NexusForever.Game.Entity
         public virtual void OnUntargeted(IUnitEntity source)
         {
             targetingGuids.Remove(source.Guid);
+        }
+
+        /// <summary>
+        /// Invoked when this entity summons another <see cref="IWorldEntity"/>.
+        /// </summary>
+        public virtual void OnSummon(IWorldEntity entity)
+        {
+            SummonFactory?.TrackSummon(entity);
+            scriptCollection?.Invoke<IWorldEntityScript>(s => s.OnSummon(entity));
+        }
+
+        /// <summary>
+        /// Invoked when this entity unsummons another <see cref="IWorldEntity"/>.
+        /// </summary>
+        public virtual void OnUnsummon(IWorldEntity entity)
+        {
+            SummonFactory?.UntrackSummon(entity);
+            scriptCollection?.Invoke<IWorldEntityScript>(s => s.OnUnsummon(entity));
         }
 
         /// <summary>

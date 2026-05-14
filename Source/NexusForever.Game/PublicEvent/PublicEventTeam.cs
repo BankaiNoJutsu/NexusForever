@@ -143,7 +143,7 @@ namespace NexusForever.Game.PublicEvent
                     continue;
 
                 if (objective.Entry.PublicEventObjectiveTypeEnum != type
-                    && objective.Entry.ObjectId != objectId)
+                    || objective.Entry.ObjectId != objectId)
                     continue;
 
                 objective.UpdateObjective(count);
@@ -185,6 +185,17 @@ namespace NexusForever.Game.PublicEvent
 
             objective.DynamicMax = max;
             objective.ActivateObjective();
+        }
+
+        /// <summary>
+        /// Reset specific objective for the team.
+        /// </summary>
+        public void ResetObjective(uint objectiveId)
+        {
+            if (!objectives.TryGetValue(objectiveId, out IPublicEventObjective objective))
+                return;
+
+            objective.ResetObjective();
         }
 
         /// <summary>

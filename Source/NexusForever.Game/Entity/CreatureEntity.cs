@@ -1,6 +1,7 @@
 ﻿using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Combat;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Script;
@@ -24,6 +25,20 @@ namespace NexusForever.Game.Entity
         public override void Initialise(EntityModel model)
         {
             base.Initialise(model);
+
+            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ICreatureEntity>(this);
+        }
+
+        public override void Initialise(ICreatureInfo creatureInfo)
+        {
+            base.Initialise(creatureInfo);
+
+            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ICreatureEntity>(this);
+        }
+
+        public override void Initialise(ICreatureInfo creatureInfo, EntityModel model)
+        {
+            base.Initialise(creatureInfo, model);
 
             scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ICreatureEntity>(this);
         }

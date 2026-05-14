@@ -21,7 +21,7 @@ namespace NexusForever.Game.Spell
 
             Spell4AoeTargetConstraintsEntry aoe = spell.Parameters.SpellInfo.AoeTargetConstraints;
             log.Trace(
-                "SpellDiagnostics target-selection spell4Id={0} baseSpell4Id={1} castingId={2} caster={3} targetCount={4} telegraphCount={5} aoeTargetLimit={6} aoeSelection={7} aoeRange={8:R}-{9:R} aoeAngle={10:R} targets=[{11}]",
+                "SpellDiagnostics target-selection spell4Id={0} baseSpell4Id={1} castingId={2} caster={3} targetCount={4} telegraphCount={5} aoeTargetLimit={6} aoeSelection={7} aoeRange={8:R}-{9:R} aoeAngle={10:R} targetMechanic={11}/{12} validTargetMask={13} targets=[{14}]",
                 spell.Parameters.SpellInfo.Entry.Id,
                 spell.Parameters.SpellInfo.BaseInfo.Entry.Id,
                 spell.CastingId,
@@ -33,6 +33,9 @@ namespace NexusForever.Game.Spell
                 aoe?.MinRange ?? 0f,
                 aoe?.MaxRange ?? 0f,
                 aoe?.Angle ?? 0f,
+                spell.Parameters.SpellInfo.BaseInfo.TargetMechanics?.TargetType ?? 0u,
+                spell.Parameters.SpellInfo.BaseInfo.TargetMechanics?.Flags ?? 0u,
+                spell.Parameters.SpellInfo.BaseInfo.ValidTargets?.TargetBitmask ?? 0u,
                 string.Join("; ", targets.Select(t => $"{t.Entity.Guid}:{t.Flags}")));
         }
 
@@ -719,6 +722,31 @@ namespace NexusForever.Game.Spell
                 delayDeath.DataBits09);
         }
 
+        public static void TraceProc(ISpell spell, IUnitEntity target, SpellEffectProcSemantics proc, bool applied, bool removed, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics proc spell4Id={0} castingId={1} target={2} triggerEvent={3} triggerSpell4Id={4} chance={5:R} targetData={6} cooldownMsOrSentinel={7} applied={8} removed={9} skippedReason={10} dataBits05={11} dataBits06={12} dataBits07={13} dataBits08={14} dataBits09={15}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                proc.TriggerEvent,
+                proc.TriggerSpell4Id,
+                proc.Chance,
+                proc.TargetData,
+                proc.CooldownMsOrSentinel,
+                applied,
+                removed,
+                skippedReason,
+                proc.DataBits05,
+                proc.DataBits06,
+                proc.DataBits07,
+                proc.DataBits08,
+                proc.DataBits09);
+        }
+
         public static void TraceDelayDeathTriggered(IUnitEntity target, uint spell4Id, uint castingId, uint mode, uint triggerSpell4Id, uint triggerDelayMs, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07, uint sourceGuid, uint preventedDamage)
         {
             if (!log.IsTraceEnabled)
@@ -1321,7 +1349,7 @@ namespace NexusForever.Game.Spell
                 return;
 
             log.Trace(
-                "SpellDiagnostics forced-move spell4Id={0} castingId={1} target={2} movementType={3} durationMs={4} flags={5} dataFloat01={6} dataFloat02={7} dataFloat06={8} dataFloat07={9} dataFloat08={10} appliedSpeed={11}",
+                "SpellDiagnostics forced-move spell4Id={0} castingId={1} target={2} movementType={3} durationMs={4} flags={5} dataFloat01={6} dataFloat02={7} gravity={8} dataFloat06={9} dataFloat07={10} dataFloat08={11} dataBits09={12} appliedSpeed={13}",
                 spell.Parameters.SpellInfo.Entry.Id,
                 spell.CastingId,
                 target.Guid,
@@ -1330,9 +1358,11 @@ namespace NexusForever.Game.Spell
                 forcedMove.Flags,
                 forcedMove.DataFloat01,
                 forcedMove.DataFloat02,
+                forcedMove.Gravity,
                 forcedMove.DataFloat06,
                 forcedMove.DataFloat07,
                 forcedMove.DataFloat08,
+                forcedMove.DataBits09,
                 speed);
         }
 

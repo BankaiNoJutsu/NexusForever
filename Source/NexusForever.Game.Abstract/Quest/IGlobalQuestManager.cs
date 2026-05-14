@@ -38,6 +38,16 @@ namespace NexusForever.Game.Abstract.Quest
         IEnumerable<ICommunicatorMessage> GetQuestCommunicatorMessages(ushort questId);
 
         /// <summary>
+        /// Return <see cref="ICommunicatorMessage"/> by id.
+        /// </summary>
+        ICommunicatorMessage GetCommunicatorMessage<T>(T communicatorMessageId) where T : Enum;
+
+        /// <summary>
+        /// Return <see cref="ICommunicatorMessage"/> by id.
+        /// </summary>
+        ICommunicatorMessage GetCommunicatorMessage(uint communicatorMessageId);
+
+        /// <summary>
         /// Return a collection of <see cref="ICommunicatorMessage"/>'s that are triggered when a quest hits a certain state.
         /// </summary>
         IEnumerable<ICommunicatorMessage> GetQuestCommunicatorQuestStateTriggers(ushort questId, QuestState state);

@@ -6,6 +6,7 @@
         None         = 0x0000,
         Velocity     = 0x0001,
         Move         = 0x0002,
+        Fall         = 0x0008,
         Jump         = 0x0040,
         Unknown80    = 0x0080,
         Unknown100   = 0x0100,
@@ -13,6 +14,7 @@
         Unknown400   = 0x0400,
         DoubleJump   = 0x0800,
         RollForward  = 0x1000,
-        RollBackward = 0x2000
+        RollBackward = 0x2000,
+        RotationWhileFalling = 0x40000
     }
 }

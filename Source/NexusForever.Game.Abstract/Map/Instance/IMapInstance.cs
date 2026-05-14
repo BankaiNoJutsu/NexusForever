@@ -26,6 +26,11 @@ namespace NexusForever.Game.Abstract.Map.Instance
         MapUnloadStatus? UnloadStatus { get; }
 
         /// <summary>
+        /// Count of players in map instance.
+        /// </summary>
+        uint PlayerCount { get; }
+
+        /// <summary>
         /// Initialise <see cref="IMapInstance"/> with supplied <see cref="WorldEntry"/> and <see cref="IMapLock"/>.
         /// </summary>
         void Initialise(WorldEntry worldEntry, IMapLock mapLock);
@@ -48,5 +53,10 @@ namespace NexusForever.Game.Abstract.Map.Instance
         /// Cancel any pending removal for <see cref="IPlayer"/>.
         /// </summary>
         void CancelPendingRemoval(IPlayer player);
+
+        /// <summary>
+        /// Returns all <see cref="IPlayer"/>'s in map instance.
+        /// </summary>
+        IEnumerable<IPlayer> GetPlayers();
     }
 }

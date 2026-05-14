@@ -33,6 +33,8 @@ namespace NexusForever.Game.Map.Instance
 
         public IMapLock MapLock { get; private set; }
 
+        public uint PlayerCount => (uint)playerEntities.Count;
+
         /// <summary>
         /// Current unload status for map instance.
         /// </summary>
@@ -308,6 +310,19 @@ namespace NexusForever.Game.Map.Instance
                 return;
 
             player.Session.EnqueueMessageEncrypted(new ServerPendingWorldRemovalCancel());
+        }
+
+        /// <summary>
+        /// Returns all <see cref="IPlayer"/>'s in map instance.
+        /// </summary>
+        public IEnumerable<IPlayer> GetPlayers()
+        {
+            foreach (uint guid in playerEntities)
+            {
+                IPlayer player = GetEntity<IPlayer>(guid);
+                if (player != null)
+                    yield return player;
+            }
         }
 
         /// <summary>

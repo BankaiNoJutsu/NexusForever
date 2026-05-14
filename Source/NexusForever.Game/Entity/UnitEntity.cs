@@ -79,6 +79,11 @@ namespace NexusForever.Game.Entity
                     UnitId   = Guid,
                     InCombat = value
                 }, true);
+
+                if (value)
+                    scriptCollection?.Invoke<IUnitScript>(s => s.OnEnterCombat());
+                else
+                    scriptCollection?.Invoke<IUnitScript>(s => s.OnLeaveCombat());
             }
         }
 
@@ -103,6 +108,7 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary</*effectId*/uint, SpellEffectImmunityState> spellEffectImmunityStates = new();
         private readonly Dictionary</*effectId*/uint, SpellImmunityState> spellImmunityStates = new();
         private readonly Dictionary</*effectId*/uint, DelayDeathState> delayDeathStates = new();
+        private readonly Dictionary</*effectId*/uint, ProcState> procStates = new();
         private readonly Dictionary</*effectId*/uint, VitalClampState> vitalClampStates = new();
         private readonly Dictionary</*effectId*/uint, TrackedSpellState> shieldOverloadStates = new();
         private readonly Dictionary</*effectId*/uint, ScaleState> scaleStates = new();
@@ -151,6 +157,20 @@ namespace NexusForever.Game.Entity
             public uint DataBits05 { get; init; }
             public uint DataBits06 { get; init; }
             public uint DataBits07 { get; init; }
+        }
+
+        private sealed class ProcState : TrackedSpellState
+        {
+            public uint TriggerEvent { get; init; }
+            public uint TriggerSpell4Id { get; init; }
+            public float Chance { get; init; }
+            public uint TargetData { get; init; }
+            public uint CooldownMsOrSentinel { get; init; }
+            public uint DataBits05 { get; init; }
+            public uint DataBits06 { get; init; }
+            public uint DataBits07 { get; init; }
+            public uint DataBits08 { get; init; }
+            public uint DataBits09 { get; init; }
         }
 
         private sealed class PendingDelayDeathTrigger
@@ -356,6 +376,30 @@ namespace NexusForever.Game.Entity
         public bool RemoveDelayDeath(uint effectId)
         {
             return delayDeathStates.Remove(effectId);
+        }
+
+        public void AddProc(uint effectId, uint spell4Id, uint castingId, uint triggerEvent, uint triggerSpell4Id, float chance, uint targetData, uint cooldownMsOrSentinel, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09)
+        {
+            procStates[effectId] = new ProcState
+            {
+                Spell4Id             = spell4Id,
+                CastingId            = castingId,
+                TriggerEvent         = triggerEvent,
+                TriggerSpell4Id      = triggerSpell4Id,
+                Chance               = chance,
+                TargetData           = targetData,
+                CooldownMsOrSentinel = cooldownMsOrSentinel,
+                DataBits05           = dataBits05,
+                DataBits06           = dataBits06,
+                DataBits07           = dataBits07,
+                DataBits08           = dataBits08,
+                DataBits09           = dataBits09
+            };
+        }
+
+        public bool RemoveProc(uint effectId)
+        {
+            return procStates.Remove(effectId);
         }
 
         public void AddVitalClamp(uint effectId, uint spell4Id, uint castingId, Vital vital, float ratio, uint mode, uint vitalMode)
@@ -1088,6 +1132,20 @@ namespace NexusForever.Game.Entity
 
             }
 
+            foreach (KeyValuePair<uint, ProcState> state in procStates.ToArray())
+            {
+                if (!CanRemove(state.Value.Spell4Id))
+                    continue;
+
+                procStates.Remove(state.Key);
+                AddRemoval(new SpellStateRemoval(
+                    SpellStateRemovalKind.Proc,
+                    state.Value.Spell4Id,
+                    state.Value.CastingId,
+                    state.Key));
+
+            }
+
             foreach (KeyValuePair<uint, VitalClampState> state in vitalClampStates.ToArray())
             {
                 if (!CanRemove(state.Value.Spell4Id))
@@ -1507,6 +1565,8 @@ namespace NexusForever.Game.Entity
             Health = (uint)Math.Clamp(newHealth, 0u, MaxHealth);
             ApplyVitalClamps();
 
+            scriptCollection?.Invoke<IUnitScript>(s => s.OnHealthChange(source, amount, type));
+
             if (Health == 0)
                 OnDeath();
         }
@@ -1617,6 +1677,7 @@ namespace NexusForever.Game.Entity
         protected virtual void OnDeath()
         {
             DeathState = EntityDeathState.JustDied;
+            scriptCollection?.Invoke<IUnitScript>(s => s.OnDeath());
 
             foreach (ISpell spell in pendingSpells)
             {

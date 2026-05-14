@@ -194,8 +194,23 @@ namespace NexusForever.WorldServer.Command.Handler
         private static string DescribeTargetMechanics(Spell4TargetMechanicsEntry entry)
         {
             return entry != null
-                ? $"{entry.Id} type {entry.TargetType} flags {entry.Flags}"
+                ? $"{entry.Id} type {entry.TargetType}{DescribeTargetMechanicType(entry.TargetType)} flags {entry.Flags}"
                 : "0";
+        }
+
+        private static string DescribeTargetMechanicType(uint targetType)
+        {
+            string label = targetType switch
+            {
+                1 => "single target",
+                2 => "self AOE",
+                3 => "target AOE",
+                4 => "position AOE",
+                5 => "chain target",
+                _ => null
+            };
+
+            return label != null ? $" ({label})" : string.Empty;
         }
 
         private static string DescribeValidTargets(Spell4ValidTargetsEntry entry)
@@ -303,6 +318,9 @@ namespace NexusForever.WorldServer.Command.Handler
 
             if (effect.ThreatTransfer != null)
                 return $"threat transfer mode {effect.ThreatTransfer.Mode}, ratio/percent {effect.ThreatTransfer.RatioOrPercent:R}, data {effect.ThreatTransfer.DataBits02}/{effect.ThreatTransfer.DataBits03}/{effect.ThreatTransfer.DataBits04}/{effect.ThreatTransfer.DataBits05}";
+
+            if (effect.Proc != null)
+                return $"proc trigger event {effect.Proc.TriggerEvent}, trigger spell4 {DescribeSpell4(effect.Proc.TriggerSpell4Id)}, chance {effect.Proc.Chance:R}, target data {effect.Proc.TargetData}, cooldown/sentinel {effect.Proc.CooldownMsOrSentinel}, data {effect.Proc.DataBits05}/{effect.Proc.DataBits06}/{effect.Proc.DataBits07}/{effect.Proc.DataBits08}/{effect.Proc.DataBits09}";
 
             if (effect.DelayDeath != null)
                 return $"delay death mode {effect.DelayDeath.Mode}, trigger spell4 {DescribeSpell4(effect.DelayDeath.TriggerSpell4Id)}, trigger delay {effect.DelayDeath.TriggerDelayMs}ms, data {effect.DelayDeath.DataBits03}/{effect.DelayDeath.DataBits04}/{effect.DelayDeath.DataBits05}/{effect.DelayDeath.DataBits06}/{effect.DelayDeath.DataBits07}/{effect.DelayDeath.DataBits08}/{effect.DelayDeath.DataBits09}";

@@ -1,6 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
+using NexusForever.Game.Abstract.Entity.Trigger;
+using NexusForever.Game.Entity.Creature;
 using NexusForever.Game.Entity.Movement;
+using NexusForever.Game.Entity.Trigger;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Entity
@@ -12,6 +16,7 @@ namespace NexusForever.Game.Entity
             sc.AddGameEntityMovement();
 
             sc.AddTransient<IEntityFactory, EntityFactory>();
+            sc.AddTransient<IEntitySummonFactory, EntitySummonFactory>();
             sc.AddTransient<INonPlayerEntity, NonPlayerEntity>();
             sc.AddTransient<IChestEntity, ChestEntity>();
             sc.AddTransient<IDestructibleEntity, DestructibleEntity>();
@@ -49,10 +54,20 @@ namespace NexusForever.Game.Entity
             sc.AddTransient<IHousingHarvestPlugEntity, HousingHarvestPlugEntity>();
             sc.AddTransient<IHousingPlantEntity, HousingPlantEntity>();
             sc.AddTransient<ILockboxEntity, LockboxEntity>();
+            sc.AddTransient<IGridTriggerEntity, GridTriggerEntity>();
+            sc.AddTransient<ITurnstileGridTriggerEntity, TurnstileTriggerEntity>();
+            sc.AddTransient<IVolumeGridTriggerEntity, VolumeGridTriggerEntity>();
+            sc.AddTransient<IWorldLocationVolumeGridTriggerEntity, WorldLocationVolumeGridTriggerEntity>();
 
             sc.AddSingletonLegacy<IBuybackManager, BuybackManager>();
             sc.AddSingletonLegacy<IEntityManager, EntityManager>();
             sc.AddSingletonLegacy<IPlayerManager, PlayerManager>();
+
+            sc.AddSingleton<ICreatureInfoManager, CreatureInfoManager>();
+            sc.AddTransientFactory<ICreatureInfo, CreatureInfo>();
+            sc.AddTransientFactory<ICreatureInfoOverride, CreatureInfoOverride>();
+            sc.AddTransientFactory<ICreatureInfoProperty, CreatureInfoProperty>();
+            sc.AddTransientFactory<ICreatureInfoStat, CreatureInfoStat>();
 
             sc.AddTransient<ICurrencyManager, CurrencyManager>();
         }

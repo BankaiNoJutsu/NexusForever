@@ -16,6 +16,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             // TODO: sanity check for range etc.
 
             entity.OnActivate(session.Player);
+            entity.OnActivateSuccess(session.Player);
         }
     }
 }

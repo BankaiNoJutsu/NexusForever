@@ -27,13 +27,11 @@ namespace NexusForever.Game.Entity.Movement.Key
 
             this.movementManager = movementManager;
 
-            Times  = times;
-            Values = values;
-
-            // adjust local times to be relative to the current time
             uint time = movementManager.GetTime();
-            for (int i = 0; i < times.Count; i++)
-                times[i] += time;
+            // Multiple command groups may share one generated timeline.
+            // Keep each command's absolute times independent.
+            Times  = times.Select(t => t + time).ToList();
+            Values = values;
         }
 
         /// <summary>

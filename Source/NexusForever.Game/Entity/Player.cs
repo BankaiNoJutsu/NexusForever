@@ -1056,6 +1056,34 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
+        /// Teleport <see cref="IPlayer"/> to a new position on the current map.
+        /// </summary>
+        public void TeleportToLocal(Vector3 position, bool showLoadingScreen = true, Action<Vector3> callback = null)
+        {
+            if (!CanTeleport())
+            {
+                SendGenericError(GenericError.InstanceTransferPending);
+                return;
+            }
+
+            if (Map == null)
+                return;
+
+            if (showLoadingScreen)
+                Session.EnqueueMessageEncrypted(new ServerLoadingScreen());
+
+            SetControl(null);
+            MovementManager.SetPosition(position, false);
+            MovementManager.BroadcastNetworkEntityCommands();
+            Relocate(position);
+            SetControl(this);
+
+            callback?.Invoke(position);
+
+            log.Trace($"Teleporting {Name}({CharacterId}) locally to location {position.X}, {position.Y}, {position.Z}.");
+        }
+
+        /// <summary>
         /// Invoked when <see cref="IPlayer"/> teleport fails.
         /// </summary>
         public void OnTeleportToFailed(GenericError error)

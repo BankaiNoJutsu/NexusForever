@@ -1,17 +1,17 @@
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
+using NexusForever.Script;
 
 namespace NexusForever.Game.Entity
 {
     public class SimpleEntity : UnitEntity, ISimpleEntity
     {
         public override EntityType Type => EntityType.Simple;
-
-        public byte QuestChecklistIdx { get; private set; }
 
         #region Dependency Injection
 
@@ -25,6 +25,14 @@ namespace NexusForever.Game.Entity
         public override void Initialise(EntityModel model)
         {
             base.Initialise(model);
+            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ISimpleEntity>(this);
+            QuestChecklistIdx = model.QuestChecklistIdx;
+        }
+
+        public override void Initialise(ICreatureInfo creatureInfo, EntityModel model)
+        {
+            base.Initialise(creatureInfo, model);
+            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ISimpleEntity>(this);
             QuestChecklistIdx = model.QuestChecklistIdx;
         }
 

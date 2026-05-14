@@ -141,6 +141,11 @@ namespace NexusForever.Game.Abstract.Entity
         void TeleportTo(IMapPosition mapPosition, TeleportReason reason = TeleportReason.Relocate);
 
         /// <summary>
+        /// Teleport <see cref="IPlayer"/> to a new position on the current map.
+        /// </summary>
+        void TeleportToLocal(Vector3 position, bool showLoadingScreen = true, Action<Vector3> callback = null);
+
+        /// <summary>
         /// Invoked when <see cref="IPlayer"/> teleport fails.
         /// </summary>
         void OnTeleportToFailed(GenericError error);
