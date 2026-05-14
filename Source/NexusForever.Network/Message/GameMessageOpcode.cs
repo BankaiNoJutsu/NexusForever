@@ -712,6 +712,7 @@ namespace NexusForever.Network.Message
         ClientRealmList                 = 0x07A4,
         ClientReplayLevelRequest        = 0x07A5,
         ClientResetInstances            = 0x07B4,
+        ClientRewardUpdateRequest       = 0x07CC,
         ClientAuctionsByFilterRequest   = 0x07DC,
         ClientCharacterSelect           = 0x07DD,
         ClientRealmSelect               = 0x07DF,
