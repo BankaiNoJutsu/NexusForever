@@ -96,6 +96,7 @@ Applied scripts:
 - `apply_creature_loot.py --apply`
 - `apply_creature_info_overrides.py --apply`
 - `load_mapping_staging_tables.py --apply`
+- `sql/apply_safe_world_imports_from_staging.sql`
 
 Inserted/updated live world data:
 
@@ -116,6 +117,7 @@ Safety policy used:
 - Vendor stock was applied only for mapped vendor creatures that already have matching rows in `entity.creature`.
 - Vendor and creature-info backups were written under `Tools\DataMapping\output\backups` before live imports.
 - `nf_map_*` staging loads are additive/reference data and are not consumed by runtime code until a feature explicitly reads them. `nf_map_creature` now includes review/original mapping audit columns.
+- `Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql` can now repeat the same safe runtime import directly from loaded `nf_map_*` staging tables. `Tools\DataMapping\sql\verify_safe_world_imports.sql` verifies counts and bridge-status distribution.
 
 ## Implemented Maps
 
@@ -408,6 +410,7 @@ Other reference maps:
 - Phase 19: Extended safe real DB imports: imported creature template health/shield/interrupt armor overrides, loaded all curated `nf_map_*` staging/reference tables into `nexus_forever_world`, and wired DB entity initialisation to apply creature template overrides before entity-specific rows.
 - Phase 20: Creature bridge adjudication loop: generated candidate review queue, added manual override input, preserved original match audit columns, and made `reviewed` mappings eligible for safe apply scripts.
 - Phase 21: Unblocked high-confidence uncertain creature bridges with spatial live-entity evidence, promoted 944 reviewed overrides, hardened staging-table reloads, and reapplied all safe real DB imports with reviewed mappings included.
+- Phase 22: Added migration-style SQL import scripts that load safe vendor, loot, and creature-info data directly from `nf_map_*` staging tables, plus a verification SQL script for row counts and bridge-status checks.
 
 ## Next Phases
 

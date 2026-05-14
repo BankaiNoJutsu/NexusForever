@@ -337,6 +337,16 @@ python Tools\DataMapping\load_mapping_staging_tables.py --apply
 
 `load_mapping_staging_tables.py` creates/replaces each owned `nf_map_*` table in `nexus_forever_world` and loads every curated staging CSV covered by `schema.sql`. It uses `LOAD DATA LOCAL INFILE`, temporarily enables the local MySQL server setting when the login can do so, and restores it afterward by default. The current localhost apply loaded 95 `nf_map_*` tables and 6,383,288 exact rows.
 
+Once staging is loaded, the safe runtime data can be imported with a single SQL script:
+
+```powershell
+Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql |
+  & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
+  --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
+```
+
+That migration-style script imports vendor stock, creature loot, and creature-info template overrides from `nf_map_*` using only `unique_name`, `scored_name`, and `reviewed` creature bridges. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import.
+
 Manual schema load example:
 
 ```powershell
