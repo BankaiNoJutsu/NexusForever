@@ -5,6 +5,8 @@ namespace NexusForever.Network.World.Message.Model.Abilities
     [Message(GameMessageOpcode.ClientRequestActionSetChanges)]
     public class ClientRequestActionSetChanges : IReadable
     {
+        public const int ActionCount = 12;
+
         public class ActionTier : IReadable
         {
             public uint Action { get; private set; }
