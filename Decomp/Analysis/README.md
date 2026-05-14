@@ -94,6 +94,7 @@ Per binary:
 - `functions.csv` - function address/name index.
 - `imports.csv` - external symbols/imports and reference counts.
 - `strings.csv` - all strings Ghidra defined.
+- `string_xrefs.csv` - xref address and containing function for interesting strings.
 - `interesting_strings.csv` - packet/network/data/auth/gameplay keyword hits.
 - `selected_xrefs.csv` - functions selected because they reference interesting strings or imports.
 - `selected_decompiled.c` - Ghidra C output for the selected functions.

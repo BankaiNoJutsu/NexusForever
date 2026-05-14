@@ -56,6 +56,8 @@ WildStar64.exe,1403bb480,ActionSet_SendPendingActionSetChanges,Sends or commits 
 WildStar64.exe,1403bb8d0,ActionSet_CheckUpdateSpellInProgress,Checks whether a spell/action-set update is already in progress.
 WildStar64.exe,1403dc9f0,WorldSocket_SelectByWorldAndSocket,WorldSocket lookup/selection path near world socket strings.
 WildStar64.exe,1404aacb0,ActionSet_ValidateRequestedChanges,Validates a 12-entry action-set request and returns a LimitedActionSetResult.
+WildStar64.exe,1404e7f60,Lua_RegisterAccountEntitlementEnums,Registers account currency/operation and entitlement Lua enums.
+WildStar64.exe,14050e830,Lua_BuildResurrectionInfoTable,Builds the resurrection Lua info table including wake-here flags and service-token cost.
 WildStar64.exe,1405e7fd0,Lua_GameSpell_Equals,Game.Spell __eq metamethod.
 WildStar64.exe,1405e8070,Lua_GameSpell_CreateOrWrap,Creates or wraps a Game.Spell Lua userdata value.
 WildStar64.exe,1405e81b0,Lua_GameSpell_Gc,Game.Spell __gc metamethod.
@@ -106,9 +108,16 @@ WildStar64.exe,1405eecf0,Lua_GameSpell_ShouldHideCooldownInTooltip,Game.Spell:Sh
 WildStar64.exe,1405eedb0,Lua_GameSpell_GetSpellServiceTokenCost,Game.Spell:GetSpellServiceTokenCost Lua method.
 WildStar64.exe,14068c2c0,Lua_RegisterPublicEventConstants,Registers public event status/category/objective constants for Lua.
 WildStar64.exe,1406a6160,Lua_GameHousingPlot_GetPlugUpgradeInfo,Housing plot Lua accessor near tSpell4IdAbility anchor.
+WildStar64.exe,140709460,Lua_RegisterGameLib,Registers GameLib Lua enums, constants, and global helpers.
+WildStar64.exe,140706140,Map_BuildRapidTransportNodeInfoTable,Builds map rapid-transport node info including availability flags and money costs.
+WildStar64.exe,140706f90,Map_GetTaxisForWorld,Map Lua method that returns taxi nodes for a world.
+WildStar64.exe,140707020,Map_GetNearestRapidTransportNodeForWorldLocation,Map Lua method that resolves the nearest rapid transport node for a world location.
+WildStar64.exe,140707640,Map_GetRapidTransportDestinationsForWorld,Map Lua method that returns rapid transport destinations for a world.
+WildStar64.exe,1407076d0,Map_GetRapidTransportCooldown,Map Lua method that returns rapid transport cooldown data.
 WildStar64.exe,140758020,Lua_ActionSetLib_IsSlotUnlocked,ActionSetLib:IsSlotUnlocked Lua method.
 WildStar64.exe,1407580e0,Lua_ActionSetLib_RequestActionSetChanges,ActionSetLib:RequestActionSetChanges Lua method.
 WildStar64.exe,140758510,Lua_ActionSetLib_GetCurrentActionSet,ActionSetLib:GetCurrentActionSet Lua method.
+WildStar64.exe,140758630,Lua_RegisterActionSetLib,Registers ActionSetLib methods and limited-action-set result constants.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.

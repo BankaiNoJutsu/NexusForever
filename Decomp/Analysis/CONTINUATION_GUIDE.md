@@ -138,10 +138,11 @@ rg -n "PublicEventObjectiveType|DefendObjectiveUnits|Lua_Register" Decomp\Analys
 When an anchor appears in `interesting_strings.csv`, open the matching rows in:
 
 1. `interesting_strings.csv` for the literal string and address.
-2. `selected_xrefs.csv` for the referencing function entry.
-3. `selected_decompiled.c` for the selected function body.
-4. `functions.csv` for nearby named or unlabeled functions.
-5. Source files under `Source/` for the current server behavior.
+2. `string_xrefs.csv` for exact xref addresses, especially data-table refs.
+3. `selected_xrefs.csv` for the referencing function entry when the xref is code.
+4. `selected_decompiled.c` for the selected function body.
+5. `functions.csv` for nearby named or unlabeled functions.
+6. Source files under `Source/` for the current server behavior.
 
 ### 4. Map The Function
 
@@ -244,7 +245,8 @@ Avoid broad patterns that explode selection noise:
 ```
 
 Re-export and confirm the pattern shows up in `interesting_strings.csv` and
-selects the expected xrefs.
+`string_xrefs.csv`, and selects the expected code xrefs when the reference is
+inside a function body.
 
 ### 7. Implement Conservatively
 

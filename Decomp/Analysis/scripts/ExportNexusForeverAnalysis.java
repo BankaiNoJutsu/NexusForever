@@ -6,6 +6,7 @@
 // The script writes a per-program folder containing:
 //   summary.txt
 //   strings.csv
+//   string_xrefs.csv
 //   imports.csv
 //   functions.csv
 //   selected_xrefs.csv
@@ -72,6 +73,9 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		"accessmask", "aliases", "alias", "userstatus", "servicetimeschedule",
 		"externalaccount", "pccafe", "licenses", "loginname", "gameaccountid",
 		"premastersecret", "authntoken", "serverrand", "serverpublickey", "serversignature",
+		"monservicetokencost", "monrezservicetokencost", "bwakehereservicetoken", "wakeherecooldown",
+		"monaltcostrapidtransport", "moncostrapidtransport", "brapidtransportallowed",
+		"getrapidtransportcooldown", "rapid transport price:", "rapid transport to $1n?",
 		"stsinetsocket", "socketcrypt", "publiceventobjectivetype",
 		"publiceventobjectivenotificationmode", "publiceventobjectivecategory", "publiceventstatus",
 		"defendobjectiveunits", "game.publicevent", "game.publiceventobjective", "tspell4idability",
@@ -201,11 +205,14 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 	private void writeStringsAndXrefs(File programDir, Listing listing, ReferenceManager referenceManager,
 			FunctionManager functionManager, Selection selection) throws Exception {
 		File stringsOut = new File(programDir, "strings.csv");
+		File refsOut = new File(programDir, "string_xrefs.csv");
 		File hitsOut = new File(programDir, "interesting_strings.csv");
 		try (
 			PrintWriter stringsWriter = new PrintWriter(new FileWriter(stringsOut));
+			PrintWriter refsWriter = new PrintWriter(new FileWriter(refsOut));
 			PrintWriter hitsWriter = new PrintWriter(new FileWriter(hitsOut))) {
 			stringsWriter.println("address,type,ref_count,interesting,value");
+			refsWriter.println("string_address,xref_address,function_entry,function_name,value");
 			hitsWriter.println("address,type,ref_count,matched_keyword,value");
 
 			DataIterator iterator = listing.getDefinedData(true);
@@ -246,13 +253,22 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 					for (Reference ref : refs) {
 						Function containing =
 							functionManager.getFunctionContaining(ref.getFromAddress());
-						if (containing != null) {
+						Function resolvedFunction = containing != null
+							? containing
+							: resolveNearbyDataFunction(listing, functionManager, ref.getFromAddress(), value);
+						refsWriter.printf("%s,%s,%s,%s,%s%n",
+							csv(data.getMinAddress().toString()),
+							csv(ref.getFromAddress().toString()),
+							csv(resolvedFunction == null ? "" : resolvedFunction.getEntryPoint().toString()),
+							csv(resolvedFunction == null ? "" : resolvedFunction.getName()),
+							csv(limit(value)));
+						if (resolvedFunction != null) {
 							if (highValue != null) {
-								selection.add(containing, "target:" + highValue + "@" +
+								selection.add(resolvedFunction, "target:" + highValue + "@" +
 									data.getMinAddress(), ref.getFromAddress());
 							}
 							if (keyword != null) {
-								selection.add(containing, "string:" + keyword + "@" +
+								selection.add(resolvedFunction, "string:" + keyword + "@" +
 									data.getMinAddress(), ref.getFromAddress());
 							}
 						}
@@ -364,6 +380,138 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 			count++;
 		}
 		return count;
+	}
+
+	private Function resolveNearbyDataFunction(Listing listing, FunctionManager functionManager,
+			Address fromAddress, String hintName) {
+		Data containingData = listing.getDefinedDataContaining(fromAddress);
+		if (containingData == null) {
+			return null;
+		}
+
+		int pointerSize = currentProgram.getDefaultPointerSize();
+		ArrayList<Address> candidates = new ArrayList<>();
+		Set<Address> seen = new LinkedHashSet<>();
+		Map<Address, Function> nearbyFunctions = new LinkedHashMap<>();
+		Address dataBase = containingData.getMinAddress();
+
+		for (int i = -4; i <= 4; i++) {
+			addCandidate(candidates, seen, fromAddress, pointerSize * (long)i);
+		}
+		for (int i = 0; i <= 4; i++) {
+			addCandidate(candidates, seen, dataBase, pointerSize * (long)i);
+		}
+
+		for (Address candidate : candidates) {
+			Function function = resolveFunctionPointerAt(
+				listing.getDefinedDataContaining(candidate), candidate, functionManager);
+			if (function != null) {
+				nearbyFunctions.putIfAbsent(function.getEntryPoint(), function);
+			}
+		}
+
+		if (nearbyFunctions.isEmpty()) {
+			return null;
+		}
+
+		if (nearbyFunctions.size() == 1) {
+			return nearbyFunctions.values().iterator().next();
+		}
+
+		String normalizedHint = normalizeIdentifier(hintName);
+		Function bestFunction = null;
+		int bestScore = 0;
+		boolean tiedBest = false;
+		for (Function function : nearbyFunctions.values()) {
+			int score = scoreFunctionName(normalizedHint, function.getName());
+			if (score > bestScore) {
+				bestFunction = function;
+				bestScore = score;
+				tiedBest = false;
+			}
+			else if (score > 0 && score == bestScore) {
+				tiedBest = true;
+			}
+		}
+
+		return bestScore > 0 && !tiedBest ? bestFunction : null;
+	}
+
+	private void addCandidate(ArrayList<Address> candidates, Set<Address> seen, Address seed,
+			long offset) {
+		try {
+			Address candidate = seed.getAddressSpace().getAddress(seed.getOffset() + offset);
+			if (seen.add(candidate)) {
+				candidates.add(candidate);
+			}
+		}
+		catch (Exception ignored) {
+		}
+	}
+
+	private Function resolveFunctionPointerAt(Data data, Address candidate,
+			FunctionManager functionManager) {
+		if (data == null) {
+			return null;
+		}
+
+		if (data.getMinAddress().equals(candidate)) {
+			Function function = functionFromValue(data.getValue(), functionManager);
+			if (function != null) {
+				return function;
+			}
+		}
+
+		for (int i = 0; i < data.getNumComponents(); i++) {
+			Function function = resolveFunctionPointerAt(data.getComponent(i), candidate, functionManager);
+			if (function != null) {
+				return function;
+			}
+		}
+
+		return null;
+	}
+
+	private Function functionFromValue(Object value, FunctionManager functionManager) {
+		if (!(value instanceof Address)) {
+			return null;
+		}
+
+		Address target = (Address)value;
+		Function function = functionManager.getFunctionAt(target);
+		if (function == null) {
+			function = functionManager.getFunctionContaining(target);
+		}
+		return function;
+	}
+
+	private int scoreFunctionName(String normalizedHint, String functionName) {
+		if (normalizedHint == null || normalizedHint.isEmpty() || functionName == null) {
+			return 0;
+		}
+
+		String normalizedFunction = normalizeIdentifier(functionName);
+		if (normalizedFunction.isEmpty() || normalizedFunction.startsWith("fun")) {
+			return 0;
+		}
+
+		if (normalizedFunction.contains(normalizedHint) || normalizedHint.contains(normalizedFunction)) {
+			return 1000 + Math.min(normalizedHint.length(), normalizedFunction.length());
+		}
+
+		int commonPrefix = 0;
+		int limit = Math.min(normalizedHint.length(), normalizedFunction.length());
+		while (commonPrefix < limit && normalizedHint.charAt(commonPrefix) == normalizedFunction.charAt(commonPrefix)) {
+			commonPrefix++;
+		}
+
+		return commonPrefix >= 8 ? commonPrefix : 0;
+	}
+
+	private String normalizeIdentifier(String value) {
+		return value == null
+			? ""
+			: value.replaceAll("[^A-Za-z0-9]", "").toLowerCase(Locale.ROOT);
 	}
 
 	private ArrayList<Reference> referencesTo(ReferenceManager referenceManager, Address address) {

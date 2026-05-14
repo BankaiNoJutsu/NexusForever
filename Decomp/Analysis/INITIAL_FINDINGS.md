@@ -7,7 +7,7 @@ and exports in `Decomp\Analysis\exports`.
 
 | Binary | Functions | Strings | Interesting strings | Selected xrefs |
 | --- | ---: | ---: | ---: | ---: |
-| `WildStar64.exe` | 24,968 | 45,034 | 10,925 | 3,318 |
+| `WildStar64.exe` | 24,968 | 45,034 | 10,940 | 3,338 |
 | `Houston64.exe` | 25,129 | 29,460 | 6,317 | 1,952 |
 | `StsConnLib64.MT.dll` | 4,522 | 10,893 | 3,406 | 2,358 |
 
@@ -253,7 +253,7 @@ for table names and field consumers, especially `WorldSocket.tbl.sql` and
 ### Public event and spell/data names
 
 `WildStar64.exe` includes public-event enum/name registration around
-`exports\WildStar64.exe\selected_decompiled.c:7987`, including names such as
+`exports\WildStar64.exe\selected_decompiled.c:8975`, including names such as
 `PublicEventObjectiveType_Script`, `PublicEventObjectiveType_ParticipantsInTriggerVolume`,
 and `PublicEventObjectiveType_KillEventObjectiveUnit`.
 
@@ -264,22 +264,22 @@ This is useful evidence for checking:
 - current expedition scripts that update public-event objectives
 
 The selected export also captures `tSpell4IdAbility` at
-`exports\WildStar64.exe\selected_decompiled.c:8582` and `tUnitProperty` at
-`selected_decompiled.c:20991`, which are good anchors for spell effect and unit
+`exports\WildStar64.exe\selected_decompiled.c:9570` and `tUnitProperty` at
+`selected_decompiled.c:22717`, which are good anchors for spell effect and unit
 property interpretation work.
 
 Follow-up implemented from this pass:
 
 - `PublicEventStatus_*` values in the Lua registration match
   `Inactive = 0`, `Active = 1`, `Succeeded = 2`, and `Failed = 3` around
-  `selected_decompiled.c:8051`.
+  `selected_decompiled.c:9039`.
 - `PublicEventObjectiveNotificationMode_*` values match `Normal = 0`,
   `LowTime = 1`, `Warn = 2`, `Serious = 3`, `Critical = 4`, and
-  `Achieving = 5` around `selected_decompiled.c:8087`.
+  `Achieving = 5` around `selected_decompiled.c:9075`.
 - `PublicEventObjectiveCategory_*` values match `Main = 0`, `Optional = 1`,
-  `PlayerPath = 2`, and `Challenge = 3` around `selected_decompiled.c:8141`.
+  `PlayerPath = 2`, and `Challenge = 3` around `selected_decompiled.c:9129`.
 - The client exposes `PublicEventObjectiveType_DefendObjectiveUnits` at value
-  `12` around `selected_decompiled.c:8285`; NexusForever keeps the existing
+  `12` around `selected_decompiled.c:9273`; NexusForever keeps the existing
   singular member and now has a plural alias for client-facing naming parity.
 
 These constants now have explicit values in the static enums where they were
@@ -293,22 +293,23 @@ names as high-value anchors.
 `Lua_GameSpell_CreateOrWrap` at `1405e8070`,
 `Lua_GameSpell_Gc` at `1405e81b0`, and
 `Lua_RegisterGameSpellBindings` at `1405e8230`. Export-only runs apply these
-names from `function_labels.csv`; the latest run reported 91 applied labels and
+names from `function_labels.csv`; the latest run reported 94 applied labels and
 0 missing labels.
 
 `Lua_RegisterGameSpellBindings` starts around
-`exports\WildStar64.exe\selected_decompiled.c:3576`. The registration walks the
+`exports\WildStar64.exe\selected_decompiled.c:4564`. The registration walks the
 indirect `Game.Spell` method table, then installs spell-facing Lua enums:
 
-- `CodeEnumCastMethod` around `selected_decompiled.c:3734` confirms
+- `CodeEnumCastMethod` around `selected_decompiled.c:4722` confirms
   `Normal = 0`, `Channeled = 1`, `PressHold = 2`,
   `ChanneledField = 3`, `UNUSED04 = 4`, `ClientSideInteraction = 5`,
-  `RapidTap = 6`, `ChargeRelease = 7`, `Multiphase = 8`, and
-  `Transactional = 9`. The next value is still named through an undecoded data
-  pointer, so NexusForever intentionally leaves it unmapped for now.
-- `CodeEnumSchool` around `selected_decompiled.c:3846` confirms
+  `RapidTap = 6`, `ChargeRelease = 7`, `Multiphase = 8`,
+  `Transactional = 9`, and `Aura = 10`. `Aura` is referenced through
+  `DAT_140b234a0` around `selected_decompiled.c:4822`; the local
+  `WildStar64.exe` bytes at `0x140b234a0` decode to the ASCII string `Aura`.
+- `CodeEnumSchool` around `selected_decompiled.c:4834` confirms
   `Spell = 0`, `Melee = 1`, `Ranged = 2`, and `Unarmed = 3`.
-- `CodeEnumAOESelectionType` around `selected_decompiled.c:3998` confirms the
+- `CodeEnumAOESelectionType` around `selected_decompiled.c:4986` confirms the
   existing `AoeSelectionType` order: `None = 0`, `Closest = 1`,
   `Furthest = 2`, `Random = 3`, `LowestAbsoluteHealth = 4`, and
   `MissingMostHealth = 5`.
@@ -324,18 +325,31 @@ such as `GetCasterInnateRequirements`, `GetCasterInnateCosts`,
 `GetSpellServiceTokenCost`. The direct callback labels now make those methods
 available in `selected_decompiled.c` without guessing from string proximity.
 
-`Lua_GameSpell_GetCastMethod` at `selected_decompiled.c:6040` and
-`Lua_GameSpell_GetSchool` at `selected_decompiled.c:6079` both resolve the
+`Lua_GameSpell_GetCastMethod` at `selected_decompiled.c:7028` and
+`Lua_GameSpell_GetSchool` at `selected_decompiled.c:7067` both resolve the
 `Game.Spell` userdata through the spell service and return numeric enum values.
-`Lua_GameSpell_GetSpellServiceTokenCost` at `selected_decompiled.c:7944` checks
+`Lua_GameSpell_GetSpellServiceTokenCost` at `selected_decompiled.c:8932` checks
 a spell metadata flag before returning a decoded 15-bit service-token value.
 
 The LAS/action-set bridge is now labelled too. The decoded `ActionSetLib` table
 at `140b75900` maps `IsSlotUnlocked` to `Lua_ActionSetLib_IsSlotUnlocked` at
-`selected_decompiled.c:8607`, `RequestActionSetChanges` to
-`Lua_ActionSetLib_RequestActionSetChanges` at `selected_decompiled.c:8652`, and
+`selected_decompiled.c:10484`, `RequestActionSetChanges` to
+`Lua_ActionSetLib_RequestActionSetChanges` at `selected_decompiled.c:10529`, and
 `GetCurrentActionSet` to `Lua_ActionSetLib_GetCurrentActionSet` at
-`selected_decompiled.c:8847`.
+`selected_decompiled.c:10724`.
+
+`Lua_RegisterActionSetLib` at
+`exports\WildStar64.exe\selected_decompiled.c:10789` installs the `ActionSetLib`
+method table, `CodeEnumLimitedActionSetResult`, and `CodeEnumShortcutSet`. The
+limited-action-set result table registers `0x2e` entries, matching the 46 values
+already present in NexusForever's `LimitedActionSetResult` enum. The adjacent
+client string table confirms the same names, with the Lua-facing Eldan
+augmentation labels written as `EldanAugmentation_*`.
+
+`CodeEnumShortcutSet` confirms `VehicleBar = 0`, `PrimaryPetBar = 1`,
+`PetMiniBar0 = 2`, `PetMiniBar1 = 3`, `PetMiniBar2 = 4`, `PetMiniBar3 = 5`,
+`PetMiniBar4 = 6`, `FloatingSpellBar = 7`, `FloatingDynamicSpellBar = 8`, and
+`Count = 9` around `selected_decompiled.c:10913`.
 
 `Lua_ActionSetLib_RequestActionSetChanges` builds a Lua result table containing
 `eResult`. It rejects malformed action-set input unless the collected payload is
@@ -380,6 +394,187 @@ Follow-up implemented from this pass:
   LAS slot `WeaponSlot == 5` validation before mutating the server action set,
   returning the matching `LimitedActionSetResult` failure when the packet is
   malformed.
+
+Second spell-binding follow-up implemented from this pass:
+
+- `Lua_RegisterGameSpellBindings` registers `CodeEnumSpellTag` with 11 entries
+  around `exports\WildStar64.exe\selected_decompiled.c:4663`, with the loop
+  count visible at `selected_decompiled.c:4671`.
+- `Tools\DataMapping\output\client_source_spell4tag_map.csv` maps the client
+  spell tag rows as `Assault = 1`, `Support = 2`, `Path = 3`, `Misc = 4`,
+  `Mount = 5`, `Utility = 7`, and unnamed entries at `6`, `8`, `9`, `10`,
+  and `11`.
+- `Source\NexusForever.Game.Static\Spell\SpellTag.cs` now carries those explicit
+  values, and `/spell inspect` plus `/spell inspect4` print decoded spell tags
+  from the five `Spell4TagId` fields to make follow-up spell-family analysis
+  easier.
+- The previously undecoded `CodeEnumCastMethod` value after `Transactional` is
+  now mapped as `Aura = 10`; `Source\NexusForever.Game.Static\Spell\SpellCastMethod.cs`
+  exposes it for spell metadata inspection and future Lua-parity checks.
+
+Third spell-binding follow-up implemented from this pass:
+
+- `Lua_GameSpell_ShouldHideCooldownInTooltip` at
+  `exports\WildStar64.exe\selected_decompiled.c:8891` reads
+  `Spell4.PropertyFlags & 0x200` and returns the one-bit result.
+- `Lua_GameSpell_GetSpellServiceTokenCost` at
+  `exports\WildStar64.exe\selected_decompiled.c:8932` checks
+  `Spell4.PropertyFlags & 0x20000000` before resolving a spell-specific service
+  token cost.
+- `Tools\DataMapping\output\client_source_spell4servicetokencost_map.csv:1`
+  currently maps 6 concrete `Spell4ServiceTokenCost` rows, including recall and
+  transmat spells with a cost of `10`.
+- `ISpellInfo` / `SpellInfo` now surface typed spell property flags,
+  cooldown-tooltip suppression, and mapped service-token-cost rows. `/spell
+  inspect` and `/spell inspect4` print the decoded property flag state and
+  service-token cost for follow-up spell-system investigation.
+- No spell runtime spending behavior was changed in this pass; the new server
+  surface is diagnostic-only until a verified client/server use site is mapped.
+
+Fourth spell/action-set follow-up implemented from this pass:
+
+- `Lua_RegisterActionSetLib` is now named in `function_labels.csv`, keeping the
+  client enum-registration evidence reproducible in future export-only runs.
+- `Source\NexusForever.Game.Static\Spell\ShortcutSet.cs` now includes the
+  client-confirmed `Count = 9` sentinel alongside the already-mapped pet mini
+  bars.
+- The existing `LimitedActionSetResult` values were checked against the
+  client-side 46-entry registration table; no packet enum value changes were
+  needed.
+
+Fifth spell-binding follow-up implemented from this pass:
+
+- `Lua_GameSpell_IsBeneficial` at
+  `exports\WildStar64.exe\selected_decompiled.c:6654` reads
+  `Spell4.PropertyFlags & 0x04000000` and returns the single-bit result.
+- `Source\NexusForever.Game.Static\Spell\SpellPropertyFlags.cs` now maps that
+  client-confirmed bit as `IsBeneficial = 0x04000000`, and `ISpellInfo` /
+  `SpellInfo` surface it for diagnostics.
+- `/spell inspect` and `/spell inspect4` now print the decoded `beneficial`
+  state alongside the existing property-flag, cooldown-tooltip, and
+  service-token-cost diagnostics.
+- `GameFormula 1307` maps rapid transport to two concrete spells in the client
+  tables: `82922` (`Rapid Transport - Global - Tier 1`, one-hour cooldown) and
+  `82956` (`Rapid Transport - Global - Service Tokens - Tier 1`, zero
+  cooldown).
+- `ClientRapidTransportHandler` still always casts `GameFormula 1307.Dataint0`,
+  and `ClientRapidTransport` currently exposes only `TaxiNode` plus an opaque
+  `Time` field. Because spell `82956` is not present in the six currently mapped
+  `Spell4ServiceTokenCost` rows, the service-token rapid-transport payment path
+  remains evidence-incomplete and was intentionally left unimplemented.
+
+Sixth resurrection/service-token follow-up implemented from this pass:
+
+- `Lua_RegisterAccountEntitlementEnums` at
+  `exports\WildStar64.exe\selected_decompiled.c:3412` now has a reproducible
+  label. It registers account currency/operation enums and the entitlement enum,
+  including `WakeHereCooldownReduction` around `selected_decompiled.c:3664` and
+  `selected_decompiled.c:3718`.
+- `Lua_BuildResurrectionInfoTable` at
+  `exports\WildStar64.exe\selected_decompiled.c:3972` builds the resurrection
+  Lua table fields `bIsDead`, `bHasCasterRezRequest`, `fDeathPenalty`,
+  `fWakeHereCooldown`, `fForceRezTimer`, `monRezCost`,
+  `monRezServiceTokenCost`, `bWakeHere`, `bHolocrypt`, `bExitInstance`,
+  `bAcceptCasterRez`, and `bWakeHereServiceToken`.
+- The client constructs `monRezServiceTokenCost` from `GameFormula 0x523` around
+  `selected_decompiled.c:4198`, matching NexusForever's resurrection
+  service-token cost source. `ResurrectionManager` now uses a named
+  `WakeHereServiceTokenCostGameFormulaId` constant instead of an opaque decimal
+  literal.
+- The service-token resurrection option is driven by the `WakeHereServiceToken`
+  resurrection flag bit; `TimeUntilWakeHereMs` is the separate wake-here cooldown
+  timer. `ServerResurrectionShow` now documents that distinction.
+
+Seventh rapid-transport follow-up implemented from this pass:
+
+- `Decomp\Analysis\scripts\ExportNexusForeverAnalysis.java` now treats
+  `monAltCostRapidTransport`, `monCostRapidTransport`,
+  `bRapidTransportAllowed`, and `GetRapidTransportCooldown` as high-value
+  export anchors. The refreshed WildStar64 export pulled in the map rapid-
+  transport node builder and preserved it through
+  `function_labels.csv` as `Map_BuildRapidTransportNodeInfoTable`.
+- `Map_BuildRapidTransportNodeInfoTable` at
+  `exports\WildStar64.exe\selected_decompiled.c:9595` builds per-node map UI
+  data including `idNode`, `eType`, `strName`, `bUnlocked`,
+  `nRecommendedMinLevel`, `nRecommendedMaxLevel`, `nAutoUnlockLevel`,
+  `bRapidTransportAllowed`, `monCostRapidTransport`,
+  `monAltCostRapidTransport`, `bTransportAllowed`, `bTaxiAllowed`,
+  `tLocation`, and `idMapZone`.
+- Both rapid-transport cost fields are wrapped as `Game.Money` objects around
+  `selected_decompiled.c:9830` and `selected_decompiled.c:9858`, which means
+  the client map-destination pricing path is credit/money-based rather than a
+  direct `Spell4ServiceTokenCost` lookup.
+- The client DB schema separately exposes `TaxiRoute.tbl.sql` with a single
+  `price` column, making taxi-route pricing a much stronger fit for
+  `monCostRapidTransport` than the spell service-token table. The exact source
+  of `monAltCostRapidTransport` is still not decoded.
+- This narrows the remaining gap: `GameFormula 1307` still exposes the normal
+  versus service-token rapid-transport spell pair, but the map destination UI is
+  a separate money-pricing subsystem. `ClientRapidTransportHandler` therefore
+  still should not implement payment or cooldown-bypass logic until the packet's
+  `Time` semantics and the `GetRapidTransportCooldown` / spell-selection path
+  are both confirmed.
+
+Eighth rapid-transport follow-up implemented from this pass:
+
+- `ExportNexusForeverAnalysis.java` now writes `string_xrefs.csv` for
+  interesting string references. This exposed the map Lua registration table
+  entries for `GetRapidTransportDestinationsForWorld`,
+  `GetNearestRapidTransportNodeForWorldLocation`, and
+  `GetRapidTransportCooldown` at `string_xrefs.csv:5462`.
+- The map Lua callbacks are now reproducibly labelled:
+  `Map_GetTaxisForWorld` at `140706f90`,
+  `Map_GetNearestRapidTransportNodeForWorldLocation` at `140707020`,
+  `Map_GetRapidTransportDestinationsForWorld` at `140707640`, and
+  `Map_GetRapidTransportCooldown` at `1407076d0`. The refreshed export applied
+  99 WildStar64 labels with 0 missing labels.
+- `Map_GetRapidTransportDestinationsForWorld` calls the same destination-list
+  builder as the per-node map UI path around
+  `exports\WildStar64.exe\selected_decompiled.c:10381`, while
+  `Map_GetNearestRapidTransportNodeForWorldLocation` consumes a Lua `position`
+  table and returns the nearest rapid-transport node around
+  `selected_decompiled.c:10109`.
+- `Map_GetRapidTransportCooldown` resolves `GameFormula 0x51b` (`1307`) and
+  uses the formula's first integer payload as the spell id around
+  `selected_decompiled.c:10432`. It then walks the player's spell cooldown list
+  and returns the remaining value in seconds around `selected_decompiled.c:10477`.
+- `ClientRapidTransportHandler` now uses a named
+  `RapidTransportSpellGameFormulaId` constant and validates that the
+  client-confirmed normal spell id (`Dataint0`, currently `82922`) exists before
+  casting it. `Dataint01` (`82956`) is still documented as the service-token
+  spell candidate, but payment/cooldown-bypass behavior remains blocked because
+  the packet `Time` field and service-token selection path are not mapped.
+- Verification: refreshed `WildStar64.exe` with an export-only Ghidra pass using
+  `-Targets WildStar64.exe -MaxDecompiledFunctions 520`, then ran
+  `dotnet build Source\NexusForever.sln --no-restore`; the build succeeded with
+  the existing `SharpCompress` NU1902 advisory warnings in
+  `NexusForever.MapGenerator`.
+
+Ninth GameLib follow-up implemented from this pass:
+
+- A widened WildStar64 export finally surfaced `FUN_140709460`, and the Lua
+  registration fanout in that export passed the function to the loader as
+  `GameLib`. `function_labels.csv` now records it as `Lua_RegisterGameLib`, and
+  a follow-up export-only verification pass with
+  `-Targets WildStar64.exe -MaxDecompiledFunctions 300` keeps it in
+  `exports\WildStar64.exe\selected_decompiled.c:10484` with `100` applied
+  WildStar64 labels and `0` missing labels.
+- `Lua_RegisterGameLib` begins by creating the `GameLib` table, then populates
+  client-facing enums and constants rather than a simple pointer-table wrapper.
+  Early in the body it registers the resurrection-facing `RezType` values,
+  including `WakeHere = 1`, `Holocrypt = 2`, `SpellCasterLocation = 4`,
+  `ExitInstance = 32`, and `WakeHereServiceToken = 64`, matching the previously
+  mapped resurrection option strings.
+- The same body also exposes broad client constants such as
+  `CodeEnumMapOverlayType`, `CodeEnumEquipItemResult`, input-device/input-event
+  enums, `CodeEnumCombatResult`, `CodeEnumRace`, `CodeEnumClass`,
+  `CodeEnumRecallCommand`, `CodeEnumItemSlots`, and a live `MapZone` export.
+- The still-blank `string_xrefs.csv` rows for `RequestRewardUpdate`,
+  `GetWorldHeroismMenaceLevel`, `GetWorldMaxPrimeLevel`, and
+  `GetWorldPrimeLevel` did not resolve just because `Lua_RegisterGameLib`
+  surfaced. Those names still do not appear as direct string literals in the
+  decompiled `GameLib` body, so they remain blocked on separate callback-table
+  or helper-function mapping rather than this top-level registration routine.
 
 ## Practical Next Steps
 
