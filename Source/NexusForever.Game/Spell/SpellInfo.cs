@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
@@ -8,6 +9,11 @@ namespace NexusForever.Game.Spell
     {
         public Spell4Entry Entry { get; }
         public ISpellBaseInfo BaseInfo { get; }
+        public SpellPropertyFlags PropertyFlags { get; }
+        public bool HideCooldownInTooltip { get; }
+        public bool IsBeneficial { get; }
+        public bool HasServiceTokenCost { get; }
+        public Spell4ServiceTokenCostEntry ServiceTokenCostEntry { get; }
         public Spell4AoeTargetConstraintsEntry AoeTargetConstraints { get; }
         public Spell4ConditionsEntry CasterConditions { get; }
         public Spell4ConditionsEntry TargetConditions { get; }
@@ -28,6 +34,11 @@ namespace NexusForever.Game.Spell
         {
             Entry                          = spell4Entry;
             BaseInfo                       = spellBaseBaseInfo;
+            PropertyFlags                  = (SpellPropertyFlags)spell4Entry.PropertyFlags;
+            HideCooldownInTooltip          = (PropertyFlags & SpellPropertyFlags.HideCooldownInTooltip) != 0;
+            IsBeneficial                   = (PropertyFlags & SpellPropertyFlags.IsBeneficial) != 0;
+            HasServiceTokenCost            = (PropertyFlags & SpellPropertyFlags.HasServiceTokenCost) != 0;
+            ServiceTokenCostEntry          = GameTableManager.Instance.Spell4ServiceTokenCost.Entries.FirstOrDefault(e => e.Spell4Id == spell4Entry.Id);
             AoeTargetConstraints           = GameTableManager.Instance.Spell4AoeTargetConstraints.GetEntry(spell4Entry.Spell4AoeTargetConstraintsId);
             CasterConditions               = GameTableManager.Instance.Spell4Conditions.GetEntry(spell4Entry.Spell4ConditionsIdCaster);
             TargetConditions               = GameTableManager.Instance.Spell4Conditions.GetEntry(spell4Entry.Spell4ConditionsIdTarget);

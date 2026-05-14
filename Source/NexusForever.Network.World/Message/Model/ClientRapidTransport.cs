@@ -6,7 +6,7 @@ namespace NexusForever.Network.World.Message.Model
     public class ClientRapidTransport : IReadable
     {
         public ushort TaxiNode { get; private set; }
-        // not sure about the name - some increment
+        // Client-supplied timestamp/sequence; semantics are still unmapped.
         public uint Time { get; private set; }
 
         public void Read(GamePacketReader reader)

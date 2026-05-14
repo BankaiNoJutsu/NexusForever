@@ -1,4 +1,5 @@
-﻿using NexusForever.GameTable.Model;
+﻿using NexusForever.Game.Static.Spell;
+using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Abstract.Spell
 {
@@ -6,6 +7,11 @@ namespace NexusForever.Game.Abstract.Spell
     {
         Spell4Entry Entry { get; }
         ISpellBaseInfo BaseInfo { get; }
+        SpellPropertyFlags PropertyFlags { get; }
+        bool HideCooldownInTooltip { get; }
+        bool IsBeneficial { get; }
+        bool HasServiceTokenCost { get; }
+        Spell4ServiceTokenCostEntry ServiceTokenCostEntry { get; }
         Spell4AoeTargetConstraintsEntry AoeTargetConstraints { get; }
         Spell4ConditionsEntry CasterConditions { get; }
         Spell4ConditionsEntry TargetConditions { get; }

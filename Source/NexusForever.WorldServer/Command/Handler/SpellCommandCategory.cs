@@ -7,6 +7,7 @@ using NexusForever.Game.Spell;
 using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.RBAC;
+using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.WorldServer.Command.Context;
@@ -165,12 +166,13 @@ namespace NexusForever.WorldServer.Command.Handler
         {
             Spell4Entry entry = spellInfo.Entry;
 
-            context.SendMessage($"Spell base {spellBaseInfo.Entry.Id}, tier {tier}, spell4 {entry.Id}: class {spellBaseInfo.SpellClass}, castMethod {spellBaseInfo.CastMethod}, school {spellBaseInfo.School}, effects {spellInfo.Effects.Count}, telegraphs {spellInfo.Telegraphs.Count}.");
+            context.SendMessage($"Spell base {spellBaseInfo.Entry.Id}, tier {tier}, spell4 {entry.Id}: class {spellBaseInfo.SpellClass}, castMethod {spellBaseInfo.CastMethod}, school {spellBaseInfo.School}, tags [{FormatSpellTags(entry)}], effects {spellInfo.Effects.Count}, telegraphs {spellInfo.Telegraphs.Count}.");
             if (!string.IsNullOrWhiteSpace(entry.Description))
                 context.SendMessage($"Description: {entry.Description}");
 
             context.SendMessage($"Timing cast/duration/cooldown {entry.CastTime}/{entry.SpellDuration}/{entry.SpellCoolDown}ms, channel initial/max/pulse {entry.ChannelInitialDelay}/{entry.ChannelMaxTime}/{entry.ChannelPulseTime}ms, GCD enum {entry.GlobalCooldownEnum}, global cooldown id {entry.SpellCoolDownIdGlobal}.");
             context.SendMessage($"Range min/max/vertical {entry.TargetMinRange:R}/{entry.TargetMaxRange:R}/{entry.TargetVerticalRange:R}, charges count/rechargeTime/rechargeCount {entry.AbilityChargeCount}/{entry.AbilityRechargeTime}/{entry.AbilityRechargeCount}, thresholdTime {entry.ThresholdTime}.");
+            context.SendMessage($"Flags property 0x{entry.PropertyFlags:X8}, beneficial {spellInfo.IsBeneficial}, hideCooldownTooltip {spellInfo.HideCooldownInTooltip}, serviceTokenCost {DescribeServiceTokenCost(spellInfo)}.");
             context.SendMessage($"Costs innate0 type/cost/emm {entry.InnateCostType0}/{entry.InnateCost0}/{entry.InnateCostEMMId0}, innate1 type/cost/emm {entry.InnateCostType1}/{entry.InnateCost1}/{entry.InnateCostEMMId1}, abilityPointCost {entry.AbilityPointCost}.");
             context.SendMessage($"Hooks castEvents [{FormatNonZero(entry.Spell4IdCastEvent00, entry.Spell4IdCastEvent01, entry.Spell4IdCastEvent02, entry.Spell4IdCastEvent03)}], runners [{FormatNonZero(entry.Spell4RunnerId00, entry.Spell4RunnerId01)}], runnerPrereqs [{FormatNonZero(entry.PrerequisiteIdRunners)}], alternate {entry.Spell4IdMechanicAlternateSpell}, petSwitch {entry.Spell4IdPetSwitch}.");
             context.SendMessage($"Prereqs casterCast {entry.PrerequisiteIdCasterCast}, targetCast {entry.PrerequisiteIdTargetCast}, casterPersist {entry.PrerequisiteIdCasterPersistence}, targetPersist {entry.PrerequisiteIdTargetPersistence}, aoeTarget {entry.PrerequisiteIdAoeTarget}, aoePreferred {entry.PrerequisiteIdAoePreferredTarget}.");
@@ -270,6 +272,37 @@ namespace NexusForever.WorldServer.Command.Handler
                 .ToArray();
 
             return nonZero is { Length: > 0 } ? string.Join(", ", nonZero) : "none";
+        }
+
+        private static string FormatSpellTags(Spell4Entry entry)
+        {
+            uint[] tagIds =
+            [
+                entry.Spell4TagId00,
+                entry.Spell4TagId01,
+                entry.Spell4TagId02,
+                entry.Spell4TagId03,
+                entry.Spell4TagId04
+            ];
+
+            string[] tags = tagIds
+                .Where(t => t != 0u)
+                .Select(t => Enum.IsDefined(typeof(SpellTag), (int)t) ? $"{(SpellTag)t} ({t})" : t.ToString())
+                .ToArray();
+
+            return tags.Length > 0 ? string.Join(", ", tags) : "none";
+        }
+
+        private static string DescribeServiceTokenCost(ISpellInfo spellInfo)
+        {
+            if (!spellInfo.HasServiceTokenCost)
+                return spellInfo.ServiceTokenCostEntry != null
+                    ? $"table-only/{spellInfo.ServiceTokenCostEntry.ServiceTokenCost}"
+                    : "none";
+
+            return spellInfo.ServiceTokenCostEntry != null
+                ? spellInfo.ServiceTokenCostEntry.ServiceTokenCost.ToString()
+                : "flagged/no-row";
         }
 
         private static string DescribeEffectSemantics(SpellEffectInterpretation effect)

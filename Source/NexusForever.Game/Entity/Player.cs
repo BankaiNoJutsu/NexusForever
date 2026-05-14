@@ -386,6 +386,7 @@ namespace NexusForever.Game.Entity
             SpellManager.Update(lastTick);
             CostumeManager.Update(lastTick);
             QuestManager.Update(lastTick);
+            ResurrectionManager.Update(lastTick);
 
             relocationTimer.Update(lastTick);
             if (relocationTimer.HasElapsed)

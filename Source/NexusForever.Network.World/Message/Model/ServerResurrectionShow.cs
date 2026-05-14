@@ -19,7 +19,7 @@ namespace NexusForever.Network.World.Message.Model
         public bool HasCasterRezRequest { get; set; }
 
         /// <summary>
-        /// This must be set if the player is to be given the option to use Service Tokens.
+        /// Remaining wake-here cooldown, in milliseconds. The service-token option is controlled by <see cref="ShowRezFlags"/>.
         /// </summary>
         public uint TimeUntilWakeHereMs { get; set; }
 

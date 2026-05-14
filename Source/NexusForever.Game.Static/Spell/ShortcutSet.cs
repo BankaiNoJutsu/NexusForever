@@ -10,6 +10,7 @@ namespace NexusForever.Game.Static.Spell
         PetMiniBar3             = 5,
         PetMiniBar4             = 6,
         FloatingSpellBar        = 7,
-        FloatingDynamicSpellBar = 8
+        FloatingDynamicSpellBar = 8,
+        Count                   = 9
     }
 }

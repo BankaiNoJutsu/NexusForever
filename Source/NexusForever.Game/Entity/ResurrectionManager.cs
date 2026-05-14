@@ -1,4 +1,5 @@
-﻿using NexusForever.Game.Abstract.Entity;
+﻿using System;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
@@ -15,6 +16,8 @@ namespace NexusForever.Game.Entity
     public class ResurrectionManager : IResurrectionManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
+        private const uint WakeHereServiceTokenCostGameFormulaId = 0x0523u;
 
         /// <summary>
         /// Determines if owner <see cref="IPlayer"/> can resurrect another player.
@@ -82,8 +85,14 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void Update(double lastTick)
         {
-            // TODO: timer
-            //wakeHereTimer.Update(lastTick);
+            if (!wakeHereTimer.IsTicking)
+                return;
+
+            wakeHereTimer.Update(lastTick);
+            if (wakeHereTimer.IsTicking || ResurrectionType == ResurrectionType.None)
+                return;
+
+            ResurrectionType = GetResurrectionType();
         }
 
         /// <summary>
@@ -106,7 +115,7 @@ namespace NexusForever.Game.Entity
                 ShowRezFlags        = ResurrectionType,
                 HasCasterRezRequest = false,
                 TimeUntilForceRezMs = 0u,
-                TimeUntilWakeHereMs = wakeHereTimer.IsTicking ? (uint)wakeHereTimer.Duration * 1000u : 0u
+                TimeUntilWakeHereMs = GetWakeHereCooldownMs()
             });
 
             log.Trace($"Player {owner.Guid} has resurrect options {resurrectionType}.");
@@ -120,10 +129,15 @@ namespace NexusForever.Game.Entity
         private ResurrectionType GetResurrectionType()
         {
             ResurrectionType type = owner.Map.GetResurrectionType();
+            if (hasCasterResurrectionRequest)
+                type |= ResurrectionType.SpellCasterLocation;
+
             if (CanWakeHere())
                 type |= ResurrectionType.WakeHere;
+            else
+                type |= ResurrectionType.WakeHereServiceToken;
 
-            return type |= ResurrectionType.WakeHereServiceToken;
+            return type;
         }
 
         /// <summary>
@@ -172,9 +186,7 @@ namespace NexusForever.Game.Entity
                 return false;
 
             owner.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, cost);
-            
-            // TODO: timer
-            //wakeHereTimer.Reset();
+            wakeHereTimer.Reset();
 
             return true;
         }
@@ -195,6 +207,13 @@ namespace NexusForever.Game.Entity
         private bool CanSpellCasterLocation()
         {
             return hasCasterResurrectionRequest;
+        }
+
+        private uint GetWakeHereCooldownMs()
+        {
+            return wakeHereTimer.IsTicking
+                ? (uint)Math.Ceiling(wakeHereTimer.Time * 1000d)
+                : 0u;
         }
 
         /// <summary>
@@ -257,7 +276,7 @@ namespace NexusForever.Game.Entity
 
         private uint GetServiceTokenCostForResurrection()
         {
-            GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(1315);
+            GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(WakeHereServiceTokenCostGameFormulaId);
             return entry.Dataint0;
         }
     }

@@ -11,6 +11,7 @@ namespace NexusForever.Game.Static.Spell
         RapidTap              = 6,
         ChargeRelease         = 7,
         Multiphase            = 8,
-        Transactional         = 9
+        Transactional         = 9,
+        Aura                  = 10
     }
 }
