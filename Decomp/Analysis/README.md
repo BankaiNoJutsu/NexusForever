@@ -72,6 +72,13 @@ Re-export or analyze only one binary while iterating on a focused subsystem:
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets StsConnLib64.MT.dll -MaxDecompiledFunctions 260
 ```
 
+Attach a focused helper script to an export-only pass when chasing callback
+tables or raw code stubs:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -ExtraPostScript DumpNearbyData.java -ExtraPostScriptArgs @('140b73540','20')
+```
+
 Skip source-controlled labels when testing raw Ghidra output:
 
 ```powershell
@@ -102,6 +109,10 @@ Per binary:
 Function labels are maintained in `Decomp\Analysis\function_labels.csv` and
 applied by `scripts\ApplyNexusForeverLabels.java` before `selected_decompiled.c`
 is written.
+
+Focused helper scripts under `Decomp\Analysis\scripts` can be run with
+`-ExtraPostScript`, after the normal export, for one-off inspection without
+changing the repeatable CSV export shape.
 
 The Ghidra project is kept under `Decomp\Analysis\ghidra_projects` so the same
 analysis can be opened interactively in Ghidra later.

@@ -19,6 +19,8 @@ implement server behavior from the evidence in the existing C# codebase.
 | `Decomp/Analysis/run_ghidra_analysis.ps1` | Runs or re-exports headless Ghidra analysis. |
 | `Decomp/Analysis/scripts/ApplyNexusForeverLabels.java` | Applies source-controlled function labels before export. |
 | `Decomp/Analysis/scripts/ExportNexusForeverAnalysis.java` | Writes repeatable CSV and decompiler exports. |
+| `Decomp/Analysis/scripts/DumpNearbyData.java` | Dumps nearby data-table slots and resolves pointer targets. |
+| `Decomp/Analysis/scripts/InspectCodeAddress.java` | Decompiles a function or dumps raw instructions at a code address. |
 | `Decomp/Analysis/function_labels.csv` | Durable function label map. This is the main bridge from native addresses to named evidence. |
 | `Decomp/Analysis/INITIAL_FINDINGS.md` | Living summary of mapped behavior and follow-up implementation. |
 | `Decomp/Analysis/exports/<binary>` | Generated analysis exports. Ignored by Git. |
@@ -111,6 +113,13 @@ For a fresh default analysis:
 
 ```powershell
 .\Decomp\Analysis\run_ghidra_analysis.ps1
+```
+
+For callback-table or raw-stub work, keep the standard export and attach a
+focused helper script:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -MaxDecompiledFunctions 340 -ExtraPostScript DumpNearbyData.java -ExtraPostScriptArgs @('140b73540','20')
 ```
 
 Increase `-MaxDecompiledFunctions` only when the selected functions are too

@@ -7,7 +7,7 @@ and exports in `Decomp\Analysis\exports`.
 
 | Binary | Functions | Strings | Interesting strings | Selected xrefs |
 | --- | ---: | ---: | ---: | ---: |
-| `WildStar64.exe` | 24,968 | 45,034 | 10,940 | 3,338 |
+| `WildStar64.exe` | 24,970 | 45,034 | 10,940 | 3,509 |
 | `Houston64.exe` | 25,129 | 29,460 | 6,317 | 1,952 |
 | `StsConnLib64.MT.dll` | 4,522 | 10,893 | 3,406 | 2,358 |
 
@@ -575,6 +575,292 @@ Ninth GameLib follow-up implemented from this pass:
   surfaced. Those names still do not appear as direct string literals in the
   decompiled `GameLib` body, so they remain blocked on separate callback-table
   or helper-function mapping rather than this top-level registration routine.
+
+Tenth GameLib follow-up implemented from this pass:
+
+- A targeted walk of the data neighborhood around `140b73550` showed the
+  unresolved `GameLib` names live in an alternating `string pointer` /
+  `callback pointer` table rather than as direct xrefs inside
+  `Lua_RegisterGameLib`. The same cluster also exposes
+  `GetPrimeLevelAchieved`, `ConfirmPartialUnlock`, `GetUnlocksForType`, and
+  `SalvageKeyCount` entries nearby.
+- `function_labels.csv` now also records `Lua_GameLib_GetPrimeLevelAchieved`
+  at `140708d50`, alongside the already-resolved callback-table entries for
+  `Lua_GameLib_GetWorldPrimeLevel` (`140708da0`),
+  `Lua_GameLib_GetWorldMaxPrimeLevel` (`140708dd0`),
+  `Lua_GameLib_GetWorldHeroismMenaceLevel` (`140708e60`), and
+  `Lua_GameLib_RequestRewardUpdate` (`1407091e0`). `string_xrefs.csv` now
+  resolves those four previously blank rows to the correct callback addresses.
+- `Lua_GameLib_GetWorldPrimeLevel` and
+  `Lua_GameLib_GetWorldHeroismMenaceLevel` are short code stubs that Ghidra had
+  not promoted to functions automatically. `ApplyNexusForeverLabels.java` now
+  creates a function at an instruction address before naming it, which is why
+  the durable labels survive export-only passes cleanly.
+- The traced bodies match the callback names closely enough for implementation
+  notes: `GetWorldPrimeLevel` reads a global world-prime value from the main
+  client state block, `GetWorldMaxPrimeLevel` computes the remaining available
+  prime level from active world data, `GetWorldHeroismMenaceLevel` reads the
+  current world-state object at `DAT_140c65898 + 0x7258` and returns field
+  `0x54` when present, and `RequestRewardUpdate` forwards to the existing
+  `Reward_SendRewardUpdateRequest` helper at `140636ba0`.
+- `Reward_SendRewardUpdateRequest` throttles indices below `7`, then sends
+  world opcode `0x07CC` with that index. NexusForever now names that opcode
+  `ClientRewardUpdateRequest`, reads the single `uint` index, and logs/ignores
+  the unsupported request rather than treating it as an unknown packet. No
+  reward rotation state is mutated because the server response/update semantics
+  are still unmapped.
+- Two small headless helpers, `DumpNearbyData.java` and
+  `InspectCodeAddress.java`, were added under `Decomp\Analysis\scripts` to
+  support future callback-table and raw-stub tracing. The
+  `run_ghidra_analysis.ps1` wrapper now accepts `-ExtraPostScript` and
+  `-ExtraPostScriptArgs`, so those helpers can run as part of repeatable
+  export-only passes.
+- Verification: `.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly
+  -Targets WildStar64.exe -MaxDecompiledFunctions 340 -ExtraPostScript
+  DumpNearbyData.java -ExtraPostScriptArgs @('140b73540','20')` applied `106`
+  WildStar64 labels with `0` missing labels. The refreshed export includes
+  `Reward_SendRewardUpdateRequest` at
+  `exports\WildStar64.exe\selected_decompiled.c:8975`,
+  `Lua_GameLib_GetPrimeLevelAchieved` at `:10527`,
+  `Lua_GameLib_GetWorldPrimeLevel` at `:10553`,
+  `Lua_GameLib_GetWorldMaxPrimeLevel` at `:10576`,
+  `Lua_GameLib_GetWorldHeroismMenaceLevel` at `:10617`, and
+  `Lua_GameLib_RequestRewardUpdate` at `:10643`. `dotnet build
+  Source\NexusForever.sln --no-restore` succeeded with the existing
+  `SharpCompress` NU1902 advisories and `Spline.formation` CS0649 warning.
+
+Eleventh rapid-transport pricing follow-up implemented from this pass:
+
+- Targeted `InspectCodeAddress.java` traces on `FUN_1404adc50`,
+  `FUN_1404af440`, and `FUN_1404af1e0` show that the map rapid-transport cost
+  builders are formula-driven and not a plain `TaxiRoute.price` passthrough.
+  `Map_BuildRapidTransportNodeInfoTable` still emits `Game.Money` objects for
+  both `monCostRapidTransport` and `monAltCostRapidTransport`, but the amounts
+  come from native helper logic that re-enters the formula system.
+- `FUN_1404adc50`, the helper behind the first emitted cost object, re-reads
+  `GameFormula 0x51b` (`1307`) and caches both `Dataint0` and `Dataint01`, the
+  same rapid-transport spell pair already surfaced through
+  `Map_GetRapidTransportCooldown`. One branch triggers when the route selector
+  matches `Dataint01`; another triggers when the selector is `0` and the
+  player's live list contains spell `Dataint0`.
+- In that branch, the helper emits the exact same `Game.Money` tuple metadata
+  used by the already-mapped resurrection `monRezServiceTokenCost` path:
+  amount plus `0xf` and `0x900000000` before wrapping the value as
+  `Game.Money`. Because `Lua_BuildResurrectionInfoTable` uses that tuple for the
+  known `WakeHereServiceToken` pricing path, this is strong evidence that one
+  rapid-transport pricing branch is service-token-tagged rather than purely a
+  credit-side alternate vendor price.
+- The service-token-tagged amount comes from `FUN_1404af440`, which follows the
+  rapid-transport entry into linked route/world data and applies
+  `GameFormula 0x51e` using `Dataint0`, `Dataint01`, and a `Datafloat02` term
+  before clamping the result to the formula's `Dataint01` ceiling.
+- The fallback amount comes from `FUN_1404af1e0`, which uses the same linked
+  route/world data but computes a distance-sensitive value from
+  `GameFormula 0x51e` (`Datafloat0`, `Datafloat01`) plus `GameFormula 0x3b8`
+  (`Datafloat0`). When the world/location selector matches, it adds live
+  spatial distance to that base; otherwise it uses the alternate `0x51e`
+  float term instead.
+- This revises the earlier interpretation from the seventh rapid-transport
+  follow-up: the client map pricing path is not yet proven to be a direct
+  `TaxiRoute.price` projection, and it is not purely credit-based. The next
+  remaining evidence gap is the exact selector argument passed into these
+  helpers, which still blocks safe server-side payment or spell-selection
+  changes for rapid transport.
+
+Twelfth rapid-transport UI→send-chain follow-up implemented from this pass:
+
+- Re-verified the Lua anchor chain for the rapid-transport map UI:
+  `Map_GetRapidTransportDestinationsForWorld` (`140707640`) dispatches to
+  `FUN_140706ce0(..., 0)` at
+  `exports\WildStar64.exe\selected_decompiled.c:10445`, and that helper emits
+  per-node map rows through `Map_BuildRapidTransportNodeInfoTable` around
+  `:10399`.
+- The destination row field tied to outbound destination selection is now
+  explicitly evidenced: `Map_BuildRapidTransportNodeInfoTable` writes `idNode`
+  from the node record base id (`*(uint *)*param_3`) at
+  `selected_decompiled.c:9691`. This is the client-side UI field that aligns
+  with the packet/model `TaxiNode` (`ClientRapidTransport.TaxiNode`) consumed by
+  opcode `ClientRapidTransport` (`0x0141`) in
+  `Source\NexusForever.Network.World\Message\Model\ClientRapidTransport.cs:5-16`.
+- `Map_GetRapidTransportCooldown` still only maps cooldown presentation:
+  it reads `GameFormula 0x51b` at `selected_decompiled.c:10475` and returns
+  cooldown seconds as `uVar4 * 0.001` at `:10520`; this path does not surface
+  the outbound packet `Time` write.
+- Expanded export evidence now also shows the client `RapidTransportResult`
+  receive/event bridge (`FUN_140520710` at
+  `selected_decompiled.c:17835-17909`), including default cast result `0x14a`
+  (`RapidTransportInvalid`) and event dispatch. This confirms receive-side
+  handling, but still does not expose the outbound serializer for opcode
+  `0x0141`.
+- `Lua_RegisterGameLib` still only registers the `RapidTransport` enum token
+  (`string_xrefs.csv:5501`, `strings.csv:41774`) rather than a directly named
+  send callback. No new label was added for a send helper because the
+  client-side opcode-`0x0141` serializer and the exact source of packet `Time`
+  are still not uniquely proven from current exports.
+- Conclusion for this todo scope: `TaxiNode` population is now mapped to the
+  map-row `idNode` field, but packet `Time` semantics remain blocked/unverified
+  pending a direct mapping of the `ClientRapidTransport` send serializer path.
+
+Thirteenth rapid-transport selector/layout follow-up implemented from this pass:
+
+- `TraceFunctionCallers.java` now closes the remaining selector-source gap for
+  `Map_BuildRapidTransportNodeInfoTable` (`140706140`):
+  `Map_GetRapidTransportDestinationsForWorld` still routes through
+  `FUN_140706ce0(..., 0)`, while `Map_GetTaxisForWorld` (`140706f90`) is the
+  only recovered nonzero caller and tail-calls the same helper as
+  `FUN_140706ce0(param_1, lVar2, 1)`.
+- The shared node-table builder does not use that selector for money layout.
+  Inside `Map_BuildRapidTransportNodeInfoTable`, selector `0` only chooses
+  `FUN_1404ada70(nodeId)` for `bUnlocked`, while selector `1` swaps in
+  `FUN_1404ad9b0(DAT_140c659d0, nodeId)`; the `bRapidTransportAllowed`,
+  `monCostRapidTransport`, `monAltCostRapidTransport`, `bTransportAllowed`,
+  and `bTaxiAllowed` branches remain shared.
+- `FUN_1404ada70` and `FUN_1404ad9b0` both fall back into
+  `FUN_1404af6b0(...)`, but selector `1` first probes a tree rooted at
+  `param_1 + 0x110` and passes fallback mode `1` instead of `2`. This makes
+  the nonzero selector a taxi-list unlock path, not a separate rapid-transport
+  pricing selector.
+- A new instruction-level helper script,
+  `Decomp\Analysis\scripts\FindImmediateInstructions.java`, recovered the
+  native opcode-registration entry for `ClientRapidTransport` inside
+  `FUN_14006c290`: `(**(code **)*puVar1)(puVar1, 0x141, 8, &LAB_14007ab70,
+  ClientRapidTransport_WritePayload, 0, 0);`.
+- `ClientRapidTransport_WritePayload` (`14007ab80`) writes two packed fields:
+  the first is masked with `0x3fff` and emitted over `0x0e` bits, and the
+  second is emitted over `0x20` bits. The paired tiny stub at `14007ab70`
+  advances by `0x2e` bits, matching $14 + 32 = 46$ bits in an 8-byte envelope.
+- This native registration matches the current wire reader in
+  `Source\NexusForever.Network.World\Message\Model\ClientRapidTransport.cs`:
+  `TaxiNode = reader.ReadUShort(14u); Time = reader.ReadUInt();`. No packet
+  layout fix is indicated by this pass; the remaining packet-side gap is only
+  the provenance/meaning of the raw 32-bit second field currently exposed as
+  `Time`.
+
+Fourteenth send-helper callgraph follow-up implemented from this pass:
+
+- Refreshed focused artifacts with `InspectCodeAddress.java` and
+  `TraceFunctionCallers.java` for `1403f4900`, `1403993c0`, and
+  `Network_SendMessageById` (`140332580`); outputs are in
+  `Decomp\Analysis\logs\inspect_*.txt`, `trace_callers_*.txt`, and
+  `trace_callers_1403f4900_summary.txt`.
+- `FUN_1403f4900` is now confirmed as a generic opcode+payload send helper:
+  it forwards `(opcode,payload)` through `(*DAT_140c65808 + 0x108)` and then
+  invokes `(*DAT_140c65808 + 0xf0)` for follow-up send-path processing
+  (`logs\inspect_1403f4900.txt:48-86`).
+- Concrete opcode `0x0141` sender is isolated: `FUN_1403993c0` issues
+  `FUN_1403f4900(lVar1,0x141,param_3)` (`logs\inspect_1403993c0.txt:48-82`);
+  instruction trace confirms `MOV EDX,0x141` at `1403994bf` immediately before
+  `CALL 0x1403f4900` at `1403994ca`
+  (`logs\trace_callers_1403f4900.txt:527-539`).
+- Rapid-transport anchoring is explicit in the caller chain:
+  `RapidTransport_HandleResult@140520710 -> FUN_1403993c0`
+  (`logs\trace_callers_1403993c0.txt:47-60`, plus
+  `exports\WildStar64.exe\selected_decompiled.c:4595`).
+- Remaining unknown surface is bounded: `FUN_1403f4900` has `345` traced
+  callsites total, `323` with immediate opcode setup, and `22` non-immediate
+  callsites still requiring deeper argument-flow recovery
+  (`logs\trace_callers_1403f4900_summary.txt:1-31`).
+- `Network_SendMessageById` remains an indirect endpoint in static xrefs for
+  this pass (`logs\trace_callers_140332580.txt:43-52`), consistent with virtual
+  callback dispatch rather than direct callers.
+
+Fifteenth rapid-transport close-time-semantics blocker pass:
+
+- Verified durable evidence surfaces are aligned for opcode `0x0141`: the sender
+  label (`RapidTransport_SendClientRapidTransport`), immediate-opcode trace
+  (`MOV EDX,0x141` before `FUN_1403f4900`), and call-chain anchor
+  (`RapidTransport_HandleResult -> RapidTransport_SendClientRapidTransport ->
+  Network_SendOpcodePayloadHelper`) are all present in source-controlled
+  findings/labels.
+- This evidence proves sender identity and opcode routing, but still does not
+  map the second payload dword (`ClientRapidTransport.Time`) to a stable
+  semantic domain (selector/cooldown token/nonce/timestamp). No deterministic
+  server-side interpretation is yet justified.
+- Server behavior therefore remains intentionally conservative: rapid transport
+  mutation continues to key off validated destination node, cooldown spell id,
+  and route price only; `Time` remains read-only opaque packet data.
+- Source comments were updated in
+  `Source\NexusForever.Network.World\Message\Model\ClientRapidTransport.cs` and
+  `Source\NexusForever.WorldServer\Network\Message\Handler\Entity\Player\ClientRapidTransportHandler.cs`
+  to make this no-change rationale explicit for future implementers.
+
+Sixteenth transport callback-registration follow-up implemented from this pass:
+
+- Refreshed callback-table evidence now resolves `PurchaseFlightPath` and
+  `SetSendMessageResultFunction` from string-only xrefs into concrete
+  `(name,function)` pairs:
+  `140c5b620 -> 140b2b390("PurchaseFlightPath"), 140c5b628 -> 14065e6c0` and
+  `140c5d770 -> 140b357c0("SetSendMessageResultFunction"), 140c5d778 ->
+  1406a4b60` (`exports\WildStar64.exe\string_xrefs.csv:4041,4856`;
+  `logs\WildStar64.DumpNearbyData.140c5b620.log:49-77`;
+  `logs\WildStar64.DumpNearbyData.140c5d770.log:49-77`).
+- `PurchaseFlightPath` now maps to a send path that is *not* rapid-transport:
+  the callback body (`FUN_14065e6c0`) validates inputs and calls
+  `FlightPath_SendPurchaseRequest` (`1404acfa0`), which sends opcode `0x00FF`
+  via `Network_SendOpcodePayloadHelper`, not `0x0141`
+  (`logs\WildStar64.InspectCodeAddress.14065e6c0.log:54-72`;
+  `logs\WildStar64.InspectCodeAddress.1404acfa0.log:145-164`).
+- `SetSendMessageResultFunction` / `SetReceivedMessageFunction` now map to
+  `FUN_1406a4b60` / `FUN_1406a4ab0`; both parse `"Game.ICComm"` userdata and
+  forward to `FUN_1406a4280` to register callback state on the ICComm object
+  (`logs\WildStar64.DumpNearbyData.140c5d770.log:72-77`;
+  `logs\WildStar64.InspectCodeAddress.1406a4b60.log:54-77`).
+- `InvokeTaxiWindow` remains an event/UI branch in `FUN_1403a71f0`, reached from
+  higher-level interaction handlers and firing
+  `FUN_1400ea3e0(...,"InvokeTaxiWindow",...)`; it does not register or emit the
+  rapid-transport payload path directly
+  (`exports\WildStar64.exe\string_xrefs.csv:3009`;
+  `exports\WildStar64.exe\selected_decompiled.c:18114-18115`;
+  `logs\WildStar64.TraceFunctionCallers.ghidra.log:49-61`).
+- Bound on `0x0141` second dword semantics is therefore unchanged: this callback
+  chain does not provide deterministic meaning for the `ClientRapidTransport`
+  32-bit field (`Time`), and no widened server interpretation is justified.
+  Confidence: **medium-high** for registration/call-chain mapping,
+  **high** for the negative conclusion that this branch is not the `0x0141`
+  producer.
+
+Seventeenth nearby-opcode helper-cluster mapping follow-up implemented from this pass:
+
+- Enumerated immediate-opcode callsites in the same `FUN_1403f4900` neighborhood
+  as `RapidTransport_SendClientRapidTransport` (`1403993c0`): `0x0141`
+  (`1403993c0`), `0x00C2` (`1403994f0`), `0x0852` (`140399630`), and
+  `0x084F`/`0x0850` (`140399780`) from contiguous `1403986f0-1403998bb`
+  dispatcher code (`logs\trace_callers_1403f4900.txt:527-595`).
+- Correlated several mapped opcodes to known meanings via source enum/models:
+  `0x0141=ClientRapidTransport`,
+  `0x084F=ClientCraftingComplexCraft`,
+  `0x0850=ClientCraftingSimpleCraft`,
+  `0x0852=ClientCraftingCraftItemAutoCraft`,
+  `0x094F=ClientCastGuildBossToken`,
+  `0x068C=ClientPathScientistSetScannerName`
+  (`Source\NexusForever.Network\Message\GameMessageOpcode.cs:121,628,766-769,840`;
+  `Source\NexusForever.Network.World\Message\Model\Crafting\ClientCraftingComplexCraft.cs:9-22`;
+  `Source\NexusForever.Network.World\Message\Model\Crafting\ClientCraftingSimpleCraft.cs:8-17`;
+  `Source\NexusForever.Network.World\Message\Model\Crafting\ClientCraftingCraftItemAutoCraft.cs:8-20`;
+  `Source\NexusForever.Network.World\Message\Model\Spell\ClientCastGuildBossToken.cs:9-18`).
+- Shared field evidence is now stronger: the same post-`FUN_1403988d0` read
+  (`*(local_res10 + 0x60)`) is copied into outgoing payloads in
+  `1403993c0`, `1403994f0`, `140399630`, `140399780`, and `1403991b0`
+  before send (`logs\inspect_1403993c0.txt:76-81`;
+  `logs\inspect_1403994f0.txt:83-85`;
+  `logs\inspect_140399630.txt:82-97`;
+  `logs\inspect_140399780.txt:82-101`;
+  `logs\inspect_1403991b0.txt:99-104`).
+- Comparison with known crafting payloads constrains `0x0141` interpretation:
+  in crafting opcodes, this shared value occupies the
+  `ClientSpellcastUniqueId` slot (first dword in
+  `ClientCrafting*` models), so the `0x0141` second dword fed from the same
+  source is unlikely to be wall-clock time and is more likely a spellcast
+  correlation token/unique id. This is still an inference, not full proof.
+- No new function labels were added in this pass because `0x00C2` remains
+  unmapped in current source enums and the surrounding helper names are not yet
+  uniquely disambiguated beyond opcode-level behavior.
+- Confidence: **high** that `+0x60` is a shared cast-context token reused across
+  this helper cluster; **medium-high** that `ClientRapidTransport.Time` should
+  be treated as an opaque cast-correlation id rather than literal time.
+- Server modeling decision (safe/minimal): keep gameplay behavior unchanged and
+  treat opcode `0x0141` second dword as an opaque context token in diagnostics;
+  compatibility alias `Time` can remain while direct proof is still pending.
 
 ## Practical Next Steps
 

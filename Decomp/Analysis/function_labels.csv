@@ -18,6 +18,7 @@ StsConnLib64.MT.dll,18000d560,StsConn_OnLoginFinishResponse,Parses LoginFinish r
 StsConnLib64.MT.dll,18002ec10,StsInetSocket_ParseConnectFields,Parses Connect XML/header fields including Address/Location fallback.
 StsConnLib64.MT.dll,18002f410,StsInetSocket_SendConnectEnvelope,Builds /Sts/Connect envelope fields.
 StsConnLib64.MT.dll,180030d80,StsInetSocket_DispatchConnectEnvelope,Dispatches parsed /Sts/Connect envelope to the registered service.
+WildStar64.exe,14007ab80,ClientRapidTransport_WritePayload,Serialises world opcode 0x0141 payload as a 14-bit node id plus a 32-bit opaque field.
 WildStar64.exe,1400a7540,NetworkBitWriter_WriteBits64,Writes up to 64 bits into the packet bitstream.
 WildStar64.exe,14022df60,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 WildStar64.exe,14024bfa0,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
@@ -51,11 +52,14 @@ WildStar64.exe,14033bf90,NetworkIOCP_PostRecv,Posts an overlapped WSARecv reques
 WildStar64.exe,14033c7e0,NetworkIOCP_SendQueued,Batches queued buffers into an overlapped WSASend request.
 WildStar64.exe,14033ec10,NetworkSocket_DestroyClosesocket,Destructor path that closes the socket and releases buffers.
 WildStar64.exe,14033ece0,NetworkSocket_CloseSocket,Closes an active socket and clears its handle.
+WildStar64.exe,1403993c0,RapidTransport_SendClientRapidTransport,Builds rapid-transport payload data and sends opcode 0x0141 through the network send helper.
 WildStar64.exe,1403a11c0,ActionSet_CheckPvPRestriction,Checks whether the current PvP state permits action-set changes.
 WildStar64.exe,1403bb480,ActionSet_SendPendingActionSetChanges,Sends or commits a validated action-set change request.
 WildStar64.exe,1403bb8d0,ActionSet_CheckUpdateSpellInProgress,Checks whether a spell/action-set update is already in progress.
 WildStar64.exe,1403dc9f0,WorldSocket_SelectByWorldAndSocket,WorldSocket lookup/selection path near world socket strings.
+WildStar64.exe,1403f4900,Network_SendOpcodePayloadHelper,Generic opcode+payload send helper that dispatches through DAT_140c65808 virtual send callbacks.
 WildStar64.exe,1404aacb0,ActionSet_ValidateRequestedChanges,Validates a 12-entry action-set request and returns a LimitedActionSetResult.
+WildStar64.exe,1404acfa0,FlightPath_SendPurchaseRequest,Builds and sends opcode 0x00FF flight-path purchase payload from validated route data.
 WildStar64.exe,1404e7f60,Lua_RegisterAccountEntitlementEnums,Registers account currency/operation and entitlement Lua enums.
 WildStar64.exe,14050e830,Lua_BuildResurrectionInfoTable,Builds the resurrection Lua info table including wake-here flags and service-token cost.
 WildStar64.exe,1405e7fd0,Lua_GameSpell_Equals,Game.Spell __eq metamethod.
@@ -108,12 +112,23 @@ WildStar64.exe,1405eecf0,Lua_GameSpell_ShouldHideCooldownInTooltip,Game.Spell:Sh
 WildStar64.exe,1405eedb0,Lua_GameSpell_GetSpellServiceTokenCost,Game.Spell:GetSpellServiceTokenCost Lua method.
 WildStar64.exe,14068c2c0,Lua_RegisterPublicEventConstants,Registers public event status/category/objective constants for Lua.
 WildStar64.exe,1406a6160,Lua_GameHousingPlot_GetPlugUpgradeInfo,Housing plot Lua accessor near tSpell4IdAbility anchor.
+WildStar64.exe,140636ba0,Reward_SendRewardUpdateRequest,Throttles reward update requests and sends world opcode 0x07CC.
+WildStar64.exe,14065e6c0,Lua_GameLib_PurchaseFlightPath,GameLib.PurchaseFlightPath Lua callback that validates route inputs and forwards purchase requests.
+WildStar64.exe,1406a4ab0,Lua_ICComm_SetReceivedMessageFunction,ICComm callback registration method for SetReceivedMessageFunction.
+WildStar64.exe,1406a4b60,Lua_ICComm_SetSendMessageResultFunction,ICComm callback registration method for SetSendMessageResultFunction.
 WildStar64.exe,140709460,Lua_RegisterGameLib,Registers GameLib Lua enums, constants, and global helpers.
+WildStar64.exe,140708d50,Lua_GameLib_GetPrimeLevelAchieved,GameLib.GetPrimeLevelAchieved Lua method.
+WildStar64.exe,140708da0,Lua_GameLib_GetWorldPrimeLevel,GameLib.GetWorldPrimeLevel Lua method.
+WildStar64.exe,140708dd0,Lua_GameLib_GetWorldMaxPrimeLevel,GameLib.GetWorldMaxPrimeLevel Lua method.
+WildStar64.exe,140708e60,Lua_GameLib_GetWorldHeroismMenaceLevel,GameLib.GetWorldHeroismMenaceLevel Lua method.
+WildStar64.exe,1407091e0,Lua_GameLib_RequestRewardUpdate,GameLib.RequestRewardUpdate Lua method.
 WildStar64.exe,140706140,Map_BuildRapidTransportNodeInfoTable,Builds map rapid-transport node info including availability flags and money costs.
 WildStar64.exe,140706f90,Map_GetTaxisForWorld,Map Lua method that returns taxi nodes for a world.
 WildStar64.exe,140707020,Map_GetNearestRapidTransportNodeForWorldLocation,Map Lua method that resolves the nearest rapid transport node for a world location.
 WildStar64.exe,140707640,Map_GetRapidTransportDestinationsForWorld,Map Lua method that returns rapid transport destinations for a world.
 WildStar64.exe,1407076d0,Map_GetRapidTransportCooldown,Map Lua method that returns rapid transport cooldown data.
+WildStar64.exe,1404adfe0,RapidTransport_CanUseNode,Validates rapid-transport node unlock/world/range constraints before dispatching rapid transport.
+WildStar64.exe,140520710,RapidTransport_HandleResult,Handles rapid transport cast-result feedback and raises the RapidTransportResult client event.
 WildStar64.exe,140758020,Lua_ActionSetLib_IsSlotUnlocked,ActionSetLib:IsSlotUnlocked Lua method.
 WildStar64.exe,1407580e0,Lua_ActionSetLib_RequestActionSetChanges,ActionSetLib:RequestActionSetChanges Lua method.
 WildStar64.exe,140758510,Lua_ActionSetLib_GetCurrentActionSet,ActionSetLib:GetCurrentActionSet Lua method.

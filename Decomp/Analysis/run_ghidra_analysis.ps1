@@ -9,7 +9,9 @@ param(
     [int] $MaxDecompiledFunctions = 200,
     [switch] $AllClientBinaries,
     [switch] $NoApplyLabels,
-    [switch] $ExportOnly
+    [switch] $ExportOnly,
+    [string] $ExtraPostScript,
+    [string[]] $ExtraPostScriptArgs = @()
 )
 
 $ErrorActionPreference = 'Stop'
@@ -46,7 +48,9 @@ if (-not $NoApplyLabels -and (Test-Path -LiteralPath $LabelMap)) {
 }
 
 foreach ($target in $Targets) {
-    $logPath = Join-Path $logDir ("{0}.ghidra.log" -f ([IO.Path]::GetFileNameWithoutExtension($target)))
+    $targetName = [IO.Path]::GetFileNameWithoutExtension($target)
+    $logSuffix = if ($ExtraPostScript) { ".{0}" -f ([IO.Path]::GetFileNameWithoutExtension($ExtraPostScript)) } else { '' }
+    $logPath = Join-Path $logDir ("{0}{1}.ghidra.log" -f $targetName, $logSuffix)
     $ghidraArgs = @(
         $ProjectDir,
         $projectName
@@ -81,6 +85,11 @@ foreach ($target in $Targets) {
     $ghidraArgs += @(
         '-postScript', 'ExportNexusForeverAnalysis.java', $OutputDir, $MaxDecompiledFunctions
     )
+
+    if ($ExtraPostScript) {
+        $ghidraArgs += @('-postScript', $ExtraPostScript)
+        $ghidraArgs += $ExtraPostScriptArgs
+    }
 
     & $analyzeHeadless @ghidraArgs 2>&1 | Tee-Object -FilePath $logPath
 

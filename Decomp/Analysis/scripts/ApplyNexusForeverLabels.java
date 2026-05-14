@@ -42,6 +42,7 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 		String programName = currentProgram.getName();
 		FunctionManager functionManager = currentProgram.getFunctionManager();
 		int applied = 0;
+		int created = 0;
 		int skipped = 0;
 		int missing = 0;
 
@@ -71,18 +72,24 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 				}
 
 				Address address = toAddr(parts[1]);
+				String name = parts[2];
 				Function function = functionManager.getFunctionAt(address);
 				if (function == null) {
 					function = functionManager.getFunctionContaining(address);
 				}
+				if (function == null && currentProgram.getListing().getInstructionAt(address) != null) {
+					function = createFunction(address, name);
+					if (function != null) {
+						created++;
+					}
+				}
 
 				if (function == null) {
-					printerr("No function at " + parts[1] + " for " + programName + " label " + parts[2]);
+					printerr("No function at " + parts[1] + " for " + programName + " label " + name);
 					missing++;
 					continue;
 				}
 
-				String name = parts[2];
 				if (!function.getName().equals(name)) {
 					function.setName(name, SourceType.USER_DEFINED);
 				}
@@ -102,7 +109,7 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 		}
 
 		println("Applied NexusForever labels for " + programName + ": applied=" + applied +
-			", skipped=" + skipped + ", missing=" + missing);
+			", created=" + created + ", skipped=" + skipped + ", missing=" + missing);
 	}
 
 	private String[] splitCsv(String line) {
