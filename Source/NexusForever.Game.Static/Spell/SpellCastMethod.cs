@@ -1,0 +1,16 @@
+namespace NexusForever.Game.Static.Spell
+{
+    public enum SpellCastMethod
+    {
+        Normal                = 0,
+        Channeled             = 1,
+        PressHold             = 2,
+        ChanneledField        = 3,
+        Unused04              = 4,
+        ClientSideInteraction = 5,
+        RapidTap              = 6,
+        ChargeRelease         = 7,
+        Multiphase            = 8,
+        Transactional         = 9
+    }
+}

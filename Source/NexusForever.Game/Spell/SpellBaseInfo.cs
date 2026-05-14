@@ -19,6 +19,8 @@ namespace NexusForever.Game.Spell
         public Spell4BaseEntry PrerequisiteSpell { get; }
         public Spell4SpellTypesEntry SpellType { get; }
         public SpellClass SpellClass { get; }
+        public SpellCastMethod CastMethod { get; }
+        public SpellSchool School { get; }
         public bool HasIcon { get; }
         public bool IsDebuff { get; }
         public bool IsBuff { get; }
@@ -41,6 +43,8 @@ namespace NexusForever.Game.Spell
             SpellType         = GameTableManager.Instance.Spell4SpellTypes.GetEntry(Entry.Spell4SpellTypesIdSpellType);
 
             SpellClass        = (SpellClass)Entry.SpellClass;
+            CastMethod        = (SpellCastMethod)Entry.CastMethod;
+            School            = (SpellSchool)Entry.School;
             HasIcon           = SpellClass == SpellClass.BuffNonDispelRightClickOk || (SpellClass >= SpellClass.BuffDispellable && SpellClass <= SpellClass.DebuffNonDispellable);
             IsDebuff          = SpellClass == SpellClass.DebuffDispellable || SpellClass == SpellClass.DebuffNonDispellable;
             IsBuff            = SpellClass == SpellClass.BuffDispellable || SpellClass == SpellClass.BuffNonDispellable || SpellClass == SpellClass.BuffNonDispelRightClickOk;

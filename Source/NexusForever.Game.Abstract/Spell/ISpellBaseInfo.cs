@@ -17,6 +17,8 @@ namespace NexusForever.Game.Abstract.Spell
         Spell4BaseEntry PrerequisiteSpell { get; }
         Spell4SpellTypesEntry SpellType { get; }
         SpellClass SpellClass { get; }
+        SpellCastMethod CastMethod { get; }
+        SpellSchool School { get; }
         bool HasIcon { get; }
         bool IsDebuff { get; }
         bool IsBuff { get; }

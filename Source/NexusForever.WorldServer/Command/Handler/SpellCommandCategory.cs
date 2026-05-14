@@ -165,7 +165,7 @@ namespace NexusForever.WorldServer.Command.Handler
         {
             Spell4Entry entry = spellInfo.Entry;
 
-            context.SendMessage($"Spell base {spellBaseInfo.Entry.Id}, tier {tier}, spell4 {entry.Id}: class {spellBaseInfo.SpellClass}, effects {spellInfo.Effects.Count}, telegraphs {spellInfo.Telegraphs.Count}.");
+            context.SendMessage($"Spell base {spellBaseInfo.Entry.Id}, tier {tier}, spell4 {entry.Id}: class {spellBaseInfo.SpellClass}, castMethod {spellBaseInfo.CastMethod}, school {spellBaseInfo.School}, effects {spellInfo.Effects.Count}, telegraphs {spellInfo.Telegraphs.Count}.");
             if (!string.IsNullOrWhiteSpace(entry.Description))
                 context.SendMessage($"Description: {entry.Description}");
 
