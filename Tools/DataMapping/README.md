@@ -291,11 +291,53 @@ When several client creatures have the same localized name, candidates are score
 
 Ambiguous rows are still emitted with the best deterministic candidate so the maps remain complete, but they should be reviewed before destructive imports.
 
+## Reviewing Uncertain Creature Mappings
+
+The mapper now generates a review queue for uncertain creature bridge rows:
+
+- `Tools\DataMapping\output\creature_bridge_review.csv`
+- `Tools\DataMapping\output\creature_bridge_override_audit.csv`
+
+`creature_bridge_review.csv` contains one row per candidate for every `ambiguous_name` creature, plus fuzzy-name candidates for `unmatched` creatures when a plausible name exists. It includes the source creature, current selected candidate, candidate rank, score delta, name similarity, faction match, level overlap, exact level match, difficulty match, datacube match, and blank review columns.
+
+Approved decisions live outside the generated output folder so remaps do not overwrite them:
+
+- `Tools\DataMapping\review\creature_bridge_overrides.csv`
+
+The mapper creates that file with the required header when it is missing. `Tools\DataMapping\creature_bridge_overrides.example.csv` is the tracked header template. To approve a mapping, add a row with:
+
+- `source_table`: `creatures`
+- `source_id`: Jabbithole creature ID
+- `chosen_creature2_id`: approved client `Creature2.ID`
+- `decision`: `approved`
+- `reason`, `reviewer`, `reviewed_at`: short audit trail
+
+On the next mapper run, approved rows become `match_status = reviewed`, keep their original candidate/status in the `original_*` columns, and flow into downstream creature relationship maps. The live DB apply scripts treat `reviewed` the same as `unique_name` and `scored_name`.
+
+Two helper scripts make the remaining queue reviewable in smaller slices:
+
+```powershell
+python Tools\DataMapping\prioritize_creature_bridge_reviews.py
+python Tools\DataMapping\promote_creature_bridge_suggestions.py
+python Tools\DataMapping\promote_creature_bridge_suggestions.py --apply
+```
+
+`prioritize_creature_bridge_reviews.py` ranks uncertain bridge rows by downstream impact and optional existing-world spatial evidence. `promote_creature_bridge_suggestions.py` conservatively promotes only high-confidence spatial suggestions by default. The current localhost review pass promoted 944 approved overrides; 527 medium-confidence suggestions remain for manual review.
+
 ## Loading Into MySQL
 
 `schema.sql` creates staging tables named `nf_map_*`. They are intended for review and import workflows, not as the final NexusForever runtime schema.
 
-Example:
+Preferred repeatable loader:
+
+```powershell
+python Tools\DataMapping\load_mapping_staging_tables.py
+python Tools\DataMapping\load_mapping_staging_tables.py --apply
+```
+
+`load_mapping_staging_tables.py` creates/replaces each owned `nf_map_*` table in `nexus_forever_world` and loads every curated staging CSV covered by `schema.sql`. It uses `LOAD DATA LOCAL INFILE`, temporarily enables the local MySQL server setting when the login can do so, and restores it afterward by default. The current localhost apply loaded 95 `nf_map_*` tables and 6,383,288 exact rows.
+
+Manual schema load example:
 
 ```powershell
 & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
@@ -303,7 +345,32 @@ Example:
   < Tools\DataMapping\schema.sql
 ```
 
-Then load CSVs with `LOAD DATA LOCAL INFILE` or your preferred import tool. Keep `world_entity_candidate.csv` in staging until entity IDs have been assigned safely for the target world database.
+Then load CSVs with `LOAD DATA LOCAL INFILE` or your preferred import tool. Keep `world_entity_candidate.csv` in staging until entity IDs have been assigned safely for the target world database. Some raw client sentinel values use the full uint32 range; the preferred loader widens bare staging `INT` columns to `BIGINT` during table creation for that reason.
+
+## Applying To The World DB
+
+The first real database apply scripts are intentionally narrow and repeatable:
+
+```powershell
+python Tools\DataMapping\apply_vendor_items.py
+python Tools\DataMapping\apply_vendor_items.py --apply
+```
+
+`apply_vendor_items.py` imports safe vendor rows from `vendor_item_map.csv` into `nexus_forever_world.entity_vendor`, `entity_vendor_category`, and `entity_vendor_item`. By default it only uses `unique_name`, `scored_name`, and `reviewed` creature bridges, joins to existing `entity.creature` rows, and leaves ambiguous/unmatched vendor bridges out of the live DB. The current localhost tables contain 180 vendor entities, 180 default categories, and 7,480 vendor item rows.
+
+```powershell
+python Tools\DataMapping\apply_creature_loot.py
+python Tools\DataMapping\apply_creature_loot.py --apply
+```
+
+`apply_creature_loot.py` creates/upserts `nexus_forever_world.creature_loot` from safe, de-duplicated `creature_loot_map.csv` rows. The current localhost apply upserted 198,735 creature-item loot rows for 3,795 creatures and 18,504 items. Runtime loot generation is not wired yet; `UnitEntity.RewardKiller` still has a loot TODO, so this table is data-ready but not gameplay-live until the server reads from it.
+
+```powershell
+python Tools\DataMapping\apply_creature_info_overrides.py
+python Tools\DataMapping\apply_creature_info_overrides.py --apply
+```
+
+`apply_creature_info_overrides.py` imports high-confidence creature template overrides from `creature_map.csv` into `creature_info_property` and `creature_info_stat`. By default it inserts only missing `BaseHealth`, `ShieldCapacityMax`, and `InterruptArmour` rows for `unique_name`/`scored_name`/`reviewed` creature bridges, and skips duplicate creature mappings with conflicting values. The current localhost tables contain 9,317 property overrides and 1,415 stat overrides after skipping 511 conflicting property keys and 14 conflicting stat keys.
 
 ## Current Limitations
 
@@ -312,4 +379,8 @@ Then load CSVs with `LOAD DATA LOCAL INFILE` or your preferred import tool. Keep
 - Display and outfit IDs are selected from the first/highest-weight client display and outfit group entries.
 - AI actions skip `creature2ActionSetId = 0` because the client has no matching `Creature2ActionSet` row for ID 0.
 - Spline mapping is spatial only and disabled by default.
-- Loot, vendor, quest, path mission, and public event maps preserve Jabbithole game version and source IDs so later import logic can choose version policy explicitly.
+- Vendor import is live for existing world entities only; mapped vendor creatures without an `entity` row are reported but not inserted.
+- Loot import is database-live but runtime-pending; the server still needs a loot manager/hook to roll `creature_loot` on kill and respond to client loot requests.
+- Creature info overrides are runtime-supported creature template data. Existing entity-specific stats/properties still take precedence over template overrides.
+- `nf_map_*` staging imports are database-live reference/query data only; runtime code does not consume them until a feature explicitly reads from those tables.
+- Quest, path mission, and public event maps preserve Jabbithole game version and source IDs so later import logic can choose version policy explicitly.

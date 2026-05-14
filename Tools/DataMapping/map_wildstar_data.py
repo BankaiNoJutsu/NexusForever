@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import difflib
 import json
 import math
 import re
@@ -23,6 +24,57 @@ from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 
 
 DEFAULT_MYSQL = r"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
+REVIEWED_MATCH_STATUS = "reviewed"
+APPROVED_REVIEW_DECISIONS = {"approve", "approved", "use", "map", "mapped", "reviewed"}
+
+CREATURE_BRIDGE_OVERRIDE_FIELDS = [
+    "source_table",
+    "source_id",
+    "source_name",
+    "chosen_creature2_id",
+    "decision",
+    "reason",
+    "reviewer",
+    "reviewed_at",
+]
+
+CREATURE_BRIDGE_REVIEW_FIELDS = [
+    "source_table",
+    "source_id",
+    "source_name",
+    "current_status",
+    "current_creature2_id",
+    "current_client_name",
+    "candidate_reason",
+    "candidate_rank",
+    "candidate_creature2_id",
+    "candidate_client_name",
+    "candidate_score",
+    "score_delta_from_best",
+    "name_similarity",
+    "source_faction",
+    "candidate_faction",
+    "faction_match",
+    "source_level_min",
+    "source_level_max",
+    "candidate_min_level",
+    "candidate_max_level",
+    "level_overlap",
+    "exact_level_match",
+    "source_difficulty",
+    "candidate_difficulty",
+    "difficulty_match",
+    "source_datacube_id",
+    "candidate_datacube_id",
+    "datacube_match",
+    "source_zone_id",
+    "source_worldid",
+    "source_worldzoneid",
+    "decision",
+    "reason",
+    "reviewer",
+    "reviewed_at",
+]
 
 CREATURE_FIELDS = [
     "ID",
@@ -2563,10 +2615,188 @@ def score_creature_match(jabbit: Dict[str, str], client: Dict[str, object]) -> i
     return score
 
 
+def bool_text(value: bool) -> str:
+    return "true" if value else "false"
+
+
+def level_overlap_text(jabbit: Dict[str, str], client: Dict[str, object]) -> str:
+    j_min = to_int(jabbit.get("level_min"))
+    j_max = to_int(jabbit.get("level_max"))
+    c_min = to_int(client.get("minLevel"))
+    c_max = to_int(client.get("maxLevel"))
+    if None in (j_min, j_max, c_min, c_max):
+        return ""
+    return bool_text(max(j_min, c_min) <= min(j_max, c_max))
+
+
+def exact_level_match_text(jabbit: Dict[str, str], client: Dict[str, object]) -> str:
+    j_min = to_int(jabbit.get("level_min"))
+    j_max = to_int(jabbit.get("level_max"))
+    c_min = to_int(client.get("minLevel"))
+    c_max = to_int(client.get("maxLevel"))
+    if None in (j_min, j_max, c_min, c_max):
+        return ""
+    return bool_text(j_min == c_min and j_max == c_max)
+
+
+def id_match_text(left, right) -> str:
+    left_id = to_int(left)
+    right_id = to_int(right)
+    if left_id is None or right_id is None:
+        return ""
+    return bool_text(left_id == right_id)
+
+
+def name_similarity(source_name: object, client_name: object) -> str:
+    source = normalize_name(source_name)
+    candidate = normalize_name(client_name)
+    if not source or not candidate:
+        return ""
+    return f"{difflib.SequenceMatcher(a=source, b=candidate).ratio():.4f}"
+
+
+def creature_review_row(
+    jabbit: Dict[str, str],
+    current: Dict[str, object],
+    candidate: Dict[str, object],
+    reason: str,
+    rank: object,
+    best_score: int,
+) -> Dict[str, object]:
+    candidate_score = score_creature_match(jabbit, candidate) if candidate else 0
+    return {
+        "source_table": "creatures",
+        "source_id": jabbit.get("jabbithole_creature_id", ""),
+        "source_name": jabbit.get("source_name", ""),
+        "current_status": current.get("match_status", ""),
+        "current_creature2_id": current.get("creature2_id", ""),
+        "current_client_name": current.get("client_name", ""),
+        "candidate_reason": reason,
+        "candidate_rank": rank,
+        "candidate_creature2_id": candidate.get("ID", "") if candidate else "",
+        "candidate_client_name": candidate.get("clientName", "") if candidate else "",
+        "candidate_score": candidate_score or "",
+        "score_delta_from_best": (best_score - candidate_score) if candidate and best_score else "",
+        "name_similarity": name_similarity(jabbit.get("source_name"), candidate.get("clientName", "")) if candidate else "",
+        "source_faction": jabbit.get("faction", ""),
+        "candidate_faction": candidate.get("factionId", "") if candidate else "",
+        "faction_match": id_match_text(jabbit.get("faction"), candidate.get("factionId")) if candidate else "",
+        "source_level_min": jabbit.get("level_min", ""),
+        "source_level_max": jabbit.get("level_max", ""),
+        "candidate_min_level": candidate.get("minLevel", "") if candidate else "",
+        "candidate_max_level": candidate.get("maxLevel", "") if candidate else "",
+        "level_overlap": level_overlap_text(jabbit, candidate) if candidate else "",
+        "exact_level_match": exact_level_match_text(jabbit, candidate) if candidate else "",
+        "source_difficulty": jabbit.get("difficulty", ""),
+        "candidate_difficulty": candidate.get("creature2DifficultyId", "") if candidate else "",
+        "difficulty_match": id_match_text(jabbit.get("difficulty"), candidate.get("creature2DifficultyId")) if candidate else "",
+        "source_datacube_id": jabbit.get("datacube_id", ""),
+        "candidate_datacube_id": candidate.get("datacubeId", "") if candidate else "",
+        "datacube_match": id_match_text(jabbit.get("datacube_id"), candidate.get("datacubeId")) if candidate else "",
+        "source_zone_id": jabbit.get("zone_id", ""),
+        "source_worldid": jabbit.get("worldid", ""),
+        "source_worldzoneid": jabbit.get("worldzoneid", ""),
+        "decision": "",
+        "reason": "",
+        "reviewer": "",
+        "reviewed_at": "",
+    }
+
+
+def ensure_review_templates(args: argparse.Namespace) -> None:
+    args.review_dir.mkdir(parents=True, exist_ok=True)
+    override_path = args.review_dir / "creature_bridge_overrides.csv"
+    if not override_path.exists():
+        write_csv(override_path, CREATURE_BRIDGE_OVERRIDE_FIELDS, [])
+
+
+def load_creature_bridge_overrides(
+    args: argparse.Namespace,
+    client_creatures: Dict[int, Dict[str, object]],
+) -> Tuple[Dict[int, Dict[str, object]], List[Dict[str, object]]]:
+    ensure_review_templates(args)
+    path = args.review_dir / "creature_bridge_overrides.csv"
+    overrides: Dict[int, Dict[str, object]] = {}
+    audit_rows: List[Dict[str, object]] = []
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row_number, row in enumerate(reader, start=2):
+            source_table = clean_cell(row.get("source_table") or "creatures")
+            source_id = to_int(row.get("source_id"))
+            chosen_id = to_int(row.get("chosen_creature2_id") or row.get("candidate_creature2_id"))
+            decision = clean_cell(row.get("decision")).lower()
+            status = "skipped"
+            note = ""
+            if source_table and source_table != "creatures":
+                note = "source_table is not creatures"
+            elif source_id is None:
+                note = "missing source_id"
+            elif chosen_id is None:
+                note = "missing chosen_creature2_id"
+            elif decision not in APPROVED_REVIEW_DECISIONS:
+                note = "decision is not approved"
+            elif chosen_id not in client_creatures:
+                note = "chosen_creature2_id not found in Creature2"
+            else:
+                status = "applied"
+                note = "reviewed creature bridge override"
+                overrides[source_id] = {
+                    "chosen_creature2_id": chosen_id,
+                    "decision": row.get("decision", ""),
+                    "reason": row.get("reason", ""),
+                    "reviewer": row.get("reviewer", ""),
+                    "reviewed_at": row.get("reviewed_at", ""),
+                    "row_number": row_number,
+                }
+            audit_rows.append(
+                {
+                    "row_number": row_number,
+                    "source_table": source_table,
+                    "source_id": row.get("source_id", ""),
+                    "chosen_creature2_id": row.get("chosen_creature2_id") or row.get("candidate_creature2_id", ""),
+                    "decision": row.get("decision", ""),
+                    "status": status,
+                    "note": note,
+                    "reason": row.get("reason", ""),
+                    "reviewer": row.get("reviewer", ""),
+                    "reviewed_at": row.get("reviewed_at", ""),
+                }
+            )
+    return overrides, audit_rows
+
+
+def fuzzy_creature_candidates(
+    source_name: object,
+    name_keys_by_first_char: Dict[str, Sequence[str]],
+    by_name: Dict[str, List[Dict[str, object]]],
+    limit: int,
+) -> List[Dict[str, object]]:
+    normalized = normalize_name(source_name)
+    if not normalized:
+        return []
+    first_char = normalized[0]
+    length_window = max(6, len(normalized) // 2)
+    candidate_names = [
+        name
+        for name in name_keys_by_first_char.get(first_char, [])
+        if abs(len(name) - len(normalized)) <= length_window
+    ]
+    matches = difflib.get_close_matches(normalized, candidate_names, n=limit, cutoff=0.55)
+    candidates: List[Dict[str, object]] = []
+    for match in matches:
+        candidates.extend(by_name.get(match, []))
+        if len(candidates) >= limit:
+            break
+    return candidates[:limit]
+
+
 def build_creature_map(
+    args: argparse.Namespace,
     jabbithole_creatures: List[Dict[str, str]],
     client_creatures: Dict[int, Dict[str, object]],
-) -> Tuple[List[Dict[str, object]], Dict[int, Dict[str, object]]]:
+    overrides: Optional[Dict[int, Dict[str, object]]] = None,
+) -> Tuple[List[Dict[str, object]], Dict[int, Dict[str, object]], List[Dict[str, object]]]:
+    overrides = overrides or {}
     by_name: Dict[str, List[Dict[str, object]]] = defaultdict(list)
     for creature in client_creatures.values():
         normalized = clean_cell(creature.get("clientNameNormalized"))
@@ -2575,6 +2805,12 @@ def build_creature_map(
 
     rows: List[Dict[str, object]] = []
     by_jabbit_id: Dict[int, Dict[str, object]] = {}
+    review_rows: List[Dict[str, object]] = []
+    name_keys = sorted(by_name)
+    name_keys_by_first_char: Dict[str, List[str]] = defaultdict(list)
+    for name in name_keys:
+        if name:
+            name_keys_by_first_char[name[0]].append(name)
     for jabbit in jabbithole_creatures:
         normalized = normalize_name(jabbit.get("source_name"))
         candidates = by_name.get(normalized, [])
@@ -2632,12 +2868,70 @@ def build_creature_map(
             "creature2_outfit_group_id": best.get("creature2OutfitGroupId", ""),
             "default_outfit_info": best.get("defaultOutfitInfo", ""),
             "last_seen_in": jabbit.get("last_seen_in", ""),
+            "original_creature2_id": "",
+            "original_client_name": "",
+            "original_match_status": "",
+            "review_decision": "",
+            "review_reason": "",
+            "reviewer": "",
+            "reviewed_at": "",
         }
-        rows.append(row)
         jabbit_id = to_int(jabbit.get("jabbithole_creature_id"))
+        override = overrides.get(jabbit_id) if jabbit_id is not None else None
+        if override:
+            chosen_id = to_int(override.get("chosen_creature2_id"))
+            chosen = client_creatures.get(chosen_id, {}) if chosen_id is not None else {}
+            row["original_creature2_id"] = row["creature2_id"]
+            row["original_client_name"] = row["client_name"]
+            row["original_match_status"] = row["match_status"]
+            row["creature2_id"] = chosen.get("ID", "")
+            row["client_name"] = chosen.get("clientName", "")
+            row["match_status"] = REVIEWED_MATCH_STATUS
+            row["client_faction"] = chosen.get("factionId", "")
+            row["client_min_level"] = chosen.get("minLevel", "")
+            row["client_max_level"] = chosen.get("maxLevel", "")
+            row["client_difficulty"] = chosen.get("creature2DifficultyId", "")
+            row["client_datacube_id"] = chosen.get("datacubeId", "")
+            row["creature2_action_set_id"] = chosen.get("creature2ActionSetId", "")
+            row["creature2_display_group_id"] = chosen.get("creature2DisplayGroupId", "")
+            row["default_display_info"] = chosen.get("defaultDisplayInfo", "")
+            row["creature2_outfit_group_id"] = chosen.get("creature2OutfitGroupId", "")
+            row["default_outfit_info"] = chosen.get("defaultOutfitInfo", "")
+            row["review_decision"] = override.get("decision", "")
+            row["review_reason"] = override.get("reason", "")
+            row["reviewer"] = override.get("reviewer", "")
+            row["reviewed_at"] = override.get("reviewed_at", "")
+        elif status in {"ambiguous_name", "unmatched"}:
+            if scored:
+                best_candidate_score = scored[0][0]
+                for rank, (candidate_score, _, candidate) in enumerate(scored[: args.review_candidate_limit], start=1):
+                    review_rows.append(creature_review_row(jabbit, row, candidate, "exact_name", rank, best_candidate_score))
+            else:
+                fuzzy_candidates = fuzzy_creature_candidates(
+                    jabbit.get("source_name"),
+                    name_keys_by_first_char,
+                    by_name,
+                    args.review_candidate_limit,
+                )
+                if fuzzy_candidates:
+                    fuzzy_scored = sorted(
+                        (
+                            score_creature_match(jabbit, candidate),
+                            to_int(candidate.get("ID"), 0) or 0,
+                            candidate,
+                        )
+                        for candidate in fuzzy_candidates
+                    )
+                    fuzzy_scored.sort(key=lambda item: (-item[0], item[1]))
+                    best_candidate_score = fuzzy_scored[0][0]
+                    for rank, (candidate_score, _, candidate) in enumerate(fuzzy_scored, start=1):
+                        review_rows.append(creature_review_row(jabbit, row, candidate, "fuzzy_name", rank, best_candidate_score))
+                else:
+                    review_rows.append(creature_review_row(jabbit, row, {}, "no_candidate", "", 0))
+        rows.append(row)
         if jabbit_id is not None:
             by_jabbit_id[jabbit_id] = row
-    return rows, by_jabbit_id
+    return rows, by_jabbit_id, review_rows
 
 
 def write_csv(path: Path, fieldnames: Sequence[str], rows: Iterable[Dict[str, object]]) -> int:
@@ -12181,6 +12475,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--client-sql-dir", type=Path)
     parser.add_argument("--jabbithole-sql-dir", type=Path)
     parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--review-dir", type=Path)
     parser.add_argument("--mysql-exe", type=Path, default=Path(DEFAULT_MYSQL))
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=3306)
@@ -12193,12 +12488,14 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--include-spline-candidates", action="store_true")
     parser.add_argument("--spline-radius", type=float, default=25.0)
     parser.add_argument("--spline-cell-size", type=float, default=50.0)
+    parser.add_argument("--review-candidate-limit", type=int, default=8)
     args = parser.parse_args(argv)
 
     args.repo_root = args.repo_root.resolve()
     args.client_sql_dir = (args.client_sql_dir or args.repo_root / "wildstar_client_mysql").resolve()
     args.jabbithole_sql_dir = (args.jabbithole_sql_dir or args.repo_root / "jabbithole_mysql").resolve()
     args.output_dir = (args.output_dir or args.repo_root / "Tools" / "DataMapping" / "output").resolve()
+    args.review_dir = (args.review_dir or args.repo_root / "Tools" / "DataMapping" / "review").resolve()
     return args
 
 
@@ -12209,13 +12506,40 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     client = load_client_sources(args)
     jabbithole_creatures = load_jabbithole_creatures(args)
-    creature_rows, creature_map = build_creature_map(jabbithole_creatures, client["creatures"])
+    creature_overrides, creature_override_audit_rows = load_creature_bridge_overrides(args, client["creatures"])
+    creature_rows, creature_map, creature_review_rows = build_creature_map(
+        args,
+        jabbithole_creatures,
+        client["creatures"],
+        creature_overrides,
+    )
 
     counts: Dict[str, int] = {}
     counts["creature_map.csv"] = write_csv(
         args.output_dir / "creature_map.csv",
         list(creature_rows[0].keys()) if creature_rows else [],
         creature_rows,
+    )
+    counts["creature_bridge_review.csv"] = write_csv(
+        args.output_dir / "creature_bridge_review.csv",
+        CREATURE_BRIDGE_REVIEW_FIELDS,
+        creature_review_rows,
+    )
+    counts["creature_bridge_override_audit.csv"] = write_csv(
+        args.output_dir / "creature_bridge_override_audit.csv",
+        [
+            "row_number",
+            "source_table",
+            "source_id",
+            "chosen_creature2_id",
+            "decision",
+            "status",
+            "note",
+            "reason",
+            "reviewer",
+            "reviewed_at",
+        ],
+        creature_override_audit_rows,
     )
     counts["creature_client_metadata_map.csv"] = write_creature_metadata(args, creature_rows, client["creatures"])
     counts.update(write_reference_maps(args, client))

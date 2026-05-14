@@ -1,6 +1,6 @@
 # WildStar Data Mapping Progress
 
-Last updated: 2026-05-14 02:05 Europe/Zurich
+Last updated: 2026-05-14 13:53 Europe/Zurich
 
 ## Current Goal
 
@@ -24,6 +24,19 @@ Generated tracking outputs:
 - `run_manifest.json`
 - `table_coverage_inventory.csv`
 - `table_coverage_inventory.md`
+- `vendor_item_apply_report.json`
+- `creature_loot_apply_report.json`
+- `creature_info_apply_report.json`
+- `apply_vendor_items.generated.sql`
+- `apply_creature_info_overrides.generated.sql`
+- `creature_bridge_review.csv`
+- `creature_bridge_override_audit.csv`
+- `creature_bridge_review_priority.csv`
+- `creature_bridge_review_candidates_ranked.csv`
+- `creature_bridge_override_suggestions.csv`
+- `creature_bridge_review_priority_report.json`
+- `creature_bridge_suggestion_promotion_report.json`
+- `mapping_staging_load_report.json`
 
 ## Coverage Snapshot
 
@@ -40,7 +53,69 @@ The mapper now covers every split SQL file in both `wildstar_client_mysql` and `
 - `Tools\DataMapping\output\table_coverage_inventory.md`
 - `Tools\DataMapping\output\table_coverage_inventory.csv`
 
-Current generated output count: 471 files.
+Current generated output count: 484 files.
+
+## Review Queue Snapshot
+
+Creature bridge adjudication is now implemented.
+
+- Manual override input: `Tools\DataMapping\review\creature_bridge_overrides.csv`
+- Tracked header template: `Tools\DataMapping\creature_bridge_overrides.example.csv`
+- Generated review queue: `Tools\DataMapping\output\creature_bridge_review.csv`
+- Override audit output: `Tools\DataMapping\output\creature_bridge_override_audit.csv`
+- Prioritized review output: `Tools\DataMapping\output\creature_bridge_review_priority.csv`
+- Ranked candidate output: `Tools\DataMapping\output\creature_bridge_review_candidates_ranked.csv`
+- Suggested override output: `Tools\DataMapping\output\creature_bridge_override_suggestions.csv`
+
+Current review queue:
+
+- `creature_bridge_review.csv`: 31,615 remaining candidate rows
+- `creature_bridge_override_audit.csv`: 944 rows
+- Current approved reviewed mappings: 944
+- Remaining prioritized sources: 7,067
+- Remaining medium-confidence suggestions: 527
+- Remaining high-confidence suggestions: 0
+
+Review behavior:
+
+- `ambiguous_name` rows emit exact-name candidates up to `--review-candidate-limit`.
+- `unmatched` rows emit fuzzy-name candidates when a plausible client name exists.
+- Approved overrides become `match_status = reviewed` on the next mapper run.
+- Reviewed rows retain original candidate/status columns in `creature_map.csv`.
+- Vendor, loot, and creature-info apply scripts now treat `reviewed` as safe alongside `unique_name` and `scored_name`.
+- The first spatial evidence pass promoted 944 high-confidence creature bridge overrides. The remaining suggestions are medium-confidence and need manual review.
+- Current `creature_map.csv` statuses: 13,852 `unique_name`, 2,816 `scored_name`, 944 `reviewed`, 6,087 `ambiguous_name`, 980 `unmatched`.
+
+## Live Database Apply Snapshot
+
+Target database: `nexus_forever_world` on localhost with the `bankai` login.
+
+Applied scripts:
+
+- `apply_vendor_items.py --apply`
+- `apply_creature_loot.py --apply`
+- `apply_creature_info_overrides.py --apply`
+- `load_mapping_staging_tables.py --apply`
+
+Inserted/updated live world data:
+
+- `entity_vendor`: 180 rows
+- `entity_vendor_category`: 180 rows
+- `entity_vendor_item`: 7,480 rows
+- `creature_loot`: 198,735 rows
+- `creature_info_property`: 9,317 rows
+- `creature_info_stat`: 1,415 rows
+- `nf_map_*`: 95 staging/reference tables loaded with 6,383,288 exact rows
+
+Safety policy used:
+
+- Vendor and loot applies used only `unique_name`, `scored_name`, and reviewed creature bridges by default.
+- Creature info override apply used only `unique_name`, `scored_name`, and reviewed creature bridges by default.
+- `ambiguous_name` and `unmatched` source rows remain in mapping CSVs for review but were not applied to live runtime tables.
+- Duplicate creature template override candidates with conflicting values were skipped instead of guessed: 511 property keys and 14 stat keys.
+- Vendor stock was applied only for mapped vendor creatures that already have matching rows in `entity.creature`.
+- Vendor and creature-info backups were written under `Tools\DataMapping\output\backups` before live imports.
+- `nf_map_*` staging loads are additive/reference data and are not consumed by runtime code until a feature explicitly reads them. `nf_map_creature` now includes review/original mapping audit columns.
 
 ## Implemented Maps
 
@@ -61,7 +136,7 @@ Creature relationships:
 - `creature_quest_map.csv`: 13,412 rows
 - `creature_path_mission_map.csv`: 2,242 rows
 - `creature_public_event_map.csv`: 2,645 rows
-- `creature_ai_action_map.csv`: 6,051 rows
+- `creature_ai_action_map.csv`: 6,117 rows
 
 Quest expansion:
 
@@ -125,7 +200,7 @@ Achievement and contract expansion:
 - `achievement_title_map.csv`: 162 rows
 - `character_achievement_map.csv`: 66 rows
 - `contract_map.csv`: 42 rows
-- `contract_reward_map.csv`: 709 rows
+- `contract_reward_map.csv`: 736 rows
 - `contract_creature_map.csv`: 2,888 rows
 
 Housing/decor/cosmetic expansion:
@@ -329,6 +404,10 @@ Other reference maps:
 - Phase 15: Jabbithole tail coverage: continents, map POIs, quest categories/episodes/zones, factions/reward items, attributes/milestones, legacy vendors, drop aggregates, character snapshots, schema metadata, empty split metadata, and the unknown-table loot scrape.
 - Phase 16: Client world/location/navigation coverage: `WorldLocation2`, bind points, taxi nodes/routes, city/quest direction rows, quest hubs, generic maps, map hexes/groups, zone completion, sound zone kits, world sockets/layers/clutter/sky, and water environment tables.
 - Phase 17: Complete client source coverage for every previously unmapped or partial client table via `client_source_*_map.csv` plus `client_source_map_inventory.csv`.
+- Phase 18: Live world database apply phase started: imported mapped vendor stock into existing vendor tables and imported safe de-duplicated creature loot into a new `creature_loot` table.
+- Phase 19: Extended safe real DB imports: imported creature template health/shield/interrupt armor overrides, loaded all curated `nf_map_*` staging/reference tables into `nexus_forever_world`, and wired DB entity initialisation to apply creature template overrides before entity-specific rows.
+- Phase 20: Creature bridge adjudication loop: generated candidate review queue, added manual override input, preserved original match audit columns, and made `reviewed` mappings eligible for safe apply scripts.
+- Phase 21: Unblocked high-confidence uncertain creature bridges with spatial live-entity evidence, promoted 944 reviewed overrides, hardened staging-table reloads, and reapplied all safe real DB imports with reviewed mappings included.
 
 ## Next Phases
 
@@ -336,7 +415,9 @@ Other reference maps:
    - Archive/account/customization, prerequisites, visuals, sound, UI, tutorials, path side tables, random text, model/item display, and reward rotation tables now have complete generic exports. Promote any cluster that needs gameplay import behavior into curated maps with table-specific bridge logic.
 
 2. Import hardening:
-   - Review ambiguous creature bridges and polymorphic client `objectId*` columns before writing destructive import scripts.
+   - Wire runtime loot generation to `creature_loot`; `UnitEntity.RewardKiller` still has the loot TODO.
+   - Promote selected `nf_map_*` staging families into runtime managers only after the table has direct semantics and conflict policy. Good next candidates are creature spell/action inspection, quest/public-event/path read models, and reviewed spline candidates.
+   - Review the 527 remaining medium-confidence creature bridge suggestions and polymorphic client `objectId*` columns before broadening apply scripts beyond safe `unique_name`/`scored_name`/`reviewed` rows.
 
 ## Implementation Notes
 

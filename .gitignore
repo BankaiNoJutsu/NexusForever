@@ -347,5 +347,12 @@ all_wildstar_client_mysql.sql
 **/wildstar_client_mysql
 **/jabbithole_mysql
 
-#Exclude DataMapping output
+# Exclude DataMapping output and review folders
 **/Tools/DataMapping/output
+**/Tools/DataMapping/review
+
+# Exclude Decomp Binaries and Exports
+**/Decomp/Client64
+**/Decomp/Analysis/ghidra_projects
+**/Decomp/Analysis/exports
+**/Decomp/Analysis/logs

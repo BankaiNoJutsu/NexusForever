@@ -37,6 +37,13 @@ CREATE TABLE IF NOT EXISTS nf_map_creature (
     creature2_outfit_group_id INT NULL,
     default_outfit_info INT NULL,
     last_seen_in INT NULL,
+    original_creature2_id INT NULL,
+    original_client_name VARCHAR(255),
+    original_match_status VARCHAR(32),
+    review_decision VARCHAR(64),
+    review_reason TEXT,
+    reviewer VARCHAR(255),
+    reviewed_at VARCHAR(64),
     KEY ix_nf_map_creature_creature2 (creature2_id),
     KEY ix_nf_map_creature_status (match_status)
 );
@@ -1599,7 +1606,7 @@ CREATE TABLE IF NOT EXISTS nf_map_tradeskill_talent (
     primary_objects VARCHAR(255),
     secondary_objects VARCHAR(255),
     tertiary_objects VARCHAR(255),
-    values VARCHAR(255),
+    `values` VARCHAR(255),
     integer_values VARCHAR(255),
     enabled VARCHAR(8),
     KEY ix_nf_map_tradeskill_talent_bonus (tradeskill_bonus_id),
