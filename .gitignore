@@ -338,3 +338,14 @@ ASALocalRun/
 
 # Visual Studio profiling session file
 *.diagsession
+
+# Exclude Custom SQL folders and files
+all_jabbithole_mysql.sql
+all_wildstar_client_mysql.sql
+**/SQL_Loot
+**/Various SQL
+**/wildstar_client_mysql
+**/jabbithole_mysql
+
+#Exclude DataMapping output
+**/Tools/DataMapping/output

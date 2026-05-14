@@ -7,6 +7,9 @@ A server emulator for WildStar written in C# that supports build 16042.
 ### Getting Started
 [Server Setup Guide](https://www.emulator.ws/installation/server-guide)
 
+For local database setup and SQL dump import automation in this checkout, see
+[Tools/Setup/README.md](Tools/Setup/README.md).
+
 ### Requirements
  * Visual Studio 2026 (.NET 10 and C# 14 support required)
  * MySQL Server (or equivalent, eg: MariaDB)
