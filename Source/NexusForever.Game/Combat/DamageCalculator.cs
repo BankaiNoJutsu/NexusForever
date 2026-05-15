@@ -214,7 +214,7 @@ namespace NexusForever.Game.Combat
 
             IDamageDescription healDescription = new SpellTargetInfo.SpellTargetEffectInfo.DamageDescription
             {
-                DamageType      = DamageType.Heal,
+                DamageType      = DamageType.HealShields,
                 RawDamage       = rawHeal,
                 RawScaledDamage = rawHeal,
                 AdjustedDamage  = adjustedHeal,

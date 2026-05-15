@@ -116,6 +116,7 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary</*effectId*/uint, TrackedSpellState> shieldOverloadStates = new();
         private readonly Dictionary</*effectId*/uint, ScaleState> scaleStates = new();
         private readonly Dictionary</*effectId*/uint, FactionState> factionStates = new();
+        private readonly Dictionary</*effectId*/uint, ItemVisualSwapState> itemVisualSwapStates = new();
         private readonly Dictionary</*effectId*/uint, DisguiseOutfitState> disguiseOutfitStates = new();
         private readonly Dictionary</*effectId*/uint, MimicDisguiseState> mimicDisguiseStates = new();
         private readonly Dictionary</*effectId*/uint, AbsorptionState> absorptionStates = new();
@@ -228,6 +229,11 @@ namespace NexusForever.Game.Entity
         private sealed class FactionState : TrackedSpellState
         {
             public Faction PreviousFaction { get; init; }
+        }
+
+        private sealed class ItemVisualSwapState : TrackedSpellState
+        {
+            public IReadOnlyDictionary<ItemSlot, IItemVisual> PreviousVisuals { get; init; }
         }
 
         private sealed class DisguiseOutfitState : TrackedSpellState
@@ -605,6 +611,36 @@ namespace NexusForever.Game.Entity
 
             SetFaction(factionState.PreviousFaction);
             return true;
+        }
+
+        public void AddItemVisualSwap(uint effectId, uint spell4Id, uint castingId, IReadOnlyDictionary<ItemSlot, IItemVisual> previousVisuals)
+        {
+            itemVisualSwapStates[effectId] = new ItemVisualSwapState
+            {
+                Spell4Id        = spell4Id,
+                CastingId       = castingId,
+                PreviousVisuals = previousVisuals
+            };
+        }
+
+        public bool RemoveItemVisualSwap(uint effectId)
+        {
+            if (!itemVisualSwapStates.Remove(effectId, out ItemVisualSwapState itemVisualSwapState))
+                return false;
+
+            RestoreItemVisualSwap(itemVisualSwapState);
+            return true;
+        }
+
+        private void RestoreItemVisualSwap(ItemVisualSwapState itemVisualSwapState)
+        {
+            foreach ((ItemSlot slot, IItemVisual previousVisual) in itemVisualSwapState.PreviousVisuals)
+            {
+                if (previousVisual == null)
+                    RemoveVisual(slot);
+                else
+                    AddVisual(previousVisual);
+            }
         }
 
         public void AddDisguiseOutfit(uint effectId, uint spell4Id, uint castingId, ushort previousOutfitInfo, IReadOnlyDictionary<ItemSlot, IItemVisual> previousVisuals)
@@ -1267,6 +1303,21 @@ namespace NexusForever.Game.Entity
                 SetFaction(state.Value.PreviousFaction);
                 AddRemoval(new SpellStateRemoval(
                     SpellStateRemovalKind.Faction,
+                    state.Value.Spell4Id,
+                    state.Value.CastingId,
+                    state.Key));
+
+            }
+
+            foreach (KeyValuePair<uint, ItemVisualSwapState> state in itemVisualSwapStates.ToArray())
+            {
+                if (!CanRemove(state.Value.Spell4Id))
+                    continue;
+
+                itemVisualSwapStates.Remove(state.Key);
+                RestoreItemVisualSwap(state.Value);
+                AddRemoval(new SpellStateRemoval(
+                    SpellStateRemovalKind.ItemVisualSwap,
                     state.Value.Spell4Id,
                     state.Value.CastingId,
                     state.Key));

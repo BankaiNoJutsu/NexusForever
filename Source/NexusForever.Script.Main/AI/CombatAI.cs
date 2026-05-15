@@ -24,6 +24,7 @@ namespace NexusForever.Script.Main.AI
         private int autoAttackIndex;
         protected List<uint> autoAttacks = [5649, 5652];
         private readonly UpdateTimer autoAttackTimer = new(TimeSpan.FromSeconds(1.5d));
+        private bool selectingTarget;
 
         private float chaseDistance = 5f;
         private readonly UpdateTimer chaseDistanceTimer = new(TimeSpan.FromSeconds(1d));
@@ -144,6 +145,17 @@ namespace NexusForever.Script.Main.AI
         }
 
         /// <summary>
+        /// Invoked when <see cref="IGridEntity"/> is removed from range check range.
+        /// </summary>
+        public void OnExitRange(IGridEntity entity)
+        {
+            if (entity is not IUnitEntity unit)
+                return;
+
+            this.entity.ThreatManager.RemoveHostile(unit.Guid);
+        }
+
+        /// <summary>
         /// Invoked when <see cref="IGridEntity"/> is removed from vision range.
         /// </summary>
         public void OnRemoveVisibleEntity(IGridEntity entity)
@@ -163,6 +175,13 @@ namespace NexusForever.Script.Main.AI
             AggroEntity(source);
         }
 
+        private bool IsWithinLeash(IUnitEntity unit)
+        {
+            return Vector2.Distance(
+                new Vector2(entity.LeashPosition.X, entity.LeashPosition.Z),
+                new Vector2(unit.Position.X, unit.Position.Z)) <= entity.LeashRange;
+        }
+
         private void AggroEntity(IGridEntity source)
         {
             if (!entity.IsAlive || entity.InCombat)
@@ -174,9 +193,7 @@ namespace NexusForever.Script.Main.AI
             if (entity.GetDispositionTo(unit.Faction1) != Disposition.Hostile)
                 return;
 
-            if (Vector2.Distance(
-                new Vector2(entity.LeashPosition.X, entity.LeashPosition.Z),
-                new Vector2(unit.Position.X, unit.Position.Z)) > entity.LeashRange)
+            if (!IsWithinLeash(unit))
                 return;
 
             ISpellParameters spellParameters = spellParametersFactory.Resolve();
@@ -238,17 +255,46 @@ namespace NexusForever.Script.Main.AI
 
         protected virtual void SelectTarget()
         {
-            IHostileEntity hostile = entity.ThreatManager.GetTopHostile();
-            if (hostile == null)
+            if (selectingTarget)
+                return;
+
+            selectingTarget = true;
+            try
             {
-                Reset();
-                return;
+                IHostileEntity nextHostile = null;
+                List<uint> invalidHostiles = [];
+
+                foreach (IHostileEntity hostile in entity.ThreatManager.OrderByDescending(hostile => hostile.Threat))
+                {
+                    IUnitEntity target = entity.GetVisible<IUnitEntity>(hostile.HatedUnitId);
+                    if (target == null || !target.IsAlive || !IsWithinLeash(target))
+                    {
+                        invalidHostiles.Add(hostile.HatedUnitId);
+                        continue;
+                    }
+
+                    nextHostile = hostile;
+                    break;
+                }
+
+                foreach (uint hostileId in invalidHostiles)
+                    entity.ThreatManager.RemoveHostile(hostileId);
+
+                if (nextHostile == null)
+                {
+                    Reset();
+                    return;
+                }
+
+                if (entity.TargetGuid == nextHostile.HatedUnitId)
+                    return;
+
+                entity.SetTarget(nextHostile.HatedUnitId, nextHostile.Threat);
             }
-
-            if (entity.TargetGuid == hostile.HatedUnitId)
-                return;
-
-            entity.SetTarget(hostile.HatedUnitId, hostile.Threat);
+            finally
+            {
+                selectingTarget = false;
+            }
         }
 
         private void Reset()

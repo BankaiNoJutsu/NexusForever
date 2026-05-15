@@ -1153,6 +1153,20 @@ namespace NexusForever.Game.Spell
                             SendRemoveBuff(target.Guid);
                     }));
                     break;
+                case SpellEffectType.ItemVisualSwap:
+                    if (effect.ItemVisualSwap == null)
+                        return;
+
+                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    {
+                        bool removed = target.RemoveItemVisualSwap(info.EffectId);
+                        SpellEffectDiagnostics.TraceItemVisualSwap(this, target, effect.ItemVisualSwap, false, removed ? null : "restore-missing");
+
+                        if (removed)
+                            SendRemoveBuff(target.Guid);
+                    }));
+                    break;
                 case SpellEffectType.DisguiseOutfit:
                     if (effect.DisguiseOutfit == null)
                         return;

@@ -19,6 +19,7 @@ namespace NexusForever.Game.Abstract.Entity
         ShieldOverload,
         Scale,
         Faction,
+        ItemVisualSwap,
         DisguiseOutfit,
         MimicDisguise,
         HealingAbsorption

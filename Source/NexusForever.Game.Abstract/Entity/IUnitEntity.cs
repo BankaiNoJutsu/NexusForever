@@ -82,6 +82,9 @@ namespace NexusForever.Game.Abstract.Entity
         void AddFaction(uint effectId, uint spell4Id, uint castingId, Faction previousFaction);
         bool RemoveFaction(uint effectId);
 
+        void AddItemVisualSwap(uint effectId, uint spell4Id, uint castingId, IReadOnlyDictionary<ItemSlot, IItemVisual> previousVisuals);
+        bool RemoveItemVisualSwap(uint effectId);
+
         void AddDisguiseOutfit(uint effectId, uint spell4Id, uint castingId, ushort previousOutfitInfo, IReadOnlyDictionary<ItemSlot, IItemVisual> previousVisuals);
         bool RemoveDisguiseOutfit(uint effectId);
 

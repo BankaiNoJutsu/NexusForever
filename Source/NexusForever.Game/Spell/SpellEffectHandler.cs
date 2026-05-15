@@ -2838,12 +2838,6 @@ namespace NexusForever.Game.Spell
             if (itemVisualSwap == null)
                 return;
 
-            if (info.Entry.DurationTime > 0u)
-            {
-                SpellEffectDiagnostics.TraceItemVisualSwap(spell, target, itemVisualSwap, false, "duration-restore-unimplemented");
-                return;
-            }
-
             if (itemVisualSwap.VisualSlot > ItemVisualSlotPacketMax)
             {
                 SpellEffectDiagnostics.TraceItemVisualSwap(spell, target, itemVisualSwap, false, "invalid-visual-slot");
@@ -2862,11 +2856,20 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
+            var previousVisuals = new Dictionary<ItemSlot, IItemVisual>();
+            ItemSlot slot = (ItemSlot)itemVisualSwap.VisualSlot;
+            if (info.Entry.DurationTime > 0u)
+                CapturePreviousVisual(target, previousVisuals, slot);
+
             target.AddVisual(
-                (ItemSlot)itemVisualSwap.VisualSlot,
+                slot,
                 (ushort)itemVisualSwap.DisplayId,
                 (ushort)itemVisualSwap.ColourSetId,
                 unchecked((int)itemVisualSwap.DyeData));
+
+            if (info.Entry.DurationTime > 0u)
+                target.AddItemVisualSwap(info.EffectId, spell.Parameters.SpellInfo.Entry.Id, spell.CastingId, previousVisuals);
+
             SpellEffectDiagnostics.TraceItemVisualSwap(spell, target, itemVisualSwap, true, null);
         }
 
