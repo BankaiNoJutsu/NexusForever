@@ -182,6 +182,7 @@ namespace NexusForever.WorldServer.Command.Handler
             context.SendMessage($"Innate requirements caster [{DescribeCasterInnateRequirements(entry)}], target {DescribeTargetInnateRequirement(entry)}.");
             context.SendMessage($"LAS tierDesc {DescribeLocalizedText(entry.LocalizedTextIdLASTier)}, bonusEachTierDesc {DescribeLocalizedText(spellBaseInfo.Entry.LocalizedTextIdLASTierPoint)}.");
             context.SendMessage($"Hooks castEvents [{FormatNonZero(entry.Spell4IdCastEvent00, entry.Spell4IdCastEvent01, entry.Spell4IdCastEvent02, entry.Spell4IdCastEvent03)}], runners [{FormatNonZero(entry.Spell4RunnerId00, entry.Spell4RunnerId01)}], runnerPrereqs [{FormatNonZero(entry.PrerequisiteIdRunners)}], alternate {entry.Spell4IdMechanicAlternateSpell}, petSwitch {entry.Spell4IdPetSwitch}.");
+            context.SendMessage($"Thresholds [{DescribeThresholds(entry.Id)}].");
             context.SendMessage($"Prereqs baseFlags {DescribePrerequisiteFlags(spellBaseInfo.PrerequisiteFlags)}, casterCast {entry.PrerequisiteIdCasterCast}, targetCast {entry.PrerequisiteIdTargetCast}, casterPersist {entry.PrerequisiteIdCasterPersistence}, targetPersist {entry.PrerequisiteIdTargetPersistence}, aoeTarget {entry.PrerequisiteIdAoeTarget}, aoePreferred {entry.PrerequisiteIdAoePreferredTarget}.");
             context.SendMessage($"TargetMechanics {DescribeTargetMechanics(spellBaseInfo.TargetMechanics)}, TargetAngle {DescribeTargetAngle(spellBaseInfo.TargetAngle)}, ValidTargets {DescribeValidTargets(spellBaseInfo.ValidTargets)}, AoeConstraints {DescribeAoeConstraints(spellInfo.AoeTargetConstraints)}, StackGroup {DescribeStackGroup(spellInfo.StackGroup)}.");
 
@@ -194,6 +195,7 @@ namespace NexusForever.WorldServer.Command.Handler
             {
                 context.SendMessage($"Effect {effect.Entry.Id} order {effect.Entry.OrderIndex}: {effect.Entry.EffectType}, targetFlags {effect.Entry.TargetFlags}, damageType {effect.Entry.DamageType}, flags {effect.Entry.Flags}, phase {effect.Entry.PhaseFlags}, group {effect.Entry.Spell4EffectGroupListId}, timing delay/tick/duration {effect.Timing.DelayTime}/{effect.Timing.TickTime}/{effect.Timing.DurationTime}.");
                 context.SendMessage($"  Prereqs apply caster/target {effect.Entry.PrerequisiteIdCasterApply}/{effect.Entry.PrerequisiteIdTargetApply}, persist caster/target {effect.Entry.PrerequisiteIdCasterPersistence}/{effect.Entry.PrerequisiteIdTargetPersistence}, suspend target {effect.Entry.PrerequisiteIdTargetSuspend}.");
+                context.SendMessage($"  Costs perTick [{DescribeEffectInnateCosts(effect.Entry)}], effectEmm {DescribeEffectEmm(effect.Entry)}.");
                 context.SendMessage($"  Semantics: {DescribeEffectSemantics(effect)}");
                 if (effect.CCStateBreak != null)
                     context.SendMessage("  Runtime diagnostics: beforeMask/afterMask + removedStates(state:effectId) are emitted by TraceCCStateBreak; combat-log writes caster-context + eState per removed state, while strState is client-local display text.");
@@ -220,7 +222,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 4 => "position AOE",
                 5 => "chain target",
                 6 => "unresolved client type 6",
-                7 => "unresolved client type 7 (service-lookup branch)",
+                7 => "unresolved client type 7 (service-lookup resolved-spell branch)",
                 _ => null
             };
 
@@ -420,6 +422,63 @@ namespace NexusForever.WorldServer.Command.Handler
                 : "emmId 0";
 
             costs.Add($"slot{slot} {DescribeVital(costType)}, value {costValue}, {emmDescription}");
+        }
+
+        private static string DescribeEffectInnateCosts(Spell4EffectsEntry entry)
+        {
+            List<string> costs = [];
+            AppendEffectInnateCost(costs, 0, entry.InnateCostPerTickType0, entry.InnateCostPerTick0);
+            AppendEffectInnateCost(costs, 1, entry.InnateCostPerTickType1, entry.InnateCostPerTick1);
+            return costs.Count > 0 ? string.Join("; ", costs) : "none";
+        }
+
+        private static void AppendEffectInnateCost(List<string> costs, int slot, uint costType, uint costValue)
+        {
+            if (costType == 0u && costValue == 0u)
+                return;
+
+            costs.Add($"slot{slot} {DescribeVital(costType)}, value {costValue}");
+        }
+
+        private static string DescribeEffectEmm(Spell4EffectsEntry entry)
+        {
+            if (entry.EmmComparison == 0u && entry.EmmValue == 0u)
+                return "none";
+
+            return $"comparison {entry.EmmComparison}, value {entry.EmmValue} (unknown semantics)";
+        }
+
+        private static string DescribeThresholds(uint spell4Id)
+        {
+            Spell4ThresholdsEntry[] entries = GameTableManager.Instance.Spell4Thresholds.Entries
+                .Where(entry => entry.Spell4IdParent == spell4Id)
+                .OrderBy(entry => entry.OrderIndex)
+                .ToArray();
+
+            if (entries.Length == 0)
+                return "none";
+
+            return string.Join("; ", entries.Select(DescribeThreshold));
+        }
+
+        private static string DescribeThreshold(Spell4ThresholdsEntry entry)
+        {
+            string iconDescription = string.IsNullOrWhiteSpace(entry.IconReplacement)
+                ? "none"
+                : $"\"{entry.IconReplacement}\"";
+
+            return $"order {entry.OrderIndex}, cast {DescribeSpell4(entry.Spell4IdToCast)}, duration {entry.ThresholdDuration}ms, costs [{DescribeThresholdCosts(entry)}], tooltip {DescribeLocalizedText(entry.LocalizedTextIdTooltip)}, icon {iconDescription}, visualEffect {entry.VisualEffectId}";
+        }
+
+        private static string DescribeThresholdCosts(Spell4ThresholdsEntry entry)
+        {
+            List<string> costs = [];
+            if (entry.VitalEnumCostType00 != 0u || entry.VitalCostValue00 != 0u)
+                costs.Add($"slot0 {DescribeVital(entry.VitalEnumCostType00)}, value {entry.VitalCostValue00}");
+            if (entry.VitalEnumCostType01 != 0u || entry.VitalCostValue01 != 0u)
+                costs.Add($"slot1 {DescribeVital(entry.VitalEnumCostType01)}, value {entry.VitalCostValue01}");
+
+            return costs.Count > 0 ? string.Join("; ", costs) : "none";
         }
 
         private static string DescribeCasterInnateRequirements(Spell4Entry entry)

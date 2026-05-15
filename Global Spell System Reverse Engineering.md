@@ -107,6 +107,21 @@ Direct evidence:
 | Rows with pet switch spell refs | 43 |
 | `spell4thresholds` rows | 622 |
 
+### `Spell4Thresholds`
+
+`Spell4Thresholds` is keyed by concrete `spell4IdParent`, not by `Spell4Base`.
+Each row can point at a follow-up `spell4IdToCast`, carry an `orderIndex`,
+optionally require a duration window, and expose a small pair of vital-cost
+fields plus tooltip/icon metadata.
+
+Important constraints from current evidence:
+
+- Threshold rows are structurally separate from EMM. The table has cost fields,
+    but no `emmComparison`, `emmValue`, or `InnateCostEMMId` equivalent.
+- This makes thresholds a poor candidate for explaining EMM semantics.
+- In current NexusForever runtime, threshold rows are loaded but not applied;
+    they are now inspection data first, not restoration-safe behavior.
+
 ### `Spell4Effects`
 
 `Spell4Effects` is the behavior node table. Each row is scoped to a concrete `spellId`, ordered by `orderIndex`, filtered to a target subset by `targetFlags`, and interpreted according to `effectType`.

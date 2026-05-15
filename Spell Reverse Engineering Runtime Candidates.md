@@ -88,6 +88,18 @@ These rows cover client target-mechanic families that still map to unresolved se
 | Type `7` | `18`, `25`, `26`, `33`, `52`, `58`, `63`, `69` | `Spell4=339`, base `339`, tier `1` | Auto-attack witness for mechanic `25`; useful for the client service-lookup branch currently surfaced as unresolved `type 7`. | `/spell inspect4 339` then `/spell cast4 339` |
 | Type `7` | `18`, `25`, `26`, `33`, `52`, `58`, `63`, `69` | `Spell4=26813`, base `13307`, tier `1` | Client test AE witness for mechanic `18`; complements the auto-attack row with a non-basic-attack shape under the same unresolved branch. | `/spell inspect4 26813` then `/spell cast4 26813` |
 
+## EMM-Bearing Innate Fixtures
+
+These rows confirm that non-zero EMM fields are live data on both `Spell4` and `Spell4Effects`. Treat them as inspect-first fixtures for pattern comparison, not as proof of EMM semantics.
+
+| Fixture | Concrete spell | EMM evidence | Commands |
+| --- | --- | --- | --- |
+| Esper Mind Cleanse Finisher | `Spell4=284`, base `284`, tier `1` | `InnateCostEMMId1=4`; baseline effect `301` has zero EMM, then heal rows `2555`-`2558` keep `emmComparison=0` while `emmValue` steps `1` -> `4`. | `/spell inspect4 284` then `/spell cast4 284` |
+| Esper Mind Stab Finisher | `Spell4=405`, base `405`, tier `1` | `InnateCostEMMId0=4`; baseline effect `505` has zero EMM, then damage rows `2549`-`2552` keep `emmComparison=0` while `emmValue` steps `1` -> `4`. | `/spell inspect4 405` then `/spell cast4 405` |
+| Esper Healing Nova Finisher | `Spell4=1691`, base `1691`, tier `1` | `InnateCostEMMId1=4`; baseline effect `2568` has zero EMM, then rows `2569`-`2572` step `emmValue` `1` -> `4` and the final row also flips `emmComparison` to `1`. | `/spell inspect4 1691` then `/spell cast4 1691` |
+| Medic Cell Shock | `Spell4=1798`, base `1798`, tier `1` | `InnateCostEMMId0=7`; baseline effect `2783` has zero EMM, then rows `2816`-`2819` step `emmValue` `1` -> `4` and the final row also flips `emmComparison` to `1`. | `/spell inspect4 1798` then `/spell cast4 1798` |
+| Medic Guillotine Charge | `Spell4=1851`, base `1851`, tier `1` | `InnateCostEMMId0=5`; baseline effect `2877` has zero EMM, then rows `2878`-`2881` step `emmValue` `1` -> `4` and the final row also flips `emmComparison` to `1`. | `/spell inspect4 1851` then `/spell cast4 1851` |
+
 ## Proxy Variant Fixtures
 
 The placed `NonPlayer` slice is dominated by plain `Proxy`, but global data gives clean non-random proxy variant fixtures. These validate that variant rows decode `DataBits00`, emit `proxy` diagnostics, preserve parent/root spell context, forward the realized proxy target to child `Target` rows, and route delayed or duration-bound pulses through the shared scheduler.
