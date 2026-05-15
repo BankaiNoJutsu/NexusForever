@@ -10,6 +10,7 @@ namespace NexusForever.Game.Abstract.Spell
         Spell4TargetMechanicsEntry TargetMechanics { get; }
         Spell4TargetAngleEntry TargetAngle { get; }
         Spell4PrerequisitesEntry Prerequisites { get; }
+        SpellPrerequisiteFlags PrerequisiteFlags { get; }
         Spell4ValidTargetsEntry ValidTargets { get; }
         TargetGroupEntry CastGroup { get; }
         Creature2Entry PositionalAoe { get; }
@@ -19,10 +20,13 @@ namespace NexusForever.Game.Abstract.Spell
         SpellClass SpellClass { get; }
         SpellCastMethod CastMethod { get; }
         SpellSchool School { get; }
+        SpellTargetingFlags TargetingFlags { get; }
         bool HasIcon { get; }
         bool IsDebuff { get; }
         bool IsBuff { get; }
         bool IsDispellable { get; }
+        bool IsFreeformTarget { get; }
+        bool IsMovingInterrupted { get; }
 
         /// <summary>
         /// Return <see cref="ISpellInfo"/> for the supplied spell tier.

@@ -11,6 +11,7 @@ namespace NexusForever.Game.Spell
     public class CharacterSpell : ICharacterSpell
     {
         private const uint TargetTypeSingleTarget = 1u;
+        private const uint TargetTypeSelfAoe = 2u;
         private const uint TargetTypeTargetAoe = 3u;
         private const uint TargetTypeChain = 5u;
 
@@ -33,7 +34,7 @@ namespace NexusForever.Game.Spell
             set
             {
                 if (tier != value)
-                    SpellInfo = BaseInfo.GetSpellInfo(tier);
+                    SpellInfo = BaseInfo.GetSpellInfo(value);
 
                 tier = value;
                 saveMask |= UnlockedSpellSaveMask.Tier;
@@ -43,6 +44,10 @@ namespace NexusForever.Game.Spell
 
         public uint AbilityCharges { get; private set; }
         public uint MaxAbilityCharges => SpellInfo.Entry.AbilityChargeCount;
+        public double AbilityRechargeTimeRemaining => rechargeTimer?.Time ?? 0d;
+        public double AbilityRechargePercentRemaining => rechargeTimer is { Duration: > 0d }
+            ? rechargeTimer.Time / rechargeTimer.Duration
+            : 0d;
 
         private UnlockedSpellSaveMask saveMask;
 
@@ -55,9 +60,9 @@ namespace NexusForever.Game.Spell
         {
             Owner     = player;
             BaseInfo  = baseInfo;
-            SpellInfo = baseInfo.GetSpellInfo(tier);
             Item      = item;
             tier      = model.Tier;
+            SpellInfo = baseInfo.GetSpellInfo(tier);
 
             InitialiseAbilityCharges();
         }
@@ -173,6 +178,10 @@ namespace NexusForever.Game.Spell
         private uint ResolvePrimaryTargetId()
         {
             uint targetType = BaseInfo.TargetMechanics?.TargetType ?? 0u;
+
+            if (targetType == TargetTypeSelfAoe)
+                return Owner.Guid;
+
             if (targetType is not TargetTypeSingleTarget and not TargetTypeTargetAoe and not TargetTypeChain)
                 return 0u;
 

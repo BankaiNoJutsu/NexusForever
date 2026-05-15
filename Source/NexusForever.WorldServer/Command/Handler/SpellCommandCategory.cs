@@ -7,6 +7,8 @@ using NexusForever.Game.Spell;
 using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Static.Combat;
 using NexusForever.Game.Static.Combat.CrowdControl;
+using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
@@ -171,12 +173,16 @@ namespace NexusForever.WorldServer.Command.Handler
             if (!string.IsNullOrWhiteSpace(entry.Description))
                 context.SendMessage($"Description: {entry.Description}");
 
-            context.SendMessage($"Timing cast/duration/cooldown {entry.CastTime}/{entry.SpellDuration}/{entry.SpellCoolDown}ms, channel initial/max/pulse {entry.ChannelInitialDelay}/{entry.ChannelMaxTime}/{entry.ChannelPulseTime}ms, GCD enum {entry.GlobalCooldownEnum}, global cooldown id {entry.SpellCoolDownIdGlobal}.");
-            context.SendMessage($"Range min/max/vertical {entry.TargetMinRange:R}/{entry.TargetMaxRange:R}/{entry.TargetVerticalRange:R}, charges count/rechargeTime/rechargeCount {entry.AbilityChargeCount}/{entry.AbilityRechargeTime}/{entry.AbilityRechargeCount}, thresholdTime {entry.ThresholdTime}.");
+            context.SendMessage($"Timing cast/duration/cooldown {entry.CastTime}/{entry.SpellDuration}/{entry.SpellCoolDown}ms, GCD enum {entry.GlobalCooldownEnum}, global cooldown id {entry.SpellCoolDownIdGlobal}.");
+            context.SendMessage($"ChannelData {DescribeChannelData(entry)}, ProxyChannelData [{DescribeProxyChannelData(spellInfo)}].");
+            context.SendMessage($"Range min/max/vertical {entry.TargetMinRange:R}/{entry.TargetMaxRange:R}/{entry.TargetVerticalRange:R}, AbilityCharges static {DescribeStaticAbilityCharges(entry)}, runtime {DescribeRuntimeAbilityCharges(context, spellBaseInfo)}, thresholdTime {entry.ThresholdTime}.");
+            context.SendMessage($"Targeting weaponSlot {spellBaseInfo.Entry.WeaponSlot}, flags {DescribeTargetingFlags(spellBaseInfo.TargetingFlags)}, freeform {spellBaseInfo.IsFreeformTarget}, movingInterrupted {spellBaseInfo.IsMovingInterrupted}.");
             context.SendMessage($"Flags property 0x{entry.PropertyFlags:X8}, beneficial {spellInfo.IsBeneficial}, hideCooldownTooltip {spellInfo.HideCooldownInTooltip}, serviceTokenCost {DescribeServiceTokenCost(spellInfo)}.");
-            context.SendMessage($"Costs innate0 type/cost/emm {entry.InnateCostType0}/{entry.InnateCost0}/{entry.InnateCostEMMId0}, innate1 type/cost/emm {entry.InnateCostType1}/{entry.InnateCost1}/{entry.InnateCostEMMId1}, abilityPointCost {entry.AbilityPointCost}.");
+            context.SendMessage($"Costs innate [{DescribeInnateCosts(entry)}], abilityPointCost {entry.AbilityPointCost}.");
+            context.SendMessage($"Innate requirements caster [{DescribeCasterInnateRequirements(entry)}], target {DescribeTargetInnateRequirement(entry)}.");
+            context.SendMessage($"LAS tierDesc {DescribeLocalizedText(entry.LocalizedTextIdLASTier)}, bonusEachTierDesc {DescribeLocalizedText(spellBaseInfo.Entry.LocalizedTextIdLASTierPoint)}.");
             context.SendMessage($"Hooks castEvents [{FormatNonZero(entry.Spell4IdCastEvent00, entry.Spell4IdCastEvent01, entry.Spell4IdCastEvent02, entry.Spell4IdCastEvent03)}], runners [{FormatNonZero(entry.Spell4RunnerId00, entry.Spell4RunnerId01)}], runnerPrereqs [{FormatNonZero(entry.PrerequisiteIdRunners)}], alternate {entry.Spell4IdMechanicAlternateSpell}, petSwitch {entry.Spell4IdPetSwitch}.");
-            context.SendMessage($"Prereqs casterCast {entry.PrerequisiteIdCasterCast}, targetCast {entry.PrerequisiteIdTargetCast}, casterPersist {entry.PrerequisiteIdCasterPersistence}, targetPersist {entry.PrerequisiteIdTargetPersistence}, aoeTarget {entry.PrerequisiteIdAoeTarget}, aoePreferred {entry.PrerequisiteIdAoePreferredTarget}.");
+            context.SendMessage($"Prereqs baseFlags {DescribePrerequisiteFlags(spellBaseInfo.PrerequisiteFlags)}, casterCast {entry.PrerequisiteIdCasterCast}, targetCast {entry.PrerequisiteIdTargetCast}, casterPersist {entry.PrerequisiteIdCasterPersistence}, targetPersist {entry.PrerequisiteIdTargetPersistence}, aoeTarget {entry.PrerequisiteIdAoeTarget}, aoePreferred {entry.PrerequisiteIdAoePreferredTarget}.");
             context.SendMessage($"TargetMechanics {DescribeTargetMechanics(spellBaseInfo.TargetMechanics)}, TargetAngle {DescribeTargetAngle(spellBaseInfo.TargetAngle)}, ValidTargets {DescribeValidTargets(spellBaseInfo.ValidTargets)}, AoeConstraints {DescribeAoeConstraints(spellInfo.AoeTargetConstraints)}, StackGroup {DescribeStackGroup(spellInfo.StackGroup)}.");
 
             foreach (TelegraphDamageEntry telegraph in spellInfo.Telegraphs)
@@ -207,11 +213,14 @@ namespace NexusForever.WorldServer.Command.Handler
         {
             string label = targetType switch
             {
+                0 => "unresolved client type 0 (IsSelfSpell candidate)",
                 1 => "single target",
                 2 => "self AOE",
                 3 => "target AOE",
                 4 => "position AOE",
                 5 => "chain target",
+                6 => "unresolved client type 6",
+                7 => "unresolved client type 7 (service-lookup branch)",
                 _ => null
             };
 
@@ -263,8 +272,199 @@ namespace NexusForever.WorldServer.Command.Handler
         private static string DescribeAoeConstraints(Spell4AoeTargetConstraintsEntry entry)
         {
             return entry != null
-                ? $"{entry.Id} angle {entry.Angle:R}, targets {entry.TargetCount}, range {entry.MinRange:R}-{entry.MaxRange:R}, selection {entry.TargetSelection}{DescribeAoeTargetSelection(entry.TargetSelection)}"
+                ? $"{entry.Id} angle {entry.Angle:R}, targets {entry.TargetCount}, range {entry.MinRange:R}-{entry.MaxRange:R}, selection {entry.TargetSelection}{DescribeAoeTargetSelection(entry.TargetSelection)}, client booleans dead/cluster/combat unresolved"
                 : "0";
+        }
+
+        private static string DescribeChannelData(Spell4Entry entry)
+        {
+            return HasChannelData(entry)
+                ? $"initialDelay {FormatSeconds(entry.ChannelInitialDelay)}, maxTime {FormatSeconds(entry.ChannelMaxTime)}, pulseTime {FormatSeconds(entry.ChannelPulseTime)}, flags 0x{entry.SpellChannelFlags:X8}"
+                : "none";
+        }
+
+        private static bool HasChannelData(Spell4Entry entry)
+        {
+            return entry != null
+                && (entry.ChannelInitialDelay != 0u || entry.ChannelMaxTime != 0u || entry.ChannelPulseTime != 0u);
+        }
+
+        private static string DescribeProxyChannelData(ISpellInfo spellInfo)
+        {
+            List<string> proxyChannels = [];
+            foreach (SpellEffectInterpretation effect in spellInfo.Effects.Select(SpellEffectInterpreter.Interpret))
+            {
+                if (effect.Proxy == null)
+                    continue;
+
+                Spell4Entry proxyEntry = GameTableManager.Instance.Spell4.GetEntry(effect.Proxy.Spell4Id);
+                if (!HasChannelData(proxyEntry))
+                    continue;
+
+                proxyChannels.Add($"effect {effect.Entry.Id} -> {DescribeSpell4(proxyEntry.Id)} channel {DescribeChannelData(proxyEntry)}");
+            }
+
+            return proxyChannels.Count > 0 ? string.Join("; ", proxyChannels) : "none";
+        }
+
+        private static string DescribeStaticAbilityCharges(Spell4Entry entry)
+        {
+            return entry.AbilityChargeCount > 0u
+                ? $"max {entry.AbilityChargeCount}, rechargeTime {FormatSeconds(entry.AbilityRechargeTime)}, rechargeCount {entry.AbilityRechargeCount}"
+                : "none";
+        }
+
+        private static string DescribeRuntimeAbilityCharges(ICommandContext context, ISpellBaseInfo spellBaseInfo)
+        {
+            IPlayer player = context.Target as IPlayer ?? context.Invoker as IPlayer;
+            if (player == null)
+                return "not available";
+
+            ICharacterSpell characterSpell = player.SpellManager.GetSpell(spellBaseInfo.Entry.Id);
+            if (characterSpell == null || characterSpell.MaxAbilityCharges == 0u)
+                return "none";
+
+            return $"remaining {characterSpell.AbilityCharges}/{characterSpell.MaxAbilityCharges}, fRechargeTime {characterSpell.AbilityRechargeTimeRemaining:R}s, fRechargePercentRemaining {characterSpell.AbilityRechargePercentRemaining:R}";
+        }
+
+        private static string FormatSeconds(uint milliseconds)
+        {
+            return $"{milliseconds / 1000d:R}s ({milliseconds}ms)";
+        }
+
+        private static string DescribeTargetingFlags(SpellTargetingFlags targetingFlags)
+        {
+            List<string> labels = [];
+            if ((targetingFlags & SpellTargetingFlags.InterruptOnMove) != 0)
+                labels.Add("interrupt-on-move");
+            if ((targetingFlags & SpellTargetingFlags.FreeformTarget) != 0)
+                labels.Add("freeform-target");
+
+            return labels.Count == 0
+                ? $"0x{(uint)targetingFlags:X8}"
+                : $"0x{(uint)targetingFlags:X8} ({string.Join(", ", labels)})";
+        }
+
+        private static string DescribePrerequisiteFlags(SpellPrerequisiteFlags flags)
+        {
+            List<string> labels = [];
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.TargetAvoided, "bTargetAvoided");
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.TargetBlocked, "bTargetBlocked");
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.TargetGlancing, "bTargetGlancing");
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.TargetFierce, "bTargetFierce");
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.NotUsed, "bNOTUSED");
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.CasterAvoided, "bCasterAvoided");
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.CasterBlocked, "bCasterBlocked");
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.CasterGlancing, "bCasterGlancing");
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.CasterFierce, "bCasterFierce");
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.NotUsed1, "bNOTUSED1");
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.CasterSpellSuccess, "bCasterSpellSuccess");
+            AppendPrerequisiteFlag(labels, flags, SpellPrerequisiteFlags.LastCasterSpellSuccess, "bLastCasterSpellSuccess");
+
+            SpellPrerequisiteFlags knownFlags =
+                SpellPrerequisiteFlags.TargetAvoided
+                | SpellPrerequisiteFlags.TargetBlocked
+                | SpellPrerequisiteFlags.TargetGlancing
+                | SpellPrerequisiteFlags.TargetFierce
+                | SpellPrerequisiteFlags.NotUsed
+                | SpellPrerequisiteFlags.CasterAvoided
+                | SpellPrerequisiteFlags.CasterBlocked
+                | SpellPrerequisiteFlags.CasterGlancing
+                | SpellPrerequisiteFlags.CasterFierce
+                | SpellPrerequisiteFlags.NotUsed1
+                | SpellPrerequisiteFlags.CasterSpellSuccess
+                | SpellPrerequisiteFlags.LastCasterSpellSuccess;
+
+            uint unknownFlags = (uint)(flags & ~knownFlags);
+            if (unknownFlags != 0u)
+                labels.Add($"unknown 0x{unknownFlags:X8}");
+
+            return labels.Count == 0
+                ? $"0x{(uint)flags:X8}"
+                : $"0x{(uint)flags:X8} ({string.Join(", ", labels)})";
+        }
+
+        private static void AppendPrerequisiteFlag(List<string> labels, SpellPrerequisiteFlags flags, SpellPrerequisiteFlags flag, string label)
+        {
+            if ((flags & flag) != 0)
+                labels.Add(label);
+        }
+
+        private static string DescribeLocalizedText(uint textId)
+        {
+            if (textId == 0u)
+                return "0 (none)";
+
+            string text = GameTableManager.Instance.TextEnglish.GetEntry(textId);
+            if (string.IsNullOrWhiteSpace(text))
+                return $"{textId} (missing)";
+
+            return $"{textId} \"{text.Replace("\r", " ").Replace("\n", " ").Trim()}\"";
+        }
+
+        private static string DescribeInnateCosts(Spell4Entry entry)
+        {
+            List<string> costs = [];
+            AppendInnateCost(costs, 0, entry.InnateCostType0, entry.InnateCost0, entry.InnateCostEMMId0);
+            AppendInnateCost(costs, 1, entry.InnateCostType1, entry.InnateCost1, entry.InnateCostEMMId1);
+            return costs.Count > 0 ? string.Join("; ", costs) : "none";
+        }
+
+        private static void AppendInnateCost(List<string> costs, int slot, uint costType, uint costValue, uint emmId)
+        {
+            if (costType == 0u && costValue == 0u && emmId == 0u)
+                return;
+
+            string emmDescription = emmId != 0u
+                ? $"emmId {emmId} (unknown semantics)"
+                : "emmId 0";
+
+            costs.Add($"slot{slot} {DescribeVital(costType)}, value {costValue}, {emmDescription}");
+        }
+
+        private static string DescribeCasterInnateRequirements(Spell4Entry entry)
+        {
+            List<string> requirements = [];
+            AppendInnateRequirement(requirements, 0, entry.CasterInnateRequirement0, entry.CasterInnateRequirementValue0, entry.CasterInnateRequirementEval0);
+            AppendInnateRequirement(requirements, 1, entry.CasterInnateRequirement1, entry.CasterInnateRequirementValue1, entry.CasterInnateRequirementEval1);
+            return requirements.Count > 0 ? string.Join("; ", requirements) : "none";
+        }
+
+        private static string DescribeTargetInnateRequirement(Spell4Entry entry)
+        {
+            if (entry.TargetBeginInnateRequirement == 0u && entry.TargetBeginInnateRequirementValue == 0u && entry.TargetBeginInnateRequirementEval == 0u)
+                return "none";
+
+            return $"{DescribePrerequisiteType(entry.TargetBeginInnateRequirement)}, value {entry.TargetBeginInnateRequirementValue}, eval {DescribeEvaluationMode(entry.TargetBeginInnateRequirementEval)}";
+        }
+
+        private static void AppendInnateRequirement(List<string> requirements, int slot, uint requirementType, uint requirementValue, uint evaluationMode)
+        {
+            if (requirementType == 0u && requirementValue == 0u && evaluationMode == 0u)
+                return;
+
+            requirements.Add($"slot{slot} {DescribePrerequisiteType(requirementType)}, value {requirementValue}, eval {DescribeEvaluationMode(evaluationMode)}");
+        }
+
+        private static string DescribeVital(uint vital)
+        {
+            return Enum.IsDefined(typeof(Vital), (int)vital)
+                ? $"{(Vital)vital} ({vital})"
+                : vital.ToString();
+        }
+
+        private static string DescribePrerequisiteType(uint requirementType)
+        {
+            return Enum.IsDefined(typeof(PrerequisiteType), (int)requirementType)
+                ? $"{(PrerequisiteType)requirementType} ({requirementType})"
+                : requirementType.ToString();
+        }
+
+        private static string DescribeEvaluationMode(uint evaluationMode)
+        {
+            return Enum.IsDefined(typeof(EvaluationMode), (int)evaluationMode)
+                ? $"{(EvaluationMode)evaluationMode} ({evaluationMode})"
+                : evaluationMode.ToString();
         }
 
         private static string DescribeValidTargetMask(uint targetBitmask)
@@ -278,14 +478,9 @@ namespace NexusForever.WorldServer.Command.Handler
 
         private static string DescribeAoeTargetSelection(uint targetSelection)
         {
-            string label = targetSelection switch
-            {
-                4 => "lowest absolute health",
-                5 => "most missing health",
-                _ => null
-            };
-
-            return label != null ? $" ({label})" : string.Empty;
+            return Enum.IsDefined(typeof(AoeSelectionType), (int)targetSelection)
+                ? $" ({(AoeSelectionType)targetSelection})"
+                : string.Empty;
         }
 
         private static string DescribeStackGroup(Spell4StackGroupEntry entry)

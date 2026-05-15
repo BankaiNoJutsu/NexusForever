@@ -13,6 +13,8 @@ namespace NexusForever.Game.Abstract.Spell
         byte Tier { get; set; }
         uint AbilityCharges { get; }
         uint MaxAbilityCharges { get; }
+        double AbilityRechargeTimeRemaining { get; }
+        double AbilityRechargePercentRemaining { get; }
 
         /// <summary>
         /// Used for when the client does not have continuous casting enabled

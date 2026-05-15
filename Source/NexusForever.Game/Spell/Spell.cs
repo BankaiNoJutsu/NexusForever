@@ -621,11 +621,11 @@ namespace NexusForever.Game.Spell
             return constraints.TargetSelection switch
             {
                 // Client rows explicitly name selection 4 as "lowest absolute health".
-                4 => candidates
+                (uint)AoeSelectionType.LowestAbsoluteHealth => candidates
                     .OrderBy(e => e.Health)
                     .ThenBy(e => Vector3.DistanceSquared(selectionOrigin, e.Position)),
                 // Client rows explicitly name selection 5 as "missing the most health".
-                5 => candidates
+                (uint)AoeSelectionType.MissingMostHealth => candidates
                     .OrderByDescending(e => e.MaxHealth > e.Health ? e.MaxHealth - e.Health : 0u)
                     .ThenBy(e => Vector3.DistanceSquared(selectionOrigin, e.Position)),
                 _ => OrderByDistance(candidates, selectionOrigin)
@@ -1211,8 +1211,7 @@ namespace NexusForever.Game.Spell
 
         public bool IsMovingInterrupted()
         {
-            // TODO: implement correctly
-            return Parameters.SpellInfo.Entry.CastTime > 0;
+            return Parameters.SpellInfo.BaseInfo.IsMovingInterrupted;
         }
 
         private void SendSpellCastResult(CastResult castResult)

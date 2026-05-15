@@ -12,6 +12,7 @@ namespace NexusForever.Game.Spell
         public Spell4TargetMechanicsEntry TargetMechanics { get; }
         public Spell4TargetAngleEntry TargetAngle { get; }
         public Spell4PrerequisitesEntry Prerequisites { get; }
+        public SpellPrerequisiteFlags PrerequisiteFlags { get; }
         public Spell4ValidTargetsEntry ValidTargets { get; }
         public TargetGroupEntry CastGroup { get; }
         public Creature2Entry PositionalAoe { get; }
@@ -21,10 +22,13 @@ namespace NexusForever.Game.Spell
         public SpellClass SpellClass { get; }
         public SpellCastMethod CastMethod { get; }
         public SpellSchool School { get; }
+        public SpellTargetingFlags TargetingFlags { get; }
         public bool HasIcon { get; }
         public bool IsDebuff { get; }
         public bool IsBuff { get; }
         public bool IsDispellable { get; }
+        public bool IsFreeformTarget { get; }
+        public bool IsMovingInterrupted { get; }
 
         private readonly ISpellInfo[] spellInfoStore;
 
@@ -35,6 +39,7 @@ namespace NexusForever.Game.Spell
             TargetMechanics   = GameTableManager.Instance.Spell4TargetMechanics.GetEntry(Entry.Spell4TargetMechanicId);
             TargetAngle       = GameTableManager.Instance.Spell4TargetAngle.GetEntry(Entry.Spell4TargetAngleId);
             Prerequisites     = GameTableManager.Instance.Spell4Prerequisites.GetEntry(Entry.Spell4PrerequisiteId);
+            PrerequisiteFlags = (SpellPrerequisiteFlags)(Prerequisites?.Flags ?? 0u);
             ValidTargets      = GameTableManager.Instance.Spell4ValidTargets.GetEntry(Entry.Spell4ValidTargetId);
             CastGroup         = GameTableManager.Instance.TargetGroup.GetEntry(Entry.TargetGroupIdCastGroup);
             PositionalAoe     = GameTableManager.Instance.Creature2.GetEntry(Entry.Creature2IdPositionalAoe);
@@ -45,10 +50,13 @@ namespace NexusForever.Game.Spell
             SpellClass        = (SpellClass)Entry.SpellClass;
             CastMethod        = (SpellCastMethod)Entry.CastMethod;
             School            = (SpellSchool)Entry.School;
+            TargetingFlags    = (SpellTargetingFlags)Entry.TargetingFlags;
             HasIcon           = SpellClass == SpellClass.BuffNonDispelRightClickOk || (SpellClass >= SpellClass.BuffDispellable && SpellClass <= SpellClass.DebuffNonDispellable);
             IsDebuff          = SpellClass == SpellClass.DebuffDispellable || SpellClass == SpellClass.DebuffNonDispellable;
             IsBuff            = SpellClass == SpellClass.BuffDispellable || SpellClass == SpellClass.BuffNonDispellable || SpellClass == SpellClass.BuffNonDispelRightClickOk;
             IsDispellable     = SpellClass == SpellClass.BuffDispellable || SpellClass == SpellClass.DebuffDispellable;
+            IsFreeformTarget  = (TargetingFlags & SpellTargetingFlags.FreeformTarget) != 0;
+            IsMovingInterrupted = (TargetingFlags & SpellTargetingFlags.InterruptOnMove) != 0;
 
             List<Spell4Entry> spellEntries = GlobalSpellManager.Instance.GetSpell4Entries(spell4BaseEntry.Id).ToList();
             if (spellEntries.Count < 1)
