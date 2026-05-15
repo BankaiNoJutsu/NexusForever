@@ -18,16 +18,38 @@ StsConnLib64.MT.dll,18000d560,StsConn_OnLoginFinishResponse,Parses LoginFinish r
 StsConnLib64.MT.dll,18002ec10,StsInetSocket_ParseConnectFields,Parses Connect XML/header fields including Address/Location fallback.
 StsConnLib64.MT.dll,18002f410,StsInetSocket_SendConnectEnvelope,Builds /Sts/Connect envelope fields.
 StsConnLib64.MT.dll,180030d80,StsInetSocket_DispatchConnectEnvelope,Dispatches parsed /Sts/Connect envelope to the registered service.
+WildStar64.exe,140001ba0,ClientCraftingAbandon_WritePayload,No-op writer shared by zero-payload world opcodes including 0x018C ClientP2PTradingAcceptInvite, 0x018F ClientP2PTradingCancelTrade, 0x0190 ClientP2PTradingCommit, 0x0191 ClientP2PTradingDeclineInvite, 0x03EC ClientRequestOwnedCommodityOrders, 0x03ED ClientRequestOwnedItemAuctions, and 0x084D ClientCraftingAbandon; the registered one-byte object emits no payload bits.
 WildStar64.exe,14007ab80,ClientRapidTransport_WritePayload,Serialises world opcode 0x0141 payload as a 14-bit node id plus a 32-bit opaque field.
+WildStar64.exe,14007d010,ClientTradeskillResetTalents_WritePayload,Serialises one raw 32-bit field; used by world opcode 0x0192 ClientP2PTradingInitiateTrade as target unit id and opcode 0x0858 ClientTradeskillResetTalents as Tradeskill id.
+WildStar64.exe,14007d4a0,ClientCraftingCraftItemAutoCraft_WritePayload,Serialises world opcode 0x0852 payload as four 32-bit fields: context token, crafting station unit id, TradeskillSchematic2 id, and schematic count.
 WildStar64.exe,14007d830,ActivateUnitFamily_Advance64Bits,Advances 64 payload bits for the shared opcode 0x0097 and 0x0098 activate-unit-family payload.
-WildStar64.exe,14007ec70,ActivateUnitFamily_WriteTokenAndTargetFieldPair,Serialises world opcode 0x0097 or 0x0098 payload as two raw 32-bit fields: generated context token plus the activate-unit-family target field.
+WildStar64.exe,14007d840,ClientP2PTradingUInt64_WritePayload,Serialises one raw 64-bit field; used by world opcodes 0x018D ClientP2PTradingAddItem, 0x0194 ClientP2PTradingRemoveItem, and 0x0197 ClientP2PTradingSetMoney.
+WildStar64.exe,14007ec70,ActivateUnitFamily_WriteTokenAndTargetFieldPair,Serialises two raw 32-bit fields; used by world opcode 0x0857 ClientTradeskillLearn and by opcode 0x0097/0x0098 activate-unit-family payloads.
+WildStar64.exe,140085420,Marketplace_RequestCommodityInfo_WritePayload,Serialises world opcode 0x03E6 ClientRequestCommodityInfo as one 18-bit Item2 id inside a registered 4-byte object.
+WildStar64.exe,140088e60,Marketplace_AuctionSellOrderSubmit_WritePayload,Serialises world opcode 0x06DC ClientAuctionSellOrderSubmit as 64-bit item guid, 64-bit minimum bid, and 64-bit buyout price.
 WildStar64.exe,140089490,ClientFlightPathPurchase_WritePayload,Serialises world opcode 0x00FF payload as a 32-bit route-count followed by that many 32-bit TaxiRoute ids.
 WildStar64.exe,140089570,ClientSpellCastWithServiceToken_WritePayload,Serialises world opcode 0x00C2 payload as an 18-bit generated cast-context token plus a 32-bit Spell4 id.
 WildStar64.exe,140093360,ClientCastSpell_WritePayload,Serialises world opcode 0x009A payload as a 32-bit generated context token, 16-bit action slot, resolved target entity id, and trailing boolean flag.
 WildStar64.exe,140093950,ClientCastSpellPosition_WritePayload,Serialises world opcode 0x009B payload as a 32-bit generated context token, 16-bit action slot, and three raw 32-bit target-position components.
 WildStar64.exe,140093d20,ActivateUnit0x0096_Advance168Bits,Advances 168 payload bits for world opcode 0x0096.
 WildStar64.exe,140093d30,ActivateUnit0x0096_WritePayload,Serialises world opcode 0x0096 payload as a 32-bit generated context token, two packed 4-bit selectors, a resolved target entity id, and a trailing three-float world-position vector.
+WildStar64.exe,140099e70,Marketplace_CommoditySellOrderSubmit_WritePayload,Serialises world opcode 0x06DA ClientCommoditySellOrderSubmit using the 0x38-byte commodity-order payload object: order id, 18-bit Item2 id, quantity, unit/total prices, buy/immediate flags, and list/expiration times.
+WildStar64.exe,140099e90,Marketplace_AuctionBuyOrderSubmit_WritePayload,Serialises world opcode 0x055E ClientAuctionBuyOrderSubmit as 18-bit Item2 id, 64-bit auction id, and 64-bit offered amount.
+WildStar64.exe,14009a020,Marketplace_CommodityOrderCancel_WritePayload,Serialises world opcode 0x0093 ClientCommodityOrderCancel as 64-bit order id, 18-bit Item2 id, and a 1-bit buy-order flag inside a registered 0x10-byte object.
+WildStar64.exe,14009a7d0,Marketplace_AuctionsByFilterRequest_WritePayload,Serialises world opcode 0x07DC ClientAuctionsByFilterRequest with family/category/type selectors, item id array, filter array, reverse-sort flags, 3-bit sort mode, 8-bit property sort field, and page.
+WildStar64.exe,14009ab70,Marketplace_AuctionCancel_WritePayload,Serialises world opcode 0x0094 ClientAuctionCancel as 64-bit auction id plus 18-bit Item2 id inside a registered 0x10-byte object.
+WildStar64.exe,1400a53c0,ClientCraftingRuneSlotAdd_WritePayload,Serialises world opcode 0x0859 payload as a 64-bit item guid, 1-bit non-fusion flag, and 5-bit RuneType.
+WildStar64.exe,1400a5550,ClientCraftingRuneSlotClear_WritePayload,Serialises world opcode 0x085A payload as a 64-bit item guid, 32-bit rune slot index, 1-bit recover flag, and 1-bit use-group-currency flag.
+WildStar64.exe,1400a5780,ClientCraftingRuneSlotReroll_WritePayload,Serialises world opcode 0x085C payload as a 64-bit item guid, 32-bit rune slot index, and 5-bit RuneType.
+WildStar64.exe,1400a5900,ClientCraftingRuneInstall_WritePayload,Serialises world opcode 0x085B payload as a 64-bit item guid, 32-bit rune item count, and count raw 32-bit Item2 ids from the pointer-backed rune array.
+WildStar64.exe,1400a5a70,ClientCraftingCraftItem_WritePayload,Serialises world opcode 0x0851 payload as the auto-craft four-field prefix plus an 18-bit trailing catalyst/item id.
+WildStar64.exe,1400a5b50,ClientCraftingSimpleCraft_WritePayload,Serialises three raw 32-bit fields; used by world opcode 0x0850 ClientCraftingSimpleCraft and opcode 0x084E ClientTradeskillPickTalent.
+WildStar64.exe,1400a5d70,ClientCraftingComplexCraft_WritePayload,Serialises world opcode 0x084F payload as the simple-craft prefix, packed CraftStats, 18-bit power-core item id, AP/SP split delta, and a 3-bit charge-count array.
+WildStar64.exe,1400a5f20,ClientCraftingAdditive_WritePayload,Serialises world opcode 0x084A payload as a 32-bit crafting station unit id plus 18-bit additive and catalyst Item2 ids.
+WildStar64.exe,1400a74e0,NetworkBitWriter_Write5BitValue,Writes a 5-bit integer value into the packet bitstream.
 WildStar64.exe,1400a7540,NetworkBitWriter_WriteBits64,Writes up to 64 bits into the packet bitstream.
+WildStar64.exe,1400ea3e0,ClientEvent_DispatchNamedEvent,Generic named client event dispatcher used for UnitEvaded UnitEnteredCombat TargetUnitChanged GenericFloater and many UI or gameplay event names through the scene event sink.
+WildStar64.exe,140430e00,Loot_DispatchBindcheckEvent,Serializes the prepared loot object set into an itemDrop payload and dispatches the named client event LootBindcheck through the scene event sink.
 WildStar64.exe,14022df60,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 WildStar64.exe,14024bfa0,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
 WildStar64.exe,1403315a0,Network_SendMessageFailure,Handles a failed world-message send attempt.
@@ -75,13 +97,30 @@ WildStar64.exe,14039b930,SpellCast_Dispatch0x009dSelectionMask,Expands a selecti
 WildStar64.exe,14039bf20,PathExplorer_SendClientCastSearching,Builds and sends opcode 0x0099 ClientCastPathExplorerSearching with the shared generated context token, requested search-radius band, and scavenger clue id after routing through the shared spell-cast target and validation path.
 WildStar64.exe,14039c1e0,ActivateUnit_SendClient0x0098Variant,Builds and sends opcode 0x0098 activate-unit-family payload with the shared generated context token and the cast-context +0x158 target field.
 WildStar64.exe,14039c430,ActivateUnit_SendClientActivateUnitCast,Builds and sends opcode 0x0097 activate-unit cast payload with the shared generated context token and the activation target field carried through cast-context +0x158.
+WildStar64.exe,14039c8a0,QuestInteraction_HandleAcceptOrRetry,Handles the quest-interaction branch reached from spell-cast validation by sending opcode 0x035B ClientQuestAccept or opcode 0x0365 ClientQuestRetry for the resolved quest id, caching pending quest state when immediate dispatch is deferred, and raising a generic floater on failure states.
+WildStar64.exe,14039cc30,SpellCast_SendClientSpellStopCast,Builds and sends opcode 0x0801 ClientSpellStopCast with the active casting id, stop result code, and a cleared trailing flag after updating the local stop-cast state and optional lookup text.
+WildStar64.exe,14039cce0,SpellCast_SendClientSpellStopCastSetTrailingFlag,Builds and sends opcode 0x0801 ClientSpellStopCast with the active casting id, stop result code, and the trailing flag set after updating the local stop-cast state and optional lookup text.
+WildStar64.exe,14039cda0,SpellEffect_SendClientCancelEffect,Builds and sends opcode 0x0802 ClientCancelEffect for the current effect server unique id when the resolved effect kind and local-target checks allow client-driven cancellation.
+WildStar64.exe,14039cee0,Loot_PrepareAndDispatchBindcheck,Looks up the keyed loot entry under the local loot tree using the request key at param_2 + 4, materializes the matching object set into a temporary container, and dispatches the downstream LootBindcheck event path.
+WildStar64.exe,14039cff0,Loot_SendClientLootItemCollect,Builds and sends opcode 0x014F ClientLootItem with the owner unit id, loot unit id, and the request bit cleared for the collect branch.
+WildStar64.exe,14039d0f0,Loot_HandlePendingLootInteract,Handles the PendingLootInteract wrapper path by invoking ActivateUnit_SendClientActivateUnitCast, routing through the shared service/result helper pair 1403acd90 and 1403a12a0 when applicable, and containing a fallback opcode 0x014F ClientLootItem collect send that reuses the returned dword for both payload unit ids.
+WildStar64.exe,14039d4a0,ActivateUnit_HandleDirectOrCastRequest,Handles an activatable target record by sending opcode 0x00B3 ClientActivateUnit directly when no cast-target id resolves, otherwise priming local activation state and falling back to ActivateUnit_SendClientActivateUnitCast while reporting nontrivial cast failures through the shared service/result helpers.
+WildStar64.exe,1403a6590,Trade_SendClientP2PTradingCancelTradeIfActive,Sends zero-payload opcode 0x018F ClientP2PTradingCancelTrade when local trade state and target checks allow cancellation.
+WildStar64.exe,1403a6a40,Trade_SendClientP2PTradingInitiateTrade,Sends opcode 0x0192 ClientP2PTradingInitiateTrade with the target unit id after local target and trade guards.
+WildStar64.exe,1403a6b50,Trade_SendClientP2PTradingAddItem,Sends opcode 0x018D ClientP2PTradingAddItem with a 64-bit item guid staged from the selected inventory item.
+WildStar64.exe,1403a6c50,Trade_SendClientP2PTradingRemoveItem,Sends opcode 0x0194 ClientP2PTradingRemoveItem with the 64-bit item guid from the local trade item entry.
+WildStar64.exe,1403a6ce0,Trade_SendClientP2PTradingSetMoney,Sends opcode 0x0197 ClientP2PTradingSetMoney with a 64-bit credit offer after local affordability and current-offer checks.
+WildStar64.exe,1403a6e00,Trade_SendClientP2PTradingCommit,Sends zero-payload opcode 0x0190 ClientP2PTradingCommit when an active local trade exists.
+WildStar64.exe,140214fe0,ClientDB_RegisterMatchingGameMap,Registers the MatchingGameMap client DB table using the MatchingGameMap and DB\\MatchingGameMap.tbl descriptors.
+WildStar64.exe,140215240,MatchingGameMap_LookupById,Resolves a MatchingGameMap record by id through the registered MatchingGameMap callback or the DAT_140c641f0 fallback dispatcher.
 WildStar64.exe,1403a11c0,ActionSet_CheckPvPRestriction,Checks whether the current PvP state permits action-set changes.
 WildStar64.exe,1403bb480,ActionSet_SendPendingActionSetChanges,Sends or commits a validated action-set change request.
 WildStar64.exe,1403bb8d0,ActionSet_CheckUpdateSpellInProgress,Checks whether a spell/action-set update is already in progress.
+WildStar64.exe,1403db7f0,UnitState_UpdateCachedStateFields,Resolves the target unit for a raw unit-state record, forwards the state into FUN_14045bdc0, and refreshes the unit's cached raw state at +0x108 plus derived classification at +0x10c when the value changes.
 WildStar64.exe,1403db870,UnitState_ApplyResolvedState,Resolves the target unit for a raw unit-state update, applies the raw state value, and special-cases state 0 cleanup for the local subject/UI path.
 WildStar64.exe,1403db920,UnitState_MaybeDispatchUnitEvaded,Emits the UnitEvaded client event when a resolved unit-state update carries raw state value 4.
 WildStar64.exe,1403dc9f0,WorldSocket_SelectByWorldAndSocket,WorldSocket lookup/selection path near world socket strings.
-WildStar64.exe,1403e8000,SceneLifecycle_EnsureInitialisationStages,Staged lifecycle gate that validates prerequisite subsystems, seeds initial scene state, and emits opcode 0x00F2 before the broader update loop can complete.
+WildStar64.exe,1403e8000,SceneLifecycle_EnsureInitialisationStages,Staged lifecycle gate that validates prerequisite subsystems, seeds initial scene state, and emits ClientEnteredWorld opcode 0x00F2 before the broader update loop can complete.
 WildStar64.exe,1403e85d0,SceneLifecycle_UpdateAndReplayQueuedStates,Large virtual scene lifecycle update path that snapshots timing and transform state, flushes queued replay records via FUN_1405cc090, iterates active lifecycle lists, and advances broader scene maintenance each tick.
 WildStar64.exe,1403f4900,Network_SendOpcodePayloadHelper,Generic opcode+payload send helper that dispatches through DAT_140c65808 virtual send callbacks.
 WildStar64.exe,14042e120,UnitEvent_HandleEnteredCombat,Dispatches UnitEnteredCombat and conditional EnteredCombat events for the local player or current target.
@@ -90,8 +129,18 @@ WildStar64.exe,1404aacb0,ActionSet_ValidateRequestedChanges,Validates a 12-entry
 WildStar64.exe,1404acfa0,FlightPath_SendPurchaseRequest,Builds and sends opcode 0x00FF flight-path purchase payload from validated route data.
 WildStar64.exe,1404e7f60,Lua_RegisterAccountEntitlementEnums,Registers account currency/operation and entitlement Lua enums.
 WildStar64.exe,14050e830,Lua_BuildResurrectionInfoTable,Builds the resurrection Lua info table including wake-here flags and service-token cost.
+WildStar64.exe,140519a00,Marketplace_SendClientAuctionSellOrderSubmit,Sends opcode 0x06DC ClientAuctionSellOrderSubmit with item guid, minimum bid, and buyout price from the auction posting UI state.
+WildStar64.exe,14051ba60,Crafting_SendClientCraftingAbandon,Sends world opcode 0x084D ClientCraftingAbandon from the crafting UI path after checking active crafting state.
+WildStar64.exe,14051dc00,RuneCrafting_SendClientRuneSlotReroll,Sends world opcode 0x085C ClientCraftingRuneSlotReroll with item guid, rune slot index, and RuneType.
+WildStar64.exe,14051e580,RuneCrafting_SendClientRuneSlotClear,Sends world opcode 0x085A ClientCraftingRuneSlotClear with item guid, rune slot index, recover flag, and currency-source flag.
+WildStar64.exe,14051ed80,RuneCrafting_SendClientRuneSlotAdd,Sends world opcode 0x0859 ClientCraftingRuneSlotAdd with item guid, non-fusion flag, and RuneType.
 WildStar64.exe,140520c10,ServiceToken_HandleCastResult,Handles ServiceTokenCastResult by gating on Spell4.PropertyFlags 0x20000000 and dispatching opcode 0x00C2 or result 0x014B.
 WildStar64.exe,14055bdc0,SpellTarget_ResolveTargetEntity,Resolves an entity target from spell metadata, explicit target hints, and fallback proximity checks, then returns the resolved world-entity object.
+WildStar64.exe,140593db0,Tradeskill_SendClientTradeskillLearn,Sends world opcode 0x0857 ClientTradeskillLearn with the selected learn Tradeskill id and optional drop Tradeskill id after rejecting already-active professions.
+WildStar64.exe,14059a900,Tradeskill_SendClientTradeskillPickTalent,Sends world opcode 0x084E ClientTradeskillPickTalent with Tradeskill id, zero-based talent tier index, and TradeskillBonus id after validating the local tier/bonus selection.
+WildStar64.exe,14059acb0,Tradeskill_SendClientTradeskillResetTalents,Sends world opcode 0x0858 ClientTradeskillResetTalents with the active Tradeskill id when that profession has at least one selected talent.
+WildStar64.exe,14059b7c0,Crafting_SendClientCraftingAdditive,Sends world opcode 0x084A ClientCraftingAdditive with crafting station unit id plus additive and catalyst Item2 ids.
+WildStar64.exe,14059d250,RuneCrafting_SendClientRuneInstall,Sends world opcode 0x085B ClientCraftingRuneInstall with target item guid, rune item count, and rune Item2 id array.
 WildStar64.exe,1405cd070,QueuedStateReplay_FlushPendingRecords,Flushes queued replay records from linked-list storage and forwards each record into the queued replay dispatcher.
 WildStar64.exe,1405cd200,QueuedStateReplay_DispatchRecord,Jump-dispatches a single queued replay record into specialized worker helpers inside the UnitCreated-linked state replay cluster.
 WildStar64.exe,1405e7fd0,Lua_GameSpell_Equals,Game.Spell __eq metamethod.
@@ -146,6 +195,10 @@ WildStar64.exe,14068c2c0,Lua_RegisterPublicEventConstants,Registers public event
 WildStar64.exe,1406a6160,Lua_GameHousingPlot_GetPlugUpgradeInfo,Housing plot Lua accessor near tSpell4IdAbility anchor.
 WildStar64.exe,140636ba0,Reward_SendRewardUpdateRequest,Throttles reward update requests and sends world opcode 0x07CC.
 WildStar64.exe,14065e6c0,Lua_GameLib_PurchaseFlightPath,GameLib.PurchaseFlightPath Lua callback that validates route inputs and forwards purchase requests.
+WildStar64.exe,1406a0570,Marketplace_SendClientCommoditySellOrderSubmit,Sends opcode 0x06DA ClientCommoditySellOrderSubmit with the 0x38-byte commodity order payload staged from marketplace UI state.
+WildStar64.exe,1406a0740,Marketplace_SendClientAuctionBuyOrderSubmit,Sends opcode 0x055E ClientAuctionBuyOrderSubmit with Item2 id, auction id, and offered amount from the selected item auction.
+WildStar64.exe,1406a1270,Marketplace_SendClientCommodityOrderCancel,Sends opcode 0x0093 ClientCommodityOrderCancel with commodity order id, Item2 id, and buy-order flag from the selected commodity order.
+WildStar64.exe,1406a20c0,Marketplace_SendClientAuctionCancel,Sends opcode 0x0094 ClientAuctionCancel with auction Item2 id and auction id from the selected item auction.
 WildStar64.exe,1406a4ab0,Lua_ICComm_SetReceivedMessageFunction,ICComm callback registration method for SetReceivedMessageFunction.
 WildStar64.exe,1406a4b60,Lua_ICComm_SetSendMessageResultFunction,ICComm callback registration method for SetSendMessageResultFunction.
 WildStar64.exe,140709460,Lua_RegisterGameLib,Registers GameLib Lua enums, constants, and global helpers.
@@ -155,6 +208,14 @@ WildStar64.exe,140708dd0,Lua_GameLib_GetWorldMaxPrimeLevel,GameLib.GetWorldMaxPr
 WildStar64.exe,140708e60,Lua_GameLib_GetWorldHeroismMenaceLevel,GameLib.GetWorldHeroismMenaceLevel Lua method.
 WildStar64.exe,1407091e0,Lua_GameLib_RequestRewardUpdate,GameLib.RequestRewardUpdate Lua method.
 WildStar64.exe,140706140,Map_BuildRapidTransportNodeInfoTable,Builds map rapid-transport node info including availability flags and money costs.
+WildStar64.exe,14074ae30,Trade_SendClientP2PTradingAcceptInvite,Sends zero-payload opcode 0x018C ClientP2PTradingAcceptInvite after current invite and target checks pass.
+WildStar64.exe,14074aed0,Trade_SendClientP2PTradingDeclineInvite,Sends zero-payload opcode 0x0191 ClientP2PTradingDeclineInvite when declining a pending trade invite.
+WildStar64.exe,14074b160,Trade_SendClientP2PTradingCommitFromUi,Sends zero-payload opcode 0x0190 ClientP2PTradingCommit from the UI path when active trade state exists.
+WildStar64.exe,14074bb60,Trade_SendClientP2PTradingCancelTradeFromUi,Sends zero-payload opcode 0x018F ClientP2PTradingCancelTrade through the global active-trade state.
+WildStar64.exe,14075f0d0,Marketplace_SendClientRequestCommodityInfo,Sends opcode 0x03E6 ClientRequestCommodityInfo with an 18-bit Item2 id from MarketplaceLib RequestCommodityInfo/SearchCommodityItems.
+WildStar64.exe,14075f110,Marketplace_SendClientRequestOwnedCommodityOrders,Sends zero-payload opcode 0x03EC ClientRequestOwnedCommodityOrders.
+WildStar64.exe,14075fd90,Marketplace_SendClientAuctionsByFilterRequest,Sends opcode 0x07DC ClientAuctionsByFilterRequest after building the auction search selector, item list, filters, sort fields, and page.
+WildStar64.exe,1407607f0,Marketplace_SendClientRequestOwnedItemAuctions,Sends zero-payload opcode 0x03ED ClientRequestOwnedItemAuctions.
 WildStar64.exe,140832810,AudioOutput_Update,Updates active audio objects and drives the global output resampler state each tick.
 WildStar64.exe,1408340b0,AudioOutput_Initialize,Initializes COM-backed audio output, selects a 24 kHz or 48 kHz sample rate, and seeds the global resampler state with the active channel mask.
 WildStar64.exe,140834990,AudioSelector_ResolveEntryId,Resolves an audio entry id from the current selector state and candidate list, falls back to default entries when needed, and clears the result when the per-entry probability gate fails.
@@ -165,9 +226,15 @@ WildStar64.exe,140863e80,AudioResampler_InitialiseState,Initializes a 0x400-samp
 WildStar64.exe,14087acd0,AudioResampler_InitHeader,Writes the sample count and reciprocal step into an audio resample block header.
 WildStar64.exe,14087aeb0,AudioResampler_InterpolateSixChannels,Interpolates a 6-channel audio resample block from sampled float control arrays.
 WildStar64.exe,14087b0b0,AudioResampler_InterpolateTwoChannels,Interpolates a 2-channel audio resample block from sampled float control arrays.
+WildStar64.exe,140895d10,AudioRuntimeTable_FindLinkedEntry,Scans the linked-entry table ranges under the current audio runtime context, matches the requested selector ids against entry ranges or fallback checks, and returns the chosen linked entry plus a flag describing whether linked-child resolution should continue.
+WildStar64.exe,1408958a0,AudioRuntimeTable_FindFallbackNodeMatch,Traverses the fallback node chain via +0x40 and returns the first node whose id at +0x18 matches one of the sorted ids in the supplied entry-local range table.
+WildStar64.exe,140898590,AudioRuntime_ResolveChildById,Resolves the requested child audio runtime id under the current runtime context, returning the current child for id 0, otherwise consulting the local child table or virtual fallback and rejecting child runtimes whose linked state pointer is still null.
+WildStar64.exe,140898620,AudioRuntime_ResolveTableBackedChild,Resolves the current table-backed child audio runtime from the active descriptor state, materializing or refreshing it through 1408981f0 and returning an out flag derived from the descriptor metadata.
 WildStar64.exe,140898df0,AudioRuntime_AcquireOrCreate,Returns an existing audio runtime object when one is already active for the resolved selection, otherwise allocates, initializes, validates, and returns a new runtime object bound to the current audio context.
 WildStar64.exe,140899fd0,AudioSelection_ScheduleAndDispatch,Processes a resolved audio entry id against the active selection list, builds primary and optional secondary runtime objects, computes their timing and transition windows, dispatches them through the next-stage helper, and updates active selection state.
 WildStar64.exe,14089ae40,AudioSelection_ConfigureRuntimeAndLinkNode,Applies the prepared timing and transition state to the selected audio runtime object, advances it until the runtime reports ready, and links the prepared node into the active selection list.
+WildStar64.exe,140890430,AudioRuntime_ExtractReadyNodes,Computes the accumulated timing offset for the current runtime queue and moves due nodes into the caller-provided ready list for the current scheduling timestamp.
+WildStar64.exe,140899180,AudioRuntime_ResolveLinkedNode,Resolves linked runtime-table entries between the current node and a cloned candidate node, enforces a bounded recursion depth, and replaces or clears the candidate node based on the referenced child runtime lookup.
 WildStar64.exe,140706f90,Map_GetTaxisForWorld,Map Lua method that returns taxi nodes for a world.
 WildStar64.exe,140707020,Map_GetNearestRapidTransportNodeForWorldLocation,Map Lua method that resolves the nearest rapid transport node for a world location.
 WildStar64.exe,140707640,Map_GetRapidTransportDestinationsForWorld,Map Lua method that returns rapid transport destinations for a world.

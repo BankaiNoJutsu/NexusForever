@@ -1251,6 +1251,58 @@ Twenty-fourth monster aggro/combat-state follow-up mapped from this pass:
   update loop is considered ready. The best current classification is therefore
   a world/scene lifecycle object with queued state replay, not the live raw
   state `4` producer.
+- Source mapping now resolves that opcode: `0x00F2 == ClientEnteredWorld` in
+  `GameMessageOpcode`. That strengthens the same conclusion because the
+  neighboring staged method is signaling world-entry readiness, not dispatching
+  a combat or raw unit-state update.
+- Exported decompile references now make the owner pointer itself more concrete.
+  `selected_decompiled.c` uses `DAT_140c65898` repeatedly as the first argument
+  into shared scene/state helpers and dereferences stable fields such as
+  `+0x78`, `+0x6490`, `+0x6718`, and `+0x7340`. Together with the vtable block
+  around `140b668a8/140b668b0`, that is strong evidence that `DAT_140c65898`
+  is the global pointer to the same scene lifecycle owner rather than an
+  unrelated scratch global. This still does not reach the live raw state `4`
+  producer; it only tightens ownership of the replay/apply path.
+- Exported fragments now also show `DAT_140c65898` being treated as the same
+  typed owner object as the scene lifecycle methods themselves, not merely as a
+  loose container pointer. The decompiler reads fields such as
+  `DAT_140c65898[0xf]`, `DAT_140c65898[0xc92]`, and tree state at
+  `DAT_140c65898 + 0x7270/+0x7278`, which matches the same object shape seen in
+  `SceneLifecycle_UpdateAndReplayQueuedStates`. That is strong enough to treat
+  `DAT_140c65898` as the live global instance of the lifecycle owner even
+  though its constructor or assignment site is still not recovered.
+- A fresh inspect of `FUN_140215240` rules out one more false lead. It is a
+  `MatchingGameMap` lookup/dispatch helper keyed by the `MatchingGameMap` DB
+  string path and fallback table callbacks, so it does not explain the scene
+  lifecycle owner or the live raw state `4` evade producer.
+- The `MatchingGameMap` detour is now strong enough for durable generic labels:
+  `FUN_140214fe0` carries the `MatchingGameMap` and `DB\\MatchingGameMap.tbl`
+  string xrefs and is best treated as `ClientDB_RegisterMatchingGameMap`, while
+  `FUN_140215240` reads as `MatchingGameMap_LookupById` because it resolves a
+  table record through the registered callback or `DAT_140c641f0` fallback
+  dispatcher before `ActionSet_CheckPvPRestriction` inspects the returned flag
+  byte. That closes this detour without changing the lifecycle-owner or evade-
+  producer conclusions.
+- Cached export evidence also makes `FUN_1400ea3e0` safe to label generically as
+  `ClientEvent_DispatchNamedEvent`. Across the selected decompile it dispatches
+  string-named events such as `UnitEvaded`, `UnitEnteredCombat`,
+  `TargetUnitChanged`, `GenericFloater`, `InvokeTaxiWindow`, and many other UI
+  or gameplay hooks through the same sink pointer (`DAT_140c65898 + 0x7340`).
+  That clarifies one more boundary in the evade path: `UnitState_MaybeDispatch`
+  reaches a generic client event emitter, not a dedicated raw-state parser, so
+  the live raw state `4` producer still remains upstream of the resolved-state
+  branch.
+- `FUN_1403db7f0` is now decompiled strongly enough for a generic cache-helper
+  label: it resolves the target unit for `*param_2`, forwards `(state, extra)`
+  through `FUN_14045bdc0(...)`, and when the cached raw value changes rewrites
+  `unit + 0x108` before recomputing the derived classification at `unit +
+  0x10c` through `FUN_14045a950(...)`. That pushes the live evade path one
+  step farther: raw state `4` definitely enters the same live cache/update
+  cluster, but a one-off caller trace of `FUN_1403db7f0` still only lands on
+  unwind metadata at `140e02c94`, so the true dispatcher is still unrecovered.
+- The neighboring `FUN_1403db9a0` block is now a closed false lead. Its only
+  recovered string xrefs are `InvokeVendorWindow` and `VendorItemsUpdated`, so
+  adjacency to the unit-state helpers does not make it part of the evade path.
 - The two central replay helpers are now safe to label generically:
   `QueuedStateReplay_FlushPendingRecords` (`1405cd070`) directly flushes linked-
   list backed replay records into `QueuedStateReplay_DispatchRecord`
@@ -1280,6 +1332,25 @@ Twenty-fourth monster aggro/combat-state follow-up mapped from this pass:
   home-position leash radius. This keeps the existing reset-to-home model from
   immediately accepting out-of-bounds pulls without inventing a new mid-combat
   raw state producer or broader chase threshold.
+- Additional conservative runtime follow-up implemented from this pass:
+  `CombatAI.SelectTarget()` now filters the threat list against the creature's
+  home leash before promoting a hostile target and prunes invalid/out-of-leash
+  hostiles behind a small reentrancy guard. That closes the remaining gap where
+  `UnitEntity.TakeDamage(...)` could add threat first, `OnThreatAddTarget()`
+  could immediately select a target, and only then would `CombatAI.AggroEntity()`
+  reject the same attacker as already outside the creature's home leash.
+- Additional conservative runtime follow-up implemented from this pass:
+  `CombatAI` now consumes the existing `OnExitRange()` callback from the leash-
+  backed range check and removes hostiles that cross out of the creature's home
+  leash. Because `GridEntity` updates range checks on relocate and already fires
+  `OnExitRange()` before any explicit vision loss is required, this is the
+  smallest rooted fix for the remaining case where a target kites out of leash
+  after valid initial aggro/selection but would otherwise stay on the threat
+  list until some later visibility or threat event happened.
+- Re-auditing the server lane after that `OnExitRange()` change does not justify
+  another runtime patch yet. A separate `DoChase()` leash guard would only
+  duplicate the existing range-exit hostile removal, and widening the `Evade`
+  floater still fails the source-modeled player-local story floater semantics.
 
 Twenty-fifth spell-helper/audio-selector follow-up implemented from this pass:
 
@@ -1619,6 +1690,661 @@ Thirty-second path-explorer/audio runtime follow-up implemented from this pass:
 - Verification: the direct inspect completed against the per-target Ghidra
   project without lock failure, and the export pass again reported
   `applied=157, created=0, skipped=0, missing=0`.
+
+Thirty-third quest-interaction/audio ready-node follow-up implemented from this
+pass:
+
+- The next spell-side controller adjacent to the widened sender band is now
+  directly decompiled. `14039c8a0` is not another cast sender; it is a
+  quest-interaction side path reached from `SpellCast_ValidateAndDispatch` when
+  the resolved cast record carries the non-zero branch at `+0x1b0`
+  (`exports/WildStar64.exe/selected_decompiled_cache/.../1403998e0.fragment.c`).
+  Direct decompile shows two bounded packet sends: `MOV EDX,0x0365` for a
+  single-quest-id retry payload and `MOV EDX,0x035B` for the item-location plus
+  quest-id accept payload (`logs/trace_callers_1403f4900.txt:163-180`,
+  `InspectCodeAddress 14039c8a0`). Current source still maps those opcodes to
+  `ClientQuestRetry` and `ClientQuestAccept`
+  (`Source/NexusForever.Network/Message/GameMessageOpcode.cs:304,314`) with the
+  paired models and handlers present in source. That is enough for the durable
+  label `QuestInteraction_HandleAcceptOrRetry`.
+- The inward audio pass now resolves the next small helper directly under
+  `AudioSelection_ConfigureRuntimeAndLinkNode`. `140890430` does not drive the
+  ready-state loop itself; it computes the accumulated timing offset for the
+  runtime queue by summing queued node durations through `1408904a0(...)`, adds
+  the current queue-base offset from `14088fda0(...)`, and then calls
+  `14088d620(...)` to move all due nodes into the caller-provided list for the
+  current scheduling timestamp (`InspectCodeAddress 140890430`,
+  `InspectCodeAddress 1408904a0`, `InspectCodeAddress 14088d620`). That is
+  strong enough for the generic label `AudioRuntime_ExtractReadyNodes`.
+- This tightens both continuation fronts. On the spell side, the next remaining
+  work near `14039bf20` is no longer “find the next sender” but to decide
+  whether nearby smaller helpers are quest-interaction leaves or broader cast
+  queue/state logic. On the audio side, the runtime-link step now has a named
+  ready-node extraction subphase, so `140899180` remains the next larger inward
+  ambiguity rather than `140890430`.
+- Verification: the direct inspect passes for `14039c8a0`, `140890430`,
+  `1408904a0`, and `14088d620` all completed successfully against the per-
+  target Ghidra project, and the label-application count remained stable before
+  the final export-only validation.
+
+Thirty-fourth crafting request follow-up implemented from this pass:
+
+- The native crafting request writer group is now mapped and labeled, not only
+  the higher-level sender helpers. Opcode `0x0852` registers writer
+  `ClientCraftingCraftItemAutoCraft_WritePayload` at `14007d4a0` with object
+  size `0x10`; it serialises four 32-bit fields: generated context token,
+  crafting station unit id, `TradeskillSchematic2` id, and schematic count
+  (`exports/WildStar64.exe/selected_decompiled.c:71`, `:77`).
+- Opcode `0x0851` registers writer `ClientCraftingCraftItem_WritePayload` at
+  `1400a5a70` with object size `0x14`. Its body reuses the four-field
+  auto-craft prefix and appends an 18-bit trailing catalyst/item id
+  (`selected_decompiled.c:624`, `:631`, `:639`). This corrects the prior source
+  model split: the extra 18-bit item field belongs to `ClientCraftingCraftItem`,
+  not `ClientCraftingCraftItemAutoCraft`.
+- Opcode `0x0850` registers writer `ClientCraftingSimpleCraft_WritePayload` at
+  `1400a5b50` with object size `0x0C`, proving the simple craft payload as
+  `{ ContextToken, CraftingStationUnitId, TradeskillSchematic2Id }`
+  (`selected_decompiled.c:668`, `:674`). Opcode `0x084F` registers
+  `ClientCraftingComplexCraft_WritePayload` at `1400a5d70` with object size
+  `0x30`; it writes the simple-craft prefix, packed `CraftStats`, an 18-bit
+  power-core item id, AP/SP split delta, and a 3-bit count plus charge-count
+  array (`selected_decompiled.c:753`, `:759`, `:768`).
+- The existing sender labels remain aligned: `Crafting_SendClientCraftItemAutoCraft`
+  sends `0x0852`, and `Crafting_SendClientComplexOrSimpleCraft` sends `0x084F`
+  when an extended craft payload is present or `0x0850` otherwise
+  (`selected_decompiled.c:4109`, `:4172`). A separate client path can choose
+  `0x0851` or `0x0852` from the same base payload, which is why both models are
+  now included in the server receive boundary.
+- Source now fixes the packet layouts for `ClientCraftingCraftItem` and
+  `ClientCraftingCraftItemAutoCraft`: `0x0851` reads the 32-bit schematic count
+  followed by the 18-bit catalyst/item id, while `0x0852` reads only the
+  four-field prefix. The new crafting handlers validate the schematic and
+  optional item ids against the `TradeskillSchematic2` and `Item2Entry` tables,
+  log the request, and send a non-mutating `ServerCraftingFinish` failure.
+- Remaining bounded uncertainty: NexusForever still has no complete crafting
+  execution manager for material consumption, discovery rolls, schematic
+  unlocks, output creation, or station constraints. The receive boundary is now
+  mapped and safe, but real craft success remains blocked until that subsystem
+  is designed from table/server evidence.
+- Verification: the shared-layout export applied the updated label set
+  (`applied=167, created=0, skipped=0, missing=0`) and refreshed
+  `selected_decompiled.c` with 260 functions. `dotnet build
+  Source\NexusForever.sln -v minimal --nologo` succeeds with the existing
+  package warnings and `0 Error(s)`.
+
+Thirty-fifth action-set request parity follow-up implemented from this pass:
+
+- Existing client evidence around `Lua_ActionSetLib_RequestActionSetChanges`
+  and `ActionSet_SendPendingActionSetChanges` is now carried through to source
+  more tightly: opcode `0x00B1` is built against the current active spec, not
+  an arbitrary target spec. NexusForever now rejects
+  `ClientRequestActionSetChanges.ActionSetIndex` values that do not match the
+  active action set with `InvalidSpecIndex` instead of mutating an inactive
+  spec.
+- The request handler now mirrors the proven client preflight that the current
+  server can model safely: it returns `PlayerIsDead` when the player is dead
+  and `InCombat` when the player is already in combat before mutating the LAS.
+- Additional server-side validation now closes the remaining local exception
+  paths in this packet flow. The handler rejects duplicate spell ids with
+  `DuplicateSpell`, rejects tier updates for spells not present in the
+  requested 12 slots with `LASChangeSpellFailed`, validates each requested tier
+  against `SpellBaseInfo.GetSpellInfo(...)`, and returns
+  `InsufficientAbilityPoints` when the requested LAS tier cost exceeds
+  `ActionSet.MaxTierPoints`.
+- AMP handling now stays additive like the mapped client request builder, but
+  no longer trusts the packet blindly: incoming AMP ids are de-duplicated, each
+  new id is validated against `EldanAugmentation`, and the handler returns
+  `EldanAugmentationInvalidId` or `EldanAugmentationNotEnoughPower` instead of
+  reaching `ArgumentException` or checked-overflow paths during
+  `ActionSet.AddAmp`.
+- Successful `ClientRequestActionSetChanges` handling now sends
+  `ServerActionSetClearCache` before the rebuilt `ServerActionSet`, and
+  ability points are refreshed whenever `TierPoints` actually changed rather
+  than only when the packet included explicit `ActionTiers`. This fixes the
+  stale ability-point UI case when swapping or removing already-tiered LAS
+  spells changed tier cost without a separate tier-delta entry.
+- Remaining bounded blocker: the client-side `RestrictedInPVP` and
+  `UpdateSpellInProgress` branches are mapped through
+  `ActionSet_CheckPvPRestriction` and `ActionSet_CheckUpdateSpellInProgress`,
+  but the current server codebase still lacks a proven matching PvP-restriction
+  state machine and a dedicated in-progress LAS/spell-update transaction state,
+  so those result paths remain intentionally unimplemented rather than guessed.
+- Verification: `dotnet build Source\NexusForever.sln --no-restore`
+  succeeds.
+
+Thirty-sixth stop-cast/audio linked-runtime follow-up implemented from this
+pass:
+
+- The next smaller spell-side helper adjacent to the quest-interaction branch
+  is now directly decompiled as a stop-cast sender rather than another quest
+  leaf. `14039cc30` emits bounded opcode `0x0801`
+  (`logs/trace_callers_1403f4900.txt:653`) and direct decompile shows it packs
+  the current stop-cast payload into a local record before calling
+  `Network_SendOpcodePayloadHelper(param_1, 0x801, ...)`
+  (`InspectCodeAddress 14039cc30`). Current source still maps `0x0801` to
+  `ClientSpellStopCast`
+  (`Source/NexusForever.Network/Message/GameMessageOpcode.cs:741`) with the
+  paired packet model and spell handler already present in source. That is
+  enough for the durable label `SpellCast_SendClientSpellStopCast`.
+- The inward audio chain now resolves the next larger helper that remained
+  below `AudioSelection_ConfigureRuntimeAndLinkNode`. Direct decompile of
+  `140899180` shows a bounded recursion counter, node-resolution through
+  `1408906b0(...)`, a cloned candidate runtime node via `140890370(...)`, and a
+  linked-entry lookup through `140895d10(...)`; when a flagged linked entry is
+  found, it increments the linked-node depth on the returned context, fetches
+  the referenced child runtime through `140898590(...)`, and clears the cloned
+  candidate node if that child runtime cannot be acquired
+  (`InspectCodeAddress 140899180`, `140895d10`, `140898590`). That is strong
+  enough for the conservative label `AudioRuntime_ResolveLinkedNode`.
+- This tightens the current continuation boundary on both fronts. Spell-side
+  work immediately after `QuestInteraction_HandleAcceptOrRetry` now splits into
+  at least one true spell stop-cast sender (`14039cc30`) instead of a pure
+  quest-only leaf cluster. Audio-side work below `14089ae40` now has named
+  ready-node extraction and linked-node resolution phases, so the next deeper
+  uncertainty moves away from `140899180` itself and toward the larger table
+  and child-runtime helpers it delegates to.
+- Verification: the shared-layout Ghidra project successfully handled the new
+  direct inspections after the per-target project lock was avoided, and the
+  durable label map remained internally consistent before the final export-only
+  validation pass.
+
+Thirty-seventh crafting/rune request follow-up implemented from this pass:
+
+- The remaining client-to-server crafting and rune request writer group is now
+  mapped and labeled. `ClientCraftingAdditive_WritePayload` at `1400a5f20`
+  registers for opcode `0x084A` with object size `0x0C` and writes a 32-bit
+  crafting station unit id followed by two 18-bit `Item2` ids for additive and
+  catalyst (`selected_decompiled.c:1142`, `:1149`).
+- `ClientCraftingAbandon_WritePayload` at `140001ba0` registers for opcode
+  `0x084D` with object size `0x01` but is a no-op writer, confirming the
+  current source model as a zero-field message (`selected_decompiled.c:7`,
+  `:14`).
+- The rune slot writers now match source packet boundaries:
+  `ClientCraftingRuneSlotAdd_WritePayload` at `1400a53c0` writes a 64-bit item
+  guid, a 1-bit non-fusion flag, and a 5-bit `RuneType`;
+  `ClientCraftingRuneSlotClear_WritePayload` at `1400a5550` writes a 64-bit
+  item guid, a 32-bit slot index, a 1-bit recover flag, and a 1-bit
+  group-currency flag; `ClientCraftingRuneSlotReroll_WritePayload` at
+  `1400a5780` writes a 64-bit item guid, a 32-bit slot index, and a 5-bit
+  `RuneType` (`selected_decompiled.c:640`, `:708`, `:800`).
+- `ClientCraftingRuneInstall_WritePayload` at `1400a5900` registers for opcode
+  `0x085B` with object size `0x18`; it writes a 64-bit target item guid, a
+  32-bit rune item count, then copies `count * 4` raw bytes from the
+  pointer-backed rune array. Source now validates that the count fits the
+  remaining packet bytes before allocating or reading the `Item2` id array
+  (`selected_decompiled.c:868`, `:874`).
+- The corresponding send helpers are also labeled:
+  `Crafting_SendClientCraftingAbandon` (`14051ba60`),
+  `RuneCrafting_SendClientRuneSlotReroll` (`14051dc00`),
+  `RuneCrafting_SendClientRuneSlotClear` (`14051e580`),
+  `RuneCrafting_SendClientRuneSlotAdd` (`14051ed80`),
+  `Crafting_SendClientCraftingAdditive` (`14059b7c0`), and
+  `RuneCrafting_SendClientRuneInstall` (`14059d250`). These labels are backed
+  by opcode immediates and local field staging around the
+  `Network_SendOpcodePayloadHelper` call sites (`selected_decompiled.c:9610`,
+  `:9636`, `:9669`, `:9704`, `:9989`, `:10133`).
+- Source now adds conservative world handlers for additive, abandon, rune slot
+  add/clear/reroll, and rune install. They validate table-backed `Item2` ids,
+  target inventory items, and `RuneType` values where applicable, log the
+  request, and leave inventory/currency/rune state untouched.
+- Remaining bounded uncertainty: the request boundary is mapped, but the actual
+  rune mutation subsystem is still absent. Installing, adding, clearing,
+  recovering, rerolling, charging currency, and returning precise
+  `ServerTradeskillSigilResult` statuses remain blocked until the item rune data
+  model and server-side result rules are mapped from table/runtime evidence.
+- Verification: the per-target WildStar64 export applied the expanded label set
+  (`applied=182, created=0, skipped=0, missing=0`) and rendered
+  `selected_decompiled.c` with 280 functions. `dotnet build
+  Source\NexusForever.sln -v minimal --nologo` succeeds with the existing
+  package warnings and `0 Error(s)`.
+
+Thirty-eighth stop-cast/effect-cancel widening follow-up implemented from this
+pass:
+
+- The spell-side band immediately after `SpellCast_SendClientSpellStopCast`
+  now proves to contain two more concrete client request senders rather than
+  generic leaves. Direct decompile of `14039cce0` shows the same bounded
+  `0x0801 ClientSpellStopCast` send as `14039cc30`, but with the trailing flag
+  field set to `1` instead of `0`; the helper otherwise shares the same active
+  casting id, stop result, and local stop-cast/UI side-effect preparation
+  (`InspectCodeAddress 14039cce0`,
+  `Source/NexusForever.Network/Message/GameMessageOpcode.cs:741`,
+  `Source/NexusForever.Network.World/Message/Model/ClientSpellStopCast.cs`).
+  That is enough for the durable label
+  `SpellCast_SendClientSpellStopCastSetTrailingFlag`.
+- Direct decompile of `14039cda0` proves the next sibling is a separate cancel-
+  effect sender, not another stop-cast variant. When the resolved effect kind
+  is `0x0E` or `0x24` and the local-target guard passes, it runs the effect
+  callback at vtable slot `+8`, then sends opcode `0x0802 ClientCancelEffect`
+  with the current effect server unique id from `param_2 + 0x5C`
+  (`InspectCodeAddress 14039cda0`,
+  `Source/NexusForever.Network/Message/GameMessageOpcode.cs:742`,
+  `Source/NexusForever.Network.World/Message/Model/ClientCancelEffect.cs`,
+  `Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCancelEffectHandler.cs`).
+  That is enough for the durable label `SpellEffect_SendClientCancelEffect`.
+- This widens the current spell-side picture from a single stop-cast helper to
+  a small outbound interrupt/cancel cluster: `14039cc30` and `14039cce0`
+  encode the `ClientSpellStopCast` trailing-flag variant bit, while `14039cda0`
+  branches into `ClientCancelEffect` for specific local effect kinds. The next
+  widening targets in this band are therefore the remaining nearby helpers such
+  as `14039ce20`, `14039cee0`, and `14039cff0`, which are now more likely to be
+  related interrupt/cancel or cleanup leaves than generic spell dispatchers.
+- Verification: both direct inspects completed successfully against the shared
+  Ghidra project layout, avoiding the per-target lock path.
+
+Thirty-ninth tradeskill profession request follow-up implemented from this
+pass:
+
+- The client-to-server profession request group is now mapped and labeled.
+  Opcode `0x0857 ClientTradeskillLearn` registers the reused two-UInt32 writer
+  `ActivateUnitFamily_WriteTokenAndTargetFieldPair` at `14007ec70` with object
+  size `0x08`, matching the existing source payload as learn tradeskill id plus
+  optional drop tradeskill id (`selected_decompiled.c:233`, `:240`).
+  `Tradeskill_SendClientTradeskillLearn` at `140593db0` stages those two ids
+  from the profession UI path and suppresses sending when the target profession
+  is already active (`selected_decompiled.c:10099`, `:10106`).
+- Opcode `0x084E ClientTradeskillPickTalent` registers the reused three-UInt32
+  writer `ClientCraftingSimpleCraft_WritePayload` at `1400a5b50` with object
+  size `0x0C`, proving the source packet shape as `{ TradeskillId, Tier,
+  TradeskillBonusId }` (`selected_decompiled.c:1019`, `:1026`). The sender
+  `Tradeskill_SendClientTradeskillPickTalent` at `14059a900` writes the
+  selected talent tier as `tier - 1`, checks the zero-based tier is below `10`,
+  verifies an active profession/available-point path, and requires the selected
+  `TradeskillBonus` to appear in one of the five slots for that tier
+  (`selected_decompiled.c:10153`, `:10159`).
+- Opcode `0x0858 ClientTradeskillResetTalents` now has a dedicated writer label,
+  `ClientTradeskillResetTalents_WritePayload` at `14007d010`, with object size
+  `0x04`; it serialises exactly one 32-bit tradeskill id
+  (`selected_decompiled.c:87`, `:93`). The sender
+  `Tradeskill_SendClientTradeskillResetTalents` at `14059acb0` sends only for an
+  active profession that has at least one selected talent slot
+  (`selected_decompiled.c:10229`, `:10236`).
+- Source now adds conservative handlers for `ClientTradeskillLearn`,
+  `ClientTradeskillPickTalent`, and `ClientTradeskillResetTalents`. They
+  validate `Tradeskill`, zero-based tier range, and the
+  `TradeskillBonus -> TradeskillTalentTier -> Tradeskill` relation against game
+  tables, then log and return without mutating profession state.
+- Remaining bounded uncertainty: NexusForever still lacks a mapped profession
+  manager/persistence boundary for active tradeskills, talent point spending and
+  refunding, reset costs, relearn cooldowns, and the exact
+  `ServerProfessionUpdate`/`ServerTradeskillRelearnCooldown` response rules.
+  Learning, dropping, picking, and resetting remain diagnostic-only until that
+  subsystem is mapped.
+- Verification: the per-target WildStar64 export applied the expanded label set
+  (`applied=188, created=0, skipped=0, missing=0`) and rendered
+  `selected_decompiled.c` with 300 functions. `dotnet build
+  Source\NexusForever.sln -v minimal --nologo` succeeds with the existing
+  package warnings and `0 Error(s)`.
+
+Fortieth action-set PvP restriction follow-up implemented from this pass:
+
+- The previously blocked `RestrictedInPVP` branch is now mapped tightly enough
+  to carry through to source. A direct caller trace on
+  `MatchingGameMap_LookupById` (`140215240`) shows
+  `ActionSet_CheckPvPRestriction` loading `ECX` from `DAT_140c65b98 + 0x108`
+  immediately before the lookup, confirming that field as the current
+  `MatchingGameMap` id (`TraceFunctionCallers 140215240`,
+  `ActionSet_CheckPvPRestriction@1403a11c0`). A matching trace on
+  `FUN_140214e00` then shows the client feeding `MOV ECX,dword ptr [RAX + 0x10]`
+  from the returned map object into the next lookup, confirming the chained
+  `MatchingGameMap -> MatchingGameType` relation through the map record's game-
+  type id field (`TraceFunctionCallers 140214e00`).
+- Two adjacent helpers now anchor the remaining field semantics strongly enough
+  to stop treating `lVar2 + 0x10` as an opaque runtime byte blob. Direct
+  decompile of `1403a1140` returns `~(*(uint *)(lVar1 + 0x10) >> 1) & 1` and
+  `1403a1230` returns `~(*(uint *)(lVar1 + 0x10) >> 4) & 1` after the same
+  `MatchingGameMap -> MatchingGameType` chain. That is consistent with the
+  client reading a `MatchingGameType` flag dword at `+0x10`, not an unrelated
+  pointer or state object, so the `RestrictedInPVP` bit tests at `0x40` and
+  `0x04` are now carried through against
+  `MatchingGameTypeEntry.MatchingGameTypeEnumFlags` in source.
+- The remaining selector at `DAT_140c65b98 + 0x114` now aligns best with live
+  PvP phase rather than hardcoded match-type metadata: the client compares only
+  values `1` and `2`, and current source already defines
+  `PvpGameState.Preparation == 1` and `PvpGameState.InProgress == 2` while the
+  match runtime broadcasts those exact phases through `PvpMatch.SetState(...)`.
+  Source now exposes that runtime phase on `IPvpMatch.State`, and
+  `ClientRequestActionSetChangesHandler` returns `RestrictedInPVP` when the
+  player is in a PvP match whose `MatchingGameTypeEnumFlags` carry bit `0x40`
+  during `Preparation` or bit `0x04` during `InProgress`.
+- `UpdateSpellInProgress` remains blocked. The client still walks the linked
+  transaction state rooted under `*(DAT_140c65898 + 0x6490) + 0x15c0` and keyed
+  by config `0x41e`, and current server source still has no equivalent
+  in-flight spell-update transaction model to map that branch safely.
+- Verification: `dotnet build Source\NexusForever.sln --no-restore` succeeds
+  after exposing `IPvpMatch.State` and wiring the new LAS restriction check.
+
+Forty-first linked-entry/loot collect follow-up implemented from this pass:
+
+- The next spell-side widening target now has bounded packet identity even
+  without a fresh direct inspect. Existing caller trace for
+  `Network_SendOpcodePayloadHelper` shows `14039cff0` writing opcode `0x014F`
+  with `{ OwnerUnitId, LootUnitId, Request=0 }` into the local payload before
+  the send (`logs/trace_callers_1403f4900.txt:681`, `:688`). Current source
+  maps `0x014F` to `ClientLootItem`, whose packet model is
+  `{ OwnerUnitId, LootUnitId, Request }` and documents `Request == 0` as the
+  collect branch rather than a request
+  (`Source/NexusForever.Network/Message/GameMessageOpcode.cs:132`,
+  `Source/NexusForever.Network.World/Message/Model/Loot/ClientLootItem.cs`).
+  Together with the adjacent `PendingLootInteract` string xref, that is enough
+  for the durable label `Loot_SendClientLootItemCollect`.
+- The adjacent `14039d0f0` helper now looks like the higher-level pending-loot
+  interaction wrapper rather than another bare sender. Existing traces show it
+  references the same `PendingLootInteract` string, calls
+  `ActivateUnit_SendClientActivateUnitCast` (`14039c430`), conditionally routes
+  through `1403acd90`, and also emits `0x014F ClientLootItem` with both unit
+  ids sourced from `EBX`
+  (`logs/trace_callers_1403acd90.txt:607`,
+  `logs/trace_callers_1403f4900.txt:695`). That is enough to prioritize it as
+  the next spell-side inspect, but not yet enough to freeze a durable name.
+- The next inward audio table helper can now be named conservatively from the
+  prior direct inspect plus the already-labeled `AudioRuntime_ResolveLinkedNode`
+  call chain. `140899180` uses `140895d10(...)` as the linked-entry lookup step
+  before `140898590(...)` child-runtime acquisition
+  (`exports/WildStar64.exe/selected_decompiled.c:20080`, `:20084`); prior
+  direct inspection of `140895d10` showed it walking the entry table between
+  `param_1 + 0xE0` and `param_1 + 0xE8`, binary-searching selector ranges
+  against the incoming ids, optionally falling back through `1408958a0(...)`,
+  and returning the matched entry plus a continuation flag via `param_7`.
+  That is enough for the durable label `AudioRuntimeTable_FindLinkedEntry`.
+- This keeps both fronts moving despite the current Ghidra lock contention. The
+  spell-side immediate next inspect is now the higher-level
+  `PendingLootInteract` wrapper `14039d0f0`, while the audio side has narrowed
+  to the child-runtime acquisition and fallback helpers below the newly named
+  table lookup (`140898590`, `1408958a0`).
+- Verification: direct re-inspection and export-only validation could not be
+  rerun this pass because both the shared and per-target Ghidra projects were
+  locked; packet identity and audio-table semantics were instead recovered from
+  existing traces, source models, and prior direct-inspection notes.
+
+Forty-second action-set update-in-progress follow-up implemented from this pass:
+
+- The native meaning of `ActionSet_CheckUpdateSpellInProgress`
+  (`1403bb8d0`) is now strong enough to narrow the blocker precisely even
+  though it still does not map to source. The helper lazily resolves config
+  `0x41e`, caches the integer at `*(config + 4)` in `DAT_140dc227c`, then walks
+  the linked list rooted at `*(*(DAT_140c65898 + 0x6490) + 0x15c0)` and returns
+  true when any node's virtual method at `vtable + 8` matches that cached key.
+  Together with the surrounding `1403988d0` inspect and prior caller context,
+  that still points to a client-side in-flight spell-update transaction list,
+  not a simple cooldown or combat-state gate.
+- The server-side architecture check now explains why the branch should remain
+  findings-only. `WorldServer.Service.HostedService` runs
+  `networkManager.Update(lastTick)` first on the world thread; `NetworkManager`
+  then iterates sessions and calls `session.Update(lastTick)` serially;
+  `GameSession.Update` drains each session's queued incoming packets in order
+  and invokes message handlers synchronously inline. That means a single
+  `ClientRequestActionSetChanges` request is already fully validated and applied
+  before the same session can enter the next LAS handler invocation.
+- Current spell/action-set source also has no deferred completion state to back
+  a real `UpdateSpellInProgress` result. `ClientRequestActionSetChangesHandler`
+  mutates the `ActionSet` immediately, calls `SpellManager.UpdateSpell(...)`
+  inline, and then queues `ServerActionSetClearCache`, `ServerActionSet`, and
+  any `ServerSpellUpdate` messages in the same handler path. `SpellManager`
+  does not own a transaction table, pending spell-update list, or begin/end
+  lifecycle comparable to the client's `+0x15c0` list.
+- Decision: do not add a synthetic server-side `UpdateSpellInProgress` gate yet.
+  Returning that result without a true deferred spell-update pipeline would
+  invent behavior the current server does not have and could reject otherwise
+  valid sequential LAS requests. This branch stays blocked until a real
+  asynchronous spell-update transaction model is found or introduced.
+- Verification: this pass only updated findings after confirming the packet
+  dispatch path and spell-update flow in current source; no code changes or
+  rebuild were required.
+
+Forty-third P2P trading request follow-up implemented from this pass:
+
+- The full client-to-server P2P trading request group is now mapped and
+  labeled. Registration evidence shows the no-op writer
+  `ClientCraftingAbandon_WritePayload` at `140001ba0` is reused by the
+  zero-payload trade requests `0x018C ClientP2PTradingAcceptInvite`,
+  `0x018F ClientP2PTradingCancelTrade`, `0x0190 ClientP2PTradingCommit`, and
+  `0x0191 ClientP2PTradingDeclineInvite`, each with a registered one-byte
+  object and no payload bits (`selected_decompiled.c:7`, `:14`).
+- The remaining trade writers line up with the existing source models:
+  `0x0192 ClientP2PTradingInitiateTrade` uses the shared raw-UInt32 writer at
+  `14007d010` for target unit id (`selected_decompiled.c:87`, `:95`), while
+  `0x018D ClientP2PTradingAddItem`, `0x0194 ClientP2PTradingRemoveItem`, and
+  `0x0197 ClientP2PTradingSetMoney` use the newly labeled
+  `ClientP2PTradingUInt64_WritePayload` at `14007d840` for one raw 64-bit
+  field (`selected_decompiled.c:235`, `:242`). That confirms the item guid and
+  credit-offer payloads are 64-bit client fields.
+- Sender labels now cover the active-trade and UI paths: `14074ae30` accepts,
+  `14074aed0` declines, `1403a6590`/`14074bb60` cancel,
+  `1403a6e00`/`14074b160` commit, `1403a6a40` initiates against a target unit,
+  `1403a6b50` adds an item, `1403a6c50` removes an item, and `1403a6ce0` sets
+  the credit offer (`selected_decompiled.c:6991`, `:7072`, `:7138`, `:7181`,
+  `:7224`, `:7306`, `:19201`, `:19240`, `:19273`, `:19305`).
+- Source now corrects `ClientP2PTradingRemoveItem` and
+  `ClientP2PTradingSetMoney` to read 64-bit payloads. It also adds
+  conservative handlers for all eight P2P trading client requests; they validate
+  visible target players, owned inventory items, and credit affordability where
+  those fields exist, then log and return without changing trade state.
+- Remaining bounded uncertainty: NexusForever still has no mapped server-side
+  P2P trade state machine, invite/session partner model, offer locking,
+  two-party commit handshake, inventory transfer, money transfer, or precise
+  server update/result response rules. Trade mutation remains blocked until
+  that state boundary is mapped.
+- Verification: the per-target WildStar64 export applied the expanded label set
+  (`applied=203, created=1, skipped=0, missing=0`) and rendered
+  `selected_decompiled.c` with 300 functions. `dotnet build
+  Source\NexusForever.sln -v minimal --nologo` succeeds with the existing
+  package warnings and `0 Error(s)`.
+
+Forty-fourth pending-loot wrapper follow-up implemented from this pass:
+
+- A direct inspect of `14039d0f0` was attempted again against the split
+  WildStar64 Ghidra project, but the project remained externally locked, so
+  this pass had to complete from the existing caller traces plus prior helper
+  decompiles rather than a fresh full decompile.
+- Even without that fresh inspect, the bounded evidence is now strong enough to
+  freeze a conservative high-level label. `14039d0f0` references the
+  `PendingLootInteract` string directly
+  (`exports/WildStar64.exe/string_xrefs.csv:2743`), calls the already-labeled
+  `ActivateUnit_SendClientActivateUnitCast` (`logs/trace_callers_1403acd90.txt:607`),
+  then conditionally routes through `1403acd90` and `1403a12a0` before exiting
+  (`logs/trace_callers_1403acd90.txt:619`,
+  `logs/trace_callers_1403f4900.txt:697`). That is enough for the durable label
+  `Loot_HandlePendingLootInteract`.
+- The two shared helpers are now bounded tightly enough to explain why this is
+  a wrapper rather than another bare sender. Prior direct inspect of
+  `1403acd90` shows it is a generic service/runtime resolver that returns a
+  context object for the local-player path or the broader service tree, not a
+  loot-specific leaf (`logs/inspect_1403acd90.txt:48`). Separate caller
+  evidence from the rapid-transport path shows `1403a12a0` is reused as a
+  post-send result/report helper after nontrivial request senders, again not a
+  loot-only leaf (`logs/inspect_140520710.txt:113`, `:116`).
+- `14039d0f0` also contains a bounded fallback `0x014F ClientLootItem` send.
+  Existing caller trace for `Network_SendOpcodePayloadHelper` shows the helper
+  loading opcode `0x014F`, zeroing the request bit, and writing the same
+  returned dword into both payload unit-id fields before the send
+  (`logs/trace_callers_1403f4900.txt:695`, `:702`). Source still maps `0x014F`
+  to `ClientLootItem` with payload `{ OwnerUnitId, LootUnitId, Request }`
+  (`Source/NexusForever.Network/Message/GameMessageOpcode.cs:132`,
+  `Source/NexusForever.Network.World/Message/Model/Loot/ClientLootItem.cs`).
+  That makes `14039d0f0` the higher-level pending-loot interaction wrapper
+  above the already-labeled `Loot_SendClientLootItemCollect` leaf at
+  `14039cff0`.
+- This shifts the spell-side continuation boundary again. The
+  `PendingLootInteract` pair is now split into the high-level wrapper
+  `14039d0f0` and the direct collect sender `14039cff0`, so the next unresolved
+  helpers in this local band are the remaining adjacent spell/loot interaction
+  siblings such as `14039ce20`, `14039cee0`, `14039d230`, and `14039d4a0`.
+- Verification: durable files were updated and textual diff validation remains
+  the safe check for this pass. Export-only Ghidra revalidation is still blocked
+  until the external project lock clears.
+
+Forty-fifth shield-heal damage type follow-up implemented from this pass:
+
+- The conservative `HealShields` runtime still carried one leftover semantic
+  mismatch: `DamageCalculator.CalculateShieldHealing(...)` built its outgoing
+  `DamageDescription` with `DamageType.Heal` even though the effect family,
+  static enum surface, and combat log path already distinguish shield healing
+  from health healing.
+- A direct source follow-up narrowed the impact. The shield-heal handler still
+  mutates `target.Shield` directly, so this field was not changing local shield
+  behavior, but the same damage description is serialized into outgoing spell
+  results. Leaving `DamageType.Heal` in place therefore preserved an avoidable
+  on-the-wire mismatch for clients and later debugging.
+- The runtime now stamps shield-heal damage descriptions as
+  `DamageType.HealShields`. This is intentionally a narrow correctness fix
+  only. Open questions from the broader shield/vital cluster remain unchanged:
+  shield-heal packet cadence, full packet parity, and whether
+  `HealingAbsorption` should consume shield healing still need sniff/runtime
+  validation before any wider behavior changes.
+
+Forty-sixth activate-unit/audio child-runtime follow-up implemented from this
+pass:
+
+- Audio-side direct inspect now resolves the child-runtime helper immediately
+  below `AudioRuntimeTable_FindLinkedEntry`. `140898590(longlong *param_1, int
+  param_2)` returns `param_1[0x10]` when the requested child id is zero,
+  otherwise checks the local child table through `1408975e0(param_1 + 0x14,
+  param_2)`, falls back to the runtime virtual method at slot `+0xC8` when the
+  table path does not claim the id, and otherwise resolves the child through
+  `140898620(...)`. If the returned child runtime still has a null linked state
+  pointer at `+0x18`, it is discarded and zero is returned
+  (`logs/WildStar64.InspectCodeAddress.ghidra.log:50` onward for
+  `140898590`). That is enough for the durable label
+  `AudioRuntime_ResolveChildById`.
+- This tightens the audio boundary one layer deeper than the prior subagent
+  estimate. `140898590` is not merely an allocator; it is the wrapper that
+  resolves either the current child runtime, a table-backed child, or a virtual
+  fallback child for the requested id before `AudioRuntime_ResolveLinkedNode`
+  decides whether the cloned candidate node can survive. The next inward audio
+  ambiguity now shifts to the larger table-backed constructor/helper path at
+  `140898620` and the older fallback probe `1408958a0`.
+- Spell-side direct inspect of `14039d4a0` also resolved the subagent's
+  earlier UI-heavy guess into a concrete request wrapper. The helper first
+  rejects a null record at `param_1 + 0x18`, optionally raises the local
+  floater path via `140437a10(..., 0x15F, ...)` when the record flag at
+  `param_1 + 0x34EC` is set, then tries `14046c580(param_1,
+  *(DAT_140c65898 + 0x78))`. If that lookup returns zero, it sends opcode
+  `0x00B3 ClientActivateUnit` with the unit id from `param_1 + 8`; otherwise it
+  primes local activation state via `14055b0e0(...)`, falls back to
+  `ActivateUnit_SendClientActivateUnitCast(...)`, and reports nontrivial cast
+  failures through `1403acd90` and `1403a12a0`
+  (`logs/WildStar64.InspectCodeAddress.ghidra.log:55` onward for `14039d4a0`,
+  `Source/NexusForever.Network/Message/GameMessageOpcode.cs:28`). That is
+  enough for the durable label `ActivateUnit_HandleDirectOrCastRequest`.
+- This narrows the spell-side local band more sharply than the old string-only
+  picture. `14039d4a0` is not just a quest/path overhead display helper even
+  though the record it consumes carries many path/quest/spell presentation
+  strings; it is a real activation wrapper that chooses between direct
+  `ClientActivateUnit` and the existing activate-unit cast path based on the
+  resolved activation target id. The remaining nearby unresolved spell helpers
+  are now better concentrated in `14039ce20`, `14039cee0`, and `14039d230`.
+- Verification: both direct inspects completed successfully against the shared
+  Ghidra project layout during this pass; export-only validation should be
+  rerun after landing the new labels so the durable map and exported artifacts
+  are back in sync.
+
+Forty-seventh marketplace request follow-up implemented from this pass:
+
+- The marketplace request group is now mapped as one coherent client-to-server
+  surface. Registration evidence labels the commodity/order writers for
+  `0x03E6 ClientRequestCommodityInfo` at `140085420` with size `0x04`,
+  `0x03EC ClientRequestOwnedCommodityOrders` and
+  `0x03ED ClientRequestOwnedItemAuctions` through the shared no-op writer
+  `140001ba0`, `0x0093 ClientCommodityOrderCancel` at `14009a020` with size
+  `0x10`, `0x0094 ClientAuctionCancel` at `14009ab70` with size `0x10`,
+  `0x055E ClientAuctionBuyOrderSubmit` at `140099e90` with size `0x18`,
+  `0x06DA ClientCommoditySellOrderSubmit` at `140099e70` with size `0x38`,
+  `0x06DC ClientAuctionSellOrderSubmit` at `140088e60` with size `0x18`, and
+  `0x07DC ClientAuctionsByFilterRequest` at `14009a7d0` with size `0x38`.
+
+Forty-eighth item-visual-swap duration restore follow-up implemented from this pass:
+
+- The next safe spell-runtime widening outside the blocked shield/vital edge
+  cases was `ItemVisualSwap` duration handling. Prior conservative runtime
+  behavior already applied immediate visual-slot overrides through
+  `IWorldEntity.AddVisual`, but duration-backed rows were only traced with
+  `duration-restore-unimplemented` even though nearby appearance families
+  (`DisguiseOutfit`, `MimicDisguise`) already had bounded previous-visual
+  snapshot and restore paths.
+- The runtime now uses the same bounded appearance-state pattern for
+  `ItemVisualSwap`. `HandleEffectItemVisualSwap(...)` validates the packet-width
+  fields as before, captures the current visual for the target slot when the
+  effect has a duration, applies the override, and stores the previous slot
+  visual by effect id. Spell lifetime removal now restores that prior visual on
+  expiry, and tracked-state removal restores it through the generic
+  force-remove/dispel cleanup path as well.
+- This remains a conservative implementation rather than a full semantic close.
+  The raw client slot ids are still preserved instead of being renamed to a
+  complete equipment-slot map, `DataBits02/03` remain uninterpreted, and the
+  duration fixtures still need runtime/sniff validation to confirm whether any
+  rows restore only when unchanged or carry extra slot-specific behavior.
+- Sender labels now cover the active marketplace/UI request paths:
+  `14075f0d0` requests commodity info, `14075f110` requests owned commodity
+  orders, `1407607f0` requests owned item auctions, `14075fd90` sends auction
+  search filters, `1406a0740` submits an auction buy order, `140519a00`
+  submits an auction sell order, `1406a0570` submits a commodity sell order,
+  `1406a20c0` cancels an auction, and `1406a1270` cancels a commodity order.
+  Existing send traces show the expected field staging for item ids, auction or
+  order ids, min bid, buyout, quantity, unit price, and search selectors.
+- Source now adds conservative handlers for all nine marketplace request
+  models. Read-only requests validate table-backed item/search/filter fields
+  and return empty result packets. Submit and auction-cancel requests validate
+  item ids, owned inventory items, ids, prices, and quantities, then return the
+  existing disabled marketplace result where a response packet is mapped.
+  Commodity-order cancel currently validates and logs only because no precise
+  cancel-failure response path has been mapped yet.
+- Packet parsing is hardened at the receive boundary: auction search item and
+  filter counts are bounded by remaining bytes and the known seven-filter
+  client limit, and unknown auction-filter enum values now throw
+  `InvalidPacketValueException` instead of falling into a server-side
+  `NotImplementedException`.
+- Remaining bounded uncertainty: NexusForever still has no mapped persisted
+  marketplace/order-book service for fees, rake, listing duration, expiry,
+  search matching, partial fills, mail settlement, or commodity/auction state
+  mutation. The request surface is safe and labeled, but real marketplace
+  mutation remains blocked until that service boundary is designed from
+  client/runtime and server evidence.
+- Verification: the WildStar64 export applied the expanded label set
+  (`applied=221, created=2, skipped=0, missing=0`) and rendered
+  `selected_decompiled.c` with 340 functions. `dotnet build
+  Source\NexusForever.sln -v minimal --nologo` succeeds with the existing
+  package warnings and `0 Error(s)`.
+
+Forty-eighth fallback-node/bindcheck follow-up implemented from this pass:
+
+- Audio-side direct inspect now resolves the larger helper behind the child
+  resolver table path. `140898620(longlong *param_1, byte *param_2)` gates on
+  the runtime state nibble at `param_1 + 0x62`, derives the active descriptor
+  path through `140895bc0(...)`, and then either materializes a child runtime
+  directly from that descriptor or builds a nested local descriptor record and
+  refreshes the child through repeated `1408981f0(...)` calls. The helper also
+  returns a low-bit mode flag through `param_2`, and falls back through the
+  runtime virtual path when the refreshed child still lacks a linked state
+  pointer. That is enough for the durable label
+  `AudioRuntime_ResolveTableBackedChild`.
+- The older fallback probe under `AudioRuntimeTable_FindLinkedEntry` is also
+  now resolved directly. `1408958a0(...)` walks a fallback chain through each
+  node's `+0x40` link, binary-searches the current node id at `+0x18` against
+  the sorted id range stored in the supplied entry-local table, and returns the
+  first matching node before the chain reaches the stop pointer. That is enough
+  for the durable label `AudioRuntimeTable_FindFallbackNodeMatch`.
+- Spell-side direct inspect of `14039cee0` showed that the helper is not
+  another packet sender. Instead it looks up the keyed loot entry under the
+  local tree rooted at `param_1 + 0x7D90` using the request key at `param_2 +
+  4`, materializes the matched object set into a temporary container through
+  `1404111e0(...)`, and forwards that container into `140430e00(...)`. A
+  follow-up direct inspect of `140430e00` then proved the downstream semantics:
+  it serializes the prepared object set into an `itemDrop` payload and emits
+  the named client event `LootBindcheck` through
+  `ClientEvent_DispatchNamedEvent(...)`. Together that is enough for the
+  durable labels `Loot_PrepareAndDispatchBindcheck` and
+  `Loot_DispatchBindcheckEvent`.
+- This closes the three subagent-guided continuation branches from the prior
+  pass. Audio-side ambiguity now shifts deeper to helpers such as `1408981f0`
+  or `140895bc0` if tighter descriptor semantics are still needed, while the
+  spell-side local band has narrowed further to the remaining adjacent helpers
+  `14039ce20` and `14039d230`.
+- Verification: all three direct target inspects plus the supporting
+  `140430e00` dispatcher inspect completed successfully against the shared
+  Ghidra project layout during this pass; export-only validation should be
+  rerun after landing the new labels so the durable map and exported artifacts
+  are synchronized again.
 
 ## Practical Next Steps
 
