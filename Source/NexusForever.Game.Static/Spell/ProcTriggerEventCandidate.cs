@@ -4,7 +4,7 @@ namespace NexusForever.Game.Static.Spell
     /// Candidate labels for <see cref="SpellEffectType.Proc"/> DataBits00 trigger events.
     /// </summary>
     /// <remarks>
-    /// These values are trace-only evidence anchors until retail/sniff behavior confirms dispatch semantics.
+    /// These values anchor the current conservative proc runtime. Unsupported trigger events remain diagnostic-only.
     /// </remarks>
     public static class ProcTriggerEventCandidate
     {

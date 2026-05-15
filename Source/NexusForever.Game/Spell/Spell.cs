@@ -2,6 +2,7 @@ using System.Numerics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Abstract.Spell.Event;
+using NexusForever.Game.Combat.CrowdControl;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Spell.Event;
@@ -138,6 +139,10 @@ namespace NexusForever.Game.Spell
             CastResult ccResult = CheckCCConditions();
             if (ccResult != CastResult.Ok)
                 return ccResult;
+
+            CastResult activeCCRestriction = CheckActiveCrowdControlRestrictions();
+            if (activeCCRestriction != CastResult.Ok)
+                return activeCCRestriction;
 
             if (Caster is IPlayer player)
             {
@@ -338,6 +343,41 @@ namespace NexusForever.Game.Spell
             }
 
             return CastResult.Ok;
+        }
+
+        private CastResult CheckActiveCrowdControlRestrictions()
+        {
+            uint activeMask = Caster.ActiveCCStateMask;
+            if (activeMask == 0u)
+                return CastResult.Ok;
+
+            foreach (CCState state in Enum.GetValues<CCState>())
+            {
+                uint stateMask = 1u << (int)state;
+                if ((activeMask & stateMask) == 0u)
+                    continue;
+
+                if (IsCasterCrowdControlStateExplicitlyAllowed(state))
+                    continue;
+
+                if (!CrowdControlStateRules.BlocksCasting(state, Parameters.SpellInfo.BaseInfo.School))
+                    continue;
+
+                return GetCasterCannotBeCCResult(state);
+            }
+
+            return CastResult.Ok;
+        }
+
+        private bool IsCasterCrowdControlStateExplicitlyAllowed(CCState state)
+        {
+            Spell4CCConditionsEntry conditions = Parameters.SpellInfo.CasterCCConditions;
+            if (conditions == null)
+                return false;
+
+            uint stateMask = 1u << (int)state;
+            return (conditions.CcStateMask & stateMask) != 0u
+                && (conditions.CcStateFlagsRequired & stateMask) != 0u;
         }
 
         private static CastResult CheckCCConditions(Spell4CCConditionsEntry conditions, IUnitEntity unit, bool caster)

@@ -840,6 +840,15 @@ namespace NexusForever.Game.Entity
                     InCombat = unitEntity.InCombat
                 });
             }
+
+            if (entity is IUnitEntity busyUnit && busyUnit.IsBusy)
+            {
+                Session.EnqueueMessageEncrypted(new ServerUnitInUse
+                {
+                    UnitId = busyUnit.Guid,
+                    InUse  = true
+                });
+            }
         }
 
         public override void RemoveVisible(IGridEntity entity)

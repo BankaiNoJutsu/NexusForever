@@ -129,8 +129,6 @@ namespace NexusForever.Game.Combat
                     damageDescription.ShieldAbsorbAmount,
                     damageDescription.CombatResult);
             }
-
-            // Proc firing remains intentionally disabled until proc-probe traces confirm event routing.
         }
 
         public void CalculateHealing(IUnitEntity caster, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo info)

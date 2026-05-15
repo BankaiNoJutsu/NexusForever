@@ -112,6 +112,7 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary</*effectId*/uint, SpellImmunityState> spellImmunityStates = new();
         private readonly Dictionary</*effectId*/uint, DelayDeathState> delayDeathStates = new();
         private readonly Dictionary</*effectId*/uint, ProcState> procStates = new();
+        private readonly HashSet</*effectId*/uint> activeProcDispatchEffectIds = new();
         private readonly Dictionary</*effectId*/uint, VitalClampState> vitalClampStates = new();
         private readonly Dictionary</*effectId*/uint, TrackedSpellState> shieldOverloadStates = new();
         private readonly Dictionary</*effectId*/uint, ScaleState> scaleStates = new();
@@ -175,6 +176,7 @@ namespace NexusForever.Game.Entity
             public uint DataBits07 { get; init; }
             public uint DataBits08 { get; init; }
             public uint DataBits09 { get; init; }
+            public double CooldownRemainingSeconds { get; set; }
         }
 
         private sealed class PendingDelayDeathTrigger
@@ -292,6 +294,7 @@ namespace NexusForever.Game.Entity
 
             HandleRespawn(lastTick);
             HandleDelayDeathTriggers(lastTick);
+            HandleProcCooldowns(lastTick);
 
             foreach (ISpell spell in pendingSpells.ToArray())
             {
@@ -305,6 +308,20 @@ namespace NexusForever.Game.Entity
             {
                 HandleStatUpdate(lastTick);
                 statUpdateTimer.Reset();
+            }
+        }
+
+        private void HandleProcCooldowns(double lastTick)
+        {
+            if (procStates.Count == 0 || lastTick <= 0d)
+                return;
+
+            foreach (ProcState state in procStates.Values)
+            {
+                if (state.CooldownRemainingSeconds <= 0d)
+                    continue;
+
+                state.CooldownRemainingSeconds = Math.Max(0d, state.CooldownRemainingSeconds - lastTick);
             }
         }
 
@@ -420,8 +437,11 @@ namespace NexusForever.Game.Entity
             uint triggerCastingId = spell?.CastingId ?? 0u;
             uint triggerSpell4EffectId = effectInfo?.Entry.Id ?? 0u;
 
-            foreach (KeyValuePair<uint, ProcState> state in procStates)
+            foreach (KeyValuePair<uint, ProcState> procEntry in procStates.ToArray())
             {
+                if (!procStates.TryGetValue(procEntry.Key, out ProcState state) || !ReferenceEquals(state, procEntry.Value))
+                    continue;
+
                 SpellEffectDiagnostics.TraceProcProbe(
                     this,
                     eventName,
@@ -433,20 +453,152 @@ namespace NexusForever.Game.Entity
                     triggerCastingId,
                     triggerSpell4EffectId,
                     damageDescription,
-                    state.Key,
-                    state.Value.Spell4Id,
-                    state.Value.CastingId,
-                    state.Value.TriggerEvent,
-                    state.Value.TriggerSpell4Id,
-                    state.Value.Chance,
-                    state.Value.TargetData,
-                    state.Value.CooldownMsOrSentinel,
-                    state.Value.DataBits05,
-                    state.Value.DataBits06,
-                    state.Value.DataBits07,
-                    state.Value.DataBits08,
-                    state.Value.DataBits09);
+                    procEntry.Key,
+                    state.Spell4Id,
+                    state.CastingId,
+                    state.TriggerEvent,
+                    state.TriggerSpell4Id,
+                    state.Chance,
+                    state.TargetData,
+                    state.CooldownMsOrSentinel,
+                    state.DataBits05,
+                    state.DataBits06,
+                    state.DataBits07,
+                    state.DataBits08,
+                    state.DataBits09);
+
+                TryDispatchProc(procEntry.Key, state, eventName, phase, triggerEvent, source, target);
             }
+        }
+
+        private void TryDispatchProc(uint effectId, ProcState state, string eventName, string phase, uint? observedTriggerEvent, IUnitEntity source, IUnitEntity target)
+        {
+            if (!observedTriggerEvent.HasValue || observedTriggerEvent.Value != state.TriggerEvent)
+                return;
+
+            if (!IsSupportedProcTriggerEvent(state.TriggerEvent))
+            {
+                SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, 0u, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", "unsupported-trigger-event");
+                return;
+            }
+
+            if (!TryResolveProcTarget(state.TargetData, source, target, out IUnitEntity resolvedTarget, out string skippedReason))
+            {
+                SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, 0u, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", skippedReason);
+                return;
+            }
+
+            if (state.CooldownRemainingSeconds > 0d)
+            {
+                SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, resolvedTarget.Guid, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", "cooldown-active");
+                return;
+            }
+
+            if (!activeProcDispatchEffectIds.Add(effectId))
+            {
+                SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, resolvedTarget.Guid, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", "reentrant-proc");
+                return;
+            }
+
+            try
+            {
+                if (state.Chance <= 0f || (state.Chance < 1f && Random.Shared.NextSingle() > state.Chance))
+                {
+                    SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, resolvedTarget.Guid, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", "chance-roll-failed");
+                    return;
+                }
+
+                int pendingSpellCount = pendingSpells.Count;
+                CastSpell(state.TriggerSpell4Id, CreateProcSpellParameters(state, resolvedTarget));
+                if (pendingSpells.Count <= pendingSpellCount)
+                {
+                    SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, resolvedTarget.Guid, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", "cast-rejected");
+                    return;
+                }
+
+                StartProcCooldown(state);
+                SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, resolvedTarget.Guid, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "cast-trigger-spell", null);
+            }
+            finally
+            {
+                activeProcDispatchEffectIds.Remove(effectId);
+            }
+        }
+
+        private static bool IsSupportedProcTriggerEvent(uint triggerEvent)
+        {
+            return triggerEvent is ProcTriggerEventCandidate.KillTarget
+                or ProcTriggerEventCandidate.EnterCombat
+                or ProcTriggerEventCandidate.ActionCastAny
+                or ProcTriggerEventCandidate.DealDamage
+                or ProcTriggerEventCandidate.ReceiveDamage
+                or ProcTriggerEventCandidate.HealOther;
+        }
+
+        private bool TryResolveProcTarget(uint targetData, IUnitEntity source, IUnitEntity target, out IUnitEntity resolvedTarget, out string skippedReason)
+        {
+            switch (targetData)
+            {
+                case 1u:
+                case 2u:
+                case 9u:
+                    resolvedTarget = this;
+                    skippedReason = null;
+                    return true;
+                case 4u:
+                case 12u:
+                    resolvedTarget = ResolveProcCounterpartTarget(source, target);
+                    skippedReason = resolvedTarget == null ? "missing-counterpart-target" : null;
+                    return resolvedTarget != null;
+                default:
+                    resolvedTarget = null;
+                    skippedReason = "unsupported-target-data";
+                    return false;
+            }
+        }
+
+        private IUnitEntity ResolveProcCounterpartTarget(IUnitEntity source, IUnitEntity target)
+        {
+            if (source != null && source.Guid != Guid)
+                return source;
+
+            if (target != null && target.Guid != Guid)
+                return target;
+
+            return null;
+        }
+
+        private void StartProcCooldown(ProcState state)
+        {
+            if (state.CooldownMsOrSentinel == 0u || state.CooldownMsOrSentinel == uint.MaxValue)
+                return;
+
+            state.CooldownRemainingSeconds = state.CooldownMsOrSentinel / 1000d;
+        }
+
+        private ISpellParameters CreateProcSpellParameters(ProcState state, IUnitEntity target)
+        {
+            ISpellInfo procHolderSpellInfo = ResolveSpellInfo(state.Spell4Id);
+            return new SpellParameters
+            {
+                ParentSpellInfo        = procHolderSpellInfo,
+                RootSpellInfo          = procHolderSpellInfo,
+                PrimaryTargetId        = target?.Guid ?? 0u,
+                UserInitiatedSpellCast = false
+            };
+        }
+
+        private static ISpellInfo ResolveSpellInfo(uint spell4Id)
+        {
+            if (spell4Id == 0u)
+                return null;
+
+            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            if (spell4Entry == null)
+                return null;
+
+            ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4Entry.Spell4BaseIdBaseSpell);
+            return spellBaseInfo?.GetSpellInfo((byte)spell4Entry.TierIndex);
         }
 
         public void AddVitalClamp(uint effectId, uint spell4Id, uint castingId, Vital vital, float ratio, uint mode, uint vitalMode)
@@ -520,6 +672,8 @@ namespace NexusForever.Game.Entity
 
         public void AddBusy(uint effectId, uint spell4Id, uint castingId, uint mode, uint contextId, uint dataBits02, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09)
         {
+            bool wasBusy = IsBusy;
+
             busyStates[effectId] = new BusyState
             {
                 Spell4Id  = spell4Id,
@@ -535,15 +689,23 @@ namespace NexusForever.Game.Entity
                 DataBits08 = dataBits08,
                 DataBits09 = dataBits09
             };
+
+            BroadcastBusyStateIfChanged(wasBusy);
         }
 
         public bool RemoveBusy(uint effectId)
         {
-            return busyStates.Remove(effectId);
+            bool wasBusy = IsBusy;
+            bool removed = busyStates.Remove(effectId);
+            if (removed)
+                BroadcastBusyStateIfChanged(wasBusy);
+
+            return removed;
         }
 
         public IReadOnlyCollection<uint> ClearBusy(uint spell4Id, uint contextId)
         {
+            bool wasBusy = IsBusy;
             var removedEffectIds = new List<uint>();
             foreach (KeyValuePair<uint, BusyState> state in busyStates.ToArray())
             {
@@ -557,7 +719,21 @@ namespace NexusForever.Game.Entity
                 removedEffectIds.Add(state.Key);
             }
 
+            BroadcastBusyStateIfChanged(wasBusy);
+
             return removedEffectIds;
+        }
+
+        private void BroadcastBusyStateIfChanged(bool wasBusy)
+        {
+            if (wasBusy == IsBusy)
+                return;
+
+            EnqueueToVisible(new ServerUnitInUse
+            {
+                UnitId = Guid,
+                InUse  = IsBusy
+            }, true);
         }
 
         public void AddScale(uint effectId, uint spell4Id, uint castingId, float previousScale, uint restoreTimeMs)
@@ -870,7 +1046,7 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        public bool TryModifyVital(Vital vital, float amount, out float appliedAmount)
+        public bool TryModifyVital(Vital vital, float amount, out float appliedAmount, IUnitEntity source = null, DamageType? damageType = null)
         {
             appliedAmount = 0f;
             if (!float.IsFinite(amount) || MathF.Abs(amount) < 0.0001f)
@@ -884,7 +1060,7 @@ namespace NexusForever.Game.Entity
                 ? Math.Clamp(currentValue + amount, 0f, maxValue)
                 : Math.Max(currentValue + amount, 0f);
 
-            return TrySetVitalValue(vital, currentValue, newValue, out appliedAmount);
+            return TrySetVitalValue(vital, currentValue, newValue, source, damageType, out appliedAmount);
         }
 
         private bool TryGetPositiveProperty(Property property, out float value)
@@ -936,13 +1112,13 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        private bool TrySetVitalValue(Vital vital, float oldValue, float newValue, out float appliedAmount)
+        private bool TrySetVitalValue(Vital vital, float oldValue, float newValue, IUnitEntity source, DamageType? damageType, out float appliedAmount)
         {
             appliedAmount = 0f;
             switch (vital)
             {
                 case Vital.Health:
-                    return TrySetHealthVital(oldValue, newValue, out appliedAmount);
+                    return TrySetHealthVital(oldValue, newValue, source, damageType, out appliedAmount);
                 case Vital.ShieldCapacity:
                     return TrySetUnsignedVital(oldValue, newValue, value => Shield = value, out appliedAmount);
                 case Vital.Focus:
@@ -968,15 +1144,31 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        private bool TrySetHealthVital(float oldValue, float newValue, out float appliedAmount)
+        private bool TrySetHealthVital(float oldValue, float newValue, IUnitEntity source, DamageType? damageType, out float appliedAmount)
         {
             uint before = Health;
             uint delta = (uint)MathF.Round(MathF.Abs(newValue - oldValue));
             if (delta != 0u)
-                ModifyHealth(delta, newValue >= oldValue ? DamageType.Heal : DamageType.Physical, null);
+                ModifyHealth(delta, ResolveVitalDamageType(newValue >= oldValue, damageType), source);
 
             appliedAmount = (float)Health - before;
             return true;
+        }
+
+        private static DamageType ResolveVitalDamageType(bool healing, DamageType? damageType)
+        {
+            if (healing)
+                return DamageType.Heal;
+
+            return damageType switch
+            {
+                DamageType.Physical => DamageType.Physical,
+                DamageType.Tech     => DamageType.Tech,
+                DamageType.Magic    => DamageType.Magic,
+                DamageType.Fall     => DamageType.Fall,
+                DamageType.Suffocate => DamageType.Suffocate,
+                _                   => DamageType.Physical
+            };
         }
 
         private static bool TrySetUnsignedVital(float oldValue, float newValue, Action<uint> setter, out float appliedAmount)
@@ -1023,17 +1215,24 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
-        public IReadOnlyCollection<(CCState State, uint EffectId)> RemoveCCStates(uint stateMask)
+        public IReadOnlyCollection<SpellStateRemoval> RemoveCCStates(uint stateMask)
         {
-            var removedStates = new List<(CCState State, uint EffectId)>();
+            var removedStates = new List<SpellStateRemoval>();
 
             foreach (KeyValuePair<CCState, Dictionary<uint, TrackedSpellState>> state in ccStates.ToArray())
             {
                 if ((stateMask & (1u << (int)state.Key)) == 0u)
                     continue;
 
-                foreach (uint effectId in state.Value.Keys)
-                    removedStates.Add((state.Key, effectId));
+                foreach (KeyValuePair<uint, TrackedSpellState> effect in state.Value)
+                {
+                    removedStates.Add(new SpellStateRemoval(
+                        SpellStateRemovalKind.CrowdControl,
+                        effect.Value.Spell4Id,
+                        effect.Value.CastingId,
+                        effect.Key,
+                        state.Key));
+                }
 
                 ccStates.Remove(state.Key);
             }
@@ -1265,6 +1464,7 @@ namespace NexusForever.Game.Entity
 
             }
 
+            bool wasBusy = IsBusy;
             foreach (KeyValuePair<uint, BusyState> state in busyStates.ToArray())
             {
                 if (!CanRemove(state.Value.Spell4Id))
@@ -1278,6 +1478,7 @@ namespace NexusForever.Game.Entity
                     state.Key));
 
             }
+            BroadcastBusyStateIfChanged(wasBusy);
 
             foreach (KeyValuePair<uint, ScaleState> state in scaleStates.ToArray())
             {

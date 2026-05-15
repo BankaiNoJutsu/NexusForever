@@ -8,6 +8,7 @@ using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Achievement;
 using NexusForever.Game.Combat;
+using NexusForever.Game.Combat.CrowdControl;
 using NexusForever.Game.Entity;
 using NexusForever.Game;
 using NexusForever.Game.Housing;
@@ -106,7 +107,7 @@ namespace NexusForever.Game.Spell
             {
                 skippedReason = "zero-heal";
             }
-            else if (spell.Caster.TryModifyVital(transference.HealedVital, rawHeal, out float appliedAmount))
+            else if (spell.Caster.TryModifyVital(transference.HealedVital, rawHeal, out float appliedAmount, spell.Caster))
             {
                 appliedHeal = appliedAmount > 0f ? (uint)MathF.Round(appliedAmount) : 0u;
                 overheal = rawHeal - Math.Min(rawHeal, appliedHeal);
@@ -241,7 +242,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            bool applied = target.TryModifyVital(vitalModifier.Vital, amount, out float appliedAmount);
+            bool applied = target.TryModifyVital(vitalModifier.Vital, amount, out float appliedAmount, spell.Caster);
             SpellEffectDiagnostics.TraceVitalModifier(spell, target, vitalModifier, mode, amount, appliedAmount, applied, applied ? string.Empty : "unsupported-vital");
             if (!applied)
                 return;
@@ -378,7 +379,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            bool applied = target.TryModifyVital(sapVital.Vital, amount, out float appliedAmount);
+            bool applied = target.TryModifyVital(sapVital.Vital, amount, out float appliedAmount, spell.Caster, info.Entry.DamageType);
             SpellEffectDiagnostics.TraceSapVital(spell, target, sapVital, mode, amountSource, amount, appliedAmount, applied, applied ? string.Empty : "unsupported-vital");
             if (!applied)
                 return;
@@ -2073,18 +2074,19 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            IReadOnlyCollection<(CCState State, uint EffectId)> removedStates = target.RemoveCCStates(ccStateBreak.StateMask);
+            IReadOnlyCollection<SpellStateRemoval> removedStates = target.RemoveCCStates(ccStateBreak.StateMask);
             uint afterMask = target.ActiveCCStateMask;
-            SpellEffectDiagnostics.TraceCCStateBreak(spell, target, ccStateBreak, beforeMask, afterMask, removedStates);
+            SpellEffectDiagnostics.TraceCCStateBreak(spell, target, ccStateBreak, beforeMask, afterMask, ToCCStateTraceTuples(removedStates));
 
-            foreach ((CCState state, uint effectId) in removedStates)
+            foreach (SpellStateRemoval removal in removedStates.Where(r => r.CCState.HasValue))
             {
+                CCState state = removal.CCState!.Value;
                 target.EnqueueToVisible(new ServerEntityCCStateRemove
                 {
                     UnitId              = target.Guid,
                     CCType              = state,
-                    SpellCastUniqueId   = spell.CastingId,
-                    SpellEffectUniqueId = effectId,
+                    SpellCastUniqueId   = removal.CastingId == 0u ? spell.CastingId : removal.CastingId,
+                    SpellEffectUniqueId = removal.EffectId,
                     Removed             = true
                 }, true);
 
@@ -2106,10 +2108,13 @@ namespace NexusForever.Game.Spell
             if (info.Entry.DurationTime > 0u)
                 target.AddCCState(ccState.State, info.EffectId, spell.Parameters.SpellInfo.Entry.Id, spell.CastingId);
 
+            ApplyCrowdControlMovementState(target, ccState.State);
+
             info.AddCombatLog(new CombatLogCCState
             {
-                State  = ccState.State,
-                Result = CCStateApplyRulesResult.Ok,
+                State                     = ccState.State,
+                Result                    = CCStateApplyRulesResult.Ok,
+                CcStateDiminishingReturnsId = ResolveCrowdControlDiminishingReturnsId(ccState.State),
                 CastData = new CombatLogCastData
                 {
                     CasterId     = spell.Caster.Guid,
@@ -2118,6 +2123,32 @@ namespace NexusForever.Game.Spell
                     CombatResult = CombatResult.Hit
                 }
             });
+        }
+
+        private static IReadOnlyCollection<(CCState State, uint EffectId)> ToCCStateTraceTuples(IReadOnlyCollection<SpellStateRemoval> removals)
+        {
+            return removals.Where(r => r.CCState.HasValue)
+                .Select(r => (r.CCState!.Value, r.EffectId))
+                .ToArray();
+        }
+
+        private static void ApplyCrowdControlMovementState(IUnitEntity target, CCState state)
+        {
+            uint stateMask = 1u << (int)state;
+            StateFlags filteredState = CrowdControlStateRules.FilterClientStateFlags(target.MovementManager.GetState(), stateMask);
+            if (filteredState != target.MovementManager.GetState())
+                target.MovementManager.SetState(filteredState);
+
+            if (!CrowdControlStateRules.HasClientMovementBlock(stateMask))
+                return;
+
+            target.MovementManager.SetMove(Vector3.Zero, false);
+            target.MovementManager.SetVelocity(Vector3.Zero, false);
+        }
+
+        private static ushort ResolveCrowdControlDiminishingReturnsId(CCState state)
+        {
+            return (ushort)(GameTableManager.Instance.CCStates.GetEntry((uint)state)?.CcStateDiminishingReturnsId ?? 0u);
         }
 
         [SpellEffectHandler(SpellEffectType.SpellDispel)]

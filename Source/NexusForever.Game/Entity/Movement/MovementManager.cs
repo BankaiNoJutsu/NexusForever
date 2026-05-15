@@ -13,6 +13,7 @@ using NexusForever.Game.Abstract.Entity.Movement.Command.State;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Time;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Velocity;
 using NexusForever.Game.Abstract.Entity.Movement.Generator;
+using NexusForever.Game.Combat.CrowdControl;
 using NexusForever.Game.Entity.Movement.Generator;
 using NexusForever.Game.Static.Entity.Movement.Command.Mode;
 using NexusForever.Game.Static.Entity.Movement.Command.State;
@@ -253,6 +254,9 @@ namespace NexusForever.Game.Entity.Movement
             if (ServerControl)
                 return;
 
+            uint activeCCStateMask = Owner is IUnitEntity unit ? unit.ActiveCCStateMask : 0u;
+            bool suppressClientMovement = CrowdControlStateRules.HasClientMovementBlock(activeCCStateMask);
+
             foreach (INetworkEntityCommand command in commands)
             {
                 switch (command.Model)
@@ -262,14 +266,29 @@ namespace NexusForever.Game.Entity.Movement
                         break;
                     case SetPositionCommand setPosition:
                     {
+                        if (suppressClientMovement)
+                            break;
+
                         commandValidator.ValidatePosition();
                         SetPosition(setPosition.Position, setPosition.Blend);
                         break;
                     }
                     case SetVelocityCommand setVelocity:
+                        if (suppressClientMovement)
+                        {
+                            SetVelocity(Vector3.Zero, setVelocity.Blend);
+                            break;
+                        }
+
                         SetVelocity(setVelocity.Velocity, setVelocity.Blend);
                         break;
                     case SetMoveCommand setMove:
+                        if (suppressClientMovement)
+                        {
+                            SetMove(Vector3.Zero, setMove.Blend);
+                            break;
+                        }
+
                         SetMove(setMove.Move, setMove.Blend);
                         break;
                     case SetRotationCommand setRotation:
@@ -278,7 +297,7 @@ namespace NexusForever.Game.Entity.Movement
                     case SetStateCommand setState:
                     {
                         commandValidator.ValidateState();
-                        SetState(setState.State);
+                        SetState(CrowdControlStateRules.FilterClientStateFlags(setState.State, activeCCStateMask));
                         break;
                     }
                     case SetModeCommand setMode:

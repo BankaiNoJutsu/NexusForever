@@ -107,7 +107,7 @@ namespace NexusForever.Game.Abstract.Entity
         uint ConsumeHealingAbsorption(uint amount);
 
         bool TryGetVitalMax(Vital vital, out float maxValue);
-        bool TryModifyVital(Vital vital, float amount, out float appliedAmount);
+        bool TryModifyVital(Vital vital, float amount, out float appliedAmount, IUnitEntity source = null, DamageType? damageType = null);
 
         /// <summary>
         /// Track an active crowd control state applied by a spell effect.
@@ -122,7 +122,7 @@ namespace NexusForever.Game.Abstract.Entity
         /// <summary>
         /// Stop tracking active crowd control states that match the supplied bit mask.
         /// </summary>
-        IReadOnlyCollection<(CCState State, uint EffectId)> RemoveCCStates(uint stateMask);
+        IReadOnlyCollection<SpellStateRemoval> RemoveCCStates(uint stateMask);
 
         /// <summary>
         /// Stop tracking active crowd control states applied by a concrete spell.

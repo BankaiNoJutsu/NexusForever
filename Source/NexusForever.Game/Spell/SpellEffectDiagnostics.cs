@@ -814,6 +814,33 @@ namespace NexusForever.Game.Spell
                 dataBits09);
         }
 
+        public static void TraceProcDispatch(IUnitEntity holder, string eventName, string phase, uint? observedTriggerEvent, uint sourceGuid, uint targetGuid, uint resolvedTargetGuid, uint procEffectId, uint procSpell4Id, uint procCastingId, uint procTriggerEvent, uint procTriggerSpell4Id, float procChance, uint procTargetData, uint procCooldownMsOrSentinel, double procCooldownRemainingSeconds, string action, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics proc-dispatch event={0} phase={1} holder={2} source={3} target={4} observedTriggerEvent={5} resolvedTarget={6} procEffectId={7} procSpell4Id={8} procCastingId={9} procTriggerEvent={10} procTriggerSpell4Id={11} procChance={12:R} procTargetData={13} procCooldownMsOrSentinel={14} procCooldownRemainingSeconds={15:R} action={16} skippedReason={17}",
+                eventName,
+                phase,
+                holder.Guid,
+                sourceGuid,
+                targetGuid,
+                observedTriggerEvent?.ToString() ?? "unknown",
+                resolvedTargetGuid,
+                procEffectId,
+                procSpell4Id,
+                procCastingId,
+                procTriggerEvent,
+                procTriggerSpell4Id,
+                procChance,
+                procTargetData,
+                procCooldownMsOrSentinel,
+                procCooldownRemainingSeconds,
+                action,
+                skippedReason);
+        }
+
         public static void TraceDelayDeathTriggered(IUnitEntity target, uint spell4Id, uint castingId, uint mode, uint triggerSpell4Id, uint triggerDelayMs, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07, uint sourceGuid, uint preventedDamage)
         {
             if (!log.IsTraceEnabled)
