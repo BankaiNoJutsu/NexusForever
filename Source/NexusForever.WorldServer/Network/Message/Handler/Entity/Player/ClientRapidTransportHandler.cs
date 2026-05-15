@@ -96,7 +96,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, route.Price);
             session.Player.CastSpell(formula.Dataint0, new SpellParameters
             {
-                // The client packet's secondary 32-bit field is currently treated as opaque context token data.
+                // Native cast-context construction indicates the client packet's secondary 32-bit field is a
+                // generated cast-context token, not a wall-clock time value.
                 // Keep server mutation keyed only by validated destination node and route.
                 TaxiNode = rapidTransport.TaxiNode
             });

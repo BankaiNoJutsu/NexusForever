@@ -35,6 +35,7 @@ namespace NexusForever.Network.Message
         ClientLogoutRequest             = 0x00BF,
         ClientLogoutConfirm             = 0x00C0,
         ServerDuelCancelWarning         = 0x00C1,
+        ClientSpellCastWithServiceToken = 0x00C2,
         ClientCCStateStunUpdate         = 0x00C3,
         ServerCCStateStunDirection      = 0x00C4,
         ClientChallengeChoice           = 0x00C5,
