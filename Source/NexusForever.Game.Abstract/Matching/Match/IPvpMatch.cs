@@ -4,6 +4,8 @@ namespace NexusForever.Game.Abstract.Matching.Match
 {
     public interface IPvpMatch : IMatch
     {
+        PvpGameState State { get; }
+
         /// <summary>
         /// Set the state of the match to the supplied <see cref="PvpGameState"/>.
         /// </summary>

@@ -21,6 +21,8 @@ namespace NexusForever.Game.Matching.Match
         private UpdateTimer stateTimer;
         private Action stateCallback;
 
+        public PvpGameState State => state;
+
         // only deathpool stats are tracked in the match, other types are tracked in the public events
         // looks like this is legacy and arenas never got migrated to the new public event system
         private readonly Dictionary<Static.Matching.MatchTeam, uint> deathmatchPool = [];
