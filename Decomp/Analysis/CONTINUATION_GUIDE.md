@@ -122,6 +122,43 @@ focused helper script:
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -MaxDecompiledFunctions 340 -ExtraPostScript DumpNearbyData.java -ExtraPostScriptArgs @('140b73540','20')
 ```
 
+Re-export commands now default to manifest-based reuse for `selected_decompiled.c`.
+If the binary fingerprint, label state, `-MaxDecompiledFunctions`, exporter
+version, and ordered top-N selected functions are unchanged, the exporter keeps
+the existing decompiler output and refreshes only the cheaper CSV and text
+artifacts.
+
+If the selected set changes under the same binary and label context, the
+exporter reuses cached per-function fragments for any unchanged functions and
+decompiles only the newly selected or invalidated entries.
+
+Single-target runs now default to per-target Ghidra projects so different
+binaries can be processed in parallel without fighting over the old shared
+project lock. Multi-target and full-pass runs still default to the shared
+project. If you only have the legacy shared project on disk, export-only Auto
+mode falls back to it until the per-target project is seeded by a non-export
+run.
+
+Use `-ProjectLayout Shared` when you intentionally want the old single-project
+behavior for a targeted pass:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -ProjectLayout Shared
+```
+
+Use `-DecompileMode Force` after manual interactive Ghidra edits that are not
+represented in `function_labels.csv`:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -DecompileMode Force
+```
+
+Use `-DecompileMode Skip` when the pass only needs strings, imports, and xrefs:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -DecompileMode Skip
+```
+
 Increase `-MaxDecompiledFunctions` only when the selected functions are too
 shallow. If the desired function is not selected, prefer improving
 `HIGH_VALUE_STRING_PATTERNS`, adding a durable label, or locating a better xref

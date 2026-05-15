@@ -19,6 +19,11 @@ StsConnLib64.MT.dll,18002ec10,StsInetSocket_ParseConnectFields,Parses Connect XM
 StsConnLib64.MT.dll,18002f410,StsInetSocket_SendConnectEnvelope,Builds /Sts/Connect envelope fields.
 StsConnLib64.MT.dll,180030d80,StsInetSocket_DispatchConnectEnvelope,Dispatches parsed /Sts/Connect envelope to the registered service.
 WildStar64.exe,14007ab80,ClientRapidTransport_WritePayload,Serialises world opcode 0x0141 payload as a 14-bit node id plus a 32-bit opaque field.
+WildStar64.exe,14007d830,ActivateUnitFamily_Advance64Bits,Advances 64 payload bits for the shared opcode 0x0097 and 0x0098 activate-unit-family payload.
+WildStar64.exe,14007ec70,ActivateUnitFamily_WriteTokenAndTargetFieldPair,Serialises world opcode 0x0097 or 0x0098 payload as two raw 32-bit fields: generated context token plus the activate-unit-family target field.
+WildStar64.exe,140089570,ClientSpellCastWithServiceToken_WritePayload,Serialises world opcode 0x00C2 payload as an 18-bit client spellcast id plus a 32-bit spell4 id.
+WildStar64.exe,140093d20,ActivateUnit0x0096_Advance168Bits,Advances 168 payload bits for world opcode 0x0096.
+WildStar64.exe,140093d30,ActivateUnit0x0096_WritePayload,Serialises world opcode 0x0096 payload as a 32-bit generated context token, two packed 4-bit selectors, a resolved target entity id, and a trailing three-float world-position vector.
 WildStar64.exe,1400a7540,NetworkBitWriter_WriteBits64,Writes up to 64 bits into the packet bitstream.
 WildStar64.exe,14022df60,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 WildStar64.exe,14024bfa0,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
@@ -53,6 +58,10 @@ WildStar64.exe,14033c7e0,NetworkIOCP_SendQueued,Batches queued buffers into an o
 WildStar64.exe,14033ec10,NetworkSocket_DestroyClosesocket,Destructor path that closes the socket and releases buffers.
 WildStar64.exe,14033ece0,NetworkSocket_CloseSocket,Closes an active socket and clears its handle.
 WildStar64.exe,1403993c0,RapidTransport_SendClientRapidTransport,Builds rapid-transport payload data and sends opcode 0x0141 through the network send helper.
+WildStar64.exe,1403994f0,ServiceToken_SendClientSpellCastWithServiceToken,Builds and sends opcode 0x00C2 service-token spell cast payload with the shared generated context token and spell4 id.
+WildStar64.exe,14039ac90,ActivateUnit_SendClient0x0096Variant,Builds and sends opcode 0x0096 activate-unit-family payload with the generated context token, two packed selectors, a resolved target entity id, and a target/self world-position vector.
+WildStar64.exe,14039c1e0,ActivateUnit_SendClient0x0098Variant,Builds and sends opcode 0x0098 activate-unit-family payload with the shared generated context token and the cast-context +0x158 target field.
+WildStar64.exe,14039c430,ActivateUnit_SendClientActivateUnitCast,Builds and sends opcode 0x0097 activate-unit cast payload with the shared generated context token and the activation target field carried through cast-context +0x158.
 WildStar64.exe,1403a11c0,ActionSet_CheckPvPRestriction,Checks whether the current PvP state permits action-set changes.
 WildStar64.exe,1403bb480,ActionSet_SendPendingActionSetChanges,Sends or commits a validated action-set change request.
 WildStar64.exe,1403bb8d0,ActionSet_CheckUpdateSpellInProgress,Checks whether a spell/action-set update is already in progress.
@@ -62,6 +71,8 @@ WildStar64.exe,1404aacb0,ActionSet_ValidateRequestedChanges,Validates a 12-entry
 WildStar64.exe,1404acfa0,FlightPath_SendPurchaseRequest,Builds and sends opcode 0x00FF flight-path purchase payload from validated route data.
 WildStar64.exe,1404e7f60,Lua_RegisterAccountEntitlementEnums,Registers account currency/operation and entitlement Lua enums.
 WildStar64.exe,14050e830,Lua_BuildResurrectionInfoTable,Builds the resurrection Lua info table including wake-here flags and service-token cost.
+WildStar64.exe,140520c10,ServiceToken_HandleCastResult,Handles the ServiceTokenCastResult path and dispatches opcode 0x00C2 only when the resolved spell has the service-token property flag set.
+WildStar64.exe,14055bdc0,SpellTarget_ResolveTargetEntity,Resolves an entity target from spell metadata, explicit target hints, and fallback proximity checks, then returns the resolved world-entity object.
 WildStar64.exe,1405e7fd0,Lua_GameSpell_Equals,Game.Spell __eq metamethod.
 WildStar64.exe,1405e8070,Lua_GameSpell_CreateOrWrap,Creates or wraps a Game.Spell Lua userdata value.
 WildStar64.exe,1405e81b0,Lua_GameSpell_Gc,Game.Spell __gc metamethod.
@@ -123,6 +134,15 @@ WildStar64.exe,140708dd0,Lua_GameLib_GetWorldMaxPrimeLevel,GameLib.GetWorldMaxPr
 WildStar64.exe,140708e60,Lua_GameLib_GetWorldHeroismMenaceLevel,GameLib.GetWorldHeroismMenaceLevel Lua method.
 WildStar64.exe,1407091e0,Lua_GameLib_RequestRewardUpdate,GameLib.RequestRewardUpdate Lua method.
 WildStar64.exe,140706140,Map_BuildRapidTransportNodeInfoTable,Builds map rapid-transport node info including availability flags and money costs.
+WildStar64.exe,140832810,AudioOutput_Update,Updates active audio objects and drives the global output resampler state each tick.
+WildStar64.exe,1408340b0,AudioOutput_Initialize,Initializes COM-backed audio output, selects a 24 kHz or 48 kHz sample rate, and seeds the global resampler state with the active channel mask.
+WildStar64.exe,14085ca20,AudioBackend_TryCreateConfiguredBackend,Attempts to construct and initialize one of the configured audio backend implementations and returns the first successful interface.
+WildStar64.exe,14085cb20,AudioBackend_CreateFallbackBackend,Allocates and initializes the small fallback audio backend interface object used when configured backends fail.
+WildStar64.exe,140863d50,AudioResampler_ProcessChannelMask,Processes the active resample block at +0x348/+0x350 and dispatches to the 2-channel or 6-channel interpolation helper based on the mask at +0x358.
+WildStar64.exe,140863e80,AudioResampler_InitialiseState,Initializes a 0x400-sample audio resample block, allocates per-channel storage, and stores the active channel mask.
+WildStar64.exe,14087acd0,AudioResampler_InitHeader,Writes the sample count and reciprocal step into an audio resample block header.
+WildStar64.exe,14087aeb0,AudioResampler_InterpolateSixChannels,Interpolates a 6-channel audio resample block from sampled float control arrays.
+WildStar64.exe,14087b0b0,AudioResampler_InterpolateTwoChannels,Interpolates a 2-channel audio resample block from sampled float control arrays.
 WildStar64.exe,140706f90,Map_GetTaxisForWorld,Map Lua method that returns taxi nodes for a world.
 WildStar64.exe,140707020,Map_GetNearestRapidTransportNodeForWorldLocation,Map Lua method that resolves the nearest rapid transport node for a world location.
 WildStar64.exe,140707640,Map_GetRapidTransportDestinationsForWorld,Map Lua method that returns rapid transport destinations for a world.
@@ -133,6 +153,7 @@ WildStar64.exe,140758020,Lua_ActionSetLib_IsSlotUnlocked,ActionSetLib:IsSlotUnlo
 WildStar64.exe,1407580e0,Lua_ActionSetLib_RequestActionSetChanges,ActionSetLib:RequestActionSetChanges Lua method.
 WildStar64.exe,140758510,Lua_ActionSetLib_GetCurrentActionSet,ActionSetLib:GetCurrentActionSet Lua method.
 WildStar64.exe,140758630,Lua_RegisterActionSetLib,Registers ActionSetLib methods and limited-action-set result constants.
+WildStar64.exe,14060b0c0,CombatLog_WriteCasterContext,Combat-log serializer helper that conditionally emits unitCaster and derived unitCasterOwner context.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.

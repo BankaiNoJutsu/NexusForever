@@ -52,6 +52,14 @@ Run the default analysis:
 The runner automatically applies function names from
 `Decomp\Analysis\function_labels.csv` before export. This keeps high-value
 function mapping reproducible even if `ghidra_projects` is deleted and rebuilt.
+`selected_decompiled.c` now defaults to manifest-based reuse, so repeated runs
+with unchanged binary, label, and selection inputs do not re-run the decompiler.
+When the selected set changes slightly, the exporter also reuses cached
+per-function fragments for the unchanged functions and only decompiles the new
+or invalidated entries.
+Single-target runs now default to isolated per-target Ghidra projects, which
+removes project-lock contention between targeted runs against different
+binaries. Multi-target and full-pass runs keep the shared project by default.
 
 Run a smaller or larger decompiler export:
 
@@ -64,6 +72,38 @@ without re-running full analysis:
 
 ```powershell
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly
+```
+
+Single-target runs use per-target projects by default. If an older shared
+project exists but the split project has not been created yet, export-only Auto
+mode falls back to the shared project for compatibility. Run the same target
+once without `-ExportOnly` to seed the split project.
+
+Force the legacy shared project layout for a targeted run:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -ProjectLayout Shared
+```
+
+Force a split per-target project even when running multiple targeted passes from
+automation:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -Targets WildStar64.exe -ProjectLayout PerTarget
+```
+
+Force a fresh `selected_decompiled.c` rebuild after manual Ghidra project edits
+that are not captured by `function_labels.csv`:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -DecompileMode Force
+```
+
+Skip `selected_decompiled.c` entirely when you only need the cheaper CSV and
+string/xref exports:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -DecompileMode Skip
 ```
 
 Re-export or analyze only one binary while iterating on a focused subsystem:
@@ -105,17 +145,22 @@ Per binary:
 - `interesting_strings.csv` - packet/network/data/auth/gameplay keyword hits.
 - `selected_xrefs.csv` - functions selected because they reference interesting strings or imports.
 - `selected_decompiled.c` - Ghidra C output for the selected functions.
+- `selected_decompiled.manifest` - local cache metadata used to reuse `selected_decompiled.c` when the export inputs are unchanged.
+- `selected_decompiled_cache/<context-hash>` - local per-function fragment cache used to avoid re-decompiling unchanged functions when the selected set expands or contracts.
 
 Function labels are maintained in `Decomp\Analysis\function_labels.csv` and
 applied by `scripts\ApplyNexusForeverLabels.java` before `selected_decompiled.c`
-is written.
+is written. Changing the label file invalidates the manifest and fragment cache
+context automatically.
 
 Focused helper scripts under `Decomp\Analysis\scripts` can be run with
 `-ExtraPostScript`, after the normal export, for one-off inspection without
 changing the repeatable CSV export shape.
 
 The Ghidra project is kept under `Decomp\Analysis\ghidra_projects` so the same
-analysis can be opened interactively in Ghidra later.
+analysis can be opened interactively in Ghidra later. Single-target Auto runs
+create per-target projects such as `NexusForeverClient64_WildStar64`, while
+shared runs keep using `NexusForeverClient64`.
 
 Logs are written under `Decomp\Analysis\logs`.
 

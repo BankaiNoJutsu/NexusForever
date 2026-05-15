@@ -862,6 +862,115 @@ Seventeenth nearby-opcode helper-cluster mapping follow-up implemented from this
   treat opcode `0x0141` second dword as an opaque context token in diagnostics;
   compatibility alias `Time` can remain while direct proof is still pending.
 
+Eighteenth combat-log serializer field mapping follow-up implemented from this pass:
+
+- Refreshed concrete order for `CombatLog_HandleCCStateBreak` (`14060bbc0`): helper `FUN_14060b0c0` executes first, then `eState` from `*(param_1 + 0x10)`, then derived `strState` (`selected_decompiled.c:11198-11214`).
+- Concrete helper map for `FUN_14060b0c0` (`14060b0c0`):
+  - `unitCaster` write path reads payload-backed `*(param_1 + 0x8)` (`selected_decompiled.c:22641-22646`).
+  - `unitCasterOwner` is client-local derivation via caster entity lookup and owner dereference (`FUN_1403d90d0` -> `FUN_14047dca0`) with conditional emit only when owner differs (`selected_decompiled.c:22647-22654`).
+- Wire vs local boundary for CCStateBreak payload parity:
+  - Payload-backed: `unitCaster` (`CasterId` parity), `eState` (`State` parity).
+  - Client-local derivation: `unitCasterOwner`, `strState`.
+- Explicit confidence by field:
+  - `unitCaster`: **Mapped** (concrete offset/write path; parity-correlated with server `CombatLogCCStateBreak.CasterId`).
+  - `unitCasterOwner`: **Verified (client-local only)** (runtime owner derivation; not payload).
+  - `eState`: **Verified** (direct payload read/write and parity with server `CombatLogCCStateBreak.State` write contract).
+  - `strState`: **Verified (client-local only)** (derived display text from `FUN_14034bdd0`, not event payload bytes).
+  - Overall server parity (`CasterId` + `State`): **Mapped** (not fully **Verified** at raw bit-schema level because `DAT_1409eb20c` internals remain opaque in selected export).
+- Sibling serializer boundary confirmed: nearby `FUN_14060b380` remains the broader cast-data serializer (`unitCaster`/`unitTarget`/`eCombatResult`/`splCallingSpell`), while CCStateBreak intentionally uses caster-only `FUN_14060b0c0` (`selected_decompiled.c:22666-22725`, `11263`, `22778`; `selected_xrefs.csv:2210-2215`).
+- Label policy outcome: confidence now supports stable helper naming; added `14060b0c0 -> CombatLog_WriteCasterContext` in `Decomp\\Analysis\\function_labels.csv`.
+
+Nineteenth CCStateBreak server-safe follow-up (diagnostics/model surface only):
+
+- Updated `/spell inspect4` CCStateBreak runtime note to reflect the verified boundary: combat-log writes caster-context + `eState` per removed state; `strState` is client-local display derivation.
+- Added explicit wire-contract comments in `CombatLogCCStateBreak` documenting payload-backed `CasterId` and 5-bit `State`, with `strState` intentionally excluded from the server wire model.
+- Model decision remains intentionally conservative: no speculative CCStateBreak payload fields were added.
+- Verification note: `dotnet build Source\\NexusForever.sln -v minimal --nologo` succeeds after these updates.
+
+Twentieth activate-unit/audio follow-up implemented from this pass:
+
+- Native registration now closes the nearby activate-unit-family packet shapes.
+  Fresh decompile of the registration block at `14006c290` shows:
+  `(..., 0x97, 8, 0x14007d830, FUN_14007ec70, 0, 0)`,
+  `(..., 0x98, 8, 0x14007d830, FUN_14007ec70, 0, 0)`, and
+  `(..., 0x96, 0x1c, &LAB_140093d20, FUN_140093d30, 0, 0)`.
+  Shared stub `14007d830` advances `0x40` bits and shared serializer
+  `FUN_14007ec70` writes two raw `0x20`-bit fields from `uint *param_2`, fully
+  wire-proving opcode `0x0097` as `{ ContextToken, ActivateUnitId }` and
+  proving that `0x0098` uses the same 64-bit layout with the same second-field
+  source offset `+0x158`.
+- `0x0096` is now also structurally wire-proven. Paired stub `140093d20`
+  advances `0xa8` bits, and serializer `FUN_140093d30` writes a 32-bit leading
+  field, two packed 4-bit selectors, a 32-bit resolved target entity id, and a
+  trailing three-float world-position vector, for a total payload width of
+  `32 + 4 + 4 + 32 + 96 = 168` bits.
+- Direct follow-up on sender `ActivateUnit_SendClient0x0096Variant`
+  (`14039ac90`) plus helper `SpellTarget_ResolveTargetEntity` (`14055bdc0`)
+  now identifies the concrete field sources behind that 168-bit packet. The
+  send buffer rooted at `&local_138` contains generated `ContextToken`, low
+  nibble of `param_4`, low nibble of `param_3`, resolved target entity id from
+  `lVar6 + 8` (or zero when no target entity resolves), and a trailing world
+  position vector from `lVar6 + 0x11e0/+0x11e4/+0x11e8` or fallback player
+  state at `param_1 + 0x6d10/+0x6d14/+0x6d18` when `lVar6 == 0`.
+  `SpellTarget_ResolveTargetEntity` itself chooses that target entity from spell
+  metadata, explicit target hints, and short-range fallback/proximity checks
+  before returning the resolved world-entity object through `FUN_1403d90d0`.
+  This fully resolves the structural question for `0x0096` as
+  `{ ContextToken, two 4-bit selectors, target entity id, world position xyz }`
+  while leaving the selector semantics intentionally unnamed.
+- The `+0x348` runtime chain is now reinforced as audio output/resampler state
+  rather than generic interpolation. Existing init path `AudioOutput_Initialize`
+  (`1408340b0`) selects a `24000` or `48000` sample rate, initializes COM, and
+  seeds the global resampler state with a normalized channel mask before
+  `AudioResampler_InitialiseState` (`140863e80`) allocates per-channel sample
+  storage.
+- Supporting binary evidence now lines up with that audio interpretation:
+  exports include `XAUDIO2_E_*` and `XACTENGINE_E_*` error strings, channel-map
+  and wavebank diagnostics (`"Invalid entry count for channel maps."`,
+  `"Requested audio format unsupported."`,
+  `"No wavebank exists for desired operation."`), and COM imports including
+  `CoInitializeEx` and `CoCreateInstance`.
+- Backend construction is partially mapped too, but still not far enough for
+  backend-specific names: `AudioBackend_TryCreateConfiguredBackend`
+  (`14085ca20`) attempts one of two configured implementations before
+  `AudioBackend_CreateFallbackBackend` (`14085cb20`) allocates a small fallback
+  interface object. That is strong enough for generic backend labels, but not
+  yet strong enough to call either branch specifically XAudio2 or DirectSound.
+
+Twenty-first service-token/audio follow-up implemented from this pass:
+
+- The unlabeled `0x00C2` helper-cluster path is now strong enough for durable
+  native labels even though the public source opcode/model mapping is still not
+  present. Current exported decompile already preserves
+  `ClientSpellCastWithServiceToken_WritePayload` (`140089570`),
+  `ServiceToken_SendClientSpellCastWithServiceToken` (`1403994f0`), and
+  `ServiceToken_HandleCastResult` (`140520c10`).
+- `ClientSpellCastWithServiceToken_WritePayload` writes an 18-bit first field
+  and a 32-bit second field from `uint *param_2`, proving world opcode `0x00C2`
+  as `{ client spellcast id/context token, spell4 id }`
+  (`selected_decompiled.c:151-205`).
+- `ServiceToken_SendClientSpellCastWithServiceToken` obtains the shared cast
+  context through `SpellCastContext_GetOrCreateByClientUniqueId`, packs
+  `*(resolvedContext + 0x60)` with `**(undefined4 **)(param_2 + 0x70)`, and
+  dispatches opcode `0x00C2` through `Network_SendOpcodePayloadHelper`
+  (`selected_decompiled.c:3208-3262`). That places the sender squarely in the
+  same cast-context helper cluster as rapid transport, crafting, and the
+  activate-unit-family senders, but with a distinct service-token spell path.
+- `ServiceToken_HandleCastResult` gates that sender on
+  `*(spellInfo + 0x108) & 0x20000000` before emitting the
+  `"ServiceTokenCastResult"` client event, which tightens the earlier service-
+  token cost/runtime evidence into a concrete cast-result branch rather than a
+  purely UI-facing cost path (`selected_decompiled.c:5980-6010`).
+- Export high-value patterns now include `SpellCastWithServiceToken` and
+  `ServiceTokenCastResult` so future export-only runs keep this path selected
+  even if surrounding labels drift.
+- Follow-up on the remaining `+0x348` consumer side still does **not** justify a
+  new label for `140899fd0`. The additional sweep keeps it inside the already-
+  identified audio/output chain, but the current evidence is still too weak to
+  distinguish effect-chain processing, validation, or other internal audio
+  bookkeeping safely. The durable boundary therefore remains: `+0x348` is audio
+  output/resampler state, and `140899fd0` stays intentionally unnamed.
+
 ## Practical Next Steps
 
 1. Keep extending `Decomp\Analysis\function_labels.csv` as functions are

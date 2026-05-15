@@ -2,6 +2,8 @@
 //
 // Usage from analyzeHeadless:
 //   -postScript ExportNexusForeverAnalysis.java <output-dir> [max-decompiled-functions]
+//       [decompile-mode] [ghidra-version] [binary-fingerprint] [label-fingerprint]
+//       [labels-applied]
 //
 // The script writes a per-program folder containing:
 //   summary.txt
@@ -17,14 +19,19 @@
 //@category NexusForever
 
 import java.io.File;
+import java.io.IOException;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import ghidra.app.decompiler.DecompInterface;
@@ -52,6 +59,14 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 	private static final int DEFAULT_MAX_DECOMPILED = 200;
 	private static final int DECOMPILE_TIMEOUT_SECONDS = 45;
 	private static final int MAX_CELL_LENGTH = 8192;
+	private static final String EXPORT_SCRIPT_VERSION = "3";
+	private static final String DECOMPILE_MANIFEST_VERSION = "1";
+	private static final String DECOMPILE_FRAGMENT_VERSION = "1";
+	private static final String DECOMPILE_MODE_AUTO = "auto";
+	private static final String DECOMPILE_MODE_FORCE = "force";
+	private static final String DECOMPILE_MODE_SKIP = "skip";
+	private static final String DECOMPILE_MANIFEST_NAME = "selected_decompiled.manifest";
+	private static final String DECOMPILE_CACHE_DIR_NAME = "selected_decompiled_cache";
 
 	private static final String[] INTERESTING_STRING_KEYWORDS = {
 		"packet", "opcode", "message", "client", "server", "auth", "login", "realm",
@@ -73,6 +88,7 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		"accessmask", "aliases", "alias", "userstatus", "servicetimeschedule",
 		"externalaccount", "pccafe", "licenses", "loginname", "gameaccountid",
 		"premastersecret", "authntoken", "serverrand", "serverpublickey", "serversignature",
+		"spellcastwithservicetoken", "servicetokencastresult",
 		"monservicetokencost", "monrezservicetokencost", "bwakehereservicetoken", "wakeherecooldown",
 		"monaltcostrapidtransport", "moncostrapidtransport", "brapidtransportallowed",
 		"getrapidtransportcooldown", "rapidtransport", "rapidtransportresult",
@@ -82,7 +98,11 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		"stsinetsocket", "socketcrypt", "publiceventobjectivetype",
 		"publiceventobjectivenotificationmode", "publiceventobjectivecategory", "publiceventstatus",
 		"defendobjectiveunits", "game.publicevent", "game.publiceventobjective", "tspell4idability",
-		"tunitproperty", "publiceventunitpropertymodifier"
+		"tunitproperty", "publiceventunitpropertymodifier",
+		"modifyinterruptarmor", "combatlogmodifyinterruptarmor",
+		"cmbtlog.disablemodifyinterruptarmor", "interruptarmor",
+		"combatlogccstatebreak", "ccstatebreak",
+		"unitcaster", "unitcasterowner"
 	};
 
 	private static final String[] INTERESTING_IMPORT_KEYWORDS = {
@@ -104,6 +124,12 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 			? new File(args[0])
 			: askDirectory("Select NexusForever export output directory", "Choose");
 		int maxDecompiled = args.length > 1 ? Integer.parseInt(args[1]) : DEFAULT_MAX_DECOMPILED;
+		DecompileSettings decompileSettings = new DecompileSettings(
+			args.length > 2 ? args[2] : DECOMPILE_MODE_AUTO,
+			args.length > 3 ? args[3] : "",
+			args.length > 4 ? args[4] : "",
+			args.length > 5 ? args[5] : "",
+			args.length > 6 && Boolean.parseBoolean(args[6]));
 
 		File programDir = new File(outputRoot, sanitizePathPart(currentProgram.getName()));
 		if (!programDir.exists() && !programDir.mkdirs()) {
@@ -121,7 +147,8 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		writeStringsAndXrefs(programDir, listing, referenceManager, functionManager, selection);
 		selectLabeledFunctions(listing, selection);
 		writeSelectedXrefs(programDir, selection, functionManager);
-		writeSelectedDecompiled(programDir, selection, functionManager, maxDecompiled);
+		writeSelectedDecompiled(programDir, selection, functionManager, maxDecompiled,
+			decompileSettings);
 
 		println("NexusForever export complete: " + programDir.getAbsolutePath());
 	}
@@ -313,13 +340,68 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 	}
 
 	private void writeSelectedDecompiled(File programDir, Selection selection,
-			FunctionManager functionManager, int maxDecompiled) throws Exception {
+			FunctionManager functionManager, int maxDecompiled, DecompileSettings settings)
+			throws Exception {
 		File out = new File(programDir, "selected_decompiled.c");
-		ArrayList<SelectedFunction> selected = new ArrayList<>(selection.byEntry.values());
-		selected.sort(Comparator.comparing((SelectedFunction item) -> item.priorityBucket())
-			.thenComparing(item -> item.entry.toString()));
+		File manifestFile = new File(programDir, DECOMPILE_MANIFEST_NAME);
+		ArrayList<SelectedFunction> selected = getSelectedFunctionsForDecompilation(
+			selection, functionManager, maxDecompiled);
 
-		DecompInterface decompiler = setUpDecompiler();
+		if (settings.isSkip()) {
+			println("Skipping selected_decompiled.c for " + currentProgram.getName() +
+				" (mode=skip). Existing artifact left untouched.");
+			return;
+		}
+
+		String contextFingerprint = buildDecompileContextFingerprint(settings);
+		String fingerprint = buildDecompileFingerprint(selected, functionManager, maxDecompiled,
+			settings, contextFingerprint);
+		if (settings.isAuto() && out.isFile() && manifestMatches(manifestFile, fingerprint)) {
+			println("Reusing selected_decompiled.c for " + currentProgram.getName() +
+				" (fingerprint unchanged).");
+			return;
+		}
+
+		File fragmentCacheDir = new File(new File(programDir, DECOMPILE_CACHE_DIR_NAME),
+			contextFingerprint);
+		LinkedHashMap<Address, DecompileFragment> fragmentsByEntry = new LinkedHashMap<>();
+		ArrayList<SelectedFunction> pendingDecompilation = new ArrayList<>();
+		int reusedFragments = 0;
+		for (SelectedFunction selectedFunction : selected) {
+			Function function = functionManager.getFunctionAt(selectedFunction.entry);
+			if (function == null || function.isExternal()) {
+				continue;
+			}
+
+			String functionFingerprint = buildDecompileFunctionFingerprint(
+				selectedFunction, function, contextFingerprint);
+			DecompileFragment cachedFragment = settings.isAuto()
+				? tryReadDecompileFragment(fragmentCacheDir, selectedFunction, function,
+					functionFingerprint)
+				: null;
+			if (cachedFragment != null) {
+				fragmentsByEntry.put(selectedFunction.entry, cachedFragment);
+				reusedFragments++;
+			}
+			else {
+				pendingDecompilation.add(selectedFunction);
+			}
+		}
+
+		DecompInterface decompiler = pendingDecompilation.isEmpty() ? null : setUpDecompiler();
+		boolean decompilerOpened = false;
+		String decompilerOpenError = null;
+		if (decompiler != null) {
+			decompilerOpened = decompiler.openProgram(currentProgram);
+			if (!decompilerOpened) {
+				decompilerOpenError = decompiler.getLastMessage();
+				println("Could not open program in decompiler for " + currentProgram.getName() +
+					": " + decompilerOpenError);
+			}
+		}
+
+		int decompiledFragments = 0;
+		boolean completedAll = true;
 		try (PrintWriter writer = new PrintWriter(new FileWriter(out))) {
 			writer.println("/*");
 			writer.println(" * Selected Ghidra decompiler output for " + currentProgram.getName());
@@ -327,15 +409,15 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 			writer.println(" */");
 			writer.println();
 
-			if (!decompiler.openProgram(currentProgram)) {
+			if (decompiler != null && !decompilerOpened) {
 				writer.println("/* Could not open program in decompiler: " +
-					decompiler.getLastMessage() + " */");
-				return;
+					decompilerOpenError + " */");
+				writer.println();
 			}
 
-			int count = 0;
 			for (SelectedFunction selectedFunction : selected) {
-				if (monitor.isCancelled() || count >= maxDecompiled) {
+				if (monitor.isCancelled()) {
+					completedAll = false;
 					break;
 				}
 				Function function = functionManager.getFunctionAt(selectedFunction.entry);
@@ -343,26 +425,306 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 					continue;
 				}
 
+				DecompileFragment fragment = fragmentsByEntry.get(selectedFunction.entry);
+				if (fragment == null) {
+					String functionFingerprint = buildDecompileFunctionFingerprint(
+						selectedFunction, function, contextFingerprint);
+					if (decompilerOpened) {
+						DecompileResults results =
+							decompiler.decompileFunction(function, DECOMPILE_TIMEOUT_SECONDS, monitor);
+						String body = results.decompileCompleted() && results.getDecompiledFunction() != null
+							? results.getDecompiledFunction().getC()
+							: "/* Decompile failed: " + results.getErrorMessage() + " */";
+						fragment = new DecompileFragment(body, false);
+						fragmentsByEntry.put(selectedFunction.entry, fragment);
+						writeDecompileFragment(fragmentCacheDir, selectedFunction, function,
+							functionFingerprint, body);
+						decompiledFragments++;
+					}
+					else {
+						completedAll = false;
+						fragment = new DecompileFragment(
+							"/* Could not open program in decompiler: " + decompilerOpenError + " */",
+							false);
+						fragmentsByEntry.put(selectedFunction.entry, fragment);
+					}
+				}
+
 				writer.println("/*");
 				writer.println(" * Function: " + function.getName() + " @ " +
 					function.getEntryPoint());
 				writer.println(" * Reasons: " + String.join("; ", selectedFunction.reasons));
 				writer.println(" */");
-				DecompileResults results =
-					decompiler.decompileFunction(function, DECOMPILE_TIMEOUT_SECONDS, monitor);
-				if (results.decompileCompleted() && results.getDecompiledFunction() != null) {
-					writer.println(results.getDecompiledFunction().getC());
-				}
-				else {
-					writer.println("/* Decompile failed: " + results.getErrorMessage() + " */");
-				}
+				writer.println(fragment.body);
 				writer.println();
-				count++;
 			}
 		}
 		finally {
-			decompiler.dispose();
+			if (decompiler != null) {
+				decompiler.dispose();
+			}
 		}
+
+		println("Rendered selected_decompiled.c for " + currentProgram.getName() +
+			": reused=" + reusedFragments + ", decompiled=" + decompiledFragments + ".");
+
+		if (completedAll && (pendingDecompilation.isEmpty() || decompilerOpened)) {
+			writeDecompileManifest(manifestFile, out, fingerprint, selected, functionManager,
+				maxDecompiled, settings, contextFingerprint, reusedFragments, decompiledFragments);
+		}
+	}
+
+	private ArrayList<SelectedFunction> getSelectedFunctionsForDecompilation(Selection selection,
+			FunctionManager functionManager, int maxDecompiled) {
+		ArrayList<SelectedFunction> ordered = new ArrayList<>(selection.byEntry.values());
+		ordered.sort(Comparator.comparing((SelectedFunction item) -> item.priorityBucket())
+			.thenComparing(item -> item.entry.toString()));
+
+		ArrayList<SelectedFunction> selected = new ArrayList<>();
+		if (maxDecompiled <= 0) {
+			return selected;
+		}
+
+		for (SelectedFunction selectedFunction : ordered) {
+			if (selected.size() >= maxDecompiled) {
+				break;
+			}
+			Function function = functionManager.getFunctionAt(selectedFunction.entry);
+			if (function == null || function.isExternal()) {
+				continue;
+			}
+			selected.add(selectedFunction);
+		}
+		return selected;
+	}
+
+	private boolean manifestMatches(File manifestFile, String expectedFingerprint) {
+		if (!manifestFile.isFile()) {
+			return false;
+		}
+
+		Properties properties = new Properties();
+		try (var reader = Files.newBufferedReader(manifestFile.toPath(), StandardCharsets.UTF_8)) {
+			properties.load(reader);
+		}
+		catch (IOException ex) {
+			println("Ignoring unreadable decompile manifest " + manifestFile.getAbsolutePath() +
+				": " + ex.getMessage());
+			return false;
+		}
+
+		return DECOMPILE_MANIFEST_VERSION.equals(properties.getProperty("manifest.version"))
+			&& EXPORT_SCRIPT_VERSION.equals(properties.getProperty("script.version"))
+			&& expectedFingerprint.equals(properties.getProperty("fingerprint"));
+	}
+
+	private void writeDecompileManifest(File manifestFile, File outputFile, String fingerprint,
+			ArrayList<SelectedFunction> selected, FunctionManager functionManager,
+			int maxDecompiled, DecompileSettings settings, String contextFingerprint,
+			int reusedFragments, int decompiledFragments) throws Exception {
+		Properties properties = new Properties();
+		properties.setProperty("manifest.version", DECOMPILE_MANIFEST_VERSION);
+		properties.setProperty("script.version", EXPORT_SCRIPT_VERSION);
+		properties.setProperty("fingerprint", fingerprint);
+		properties.setProperty("context.fingerprint", contextFingerprint);
+		properties.setProperty("program.name", safeString(currentProgram.getName()));
+		properties.setProperty("program.executablePath", safeString(currentProgram.getExecutablePath()));
+		properties.setProperty("program.executableFormat", safeString(currentProgram.getExecutableFormat()));
+		properties.setProperty("program.language", safeString(currentProgram.getLanguageID()));
+		properties.setProperty("program.imageBase", safeString(currentProgram.getImageBase()));
+		properties.setProperty("ghidra.version", settings.ghidraVersion);
+		properties.setProperty("binary.fingerprint", settings.binaryFingerprint);
+		properties.setProperty("labels.applied", Boolean.toString(settings.labelsApplied));
+		properties.setProperty("labels.fingerprint", settings.labelFingerprint);
+		properties.setProperty("max.decompiledFunctions", Integer.toString(maxDecompiled));
+		properties.setProperty("decompile.timeoutSeconds",
+			Integer.toString(DECOMPILE_TIMEOUT_SECONDS));
+		properties.setProperty("output.file", outputFile.getName());
+		properties.setProperty("output.exists", Boolean.toString(outputFile.isFile()));
+		properties.setProperty("selected.count", Integer.toString(selected.size()));
+		properties.setProperty("cache.reusedFragments", Integer.toString(reusedFragments));
+		properties.setProperty("cache.decompiledFragments",
+			Integer.toString(decompiledFragments));
+
+		for (int index = 0; index < selected.size(); index++) {
+			SelectedFunction selectedFunction = selected.get(index);
+			Function function = functionManager.getFunctionAt(selectedFunction.entry);
+			String keyPrefix = "selected." + index + ".";
+			properties.setProperty(keyPrefix + "entry", selectedFunction.entry.toString());
+			properties.setProperty(keyPrefix + "name", safeFunctionName(function));
+			properties.setProperty(keyPrefix + "priority",
+				Integer.toString(selectedFunction.priorityBucket()));
+			properties.setProperty(keyPrefix + "reasons", joinReasons(selectedFunction));
+		}
+
+		try (var writer = Files.newBufferedWriter(manifestFile.toPath(), StandardCharsets.UTF_8)) {
+			properties.store(writer, "Selected decompiler manifest");
+		}
+	}
+
+	private String buildDecompileContextFingerprint(DecompileSettings settings) throws Exception {
+		StringBuilder builder = new StringBuilder();
+		appendFingerprintValue(builder, "fragment.version", DECOMPILE_FRAGMENT_VERSION);
+		appendFingerprintValue(builder, "script.version", EXPORT_SCRIPT_VERSION);
+		appendFingerprintValue(builder, "program.name", currentProgram.getName());
+		appendFingerprintValue(builder, "program.executablePath", currentProgram.getExecutablePath());
+		appendFingerprintValue(builder, "program.executableFormat", currentProgram.getExecutableFormat());
+		appendFingerprintValue(builder, "program.language", safeString(currentProgram.getLanguageID()));
+		appendFingerprintValue(builder, "program.imageBase", safeString(currentProgram.getImageBase()));
+		appendFingerprintValue(builder, "ghidra.version", settings.ghidraVersion);
+		appendFingerprintValue(builder, "binary.fingerprint", settings.binaryFingerprint);
+		appendFingerprintValue(builder, "labels.applied",
+			Boolean.toString(settings.labelsApplied));
+		appendFingerprintValue(builder, "labels.fingerprint", settings.labelFingerprint);
+		appendFingerprintValue(builder, "decompile.timeoutSeconds",
+			Integer.toString(DECOMPILE_TIMEOUT_SECONDS));
+		return sha256Hex(builder.toString());
+	}
+
+	private String buildDecompileFingerprint(ArrayList<SelectedFunction> selected,
+			FunctionManager functionManager, int maxDecompiled, DecompileSettings settings,
+			String contextFingerprint)
+			throws Exception {
+		StringBuilder builder = new StringBuilder();
+		appendFingerprintValue(builder, "manifest.version", DECOMPILE_MANIFEST_VERSION);
+		appendFingerprintValue(builder, "script.version", EXPORT_SCRIPT_VERSION);
+		appendFingerprintValue(builder, "context.fingerprint", contextFingerprint);
+		appendFingerprintValue(builder, "max.decompiledFunctions",
+			Integer.toString(maxDecompiled));
+		appendFingerprintValue(builder, "selected.count", Integer.toString(selected.size()));
+
+		for (int index = 0; index < selected.size(); index++) {
+			SelectedFunction selectedFunction = selected.get(index);
+			Function function = functionManager.getFunctionAt(selectedFunction.entry);
+			appendFingerprintValue(builder, "selected." + index + ".entry",
+				selectedFunction.entry.toString());
+			appendFingerprintValue(builder, "selected." + index + ".name",
+				safeFunctionName(function));
+			appendFingerprintValue(builder, "selected." + index + ".priority",
+				Integer.toString(selectedFunction.priorityBucket()));
+			appendFingerprintValue(builder, "selected." + index + ".reasons",
+				joinReasons(selectedFunction));
+		}
+
+		return sha256Hex(builder.toString());
+	}
+
+	private String buildDecompileFunctionFingerprint(SelectedFunction selectedFunction,
+			Function function, String contextFingerprint) throws Exception {
+		StringBuilder builder = new StringBuilder();
+		appendFingerprintValue(builder, "fragment.version", DECOMPILE_FRAGMENT_VERSION);
+		appendFingerprintValue(builder, "context.fingerprint", contextFingerprint);
+		appendFingerprintValue(builder, "entry", selectedFunction.entry.toString());
+		appendFingerprintValue(builder, "name", safeFunctionName(function));
+		appendFingerprintValue(builder, "body.addressCount",
+			Long.toString(function.getBody().getNumAddresses()));
+		return sha256Hex(builder.toString());
+	}
+
+	private DecompileFragment tryReadDecompileFragment(File fragmentCacheDir,
+			SelectedFunction selectedFunction, Function function, String expectedFingerprint) {
+		File metadataFile = getDecompileFragmentMetadataFile(fragmentCacheDir, selectedFunction);
+		File bodyFile = getDecompileFragmentBodyFile(fragmentCacheDir, selectedFunction);
+		if (!metadataFile.isFile() || !bodyFile.isFile()) {
+			return null;
+		}
+
+		Properties properties = new Properties();
+		try (var reader = Files.newBufferedReader(metadataFile.toPath(), StandardCharsets.UTF_8)) {
+			properties.load(reader);
+		}
+		catch (IOException ex) {
+			println("Ignoring unreadable decompile fragment metadata " + metadataFile.getAbsolutePath() +
+				": " + ex.getMessage());
+			return null;
+		}
+
+		if (!DECOMPILE_FRAGMENT_VERSION.equals(properties.getProperty("fragment.version")) ||
+			!expectedFingerprint.equals(properties.getProperty("fingerprint")) ||
+			!selectedFunction.entry.toString().equals(properties.getProperty("entry")) ||
+			!safeFunctionName(function).equals(properties.getProperty("name"))) {
+			return null;
+		}
+
+		try {
+			String body = new String(Files.readAllBytes(bodyFile.toPath()), StandardCharsets.UTF_8);
+			String expectedBodyHash = properties.getProperty("body.sha256");
+			if (expectedBodyHash != null && !expectedBodyHash.equals(sha256Hex(body))) {
+				println("Ignoring mismatched decompile fragment body " + bodyFile.getAbsolutePath());
+				return null;
+			}
+			return new DecompileFragment(body, true);
+		}
+		catch (Exception ex) {
+			println("Ignoring unreadable decompile fragment body " + bodyFile.getAbsolutePath() +
+				": " + ex.getMessage());
+			return null;
+		}
+	}
+
+	private void writeDecompileFragment(File fragmentCacheDir, SelectedFunction selectedFunction,
+			Function function, String fingerprint, String body) throws Exception {
+		if (!fragmentCacheDir.exists() && !fragmentCacheDir.mkdirs()) {
+			throw new IOException("Could not create decompile fragment cache directory: " +
+				fragmentCacheDir.getAbsolutePath());
+		}
+
+		File metadataFile = getDecompileFragmentMetadataFile(fragmentCacheDir, selectedFunction);
+		File bodyFile = getDecompileFragmentBodyFile(fragmentCacheDir, selectedFunction);
+		Properties properties = new Properties();
+		properties.setProperty("fragment.version", DECOMPILE_FRAGMENT_VERSION);
+		properties.setProperty("script.version", EXPORT_SCRIPT_VERSION);
+		properties.setProperty("fingerprint", fingerprint);
+		properties.setProperty("entry", selectedFunction.entry.toString());
+		properties.setProperty("name", safeFunctionName(function));
+		properties.setProperty("body.file", bodyFile.getName());
+		properties.setProperty("body.sha256", sha256Hex(body));
+		Files.write(bodyFile.toPath(), body.getBytes(StandardCharsets.UTF_8));
+		try (var writer = Files.newBufferedWriter(metadataFile.toPath(), StandardCharsets.UTF_8)) {
+			properties.store(writer, "Selected decompiler fragment");
+		}
+	}
+
+	private File getDecompileFragmentMetadataFile(File fragmentCacheDir,
+			SelectedFunction selectedFunction) {
+		return new File(fragmentCacheDir,
+			sanitizePathPart(selectedFunction.entry.toString()) + ".fragment.properties");
+	}
+
+	private File getDecompileFragmentBodyFile(File fragmentCacheDir,
+			SelectedFunction selectedFunction) {
+		return new File(fragmentCacheDir,
+			sanitizePathPart(selectedFunction.entry.toString()) + ".fragment.c");
+	}
+
+	private void appendFingerprintValue(StringBuilder builder, String key, String value) {
+		builder.append(key)
+			.append('=')
+			.append(value == null ? "" : value)
+			.append('\n');
+	}
+
+	private String joinReasons(SelectedFunction selectedFunction) {
+		return String.join(" || ", selectedFunction.reasons);
+	}
+
+	private String safeFunctionName(Function function) {
+		return function == null ? "" : safeString(function.getName());
+	}
+
+	private String safeString(Object value) {
+		return value == null ? "" : value.toString();
+	}
+
+	private String sha256Hex(String value) throws Exception {
+		MessageDigest digest = MessageDigest.getInstance("SHA-256");
+		byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+		StringBuilder builder = new StringBuilder(hash.length * 2);
+		for (byte item : hash) {
+			builder.append(Character.forDigit((item >> 4) & 0xf, 16));
+			builder.append(Character.forDigit(item & 0xf, 16));
+		}
+		return builder.toString();
 	}
 
 	private DecompInterface setUpDecompiler() {
@@ -600,6 +962,53 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 				}
 			}
 			return 1;
+		}
+	}
+
+	private static class DecompileFragment {
+		private final String body;
+		private final boolean reusedFromCache;
+
+		DecompileFragment(String body, boolean reusedFromCache) {
+			this.body = body;
+			this.reusedFromCache = reusedFromCache;
+		}
+	}
+
+	private static class DecompileSettings {
+		private final String mode;
+		private final String ghidraVersion;
+		private final String binaryFingerprint;
+		private final String labelFingerprint;
+		private final boolean labelsApplied;
+
+		DecompileSettings(String mode, String ghidraVersion, String binaryFingerprint,
+				String labelFingerprint, boolean labelsApplied) {
+			this.mode = normalizeMode(mode);
+			this.ghidraVersion = ghidraVersion == null ? "" : ghidraVersion;
+			this.binaryFingerprint = binaryFingerprint == null ? "" : binaryFingerprint;
+			this.labelFingerprint = labelFingerprint == null ? "" : labelFingerprint;
+			this.labelsApplied = labelsApplied;
+		}
+
+		boolean isAuto() {
+			return DECOMPILE_MODE_AUTO.equals(mode);
+		}
+
+		boolean isSkip() {
+			return DECOMPILE_MODE_SKIP.equals(mode);
+		}
+
+		private static String normalizeMode(String mode) {
+			if (mode == null) {
+				return DECOMPILE_MODE_AUTO;
+			}
+
+			String normalized = mode.trim().toLowerCase(Locale.ROOT);
+			if (DECOMPILE_MODE_FORCE.equals(normalized) || DECOMPILE_MODE_SKIP.equals(normalized)) {
+				return normalized;
+			}
+			return DECOMPILE_MODE_AUTO;
 		}
 	}
 }
