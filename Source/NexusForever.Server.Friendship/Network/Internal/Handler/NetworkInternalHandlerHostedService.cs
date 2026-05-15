@@ -17,6 +17,7 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            await _bus.Subscribe<FriendshipAccountBlockUpdateMessage>();
             await _bus.Subscribe<FriendshipAccountEmailInviteRequestMessage>();
             await _bus.Subscribe<FriendshipAccountFriendInviteRequestMessage>();
             await _bus.Subscribe<FriendshipAccountInviteResponseMessage>();
@@ -31,7 +32,9 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler
             await _bus.Subscribe<FriendshipInviteResponseMessage>();
             await _bus.Subscribe<FriendshipLocationRequestMessage>();
             await _bus.Subscribe<FriendshipNoteUpdateByIdentityMessage>();
+            await _bus.Subscribe<FriendshipNoteUpdateByNameMessage>();
             await _bus.Subscribe<FriendshipRemoveIdentityMessage>();
+            await _bus.Subscribe<FriendshipRemoveNameMessage>();
 
             await _bus.Subscribe<PlayerLoggedInMessage>();
             await _bus.Subscribe<PlayerLoggedOutMessage>();

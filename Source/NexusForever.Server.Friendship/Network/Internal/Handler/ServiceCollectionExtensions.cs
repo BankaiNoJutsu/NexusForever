@@ -9,6 +9,7 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler
     {
         public static void AddNetworkInternalHandlers(this IServiceCollection sc)
         {
+            sc.AddRebusHandler<FriendshipAccountBlockUpdateHandler>();
             sc.AddRebusHandler<FriendshipAccountEmailInviteRequestHandler>();
             sc.AddRebusHandler<FriendshipAccountFriendInviteRequestHandler>();
             sc.AddRebusHandler<FriendshipAccountInviteResponseHandler>();
@@ -23,7 +24,9 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler
             sc.AddRebusHandler<FriendshipInviteResponseHandler>();
             sc.AddRebusHandler<FriendshipLocationRequestHandler>();
             sc.AddRebusHandler<FriendshipNoteUpdateByIdentityHandler>();
+            sc.AddRebusHandler<FriendshipNoteUpdateByNameHandler>();
             sc.AddRebusHandler<FriendshipRemoveIdentityHandler>();
+            sc.AddRebusHandler<FriendshipRemoveNameHandler>();
 
             sc.AddRebusHandler<PlayerLoggedInHandler>();
             sc.AddRebusHandler<PlayerLoggedOutHandler>();

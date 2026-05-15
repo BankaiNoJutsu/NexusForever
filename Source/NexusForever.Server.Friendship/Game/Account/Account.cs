@@ -221,6 +221,22 @@ namespace NexusForever.Server.Friendship.Game.Account
         }
 
         /// <summary>
+        /// Set whether stranger account friend requests are blocked for the <see cref="Account"/>.
+        /// </summary>
+        public async Task SetBlockAccountFriendRequestsAsync(bool blockAccountFriendRequests)
+        {
+            BlockAccountFriendRequests = blockAccountFriendRequests;
+
+            _log.LogTrace("Set block account friend requests for account {AccountId} to {BlockAccountFriendRequests}.",
+                Id, blockAccountFriendRequests);
+
+            await _messagePublisher.PublishAsync(new FriendshipAccountPersonalStatusUpdatedMessage
+            {
+                Account = await this.ToInternalAccountAsync()
+            });
+        }
+
+        /// <summary>
         /// Set the active character for the <see cref="Account"/>.
         /// </summary>
         /// <param name="identity">The character to set as the active character on the account, or null to remove the active character.</param>
