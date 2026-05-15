@@ -1031,6 +1031,12 @@ Nineteenth CCStateBreak server-safe follow-up (diagnostics/model surface only):
 - Model decision remains intentionally conservative: no speculative CCStateBreak payload fields were added.
 - Verification note: `dotnet build Source\\NexusForever.sln -v minimal --nologo` succeeds after these updates.
 
+CC breakout client evidence sweep used for the next runtime pass:
+
+- Export-string scans in `Houston64.exe` and `WildStar64.exe` surface explicit stun-breakout anchors: `StunBreakoutLeft`, `StunBreakoutRight`, `StunBreakoutUp`, `StunBreakoutDown`, `CodeEnumCCStateStunVictimGameplay`, `StunBreakoutGameplay`, `ActivateCCStateStun`, `RemoveCCStateStun`, `UpdateCCStateStun`, and `GetCCStateStunTimeRemaining`.
+- Existing packet models already line up with that surface: `ServerCCStateStunDirection` names the required input direction, `ClientCCStateStunUpdate` reports pressed/held direction state, and `ClientCCStateKnockdownBreak` is explicitly documented as the dash breakout packet for `Knockdown`.
+- Server-safe implementation boundary for now: wire player `ClientCCStateKnockdownBreak` through tracked `CCStateBreak` removal and conservative cast/movement restrictions; leave stun-direction gameplay, breakout cadence, and DR semantics open pending sniff validation.
+
 Twentieth activate-unit/audio follow-up implemented from this pass:
 
 - Native registration now closes the nearby activate-unit-family packet shapes.
@@ -1303,6 +1309,14 @@ Twenty-fourth monster aggro/combat-state follow-up mapped from this pass:
 - The neighboring `FUN_1403db9a0` block is now a closed false lead. Its only
   recovered string xrefs are `InvokeVendorWindow` and `VendorItemsUpdated`, so
   adjacency to the unit-state helpers does not make it part of the evade path.
+- Two more upstream probes close out the simple adjacency-search branch around
+  the unit-state helpers. `FUN_1403d8810` lazily allocates and copies a `0x1b0`
+  record payload after `FUN_1403d8790(...)`, while `FUN_1403d8200` is a keyed
+  tree find-or-insert helper around `FUN_1403d8140(...)` and `FUN_1403d8470(...)`.
+  Neither function dispatches live unit-state updates, so the next productive
+  evade hunt needs to pivot away from neighboring addresses and toward the code
+  that creates or routes those `0x1b0` records into the live cache/apply
+  cluster.
 - The two central replay helpers are now safe to label generically:
   `QueuedStateReplay_FlushPendingRecords` (`1405cd070`) directly flushes linked-
   list backed replay records into `QueuedStateReplay_DispatchRecord`
@@ -2345,6 +2359,575 @@ Forty-eighth fallback-node/bindcheck follow-up implemented from this pass:
   Ghidra project layout during this pass; export-only validation should be
   rerun after landing the new labels so the durable map and exported artifacts
   are synchronized again.
+
+Forty-ninth progress-click/range-check follow-up implemented from this pass:
+
+- Direct inspect now resolves the remaining helper immediately before the loot
+  bindcheck wrapper. `14039ce20(param_1, param_2)` stores or replaces the
+  object slot at `DAT_140c65898 + 0x7188`, records the replacement tick at
+  `+0x7190`, retains/releases the swapped objects through virtual callbacks,
+  and throttles rapid replacement when the incoming object's status code from
+  virtual slot `+0x68` is one of `1..3` or `7` and less than `1000` ms have
+  elapsed since the last store. Caller tracing then showed the only code caller
+  in this pass is `1407798c0`, which stages five fields into an object, calls
+  `14039ce20(param_1, param_1)`, and dispatches the named client event
+  `ProgressClickWindowCompletionLevel` on success. That is enough for the
+  durable label `ProgressClickWindow_SetActiveObject`.
+- The other adjacent unresolved helper is now bounded as a range gate rather
+  than another dispatcher. `14039d230(param_1, param_2)` lazily caches the
+  float at offset `+0x18` from client table id `0x146`, defaulting to `10.0`
+  when the lookup fails, and then calls `1403ad690(*(param_1 + 0x6490),
+  param_2, 0, cachedFloat, 0)`. A direct inspect of `1403ad690` proved that it
+  computes adjusted 3D separation between two entities and returns whether the
+  resulting distance is within the supplied max range. Caller tracing then
+  showed the sole code caller in this pass is `1403a64f0`, which first gates on
+  a resolved loot-tree entry from `1403967f0(..., *(param_2 + 8))` before using
+  `14039d230` as the final range check. That is enough for the durable label
+  `Loot_CheckInteractionRange`.
+- This narrows the spell-side local band one step further than the previous
+  pass. The immediate local ambiguity is no longer centered on `14039ce20` or
+  `14039d230`; the next useful spell-side targets move outward to helpers such
+  as `14039d2c0` or the loot-side caller `1403a64f0` if tighter interaction
+  semantics are still needed.
+- Verification: direct inspects completed successfully for `14039ce20`,
+  `14039d230`, `1403ad690`, `1403a64f0`, and `1407798c0`, and caller traces for
+  both local helpers returned exactly one code caller each plus one data
+  reference.
+
+Fiftieth duel/PvP toggle request follow-up implemented from this pass:
+
+- The client-to-server duel and PvP toggle request group is now mapped and
+  labeled. Registration evidence from the world-message registration block
+  shows `0x00E8 ClientDuelAccept`, `0x00E9 ClientDuelDecline`,
+  `0x00EA ClientDuelForfeit`, and `0x00EC ClientDuelInitiate` all using the
+  shared no-op writer at `140001ba0` with registered one-byte objects. The
+  same pass labels `ClientBool_WritePayload` at `14007e610`; direct inspect
+  shows it turns a nonzero 32-bit value into one emitted payload bit, matching
+  both `0x0170 ClientSetIgnoreDuelRequests` and
+  `0x0173 ClientPvpToggleFlags` as registered 4-byte bool objects
+  (`selected_decompiled.c:11`, `:275`, `:282`).
+- The GameLib sender surface is also now named. The Lua method table around the
+  `InitiateDuel`, `AcceptDuel`, `DeclineDuel`, `ForfeitDuel`,
+  `SetIgnoreDuelRequests`, and `TogglePvpFlags` strings points at
+  `140701120`, `140701150`, `140701180`, `1407011b0`, `140701290`, and
+  `140701090` respectively. Exported decompile now shows the zero-payload duel
+  senders, the pending-request guard at local duel state `1`, the active-duel
+  forfeit guard at local duel state `3`, the ignore-duel local flag bit `0x8`,
+  and the PvP flag toggle preflight before opcode `0x0173`
+  (`selected_decompiled.c:17907`, `:17952`, `:17972`, `:17994`, `:18016`,
+  `:18038`).
+- Source now adds conservative world handlers for all six request models. Duel
+  initiation validates the selected target-player boundary already implied by
+  the zero-payload packet shape, rejects missing/self targets with
+  `InvalidDuelTarget`, rejects dead or in-combat participants with the mapped
+  `DuelFailureReason` values, and otherwise returns `CannotDuelRightNow`
+  because NexusForever has no duel session manager yet. A follow-up runtime
+  increment now also maps `ClientSetIgnoreDuelRequests` onto
+  `CharacterFlag.IgnoreDuelRequests` through the existing character-flag update
+  path and rejects duel initiation against targets with
+  `PlayerIsIgnoringDuels`. Duel accept, decline, forfeit, and PvP flag toggles
+  still remain logged without mutating state.
+- Remaining bounded uncertainty: the packet surface is mapped, but real duel
+  behavior still needs a server-side duel request/session model, opponent state,
+  countdown/start/result broadcasts, area-leave warnings, PvP flag persistence,
+  cooldown handling, and the remaining PvP flag semantics. The handlers
+  intentionally avoid synthesizing those states until the service boundary is
+  mapped.
+- Verification: the WildStar64 export applied the expanded label set
+  (`applied=237, created=1, skipped=0, missing=0`) and rendered
+  `selected_decompiled.c` with 360 functions. `dotnet build
+  Source\NexusForever.sln -v minimal --nologo` succeeds with the existing
+  package warnings and `0 Error(s)`.
+
+Fifty-first shared target-interaction follow-up implemented from this pass:
+
+- Direct inspect now resolves the larger local helper immediately above the
+  activate-unit wrapper into a shared target-interaction attempt path.
+  `14039d2c0(param_1, param_2)` first validates the local interaction state
+  through `1403ad600(*(param_1 + 0x78))`, resolves the target object by id via
+  `1403d90d0(DAT_140c65898, param_2)`, and reads the target interaction
+  descriptor at `target + 0x1908`. It rejects descriptors that are disabled, do
+  not expose a callback, use type `0x65`, or would duplicate the current active
+  progress-click object already stored at `param_1 + 0x7188`.
+- The core behavior boundary is now clear from the downstream helper chain.
+  The function derives a default interaction distance from descriptor slot
+  `piVar1[4]` with a fallback of `5.0`, optionally pulls an override family id
+  for type `0x4d`, and then calls `1403ebe80(...)`. A direct inspect of
+  `1403ebe80` proved that helper is not the action itself: it resolves the
+  effective interaction family through `14046c580` and `1403acd90`, derives the
+  active lower and upper distance bounds through `1403ad860` and `1403ad8f0`,
+  and finally delegates to `1403ad690` for the adjusted 3D range check. Caller
+  tracing then showed the sole code caller in this pass is
+  `Interaction_AttemptTargetAction`, which is enough for the durable label
+  `Interaction_CheckEffectiveRange`. If the attempt is out of range and the
+  descriptor permits fallback, `14039d2c0`
+  queues `1405592f0(param_1 + 0x70b0, target, 3)`; otherwise it runs the
+  descriptor callback, updates active interaction state through `1403dd1c0`
+  when configured, and flushes the pending action state through `1405598d0`
+  when needed. That is enough for the durable label
+  `Interaction_AttemptTargetAction`.
+- Caller recovery also tightened the public boundary without forcing unsafe
+  names onto the callers themselves. `14077e2c0` uses the current active object
+  id at `*(DAT_140c65898 + 0x6490) + 0x108` as the fallback target when a
+  special-case branch does not short-circuit, while `1404d9450` is a broader
+  context-sensitive key handler that dispatches `CSIKeyPressed`, routes several
+  stored action kinds through a local switch table, and falls back into
+  `14039d2c0` when the stored target id at `param_1 + 0x6720` should be used.
+  Both callers reinforce that `14039d2c0` is the shared attempt path rather
+  than a loot-only leaf.
+- This moves the spell-side ambiguity outward again. The nearby local band is
+  now substantially labeled through `14039d2c0`, so the next useful targets are
+  the still-unnamed caller families `1404d9450` and `14077e2c0` or the queue or
+  state-update helpers `1405592f0` and `1403dd1c0` if tighter CSI/progress-click
+  semantics are still needed.
+- Verification: direct inspects completed successfully for `14039d2c0`,
+  `1403ebe80`, `14077e2c0`, and `1404d9450`, and caller tracing for
+  `14039d2c0` returned exactly two code callers plus six data references while
+  `1403ebe80` returned exactly one code caller plus one data reference.
+
+Fifty-second current-active-object interaction wrapper follow-up investigated
+from this pass:
+
+- Direct inspect on `14077e2c0(param_1, param_2)` tightened the current-object
+  branch without yet exposing a stable public callback name. The function only
+  acts when `param_2 == 0`, pulls the current active object id from
+  `*(DAT_140c65898 + 0x6490) + 0x108`, checks a narrow special-case branch on a
+  resolved type-`0x14` target plus several local state fields, and if that
+  branch succeeds calls `140397ce0(DAT_140c65898)` before returning. Otherwise
+  it falls back to `Interaction_AttemptTargetAction(DAT_140c65898, currentId)`.
+- Caller tracing still stops short of a safe durable label. The recovered refs
+  are five data references and zero code callers; three of those refs are only
+  unwind metadata at `140c06138`, `140c06154`, and `140c06164`, while the one
+  semantic-looking remaining slot at `140b6d550` sits in an otherwise unnamed
+  function-pointer table next to `14077e3b0` and several `1405c8xxx` helpers.
+  That is not enough evidence to force a stable public name for the callback
+  family yet.
+- This keeps `14077e2c0` on the bounded unresolved list, but narrows the next
+  useful decomp step: inspect the sibling table entry `14077e3b0` or recover
+  the owning function-pointer table around `140b6d540` before attempting to
+  name the wrapper itself.
+- Verification: direct inspect, caller trace, and nearby-data dump completed
+  successfully for `14077e2c0` and the semantic table slot at `140b6d550`.
+
+Fifty-third deferred interaction-queue follow-up implemented from this pass:
+
+- Direct inspect plus caller tracing now resolve the shared queue worker beneath
+  the target-interaction path as `140559920 = DeferredActionQueue_UpdateAndDispatch`.
+  The helper is invoked each scene tick from `SceneLifecycle_UpdateAndReplayQueuedStates`
+  and from several queue-arm helpers, clears queued state when the local actor or
+  target becomes invalid, tracks position, delay, and retry state while the actor
+  moves into range, and then redispatches queued action kinds once the range or
+  state gates pass. The current decode shows queued kind `2` routes through the
+  callback table at `DAT_140c89d80[subkind]`, queued kind `3` re-enters
+  `SpellCast_ValidateAndDispatch`, queued kinds `5/6` send the `0x0096`
+  activate-unit variant, and queued kind `7` reuses
+  `SpellCast_SendClient0x009dVariant`.
+- The smaller wrapper immediately below `Interaction_AttemptTargetAction` is now
+  bounded enough for `1405592f0 = DeferredActionQueue_ArmInteractionAction`.
+  It validates the profile-specific allow-mask branch, requires a live local
+  interaction source and an interaction subkind below `0x24`, clears the queue
+  block through `1405598d0`, stores queued mode `2`, target entity id,
+  interaction range, and interaction subkind into the local queue state, and
+  immediately hands off to `DeferredActionQueue_UpdateAndDispatch`. Caller
+  tracing still shows `Interaction_AttemptTargetAction` as the only direct code
+  caller of `1405592f0` seen in this pass.
+- The post-callback branch through `1403dd1c0` remains intentionally unnamed.
+  Direct inspect now shows a much larger target-feedback or state-transition
+  routine that resolves localized text, builds a `"target"` payload or event,
+  and flips multiple timed target-state fields, but the current evidence is not
+  yet enough to distinguish notification, UI, and state-machine semantics
+  safely.
+- This narrows the remaining spell-side ambiguity to the broader caller families
+  `1404d9450` and `14077e2c0`, or to a deeper dedicated pass on `1403dd1c0` if
+  the post-callback feedback/state side must be named.
+  `140559920`, and `1403dd1c0`; caller tracing for `1405592f0` returned one
+  code caller plus one data reference, while `140559920` returned the scene-tick
+  caller, several queue-arm helpers, and four data references.
+
+Fifty-fourth current-object profile callback follow-up investigated from this
+pass:
+
+- Direct inspect now bounds the sibling table entry `14077e3b0(param_1)` as a
+  current-object profile initializer rather than another action dispatcher. The
+  function seeds a block of floats and state fields on `param_1`, disables the
+  profile outright when the local actor is missing or when any populated local
+  slot at `actor + 0x2d8` resolves table flags with bit `0x4`, and otherwise
+  evaluates the current active object id from `actor + 0x108`.
+- The remaining branch structure still stops short of a stable public name. For
+  local type-`0x14` targets the callback reuses the same special-case gate seen
+  in `14077e2c0` and keeps the profile enabled only when the resolved
+  `1403acd90(...)` service object is non-null. For other targets it requires an
+  enabled interaction descriptor at `target + 0x1908` and a non-null callback
+  pointer at descriptor offset `+0x40`; otherwise it resets the profile back to
+  its disabled defaults. That is enough to say the function configures a
+  current-object interaction profile, but not enough to distinguish the owning
+  callback family or UI surface safely.
+- Caller tracing reinforces that this is still a table-driven callback rather
+  than a normal helper. `14077e3b0` has zero recovered code callers and five
+  data references: three unwind-metadata refs, one semantic slot at
+  `140b6d540` in the same unnamed function-pointer table as `14077e2c0`, and a
+  second data ref at `140e374a0` that could not yet be expanded because the
+  shared Ghidra project was locked during the follow-up dump.
+- This keeps `14077e3b0` blocked for naming, but narrows the next useful decomp
+  step again: recover the owning table or inspect the paired callback entries
+  around `140b6d540` before attempting to label either current-object callback.
+- Verification: direct inspect and caller tracing completed successfully for
+  `14077e3b0`.
+
+Fifty-fourth audio table-child materialization follow-up implemented from this
+pass:
+
+- Direct inspect plus caller tracing now resolve the small selector beneath the
+  table-backed child path as `140895bc0 = AudioRuntimeTable_SelectDescriptorEntry`.
+  The helper walks the `0x68`-byte records between `param_1 + 0xe0` and
+  `param_1 + 0xe8` from last to first, matches `param_2` against the record's
+  primary sorted id range unless that range begins with `-1`, then matches
+  `param_3` against the secondary range with the same wildcard handling, and
+  returns the first record that satisfies both tests. If nothing more specific
+  matches, it falls back to the default first record. Caller tracing still shows
+  `AudioRuntime_ResolveTableBackedChild` as the only direct code caller in this
+  pass, which keeps the durable boundary safely inside the runtime-table
+  descriptor family.
+- The heavier child-refresh helper immediately below that selector is now
+  bounded enough for `1408981f0 = AudioRuntime_MaterializeTableBackedChild`.
+  When an existing child runtime is supplied, it preserves accumulated timing
+  from `param_3 + 8`, derives the descriptor timing offsets through
+  `140891b60`, `140891630`, and `1408922f0`, and updates the child through
+  `14088c9f0`. When a nonzero `param_4` is present it also resolves the related
+  table object, prepares descriptor-local state through `140891aa0`, creates a
+  child payload object through `1408917a0`, and feeds the result into
+  `14088fb00(...)`. If that materialization succeeds, it applies the remaining
+  descriptor-driven offset or modulation updates through `14088d6b0` and
+  `14088e1d0`; otherwise it falls back to the runtime virtual child accessor.
+  Caller tracing returned three direct code calls, all from distinct branches
+  inside `AudioRuntime_ResolveTableBackedChild`, plus three data references.
+- This tightens the deeper audio chain without overnaming the lower runtime or
+  asset helpers. The current ambiguity now shifts inward to constructors or
+  descriptor workers such as `14088fb00`, `1408917a0`, or the `140891xxx`
+  timing helpers if more precise child-runtime semantics are still needed,
+  while the already-established `+0x348` boundary remains audio output or
+  resampler state rather than general gameplay logic.
+- Verification: direct inspects and caller traces completed successfully for
+  both `140895bc0` and `1408981f0` against the shared Ghidra project.
+
+Fifty-fifth support/report request follow-up implemented from this pass:
+
+- The remaining customer-support/report client request family is now mapped and
+  labeled. Registration evidence ties `0x033F ClientCustomerSurveySubmit` to
+  `1400a6830` with a `0x18`-byte object, `0x06C5 ClientIncidentReport` to
+  `14009fd30` with a `0x30`-byte object, `0x06D1 ClientSupportTicket` to
+  `14007cc20` with a `0x28`-byte object, `0x0830 ClientReportBug` to
+  `14007c990` with a `0x18`-byte object, `0x0831 ClientStuck` to
+  `14007c7c0` with an `0x08`-byte object, and `0x0833 ClientSuggest` to the
+  small string-writer thunk at `14007ae80`.
+- Direct writer inspection now matches the existing NexusForever packet models:
+  `ClientStuck_WritePayload` emits a 3-bit `UnstickType` plus 32-bit context
+  token, `ClientReportBug_WritePayload` emits the 16-bit bug category, selected
+  unit id, Quest2 id, and description string, `ClientSupportTicket_WritePayload`
+  emits category/subcategory, player position vector, subject/body strings, and
+  `Language`, and `ClientCustomerSurveySubmit_WritePayload` emits a 14-bit
+  survey id followed by packed survey answers and comment text. The incident
+  report writer covers the post-identity tail as 3-bit reason, 4-bit source,
+  note string, object id, days-ago float, and permanent-ignore bit. Exported
+  labels appear in `selected_decompiled.c` for all six writers and all six
+  UI/Lua senders (`ClientSuggest_WritePayload` at `:87`,
+  `ClientSupportTicket_WritePayload` at `:260`,
+  `ClientIncidentReport_WritePayload` at `:1499`,
+  `Support_SendClientSupportTicket` at `:11833`,
+  `Support_SendClientStuck` at `:12100`, and
+  `Lua_GameLib_ReportBug` at `:19037`).
+- Source now handles the whole group conservatively. `ClientCustomerSurveySubmit`
+  rejects unsupported survey ids with `InvalidPacketValueException` instead of
+  falling into a null dereference. The survey, incident-report, bug-report,
+  stuck, and suggestion handlers log only structured metadata and free-text
+  lengths. Support tickets validate the language enum and return
+  `ServerSupportTicketResult { Success = false }` because there is still no
+  ticket backend to persist or route the request. Stuck requests are logged but
+  do not teleport, kill, or cast until the server-side stuck spell/result path
+  is mapped.
+- Remaining bounded uncertainty: the packet surfaces are mapped, but real
+  support behavior still needs moderation/report storage, ticket category data
+  and persistence, survey storage plus the unsupported survey submodels, and
+  validated stuck teleport/suicide server semantics. The implementation is
+  therefore diagnostic plus explicit rejection where the current server lacks a
+  durable backend.
+- Verification: `dotnet build Source\NexusForever.sln` succeeds with the
+  existing package warnings and `0 Error(s)`. The WildStar64 export applied the
+  expanded label set (`applied=255, created=1, skipped=0, missing=0`) and
+  rendered `selected_decompiled.c` with 400 functions; `functions.csv` confirms
+  all twelve support/report labels.
+
+Sixty-first current-target CSI leaf follow-up implemented from this pass:
+
+- The next two callback-table leaves beside the current-object CSI pair are now
+  bounded tightly enough for conservative behavior-first labels. Direct inspect
+  of `14077e580(param_1, param_2)` shows it only acts on the pressed-key branch,
+  validates the current active target against the same local subject and
+  special type-`0x14` service gates used by the other CSI leaves, then arms
+  `DeferredActionQueue_ArmTargetApproach` for that target and dispatches a
+  localized target-name message. That is enough for the durable label
+  `CSIAction_HandleCurrentTargetApproach`.
+- Direct inspect of the adjacent leaf `14077e770(param_1)` is also now enough
+  for a conservative availability label. The helper resets the same CSI action
+  state block used by the neighboring callbacks, preserves the service-target
+  profile only when the current active target is a valid type-`0x14` target
+  that passes the narrow relation check, and otherwise disables the action by
+  clearing the availability flag and replacing the default profile floats.
+  That is enough for the durable label
+  `CSIAction_UpdateCurrentTargetServiceAvailability`.
+- Caller tracing confirms both methods remain internal CSI leaves rather than
+  broader entry points. `14077e580` returned only data references at
+  `140b6d610`, `140e374d0`, and unwind metadata, while `14077e770` returned
+  only data references at `140b6d600` and `140e374f4`. Together with the
+  earlier `14077e2c0` and `14077e3b0` work, that tightens the current-target
+  side of the CSI callback family without forcing a speculative owning-class
+  name onto the table itself.
+- This shifts the remaining ambiguity inward again: the current-object and
+  current-target CSI leaves are now behaviorally labeled, so the next useful
+  decomp step is either the deeper callback-table family around `140e374xx` or
+  another sibling leaf such as `14077e8b0` if tighter CSI-object semantics are
+  still needed.
+- Verification: direct inspect and caller trace completed successfully for both
+  `14077e580` and `14077e770`, and nearby-data dump completed successfully for
+  the owning table slot at `140b6d610`.
+
+Fifty-sixth CSI key-handler follow-up implemented from this pass:
+
+- Direct inspect plus caller tracing now resolve `1404d9450 = CSIKey_HandlePress`.
+  The helper first gates on several local busy-state flags and an active cast
+  record. If the current active object at `param_1 + 0x7188` exposes a positive
+  handler through virtual slot `+0x60`, it emits the named client event
+  `CSIKeyPressed` with the incoming key-state flag and returns. Otherwise, when
+  no stored target id is present at `param_1 + 0x6720`, it routes the stored
+  CSI action kind in `param_1 + 0x7f20` through a local switch table and calls
+  several specialized helpers for the remembered action payload ids. When a
+  stored target id is present, it refreshes stale local targeting through
+  `14055b0e0(param_1)` and, on the pressed-key branch, falls back into
+  `Interaction_AttemptTargetAction(param_1, storedTargetId)`. That is enough
+  for a durable CSI-key handler label without overcommitting to any single
+  switch case.
+- Supporting inspect of the sibling callback-table leaf `14077e3b0` tightened
+  the current-active-object family without justifying a public label yet. The
+  helper initializes callback-local state fields, scans the local subject's
+  slot-linked records for a flag-driven disable case, and then checks the
+  current active target id plus either the special type-`0x14` path or the
+  generic interaction descriptor callback pointer before deciding whether the
+  initialized state should remain enabled. Together with the earlier
+  `14077e2c0` pass, that reinforces the interpretation that both siblings are
+  internal current-active-object callback leaves hanging off the table near
+  `140b6d540`, not the right durable public boundary for this family.
+- This shifts the remaining spell-side ambiguity away from the broader CSI key
+  entry point and toward the still-unnamed post-callback helper `1403dd1c0` or,
+  if callback-table semantics are needed later, the narrower current-object
+  leaf pair `14077e2c0` and `14077e3b0`.
+- Verification: direct inspect and caller trace completed successfully for
+  `1404d9450`, and the supporting direct inspect plus caller trace completed
+  successfully for `14077e3b0`.
+
+Fifty-seventh post-interaction feedback follow-up implemented from this pass:
+
+- Caller tracing now shows `1403dd1c0` has exactly one direct code caller in the
+  current program: `Interaction_AttemptTargetAction`. The call sits strictly on
+  the successful descriptor-callback path and is only taken when the current
+  interaction descriptor requests the extra follow-up through its flag byte at
+  `+0xd`. That bounds the helper as post-interaction behavior rather than a
+  generic scene or unit-state routine.
+- Combined with the earlier direct inspect, that is now enough for
+  `1403dd1c0 = Interaction_HandlePostActionTargetFeedback`. The helper resolves
+  the current target, derives localized or random-text response data through the
+  target's descriptor tables, builds a small payload containing the `"target"`
+  key for the text or event path, dispatches the resulting target-facing
+  feedback through the local message helpers, and then arms the timed local
+  target-state updates and follow-up toggles used after a successful
+  interaction callback. The body is still broad internally, so the label stays
+  intentionally generic at the feedback-and-state boundary rather than trying to
+  guess a narrower UI or dialogue subsystem name.
+- This leaves the nearby spell-side ambiguity concentrated in the current-active-
+  object callback leaves `14077e2c0` and `14077e3b0` rather than in the broader
+  interaction attempt, deferred-action queue, CSI key handler, or post-action
+  feedback path.
+- Verification: direct inspect and caller trace completed successfully for
+  `1403dd1c0`, and the trace returned one code caller plus three data
+  references.
+
+Fifty-eighth deferred target-approach follow-up implemented from this pass:
+
+- Direct inspect plus caller tracing now resolve `140559250 = DeferredActionQueue_ArmTargetApproach`.
+  The helper clears the shared deferred-action queue block, resets any attached
+  callback object through the queue slot at `+0x90`, rejects a null target, then
+  stores mode `1`, the supplied target id, and a fixed range of `1.5` before
+  immediately handing off to `DeferredActionQueue_UpdateAndDispatch`. That is a
+  bounded queued target-approach behavior rather than another general dispatch
+  helper.
+- Caller tracing also tightens the remaining current-target callback family.
+  `140559250` currently has exactly one direct code caller in the program:
+  `14077e580`. Direct inspect of that leaf shows it only runs on a narrow
+  current-target path, rejects invalid or self targets, arms the deferred queue
+  for the resolved current target, and then builds a localized target-name
+  message before dispatch. That is useful evidence for the family, but still not
+  enough to force a stable public label onto `14077e580` itself.
+- This keeps the unresolved spell-side edge confined to the callback-table leaf
+  family around `140b6d540`, while the deferred queue beneath it is now labeled
+  through both the target-approach and interaction-action arms.
+- Verification: direct inspect and caller trace completed successfully for
+  `140559250`, and the trace returned one code caller plus one data reference.
+
+Sixtieth current-object CSI callback follow-up implemented from this pass:
+
+- The callback-table leaf family around `140b6d540` is now bounded tightly
+  enough to name the two core current-object methods. Existing table dumps show
+  `14077e3b0` and `14077e2c0` are direct members of the same local method table,
+  while fresh adjacent method inspection on `1405c8600` and `1405c9590` shows
+  that table behaves like a CSI action object rather than an unrelated helper
+  cluster: the neighboring methods resolve prompt text, refresh local action
+  flags, and either dispatch a stored spell or forward the press into the active
+  CSI object.
+- Direct inspect of `14077e2c0` is now enough for
+  `CSIAction_HandleCurrentObjectPress`. The method only acts on the pressed-key
+  branch (`param_2 == 0`), resolves the active object id at
+  `*(DAT_140c65898 + 0x6490) + 0x108`, takes a narrow special-case type-`0x14`
+  path through `140397ce0(DAT_140c65898)` when the extra gates pass, and
+  otherwise falls back to `Interaction_AttemptTargetAction` for that active
+  object id.
+- Direct inspect of `14077e3b0` is likewise now enough for
+  `CSIAction_UpdateCurrentObjectAvailability`. The method resets the local CSI
+  action state block, scans the local subject's slot-linked records for a
+  flag-driven disable case, then checks the current active object id plus either
+  the special type-`0x14` service path or the generic interaction descriptor
+  callback pointer before deciding whether the action remains enabled.
+- The nearby leaf `14077e580` still stays intentionally unnamed. It now has a
+  clearer role as a current-target branch that arms
+  `DeferredActionQueue_ArmTargetApproach` and dispatches a localized target-name
+  message, but that is still not a stable enough public boundary to force a
+  durable label without better table-family context.
+- This moves the remaining spell-side ambiguity inward again: the broader
+  interaction attempt, deferred queue, CSI key handler, post-action feedback,
+  and the two main current-object CSI leaves are now labeled, leaving only the
+  narrower sibling leaf methods such as `14077e580` or deeper table-family
+  semantics if tighter CSI object naming is still needed.
+- Verification: existing direct inspect and caller trace evidence for
+  `14077e2c0` and `14077e3b0` was combined with new direct inspect evidence for
+  adjacent table methods `1405c8600` and `1405c9590`.
+
+Fifty-ninth option/combat-log request follow-up implemented from this pass:
+
+- The client option and combat-log preference request cluster is now mapped and
+  handled. Registration evidence in the world-message table ties
+  `0x00D5 ClientCombatOptions` to writer `14008a450`, registered object size
+  `0x0c`; `0x012B ClientOptions` to the existing two-uint writer `14007ec70`,
+  registered object size `0x08`; and both `0x0248
+  ClientCombatLogDisableOthers` and `0x0249 ClientCombatLogDisables` to the
+  existing one-uint writer `14007d010`, registered object size `0x04`.
+- Direct inspection of `14008a450` proves the custom combat-options packet
+  layout: it writes the first dword as 4 bits, the second dword as one bit, and
+  the third dword as 14 bits. That matches
+  `ClientCombatOptions.CastingOptions`, `DisableOtherPlayersLogging`, and
+  `CombatLogDisableFlags` in the source model. The existing `14007ec70` label
+  comment now records its `ClientOptions` use as option type/value, while the
+  existing `14007d010` label comment now records both combat-log one-uint
+  update packets.
+- One sender is now named: `1403f7480 =
+  Options_SendClientOptionsCasting`. Direct inspect shows it mutates the local
+  casting option mask at `DAT_140c65898 + 0x7ba0`, sends opcode `0x012B` with
+  option type `0` (`OptionType.Casting`) and the current option mask as the
+  value, then dispatches the `OpenOptions` client event when the surrounding
+  UI event target exists. Exported labels appear in `selected_decompiled.c` at
+  `ClientCombatOptions_WritePayload` (`:843`) and
+  `Options_SendClientOptionsCasting` (`:10896`).
+- Source now adds handlers for all four missing option models. The handlers
+  validate known `CastingOptionFlags`, known `CombatLogOptions`, and the
+  `OptionType.SharedChallenge` boolean shape before logging the structured
+  setting values. They intentionally do not persist new state: NexusForever's
+  current option persistence covers keybindings/InputKeySet, but there is no
+  durable character/account store yet for combat-log masks, casting options, or
+  shared-challenge preference.
+- Remaining bounded uncertainty: the packet shapes and one casting-option sender
+  are mapped, but persistent option storage and any server-side filtering based
+  on combat-log preferences remain absent. If those preferences need to affect
+  outbound combat-log delivery later, the next implementation step is a small
+  account/character option store rather than more packet parsing.
+- Verification: `dotnet build Source\NexusForever.sln` succeeds with the
+  existing package warnings and `0 Error(s)`. The WildStar64 export applied the
+  expanded label set (`applied=259, created=0, skipped=0, missing=0`) and
+  rendered `selected_decompiled.c` with 420 functions; `functions.csv` confirms
+  `ClientCombatOptions_WritePayload` and `Options_SendClientOptionsCasting`.
+
+Sixtieth set-busy interaction follow-up implemented from this pass:
+
+- Existing interaction evidence already bounded busy state as a front-door gate
+  rather than a purely visual latch. The earlier direct inspect of
+  `CSIKey_HandlePress` (`1404d9450`) showed it checks local busy-state flags
+  before dispatching `CSIKeyPressed` or falling back to
+  `Interaction_AttemptTargetAction`, and the activate-unit packet family is
+  already closed around the direct `0x0097` and cast-backed `0x0098` request
+  shapes.
+- That is strong enough for a conservative server boundary. Source now rejects
+  busy targets in `ClientActivateUnit`, `ClientActivateUnitCast`, and
+  `ClientEntityInteract` before invoking the activation callback, sends
+  `GenericError.TargetBusy`, and routes the failure through `OnActivateFail`.
+- The same pass upgrades busy state from server-only bookkeeping to visible
+  runtime state. `SetBusy` transitions now reuse `ServerUnitInUse`, and players
+  who newly gain visibility on a busy unit receive the current in-use state on
+  entry instead of waiting for a later toggle.
+- The server-safe implementation boundary remains intentionally narrower than
+  full CSI/path/object parity: direct activation and generic entity-interaction
+  ingress are gated, while deeper deferred-action, current-active-object, and
+  non-zero context semantics remain open pending sniff or stronger client proof.
+- Verification: editor diagnostics were clean on the touched runtime files, and
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -m:1`
+  is the validation target for this pass because it covers the changed game and
+  world-server surfaces without the unrelated static-web-assets failure path.
+
+Sixty-first SapVital/vital-modifier follow-up implemented from this pass:
+
+- `Decomp\Analysis\scripts\ExportNexusForeverAnalysis.java` now treats
+  `sapvital`, `vitalmodifier`, `combatlogvitalmodifier`, and
+  `cmbtlog.disablevitalmodifier` as high-value string anchors. The refreshed
+  per-target WildStar64 export now keeps `SapVital`, `VitalModifier`, and the
+  combat-log toggle string in `interesting_strings.csv` instead of dropping them
+  out of the focused export set.
+- The strongest new client anchor is now durable in
+  `function_labels.csv`: `14060f170 = CombatLog_DispatchVitalModifierEvent`.
+  Direct decompile evidence at `exports\WildStar64.exe\selected_decompiled.c`
+  shows it building the `CombatLogVitalModifier` named-event payload, writing
+  `nAmount`, resolving `bShowCombatLog`, and dispatching the event through the
+  existing `ClientEvent_DispatchNamedEvent` sink.
+- Targeted `DumpNearbyData.java` output on the raw `SapVital` string at
+  `140abb710` now places it inside a dense contiguous spell-effect name block
+  with neighboring entries such as `ActionBarSet`, `UnlockActionBar`,
+  `SummonCreature`, `Scale`, `Resurrect`, `Disguise`, `ForceFacing`,
+  `Absorption`, `CCStateBreak`, `ForcedAction`, and `ProxyChannel`. That is
+  strong registration-table evidence even though the focused export still does
+  not surface a direct gameplay-code xref for the `SapVital` string itself.
+- This improves the SapVital evidence ladder without overstating coverage.
+  `VitalModifier` is still visible in the Lua spell-registration path, and the
+  combat-log dispatch path is now mapped, but the focused export still does not
+  surface a direct gameplay-code xref for the `SapVital` enum string itself.
+  Server implementation therefore stays conservative around unsupported alias
+  vitals and unresolved client-side secondary semantics.
+- Source follow-up from the same pass keeps the server runtime aligned with the
+  client evidence: `TryModifyVital` now preserves the spell source for health
+  changes, and health-vital drains only reuse the effect-level damage type when
+  it is an explicit physical/tech/magic/fall/suffocate value. The mapped SapVital
+  fixtures used for validation still commonly carry `damage_type = 0`, so the
+  fallback remains physical for zero or unknown rows.
+
+Sixty-second SapVital enum-registration follow-up implemented from this pass:
+
+- `InspectCodeAddress.java` on `FUN_1400f06f0` shows a small generic helper
+  that resolves a key string from its third argument, writes the supplied
+  integer value, and inserts the pair into the active Lua or named-event table.
+  After re-exporting the label set, the helper is now durably named
+  `Lua_InsertStringIntPair` in `function_labels.csv` and `selected_decompiled.c`.
+- In the already-labeled `Lua_RegisterGameSpellBindings` path, the
+  `CodeEnumSpellEffectType` registration block calls this helper in a 0x96-entry
+  loop. The refreshed decompile also shows `CombatLog_DispatchVitalModifierEvent`
+  using the same helper for named payload fields such as `nAmount`, which proves
+  the helper is generic table/object plumbing rather than spell-effect-specific
+  logic. Combined with the `DumpNearbyData.java` output around `140abb710`, this
+  is stronger evidence that the contiguous `SapVital` string block belongs to
+  the client spell-effect enum registration surface even though a dedicated
+  gameplay consumer for the `SapVital` entry remains unmapped.
 
 ## Practical Next Steps
 

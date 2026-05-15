@@ -2,11 +2,11 @@
 
 Date: 2026-05-14
 
-The proc system is structurally decoded and registered, but real proc firing is intentionally blocked until we have observable runtime evidence for event routing.
+The proc system is structurally decoded and now has a conservative holder-side runtime for the dominant event and routing shapes. Unsupported tails still stay diagnostic-only until we have stronger evidence.
 
 ## Goal
 
-Capture enough evidence to safely implement proc event dispatch without guessing:
+Validate and widen proc event dispatch without guessing:
 
 - trigger event enum meaning from `Proc.DataBits00`
 - trigger spell caster and target routing from `Proc.DataBits03`
@@ -74,9 +74,9 @@ A single reliable capture for either of these is enough to implement the first c
 
 The key evidence needed is trigger spell caster, trigger spell target, and ordering relative to the original event.
 
-## Suggested Next Code Step
+## Current Runtime
 
-Implemented on 2026-05-14: a diagnostic-only `proc-probe` trace now logs active proc states when these events happen:
+Implemented on 2026-05-15: proc dispatch now fires conservative holder-side trigger casts when these observed events match the stored proc trigger event:
 
 - spell cast
 - damage dealt
@@ -85,7 +85,15 @@ Implemented on 2026-05-14: a diagnostic-only `proc-probe` trace now logs active 
 - target killed
 - enter combat
 
-It does not cast trigger spells yet. The purpose is to compare local event context against captured retail/sniff/client behavior before mutating gameplay.
+Current conservative routing rules are:
+
+- trigger events `1`, `6`, `10`, `12`, `16`, and `20` are supported
+- `targetData` `1`, `2`, and `9` target the proc holder
+- `targetData` `4` and `12` target the counterpart unit in the observed event
+- cooldown from `DataBits04` is consumed only when the trigger cast queues successfully
+- same-chain reentry is blocked per proc effect id
+
+Unsupported trigger events and unsupported `targetData` tails still do not cast trigger spells.
 
 Current candidate labels are source-controlled in:
 
@@ -100,15 +108,15 @@ Current probe hook points:
 - `heal-other` / `heal-self` and shield-heal equivalents after heal calculation and before application
 - `target-killed` after normal damage, `Kill`, or support-stuck death application
 
-Each `SpellDiagnostics proc-probe` row includes the proc holder, source/target, observed event candidate, whether it matches the active proc state's trigger event, trigger spell/casting/effect context, damage or heal amounts when available, and the raw proc fields.
+Each `SpellDiagnostics proc-probe` row includes the proc holder, source/target, observed event candidate, whether it matches the active proc state's trigger event, trigger spell/casting/effect context, damage or heal amounts when available, and the raw proc fields. `SpellDiagnostics proc-dispatch` now records the resolved target, cooldown state, cast action, and skipped reason for matched proc states.
 
 ## Next Evidence Step
 
-Capture `proc` registration plus `proc-probe` rows for:
+Capture `proc` registration plus `proc-probe` and `proc-dispatch` rows for:
 
 ```text
 /spell inspect4 4046
 /spell cast4 4046
 ```
 
-Then deal damage with a simple known hit and compare whether event `12` rows line up with source, target, timing, and trigger spell routing. Repeat with `7116` for event `1` kill evidence.
+Then deal damage with a simple known hit and compare whether event `12` rows line up with source, target, timing, and trigger spell routing. Repeat with `7116` for event `1` kill evidence, `4876` for enter-combat, and one heal-other fixture for event `20`. Unsupported target-data tails such as `20`, `14`, `18`, `33`, `34`, and `36` should stay trace-only until their routing is proven.

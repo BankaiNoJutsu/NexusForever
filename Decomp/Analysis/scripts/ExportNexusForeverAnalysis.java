@@ -90,6 +90,7 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		"premastersecret", "authntoken", "serverrand", "serverpublickey", "serversignature",
 		"spellcastwithservicetoken", "servicetokencastresult",
 		"spellcastfailed", "prereqfailuremessage",
+		"sapvital", "vitalmodifier", "combatlogvitalmodifier", "cmbtlog.disablevitalmodifier",
 		"monservicetokencost", "monrezservicetokencost", "bwakehereservicetoken", "wakeherecooldown",
 		"monaltcostrapidtransport", "moncostrapidtransport", "brapidtransportallowed",
 		"getrapidtransportcooldown", "rapidtransport", "rapidtransportresult",
