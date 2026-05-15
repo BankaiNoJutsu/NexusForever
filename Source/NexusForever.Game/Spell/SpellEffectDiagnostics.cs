@@ -635,6 +635,22 @@ namespace NexusForever.Game.Spell
                 blockedEffect.Entry.EffectType);
         }
 
+        public static void TraceUnitStateImmuneBlocked(ISpell spell, IUnitEntity target, SpellEffectInterpretation blockedEffect, uint blockingStateId)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics unit-state-immune-blocked spell4Id={0} castingId={1} target={2} blockingStateId={3} blockingStateName={4} blockedSpell4EffectId={5} blockedEffectType={6}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                blockingStateId,
+                UnitStateSetRules.DescribeState(blockingStateId) ?? "unknown",
+                blockedEffect.Entry.Id,
+                blockedEffect.Entry.EffectType);
+        }
+
         public static void TraceScale(ISpell spell, IUnitEntity target, SpellEffectScaleSemantics scale, float previousScale, bool applied, bool removed, string skippedReason)
         {
             if (!log.IsTraceEnabled)
@@ -936,11 +952,12 @@ namespace NexusForever.Game.Spell
                 return;
 
             log.Trace(
-                "SpellDiagnostics unit-state-set spell4Id={0} castingId={1} target={2} stateId={3} changed={4} applied={5} removed={6} skippedReason={7} dataBits01={8} dataBits02={9} dataBits03={10} dataBits04={11} dataBits05={12} dataBits06={13} dataBits07={14} dataBits08={15} dataBits09={16}",
+                "SpellDiagnostics unit-state-set spell4Id={0} castingId={1} target={2} stateId={3} stateName={4} changed={5} applied={6} removed={7} skippedReason={8} dataBits01={9} dataBits02={10} dataBits03={11} dataBits04={12} dataBits05={13} dataBits06={14} dataBits07={15} dataBits08={16} dataBits09={17}",
                 spell.Parameters.SpellInfo.Entry.Id,
                 spell.CastingId,
                 target.Guid,
                 unitState.StateId,
+                UnitStateSetRules.DescribeState(unitState.StateId) ?? "unknown",
                 changed,
                 applied,
                 removed,

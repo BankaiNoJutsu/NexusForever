@@ -135,14 +135,14 @@ namespace NexusForever.Game.Abstract.Entity
         IReadOnlyCollection<SpellStateRemoval> RemoveTrackedSpellStates(System.Func<uint, bool> spell4Predicate, uint maxCount);
 
         /// <summary>
-        /// Add a <see cref="Property"/> modifier given a Spell4Id and <see cref="ISpellPropertyModifier"/> instance.
+        /// Add a <see cref="Property"/> modifier owned by a concrete spell effect instance.
         /// </summary>
-        void AddSpellModifierProperty(ISpellPropertyModifier modifier, uint spell4Id, uint castingId);
+        void AddSpellModifierProperty(ISpellPropertyModifier modifier, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId);
 
         /// <summary>
-        /// Remove a <see cref="Property"/> modifier by a Spell that is currently affecting this <see cref="IUnitEntity"/>.
+        /// Remove a <see cref="Property"/> modifier by a concrete spell effect instance that is currently affecting this <see cref="IUnitEntity"/>.
         /// </summary>
-        void RemoveSpellProperty(Property property, uint spell4Id);
+        bool RemoveSpellProperty(Property property, uint effectId);
 
         /// <summary>
         /// Remove all <see cref="Property"/> modifiers by a Spell that is currently affecting this <see cref="IUnitEntity"/>

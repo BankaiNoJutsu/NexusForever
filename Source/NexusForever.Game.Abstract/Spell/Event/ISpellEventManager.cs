@@ -7,6 +7,7 @@ namespace NexusForever.Game.Abstract.Spell.Event
         bool HasPendingEvent { get; }
 
         void EnqueueEvent(ISpellEvent spellEvent);
+        void CancelEvent(ISpellEvent spellEvent);
         void CancelEvents();
     }
 }

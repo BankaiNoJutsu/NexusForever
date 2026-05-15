@@ -549,6 +549,19 @@ namespace NexusForever.WorldServer.Command.Handler
                 : "0";
         }
 
+        private static string DescribeUnitState(uint stateId)
+        {
+            string stateName = UnitStateSetRules.DescribeState(stateId);
+            if (stateName == null)
+                return string.Empty;
+
+            string behavior = UnitStateSetRules.BlocksHostileEffects(stateId)
+                ? ", hostile-effect immunity"
+                : string.Empty;
+
+            return $" ({stateName}{behavior})";
+        }
+
         private static string FormatNonZero(params uint[] values)
         {
             string[] nonZero = values?
@@ -608,7 +621,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 return $"vital {effect.VitalModifier.Vital}, amount bits {effect.VitalModifier.DataBits01}/{effect.VitalModifier.DataBits02}, data {effect.VitalModifier.DataBits03}/{effect.VitalModifier.DataBits04}, percent-like {effect.VitalModifier.DataFloat05:R}";
 
             if (effect.UnitStateSet != null)
-                return $"unit state {effect.UnitStateSet.StateId}, data {effect.UnitStateSet.DataBits01}/{effect.UnitStateSet.DataBits02}/{effect.UnitStateSet.DataBits03}/{effect.UnitStateSet.DataBits04}/{effect.UnitStateSet.DataBits05}/{effect.UnitStateSet.DataBits06}/{effect.UnitStateSet.DataBits07}/{effect.UnitStateSet.DataBits08}/{effect.UnitStateSet.DataBits09}";
+                return $"unit state {effect.UnitStateSet.StateId}{DescribeUnitState(effect.UnitStateSet.StateId)}, data {effect.UnitStateSet.DataBits01}/{effect.UnitStateSet.DataBits02}/{effect.UnitStateSet.DataBits03}/{effect.UnitStateSet.DataBits04}/{effect.UnitStateSet.DataBits05}/{effect.UnitStateSet.DataBits06}/{effect.UnitStateSet.DataBits07}/{effect.UnitStateSet.DataBits08}/{effect.UnitStateSet.DataBits09}";
 
             if (effect.SetBusy != null)
                 return $"set busy {effect.SetBusy.Busy}, mode {effect.SetBusy.Mode}, context {effect.SetBusy.ContextId}, data {effect.SetBusy.DataBits02}/{effect.SetBusy.DataBits03}/{effect.SetBusy.DataBits04}/{effect.SetBusy.DataBits05}/{effect.SetBusy.DataBits06}/{effect.SetBusy.DataBits07}/{effect.SetBusy.DataBits08}/{effect.SetBusy.DataBits09}";

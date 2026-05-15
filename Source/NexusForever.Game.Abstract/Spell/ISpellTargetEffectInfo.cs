@@ -10,6 +10,7 @@ namespace NexusForever.Game.Abstract.Spell
         Spell4EffectsEntry Entry { get; }
         IDamageDescription Damage { get; }
         bool DropEffect { get; set; }
+        bool LifetimeEnded { get; set; }
         List<ICombatLog> CombatLogs { get; }
         IReadOnlyCollection<IGridEntity> CreatedEntities { get; }
 

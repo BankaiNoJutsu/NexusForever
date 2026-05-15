@@ -123,8 +123,7 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary</*effectId*/uint, AbsorptionState> absorptionStates = new();
         private readonly Dictionary</*effectId*/uint, AbsorptionState> healingAbsorptionStates = new();
 
-        private Dictionary<Property, Dictionary</*spell4Id*/uint, ISpellPropertyModifier>> spellProperties = new();
-        private readonly Dictionary</*spell4Id*/uint, /*castingId*/uint> spellPropertyCastingIds = new();
+        private readonly Dictionary<Property, Dictionary</*effectId*/uint, SpellPropertyState>> spellProperties = new();
         private readonly List<PendingDelayDeathTrigger> pendingDelayDeathTriggers = new();
 
         public uint ActiveCCStateMask => ccStates.Keys.Aggregate(0u, (mask, state) => mask | (1u << (int)state));
@@ -139,6 +138,12 @@ namespace NexusForever.Game.Entity
         {
             public uint Spell4Id { get; init; }
             public uint CastingId { get; init; }
+        }
+
+        private sealed class SpellPropertyState : TrackedSpellState
+        {
+            public uint EffectEntryId { get; init; }
+            public ISpellPropertyModifier Modifier { get; init; }
         }
 
         private sealed class SpellEffectImmunityState : TrackedSpellState
@@ -1288,23 +1293,21 @@ namespace NexusForever.Game.Entity
                 removedSpell4Ids.Add(removal.Spell4Id);
             }
 
-            foreach (KeyValuePair<Property, Dictionary<uint, ISpellPropertyModifier>> property in spellProperties.ToArray())
+            foreach (KeyValuePair<Property, Dictionary<uint, SpellPropertyState>> property in spellProperties.ToArray())
             {
                 bool propertyChanged = false;
-                foreach (uint spell4Id in property.Value.Keys.ToArray())
+                foreach (KeyValuePair<uint, SpellPropertyState> state in property.Value.ToArray())
                 {
-                    if (!CanRemove(spell4Id))
+                    if (!CanRemove(state.Value.Spell4Id))
                         continue;
 
-                    property.Value.Remove(spell4Id);
+                    property.Value.Remove(state.Key);
                     propertyChanged = true;
                     AddRemoval(new SpellStateRemoval(
                         SpellStateRemovalKind.PropertyModifier,
-                        spell4Id,
-                        spellPropertyCastingIds.GetValueOrDefault(spell4Id)));
-
-                    if (!HasAnySpellProperties(spell4Id))
-                        spellPropertyCastingIds.Remove(spell4Id);
+                        state.Value.Spell4Id,
+                        state.Value.CastingId,
+                        state.Key));
 
                 }
 
@@ -1587,45 +1590,49 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
-        /// Add a <see cref="Property"/> modifier given a Spell4Id and <see cref="ISpellPropertyModifier"/> instance.
+        /// Add a <see cref="Property"/> modifier owned by a concrete spell effect instance.
         /// </summary>
-        public void AddSpellModifierProperty(ISpellPropertyModifier spellModifier, uint spell4Id, uint castingId)
+        public void AddSpellModifierProperty(ISpellPropertyModifier spellModifier, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId)
         {
-            if (spellProperties.TryGetValue(spellModifier.Property, out Dictionary<uint, ISpellPropertyModifier> spellDict))
+            if (!spellProperties.TryGetValue(spellModifier.Property, out Dictionary<uint, SpellPropertyState> spellDict))
             {
-                if (spellDict.ContainsKey(spell4Id))
-                    spellDict[spell4Id] = spellModifier;
-                else
-                    spellDict.Add(spell4Id, spellModifier);
-            }
-            else
-            {
-                spellProperties.Add(spellModifier.Property, new Dictionary<uint, ISpellPropertyModifier>
-                {
-                    { spell4Id, spellModifier }
-                });
+                spellDict = new Dictionary<uint, SpellPropertyState>();
+                spellProperties.Add(spellModifier.Property, spellDict);
             }
 
-            spellPropertyCastingIds[spell4Id] = castingId;
+            foreach (KeyValuePair<uint, SpellPropertyState> state in spellDict.ToArray())
+            {
+                if (state.Value.Spell4Id == spell4Id && state.Value.EffectEntryId == spell4EffectId)
+                    spellDict.Remove(state.Key);
+            }
+
+            spellDict[effectId] = new SpellPropertyState
+            {
+                Spell4Id      = spell4Id,
+                CastingId     = castingId,
+                EffectEntryId = spell4EffectId,
+                Modifier      = spellModifier
+            };
+
             CalculateProperty(spellModifier.Property);
         }
 
         /// <summary>
-        /// Remove a <see cref="Property"/> modifier by a Spell that is currently affecting this <see cref="IUnitEntity"/>.
+        /// Remove a <see cref="Property"/> modifier by a concrete spell effect instance that is currently affecting this <see cref="IUnitEntity"/>.
         /// </summary>
-        public void RemoveSpellProperty(Property property, uint spell4Id)
+        public bool RemoveSpellProperty(Property property, uint effectId)
         {
-            if (spellProperties.TryGetValue(property, out Dictionary<uint, ISpellPropertyModifier> spellDict))
-            {
-                spellDict.Remove(spell4Id);
-                if (spellDict.Count == 0)
-                    spellProperties.Remove(property);
-            }
+            if (!spellProperties.TryGetValue(property, out Dictionary<uint, SpellPropertyState> spellDict))
+                return false;
 
-            if (!HasAnySpellProperties(spell4Id))
-                spellPropertyCastingIds.Remove(spell4Id);
+            if (!spellDict.Remove(effectId))
+                return false;
+
+            if (spellDict.Count == 0)
+                spellProperties.Remove(property);
 
             CalculateProperty(property);
+            return true;
         }
 
         /// <summary>
@@ -1633,12 +1640,30 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public bool RemoveSpellProperties(uint spell4Id)
         {
-            List<Property> propertiesWithSpell = spellProperties.Where(i => i.Value.ContainsKey(spell4Id)).Select(p => p.Key).ToList();
+            bool removed = false;
+            foreach (KeyValuePair<Property, Dictionary<uint, SpellPropertyState>> property in spellProperties.ToArray())
+            {
+                bool propertyChanged = false;
+                foreach (KeyValuePair<uint, SpellPropertyState> state in property.Value.ToArray())
+                {
+                    if (state.Value.Spell4Id != spell4Id)
+                        continue;
 
-            foreach (Property property in propertiesWithSpell)
-                RemoveSpellProperty(property, spell4Id);
+                    property.Value.Remove(state.Key);
+                    propertyChanged = true;
+                }
 
-            return propertiesWithSpell.Count > 0;
+                if (property.Value.Count == 0)
+                    spellProperties.Remove(property.Key);
+
+                if (!propertyChanged)
+                    continue;
+
+                removed = true;
+                CalculateProperty(property.Key);
+            }
+
+            return removed;
         }
 
         /// <summary>
@@ -1646,12 +1671,9 @@ namespace NexusForever.Game.Entity
         /// </summary>
         private IEnumerable<ISpellPropertyModifier> GetSpellPropertyModifiers(Property property)
         {
-            return spellProperties.ContainsKey(property) ? spellProperties[property].Values : Enumerable.Empty<ISpellPropertyModifier>();
-        }
-
-        private bool HasAnySpellProperties(uint spell4Id)
-        {
-            return spellProperties.Values.Any(spellDict => spellDict.ContainsKey(spell4Id));
+            return spellProperties.TryGetValue(property, out Dictionary<uint, SpellPropertyState> spellDict)
+                ? spellDict.Values.Select(state => state.Modifier)
+                : Enumerable.Empty<ISpellPropertyModifier>();
         }
 
         protected override void CalculatePropertyValue(IPropertyValue propertyValue)

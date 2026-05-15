@@ -10,6 +10,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.Entity.Movement.Command.State;
+using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -45,6 +46,8 @@ namespace NexusForever.Game.Spell
         private readonly List<ISpellTargetInfo> targets = new();
         private readonly List<ITelegraph> telegraphs = new();
         private readonly List<PendingSpellGoEffect> pendingSpellGoEffects = new();
+        private readonly Dictionary<ISpellTargetEffectInfo, ISpellEvent> lifetimeEvents = new();
+        private readonly HashSet<(uint TargetId, uint EffectEntryId)> terminatedPersistentEffects = new();
 
         private readonly ISpellEventManager events = new SpellEventManager();
 
@@ -77,6 +80,7 @@ namespace NexusForever.Game.Spell
             scriptCollection.Invoke<IUpdate>(s => s.Update(lastTick));
 
             events.Update(lastTick);
+            UpdatePersistence();
 
             if (status == SpellStatus.Executing && !events.HasPendingEvent)
             {
@@ -231,7 +235,18 @@ namespace NexusForever.Game.Spell
 
         private CastResult CheckPrimaryTargetValidMask(IUnitEntity target)
         {
-            return CheckTargetLivingState(target);
+            CastResult result = CheckTargetLivingState(target);
+            if (result != CastResult.Ok)
+                return result;
+
+            return IsHostileToTarget(target) && UnitStateSetRules.TryGetHostileEffectImmuneState(target, out _)
+                ? CastResult.TargetInvulnerable
+                : CastResult.Ok;
+        }
+
+        private bool IsHostileToTarget(IUnitEntity target)
+        {
+            return Caster.GetDispositionTo(target.Faction1) < Disposition.Friendly;
         }
 
         private CastResult CheckTargetLivingState(IUnitEntity target)
@@ -319,6 +334,57 @@ namespace NexusForever.Game.Spell
                     return true;
 
             return false;
+        }
+
+        private void UpdatePersistence()
+        {
+            if (status != SpellStatus.Executing)
+                return;
+
+            foreach (SpellTargetInfo targetInfo in targets.OfType<SpellTargetInfo>())
+            {
+                foreach (ISpellTargetEffectInfo info in targetInfo.Effects.ToArray())
+                {
+                    if (info.DropEffect || info.LifetimeEnded)
+                        continue;
+
+                    SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(info.Entry);
+                    if (!HasPersistencePrerequisites(effect) || MeetsPersistencePrerequisites(effect, targetInfo.Entity))
+                        continue;
+
+                    terminatedPersistentEffects.Add((targetInfo.Entity.Guid, effect.Entry.Id));
+                    CancelLifetimeEvent(info);
+                    if (!TryRemoveActiveEffect(effect, targetInfo.Entity, info))
+                        info.LifetimeEnded = true;
+                }
+            }
+        }
+
+        private bool HasPersistencePrerequisites(SpellEffectInterpretation effect)
+        {
+            return Parameters.SpellInfo.CasterPersistencePrerequisites != null
+                || Parameters.SpellInfo.TargetPersistencePrerequisites != null
+                || effect.Entry.PrerequisiteIdCasterPersistence != 0u
+                || effect.Entry.PrerequisiteIdTargetPersistence != 0u;
+        }
+
+        private bool MeetsPersistencePrerequisites(SpellEffectInterpretation effect, IUnitEntity target)
+        {
+            return MeetsPersistencePrerequisite(Parameters.SpellInfo.CasterPersistencePrerequisites, Caster)
+                && MeetsPersistencePrerequisite(Parameters.SpellInfo.TargetPersistencePrerequisites, target)
+                && MeetsPersistencePrerequisite(GameTableManager.Instance.Prerequisite.GetEntry(effect.Entry.PrerequisiteIdCasterPersistence), Caster)
+                && MeetsPersistencePrerequisite(GameTableManager.Instance.Prerequisite.GetEntry(effect.Entry.PrerequisiteIdTargetPersistence), target);
+        }
+
+        private static bool MeetsPersistencePrerequisite(PrerequisiteEntry prerequisite, IUnitEntity entity)
+        {
+            if (prerequisite == null)
+                return true;
+
+            if (entity is not IPlayer player)
+                return true;
+
+            return PrerequisiteManager.Instance.Meets(player, prerequisite.Id);
         }
 
         private CastResult CheckCCConditions()
@@ -868,6 +934,9 @@ namespace NexusForever.Game.Spell
             bool executed = false;
             foreach (SpellTargetInfo effectTarget in effectTargets)
             {
+                if (terminatedPersistentEffects.Contains((effectTarget.Entity.Guid, effect.Entry.Id)))
+                    continue;
+
                 var info = new SpellTargetInfo.SpellTargetEffectInfo(effectId, effect.Entry);
                 effectTarget.Effects.Add(info);
                 pendingSpellGoEffects.Add(new PendingSpellGoEffect(effectTarget, info));
@@ -910,6 +979,26 @@ namespace NexusForever.Game.Spell
                     continue;
                 }
 
+                if (IsHostileToTarget(effectTarget.Entity)
+                    && UnitStateSetRules.TryGetHostileEffectImmuneState(effectTarget.Entity, out uint blockingStateId))
+                {
+                    info.DropEffect = true;
+                    info.AddCombatLog(new CombatLogImmune
+                    {
+                        CastData = new CombatLogCastData
+                        {
+                            CasterId     = Caster.Guid,
+                            TargetId     = effectTarget.Entity.Guid,
+                            SpellId      = Parameters.SpellInfo.Entry.Id,
+                            CombatResult = CombatResult.Hit
+                        }
+                    });
+                    SpellEffectDiagnostics.TraceUnitStateImmuneBlocked(this, effectTarget.Entity, effect, blockingStateId);
+                    SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
+                    executed = true;
+                    continue;
+                }
+
                 // TODO: if there is an unhandled exception in the handler, there will be an infinite loop on Execute()
                 handler.Invoke(this, effectTarget.Entity, info);
                 ScheduleEffectLifetime(effect, effectTarget.Entity, info);
@@ -926,55 +1015,89 @@ namespace NexusForever.Game.Spell
             if (durationTime == 0u)
                 return;
 
+            Action removalAction = BuildLifetimeRemovalAction(effect, target, info);
+            if (removalAction == null)
+                return;
+
+            SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+
+            var lifetimeEvent = new SpellEvent(durationTime / 1000d, () =>
+            {
+                lifetimeEvents.Remove(info);
+                TryRemoveActiveEffect(effect, target, info);
+            });
+
+            lifetimeEvents[info] = lifetimeEvent;
+            events.EnqueueEvent(lifetimeEvent);
+        }
+
+        private void CancelLifetimeEvent(ISpellTargetEffectInfo info)
+        {
+            if (!lifetimeEvents.TryGetValue(info, out ISpellEvent lifetimeEvent))
+                return;
+
+            lifetimeEvents.Remove(info);
+            events.CancelEvent(lifetimeEvent);
+        }
+
+        private bool TryRemoveActiveEffect(SpellEffectInterpretation effect, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            if (info.LifetimeEnded)
+                return false;
+
+            Action removalAction = BuildLifetimeRemovalAction(effect, target, info);
+            if (removalAction == null)
+                return false;
+
+            info.LifetimeEnded = true;
+            removalAction();
+            return true;
+        }
+
+        private Action BuildLifetimeRemovalAction(SpellEffectInterpretation effect, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
             switch (effect.Entry.EffectType)
             {
                 case SpellEffectType.UnitPropertyModifier:
                     if (effect.UnitPropertyModifier == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
-                        target.RemoveSpellProperty(effect.UnitPropertyModifier.Property, Parameters.SpellInfo.Entry.Id);
-                        SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                        if (target.RemoveSpellProperty(effect.UnitPropertyModifier.Property, info.EffectId))
+                            SendRemoveBuff(target.Guid);
+                    };
                 case SpellEffectType.PersonalDmgHealMod:
                     if (effect.PersonalDmgHealMod == null)
-                        return;
+                        return null;
 
                     if (!SpellHandler.TryResolvePersonalDmgHealModProperty(effect.PersonalDmgHealMod, out Property personalProperty, out _))
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
-                        target.RemoveSpellProperty(personalProperty, Parameters.SpellInfo.Entry.Id);
-                        SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                        if (target.RemoveSpellProperty(personalProperty, info.EffectId))
+                            SendRemoveBuff(target.Guid);
+                    };
                 case SpellEffectType.CCStateSet:
                     if (effect.CCState == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         if (target.RemoveCCState(effect.CCState.State, info.EffectId))
                             SendCCStateRemove(target.Guid, effect.CCState.State, info.EffectId);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.ModifyInterruptArmor:
                     if (effect.ModifyInterruptArmor == null)
-                        return;
+                        return null;
 
                     uint interruptArmorAmount = info.CombatLogs.OfType<CombatLogModifyInterruptArmor>().LastOrDefault()?.Amount
                         ?? effect.ModifyInterruptArmor.Amount;
                     if (interruptArmorAmount == 0u)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         uint removedAmount = Math.Min(target.InterruptArmor, interruptArmorAmount);
                         target.InterruptArmor -= removedAmount;
@@ -982,137 +1105,117 @@ namespace NexusForever.Game.Spell
 
                         if (removedAmount > 0u)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.Absorption:
                     if (effect.Absorption == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         uint removedAmount = target.RemoveAbsorption(info.EffectId);
                         SpellEffectDiagnostics.TraceAbsorption(this, target, effect.Absorption, removedAmount, true);
 
                         if (removedAmount > 0u)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.HealingAbsorption:
                     if (effect.HealingAbsorption == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         uint removedAmount = target.RemoveHealingAbsorption(info.EffectId);
                         SpellEffectDiagnostics.TraceHealingAbsorption(this, target, effect.HealingAbsorption, removedAmount, true);
 
                         if (removedAmount > 0u)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.DelayDeath:
                     if (effect.DelayDeath == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveDelayDeath(info.EffectId);
                         SpellEffectDiagnostics.TraceDelayDeath(this, target, effect.DelayDeath, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.Proc:
                     if (effect.Proc == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveProc(info.EffectId);
                         SpellEffectDiagnostics.TraceProc(this, target, effect.Proc, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.ClampVital:
                     if (effect.ClampVital == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveVitalClamp(info.EffectId);
                         SpellEffectDiagnostics.TraceClampVital(this, target, effect.ClampVital, Vital.Health, target.Health, target.Health, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.ShieldOverload:
                     if (effect.ShieldOverload == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveShieldOverload(info.EffectId);
                         SpellEffectDiagnostics.TraceShieldOverload(this, target, effect.ShieldOverload, target.Shield, target.Shield, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.UnitStateSet:
                     if (effect.UnitStateSet == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveUnitState(info.EffectId);
                         SpellEffectDiagnostics.TraceUnitStateSet(this, target, effect.UnitStateSet, false, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.SetBusy:
                     if (effect.SetBusy == null || !effect.SetBusy.Busy)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveBusy(info.EffectId);
                         SpellEffectDiagnostics.TraceSetBusy(this, target, effect.SetBusy, removed, false, removed, removed ? 1u : 0u, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.ForcedMove:
                     if (effect.ForcedMove == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         target.MovementManager.SetVelocity(Vector3.Zero, false);
                         target.MovementManager.SetState(target.MovementManager.GetState() & ~StateFlags.Velocity);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.Stealth:
                     if (effect.Stealth == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         if (!target.RemoveStealth(info.EffectId))
                             return;
@@ -1124,134 +1227,116 @@ namespace NexusForever.Game.Spell
                         }
 
                         SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.AggroImmune:
                     if (effect.AggroImmune == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         if (target.RemoveAggroImmune(info.EffectId))
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.SpellEffectImmunity:
                     if (effect.SpellEffectImmunity == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveSpellEffectImmunity(info.EffectId);
                         SpellEffectDiagnostics.TraceSpellEffectImmunity(this, target, effect.SpellEffectImmunity, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.SpellImmunity:
                     if (effect.SpellImmunity == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveSpellImmunity(info.EffectId);
                         SpellEffectDiagnostics.TraceSpellImmunity(this, target, effect.SpellImmunity, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.Scale:
                     if (effect.Scale == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveScale(info.EffectId);
                         SpellEffectDiagnostics.TraceScale(this, target, effect.Scale, 0f, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.FactionSet:
                     if (effect.FactionSet == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveFaction(info.EffectId);
                         SpellEffectDiagnostics.TraceFactionSet(this, target, effect.FactionSet, 0u, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.ItemVisualSwap:
                     if (effect.ItemVisualSwap == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveItemVisualSwap(info.EffectId);
                         SpellEffectDiagnostics.TraceItemVisualSwap(this, target, effect.ItemVisualSwap, false, removed ? null : "restore-missing");
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.DisguiseOutfit:
                     if (effect.DisguiseOutfit == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveDisguiseOutfit(info.EffectId);
                         SpellEffectDiagnostics.TraceDisguiseOutfit(this, target, effect.DisguiseOutfit, 0, false, false, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.MimicDisguise:
                     if (effect.MimicDisguise == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         bool removed = target.RemoveMimicDisguise(info.EffectId);
                         SpellEffectDiagnostics.TraceMimicDisguise(this, target, effect.MimicDisguise, Caster.Guid, 0u, 0, 0u, 0, false, false, false, removed, null);
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.RewardPropertyModifier:
                     if (effect.RewardPropertyModifier == null)
-                        return;
+                        return null;
 
                     IPlayer rewardPlayer = target as IPlayer ?? Caster as IPlayer;
                     if (rewardPlayer == null)
-                        return;
+                        return null;
 
                     if (!SpellHandler.TryResolveRewardPropertyModifier(
                         effect.RewardPropertyModifier,
                         out RewardPropertyEntry rewardPropertyEntry,
                         out float rewardPropertyValue,
                         out _))
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         rewardPlayer.Account.RewardPropertyManager.UpdateRewardProperty(
                             rewardPropertyEntry,
@@ -1259,43 +1344,38 @@ namespace NexusForever.Game.Spell
                             effect.RewardPropertyModifier.Data);
                         SpellEffectDiagnostics.TraceRewardPropertyModifier(this, target, effect.RewardPropertyModifier, rewardPlayer.Guid, -rewardPropertyValue, false, true, null);
                         SendRemoveBuff(target.Guid);
-                    }));
-                    break;
+                    };
                 case SpellEffectType.SummonCreature:
                     if (effect.SummonCreature == null || info.CreatedEntities.Count == 0)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         foreach (IGridEntity entity in info.CreatedEntities)
                         {
                             if (entity.InWorld)
                                 entity.RemoveFromMap();
                         }
-                    }));
-                    break;
+                    };
                 case SpellEffectType.SummonTrap:
                     if (effect.SummonTrap == null || info.CreatedEntities.Count == 0)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () =>
+                    return () =>
                     {
                         foreach (IGridEntity entity in info.CreatedEntities)
                         {
                             if (entity.InWorld)
                                 entity.RemoveFromMap();
                         }
-                    }));
-                    break;
+                    };
                 case SpellEffectType.NpcExecutionDelay:
                     if (effect.NpcExecutionDelay == null)
-                        return;
+                        return null;
 
-                    SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
-                    events.EnqueueEvent(new SpellEvent(durationTime / 1000d, () => { }));
-                    break;
+                    return () => { };
+                default:
+                    return null;
             }
         }
 

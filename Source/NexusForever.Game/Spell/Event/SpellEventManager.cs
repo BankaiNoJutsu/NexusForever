@@ -26,6 +26,11 @@ namespace NexusForever.Game.Spell.Event
             events.Add(spellEvent);
         }
 
+        public void CancelEvent(ISpellEvent spellEvent)
+        {
+            events.Remove(spellEvent);
+        }
+
         public void CancelEvents()
         {
             events.Clear();

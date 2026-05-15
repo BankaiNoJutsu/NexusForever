@@ -3105,7 +3105,7 @@ namespace NexusForever.Game.Spell
                 personalMod.Multiplier,
                 0f,
                 0f);
-            target.AddSpellModifierProperty(modifier, spell.Parameters.SpellInfo.Entry.Id, spell.CastingId);
+            target.AddSpellModifierProperty(modifier, info.EffectId, spell.Parameters.SpellInfo.Entry.Id, info.Entry.Id, spell.CastingId);
 
             SpellEffectDiagnostics.TracePersonalDmgHealMod(spell, target, personalMod, property, true, null);
         }
@@ -3124,7 +3124,7 @@ namespace NexusForever.Game.Spell
                     propertyModifier.PercentageValue,
                     propertyModifier.FlatValue,
                     propertyModifier.LevelScaleValue);
-            target.AddSpellModifierProperty(modifier, spell.Parameters.SpellInfo.Entry.Id, spell.CastingId);
+            target.AddSpellModifierProperty(modifier, info.EffectId, spell.Parameters.SpellInfo.Entry.Id, info.Entry.Id, spell.CastingId);
 
             // Timed removal is scheduled centrally by Spell after the handler succeeds.
         }
