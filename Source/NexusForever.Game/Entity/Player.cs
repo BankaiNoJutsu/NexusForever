@@ -30,10 +30,12 @@ using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Option;
+using NexusForever.Game.Static.Pvp;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
+using NexusForever.Game.Pvp;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Internal;
@@ -46,6 +48,7 @@ using NexusForever.Network.World.Message.Model.Abilities;
 using NexusForever.Network.World.Message.Model.Chat;
 using NexusForever.Network.World.Message.Model.Info;
 using NexusForever.Network.World.Message.Model.Pregame;
+using NexusForever.Network.World.Message.Model.Pvp;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script;
@@ -133,6 +136,8 @@ namespace NexusForever.Game.Entity
             }
         }
         private CharacterFlag flags;
+
+        public PvPFlag PvPFlag { get; private set; } = PvPFlag.Disabled;
 
         public Path Path
         {
@@ -612,7 +617,7 @@ namespace NexusForever.Game.Entity
                     .ToList(),
                 GuildName = GuildManager.GuildAffiliation?.Name,
                 GuildType = GuildManager.GuildAffiliation?.Type ?? GuildType.None,
-                PvPFlag   = PvPFlag.Disabled,
+                PvPFlag   = PvPFlag,
 
                 // We use Group 1 as the "dominant group"
                 GroupId   = GroupAssociation
@@ -777,6 +782,7 @@ namespace NexusForever.Game.Entity
             MailManager.SendInitialPackets();
             ZoneMapManager.SendInitialPackets();
             Account.CurrencyManager.SendInitialPackets();
+            Account.InventoryManager.SendInitialPackets();
             QuestManager.SendInitialPackets();
             AchievementManager.SendInitialPackets(null);
             Account.RewardPropertyManager.SendInitialPackets();
@@ -1365,6 +1371,30 @@ namespace NexusForever.Game.Entity
             });
         }
 
+        public void SetPvPFlag(PvPFlag flag)
+        {
+            PvPFlag = flag & (PvPFlag.Enabled | PvPFlag.Forced);
+
+            EnqueueToVisible(new ServerUnitPvpStateChange
+            {
+                UnitId = Guid,
+                State  = GetPvpState()
+            }, true);
+        }
+
+        private PvpState GetPvpState()
+        {
+            PvpState state = 0;
+
+            if ((PvPFlag & PvPFlag.Enabled) != 0)
+                state |= PvpState.PvpOn;
+
+            if ((PvPFlag & PvPFlag.Forced) != 0)
+                state |= PvpState.Forced;
+
+            return state;
+        }
+
         /// <summary>
         /// Add or update <see cref="IItemVisual"/>.
         /// </summary>
@@ -1470,9 +1500,18 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public override bool CanAttack(IUnitEntity target)
         {
-            // TODO: Disable when PvP is available.
-            if (target is IPlayer)
-                return false;
+            if (target is IPlayer playerTarget)
+            {
+                if (!DuelManager.Instance.AreDueling(this, playerTarget))
+                    return false;
+
+                return IsAlive
+                    && target.IsAlive
+                    && !IsAggroImmune
+                    && !target.IsAggroImmune
+                    && IsValidAttackTarget()
+                    && target.IsValidAttackTarget();
+            }
 
             return base.CanAttack(target);
         }
@@ -1501,6 +1540,9 @@ namespace NexusForever.Game.Entity
 
             if (Health > 0 && DeathState != null)
                 OnResurrection(source);
+
+            if (!IsAlive && source is IPlayer player)
+                DuelManager.Instance.TryFinishDefeat(this, player);
         }
 
         protected override void OnDeath()

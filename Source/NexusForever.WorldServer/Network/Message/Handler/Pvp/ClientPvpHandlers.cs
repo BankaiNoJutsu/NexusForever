@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Pvp;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Pvp;
 using NexusForever.Network.Message;
@@ -11,10 +12,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
     public class ClientDuelInitateHandler : IMessageHandler<IWorldSession, ClientDuelInitate>
     {
         private readonly ILogger<ClientDuelInitateHandler> log;
+        private readonly IDuelManager duelManager;
 
-        public ClientDuelInitateHandler(ILogger<ClientDuelInitateHandler> log)
+        public ClientDuelInitateHandler(
+            ILogger<ClientDuelInitateHandler> log,
+            IDuelManager duelManager)
         {
-            this.log = log;
+            this.log         = log;
+            this.duelManager = duelManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientDuelInitate duelInitiate)
@@ -27,11 +32,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
                 return;
             }
 
-            DuelFailureReason? failureReason = GetDuelPreflightFailure(session.Player, target);
-            log.LogDebug("Rejecting unsupported duel initiate from player {PlayerGuid} to player {TargetGuid}: reason {Reason}.",
-                session.Player.Guid, target.Guid, failureReason ?? DuelFailureReason.CannotDuelRightNow);
+            DuelFailureReason? failureReason = duelManager.Initiate(session.Player, target);
+            if (failureReason.HasValue)
+            {
+                log.LogDebug("Rejecting duel initiate from player {PlayerGuid} to player {TargetGuid}: reason {Reason}.",
+                    session.Player.Guid, target.Guid, failureReason);
 
-            SendFailure(session, failureReason ?? DuelFailureReason.CannotDuelRightNow);
+                SendFailure(session, failureReason.Value);
+                return;
+            }
+
+            log.LogDebug("Started duel challenge from player {PlayerGuid} to player {TargetGuid}.",
+                session.Player.Guid, target.Guid);
         }
 
         private static IPlayer GetSelectedPlayer(IPlayer player)
@@ -41,26 +53,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
 
             IPlayer target = player.GetVisible<IPlayer>(player.TargetGuid.Value);
             return target?.Guid == player.Guid ? null : target;
-        }
-
-        private static DuelFailureReason? GetDuelPreflightFailure(IPlayer player, IPlayer target)
-        {
-            if (!player.IsAlive)
-                return DuelFailureReason.YouCannotDuelWhileDead;
-
-            if (!target.IsAlive)
-                return DuelFailureReason.CannotDuelDeadPlayer;
-
-            if (target.HasFlag(CharacterFlag.IgnoreDuelRequests))
-                return DuelFailureReason.PlayerIsIgnoringDuels;
-
-            if (player.InCombat)
-                return DuelFailureReason.YouAreInCombat;
-
-            if (target.InCombat)
-                return DuelFailureReason.PlayerIsInCombat;
-
-            return null;
         }
 
         private static void SendFailure(IWorldSession session, DuelFailureReason reason)
@@ -75,45 +67,84 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
     public class ClientDuelAcceptHandler : IMessageHandler<IWorldSession, ClientDuelAccept>
     {
         private readonly ILogger<ClientDuelAcceptHandler> log;
+        private readonly IDuelManager duelManager;
 
-        public ClientDuelAcceptHandler(ILogger<ClientDuelAcceptHandler> log)
+        public ClientDuelAcceptHandler(
+            ILogger<ClientDuelAcceptHandler> log,
+            IDuelManager duelManager)
         {
-            this.log = log;
+            this.log         = log;
+            this.duelManager = duelManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientDuelAccept duelAccept)
         {
-            log.LogDebug("Ignoring unsupported duel accept request from player {PlayerGuid}.", session.Player?.Guid);
+            DuelFailureReason? failureReason = duelManager.Accept(session.Player);
+            if (failureReason.HasValue)
+            {
+                session.EnqueueMessageEncrypted(new ServerDuelFailure
+                {
+                    Reason = failureReason.Value
+                });
+
+                log.LogDebug("Rejecting duel accept request from player {PlayerGuid}: reason {Reason}.",
+                    session.Player?.Guid, failureReason);
+                return;
+            }
+
+            log.LogDebug("Accepted duel request for player {PlayerGuid}.", session.Player?.Guid);
         }
     }
 
     public class ClientDuelDeclineHandler : IMessageHandler<IWorldSession, ClientDuelDecline>
     {
         private readonly ILogger<ClientDuelDeclineHandler> log;
+        private readonly IDuelManager duelManager;
 
-        public ClientDuelDeclineHandler(ILogger<ClientDuelDeclineHandler> log)
+        public ClientDuelDeclineHandler(
+            ILogger<ClientDuelDeclineHandler> log,
+            IDuelManager duelManager)
         {
-            this.log = log;
+            this.log         = log;
+            this.duelManager = duelManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientDuelDecline duelDecline)
         {
-            log.LogDebug("Ignoring unsupported duel decline request from player {PlayerGuid}.", session.Player?.Guid);
+            if (!duelManager.Decline(session.Player))
+            {
+                log.LogDebug("Ignoring duel decline request without pending duel from player {PlayerGuid}.",
+                    session.Player?.Guid);
+                return;
+            }
+
+            log.LogDebug("Declined duel request for player {PlayerGuid}.", session.Player?.Guid);
         }
     }
 
     public class ClientDuelForfeitHandler : IMessageHandler<IWorldSession, ClientDuelForfeit>
     {
         private readonly ILogger<ClientDuelForfeitHandler> log;
+        private readonly IDuelManager duelManager;
 
-        public ClientDuelForfeitHandler(ILogger<ClientDuelForfeitHandler> log)
+        public ClientDuelForfeitHandler(
+            ILogger<ClientDuelForfeitHandler> log,
+            IDuelManager duelManager)
         {
-            this.log = log;
+            this.log         = log;
+            this.duelManager = duelManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientDuelForfeit duelForfeit)
         {
-            log.LogDebug("Ignoring unsupported duel forfeit request from player {PlayerGuid}.", session.Player?.Guid);
+            if (!duelManager.Forfeit(session.Player))
+            {
+                log.LogDebug("Ignoring duel forfeit request without active duel from player {PlayerGuid}.",
+                    session.Player?.Guid);
+                return;
+            }
+
+            log.LogDebug("Forfeited duel for player {PlayerGuid}.", session.Player?.Guid);
         }
     }
 
@@ -152,7 +183,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
 
         public void HandleMessage(IWorldSession session, ClientPvpToggleFlags pvpToggleFlags)
         {
-            log.LogDebug("Ignoring unsupported PvP flag toggle from player {PlayerGuid}: value {Value}.",
+            if (session.Player == null)
+                return;
+
+            PvPFlag pvpFlag = session.Player.PvPFlag & PvPFlag.Forced;
+            if (pvpToggleFlags.Value)
+                pvpFlag |= PvPFlag.Enabled;
+
+            session.Player.SetPvPFlag(pvpFlag);
+            if (!pvpToggleFlags.Value)
+                session.EnqueueMessageEncrypted(new ServerPvpCooldownClear());
+
+            log.LogDebug("Updated PvP flag toggle for player {PlayerGuid}: value {Value}.",
                 session.Player?.Guid, pvpToggleFlags.Value);
         }
     }

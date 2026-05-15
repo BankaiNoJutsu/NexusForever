@@ -8,9 +8,12 @@ using NexusForever.Database.Configuration.Model;
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Chat.Format;
+using NexusForever.Game.Abstract.ICComm;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.Matching.Queue;
+using NexusForever.Game.Abstract.Pvp;
 using NexusForever.Game.Abstract.PublicEvent;
+using NexusForever.Game.Abstract.Trade;
 using NexusForever.Game.Achievement;
 using NexusForever.Game.Character;
 using NexusForever.Game.Cinematic;
@@ -52,6 +55,9 @@ namespace NexusForever.WorldServer.Service
         private readonly IMessageManager messageManager;
         private readonly IMatchingManager matchingManager;
         private readonly IMatchManager matchManager;
+        private readonly IDuelManager duelManager;
+        private readonly IICCommManager icCommManager;
+        private readonly ITradeManager tradeManager;
         private readonly IPublicEventTemplateManager publicEventManager;
         private readonly ICreatureInfoManager creatureInfoManager;
         private readonly IChatFormatManager chatFormatManager;
@@ -66,6 +72,9 @@ namespace NexusForever.WorldServer.Service
             IMessageManager messageManager,
             IMatchingManager matchingManager,
             IMatchManager matchManager,
+            IDuelManager duelManager,
+            IICCommManager icCommManager,
+            ITradeManager tradeManager,
             IPublicEventTemplateManager publicEventManager,
             ICreatureInfoManager creatureInfoManager,
             IChatFormatManager chatFormatManager,
@@ -81,6 +90,9 @@ namespace NexusForever.WorldServer.Service
             this.messageManager     = messageManager;
             this.matchingManager    = matchingManager;
             this.matchManager       = matchManager;
+            this.duelManager        = duelManager;
+            this.icCommManager      = icCommManager;
+            this.tradeManager       = tradeManager;
             this.publicEventManager = publicEventManager;
             this.creatureInfoManager = creatureInfoManager;
             this.chatFormatManager  = chatFormatManager;
@@ -162,6 +174,9 @@ namespace NexusForever.WorldServer.Service
                 loginQueueManager.Update(lastTick);
                 matchingManager.Update(lastTick);
                 matchManager.Update(lastTick);
+                duelManager.Update(lastTick);
+                icCommManager.Update(lastTick);
+                tradeManager.Update(lastTick);
 
                 scriptManager.Update(lastTick);
 

@@ -1,5 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.ICComm;
+using NexusForever.Game.Abstract.Pvp;
+using NexusForever.Game.Abstract.Trade;
 using NexusForever.Game.Achievement;
 using NexusForever.Game.Character;
 using NexusForever.Game.Chat;
@@ -9,9 +12,11 @@ using NexusForever.Game.Customisation;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Guild;
 using NexusForever.Game.Housing;
+using NexusForever.Game.ICComm;
 using NexusForever.Game.Map;
 using NexusForever.Game.Matching;
 using NexusForever.Game.Prerequisite;
+using NexusForever.Game.Pvp;
 using NexusForever.Game.PublicEvent;
 using NexusForever.Game.Quest;
 using NexusForever.Game.RBAC;
@@ -20,6 +25,7 @@ using NexusForever.Game.Server;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Storefront;
 using NexusForever.Game.Story;
+using NexusForever.Game.Trade;
 using NexusForever.Shared;
 
 namespace NexusForever.Game
@@ -35,6 +41,9 @@ namespace NexusForever.Game
             sc.AddSingletonLegacy<IRealmContext, RealmContext>();
             sc.AddSingletonLegacy<IShutdownManager, ShutdownManager>();
             sc.AddSingletonLegacy<IDamageCalculator, DamageCalculator>();
+            sc.AddSingletonLegacy<IDuelManager, DuelManager>();
+            sc.AddSingletonLegacy<IICCommManager, ICCommManager>();
+            sc.AddSingletonLegacy<ITradeManager, TradeManager>();
 
             sc.AddGameAchievement();
             sc.AddGameCharacter();

@@ -28,6 +28,7 @@ namespace NexusForever.Game.Abstract.Entity
         Race Race { get; set; }
         Class Class { get; }
         CharacterFlag Flags { get; set; }
+        PvPFlag PvPFlag { get; }
         Static.PlayerPath.Path Path { get; set; }
         DateTime PathActivatedTime { get; }
         InputSets InputKeySet { get; set; }
@@ -199,6 +200,7 @@ namespace NexusForever.Game.Abstract.Entity
         bool HasFlag(CharacterFlag flag);
 
         void SendCharacterFlagsUpdated();
+        void SetPvPFlag(PvPFlag flag);
 
         /// <summary>
         /// Add a <see cref="Property"/> modifier given a <see cref="ItemSlot"/> and value.
