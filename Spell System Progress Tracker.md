@@ -1,6 +1,6 @@
 # Spell System Progress Tracker
 
-Date: 2026-05-14
+Date: 2026-05-15
 
 This is the working implementation tracker for the global `Spell4` / `Spell4Effects` restoration effort. The detailed evidence lives in:
 
@@ -15,7 +15,7 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 | --- | --- | --- |
 | Structural model | Mostly mapped | `Spell4Base`, concrete `Spell4`, ordered effects, telegraphs, target flags, timing, Jabbithole/world context joins. |
 | Runtime scheduler | Implemented, partial parity | Delay rows and duration-bounded tick rows execute through the spell event queue; duration lifetimes handle known families. |
-| Target acquisition | Partial | Caster, explicit target, telegraph targets, duplicate merge, explicit primary-target range/vertical/facing-angle validation, `Spell4ValidTargets` dead-target bit `0x08`, target/position AOE anchoring from `Spell4TargetMechanics`, selected-target forwarding for player single-target/target-AOE/chain casts, and AOE target count/range/angle filtering are implemented. `targetSelection=4` lowest-health and `5` most-missing-health ordering are wired from named data witnesses. Full target mechanics, non-dead valid-target masks, groups, AOE prerequisites, and remaining preferred-target modes remain. |
+| Target acquisition | Partial | Caster, explicit target, telegraph targets, duplicate merge, explicit primary-target range/vertical/facing-angle validation, `Spell4ValidTargets` dead-target bit `0x08`, target/position AOE anchoring from `Spell4TargetMechanics`, selected-target forwarding for player single-target/target-AOE/chain casts, and AOE target count/range/angle filtering are implemented. All observed `Spell4AoeTargetConstraints.TargetSelection` values `1..5` are now wired: `1` closest, `2` furthest, `3` random, `4` lowest-health, and `5` most-missing-health. Explicit primary targets now resolve through `IWorldEntity`, so valid-target bit `0x02` is enforced for interactable/object targets and the spell core can carry non-unit primary targets through selection, spell-start anchoring, and narrow world-target `Activate`/`Fluff` execution. Full target mechanics, remaining non-corpse valid-target masks, broader world-target effect routing, groups, and AOE prerequisites remain. |
 | Diagnostics | Active | `primary-target-validation`, enriched `target-selection`, `effect-schedule`, `effect-lifetime`, `effect-dispatch`, `effect-result`, `spell-go`, `proc`, `proc-probe`, `ravel-signal`, `player-collection`, `housing-teleport`, `support-stuck`, and family diagnostics are available. |
 | Command fixtures | Active | `/spell inspect4` and `/spell cast4` support concrete `Spell4` work. |
 
@@ -36,7 +36,7 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 | `SetBusy` | Partial | Decodes `DataBits00=1` as set busy and `DataBits00=0` as clear busy, tracks effect-id busy latches, broadcasts/replays busy state, rejects direct activate/interact requests on busy targets, and removes duration-backed busy state; CSI/deferred interaction parity and context-id semantics remain. |
 | `Absorption` | Conservative | Applies formula-backed absorb pools, consumes them before shields, and removes duration-backed pools; damage-type filtering and stat packet parity remain. |
 | `HealingAbsorption` | Conservative | Applies formula-backed healing-absorb pools, consumes incoming health heals before they land, reports absorbed heal amounts, and removes duration-backed pools; shield-heal behavior and packet parity remain. |
-| `ModifyInterruptArmor` | Conservative | `DataBits00` applies interrupt armor and duration rows remove it later; `DataBits01` is preserved as a likely consume/remove-on-interrupt mode pending sniff validation. |
+| `ModifyInterruptArmor` | Conservative | `DataBits00` applies interrupt armor through the bounded interrupt-armor vital path so gains clamp to the target's current `InterruptArmorThreshold`, and duration rows remove it later; `DataBits01` is preserved as a likely consume/remove-on-interrupt mode pending sniff validation. |
 | `ThreatModification` / `ThreatTransfer` | Conservative / Diagnostics | Threat modification handles add, reduce, clear, set, and fixate-like modes through `ThreatManager`; transfer rows decode and trace only pending party/raid semantics. |
 | `UnitPropertyModifier` | Partial | Tracks modifiers by concrete effect instance, refreshes repeated rows from the same spell/effect without letting stale expiry remove the replacement, removes timed modifiers, and rechecks player-scoped spell/effect persistence prerequisites; stack groups, non-player persistence, and exact buff packet parity remain. |
 | `PersonalDmgHealMod` | Conservative | Maps common personal damage/heal modifier codes to existing outgoing damage, incoming damage, and healing multiplier properties; the shared property lifecycle now uses effect-instance cleanup plus player-scoped persistence rechecks, while uncommon codes, non-player persistence, and auxiliary fields remain diagnostic-only. |
@@ -68,7 +68,7 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 | `RavelSignal` | Structural diagnostics | Decodes `DataBits00` as signal mode, `DataBits01` as the likely signal id, preserves remaining payload fields, shows semantics in `/spell inspect4`, and emits `ravel-signal` diagnostics. No receiver/script mutation is implemented yet. |
 | `DespawnUnit` | Conservative | Delayed non-player map removal; non-zero payload modes remain. |
 | `Disembark` | Conservative | Resolves a player target/owner, safely dismounts mounted players through the existing vehicle path, and emits `CombatLogMount`; `DataBits00` reason/mode values remain unnamed. |
-| `Activate` | Partial | Quest activation objective updates; CSI/script/visibility payload behavior remains. |
+| `Activate` | Partial | Quest activation objective updates, world-target `Activate`/`Fluff` execution, and `ClientActivateUnitCast` spell resolution now work for object interactions; CSI/script/visibility payload behavior remains. |
 | `Stealth` / `RemoveStealth` / `AggroImmune` | Conservative | Local state, timed removal, stealth logs, and attackability gate; visibility planes and exact immunity behavior remain. |
 | `Teleport`, housing, support-stuck, and unlock/pet/title handlers | Narrow | Existing `WorldLocation2` teleport behavior, guarded housing recall/escape through the residence map-lock path, `/stuck` suicide through normal death handling, plus guarded dye, mount, pet flair, vanity pet, title grant, and title revoke paths. Vanity pet unlock now sends `ServerUnlockVanityPet`; duplicate/unknown rows are safe no-ops with diagnostics. |
 
@@ -76,7 +76,7 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 
 | Priority | Family / Area | Why It Matters | Next Action |
 | ---: | --- | --- | --- |
-| 1 | Target mechanics and valid target masks | Affects every family and prevents wrong target application. | Decode valid-target categories and remaining `Spell4AoeTargetConstraints.TargetSelection` modes from high-value fixtures before enforcing broad masks. |
+| 1 | Target mechanics and valid target masks | Affects every family and prevents wrong target application. | Decode remaining non-dead valid-target categories and broader world-target effect families beyond the now-wired `0x02` activate slice, then continue on groups and AOE prerequisites. |
 | 2 | `Proc` validation | Conservative runtime now covers 1,747 rows across 1,486 spells, but retail parity still needs proving. | Validate kill, enter-combat, cast, damage, receive-damage, and heal-other fixtures against `proc-probe` and `proc-dispatch` traces; keep unsupported target-data tails diagnostic-only until new evidence lands. |
 | 3 | `RavelSignal` | 5,262 rows; high row count and likely content scripting. | Structural diagnostics are implemented; next blocker is decoding the receiver/script graph that consumes mode/signal/payload values. |
 | 4 | Shield/transference families | Smaller but clear formula semantics. | Validate `HealShields`, `DamageShields`, and `Transference` with shield pot, Warrior/rune, and life-drain fixtures. |
@@ -126,7 +126,9 @@ These families were rechecked against the imported `Spell4Effects` data and loca
 
 ## Last Verified Build
 
-`dotnet build Source\NexusForever.sln --no-restore` passed on 2026-05-14 with known warnings:
+`dotnet build Source\NexusForever.Game\NexusForever.Game.csproj` and `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj` passed on 2026-05-15.
 
-- SharpCompress moderate vulnerability warnings in `NexusForever.MapGenerator`.
-- Existing `Spline.formation` CS0649 warning.
+Known warnings / environment notes:
+
+- Existing `Spline.formation` CS0649 warning in `NexusForever.Game`.
+- Full solution builds are currently noisy/failing when running server processes lock output DLLs, including observed `GroupServer` and `ChatServer` copy targets.

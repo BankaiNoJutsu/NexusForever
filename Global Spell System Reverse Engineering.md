@@ -1,6 +1,6 @@
 # Global Spell System Reverse Engineering
 
-Date: 2026-05-14
+Date: 2026-05-15
 
 This note captures the current structural and behavioral understanding of the WildStar/NexusForever global spell system from three local evidence sources:
 
@@ -275,11 +275,13 @@ Distribution in `spell4effects.targetFlags`:
 
 Client test spell names give high-confidence labels for several target types: `1` single target, `2` self AOE, `3` target AOE, `4` position AOE, and `5` chain target. The runtime now uses only the structurally safe subset of that mapping: player casts forward the selected target for type `1`, `3`, and `5`; type `3` telegraphs anchor on the primary target position when present; and type `4` telegraphs anchor on the supplied spell position or primary-target fallback when available.
 
-Current NexusForever target selection is still partial but now uses more of the client target data. It selects caster, explicit target, and telegraph hits; merges duplicate target entries by unit id; validates explicit primary targets against concrete `Spell4` min/max/vertical range and `Spell4TargetAngle` facing cones; applies the evidenced `Spell4ValidTargets` dead-target bit `0x08` for explicit targets and telegraph candidates; filters telegraph candidates by `Spell4AoeTargetConstraints` min/max range and angle around the resolved AOE origin; applies the AOE target count cap; and orders smart AOE candidates for the evidenced `targetSelection=4` lowest-absolute-health and `targetSelection=5` most-missing-health modes. It then lets effect `targetFlags` filter that set.
+Current NexusForever target selection is still partial but now uses more of the client target data. It selects caster, explicit target, and telegraph hits; merges duplicate target entries by entity id; validates explicit primary targets against concrete `Spell4` min/max/vertical range and `Spell4TargetAngle` facing cones; applies the evidenced `Spell4ValidTargets` dead-target bit `0x08` for explicit targets and telegraph candidates; filters telegraph candidates by `Spell4AoeTargetConstraints` min/max range and angle around the resolved AOE origin; applies the AOE target count cap; and now covers all observed `Spell4AoeTargetConstraints.targetSelection` values `1..5`: closest, furthest, random, lowest-absolute-health, and most-missing-health. Mode `3` is supported by repeated random-target spell names such as `Find Random Target`, `Random Target Selection`, and `Proxy Random TPAE` in the imported client data. It then lets effect `targetFlags` filter that set.
 
-Still-open target acquisition pieces: the full `Spell4TargetMechanics` `targetType/flags` matrix, non-dead `Spell4ValidTargets.targetBitmask` categories, `TargetGroup`, AOE target prerequisites, target apply/suspend prerequisites, phase filters, and remaining preferred-target modes.
+SQL witnesses now also give one safe non-corpse `Spell4ValidTargets` decode: bit `0x02` clusters overwhelmingly on interactable/world-object spells such as `Activating`, `Harvesting`, `Repairing Machinery`, `Collecting Junk`, and `Placing wanted poster`, while composite mask `0x0A` appears on corpse-interaction rows such as `Blood Extractor - Discovery - Targets Corpse`. The runtime now resolves explicit primary targets through `IWorldEntity`, so mask `0x02` is enforced for non-unit interactable/object targets and those targets can flow through selection and packet anchoring. Effect routing on non-unit targets is still intentionally narrow: only world-safe `Activate` and observed no-op `Fluff` rows execute there today.
 
-`Spell4AoeTargetConstraints` is already useful as a safe runtime field. In placed `NonPlayer` context, 731 concrete `Spell4` ids have AOE constraints. Common rows include target caps of 10, 20, 40, and 80 with ranges that line up with telegraph/proxy spell names. High-placement witnesses include `Spell4Id=38478` (target count 10, range 5), `35234` (10, range 60), `77996` (5, range 15), `30999` (10, range 1), and `59523` (10, range 25). Global named witnesses identify `targetSelection=4` as lowest absolute health (`Spell4Id=27181`) and `targetSelection=5` as missing the most health (`Spell4Id=27182`).
+Still-open target acquisition pieces: the full `Spell4TargetMechanics` `targetType/flags` matrix, remaining non-corpse `Spell4ValidTargets.targetBitmask` categories, broader world-target effect routing beyond the implemented `0x02` activate slice, `TargetGroup`, AOE target prerequisites, target apply/suspend prerequisites, and phase filters.
+
+`Spell4AoeTargetConstraints` is already useful as a safe runtime field. In placed `NonPlayer` context, 731 concrete `Spell4` ids have AOE constraints. Common rows include target caps of 10, 20, 40, and 80 with ranges that line up with telegraph/proxy spell names. High-placement witnesses include `Spell4Id=38478` (target count 10, range 5), `35234` (10, range 60), `77996` (5, range 15), `30999` (10, range 1), and `59523` (10, range 25). The imported data uses only target-selection values `1..5`: the local enum names `1/2/3` as closest/furthest/random, global test rows identify `4` as lowest absolute health (`Spell4Id=27181`) and `5` as missing the most health (`Spell4Id=27182`), and many mode-`3` rows explicitly say `Find Random Target`, `Random Target Selection`, or `Proxy Random TPAE`.
 
 ## Telegraph Evidence
 
@@ -728,9 +730,9 @@ The runtime now emits `SpellDiagnostics despawn-unit` and calls `RemoveFromMap()
 
 Most rows are payload-light. The top `DataBits00..05` shape is all zero, with 2,566 rows across 2,563 spells. The next common shapes are `703,200,0,0,0,0` (27 rows), `5,0,0,0,0,0` (18 rows), `3,31220,0,1,0,0` (17 rows), `1,0,0,0,0,0` (7 rows), and `5692,0,1,3,3,0` (5 rows). Because the dominant payload is empty and the uncommon values look content-specific, the runtime preserves the six decoded fields without assigning names yet.
 
-The strongest local code anchor is `QuestObjectiveType.ActivateTargetGroupChecklist`, whose comment explicitly says the objective is driven by a creature casting a spell with Activate effect id `7`. Existing interaction handlers already update `ActivateEntity` and `ActivateTargetGroup`; the spell effect handler now mirrors that activation surface from spell execution by resolving the player and activated entity from caster/target context, updating `ActivateEntity`, `ActivateEntity2`, `ActivateTargetGroup`, and `ActivateTargetGroupChecklist`, and emitting `SpellDiagnostics activate`.
+The strongest local code anchor is `QuestObjectiveType.ActivateTargetGroupChecklist`, whose comment explicitly says the objective is driven by a creature casting a spell with Activate effect id `7`. The spell effect handler resolves the player and activated entity from caster/target context, updates `ActivateEntity`, `ActivateEntity2`, `ActivateTargetGroup`, and `ActivateTargetGroupChecklist`, and emits `SpellDiagnostics activate`. `ClientActivateUnitCast` now resolves `Creature2.Spell4IdActivate00..03` against their prerequisite ids, sends `CastResult.NoValidActivateSpell` plus `OnActivateFail` when no candidate matches, and otherwise casts the resolved `Spell4` with the activated world entity as primary target instead of granting quest progress directly.
 
-Open behavior remains around exact non-zero `DataBits` meanings, CSI/busy-state/channel handling, object visibility or script hooks, whether some rows should update only checklist-style objectives, and how non-player scripted activations should be represented.
+Open behavior remains around exact non-zero `DataBits` meanings, CSI/busy-state/channel handling, object visibility or script hooks, whether some rows should update only checklist-style objectives, how non-player scripted activations should be represented, and whether success/fail hooks should align more tightly to spell completion than the current conservative path.
 
 ### Stealth And AggroImmune
 
@@ -997,11 +999,12 @@ Proven from local data/code:
 - `SpellForceRemove` type-2 rows mostly use `DataBits01` as a concrete `Spell4.ID`; type-3 rows mostly use `DataBits01` as a `Spell4Base.ID`. The server now has conservative local cleanup for tracked states through both scopes.
 - Non-random proxy variants now share the same conservative chained-cast path as plain `Proxy`, including target forwarding to child spells.
 - `DespawnUnit` now removes non-player world entities after scheduled effect execution.
-- `Activate` effects now update local quest activation objective paths for player/entity and target-group context.
+- `Activate` effects now update local quest activation objective paths for player/entity and target-group context, and direct activate-cast requests now resolve `Creature2.Spell4IdActivate00..03` through the spell system against world-entity targets.
 - `Stealth`, `RemoveStealth`, and `AggroImmune` now have local state tracking, timed removal, stealth combat logs, and attackability gating for aggro immunity.
 - Damage/heal/transference-adjacent families share coefficient-vector structure.
 - NexusForever now centrally schedules delayed effect rows and rows with both `tickTime` and `durationTime`; each execution pulse gets its own `ServerSpellGo` batch.
-- Target selection now merges caster/target/telegraph flags per entity so one unit does not receive the same effect multiple times just because it entered the target set through multiple routes.
+- Target selection now merges caster/target/telegraph flags per entity so one world entity does not receive the same effect multiple times just because it entered the target set through multiple routes.
+- Explicit primary targets now resolve through `IWorldEntity`, allowing interactable/object valid-target mask `0x02` to pass validation and flow through spell-start anchoring; non-unit effect execution remains intentionally limited to `Activate` and `Fluff`.
 - Telegraph target selection now applies `Spell4AoeTargetConstraints.TargetCount` as a conservative cap ordered by distance to the resolved AOE origin. Target-AOE and position-AOE telegraphs use primary-target or supplied-position anchors when those are available instead of always using the caster origin.
 - Health `Heal` effects now use the shared damage-family formula decoder and apply positive health changes.
 - `Transference`, `DistanceDependentDamage`, and `DistributedDamage` now execute through the decoded damage path; transference additionally restores the caster's decoded vital, while distance falloff and target-count splitting remain evidence gaps.
@@ -1044,7 +1047,7 @@ Unknown or still needs sniff/client confirmation:
 - Full `Spell4TargetMechanics.targetType` and `flags` enum names.
 - Full `Spell4ValidTargets.targetBitmask` semantics.
 - `TargetGroup.type/data0..6` semantics.
-- Full `Spell4AoeTargetConstraints.targetSelection` modes beyond the current distance/health ordering.
+- Further validation of the now-mapped `Spell4AoeTargetConstraints.targetSelection` modes against live/runtime fixtures, especially random-target encounter selectors and furthest-target rows such as `70178`.
 - Condition, CC condition, AOE target prerequisite, and target suspend behavior.
 - Exact packet/result behavior for heal crit/multihit, shields, absorbs, CC diminishing returns/breakout/apply-rules, proc event dispatch/target routing, and force-remove effects.
 - Exact `VitalModifier` sentinel, parameter-driven, negative/drain, and class-resource-alias behavior.
@@ -1055,7 +1058,7 @@ Unknown or still needs sniff/client confirmation:
 - Exact `SetBusy` client/object-state packet behavior beyond conservative `ServerUnitInUse` use, CSI/deferred/path/object blocking parity, non-zero context ids, and broad-context clear rules.
 - Exact `SummonCreature` ownership, AI/pet/turret links, placement payloads, terrain placement, and follow-up spell/service payload behavior.
 - Exact `NpcExecutionDelay` AI scheduler coupling and non-zero payload semantics.
-- Exact `Activate` payload meanings, CSI/busy-state/channel behavior, object visibility, and target-group checklist parity.
+- Exact `Activate` payload meanings, CSI/busy-state/channel behavior, object visibility, success/fail hook timing, and target-group checklist parity.
 - Exact `SpellImmunity` modes `1` and `2`, category/class immunity payloads, and immunity stacking/pierce rules.
 - Exact `MimicDisguise` source selection, payload modes, and `MimicDisplayName`/nameplate coupling.
 - Exact `SummonTrap` trigger firing, owner AI, arming/radius semantics, and terrain placement.

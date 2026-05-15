@@ -1,6 +1,6 @@
 # Spell Reverse Engineering Runtime Candidates
 
-Date: 2026-05-14
+Date: 2026-05-15
 
 This is the runtime fixture layer for the global spell reverse-engineering loop. It turns the data join:
 
@@ -359,7 +359,7 @@ The current placed `NonPlayer` join does not expose direct `CCStateBreak` rows. 
 
 ## Activate Fixtures
 
-`Activate` currently has no placed `NonPlayer` rows in the world context join, so use global quest/object spells and a controlled player plus activated entity target. These validate `activate` diagnostics and quest objective updates for `ActivateEntity`, `ActivateEntity2`, `ActivateTargetGroup`, and `ActivateTargetGroupChecklist`.
+`Activate` currently has no placed `NonPlayer` rows in the world context join, so use global quest/object spells and a controlled player plus activated entity target. `ClientActivateUnitCast` now resolves `Creature2.Spell4IdActivate00..03` by prerequisite and casts the matched spell with the activated world entity as `PrimaryTargetId`, so the cleanest validation path for object-target activation is now normal interaction rather than a synthetic quest-objective update. These fixtures validate `activate` diagnostics and quest objective updates for `ActivateEntity`, `ActivateEntity2`, `ActivateTargetGroup`, and `ActivateTargetGroupChecklist`.
 
 | Fixture | Creature context | Concrete spell | Activate evidence | Commands |
 | --- | --- | --- | --- | --- |
@@ -368,6 +368,9 @@ The current placed `NonPlayer` join does not expose direct `CCStateBreak` rows. 
 | Burying Heart | Global quest spell data | `Spell4=3817`, base `3503`, tier `1` | Less common payload `5692/0/1/3/3/0`. | `/spell inspect4 3817` then `/spell cast4 3817` |
 | Halon Ring Activate | Global quest spell data | `Spell4=40785`, base `24992`, tier `1` | Simple mode-like payload `1/0/0/0/0/0`. | `/spell inspect4 40785` then `/spell cast4 40785` |
 | Silo N22 Panel Activate | Global quest/object spell data | `Spell4=57122`, base `36739`, tier `1` | Common panel payload `5/0/0/0/0/0`; pair with `57123`. | `/spell inspect4 57122` then `/spell cast4 57122` |
+| Generic Activating Object | World-object activation rows | `Spell4=116`, `1545`, or `2552` | Clean object-valid slice: single-target mechanics plus `Spell4ValidTargets=0x02`, with `Activate` and optional `Fluff`; validates world-target spell routing through normal object interaction. | `/spell inspect4 <spell4>` then interact with an entity whose `Creature2.Spell4IdActivate0x` uses that row |
+
+`/spell cast4` still targets units only, so object-target validation for the generic activation rows above should use the normal interaction path rather than the spell command.
 
 ## State Toggle Fixtures
 

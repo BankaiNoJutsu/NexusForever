@@ -320,6 +320,8 @@ Common implementation surfaces:
 | Public-event constants | `Source/NexusForever.Game.Static/PublicEvent` |
 | Client DB table meaning | `Source/NexusForever.GameTable`, `Tools/DataMapping`, and matching runtime managers |
 | Spell effect payloads | `Source/NexusForever.Game/Spell` and `Source/NexusForever.Game.Abstract` |
+| Action set, PvP, interaction, and player runtime state | `Source/NexusForever.Game`, `Source/NexusForever.WorldServer/Network/Message/Handler` |
+| Crafting, marketplace, support, friendship, ICComm, trade, options, and other world request clusters | `Source/NexusForever.Network.World/Message/Model`, `Source/NexusForever.WorldServer/Network/Message/Handler`, and matching game services |
 | Expedition or content behavior | `Source/NexusForever.Script.Instance` |
 
 Keep uncertain values surfaced through diagnostics or comments in the tracker,
@@ -387,19 +389,73 @@ Follow-up implemented from this pass:
 
 ## Current Map
 
-This map summarizes the known high-value areas so the next pass can start from
-known terrain.
+This map is a state ledger. It summarizes the known high-value areas from
+`INITIAL_FINDINGS.md` so the next pass can start from known terrain and avoid
+re-mapping packet surfaces that are already closed.
 
-| Area | Binary | Durable labels or anchors | Server implementation surfaces | Next useful work |
-| --- | --- | --- | --- | --- |
-| STS auth transactions | `StsConnLib64.MT.dll` | `StsConn_SendLoginStart`, `StsConn_SendLoginFinish`, `StsConn_OnLoginFinishResponse`, `StsConn_SendRequestGameToken`, `StsConn_SendConsumeGameToken`, `StsConn_OnConsumeGameTokenResponse` | `NexusForever.Network.Sts/Model`, `NexusForever.StsServer/Network/Message/Handler` | Continue unmapped auth/token/external-account routes only when a local client flow needs them. |
-| STS connect envelope | `StsConnLib64.MT.dll` | `StsInetSocket_ParseConnectFields`, `StsInetSocket_SendConnectEnvelope`, `StsInetSocket_DispatchConnectEnvelope` | `ClientConnectMessage`, STS session setup | Validate any remaining optional envelope fields against observed client startup. |
-| Token crypto handshake | `StsConnLib64.MT.dll` | `StsConn_SendTokenKeyData`, `ServerRand`, `ServerPublicKey`, `ServerSignature`, `PremasterSecret`, `AuthnToken` | STS auth models and handlers | Keep blocked until the handshake semantics are understood safely. Do not guess crypto behavior. |
-| World send framing | `WildStar64.exe` | `Network_SendMessageById`, `Network_SendResolvedMessage`, `Network_SerialiseResolvedMessage`, bit writer labels | `NexusForever.Network/Packet`, `NexusForever.Network/Session`, world messages | Continue into receive/framing/dispatch if client-server packet mismatch appears. |
-| Socket driver behavior | `WildStar64.exe` | `NetworkSocket_*`, `NetworkIOCP_*`, `Network_ParseEndpointAddress` | `NetworkSession`, connection setup | Use only for compatibility and diagnostics, not large rewrites without a runtime issue. |
-| Client DB registration | `WildStar64.exe`, `Houston64.exe` | `ClientDB_RegisterRealmDataCenter`, `ClientDB_RegisterWorldSocket`, table path strings | `GameTable`, `Tools/DataMapping`, runtime managers | Label more table registrations when a table is needed for data mapping. |
-| Public-event constants | `WildStar64.exe` | `Lua_RegisterPublicEventConstants` and `PublicEventObjectiveType_*` strings | `Game.Static/PublicEvent`, public event scripts | Extend enum validation for objective flags and notification behavior. |
-| Spell runtime hints | `WildStar64.exe` | `tSpell4IdAbility`, `tUnitProperty`, public-event and Lua anchors | `Game/Spell`, spell trackers, diagnostics | Continue family-by-family using diagnostics and data queries. |
+| Area | Binary | Durable labels or anchors | NexusForever surfaces | State | Next useful work |
+| --- | --- | --- | --- | --- | --- |
+| STS auth transactions | `StsConnLib64.MT.dll` | `StsConn_SendLoginStart`, `StsConn_SendLoginFinish`, `StsConn_OnLoginFinishResponse`, `StsConn_SendRequestGameToken`, `StsConn_SendConsumeGameToken`, `StsConn_OnConsumeGameTokenResponse` | `NexusForever.Network.Sts/Model`, `NexusForever.StsServer/Network/Message/Handler` | Implemented for login/account/game-token compatibility. | Continue unmapped auth/token/external-account routes only when a local client flow needs them. |
+| STS connect envelope | `StsConnLib64.MT.dll` | `StsInetSocket_ParseConnectFields`, `StsInetSocket_SendConnectEnvelope`, `StsInetSocket_DispatchConnectEnvelope` | `ClientConnectMessage`, STS session setup | Implemented for known connect/login-start fields. | Validate remaining optional envelope fields against observed startup before changing session state. |
+| Token crypto handshake | `StsConnLib64.MT.dll` | `StsConn_SendTokenKeyData`, `ServerRand`, `ServerPublicKey`, `ServerSignature`, `PremasterSecret`, `AuthnToken` | STS auth models and handlers | Mapped only / blocked. | Keep blocked until the crypto/token-login semantics are understood safely. Do not guess crypto behavior. |
+| World framing and bit IO | `WildStar64.exe` | `Network_SendMessageById`, `Network_SendResolvedMessage`, `Network_SerialiseResolvedMessage`, bit reader/writer labels | `NexusForever.Network/Packet`, `NexusForever.Network/Session`, world messages | Implemented where packet size/opcode/bit order differed or needed confirmation. | Continue into receive/framing/dispatch only if a client-server packet mismatch appears. |
+| Socket driver behavior | `WildStar64.exe` | `NetworkSocket_*`, `NetworkIOCP_*`, `Network_ParseEndpointAddress` | `NetworkSession`, connection setup | Implemented only for low-risk compatibility such as `TCP_NODELAY`; mostly mapped diagnostics. | Use for compatibility and diagnostics, not large rewrites without a runtime issue. |
+| Client DB registration | `WildStar64.exe`, `Houston64.exe` | `ClientDB_RegisterRealmDataCenter`, `ClientDB_RegisterWorldSocket`, `ClientDB_RegisterPublicEventUnitPropertyModifier`, table path strings | `GameTable`, `Tools/DataMapping`, runtime managers | Mapped table-registration pattern. | Label more table registrations when a table is needed for data mapping or runtime behavior. |
+| Public-event constants | `WildStar64.exe` | `Lua_RegisterPublicEventConstants`, `PublicEventObjectiveType_*`, status/category/notification strings | `Game.Static/PublicEvent`, public event scripts | Implemented for confirmed enum values and aliases. | Extend only when a public-event objective flag/notification behavior needs server logic. |
+| Game.Spell Lua and spell metadata | `WildStar64.exe` | `Lua_RegisterGameSpellBindings`, 46 `Lua_GameSpell_*` labels, `Lua_InsertStringIntPair`, spell enum strings | `Game.Static/Spell`, `Game/Spell`, `/spell inspect`, data mapping outputs | Implemented for metadata/diagnostics; several runtime behaviors remain blocked. | Continue family-by-family: prove a concrete `Spell4Effects` consumer before mutating spell runtime. |
+| Action set and LAS requests | `WildStar64.exe` | `Lua_RegisterActionSetLib`, `Lua_ActionSetLib_RequestActionSetChanges`, `ActionSet_ValidateRequestedChanges`, `ActionSet_CheckPvPRestriction`, `ActionSet_CheckUpdateSpellInProgress` | `Game/Spell`, `WorldServer/Network/Message/Handler/Spell` | Implemented for 12-slot LAS size, active spec, tier, AMP, PvP/in-combat/dead preflight, and cache refresh. | `UpdateSpellInProgress` remains blocked until a real asynchronous spell-update transaction model is found or introduced; do not add a synthetic boolean gate. |
+| Rapid transport and taxi/flight path | `WildStar64.exe` | `ClientRapidTransport_WritePayload`, `RapidTransport_SendClientRapidTransport`, `Map_BuildRapidTransportNodeInfoTable`, `Map_GetRapidTransport*`, `ClientFlightPathPurchase_WritePayload`, `FlightPath_SendPurchaseRequest` | `WorldServer/Network/Message/Handler/PlayerPath`, `Game/Entity/PathManager`, `GameTable` | Implemented for validated receive boundaries, pricing evidence, and read-only treatment of the second `ClientRapidTransport` field as `ContextToken`; transport movement/payment is partial. | Map service-token bypass selection, taxi embark, route state, and cast-result correlation before using `ContextToken` for validation or charging/teleporting beyond proven behavior. |
+| Crafting and tradeskill requests | `WildStar64.exe` | `ClientCrafting*WritePayload`, `Crafting_SendClient*`, `Tradeskill_SendClientTradeskill*` | `Network.World/Message/Model/Crafting`, `WorldServer/Network/Message/Handler/Crafting`, `GameTable` | Implemented for packet layouts, table validation, and deterministic failure/non-mutating handlers. | Real craft success remains blocked on material consumption, discovery rolls, output creation, station constraints, and profession persistence semantics. |
+| Rune crafting requests | `WildStar64.exe` | `ClientCraftingRuneSlot*WritePayload`, `RuneCrafting_SendClientRune*` | `Network.World/Message/Model/Crafting`, `WorldServer/Network/Message/Handler/Crafting` | Implemented as validated request parsing and diagnostic/non-mutating handlers. | Item rune data semantics and `ServerTradeskillSigilResult` statuses remain blocked. |
+| Marketplace request state | `WildStar64.exe` | `Marketplace_*WritePayload`, `Marketplace_SendClient*` auction and commodity labels | `WorldServer/Network/Message/Handler/Marketplace`, marketplace message models | Implemented with deterministic empty/failure responses; payloads and validation are mapped. | Real auction/commodity persistence, search state, bid/post/cancel mutation, and mail settlement remain blocked. |
+| Storefront catalog and purchase state | `WildStar64.exe` | `Storefront_RequestCatalog_WritePayload`, `Storefront_PurchaseCharacter_WritePayload`, `Storefront_PurchaseAccount_WritePayload`, `NetworkBitWriter_WriteIdentity` | `Game/Storefront`, `Network.World/Message/Model`, `WorldServer/Network/Message/Handler/Account` | Implemented for catalog send, mapped purchase packet parsing, local-target validation, account-currency charging, and account-inventory item creation. | Gifting, cooldowns, exact purchase result UI, and unsupported offer item types remain blocked pending native packet/result mapping. |
+| Account inventory and account-item claim | `WildStar64.exe` | `ServerAccountItems_ReadPayload`, `ServerAccountItemCooldownSet_ReadPayload`, `ServerAccountItemsPending_ReadPayload`, `AccountInventoryItem_ReadPayload`, `AccountItem_SendClientAccountItemTake`, `AccountItem_SendClientClaimPendingItemGroup` | `Database.Auth`, `Game/Account/Inventory`, `Network.World/Message/Model`, `WorldServer/Network/Message/Handler/Account` | Implemented for persisted account inventory list/add, claim-state enum, `ClientAccountItemTake`, and supported `AccountItem` grant paths. | Pending account item groups, gift delivery, cooldown mutation, and unmapped account item effects remain blocked. |
+| P2P trading request state | `WildStar64.exe` | `Trade_SendClientP2PTrading*`, `ClientP2PTradingUInt64_WritePayload`, shared zero-payload and raw field writers | `WorldServer/Network/Message/Handler/Trade`, `Game/Trade/TradeManager`, `Network.World/Message/Model` | Implemented for transient invite/session/offer/commit/settlement using existing item/currency APIs. | Remaining precision: trade locks against concurrent inventory changes, exact eligibility/money-limit rules, unknown item-update fields, `ServerP2PTradeResult.Cancelled` semantics, and sniff/client UI verification. |
+| Duel/PvP request state | `WildStar64.exe` | `Lua_GameLib_InitiateDuel`, `Lua_GameLib_AcceptDuel`, `Lua_GameLib_DeclineDuel`, `Lua_GameLib_ForfeitDuel`, `Lua_GameLib_SetIgnoreDuelRequests`, `Lua_GameLib_TogglePvpFlags`, shared zero-payload and bool writers | `WorldServer/Network/Message/Handler/Pvp`, `Game/Pvp/DuelManager`, `Game/Entity/Player` | Implemented for safe transient duel lifecycle and runtime PvP toggle. | Remaining precision: observer broadcasts, duel-area leash/warnings, countdown duration, PvP cooldown persistence, forced-map PvP, and duel reward/stat effects. |
+| Support/report/survey requests | `WildStar64.exe` | `ClientIncidentReport_WritePayload`, `ClientSupportTicket_WritePayload`, `ClientReportBug_WritePayload`, `ClientStuck_WritePayload`, `ClientSuggest_WritePayload`, `ClientCustomerSurveySubmit_WritePayload` | `WorldServer/Network/Message/Handler/Support`, `WorldServer/Network/Message/Handler/Misc` | Implemented as parsed diagnostics and deterministic ticket result/failure where safe. | Real support-ticket/report/survey persistence or moderation workflows remain blocked until a backing service is designed. |
+| Options and combat-log preferences | `WildStar64.exe` | `ClientCombatOptions_WritePayload`, `Options_SendClientOptionsCasting`, `ClientOptions`, combat-log one-uint writers | `WorldServer/Network/Message/Handler/Option`, option message models | Implemented as validated parsing/logging; no durable store yet. | Add a small account/character option store before using these preferences to filter outbound combat logs. |
+| Friendship request state | `WildStar64.exe` | `Lua_FriendshipLib_*`, `ClientFriendship*WritePayload`, `NetworkBitWriter_WriteWideString`, `NetworkBitWriter_Write4BitValue` | Friendship server handlers, `WorldServer/Network/Message/Handler/Friendship` | Implemented for account block, remove-by-name, note-by-name, and transient ignore-strangers; auto-response diagnostic-only. | Persist ignore-strangers if needed; auto-response needs account/chat storage and delivery semantics. |
+| ICComm request state | `WildStar64.exe` | `ClientICCommChannelJoin_WritePayload`, `ClientICCommMessage_WritePayload`, `ClientP2PTradingUInt64_WritePayload` | `WorldServer/Network/Message/Handler/ICComm`, `Game/ICComm/ICCommManager`, `Network.World/Message/Model/ICComm` | Implemented for transient global/group/guild channel membership, join results, message result echo, directed delivery, ordered sender echo, and not-joined cleanup. | Remaining precision: entitlement checks, exact directed-vs-ordered delivery semantics, persistent membership, explicit leave/logout UI behavior, throttling, and guild/group lifecycle hooks. |
+| Interaction, CSI, busy, and target feedback | `WildStar64.exe` | `CSIKey_HandlePress`, `CSIAction_*`, `Interaction_AttemptTargetAction`, `Interaction_HandlePostActionTargetFeedback`, `DeferredActionQueue_*`, `Loot_CheckInteractionRange` | `WorldServer` entity interaction handlers, `Game/Entity/UnitEntity`, scripts | Implemented for busy target gating and visible busy state; broader client interaction flow is mapped in labels. | Deeper deferred-action/current-object/current-target semantics need sniffs or stronger table/callback evidence before server mutation. |
+| Loot interaction and bindcheck | `WildStar64.exe` | `Loot_PrepareAndDispatchBindcheck`, `Loot_SendClientLootItemCollect`, `Loot_HandlePendingLootInteract`, `Loot_DispatchBindcheckEvent` | Loot handlers, item/loot runtime | Mapped/partially implemented at request and diagnostic boundaries. | Export-only revalidation and real loot assignment/roll/master-loot state remain open. |
+| Vital modifier and SapVital | `WildStar64.exe` | `CombatLog_DispatchVitalModifierEvent`, `Lua_InsertStringIntPair`, `SapVital`, `VitalModifier`, spell-effect enum block | `Game/Spell`, `Game/Entity/UnitEntity`, combat logs | Implemented for conservative health vital source/damage-type handling; enum-registration evidence improved. | Direct gameplay consumer for `SapVital` and unsupported alias vitals remain blocked. |
+| Item visual, disguise, scale, shield/vital spell effects | `WildStar64.exe` | Spell-effect name block and targeted runtime helper labels | `Game/Spell`, `Game/Entity/UnitEntity`, diagnostics | Implemented incrementally where effect ownership/restoration semantics were proven. | Continue with one effect family at a time; keep unknown `DataBits` diagnostic-only. |
+| Audio runtime and selector mapping | `WildStar64.exe` | `AudioOutput_*`, `AudioSelector_*`, `AudioRuntime*`, `AudioResampler_*` | Findings/labels only | Mapped only. | Use as helper/context evidence for client callback families; do not implement server audio behavior. |
+
+### Current State Precision
+
+Use the current map as a state ledger, not just a list of decompile anchors:
+
+- **Implemented** means NexusForever now has code that handles the mapped client
+  surface, even when the safe behavior is an empty result or deterministic
+  failure because a backing service does not exist.
+- **Mapped only / blocked** means the packet or function shape is known, but the
+  server-side state boundary is still missing. Do not add mutation just because
+  the request fields are known.
+- For request clusters, record three separate layers: packet shape, local client
+  sender guard/state, and server response/state mutation. Most remaining gaps
+  are in the third layer.
+- When `INITIAL_FINDINGS.md` says a handler returns an empty result or
+  deterministic failure, treat that as an implemented compatibility boundary,
+  not as full feature support.
+
+### Good Next Targets
+
+Prefer one of these shapes when choosing a new pass:
+
+- A blocked state machine or backing service with fully mapped packets, such as
+  marketplace persistence, crafting success, or support-ticket storage. P2P
+  trade and ICComm now have transient runtime implementations; return there
+  only for precision gaps such as offer locks, entitlement checks, message
+  delivery packet choice, item eligibility, money limits, or result/update-field
+  verification.
+- A narrow runtime precision gap inside an implemented cluster, such as duel
+  observer broadcasts, PvP cooldowns, rapid-transport service-token/route
+  selection, or a real server-side spell-update transaction model for
+  `UpdateSpellInProgress`.
+- One spell-effect family with table rows, diagnostics, and at least one client
+  consumer anchor. Avoid broad `Spell4Effects` sweeps.
+- A client DB registration needed by a concrete source or data-mapping task.
 
 ## Prompt Guide
 

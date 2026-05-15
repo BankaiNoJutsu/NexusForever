@@ -2544,6 +2544,31 @@ Fifty-third deferred interaction-queue follow-up implemented from this pass:
   code caller plus one data reference, while `140559920` returned the scene-tick
   caller, several queue-arm helpers, and four data references.
 
+Fifty-fifth direct interaction range-guard follow-up implemented from this
+pass:
+
+- The mapped client boundary around `Interaction_AttemptTargetAction` and
+  `Interaction_CheckEffectiveRange` now has a conservative server counterpart
+  on the direct world-interaction handlers. `ClientActivateUnit`,
+  `ClientActivateUnitCast`, `ClientEntityInteract`, and
+  `ClientEntityInteractChair` now reject out-of-range requests before invoking
+  activation callbacks.
+- The server-side guard uses `Creature2.ActivateSpellMinRange` and
+  `Creature2.ActivateSpellMaxRange` when the creature row exposes them, with a
+  conservative `5.0` fallback for the upper bound that matches the mapped
+  client descriptor default when no explicit range is present. Vendor
+  interaction reuses `GenericError.VendorTooFar`; the other direct handlers call
+  `OnActivateFail` without inventing an unmapped generic error.
+- This pass still leaves the client deferred retry path blocked. The native
+  queue helpers `DeferredActionQueue_ArmInteractionAction` and
+  `DeferredActionQueue_UpdateAndDispatch` remain mapped-only, so NexusForever now
+  fails out-of-range direct requests conservatively instead of queueing movement
+  and retry state.
+- Chair interaction now shares the same busy/range guard shell as the other
+  direct activation paths instead of bypassing those checks completely.
+- Verification: `dotnet build Source\NexusForever.sln --no-restore` now passes
+  with the existing warnings only.
+
 Fifty-fourth current-object profile callback follow-up investigated from this
 pass:
 
@@ -3015,6 +3040,313 @@ Sixty-fourth ICComm request group follow-up implemented from this pass:
   succeeds with only the existing `Spline.formation` warning; the alternate
   output path avoids interfering with the locally running world-server process
   that has the normal debug outputs locked.
+
+Sixty-fifth duel/PvP state follow-up implemented from this pass:
+
+- The previously mapped duel/PvP client request cluster now has a bounded
+  runtime state implementation instead of diagnostic-only handlers. The evidence
+  remains the labelled request surface from the fiftieth pass:
+  `ClientDuelInitiate`, `ClientDuelAccept`, `ClientDuelDecline`,
+  `ClientDuelForfeit`, `ClientSetIgnoreDuelRequests`, and
+  `ClientPvpToggleFlags` are still driven by the zero-payload and one-bit bool
+  request shapes at `selected_decompiled.c:11`, `:275`, `:282`, and the
+  `GameLib` sender guards around `selected_decompiled.c:20414`.
+- Source now adds `IDuelManager`/`DuelManager` as a transient world-runtime
+  duel boundary. It tracks one pending/countdown/active duel per participant,
+  sends `ServerDuelChallenge`, `ServerDuelCountdown`, `ServerDuelStart`, and
+  `ServerDuelResult`, expires unanswered challenges, rejects busy/dead/in-combat
+  participants through the already mapped `DuelFailureReason` values, and
+  handles decline, forfeit, cancellation, and defeated outcomes. Active duels
+  now also open the player-vs-player attack gate without making non-duel players
+  attackable.
+- `ClientPvpToggleFlags` now updates a player-local `PvPFlag`, broadcasts
+  `ServerUnitPvpStateChange`, and clears the client cooldown on immediate
+  disable. This intentionally remains a simple session/runtime flag: persisted
+  PvP preference, cooldown countdown semantics, forced-map PvP, and wider PvP
+  combat rules are still blocked pending stronger client/server state evidence.
+- Remaining bounded uncertainty: the local client request and basic response
+  flow is implemented, but observer-wide duel broadcasts, duel-area leash and
+  leave warnings, exact countdown duration, PvP cooldown persistence, cross-map
+  cleanup rules, duel-specific reward/stat side effects, and forced PvP realm
+  behavior remain open. The new guide row calls this out so future passes can
+  target those exact state gaps instead of re-mapping the request packets.
+- Verification: `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-duel-pvp/`
+  succeeds with the existing `Spline.formation` warning and `0 Error(s)`.
+
+Sixty-sixth P2P trading state follow-up implemented from this pass:
+
+- The previously mapped P2P trading client request group now has a bounded
+  runtime state implementation instead of diagnostic-only handlers. This builds
+  directly on the forty-third pass packet evidence: the zero-payload accept,
+  cancel, commit, and decline requests, the raw target-unit initiate request,
+  and the shared 64-bit add-item/remove-item/set-money writer remain the mapped
+  client request surface.
+- Source now adds `ITradeManager`/`TradeManager` as the world-runtime trade
+  boundary. It tracks one pending or active trade per participant, sends
+  `ServerP2PTradeInvite`, handles accept/decline/cancel, expires unanswered
+  invites, emits item/money offer updates, resets commit state when offers
+  change, and sends initiator/target committed or uncommitted results.
+- Settlement is implemented through the existing safe NexusForever item and
+  currency APIs. Before mutation, the manager revalidates offered inventory
+  items, credit affordability, recipient inventory capacity after both sides'
+  outgoing items are removed, and known credit caps after outgoing money is
+  debited. It then removes both sides' outgoing items, subtracts both credit
+  offers, adds received items with `ItemUpdateReason.Trade`, adds received
+  credits, and finishes with `FinishedSuccess`; empty double-commit returns
+  `NothingToTrade`.
+- Remaining bounded uncertainty: the client packet shapes and server mutation
+  path are implemented, but exact item eligibility rules, trade-lock behavior
+  against concurrent inventory mutation, account/character money-trade limits,
+  the unknown fields in `ServerP2PTradeUpdateItem`, and exact
+  `ServerP2PTradeResult.Cancelled` UI semantics still need sniff or runtime UI
+  verification. The implementation therefore rejects non-inventory items and
+  equippable bags conservatively and does not add new labels in this pass.
+- Verification: `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-trade-state/`
+  succeeds with the existing `Spline.formation` warning and `0 Error(s)`.
+
+Sixty-seventh ICComm routing follow-up implemented from this pass:
+
+- The previously mapped ICComm client request group now has a bounded runtime
+  implementation instead of deterministic client-visible failures. This builds
+  directly on the sixty-fourth pass evidence: `ClientICCommChannelJoin` sends a
+  3-bit `ICCommChannelType`, a 64-bit guild id, and a wide channel name;
+  `ClientICCommMessage` sends a 64-bit channel id, a 32-bit message id, an
+  ASCII message string, and a wide recipient name; and
+  `ClientICCommChannelNotJoined` reuses the shared 64-bit writer.
+- Source now adds `IICCommManager`/`ICCommManager` as an in-memory ICComm
+  channel boundary. It creates or reuses transient channels keyed by global
+  name, group association id, or guild id; validates no-group/no-guild/bad-name
+  join cases; sends `ServerICCommChannelJoin` on success; and uses
+  `ServerICCommChannelJoinResult` for known failure results.
+- `ClientICCommMessage` now routes through the manager. Blank messages still
+  return `InvalidText`, non-members still return `NotInChannel`, successful
+  sends get `ServerICCommMessageResult.Sent`, the sender receives
+  `ServerICCommOrderedMessage` with the client message id, and joined recipients
+  receive `ServerICCommDirectedMessage` with sender name and message text.
+  `ClientICCommChannelNotJoined` removes the player from the server-side
+  membership view, and the manager's world tick clears stale members that have
+  left world.
+- Remaining bounded uncertainty: the client packet shapes and a safe transient
+  routing boundary are implemented, but entitlement checks, throttle windows,
+  exact ordered-vs-directed packet selection, persistent channel membership,
+  explicit leave/logout UI packets, and guild/group lifecycle subscription
+  semantics still require stronger client or sniff evidence. No new labels were
+  needed for this pass.
+- Verification: `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-iccomm-routing/`
+  succeeds with the existing `Spline.formation` warning and `0 Error(s)`.
+
+Sixty-eighth multi-lane blocker review from this pass:
+
+- Parallel focused reviews rechecked three tempting follow-up areas without
+  adding speculative server state. No new function labels were needed.
+- Rapid transport: `ClientRapidTransport_WritePayload` (`14007ab80`) still
+  proves the wire order as a 14-bit taxi node followed by one raw 32-bit field,
+  and `RapidTransport_SendClientRapidTransport` (`1403993c0`) still copies that
+  second field from resolved cast context `+0x60` before sending opcode
+  `0x0141`. Sibling spell/crafting sender correlation supports the current
+  `ContextToken` source naming. It remains unsafe to validate, require
+  monotonicity, echo, or charge/teleport from this value until its lifecycle or
+  server-side consumer is observed.
+- LAS/action set: `ActionSet_CheckUpdateSpellInProgress` (`1403bb8d0`) lazily
+  resolves config id `0x41e`, caches the resolved key, and walks the local
+  player-side pending update list before the client sends
+  `ClientRequestActionSetChanges`. NexusForever currently mutates LAS requests
+  synchronously through `ClientRequestActionSetChangesHandler`, so there is no
+  matching server transaction list or begin/end spell-update lifecycle. A
+  synthetic boolean gate would risk rejecting valid sequential requests.
+- Support/report/survey: the mapped packet models and diagnostic handlers
+  already cover the client request fields for incident reports, support tickets,
+  bug reports, stuck requests, suggestions, and survey submits. Real persistence
+  remains a backing-service design task because no schema, moderation lifecycle,
+  category-to-queue routing, raw-text retention policy, or staff workflow is
+  defined by the client evidence.
+- Result: mapped-only/blocker update. The guide now treats rapid transport's
+  second field as read-only `ContextToken` evidence rather than an unmapped
+  `Time` target, keeps `UpdateSpellInProgress` blocked pending a real
+  asynchronous spell-update transaction model, and keeps support persistence
+  blocked pending an explicit support-case backend.
+- Verification: `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-continuation/`
+  succeeds with the existing `Spline.formation` warning and `0 Error(s)`.
+
+Sixty-ninth CC apply-rules enum and combat-log label follow-up mapped from this
+pass:
+
+- The WildStar combat-log event helpers around the existing
+  `CombatLog_WriteCasterContext` anchor now have durable function labels in
+  `function_labels.csv`: `14060b750 = CombatLog_DispatchCCStateEvent`,
+  `14060bbc0 = CombatLog_DispatchCCStateBreakEvent`, and
+  `14060e210 = CombatLog_DispatchModifyInterruptArmorEvent`. The decompile shape
+  matches the previously labeled `CombatLog_DispatchVitalModifierEvent`: each
+  helper builds a named-event payload object and dispatches it through
+  `ClientEvent_DispatchNamedEvent`.
+- `CombatLog_DispatchCCStateEvent` is the most useful new anchor for the
+  pending interrupt-armor and CC apply-rules work. The decompile shows it
+  reusing `CombatLog_WriteCasterContext`, writing payload-backed `eState`, then
+  carrying additional CC-state fields plus client-local display keys such as
+  `strState`, `strTriggerCapCategory`, and `bHideFloater` before dispatching
+  `CombatLogCCState`. The two intermediate integer writes remain bounded but not
+  fully recovered from the current export, so they stay mapping-only.
+- Separate enum-registration evidence now pins the client-facing
+  `CCStateApplyRulesResult` names without forcing speculative runtime behavior.
+  The registration helper block at
+  `exports\WildStar64.exe\selected_decompiled.c:43128-43192` includes
+  `CodeEnumCCStateApplyRulesResult` values `InvalidCCState`,
+  `NoTargetSpecified`, `Target_Immune`, `Target_InfiniteInterruptArmor`,
+  `Target_InterruptArmorReduced`, and `Target_InterruptArmorBlocked`, which line
+  up with the existing server enum surface.
+- No server gameplay behavior changed in this pass. NexusForever still keeps
+  `CCStateSet` conservative and `ModifyInterruptArmor.DataBits01`
+  diagnostic-only because the client evidence does not yet show when interrupt
+  armor should be consumed, when it should fully block a CC application, or how
+  those results interact with breakout and apply-rules payload fields.
+- Source-side inspection output now uses the new stable handler names for
+  `CCStateSet`, `CCStateBreak`, and `ModifyInterruptArmor` so `/spell inspect4`
+  and related diagnostics point back at the labeled client anchors directly.
+
+Seventieth interrupt-armor threshold clamp follow-up implemented from this
+pass:
+
+- `HandleEffectModifyInterruptArmor` no longer adds raw unsigned interrupt armor
+  directly up to `uint.MaxValue`. The handler now reuses the existing bounded
+  vital path via `TryModifyVital(Vital.InterruptArmor, ...)`, which means the
+  applied amount respects the target's current interrupt-armor max from
+  `Property.InterruptArmorThreshold` and still flows through the existing stat
+  update path.
+- This keeps the family aligned with the already mapped entity model: interrupt
+  armor is exposed as a normal vital in `UnitEntity.TryGetVitalMax` /
+  `TryModifyVital`, while the combat-log payload already carries the applied
+  amount rather than the requested amount. High-amount fixtures such as `79320`
+  and `81579` can now safely hit the local cap instead of overfilling past the
+  target's bounded interrupt-armor surface.
+- The implementation remains intentionally conservative. `DataBits01` is still
+  diagnostic-only as the likely consume/remove-on-interrupt flag, and
+  `CCStateSet` still does not mutate apply-rules results or consume interrupt
+  armor during CC application.
+- Verification for this follow-up: `dotnet build
+  Source\NexusForever.Game\NexusForever.Game.csproj --no-restore
+  -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-ia-clamp-game/`
+  succeeds with only the existing `Spline.formation` warning. Full-solution
+  verification remains temporarily blocked while the locally running
+  `NexusForever.WorldServer`/`NexusForever.AuthServer` processes hold files open
+  in their normal `bin\Debug` output trees.
+
+Seventy-first in-game store purchase follow-up implemented from this pass:
+
+- The storefront purchase client payloads now have durable native labels:
+  `Storefront_RequestCatalog_WritePayload` (`14007a610`),
+  `Storefront_PurchaseCharacter_WritePayload` (`1400acf80`), and
+  `Storefront_PurchaseAccount_WritePayload` (`140080a20`), with helper labels
+  for `NetworkBitWriter_WriteRaw32` (`14006bd80`) and
+  `NetworkBitWriter_WriteIdentity` (`140085170`). Re-export confirmed all five
+  labels in `exports\WildStar64.exe\functions.csv` and
+  `selected_decompiled.c`.
+- `ClientStorefrontRequestCatalog` was already correct as one 14-bit field.
+  The character purchase model was corrected from the stale 20-bit layout to
+  the mapped shared purchase payload: 32-bit offer id, 5-bit selector, 32-bit
+  field, 14-bit currency id, 32-bit field, target identity, and trailing 32-bit
+  field. `ClientStorefrontPurchaseAccount` was added as the same shared payload
+  followed by one 32-bit field, one identity, and a wide string.
+- `ClientStorefrontPurchaseCharacter` and `ClientStorefrontPurchaseAccount`
+  handlers now validate the requested offer, currency, price, local target, and
+  grantability before subtracting account currency. The implemented grant paths
+  use existing NexusForever systems only: account currency grants, account or
+  character entitlements based on the entitlement flags, and account generic
+  unlock sets.
+- The implementation intentionally rejects unmapped account-inventory, gift, and
+  unsupported offer-item paths without charging the player. `ServerAccountItemAdd`
+  and account item persistence remain blocked until the native result/add-item
+  packet shape and server-side inventory semantics are mapped.
+- Verification: `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-storefront/`
+  succeeds with `0 Warning(s)` and `0 Error(s)`. The Ghidra export refresh
+  succeeded with the storefront labels applied.
+
+Seventy-second account inventory follow-up implemented from this pass:
+
+- Native receive labels now cover the account-inventory wire shapes:
+  `ServerAccountItems_ReadPayload` (`140080630`) reads opcode `0x096D` as a
+  32-bit count followed by 0x28-byte account item records;
+  `AccountInventoryItem_ReadPayload` (`1400a9c20`) reads a 64-bit inventory id,
+  32-bit `AccountItem` id, 5-bit claim state, one flag bit, and target
+  identity; `ServerAccountItemCooldownSet_ReadPayload` (`14007a040`) reads
+  opcode `0x0974` as two 32-bit fields; and
+  `ServerAccountItemsPending_ReadPayload` (`140080510`) /
+  `PendingAccountItemGroup_ReadPayload` (`1400a9b20`) map the pending group
+  list enough to keep it blocked rather than guessed.
+- `AccountItemLib:TakeAccountItem` resolves to
+  `AccountItem_SendClientAccountItemTake` (`140006d00`), which sends opcode
+  `0x0839` with one raw 64-bit account inventory id after local list
+  validation. `AccountItemLib:ClaimPendingItemGroup` resolves to
+  `AccountItem_SendClientClaimPendingItemGroup` (`140006ba0`), which sends
+  opcode `0x0233` with one wide string group key. The shared single-u64 and
+  wide-string writer labels were updated to include these account-item uses.
+- `CodeEnumClaimItemState` registers `CanClaim = 0`, `CharacterMaxed = 1`,
+  `AccountMaxed = 2`, and `AccountMaxedWithPending = 3`; NexusForever now has
+  `AccountItemClaimState` and uses it for the 5-bit account inventory field.
+- NexusForever now persists account inventory in `account_inventory`, loads it
+  with the auth account model, sends `ServerAccountItems` on world/catalog
+  entry, sends `ServerAccountItemAdd` for new purchases, and handles
+  `ClientAccountItemTake` by validating target identity and applying supported
+  `AccountItem` grants through existing item, account-currency, entitlement,
+  and generic-unlock systems before removing the inventory row.
+- Storefront purchases now place purchased `AccountItem` entries into account
+  inventory instead of granting rewards immediately. Gifting, pending item
+  groups, cooldown mutation, exact purchase-result UI packets, and unsupported
+  account-item paths such as unmapped instant events remain blocked.
+- Verification: Ghidra export refresh with `-MaxDecompiledFunctions 430`
+  applied and selected all new account-item labels. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-account-inventory/`
+  succeeds with only the existing `Spline.formation` warning.
+
+Seventy-third account inventory blocked-path follow-up implemented from this pass:
+
+- Native labels now cover the UI callbacks and extra pending-group senders
+  behind the previously rejected account-item paths:
+  `AccountItemUi_ClaimSelectedPendingItemGroup` (`140518b70`) sends the mapped
+  claim request and raises `AccountPendingItemsClaimed`;
+  `AccountItemUi_TakeSelectedAccountItem` (`140518be0`) sends the mapped take
+  request and raises `AccountPendingItemTook`;
+  `AccountItemUi_GiftSelectedPendingItemGroup` (`140519260`) dispatches one of
+  two gift request payloads and raises `AccountPendingItemsGifted`; and
+  `AccountItemUi_ReturnSelectedPendingItemGroup` (`140519440`) sends a return
+  request and raises `AccountPendingItemsReturned`.
+- `AccountItem_SendClientReturnPendingItemGroup` (`140006c50`) is now mapped as
+  opcode `0x07C6` with the same single pending-group wide string shape used by
+  the claim request. The gift helpers remain mapped only at the boundary:
+  `AccountItem_SendClientGiftPendingItemGroupIdentityPayload` (`140006d60`)
+  sends opcode `0x03F2`, and
+  `AccountItem_SendClientGiftPendingItemGroupAlternatePayload` (`140006e50`)
+  sends opcode `0x03F1`, but their exact semantic fields are still blocked.
+- `StorefrontLib_PurchaseOffer` (`1404f1150`) confirms the Lua-facing purchase
+  method routes normal purchases separately from recipient/extra-target flows.
+  No server purchase-result UI packet was mapped from the result strings yet.
+- NexusForever now names and parses `ClientAccountItemReturnPendingItemGroup`
+  as opcode `0x07C6`, rejects it with a generic error like pending-group claim,
+  and resends the authoritative empty pending list. The `ServerAccountItemsPending`
+  model was corrected from unknown scalar fields to the mapped pending-group
+  identity layout, but the server only emits an empty list until pending group
+  storage, gift semantics, and non-empty source/target identity meanings are
+  verified.
+- Account-item cooldown mutation remains blocked: the native receive packet is
+  mapped, but current generated static data only exposes
+  `AccountItemCooldownGroupEntry.Id`, with no verified duration source to
+  enforce or persist.
+- Verification: Ghidra export refresh with `-MaxDecompiledFunctions 430`
+  applied 302 WildStar64 labels and selected the new account-item callbacks.
+  `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-account-inventory-blocked/`
+  succeeds with only the existing `Spline.formation` warning.
 
 ## Practical Next Steps
 

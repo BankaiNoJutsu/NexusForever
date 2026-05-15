@@ -23,7 +23,7 @@ WildStar64.exe,14007ab80,ClientRapidTransport_WritePayload,Serialises world opco
 WildStar64.exe,14007d010,ClientTradeskillResetTalents_WritePayload,Serialises one raw 32-bit field; used by world opcodes 0x0192 ClientP2PTradingInitiateTrade as target unit id, 0x0248 ClientCombatLogDisableOthers, 0x0249 ClientCombatLogDisables, and 0x0858 ClientTradeskillResetTalents as Tradeskill id.
 WildStar64.exe,14007d4a0,ClientCraftingCraftItemAutoCraft_WritePayload,Serialises world opcode 0x0852 payload as four 32-bit fields: context token, crafting station unit id, TradeskillSchematic2 id, and schematic count.
 WildStar64.exe,14007d830,ActivateUnitFamily_Advance64Bits,Advances 64 payload bits for the shared opcode 0x0097 and 0x0098 activate-unit-family payload.
-WildStar64.exe,14007d840,ClientP2PTradingUInt64_WritePayload,Serialises one raw 64-bit field; used by world opcodes 0x018D ClientP2PTradingAddItem, 0x0194 ClientP2PTradingRemoveItem, 0x0197 ClientP2PTradingSetMoney, and 0x0549 ClientICCommChannelNotJoined.
+WildStar64.exe,14007d840,ClientP2PTradingUInt64_WritePayload,Serialises one raw 64-bit field; used by world opcodes 0x018D ClientP2PTradingAddItem, 0x0194 ClientP2PTradingRemoveItem, 0x0197 ClientP2PTradingSetMoney, 0x0549 ClientICCommChannelNotJoined, and 0x0839 ClientAccountItemTake.
 WildStar64.exe,14007e4b0,ClientFriendshipSetAutoResponseMessage_WritePayload,Serialises world opcode 0x03B7 ClientFriendshipSetAutoResponseMessage as away and busy wide strings.
 WildStar64.exe,14007e610,ClientBool_WritePayload,Serialises a nonzero 32-bit value as one payload bit; used by world opcodes 0x00B8 ClientFriendshipBlock, 0x0170 ClientSetIgnoreDuelRequests, 0x0173 ClientPvpToggleFlags, and 0x039E ClientFriendshipIgnoreStrangersState inside registered 4-byte objects.
 WildStar64.exe,14007ec70,ActivateUnitFamily_WriteTokenAndTargetFieldPair,Serialises two raw 32-bit fields; used by world opcode 0x012B ClientOptions as option type/value, opcode 0x0857 ClientTradeskillLearn, and opcode 0x0097/0x0098 activate-unit-family payloads.
@@ -281,8 +281,11 @@ WildStar64.exe,14077e3b0,CSIAction_UpdateCurrentObjectAvailability,Refreshes the
 WildStar64.exe,14077e580,CSIAction_HandleCurrentTargetApproach,Handles the current-target CSI action press by validating the active target, arming DeferredActionQueue_ArmTargetApproach for that target, and dispatching a localized target-name message on the narrow current-target branch.
 WildStar64.exe,14077e770,CSIAction_UpdateCurrentTargetServiceAvailability,Refreshes the current-target CSI action availability block for the service-target branch by resetting its local state fields and disabling the action unless the active target is a valid type-0x14 target that passes the narrow relation gate.
 WildStar64.exe,14060b0c0,CombatLog_WriteCasterContext,Combat-log serializer helper that conditionally emits unitCaster and derived unitCasterOwner context.
+WildStar64.exe,14060b750,CombatLog_DispatchCCStateEvent,Builds the CombatLogCCState named-event payload with caster context state fields and client-local display flags before dispatching it through the scene event sink.
+WildStar64.exe,14060bbc0,CombatLog_DispatchCCStateBreakEvent,Builds the CombatLogCCStateBreak named-event payload with caster context eState and derived strState before dispatching it through the scene event sink.
+WildStar64.exe,14060e210,CombatLog_DispatchModifyInterruptArmorEvent,Builds the CombatLogModifyInterruptArmor named-event payload including nAmount before dispatching it through the scene event sink.
 WildStar64.exe,14060f170,CombatLog_DispatchVitalModifierEvent,Builds the CombatLogVitalModifier named-event payload including nAmount and bShowCombatLog, then dispatches it through the scene event sink.
-WildStar64.exe,14007ae80,ClientSuggest_WritePayload,Serialises world opcode 0x0833 ClientSuggest as one wide/string payload field through the shared string writer thunk.
+WildStar64.exe,14007ae80,ClientSuggest_WritePayload,Serialises one wide string payload field; used by world opcodes 0x0833 ClientSuggest and 0x0233 ClientAccountItemClaimPendingItemGroup through the shared string writer thunk.
 WildStar64.exe,14007c7c0,ClientStuck_WritePayload,Serialises world opcode 0x0831 ClientStuck as a 3-bit UnstickType plus 32-bit generated context token.
 WildStar64.exe,14007c990,ClientReportBug_WritePayload,Serialises world opcode 0x0830 ClientReportBug as 16-bit bug category, selected unit id, Quest2 id, and description string.
 WildStar64.exe,14007cc20,ClientSupportTicket_WritePayload,Serialises world opcode 0x06D1 ClientSupportTicket as category/subcategory, player position vector, subject/body strings, and language enum.
@@ -296,6 +299,27 @@ WildStar64.exe,14053bcc0,Support_SendClientStuck,Builds and sends opcode 0x0831 
 WildStar64.exe,14063b9f0,Support_SendClientSuggest,Builds and sends opcode 0x0833 ClientSuggest from the slash-command suggestion text.
 WildStar64.exe,140700340,Lua_GameLib_ReportBug,Builds and sends opcode 0x0830 ClientReportBug with bug category, selected unit id, Quest2 id, and description text.
 WildStar64.exe,14073e640,IncidentReport_SendClientIncidentReport,Builds and sends opcode 0x06C5 ClientIncidentReport from the IncidentReportLib/Game.IncidentReport report object.
+WildStar64.exe,14006bd80,NetworkBitWriter_WriteRaw32,Serialises one raw 32-bit value into the packet bitstream.
+WildStar64.exe,140085170,NetworkBitWriter_WriteIdentity,Serialises an Identity payload as a 14-bit realm id followed by a 64-bit identity id.
+WildStar64.exe,14007a610,Storefront_RequestCatalog_WritePayload,Serialises opcode 0x082D ClientStorefrontRequestCatalog as one 14-bit catalog context field.
+WildStar64.exe,1400acf80,Storefront_PurchaseCharacter_WritePayload,Serialises the shared store purchase payload for opcode 0x082A: offer id, 5-bit selector, two 32-bit fields around a 14-bit currency id, target identity, and a trailing 32-bit field.
+WildStar64.exe,140080a20,Storefront_PurchaseAccount_WritePayload,Serialises opcode 0x0828 ClientStorefrontPurchaseAccount as the shared store purchase payload plus one 32-bit field, an identity, and a wide string.
+WildStar64.exe,1400852f0,NetworkBitReader_ReadIdentity,Reads an Identity payload as a 14-bit realm id followed by a 64-bit identity id.
+WildStar64.exe,1400a9c20,AccountInventoryItem_ReadPayload,Reads one account inventory item: 64-bit inventory id, 32-bit AccountItem id, 5-bit claim state, one flag bit, and target identity.
+WildStar64.exe,140080630,ServerAccountItems_ReadPayload,Reads opcode 0x096D as a 32-bit count followed by account inventory item records of size 0x28.
+WildStar64.exe,14007a040,ServerAccountItemCooldownSet_ReadPayload,Reads opcode 0x0974 as account item cooldown group and cooldown seconds.
+WildStar64.exe,140080510,ServerAccountItemsPending_ReadPayload,Reads opcode 0x0979 as a 32-bit count followed by pending account item group records of size 0x60.
+WildStar64.exe,1400a9b20,PendingAccountItemGroup_ReadPayload,Reads one pending account item group record used by opcode 0x0979, including ids, a wide string group key, claim state, and two identity payloads.
+WildStar64.exe,140006d00,AccountItem_SendClientAccountItemTake,Sends opcode 0x0839 from AccountItemLib:TakeAccountItem with one 64-bit account inventory id after validating it is present locally.
+WildStar64.exe,140006ba0,AccountItem_SendClientClaimPendingItemGroup,Sends opcode 0x0233 from AccountItemLib:ClaimPendingItemGroup with one pending group wide string after validating it is present locally.
+WildStar64.exe,140006c50,AccountItem_SendClientReturnPendingItemGroup,Sends opcode 0x07C6 with one pending group wide string after validating it is present locally.
+WildStar64.exe,140006d60,AccountItem_SendClientGiftPendingItemGroupIdentityPayload,Sends opcode 0x03F2 with a pending group wide string and two 64-bit UI-supplied fields after validating the group is present locally.
+WildStar64.exe,140006e50,AccountItem_SendClientGiftPendingItemGroupAlternatePayload,Sends opcode 0x03F1 with a pending group wide string, a UI-supplied field, and current-player identity fields after validating the group is present locally.
+WildStar64.exe,140518b70,AccountItemUi_ClaimSelectedPendingItemGroup,UI callback that sends ClientAccountItemClaimPendingItemGroup for the selected pending group and dispatches AccountPendingItemsClaimed.
+WildStar64.exe,140518be0,AccountItemUi_TakeSelectedAccountItem,UI callback that sends ClientAccountItemTake for the selected account inventory item and dispatches AccountPendingItemTook.
+WildStar64.exe,140519260,AccountItemUi_GiftSelectedPendingItemGroup,UI callback that sends one of the pending-group gift request payloads for the selected pending group and dispatches AccountPendingItemsGifted.
+WildStar64.exe,140519440,AccountItemUi_ReturnSelectedPendingItemGroup,UI callback that sends ClientAccountItemReturnPendingItemGroup for the selected pending group and dispatches AccountPendingItemsReturned.
+WildStar64.exe,1404f1150,StorefrontLib_PurchaseOffer,Lua StorefrontLib PurchaseOffer method that reads the Game.Money purchase argument and routes normal purchases separately from recipient or extra-target purchase flows.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
