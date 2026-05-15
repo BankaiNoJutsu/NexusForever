@@ -9,9 +9,9 @@ database, and can start the standalone server processes.
 
 ## Prerequisites
 
-- MySQL or MariaDB server running on `127.0.0.1:3306`.
-- MySQL/MariaDB command-line client (`mysql.exe`).
-- RabbitMQ server running if you want the script to create the broker user.
+- Either a reachable MySQL or MariaDB server on the configured `-MySqlHost` and `-MySqlPort`, or Docker Desktop for automatic portable provisioning.
+- Either a reachable RabbitMQ broker on the configured `-BrokerHost` and `-BrokerPort`, or Docker Desktop for automatic portable provisioning.
+- MySQL/MariaDB command-line client (`mysql.exe`) if you want to target an existing external database server without Docker.
 - .NET SDK required by this repo.
 - Optional: a `NexusForever.WorldDatabase` clone next to this repo, for example
   `I:\GIT\NexusForever.WorldDatabase`. The script also checks the guide's
@@ -19,6 +19,17 @@ database, and can start the standalone server processes.
 
 The script searches common MariaDB/MySQL locations under `C:\Program Files`.
 If it cannot find `mysql.exe`, pass the path explicitly with `-MySqlExe`.
+
+By default, the setup scripts use the configured MySQL and RabbitMQ endpoints if
+they are already reachable. If a local endpoint is missing and Docker Desktop is
+available, the scripts automatically start a repo-scoped portable MariaDB or
+RabbitMQ container and reuse it on later runs.
+
+Use `-DependencyMode ExternalOnly` to disable portable provisioning and require
+pre-existing services.
+
+Use `-DependencyMode PortableDocker` to force the scripts to use the portable
+Docker-backed dependencies even if local services are already running.
 
 ## Full Local Setup
 
@@ -46,11 +57,31 @@ What it does:
 
 - runs `Initialize-NexusForever.ps1` with the same database and RabbitMQ
   options you pass through
+- reuses reachable local MySQL and RabbitMQ endpoints when they already exist,
+  or auto-starts portable Docker-backed replacements for missing local
+  dependencies
 - stages shared `tbl` and `map` runtime assets under `.nexusforever-runtime`
   and rewrites the runtime JSON files to those absolute paths
 - creates or verifies the default login account
 - starts the standalone server executables and waits for the local endpoints to
-  come up before launching `WildStar64.exe`
+  come up before launching the client through `NexusForever.ClientConnector`
+  when it is available in the current build output
+
+For local development, this now mirrors the official client connection guide
+more closely: the launcher writes `Client64\config.json` with the selected host
+and language, stages the built `NexusForever.ClientConnector` runtime files into
+the WildStar `Client64` directory, and then launches that staged copy from
+there. If the PowerShell session is not already
+elevated, Windows should prompt for elevation because the official guide says
+the client connector should be run as Administrator.
+
+If you intentionally need different values for `-AuthHost` and `-PatcherHost`,
+the script falls back to a direct `WildStar64.exe` launch because the current
+client connector only supports one shared host.
+
+The map generator now uses a bounded parallel worker count by default. Pass
+`-MapGeneratorParallelism` to the launcher if you want to force a specific
+worker count.
 
 The default login created by the launcher is:
 
@@ -86,6 +117,15 @@ If auto-detection ever misses it, run:
   -MySqlExe "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
   -PromptForRootPassword `
   -InstallDotNetEf
+```
+
+Force the scripts to use their portable Docker-backed database and broker
+runtime even if local services are already listening on the default ports:
+
+```powershell
+.\Tools\Setup\Start-NexusForeverLocal.ps1 `
+  -DependencyMode PortableDocker `
+  -ClientDirectory "D:\Games\WildStar"
 ```
 
 ## What It Creates
@@ -216,6 +256,12 @@ Start the standalone servers after setup:
 - Re-run after this update; the script now auto-detects common install paths.
 - Or pass `-MySqlExe "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"`.
 
+`MySQL/MariaDB is reachable ... but no mysql client was found`:
+
+- Install MariaDB/MySQL client tools.
+- Or install Docker Desktop so the setup script can use a transient MariaDB
+  client container against the reachable server.
+
 `ERROR 1264 ... Out of range value for column 'cost'`:
 
 - Re-run after this update with `-RepairPartialLargeDumpDatabases`.
@@ -272,6 +318,28 @@ RabbitMQ command not found:
 
 - Install RabbitMQ and make `rabbitmqctl` available on `PATH`.
 - Or pass `-SkipRabbitMqUser` and create the `nexusforever` broker user manually.
+
+`RabbitMQ broker is not reachable on localhost:5672` during local launch:
+
+- Start the RabbitMQ service before running `Start-NexusForeverLocal.ps1`.
+- If your broker is listening elsewhere, pass the correct `-BrokerHost` and `-BrokerPort` values.
+- The chat, group, friendship, character, and world servers all depend on the AMQP broker during startup.
+
+`RabbitMQ is not reachable ... install Docker Desktop`:
+
+- No reachable broker was found on the configured host and port.
+- Install Docker Desktop if you want the scripts to provision a portable local
+  RabbitMQ instance automatically.
+- Or pass `-DependencyMode ExternalOnly` and point the scripts at an existing
+  broker.
+
+`Portable dependencies were created for the first time, but -SkipSetup was requested`:
+
+- Run once without `-SkipSetup` so the freshly provisioned MariaDB and
+  RabbitMQ runtime can be initialized with users, databases, migrations, and
+  imported data.
+- After that first successful run, `-SkipSetup` can reuse the same portable
+  dependency containers.
 
 Official world database skipped:
 

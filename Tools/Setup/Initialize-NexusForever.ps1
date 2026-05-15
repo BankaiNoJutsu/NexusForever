@@ -72,6 +72,12 @@ Runs setup with an explicit MySQL client path.
 param(
     [string] $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path,
 
+    [ValidateSet('Auto', 'ExternalOnly', 'PortableDocker')]
+    [string] $DependencyMode = 'Auto',
+    [string] $DockerCli = 'docker',
+    [string] $PortableMariaDbImage = 'mariadb:11.8',
+    [string] $PortableRabbitMqImage = 'rabbitmq:4.1-management',
+
     [string] $MySqlExe = 'mysql',
     [string] $MySqlHost = '127.0.0.1',
     [int] $MySqlPort = 3306,
@@ -167,6 +173,25 @@ function Write-Info {
     param([string] $Message)
     Write-Host $Message -ForegroundColor Gray
 }
+
+$dependencyBootstrapScript = Join-Path $PSScriptRoot 'DependencyBootstrap.ps1'
+if (!(Test-Path -LiteralPath $dependencyBootstrapScript -PathType Leaf)) {
+    throw "Dependency bootstrap script was not found: $dependencyBootstrapScript"
+}
+
+. $dependencyBootstrapScript
+
+$MySqlInvocationMode = 'Native'
+$MySqlDockerContainerName = ''
+$MySqlDockerClientHost = ''
+$MySqlDockerImage = $PortableMariaDbImage
+$RabbitMqCtlInvocationMode = 'Native'
+$RabbitMqDockerContainerName = ''
+$RabbitMqCtlResolved = $RabbitMqCtl
+$DockerCliResolved = $DockerCli
+$ShouldPromptForRootPassword = [bool] $PromptForRootPassword
+$MySqlProvisionedThisRun = $false
+$RabbitMqProvisionedThisRun = $false
 
 function Assert-Command {
     param(
@@ -308,9 +333,14 @@ function Quote-MySqlString {
 function Get-MySqlArguments {
     param([string] $Database)
 
+    $effectiveHost = $MySqlHost
+    if ($MySqlInvocationMode -eq 'DockerClient' -and ![string]::IsNullOrWhiteSpace($MySqlDockerClientHost)) {
+        $effectiveHost = $MySqlDockerClientHost
+    }
+
     $arguments = @(
         '--protocol=tcp',
-        "--host=$MySqlHost",
+        "--host=$effectiveHost",
         "--port=$MySqlPort",
         "--user=$RootUser",
         '--default-character-set=utf8mb4',
@@ -323,6 +353,36 @@ function Get-MySqlArguments {
     }
 
     $arguments
+}
+
+function Get-MySqlCommandInvocation {
+    param([string[]] $Arguments)
+
+    $effectiveArguments = @($Arguments)
+    if ($MySqlInvocationMode -ne 'Native' -and $RootPassword) {
+        $effectiveArguments += "--password=$RootPassword"
+    }
+
+    switch ($MySqlInvocationMode) {
+        'DockerExec' {
+            return [pscustomobject]@{
+                FilePath  = $DockerCliResolved
+                Arguments = @('exec', '-i', $MySqlDockerContainerName, 'mariadb') + $effectiveArguments
+            }
+        }
+        'DockerClient' {
+            return [pscustomobject]@{
+                FilePath  = $DockerCliResolved
+                Arguments = @('run', '--rm', '-i', $MySqlDockerImage, 'mariadb') + $effectiveArguments
+            }
+        }
+        default {
+            return [pscustomobject]@{
+                FilePath  = $MySqlExe
+                Arguments = $effectiveArguments
+            }
+        }
+    }
 }
 
 function ConvertTo-ProcessArgumentString {
@@ -514,14 +574,17 @@ function Invoke-MySqlStreamImport {
         [switch] $DisableIntegrityChecks
     )
 
-    $process = New-Object System.Diagnostics.Process
-    $process.StartInfo.FileName = $MySqlExe
     $streamArguments = @($Arguments)
     if ($SelectedDatabase) {
         $streamArguments += "--init-command=USE $(Quote-MySqlIdentifier $SelectedDatabase)"
     }
 
-    $process.StartInfo.Arguments = ConvertTo-ProcessArgumentString -Arguments $streamArguments
+    $commandInvocation = Get-MySqlCommandInvocation -Arguments $streamArguments
+
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo.FileName = $commandInvocation.FilePath
+
+    $process.StartInfo.Arguments = ConvertTo-ProcessArgumentString -Arguments $commandInvocation.Arguments
     $process.StartInfo.UseShellExecute = $false
     $process.StartInfo.RedirectStandardInput = $true
     $process.StartInfo.RedirectStandardOutput = $true
@@ -648,8 +711,9 @@ function Invoke-MySql {
         [switch] $DisableIntegrityChecks
     )
 
+    $usePasswordEnvironment = $MySqlInvocationMode -eq 'Native'
     $oldMySqlPassword = $env:MYSQL_PWD
-    if ($RootPassword) {
+    if ($usePasswordEnvironment -and $RootPassword) {
         $env:MYSQL_PWD = $RootPassword
     }
 
@@ -665,7 +729,9 @@ function Invoke-MySql {
                 -DisableIntegrityChecks:$DisableIntegrityChecks
         }
         else {
-            $output = & $MySqlExe @Arguments 2>&1
+            $commandInvocation = Get-MySqlCommandInvocation -Arguments $Arguments
+            $commandArguments = $commandInvocation.Arguments
+            $output = & $commandInvocation.FilePath @commandArguments 2>&1
             if ($LASTEXITCODE -ne 0) {
                 throw "mysql failed with exit code $LASTEXITCODE.`n$($output -join [Environment]::NewLine)"
             }
@@ -675,11 +741,13 @@ function Invoke-MySql {
         }
     }
     finally {
-        if ($null -eq $oldMySqlPassword) {
-            Remove-Item Env:MYSQL_PWD -ErrorAction SilentlyContinue
-        }
-        else {
-            $env:MYSQL_PWD = $oldMySqlPassword
+        if ($usePasswordEnvironment) {
+            if ($null -eq $oldMySqlPassword) {
+                Remove-Item Env:MYSQL_PWD -ErrorAction SilentlyContinue
+            }
+            else {
+                $env:MYSQL_PWD = $oldMySqlPassword
+            }
         }
     }
 }
@@ -1443,42 +1511,90 @@ function Import-WorldDatabaseSqlFiles {
     }
 }
 
+function Get-RabbitMqCtlCommandInvocation {
+    param([string[]] $Arguments)
+
+    switch ($RabbitMqCtlInvocationMode) {
+        'DockerExec' {
+            return [pscustomobject]@{
+                FilePath  = $DockerCliResolved
+                Arguments = @('exec', $RabbitMqDockerContainerName, 'rabbitmqctl') + $Arguments
+            }
+        }
+        default {
+            if ([string]::IsNullOrWhiteSpace($RabbitMqCtlResolved)) {
+                return $null
+            }
+
+            return [pscustomobject]@{
+                FilePath  = $RabbitMqCtlResolved
+                Arguments = $Arguments
+            }
+        }
+    }
+}
+
+function Invoke-RabbitMqCtl {
+    param(
+        [string[]] $Arguments,
+        [switch] $IgnoreExitCode
+    )
+
+    $commandInvocation = Get-RabbitMqCtlCommandInvocation -Arguments $Arguments
+    if ($null -eq $commandInvocation) {
+        if ($IgnoreExitCode) {
+            return [pscustomobject]@{
+                ExitCode = 1
+                Output   = @()
+            }
+        }
+
+        throw "RabbitMQ CLI '$RabbitMqCtl' was not found."
+    }
+
+    $commandArguments = $commandInvocation.Arguments
+    $output = & $commandInvocation.FilePath @commandArguments 2>&1
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0 -and !$IgnoreExitCode) {
+        throw "RabbitMQ CLI command failed with exit code $exitCode.`n$($output -join [Environment]::NewLine)"
+    }
+
+    [pscustomobject]@{
+        ExitCode = $exitCode
+        Output   = @($output)
+    }
+}
+
 function Ensure-RabbitMqUser {
     if ($SkipRabbitMqUser) {
         Write-Info 'Skipping RabbitMQ user creation.'
         return
     }
 
-    if (!(Get-Command $RabbitMqCtl -ErrorAction SilentlyContinue)) {
+    if ($RabbitMqCtlInvocationMode -eq 'Native') {
+        $RabbitMqCtlResolved = Resolve-NexusSetupExecutablePath -Command $RabbitMqCtlResolved
+    }
+
+    if ($null -eq (Get-RabbitMqCtlCommandInvocation -Arguments @('help'))) {
         Write-Warning "RabbitMQ command '$RabbitMqCtl' was not found. Install RabbitMQ or pass -SkipRabbitMqUser."
         return
     }
 
-    $usersOutput = & $RabbitMqCtl list_users 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to list RabbitMQ users.`n$($usersOutput -join [Environment]::NewLine)"
+    $usersOutput = Invoke-RabbitMqCtl -Arguments @('list_users')
+    if ($usersOutput.ExitCode -ne 0) {
+        throw "Failed to list RabbitMQ users.`n$($usersOutput.Output -join [Environment]::NewLine)"
     }
 
-    if (($usersOutput -join [Environment]::NewLine) -notmatch "(?m)^$([regex]::Escape($BrokerUser))\s") {
+    if (($usersOutput.Output -join [Environment]::NewLine) -notmatch "(?m)^$([regex]::Escape($BrokerUser))\s") {
         Write-Info "Creating RabbitMQ user $BrokerUser"
-        & $RabbitMqCtl add_user $BrokerUser $BrokerPassword
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to create RabbitMQ user $BrokerUser."
-        }
+        Invoke-RabbitMqCtl -Arguments @('add_user', $BrokerUser, $BrokerPassword) | Out-Null
     }
     else {
         Write-Info "RabbitMQ user $BrokerUser already exists."
     }
 
-    & $RabbitMqCtl set_user_tags $BrokerUser administrator
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to set RabbitMQ tags for $BrokerUser."
-    }
-
-    & $RabbitMqCtl set_permissions -p / $BrokerUser '.*' '.*' '.*'
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to set RabbitMQ permissions for $BrokerUser."
-    }
+    Invoke-RabbitMqCtl -Arguments @('set_user_tags', $BrokerUser, 'administrator') | Out-Null
+    Invoke-RabbitMqCtl -Arguments @('set_permissions', '-p', '/', $BrokerUser, '.*', '.*', '.*') | Out-Null
 }
 
 function Start-StandaloneServers {
@@ -1495,13 +1611,69 @@ function Start-StandaloneServers {
     }
 }
 
-if ($PromptForRootPassword) {
+$RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+$WorldDatabasePath = Resolve-WorldDatabasePath -Path $WorldDatabasePath -RepositoryRoot $RepoRoot
+
+$dependencyBootstrap = Resolve-NexusSetupDependencies `
+    -RepoRoot $RepoRoot `
+    -DependencyMode $DependencyMode `
+    -DockerCli $DockerCli `
+    -PortableMariaDbImage $PortableMariaDbImage `
+    -PortableRabbitMqImage $PortableRabbitMqImage `
+    -MySqlExe $MySqlExe `
+    -MySqlHost $MySqlHost `
+    -MySqlPort $MySqlPort `
+    -RootUser $RootUser `
+    -RootPassword $RootPassword `
+    -PromptForRootPassword:$PromptForRootPassword `
+    -BrokerHost $BrokerHost `
+    -BrokerPort $BrokerPort `
+    -BrokerUser $BrokerUser `
+    -BrokerPassword $BrokerPassword `
+    -RabbitMqCtl $RabbitMqCtl
+
+$DockerCliResolved = $dependencyBootstrap.DockerCliResolved
+$MySqlHost = $dependencyBootstrap.MySqlHost
+$MySqlPort = $dependencyBootstrap.MySqlPort
+$RootUser = $dependencyBootstrap.RootUser
+$RootPassword = $dependencyBootstrap.RootPassword
+$ShouldPromptForRootPassword = $dependencyBootstrap.ShouldPromptForRootPassword
+$MySqlInvocationMode = $dependencyBootstrap.MySqlInvocationMode
+$MySqlDockerContainerName = $dependencyBootstrap.MySqlDockerContainerName
+$MySqlDockerClientHost = $dependencyBootstrap.MySqlDockerClientHost
+$MySqlDockerImage = $dependencyBootstrap.MySqlDockerImage
+$MySqlProvisionedThisRun = $dependencyBootstrap.MySqlProvisionedThisRun
+$BrokerHost = $dependencyBootstrap.BrokerHost
+$BrokerPort = $dependencyBootstrap.BrokerPort
+$RabbitMqCtlResolved = $dependencyBootstrap.RabbitMqCtlResolved
+$RabbitMqCtlInvocationMode = $dependencyBootstrap.RabbitMqCtlInvocationMode
+$RabbitMqDockerContainerName = $dependencyBootstrap.RabbitMqDockerContainerName
+$RabbitMqProvisionedThisRun = $dependencyBootstrap.RabbitMqProvisionedThisRun
+
+if ($ShouldPromptForRootPassword) {
     $RootPassword = ConvertFrom-SecureStringToPlainText (Read-Host 'MySQL/MariaDB root password' -AsSecureString)
 }
 
-$RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
-$WorldDatabasePath = Resolve-WorldDatabasePath -Path $WorldDatabasePath -RepositoryRoot $RepoRoot
-$MySqlExe = Resolve-MySqlClient -Command $MySqlExe
+if ($MySqlInvocationMode -eq 'Native') {
+    try {
+        $MySqlExe = Resolve-MySqlClient -Command $MySqlExe
+    }
+    catch {
+        if ($DependencyMode -eq 'ExternalOnly') {
+            throw
+        }
+
+        $DockerCliResolved = Get-NexusSetupDockerCli -Command $DockerCli
+        if (!$DockerCliResolved) {
+            throw
+        }
+
+        Write-Info 'mysql client was not found locally; using a transient MariaDB Docker client.'
+        $MySqlInvocationMode = 'DockerClient'
+        $MySqlDockerClientHost = Convert-NexusSetupHostForDockerClient -HostName $MySqlHost
+        $MySqlDockerImage = $PortableMariaDbImage
+    }
+}
 
 Write-Section 'MySQL/MariaDB user and databases'
 Ensure-DatabaseUser

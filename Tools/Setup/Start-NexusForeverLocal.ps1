@@ -18,6 +18,8 @@ This script wraps Initialize-NexusForever.ps1 so one command can:
 By default, generated runtime assets are staged under
 .nexusforever-runtime\assets in the repo root. Pass -ExistingTableDirectory and
 -ExistingMapDirectory to reuse assets you already generated elsewhere.
+Map generation and table extraction use a bounded parallel worker count by
+default. Pass -MapGeneratorParallelism to override it.
 
 .EXAMPLE
 .\Tools\Setup\Start-NexusForeverLocal.ps1 -ClientDirectory "D:\Games\WildStar" -PromptForRootPassword
@@ -35,6 +37,12 @@ By default, generated runtime assets are staged under
 param(
     [string] $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path,
 
+    [ValidateSet('Auto', 'ExternalOnly', 'PortableDocker')]
+    [string] $DependencyMode = 'Auto',
+    [string] $DockerCli = 'docker',
+    [string] $PortableMariaDbImage = 'mariadb:11.8',
+    [string] $PortableRabbitMqImage = 'rabbitmq:4.1-management',
+
     [string] $Configuration = 'Debug',
     [string] $TargetFramework = 'net10.0',
 
@@ -44,6 +52,7 @@ param(
     [string] $ExistingTableDirectory = '',
     [string] $ExistingMapDirectory = '',
     [string] $AssetRoot = '',
+    [int] $MapGeneratorParallelism = 0,
     [switch] $RegenerateAssets,
 
     [switch] $SkipSetup,
@@ -134,6 +143,17 @@ function Write-Info {
     Write-Host $Message -ForegroundColor Gray
 }
 
+$dependencyBootstrapScript = Join-Path $PSScriptRoot 'DependencyBootstrap.ps1'
+if (!(Test-Path -LiteralPath $dependencyBootstrapScript -PathType Leaf)) {
+    throw "Dependency bootstrap script was not found: $dependencyBootstrapScript"
+}
+
+. $dependencyBootstrapScript
+
+$ShouldPromptForRootPasswordInSetup = [bool] $PromptForRootPassword
+$MySqlProvisionedThisRun = $false
+$RabbitMqProvisionedThisRun = $false
+
 function Get-AbsolutePath {
     param(
         [string] $Path,
@@ -175,10 +195,16 @@ function Resolve-ClientExecutablePath {
     }
 
     foreach ($root in $candidateRoots | Select-Object -Unique) {
-        foreach ($candidate in @('WildStar64.exe', 'WildStar32.exe')) {
-            $candidatePath = Join-Path $root $candidate
-            if (Test-Path -LiteralPath $candidatePath -PathType Leaf) {
-                return (Resolve-Path -LiteralPath $candidatePath).Path
+        foreach ($candidateDirectory in @($root, (Join-Path $root 'Client64'), (Join-Path $root 'Client32'))) {
+            if (!(Test-Path -LiteralPath $candidateDirectory -PathType Container)) {
+                continue
+            }
+
+            foreach ($candidate in @('WildStar64.exe', 'WildStar32.exe')) {
+                $candidatePath = Join-Path $candidateDirectory $candidate
+                if (Test-Path -LiteralPath $candidatePath -PathType Leaf) {
+                    return (Resolve-Path -LiteralPath $candidatePath).Path
+                }
             }
         }
     }
@@ -201,7 +227,13 @@ function Resolve-PatchDirectoryPath {
         $candidateRoots += Get-AbsolutePath -Path $ClientDirectory
     }
     elseif (![string]::IsNullOrWhiteSpace($ClientExecutable)) {
-        $candidateRoots += Split-Path -Parent (Get-AbsolutePath -Path $ClientExecutable)
+        $clientExecutableDirectory = Split-Path -Parent (Get-AbsolutePath -Path $ClientExecutable)
+        $candidateRoots += $clientExecutableDirectory
+
+        $clientInstallRoot = Split-Path -Parent $clientExecutableDirectory
+        if (![string]::IsNullOrWhiteSpace($clientInstallRoot)) {
+            $candidateRoots += $clientInstallRoot
+        }
     }
 
     foreach ($root in $candidateRoots | Select-Object -Unique) {
@@ -222,6 +254,72 @@ function Get-DatabaseConnectionString {
 
 function Get-BrokerConnectionString {
     "amqp://${BrokerUser}:${BrokerPassword}@${BrokerHost}:${BrokerPort}"
+}
+
+function Get-ProcessLogDirectory {
+    $logDirectory = Join-Path $RepoRoot '.nexusforever-runtime\logs'
+    New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
+    (Resolve-Path -LiteralPath $logDirectory).Path
+}
+
+function Get-ProcessLogPaths {
+    param([string] $Name)
+
+    $safeName = ($Name -replace '[^A-Za-z0-9_.-]', '_')
+    $logDirectory = Get-ProcessLogDirectory
+
+    [pscustomobject]@{
+        StandardOutput = Join-Path $logDirectory "$safeName.stdout.log"
+        StandardError  = Join-Path $logDirectory "$safeName.stderr.log"
+    }
+}
+
+function Get-LogTail {
+    param(
+        [string] $Path,
+        [int] $LineCount = 40
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path) -or !(Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return ''
+    }
+
+    try {
+        $lines = @(Get-Content -LiteralPath $Path -Tail $LineCount -ErrorAction Stop)
+        if ($lines.Count -eq 0) {
+            return ''
+        }
+
+        ($lines -join [Environment]::NewLine).TrimEnd()
+    }
+    catch {
+        ''
+    }
+}
+
+function Get-ProcessStartupFailureDetails {
+    param(
+        [string] $StandardOutputPath,
+        [string] $StandardErrorPath
+    )
+
+    $sections = @()
+
+    $stdoutTail = Get-LogTail -Path $StandardOutputPath
+    if ($stdoutTail) {
+        $sections += "stdout ($StandardOutputPath):`n$stdoutTail"
+    }
+
+    $stderrTail = Get-LogTail -Path $StandardErrorPath
+    if ($stderrTail) {
+        $sections += "stderr ($StandardErrorPath):`n$stderrTail"
+    }
+
+    if ($sections.Count -eq 0) {
+        return ''
+    }
+
+    "`n" + ($sections -join "`n`n")
 }
 
 function Invoke-ExternalCommand {
@@ -399,7 +497,20 @@ function Test-MapAssets {
         return $false
     }
 
-    [bool] (Get-ChildItem -LiteralPath $Path -Filter '*.nfmap' -File -ErrorAction SilentlyContinue | Select-Object -First 1)
+    $requiredMapFiles = @(
+        'Eastern.nfmap',
+        'NewCentral.nfmap',
+        'NewPlayerExperience.nfmap',
+        'Western.nfmap'
+    )
+
+    foreach ($requiredMapFile in $requiredMapFiles) {
+        if (!(Test-Path -LiteralPath (Join-Path $Path $requiredMapFile) -PathType Leaf)) {
+            return $false
+        }
+    }
+
+    $true
 }
 
 function Initialize-GameAssets {
@@ -458,6 +569,10 @@ function Initialize-GameAssets {
             $arguments += '--generate'
         }
 
+        if ($MapGeneratorParallelism -gt 0) {
+            $arguments += @('--maxParallelism', $MapGeneratorParallelism)
+        }
+
         Write-Section 'WildStar assets'
         Invoke-ExternalCommand -FilePath $mapGeneratorExe -Arguments $arguments -WorkingDirectory (Split-Path -Parent $mapGeneratorExe)
     }
@@ -488,6 +603,10 @@ function Invoke-NexusForeverSetup {
 
     $setupParameters = @{
         RepoRoot               = $RepoRoot
+        DependencyMode         = $DependencyMode
+        DockerCli              = $DockerCli
+        PortableMariaDbImage   = $PortableMariaDbImage
+        PortableRabbitMqImage  = $PortableRabbitMqImage
         MySqlExe               = $MySqlExe
         MySqlHost              = $MySqlHost
         MySqlPort              = $MySqlPort
@@ -507,7 +626,7 @@ function Invoke-NexusForeverSetup {
         DefaultAccountPassword = $DefaultAccountPassword
     }
 
-    if ($PromptForRootPassword) {
+    if ($ShouldPromptForRootPasswordInSetup) {
         $setupParameters.PromptForRootPassword = $true
     }
 
@@ -591,11 +710,14 @@ function Stop-RunningProcessByPath {
 }
 
 function Start-StandaloneServers {
+    Assert-BrokerEndpointReady
+
     $startedProcesses = @()
 
     foreach ($server in $ServerProcesses) {
         $workingDirectory = Join-Path $RepoRoot "Source\$($server.Project)\bin\$Configuration\$TargetFramework"
         $exePath = Join-Path $workingDirectory $server.Exe
+        $logPaths = Get-ProcessLogPaths -Name $server.Project
 
         if (!(Test-Path -LiteralPath $exePath -PathType Leaf)) {
             throw "Cannot start $($server.Name); executable was not found: $exePath"
@@ -606,18 +728,22 @@ function Start-StandaloneServers {
         }
 
         Write-Info "Starting $($server.Name)"
-        $process = Start-Process -FilePath $exePath -WorkingDirectory $workingDirectory -WindowStyle Hidden -PassThru
+        Remove-Item -LiteralPath $logPaths.StandardOutput, $logPaths.StandardError -Force -ErrorAction SilentlyContinue
+        $process = Start-Process -FilePath $exePath -WorkingDirectory $workingDirectory -WindowStyle Hidden -RedirectStandardOutput $logPaths.StandardOutput -RedirectStandardError $logPaths.StandardError -PassThru
 
         Start-Sleep -Milliseconds 500
         $process.Refresh()
         if ($process.HasExited) {
-            throw "$($server.Name) exited immediately with code $($process.ExitCode)."
+            $failureDetails = Get-ProcessStartupFailureDetails -StandardOutputPath $logPaths.StandardOutput -StandardErrorPath $logPaths.StandardError
+            throw "$($server.Name) exited immediately with code $($process.ExitCode).$failureDetails"
         }
 
         $startedProcesses += [pscustomobject]@{
-            Name    = $server.Name
-            Port    = $server.Port
-            Process = $process
+            Name               = $server.Name
+            Port               = $server.Port
+            Process            = $process
+            StandardOutputPath = $logPaths.StandardOutput
+            StandardErrorPath  = $logPaths.StandardError
         }
     }
 
@@ -634,7 +760,8 @@ function Assert-ProcessesAlive {
 
         $entry.Process.Refresh()
         if ($entry.Process.HasExited) {
-            throw "$($entry.Name) exited before startup completed with code $($entry.Process.ExitCode)."
+            $failureDetails = Get-ProcessStartupFailureDetails -StandardOutputPath $entry.StandardOutputPath -StandardErrorPath $entry.StandardErrorPath
+            throw "$($entry.Name) exited before startup completed with code $($entry.Process.ExitCode).$failureDetails"
         }
     }
 }
@@ -694,6 +821,20 @@ function Wait-ForTcpEndpoint {
     throw "${Name} did not start listening on ${Address}:${Port} within $TimeoutSeconds seconds."
 }
 
+function Assert-BrokerEndpointReady {
+    $deadline = [DateTime]::UtcNow.AddSeconds([Math]::Min([Math]::Max($WaitTimeoutSeconds, 5), 30))
+    while ([DateTime]::UtcNow -lt $deadline) {
+        if (Test-TcpEndpoint -Address $BrokerHost -Port $BrokerPort) {
+            Write-Info "RabbitMQ broker is reachable on ${BrokerHost}:${BrokerPort}"
+            return
+        }
+
+        Start-Sleep -Milliseconds 500
+    }
+
+    throw "RabbitMQ broker is not reachable on ${BrokerHost}:${BrokerPort}. Start RabbitMQ or update -BrokerHost/-BrokerPort before launching the broker-backed NexusForever servers."
+}
+
 function Wait-ForRuntimeReadiness {
     param([object[]] $Processes = @())
 
@@ -706,6 +847,61 @@ function Wait-ForRuntimeReadiness {
     Assert-ProcessesAlive -Processes $Processes
 }
 
+function Test-CurrentProcessElevated {
+    try {
+        $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+        $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+    catch {
+        $false
+    }
+}
+
+function Get-ClientConnectorExecutablePath {
+    $clientConnectorPath = Join-Path $RepoRoot "Source\NexusForever.ClientConnector\bin\$Configuration\$TargetFramework\NexusForever.ClientConnector.exe"
+    if (!(Test-Path -LiteralPath $clientConnectorPath -PathType Leaf)) {
+        return ''
+    }
+
+    (Resolve-Path -LiteralPath $clientConnectorPath).Path
+}
+
+function Sync-ClientConnectorRuntime {
+    param([string] $ClientDirectory)
+
+    $clientConnectorExecutable = Get-ClientConnectorExecutablePath
+    if ([string]::IsNullOrWhiteSpace($clientConnectorExecutable)) {
+        return ''
+    }
+
+    $clientConnectorOutputDirectory = Split-Path -Parent $clientConnectorExecutable
+    foreach ($runtimeFile in @(Get-ChildItem -LiteralPath $clientConnectorOutputDirectory -File -ErrorAction Stop)) {
+        if ($runtimeFile.Name -ieq 'config.json') {
+            continue
+        }
+
+        Copy-Item -LiteralPath $runtimeFile.FullName -Destination (Join-Path $ClientDirectory $runtimeFile.Name) -Force
+    }
+
+    (Resolve-Path -LiteralPath (Join-Path $ClientDirectory 'NexusForever.ClientConnector.exe')).Path
+}
+
+function Write-ClientConnectorConfig {
+    param(
+        [string] $ClientDirectory,
+        [string] $HostName,
+        [string] $Language
+    )
+
+    $configPath = Join-Path $ClientDirectory 'config.json'
+    [pscustomobject]@{
+        HostName = $HostName
+        Language = $Language
+    } | ConvertTo-Json | Set-Content -LiteralPath $configPath -Encoding utf8
+
+    (Resolve-Path -LiteralPath $configPath).Path
+}
+
 function Start-WildStarClient {
     param([string] $ExecutablePath)
 
@@ -714,6 +910,48 @@ function Start-WildStarClient {
     }
     else {
         $PatcherHost
+    }
+
+    $clientDirectoryPath = Split-Path -Parent $ExecutablePath
+    $sharedHost = [string]::Equals($resolvedPatcherHost, $AuthHost, [System.StringComparison]::OrdinalIgnoreCase)
+
+    if ($sharedHost) {
+        $clientConnectorExecutable = Sync-ClientConnectorRuntime -ClientDirectory $clientDirectoryPath
+    }
+    else {
+        $clientConnectorExecutable = Get-ClientConnectorExecutablePath
+    }
+
+    if ($clientConnectorExecutable -and $sharedHost) {
+        $configPath = Write-ClientConnectorConfig -ClientDirectory $clientDirectoryPath -HostName $AuthHost -Language $ClientLanguage
+        $clientConnectorParameters = @{
+            FilePath         = $clientConnectorExecutable
+            WorkingDirectory = $clientDirectoryPath
+        }
+
+        Write-Info "Prepared NexusForever.ClientConnector config $configPath"
+
+        if (!(Test-CurrentProcessElevated)) {
+            Write-Warning 'Official client connection guidance expects NexusForever.ClientConnector to run as Administrator. Approve the UAC prompt if Windows asks.'
+            $clientConnectorParameters.Verb = 'RunAs'
+        }
+
+        Write-Info "Launching WildStar client through NexusForever.ClientConnector"
+
+        try {
+            Start-Process @clientConnectorParameters | Out-Null
+            return
+        }
+        catch {
+            throw "Failed to launch NexusForever.ClientConnector from $clientConnectorExecutable. $($_.Exception.Message)"
+        }
+    }
+
+    if (![string]::IsNullOrWhiteSpace($clientConnectorExecutable) -and !$sharedHost) {
+        Write-Warning 'NexusForever.ClientConnector only supports one shared host for auth and patcher. Falling back to direct WildStar launch because -PatcherHost differs from -AuthHost.'
+    }
+    elseif ([string]::IsNullOrWhiteSpace($clientConnectorExecutable)) {
+        Write-Warning 'NexusForever.ClientConnector executable was not found in the current build output. Falling back to direct WildStar launch.'
     }
 
     $arguments = @(
@@ -730,6 +968,39 @@ function Start-WildStarClient {
 }
 
 $RepoRoot = Get-AbsolutePath -Path $RepoRoot
+
+$dependencyBootstrap = Resolve-NexusSetupDependencies `
+    -RepoRoot $RepoRoot `
+    -DependencyMode $DependencyMode `
+    -DockerCli $DockerCli `
+    -PortableMariaDbImage $PortableMariaDbImage `
+    -PortableRabbitMqImage $PortableRabbitMqImage `
+    -MySqlExe $MySqlExe `
+    -MySqlHost $MySqlHost `
+    -MySqlPort $MySqlPort `
+    -RootUser $RootUser `
+    -RootPassword $RootPassword `
+    -PromptForRootPassword:$PromptForRootPassword `
+    -BrokerHost $BrokerHost `
+    -BrokerPort $BrokerPort `
+    -BrokerUser $BrokerUser `
+    -BrokerPassword $BrokerPassword `
+    -RabbitMqCtl $RabbitMqCtl
+
+$DockerCli = $dependencyBootstrap.DockerCliResolved
+$MySqlHost = $dependencyBootstrap.MySqlHost
+$MySqlPort = $dependencyBootstrap.MySqlPort
+$RootUser = $dependencyBootstrap.RootUser
+$RootPassword = $dependencyBootstrap.RootPassword
+$ShouldPromptForRootPasswordInSetup = $dependencyBootstrap.ShouldPromptForRootPassword
+$MySqlProvisionedThisRun = $dependencyBootstrap.MySqlProvisionedThisRun
+$BrokerHost = $dependencyBootstrap.BrokerHost
+$BrokerPort = $dependencyBootstrap.BrokerPort
+$RabbitMqProvisionedThisRun = $dependencyBootstrap.RabbitMqProvisionedThisRun
+
+if ($SkipSetup -and ($MySqlProvisionedThisRun -or $RabbitMqProvisionedThisRun)) {
+    throw 'Portable dependencies were created for the first time, but -SkipSetup was requested. Run without -SkipSetup once so the databases, users, migrations, and broker state can be initialized.'
+}
 
 if (!$SkipSetup) {
     Write-Section 'Setup'
