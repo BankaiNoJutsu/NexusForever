@@ -1,3 +1,4 @@
+using NexusForever.Network;
 using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model.Crafting
@@ -12,6 +13,10 @@ namespace NexusForever.Network.World.Message.Model.Crafting
         {
             ItemGuid = reader.ReadULong();
             uint count = reader.ReadUInt();
+
+            if (count > reader.BytesRemaining / 4u)
+                throw new InvalidPacketValueException();
+
             RuneSlotItem2Id = new uint[count];
             for (int i = 0; i < count; i++)
             {

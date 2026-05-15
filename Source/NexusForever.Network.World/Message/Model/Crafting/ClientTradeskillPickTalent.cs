@@ -7,6 +7,7 @@ namespace NexusForever.Network.World.Message.Model.Crafting
     public class ClientTradeskillPickTalent : IReadable
     {
         public TradeskillType TradeskillId { get; private set; }
+        // Native client sends the selected talent tier as a zero-based index.
         public uint Tier { get; private set; }
         public uint TradeskillBonusId { get; private set; }
 

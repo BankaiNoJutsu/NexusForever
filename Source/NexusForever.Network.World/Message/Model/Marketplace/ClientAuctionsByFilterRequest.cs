@@ -28,12 +28,18 @@ namespace NexusForever.Network.World.Message.Model.Marketplace
             Item2TypeId = reader.ReadUInt(14u);
 
             uint count = reader.ReadUInt();
+            if (count > reader.BytesRemaining / 4u)
+                throw new InvalidPacketValueException();
+
             for(uint i = 0; i < count; i++)
             {
                 Item2Ids.Add(reader.ReadUInt());
             }
 
             count = reader.ReadUInt();
+            if (count > 7u)
+                throw new InvalidPacketValueException();
+
             for(uint i = 0; i < count; i++)
             {
                 AuctionFilter filter = new AuctionFilter();
