@@ -9,6 +9,7 @@ namespace NexusForever.Game.Abstract.Spell
         ISpellInfo ParentSpellInfo { get; set; }
         ISpellInfo RootSpellInfo { get; set; }
         bool UserInitiatedSpellCast { get; set; }
+        bool UseServiceTokenCost { get; set; }
         uint PrimaryTargetId { get; set; }
         Position Position { get; set; }
         ushort TaxiNode { get; set; }

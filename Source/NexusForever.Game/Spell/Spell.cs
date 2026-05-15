@@ -6,6 +6,7 @@ using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Spell.Event;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.Entity.Movement.Command.State;
 using NexusForever.Game.Static.Spell;
@@ -104,6 +105,12 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
+            if (!TryConsumeServiceTokenCost())
+            {
+                SendSpellCastResult(CastResult.ServiceTokensInsufficentFunds);
+                return;
+            }
+
             if (Caster is IPlayer player)
                 if (Parameters.SpellInfo.GlobalCooldown != null)
                     player.SpellManager.SetGlobalSpellCooldown(Parameters.SpellInfo.GlobalCooldown.CooldownTime / 1000d);
@@ -144,6 +151,10 @@ namespace NexusForever.Game.Spell
 
                 if (Parameters.CharacterSpell?.MaxAbilityCharges > 0 && Parameters.CharacterSpell?.AbilityCharges == 0)
                     return CastResult.SpellNoCharges;
+
+                CastResult serviceTokenCostResult = CheckServiceTokenCost(player);
+                if (serviceTokenCostResult != CastResult.Ok)
+                    return serviceTokenCostResult;
             }
 
             CastResult targetResult = CheckPrimaryTarget();
@@ -151,6 +162,39 @@ namespace NexusForever.Game.Spell
                 return targetResult;
 
             return CastResult.Ok;
+        }
+
+        private CastResult CheckServiceTokenCost(IPlayer player)
+        {
+            if (!Parameters.UseServiceTokenCost)
+                return CastResult.Ok;
+
+            if (!Parameters.SpellInfo.HasServiceTokenCost || Parameters.SpellInfo.ServiceTokenCostEntry == null)
+                return CastResult.ServiceTokensInsufficentFunds;
+
+            uint serviceTokenCost = Parameters.SpellInfo.ServiceTokenCostEntry.ServiceTokenCost;
+            return player.Account.CurrencyManager.CanAfford(AccountCurrencyType.ServiceToken, serviceTokenCost)
+                ? CastResult.Ok
+                : CastResult.ServiceTokensInsufficentFunds;
+        }
+
+        private bool TryConsumeServiceTokenCost()
+        {
+            if (!Parameters.UseServiceTokenCost)
+                return true;
+
+            if (Caster is not IPlayer player)
+                return false;
+
+            uint serviceTokenCost = Parameters.SpellInfo.ServiceTokenCostEntry?.ServiceTokenCost ?? 0u;
+            if (serviceTokenCost == 0u)
+                return true;
+
+            if (!player.Account.CurrencyManager.CanAfford(AccountCurrencyType.ServiceToken, serviceTokenCost))
+                return false;
+
+            player.Account.CurrencyManager.CurrencySubtractAmount(AccountCurrencyType.ServiceToken, serviceTokenCost);
+            return true;
         }
 
         private CastResult CheckPrimaryTarget()

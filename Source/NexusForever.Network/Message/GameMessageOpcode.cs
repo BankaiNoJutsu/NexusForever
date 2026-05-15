@@ -17,6 +17,7 @@ namespace NexusForever.Network.Message
         ClientActivateUnitCast          = 0x0097, // not sure about the name - almost the same as 0x00B3, but also initiates 0x07FD
         ClientCastPathExplorerSearching = 0x0099,
         ClientCastSpell                 = 0x009A,
+        ClientCastSpellPosition         = 0x009B,
         ServerChallengeShared           = 0x00A9,
         ServerChallengeShareTimeout     = 0x00AA,
         ServerChangeWorld               = 0x00AD,
@@ -73,6 +74,7 @@ namespace NexusForever.Network.Message
         ClientPathExplorerPowerMapProgress = 0x00F9,
         ServerPathExplorerPowerMapWaiting = 0x00FA,
         ServerCharacterFlagsUpdated     = 0x00FE,
+        ClientFlightPathPurchase        = 0x00FF,
         ServerResurrectionState         = 0x0100,
         ServerGalacticArchiveRefresh    = 0x0102,
         ClientGalacticArchiveUnlock     = 0x0103,
