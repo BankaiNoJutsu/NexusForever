@@ -57,16 +57,25 @@ WildStar64.exe,14033bf90,NetworkIOCP_PostRecv,Posts an overlapped WSARecv reques
 WildStar64.exe,14033c7e0,NetworkIOCP_SendQueued,Batches queued buffers into an overlapped WSASend request.
 WildStar64.exe,14033ec10,NetworkSocket_DestroyClosesocket,Destructor path that closes the socket and releases buffers.
 WildStar64.exe,14033ece0,NetworkSocket_CloseSocket,Closes an active socket and clears its handle.
+WildStar64.exe,1403988d0,SpellCast_ResolveTargetsAndValidate,Shared spell-cast target-preparation helper that resolves target entity ids, drives repeated target validation/expansion through FUN_140398800, conditionally sends zero-byte opcode 0x018F ClientP2PTradingCancelTrade for the matching local-trade path, and returns the resulting cast status.
 WildStar64.exe,1403993c0,RapidTransport_SendClientRapidTransport,Builds rapid-transport payload data and sends opcode 0x0141 through the network send helper.
 WildStar64.exe,1403994f0,ServiceToken_SendClientSpellCastWithServiceToken,Builds and sends opcode 0x00C2 service-token spell cast payload with the shared generated context token and spell4 id.
+WildStar64.exe,1403998e0,SpellCast_ValidateAndDispatch,Shared spell-cast entry path that validates prerequisites and target state, emits PrereqFailureMessage or SpellCastFailed on failure, and dispatches to specialized cast sender helpers on success.
+WildStar64.exe,140398cc0,ItemUse_SendClientItemUse,Builds and sends opcode 0x0943 ClientItemUse payload with the shared generated context token, item location, resolved target unit id, target item location, and fallback world-position vector.
 WildStar64.exe,14039ac90,ActivateUnit_SendClient0x0096Variant,Builds and sends opcode 0x0096 activate-unit-family payload with the generated context token, two packed selectors, a resolved target entity id, and a target/self world-position vector.
+WildStar64.exe,14039b340,SpellCast_SendClient0x009dVariant,Builds and sends opcode 0x009D payload with the shared generated context token, selected entry id, resolved target entity id, and a target or fallback world-position vector.
+WildStar64.exe,14039b930,SpellCast_Dispatch0x009dSelectionMask,Expands a selection bitmask over cast entries, routes selected ids through the opcode 0x009D sender helper, and raises SpellCastFailed for failing entries.
 WildStar64.exe,14039c1e0,ActivateUnit_SendClient0x0098Variant,Builds and sends opcode 0x0098 activate-unit-family payload with the shared generated context token and the cast-context +0x158 target field.
 WildStar64.exe,14039c430,ActivateUnit_SendClientActivateUnitCast,Builds and sends opcode 0x0097 activate-unit cast payload with the shared generated context token and the activation target field carried through cast-context +0x158.
 WildStar64.exe,1403a11c0,ActionSet_CheckPvPRestriction,Checks whether the current PvP state permits action-set changes.
 WildStar64.exe,1403bb480,ActionSet_SendPendingActionSetChanges,Sends or commits a validated action-set change request.
 WildStar64.exe,1403bb8d0,ActionSet_CheckUpdateSpellInProgress,Checks whether a spell/action-set update is already in progress.
+WildStar64.exe,1403db870,UnitState_ApplyResolvedState,Resolves the target unit for a raw unit-state update, applies the raw state value, and special-cases state 0 cleanup for the local subject/UI path.
+WildStar64.exe,1403db920,UnitState_MaybeDispatchUnitEvaded,Emits the UnitEvaded client event when a resolved unit-state update carries raw state value 4.
 WildStar64.exe,1403dc9f0,WorldSocket_SelectByWorldAndSocket,WorldSocket lookup/selection path near world socket strings.
 WildStar64.exe,1403f4900,Network_SendOpcodePayloadHelper,Generic opcode+payload send helper that dispatches through DAT_140c65808 virtual send callbacks.
+WildStar64.exe,14042e120,UnitEvent_HandleEnteredCombat,Dispatches UnitEnteredCombat and conditional EnteredCombat events for the local player or current target.
+WildStar64.exe,14042e1b0,UnitEvent_DispatchTargetUnitChanged,Dispatches TargetUnitChanged with the local player's current target id.
 WildStar64.exe,1404aacb0,ActionSet_ValidateRequestedChanges,Validates a 12-entry action-set request and returns a LimitedActionSetResult.
 WildStar64.exe,1404acfa0,FlightPath_SendPurchaseRequest,Builds and sends opcode 0x00FF flight-path purchase payload from validated route data.
 WildStar64.exe,1404e7f60,Lua_RegisterAccountEntitlementEnums,Registers account currency/operation and entitlement Lua enums.

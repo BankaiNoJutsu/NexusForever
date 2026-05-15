@@ -89,6 +89,7 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		"externalaccount", "pccafe", "licenses", "loginname", "gameaccountid",
 		"premastersecret", "authntoken", "serverrand", "serverpublickey", "serversignature",
 		"spellcastwithservicetoken", "servicetokencastresult",
+		"spellcastfailed", "prereqfailuremessage",
 		"monservicetokencost", "monrezservicetokencost", "bwakehereservicetoken", "wakeherecooldown",
 		"monaltcostrapidtransport", "moncostrapidtransport", "brapidtransportallowed",
 		"getrapidtransportcooldown", "rapidtransport", "rapidtransportresult",

@@ -77,6 +77,17 @@ These fixtures validate central target selection: one entity should only appear 
 | Lowest Health AE Test | Global spell data | `Spell4=27181`, base `13599`, tier `1` | Named witness for `targetSelection=4`: "lowest absolute health in a 30 yd AE". | `/spell inspect4 27181` then `/spell cast4 27181` |
 | Missing Health AE Test | Global spell data | `Spell4=27182`, base `13600`, tier `1` | Named witness for `targetSelection=5`: "unit missing the most health in a 30 yd AE". | `/spell inspect4 27182` then `/spell cast4 27182` |
 
+## Unresolved TargetMechanic Fixtures
+
+These rows cover client target-mechanic families that still map to unresolved server labels (`type 0`, `type 6`, `type 7`). Treat them as evidence-only inspect and cast fixtures for follow-up tracing, not as justification to hardcode new targeting behavior.
+
+| Target type | Known mechanic ids | Concrete spell | Why it matters | Commands |
+| --- | --- | --- | --- | --- |
+| Type `0` | `1`, `2`, `44` | `Spell4=305`, base `305`, tier `1` | `Q388` anti-tank mine explosion is a simple concrete witness for the unresolved client `type 0` branch and remains a candidate for deeper `IsSelfSpell` tracing. | `/spell inspect4 305` then `/spell cast4 305` |
+| Type `6` | `17` | `Spell4=5157`, base `4526`, tier `1` | Consumable buff row mapped end-to-end to mechanic `17`; currently the cleanest inspect-first witness for unresolved client `type 6`, even though practical casting still depends on item context. | `/spell inspect4 5157`; cast through the matching item or consumable path if available |
+| Type `7` | `18`, `25`, `26`, `33`, `52`, `58`, `63`, `69` | `Spell4=339`, base `339`, tier `1` | Auto-attack witness for mechanic `25`; useful for the client service-lookup branch currently surfaced as unresolved `type 7`. | `/spell inspect4 339` then `/spell cast4 339` |
+| Type `7` | `18`, `25`, `26`, `33`, `52`, `58`, `63`, `69` | `Spell4=26813`, base `13307`, tier `1` | Client test AE witness for mechanic `18`; complements the auto-attack row with a non-basic-attack shape under the same unresolved branch. | `/spell inspect4 26813` then `/spell cast4 26813` |
+
 ## Proxy Variant Fixtures
 
 The placed `NonPlayer` slice is dominated by plain `Proxy`, but global data gives clean non-random proxy variant fixtures. These validate that variant rows decode `DataBits00`, emit `proxy` diagnostics, preserve parent/root spell context, forward the realized proxy target to child `Target` rows, and route delayed or duration-bound pulses through the shared scheduler.

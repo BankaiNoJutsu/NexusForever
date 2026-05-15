@@ -701,6 +701,94 @@ Twelfth rapid-transport UI→send-chain follow-up implemented from this pass:
   map-row `idNode` field, but packet `Time` semantics remain blocked/unverified
   pending a direct mapping of the `ClientRapidTransport` send serializer path.
 
+Spell-targeting follow-up implemented from this pass:
+
+- `Lua_GameSpell_IsMovingInterrupted` at
+  `exports\WildStar64.exe\selected_decompiled.c:10802` reads
+  `Spell4Base.TargetingFlags & 0x40` and returns the one-bit result.
+- `Lua_GameSpell_IsFreeformTarget` at
+  `exports\WildStar64.exe\selected_decompiled.c:10734` reads
+  `Spell4Base.TargetingFlags & 0x400000` and returns the one-bit result.
+- `Lua_GameSpell_GetLasTierDesc` at
+  `exports\WildStar64.exe\selected_decompiled.c:10843` and
+  `Lua_GameSpell_GetLasBonusEachTierDesc` at `:10943` resolve localized LAS
+  description ids through the spell metadata object; this pass keeps that as a
+  diagnostic-only server surface until the exact entry/base field pairing is
+  fully proven.
+- `Source\NexusForever.Game.Static\Spell\SpellTargetingFlags.cs` now names the
+  two client-confirmed targeting bits as `InterruptOnMove = 0x40` and
+  `FreeformTarget = 0x400000`.
+- `ISpellBaseInfo` / `SpellBaseInfo` now surface typed targeting flags plus
+  `IsFreeformTarget` and `IsMovingInterrupted`, and `/spell inspect` prints the
+  targeting flags, those booleans, and the LAS description ids for follow-up
+  skill/LAS work.
+- `Spell.IsMovingInterrupted()` no longer uses the old `CastTime > 0`
+  placeholder; it now follows the client-confirmed targeting-flag bit instead.
+
+Spell self-targeting and LAS text follow-up implemented from this pass:
+
+- `Lua_GameSpell_IsSelfSpell` at
+  `exports\WildStar64.exe\selected_decompiled.c:10656` returns true for a
+  proven self-AOE path (`TargetType == 2`) and also includes unproven target
+  type `0`, a type-`7` service lookup, and a conditional target-AOE branch that
+  depends on an undecoded target-mechanics field.
+- `CharacterSpell.ResolvePrimaryTargetId()` now treats `TargetType == 2`
+  (`self AOE`) as caster-targeted by returning the player/unit guid directly,
+  which is the minimal safe server-side alignment with the proven client path.
+- `Lua_GameSpell_GetLasTierDesc` and `Lua_GameSpell_GetLasBonusEachTierDesc`
+  resolve localized text rather than returning raw ids. The decompiled accessors
+  line up with `Spell4.LocalizedTextIdLASTier` and
+  `Spell4Base.LocalizedTextIdLASTierPoint` before passing those ids into the
+  client localization layer.
+- `/spell inspect` now resolves those LAS ids through the server English text
+  table and prints id plus resolved text, while preserving the raw ids inside
+  the same diagnostic line.
+- The type-`7` self-spell branch, type-`0` meaning, and the extra target-AOE
+  condition remain evidence-only until the target-mechanics wrapper layout is
+  decoded more completely.
+- Verification: `dotnet build Source\NexusForever.sln -v minimal --nologo`
+  succeeds, with only existing package-version/vulnerability warnings.
+
+Innate spell accessor and unresolved self-spell-branch follow-up implemented from this pass:
+
+- Rechecked the deeper `Lua_GameSpell_IsSelfSpell` branches against the client
+  wrapper layout shared by `Lua_GameSpell_IsFreeformTarget`. The remaining
+  target-type `0`, target-type `7`, and conditional target-AOE behavior all
+  depend on undecoded runtime wrapper fields and a service lookup path, so no
+  further server-side self-targeting change was made in this pass.
+- The live `Spell4TargetMechanics` table confirms those unresolved target types
+  are not dead code: type `0` appears on mechanic ids `1`, `2`, and `44`; type
+  `6` appears on mechanic id `17`; type `7` appears on mechanic ids `18`, `25`,
+  `26`, `33`, `52`, `58`, `63`, and `69`. Existing spell-system notes still put
+  type-`0` at `16,453` bases when paired with flags `1`, which raises its
+  priority while still not making it safe to implement blindly.
+- `Lua_GameSpell_GetCasterInnateCosts` at
+  `exports\WildStar64.exe\selected_decompiled.c:8245` returns an array of up
+  to two `{ costType, costValue }` pairs sourced from the two innate-cost slots
+  on `Spell4`, while preserving the extra `InnateCostEMMId` payload through the
+  client runtime path.
+- `Lua_GameSpell_GetCasterInnateRequirements` at
+  `exports\WildStar64.exe\selected_decompiled.c:8884` returns up to two
+  `{ requirementType, requirementValue, evaluationMode }` tuples from the two
+  caster innate requirement slots on `Spell4`.
+- `Lua_GameSpell_GetTargetInnateRequirements` at
+  `exports\WildStar64.exe\selected_decompiled.c:8998` returns a single target
+  innate requirement tuple from `Spell4.TargetBeginInnateRequirement`,
+  `TargetBeginInnateRequirementValue`, and `TargetBeginInnateRequirementEval`.
+- `/spell inspect` now decodes innate costs with `Vital` names where possible,
+  decodes caster and target innate requirement types through
+  `PrerequisiteType`, decodes evaluation modes through `EvaluationMode`, and
+  keeps unresolved `InnateCostEMMId` values raw instead of overnaming them.
+- Follow-up trace on `InnateCostEMMId` still does not prove a meaning or any
+  downstream consumer. The
+  strongest structural clue is the parallel `Spell4Effects.EmmComparison` /
+  `EmmValue` pair, so inspection output now explicitly flags non-zero `emmId`
+  values as unknown semantics rather than silently printing bare integers.
+- Runtime candidates now include concrete inspect-first witnesses for the
+  unresolved client target-mechanic families: type `0` (`Spell4=305`, known
+  mechanics `1/2/44`), type `6` (`Spell4=5157`, mechanic `17`), and type `7`
+  (`Spell4=339` and `Spell4=26813`, known mechanics `18/25/26/33/52/58/63/69`).
+
 Thirteenth rapid-transport selector/layout follow-up implemented from this pass:
 
 - `TraceFunctionCallers.java` now closes the remaining selector-source gap for
@@ -970,6 +1058,228 @@ Twenty-first service-token/audio follow-up implemented from this pass:
   distinguish effect-chain processing, validation, or other internal audio
   bookkeeping safely. The durable boundary therefore remains: `+0x348` is audio
   output/resampler state, and `140899fd0` stays intentionally unnamed.
+
+Twenty-second spell-cast/audio caller follow-up implemented from this pass:
+
+- Direct decompile now upgrades `1403998e0` from string-adjacent suspicion to a
+  real shared spell-cast entry path. It is called from multiple higher-level
+  systems, including the previously inspected activate-unit callers
+  `14039eaf0` and `140559920`, and it validates the current cast object,
+  resolves target state, emits `PrereqFailureMessage` or `SpellCastFailed` on
+  failure, and dispatches successful paths to specialized cast helpers such as
+  `FUN_140398cc0` (`InspectCodeAddress 1403998e0`; `TraceFunctionCallers 1403998e0`).
+- The same pass directly proves a new adjacent sender. `14039b340` resolves the
+  selected cast entry id, target entity, and target/fallback world position,
+  then packs `CONCAT44(param_2, *(local_res20 + 0x60))` plus target entity id
+  and position vector before calling `Network_SendOpcodePayloadHelper(param_1,
+  0x9d, &local_128)`. That is enough for a safe generic label
+  `SpellCast_SendClient0x009dVariant` even though the public source-side opcode
+  name is still unmapped.
+- Its nearby wrapper `14039b930` now decompiles as a bitmask expander over cast
+  entries. It iterates selected bits, routes each selected id through
+  `14039b340`, raises `SpellCastFailed` for failing entries, and marks selected
+  entries dirty/completed through the per-entry `+0x148` field. That supports a
+  matching generic bitmask-dispatch label without guessing at gameplay naming.
+- Export high-value patterns now include `SpellCastFailed` and
+  `PrereqFailureMessage` so future export-only runs keep this failure band
+  selected even if nearby labels drift.
+- Verification: forced WildStar64 export applied `142` labels with `0` missing
+  labels and refreshed `selected_decompiled.c`; the three new labels now appear
+  at `selected_decompiled.c:3178`, `:3605`, and `:3846`.
+- The deeper audio follow-up still stops short of a new `140899fd0` label, but
+  the boundary is tighter than before. Caller tracing now shows a direct wrapper
+  family at `140899420`, `1408998c0`, `14089b0a0`, `14089b140`, and
+  `14089b430`, all invoking `140899fd0` with the same `(RCX object, EDX mode,
+  R8 descriptor-out)` shape. Inspected wrapper `140899420` rebuilds an internal
+  object array from `*(param_1 + 0x80) + 0x110`, computes a selector via
+  `FUN_140899eb0`, acquires a worker object through `FUN_140898df0`, and then
+  invokes `140899fd0` before a virtual callback. That strengthens the function's
+  role as a common audio worker, but still does not justify a stable semantic
+  label beyond the existing audio/output boundary.
+
+Twenty-third item-use/audio-wrapper follow-up implemented from this pass:
+
+- `FUN_140398cc0` is no longer an opaque spell helper. Direct decompile now
+  shows it sends opcode `0x0943`, which matches
+  `GameMessageOpcode.ClientItemUse` in source. The success path builds a payload
+  with the shared generated context token from `*(local_108 + 0x60)`, a 64-bit
+  item-location value from the virtual accessor at `(*param_2 + 0x20)`, a
+  32-bit target unit id from `*(local_108 + 0x158)`, a 64-bit target-location
+  value carried in `local_138`, and the fallback world-position vector from
+  `param_1 + 0x6d10/+0x6d18` before calling
+  `Network_SendOpcodePayloadHelper(param_1, 0x943, &local_130)`. That is strong
+  enough for the stable label `ItemUse_SendClientItemUse` and lines up with the
+  existing `ClientItemUse` model in source.
+- This also sharpens the shared dispatcher picture around
+  `SpellCast_ValidateAndDispatch` (`1403998e0`): successful cast attempts now
+  demonstrably branch into at least three specialized send paths inside the same
+  helper cluster, including `ItemUse_SendClientItemUse` (`0x0943`),
+  `SpellCast_SendClient0x009dVariant` (`0x009D`), and the already-mapped
+  activate-unit family (`0x0096` / `0x0097` / `0x0098`).
+- The audio wrapper family also tightened again. `1408998c0` reuses the same
+  `FUN_140899eb0 -> FUN_140898df0 -> 140899fd0 -> vtable[0x48]` worker path as
+  `140899420`, but sits behind flag-gated pending work and post-dispatch linked
+  callbacks. `14089b430` uses the same selector/worker/callback chain when a
+  key/state transition changes, then finalizes through `FUN_14089b630`. Together
+  with `140899420`, those wrappers prove `140899fd0` is a shared mode-driven
+  audio worker/callback path. That still narrows the boundary, but it remains
+  intentionally unnamed because the exact worker semantics are not yet direct.
+
+Twenty-fourth monster aggro/combat-state follow-up mapped from this pass:
+
+- `UnitEvent_HandleEnteredCombat` (`14042e120`) dispatches
+  `UnitEnteredCombat` with the resolved unit id and in-combat flag through the
+  shared event helper, then conditionally dispatches `EnteredCombat` when the
+  flag is non-zero and the unit matches either the local player record or the
+  current target while the combat UI singleton is active
+  (`selected_decompiled.c:5028`).
+- Immediate neighbor `UnitEvent_DispatchTargetUnitChanged` (`14042e1b0`)
+  dispatches `TargetUnitChanged` from the local player's current target field,
+  placing the combat-entry callback in the same target-driven event/UI cluster
+  (`selected_decompiled.c:5054`).
+- `UnitState_MaybeDispatchUnitEvaded` (`1403db920`) resolves the subject unit
+  and emits `UnitEvaded` only when the raw state field `param_2[1]` equals `4`.
+  The emitted event carries the subject unit id, the actor id from
+  `*(param_1 + 0x78) + 8`, the raw state value, and a display/context object
+  from `FUN_14034bdd0()` (`selected_decompiled.c:4660`).
+- Neighbor `UnitState_ApplyResolvedState` (`1403db870`) shares the same entity
+  lookup and raw state field, special-cases state value `0` for the local
+  subject/UI path, and then routes the resolved unit plus `param_2[1]` through
+  `FUN_14045e740(...)`. That tightens the consumer-side mapping: the evade path
+  sits inside a broader raw unit-state apply branch rather than a standalone
+  dedicated evade packet.
+- `FUN_14045e740(...)` now has a second confirmed caller family beyond the raw
+  state consumer. `FUN_140456960` also reaches it directly, carries the string
+  xref `UnitCreated`, and is itself reached from both `FUN_1403d9760` and
+  `FUN_14047f770`. That makes the shared state helper part of a broader unit
+  lifecycle/state replay cluster, not only the live raw-state consumer path.
+- Tracing farther up one of those branches recovers a queued dispatcher shape:
+  `FUN_1405cd160` and `FUN_1405cd070` each iterate linked-list style record
+  storage and forward entries into `FUN_1405cd200`, which jump-dispatches into
+  `FUN_1405cef50` and `FUN_1405caf20` before reaching `FUN_1403d9760` and then
+  the `UnitCreated`-linked `FUN_140456960` path. This is stronger evidence for
+  batched lifecycle/state replay than for a direct live evade packet producer.
+- Re-checking the only caller-trace DATA target with `DumpNearbyData.java`
+  confirms `140e02ca0` sits inside `_IMAGE_RUNTIME_FUNCTION_ENTRY[46407]`, so
+  the refs surfaced for `1403db870` / `1403db920` are PE unwind metadata, not a
+  recovered dispatcher table. The producer side therefore remains unresolved:
+  the real state multiplexer still is not visible through direct caller tracing.
+- Current NexusForever server behavior already matches the combat-entry side of
+  this mapping: `UnitEntity.InCombat` emits `ServerUnitEnteredCombat`, retargets
+  go through `ServerEntityTargetUnit`, creature-on-player aggro hints go through
+  `ServerEntityAggroSwitch`, and player threat HUD refresh stays scoped through
+  `ThreatManager` when the player targets the creature.
+- Verification: the same forced WildStar64 export applied these labels with
+  `0` missing labels and refreshed the selected decompile anchors above.
+- Conservative runtime follow-up implemented from this pass: the existing
+  `CombatAI.Reset()` leash-return path now sends the already-modeled localized
+  `Evade` floater (`LocalisedTextId = 0x5F95C`) to the previous player target
+  before the creature clears target, fully heals, and returns home. This does
+  not claim a newly proven leash threshold or raw state producer; it only makes
+  the current reset path visible with a client-confirmed evade message.
+- Additional conservative runtime follow-up implemented from this pass:
+  `CombatAI` now uses `LeashRange` for its initial range check and refuses the
+  first aggro handoff when the hostile unit is already outside the creature's
+  home-position leash radius. This keeps the existing reset-to-home model from
+  immediately accepting out-of-bounds pulls without inventing a new mid-combat
+  raw state producer or broader chase threshold.
+
+Twenty-fifth spell-helper/audio-selector follow-up implemented from this pass:
+
+- `FUN_1403988d0` now decompiles cleanly enough for a durable generic label.
+  It is a shared spell-cast target-preparation helper upstream of multiple send
+  paths, not a sender itself: it resolves the primary subject from `param_2[7]`,
+  copies spell and resolved unit ids back into the working record, drives
+  repeated target validation/expansion through `FUN_140398800(...)`, and
+  conditionally emits `Network_SendOpcodePayloadHelper(param_1, 399, zero)`
+  when the local subject, current target, and global trade state align. Source
+  mapping confirms `0x018F == ClientP2PTradingCancelTrade`, but that zero-byte
+  trade-cancel packet is only a side effect inside a broader shared helper.
+  This is strong enough for the stable label
+  `SpellCast_ResolveTargetsAndValidate`.
+- That decompile also sharpens the spell helper cluster around
+  `SpellCast_ValidateAndDispatch` (`1403998e0`): specialized senders such as
+  `ItemUse_SendClientItemUse`, `RapidTransport_SendClientRapidTransport`,
+  `SpellCast_SendClient0x009dVariant`, and the mapped activate-unit family now
+  sit downstream of a common target-resolution/validation stage before they use
+  the shared generated context field later read at `+0x60`.
+- The audio side now has a firmer stop condition for wrapper comparison.
+  Direct decompile of `FUN_140899eb0` shows it snapshots the dword at `+8` from
+  each `0x18`-byte entry between `[param_1 + 0x88, param_1 + 0x90)` into a
+  temporary list, then forwards that list plus current state
+  `*( *(param_1 + 0x80) + 0x18 )` into
+  `FUN_140834990(*(param_1 + 0x80) + 0x110, state, list, count)`. Since the
+  wrappers feed the result of `140899eb0` into `FUN_140898df0` and then
+  `140899fd0`, the shared worker's second argument is a dynamically computed
+  selector/index derived from current entry state, not a fixed per-wrapper mode
+  constant. That makes further wrapper-only comparison low value and pushes the
+  next audio follow-up inward to `140834990` or `140899fd0` itself.
+- Additional server-side follow-up from this pass stayed investigative only:
+  widening the `Evade` floater beyond the previous player target is still not
+  justified, because both `ServerGenericFloaterLocalised` and
+  `ServerGenericFloaterComplex` are modeled in source as player-local floaters
+  that appear over the receiving player's unit and are only sent through
+  session-scoped story helpers.
+- Remaining blocker is unchanged: the client-facing `UnitEvaded` signal is now
+  mapped to raw state value `4`, but the newly recovered lifecycle/queue chain
+  only proves another route into the shared state-apply helper, not the live raw
+  state `4` producer that reaches `UnitState_MaybeDispatchUnitEvaded`. The
+  upstream server-side packet/state producer and any broader leash/reset
+  thresholds therefore still are not proven tightly enough to synthesize a new
+  raw state update or widen `CombatAI` behavior beyond the existing reset path
+  without guessing.
+
+Twenty-fifth Game.Spell Lua accessor follow-up implemented from this pass:
+
+- The remaining nearby `Game.Spell` accessor cluster is now mapped far enough
+  for durable server diagnostics. `Lua_GameSpell_GetPrerequisites`
+  (`1405ec320`) reads `Spell4Prerequisites.Flags` and emits the client field
+  names `bTargetAvoided`, `bTargetBlocked`, `bTargetGlancing`, `bTargetFierce`,
+  `bNOTUSED`, `bCasterAvoided`, `bCasterBlocked`, `bCasterGlancing`,
+  `bCasterFierce`, `bNOTUSED1`, `bCasterSpellSuccess`, and
+  `bLastCasterSpellSuccess` for bits `0x0001` through `0x0800`
+  (`exports/WildStar64.exe/selected_decompiled.c:9538`, `:9604`, `:9635`,
+  `:9665`, `:9695`, `:9725`, `:9755`, `:9785`, `:9815`, `:9845`, `:9875`,
+  `:9905`, `:9935`). Source now carries this as typed
+  `SpellPrerequisiteFlags`, exposes it through `ISpellBaseInfo`, and prints the
+  decoded names in `/spell inspect`.
+- `Lua_GameSpell_GetChannelData` (`1405ed640`) maps directly to
+  `Spell4.ChannelMaxTime`, `ChannelInitialDelay`, and `ChannelPulseTime`,
+  returned as seconds under `fMaxTime`, `fInitialDelay`, and `fPulseTime`
+  (`selected_decompiled.c:10302`, `:10351`, `:10382`, `:10412`). The command
+  diagnostics now print the same channel tuple, keeping the raw millisecond
+  fields visible beside the client-style seconds.
+- `Lua_GameSpell_GetProxyChannelData` (`1405eda10`) loops proxy effects, checks
+  client effect type `0x1A` (`SpellEffectType.Proxy` in source), resolves the
+  proxied `Spell4` child, and emits the same channel fields for the child spell
+  (`selected_decompiled.c:10458`, `:10529`, `:10559`, `:10589`). The existing
+  proxy-effect interpreter already models the child `Spell4Id`, so
+  `/spell inspect` now reports any proxy child channel data without inventing a
+  new runtime behavior.
+- `Lua_GameSpell_GetAbilityCharges` (`1405edff0`) exposes the runtime charge
+  table shape with `nChargesRemaining`, `nChargesMax`, `fRechargeTime`, and
+  `fRechargePercentRemaining`; the two float fields are written directly in the
+  selected decompile and the integer names are present in the export strings
+  (`selected_decompiled.c:10686`, `:10770`, `:10814`;
+  `exports/WildStar64.exe/strings.csv:37170`, `:37171`, `:37174`). Server
+  `ICharacterSpell` now exposes recharge time remaining and percent remaining,
+  and `/spell inspect` reports runtime charges when the invoker or target owns
+  the inspected base spell. This pass also fixed the saved-spell constructor and
+  tier setter ordering so charge data resolves against the actual tier.
+- `Lua_GameSpell_GetAOETargetInfo` (`1405ecf20`) confirms the safe part of the
+  AOE table: `fMinimumRange`, `fMaximumRange`, and `fAngle` correspond to
+  `Spell4AoeTargetConstraints.MinRange`, `MaxRange`, and `Angle`
+  (`selected_decompiled.c:10024`, `:10100`, `:10131`, `:10161`). The adjacent
+  client booleans `bCanAffectDead`, `bClusterOnly`, and `bMustBeInCombat` are
+  visible (`:10199`, `:10229`, `:10259`), but their server-source table fields
+  are still not proven. Diagnostics therefore mark those booleans unresolved
+  while continuing to enforce the already-modeled range, angle, target-count,
+  and `AoeSelectionType` behavior. Runtime ordering now uses the typed
+  `AoeSelectionType.LowestAbsoluteHealth` and `MissingMostHealth` enum names
+  instead of raw selection values.
+- Verification: `dotnet build Source\\NexusForever.sln -v minimal --nologo`
+  succeeds after these updates. Remaining warnings are the existing package
+  advisory/version warnings plus the existing unused `Spline.formation` field.
 
 ## Practical Next Steps
 
