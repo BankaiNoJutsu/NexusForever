@@ -477,16 +477,16 @@ Most `ShieldOverload` rows have all-zero payload plus a duration. The current ru
 
 ## Unit State Set Fixtures
 
-`UnitStateSet.DataBits00` is now decoded as a raw unit state id and tracked for duration cleanup. The current runtime records the state and emits diagnostics, but individual state-id behavior such as block, invulnerability, all-spell immunity, barrier, and burrow targeting is still validation-only.
+`UnitStateSet.DataBits00` is now decoded as a raw unit state id and tracked for duration cleanup. The current runtime records the state, emits diagnostics, names the mapped hostile-immunity states in `/spell inspect4`, rejects hostile primary-target casts with `TargetInvulnerable`, and drops later hostile effects against targets carrying states `6/7/8/9/13/14/15/16/17/18/22/23`. State `1` block behavior and packet parity are still validation-only.
 
 | Fixture | Context | Concrete spell | Unit-state evidence | Commands |
 | --- | --- | --- | --- | --- |
-| Yeti Brawler Block | Global creature family spell | `Spell4=3946`, base `1947`, tier `1` | State `1`, duration `1000`, simple payload; validates block-state tracking. | `/spell inspect4 3946` then `/spell cast4 3946` |
-| Shadow Crawler Block | Global creature family spell | `Spell4=4360`, base `2222`, tier `1` | State `1`, duration `1000`, simple payload; validates common NPC block row. | `/spell inspect4 4360` then `/spell cast4 4360` |
-| Generic Invulnerability | Global test spell | `Spell4=4178`, base `2122`, tier `1` | State `6`, duration-backed invulnerability naming; validates non-block state tracking. | `/spell inspect4 4178` then `/spell cast4 4178` |
-| All Spell Immunity | Global deprecated spell | `Spell4=2362`, base `1258`, tier `1` | Paired states `7/8/9/16/17/18`, all-spell-immunity naming; validates multi-row state tracking. | `/spell inspect4 2362` then `/spell cast4 2362` |
-| Sonic Barrier | Global barrier spell | `Spell4=36601`, base `22663`, tier `1` | State `22`, barrier naming; validates barrier cluster without applying combat gates yet. | `/spell inspect4 36601` then `/spell cast4 36601` |
-| Gloomclaw Burrow Move | Placed/encounter-style spell | `Spell4=56899`, base `36489`, tier `1` | State `23`, burrow move naming; validates movement/targeting candidate state. | `/spell inspect4 56899` then `/spell cast4 56899` |
+| Yeti Brawler Block | Global creature family spell | `Spell4=3946`, base `3617`, tier `1` | State `1`, duration `1000`, simple payload; validates block-state tracking. | `/spell inspect4 3946` then `/spell cast4 3946` |
+| Shadow Crawler Block | Global creature family spell | `Spell4=4360`, base `3923`, tier `1` | State `1`, duration `1000`, simple payload; validates common NPC block row. | `/spell inspect4 4360` then `/spell cast4 4360` |
+| Generic Invulnerability | Global test spell | `Spell4=4178`, base `3847`, tier `1` | States `6/13/14/15/16/17/18`; validates the mapped invulnerability shield cluster and hostile-target rejection. | `/spell inspect4 4178` then `/spell cast4 4178` |
+| All Spell Immunity | Global deprecated spell | `Spell4=2362`, base `2362`, tier `1` | Paired states `7/8/9/16/17/18`, all-spell-immunity naming; validates multi-row state tracking. | `/spell inspect4 2362` then `/spell cast4 2362` |
+| Sonic Barrier | Global barrier spell | `Spell4=36601`, base `22099`, tier `1` | State `22`, barrier naming; validates barrier cluster without applying combat gates yet. | `/spell inspect4 36601` then `/spell cast4 36601` |
+| Gloomclaw Burrow Move | Placed/encounter-style spell | `Spell4=44281`, base `28427`, tier `1` | State `23`, burrow move naming; validates the mapped burrow hostile-immunity cluster. | `/spell inspect4 44281` then `/spell cast4 44281` |
 
 ## Set Busy Fixtures
 

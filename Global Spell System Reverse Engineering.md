@@ -154,7 +154,7 @@ The current server code already mirrors the core data pipeline:
 8. `Spell.ExecuteEffects()` walks ordered `Spell4Effects`, filters targets by `targetFlags`, assigns one effect unique id per executed effect pulse, and invokes the registered handler for each selected target.
 9. Effect rows with `delayTime > 0` are scheduled through the spell event queue. Rows with both `tickTime > 0` and `durationTime > 0` pulse centrally from the first tick/delay through the duration window.
 10. `SendSpellGo()` serializes only the newly executed target/effect result batch and combat logs for each immediate, delayed, or periodic pulse. Proxy effects are intentionally suppressed from outgoing target effect serialization.
-11. `Spell.Update()` marks a spell finished once its event queue is empty, but duration-only buff removal and persistence rechecks are still mostly TODO.
+11. `Spell.Update()` marks a spell finished once its event queue is empty. Duration-backed removal is wired for tracked buff/debuff families, and player-scoped persistence rechecks now terminate active lifetime effects early, but stack-group arbitration, non-player prerequisite evaluation, and exact finish/buff-remove parity remain incomplete.
 
 That current runtime is structurally correct enough to be the restoration anchor, but it is behaviorally incomplete for retail parity.
 
@@ -179,14 +179,14 @@ Top effect families by row count:
 | 1 | `VitalModifier` | 2,049 | 1,631 | 258 | 190 | 135 |
 | 21 | `SummonCreature` | 1,951 | 1,082 | 277 | 5 | 1,754 |
 
-Current registered handlers cover a little more of the high-volume surface now that `Heal` has a health-heal handler, `Transference`, `DistanceDependentDamage`, and `DistributedDamage` share the decoded damage path, shield heal/damage families mutate shield capacity, `Absorption` creates conservative damage absorb pools, `HealingAbsorption` creates conservative anti-heal pools, `VitalModifier` restores supported vitals conservatively, `SapVital` applies conservative percent-of-max vital restore/drain rows, `ClampVital` caps current health from decoded ratios, `ShieldOverload` shuts down shield regen for simple duration rows, `Proc` registers decoded trigger/chance state, `RavelSignal` emits structural receiver-blocked diagnostics, `UnitStateSet` tracks raw duration-backed unit state latches, `SetBusy` now tracks activation/object busy latches, reuses `ServerUnitInUse`, and conservatively blocks direct activation/interact requests, `PersonalDmgHealMod` maps common damage/heal multiplier rows through the property system, `SummonCreature` creates duration-backed NPC summons, `SummonTrap` creates duration-backed trap/probe entities, `SummonVehicle` creates decoded vehicle entities and optionally boards players, `NpcExecutionDelay` preserves duration-backed spell lifetime, `Activate`, `QuestAdvanceObjective`, `AchievementAdvance`, `ReputationModify`, `GiveItemToPlayer`, `GiveSchematic`, and `RewardPropertyModifier` update existing player progression/reward surfaces, `ActionBarSet` shows decoded temporary action bars, `ItemVisualSwap` applies immediate visual display overrides, `DisguiseOutfit` and `MimicDisguise` apply visible appearance changes with duration-backed restoration, `Disembark` routes through the existing vehicle passenger removal path, `CCStateSet` now has a conservative control shell around the timed packet/state path, `CCStateBreak` clears tracked CC with preserved remove identity and player knockdown breakout wiring, `SpellDispel` removes tracked aura-like state by spell class, cooldown/charge families cover the obvious player ability reset/charge rows, `SpellEffectImmunity` and concrete `SpellImmunity` mode `0` centrally block immune effects/spells, `Scale`/`FactionSet` use existing entity update systems, `ModifyInterruptArmor` mutates and expires interrupt armor, `ThreatModification` has a conservative aggro-control shell, `DelayDeath` consumes prevent-death states on fatal damage, `ForceFacing`/`NpcForceFacing` use movement rotation commands, and `ForcedMove` has a conservative velocity handler. Raw handler coverage still overstates behavioral completeness because several covered families are intentionally partial, structural, or empty, and major gaps like proc event dispatch, `RavelSignal` receiver behavior, and the non-zero `SpellImmunity` modes are not actually restored.
+Current registered handlers cover a little more of the high-volume surface now that `Heal` has a health-heal handler, `Transference`, `DistanceDependentDamage`, and `DistributedDamage` share the decoded damage path, shield heal/damage families mutate shield capacity, `Absorption` creates conservative damage absorb pools, `HealingAbsorption` creates conservative anti-heal pools, `VitalModifier` restores supported vitals conservatively, `SapVital` applies conservative percent-of-max vital restore/drain rows, `ClampVital` caps current health from decoded ratios, `ShieldOverload` shuts down shield regen for simple duration rows, `Proc` registers decoded trigger/chance state, `RavelSignal` emits structural receiver-blocked diagnostics, `UnitStateSet` tracks raw duration-backed unit state latches and now conservatively blocks hostile primary-target casts/effects for mapped invulnerability, immunity, barrier, and burrow states, `SetBusy` now tracks activation/object busy latches, reuses `ServerUnitInUse`, and conservatively blocks direct activation/interact requests, `UnitPropertyModifier` now tracks effect-owned property state so stale expiries stop removing refreshed replacements and player-scoped persistence prerequisites can terminate live buffs early, `PersonalDmgHealMod` shares that property lifecycle for the common damage/heal multiplier selectors, `SummonCreature` creates duration-backed NPC summons, `SummonTrap` creates duration-backed trap/probe entities, `SummonVehicle` creates decoded vehicle entities and optionally boards players, `NpcExecutionDelay` preserves duration-backed spell lifetime, `Activate`, `QuestAdvanceObjective`, `AchievementAdvance`, `ReputationModify`, `GiveItemToPlayer`, `GiveSchematic`, and `RewardPropertyModifier` update existing player progression/reward surfaces, `ActionBarSet` shows decoded temporary action bars, `ItemVisualSwap` applies immediate visual display overrides, `DisguiseOutfit` and `MimicDisguise` apply visible appearance changes with duration-backed restoration, `Disembark` routes through the existing vehicle passenger removal path, `CCStateSet` now has a conservative control shell around the timed packet/state path, `CCStateBreak` clears tracked CC with preserved remove identity and player knockdown breakout wiring, `SpellDispel` removes tracked aura-like state by spell class, cooldown/charge families cover the obvious player ability reset/charge rows, `SpellEffectImmunity` and concrete `SpellImmunity` mode `0` centrally block immune effects/spells, `Scale`/`FactionSet` use existing entity update systems, `ModifyInterruptArmor` mutates and expires interrupt armor, `ThreatModification` has a conservative aggro-control shell, `DelayDeath` consumes prevent-death states on fatal damage, `ForceFacing`/`NpcForceFacing` use movement rotation commands, and `ForcedMove` has a conservative velocity handler. Raw handler coverage still overstates behavioral completeness because several covered families are intentionally partial, structural, or empty, and major gaps like proc event dispatch, `RavelSignal` receiver behavior, stack-group arbitration, non-player persistence evaluation, the non-zero `SpellImmunity` modes, and `UnitStateSet` state `1` block math are not actually restored.
 
 Registered handlers by row count:
 
 | Handler | Rows | Notes |
 | --- | ---: | --- |
 | `Damage` | 29,445 | Has a real damage calculator, but retail parity is incomplete. |
-| `UnitPropertyModifier` | 20,105 | Adds modifiers and schedules timed removal, but stack and persistence behavior are incomplete. |
+| `UnitPropertyModifier` | 20,105 | Tracks effect-owned modifiers, safely refreshes repeated rows from the same spell/effect, schedules timed removal, and rechecks player-scoped persistence prerequisites; stack groups, non-player persistence, and exact buff packet parity remain incomplete. |
 | `Proxy` plus non-random proxy variants | 17,542 | Casts chained spell id and emits `proxy` diagnostics for `Proxy`, `ProxyLinearAE`, `ProxyChannel`, and `ProxyChannelVariableTime`; forwards the realized proxy target as the child primary target; channel ownership and random-exclusive semantics need work. |
 | `CCStateSet` | 7,185 | Emits set/remove packets and combat logs, tracks timed active states for caster CC-condition masks, applies conservative cast/movement restrictions for clearly named states, and still leaves DR, stun breakout, tether payloads, and richer control parity open. |
 | `ForcedMove` | 4,645 | Decodes movement type/magnitude fields and applies a conservative velocity impulse with timed reset; exact type physics remain open. |
@@ -201,7 +201,7 @@ Registered handlers by row count:
 | `ShieldOverload` | 55 | Simple all-zero payload rows set shields to zero and suppress normal shield regeneration until duration removal; non-zero payloads remain diagnostic-only. |
 | `Proc` | 3,498 | Decodes trigger event, trigger `Spell4`, chance, target/routing data, cooldown/sentinel, and remaining raw fields; tracks active proc state by effect id, removes duration-backed rows, emits `proc`/`proc-probe`/`proc-dispatch` diagnostics, and now dispatches conservative holder-side trigger casts for trigger events `1/6/10/12/16/20` using holder-self routing for `targetData` `1/2/9` and counterpart routing for `4/12`. Unsupported trigger events and target-data tails remain diagnostic-only. |
 | `RavelSignal` | 5,262 | Decodes mode, likely signal id, and raw payload fields; `/spell inspect4` shows the shape and the handler emits `ravel-signal` diagnostics, but no script/receiver mutation is implemented yet. |
-| `UnitStateSet` | 752 | Tracks non-zero raw unit state ids by effect id, removes duration-backed states, and participates in force-remove/dispel cleanup; state-id-specific combat behavior remains open. |
+| `UnitStateSet` | 752 | Tracks non-zero raw unit state ids by effect id, removes duration-backed states, participates in force-remove/dispel cleanup, and centrally blocks hostile primary-target casts/effects for mapped states `6/7/8/9/13/14/15/16/17/18/22/23`; state `1` block behavior remains open. |
 | `SetBusy` | 571 | Tracks `DataBits00=1` busy rows and clears them through `DataBits00=0` same-spell/context rows or duration cleanup, reuses `ServerUnitInUse` for visible busy state, and conservatively blocks direct activate/interact requests; CSI/deferred interaction parity and context-id semantics remain open. |
 | `SummonCreature` | 1,951 | Creates `INonPlayerEntity` summons from decoded `Creature2` ids, places them through the map add path, and schedules duration cleanup; ownership/AI/placement payload semantics remain open. |
 | `SummonTrap` | 64 | Creates duration-backed trap/probe `INonPlayerEntity` rows from decoded `Creature2` ids and preserves trigger `Spell4` data; trigger/AI semantics remain open. |
@@ -521,20 +521,21 @@ The runtime now decodes `ShieldOverload`, applies only all-zero payload rows, se
 
 ### UnitStateSet
 
-`UnitStateSet` is a broad raw state latch family with 752 rows across 673 spells. It is strongly duration-oriented: 645 rows have `durationTime`, and 720 rows have no secondary payload beyond `DataBits00`. `DataBits00` is the unit state id. The dominant cluster is state `1` with 506 rows, mostly named `Block [30]` or guard/block variants. Other clusters line up with invulnerability, all-spell immunity, barriers, burrow movement, and ice-block/tether style rows.
+`UnitStateSet` is a broad raw state latch family with 752 rows across 673 spells. It is strongly duration-oriented: 645 rows have `durationTime`, and 720 rows have no secondary payload beyond `DataBits00`. `DataBits00` is the unit state id. The dominant cluster is state `1` with 515 rows, mostly named `Block [30]` or guard/block variants. Other clusters line up with invulnerability, all-spell immunity, barriers, burrow movement, and ice-block/tether style rows.
 
 High-signal state clusters:
 
 | State id | Rows | Evidence |
 | ---: | ---: | --- |
-| `1` | 506 | Block/guard rows such as `Spell4Id=3946`, `3955`, `4360`, `5764`, and many creature family `Block [30]` spells. |
-| `6` | 62 | Generic invulnerability, frozen, unburrow transition, and combat transition invulnerability rows such as `4178`, `4195`, `52966`, and `87242`. |
-| `7/8/9` | 14 each | Deprecated and test rows explicitly named as immune to all spells, plus telegraph/encounter variants. |
-| `16/17/18` | 11/12/12 | Additional all-spell/immunity shield clusters, often paired with generic invulnerability rows. |
-| `22` | 45 | Sonic barrier, shielding swarm, fire shield, protective barrier, star power, and shadow meld rows. |
-| `23` | 11 | Burrow move, trap, sonic barrier, reckless bombardment, and ice-block tether rows. |
+| `1` | 515 | Block/guard rows such as `Spell4Id=3946`, `3955`, `4360`, `5764`, and many creature family `Block [30]` spells. |
+| `6` | 63 | Generic invulnerability, frozen, unburrow transition, and combat transition invulnerability rows such as `4178`, `4195`, `52966`, and `87242`. |
+| `7/8/9` | 15/14/14 | Deprecated and test rows explicitly named as immune to all spells, plus telegraph/encounter variants. |
+| `13/14/15` | 6/7/5 | Additional immunity-shield rows that travel with the generic invulnerability cluster, including `4178`. |
+| `16/17/18` | 12/12/12 | Invulnerability-shield rows often paired with generic invulnerability or all-spell-immunity content. |
+| `22` | 46 | Sonic barrier, shielding swarm, fire shield, protective barrier, star power, and shadow meld rows. |
+| `23` | 12 | Burrow move, trap, sonic barrier, reckless bombardment, and ice-block tether rows. |
 
-The runtime now decodes `UnitStateSet`, skips zero-state rows, stores active unit states by effect id, removes duration-backed states through the spell lifetime queue, includes the state in force-remove/dispel cleanup, and emits `SpellDiagnostics unit-state-set`. Open behavior includes the state-id enum names, exact block/guard math for state `1`, which invulnerability/barrier ids should block damage, effects, targeting, or aggro, the meaning of `DataBits01` values such as `30`, `1`, `2`, and large float-like payloads, and exact packet/combat-log parity for state entry and exit.
+The runtime now decodes `UnitStateSet`, skips zero-state rows, stores active unit states by effect id, removes duration-backed states through the spell lifetime queue, includes the state in force-remove/dispel cleanup, emits `SpellDiagnostics unit-state-set`, surfaces mapped state names in diagnostics and `/spell inspect4`, returns `TargetInvulnerable` when a hostile primary target carries states `6/7/8/9/13/14/15/16/17/18/22/23`, and centrally drops later hostile effects against those targets with `CombatLogImmune`. Open behavior includes the exact block/guard math for state `1`, whether the mapped hostile-immunity states should also affect non-spell damage, aggro, movement, or visibility, the meaning of `DataBits01` values such as `30`, `1`, `2`, and large float-like payloads, and exact packet/combat-log parity for state entry and exit.
 
 ### SetBusy
 
@@ -637,7 +638,7 @@ Top modified properties:
 | `DamageTakenMultiplierTech` | 505 | 448 |
 | `Strength` | 458 | 455 |
 
-Current server adds the modifier to the target and schedules removal for timed `UnitPropertyModifier` rows. Persistence prerequisites, stack group behavior, refresh rules, and exact buff remove packet parity remain open.
+Current server now tracks `UnitPropertyModifier` state by concrete effect instance, refreshes repeated rows from the same spell/effect entry without letting stale expiry remove the replacement, schedules timed removal for duration rows, and rechecks player-scoped spell/effect persistence prerequisites while the buff is active. Stack group behavior, non-player prerequisite evaluation, and exact buff remove packet parity remain open.
 
 ### CCStateSet
 
@@ -986,7 +987,7 @@ Proven from local data/code:
 - `SapVital.DataBits00` maps to the server `Vital` enum, and clean `DataBits01/02` rows now apply conservative percent-of-max restore/drain behavior.
 - `ClampVital.DataBits02` is a float-bitcast current-health ceiling ratio, and the runtime now tracks/reapplies conservative health caps.
 - All-zero `ShieldOverload` rows are duration-backed shield shutdown states, and the runtime now suppresses normal shield regeneration while active.
-- `UnitStateSet.DataBits00` is a raw unit state id; the runtime now tracks duration-backed non-zero states and removes them through lifetime and force-remove cleanup.
+- `UnitStateSet.DataBits00` is a raw unit state id; the runtime now tracks duration-backed non-zero states, removes them through lifetime and force-remove cleanup, and treats states `6/7/8/9/13/14/15/16/17/18/22/23` as conservative hostile spell-effect immunity.
 - `SetBusy.DataBits00` is a set/clear flag: `1` sets busy and delayed `0` rows clear matching same-spell/context busy state.
 - `SummonCreature.DataBits00` maps to `Creature2.ID`, and duration-backed summoned NPCs now create and remove through the map lifecycle.
 - `NpcExecutionDelay` rows are mostly zero-payload duration holds, and the runtime now preserves those durations as pending spell lifetime.
@@ -1020,7 +1021,7 @@ Proven from local data/code:
 - `ShieldOverload` now drops current shields to zero and pauses shield regeneration for simple duration-backed overload rows.
 - `Proc` now decodes trigger event, trigger `Spell4`, chance, target/routing data, cooldown/sentinel, and raw filter fields into tracked effect-id state with duration-backed cleanup, diagnostics, and trace-only runtime event probes.
 - `RavelSignal` now decodes mode, likely signal id, and payload fields, appears in `/spell inspect4`, and emits `ravel-signal` diagnostics without mutating state until the receiver graph is known.
-- `UnitStateSet` now tracks raw state ids, expires duration-backed states, and emits `unit-state-set` diagnostics for validation.
+- `UnitStateSet` now tracks raw state ids, expires duration-backed states, emits `unit-state-set` diagnostics with named mapped states, rejects hostile primary-target casts with `TargetInvulnerable`, and drops later hostile effects against mapped invulnerability/barrier/burrow states.
 - `SetBusy` now tracks activation/object busy state, handles paired delayed unbusy rows, expires duration-backed rows, reuses `ServerUnitInUse`, conservatively blocks direct activate/interact requests on busy targets, and emits `set-busy` diagnostics.
 - `ForceFacing` and `NpcForceFacing` now decode facing context/degree offsets, emit `force-facing` diagnostics, and apply movement rotation commands.
 - `ForcedMove` effects now decode movement fields, emit `forced-move` diagnostics, and apply a conservative timed velocity impulse.
@@ -1050,7 +1051,7 @@ Unknown or still needs sniff/client confirmation:
 - Exact `SapVital` mode table, parameter formulas, high-scalar payloads, unsupported vital aliases, and damage-log parity.
 - Exact `ClampVital` mode/vital fields, stacking priority, and client/combat-log visibility.
 - Exact `ShieldOverload` packet/combat-log parity, shield-heal interaction, reboot timing, and non-zero payload semantics.
-- Exact `UnitStateSet` state-id names and behavior, especially block/guard math, invulnerability/all-spell-immunity gates, barrier/burrow targeting rules, and secondary payload meanings.
+- Exact `UnitStateSet` state-id names and behavior outside the mapped hostile-immunity shell, especially block/guard math for state `1`, any non-spell-damage or aggro/movement/visibility effects of states `6/7/8/9/13/14/15/16/17/18/22/23`, and secondary payload meanings.
 - Exact `SetBusy` client/object-state packet behavior beyond conservative `ServerUnitInUse` use, CSI/deferred/path/object blocking parity, non-zero context ids, and broad-context clear rules.
 - Exact `SummonCreature` ownership, AI/pet/turret links, placement payloads, terrain placement, and follow-up spell/service payload behavior.
 - Exact `NpcExecutionDelay` AI scheduler coupling and non-zero payload semantics.
@@ -1060,7 +1061,7 @@ Unknown or still needs sniff/client confirmation:
 - Exact `SummonTrap` trigger firing, owner AI, arming/radius semantics, and terrain placement.
 - Full stealth detection, stealth visibility planes, remove-stealth reveal behavior, and exact aggro-immunity vs damage-immunity semantics.
 - Housing teleport destination submodes beyond own-residence recall, warplot recall, and support-stuck durability consequences.
-- Stack group rules, modifier stacking, persistence gates, and duration refresh rules.
+- Stack group rules, full modifier stacking arbitration, non-player persistence gates, and exact buff refresh/remove packet parity.
 - Complete cast event, runner, threshold, and alternate spell behavior.
 
 ## Restoration Direction
@@ -1076,7 +1077,7 @@ The implementation path should stay family-first:
 7. Validate `ShieldOverload` against simple duration rows and non-zero payload diagnostics before widening shield-heal or reboot behavior.
 8. Validate the conservative `Proc` runtime with `proc-probe` and `proc-dispatch` traces against kill, damage, damage-taken, cast, enter-combat, and heal fixtures before widening unsupported trigger events or target-data tails.
 9. Decode the `RavelSignal` receiver graph before routing mode/signal/payload values into scripts or object state.
-10. Validate `UnitStateSet` against block, invulnerability, all-spell immunity, barrier, and burrow fixtures before adding state-id-specific combat gates.
+10. Validate `UnitStateSet` state `1` block behavior plus packet/client parity and non-spell side effects for the mapped hostile-immunity states before widening beyond the current conservative shell.
 11. Validate `SetBusy` against activation/CSI/object rows to confirm `ServerUnitInUse` parity, the current direct interaction gate, and whether deferred/CSI paths need the same suppression.
 12. Validate `Absorption` and `HealingAbsorption` against shield and anti-heal fixtures before widening damage-type filtering, stacking, shield-heal scope, or stat packet behavior.
 13. Validate `SummonCreature` against service, turret, follower, and encounter-add fixtures before widening ownership, AI, follow-up spell, or formation behavior.
@@ -1084,7 +1085,7 @@ The implementation path should stay family-first:
 15. Validate `ModifyInterruptArmor` against temporary and no-remove rows before coupling it to CC apply/breakout behavior.
 16. Validate `ThreatModification` and decode `ThreatTransfer` source/destination before widening aggro-control behavior.
 17. Finish `CCStateSet` and `ForcedMove` behavior beyond packet/timed impulse lifetime: diminishing returns, breakout/interruption rules, forced-move type physics, tether payloads, and apply-rules result mapping.
-17. Finish `UnitPropertyModifier` lifecycle: stack group integration, persistence recheck, refresh rules, and buff remove packet parity.
+17. Finish `UnitPropertyModifier` lifecycle: stack group integration, non-player persistence evaluation, and buff remove packet parity.
 18. Expand proxy behavior by variant: plain proxy, linear AE proxy, channel proxy, variable-time channel proxy, random-exclusive proxy.
 19. Validate `Activate` against quest/object sniffs before widening payload semantics beyond objective updates.
 20. Decode target mechanics and valid targets only as required by those priority families.

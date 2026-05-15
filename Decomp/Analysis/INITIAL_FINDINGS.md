@@ -2978,6 +2978,44 @@ Sixty-third friendship request group follow-up implemented from this pass:
   generated `functions.csv` confirms all new friendship writer, sender, Lua,
   and bit-writer labels.
 
+Sixty-fourth ICComm request group follow-up implemented from this pass:
+
+- The remaining client-to-world ICComm request cluster is now mapped from the
+  native world-message registration table. Opcode `0x0546
+  ClientICCommChannelJoin` registers `ClientICCommChannelJoin_WritePayload`
+  at `1400877a0` with a 0x18-byte object. Opcode `0x0549
+  ClientICCommChannelNotJoined` reuses `ClientP2PTradingUInt64_WritePayload`
+  at `14007d840` with an 8-byte object. Opcode `0x054B ClientICCommMessage`
+  registers `ClientICCommMessage_WritePayload` at `1400875e0` with a
+  0x20-byte object.
+- Direct writer inspection confirms the packet models already present in
+  NexusForever. `ClientICCommChannelJoin_WritePayload` writes a 3-bit
+  `ICCommChannelType`, a 64-bit guild id, and a wide channel name.
+  `ClientICCommMessage_WritePayload` writes a 64-bit channel id, a 32-bit
+  message id, an ASCII message string through the shared string writer, and a
+  wide recipient name. The shared `ClientP2PTradingUInt64_WritePayload` path is
+  now documented as the single-ulong writer also used by
+  `ClientICCommChannelNotJoined`.
+- Source now handles the full parsed client ICComm cluster in WorldServer.
+  `ClientICCommChannelJoin` validates the 3-bit channel type and returns
+  `ServerICCommChannelJoinResult` with `MissingEntitlement`, while
+  `ClientICCommMessage` returns `ServerICCommMessageResult` with
+  `InvalidText` for blank text or `NotInChannel` otherwise. The client
+  not-joined notice is parsed and logged. This keeps client-visible failures
+  deterministic without inventing ICComm channel storage, membership, message
+  ordering, or routing semantics that NexusForever does not yet have.
+- Verification: the refreshed WildStar64 export applied the expanded label set
+  (`applied=278, created=0, skipped=0, missing=0`) and rendered
+  `selected_decompiled.c` with 430 functions. The generated `functions.csv`
+  confirms `ClientICCommMessage_WritePayload` and
+  `ClientICCommChannelJoin_WritePayload`, and `selected_decompiled.c` includes
+  them at lines 689 and 760. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-iccomm/`
+  succeeds with only the existing `Spline.formation` warning; the alternate
+  output path avoids interfering with the locally running world-server process
+  that has the normal debug outputs locked.
+
 ## Practical Next Steps
 
 1. Keep extending `Decomp\Analysis\function_labels.csv` as functions are
