@@ -28,6 +28,51 @@ From the repository root:
 .\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -InstallDotNetEf
 ```
 
+## One-Command Local Launch
+
+Use `Start-NexusForeverLocal.ps1` when you want one command to build the
+solution, prepare runtime assets, start the standalone servers, and launch the
+WildStar client against localhost.
+
+From the repository root:
+
+```powershell
+.\Tools\Setup\Start-NexusForeverLocal.ps1 `
+  -ClientDirectory "D:\Games\WildStar" `
+  -PromptForRootPassword
+```
+
+What it does:
+
+- runs `Initialize-NexusForever.ps1` with the same database and RabbitMQ
+  options you pass through
+- stages shared `tbl` and `map` runtime assets under `.nexusforever-runtime`
+  and rewrites the runtime JSON files to those absolute paths
+- creates or verifies the default login account
+- starts the standalone server executables and waits for the local endpoints to
+  come up before launching `WildStar64.exe`
+
+The default login created by the launcher is:
+
+- username: `nexusforever`
+- password: `nexusforever`
+
+If you already have extracted tables and generated maps, point the launcher at
+those directories and skip the heavy setup work on later runs:
+
+```powershell
+.\Tools\Setup\Start-NexusForeverLocal.ps1 `
+  -ExistingTableDirectory "D:\WildStarAssets\tbl" `
+  -ExistingMapDirectory "D:\WildStarAssets\map" `
+  -ClientDirectory "D:\Games\WildStar" `
+  -SkipSetup
+```
+
+If staged assets are missing and you do not pass `-ExistingTableDirectory` and
+`-ExistingMapDirectory`, the launcher needs a WildStar client `Patch`
+directory. Passing `-ClientDirectory` is enough for the common layout because
+the script automatically uses `<ClientDirectory>\Patch`.
+
 On this machine, `mysql.exe` is available at:
 
 ```powershell

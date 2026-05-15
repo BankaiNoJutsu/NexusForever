@@ -6,6 +6,7 @@
 # NexusForever generated files
 *.tbl
 *.nfmap
+.nexusforever-runtime/
 
 # User-specific files
 *.suo
