@@ -2,6 +2,8 @@ using System.Numerics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Spell.Effect;
+using NexusForever.Game.Static.Combat;
+using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable.Model;
@@ -353,7 +355,7 @@ namespace NexusForever.Game.Spell
                 return;
 
             log.Trace(
-                "SpellDiagnostics modify-interrupt-armor spell4Id={0} castingId={1} target={2} amount={3} removeOnInterrupt={4} appliedAmount={5} removed={6} currentInterruptArmor={7} dataBits02={8} dataBits03={9} dataBits04={10} dataBits05={11}",
+                "SpellDiagnostics modify-interrupt-armor spell4Id={0} castingId={1} target={2} amount={3} removeOnInterrupt={4} appliedAmount={5} removed={6} currentInterruptArmor={7} dataBits02={8} dataBits03={9} dataBits04={10} dataBits05={11} handlerCandidate={12}",
                 spell.Parameters.SpellInfo.Entry.Id,
                 spell.CastingId,
                 target.Guid,
@@ -365,7 +367,8 @@ namespace NexusForever.Game.Spell
                 interruptArmor.DataBits02,
                 interruptArmor.DataBits03,
                 interruptArmor.DataBits04,
-                interruptArmor.DataBits05);
+                interruptArmor.DataBits05,
+                CombatLogHandlerCandidate.ModifyInterruptArmor);
         }
 
         public static void TraceAbsorption(ISpell spell, IUnitEntity target, SpellEffectAbsorptionSemantics absorption, uint amount, bool removed)
@@ -1430,23 +1433,47 @@ namespace NexusForever.Game.Spell
                 speed);
         }
 
-        public static void TraceCCStateBreak(ISpell spell, IUnitEntity target, SpellEffectCCStateBreakSemantics ccStateBreak, int removedCount)
+        public static void TraceCCStateBreak(ISpell spell, IUnitEntity target, SpellEffectCCStateBreakSemantics ccStateBreak, uint beforeMask, uint afterMask, IReadOnlyCollection<(CCState State, uint EffectId)> removedStates)
         {
             if (!log.IsTraceEnabled)
                 return;
 
+            removedStates ??= Array.Empty<(CCState State, uint EffectId)>();
+
             log.Trace(
-                "SpellDiagnostics cc-state-break spell4Id={0} castingId={1} target={2} stateMask={3} dataBits01={4} dataBits02={5} dataBits03={6} dataBits04={7} dataBits05={8} removedCount={9}",
+                "SpellDiagnostics cc-state-break spell4Id={0} castingId={1} target={2} stateMask={3} beforeMask={4} beforeStates={5} afterMask={6} afterStates={7} dataBits01={8} dataBits02={9} dataBits03={10} dataBits04={11} dataBits05={12} removedCount={13} removedStates={14} handlerCandidate={15}",
                 spell.Parameters.SpellInfo.Entry.Id,
                 spell.CastingId,
                 target.Guid,
                 ccStateBreak.StateMask,
+                beforeMask,
+                FormatCCStateMask(beforeMask),
+                afterMask,
+                FormatCCStateMask(afterMask),
                 ccStateBreak.DataBits01,
                 ccStateBreak.DataBits02,
                 ccStateBreak.DataBits03,
                 ccStateBreak.DataBits04,
                 ccStateBreak.DataBits05,
-                removedCount);
+                removedStates.Count,
+                FormatRemovedCCStates(removedStates),
+                CombatLogHandlerCandidate.CCStateBreak);
+        }
+
+        private static string FormatCCStateMask(uint stateMask)
+        {
+            string[] states = Enum.GetValues<CCState>()
+                .Where(state => (stateMask & (1u << (int)state)) != 0u)
+                .Select(state => state.ToString())
+                .ToArray();
+
+            return states.Length > 0 ? string.Join(", ", states) : "none";
+        }
+
+        private static string FormatRemovedCCStates(IEnumerable<(CCState State, uint EffectId)> removedStates)
+        {
+            string[] values = removedStates.Select(removed => $"{removed.State}:{removed.EffectId}").ToArray();
+            return values.Length > 0 ? string.Join(", ", values) : "none";
         }
 
         public static void TracePlayerCollection(ISpell spell, IUnitEntity target, string family, uint playerGuid, uint objectId, uint resolvedId, bool applied, string skippedReason)

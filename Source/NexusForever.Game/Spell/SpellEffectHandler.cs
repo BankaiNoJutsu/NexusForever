@@ -2066,14 +2066,16 @@ namespace NexusForever.Game.Spell
             if (ccStateBreak == null)
                 return;
 
+            uint beforeMask = target.ActiveCCStateMask;
             if (ccStateBreak.StateMask == 0u)
             {
-                SpellEffectDiagnostics.TraceCCStateBreak(spell, target, ccStateBreak, 0);
+                SpellEffectDiagnostics.TraceCCStateBreak(spell, target, ccStateBreak, beforeMask, beforeMask, Array.Empty<(CCState State, uint EffectId)>());
                 return;
             }
 
             IReadOnlyCollection<(CCState State, uint EffectId)> removedStates = target.RemoveCCStates(ccStateBreak.StateMask);
-            SpellEffectDiagnostics.TraceCCStateBreak(spell, target, ccStateBreak, removedStates.Count);
+            uint afterMask = target.ActiveCCStateMask;
+            SpellEffectDiagnostics.TraceCCStateBreak(spell, target, ccStateBreak, beforeMask, afterMask, removedStates);
 
             foreach ((CCState state, uint effectId) in removedStates)
             {

@@ -1513,7 +1513,7 @@ namespace NexusForever.Game.Entity
             }
 
             var spell = new Spell.Spell(this, parameters);
-            ProbeProcEvent("spell-cast", null, this, ResolveProcProbePrimaryTarget(parameters), spell, null, null, "before-cast");
+            ProbeProcEvent("action-cast-any", ProcTriggerEventCandidate.ActionCastAny, this, ResolveProcProbePrimaryTarget(parameters), spell, null, null, "before-cast");
             spell.Cast();
             pendingSpells.Add(spell);
         }

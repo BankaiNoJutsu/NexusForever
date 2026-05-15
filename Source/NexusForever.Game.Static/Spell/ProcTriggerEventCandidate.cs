@@ -10,6 +10,7 @@ namespace NexusForever.Game.Static.Spell
     {
         public const uint KillTarget    = 1u;
         public const uint EnterCombat   = 6u;
+        public const uint ActionCastAny = 10u;
         public const uint DealDamage    = 12u;
         public const uint ReceiveDamage = 16u;
         public const uint HealOther     = 20u;

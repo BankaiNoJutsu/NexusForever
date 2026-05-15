@@ -5,6 +5,7 @@ using System.Linq;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Spell.Effect;
+using NexusForever.Game.Static.Combat;
 using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.Game.Static.Spell;
@@ -188,6 +189,8 @@ namespace NexusForever.WorldServer.Command.Handler
                 context.SendMessage($"Effect {effect.Entry.Id} order {effect.Entry.OrderIndex}: {effect.Entry.EffectType}, targetFlags {effect.Entry.TargetFlags}, damageType {effect.Entry.DamageType}, flags {effect.Entry.Flags}, phase {effect.Entry.PhaseFlags}, group {effect.Entry.Spell4EffectGroupListId}, timing delay/tick/duration {effect.Timing.DelayTime}/{effect.Timing.TickTime}/{effect.Timing.DurationTime}.");
                 context.SendMessage($"  Prereqs apply caster/target {effect.Entry.PrerequisiteIdCasterApply}/{effect.Entry.PrerequisiteIdTargetApply}, persist caster/target {effect.Entry.PrerequisiteIdCasterPersistence}/{effect.Entry.PrerequisiteIdTargetPersistence}, suspend target {effect.Entry.PrerequisiteIdTargetSuspend}.");
                 context.SendMessage($"  Semantics: {DescribeEffectSemantics(effect)}");
+                if (effect.CCStateBreak != null)
+                    context.SendMessage("  Runtime diagnostics: beforeMask/afterMask + removedStates(state:effectId) are emitted by TraceCCStateBreak; combat-log writes caster-context + eState per removed state, while strState is client-local display text.");
                 context.SendMessage($"  DataBits: {effect.FormatDataBits()}");
                 context.SendMessage($"  Parameters: {effect.FormatParameters()}");
             }
@@ -213,6 +216,34 @@ namespace NexusForever.WorldServer.Command.Handler
             };
 
             return label != null ? $" ({label})" : string.Empty;
+        }
+
+        private static string DescribeProcTriggerEventCandidate(uint triggerEvent)
+        {
+            string label = triggerEvent switch
+            {
+                ProcTriggerEventCandidate.KillTarget    => "kill-target candidate",
+                ProcTriggerEventCandidate.EnterCombat   => "enter-combat candidate",
+                ProcTriggerEventCandidate.ActionCastAny => "action-cast-any candidate",
+                ProcTriggerEventCandidate.DealDamage    => "deal-damage candidate",
+                ProcTriggerEventCandidate.ReceiveDamage => "receive-damage candidate",
+                ProcTriggerEventCandidate.HealOther     => "heal-other candidate",
+                _                                       => null
+            };
+
+            return label != null ? $" ({label})" : string.Empty;
+        }
+
+        private static string DescribeCombatLogHandlerCandidate(SpellEffectType effectType)
+        {
+            string label = effectType switch
+            {
+                SpellEffectType.ModifyInterruptArmor => CombatLogHandlerCandidate.ModifyInterruptArmor,
+                SpellEffectType.CCStateBreak         => CombatLogHandlerCandidate.CCStateBreak,
+                _                                    => null
+            };
+
+            return label != null ? $", combat-log handler {label}" : string.Empty;
         }
 
         private static string DescribeValidTargets(Spell4ValidTargetsEntry entry)
@@ -347,7 +378,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 return $"ravel signal mode {effect.RavelSignal.Mode}, signal {effect.RavelSignal.SignalId}, data {effect.RavelSignal.DataBits02}/{effect.RavelSignal.DataBits03}/{effect.RavelSignal.DataBits04}/{effect.RavelSignal.DataBits05}/{effect.RavelSignal.DataBits06}/{effect.RavelSignal.DataBits07}/{effect.RavelSignal.DataBits08}/{effect.RavelSignal.DataBits09}";
 
             if (effect.ModifyInterruptArmor != null)
-                return $"modify interrupt armor amount {effect.ModifyInterruptArmor.Amount}, remove on interrupt {effect.ModifyInterruptArmor.RemoveOnInterrupt}, data {effect.ModifyInterruptArmor.DataBits02}/{effect.ModifyInterruptArmor.DataBits03}/{effect.ModifyInterruptArmor.DataBits04}/{effect.ModifyInterruptArmor.DataBits05}";
+                return $"modify interrupt armor amount {effect.ModifyInterruptArmor.Amount}, remove on interrupt {effect.ModifyInterruptArmor.RemoveOnInterrupt}, data {effect.ModifyInterruptArmor.DataBits02}/{effect.ModifyInterruptArmor.DataBits03}/{effect.ModifyInterruptArmor.DataBits04}/{effect.ModifyInterruptArmor.DataBits05}{DescribeCombatLogHandlerCandidate(effect.Entry.EffectType)}";
 
             if (effect.ThreatModification != null)
                 return $"threat modification mode {effect.ThreatModification.Mode}, ratio/percent {effect.ThreatModification.RatioOrPercent:R}, value {effect.ThreatModification.ThreatValue}, data {effect.ThreatModification.DataBits02}/{effect.ThreatModification.DataBits04}/{effect.ThreatModification.DataBits05}";
@@ -356,7 +387,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 return $"threat transfer mode {effect.ThreatTransfer.Mode}, ratio/percent {effect.ThreatTransfer.RatioOrPercent:R}, data {effect.ThreatTransfer.DataBits02}/{effect.ThreatTransfer.DataBits03}/{effect.ThreatTransfer.DataBits04}/{effect.ThreatTransfer.DataBits05}";
 
             if (effect.Proc != null)
-                return $"proc trigger event {effect.Proc.TriggerEvent}, trigger spell4 {DescribeSpell4(effect.Proc.TriggerSpell4Id)}, chance {effect.Proc.Chance:R}, target data {effect.Proc.TargetData}, cooldown/sentinel {effect.Proc.CooldownMsOrSentinel}, data {effect.Proc.DataBits05}/{effect.Proc.DataBits06}/{effect.Proc.DataBits07}/{effect.Proc.DataBits08}/{effect.Proc.DataBits09}";
+                return $"proc trigger event {effect.Proc.TriggerEvent}{DescribeProcTriggerEventCandidate(effect.Proc.TriggerEvent)}, trigger spell4 {DescribeSpell4(effect.Proc.TriggerSpell4Id)}, chance {effect.Proc.Chance:R}, target data {effect.Proc.TargetData}, cooldown/sentinel {effect.Proc.CooldownMsOrSentinel}, data {effect.Proc.DataBits05}/{effect.Proc.DataBits06}/{effect.Proc.DataBits07}/{effect.Proc.DataBits08}/{effect.Proc.DataBits09}";
 
             if (effect.DelayDeath != null)
                 return $"delay death mode {effect.DelayDeath.Mode}, trigger spell4 {DescribeSpell4(effect.DelayDeath.TriggerSpell4Id)}, trigger delay {effect.DelayDeath.TriggerDelayMs}ms, data {effect.DelayDeath.DataBits03}/{effect.DelayDeath.DataBits04}/{effect.DelayDeath.DataBits05}/{effect.DelayDeath.DataBits06}/{effect.DelayDeath.DataBits07}/{effect.DelayDeath.DataBits08}/{effect.DelayDeath.DataBits09}";
@@ -401,7 +432,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 return $"cc state {effect.CCState.State}, apply flags {effect.CCState.ApplyRulesFlags}, additional data {effect.CCState.AdditionalDataId}";
 
             if (effect.CCStateBreak != null)
-                return $"cc state break mask {effect.CCStateBreak.StateMask} [{FormatCCStateMask(effect.CCStateBreak.StateMask)}], data {effect.CCStateBreak.DataBits01}/{effect.CCStateBreak.DataBits02}/{effect.CCStateBreak.DataBits03}/{effect.CCStateBreak.DataBits04}/{effect.CCStateBreak.DataBits05}";
+                return $"cc state break mask {effect.CCStateBreak.StateMask} [{FormatCCStateMask(effect.CCStateBreak.StateMask)}], data {effect.CCStateBreak.DataBits01}/{effect.CCStateBreak.DataBits02}/{effect.CCStateBreak.DataBits03}/{effect.CCStateBreak.DataBits04}/{effect.CCStateBreak.DataBits05}, runtime trace beforeMask/afterMask/removedStates{DescribeCombatLogHandlerCandidate(effect.Entry.EffectType)}";
 
             if (effect.ForceRemove != null)
                 return $"force remove type {effect.ForceRemove.RemoveType}, spell4 {DescribeSpell4(effect.ForceRemove.Spell4Id)}, data {effect.ForceRemove.DataBits02}/{effect.ForceRemove.DataBits03}/{effect.ForceRemove.DataBits04}/{effect.ForceRemove.DataBits05}/{effect.ForceRemove.DataBits06}";
