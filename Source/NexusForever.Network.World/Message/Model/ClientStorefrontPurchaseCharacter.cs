@@ -6,21 +6,23 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ClientStorefrontPurchaseCharacter)]
     public class ClientStorefrontPurchaseCharacter : IReadable
     {
-        public uint OfferId { get; set; } // OfferId
-        public byte Unknown1 { get; set; }
-        public ushort CurrencyId { get; set; } // CurrencyId - 1408 == NCCoin, 768 == Omnibits
-        public uint Unknown3 { get; set; }
-        public Identity Target { get; set; } = new();
-        public uint Unknown6 { get; set; }
+        public uint OfferId { get; private set; }
+        public byte Unknown1 { get; private set; }
+        public uint Unknown2 { get; private set; }
+        public ushort CurrencyId { get; private set; }
+        public uint Unknown4 { get; private set; }
+        public Identity Target { get; } = new();
+        public uint Unknown6 { get; private set; }
 
         public void Read(GamePacketReader reader)
         {
-            OfferId    = reader.ReadUInt(20);
+            OfferId    = reader.ReadUInt();
             Unknown1   = reader.ReadByte(5);
+            Unknown2   = reader.ReadUInt();
             CurrencyId = reader.ReadUShort(14);
-            Unknown3   = reader.ReadUInt(20);
+            Unknown4   = reader.ReadUInt();
             Target.Read(reader);
-            Unknown6   = reader.ReadUInt(20);
+            Unknown6   = reader.ReadUInt();
         }
     }
 }

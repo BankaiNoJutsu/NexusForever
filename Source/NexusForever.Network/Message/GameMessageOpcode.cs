@@ -264,6 +264,7 @@ namespace NexusForever.Network.Message
         ServerCinematicActorAngle       = 0x0230,
         ServerCinematicActorMode        = 0x0231,
         ServerCinematicNotify           = 0x0232,
+        ClientAccountItemClaimPendingItemGroup = 0x0233,
         Server0237                      = 0x0237, // UI related, opens or closes different UI windows (bank, barber, ect...)
         ServerPetClearFlair             = 0x023B,
         ClientStatisticsWatchdog        = 0x023C,
@@ -715,6 +716,7 @@ namespace NexusForever.Network.Message
         ClientRealmList                 = 0x07A4,
         ClientReplayLevelRequest        = 0x07A5,
         ClientResetInstances            = 0x07B4,
+        ClientAccountItemReturnPendingItemGroup = 0x07C6,
         ClientRewardUpdateRequest       = 0x07CC,
         ClientAuctionsByFilterRequest   = 0x07DC,
         ClientCharacterSelect           = 0x07DD,
@@ -758,6 +760,7 @@ namespace NexusForever.Network.Message
         ClientReportBug                 = 0x0830,
         ClientStuck                     = 0x0831,
         ClientSuggest                   = 0x0833,
+        ClientAccountItemTake           = 0x0839,
         ServerLoadingScreen             = 0x083C,
         ServerTimeOfDay                 = 0x0845,
         ServerMapTrackedUnitDisable     = 0x0848,

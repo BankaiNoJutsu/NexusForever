@@ -12,6 +12,7 @@ namespace NexusForever.Database.Auth
         public DbSet<AccountEntitlementModel> AccountEntitlement { get; set; }
         public DbSet<AccountExternalReferenceModel> AccountExternalReference { get; set; }
         public DbSet<AccountGenericUnlockModel> AccountGenericUnlock { get; set; }
+        public DbSet<AccountInventoryModel> AccountInventory { get; set; }
         public DbSet<AccountKeybindingModel> AccountKeybinding { get; set; }
         public DbSet<AccountPermissionModel> AccountPermission { get; set; }
         public DbSet<AccountRoleModel> AccountRole { get; set; }
@@ -233,6 +234,59 @@ namespace NexusForever.Database.Auth
                     .WithMany(p => p.AccountGenericUnlock)
                     .HasForeignKey(d => d.Id)
                     .HasConstraintName("FK__account_generic_unlock_id__account_id");
+            });
+
+            modelBuilder.Entity<AccountInventoryModel>(entity =>
+            {
+                entity.HasKey(e => new { e.Id, e.InventoryId })
+                    .HasName("PRIMARY");
+
+                entity.ToTable("account_inventory");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.InventoryId)
+                    .HasColumnName("inventoryId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.AccountItemId)
+                    .HasColumnName("accountItemId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.ClaimState)
+                    .HasColumnName("claimState")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.Unknown1)
+                    .HasColumnName("unknown1")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.TargetRealmId)
+                    .HasColumnName("targetRealmId")
+                    .HasColumnType("smallint(5) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TargetCharacterId)
+                    .HasColumnName("targetCharacterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.CreateTime)
+                    .HasColumnName("createTime")
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("current_timestamp()");
+
+                entity.HasOne(d => d.Account)
+                    .WithMany(p => p.AccountInventory)
+                    .HasForeignKey(d => d.Id)
+                    .HasConstraintName("FK__account_inventory_id__account_id");
             });
 
             modelBuilder.Entity<AccountKeybindingModel>(entity =>

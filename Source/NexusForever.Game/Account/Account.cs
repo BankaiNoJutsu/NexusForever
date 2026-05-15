@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Costume;
 using NexusForever.Game.Abstract.Account.Currency;
 using NexusForever.Game.Abstract.Account.Entitlement;
+using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Account.Option;
 using NexusForever.Game.Abstract.Account.Reward;
 using NexusForever.Game.Abstract.Account.Unlock;
@@ -11,6 +12,7 @@ using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Account.Costume;
 using NexusForever.Game.Account.Currency;
 using NexusForever.Game.Account.Entitlement;
+using NexusForever.Game.Account.Inventory;
 using NexusForever.Game.Account.Option;
 using NexusForever.Game.Account.Reward;
 using NexusForever.Game.Account.Unlock;
@@ -30,6 +32,7 @@ namespace NexusForever.Game.Account
         public IGenericUnlockManager GenericUnlockManager { get; private set; }
         public IAccountCurrencyManager CurrencyManager { get; private set; }
         public IAccountEntitlementManager EntitlementManager { get; private set; }
+        public IAccountInventoryManager InventoryManager { get; private set; }
         public IAccountCostumeManager CostumeManager { get; private set; }
         public IRewardPropertyManager RewardPropertyManager { get; private set; }
         public IAccountKeybindingManager KeybindingManager { get; private set; } 
@@ -54,6 +57,7 @@ namespace NexusForever.Game.Account
             GenericUnlockManager  = new GenericUnlockManager(this, model);
             CurrencyManager       = new AccountCurrencyManager(this, model);
             EntitlementManager    = new AccountEntitlementManager(this, model);
+            InventoryManager      = new AccountInventoryManager(this, model);
             CostumeManager        = new AccountCostumeManager(this, model);
             RewardPropertyManager = new RewardPropertyManager(this);
             KeybindingManager     = new AccountKeybindingManager(model);
@@ -65,6 +69,7 @@ namespace NexusForever.Game.Account
             GenericUnlockManager.Save(context);
             CurrencyManager.Save(context);
             EntitlementManager.Save(context);
+            InventoryManager.Save(context);
             CostumeManager.Save(context);
             KeybindingManager.Save(context);
         }

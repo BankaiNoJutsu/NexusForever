@@ -3,6 +3,7 @@ using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Account.Costume;
 using NexusForever.Game.Abstract.Account.Currency;
 using NexusForever.Game.Abstract.Account.Entitlement;
+using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Account.Option;
 using NexusForever.Game.Abstract.Account.Reward;
 using NexusForever.Game.Abstract.Account.Unlock;
@@ -21,6 +22,7 @@ namespace NexusForever.Game.Abstract.Account
         IGenericUnlockManager GenericUnlockManager { get; }
         IAccountCurrencyManager CurrencyManager { get; }
         IAccountEntitlementManager EntitlementManager { get; }
+        IAccountInventoryManager InventoryManager { get; }
         IAccountCostumeManager CostumeManager { get; }
         IRewardPropertyManager RewardPropertyManager { get; }
         IAccountKeybindingManager KeybindingManager { get; }

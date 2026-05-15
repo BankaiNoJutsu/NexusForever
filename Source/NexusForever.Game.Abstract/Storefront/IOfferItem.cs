@@ -14,6 +14,7 @@ namespace NexusForever.Game.Abstract.Storefront
         long Field6 { get; }
         byte Field7 { get; }
         bool Visible { get; }
+        IReadOnlyList<IOfferItemData> Items { get; }
 
         /// <summary>
         /// Get the <see cref="IOfferItemPrice"/> associated with this <see cref="IOfferItem"/> for the given account currency ID

@@ -17,6 +17,7 @@ namespace NexusForever.Game.Storefront
         public long Field6 { get; }
         public byte Field7 { get; }
         public bool Visible { get; }
+        public IReadOnlyList<IOfferItemData> Items => items;
 
         private readonly ImmutableList<IOfferItemData> items;
         private readonly ImmutableDictionary<AccountCurrencyType, IOfferItemPrice> prices;

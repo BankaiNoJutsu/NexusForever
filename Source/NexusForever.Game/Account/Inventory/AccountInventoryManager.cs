@@ -1,0 +1,371 @@
+using System.Collections;
+using NexusForever.Database.Auth;
+using NexusForever.Database.Auth.Model;
+using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Account.Inventory;
+using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Static.Account;
+using NexusForever.Game.Static.Entity;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
+using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Static;
+using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
+
+namespace NexusForever.Game.Account.Inventory
+{
+    public class AccountInventoryManager : IAccountInventoryManager
+    {
+        private readonly Dictionary<ulong, IAccountInventoryItem> items = new();
+        private readonly List<IAccountInventoryItem> deletedItems = [];
+
+        private readonly IAccount account;
+        private ulong nextInventoryId = 1ul;
+
+        public AccountInventoryManager(IAccount account, AccountModel model)
+        {
+            this.account = account;
+
+            foreach (AccountInventoryModel itemModel in model.AccountInventory)
+            {
+                var item = new AccountInventoryItem(account, itemModel);
+                items.Add(item.Id, item);
+                nextInventoryId = Math.Max(nextInventoryId, item.Id + 1ul);
+            }
+        }
+
+        public void Save(AuthContext context)
+        {
+            foreach (IAccountInventoryItem item in deletedItems)
+                item.Save(context);
+            deletedItems.Clear();
+
+            foreach (IAccountInventoryItem item in items.Values)
+                item.Save(context);
+        }
+
+        public IAccountInventoryItem GetItem(ulong id)
+        {
+            return items.TryGetValue(id, out IAccountInventoryItem item) ? item : null;
+        }
+
+        public IAccountInventoryItem AddItem(uint accountItemId, NetworkIdentity targetPlayerIdentity = null, AccountItemClaimState claimState = AccountItemClaimState.CanClaim, bool unknown1 = false, bool notify = true)
+        {
+            if (!CanAddItem(accountItemId))
+                throw new ArgumentException($"Account item {accountItemId} does not exist!");
+
+            ulong inventoryId = GetNextInventoryId();
+            var item = new AccountInventoryItem(account, inventoryId, accountItemId, targetPlayerIdentity, claimState, unknown1);
+            items.Add(item.Id, item);
+
+            if (notify)
+                SendItemAdd(item);
+
+            return item;
+        }
+
+        public bool CanAddItem(uint accountItemId)
+        {
+            return GameTableManager.Instance.AccountItem.GetEntry(accountItemId) != null;
+        }
+
+        public bool RemoveItem(ulong id)
+        {
+            if (!items.Remove(id, out IAccountInventoryItem item))
+                return false;
+
+            if (!item.PendingCreate)
+            {
+                item.EnqueueDelete(true);
+                deletedItems.Add(item);
+            }
+
+            return true;
+        }
+
+        public GenericError TakeItem(IPlayer player, ulong id)
+        {
+            if (player == null)
+                return GenericError.Params;
+
+            if (!items.TryGetValue(id, out IAccountInventoryItem item))
+                return GenericError.ItemBadId;
+
+            if (item.ClaimState != AccountItemClaimState.CanClaim)
+                return GenericError.AccountItemMaxEntitlementCount;
+
+            if (!IsTargetPlayer(player, item.TargetPlayerIdentity))
+                return GenericError.Params;
+
+            if (!TryBuildGrantPlan(player, item.Entry, out List<IAccountItemGrant> grants, out GenericError error))
+                return error;
+
+            foreach (IAccountItemGrant grant in grants)
+                grant.Apply(account, player);
+
+            RemoveItem(id);
+            SendInventory();
+            return GenericError.Ok;
+        }
+
+        public void SendInitialPackets()
+        {
+            SendInventory();
+            SendPendingItems();
+            SendCooldowns();
+        }
+
+        public void SendInventory()
+        {
+            account.Session.EnqueueMessageEncrypted(new ServerAccountItems
+            {
+                AccountItems = items.Values
+                    .OrderBy(i => i.Id)
+                    .Select(i => i.Build())
+                    .ToList()
+            });
+        }
+
+        public void SendPendingItems()
+        {
+            account.Session.EnqueueMessageEncrypted(new ServerAccountItemsPending());
+        }
+
+        public void SendCooldowns()
+        {
+        }
+
+        public IEnumerator<IAccountInventoryItem> GetEnumerator()
+        {
+            return items.Values.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        private ulong GetNextInventoryId()
+        {
+            if (nextInventoryId == 0ul)
+                throw new InvalidOperationException("No account inventory ids are available.");
+
+            return nextInventoryId++;
+        }
+
+        private void SendItemAdd(IAccountInventoryItem item)
+        {
+            account.Session.EnqueueMessageEncrypted(new ServerAccountItemAdd
+            {
+                AccountItem = item.Build()
+            });
+        }
+
+        private static bool IsTargetPlayer(IPlayer player, NetworkIdentity targetPlayerIdentity)
+        {
+            if (targetPlayerIdentity == null || targetPlayerIdentity.Id == 0ul)
+                return true;
+
+            return targetPlayerIdentity.Id == player.Identity.Id &&
+                (targetPlayerIdentity.RealmId == 0u || targetPlayerIdentity.RealmId == player.Identity.RealmId);
+        }
+
+        private static bool TryBuildGrantPlan(IPlayer player, AccountItemEntry entry, out List<IAccountItemGrant> grants, out GenericError error)
+        {
+            grants = [];
+            error  = GenericError.Ok;
+
+            if (entry.Item2Id != 0u && !TryAddItemGrant(player, entry.Item2Id, grants, out error))
+                return false;
+
+            if (entry.AccountCurrencyEnum != 0u && !TryAddAccountCurrencyGrant(entry, grants, out error))
+                return false;
+
+            if (entry.EntitlementId != 0u && !TryAddEntitlementGrant(player, entry, grants, out error))
+                return false;
+
+            if (entry.GenericUnlockSetId != 0u && !TryAddGenericUnlockGrants(player, entry.GenericUnlockSetId, grants, out error))
+                return false;
+
+            if (grants.Count == 0)
+            {
+                error = entry.GenericUnlockSetId != 0u ? GenericError.GenericUnlockAlreadyUnlocked : GenericError.ItemBadStaticData;
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryAddItemGrant(IPlayer player, uint item2Id, List<IAccountItemGrant> grants, out GenericError error)
+        {
+            error = GenericError.Ok;
+
+            IItemInfo itemInfo = ItemManager.Instance.GetItemInfo(item2Id);
+            if (itemInfo == null)
+            {
+                error = GenericError.ItemBadStaticData;
+                return false;
+            }
+
+            if (!CanHoldItem(player, itemInfo))
+            {
+                error = GenericError.ItemInventoryFull;
+                return false;
+            }
+
+            grants.Add(new ItemGrant(itemInfo));
+            return true;
+        }
+
+        private static bool CanHoldItem(IPlayer player, IItemInfo itemInfo)
+        {
+            if (player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u)
+                return true;
+
+            if (!itemInfo.IsStackable())
+                return false;
+
+            return player.Inventory
+                .Where(b => b.Location == InventoryLocation.Inventory)
+                .SelectMany(b => b)
+                .Any(i => i.Info.Id == itemInfo.Id && i.StackCount < i.Info.Entry.MaxStackCount);
+        }
+
+        private static bool TryAddAccountCurrencyGrant(AccountItemEntry entry, List<IAccountItemGrant> grants, out GenericError error)
+        {
+            error = GenericError.Ok;
+
+            var currencyType = (AccountCurrencyType)entry.AccountCurrencyEnum;
+            if (!Enum.IsDefined(typeof(AccountCurrencyType), currencyType) || entry.AccountCurrencyAmount == 0ul)
+            {
+                error = GenericError.ItemBadStaticData;
+                return false;
+            }
+
+            grants.Add(new AccountCurrencyGrant(currencyType, entry.AccountCurrencyAmount));
+            return true;
+        }
+
+        private static bool TryAddEntitlementGrant(IPlayer player, AccountItemEntry entry, List<IAccountItemGrant> grants, out GenericError error)
+        {
+            error = GenericError.Ok;
+
+            EntitlementEntry entitlementEntry = GameTableManager.Instance.Entitlement.GetEntry(entry.EntitlementId);
+            if (entitlementEntry == null)
+            {
+                error = GenericError.ItemBadStaticData;
+                return false;
+            }
+
+            var entitlementFlags = (EntitlementFlags)entitlementEntry.Flags;
+            if (entitlementFlags.HasFlag(EntitlementFlags.Disabled))
+            {
+                error = GenericError.MissingEntitlement;
+                return false;
+            }
+
+            if (entry.EntitlementCount == 0u || entry.EntitlementCount > int.MaxValue)
+            {
+                error = GenericError.ItemBadStaticData;
+                return false;
+            }
+
+            bool characterEntitlement = entitlementFlags.HasFlag(EntitlementFlags.Character);
+            var entitlementType = (EntitlementType)entitlementEntry.Id;
+            uint currentAmount = characterEntitlement
+                ? player.EntitlementManager.GetEntitlement(entitlementType)?.Amount ?? 0u
+                : player.Account.EntitlementManager.GetEntitlement(entitlementType)?.Amount ?? 0u;
+
+            if (currentAmount + (ulong)entry.EntitlementCount > entitlementEntry.MaxCount)
+            {
+                error = GenericError.AccountItemMaxEntitlementCount;
+                return false;
+            }
+
+            grants.Add(new EntitlementGrant(entitlementType, (int)entry.EntitlementCount, characterEntitlement));
+            return true;
+        }
+
+        private static bool TryAddGenericUnlockGrants(IPlayer player, uint genericUnlockSetId, List<IAccountItemGrant> grants, out GenericError error)
+        {
+            error = GenericError.Ok;
+
+            GenericUnlockSetEntry unlockSetEntry = GameTableManager.Instance.GenericUnlockSet.GetEntry(genericUnlockSetId);
+            if (unlockSetEntry == null)
+            {
+                error = GenericError.InvalidGenericUnlock;
+                return false;
+            }
+
+            foreach (uint genericUnlockEntryId in GetGenericUnlockEntryIds(unlockSetEntry))
+            {
+                if (genericUnlockEntryId == 0u)
+                    continue;
+
+                GenericUnlockEntryEntry genericUnlockEntry = GameTableManager.Instance.GenericUnlockEntry.GetEntry(genericUnlockEntryId);
+                if (genericUnlockEntry == null || genericUnlockEntry.Id > ushort.MaxValue)
+                {
+                    error = GenericError.InvalidGenericUnlock;
+                    return false;
+                }
+
+                if (player.Account.GenericUnlockManager.IsUnlocked(genericUnlockEntry.GenericUnlockTypeEnum, genericUnlockEntry.UnlockObject))
+                    continue;
+
+                grants.Add(new GenericUnlockGrant((ushort)genericUnlockEntry.Id));
+            }
+
+            return true;
+        }
+
+        private static IEnumerable<uint> GetGenericUnlockEntryIds(GenericUnlockSetEntry entry)
+        {
+            yield return entry.GenericUnlockEntryId00;
+            yield return entry.GenericUnlockEntryId01;
+            yield return entry.GenericUnlockEntryId02;
+            yield return entry.GenericUnlockEntryId03;
+            yield return entry.GenericUnlockEntryId04;
+            yield return entry.GenericUnlockEntryId05;
+        }
+
+        private interface IAccountItemGrant
+        {
+            void Apply(IAccount account, IPlayer player);
+        }
+
+        private readonly record struct ItemGrant(IItemInfo ItemInfo) : IAccountItemGrant
+        {
+            public void Apply(IAccount account, IPlayer player)
+            {
+                player.Inventory.ItemCreate(InventoryLocation.Inventory, ItemInfo, 1u, ItemUpdateReason.PlayerRequested);
+            }
+        }
+
+        private readonly record struct AccountCurrencyGrant(AccountCurrencyType CurrencyType, ulong Amount) : IAccountItemGrant
+        {
+            public void Apply(IAccount account, IPlayer player)
+            {
+                account.CurrencyManager.CurrencyAddAmount(CurrencyType, Amount);
+            }
+        }
+
+        private readonly record struct EntitlementGrant(EntitlementType Type, int Amount, bool Character) : IAccountItemGrant
+        {
+            public void Apply(IAccount account, IPlayer player)
+            {
+                if (Character)
+                    player.EntitlementManager.UpdateEntitlement(Type, Amount);
+                else
+                    account.EntitlementManager.UpdateEntitlement(Type, Amount);
+            }
+        }
+
+        private readonly record struct GenericUnlockGrant(ushort GenericUnlockEntryId) : IAccountItemGrant
+        {
+            public void Apply(IAccount account, IPlayer player)
+            {
+                account.GenericUnlockManager.Unlock(GenericUnlockEntryId);
+            }
+        }
+    }
+}

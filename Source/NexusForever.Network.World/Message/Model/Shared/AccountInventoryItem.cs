@@ -1,4 +1,5 @@
-﻿using NexusForever.Network.Message;
+using NexusForever.Game.Static.Account;
+using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model.Shared
 {
@@ -6,7 +7,7 @@ namespace NexusForever.Network.World.Message.Model.Shared
     {
         public ulong Id { get; set; }
         public uint ItemId { get; set; }
-        public byte Unknown0 { get; set; } // 5
+        public AccountItemClaimState ClaimState { get; set; }
         public bool Unknown1 { get; set; }
         public Identity TargetPlayerIdentity { get; set; } = new();
 
@@ -14,7 +15,7 @@ namespace NexusForever.Network.World.Message.Model.Shared
         {
             writer.Write(Id);
             writer.Write(ItemId);
-            writer.Write(Unknown0, 5u);
+            writer.Write(ClaimState, 5u);
             writer.Write(Unknown1);
             TargetPlayerIdentity.Write(writer);
         }
