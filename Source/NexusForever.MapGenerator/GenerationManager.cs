@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -19,7 +20,24 @@ namespace NexusForever.MapGenerator
     public sealed class GenerationManager : Singleton<GenerationManager>
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+        private static readonly Regex gridFilePattern = new(@"[\w]+\.([A-Fa-f0-9]{2})([A-Fa-f0-9]{2})\.area", RegexOptions.Compiled);
         private string outputDir;
+
+        private readonly struct GridRequest
+        {
+            public GridRequest(string asset, string archivePath, byte x, byte y)
+            {
+                Asset = asset;
+                ArchivePath = archivePath;
+                X = x;
+                Y = y;
+            }
+
+            public string Asset { get; }
+            public string ArchivePath { get; }
+            public byte X { get; }
+            public byte Y { get; }
+        }
 
         public void Initialise(string outputDir)
         {
@@ -33,64 +51,89 @@ namespace NexusForever.MapGenerator
         /// <summary>
         /// Generate a base map (.nfmap) file for a single world optionally specifying a single grid.
         /// </summary>
-        public void GenerateWorld(ushort worldId, byte? gridX = null, byte? gridY = null)
+        public void GenerateWorld(ushort worldId, byte? gridX = null, byte? gridY = null, int maxDegreeOfParallelism = 1)
         {
             WorldEntry entry = GameTableManager.Instance.World.GetEntry(worldId);
             if (entry != null)
-                ProcessWorld(entry, gridX, gridY);
+                ProcessWorld(entry, ArchiveManager.Instance, maxDegreeOfParallelism, gridX, gridY);
         }
 
         /// <summary>
         /// Generate base map (.nfmap) files for all worlds.
         /// </summary>
-        public void GenerateWorlds(bool singleThread)
+        public void GenerateWorlds(int maxDegreeOfParallelism = 1)
         {
-            var taskList = new List<Task>();
-            foreach (WorldEntry entry in GameTableManager.Instance.World.Entries
+            List<WorldEntry> entries = GameTableManager.Instance.World.Entries
                 .Where(e => e.AssetPath != string.Empty)
                 .GroupBy(e => e.AssetPath)
-                .Select(g => g.First()))
+                .Select(g => g.First())
+                .ToList();
+
+            int effectiveMaxDegreeOfParallelism = ParallelismHelper.GetEffectiveMaxDegreeOfParallelism(maxDegreeOfParallelism, entries.Count);
+            if (effectiveMaxDegreeOfParallelism == 1)
             {
-                if (singleThread)
-                    ProcessWorld(entry);
-                else
-                {
-                    Task task = Task.Factory.StartNew(() => ProcessWorld(entry));
-                    taskList.Add(task);
-                }
+                foreach (WorldEntry entry in entries)
+                    ProcessWorld(entry, ArchiveManager.Instance);
+
+                return;
             }
 
-            if (!singleThread)
-                Task.WaitAll(taskList.ToArray<Task>());
+            log.Info($"Generating {entries.Count} base maps with up to {effectiveMaxDegreeOfParallelism} workers...");
+
+            Parallel.ForEach(
+                entries,
+                new ParallelOptions { MaxDegreeOfParallelism = effectiveMaxDegreeOfParallelism },
+                () => ArchiveManager.Instance.CreateIsolatedInstance(),
+                (entry, _, localArchiveManager) =>
+                {
+                    ProcessWorld(entry, localArchiveManager);
+                    return localArchiveManager;
+                },
+                localArchiveManager => localArchiveManager.Dispose());
         }
 
         /// <summary>
         /// Generate a base map (.nfmap) file from supplied <see cref="WorldEntry"/>.
         /// </summary>
-        private void ProcessWorld(WorldEntry entry, byte? gridX = null, byte? gridY = null)
+        private void ProcessWorld(WorldEntry entry, ArchiveManager archiveManager, int maxDegreeOfParallelism = 1, byte? gridX = null, byte? gridY = null)
         {
             var mapFile = new WritableMapFile(Path.GetFileName(entry.AssetPath.Replace('\\', Path.DirectorySeparatorChar)));
 
             log.Info($"Processing {mapFile.Asset}...");
 
-            if (gridX.HasValue && gridY.HasValue)
+            List<GridRequest> gridRequests = GetGridRequests(entry, archiveManager, mapFile.Asset, gridX, gridY);
+            int effectiveMaxDegreeOfParallelism = ParallelismHelper.GetEffectiveMaxDegreeOfParallelism(maxDegreeOfParallelism, gridRequests.Count);
+            if (effectiveMaxDegreeOfParallelism == 1)
             {
-                string path = Path.Combine(entry.AssetPath, $"{mapFile.Asset}.{gridX:x2}{gridY:x2}.area");
-                IArchiveFileEntry grid = ArchiveManager.Instance.MainArchive.GetFileInfoByPath(path);
-                if (grid != null)
-                    ProcessGrid(mapFile, grid, gridX.Value, gridY.Value);
+                foreach (GridRequest gridRequest in gridRequests)
+                {
+                    WritableMapFileGrid mapFileGrid = ProcessGrid(archiveManager, gridRequest);
+                    if (mapFileGrid != null)
+                        mapFile.SetGrid(mapFileGrid.X, mapFileGrid.Y, mapFileGrid);
+                }
             }
             else
             {
-                string path = Path.Combine(entry.AssetPath, "*.*.area");
-                foreach (IArchiveFileEntry grid in ArchiveManager.Instance.MainArchive.IndexFile.GetFiles(path))
-                {
-                    var regex = new Regex(@"[\w]+\.([A-Fa-f0-9]{2})([A-Fa-f0-9]{2})\.area");
-                    Match match = regex.Match(grid.FileName);
-                    byte x = byte.Parse(match.Groups[1].Value, NumberStyles.HexNumber);
-                    byte y = byte.Parse(match.Groups[2].Value, NumberStyles.HexNumber);
+                log.Info($"Processing {mapFile.Asset} with up to {effectiveMaxDegreeOfParallelism} grid workers...");
 
-                    ProcessGrid(mapFile, grid, x, y);
+                var mapFileGrids = new ConcurrentBag<WritableMapFileGrid>();
+                Parallel.ForEach(
+                    gridRequests,
+                    new ParallelOptions { MaxDegreeOfParallelism = effectiveMaxDegreeOfParallelism },
+                    () => ArchiveManager.Instance.CreateIsolatedInstance(),
+                    (gridRequest, _, localArchiveManager) =>
+                    {
+                        WritableMapFileGrid mapFileGrid = ProcessGrid(localArchiveManager, gridRequest);
+                        if (mapFileGrid != null)
+                            mapFileGrids.Add(mapFileGrid);
+
+                        return localArchiveManager;
+                    },
+                    localArchiveManager => localArchiveManager.Dispose());
+
+                foreach (WritableMapFileGrid mapFileGrid in mapFileGrids)
+                {
+                    mapFile.SetGrid(mapFileGrid.X, mapFileGrid.Y, mapFileGrid);
                 }
             }
 
@@ -112,19 +155,47 @@ namespace NexusForever.MapGenerator
             }
         }
 
-        private void ProcessGrid(WritableMapFile map, IArchiveFileEntry grid, byte gridX, byte gridY)
+        private List<GridRequest> GetGridRequests(WorldEntry entry, ArchiveManager archiveManager, string asset, byte? gridX = null, byte? gridY = null)
         {
-            // skip any low quality grids
-            if (grid.FileName.Contains("_low", StringComparison.OrdinalIgnoreCase))
-                return;
+            var gridRequests = new List<GridRequest>();
+            if (gridX.HasValue && gridY.HasValue)
+            {
+                string gridPath = Path.Combine(entry.AssetPath, $"{asset}.{gridX:x2}{gridY:x2}.area");
+                gridRequests.Add(new GridRequest(asset, gridPath, gridX.Value, gridY.Value));
+                return gridRequests;
+            }
 
-            log.Info($"Processing {map.Asset} grid {gridX},{gridY}...");
+            string path = Path.Combine(entry.AssetPath, "*.*.area");
+            foreach (IArchiveFileEntry grid in archiveManager.MainArchive.IndexFile.GetFiles(path))
+            {
+                if (grid.FileName.Contains("_low", StringComparison.OrdinalIgnoreCase))
+                    continue;
 
-            using (Stream stream = ArchiveManager.Instance.MainArchive.OpenFileStream(grid))
+                Match match = gridFilePattern.Match(grid.FileName);
+                if (!match.Success)
+                    continue;
+
+                byte x = byte.Parse(match.Groups[1].Value, NumberStyles.HexNumber);
+                byte y = byte.Parse(match.Groups[2].Value, NumberStyles.HexNumber);
+                gridRequests.Add(new GridRequest(asset, Path.Combine(entry.AssetPath, grid.FileName), x, y));
+            }
+
+            return gridRequests;
+        }
+
+        private WritableMapFileGrid ProcessGrid(ArchiveManager archiveManager, GridRequest gridRequest)
+        {
+            IArchiveFileEntry grid = archiveManager.MainArchive.GetFileInfoByPath(gridRequest.ArchivePath);
+            if (grid == null)
+                return null;
+
+            log.Info($"Processing {gridRequest.Asset} grid {gridRequest.X},{gridRequest.Y}...");
+
+            using (Stream stream = archiveManager.MainArchive.OpenFileStream(grid))
             {
                 try
                 {
-                    var mapFileGrid = new WritableMapFileGrid(gridX, gridY);
+                    var mapFileGrid = new WritableMapFileGrid(gridRequest.X, gridRequest.Y);
                     var areaFile = new AreaFile(stream);
                     foreach (IReadable areaChunk in areaFile.Chunks)
                     {
@@ -139,13 +210,15 @@ namespace NexusForever.MapGenerator
                         }
                     }
 
-                    map.SetGrid(gridX, gridY, mapFileGrid);
+                    return mapFileGrid;
                 }
                 catch (Exception e)
                 {
                     log.Error(e);
                 }
             }
+
+            return null;
         }
     }
 }

@@ -563,6 +563,8 @@ namespace NexusForever.GameTable
         public GameTable<Spell4PrerequisitesEntry> Spell4Prerequisites { get; private set; }
         public GameTable<Spell4ReagentEntry> Spell4Reagent { get; private set; }
         public GameTable<Spell4RunnerEntry> Spell4Runner { get; private set; }
+
+        [GameData]
         public GameTable<Spell4ServiceTokenCostEntry> Spell4ServiceTokenCost { get; private set; }
 
         [GameData]

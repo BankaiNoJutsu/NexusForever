@@ -20,6 +20,10 @@ namespace NexusForever.MapGenerator
             HelpText = "The base directory where output files will be created.", Default = "")]
         public string OutputDir { get; set; }
 
+        [Option('j', "maxParallelism",
+            HelpText = "Maximum number of parallel workers to use. Use 0 to auto-select a bounded value.", Default = 0)]
+        public int MaxParallelism { get; set; }
+
         [Option("debug")]
         public bool Debug { get; set; }
 

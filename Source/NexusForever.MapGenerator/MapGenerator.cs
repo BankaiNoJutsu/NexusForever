@@ -43,6 +43,9 @@ namespace NexusForever.MapGenerator
             if (!Directory.Exists(parameters.PatchPath))
                 throw new DirectoryNotFoundException();
 
+            if (parameters.MaxParallelism < 0)
+                throw new ArgumentOutOfRangeException(nameof(parameters.MaxParallelism), "maxParallelism must be 0 or greater.");
+
             if (!parameters.Extract && !parameters.Generate)
             {
                 log.Warn("Please specify the Extract or Generate parameter");
@@ -60,16 +63,16 @@ namespace NexusForever.MapGenerator
             GameTableManager.Instance.Initialise();
 
             if (parameters.Extract)
-                ExtractionManager.Instance.Initialise(parameters.OutputDir);
+                ExtractionManager.Instance.Initialise(parameters.OutputDir, parameters.MaxParallelism);
             if (parameters.Generate)
             {
                 GenerationManager.Instance.Initialise(parameters.OutputDir);
 
                 var start = DateTime.UtcNow;
                 if (parameters.WorldId.HasValue)
-                    GenerationManager.Instance.GenerateWorld(parameters.WorldId.Value, parameters.GridX, parameters.GridY);
+                    GenerationManager.Instance.GenerateWorld(parameters.WorldId.Value, parameters.GridX, parameters.GridY, parameters.MaxParallelism);
                 else
-                    GenerationManager.Instance.GenerateWorlds(true);
+                    GenerationManager.Instance.GenerateWorlds(parameters.MaxParallelism);
 
                 TimeSpan span = DateTime.UtcNow - start;
                 log.Info($"Generated base maps in {span.TotalSeconds}s.");

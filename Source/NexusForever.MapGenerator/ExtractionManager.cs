@@ -1,5 +1,8 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Nexus.Archive;
 using NexusForever.Shared;
 using NLog;
@@ -20,7 +23,7 @@ namespace NexusForever.MapGenerator
 
         private string outputDir;
 
-        public void Initialise(string outputDir)
+        public void Initialise(string outputDir, int maxDegreeOfParallelism = 1)
         {
             log.Info("Extracting GameTables...");
 
@@ -28,18 +31,41 @@ namespace NexusForever.MapGenerator
 
             Directory.CreateDirectory(this.outputDir);
 
-            ExtractGameTables();
+            ExtractGameTables(maxDegreeOfParallelism);
             ExtractLanguageFiles();
         }
 
         /// <summary>
         /// Extract all GameTables (*.tbl) from main client archive.
         /// </summary>
-        private void ExtractGameTables()
+        private void ExtractGameTables(int maxDegreeOfParallelism)
         {
             string searchPattern = Path.Combine("DB", "*.tbl");
-            foreach (IArchiveFileEntry fileEntry in ArchiveManager.Instance.MainArchive.IndexFile.GetFiles(searchPattern))
-                ExtractFile(ArchiveManager.Instance.MainArchive, fileEntry);
+            List<string> tablePaths = ArchiveManager.Instance.MainArchive.IndexFile.GetFiles(searchPattern)
+                .Select(fileEntry => Path.Combine("DB", fileEntry.FileName))
+                .ToList();
+
+            int effectiveMaxDegreeOfParallelism = ParallelismHelper.GetEffectiveMaxDegreeOfParallelism(maxDegreeOfParallelism, tablePaths.Count);
+            if (effectiveMaxDegreeOfParallelism == 1)
+            {
+                foreach (string tablePath in tablePaths)
+                    ExtractFile(ArchiveManager.Instance.MainArchive, tablePath);
+
+                return;
+            }
+
+            log.Info($"Extracting {tablePaths.Count} game tables with up to {effectiveMaxDegreeOfParallelism} workers...");
+
+            Parallel.ForEach(
+                tablePaths,
+                new ParallelOptions { MaxDegreeOfParallelism = effectiveMaxDegreeOfParallelism },
+                () => ArchiveManager.Instance.CreateIsolatedInstance(),
+                (tablePath, _, localArchiveManager) =>
+                {
+                    ExtractFile(localArchiveManager.MainArchive, tablePath);
+                    return localArchiveManager;
+                },
+                localArchiveManager => localArchiveManager.Dispose());
         }
 
         /// <summary>
@@ -53,20 +79,23 @@ namespace NexusForever.MapGenerator
                     .Select(archive.IndexFile.FindEntry)
                     .OfType<IArchiveFileEntry>())
                 {
-                    ExtractFile(archive, fileEntry);
+                    ExtractFile(archive, fileEntry.FileName);
                 }
             }
         }
 
         /// <summary>
-        /// Extract supplied <see cref="IArchiveFileEntry"/> from <see cref="Archive"/>.
+        /// Extract supplied archive file path from <see cref="Archive"/>.
         /// </summary>
-        private void ExtractFile(Archive archive, IArchiveFileEntry fileEntry)
+        private void ExtractFile(Archive archive, string archiveFilePath)
         {
+            if (!(archive.IndexFile.FindEntry(archiveFilePath) is IArchiveFileEntry fileEntry))
+                throw new FileNotFoundException($"Archive entry was not found: {archiveFilePath}");
+
             string filePath = Path.Combine(outputDir, fileEntry.FileName);
 
             using (Stream archiveStream = archive.OpenFileStream(fileEntry))
-            using (FileStream fileStream = File.OpenWrite(filePath))
+            using (FileStream fileStream = File.Create(filePath))
             {
                 archiveStream.CopyTo(fileStream);
             }
