@@ -11,6 +11,7 @@ using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Combat;
 using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
@@ -2041,15 +2042,47 @@ namespace NexusForever.Game.Entity
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillCreature2, CreatureId, 1u);
             player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureEntry, CreatureId);
 
-            foreach (uint targetGroupId in AssetManager.Instance.GetTargetGroupsForCreatureId(CreatureId) ?? Enumerable.Empty<uint>())
+            List<uint> targetGroupIds = (AssetManager.Instance.GetTargetGroupsForCreatureId(CreatureId) ?? Enumerable.Empty<uint>()).ToList();
+            foreach (uint targetGroupId in targetGroupIds)
             {
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroup, targetGroupId, 1u);
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroups, targetGroupId, 1u);
                 player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureGroup, targetGroupId);
             }
 
+            RewardPublicEventKiller(player, targetGroupIds);
+
             // TODO: Reward XP
             // TODO: Reward Loot
+        }
+
+        private void RewardPublicEventKiller(IPlayer player, IEnumerable<uint> targetGroupIds)
+        {
+            foreach (uint targetGroupId in targetGroupIds)
+            {
+                Map.PublicEventManager.UpdateObjective(player, PublicEventObjectiveType.KillTargetGroup, targetGroupId, 1);
+                Map.PublicEventManager.UpdateObjective(player, PublicEventObjectiveType.KillClusterTargetGroup, targetGroupId, 1);
+            }
+
+            if (PublicEventId == 0u)
+                return;
+
+            var publicEvent = Map.PublicEventManager.GetEvent(PublicEventId);
+            if (publicEvent == null)
+                return;
+
+            publicEvent.UpdateObjective(player, PublicEventObjectiveType.KillEventUnit, 0u, 1);
+            publicEvent.UpdateObjective(player, PublicEventObjectiveType.KillEventObjectiveUnit, 0u, 1);
+            publicEvent.UpdateObjective(player, PublicEventObjectiveType.KillClusterEventUnit, 0u, 1);
+            publicEvent.UpdateObjective(player, PublicEventObjectiveType.KillClusterEventObjectiveUnit, 0u, 1);
+
+            foreach (uint targetGroupId in targetGroupIds)
+            {
+                publicEvent.UpdateObjective(player, PublicEventObjectiveType.KillEventUnit, targetGroupId, 1);
+                publicEvent.UpdateObjective(player, PublicEventObjectiveType.KillEventObjectiveUnit, targetGroupId, 1);
+                publicEvent.UpdateObjective(player, PublicEventObjectiveType.KillClusterEventUnit, targetGroupId, 1);
+                publicEvent.UpdateObjective(player, PublicEventObjectiveType.KillClusterEventObjectiveUnit, targetGroupId, 1);
+            }
         }
 
         private void ClearCombatState()

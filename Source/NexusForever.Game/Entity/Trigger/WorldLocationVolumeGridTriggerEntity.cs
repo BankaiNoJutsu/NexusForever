@@ -1,4 +1,8 @@
+using System.Linq;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Trigger;
+using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Script;
@@ -35,6 +39,38 @@ namespace NexusForever.Game.Entity.Trigger
                 ?? throw new InvalidOperationException($"Unknown WorldLocation2 entry {worldLocationId}.");
 
             Initialise(worldLocationId, Entry.Radius, objectId);
+        }
+
+        protected override void AddToRange(IGridEntity entity)
+        {
+            base.AddToRange(entity);
+
+            if (entity is not IPlayer player)
+                return;
+
+            foreach (IQuest quest in player.QuestManager.GetActiveQuests())
+            {
+                // Process matching objectives in reverse order so a single trigger entry
+                // cannot advance multiple sequential steps that share the same location.
+                foreach (IQuestObjective objective in quest
+                    .Where(MatchesWorldLocation)
+                    .OrderByDescending(o => o.Index))
+                {
+                    quest.ObjectiveUpdate(objective.ObjectiveInfo.Id, 1u);
+                }
+            }
+        }
+
+        private bool MatchesWorldLocation(IQuestObjective objective)
+        {
+            if (objective.ObjectiveInfo.Type != QuestObjectiveType.EnterArea)
+                return false;
+
+            QuestObjectiveEntry objectiveEntry = objective.ObjectiveInfo.Entry;
+            return objectiveEntry.WorldLocationsIdIndicator00 == Entry.Id
+                || objectiveEntry.WorldLocationsIdIndicator01 == Entry.Id
+                || objectiveEntry.WorldLocationsIdIndicator02 == Entry.Id
+                || objectiveEntry.WorldLocationsIdIndicator03 == Entry.Id;
         }
     }
 }

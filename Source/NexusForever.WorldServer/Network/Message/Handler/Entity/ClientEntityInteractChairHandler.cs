@@ -27,6 +27,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             if (chair == null)
                 throw new InvalidPacketValueException();
 
+            if (ActivationInteractionGuards.TryRejectBusyTarget(session, chair))
+                return;
+
+            if (ActivationInteractionGuards.TryRejectOutOfRangeTarget(session, chair))
+                return;
+
             Creature2Entry creatureEntry = gameTableManager.Creature2.GetEntry(chair.CreatureId);
             if ((creatureEntry.ActivationFlags & 0x200000) == 0)
                 throw new InvalidPacketValueException();

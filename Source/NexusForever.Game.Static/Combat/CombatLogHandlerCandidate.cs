@@ -8,7 +8,8 @@ namespace NexusForever.Game.Static.Combat
     /// </remarks>
     public static class CombatLogHandlerCandidate
     {
-        public const string CCStateBreak         = "CombatLog_HandleCCStateBreak (14060bbc0)";
-        public const string ModifyInterruptArmor = "CombatLog_HandleModifyInterruptArmor (14060e210)";
+        public const string CCState              = "CombatLog_DispatchCCStateEvent (14060b750)";
+        public const string CCStateBreak         = "CombatLog_DispatchCCStateBreakEvent (14060bbc0)";
+        public const string ModifyInterruptArmor = "CombatLog_DispatchModifyInterruptArmorEvent (14060e210)";
     }
 }

@@ -777,10 +777,11 @@ namespace NexusForever.Game.Spell
             if (interruptArmor == null)
                 return;
 
-            uint oldInterruptArmor = target.InterruptArmor;
-            target.InterruptArmor = AddClamped(target.InterruptArmor, interruptArmor.Amount);
+            target.TryModifyVital(Vital.InterruptArmor, interruptArmor.Amount, out float appliedAmountFloat, spell.Caster);
+            uint appliedAmount = appliedAmountFloat > 0f
+                ? (uint)MathF.Round(appliedAmountFloat)
+                : 0u;
 
-            uint appliedAmount = target.InterruptArmor - oldInterruptArmor;
             SpellEffectDiagnostics.TraceModifyInterruptArmor(spell, target, interruptArmor, appliedAmount, false);
             if (appliedAmount == 0u)
                 return;
@@ -796,13 +797,6 @@ namespace NexusForever.Game.Spell
                     CombatResult = CombatResult.Hit
                 }
             });
-        }
-
-        private static uint AddClamped(uint value, uint amount)
-        {
-            return amount > uint.MaxValue - value
-                ? uint.MaxValue
-                : value + amount;
         }
 
         [SpellEffectHandler(SpellEffectType.ThreatModification)]
@@ -1382,6 +1376,16 @@ namespace NexusForever.Game.Spell
 
         [SpellEffectHandler(SpellEffectType.Activate)]
         public static void HandleEffectActivate(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            HandleEffectActivateCore(spell, target, info);
+        }
+
+        public static void HandleEffectActivateWorld(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
+            HandleEffectActivateCore(spell, target, info);
+        }
+
+        private static void HandleEffectActivateCore(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
         {
             SpellEffectActivateSemantics activate = SpellEffectInterpreter.Interpret(info).Activate;
             if (activate == null)

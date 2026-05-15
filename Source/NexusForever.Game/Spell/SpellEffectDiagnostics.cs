@@ -126,7 +126,7 @@ namespace NexusForever.Game.Spell
                 durationMs);
         }
 
-        public static void TraceEffectResult(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        public static void TraceEffectResult(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
         {
             if (!log.IsTraceEnabled)
                 return;
@@ -1597,7 +1597,7 @@ namespace NexusForever.Game.Spell
                 removed);
         }
 
-        public static void TraceActivate(ISpell spell, IUnitEntity target, SpellEffectActivateSemantics activate, uint playerGuid, uint activatedCreatureId, int targetGroupCount)
+        public static void TraceActivate(ISpell spell, IWorldEntity target, SpellEffectActivateSemantics activate, uint playerGuid, uint activatedCreatureId, int targetGroupCount)
         {
             if (!log.IsTraceEnabled)
                 return;

@@ -30,6 +30,7 @@ namespace NexusForever.Game.Spell
     public partial class Spell : ISpell
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+        private const uint ValidTargetObjectMask = 0x02u;
         private const uint ValidTargetDeadMask = 0x08u;
         private const uint TargetTypeTargetAoe = 3u;
         private const uint TargetTypePositionAoe = 4u;
@@ -211,7 +212,7 @@ namespace NexusForever.Game.Spell
             if (Parameters.PrimaryTargetId == 0u)
                 return CastResult.Ok;
 
-            IUnitEntity target = GetPrimaryTargetEntity();
+            IWorldEntity target = GetPrimaryTargetWorldEntity();
             if (target == null)
             {
                 SpellEffectDiagnostics.TracePrimaryTargetValidation(this, null, CastResult.TargetUnknown, 0f, 0f, 0f);
@@ -219,7 +220,7 @@ namespace NexusForever.Game.Spell
             }
 
             float horizontalRange = GetHorizontalDistance(Caster.Position, target.Position);
-            float effectiveRange = MathF.Max(0f, horizontalRange - Caster.HitRadius * 0.5f - target.HitRadius * 0.5f);
+            float effectiveRange = GetEffectivePrimaryTargetRange(horizontalRange, target);
             float verticalDelta = MathF.Abs(Caster.Position.Y - target.Position.Y);
 
             CastResult result = CheckPrimaryTargetValidMask(target);
@@ -233,13 +234,27 @@ namespace NexusForever.Game.Spell
             return result;
         }
 
-        private CastResult CheckPrimaryTargetValidMask(IUnitEntity target)
+        private float GetEffectivePrimaryTargetRange(float horizontalRange, IWorldEntity target)
         {
-            CastResult result = CheckTargetLivingState(target);
+            float targetRadius = target is IUnitEntity unitTarget
+                ? unitTarget.HitRadius * 0.5f
+                : 0f;
+
+            return MathF.Max(0f, horizontalRange - Caster.HitRadius * 0.5f - targetRadius);
+        }
+
+        private CastResult CheckPrimaryTargetValidMask(IWorldEntity target)
+        {
+            if (target is not IUnitEntity unitTarget)
+                return ((Parameters.SpellInfo.BaseInfo.ValidTargets?.TargetBitmask ?? 0u) & ValidTargetObjectMask) != 0u
+                    ? CastResult.Ok
+                    : CastResult.TargetUnknown;
+
+            CastResult result = CheckTargetLivingState(unitTarget);
             if (result != CastResult.Ok)
                 return result;
 
-            return IsHostileToTarget(target) && UnitStateSetRules.TryGetHostileEffectImmuneState(target, out _)
+            return IsHostileToTarget(unitTarget) && UnitStateSetRules.TryGetHostileEffectImmuneState(unitTarget, out _)
                 ? CastResult.TargetInvulnerable
                 : CastResult.Ok;
         }
@@ -272,7 +287,7 @@ namespace NexusForever.Game.Spell
             return CheckTargetLivingState(target) == CastResult.Ok;
         }
 
-        private CastResult CheckPrimaryTargetAngle(IUnitEntity target)
+        private CastResult CheckPrimaryTargetAngle(IWorldEntity target)
         {
             float targetAngle = Parameters.SpellInfo.BaseInfo.TargetAngle?.TargetAngle ?? 0f;
             if (targetAngle <= 0f || targetAngle >= 360f)
@@ -368,7 +383,7 @@ namespace NexusForever.Game.Spell
                 || effect.Entry.PrerequisiteIdTargetPersistence != 0u;
         }
 
-        private bool MeetsPersistencePrerequisites(SpellEffectInterpretation effect, IUnitEntity target)
+        private bool MeetsPersistencePrerequisites(SpellEffectInterpretation effect, IWorldEntity target)
         {
             return MeetsPersistencePrerequisite(Parameters.SpellInfo.CasterPersistencePrerequisites, Caster)
                 && MeetsPersistencePrerequisite(Parameters.SpellInfo.TargetPersistencePrerequisites, target)
@@ -376,7 +391,7 @@ namespace NexusForever.Game.Spell
                 && MeetsPersistencePrerequisite(GameTableManager.Instance.Prerequisite.GetEntry(effect.Entry.PrerequisiteIdTargetPersistence), target);
         }
 
-        private static bool MeetsPersistencePrerequisite(PrerequisiteEntry prerequisite, IUnitEntity entity)
+        private static bool MeetsPersistencePrerequisite(PrerequisiteEntry prerequisite, IWorldEntity entity)
         {
             if (prerequisite == null)
                 return true;
@@ -692,7 +707,7 @@ namespace NexusForever.Game.Spell
 
             if (Parameters.PrimaryTargetId != 0)
             {
-                IUnitEntity primaryTargetEntity = GetPrimaryTargetEntity();
+                IWorldEntity primaryTargetEntity = GetPrimaryTargetWorldEntity();
                 if (primaryTargetEntity != null)
                     AddTarget(SpellEffectTargetFlags.Target, primaryTargetEntity);
             }
@@ -706,7 +721,7 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TraceTargetSelection(this, targets, telegraphs.Count);
         }
 
-        private void AddTarget(SpellEffectTargetFlags flags, IUnitEntity entity)
+        private void AddTarget(SpellEffectTargetFlags flags, IWorldEntity entity)
         {
             SpellTargetInfo target = targets.OfType<SpellTargetInfo>().FirstOrDefault(t => t.Entity.Guid == entity.Guid);
             if (target != null)
@@ -770,6 +785,9 @@ namespace NexusForever.Game.Spell
 
             return constraints.TargetSelection switch
             {
+                (uint)AoeSelectionType.Closest => OrderByDistance(candidates, selectionOrigin),
+                (uint)AoeSelectionType.Furthest => OrderByDistanceDescending(candidates, selectionOrigin),
+                (uint)AoeSelectionType.Random => ShuffleCandidates(candidates),
                 // Client rows explicitly name selection 4 as "lowest absolute health".
                 (uint)AoeSelectionType.LowestAbsoluteHealth => candidates
                     .OrderBy(e => e.Health)
@@ -787,14 +805,36 @@ namespace NexusForever.Game.Spell
             return candidates.OrderBy(e => Vector3.DistanceSquared(selectionOrigin, e.Position));
         }
 
-        private bool IsWithinCasterAngle(IUnitEntity entity, float angleDegrees)
+        private IEnumerable<IUnitEntity> OrderByDistanceDescending(IEnumerable<IUnitEntity> candidates, Vector3 selectionOrigin)
         {
-            return IsWithinAngle(entity, Caster.Position, Caster.Rotation, angleDegrees);
+            return candidates.OrderByDescending(e => Vector3.DistanceSquared(selectionOrigin, e.Position));
+        }
+
+        private static IEnumerable<IUnitEntity> ShuffleCandidates(IEnumerable<IUnitEntity> candidates)
+        {
+            List<IUnitEntity> shuffled = candidates.ToList();
+            for (int index = shuffled.Count - 1; index > 0; index--)
+            {
+                int swapIndex = Random.Shared.Next(index + 1);
+                (shuffled[index], shuffled[swapIndex]) = (shuffled[swapIndex], shuffled[index]);
+            }
+
+            return shuffled;
+        }
+
+        private bool IsWithinCasterAngle(IWorldEntity entity, float angleDegrees)
+        {
+            return IsWithinAngle(entity.Position, Caster.Position, Caster.Rotation, angleDegrees);
         }
 
         private static bool IsWithinAngle(IUnitEntity entity, Vector3 origin, Vector3 rotation, float angleDegrees)
         {
-            float targetAngle = (origin.GetAngle(entity.Position) - rotation.X).NormaliseRotationRadians();
+            return IsWithinAngle(entity.Position, origin, rotation, angleDegrees);
+        }
+
+        private static bool IsWithinAngle(Vector3 targetPosition, Vector3 origin, Vector3 rotation, float angleDegrees)
+        {
+            float targetAngle = (origin.GetAngle(targetPosition) - rotation.X).NormaliseRotationRadians();
             return MathF.Abs(targetAngle.ToDegrees()) <= angleDegrees / 2f;
         }
 
@@ -806,7 +846,7 @@ namespace NexusForever.Game.Spell
         private (Vector3 Position, Vector3 Rotation) ResolveTelegraphAnchor()
         {
             uint targetType = Parameters.SpellInfo.BaseInfo.TargetMechanics?.TargetType ?? 0u;
-            IUnitEntity primaryTarget = GetPrimaryTargetEntity();
+            IWorldEntity primaryTarget = GetPrimaryTargetWorldEntity();
 
             if (targetType == TargetTypeTargetAoe && primaryTarget != null)
                 return (primaryTarget.Position, GetRotationToward(primaryTarget.Position));
@@ -843,13 +883,18 @@ namespace NexusForever.Game.Spell
 
         private IUnitEntity GetPrimaryTargetEntity()
         {
+            return GetPrimaryTargetWorldEntity() as IUnitEntity;
+        }
+
+        private IWorldEntity GetPrimaryTargetWorldEntity()
+        {
             if (Parameters.PrimaryTargetId == 0u)
                 return null;
 
             if (Parameters.PrimaryTargetId == Caster.Guid)
                 return Caster;
 
-            return Caster.GetVisible<IUnitEntity>(Parameters.PrimaryTargetId);
+            return Caster.GetVisible<IWorldEntity>(Parameters.PrimaryTargetId);
         }
 
         private void ExecuteEffects()
@@ -941,26 +986,21 @@ namespace NexusForever.Game.Spell
                 effectTarget.Effects.Add(info);
                 pendingSpellGoEffects.Add(new PendingSpellGoEffect(effectTarget, info));
 
-                if (effect.Entry.EffectType != SpellEffectType.SpellImmunity && effectTarget.Entity.IsImmuneToSpell(Parameters.SpellInfo.Entry.Id))
+                if (effectTarget.Entity is not IUnitEntity unitTarget)
                 {
-                    info.DropEffect = true;
-                    info.AddCombatLog(new CombatLogImmune
+                    if (!ExecuteWorldEntityEffect(effect, effectTarget.Entity, info))
                     {
-                        CastData = new CombatLogCastData
-                        {
-                            CasterId     = Caster.Guid,
-                            TargetId     = effectTarget.Entity.Guid,
-                            SpellId      = Parameters.SpellInfo.Entry.Id,
-                            CombatResult = CombatResult.Hit
-                        }
-                    });
-                    SpellEffectDiagnostics.TraceSpellImmunityBlocked(this, effectTarget.Entity, effect, Parameters.SpellInfo.Entry.Id);
+                        info.DropEffect = true;
+                        SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
+                        continue;
+                    }
+
                     SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
                     executed = true;
                     continue;
                 }
 
-                if (effect.Entry.EffectType != SpellEffectType.SpellEffectImmunity && effectTarget.Entity.IsImmuneToSpellEffect(effect.Entry.EffectType))
+                if (effect.Entry.EffectType != SpellEffectType.SpellImmunity && unitTarget.IsImmuneToSpell(Parameters.SpellInfo.Entry.Id))
                 {
                     info.DropEffect = true;
                     info.AddCombatLog(new CombatLogImmune
@@ -973,14 +1013,13 @@ namespace NexusForever.Game.Spell
                             CombatResult = CombatResult.Hit
                         }
                     });
-                    SpellEffectDiagnostics.TraceSpellEffectImmunityBlocked(this, effectTarget.Entity, effect);
-                    SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
+                    SpellEffectDiagnostics.TraceSpellImmunityBlocked(this, unitTarget, effect, Parameters.SpellInfo.Entry.Id);
+                    SpellEffectDiagnostics.TraceEffectResult(this, unitTarget, info);
                     executed = true;
                     continue;
                 }
 
-                if (IsHostileToTarget(effectTarget.Entity)
-                    && UnitStateSetRules.TryGetHostileEffectImmuneState(effectTarget.Entity, out uint blockingStateId))
+                if (effect.Entry.EffectType != SpellEffectType.SpellEffectImmunity && unitTarget.IsImmuneToSpellEffect(effect.Entry.EffectType))
                 {
                     info.DropEffect = true;
                     info.AddCombatLog(new CombatLogImmune
@@ -993,20 +1032,55 @@ namespace NexusForever.Game.Spell
                             CombatResult = CombatResult.Hit
                         }
                     });
-                    SpellEffectDiagnostics.TraceUnitStateImmuneBlocked(this, effectTarget.Entity, effect, blockingStateId);
-                    SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
+                    SpellEffectDiagnostics.TraceSpellEffectImmunityBlocked(this, unitTarget, effect);
+                    SpellEffectDiagnostics.TraceEffectResult(this, unitTarget, info);
+                    executed = true;
+                    continue;
+                }
+
+                if (IsHostileToTarget(unitTarget)
+                    && UnitStateSetRules.TryGetHostileEffectImmuneState(unitTarget, out uint blockingStateId))
+                {
+                    info.DropEffect = true;
+                    info.AddCombatLog(new CombatLogImmune
+                    {
+                        CastData = new CombatLogCastData
+                        {
+                            CasterId     = Caster.Guid,
+                            TargetId     = effectTarget.Entity.Guid,
+                            SpellId      = Parameters.SpellInfo.Entry.Id,
+                            CombatResult = CombatResult.Hit
+                        }
+                    });
+                    SpellEffectDiagnostics.TraceUnitStateImmuneBlocked(this, unitTarget, effect, blockingStateId);
+                    SpellEffectDiagnostics.TraceEffectResult(this, unitTarget, info);
                     executed = true;
                     continue;
                 }
 
                 // TODO: if there is an unhandled exception in the handler, there will be an infinite loop on Execute()
-                handler.Invoke(this, effectTarget.Entity, info);
-                ScheduleEffectLifetime(effect, effectTarget.Entity, info);
-                SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
+                handler.Invoke(this, unitTarget, info);
+                ScheduleEffectLifetime(effect, unitTarget, info);
+                SpellEffectDiagnostics.TraceEffectResult(this, unitTarget, info);
                 executed = true;
             }
 
             return executed;
+        }
+
+        private bool ExecuteWorldEntityEffect(SpellEffectInterpretation effect, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
+            switch ((SpellEffectType)effect.Entry.EffectType)
+            {
+                case SpellEffectType.Activate:
+                    SpellHandler.HandleEffectActivateWorld(this, target, info);
+                    return true;
+                case SpellEffectType.Fluff:
+                    return true;
+                default:
+                    log.Warn($"Unhandled world-target spell effect {(SpellEffectType)effect.Entry.EffectType} for target {target.Guid} on spell {Parameters.SpellInfo.Entry.Id}.");
+                    return false;
+            }
         }
 
         private void ScheduleEffectLifetime(SpellEffectInterpretation effect, IUnitEntity target, ISpellTargetEffectInfo info)
@@ -1052,6 +1126,11 @@ namespace NexusForever.Game.Spell
             info.LifetimeEnded = true;
             removalAction();
             return true;
+        }
+
+        private bool TryRemoveActiveEffect(SpellEffectInterpretation effect, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
+            return target is IUnitEntity unitTarget && TryRemoveActiveEffect(effect, unitTarget, info);
         }
 
         private Action BuildLifetimeRemovalAction(SpellEffectInterpretation effect, IUnitEntity target, ISpellTargetEffectInfo info)
@@ -1426,13 +1505,13 @@ namespace NexusForever.Game.Spell
                 TelegraphPositionData  = new List<ServerSpellStart.TelegraphPosition>()
             };
 
-            var unitsCasting = new List<IUnitEntity>();
+            var unitsCasting = new List<IWorldEntity>();
             if (Parameters.PrimaryTargetId > 0)
-                unitsCasting.Add(GetPrimaryTargetEntity());
+                unitsCasting.Add(GetPrimaryTargetWorldEntity());
             else
                 unitsCasting.Add(Caster);
 
-            foreach (IUnitEntity unit in unitsCasting.Where(u => u != null))
+            foreach (IWorldEntity unit in unitsCasting.Where(u => u != null))
             {
                 spellStart.InitialPositionData.Add(new ServerSpellStart.InitialPosition
                 {
@@ -1443,7 +1522,7 @@ namespace NexusForever.Game.Spell
                 });
             }
 
-            foreach (IUnitEntity unit in unitsCasting.Where(u => u != null))
+            foreach (IWorldEntity unit in unitsCasting.Where(u => u != null))
             {
                 foreach (ITelegraph telegraph in telegraphs)
                 {

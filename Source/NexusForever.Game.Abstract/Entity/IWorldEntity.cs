@@ -23,6 +23,8 @@ namespace NexusForever.Game.Abstract.Entity
 
         uint EntityId { get; }
         byte EntityMode { get; }
+        uint PublicEventId { get; }
+        uint PublicEventPhase { get; }
         IEnumerable<string> ScriptNames { get; }
         byte QuestChecklistIdx { get; }
         uint CreatureId { get; set; }

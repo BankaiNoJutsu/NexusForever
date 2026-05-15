@@ -249,6 +249,7 @@ namespace NexusForever.WorldServer.Command.Handler
         {
             string label = effectType switch
             {
+                SpellEffectType.CCStateSet           => CombatLogHandlerCandidate.CCState,
                 SpellEffectType.ModifyInterruptArmor => CombatLogHandlerCandidate.ModifyInterruptArmor,
                 SpellEffectType.CCStateBreak         => CombatLogHandlerCandidate.CCStateBreak,
                 _                                    => null
@@ -529,6 +530,9 @@ namespace NexusForever.WorldServer.Command.Handler
         private static string DescribeValidTargetMask(uint targetBitmask)
         {
             List<string> labels = [];
+            if ((targetBitmask & 0x02u) != 0u)
+                labels.Add("interactable/object");
+
             if ((targetBitmask & 0x08u) != 0u)
                 labels.Add("dead/corpse");
 

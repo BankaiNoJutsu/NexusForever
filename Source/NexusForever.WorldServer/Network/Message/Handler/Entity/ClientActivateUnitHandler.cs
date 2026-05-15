@@ -16,7 +16,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             if (ActivationInteractionGuards.TryRejectBusyTarget(session, entity))
                 return;
 
-            // TODO: sanity check for range etc.
+            if (ActivationInteractionGuards.TryRejectOutOfRangeTarget(session, entity))
+                return;
 
             entity.OnActivate(session.Player);
             entity.OnActivateSuccess(session.Player);

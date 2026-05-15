@@ -101,7 +101,7 @@ namespace NexusForever.Script
             try
             {
                 using Stream stream = loader.Load(path);
-                context = new AssemblyLoadContext(Name, true);
+                context = CreateLoadContext();
                 Assembly assembly = context.LoadFromStream(stream);
 
                 foreach (Type type in assembly.GetTypes())
@@ -142,6 +142,78 @@ namespace NexusForever.Script
                 sourceWatcher.OnEvent += () => RaiseEvent(ReloadType.Source);
                 sourceWatcher.Start();
             }
+        }
+
+        private AssemblyLoadContext CreateLoadContext()
+        {
+            string assemblyPath = !string.IsNullOrWhiteSpace(AssemblyPath)
+                ? Path.GetFullPath(AssemblyPath)
+                : null;
+
+            var probeDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (assemblyPath != null)
+                probeDirectories.Add(Path.GetDirectoryName(assemblyPath));
+
+            string hostDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (!string.IsNullOrWhiteSpace(hostDirectory))
+                probeDirectories.Add(hostDirectory);
+
+            var loadContext = new AssemblyLoadContext(Name, true);
+            AssemblyDependencyResolver resolver = assemblyPath != null && File.Exists(assemblyPath)
+                ? new AssemblyDependencyResolver(assemblyPath)
+                : null;
+
+            loadContext.Resolving += (context, assemblyName) => ResolveAssembly(context, assemblyName, resolver, probeDirectories);
+            return loadContext;
+        }
+
+        private static Assembly ResolveAssembly(
+            AssemblyLoadContext context,
+            AssemblyName assemblyName,
+            AssemblyDependencyResolver resolver,
+            IEnumerable<string> probeDirectories)
+        {
+            Assembly defaultAssembly = FindDefaultAssembly(assemblyName);
+            if (!IsScriptImplementationAssembly(assemblyName.Name) && defaultAssembly != null)
+                return defaultAssembly;
+
+            string resolvedPath = resolver?.ResolveAssemblyToPath(assemblyName);
+            if (resolvedPath == null)
+            {
+                resolvedPath = probeDirectories
+                    .Select(directory => Path.Combine(directory, $"{assemblyName.Name}.dll"))
+                    .FirstOrDefault(File.Exists);
+            }
+
+            if (resolvedPath != null)
+                return LoadAssemblyFromPath(context, resolvedPath);
+
+            return defaultAssembly;
+        }
+
+        private static Assembly FindDefaultAssembly(AssemblyName assemblyName)
+        {
+            return AssemblyLoadContext.Default.Assemblies
+                .FirstOrDefault(assembly => AssemblyName.ReferenceMatchesDefinition(assemblyName, assembly.GetName()));
+        }
+
+        private static bool IsScriptImplementationAssembly(string assemblyName)
+        {
+            return !string.IsNullOrWhiteSpace(assemblyName)
+                && assemblyName.StartsWith("NexusForever.Script.", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(assemblyName, "NexusForever.Script", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static Assembly LoadAssemblyFromPath(AssemblyLoadContext context, string path)
+        {
+            using FileStream assemblyStream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+
+            string symbolPath = Path.ChangeExtension(path, ".pdb");
+            if (!File.Exists(symbolPath))
+                return context.LoadFromStream(assemblyStream);
+
+            using FileStream symbolStream = File.Open(symbolPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            return context.LoadFromStream(assemblyStream, symbolStream);
         }
 
         private void RaiseEvent(ReloadType reloadType)

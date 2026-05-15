@@ -32,7 +32,7 @@ namespace NexusForever.Game.Entity.Trigger
         {
             base.AddToRange(entity);
 
-            if (entity is not IPlayer)
+            if (objectId == 0u || entity is not IPlayer)
                 return;
 
             Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.ParticipantsInTriggerVolume, objectId, 1);
@@ -40,7 +40,7 @@ namespace NexusForever.Game.Entity.Trigger
 
         protected override void RemoveFromRange(IGridEntity entity)
         {
-            if (entity is IPlayer)
+            if (objectId != 0u && entity is IPlayer)
                 Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.ParticipantsInTriggerVolume, objectId, -1);
 
             base.RemoveFromRange(entity);

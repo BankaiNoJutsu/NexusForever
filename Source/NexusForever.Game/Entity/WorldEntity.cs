@@ -39,6 +39,8 @@ namespace NexusForever.Game.Entity
         public WorldZoneEntry Zone { get; private set; }
         public uint EntityId { get; protected set; }
         public byte EntityMode { get; private set; }
+        public uint PublicEventId { get; private set; }
+        public uint PublicEventPhase { get; private set; }
         public IEnumerable<string> ScriptNames => scriptNames;
         public byte QuestChecklistIdx { get; protected set; }
         private readonly HashSet<string> scriptNames = [];
@@ -260,6 +262,8 @@ namespace NexusForever.Game.Entity
                 throw new ArgumentNullException(nameof(creatureInfo));
 
             CreatureInfo  = creatureInfo;
+            PublicEventId = 0u;
+            PublicEventPhase = 0u;
             CreatureEntry = creatureInfo.Entry;
             SetVisualEmit(true);
 
@@ -301,6 +305,8 @@ namespace NexusForever.Game.Entity
 
             EntityId      = model.Id;
             EntityMode    = model.Mode;
+            PublicEventId = model.EntityEvent?.EventId ?? 0u;
+            PublicEventPhase = model.EntityEvent?.Phase ?? 0u;
             QuestChecklistIdx = model.QuestChecklistIdx;
             CreatureId    = model.Creature;
             Rotation      = new Vector3(model.Rx, model.Ry, model.Rz);
@@ -340,6 +346,8 @@ namespace NexusForever.Game.Entity
             CreatureInfo  = creatureInfo;
             EntityId      = model.Id;
             EntityMode    = model.Mode;
+            PublicEventId = model.EntityEvent?.EventId ?? 0u;
+            PublicEventPhase = model.EntityEvent?.Phase ?? 0u;
             QuestChecklistIdx = model.QuestChecklistIdx;
             CreatureEntry = creatureInfo.Entry;
             SetVisualEmit(true);

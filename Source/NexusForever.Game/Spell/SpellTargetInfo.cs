@@ -71,10 +71,10 @@ namespace NexusForever.Game.Spell
         }
 
         public SpellEffectTargetFlags Flags { get; private set; }
-        public IUnitEntity Entity { get; }
+        public IWorldEntity Entity { get; }
         public List<ISpellTargetEffectInfo> Effects { get; } = new List<ISpellTargetEffectInfo>();
 
-        public SpellTargetInfo(SpellEffectTargetFlags flags, IUnitEntity entity)
+        public SpellTargetInfo(SpellEffectTargetFlags flags, IWorldEntity entity)
         {
             Flags  = flags;
             Entity = entity;
