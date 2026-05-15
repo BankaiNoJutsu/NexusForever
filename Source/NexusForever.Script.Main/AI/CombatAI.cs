@@ -10,6 +10,7 @@ using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.World.Message.Model.Story;
 using NexusForever.Script.Template;
 using NexusForever.Shared;
 using NexusForever.Shared.Game;
@@ -48,7 +49,7 @@ namespace NexusForever.Script.Main.AI
         public virtual void OnLoad(ICreatureEntity owner)
         {
             entity = owner;
-            entity.SetInRangeCheck(15f);
+            entity.SetInRangeCheck(entity.LeashRange);
         }
 
         /// <summary>
@@ -173,6 +174,11 @@ namespace NexusForever.Script.Main.AI
             if (entity.GetDispositionTo(unit.Faction1) != Disposition.Hostile)
                 return;
 
+            if (Vector2.Distance(
+                new Vector2(entity.LeashPosition.X, entity.LeashPosition.Z),
+                new Vector2(unit.Position.X, unit.Position.Z)) > entity.LeashRange)
+                return;
+
             ISpellParameters spellParameters = spellParametersFactory.Resolve();
             entity.CastSpell(41368, spellParameters);
 
@@ -247,9 +253,21 @@ namespace NexusForever.Script.Main.AI
 
         private void Reset()
         {
+            IUnitEntity previousTarget = entity.TargetGuid.HasValue
+                ? entity.Map.GetEntity<IUnitEntity>(entity.TargetGuid.Value)
+                : null;
+
             entity.SetTarget((IWorldEntity)null);
 
             entity.ModifyHealth(entity.MaxHealth, DamageType.Heal, null);
+
+            if (previousTarget is IPlayer player)
+            {
+                player.Session.EnqueueMessageEncrypted(new ServerGenericFloaterLocalised
+                {
+                    LocalisedTextId = 0x5F95C
+                });
+            }
 
             float speed = entity.GetPropertyValue(Property.MoveSpeedMultiplier) * 10f;
             entity.MovementManager.LaunchSpline([entity.Position, entity.LeashPosition], SplineType.Linear, SplineMode.OneShot, speed);
