@@ -2929,6 +2929,55 @@ Sixty-second SapVital enum-registration follow-up implemented from this pass:
   the client spell-effect enum registration surface even though a dedicated
   gameplay consumer for the `SapVital` entry remains unmapped.
 
+Sixty-third friendship request group follow-up implemented from this pass:
+
+- The remaining name/preference friendship request cluster is now mapped from
+  the native world-message registration table. Opcode `0x00B8
+  ClientFriendshipBlock` and `0x039E ClientFriendshipIgnoreStrangersState` both
+  reuse `ClientBool_WritePayload` with registered 4-byte objects. Opcode
+  `0x03B7 ClientFriendshipSetAutoResponseMessage` registers
+  `ClientFriendshipSetAutoResponseMessage_WritePayload` with a 0x10-byte object;
+  opcode `0x03C2 ClientFriendshipRemoveByName` registers
+  `ClientFriendshipRemoveByName_WritePayload` with a 0x18-byte object; and
+  opcode `0x03C8 ClientFriendshipSetNoteByName` registers
+  `ClientFriendshipSetNoteByName_WritePayload` with a 0x18-byte object.
+- Direct writer inspection proves the packet layouts already modeled in
+  NexusForever: auto-response writes away and busy wide strings; remove-by-name
+  writes name and realm wide strings followed by a 4-bit `FriendshipType`; and
+  note-by-name writes name, realm, and note wide strings. The shared helpers are
+  now named `NetworkBitWriter_WriteWideString` and
+  `NetworkBitWriter_Write4BitValue` because those exact helper calls explain the
+  friendship packet field shapes.
+- The Lua and send-side anchors also line up with the source behavior.
+  `Lua_FriendshipLib_SetAutoResponseMessages` reads two Lua strings and forwards
+  them into `Friendship_SetAutoResponseMessagesAndSend`, which validates the
+  strings, dispatches `FriendshipResult_InvalidAutoResponse` on failure, and
+  sends opcode `0x03B7` when the friendship service is loaded.
+  `Lua_FriendshipLib_SetPersonalIgnoreStrangersState` updates the local
+  ignore-strangers bit and sends opcode `0x039E` on state changes, while
+  `Friendship_SendClientFriendshipBlock` builds opcode `0x00B8` from the
+  requested or toggled account friend-request block bit.
+- Source now handles the full parsed cluster. `ClientFriendshipBlock` persists
+  the account friend-request block flag through a new internal
+  `FriendshipAccountBlockUpdateMessage` and republishes personal status.
+  `ClientFriendshipRemoveByName` and `ClientFriendshipSetNoteByName` now resolve
+  same-realm or explicit-realm names in the friendship server through new
+  internal messages and handlers, then reuse the existing friend remove/note
+  update semantics and friendship result publisher.
+  `ClientFriendshipIgnoreStrangersState` updates the client with
+  `ServerFriendshipIgnoreStrangersState` flags but remains transient because no
+  server-side persistence model exists yet. `ClientFriendshipSetAutoResponseMessage`
+  is parsed and logged with message lengths, but remains diagnostic-only because
+  there is still no account/chat storage or auto-response delivery path in
+  NexusForever.
+- Verification: `dotnet build Source\NexusForever.sln` succeeds after stopping
+  local NexusForever server processes that had locked build outputs; only the
+  existing NuGet/package warnings remain. The refreshed WildStar64 export
+  applied the expanded label set (`applied=276, created=0, skipped=0,
+  missing=0`) and rendered `selected_decompiled.c` with 430 functions. The
+  generated `functions.csv` confirms all new friendship writer, sender, Lua,
+  and bit-writer labels.
+
 ## Practical Next Steps
 
 1. Keep extending `Decomp\Analysis\function_labels.csv` as functions are

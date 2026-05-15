@@ -24,7 +24,8 @@ WildStar64.exe,14007d010,ClientTradeskillResetTalents_WritePayload,Serialises on
 WildStar64.exe,14007d4a0,ClientCraftingCraftItemAutoCraft_WritePayload,Serialises world opcode 0x0852 payload as four 32-bit fields: context token, crafting station unit id, TradeskillSchematic2 id, and schematic count.
 WildStar64.exe,14007d830,ActivateUnitFamily_Advance64Bits,Advances 64 payload bits for the shared opcode 0x0097 and 0x0098 activate-unit-family payload.
 WildStar64.exe,14007d840,ClientP2PTradingUInt64_WritePayload,Serialises one raw 64-bit field; used by world opcodes 0x018D ClientP2PTradingAddItem, 0x0194 ClientP2PTradingRemoveItem, and 0x0197 ClientP2PTradingSetMoney.
-WildStar64.exe,14007e610,ClientBool_WritePayload,Serialises a nonzero 32-bit value as one payload bit; used by world opcodes 0x0170 ClientSetIgnoreDuelRequests and 0x0173 ClientPvpToggleFlags inside registered 4-byte objects.
+WildStar64.exe,14007e4b0,ClientFriendshipSetAutoResponseMessage_WritePayload,Serialises world opcode 0x03B7 ClientFriendshipSetAutoResponseMessage as away and busy wide strings.
+WildStar64.exe,14007e610,ClientBool_WritePayload,Serialises a nonzero 32-bit value as one payload bit; used by world opcodes 0x00B8 ClientFriendshipBlock, 0x0170 ClientSetIgnoreDuelRequests, 0x0173 ClientPvpToggleFlags, and 0x039E ClientFriendshipIgnoreStrangersState inside registered 4-byte objects.
 WildStar64.exe,14007ec70,ActivateUnitFamily_WriteTokenAndTargetFieldPair,Serialises two raw 32-bit fields; used by world opcode 0x012B ClientOptions as option type/value, opcode 0x0857 ClientTradeskillLearn, and opcode 0x0097/0x0098 activate-unit-family payloads.
 WildStar64.exe,140085420,Marketplace_RequestCommodityInfo_WritePayload,Serialises world opcode 0x03E6 ClientRequestCommodityInfo as one 18-bit Item2 id inside a registered 4-byte object.
 WildStar64.exe,140088e60,Marketplace_AuctionSellOrderSubmit_WritePayload,Serialises world opcode 0x06DC ClientAuctionSellOrderSubmit as 64-bit item guid, 64-bit minimum bid, and 64-bit buyout price.
@@ -40,6 +41,8 @@ WildStar64.exe,14009a020,Marketplace_CommodityOrderCancel_WritePayload,Serialise
 WildStar64.exe,14009a7d0,Marketplace_AuctionsByFilterRequest_WritePayload,Serialises world opcode 0x07DC ClientAuctionsByFilterRequest with family/category/type selectors, item id array, filter array, reverse-sort flags, 3-bit sort mode, 8-bit property sort field, and page.
 WildStar64.exe,1400f06f0,Lua_InsertStringIntPair,Resolves a key string and inserts it with the supplied integer value into the active Lua or named-event table; used by enum registration loops and payload builders.
 WildStar64.exe,14009ab70,Marketplace_AuctionCancel_WritePayload,Serialises world opcode 0x0094 ClientAuctionCancel as 64-bit auction id plus 18-bit Item2 id inside a registered 0x10-byte object.
+WildStar64.exe,14009b500,ClientFriendshipRemoveByName_WritePayload,Serialises world opcode 0x03C2 ClientFriendshipRemoveByName as name and realm wide strings followed by a 4-bit FriendshipType.
+WildStar64.exe,14009b700,ClientFriendshipSetNoteByName_WritePayload,Serialises world opcode 0x03C8 ClientFriendshipSetNoteByName as name, realm, and note wide strings.
 WildStar64.exe,1400a53c0,ClientCraftingRuneSlotAdd_WritePayload,Serialises world opcode 0x0859 payload as a 64-bit item guid, 1-bit non-fusion flag, and 5-bit RuneType.
 WildStar64.exe,1400a5550,ClientCraftingRuneSlotClear_WritePayload,Serialises world opcode 0x085A payload as a 64-bit item guid, 32-bit rune slot index, 1-bit recover flag, and 1-bit use-group-currency flag.
 WildStar64.exe,1400a5780,ClientCraftingRuneSlotReroll_WritePayload,Serialises world opcode 0x085C payload as a 64-bit item guid, 32-bit rune slot index, and 5-bit RuneType.
@@ -48,6 +51,7 @@ WildStar64.exe,1400a5a70,ClientCraftingCraftItem_WritePayload,Serialises world o
 WildStar64.exe,1400a5b50,ClientCraftingSimpleCraft_WritePayload,Serialises three raw 32-bit fields; used by world opcode 0x0850 ClientCraftingSimpleCraft and opcode 0x084E ClientTradeskillPickTalent.
 WildStar64.exe,1400a5d70,ClientCraftingComplexCraft_WritePayload,Serialises world opcode 0x084F payload as the simple-craft prefix, packed CraftStats, 18-bit power-core item id, AP/SP split delta, and a 3-bit charge-count array.
 WildStar64.exe,1400a5f20,ClientCraftingAdditive_WritePayload,Serialises world opcode 0x084A payload as a 32-bit crafting station unit id plus 18-bit additive and catalyst Item2 ids.
+WildStar64.exe,1400a73c0,NetworkBitWriter_Write4BitValue,Writes a 4-bit integer value into the packet bitstream.
 WildStar64.exe,1400a74e0,NetworkBitWriter_Write5BitValue,Writes a 5-bit integer value into the packet bitstream.
 WildStar64.exe,1400a7540,NetworkBitWriter_WriteBits64,Writes up to 64 bits into the packet bitstream.
 WildStar64.exe,1400ea3e0,ClientEvent_DispatchNamedEvent,Generic named client event dispatcher used for UnitEvaded UnitEnteredCombat TargetUnitChanged GenericFloater and many UI or gameplay event names through the scene event sink.
@@ -62,6 +66,7 @@ WildStar64.exe,140333fc0,Network_SendResolvedMessage,Dispatches a resolved messa
 WildStar64.exe,140334f90,Network_ParseEndpointAddress,Resolves host or host:port text into a sockaddr-style endpoint.
 WildStar64.exe,140335530,NetworkPacketBuffer_Create,Creates a packet bitstream buffer for a requested byte capacity.
 WildStar64.exe,1403355e0,Network_SerialiseResolvedMessage,Serialises a resolved message definition into the world socket send queue.
+WildStar64.exe,140336040,NetworkBitWriter_WriteWideString,Writes a variable-length UTF-16 string into the packet bitstream.
 WildStar64.exe,140336380,NetworkBitWriter_WriteBits,Writes an integer value with a requested bit count into the packet bitstream.
 WildStar64.exe,1403366f0,NetworkBitWriter_GetPayloadStartBit,Returns the current packet bit position before payload serialisation.
 WildStar64.exe,140336750,NetworkBitWriter_GetBitPosition,Returns the current packet bit position after serialisation.
@@ -154,6 +159,9 @@ WildStar64.exe,14059b7c0,Crafting_SendClientCraftingAdditive,Sends world opcode 
 WildStar64.exe,14059d250,RuneCrafting_SendClientRuneInstall,Sends world opcode 0x085B ClientCraftingRuneInstall with target item guid, rune item count, and rune Item2 id array.
 WildStar64.exe,1405cd070,QueuedStateReplay_FlushPendingRecords,Flushes queued replay records from linked-list storage and forwards each record into the queued replay dispatcher.
 WildStar64.exe,1405cd200,QueuedStateReplay_DispatchRecord,Jump-dispatches a single queued replay record into specialized worker helpers inside the UnitCreated-linked state replay cluster.
+WildStar64.exe,1405de2e0,Friendship_SetAutoResponseMessagesAndSend,Validates away and busy auto-response strings and sends opcode 0x03B7 ClientFriendshipSetAutoResponseMessage when the friendship service is loaded.
+WildStar64.exe,1405e3190,Friendship_SendClientFriendshipRemoveByNameOrTarget,Resolves an explicit name/realm or selected target and sends opcode 0x03C2 ClientFriendshipRemoveByName or the target remove request.
+WildStar64.exe,1405e39e0,Friendship_SendClientFriendshipBlock,Builds and sends opcode 0x00B8 ClientFriendshipBlock with the requested or toggled account friend-request block bit.
 WildStar64.exe,1405e7fd0,Lua_GameSpell_Equals,Game.Spell __eq metamethod.
 WildStar64.exe,1405e8070,Lua_GameSpell_CreateOrWrap,Creates or wraps a Game.Spell Lua userdata value.
 WildStar64.exe,1405e81b0,Lua_GameSpell_Gc,Game.Spell __gc metamethod.
@@ -225,6 +233,8 @@ WildStar64.exe,140701150,Lua_GameLib_AcceptDuel,Sends zero-payload opcode 0x00E8
 WildStar64.exe,140701180,Lua_GameLib_DeclineDuel,Sends zero-payload opcode 0x00E9 ClientDuelDecline when the local duel state field is pending-request state 1.
 WildStar64.exe,1407011b0,Lua_GameLib_ForfeitDuel,Sends zero-payload opcode 0x00EA ClientDuelForfeit when the local duel state field is active-duel state 3.
 WildStar64.exe,140701290,Lua_GameLib_SetIgnoreDuelRequests,Sends opcode 0x0170 ClientSetIgnoreDuelRequests with the requested one-bit ignore-duel state only when it changes local flag bit 0x8.
+WildStar64.exe,14070e370,Lua_FriendshipLib_SetAutoResponseMessages,FriendshipLib.SetAutoResponseMessages Lua method; reads away and busy strings and forwards them to Friendship_SetAutoResponseMessagesAndSend.
+WildStar64.exe,14070e5d0,Lua_FriendshipLib_SetPersonalIgnoreStrangersState,FriendshipLib.SetPersonalIgnoreStrangersState Lua method; updates local ignore-strangers state and sends opcode 0x039E on state changes.
 WildStar64.exe,14074ae30,Trade_SendClientP2PTradingAcceptInvite,Sends zero-payload opcode 0x018C ClientP2PTradingAcceptInvite after current invite and target checks pass.
 WildStar64.exe,14074aed0,Trade_SendClientP2PTradingDeclineInvite,Sends zero-payload opcode 0x0191 ClientP2PTradingDeclineInvite when declining a pending trade invite.
 WildStar64.exe,14074b160,Trade_SendClientP2PTradingCommitFromUi,Sends zero-payload opcode 0x0190 ClientP2PTradingCommit from the UI path when active trade state exists.
