@@ -453,6 +453,8 @@ namespace NexusForever.Game.Entity
                 summoner?.OnUnsummon(this);
             }
 
+            Zone = null;
+
             base.OnRemoveFromMap();
         }
 

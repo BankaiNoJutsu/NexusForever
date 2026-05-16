@@ -39,12 +39,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 return;
             }
 
-            session.Player.CastSpell(new SpellParameters
+            var spellParameters = new SpellParameters
             {
                 SpellInfo              = spellInfo,
                 UserInitiatedSpellCast = true,
-                UseServiceTokenCost    = true
-            });
+                UseServiceTokenCost    = true,
+                ClientContextToken     = serviceTokenCast.ContextToken,
+                ClientRequestSource    = nameof(ClientSpellCastWithServiceToken)
+            };
+
+            ClientSpellEvidenceCaptureHelper.ApplyPendingCapture(session, spellParameters);
+            session.Player.CastSpell(spellParameters);
         }
 
         private ISpellInfo GetSpellInfo(uint spell4Id)

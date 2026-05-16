@@ -29,6 +29,7 @@ namespace NexusForever.Game
 
         private ImmutableDictionary</*zoneId*/uint, /*tutorialId*/uint> zoneTutorials;
         private ImmutableDictionary</*creatureId*/uint, /*targetGroupIds*/ImmutableList<uint>> creatureAssociatedTargetGroups;
+        private ImmutableDictionary</*questObjectiveId*/uint, /*targetIds*/ImmutableList<uint>> questObjectiveTargets;
 
         private ImmutableDictionary<AccountTier, ImmutableList<RewardPropertyPremiumModifierEntry>> rewardPropertiesByTier;
 
@@ -40,6 +41,7 @@ namespace NexusForever.Game
             CacheItemDisplaySourceEntries();
             CacheTutorials();
             CacheCreatureTargetGroups();
+            CacheQuestObjectiveTargetGroups();
             CacheRewardPropertiesByTier();
         }
 
@@ -107,6 +109,57 @@ namespace NexusForever.Game
             creatureAssociatedTargetGroups = entries.ToImmutableDictionary(e => e.Key, e => e.Value.ToImmutableList());
         }
 
+        private void AddToTargets(TargetGroupEntry entry, ISet<uint> targetIds, ISet<TargetGroupType> unhandledTargetGroups, ISet<uint> visitedTargetGroups)
+        {
+            if (entry == null || !visitedTargetGroups.Add(entry.Id))
+                return;
+
+            switch ((TargetGroupType)entry.Type)
+            {
+                case TargetGroupType.CreatureIdGroup:
+                    foreach (uint targetId in entry.DataEntries.Where(id => id != 0u))
+                        targetIds.Add(targetId);
+                    break;
+                case TargetGroupType.OtherTargetGroup:
+                case TargetGroupType.OtherTargetGroupCreatures:
+                    foreach (uint targetGroupId in entry.DataEntries.Where(id => id != 0u))
+                        AddToTargets(GameTableManager.Instance.TargetGroup.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, visitedTargetGroups);
+                    break;
+                default:
+                    unhandledTargetGroups.Add((TargetGroupType)entry.Type);
+                    break;
+            }
+        }
+
+        private void CacheQuestObjectiveTargetGroups()
+        {
+            var entries = ImmutableDictionary.CreateBuilder<uint, ImmutableList<uint>>();
+            var unhandledTargetGroups = new HashSet<TargetGroupType>();
+
+            foreach (QuestObjectiveEntry questObjectiveEntry in GameTableManager.Instance.QuestObjective.Entries
+                .Where(o => o.TargetGroupIdRewardPane > 0u
+                    || (QuestObjectiveType)o.Type == QuestObjectiveType.ActivateTargetGroup
+                    || (QuestObjectiveType)o.Type == QuestObjectiveType.ActivateTargetGroupChecklist
+                    || (QuestObjectiveType)o.Type == QuestObjectiveType.KillTargetGroup
+                    || (QuestObjectiveType)o.Type == QuestObjectiveType.KillTargetGroups
+                    || (QuestObjectiveType)o.Type == QuestObjectiveType.TalkToTargetGroup
+                    || (QuestObjectiveType)o.Type == QuestObjectiveType.Unknown10))
+            {
+                uint targetGroupId = questObjectiveEntry.Data > 0u
+                    ? questObjectiveEntry.Data
+                    : questObjectiveEntry.TargetGroupIdRewardPane;
+
+                if (targetGroupId == 0u)
+                    continue;
+
+                var targetIds = new HashSet<uint>();
+                AddToTargets(GameTableManager.Instance.TargetGroup.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, new HashSet<uint>());
+                entries[questObjectiveEntry.Id] = targetIds.Order().ToImmutableList();
+            }
+
+            questObjectiveTargets = entries.ToImmutable();
+        }
+
         private void CacheRewardPropertiesByTier()
         {
             // VIP was intended to be used in China from what I can see, you can force the VIP premium system in the client with the China game mode parameter
@@ -149,6 +202,14 @@ namespace NexusForever.Game
         public ImmutableList<uint> GetTargetGroupsForCreatureId(uint creatureId)
         {
             return creatureAssociatedTargetGroups.TryGetValue(creatureId, out ImmutableList<uint> entries) ? entries : null;
+        }
+
+        /// <summary>
+        /// Returns an <see cref="ImmutableList{T}"/> containing all target id's associated with the questObjectiveId.
+        /// </summary>
+        public ImmutableList<uint> GetQuestObjectiveTargetIds(uint questObjectiveId)
+        {
+            return questObjectiveTargets.TryGetValue(questObjectiveId, out ImmutableList<uint> entries) ? entries : ImmutableList<uint>.Empty;
         }
 
         /// <summary>

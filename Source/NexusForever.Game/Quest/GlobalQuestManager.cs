@@ -128,22 +128,22 @@ namespace NexusForever.Game.Quest
         private void InitialiseCommunicatorQuestStateTriggers()
         {
             var builder = new Dictionary<(ushort, QuestState), List<ICommunicatorMessage>>();
-            foreach (CommunicatorMessagesEntry entry in GameTableManager.Instance.CommunicatorMessages.Entries
-                .Where(e => e.QuestIdDelivered != 0u))
+            foreach (CommunicatorMessagesEntry entry in GameTableManager.Instance.CommunicatorMessages.Entries)
             {
+                ICommunicatorMessage communicator = communicatorStore[entry.Id];
+
                 foreach ((ushort QuestId, QuestState QuestState) p in
                     entry.Quests.Zip(entry.States, (a, b) => ((ushort)a, (QuestState)b)))
                 {
                     if (p.QuestId == 0)
                         continue;
 
-                    if (p.QuestId == entry.QuestIdDelivered)
+                    if (entry.QuestIdDelivered != 0u && p.QuestId == entry.QuestIdDelivered)
                         continue;
 
                     if (!builder.ContainsKey(p))
                         builder.Add(p, new List<ICommunicatorMessage>());
 
-                    ICommunicatorMessage communicator = communicatorStore[entry.Id];
                     builder[p].Add(communicator);
                 }
             }

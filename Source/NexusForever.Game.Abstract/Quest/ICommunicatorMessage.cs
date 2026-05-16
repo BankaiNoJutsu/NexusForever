@@ -7,6 +7,7 @@ namespace NexusForever.Game.Abstract.Quest
     {
         uint Id { get; }
         ushort QuestId { get; }
+        bool DeliversQuest { get; }
 
         /// <summary>
         /// Checks if <see cref="IPlayer"/> meets the required conditions for this quest to be added to their communicator.

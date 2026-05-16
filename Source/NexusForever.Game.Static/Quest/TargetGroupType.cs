@@ -9,9 +9,9 @@
         PlayerRaceIdGroup   = 5,
         Unknown7            = 7,
         Unknown9            = 9,
-        OtherTargetGroup    = 10, // This is used to target other TargetGroup(s) data
-        Unknown11           = 11,
-        CreatureRaceIdGroup = 12, // This targets the Creature2Entry.RaceId
-        Unknown13           = 13
+        OtherTargetGroup          = 10, // This is used to target other TargetGroup(s) data
+        OtherTargetGroupCreatures = 11,
+        CreatureRaceIdGroup       = 12, // This targets the Creature2Entry.RaceId
+        Unknown13                 = 13
     }
 }

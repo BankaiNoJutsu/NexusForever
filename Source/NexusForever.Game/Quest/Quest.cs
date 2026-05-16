@@ -6,17 +6,51 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Quest;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Script;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Collection;
 using NexusForever.Shared;
 using NexusForever.Shared.Game;
+using NLog;
 
 namespace NexusForever.Game.Quest
 {
     public class Quest : IQuest
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
+        private static readonly HashSet<ushort> guidanceDiagnosticQuestIds =
+        [
+            5573,
+            5575,
+            5868,
+            6302,
+            6677,
+            6986,
+            10513,
+            10518,
+            10521,
+            10527,
+            10524,
+            10532
+        ];
+
+        private enum ObjectiveWorldLocationResolutionSource
+        {
+            InactiveQuest,
+            InactiveObjective,
+            QuestDirection,
+            EnterAreaDirectionEntry,
+            EnterAreaDirection,
+            Indicator,
+            Unresolved
+        }
+
+        private readonly record struct ObjectiveWorldLocationResolution(uint WorldLocationId, ObjectiveWorldLocationResolutionSource Source);
+
         [Flags]
         private enum QuestSaveMask
         {
@@ -43,6 +77,7 @@ namespace NexusForever.Game.Quest
                 saveMask |= QuestSaveMask.State;
 
                 OnStateChange(oldState);
+                player.RequestSave();
             }
         }
 
@@ -55,6 +90,7 @@ namespace NexusForever.Game.Quest
             {
                 flags = value;
                 saveMask |= QuestSaveMask.Flags;
+                player.RequestSave();
             }
         }
 
@@ -79,6 +115,7 @@ namespace NexusForever.Game.Quest
             {
                 reset = value;
                 saveMask |= QuestSaveMask.Reset;
+                player.RequestSave();
             }
         }
 
@@ -257,6 +294,8 @@ namespace NexusForever.Game.Quest
                 saveMask |= QuestSaveMask.Delete;
             else
                 saveMask &= ~QuestSaveMask.Delete;
+
+            player.RequestSave();
         }
 
         /// <summary>
@@ -303,9 +342,9 @@ namespace NexusForever.Game.Quest
             if (State == QuestState.Achieved)
                 return;
 
-            // Order in reverse Index so that sequential steps don't completed by the same action
+            // Order in reverse Index so that sequential steps don't completed by the same action.
             foreach (IQuestObjective objective in objectives
-                .Where(o => o.ObjectiveInfo.Entry.Type == (uint)type && o.ObjectiveInfo.Entry.Data == data)
+                .Where(o => o.ObjectiveInfo.Entry.Type == (uint)type && o.IsTarget(data))
                 .OrderByDescending(o => o.Index))
             {
                 if (objective.IsComplete())
@@ -368,13 +407,34 @@ namespace NexusForever.Game.Quest
                 State = QuestState.Achieved;
         }
 
+        public void SendObjectiveWorldLocationUpdates()
+        {
+            foreach (IQuestObjective objective in objectives)
+            {
+                ObjectiveWorldLocationResolution resolution = ResolveObjectiveWorldLocation(objective);
+                player.Session.EnqueueMessageEncrypted(new ServerQuestObjectiveWorldLocation
+                {
+                    QuestId = Id,
+                    QuestObjectiveIndex = objective.Index,
+                    WorldLocation2Id = resolution.WorldLocationId
+                });
+
+                LogObjectiveWorldLocationUpdate(objective, resolution);
+            }
+        }
+
         private bool CanUpdateObjective(IQuestObjective objective)
         {
             if (objective.ObjectiveInfo.IsSequential())
             {
                 for (int i = 0; i < objective.Index; i++)
+                {
+                    if (objectives[i].ObjectiveInfo.IsOptional())
+                        continue;
+
                     if (!objectives[i].IsComplete())
                         return false;
+                }
             }
 
             // TODO: client also checks objective flags 1 and 8 in the same function
@@ -410,6 +470,23 @@ namespace NexusForever.Game.Quest
                 QuestObjectiveIndex     = objective.Index,
                 Completed = objective.Progress
             });
+
+            if (log.IsDebugEnabled && guidanceDiagnosticQuestIds.Contains(Id))
+            {
+                log.Debug(
+                    "Quest objective update: player={PlayerId}, quest={QuestId}, objectiveIndex={ObjectiveIndex}, objectiveId={ObjectiveId}, objectiveType={ObjectiveType}, objectiveData={ObjectiveData}, progress={Progress}, state={QuestState}.",
+                    player.CharacterId,
+                    Id,
+                    objective.Index,
+                    objective.ObjectiveInfo.Id,
+                    objective.ObjectiveInfo.Type,
+                    objective.ObjectiveInfo.Entry.Data,
+                    objective.Progress,
+                    State);
+            }
+
+            SendObjectiveWorldLocationUpdates();
+            TrySyncStarterTutorialEntityVisibility();
         }
 
         /// <summary>
@@ -423,12 +500,21 @@ namespace NexusForever.Game.Quest
                 QuestState = State
             });
 
+            SendObjectiveWorldLocationUpdates();
+
             // check if this quest and state is a trigger for a new communicator message
             foreach (ICommunicatorMessage message in GlobalQuestManager.Instance.GetQuestCommunicatorQuestStateTriggers(Id, state))
                 if (message.Meets(player))
-                    player.QuestManager.QuestMention(message.QuestId);
+                {
+                    message.Send(player.Session);
+
+                    if (message.DeliversQuest)
+                        player.QuestManager.QuestMention(message.QuestId);
+                }
 
             scriptCollection?.Invoke<IQuestScript>(s => s.OnQuestStateChange(State, oldState));
+
+            player.TryRecoverStarterTutorialQuestProgression();
         }
 
         public IEnumerator<IQuestObjective> GetEnumerator()
@@ -439,6 +525,152 @@ namespace NexusForever.Game.Quest
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        private ObjectiveWorldLocationResolution ResolveObjectiveWorldLocation(IQuestObjective objective)
+        {
+            if (State != QuestState.Accepted)
+                return new ObjectiveWorldLocationResolution(0u, ObjectiveWorldLocationResolutionSource.InactiveQuest);
+
+            if (!IsObjectiveEligibleForGuidance(objective))
+                return new ObjectiveWorldLocationResolution(0u, ObjectiveWorldLocationResolutionSource.InactiveObjective);
+
+            QuestObjectiveEntry entry = objective.ObjectiveInfo.Entry;
+
+            if (TryResolveSingleDirectionLocation(entry.QuestDirectionId, out uint worldLocationId))
+                return new ObjectiveWorldLocationResolution(worldLocationId, ObjectiveWorldLocationResolutionSource.QuestDirection);
+
+            if (objective.ObjectiveInfo.Type == QuestObjectiveType.EnterArea)
+            {
+                if (TryResolveSingleDirectionEntryLocation(entry.Data, out worldLocationId))
+                    return new ObjectiveWorldLocationResolution(worldLocationId, ObjectiveWorldLocationResolutionSource.EnterAreaDirectionEntry);
+
+                if (TryResolveSingleDirectionLocation(entry.Data, out worldLocationId))
+                    return new ObjectiveWorldLocationResolution(worldLocationId, ObjectiveWorldLocationResolutionSource.EnterAreaDirection);
+            }
+
+            return TryResolveSingleIndicatorLocation(entry, out worldLocationId)
+                ? new ObjectiveWorldLocationResolution(worldLocationId, ObjectiveWorldLocationResolutionSource.Indicator)
+                : new ObjectiveWorldLocationResolution(0u, ObjectiveWorldLocationResolutionSource.Unresolved);
+        }
+
+        private void LogObjectiveWorldLocationUpdate(IQuestObjective objective, ObjectiveWorldLocationResolution resolution)
+        {
+            if (!log.IsDebugEnabled || !guidanceDiagnosticQuestIds.Contains(Id))
+                return;
+
+            log.Debug(
+                "QuestGuidance objective-world-location: player={PlayerId}, quest={QuestId}, objectiveIndex={ObjectiveIndex}, objectiveType={ObjectiveType}, progress={Progress}, state={QuestState}, worldLocation2Id={WorldLocation2Id}, source={Source}.",
+                player.CharacterId,
+                Id,
+                objective.Index,
+                objective.ObjectiveInfo.Type,
+                objective.Progress,
+                State,
+                resolution.WorldLocationId,
+                resolution.Source);
+        }
+
+        private bool IsObjectiveEligibleForGuidance(IQuestObjective objective)
+        {
+            if (objective.IsComplete())
+                return false;
+
+            if (objective.ObjectiveInfo.IsHidden() || objective.ObjectiveInfo.IsOptional())
+                return false;
+
+            return CanUpdateObjective(objective);
+        }
+
+        private bool TryResolveSingleDirectionLocation(uint directionId, out uint worldLocationId)
+        {
+            worldLocationId = 0u;
+            if (directionId == 0u)
+                return false;
+
+            QuestDirectionEntry direction = GameTableManager.Instance.QuestDirection.GetEntry(directionId);
+            if (direction == null)
+                return false;
+
+            HashSet<uint> locations = [];
+            foreach (uint directionEntryId in EnumerateDirectionEntryIds(direction))
+            {
+                if (TryResolveSingleDirectionEntryLocation(directionEntryId, out uint entryWorldLocationId))
+                    locations.Add(entryWorldLocationId);
+            }
+
+            if (locations.Count != 1)
+                return false;
+
+            worldLocationId = locations.First();
+            return true;
+        }
+
+        private bool TryResolveSingleDirectionEntryLocation(uint directionEntryId, out uint worldLocationId)
+        {
+            worldLocationId = 0u;
+            if (directionEntryId == 0u)
+                return false;
+
+            QuestDirectionEntryEntry directionEntry = GameTableManager.Instance.QuestDirectionEntry.GetEntry(directionEntryId);
+            if (directionEntry == null || directionEntry.WorldLocation2Id == 0u)
+                return false;
+
+            worldLocationId = directionEntry.WorldLocation2Id;
+            return true;
+        }
+
+        private void TrySyncStarterTutorialEntityVisibility()
+        {
+            if (Id is 10527 or 10532)
+                player.SyncStarterTutorialEntityVisibility();
+        }
+
+        private static IEnumerable<uint> EnumerateDirectionEntryIds(QuestDirectionEntry direction)
+        {
+            uint[] directionEntryIds =
+            [
+                direction.QuestDirectionEntryId00,
+                direction.QuestDirectionEntryId01,
+                direction.QuestDirectionEntryId02,
+                direction.QuestDirectionEntryId03,
+                direction.QuestDirectionEntryId04,
+                direction.QuestDirectionEntryId05,
+                direction.QuestDirectionEntryId06,
+                direction.QuestDirectionEntryId07,
+                direction.QuestDirectionEntryId08,
+                direction.QuestDirectionEntryId09,
+                direction.QuestDirectionEntryId10,
+                direction.QuestDirectionEntryId11,
+                direction.QuestDirectionEntryId12,
+                direction.QuestDirectionEntryId13,
+                direction.QuestDirectionEntryId14,
+                direction.QuestDirectionEntryId15
+            ];
+
+            return directionEntryIds.Where(id => id != 0u);
+        }
+
+        private static bool TryResolveSingleIndicatorLocation(QuestObjectiveEntry entry, out uint worldLocationId)
+        {
+            uint[] indicatorIds =
+            [
+                entry.WorldLocationsIdIndicator00,
+                entry.WorldLocationsIdIndicator01,
+                entry.WorldLocationsIdIndicator02,
+                entry.WorldLocationsIdIndicator03
+            ];
+
+            HashSet<uint> locations = indicatorIds.Where(id => id != 0u).ToHashSet();
+
+            if (locations.Count != 1)
+            {
+                worldLocationId = 0u;
+                return false;
+            }
+
+            worldLocationId = locations.First();
+            return true;
         }
     }
 }

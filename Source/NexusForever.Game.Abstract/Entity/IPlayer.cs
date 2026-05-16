@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Threading.Tasks;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -110,9 +111,14 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         /// <remarks>
         /// This is an instant save, <see cref="AuthContext"/> changes are saved first followed by <see cref="CharacterContext"/> changes.
-        /// This will block the calling thread until the database save is complete. 
+        /// Returns a task that completes once both database saves have finished.
         /// </remarks>
-        void SaveDirect();
+        Task SaveDirect();
+
+        /// <summary>
+        /// Request a delayed save on the next available update tick.
+        /// </summary>
+        void RequestSave();
 
         ItemProficiency GetItemProficiencies();
 
@@ -178,6 +184,26 @@ namespace NexusForever.Game.Abstract.Entity
         /// Dismounts this <see cref="IPlayer"/> from a vehicle that it's attached to
         /// </summary>
         void Dismount();
+
+        /// <summary>
+        /// Re-evaluate tutorial-specific entity visibility for this <see cref="IPlayer"/>.
+        /// </summary>
+        void SyncStarterTutorialEntityVisibility();
+
+        /// <summary>
+        /// Recover starter tutorial quest progression when the retail client flow is still partially unmapped.
+        /// </summary>
+        void TryRecoverStarterTutorialQuestProgression();
+
+        /// <summary>
+        /// Recover starter tutorial quest progression when the retail client flow is still partially unmapped.
+        /// </summary>
+        void TryRecoverStarterTutorialQuestProgression(bool allowCombatTransitionRecovery);
+
+        /// <summary>
+        /// Recover the starter tutorial combat transition after the combat projector has been activated.
+        /// </summary>
+        void TryRecoverStarterTutorialCombatProjectorActivation();
 
         /// <summary>
         /// Returns the time in seconds that has past since the last <see cref="IPlayer"/> save.

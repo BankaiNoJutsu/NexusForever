@@ -13,7 +13,9 @@ using NexusForever.Game.Static.RBAC;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.World.Message.Static;
 using NexusForever.WorldServer.Command.Context;
+using NexusForever.WorldServer.Network;
 
 namespace NexusForever.WorldServer.Command.Handler
 {
@@ -90,24 +92,52 @@ namespace NexusForever.WorldServer.Command.Handler
             [Parameter("Concrete Spell4 id to cast from target.")]
             uint spell4Id)
         {
-            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
-            if (spell4Entry == null)
-            {
-                context.SendMessage($"Invalid spell4 id {spell4Id}!");
+            if (!TryCastSpell4(context, spell4Id, false, false, out _))
                 return;
-            }
+        }
 
-            if (!TryResolveSpellCastSource(context, out IUnitEntity caster, out uint primaryTargetId))
-            {
-                context.SendError("Spell cast requires a unit caster, or a player invoker with a selected world target.");
+        [Command(Permission.SpellCast, "Cast a concrete Spell4 id and export a runtime evidence artifact when the spell finishes.", "capture4", "evidence4")]
+        [CommandTarget(typeof(IWorldEntity))]
+        public void HandleSpellCaptureSpell4(ICommandContext context,
+            [Parameter("Concrete Spell4 id to cast from target and capture.")]
+            uint spell4Id)
+        {
+            if (!TryCastSpell4(context, spell4Id, true, false, out CastResult result))
                 return;
-            }
 
-            caster.CastSpell(spell4Id, new SpellParameters
-            {
-                PrimaryTargetId        = primaryTargetId,
-                UserInitiatedSpellCast = false
-            });
+            context.SendMessage($"Spell4 {spell4Id} capture requested ({result}). Evidence artifacts are written under {SpellRuntimeEvidenceCollector.GetOutputDirectoryHint()}.");
+        }
+
+        [Command(Permission.SpellCast, "Cast a concrete Spell4 id, export runtime evidence, and emit test-only diagnostic spell broadcast packets for blocked immunity cases.", "diag4", "broadcast4")]
+        [CommandTarget(typeof(IWorldEntity))]
+        public void HandleSpellDiagnosticSpell4(ICommandContext context,
+            [Parameter("Concrete Spell4 id to cast with runtime evidence and diagnostic broadcasts.")]
+            uint spell4Id)
+        {
+            if (!TryCastSpell4(context, spell4Id, true, true, out CastResult result))
+                return;
+
+            context.SendMessage($"Spell4 {spell4Id} diagnostic capture requested ({result}). Evidence artifacts are written under {SpellRuntimeEvidenceCollector.GetOutputDirectoryHint()}.");
+        }
+
+        [Command(Permission.SpellCast, "Arm runtime evidence export for the next real client-originated spell request from the invoker.", "capturenext", "captureclient", "evidencenext")]
+        public void HandleSpellCaptureNextClient(ICommandContext context)
+        {
+            if (!TryGetInvokerSession(context, out IWorldSession session))
+                return;
+
+            session.ArmNextClientSpellEvidenceCapture();
+            context.SendMessage($"Next supported real client spell request will export a runtime evidence artifact under {SpellRuntimeEvidenceCollector.GetOutputDirectoryHint()}.");
+        }
+
+        [Command(Permission.SpellCast, "Arm runtime evidence export plus blocked-immunity diagnostic broadcasts for the next real client-originated spell request from the invoker.", "diagnext", "diagclient", "broadcastnext")]
+        public void HandleSpellDiagnosticNextClient(ICommandContext context)
+        {
+            if (!TryGetInvokerSession(context, out IWorldSession session))
+                return;
+
+            session.ArmNextClientSpellEvidenceCapture(true);
+            context.SendMessage($"Next supported real client spell request will export runtime evidence and emit guarded diagnostic broadcasts under {SpellRuntimeEvidenceCollector.GetOutputDirectoryHint()}.");
         }
 
         [Command(Permission.Spell, "Inspect decoded spell effect rows for a base spell tier.", "inspect")]
@@ -204,6 +234,50 @@ namespace NexusForever.WorldServer.Command.Handler
 
             caster = null;
             return false;
+        }
+
+        private static bool TryGetInvokerSession(ICommandContext context, out IWorldSession session)
+        {
+            session = (context.Invoker as IPlayer)?.Session as IWorldSession;
+            if (session != null)
+                return true;
+
+            context.SendError("This command requires a player invoker with an active world session.");
+            return false;
+        }
+
+        private static bool TryCastSpell4(ICommandContext context, uint spell4Id, bool captureRuntimeEvidence, bool emitDiagnosticSpellBroadcasts, out CastResult castResult)
+        {
+            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            if (spell4Entry == null)
+            {
+                context.SendMessage($"Invalid spell4 id {spell4Id}!");
+                castResult = CastResult.SpellUnknown;
+                return false;
+            }
+
+            if (!TryResolveSpellCastSource(context, out IUnitEntity caster, out uint primaryTargetId))
+            {
+                context.SendError("Spell cast requires a unit caster, or a player invoker with a selected world target.");
+                castResult = CastResult.CasterUnknown;
+                return false;
+            }
+
+            castResult = caster.TryCastSpell(spell4Id, new SpellParameters
+            {
+                PrimaryTargetId = primaryTargetId,
+                UserInitiatedSpellCast = false,
+                CaptureRuntimeEvidence = captureRuntimeEvidence,
+                EmitDiagnosticSpellBroadcasts = emitDiagnosticSpellBroadcasts
+            });
+
+            if (castResult != CastResult.Ok)
+            {
+                context.SendError($"Spell4 {spell4Id} failed to cast: {castResult}.");
+                return false;
+            }
+
+            return true;
         }
 
         private static void InspectSpell(ICommandContext context, ISpellBaseInfo spellBaseInfo, ISpellInfo spellInfo, byte tier)
@@ -492,7 +566,11 @@ namespace NexusForever.WorldServer.Command.Handler
 
         private static string DescribeThresholds(uint spell4Id)
         {
-            Spell4ThresholdsEntry[] entries = GameTableManager.Instance.Spell4Thresholds.Entries
+            GameTable<Spell4ThresholdsEntry> thresholdTable = GameTableManager.Instance.Spell4Thresholds;
+            if (thresholdTable?.Entries == null)
+                return "unavailable (Spell4Thresholds table not loaded)";
+
+            Spell4ThresholdsEntry[] entries = thresholdTable.Entries
                 .Where(entry => entry.Spell4IdParent == spell4Id)
                 .OrderBy(entry => entry.OrderIndex)
                 .ToArray();

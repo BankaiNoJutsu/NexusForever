@@ -7,6 +7,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.WorldServer.Network.Message.Handler.Spell;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Item
 {
@@ -47,12 +48,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
 
                 if (session.Player.Inventory.ItemUse(item))
                 {
-                    session.Player.CastSpell(itemSpecial.Spell4IdOnActivate, new SpellParameters
+                    var spellParameters = new SpellParameters
                     {
-                        PrimaryTargetId = itemUse.TargetUnitId,
-                        Position        = itemUse.Position,
-                        CancelActiveTrade = true
-                    });
+                        PrimaryTargetId     = itemUse.TargetUnitId,
+                        Position            = itemUse.Position,
+                        CancelActiveTrade   = true,
+                        ClientContextToken  = itemUse.ContextToken,
+                        ClientRequestSource = nameof(ClientItemUse)
+                    };
+
+                    ClientSpellEvidenceCaptureHelper.ApplyPendingCapture(session, spellParameters);
+                    session.Player.CastSpell(itemSpecial.Spell4IdOnActivate, spellParameters);
                 }
             }
         }

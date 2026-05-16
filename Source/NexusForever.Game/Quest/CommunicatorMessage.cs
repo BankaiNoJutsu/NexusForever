@@ -14,6 +14,7 @@ namespace NexusForever.Game.Quest
     {
         public uint Id => entry.Id;
         public ushort QuestId => (ushort)entry.QuestIdDelivered;
+        public bool DeliversQuest => entry.QuestIdDelivered != 0u;
 
         private readonly CommunicatorMessagesEntry entry;
 
@@ -30,6 +31,9 @@ namespace NexusForever.Game.Quest
         /// </summary>
         public bool Meets(IPlayer player)
         {
+            if (player.Map == null)
+                return false;
+
             if (entry.WorldId != 0u && entry.WorldId != player.Map.Entry.Id)
                 return false;
 
@@ -74,6 +78,9 @@ namespace NexusForever.Game.Quest
         /// </summary>
         public void Send(IGameSession session)
         {
+            if (entry.LocalizedTextIdMessage == 0u)
+                return;
+
             session.EnqueueMessageEncrypted(new ServerCommunicatorMessage
             {
                 CommunicatorMessagesId = (ushort)entry.Id

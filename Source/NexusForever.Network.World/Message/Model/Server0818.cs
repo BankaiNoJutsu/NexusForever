@@ -3,7 +3,10 @@ using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model
 {
-    // Seems to fire when buffs are applied from NPC-created Telegraphs, like speed boosts in Northern Wilds
+    /// <summary>
+    /// Spell broadcast follow-up carrying one <see cref="TargetInfo"/> payload.
+    /// Current evidence places this near NPC-created telegraph buff cases, but the exact trigger is still under investigation.
+    /// </summary>
     [Message(GameMessageOpcode.Server0818)]
     public class Server0818 : IWritable
     {

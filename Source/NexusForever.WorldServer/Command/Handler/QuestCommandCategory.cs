@@ -109,12 +109,8 @@ namespace NexusForever.WorldServer.Command.Handler
             var target = context.GetTargetOrInvoker<IPlayer>();
             target.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillCreature, creatureId, quantity.Value);
             target.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillCreature2, creatureId, quantity.Value);
-
-            foreach (uint targetGroupId in AssetManager.Instance.GetTargetGroupsForCreatureId(creatureId) ?? Enumerable.Empty<uint>())
-            {
-                target.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroup, targetGroupId, quantity.Value);
-                target.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroups, targetGroupId, quantity.Value);
-            }
+            target.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroup, creatureId, quantity.Value);
+            target.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroups, creatureId, quantity.Value);
 
             context.SendMessage($"Success! You've killed {quantity} of Creature ID: {creatureId}");
         }

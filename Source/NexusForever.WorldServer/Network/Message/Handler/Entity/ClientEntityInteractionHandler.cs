@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Static.Quest;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -13,6 +11,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 {
     public class ClientEntityInteractionHandler : IMessageHandler<IWorldSession, ClientEntityInteract>
     {
+        private const ushort TutorialWorldId = 3460;
+        private const uint TutorialHoverboardProjectorCreatureId = 73419u;
+        private const uint TutorialHoverboardFinishCreatureId = 73735u;
+
         #region Dependency Injection
 
         private readonly ILogger<ClientEntityInteractionHandler> log;
@@ -32,6 +34,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         public void HandleMessage(IWorldSession session, ClientEntityInteract entityInteraction)
         {
             IWorldEntity entity = session.Player.GetVisible<IWorldEntity>(entityInteraction.Guid);
+            if (entity == null && session.Player.Map?.Entry?.Id == TutorialWorldId)
+            {
+                if (!TryRecoverTutorialInteractionTarget(session, entityInteraction.Guid, out entity))
+                    return;
+            }
+
             if (entity != null && ActivationInteractionGuards.TryRejectBusyTarget(session, entity))
                 return;
 
@@ -110,14 +118,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
         private void UpdateInteractionObjectives(IWorldSession session, IWorldEntity entity)
         {
-            if (entity == null)
-                return;
-
-            session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateEntity, entity.CreatureId, 1u);
-            session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.SucceedCSI, entity.CreatureId, 1u);
-            session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkTo, entity.CreatureId, 1u);
-            foreach (uint targetGroupId in assetManager.GetTargetGroupsForCreatureId(entity.CreatureId) ?? Enumerable.Empty<uint>())
-                session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkToTargetGroup, targetGroupId, 1u);
+            InteractionObjectiveUpdater.UpdateDirectInteractionObjectives(session.Player, entity, assetManager);
         }
 
         private void HandleVendor(IWorldSession session, IWorldEntity worldEntity)
@@ -133,6 +134,42 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             ServerVendorItemsUpdated vendorItemsUpdated = vendorEntity.VendorInfo.Build();
             vendorItemsUpdated.Guid = vendorEntity.Guid;
             session.EnqueueMessageEncrypted(vendorItemsUpdated);
+        }
+
+        private bool TryRecoverTutorialInteractionTarget(IWorldSession session, uint targetId, out IWorldEntity entity)
+        {
+            entity = session.Player.Map?.GetEntity<IWorldEntity>(targetId);
+            if (entity == null)
+            {
+                log.LogDebug("Tutorial entity interaction lookup failed: player={PlayerGuid}, requestedEntity={RequestedEntity}, reason=not-on-map.",
+                    session.Player.Guid,
+                    targetId);
+                return false;
+            }
+
+            bool canSee = session.Player.CanSeeEntity(entity);
+            if (IsTutorialHoverboardActivationEntity(entity) && canSee)
+            {
+                log.LogDebug("Tutorial entity interaction recovered stale visibility target: player={PlayerGuid}, entity={EntityGuid}, creature={CreatureId}.",
+                    session.Player.Guid,
+                    entity.Guid,
+                    entity.CreatureId);
+                return true;
+            }
+
+            log.LogDebug("Tutorial entity interaction ignored stale target: player={PlayerGuid}, requestedEntity={RequestedEntity}, mapEntity={MapEntity}, creature={CreatureId}, canSee={CanSee}.",
+                session.Player.Guid,
+                targetId,
+                entity.Guid,
+                entity.CreatureId,
+                canSee);
+            entity = null;
+            return false;
+        }
+
+        private static bool IsTutorialHoverboardActivationEntity(IWorldEntity entity)
+        {
+            return entity.CreatureId is TutorialHoverboardProjectorCreatureId or TutorialHoverboardFinishCreatureId;
         }
     }
 }

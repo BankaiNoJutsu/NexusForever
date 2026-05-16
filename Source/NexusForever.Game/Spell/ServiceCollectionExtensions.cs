@@ -8,6 +8,7 @@ namespace NexusForever.Game.Spell
     {
         public static void AddGameSpell(this IServiceCollection sc)
         {
+            sc.AddTransientFactory<ISpellParameters, SpellParameters>();
             sc.AddSingletonLegacy<IGlobalSpellManager, GlobalSpellManager>();
         }
     }

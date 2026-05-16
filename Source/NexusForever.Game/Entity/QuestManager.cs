@@ -21,6 +21,8 @@ namespace NexusForever.Game.Entity
     public class QuestManager : IQuestManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+        private static readonly ushort[] receiverlessStarterTutorialQuestIds = [10513, 10518, 10521, 10524, 10527, 10532];
+        private static readonly ushort[] tutorialRegionQuestIds = [10513, 10518, 10519, 10520, 10521, 10522, 10523, 10524, 10525, 10526, 10527, 10528, 10530, 10532, 10540, 10541];
 
         [Flags]
         private enum GetQuestFlags
@@ -152,6 +154,9 @@ namespace NexusForever.Game.Entity
                         }).ToList()
                     }).ToList()
             });
+
+            foreach (IQuest quest in activeQuests.Values)
+                quest.SendObjectiveWorldLocationUpdates();
         }
 
         /// <summary>
@@ -223,6 +228,7 @@ namespace NexusForever.Game.Entity
             inactiveQuests.Add((ushort)info.Entry.Id, quest);
 
             log.Trace($"Mentioned new quest {info.Entry.Id}.");
+            LogTutorialRegionQuestLifecycle("mentioned", (ushort)info.Entry.Id, quest.State);
         }
 
         /// <summary>
@@ -363,6 +369,26 @@ namespace NexusForever.Game.Entity
             quest.InitialiseTimer();
 
             log.Trace($"Accepted new quest {info.Entry.Id}.");
+            LogTutorialRegionQuestLifecycle("accepted", (ushort)info.Entry.Id, quest.State);
+        }
+
+        private void LogTutorialRegionQuestLifecycle(string action, ushort questId, QuestState state)
+        {
+            if (!tutorialRegionQuestIds.Contains(questId))
+                return;
+
+            uint[] giverIds = GlobalQuestManager.Instance.GetQuestGivers(questId).ToArray();
+            uint[] receiverIds = GlobalQuestManager.Instance.GetQuestReceivers(questId).ToArray();
+
+            uint[] visibleGiverIds = giverIds
+                .Where(creatureId => player.GetVisibleCreature<WorldEntity>(creatureId).Any())
+                .ToArray();
+
+            uint[] visibleReceiverIds = receiverIds
+                .Where(creatureId => player.GetVisibleCreature<WorldEntity>(creatureId).Any())
+                .ToArray();
+
+            log.Debug($"Tutorial region quest {action} for player {player.CharacterId}: quest={questId}, state={state}, faction={player.Faction1}, map={player.Map?.Entry?.Id ?? 0}, position=({player.Position.X}, {player.Position.Y}, {player.Position.Z}), givers=[{string.Join(",", giverIds)}], visibleGivers=[{string.Join(",", visibleGiverIds)}], receivers=[{string.Join(",", receiverIds)}], visibleReceivers=[{string.Join(",", visibleReceiverIds)}].");
         }
 
         private void QuestRemove(IQuest quest)
@@ -526,17 +552,28 @@ namespace NexusForever.Game.Entity
             if (quest.State != QuestState.Achieved)
                 throw new QuestException($"Player {player.CharacterId} tried to complete quest {questId} which wasn't complete!");
 
+            bool allowStarterTutorialReceiverlessCompletion = AllowsStarterTutorialReceiverlessCompletion(questId);
+
             if (communicator)
             {
                 // TODO: check if this is complete, client seems to also refer to contact info
                 // for more see QuestTracker:HelperShowQuestCallbackBtn in LUA which contains the logic to show the complete button in the quest tracker
-                if (!quest.Info.IsCommunicatorReceived())
+                if (!quest.Info.IsCommunicatorReceived() && !allowStarterTutorialReceiverlessCompletion)
                     throw new QuestException($"Player {player.CharacterId} tried to complete quest {questId} without communicator message!");
+
+                if (!quest.Info.IsCommunicatorReceived() && allowStarterTutorialReceiverlessCompletion)
+                    log.Debug($"Allowing starter tutorial communicator completion without communicator metadata for player {player.CharacterId}, quest {questId}.");
             }
             else
             {
-                if (!GlobalQuestManager.Instance.GetQuestReceivers(questId).Any(c => player.GetVisibleCreature<WorldEntity>(c).Any()))
-                    throw new QuestException($"Player {player.CharacterId} tried to complete quest {questId} without any quest receiver!");
+                bool hasVisibleReceiver = GlobalQuestManager.Instance.GetQuestReceivers(questId).Any(c => player.GetVisibleCreature<WorldEntity>(c).Any());
+                if (!hasVisibleReceiver)
+                {
+                    if (!allowStarterTutorialReceiverlessCompletion)
+                        throw new QuestException($"Player {player.CharacterId} tried to complete quest {questId} without any quest receiver!");
+
+                    log.Debug($"Allowing starter tutorial completion without a visible receiver for player {player.CharacterId}, quest {questId}.");
+                }
             }
 
             // reclaim any quest specific items
@@ -564,7 +601,13 @@ namespace NexusForever.Game.Entity
             activeQuests.Remove(questId);
             completedQuests.Add(questId, quest);
 
+            LogTutorialRegionQuestLifecycle(communicator ? "completed-via-communicator" : "completed", questId, quest.State);
             player.AchievementManager.CheckAchievements(player, AchievementType.QuestComplete, questId);
+        }
+
+        private static bool AllowsStarterTutorialReceiverlessCompletion(ushort questId)
+        {
+            return receiverlessStarterTutorialQuestIds.Contains(questId);
         }
 
         private void RewardQuest(IQuestInfo info, ushort reward)

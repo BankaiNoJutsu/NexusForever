@@ -6,7 +6,6 @@ using NexusForever.Game.Abstract.Entity.Movement.Command.Position;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Entity.Movement.Spline;
-using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -19,6 +18,20 @@ namespace NexusForever.Script.Main.AI
 {
     public class CombatAI : IUnitScript, IOwnedScript<ICreatureEntity>
     {
+        private const float StarterTutorialCombatLeashRange = 50f;
+
+        private static readonly HashSet<uint> starterTutorialCombatCreatureIds =
+        [
+            73464u, // Exile lane Dominion Battle Beast
+            73465u, // Dominion lane Dagun
+            73473u, // Dominion lane Virtual Elite Exile
+            73494u, // Exile lane Dominion Turret
+            73492u, // Exile lane Virtual Legionnaire
+            73566u, // Dominion lane Virtual Elite Exile
+            73567u, // Exile lane Virtual Legionnaire
+            74862u  // Dominion lane Exile Turret
+        ];
+
         protected ICreatureEntity entity;
 
         private int autoAttackIndex;
@@ -50,7 +63,7 @@ namespace NexusForever.Script.Main.AI
         public virtual void OnLoad(ICreatureEntity owner)
         {
             entity = owner;
-            entity.SetInRangeCheck(entity.LeashRange);
+            entity.SetInRangeCheck(GetEffectiveLeashRange());
         }
 
         /// <summary>
@@ -62,6 +75,9 @@ namespace NexusForever.Script.Main.AI
                 return;
 
             if (!entity.TargetGuid.HasValue)
+                return;
+
+            if (!ValidateCurrentTarget())
                 return;
 
             UpdateAI(lastTick);
@@ -93,6 +109,9 @@ namespace NexusForever.Script.Main.AI
             if (target == null)
                 return;
 
+            if (!entity.CanAttack(target))
+                return;
+
             uint spell4Id = autoAttacks[autoAttackIndex];
             autoAttackIndex = (autoAttackIndex + 1) % autoAttacks.Count;
 
@@ -117,6 +136,9 @@ namespace NexusForever.Script.Main.AI
 
             IUnitEntity target = entity.Map.GetEntity<IUnitEntity>(entity.TargetGuid.Value);
             if (target == null)
+                return;
+
+            if (!entity.CanAttack(target))
                 return;
 
             if (Vector3.Distance(entity.Position, target.Position) < chaseDistance)
@@ -179,7 +201,7 @@ namespace NexusForever.Script.Main.AI
         {
             return Vector2.Distance(
                 new Vector2(entity.LeashPosition.X, entity.LeashPosition.Z),
-                new Vector2(unit.Position.X, unit.Position.Z)) <= entity.LeashRange;
+                new Vector2(unit.Position.X, unit.Position.Z)) <= GetEffectiveLeashRange();
         }
 
         private void AggroEntity(IGridEntity source)
@@ -190,7 +212,10 @@ namespace NexusForever.Script.Main.AI
             if (source is not IUnitEntity unit)
                 return;
 
-            if (entity.GetDispositionTo(unit.Faction1) != Disposition.Hostile)
+            if (IsStarterTutorialCombatCreature() && unit is not IPlayer)
+                return;
+
+            if (!entity.CanAttack(unit))
                 return;
 
             if (!IsWithinLeash(unit))
@@ -267,7 +292,7 @@ namespace NexusForever.Script.Main.AI
                 foreach (IHostileEntity hostile in entity.ThreatManager.OrderByDescending(hostile => hostile.Threat))
                 {
                     IUnitEntity target = entity.GetVisible<IUnitEntity>(hostile.HatedUnitId);
-                    if (target == null || !target.IsAlive || !IsWithinLeash(target))
+                    if (target == null || !entity.CanAttack(target) || !IsWithinLeash(target))
                     {
                         invalidHostiles.Add(hostile.HatedUnitId);
                         continue;
@@ -297,6 +322,20 @@ namespace NexusForever.Script.Main.AI
             }
         }
 
+        private bool ValidateCurrentTarget()
+        {
+            IUnitEntity target = entity.Map.GetEntity<IUnitEntity>(entity.TargetGuid.Value);
+            if (target != null && entity.CanAttack(target) && IsWithinLeash(target))
+                return true;
+
+            if (target != null)
+                entity.ThreatManager.RemoveHostile(target.Guid);
+            else
+                SelectTarget();
+
+            return false;
+        }
+
         private void Reset()
         {
             IUnitEntity previousTarget = entity.TargetGuid.HasValue
@@ -317,6 +356,19 @@ namespace NexusForever.Script.Main.AI
 
             float speed = entity.GetPropertyValue(Property.MoveSpeedMultiplier) * 10f;
             entity.MovementManager.LaunchSpline([entity.Position, entity.LeashPosition], SplineType.Linear, SplineMode.OneShot, speed);
+        }
+
+        private float GetEffectiveLeashRange()
+        {
+            if (IsStarterTutorialCombatCreature())
+                return Math.Max(entity.LeashRange, StarterTutorialCombatLeashRange);
+
+            return entity.LeashRange;
+        }
+
+        private bool IsStarterTutorialCombatCreature()
+        {
+            return starterTutorialCombatCreatureIds.Contains(entity.CreatureId);
         }
     }
 }

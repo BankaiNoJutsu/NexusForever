@@ -9,6 +9,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.WorldServer.Network.Message.Handler.Spell;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
 {
@@ -94,14 +95,19 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             log.LogTrace("Rapid transport accepted for player {PlayerGuid}: route {RouteId}, destination taxi node {TaxiNode}, price {Price}, spell {Spell4Id}.",
                 session.Player?.Guid, route.Id, rapidTransport.TaxiNode, route.Price, formula.Dataint0);
             session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, route.Price);
-            session.Player.CastSpell(formula.Dataint0, new SpellParameters
+            var spellParameters = new SpellParameters
             {
                 // Native cast-context construction indicates the client packet's secondary 32-bit field is a
                 // generated cast-context token, not a wall-clock time value.
                 // Keep server mutation keyed only by validated destination node and route.
-                TaxiNode = rapidTransport.TaxiNode,
-                CancelActiveTrade = true
-            });
+                TaxiNode            = rapidTransport.TaxiNode,
+                CancelActiveTrade   = true,
+                ClientContextToken  = rapidTransport.ContextToken,
+                ClientRequestSource = nameof(ClientRapidTransport)
+            };
+
+            ClientSpellEvidenceCaptureHelper.ApplyPendingCapture(session, spellParameters);
+            session.Player.CastSpell(formula.Dataint0, spellParameters);
         }
 
         private TaxiRouteEntry ResolveRapidTransportRoute(IWorldSession session, ushort destinationNodeId)

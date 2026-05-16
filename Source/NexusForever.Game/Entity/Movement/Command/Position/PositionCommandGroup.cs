@@ -1,7 +1,13 @@
 ﻿using System.Numerics;
+using System.Linq;
+using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Position;
+using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Static.Quest;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Game.Static.Entity.Movement.Command;
 using NexusForever.Game.Static.Entity.Movement.Command.Mode;
 using NexusForever.Game.Static.Entity.Movement.Spline;
@@ -41,11 +47,14 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
         #region Dependency Injection
 
         private readonly IFactoryInterface<IPositionCommand> factory;
+        private readonly ILogger<PositionCommandGroup> log;
 
         public PositionCommandGroup(
-            IFactoryInterface<IPositionCommand> factory)
+            IFactoryInterface<IPositionCommand> factory,
+            ILogger<PositionCommandGroup> log)
         {
             this.factory = factory;
+            this.log     = log;
         }
 
         #endregion
@@ -86,6 +95,17 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
 
         private void Relocate()
         {
+            Vector3 position = GetRelocationPosition();
+
+            if (lastPosition == position)
+                return;
+
+            lastPosition = position;
+            movementManager.Owner.Relocate(position);
+        }
+
+        private Vector3 GetRelocationPosition()
+        {
             Vector3 position = GetPosition();
 
             uint? platformUnitId = movementManager.GetPlatform();
@@ -96,11 +116,7 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
                     position += platformEntity.Position;
             }
 
-            if (lastPosition == position)
-                return;
-
-            lastPosition = position;
-            movementManager.Owner.Relocate(position);
+            return position;
         }
 
         /// <summary>
@@ -163,7 +179,106 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
             command.Initialise(position, blend);
             Command = command;
 
+            if (!movementManager.ServerControl)
+                TryUpdateImmediateStarterTutorialObjectives(GetRelocationPosition());
+
             IsDirty = true;
+        }
+
+        private void TryUpdateImmediateStarterTutorialObjectives(Vector3 position)
+        {
+            if (movementManager.Owner is not IPlayer player || player.Map == null)
+                return;
+
+            float targetRadius = player.HitRadius * 0.5f;
+
+            foreach (IQuest quest in player.QuestManager.GetActiveQuests())
+            {
+                if (quest.Id is not (10513 or 10521 or 10527 or 10532))
+                    continue;
+
+                List<IQuestObjective> matchingObjectives = [];
+                bool hasRequiredObjective = false;
+
+                foreach (IQuestObjective objective in quest)
+                {
+                    if (!ShouldUpdateImmediateAreaObjective(objective, position, targetRadius))
+                        continue;
+
+                    matchingObjectives.Add(objective);
+                    if (!objective.ObjectiveInfo.IsOptional())
+                        hasRequiredObjective = true;
+                }
+
+                if (matchingObjectives.Count == 0)
+                    continue;
+
+                List<IQuestObjective> objectivesToUpdate = (hasRequiredObjective
+                    ? matchingObjectives.Where(o => !o.ObjectiveInfo.IsOptional())
+                    : matchingObjectives)
+                    .OrderByDescending(o => o.Index)
+                    .ToList();
+
+                foreach (IQuestObjective objective in objectivesToUpdate)
+                {
+                    log.LogDebug("Immediate tutorial area update for player {PlayerGuid}: quest {QuestId}, objective {ObjectiveId}, matched world locations {WorldLocationIds}, position ({X}, {Y}, {Z}), hit padding {TargetRadius}.",
+                        player.Guid, quest.Id, objective.ObjectiveInfo.Id,
+                        string.Join(", ", GetMatchedWorldLocationIds(objective.ObjectiveInfo.Entry, position, targetRadius)),
+                        position.X, position.Y, position.Z, targetRadius);
+                    quest.ObjectiveUpdate(objective.ObjectiveInfo.Id, 1u);
+                }
+            }
+        }
+
+        private static IEnumerable<uint> GetMatchedWorldLocationIds(QuestObjectiveEntry objectiveEntry, Vector3 position, float targetRadius)
+        {
+            uint[] worldLocationIds =
+            [
+                objectiveEntry.WorldLocationsIdIndicator00,
+                objectiveEntry.WorldLocationsIdIndicator01,
+                objectiveEntry.WorldLocationsIdIndicator02,
+                objectiveEntry.WorldLocationsIdIndicator03
+            ];
+
+            return worldLocationIds
+                .Where(id => id != 0u)
+                .Distinct()
+                .Where(id => IsInsideWorldLocation(position, targetRadius, id));
+        }
+
+        private static bool ShouldUpdateImmediateAreaObjective(IQuestObjective objective, Vector3 position, float targetRadius)
+        {
+            if (objective.IsComplete() || objective.ObjectiveInfo.Type != QuestObjectiveType.EnterArea)
+                return false;
+
+            var objectiveEntry = objective.ObjectiveInfo.Entry;
+            return IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator00)
+                || IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator01)
+                || IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator02)
+                || IsInsideWorldLocation(position, targetRadius, objectiveEntry.WorldLocationsIdIndicator03);
+        }
+
+        private static bool IsInsideWorldLocation(Vector3 position, float targetRadius, uint worldLocationId)
+        {
+            if (worldLocationId == 0u)
+                return false;
+
+            WorldLocation2Entry worldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(worldLocationId);
+            return worldLocation != null && IsInsideWorldLocation(position, targetRadius, worldLocation);
+        }
+
+        private static bool IsInsideWorldLocation(Vector3 position, float targetRadius, WorldLocation2Entry worldLocation)
+        {
+            float horizontalDistanceSquared = Vector2.DistanceSquared(
+                new Vector2(position.X, position.Z),
+                new Vector2(worldLocation.Position0, worldLocation.Position2));
+
+            float horizontalRange = worldLocation.Radius + targetRadius;
+            if (horizontalDistanceSquared > horizontalRange * horizontalRange)
+                return false;
+
+            return worldLocation.MaxVerticalDistance <= 0f
+                || MathF.Abs(position.Y - worldLocation.Position1) <= worldLocation.MaxVerticalDistance;
         }
 
         /// <summary>

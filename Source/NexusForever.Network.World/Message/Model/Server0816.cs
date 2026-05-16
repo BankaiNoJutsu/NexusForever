@@ -2,6 +2,10 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Opaque spell hierarchy follow-up packet carrying root, parent, and current Spell4 ids.
+    /// This is tracked as part of the broader 0x07F5..0x0818 spell broadcast family.
+    /// </summary>
     [Message(GameMessageOpcode.Server0816)]
     public class Server0816 : IWritable
     {

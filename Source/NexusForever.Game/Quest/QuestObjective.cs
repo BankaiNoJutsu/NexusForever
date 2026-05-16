@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
+using System.Numerics;
+using NexusForever.Game;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
@@ -31,6 +33,7 @@ namespace NexusForever.Game.Quest
             {
                 saveMask |= QuestObjectiveSaveMask.Progress;
                 progress = value;
+                player.RequestSave();
             }
         }
 
@@ -48,6 +51,8 @@ namespace NexusForever.Game.Quest
 
         private uint? timer;
 
+        private List<uint> targetIds = [];
+
         private QuestObjectiveSaveMask saveMask;
 
         private readonly IPlayer player;
@@ -64,6 +69,9 @@ namespace NexusForever.Game.Quest
             Index         = model.Index;
             progress      = model.Progress;
             timer         = model.Timer;
+
+            if (IsChecklist() || UsesTargetGroups())
+                BuildTargets();
         }
 
         /// <summary>
@@ -82,7 +90,18 @@ namespace NexusForever.Game.Quest
                 // TODO
             }
 
+            if (IsChecklist() || UsesTargetGroups())
+                BuildTargets();
+
             saveMask = QuestObjectiveSaveMask.Create;
+        }
+
+        /// <summary>
+        /// Builds the target ID list for this <see cref="IQuestObjective"/>.
+        /// </summary>
+        private void BuildTargets()
+        {
+            targetIds = AssetManager.Instance.GetQuestObjectiveTargetIds(ObjectiveInfo.Id).ToList();
         }
 
         public void Save(CharacterContext context)
@@ -142,12 +161,40 @@ namespace NexusForever.Game.Quest
                 && !ObjectiveInfo.HasUnknown0200();
         }
 
+        private bool IsChecklist()
+        {
+            return ObjectiveInfo.Type is QuestObjectiveType.ActivateTargetGroupChecklist
+                or QuestObjectiveType.Unknown10;
+        }
+
+        private bool UsesTargetGroups()
+        {
+            return ObjectiveInfo.Type is QuestObjectiveType.ActivateTargetGroup
+                    or QuestObjectiveType.ActivateTargetGroupChecklist
+                    or QuestObjectiveType.KillTargetGroup
+                    or QuestObjectiveType.KillTargetGroups
+                    or QuestObjectiveType.TalkToTargetGroup
+                    or QuestObjectiveType.Unknown10
+                || ObjectiveInfo.Type == QuestObjectiveType.ActivateEntity && ObjectiveInfo.Entry.TargetGroupIdRewardPane != 0u;
+        }
+
         /// <summary>
         /// Return if the objective has been completed.
         /// </summary>
         public bool IsComplete()
         {
+            if (IsChecklist())
+                return BitOperations.PopCount(progress) >= GetMaxValue();
+
             return progress >= GetMaxValue();
+        }
+
+        /// <summary>
+        /// Return if the objective can be updated by the supplied target id.
+        /// </summary>
+        public bool IsTarget(uint id)
+        {
+            return ObjectiveInfo.Entry.Data == id || targetIds.Contains(id);
         }
 
         private uint GetMaxValue()
@@ -160,8 +207,20 @@ namespace NexusForever.Game.Quest
         /// </summary>
         public void ObjectiveUpdate(uint update)
         {
+            if (IsChecklist())
+            {
+                if (update >= sizeof(uint) * 8)
+                    return;
+
+                Progress = progress | (1u << (int)update);
+                return;
+            }
+
             if (IsDynamic())
-                update = (uint)(((float)update / ObjectiveInfo.Entry.Count) * 1000f);
+            {
+                ulong requiredCount = ObjectiveInfo.Entry.Count;
+                update = (uint)Math.Min(1000ul, ((ulong)update * 1000ul + requiredCount - 1ul) / requiredCount);
+            }
 
             Progress = Math.Min(progress + update, GetMaxValue());
         }
@@ -169,6 +228,16 @@ namespace NexusForever.Game.Quest
        
         public void Complete()
         {
+            if (IsChecklist())
+            {
+                uint update = 0u;
+                for (int i = 0; i < GetMaxValue() && i < sizeof(uint) * 8; i++)
+                    update |= 1u << i;
+
+                Progress = update;
+                return;
+            }
+
             Progress = GetMaxValue();
         }
     }

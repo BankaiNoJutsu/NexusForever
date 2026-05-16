@@ -2,6 +2,10 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Likely miss, immunity, or invalid-target follow-up packet for a spell cast.
+    /// The current model is intentionally structural until the exact target-result semantics are proven.
+    /// </summary>
     [Message(GameMessageOpcode.Server07FB)]
     public class Server07FB : IWritable
     {
@@ -15,7 +19,7 @@ namespace NexusForever.Network.World.Message.Model
             {
                 writer.Write(CasterId);
                 writer.Write(Unknown4, 4u);
-                writer.Write(Unknown4);
+                writer.Write(Unknown5);
             }
         }
         public uint CastingId { get; set; }

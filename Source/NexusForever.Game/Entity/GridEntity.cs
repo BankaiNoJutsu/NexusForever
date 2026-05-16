@@ -193,6 +193,9 @@ namespace NexusForever.Game.Entity
             if (!CanSeeEntity(entity))
                 return;
 
+            if (visibleEntities.ContainsKey(entity.Guid))
+                return;
+
             visibleEntities.Add(entity.Guid, entity);
 
             scriptCollection?.Invoke<IGridEntityScript>(s => s.OnAddVisibleEntity(entity));
@@ -205,7 +208,8 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public virtual void RemoveVisible(IGridEntity entity)
         {
-            visibleEntities.Remove(entity.Guid);
+            if (!visibleEntities.Remove(entity.Guid))
+                return;
 
             scriptCollection?.Invoke<IGridEntityScript>(s => s.OnRemoveVisibleEntity(entity));
 
@@ -332,12 +336,12 @@ namespace NexusForever.Game.Entity
                 RemoveFromRange(target);
         }
 
-        private bool IsInRange(IGridEntity target)
+        protected virtual bool IsInRange(IGridEntity target)
         {
-            return Position.GetDistance(target.Position) < RangeCheck;
+            return RangeCheck.HasValue && Position.GetDistance(target.Position) < RangeCheck.Value;
         }
 
-        private bool HasEnteredRange(IGridEntity target)
+        protected bool HasEnteredRange(IGridEntity target)
         {
             return inRangeEntities.ContainsKey(target.Guid);
         }

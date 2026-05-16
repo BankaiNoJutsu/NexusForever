@@ -40,5 +40,10 @@ namespace NexusForever.Game.Abstract.Quest
         /// Update any <see cref="IQuestObjective"/>'s with supplied ID with progress.
         /// </summary>
         void ObjectiveUpdate(uint id, uint progress);
+
+        /// <summary>
+        /// Send objective world-location guidance updates for this quest.
+        /// </summary>
+        void SendObjectiveWorldLocationUpdates();
     }
 }

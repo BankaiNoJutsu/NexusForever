@@ -1374,7 +1374,9 @@ namespace NexusForever.Game.Spell
                 ParentSpellInfo        = spell.Parameters.SpellInfo,
                 RootSpellInfo          = spell.Parameters.RootSpellInfo,
                 PrimaryTargetId        = target.Guid,
-                UserInitiatedSpellCast = false
+                UserInitiatedSpellCast = false,
+                ClientContextToken     = spell.Parameters.ClientContextToken,
+                ClientRequestSource    = spell.Parameters.ClientRequestSource
             });
         }
 
@@ -1428,11 +1430,8 @@ namespace NexusForever.Game.Spell
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateEntity2, activatedEntity.CreatureId, 1u);
 
             IReadOnlyCollection<uint> targetGroupIds = AssetManager.Instance.GetTargetGroupsForCreatureId(activatedEntity.CreatureId);
-            foreach (uint targetGroupId in targetGroupIds ?? Enumerable.Empty<uint>())
-            {
-                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroup, targetGroupId, 1u);
-                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroupChecklist, targetGroupId, 1u);
-            }
+            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroup, activatedEntity.CreatureId, 1u);
+            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroupChecklist, activatedEntity.CreatureId, activatedEntity.QuestChecklistIdx);
 
             SpellEffectDiagnostics.TraceActivate(spell, target, activate, player.Guid, activatedEntity.CreatureId, targetGroupIds?.Count ?? 0);
         }

@@ -18,6 +18,8 @@ namespace NexusForever.Game.Spell
 
         public static void TraceTargetSelection(ISpell spell, IReadOnlyCollection<ISpellTargetInfo> targets, int telegraphCount)
         {
+            SpellRuntimeEvidenceCollector.RecordTargetSelection(spell, targets, telegraphCount);
+
             if (!log.IsTraceEnabled)
                 return;
 
@@ -66,8 +68,30 @@ namespace NexusForever.Game.Spell
                 spell.Parameters.SpellInfo.BaseInfo.ValidTargets?.TargetBitmask ?? 0u);
         }
 
+        public static void TraceTelegraphAnchorResolution(ISpell spell, string source, Vector3 position, uint? primaryTargetGuid)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics telegraph-anchor spell4Id={0} baseSpell4Id={1} castingId={2} caster={3} targetType={4} primaryTarget={5} source={6} position={7:R}/{8:R}/{9:R} hasExplicitPosition={10}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.Parameters.SpellInfo.BaseInfo.Entry.Id,
+                spell.CastingId,
+                spell.Caster.Guid,
+                spell.Parameters.SpellInfo.BaseInfo.TargetMechanics?.TargetType ?? 0u,
+                primaryTargetGuid?.ToString() ?? "none",
+                source,
+                position.X,
+                position.Y,
+                position.Z,
+                spell.Parameters.Position != null);
+        }
+
         public static void TraceEffectDispatch(ISpell spell, SpellEffectInterpretation effect, int targetCount, bool hasHandler)
         {
+            SpellRuntimeEvidenceCollector.RecordEffectDispatch(spell, effect, targetCount, hasHandler);
+
             if (!log.IsTraceEnabled)
                 return;
 
@@ -128,6 +152,8 @@ namespace NexusForever.Game.Spell
 
         public static void TraceEffectResult(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
         {
+            SpellRuntimeEvidenceCollector.RecordEffectResult(spell, target, info);
+
             if (!log.IsTraceEnabled)
                 return;
 
@@ -587,6 +613,8 @@ namespace NexusForever.Game.Spell
 
         public static void TraceSpellEffectImmunityBlocked(ISpell spell, IUnitEntity target, SpellEffectInterpretation blockedEffect)
         {
+            SpellRuntimeEvidenceCollector.RecordBlockedEffect(spell, target, blockedEffect, "spell-effect-immunity", blockedEffect.Entry.EffectType.ToString());
+
             if (!log.IsTraceEnabled)
                 return;
 
@@ -622,6 +650,8 @@ namespace NexusForever.Game.Spell
 
         public static void TraceSpellImmunityBlocked(ISpell spell, IUnitEntity target, SpellEffectInterpretation blockedEffect, uint immuneSpell4Id)
         {
+            SpellRuntimeEvidenceCollector.RecordBlockedEffect(spell, target, blockedEffect, "spell-immunity", $"immuneSpell4Id={immuneSpell4Id}");
+
             if (!log.IsTraceEnabled)
                 return;
 
@@ -637,6 +667,8 @@ namespace NexusForever.Game.Spell
 
         public static void TraceUnitStateImmuneBlocked(ISpell spell, IUnitEntity target, SpellEffectInterpretation blockedEffect, uint blockingStateId)
         {
+            SpellRuntimeEvidenceCollector.RecordBlockedEffect(spell, target, blockedEffect, "unit-state-immunity", $"blockingStateId={blockingStateId}");
+
             if (!log.IsTraceEnabled)
                 return;
 
@@ -1681,6 +1713,14 @@ namespace NexusForever.Game.Spell
 
         public static void TraceSpellGo(ISpell spell, int targetInfoCount, int effectInfoCount, int combatLogCount)
         {
+            SpellRuntimeEvidenceCollector.RecordPacketEvent(
+                spell,
+                "ServerSpellGo",
+                "spell-go",
+                targetInfoCount,
+                effectInfoCount,
+                combatLogCount);
+
             if (!log.IsTraceEnabled)
                 return;
 

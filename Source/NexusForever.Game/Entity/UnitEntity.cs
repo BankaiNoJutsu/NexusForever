@@ -1801,7 +1801,10 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public virtual bool CanAttack(IUnitEntity target)
         {
-            if (!IsAlive)
+            if (target == null || !IsAlive || !target.IsAlive)
+                return false;
+
+            if (target.Guid == Guid)
                 return false;
 
             if (IsAggroImmune || target.IsAggroImmune)
@@ -2004,13 +2007,13 @@ namespace NexusForever.Game.Entity
         {
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillCreature, CreatureId, 1u);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillCreature2, CreatureId, 1u);
+            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroup, CreatureId, 1u);
+            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroups, CreatureId, 1u);
             player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureEntry, CreatureId);
 
             List<uint> targetGroupIds = (AssetManager.Instance.GetTargetGroupsForCreatureId(CreatureId) ?? Enumerable.Empty<uint>()).ToList();
             foreach (uint targetGroupId in targetGroupIds)
             {
-                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroup, targetGroupId, 1u);
-                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroups, targetGroupId, 1u);
                 player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureGroup, targetGroupId);
             }
 

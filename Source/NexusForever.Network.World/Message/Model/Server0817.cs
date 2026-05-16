@@ -2,6 +2,10 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Opaque spell follow-up packet carrying a concrete Spell4 id and one event-like byte.
+    /// The byte remains unnamed until client parse or sniff evidence identifies the event class.
+    /// </summary>
     [Message(GameMessageOpcode.Server0817)]
     public class Server0817 : IWritable
     {

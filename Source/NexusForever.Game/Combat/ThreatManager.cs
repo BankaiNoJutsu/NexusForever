@@ -176,13 +176,29 @@ namespace NexusForever.Game.Combat
                 SrcUnitId = owner.Guid,
             };
 
-            // TODO: should this be target plus top 4?
-            IHostileEntity[] hostileEntities = hostiles.Values
-                .OrderByDescending(h => h.Threat)
-                .Take(5)
-                .ToArray();
+            // The client threat HUD promotes the owner's current target to the first
+            // visible slot from this five-entry packet, so keep that target in-band
+            // whenever it already exists on the threat list.
+            List<IHostileEntity> hostileEntities = [];
+            uint? prioritisedHostileId = null;
+            if (owner.TargetGuid.HasValue && hostiles.TryGetValue(owner.TargetGuid.Value, out IHostileEntity currentTarget))
+            {
+                prioritisedHostileId = currentTarget.HatedUnitId;
+                hostileEntities.Add(currentTarget);
+            }
 
-            for (uint i = 0u; i < hostileEntities.Length; i++)
+            foreach (IHostileEntity hostile in hostiles.Values.OrderByDescending(h => h.Threat))
+            {
+                if (hostileEntities.Count == 5)
+                    break;
+
+                if (prioritisedHostileId.HasValue && hostile.HatedUnitId == prioritisedHostileId.Value)
+                    continue;
+
+                hostileEntities.Add(hostile);
+            }
+
+            for (int i = 0; i < hostileEntities.Count; i++)
             {
                 threatUpdate.ThreatUnitIds[i] = hostileEntities[i].HatedUnitId;
                 threatUpdate.ThreatLevels[i] = hostileEntities[i].Threat;

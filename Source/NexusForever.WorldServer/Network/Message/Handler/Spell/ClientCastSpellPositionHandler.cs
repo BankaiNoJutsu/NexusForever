@@ -9,7 +9,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
         public void HandleMessage(IWorldSession session, ClientCastSpellPosition castSpell)
         {
             ICharacterSpell characterSpell = ClientCastSpellHandler.GetCharacterSpell(session, castSpell.BagIndex);
-            ClientCastSpellHandler.CastCharacterSpell(session, characterSpell, position: castSpell.Position);
+            ClientCastSpellHandler.CastCharacterSpell(session, characterSpell, position: castSpell.Position, clientContextToken: castSpell.ContextToken, clientRequestSource: nameof(ClientCastSpellPosition));
         }
     }
 }

@@ -32,6 +32,9 @@ namespace NexusForever.WorldServer.Network
         /// </remarks>
         public bool? IsQueued { get; set; }
 
+        private bool captureNextClientSpellEvidence;
+        private bool emitDiagnosticSpellBroadcastsOnNextClientSpellEvidence;
+
         #region Dependency Injection
 
         private readonly INetworkManager<IWorldSession> networkManager;
@@ -112,6 +115,23 @@ namespace NexusForever.WorldServer.Network
             Account.Initialise(account, this);
 
             networkManager.UpdateSessionId(this, account.Id.ToString());
+        }
+
+        public void ArmNextClientSpellEvidenceCapture(bool emitDiagnosticSpellBroadcasts = false)
+        {
+            captureNextClientSpellEvidence = true;
+            emitDiagnosticSpellBroadcastsOnNextClientSpellEvidence = emitDiagnosticSpellBroadcasts;
+        }
+
+        public bool TryConsumeNextClientSpellEvidenceCapture(out bool emitDiagnosticSpellBroadcasts)
+        {
+            emitDiagnosticSpellBroadcasts = emitDiagnosticSpellBroadcastsOnNextClientSpellEvidence;
+            if (!captureNextClientSpellEvidence)
+                return false;
+
+            captureNextClientSpellEvidence = false;
+            emitDiagnosticSpellBroadcastsOnNextClientSpellEvidence = false;
+            return true;
         }
 
         public void SetEncryptionKey(byte[] sessionKey)

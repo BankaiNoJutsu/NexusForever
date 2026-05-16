@@ -10,8 +10,13 @@ namespace NexusForever.Game.Spell
         public ISpellInfo ParentSpellInfo { get; set; }
         public ISpellInfo RootSpellInfo { get; set; }
         public bool UserInitiatedSpellCast { get; set; }
+        public bool IgnoreGlobalCooldown { get; set; }
         public bool CancelActiveTrade { get; set; }
         public bool UseServiceTokenCost { get; set; }
+        public bool CaptureRuntimeEvidence { get; set; }
+        public bool EmitDiagnosticSpellBroadcasts { get; set; }
+        public uint ClientContextToken { get; set; }
+        public string ClientRequestSource { get; set; }
         public uint PrimaryTargetId { get; set; }
         public Position Position { get; set; }
         public ushort TaxiNode { get; set; }

@@ -17,7 +17,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
         public void HandleMessage(IWorldSession session, ClientCastSpell castSpell)
         {
             ICharacterSpell characterSpell = GetCharacterSpell(session, castSpell.BagIndex);
-            CastCharacterSpell(session, characterSpell, castSpell.PrimaryTargetId);
+            CastCharacterSpell(session, characterSpell, castSpell.PrimaryTargetId, null, castSpell.ContextToken, nameof(ClientCastSpell));
         }
 
         internal static ICharacterSpell GetCharacterSpell(IWorldSession session, ushort bagIndex)
@@ -33,16 +33,21 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             return characterSpell;
         }
 
-        internal static void CastCharacterSpell(IWorldSession session, ICharacterSpell characterSpell, uint primaryTargetId = 0u, Position position = null)
+        internal static void CastCharacterSpell(IWorldSession session, ICharacterSpell characterSpell, uint primaryTargetId = 0u, Position position = null, uint clientContextToken = 0u, string clientRequestSource = null)
         {
-            session.Player.CastSpell(new SpellParameters
+            var spellParameters = new SpellParameters
             {
                 CharacterSpell         = characterSpell,
                 SpellInfo              = characterSpell.SpellInfo,
                 PrimaryTargetId        = primaryTargetId,
                 Position               = position,
-                UserInitiatedSpellCast = true
-            });
+                UserInitiatedSpellCast = true,
+                ClientContextToken     = clientContextToken,
+                ClientRequestSource    = clientRequestSource
+            };
+
+            ClientSpellEvidenceCaptureHelper.ApplyPendingCapture(session, spellParameters);
+            session.Player.CastSpell(spellParameters);
         }
     }
 }

@@ -17,6 +17,11 @@ namespace NexusForever.Game.Abstract.Quest
         bool IsComplete();
 
         /// <summary>
+        /// Return if the objective can be updated by the supplied target id.
+        /// </summary>
+        bool IsTarget(uint id);
+
+        /// <summary>
         /// Update object progress with supplied update.
         /// </summary>
         void ObjectiveUpdate(uint update);

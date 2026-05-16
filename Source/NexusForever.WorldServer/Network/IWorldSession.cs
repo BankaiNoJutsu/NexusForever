@@ -27,6 +27,9 @@ namespace NexusForever.WorldServer.Network
         /// </summary>
         void Initialise(AccountModel account);
 
+        void ArmNextClientSpellEvidenceCapture(bool emitDiagnosticSpellBroadcasts = false);
+        bool TryConsumeNextClientSpellEvidenceCapture(out bool emitDiagnosticSpellBroadcasts);
+
         void SetEncryptionKey(byte[] sessionKey);
     }
 }

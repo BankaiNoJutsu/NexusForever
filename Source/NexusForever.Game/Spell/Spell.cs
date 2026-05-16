@@ -70,6 +70,8 @@ namespace NexusForever.Game.Spell
 
         public void Dispose()
         {
+            SpellRuntimeEvidenceCollector.FinalizeAndExport(this, status == SpellStatus.Finished ? "disposed-finished" : "disposed");
+
             if (scriptCollection != null)
                 ScriptManager.Instance.Unload(scriptCollection);
 
@@ -92,6 +94,9 @@ namespace NexusForever.Game.Spell
                 // TODO: add a timer to count down on the Effect before sending the finish - sending the finish will e.g. wear off the buff
                 //SendSpellFinish();
             }
+
+            if (status == SpellStatus.Finished)
+                SpellRuntimeEvidenceCollector.FinalizeAndExport(this, "finished");
         }
 
         /// <summary>
@@ -107,15 +112,19 @@ namespace NexusForever.Game.Spell
             CastResult result = CheckCast();
             if (result != CastResult.Ok)
             {
+                SpellRuntimeEvidenceCollector.RecordCastAttempt(this, result);
                 SendSpellCastResult(result);
                 status = SpellStatus.Finished;
+                SpellRuntimeEvidenceCollector.FinalizeAndExport(this, "cast-blocked");
                 return result;
             }
 
             if (!TryConsumeServiceTokenCost())
             {
+                SpellRuntimeEvidenceCollector.RecordCastAttempt(this, CastResult.ServiceTokensInsufficentFunds);
                 SendSpellCastResult(CastResult.ServiceTokensInsufficentFunds);
                 status = SpellStatus.Finished;
+                SpellRuntimeEvidenceCollector.FinalizeAndExport(this, "service-token-blocked");
                 return CastResult.ServiceTokensInsufficentFunds;
             }
 
@@ -133,6 +142,7 @@ namespace NexusForever.Game.Spell
             // enqueue spell to be executed after cast time
             events.EnqueueEvent(new SpellEvent(Parameters.SpellInfo.Entry.CastTime / 1000d, Execute));
             status = SpellStatus.Casting;
+            SpellRuntimeEvidenceCollector.RecordCastAttempt(this, CastResult.Ok);
 
             log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} has started casting.");
             return CastResult.Ok;
@@ -160,7 +170,8 @@ namespace NexusForever.Game.Spell
                     return CastResult.SpellCooldown;
 
                 // this isn't entirely correct, research GlobalCooldownEnum
-                if (Parameters.SpellInfo.Entry.GlobalCooldownEnum == 0
+                if (!Parameters.IgnoreGlobalCooldown
+                    && Parameters.SpellInfo.Entry.GlobalCooldownEnum == 0
                     && player.SpellManager.GetGlobalSpellCooldown() > 0d)
                     return CastResult.SpellGlobalCooldown;
 
@@ -251,6 +262,7 @@ namespace NexusForever.Game.Spell
         private CastResult CheckPrimaryTargetValidMask(IWorldEntity target)
         {
             if (target is not IUnitEntity unitTarget)
+                // Current verified non-unit target bit: 0x02 = interactable/world-object target.
                 return ((Parameters.SpellInfo.BaseInfo.ValidTargets?.TargetBitmask ?? 0u) & ValidTargetObjectMask) != 0u
                     ? CastResult.Ok
                     : CastResult.TargetUnknown;
@@ -669,6 +681,8 @@ namespace NexusForever.Game.Spell
             if (status != SpellStatus.Casting)
                 throw new InvalidOperationException();
 
+            SpellRuntimeEvidenceCollector.RecordCancellation(this, result);
+
             if (Caster is IPlayer player && !player.IsLoading)
             {
                 player.Session.EnqueueMessageEncrypted(new Server07F9
@@ -904,20 +918,44 @@ namespace NexusForever.Game.Spell
         {
             uint targetType = Parameters.SpellInfo.BaseInfo.TargetMechanics?.TargetType ?? 0u;
             IWorldEntity primaryTarget = GetPrimaryTargetWorldEntity();
+            Vector3 position;
+            string source;
 
             if (targetType == TargetTypeTargetAoe && primaryTarget != null)
-                return (primaryTarget.Position, GetRotationToward(primaryTarget.Position));
-
-            if (targetType == TargetTypePositionAoe)
             {
-                if (Parameters.Position != null)
-                    return (Parameters.Position.Vector, GetRotationToward(Parameters.Position.Vector));
-
-                if (primaryTarget != null)
-                    return (primaryTarget.Position, GetRotationToward(primaryTarget.Position));
+                position = primaryTarget.Position;
+                source = "target-aoe:primary-target";
             }
 
-            return (Caster.Position, Caster.Rotation);
+            else if (targetType == TargetTypePositionAoe)
+            {
+                if (Parameters.Position != null)
+                {
+                    position = Parameters.Position.Vector;
+                    source = "position-aoe:explicit-position";
+                }
+
+                else if (primaryTarget != null)
+                {
+                    position = primaryTarget.Position;
+                    source = "position-aoe:primary-target-fallback";
+                }
+
+                else
+                {
+                    position = Caster.Position;
+                    source = "position-aoe:caster-fallback";
+                }
+            }
+
+            else
+            {
+                position = Caster.Position;
+                source = "caster-centered";
+            }
+
+            SpellEffectDiagnostics.TraceTelegraphAnchorResolution(this, source, position, primaryTarget?.Guid);
+            return (position, GetRotationToward(position));
         }
 
         private Vector3 GetAoeSelectionOrigin()
@@ -1042,6 +1080,7 @@ namespace NexusForever.Game.Spell
                 var info = new SpellTargetInfo.SpellTargetEffectInfo(effectId, effect.Entry);
                 effectTarget.Effects.Add(info);
                 pendingSpellGoEffects.Add(new PendingSpellGoEffect(effectTarget, info));
+                SpellRuntimeEvidenceCollector.RecordEffectPreparation(this, effectTarget.Entity, info);
 
                 if (effectTarget.Entity is not IUnitEntity unitTarget)
                 {
@@ -1072,6 +1111,7 @@ namespace NexusForever.Game.Spell
                         }
                     });
                     SpellEffectDiagnostics.TraceSpellImmunityBlocked(this, unitTarget, effect, Parameters.SpellInfo.Entry.Id);
+                    QueueDiagnosticSpellBroadcast(unitTarget.Guid, $"spell-immunity:{Parameters.SpellInfo.Entry.Id}", effect);
                     SpellEffectDiagnostics.TraceEffectResult(this, unitTarget, info);
                     executed = true;
                     continue;
@@ -1091,6 +1131,7 @@ namespace NexusForever.Game.Spell
                         }
                     });
                     SpellEffectDiagnostics.TraceSpellEffectImmunityBlocked(this, unitTarget, effect);
+                    QueueDiagnosticSpellBroadcast(unitTarget.Guid, $"effect-immunity:{effect.Entry.EffectType}", effect);
                     SpellEffectDiagnostics.TraceEffectResult(this, unitTarget, info);
                     executed = true;
                     continue;
@@ -1111,6 +1152,7 @@ namespace NexusForever.Game.Spell
                         }
                     });
                     SpellEffectDiagnostics.TraceUnitStateImmuneBlocked(this, unitTarget, effect, blockingStateId);
+                    QueueDiagnosticSpellBroadcast(unitTarget.Guid, $"state-immunity:{blockingStateId}", effect);
                     SpellEffectDiagnostics.TraceEffectResult(this, unitTarget, info);
                     executed = true;
                     continue;
@@ -1812,6 +1854,7 @@ namespace NexusForever.Game.Spell
                 combatLogs.Count);
 
             Caster.EnqueueToVisible(serverSpellGo, true);
+            SendDiagnosticSpellBroadcasts();
             SendPostSpellGoEffectMessages(pendingEffects);
 
         }

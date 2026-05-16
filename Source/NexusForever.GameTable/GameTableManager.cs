@@ -479,7 +479,11 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<Quest2RewardEntry> Quest2Reward { get; private set; }
         public GameTable<QuestCategoryEntry> QuestCategory { get; private set; }
+
+        [GameData]
         public GameTable<QuestDirectionEntry> QuestDirection { get; private set; }
+
+        [GameData]
         public GameTable<QuestDirectionEntryEntry> QuestDirectionEntry { get; private set; }
         public GameTable<QuestGroupEntry> QuestGroup { get; private set; }
         public GameTable<QuestHubEntry> QuestHub { get; private set; }

@@ -198,7 +198,7 @@ namespace NexusForever.WorldServer.Service
         /// <summary>
         /// Stop <see cref="WorldServer"/> and any related resources.
         /// </summary>
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
             log.LogInformation("Stopping...");
 
@@ -221,10 +221,12 @@ namespace NexusForever.WorldServer.Service
             GlobalGuildManager.Instance.Shutdown();
 
             foreach (IWorldSession worldSession in networkManager)
-                worldSession.Player?.SaveDirect();
+            {
+                if (worldSession.Player != null)
+                    await worldSession.Player.SaveDirect();
+            }
 
             log.LogInformation("Stopped!");
-            return Task.CompletedTask;
         }
     }
 }
