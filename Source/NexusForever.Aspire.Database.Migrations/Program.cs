@@ -36,6 +36,9 @@ namespace NexusForever.Aspire.Database.Migrations
                 })
                 .ConfigureServices((hb, sc) =>
                 {
+                    sc.AddOptions<DatabaseMigrationOptions>()
+                        .Bind(hb.Configuration.GetSection("DatabaseMigration"));
+
                     sc.AddOptions<AccountCreationOptions>()
                         .Bind(hb.Configuration.GetSection("AccountCreation"));
 

@@ -15,6 +15,36 @@ namespace NexusForever.Aspire.Database.Migrations.Service
     {
         private const string NewPlayerExperienceFileName = "New Player Experience.sql";
         private const ushort NewPlayerExperienceWorldId = 3460;
+        private static readonly uint[] RequiredNewPlayerExperienceCreatureIds =
+        [
+            70939u,
+            72051u,
+            73416u,
+            73419u,
+            73461u,
+            73463u,
+            73595u,
+            73610u,
+            73619u,
+            73667u,
+            73668u,
+            73707u,
+            73735u,
+            73736u,
+            74767u,
+            74768u,
+            74769u,
+            75094u,
+            75096u
+        ];
+
+        private static readonly string[] RequiredNewPlayerExperienceScriptNames =
+        [
+            "DirectionArrowEntityScript",
+            "DirectionArrowPt2EntityScript",
+            "ObjectiveRingEntityScript",
+            "ObjectiveRingPt2EntityScript"
+        ];
 
         #region Dependency Injection
 
@@ -110,6 +140,30 @@ namespace NexusForever.Aspire.Database.Migrations.Service
                 .AnyAsync(s => _context.Entity.Any(e => e.Id == s.Id && e.World == NewPlayerExperienceWorldId), cancellationToken);
             if (!hasNpeEntityScripts)
                 throw new InvalidOperationException($"WorldDatabase import did not create entity_script rows for world {NewPlayerExperienceWorldId}.");
+
+            uint[] importedCreatureIds = await _context.Entity
+                .Where(e => e.World == NewPlayerExperienceWorldId)
+                .Select(e => e.Creature)
+                .Distinct()
+                .ToArrayAsync(cancellationToken);
+
+            uint[] missingCreatureIds = RequiredNewPlayerExperienceCreatureIds
+                .Except(importedCreatureIds)
+                .ToArray();
+            if (missingCreatureIds.Length != 0)
+                throw new InvalidOperationException($"WorldDatabase import is missing required Rider's Reef creature rows for world {NewPlayerExperienceWorldId}: {string.Join(", ", missingCreatureIds)}.");
+
+            string[] importedScriptNames = await _context.EntityScript
+                .Where(s => _context.Entity.Any(e => e.Id == s.Id && e.World == NewPlayerExperienceWorldId))
+                .Select(s => s.ScriptName)
+                .Distinct()
+                .ToArrayAsync(cancellationToken);
+
+            string[] missingScriptNames = RequiredNewPlayerExperienceScriptNames
+                .Except(importedScriptNames)
+                .ToArray();
+            if (missingScriptNames.Length != 0)
+                throw new InvalidOperationException($"WorldDatabase import is missing required Rider's Reef entity_script rows for world {NewPlayerExperienceWorldId}: {string.Join(", ", missingScriptNames)}.");
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

@@ -1,7 +1,25 @@
 {
+    "DatabaseMigration": {
+        "Skip": false
+    },
     "AccountCreation": {
-        "Username": "nexusforever",
-        "Password": "nexusforever"
+        "Accounts": [
+            {
+                "Username": "player",
+                "Password": "player",
+                "RoleId": 1
+            },
+            {
+                "Username": "gm",
+                "Password": "gm",
+                "RoleId": 2
+            },
+            {
+                "Username": "admin",
+                "Password": "admin",
+                "RoleId": 3
+            }
+        ]
     },
     "WorldDatabase": {
         "Path": "C:\\nexusforever-database"

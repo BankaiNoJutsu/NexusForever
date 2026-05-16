@@ -5,6 +5,7 @@ using NexusForever.Aspire.Database.Migrations.Configuration.Model;
 using NexusForever.Cryptography;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
+using Microsoft.EntityFrameworkCore;
 
 namespace NexusForever.Aspire.Database.Migrations.Service
 {
@@ -30,36 +31,102 @@ namespace NexusForever.Aspire.Database.Migrations.Service
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            if (_options.UserName == null || _options.Password == null)
+            List<AccountCreationAccountOptions> configuredAccounts = GetConfiguredAccounts();
+            if (configuredAccounts.Count == 0)
             {
                 _log.LogWarning("Account creation options are not configured, skipping account creation.");
                 return;
             }
 
-            AccountModel accountModel = _context.Account.SingleOrDefault(a => a.Email == _options.UserName);
-            if (accountModel != null)
+            foreach (AccountCreationAccountOptions configuredAccount in configuredAccounts)
             {
-                _log.LogInformation("Account with username '{UserName}' already exists, skipping account creation.", _options.UserName);
-                return;
+                if (string.IsNullOrWhiteSpace(configuredAccount.UserName) || string.IsNullOrWhiteSpace(configuredAccount.Password))
+                {
+                    _log.LogWarning("Account creation entry is missing a username or password, skipping it.");
+                    continue;
+                }
+
+                uint roleId = configuredAccount.RoleId ?? 1u;
+
+                AccountModel accountModel = await _context.Account
+                    .Include(a => a.AccountRole)
+                    .SingleOrDefaultAsync(a => a.Email == configuredAccount.UserName, cancellationToken);
+
+                if (accountModel != null)
+                {
+                    if (accountModel.AccountRole.Any(r => r.RoleId == roleId))
+                    {
+                        _log.LogInformation("Account with username '{UserName}' already exists with role {RoleId}, skipping account creation.", configuredAccount.UserName, roleId);
+                        continue;
+                    }
+
+                    accountModel.AccountRole.Add(new AccountRoleModel
+                    {
+                        RoleId = roleId
+                    });
+
+                    try
+                    {
+                        await _context.SaveChangesAsync(cancellationToken);
+                        _log.LogInformation("Added role {RoleId} to existing account '{UserName}'.", roleId, configuredAccount.UserName);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogError(ex, "Failed to add role {RoleId} to existing account '{UserName}'.", roleId, configuredAccount.UserName);
+                    }
+
+                    continue;
+                }
+
+                (string salt, string vertifier) = PasswordProvider.GenerateSaltAndVerifier(configuredAccount.UserName, configuredAccount.Password);
+                var newAccount = new AccountModel
+                {
+                    Email = configuredAccount.UserName,
+                    S     = salt,
+                    V     = vertifier
+                };
+                newAccount.AccountRole.Add(new AccountRoleModel
+                {
+                    RoleId = roleId
+                });
+
+                _context.Account.Add(newAccount);
+
+                try
+                {
+                    await _context.SaveChangesAsync(cancellationToken);
+                    _log.LogInformation("Account with username '{UserName}' created successfully with role {RoleId}.", configuredAccount.UserName, roleId);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogError(ex, "Failed to create account with username '{UserName}'.", configuredAccount.UserName);
+                }
+            }
+        }
+
+        private List<AccountCreationAccountOptions> GetConfiguredAccounts()
+        {
+            if (_options.Accounts != null && _options.Accounts.Count > 0)
+            {
+                return _options.Accounts
+                    .Where(a => a != null)
+                    .ToList();
             }
 
-            (string salt, string vertifier) = PasswordProvider.GenerateSaltAndVerifier(_options.UserName, _options.Password);
-            _context.Account.Add(new AccountModel
+            if (string.IsNullOrWhiteSpace(_options.UserName) && string.IsNullOrWhiteSpace(_options.Password))
             {
-                Email = _options.UserName,
-                S     = salt,
-                V     = vertifier
-            });
+                return [];
+            }
 
-            try
-            {
-                await _context.SaveChangesAsync();
-                _log.LogInformation("Account with username '{UserName}' created successfully.", _options.UserName);
-            }
-            catch (Exception ex)
-            {
-                _log.LogError(ex, "Failed to create account with username '{UserName}'.", _options.UserName);
-            }
+            return
+            [
+                new AccountCreationAccountOptions
+                {
+                    UserName = _options.UserName,
+                    Password = _options.Password,
+                    RoleId   = _options.RoleId
+                }
+            ];
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

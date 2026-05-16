@@ -1,9 +1,11 @@
 {
+  "DatabaseMigration": {
+    "Skip": false
+  },
   "AccountCreation": {
-    "Username": "nexusforever",
-    "Password": "nexusforever"
+    "Accounts": []
   },
   "WorldDatabase": {
-    "Path": "I:\\GIT\\NexusForever.WorldDatabase"
+    "Path": "C:\\nexusforever-database"
   }
 }

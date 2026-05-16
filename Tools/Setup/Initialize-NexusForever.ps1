@@ -12,6 +12,7 @@ server guide:
 * create/import the split SQL dump folders into standalone reference DBs
 * copy default server configuration files
 * build the solution and run EF Core migrations
+* create or verify the local player, gm, and admin login accounts
 * import the NexusForever.WorldDatabase SQL files into nexus_forever_world
 * optionally configure RabbitMQ and start the standalone server processes
 
@@ -120,8 +121,14 @@ param(
     [switch] $RepairPartialLargeDumpDatabases,
     [switch] $KeepLargeDumpIntegerColumns,
 
-    [string] $DefaultAccountUsername = 'nexusforever',
-    [string] $DefaultAccountPassword = 'nexusforever',
+    [Alias('DefaultAccountUsername')]
+    [string] $PlayerAccountUsername = 'player',
+    [Alias('DefaultAccountPassword')]
+    [string] $PlayerAccountPassword = 'player',
+    [string] $GameMasterAccountUsername = 'gm',
+    [string] $GameMasterAccountPassword = 'gm',
+    [string] $AdministratorAccountUsername = 'admin',
+    [string] $AdministratorAccountPassword = 'admin',
 
     [switch] $StartServers
 )
@@ -136,6 +143,70 @@ $GameDatabases = [ordered]@{
     Group      = 'nexus_forever_group'
     Chat       = 'nexus_forever_chat'
     Friendship = 'nexus_forever_friendship'
+}
+
+$LocalAccountRoleIds = [ordered]@{
+    Player        = 1u
+    GameMaster    = 2u
+    Administrator = 3u
+}
+
+function Get-LocalLoginAccounts {
+    $accounts = @(
+        [pscustomobject]@{
+            UserName = $PlayerAccountUsername
+            Password = $PlayerAccountPassword
+            RoleId   = $LocalAccountRoleIds['Player']
+            RoleName = 'Player'
+        },
+        [pscustomobject]@{
+            UserName = $GameMasterAccountUsername
+            Password = $GameMasterAccountPassword
+            RoleId   = $LocalAccountRoleIds['GameMaster']
+            RoleName = 'GameMaster'
+        },
+        [pscustomobject]@{
+            UserName = $AdministratorAccountUsername
+            Password = $AdministratorAccountPassword
+            RoleId   = $LocalAccountRoleIds['Administrator']
+            RoleName = 'Administrator'
+        }
+    )
+
+    foreach ($account in $accounts) {
+        if ([string]::IsNullOrWhiteSpace($account.UserName)) {
+            throw "Local account username for role '$($account.RoleName)' cannot be empty."
+        }
+
+        if ([string]::IsNullOrWhiteSpace($account.Password)) {
+            throw "Local account password for role '$($account.RoleName)' cannot be empty."
+        }
+    }
+
+    $duplicateUserNames = @($accounts | Group-Object UserName | Where-Object Count -gt 1)
+    if ($duplicateUserNames.Count -gt 0) {
+        throw "Local account usernames must be unique. Duplicates: $($duplicateUserNames.Name -join ', ')"
+    }
+
+    $accounts
+}
+
+function Get-AccountCreationConfigAccounts {
+    @(
+        Get-LocalLoginAccounts | ForEach-Object {
+            [pscustomobject]@{
+                UserName = $_.UserName
+                Password = $_.Password
+                RoleId   = $_.RoleId
+            }
+        }
+    )
+}
+
+function Write-LocalAccountSummary {
+    foreach ($account in Get-LocalLoginAccounts) {
+        Write-Host ("  {0} / {1} ({2}, roleId={3})" -f $account.UserName, $account.Password, $account.RoleName, $account.RoleId) -ForegroundColor Green
+    }
 }
 
 $ConfigFiles = @(
@@ -396,6 +467,39 @@ function ConvertTo-ProcessArgumentString {
             $_
         }
     }) -join ' ')
+}
+
+function Invoke-WithTemporaryEnvironment {
+    param(
+        [hashtable] $Variables,
+        [scriptblock] $ScriptBlock
+    )
+
+    $originalValues = @{}
+    foreach ($key in $Variables.Keys) {
+        if (Test-Path -LiteralPath "Env:$key") {
+            $originalValues[$key] = (Get-Item -LiteralPath "Env:$key").Value
+        }
+        else {
+            $originalValues[$key] = $null
+        }
+
+        Set-Item -LiteralPath "Env:$key" -Value $Variables[$key]
+    }
+
+    try {
+        & $ScriptBlock
+    }
+    finally {
+        foreach ($key in $Variables.Keys) {
+            if ($null -eq $originalValues[$key]) {
+                Remove-Item -LiteralPath "Env:$key" -ErrorAction SilentlyContinue
+            }
+            else {
+                Set-Item -LiteralPath "Env:$key" -Value $originalValues[$key]
+            }
+        }
+    }
 }
 
 function Split-SqlTopLevelComma {
@@ -1179,8 +1283,12 @@ function Update-ConfigJson {
     Update-JsonNode -Node $json
 
     if ($IsAspireMigrations) {
-        $json.AccountCreation.Username = $DefaultAccountUsername
-        $json.AccountCreation.Password = $DefaultAccountPassword
+        $json.DatabaseMigration = [pscustomobject]@{
+            Skip = $false
+        }
+        $json.AccountCreation = [pscustomobject]@{
+            Accounts = @(Get-AccountCreationConfigAccounts)
+        }
         $json.WorldDatabase.Path = $WorldDatabasePath
     }
 
@@ -1217,6 +1325,54 @@ function Copy-ConfigurationFiles {
                 Copy-Item -LiteralPath $targetPath -Destination $outputPath -Force
                 Write-Info "Wrote runtime config $outputPath"
             }
+        }
+    }
+}
+
+function Invoke-AccountSeeder {
+    $migrationExe = Join-Path $RepoRoot "Source\NexusForever.Aspire.Database.Migrations\bin\$Configuration\$TargetFramework\NexusForever.Aspire.Database.Migrations.exe"
+    $skippedWorldDatabasePath = Join-Path $RepoRoot '.nexusforever-runtime\skip-world-database'
+
+    if (!(Test-Path -LiteralPath $migrationExe -PathType Leaf)) {
+        if ($SkipBuild) {
+            Write-Warning "Database migration executable was not found, so local account creation was skipped: $migrationExe"
+            return
+        }
+
+        throw "Database migration executable was not found: $migrationExe"
+    }
+
+    $environmentOverrides = @{
+        'ConnectionStrings__authdb'       = Get-DatabaseConnectionString -Database $GameDatabases.Auth
+        'ConnectionStrings__characterdb'  = Get-DatabaseConnectionString -Database $GameDatabases.Character
+        'ConnectionStrings__worlddb'      = Get-DatabaseConnectionString -Database $GameDatabases.World
+        'ConnectionStrings__groupdb'      = Get-DatabaseConnectionString -Database $GameDatabases.Group
+        'ConnectionStrings__chatdb'       = Get-DatabaseConnectionString -Database $GameDatabases.Chat
+        'ConnectionStrings__friendshipdb' = Get-DatabaseConnectionString -Database $GameDatabases.Friendship
+        'DatabaseMigration__Skip'         = 'true'
+        'WorldDatabase__Path'             = $skippedWorldDatabasePath
+    }
+
+    $accounts = @(Get-LocalLoginAccounts)
+    for ($index = 0; $index -lt $accounts.Count; $index++) {
+        $account = $accounts[$index]
+        $environmentOverrides["AccountCreation__Accounts__${index}__UserName"] = $account.UserName
+        $environmentOverrides["AccountCreation__Accounts__${index}__Password"] = $account.Password
+        $environmentOverrides["AccountCreation__Accounts__${index}__RoleId"] = [string] $account.RoleId
+    }
+
+    Write-Section 'Local accounts'
+    Invoke-WithTemporaryEnvironment -Variables $environmentOverrides -ScriptBlock {
+        Push-Location (Split-Path -Parent $migrationExe)
+        try {
+            Write-Info "Running: $migrationExe"
+            & $migrationExe
+            if ($LASTEXITCODE -ne 0) {
+                throw "$([System.IO.Path]::GetFileName($migrationExe)) failed with exit code $LASTEXITCODE."
+            }
+        }
+        finally {
+            Pop-Location
         }
     }
 }
@@ -1729,6 +1885,8 @@ if (!$SkipMigrations) {
     Invoke-EfMigration -ProjectDirectory (Join-Path $RepoRoot 'Source\NexusForever.Server.Friendship') -Context 'FriendshipContext'
 }
 
+Invoke-AccountSeeder
+
 if (!$SkipWorldDatabaseImport) {
     Write-Section 'Official world database import'
     Import-WorldDatabaseSqlFiles
@@ -1741,3 +1899,5 @@ if ($StartServers) {
 
 Write-Section 'Done'
 Write-Host 'NexusForever setup/import automation completed.' -ForegroundColor Green
+Write-Host 'Local login accounts:' -ForegroundColor Green
+Write-LocalAccountSummary

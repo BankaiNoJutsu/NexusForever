@@ -53,6 +53,68 @@ From the repository root:
   -PromptForRootPassword
 ```
 
+For the faster local edit loop after the repo has already been initialized once,
+use the auth/world restart wrapper instead of the full setup path:
+
+```powershell
+.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1 `
+  -ClientDirectory "D:\Games\WildStar" `
+  -PromptForRootPassword
+```
+
+That wrapper rebuilds `NexusForever.AuthServer` and
+`NexusForever.WorldServer`, restarts only those two processes if they are
+already running, reuses the other local server processes when possible, and
+then launches the client through the same runtime-prep flow.
+
+If you want the same reuse behavior from the base launcher, pass
+`-RestartAuthWorldOnly`. When you pass `-RestartExistingServers:$false`
+without that switch, the base launcher now keeps already-running local server
+processes and only starts the ones that are missing.
+
+To launch the client with extra WildStar command-line arguments, pass
+`-ClientArguments`. For the built-in client console discovered in the retail
+binary, prefer `-EnableClientConsole`, which appends `-Console` for you without
+relying on a dash-prefixed string argument. On a typical US layout, the client
+checks `Alt` plus the backtick key in game to toggle the console window.
+
+```powershell
+.\Tools\Setup\Start-NexusForeverLocal.ps1 `
+  -ClientDirectory "D:\Games\WildStar" `
+  -EnableClientConsole `
+  -PromptForRootPassword
+```
+
+`-ClientArguments '-Console'` still works as a generic extra argument path, but
+`-EnableClientConsole` is the preferred dedicated switch for this case.
+Later local launcher and auth/world restart runs now reuse the already staged
+client `ExtraArguments` by default, so once you have enabled the client console
+you do not need to repeat `-EnableClientConsole` unless you want to replace the
+staged client arguments explicitly.
+
+If your keyboard layout does not map the client's hard-coded toggle key cleanly,
+run the helper below after the WildStar window is open. It posts
+WM_SYSKEYDOWN and WM_SYSKEYUP for virtual key `0xC0` directly to the running
+client window instead of relying on the physical key mapping.
+
+```powershell
+.\Tools\Setup\Send-WildStarConsoleToggle.ps1
+```
+
+If the client was launched elevated through `NexusForever.ClientConnector`, the
+helper will prompt for elevation automatically before it posts the messages.
+If posted messages appear to succeed but the console still does not show, retry
+from an already elevated PowerShell session with the stronger hardware-style
+input path:
+
+```powershell
+.\Tools\Setup\Send-WildStarConsoleToggle.ps1 -FocusWindow -InputMethod SendInput -SkipElevationPrompt
+```
+
+Running the `SendInput` path from an already elevated shell avoids a fresh UAC
+prompt stealing foreground focus away from the WildStar window just before the
+injected key is sent.
+
 What it does:
 
 - runs `Initialize-NexusForever.ps1` with the same database and RabbitMQ
@@ -62,7 +124,7 @@ What it does:
   dependencies
 - stages shared `tbl` and `map` runtime assets under `.nexusforever-runtime`
   and rewrites the runtime JSON files to those absolute paths
-- creates or verifies the default login account
+- creates or verifies the local player, gm, and admin login accounts
 - starts the standalone server executables and waits for the local endpoints to
   come up before launching the client through `NexusForever.ClientConnector`
   when it is available in the current build output
@@ -83,10 +145,22 @@ The map generator now uses a bounded parallel worker count by default. Pass
 `-MapGeneratorParallelism` to the launcher if you want to force a specific
 worker count.
 
-The default login created by the launcher is:
+The setup scripts create these local accounts by default:
 
-- username: `nexusforever`
-- password: `nexusforever`
+- `player` / `player`: `Player` role (`roleId=1`) for ordinary gameplay.
+- `gm` / `gm`: `GameMaster` role (`roleId=2`) for GM and spell/debug commands.
+- `admin` / `admin`: `Administrator` role (`roleId=3`) for full local administration.
+
+RBAC notes:
+
+- `!spell` and other privileged chat commands are permission-gated. Use `gm` or
+  `admin` when validating spell diagnostics in game.
+- Fresh accounts created outside these setup scripts still fall back to the
+  realm default `Player` role until you add rows in
+  `nexus_forever_auth.account_role`.
+- The command layer uses the same generic chat error for unknown commands and
+  missing permission, so role assignment is the first thing to verify when a
+  known command is rejected.
 
 If you already have extracted tables and generated maps, point the launcher at
 those directories and skip the heavy setup work on later runs:

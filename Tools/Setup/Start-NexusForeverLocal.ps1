@@ -11,7 +11,7 @@ This script wraps Initialize-NexusForever.ps1 so one command can:
 * import the optional world database through the existing setup workflow
 * extract WildStar game tables and generate maps with NexusForever.MapGenerator
 * rewrite the runtime JSON files to use shared absolute asset paths
-* create or verify a local login account
+* create or verify the local player, gm, and admin login accounts
 * start the standalone server processes and wait for the local endpoints
 * launch WildStar64.exe against localhost for immediate testing
 
@@ -60,7 +60,10 @@ param(
     [switch] $SkipClientLaunch,
     [switch] $OverwriteConfig,
     [bool] $RestartExistingServers = $true,
+    [switch] $RestartAuthWorldOnly,
 
+    [string[]] $ClientArguments = @(),
+    [switch] $EnableClientConsole,
     [string] $ClientLanguage = 'en',
     [string] $AuthHost = '127.0.0.1',
     [string] $PatcherHost = '',
@@ -88,14 +91,21 @@ param(
     [switch] $SkipWorldDatabaseImport,
     [switch] $CreateWorldDatabaseCompatibilityTables,
 
-    [string] $DefaultAccountUsername = 'nexusforever',
-    [string] $DefaultAccountPassword = 'nexusforever',
+    [Alias('DefaultAccountUsername')]
+    [string] $PlayerAccountUsername = 'player',
+    [Alias('DefaultAccountPassword')]
+    [string] $PlayerAccountPassword = 'player',
+    [string] $GameMasterAccountUsername = 'gm',
+    [string] $GameMasterAccountPassword = 'gm',
+    [string] $AdministratorAccountUsername = 'admin',
+    [string] $AdministratorAccountPassword = 'admin',
 
     [switch] $InstallDotNetEf
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$ExplicitClientArgumentsOverrideRequested = $PSBoundParameters.ContainsKey('ClientArguments') -or $PSBoundParameters.ContainsKey('EnableClientConsole')
 
 $GameDatabases = [ordered]@{
     Auth       = 'nexus_forever_auth'
@@ -104,6 +114,58 @@ $GameDatabases = [ordered]@{
     Group      = 'nexus_forever_group'
     Chat       = 'nexus_forever_chat'
     Friendship = 'nexus_forever_friendship'
+}
+
+$LocalAccountRoleIds = [ordered]@{
+    Player        = 1u
+    GameMaster    = 2u
+    Administrator = 3u
+}
+
+function Get-LocalLoginAccounts {
+    $accounts = @(
+        [pscustomobject]@{
+            UserName = $PlayerAccountUsername
+            Password = $PlayerAccountPassword
+            RoleId   = $LocalAccountRoleIds['Player']
+            RoleName = 'Player'
+        },
+        [pscustomobject]@{
+            UserName = $GameMasterAccountUsername
+            Password = $GameMasterAccountPassword
+            RoleId   = $LocalAccountRoleIds['GameMaster']
+            RoleName = 'GameMaster'
+        },
+        [pscustomobject]@{
+            UserName = $AdministratorAccountUsername
+            Password = $AdministratorAccountPassword
+            RoleId   = $LocalAccountRoleIds['Administrator']
+            RoleName = 'Administrator'
+        }
+    )
+
+    foreach ($account in $accounts) {
+        if ([string]::IsNullOrWhiteSpace($account.UserName)) {
+            throw "Local account username for role '$($account.RoleName)' cannot be empty."
+        }
+
+        if ([string]::IsNullOrWhiteSpace($account.Password)) {
+            throw "Local account password for role '$($account.RoleName)' cannot be empty."
+        }
+    }
+
+    $duplicateUserNames = @($accounts | Group-Object UserName | Where-Object Count -gt 1)
+    if ($duplicateUserNames.Count -gt 0) {
+        throw "Local account usernames must be unique. Duplicates: $($duplicateUserNames.Name -join ', ')"
+    }
+
+    $accounts
+}
+
+function Write-LocalAccountSummary {
+    foreach ($account in Get-LocalLoginAccounts) {
+        Write-Host ("  {0} / {1} ({2}, roleId={3})" -f $account.UserName, $account.Password, $account.RoleName, $account.RoleId) -ForegroundColor Green
+    }
 }
 
 $RuntimeConfigs = @(
@@ -128,6 +190,11 @@ $ServerProcesses = @(
     @{ Project = 'NexusForever.Server.Friendship';  Exe = 'NexusForever.Server.Friendship.exe';  Name = 'NexusForever Friendship';  Port = $null },
     @{ Project = 'NexusForever.Server.Character';   Exe = 'NexusForever.Server.Character.exe';   Name = 'NexusForever Character';   Port = $null },
     @{ Project = 'NexusForever.WorldServer';        Exe = 'NexusForever.WorldServer.exe';        Name = 'NexusForever World';       Port = 24000 }
+)
+
+$AuthWorldRestartProjects = @(
+    'NexusForever.AuthServer',
+    'NexusForever.WorldServer'
 )
 
 function Write-Section {
@@ -622,8 +689,12 @@ function Invoke-NexusForeverSetup {
         Configuration          = $Configuration
         TargetFramework        = $TargetFramework
         WorldDatabasePath      = $WorldDatabasePath
-        DefaultAccountUsername = $DefaultAccountUsername
-        DefaultAccountPassword = $DefaultAccountPassword
+        PlayerAccountUsername  = $PlayerAccountUsername
+        PlayerAccountPassword  = $PlayerAccountPassword
+        GameMasterAccountUsername = $GameMasterAccountUsername
+        GameMasterAccountPassword = $GameMasterAccountPassword
+        AdministratorAccountUsername = $AdministratorAccountUsername
+        AdministratorAccountPassword = $AdministratorAccountPassword
     }
 
     if ($ShouldPromptForRootPasswordInSetup) {
@@ -672,15 +743,50 @@ function Invoke-AccountSeeder {
         'ConnectionStrings__groupdb'      = Get-DatabaseConnectionString -Database $GameDatabases.Group
         'ConnectionStrings__chatdb'       = Get-DatabaseConnectionString -Database $GameDatabases.Chat
         'ConnectionStrings__friendshipdb' = Get-DatabaseConnectionString -Database $GameDatabases.Friendship
-        'AccountCreation__UserName'       = $DefaultAccountUsername
-        'AccountCreation__Password'       = $DefaultAccountPassword
+        'DatabaseMigration__Skip'         = 'true'
         'WorldDatabase__Path'             = $skippedWorldDatabasePath
     }
 
-    Write-Section 'Account'
+    $accounts = @(Get-LocalLoginAccounts)
+    for ($index = 0; $index -lt $accounts.Count; $index++) {
+        $account = $accounts[$index]
+        $environmentOverrides["AccountCreation__Accounts__${index}__UserName"] = $account.UserName
+        $environmentOverrides["AccountCreation__Accounts__${index}__Password"] = $account.Password
+        $environmentOverrides["AccountCreation__Accounts__${index}__RoleId"] = [string] $account.RoleId
+    }
+
+    Write-Section 'Local accounts'
     Invoke-WithTemporaryEnvironment -Variables $environmentOverrides -ScriptBlock {
         Invoke-ExternalCommand -FilePath $migrationExe -WorkingDirectory (Split-Path -Parent $migrationExe)
     }
+}
+
+function Get-RunningProcessesByPath {
+    param([string] $ExecutablePath)
+
+    $processName = [System.IO.Path]::GetFileName($ExecutablePath)
+    $runningProcessIds = @(Get-CimInstance Win32_Process -Filter "Name = '$processName'" -ErrorAction SilentlyContinue | Where-Object {
+        $_.ExecutablePath -and [string]::Equals($_.ExecutablePath, $ExecutablePath, [System.StringComparison]::OrdinalIgnoreCase)
+    } | Select-Object -ExpandProperty ProcessId)
+
+    $runningProcesses = foreach ($processId in $runningProcessIds) {
+        $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
+        if ($process) {
+            $process
+        }
+    }
+
+    @($runningProcesses)
+}
+
+function Test-ShouldRestartServer {
+    param([hashtable] $Server)
+
+    if ($RestartAuthWorldOnly) {
+        return $AuthWorldRestartProjects -contains $Server.Project
+    }
+
+    [bool] $RestartExistingServers
 }
 
 function Stop-RunningProcessByPath {
@@ -689,18 +795,15 @@ function Stop-RunningProcessByPath {
         [string] $DisplayName
     )
 
-    $processName = [System.IO.Path]::GetFileName($ExecutablePath)
-    $runningProcesses = @(Get-CimInstance Win32_Process -Filter "Name = '$processName'" -ErrorAction SilentlyContinue | Where-Object {
-        $_.ExecutablePath -and [string]::Equals($_.ExecutablePath, $ExecutablePath, [System.StringComparison]::OrdinalIgnoreCase)
-    })
+    $runningProcesses = @(Get-RunningProcessesByPath -ExecutablePath $ExecutablePath)
 
     foreach ($process in $runningProcesses) {
-        Write-Info "Stopping existing $DisplayName process $($process.ProcessId)"
-        Stop-Process -Id $process.ProcessId -Force -ErrorAction Stop
+        Write-Info "Stopping existing $DisplayName process $($process.Id)"
+        Stop-Process -Id $process.Id -Force -ErrorAction Stop
 
         $deadline = [DateTime]::UtcNow.AddSeconds(10)
         while ([DateTime]::UtcNow -lt $deadline) {
-            if (!(Get-Process -Id $process.ProcessId -ErrorAction SilentlyContinue)) {
+            if (!(Get-Process -Id $process.Id -ErrorAction SilentlyContinue)) {
                 break
             }
 
@@ -723,8 +826,25 @@ function Start-StandaloneServers {
             throw "Cannot start $($server.Name); executable was not found: $exePath"
         }
 
-        if ($RestartExistingServers) {
-            Stop-RunningProcessByPath -ExecutablePath $exePath -DisplayName $server.Name
+        $existingProcesses = @(Get-RunningProcessesByPath -ExecutablePath $exePath)
+        if ($existingProcesses.Count -gt 0) {
+            if (Test-ShouldRestartServer -Server $server) {
+                Stop-RunningProcessByPath -ExecutablePath $exePath -DisplayName $server.Name
+            }
+            else {
+                Write-Info "Reusing existing $($server.Name) process(es): $(@($existingProcesses | ForEach-Object Id) -join ', ')"
+                foreach ($existingProcess in $existingProcesses) {
+                    $startedProcesses += [pscustomobject]@{
+                        Name               = $server.Name
+                        Port               = $server.Port
+                        Process            = $existingProcess
+                        StandardOutputPath = ''
+                        StandardErrorPath  = ''
+                    }
+                }
+
+                continue
+            }
         }
 
         Write-Info "Starting $($server.Name)"
@@ -890,16 +1010,71 @@ function Write-ClientConnectorConfig {
     param(
         [string] $ClientDirectory,
         [string] $HostName,
-        [string] $Language
+        [string] $Language,
+        [string[]] $ExtraArguments = @()
     )
 
     $configPath = Join-Path $ClientDirectory 'config.json'
     [pscustomobject]@{
-        HostName = $HostName
-        Language = $Language
-    } | ConvertTo-Json | Set-Content -LiteralPath $configPath -Encoding utf8
+        HostName       = $HostName
+        Language       = $Language
+        ExtraArguments = @($ExtraArguments | Where-Object { ![string]::IsNullOrWhiteSpace($_) })
+    } | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $configPath -Encoding utf8
 
     (Resolve-Path -LiteralPath $configPath).Path
+}
+
+function Get-ConfiguredClientArguments {
+    param([string] $ClientDirectory)
+
+    if ([string]::IsNullOrWhiteSpace($ClientDirectory)) {
+        return @()
+    }
+
+    $configPath = Join-Path $ClientDirectory 'config.json'
+    if (!(Test-Path -LiteralPath $configPath -PathType Leaf)) {
+        return @()
+    }
+
+    try {
+        $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "Failed to read staged client arguments from $configPath. $($_.Exception.Message)"
+        return @()
+    }
+
+    if (($null -eq $config) -or ($null -eq $config.ExtraArguments)) {
+        return @()
+    }
+
+    @($config.ExtraArguments | Where-Object { ![string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
+}
+
+function Get-RequestedClientArguments {
+    $effectiveArguments = @($ClientArguments | Where-Object { ![string]::IsNullOrWhiteSpace($_) })
+
+    if ($EnableClientConsole) {
+        $effectiveArguments += '-Console'
+    }
+
+    @($effectiveArguments | Select-Object -Unique)
+}
+
+function Get-EffectiveClientArguments {
+    param([string] $ClientDirectory)
+
+    $requestedArguments = @(Get-RequestedClientArguments)
+    if ($ExplicitClientArgumentsOverrideRequested) {
+        return $requestedArguments
+    }
+
+    $configuredArguments = @(Get-ConfiguredClientArguments -ClientDirectory $ClientDirectory)
+    if ($configuredArguments.Count -gt 0) {
+        return $configuredArguments
+    }
+
+    return $requestedArguments
 }
 
 function Start-WildStarClient {
@@ -913,7 +1088,12 @@ function Start-WildStarClient {
     }
 
     $clientDirectoryPath = Split-Path -Parent $ExecutablePath
+    $effectiveClientArguments = @(Get-EffectiveClientArguments -ClientDirectory $clientDirectoryPath)
     $sharedHost = [string]::Equals($resolvedPatcherHost, $AuthHost, [System.StringComparison]::OrdinalIgnoreCase)
+
+    if ((-not $ExplicitClientArgumentsOverrideRequested) -and ($effectiveClientArguments.Count -gt 0)) {
+        Write-Info "Reusing staged client arguments: $($effectiveClientArguments -join ' ')"
+    }
 
     if ($sharedHost) {
         $clientConnectorExecutable = Sync-ClientConnectorRuntime -ClientDirectory $clientDirectoryPath
@@ -923,7 +1103,7 @@ function Start-WildStarClient {
     }
 
     if ($clientConnectorExecutable -and $sharedHost) {
-        $configPath = Write-ClientConnectorConfig -ClientDirectory $clientDirectoryPath -HostName $AuthHost -Language $ClientLanguage
+        $configPath = Write-ClientConnectorConfig -ClientDirectory $clientDirectoryPath -HostName $AuthHost -Language $ClientLanguage -ExtraArguments $effectiveClientArguments
         $clientConnectorParameters = @{
             FilePath         = $clientConnectorExecutable
             WorkingDirectory = $clientDirectoryPath
@@ -962,6 +1142,7 @@ function Start-WildStarClient {
         '/SettingsKey', 'WildStar',
         '/realmDataCenterId', '9'
     )
+    $arguments += $effectiveClientArguments
 
     Write-Info "Launching WildStar client $ExecutablePath"
     Start-Process -FilePath $ExecutablePath -WorkingDirectory (Split-Path -Parent $ExecutablePath) -ArgumentList $arguments | Out-Null
@@ -1032,4 +1213,5 @@ if (!$SkipClientLaunch) {
 
 Write-Section 'Done'
 Write-Host 'NexusForever is prepared for local login testing.' -ForegroundColor Green
-Write-Host "Account: $DefaultAccountUsername / $DefaultAccountPassword" -ForegroundColor Green
+Write-Host 'Local login accounts:' -ForegroundColor Green
+Write-LocalAccountSummary

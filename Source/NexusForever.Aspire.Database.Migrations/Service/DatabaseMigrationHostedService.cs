@@ -1,5 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using NexusForever.Aspire.Database.Migrations.Configuration.Model;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Character;
 using NexusForever.Database.Chat;
@@ -13,6 +16,8 @@ namespace NexusForever.Aspire.Database.Migrations.Service
     {
         #region Dependency Injection
 
+        private readonly ILogger<DatabaseMigrationHostedService> _log;
+        private readonly DatabaseMigrationOptions _options;
         private readonly AuthContext _authContext;
         private readonly CharacterContext _characterContext;
         private readonly WorldContext _worldContext;
@@ -21,6 +26,8 @@ namespace NexusForever.Aspire.Database.Migrations.Service
         private readonly FriendshipContext _friendshipContext;
 
         public DatabaseMigrationHostedService(
+            ILogger<DatabaseMigrationHostedService> log,
+            IOptions<DatabaseMigrationOptions> options,
             AuthContext authContext,
             CharacterContext characterContext,
             WorldContext worldContext,
@@ -28,6 +35,8 @@ namespace NexusForever.Aspire.Database.Migrations.Service
             ChatContext chatContext,
             FriendshipContext friendshipContext)
         {
+            _log               = log;
+            _options           = options.Value;
             _authContext       = authContext;
             _characterContext  = characterContext;
             _worldContext      = worldContext;
@@ -40,6 +49,12 @@ namespace NexusForever.Aspire.Database.Migrations.Service
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            if (_options.Skip)
+            {
+                _log.LogInformation("Database migrations are disabled for this execution. Skipping EF migration hosted service.");
+                return;
+            }
+
             await _authContext.Database.MigrateAsync();
             await _characterContext.Database.MigrateAsync();
             await _worldContext.Database.MigrateAsync();
