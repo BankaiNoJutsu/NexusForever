@@ -104,6 +104,8 @@ These rows confirm that non-zero EMM fields are live data on both `Spell4` and `
 
 The placed `NonPlayer` slice is dominated by plain `Proxy`, but global data gives clean non-random proxy variant fixtures. These validate that variant rows decode `DataBits00`, emit `proxy` diagnostics, preserve parent/root spell context, forward the realized proxy target to child `Target` rows, and route delayed or duration-bound pulses through the shared scheduler.
 
+Activation-object data now adds a narrow plain-`Proxy` fixture slice as well. Local creature activate joins show 79 object-target `Proxy` rows across 36 parent spells, with useful witnesses such as `Spell4=25513`, `30426`, `42816`, `44197`, `71989`, and `81591`. These are the rows that now execute through the world-target shell by casting the child spell from the original caster while preserving the activated object as the child primary target.
+
 | Fixture | Context | Concrete spell | Proxy evidence | Commands |
 | --- | --- | --- | --- | --- |
 | Stemdragon Telegraph Base | Global spell data | `Spell4=27279`, base `13767`, tier `1` | `ProxyLinearAE` rows chain to `27290` across several delayed rows. | `/spell inspect4 27279` then `/spell cast4 27279` |
@@ -359,7 +361,7 @@ The current placed `NonPlayer` join does not expose direct `CCStateBreak` rows. 
 
 ## Activate Fixtures
 
-`Activate` currently has no placed `NonPlayer` rows in the world context join, so use global quest/object spells and a controlled player plus activated entity target. `ClientActivateUnitCast` now resolves `Creature2.Spell4IdActivate00..03` by prerequisite and casts the matched spell with the activated world entity as `PrimaryTargetId`, so the cleanest validation path for object-target activation is now normal interaction rather than a synthetic quest-objective update. These fixtures validate `activate` diagnostics and quest objective updates for `ActivateEntity`, `ActivateEntity2`, `ActivateTargetGroup`, and `ActivateTargetGroupChecklist`.
+`Activate` currently has no placed `NonPlayer` rows in the world context join, so use global quest/object spells and a controlled player plus activated entity target. `ClientActivateUnitCast` now resolves `Creature2.Spell4IdActivate00..03` by prerequisite and casts the matched spell with the activated world entity as `PrimaryTargetId`. Player-owned spells and `/spell cast4` also now honor selected world-object targets, so object-target activation can be validated either through the real interaction path or through a controlled direct cast. These fixtures validate `activate` diagnostics and quest objective updates for `ActivateEntity`, `ActivateEntity2`, `ActivateTargetGroup`, and `ActivateTargetGroupChecklist`.
 
 | Fixture | Creature context | Concrete spell | Activate evidence | Commands |
 | --- | --- | --- | --- | --- |
@@ -368,9 +370,7 @@ The current placed `NonPlayer` join does not expose direct `CCStateBreak` rows. 
 | Burying Heart | Global quest spell data | `Spell4=3817`, base `3503`, tier `1` | Less common payload `5692/0/1/3/3/0`. | `/spell inspect4 3817` then `/spell cast4 3817` |
 | Halon Ring Activate | Global quest spell data | `Spell4=40785`, base `24992`, tier `1` | Simple mode-like payload `1/0/0/0/0/0`. | `/spell inspect4 40785` then `/spell cast4 40785` |
 | Silo N22 Panel Activate | Global quest/object spell data | `Spell4=57122`, base `36739`, tier `1` | Common panel payload `5/0/0/0/0/0`; pair with `57123`. | `/spell inspect4 57122` then `/spell cast4 57122` |
-| Generic Activating Object | World-object activation rows | `Spell4=116`, `1545`, or `2552` | Clean object-valid slice: single-target mechanics plus `Spell4ValidTargets=0x02`, with `Activate` and optional `Fluff`; validates world-target spell routing through normal object interaction. | `/spell inspect4 <spell4>` then interact with an entity whose `Creature2.Spell4IdActivate0x` uses that row |
-
-`/spell cast4` still targets units only, so object-target validation for the generic activation rows above should use the normal interaction path rather than the spell command.
+| Generic Activating Object | World-object activation rows | `Spell4=116`, `1545`, or `2552` | Clean object-valid slice: single-target mechanics plus `Spell4ValidTargets=0x02`, with `Activate` and optional `Fluff`; validates world-target spell routing through direct selected-target casts and through normal object interaction. The broader live activation-object slice now also has proven world-target `Proxy`, `SetBusy`, conservative busy-only `SpellForceRemove`, `DespawnUnit`, and diagnostics-only `RavelSignal` witnesses on rows such as `25513`, `28135`, `31568`, `35174`, `41576`, `47634`, `63250`, `71338`, and `76797`. | `/spell inspect4 <spell4>` then select the object and `/spell cast4 <spell4>`, or interact with an entity whose `Creature2.Spell4IdActivate0x` uses that row |
 
 ## State Toggle Fixtures
 
@@ -388,7 +388,7 @@ These cover `Stealth`, `RemoveStealth`, and `AggroImmune`. They validate state t
 
 ## Despawn Fixtures
 
-`DespawnUnit` is mostly driven by scheduling: 668 of 855 global rows have `delayTime > 0`, and 748 rows have zero payload. The runtime guards player targets and removes non-player world entities from the map when the scheduled effect fires.
+`DespawnUnit` is mostly driven by scheduling: 668 of 855 global rows have `delayTime > 0`, and 748 rows have zero payload. The runtime guards player targets and removes non-player world entities from the map when the scheduled effect fires, including object-target activation rows such as `71338` and `76797`.
 
 | Fixture | Creature context | Concrete spell | Despawn evidence | Commands |
 | --- | --- | --- | --- | --- |
@@ -493,7 +493,7 @@ Most `ShieldOverload` rows have all-zero payload plus a duration. The current ru
 
 ## Set Busy Fixtures
 
-`SetBusy.DataBits00=1` sets busy and `DataBits00=0` clears busy. The strongest rows pair an immediate set with a delayed clear on the same concrete spell; duration-backed rows also expire through the spell lifetime queue.
+`SetBusy.DataBits00=1` sets busy and `DataBits00=0` clears busy. The strongest rows pair an immediate set with a delayed clear on the same concrete spell; duration-backed rows also expire through the spell lifetime queue. Live activation-object joins show these rows really do target world objects such as doors, gates, Finder's Rock, and the WF14 salesbot object, so the runtime now applies the family on `IWorldEntity` targets rather than only unit targets.
 
 | Fixture | Context | Concrete spell | Busy evidence | Commands |
 | --- | --- | --- | --- | --- |
