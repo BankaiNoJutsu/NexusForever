@@ -1775,3 +1775,192 @@ ORDER BY
     s.ID,
     e.ID
 LIMIT 200;
+
+-- 45. Global unresolved target-mechanic witnesses for target types 0, 6, and 7.
+-- These are the current blocked client helper families; treat them as
+-- inspect-first witnesses until the target-helper chain is mapped.
+SELECT
+  tm.ID AS target_mechanic_id,
+  tm.targetType,
+  tm.flags AS target_mechanic_flags,
+  s.ID AS spell4_id,
+  s.spell4BaseIdBaseSpell AS spell4_base_id,
+  s.tierIndex AS spell4_tier,
+  LEFT(s.description, 140) AS spell,
+  GROUP_CONCAT(DISTINCT CONCAT(e.effectType, '/', e.targetFlags) ORDER BY e.orderIndex SEPARATOR '; ') AS effects,
+  CONCAT('/spell inspect4 ', s.ID) AS inspect_command,
+  CONCAT('/spell cast4 ', s.ID) AS cast_command
+FROM spell4 s
+JOIN spell4base b
+  ON b.ID = s.spell4BaseIdBaseSpell
+JOIN spell4targetmechanics tm
+  ON tm.ID = b.spell4TargetMechanicId
+LEFT JOIN spell4effects e
+  ON e.spellId = s.ID
+WHERE tm.targetType IN (0, 6, 7)
+GROUP BY
+  tm.ID,
+  tm.targetType,
+  tm.flags,
+  s.ID,
+  s.spell4BaseIdBaseSpell,
+  s.tierIndex,
+  s.description
+ORDER BY tm.targetType, tm.ID, s.ID
+LIMIT 220;
+
+-- 46. RavelSignal witnesses with payload, timing, and optional placed context.
+-- Placements are helpful for later receiver-graph work, but unplaced global
+-- rows still matter because the receiver side is the real blocker.
+SELECT
+  s.ID AS spell4_id,
+  s.spell4BaseIdBaseSpell AS spell4_base_id,
+  s.tierIndex AS spell4_tier,
+  LEFT(s.description, 140) AS spell,
+  e.ID AS spell4_effect_id,
+  e.targetFlags,
+  e.delayTime,
+  e.tickTime,
+  e.durationTime,
+  e.dataBits00 AS mode,
+  e.dataBits01 AS signal_id,
+  e.dataBits02,
+  e.dataBits03,
+  e.dataBits04,
+  e.dataBits05,
+  COUNT(DISTINCT wcsc.placement_id) AS placements,
+  LEFT(GROUP_CONCAT(DISTINCT CONCAT(wcsc.continent, '/', wcsc.zone, '/', wcsc.creature_id) ORDER BY wcsc.continent, wcsc.zone, wcsc.creature_id SEPARATOR '; '), 240) AS creature_contexts,
+  CONCAT('/spell inspect4 ', s.ID) AS inspect_command,
+  CONCAT('/spell cast4 ', s.ID) AS cast_command
+FROM spell4 s
+JOIN spell4effects e
+  ON e.spellId = s.ID
+LEFT JOIN world_creature_spell_context wcsc
+  ON wcsc.spell4_id = s.ID
+ AND wcsc.entity_type = 0
+WHERE e.effectType = 81
+GROUP BY
+  s.ID,
+  s.spell4BaseIdBaseSpell,
+  s.tierIndex,
+  s.description,
+  e.ID,
+  e.targetFlags,
+  e.delayTime,
+  e.tickTime,
+  e.durationTime,
+  e.dataBits00,
+  e.dataBits01,
+  e.dataBits02,
+  e.dataBits03,
+  e.dataBits04,
+  e.dataBits05
+ORDER BY placements DESC, e.durationTime DESC, s.ID, e.ID
+LIMIT 220;
+
+-- 47. Activation-object world-target candidate families.
+-- Target flag bit 0x02 is the proven interactable/object bucket. This query
+-- highlights which object-target effect families fall outside the current
+-- conservative runtime slice.
+SELECT
+  e.effectType,
+  COALESCE(n.effectName, CONCAT('EffectType ', e.effectType)) AS effect_name,
+  s.ID AS spell4_id,
+  s.spell4BaseIdBaseSpell AS spell4_base_id,
+  s.tierIndex AS spell4_tier,
+  LEFT(s.description, 140) AS spell,
+  e.ID AS spell4_effect_id,
+  e.orderIndex,
+  e.targetFlags,
+  e.delayTime,
+  e.tickTime,
+  e.durationTime,
+  COUNT(DISTINCT c.ID) AS activate_creature_rows,
+  CASE
+    WHEN e.effectType IN (7, 17, 26, 80, 81, 97, 107) THEN 'current-slice-or-diagnostics'
+    ELSE 'outside-current-slice'
+  END AS runtime_bucket,
+  CONCAT('/spell inspect4 ', s.ID) AS inspect_command,
+  CONCAT('/spell cast4 ', s.ID) AS cast_command
+FROM spell4effects e
+JOIN spell4 s
+  ON s.ID = e.spellId
+JOIN creature2 c
+  ON c.spell4IdActivate00 = s.ID
+  OR c.spell4IdActivate01 = s.ID
+  OR c.spell4IdActivate02 = s.ID
+  OR c.spell4IdActivate03 = s.ID
+LEFT JOIN spell_effect_type_names n
+  ON n.effectType = e.effectType
+WHERE (e.targetFlags & 2) <> 0
+GROUP BY
+  e.effectType,
+  effect_name,
+  s.ID,
+  s.spell4BaseIdBaseSpell,
+  s.tierIndex,
+  s.description,
+  e.ID,
+  e.orderIndex,
+  e.targetFlags,
+  e.delayTime,
+  e.tickTime,
+  e.durationTime,
+  runtime_bucket
+ORDER BY
+  CASE
+    WHEN e.effectType IN (7, 17, 26, 80, 81, 97, 107) THEN 1
+    ELSE 0
+  END,
+  activate_creature_rows DESC,
+  e.effectType,
+  s.ID,
+  e.ID
+LIMIT 220;
+
+-- 48. Service-token property-flag probe (local schema safe).
+-- Decompile evidence proves a client/runtime gate on Spell4.PropertyFlags
+-- 0x20000000, but both current SQL imports expose zero spell4 rows with that
+-- bit set. Keep this query as a cheap regression probe for future data-import
+-- changes; use 48b for the practical client-table witnesses that exist today.
+SELECT
+  s.ID AS spell4_id,
+  s.spell4BaseIdBaseSpell AS spell4_base_id,
+  s.tierIndex AS spell4_tier,
+  LEFT(s.description, 140) AS spell,
+  s.propertyFlags,
+  CASE WHEN (s.propertyFlags & 536870912) <> 0 THEN 1 ELSE 0 END AS has_service_token_flag,
+  CONCAT('/spell inspect4 ', s.ID) AS inspect_command,
+  CONCAT('/spell cast4 ', s.ID) AS cast_command
+FROM spell4 s
+WHERE (s.propertyFlags & 536870912) <> 0
+ORDER BY
+  has_service_token_flag DESC,
+  s.ID
+LIMIT 120;
+
+-- 48b. Service-token cost witnesses plus flag/cost mismatch check.
+-- This version is schema-qualified so it can be run even when the current
+-- mysql session database is nexus_spell_re. As of 2026-05-16 the extracted
+-- client tables expose 6 Spell4ServiceTokenCost rows and 0 matching flagged
+-- spell4 rows, so these cost rows are the durable SQL-side witness set.
+-- SELECT
+--   s.ID AS spell4_id,
+--   s.spell4BaseIdBaseSpell AS spell4_base_id,
+--   s.tierIndex AS spell4_tier,
+--   LEFT(s.description, 140) AS spell,
+--   s.propertyFlags,
+--   CASE WHEN (s.propertyFlags & 536870912) <> 0 THEN 1 ELSE 0 END AS has_service_token_flag,
+--   stc.serviceTokenCost,
+--   CONCAT('/spell inspect4 ', s.ID) AS inspect_command,
+--   CONCAT('/spell cast4 ', s.ID) AS cast_command
+-- FROM wildstar_client.spell4 s
+-- LEFT JOIN wildstar_client.Spell4ServiceTokenCost stc
+--   ON stc.spell4Id = s.ID
+-- WHERE stc.ID IS NOT NULL
+--    OR (s.propertyFlags & 536870912) <> 0
+-- ORDER BY
+--   has_service_token_flag DESC,
+--   stc.serviceTokenCost DESC,
+--   s.ID
+-- LIMIT 120;

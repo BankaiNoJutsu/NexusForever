@@ -4,7 +4,7 @@ Date: 2026-05-15
 
 This note captures the current structural and behavioral understanding of the WildStar/NexusForever global spell system from three local evidence sources:
 
-- `all_wildstar_client_mysql.sql`: client gametable spell data.
+- `all_wildstar_client_mysql.sql`, imported locally as `wildstar_client`: canonical extracted client tables.
 - `all_jabbithole_mysql.sql`: Jabbithole spell/content relationship data.
 - `I:\GIT\NexusForever.WorldDatabase`: optional sniff-derived world entity placements.
 - NexusForever server code in `Source/NexusForever.Game`.
@@ -13,7 +13,12 @@ The important conclusion: spells are global, data-driven behavior graphs. A `Spe
 
 ## Evidence Setup
 
-I created a local MySQL database named `nexus_spell_re` using `bankai/bankai` and imported a focused subset of both root SQL dumps. A full import of the client dump was possible but inefficient because it spent a long time loading large localization tables before reaching spell tables; the focused import loaded the spell, prerequisite, property, telegraph, formula, location, and Jabbithole relationship tables needed for this analysis.
+I use two local MySQL spell-data schemas:
+
+- `wildstar_client`: the canonical import of extracted client tables from `all_wildstar_client_mysql.sql`.
+- `nexus_spell_re`: a focused mirror for fast spell/runtime analysis, loaded from a targeted subset of the root SQL dumps.
+
+The focused mirror is still useful because it avoids repeatedly scanning the broader client schema when a pass only needs the common spell/runtime tables, but any client-only support table that is missing there should be treated as a prompt to query `wildstar_client`, not as evidence that the table is absent from the extracted client data.
 
 Direct row counts from the focused database:
 
@@ -280,6 +285,8 @@ Current NexusForever target selection is still partial but now uses more of the 
 SQL witnesses now also give one safe non-corpse `Spell4ValidTargets` decode: bit `0x02` clusters overwhelmingly on interactable/world-object spells such as `Activating`, `Harvesting`, `Repairing Machinery`, `Collecting Junk`, and `Placing wanted poster`, while composite mask `0x0A` appears on corpse-interaction rows such as `Blood Extractor - Discovery - Targets Corpse`. The runtime now resolves explicit primary targets through `IWorldEntity`, so mask `0x02` is enforced for non-unit interactable/object targets and those targets can flow through selection and packet anchoring. Effect routing on non-unit targets is still intentionally narrow, but it now covers the dominant activation-object slice proven by local creature activate rows: world-safe `Proxy`, `Activate`, `SetBusy`, conservative busy-only `SpellForceRemove`, `DespawnUnit`, diagnostics-only `RavelSignal`, and observed no-op `Fluff`.
 
 Still-open target acquisition pieces: the full `Spell4TargetMechanics` `targetType/flags` matrix, remaining non-corpse `Spell4ValidTargets.targetBitmask` categories, broader world-target effect routing beyond the implemented `0x02` activation-object slice, `TargetGroup`, AOE target prerequisites, target apply/suspend prerequisites, and phase filters.
+
+Area 2 is the current critical-path blocker inside targeting. The highest-volume unresolved client branch is target type `0` (mechanic ids `1/2/44`, 16,453 base rows in the current import), type `6` now reduces to a single mechanic-`17` test/item-special witness (`Spell4=11820`, `ItemSpecial=3777`) with no current `item2` owner rows, and type `7` is now structurally mapped to a spell-id keyed lookup tree rooted at `DAT_140c65b70 + 0x788` but still blocked on the bool helper `FUN_1403b4ec0`. Until those client helpers are decoded, the broader world-target effect families and remaining valid-target categories should stay documentation-first and diagnostic-only.
 
 `Spell4AoeTargetConstraints` is already useful as a safe runtime field. In placed `NonPlayer` context, 731 concrete `Spell4` ids have AOE constraints. Common rows include target caps of 10, 20, 40, and 80 with ranges that line up with telegraph/proxy spell names. High-placement witnesses include `Spell4Id=38478` (target count 10, range 5), `35234` (10, range 60), `77996` (5, range 15), `30999` (10, range 1), and `59523` (10, range 25). The imported data uses only target-selection values `1..5`: the local enum names `1/2/3` as closest/furthest/random, global test rows identify `4` as lowest absolute health (`Spell4Id=27181`) and `5` as missing the most health (`Spell4Id=27182`), and many mode-`3` rows explicitly say `Find Random Target`, `Random Target Selection`, or `Proxy Random TPAE`.
 

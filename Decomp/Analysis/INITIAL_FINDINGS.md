@@ -758,6 +758,27 @@ Spell self-targeting and LAS text follow-up implemented from this pass:
   bool helper invoked on the resolved wrapper in `IsSelfSpell`, so the safest
   current server/runtime label is still "resolved-spell service-lookup branch"
   rather than a concrete mechanic name.
+- Export-only label recovery now makes that helper cluster reproducible across
+  future runs: `SpellService_ResolveSpellWrapper` at `1403acd90` resolves the
+  shared spell wrapper/service object, `Game_Spell_IsSelfSpellDelegate` at
+  `1403b4ec0` is the unresolved 56-byte bool helper behind the deeper
+  `IsSelfSpell` branches, and `SpellService_ResolveTargetFlags` at `1407a0fd0`
+  is the wrapper-flag accessor used by `IsFreeformTarget` after the type-`7`
+  service lookup branch.
+- Direct recheck of the labeled `SpellService_ResolveSpellWrapper` body now
+  tightens that shared wrapper path further. Before falling back to
+  `SpellService_ResolveTargetFlags(param_1)`, it checks whether `param_3`
+  matches either `*(DAT_140c65898 + 0x78)` or `*(DAT_140c65898 + 0x6490)` and,
+  on that narrow global-context match, returns `FUN_1405a5b90()`. That is
+  documentation-grade evidence that the unresolved type-`0` fallback and the
+  type-`7` service-tree re-entry share a common wrapper gate, even though the
+  final `Game_Spell_IsSelfSpellDelegate` semantics remain undecoded.
+- The wrapper layout evidence also sharpened. Type-`0` fallback branches still
+  materialize bit pattern `0x85` at wrapper offset `+0x7c`, while the type-`7`
+  tree path resolves a secondary wrapper from `DAT_140c65b70 + 0x788` and then
+  reads targeting flags from `+0x108`. That is now the strongest current
+  evidence that `+0x7c` is a target-shape selector and `+0x108` is the
+  resolved targeting-flags word rather than an unrelated bookkeeping field.
 - `TraceFunctionCallers` follow-up on `FUN_1403acd90` also recovered multiple
   wrapper users that materialize `+0x9c` and read `[RAX + 0x80]`, which lines
   up with the unresolved `IsSelfSpell` conditional target-AOE gate at wrapper
@@ -842,8 +863,16 @@ Innate spell accessor and unresolved self-spell-branch follow-up implemented fro
   EMM semantics because `Spell4Thresholds` has no EMM fields at all.
 - Runtime candidates now include concrete inspect-first witnesses for the
   unresolved client target-mechanic families: type `0` (`Spell4=305`, known
-  mechanics `1/2/44`), type `6` (`Spell4=5157`, mechanic `17`), and type `7`
+  mechanics `1/2/44`), type `6` (`Spell4=11820`, mechanic `17`), and type `7`
   (`Spell4=339` and `Spell4=26813`, known mechanics `18/25/26/33/52/58/63/69`).
+- A later cross-schema recheck corrected the concrete type-`6` witness. The
+  earlier `Spell4=5157` food-buff candidate is actually `spell4TargetMechanicId
+  = 1` / `targetType = 0` in both `nexus_spell_re` and `wildstar_client`.
+  The only current mechanic-`17` / type-`6` spell is
+  `Spell4=11820` (`[TEST] Recharge Item Batteries Full - Tier 1`), backed by
+  `ItemSpecial=3777` with `spell4IdOnActivate=11820` and zero current
+  `item2.itemSpecialId00` owners. Type `6` therefore remains real, but even
+  narrower and more awkward to cast than the earlier note implied.
 
 Thirteenth rapid-transport selector/layout follow-up implemented from this pass:
 
@@ -1656,12 +1685,50 @@ Thirty-first service-token spellcast follow-up implemented from this pass:
   requires the mapped `HasServiceTokenCost` flag and matching
   `Spell4ServiceTokenCost` row, and casts the spell with
   `UseServiceTokenCost = true`.
+- Current SQL imports preserve an important data-boundary mismatch: as of
+  2026-05-16, both `nexus_spell_re.spell4` and `wildstar_client.spell4` expose
+  zero rows with `PropertyFlags & 0x20000000`, while
+  `wildstar_client.Spell4ServiceTokenCost` still carries the 6 concrete service-
+  token cost rows (`83146`, `83153`, `8568`, `38408`, `70864`, `70865`). Treat
+  the flag gate as decompile-proven and the cost rows as the durable SQL-side
+  witnesses; do not read the missing SQL flag bit as evidence that the client
+  helper gate is wrong.
+- The schema-qualified witness query now resolves that cost-row cohort to exact
+  concrete spells: `8568` (`Teleporting to Eldan Stone - Recall Shard -
+  Hearthstone - Global - Tier 1`, cost `10`), `38408` (`Teleport to house -
+  Global - Tier 1`, cost `10`), `70864` (`Teleport - Exiles - Thayd - [10s
+  cast] - SWC - Tier 1`, cost `10`), `70865` (`Teleport - Dominion - Illium -
+  [10s cast] - SWC - Tier 1`, cost `10`), plus the two dev cooldown-removal
+  rows `83146` (cost `2`) and `83153` (cost `5`). `GameFormula 1307`'s service-
+  token rapid-transport spell `82956` is still absent from
+  `wildstar_client.Spell4ServiceTokenCost`, so the durable SQL witness set for
+  the current Area 3 transaction boundary remains recall, housing, capital
+  teleport, and dev-test rows rather than rapid transport.
+- Those six SQL-side witnesses also sort cleanly by effect family, which makes
+  the next Area 3 transaction pass concrete: `8568`, `70864`, and `70865` are
+  plain `Teleport` rows (`effectType = 65`), `38408` is a
+  `HousingTeleport` plus delayed `Fluff` combination (`effectType = 22`, `17`),
+  and `83146` / `83153` are compact `Fluff`-only target rows (`effectType = 17`,
+  `targetFlags = 2`, `durationTime = 4000`). That is the right cohort for
+  sorting `0x00C2` and `0x014B` behavior by recall, housing, capital-teleport,
+  and dev-test spell family rather than treating the service-token boundary as
+  one undifferentiated packet path.
 - `ISpellParameters`/`SpellParameters` now carry `UseServiceTokenCost`, and the
   spell pipeline checks account service-token affordability during cast
   validation. Tokens are consumed only after prerequisite, cooldown, charge, and
   target checks pass; a final affordability recheck sends
   `CastResult.ServiceTokensInsufficentFunds` if the balance changed before
   consumption.
+- The direct spell-entry surfaces that already decode native cast-context
+  tokens now preserve them into runtime spell parameters and the structured
+  spell evidence export instead of dropping them at the network-handler
+  boundary. Current carried sources include `ClientCastSpell` (`0x009A`),
+  `ClientCastSpellPosition` (`0x009B`), `ClientActivateUnitCast` (`0x0097`),
+  `ClientSpellCastWithServiceToken` (`0x00C2`), `ClientRapidTransport`
+  (`0x0141`), and spell-triggering `ClientItemUse` (`0x0943`). The server still
+  does not validate or echo those tokens back into unknown packet fields, but
+  runtime evidence artifacts can now correlate `ClientContextToken` plus
+  `ClientRequestSource` against the generated server `CastingId`.
 - Remaining bounded uncertainty: the client-side result event also carries a
   local context token, but the existing `ServerSpellCastResult.Unknown0` meaning
   is still unmapped, so the handler follows existing server cast-result practice
@@ -3347,6 +3414,804 @@ Seventy-third account inventory blocked-path follow-up implemented from this pas
   Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
   -m:1 -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-account-inventory-blocked/`
   succeeds with only the existing `Spline.formation` warning.
+
+Seventy-fourth quest-log/GalacticArchive follow-up mapped from this pass:
+
+- `ShowQuestLog` needed xref triage rather than another broad helper label.
+  The earlier `1401074d0` site still decompiles as a large path/UI helper and
+  remains intentionally unlabeled, but direct inspect of `14042e3b0` is stable
+  enough for `QuestLog_DispatchShowQuestLogEvent`: it emits
+  `ClientEvent_DispatchNamedEvent(..., "ShowQuestLog", ..., uVar2)` from a
+  tighter event path, making it the current durable quest-log-open anchor.
+- `Communicator_ShowQuestMsg` also had a false-positive string xref. Native
+  inspect now shows `14093ec20` is setup-only
+  `Communicator_RegisterSocietyChatChannels`, repeatedly registering
+  `chat.society00` through `chat.society19` and never emitting a quest popup.
+  The actual runtime branch is `Communicator_HandleQuestOrSpamMessage`
+  (`14043bf30`), which routes spam payloads to `Communicator_ShowSpamMsg`,
+  gates quest payloads through local profile/state checks, calls
+  `FUN_140437a10(..., 0x3e, ...)`, dispatches `Communicator_ShowQuestMsg`, and
+  arms the local follow-up timer fields at `param_1 + 0xfc/+0x100` when the
+  global popup latch is clear.
+- Quest hand-in/completion evidence is now a tighter end-to-end chain rather
+  than isolated anchors. Existing labels still hold: `Dialog_HandleResponseSelection`
+  routes `DialogResponseType_QuestComplete` into
+  `Dialog_SendClientQuestComplete`, that helper sends opcode `0x035D` with the
+  active `{ QuestId, RewardSelection, communicator bit }` tuple,
+  `Lua_GameContract_Complete` reuses the same `ClientQuestComplete` payload with
+  the communicator bit cleared, and `ClientQuestComplete_WritePayload` still
+  proves the packed 15-bit quest id plus 15-bit reward-selection layout.
+  Reward refresh remains a separate but adjacent lane:
+  `Lua_GameLib_RequestRewardUpdate` still forwards to
+  `Reward_SendRewardUpdateRequest`, which throttles low indices and sends opcode
+  `0x07CC`.
+- The strongest current native surface for user-facing "Codex" behavior is
+  Galactic Archive plus datacube content, not a literal `Codex` string.
+  `GalacticArchive_ApplyUnlockMaskAndDispatchEvents` (`140499a20`) updates the
+  local unlock bitmask and dispatches `GalacticArchiveRefresh`,
+  `GalacticArchiveArticleAdded`, and `GalacticArchiveEntryAdded` when new bits
+  appear. `GalacticArchive_HandleLinkClick` (`140431a00`) handles `Link`
+  payloads with `Archive:`, `Location:`, and `Schematic:` prefixes, routing the
+  location branch through the existing location helper, dispatching
+  `WorkOrderLocate` for schematic links, and emitting
+  `GalacticArchiveLinkClick` for resolved archive entries. The nearby
+  `DB\Datacube.tbl`, `DB\DatacubeVolume.tbl`, and
+  `DB\PathScientistDatacubeDiscovery.tbl` string xrefs keep
+  datacube/archive work as the best continuation lane for deeper Codex
+  recovery.
+- Verification: `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -DecompileMode Skip` applied `315` WildStar64 labels with `0`
+  missing labels and refreshed the export metadata without widening
+  `selected_decompiled.c`.
+
+Seventy-fifth quest-log/datacube continuation follow-up mapped from this pass:
+
+- The broader `ShowQuestLog` family is a compact UI event cluster, not a newly
+  exposed quest-state manager. Direct inspect now shows `14042e380` dispatches
+  `ToggleQuestLog`, `14042e3b0` remains the stable `ShowQuestLog` dispatcher,
+  and `14042e410` dispatches `HideQuestLog` through the same named-event sink.
+  `DumpNearbyData.java` around `Event_ShowQuestLog` at `140b00110` tightens the
+  same cluster further: the adjacent string block also contains
+  `Event_HideQuestLog`, `Event_ToggleCodex`, and `Event_ToggleQuestLog`, so the
+  client keeps these quest-log/Codex open-close toggles grouped as neighboring
+  event names rather than scattering them across unrelated tables.
+- The secondary `ToggleQuestLog` xref at `1404d7a10` is not another quest-log
+  state helper. It sits inside a broad input/shortcut action switch that routes
+  action kind `5` to `ToggleQuestLog` alongside other shell-style UI actions
+  such as options, character, inventory, and CSI helpers. That makes it useful
+  as an upstream input bridge, but not specific enough for a stable semantic
+  label in this pass.
+- The Codex-adjacent data boundary is now explicit in the client DB layer.
+  `1401fc000`, `1401fc440`, and `14021fe20` are the lazy registration/load
+  paths for `Datacube`, `DatacubeVolume`, and
+  `PathScientistDatacubeDiscovery`, respectively. Each function follows the
+  same client DB-table registration shape already used elsewhere: allocate a DB
+  table wrapper, bind the typed descriptor, and load from the corresponding
+  `DB\*.tbl` path or provider-backed cache.
+- The client Lua surface for this same lane is now better bounded. `140679e50`
+  registers `Game.PathMission` plus `PlayerPathType`, `PathMissionState`, and
+  `PathMissionType_*` constants, including the concrete
+  `PathMissionType_Scientist_DatacubeDiscovery` enum. `14066aa40` and
+  `14066c710` register the `Game.GalacticArchiveArticle` and
+  `Game.GalacticArchiveEntry` Lua bindings, respectively; the article path also
+  exports `LinkQueryType_All`, `LinkQueryType_Parents`, and
+  `LinkQueryType_Children`, while the entry path exports archive entry and entry
+  header enums such as `ArchiveEntryEnum_EldanArchive` and
+  `ArchiveEntryHeaderEnum_TextWithPortrait` / `TextWithIcon`.
+- One concrete runtime-adjacent article method is now decoded cleanly enough to
+  keep: `14066a490` compares two `Game.GalacticArchiveArticle` userdata values
+  by the resolved underlying article object id and returns a boolean result.
+  A neighboring `Game.GalacticArchiveEntry` boolean method at `14066d0c0` also
+  clearly consults live archive state through the resolved entry object, but the
+  exact predicate semantics are still too ambiguous for a stable label, so it
+  remains intentionally unnamed.
+- Net result for the user-facing "Codex" lane: this pass strengthens the
+  interpretation that Codex behavior in WildStar lives across a combined
+  Galactic Archive + datacube + scientist datacube-discovery surface. The
+  client now has durable labels for the archive/article entry binding layer and
+  the datacube table loaders, but the exact runtime handler behind
+  `Event_ToggleCodex` is still unrecovered from current string/data evidence.
+- Verification: `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -DecompileMode Skip` applied `324` WildStar64 labels with `0`
+  missing labels and refreshed the export metadata without widening
+  `selected_decompiled.c`.
+
+Seventy-sixth Codex toggle/archive-entry follow-up mapped from this pass:
+
+- `Event_ToggleCodex` is no longer blocked. Direct `DumpNearbyData.java`
+  against the event table entry at `140c59120` shows a compact `{ event string,
+  function pointer }` layout: `140c59120 -> 140b00128 (Event_ToggleCodex)` and
+  `140c59128 -> 14042e350`. Direct inspect of `14042e350` then confirms the
+  missing runtime leaf: it dispatches `ClientEvent_DispatchNamedEvent(...,
+  "ToggleCodex", ...)` through the same UI event sink used by
+  `ToggleQuestLog`, `ShowQuestLog`, and `HideQuestLog`.
+- That same event table sharpens the surrounding UI cluster further. Nearby
+  entries pair `Event_ToggleQuestLog` with `14042e380`,
+  `Event_ShowQuestLog` with `14042e3b0`, `Event_HideQuestLog` with
+  `14042e410`, and additional adjacent event-name/function pairs continue past
+  the quest-log/Codex trio. This is now a documented event-registration table,
+  not just an isolated string neighborhood.
+- The live `Game.GalacticArchiveEntry` path is now tighter at the helper level.
+  `14066dab0` resolves an entry-linked live archive state object by walking one
+  current archive lookup tree with the entry metadata key, extracting a second
+  id from the resolved metadata object, and then resolving that id through the
+  active state tree under `DAT_140c65990`. This is stable enough for a generic
+  resolver label even though the exact backing object type is still unnamed.
+- One concrete entry accessor is now safe to keep. `14066d280` returns `100`
+  when the resolved entry state already satisfies the primary player-state
+  predicate, otherwise it delegates to `140499b40` to compute a bounded percent
+  completion value from the entry's requirement cluster. `140499b40` itself
+  confirms that this is a real progress-style calculation rather than a raw
+  flag read: it short-circuits to `100.0` for already-satisfied entries and
+  otherwise aggregates requirement progress before scaling to percent.
+- Another neighboring entry accessor is now concrete enough to keep.
+  `14066d360` resolves the same live entry state object, calls its virtual
+  accessor at slot `0x18`, and then wraps the returned pointer through
+  `140432f20`, which explicitly materializes a `Game.GalacticArchiveArticle`
+  Lua userdata. That is strong evidence that this entry method returns the
+  associated archive article object rather than an opaque helper token.
+- Two adjacent boolean entry methods remain real but not fully named.
+  `14066d0c0` and `14066d1a0` both resolve the same live state object and then
+  dispatch to neighboring virtual predicates at slots `0x58` and `0x60`,
+  respectively, returning one-bit Lua results. Additional adjacent accessors at
+  `14066d430` and `14066d520` gate integer fields at entry offsets `+0x58` and
+  `+0x50` behind the `0x58` predicate, but the exact semantic names of those
+  state bits and gated fields remain intentionally unresolved.
+- Net result: the Codex toggle half of this continuation is now resolved to a
+  concrete client event dispatcher, while the archive-entry half has moved from
+  a single ambiguous boolean into a documented mini-family: one state-object
+  resolver, one progress-percent accessor, one article-wrapper accessor, and two
+  still-unnamed player-state predicates.
+- Verification: `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -DecompileMode Skip` applied `328` WildStar64 labels with `0`
+  missing labels and refreshed the export metadata without widening
+  `selected_decompiled.c`.
+
+Seventy-seventh GalacticArchiveEntry binding-table follow-up mapped from this
+pass:
+
+- The `Game.GalacticArchiveEntry` Lua method table is now directly recoverable
+  from the registrar. `InspectCodeAddress.java` on `14066c710` shows the
+  binding registrar iterating `PTR_DAT_140c5be20`, and `DumpNearbyData.java`
+  over that table resolves a clean `{ method name, function pointer }` layout
+  for the live entry methods.
+- That table converts the previously ambiguous runtime-adjacent accessors into
+  authoritative client-authored names. The middle of the block binds
+  `GetTitle -> 14066cb20`, `GetText -> 14066cc50`,
+  `GetScientistText -> 14066ce50`, `IsUnlocked -> 14066d0c0`,
+  `IsViewed -> 14066d1a0`, `GetProgress -> 14066d280`,
+  `GetArticle -> 14066d360`, `GetHeaderStyle -> 14066d430`,
+  `GetBodyStyle -> 14066d520`, `GetHeaderIcon -> 14066d610`,
+  `GetHeaderCreature -> 14066d770`, `GetBodyImage -> 14066d860`, and
+  `GetCompletionTitle -> 14066d9c0`.
+- This resolves the earlier stop-boundary on the two boolean predicates and the
+  gated integer accessors without needing speculative field names. The same
+  helpers still decompile as live-state and metadata reads, but the registrar
+  proves the user-facing Lua semantics are `IsUnlocked`, `IsViewed`,
+  `GetHeaderStyle`, and `GetBodyStyle`, which is the stronger durable label.
+- The progress helper also tightens slightly: although `14066d280` computes a
+  bounded percentage-like completion value, the bound method name in the client
+  surface is simply `GetProgress`, so the durable label now follows the Lua API
+  name rather than an inferred suffix.
+- Two table slots remain intentionally unnamed. The leading entries at
+  `14066a730` and `14066a930` still point through `140b2f000` and `140b2efcc`,
+  and those addresses are not currently defined as strings in the listing, so
+  this pass leaves them unlabeled rather than guessing at the missing method
+  names.
+- Verification: `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -DecompileMode Skip` applied `339` WildStar64 labels with `0`
+  missing labels and refreshed the export metadata without widening
+  `selected_decompiled.c`.
+
+Seventy-eighth GalacticArchive metatable/article-table follow-up mapped from
+this pass:
+
+- The last two leading `Game.GalacticArchiveEntry` table slots are now fully
+  resolved rather than behavior-guessed. A new tiny helper,
+  `DumpAsciiAtAddress.java`, dumps raw bytes and printable ASCII for undefined
+  addresses; running it on `140b2f000` and `140b2efcc` proves the short inline
+  strings are literally `__eq` and `__gc`. That promotes `14066a730` to the
+  entry `__eq` metamethod and `14066a930` to the entry `__gc` metamethod.
+- The same raw-string pass also fixes the neighboring article metatable block.
+  `140b2ecf0` and `140b2ee1c` decode to `__eq` and `__gc`, which tightens the
+  earlier article equality helper from a generic `Equals` label into the real
+  `Game.GalacticArchiveArticle.__eq` Lua metamethod and identifies
+  `14066a6b0` as the matching article `__gc` release path.
+- With the metatable helpers pinned down, the adjacent
+  `Game.GalacticArchiveArticle` method table can now be read directly as another
+  `{ name, function }` block. This pass maps `GetTitle -> 14066b300`,
+  `GetText -> 14066b3e0`, `GetLinkName -> 14066b5b0`,
+  `GetEntries -> 14066b6f0`, `GetIcon -> 14066b920`,
+  `GetCreaturePortrait -> 14066ba60`, and `GetWorldZone -> 14066bb20`.
+- `14066b6f0` is now behavior-checked as well as table-named. It resolves the
+  live article state, iterates the active child-entry container, filters out
+  hidden/unavailable rows through the existing archive state checks, wraps each
+  surviving child via `140433000`, and returns the accumulated Lua table. That
+  is durable evidence that `GetEntries` returns a live entry list rather than a
+  static metadata blob.
+- Net result: the Galactic Archive Lua surface is no longer split between
+  exact-named entry getters and half-guessed article helpers. Both the entry and
+  article tables now have concrete `__eq` / `__gc` metamethod anchors, and the
+  article side has its first stable getter cluster promoted into the label map.
+- Verification: `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -DecompileMode Skip` applied `349` WildStar64 labels with `0`
+  missing labels and refreshed the export metadata without widening
+  `selected_decompiled.c`.
+
+Seventy-ninth PathMission short-string table follow-up mapped from this pass:
+
+- The new raw ASCII dumper also applies cleanly outside the Galactic Archive
+  lane. `InspectCodeAddress.java` on `140679e50` shows
+  `Game.PathMission` walking a `{ name, function }` table at `PTR_DAT_140c5c490`.
+  `DumpNearbyData.java` over that table then revealed the same stall pattern as
+  the archive bindings: the leading pointer cells exist, but several short names
+  were not auto-defined in the listing.
+- `DumpAsciiAtAddress.java` resolves those PathMission names directly from raw
+  bytes. The first two slots decode to `__eq` and `__gc`, promoting
+  `140678590` to the `Game.PathMission.__eq` metamethod and `140678790` to the
+  matching `__gc` release path. Direct inspect confirms the same compare and
+  reference-release shapes already seen in the Galactic Archive userdata types.
+- The next PathMission table entries are now similarly concrete rather than
+  anonymous callback pointers: `GetId -> 14067b7c0`, `GetName -> 14067b840`,
+  `GetSummary -> 14067b9c0`, `GetType -> 14067bcb0`,
+  `GetSubType -> 14067bd30`, `GetDisplayType -> 14067be10`,
+  `GetRewardData -> 14067be90`, `GetRewardXp -> 14067c010`, and
+  `GetDistance -> 14067c090`.
+- This same pass also checked `Game.DialogResponse` as another possible target,
+  but it does not represent the same stalled short-string problem. Its registrar
+  starts from an already defined `GetText` string (`PTR_s_GetText_140c5ee40`),
+  so the ASCII dumper is less valuable there than it is on the PathMission and
+  Galactic Archive tables.
+- Net result: the ASCII dumper is now proven as a general-purpose recovery tool
+  for short undefined Lua method names, not just a one-off Galactic Archive
+  trick. PathMission is the second clear success case, and DialogResponse is a
+  useful counterexample showing when the extra raw-byte step is unnecessary.
+- Verification: `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -DecompileMode Skip` applied `360` WildStar64 labels with `0`
+  missing labels and refreshed the export metadata without widening
+  `selected_decompiled.c`.
+
+Eightieth PathMission continuation and Spell table-head audit mapped from this
+pass:
+
+- Extending `DumpNearbyData.java` past the previous PathMission cutoff at
+  `PTR_DAT_140c5c490` cleanly promotes the next three `{ name, function }`
+  pairs. `DumpAsciiAtAddress.java` resolves `140b30678` as `IsInArea`,
+  `140b30688` as `IsComplete`, and `140b30658` as `IsOptional`, while the
+  widened table dump pairs those names with `14067c190`, `14067c220`, and
+  `14067c290` respectively.
+- Those three callbacks are now stable `Game.PathMission` Lua methods rather
+  than anonymous tail entries: `IsInArea -> 14067c190`,
+  `IsComplete -> 14067c220`, and `IsOptional -> 14067c290`. This extends the
+  PathMission surface beyond `GetDistance` without needing speculative behavior
+  naming from decompiler-only control flow.
+- The same audit on `Game.Spell` confirms the short-string pattern also exists
+  at the head of `PTR_DAT_140c5a480`: raw-byte dumps of `140b1e524` and
+  `140b1e254` decode to `__eq` and `__gc`. However, the surrounding table head
+  is already covered by the current label map (`GetId`, `GetBaseSpellId`,
+  `GetCastMethod`, `GetAOETargetInfo`, and adjacent accessors), so Spell does
+  not presently need the same rescue pass that PathMission and GalacticArchive
+  required.
+- Net result: PathMission gains another stable trio of late-table boolean
+  accessors, while Spell becomes a useful positive control showing that the
+  ASCII-dumper heuristic can confirm short undefined slots even when the table
+  is otherwise already well-labeled.
+- Verification: `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -DecompileMode Skip` now applies the expanded WildStar64 label
+  map after promoting the additional PathMission methods.
+
+Eighty-first PathMission episodic tail follow-up mapped from this pass:
+
+- Continuing the same `PTR_DAT_140c5c490` tail from the next unresolved short
+  string at `140b30668` produces another clean registrar-backed pair. Raw-byte
+  output from `DumpAsciiAtAddress.java` resolves `140b30668` as
+  `GetEpisode`, and the widened `DumpNearbyData.java` table pairs it with
+  `14067c300`.
+- Extending one slot farther immediately yields another stable PathMission
+  accessor rather than a speculative decompiler-only guess. Raw bytes at
+  `140b30638` decode to `GetNumCompleted`, and the same table dump binds that
+  name to `14067c370`.
+- These callbacks are now durable `Game.PathMission` Lua methods:
+  `GetEpisode -> 14067c300` and `GetNumCompleted -> 14067c370`. This keeps the
+  PathMission continuation grounded in the table walk itself instead of inferred
+  behavior naming.
+- Net result: the post-`IsOptional` PathMission tail now extends into an
+  episode/count accessor pair, and the same ASCII-dumper workflow continues to
+  pay off on short undefined inline strings that Ghidra leaves unnamed.
+- Verification: `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -DecompileMode Skip` applied `365` WildStar64 labels with `0`
+  missing labels and refreshed the export metadata without widening
+  `selected_decompiled.c`.
+
+Eighty-second monster aggro/target threat-list follow-up implemented from this pass:
+
+- `FUN_14042e1f0` is now safe to label
+  `TargetThreatList_DispatchUpdatedEvent`. It clamps the cached target-threat
+  pair count to five, zero-fills missing slots, and dispatches
+  `TargetThreatListUpdated` with the format string `UiUiUiUiUi` through the
+  shared client event sink from the targeted `InspectCodeAddress.java` pass.
+  The threat HUD surface is therefore event-backed rather than directly bound
+  to the raw packet buffer.
+- `FUN_14055c0f0` is now safe to label `TargetThreatList_RebuildAndDispatch`.
+  Its decompile shows the exact packet-shaped buffer the client consumes:
+  `*param_2` is the source unit id, `param_2[1..5]` are threat unit ids, and
+  `param_2[6..10]` are the matching threat values. The helper resolves the
+  source unit, reads that unit's current target id, prepends the current target
+  with its matching threat when present, appends the remaining non-zero entries
+  without duplicating that current target, stores the rebuilt list at
+  `param_1 + 0x66e8/+0x66f0`, and then dispatches
+  `TargetThreatListUpdated` in the targeted `InspectCodeAddress.java` pass.
+- That helper also exposes the client-side constraint that matters for
+  NexusForever combat behavior: the rebuilt list can grow to six entries when
+  the source unit's current target is absent from the incoming five-slot threat
+  payload, but `TargetThreatList_DispatchUpdatedEvent` clamps the final HUD
+  event back to five. In other words, omitting the creature's current target
+  from the packet can force the client to show that target with threat `0`
+  while dropping a real trailing hostile from the visible HUD list.
+- `FUN_14055b0e0` is now safely mapped as
+  `TargetSelection_ApplySelectionAndDispatch`. It clears the cached target-
+  threat list count at `param_1 + 0x66f0`, immediately dispatches the cleared
+  `TargetThreatListUpdated` event, sends opcode `0x0185 == ClientEntitySelect`
+  with the new selection id, dispatches `TargetUnitChanged`, and then refreshes
+  dependent selection and interaction state. Caller traces show this is the
+  shared selection-apply path reached from scene replay, interaction/CSI,
+  loot, activate-unit, and other local target changes from the targeted
+  `InspectCodeAddress.java` and `TraceFunctionCallers.java` passes.
+- Together these helpers bound the client behavior tightly enough for a narrow
+  server fix. Source `ServerEntityThreatListUpdate` already matches the client
+  `SrcUnitId + 5 ids + 5 threat values` buffer shape, and the threat HUD is
+  intentionally cleared first on target change. The remaining mismatch was the
+  packet builder: NexusForever was still sending the top five hostiles only.
+- Runtime follow-up implemented from this pass:
+  `ThreatManager.BuildServerThreatListUpdate()` now includes the creature's
+  current target first when that target already exists on the threat list, then
+  fills the remaining slots by descending threat. This keeps the client's
+  current-target-first rebuild helper in-band and avoids the stale `current
+  target with 0 threat` plus sixth-entry-drop case without widening any other
+  aggro or combat-state behavior.
+- Verification: `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -DecompileMode Skip` applies the expanded WildStar64 label map,
+  and `dotnet build Source\\NexusForever.Game\\NexusForever.Game.csproj -v
+  minimal --nologo` succeeds. A full solution build in this workspace is
+  currently blocked by locked output files from running
+  `NexusForever.Server.ChatServer`, `NexusForever.StsServer`,
+  `NexusForever.AuthServer`, and `NexusForever.WorldServer` processes rather
+  than by code errors in this pass.
+
+Eighty-third PathMission full method-table tail follow-up mapped from this pass:
+
+- The `Game.PathMission` Lua method table at `PTR_DAT_140c5c490` is now mapped
+  through its end instead of stopping at `GetNumCompleted`. Direct
+  `DumpNearbyData.java` passes over `140c5c490` and `140c5c700` show the
+  continuing alternating `{ method name, function pointer }` layout, and the
+  table terminates at the empty cells `140c5c7f0`/`140c5c7f8` before the next
+  unrelated table starts at `140c5c800`.
+- This pass adds durable labels for 38 previously anonymous PathMission Lua
+  methods. The first continuation block binds core, map, scientist, and explorer
+  accessors: `GetNumNeeded -> 14067c3f0`, `IsStarted -> 14067c4e0`,
+  `GetMissionState -> 14067c470`, `GetMapIcon -> 14067c950`,
+  `GetMapLocations -> 14067cb20`, `GetMapRegions -> 14067cfd0`,
+  `GetUnlockString -> 14067c550`, `GetCompletedString -> 14067c750`,
+  `GetScientistIcon -> 14067d4e0`, `GetScientistFieldStudy -> 14067d660`,
+  `GetScientistSpecimenSurvey -> 14067d9a0`,
+  `GetScientistDatacubeDiscoveryZone -> 14067dd40`,
+  `GetScientistExperimentationInfo -> 14067de30`,
+  `GetScientistExperimentationCurrentPatterns -> 14067e2d0`,
+  `AttemptScientistExperimentation -> 14067e670`,
+  `RefreshScientistExperimentation -> 14067e830`,
+  `GetExplorerNodeInfo -> 14067e870`, `GetExplorerNodeCount -> 14067ed30`,
+  `GetExplorerHuntStartCreature -> 14067edd0`,
+  `GetExplorerHuntStartText -> 14067ee70`,
+  `GetExplorerHuntSprite -> 14067ef90`,
+  `GetExplorerClueStatus -> 14067f0e0`,
+  `GetExplorerClueRatio -> 14067f1e0`, and
+  `GetExplorerClueString -> 14067f2f0`.
+- The final PathMission table segment binds the remaining explorer, settler,
+  soldier, hint, and spell bridge methods: `GetExplorerClueType -> 14067f4b0`,
+  `GetExplorerPowerMapReadyText -> 14067f670`,
+  `GetExplorerPowerMapInfo -> 14067f780`,
+  `IsExplorerPowerMapActive -> 14067fbf0`,
+  `IsExplorerPowerMapReady -> 14067fcb0`,
+  `ShowExplorerClueHintArrow -> 14067fd70`,
+  `GetSettlerMayorInfo -> 14067fe10`,
+  `GetSettlerSheriffInfo -> 140680180`,
+  `GetSettlerScoutInfo -> 1406805b0`,
+  `GetSettlerResourceRegions -> 140680ad0`,
+  `GetSoldierHoldout -> 140680e30`, `ShowHintArrow -> 140680f60`,
+  `ShowPathChecklistHintArrow -> 14067dca0`, and `GetSpell -> 140680ec0`.
+- No server implementation was added from these labels. The registrar proves the
+  client-authored Lua API names, but the underlying mission-state object fields,
+  side effects for `AttemptScientistExperimentation`/hint helpers, and server
+  packets or script hooks still need separate behavior evidence before mutating
+  NexusForever runtime state.
+- Verification:
+  `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -MaxDecompiledFunctions 500` applied `411` WildStar64 labels
+  with `0` missing labels and rendered a fresh `selected_decompiled.c`.
+  Focused checks confirm all 38 new labels appear in `functions.csv`; each also
+  appears in `selected_decompiled.c` with label reasons, covering the new block
+  around `selected_decompiled.c:26382` through `selected_decompiled.c:29850`.
+
+Eighty-fourth CombatAI attackability follow-up implemented from this pass:
+
+- This pass did not add new native labels; it builds on the already-labeled
+  client combat/threat anchors. `UnitState_MaybeDispatchUnitEvaded`
+  (`1403db920`) still bounds the client-facing evade event at raw unit-state
+  value `4` around `exports\WildStar64.exe\selected_decompiled.c:10786`,
+  `UnitEvent_HandleEnteredCombat` (`14042e120`) bounds the entered-combat event
+  around `selected_decompiled.c:12685`, and the threat HUD handlers remain
+  `TargetThreatList_DispatchUpdatedEvent` (`14042e1f0`) plus
+  `TargetThreatList_RebuildAndDispatch` (`14055c0f0`) around
+  `selected_decompiled.c:12736` and `selected_decompiled.c:16777`.
+- The safe implementation gap was on the NexusForever side. Source already
+  models `AggroImmune` as client spell-effect value `0x004D` and as a real
+  unit state, and `UnitEntity.CanAttack(...)` already gates dead/invalid targets
+  plus source or target aggro immunity. `CombatAI`, however, still accepted
+  initial aggro from any hostile unit inside leash and kept existing threat
+  targets as long as they were alive and in leash.
+- Runtime follow-up implemented from this pass:
+  `CombatAI` now uses `entity.CanAttack(target)` for initial aggro, target
+  selection, current-target validation, autoattack, and chase decisions. If the
+  current target becomes non-attackable or leaves the leash, the AI prunes that
+  hostile and lets the existing threat-selection/reset path choose the next safe
+  target or return home. This keeps the earlier leash and evade-floater behavior
+  intact while preventing dead, invalid, aggro-immune, or otherwise non-
+  attackable units from remaining active CombatAI targets.
+- Still blocked: this does not synthesize the client raw state `4` producer,
+  alter threat table math, or implement `MaxThreatVsCreature`/`ThreatMultiplier`
+  behavior. The native strings for those threat properties are observed, but
+  the current evidence does not yet prove safe server-side caps or multipliers.
+- Verification:
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
+  --no-restore -m:1
+  -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-combatai/
+  -v minimal --nologo` succeeds with `0` warnings and `0` errors.
+
+Eighty-fifth Rider's Reef combat projector follow-up implemented from this pass:
+
+- This pass did not add new native labels. The runtime mismatch was correlated
+  from the authoritative tutorial world SQL import: combat projector creature
+  `73735` is imported as entity type `32` (`SimpleCollidable`), while the
+  existing tutorial projector script was owned by `ISimpleEntity`, and
+  `SimpleCollidableEntity` did not initialise entity scripts at all.
+- Runtime follow-up implemented from this pass:
+  `SimpleCollidableEntity` now initialises script collections for
+  `ISimpleCollidableEntity` and preserves `QuestChecklistIdx` in its network
+  model. `TutorialCombatProjectorEntityScript` is now owned by
+  `ISimpleCollidableEntity`, so successful activation of imported creature
+  `73735` can queue the novice combat-projector cinematic and delayed transport.
+  The script gate now allows projector use after the hoverboard projector and
+  ride objectives are complete, regardless of whether the finish objective was
+  already credited by the interaction path.
+- Recovery follow-up implemented from this pass:
+  `InteractionObjectiveUpdater` queues a delayed combat-transition recovery
+  after successful objective credit on creature `73735`. This is intentionally
+  later than the scripted cinematic transport, so the normal script path wins
+  when loaded, while already-stuck or script-missed activations can still
+  recover through the existing player combat-transition logic. Follow-up log
+  inspection showed a successful `ClientActivateUnitCast` for `73735` and spell
+  `87061`, but no projector script activation lines because the live
+  `NexusForever.Script.Main.dll` was stale. Direct project builds were writing
+  to `I:\NexusForever.WorldServer\...` when `$(SolutionDir)` was empty, so the
+  script project now uses its own file directory to target the actual
+  WorldServer output folder. The projector-activation fallback also no longer
+  requires the player to remain inside the small hoverboard finish volume once
+  `73735` activation has succeeded.
+- Still blocked: full Rider's Reef recovery still needs an in-client fresh
+  Exile and Dominion validation pass for world `3460`, including projector
+  activation, cinematic timing, transport target, and post-transition combat
+  lane visibility.
+- Verification:
+  focused isolated-output builds succeed for
+  `Source\NexusForever.Game\NexusForever.Game.csproj`,
+  `Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj`, and
+  `Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj`. The only
+  warning observed is the existing `Spline.formation` CS0649 warning in the
+  Game build dependency.
+
+Eighty-sixth Game.Challenges method-table follow-up mapped from this pass:
+
+- The next callback table after the completed `Game.PathMission` block is now
+  mapped as the `Game.Challenges` userdata method table. Direct
+  `DumpNearbyData.java` over `140c5c800` shows an alternating
+  `{ method name, function pointer }` table from `140c5c800` through
+  `140c5c9e8`, followed by empty cells at `140c5c9f0`/`140c5c9f8` and then the
+  next unrelated PublicEvent table at `140c5ca00`. Raw ASCII dumps resolve the
+  short head strings at `140b321c0` and `140b321c8` to `__eq` and `__gc`.
+- This pass adds 31 durable `Game.Challenges` labels. The table binds the
+  metamethod and core progress/tier accessors:
+  `__eq -> 140684cd0`, `__gc -> 140684ed0`, `GetId -> 1406850e0`,
+  `GetType -> 140685170`, `GetCurrentCount -> 140685210`,
+  `GetTotalCount -> 140685330`, `GetCurrentTier -> 140685440`,
+  `GetDisplayTier -> 140685540`, `GetCompletionCount -> 140685640`,
+  `GetCompletionTotal -> 140685740`, `GetLastRewardTier -> 1406857d0`,
+  `GetRewardTrack -> 1406858d0`, `IsTimeTiered -> 140685950`,
+  `IsActivated -> 1406859e0`, `IsInCooldown -> 140685ad0`, and
+  `IsFullyComplete -> 140685be0`.
+- The same table binds the remaining display, zone, timer, map, hint, and
+  distance accessors: `GetName -> 140685cf0`,
+  `GetDescription -> 140685db0`, `GetZoneInfo -> 140685f70`,
+  `GetZoneRestrictionInfo -> 1406860c0`,
+  `GetStartLocationRestrictionId -> 140686240`, `GetTimer -> 1406862d0`,
+  `GetDuration -> 1406863e0`, `GetAllTierCounts -> 1406864e0`,
+  `NeedsHintArrow -> 140686730`, `GetMapStartLocation -> 1406867d0`,
+  `GetMapStartRegions -> 140686b50`, `GetMapLocation -> 140686e20`,
+  `GetMapRegions -> 1406871a0`,
+  `ShouldDisplayPercentProgress -> 140687610`, and
+  `GetDistance -> 1406876b0`.
+- No server implementation was added. The labels prove the client-authored Lua
+  API names for challenge objects, but they do not yet prove challenge runtime
+  state mutation, `ServerChallengeUpdate` field semantics, `ClientChallengeChoice`
+  handling, cooldown/tier progression, or the `ChallengesLib` global request
+  surface. Those remain blocked until packet/state producers or stronger
+  handler evidence are mapped.
+- Verification:
+  `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -MaxDecompiledFunctions 500` applied `442` WildStar64 labels
+  with `0` missing labels and rendered a fresh `selected_decompiled.c`. Focused
+  checks confirm all 31 new `Lua_Challenges_*` labels appear in `functions.csv`
+  and in `selected_decompiled.c`, covering the selected block around
+  `selected_decompiled.c:29920` through `selected_decompiled.c:31903`.
+  `./Decomp/Analysis/Test-DecompileManifest.ps1 -FailOnMismatch` reports
+  `WildStar64.exe ok`.
+
+Eighty-seventh Game.PublicEvent method-table follow-up mapped from this pass:
+
+- The callback table immediately after `Game.Challenges` is now mapped as the
+  `Game.PublicEvent` userdata method table. Direct `DumpNearbyData.java` over
+  `140c5ca00` shows the alternating `{ method name, function pointer }` layout
+  from `140c5ca00` through `140c5cc18`, followed by empty cells at
+  `140c5cc20`/`140c5cc28` and then the next `Game.PublicEventObjective` table
+  at `140c5cc30`. Raw ASCII dumps resolve the short head strings at
+  `140b324cc` and `140b324a0` to `__eq` and `__gc`.
+- This pass adds 34 durable `Game.PublicEvent` labels. The table binds the
+  metamethod and core event accessors:
+  `__eq -> 140687820`, `__gc -> 140687a40`,
+  `RequestScoreboard -> 140689580`, `GetName -> 1406896f0`,
+  `GetId -> 140689920`, `IsActive -> 1406899b0`,
+  `GetObjectives -> 140689a50`, `GetObjective -> 140689c70`,
+  `GetElapsedTime -> 140689da0`, `GetTotalTime -> 140689e60`,
+  `GetJoinedTeam -> 140689f20`, `GetTeamCount -> 140689fd0`,
+  `GetMapZone -> 14068a090`, `GetLocations -> 14068a1a0`, and
+  `GetMapRegions -> 14068a500`.
+- The same table binds the remaining tracker, stat, reward, display, report,
+  and custom-tracker helpers: `ShowHintArrow -> 14068ad40`,
+  `GetTrackedUnits -> 14068adb0`, `GetLiveStats -> 14068afb0`,
+  `HasLiveStats -> 14068b140`, `GetMyStats -> 14068b1f0`,
+  `GetStatsToDisplay -> 14068b410`, `GetTrackedSpawns -> 14068b570`,
+  `GetEventType -> 14068b750`, `GetParentEvent -> 14068b800`,
+  `GetRewardType -> 14068b8d0`, `GetRewardThreshold -> 14068b990`,
+  `ShouldShowOnMiniMapEdge -> 14050d090`, `GetLiveEvent -> 14068ba90`,
+  `PrepareInfractionReport -> 14068bb80`, `GetStat -> 14068bd60`,
+  `ShouldShowMedalsUI -> 14068be30`,
+  `IsPriorityDisplay -> 14068bf30`, `GetEndMessage -> 14068bff0`, and
+  `ShouldUseCustomTracker -> 14068c220`.
+- No server implementation was added. These labels prove the client-authored
+  Lua API names for public-event objects, but they do not yet prove safe
+  NexusForever mutations for event participation, scoreboard requests, custom
+  tracker state, objective progress, team membership, reward thresholds, or
+  infraction-report side effects. Those remain blocked until packet handlers,
+  state producers, or stronger runtime evidence are mapped.
+- Verification:
+  `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -MaxDecompiledFunctions 500` applied `476` WildStar64 labels,
+  created the small `Lua_PublicEvent_ShouldShowOnMiniMapEdge` stub function,
+  reported `0` missing labels, and rendered a fresh `selected_decompiled.c`.
+  Focused checks confirm all 34 new `Lua_PublicEvent_*` labels appear in
+  `functions.csv` and in `selected_decompiled.c`, covering the selected block
+  around `selected_decompiled.c:14676` and `selected_decompiled.c:31986`
+  through `selected_decompiled.c:34275`.
+  `./Decomp/Analysis/Test-DecompileManifest.ps1 -FailOnMismatch` reports
+  `WildStar64.exe ok`.
+
+Eighty-eighth Game.PublicEventObjective method-table follow-up mapped from this
+pass:
+
+- The callback table immediately after `Game.PublicEvent` is now mapped as the
+  `Game.PublicEventObjective` userdata method table. Direct
+  `DumpNearbyData.java` over `140c5cc30` shows the alternating
+  `{ method name, function pointer }` layout from `140c5cc30` through
+  `140c5ce98`, followed by empty cells at `140c5cea0`/`140c5cea8` and then the
+  next unrelated table at `140c5ceb0`. Raw ASCII dumps resolve the short head
+  strings at `140b32e1c` and `140b32e24` to `__eq` and `__gc`; the one
+  out-of-block method-name pointer at `1409f5b5c` resolves to `IsBusy`.
+- This pass adds 39 durable `Game.PublicEventObjective` labels. The table binds
+  the metamethod, description, identity, status, timer, count, and display
+  accessors: `__eq -> 140687ac0`, `__gc -> 140687cc0`,
+  `GetDescription -> 14068d5b0`, `GetShortDescription -> 14068d8a0`,
+  `GetObjectiveId -> 14068db80`, `GetSpell -> 14068dc10`,
+  `GetStatus -> 14068dd50`, `GetNotificationMode -> 14068de40`,
+  `GetElapsedTime -> 14068df30`, `GetTotalTime -> 14068e020`,
+  `GetCount -> 14068e110`, `ShowPercent -> 14068ed90`,
+  `ShowHealthBar -> 14068ee80`, and `GetRequiredCount -> 14068ef30`.
+- The same table binds team, map, event-link, visibility, parent/live-event,
+  medal, message, contested-area, depot, and warplot helpers:
+  `GetTeam -> 14068f140`, `GetOwningTeam -> 14068f200`,
+  `GetLocations -> 14068f2f0`, `GetMapRegions -> 14068f700`,
+  `ShowHintArrow -> 14068fff0`, `GetObjectiveType -> 1406900a0`,
+  `GetEvent -> 140690160`, `IsBusy -> 140690250`,
+  `ShouldShowOnMinimap -> 140690330`,
+  `ShouldShowOnMinimapEdge -> 140690410`,
+  `GetTrackedUnits -> 140690500`, `IsHidden -> 140690730`,
+  `GetCategory -> 1406907f0`,
+  `ShouldShowRequiredCount -> 1406908b0`,
+  `GetParentObjective -> 140690990`,
+  `GetLiveEventName -> 140690aa0`,
+  `GetLiveEventSummary -> 140690c20`,
+  `GetMedalPoints -> 140690e80`, `GetJoinMessage -> 140690f20`,
+  `GetStartMessage -> 140691150`, `GetDisplayOrder -> 140691380`,
+  `GetContestedAreaOwningTeam -> 14068e420`,
+  `GetContestedAreaRatio -> 14068e520`,
+  `GetVirtualDepotItems -> 14068e6c0`, and
+  `GetWarplotLocation -> 14068e970`.
+- No server implementation was added. These labels prove the client-authored
+  Lua API names for public-event objective objects, but they do not yet prove
+  safe NexusForever mutations for objective progress, required-count updates,
+  hidden/visibility rules, contested-area ownership, virtual depot items,
+  warplot objective locations, or live-event parent/summary state. Those remain
+  blocked until packet handlers, state producers, or runtime captures map the
+  underlying fields and update flow.
+- Verification:
+  `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -MaxDecompiledFunctions 500` applied `515` WildStar64 labels
+  with `0` missing labels and rendered a fresh `selected_decompiled.c`.
+  Focused checks confirm all 39 new `Lua_PublicEventObjective_*` labels appear
+  in `functions.csv` and in `selected_decompiled.c`, covering the selected block
+  around `selected_decompiled.c:32078` through
+  `selected_decompiled.c:37680`.
+  `./Decomp/Analysis/Test-DecompileManifest.ps1 -FailOnMismatch` reports
+  `WildStar64.exe ok`.
+
+Eighty-seventh Rider's Reef combat-lane follow-up implemented from this pass:
+
+- This pass did not add new native labels. The runtime evidence came from the
+  local worldserver log after the combat projector fix: the player was
+  transported to Exile combat simulation world location `51739`, quest `10518`
+  stayed accepted, and combat AI spell traces showed tutorial hostile units
+  selecting themselves as valid attack targets.
+- Runtime follow-up implemented from this pass:
+  `UnitEntity.CanAttack(...)` now rejects null, dead, and self targets before
+  disposition checks. This prevents Rider's Reef combat NPCs from entering
+  self-hostile loops and dying before player threat can cleanly drive kill
+  objective credit.
+- Quest follow-up implemented from this pass:
+  `InteractionObjectiveUpdater` now has a narrow Rider's Reef mine-credit path
+  for the imported combat mine entities. The official world SQL places
+  `73463`, `73667`, and `73668` at the mine objective locations, but the
+  `10518`/`10524` `ActivateEntity` objective data does not consistently match
+  those imported creature ids. The updater therefore credits the exact objective
+  ids by quest, creature id, and world-location proximity:
+  Exile `21287`/`21340`/`21318` at `51662`/`51663`/`51664`, and Dominion
+  `21313`/`21314`/`21315` at `52899`/`52900`/`52901`.
+- Diagnostics added:
+  quest objective-update and objective-world-location logging now covers combat
+  quests `10518` and `10524`, and mine-credit logging records both successful
+  and location-skipped combat mine activations.
+- Still blocked:
+  fresh in-client validation still needs to walk through the combat lane after
+  the projector transport on Exile, then repeat on Dominion. The next evidence
+  target is whether first-wave kills for `73464`/`73465`, turret kills, and
+  final target groups `14356`/`14402` advance all remaining objectives without
+  further table remaps.
+- Verification:
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build-riders-reef-combat\worldserver-serial2\
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` succeeds with `0`
+  warnings and `0` errors after the initial parallel-build verifier attempts
+  were rerun serially. `.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1
+  -ClientDirectory "I:\WildStar"` restarted Auth/World, and the fresh
+  WorldServer log shows the tutorial script assembly loading without startup
+  errors.
+
+Eighty-eighth Rider's Reef combat-lane follow-up implemented from this pass:
+
+- This pass used the older `kirmmin/NexusForever` `latest` branch as a
+  comparison source at commit `d9b4c0aa8b4f8ee111d799aa2f4d646d9304f1d1`.
+  Its `WorldEntity` default leash range is `50f`, and its `UnitAI` leash reset
+  checks the creature's distance from its spawn rather than immediately
+  invalidating a player target outside a small target-vs-spawn radius. The
+  local WorldServer log had shown Rider's Reef combat beasts taking player
+  damage and then immediately removing/re-adding threat, healing, and resetting;
+  that behavior correlates with the current 15m leash target check being too
+  tight for the combat simulation layout.
+- Runtime follow-up implemented from this pass:
+  `CombatAI` now keeps the tutorial-only player-aggro guard from the previous
+  pass but raises the Rider's Reef combat creature effective leash to `50f`,
+  matching the older branch baseline without changing global AI behavior. The
+  tutorial combat set now includes the final simulated enemies `73492`,
+  `73567`, and `73566` in addition to the first-wave and turret creatures.
+- Quest target-group follow-up implemented from this pass:
+  `Tools/QuestTableInspector --target-groups` now prints target group
+  membership recursively for table-backed checks. The table evidence for the
+  final combat objectives is direct:
+  `14356 -> CreatureIdGroup [73492,73567]` for Exile quest `10518` objective
+  `21290`, and `14402 -> CreatureIdGroup [73473,73566]` for Dominion quest
+  `10524` objective `21317`.
+- Quest objective progress follow-up implemented from this pass:
+  dynamic quest objectives now scale count-based updates with integer ceiling
+  instead of float truncation. This prevents count-`3` objectives such as the
+  Rider's Reef final target groups from landing at `999/1000` after three
+  one-kill updates.
+- World-content follow-up implemented from this pass:
+  `TutorialMapScript` now dynamically spawns the missing Exile final combat
+  wave at world location `51740` with three target-group members
+  (`73492`, `73567`, `73492`) and expands the synthetic Dominion final wave at
+  world location `53015` to three target-group members
+  (`73473`, `73566`, `73473`). This matches the objective counts of `3` while
+  staying scoped to map `3460`.
+- Still blocked:
+  fresh in-client validation needs to re-enter Rider's Reef after restart,
+  activate the Combat Projector, kill the first wave, activate all three mines,
+  destroy both turrets, and kill the final target group. The fresh post-restart
+  WorldServer log confirms the tutorial map loaded the new script assembly and
+  spawned the Exile final wave plus expanded Dominion final wave, but no new
+  kill or mine objective updates had been observed yet during the verification
+  window.
+- Verification:
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` succeeds with `0`
+  warnings and `0` errors after stopping the running WorldServer so output DLLs
+  are unlocked. `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` also succeeds with
+  `0` warnings and `0` errors and refreshes
+  `Source\NexusForever.WorldServer\bin\Debug\net10.0\NexusForever.Script.Main.dll`.
+  `dotnet run --project Tools\QuestTableInspector\QuestTableInspector.csproj --
+  --target-groups .nexusforever-runtime\assets\tbl 14356 14402` prints the two
+  expected creature-id groups. `.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1
+  -ClientDirectory "I:\WildStar"` restarted Auth/World, and the final fresh
+  WorldServer process came up responding with no `error`, `exception`,
+  `failed`, `Fatal`, or `Unhandled` matches in
+  `.nexusforever-runtime\logs\NexusForever.WorldServer.stdout.log`. After a
+  character loaded world `3460`, the log confirmed
+  `Spawned Rider's Reef Exile final combat wave ... legionnaires=3` and
+  `Spawned Rider's Reef Dominion combat lane ... finalHostiles=3`.
+
+Eighty-ninth kirmmin/latest quest target-group follow-up implemented from this
+pass:
+
+- This pass refreshed the older `kirmmin/NexusForever` `latest` comparison
+  branch and confirmed it remains at commit
+  `d9b4c0aa8b4f8ee111d799aa2f4d646d9304f1d1`. The useful portable behavior in
+  this pass is quest target-group expansion and objective matching. The older
+  branch also has a larger loot subsystem, but that path touches loot managers,
+  corpse state, packets, and persistence enough that it remains a separate
+  blocked follow-up rather than a safe quick port.
+- Quest target-group runtime follow-up implemented from this pass:
+  `AssetManager` now caches quest-objective target ids by recursively expanding
+  table-backed `CreatureIdGroup`, nested `OtherTargetGroup`, and the older
+  branch's type-`11` `OtherTargetGroupCreatures` entries for target-group
+  objective types. `IAssetManager` exposes
+  `GetQuestObjectiveTargetIds(...)` so quest objectives can resolve concrete
+  targets without every call site understanding the table hierarchy.
+- Quest objective follow-up implemented from this pass:
+  `QuestObjective` now builds its target-id list for checklist and target-group
+  objectives, exposes `IsTarget(...)`, treats checklist progress as a bitmask,
+  and completes checklist objectives by filling the expected bits. This lets
+  target-group objectives match concrete creature ids while keeping the earlier
+  dynamic-objective integer-ceiling fix for count-based progress.
+- Objective-credit follow-up implemented from this pass:
+  kill, activate, talk, and the `quest kill` debug command now credit
+  target-group quest objectives with the concrete creature id/objective target.
+  Activation checklist credit uses the activated entity's `QuestChecklistIdx`,
+  matching the table-driven checklist model instead of repeatedly crediting the
+  enclosing target-group id.
+- Still blocked:
+  the older branch's full loot implementation is worth mining next, but it
+  should be ported as a dedicated subsystem pass with packet, corpse-state,
+  item-generation, and database checks. The current target-group cache still
+  intentionally avoids semantic guesses for non-creature filters such as
+  faction/race/exclusion groups until those have fresh table evidence.
+- Verification:
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` succeeds with only
+  the pre-existing `Spline.formation` warning. `dotnet run --project
+  Tools\QuestTableInspector\QuestTableInspector.csproj -- --target-groups
+  .nexusforever-runtime\assets\tbl 14356 14402` still prints the expected
+  Rider's Reef final-combat creature groups. `.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1
+  -ClientDirectory "I:\WildStar" -SkipClientLaunch` rebuilds and restarts
+  Auth/World, both processes report responding, and the fresh WorldServer
+  stdout log has no `error`, `exception`, `failed`, `Fatal`, or `Unhandled`
+  matches.
 
 ## Practical Next Steps
 

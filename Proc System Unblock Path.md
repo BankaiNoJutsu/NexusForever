@@ -34,14 +34,34 @@ dotnet run --project Source\NexusForever.WorldServer\NexusForever.WorldServer.cs
 
 ## Validate Proc Registration
 
-These commands should show decoded proc semantics and `SpellDiagnostics proc ... applied=True` when cast:
+In game, the WorldServer command prefix is `!`, not `/`. These commands should
+show decoded proc semantics and `SpellDiagnostics proc ... applied=True` when
+cast:
+
+Prerequisite: these commands require RBAC access. The setup scripts now create
+`gm` / `gm` with the `GameMaster` role and `admin` / `admin` with the
+`Administrator` role for command-driven testing. If you log in with
+`player` / `player`, chat still returns `Unable to invoke command, it's either
+an invalid command or you don't have permission to access it!` because the
+`Player` role does not include `Permission.Spell` / `Permission.SpellCast`.
+Fresh accounts created outside the setup scripts also fall back to `Player`
+until you add the right role or explicit permissions in `nexus_forever_auth`,
+then relog before retrying.
 
 ```text
-/spell inspect4 7116
-/spell cast4 7116
-/spell inspect4 4046
-/spell cast4 4046
+!spell inspect4 7116
+!spell cast4 7116
+!spell inspect4 4046
+!spell cast4 4046
 ```
+
+When the question depends on the real client-originated trigger spell rather than the command-driven proc holder application, arm the next live request first:
+
+```text
+!spell capturenext
+```
+
+Then cast the actual hotbar ability, activate-unit interaction, item use, or rapid-transport request that should trigger the proc. This captures the real client spell entry path and preserves the client context token plus request source in the exported runtime artifact while the proc traces still land in `SpellDiagnostics`.
 
 ## Minimum Evidence Matrix
 
@@ -73,6 +93,8 @@ A single reliable capture for either of these is enough to implement the first c
 - `Spell4=7116` Momentum: kill event `1`, trigger spell `7117`
 
 The key evidence needed is trigger spell caster, trigger spell target, and ordering relative to the original event.
+
+If the trigger action itself needs a structured JSON artifact, use `!spell capturenext` immediately before the real client action instead of relying only on `!spell cast4`, because `!spell cast4` bypasses the client packet handlers and will not exercise the preserved client context fields.
 
 ## Current Runtime
 
@@ -115,8 +137,9 @@ Each `SpellDiagnostics proc-probe` row includes the proc holder, source/target, 
 Capture `proc` registration plus `proc-probe` and `proc-dispatch` rows for:
 
 ```text
-/spell inspect4 4046
-/spell cast4 4046
+!spell inspect4 4046
+!spell cast4 4046
+!spell capturenext
 ```
 
-Then deal damage with a simple known hit and compare whether event `12` rows line up with source, target, timing, and trigger spell routing. Repeat with `7116` for event `1` kill evidence, `4876` for enter-combat, and one heal-other fixture for event `20`. Unsupported target-data tails such as `20`, `14`, `18`, `33`, `34`, and `36` should stay trace-only until their routing is proven.
+Then deal damage with a simple known hotbar hit and compare whether event `12` rows line up with source, target, timing, and trigger spell routing. Keep the exported JSON path alongside the trace rows when the real client trigger spell is part of the question. Repeat with `7116` for event `1` kill evidence, `4876` for enter-combat, and one heal-other fixture for event `20`. Unsupported target-data tails such as `20`, `14`, `18`, `33`, `34`, and `36` should stay trace-only until their routing is proven.

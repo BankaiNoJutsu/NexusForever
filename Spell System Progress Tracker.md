@@ -1,6 +1,6 @@
 # Spell System Progress Tracker
 
-Date: 2026-05-15
+Date: 2026-05-16
 
 This is the working implementation tracker for the global `Spell4` / `Spell4Effects` restoration effort. The detailed evidence lives in:
 
@@ -15,9 +15,9 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 | --- | --- | --- |
 | Structural model | Mostly mapped | `Spell4Base`, concrete `Spell4`, ordered effects, telegraphs, target flags, timing, Jabbithole/world context joins. |
 | Runtime scheduler | Implemented, partial parity | Delay rows and duration-bounded tick rows execute through the spell event queue; duration lifetimes handle known families. |
-| Target acquisition | Partial | Caster, explicit target, telegraph targets, duplicate merge, explicit primary-target range/vertical/facing-angle validation, `Spell4ValidTargets` dead-target bit `0x08`, target/position AOE anchoring from `Spell4TargetMechanics`, selected-target forwarding for player single-target/target-AOE/chain casts, and AOE target count/range/angle filtering are implemented. All observed `Spell4AoeTargetConstraints.TargetSelection` values `1..5` are now wired: `1` closest, `2` furthest, `3` random, `4` lowest-health, and `5` most-missing-health. Explicit primary targets now resolve through `IWorldEntity` in both the spell core and player-owned spell selection, so valid-target bit `0x02` is enforced for interactable/object targets and the spell core can carry non-unit primary targets through selection, spell-start anchoring, and the current activation-object world-target slice: `Proxy`, `Activate`, `SetBusy`, conservative busy-only `SpellForceRemove`, `DespawnUnit`, diagnostics-only `RavelSignal`, and `Fluff`. Full target mechanics, remaining non-corpse valid-target masks, broader world-target effect routing, groups, and AOE prerequisites remain. |
-| Diagnostics | Active | `primary-target-validation`, enriched `target-selection`, `effect-schedule`, `effect-lifetime`, `effect-dispatch`, `effect-result`, `spell-go`, `proc`, `proc-probe`, `ravel-signal`, `player-collection`, `housing-teleport`, `support-stuck`, and family diagnostics are available. |
-| Command fixtures | Active | `/spell inspect4` and `/spell cast4` support concrete `Spell4` work, including player-initiated casts against selected world-object targets while preserving unit-caster testing. |
+| Target acquisition | Partial | Caster, explicit target, telegraph targets, duplicate merge, explicit primary-target range/vertical/facing-angle validation, `Spell4ValidTargets` dead-target bit `0x08`, target/position AOE anchoring from `Spell4TargetMechanics`, selected-target forwarding for player single-target/target-AOE/chain casts, and AOE target count/range/angle filtering are implemented. All observed `Spell4AoeTargetConstraints.TargetSelection` values `1..5` are now wired: `1` closest, `2` furthest, `3` random, `4` lowest-health, and `5` most-missing-health. Explicit primary targets now resolve through `IWorldEntity` in both the spell core and player-owned spell selection, so valid-target bit `0x02` is enforced for interactable/object targets and the spell core can carry non-unit primary targets through selection, spell-start anchoring, and the current activation-object world-target slice: `Proxy`, `Activate`, `SetBusy`, conservative busy-only `SpellForceRemove`, `DespawnUnit`, diagnostics-only `RavelSignal`, and `Fluff`. Area 2 remains the current blocker: client target types `0`, `6`, and `7` are still evidence-only, remaining non-corpse valid-target masks are undecoded, and broader world-target family routing, groups, and AOE prerequisites remain blocked until the target-helper chain is mapped. |
+| Diagnostics | Active | `primary-target-validation`, enriched `target-selection`, `effect-schedule`, `effect-lifetime`, `effect-dispatch`, `effect-result`, `spell-go`, `proc`, `proc-probe`, `ravel-signal`, `player-collection`, `housing-teleport`, `support-stuck`, family diagnostics, structured runtime evidence export, guarded `Server07FB` blocked-immunity diagnostics, and client cast-context token capture for direct spell-entry requests are available. |
+| Command fixtures | Active | `/spell inspect4`, `/spell cast4`, `/spell capture4`, and `/spell diag4` support concrete `Spell4` work, including player-initiated casts against selected world-object targets while preserving unit-caster testing and carrying the exported runtime artifact's client request source/context token when one exists. |
 
 ## Implemented Or Partially Implemented Families
 
@@ -76,7 +76,7 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 
 | Priority | Family / Area | Why It Matters | Next Action |
 | ---: | --- | --- | --- |
-| 1 | Target mechanics and valid target masks | Affects every family and prevents wrong target application. | Decode remaining non-dead valid-target categories and broader world-target effect families beyond the now-wired `0x02` activation-object slice (`Activate`, `SetBusy`, `DespawnUnit`, diagnostics-only `RavelSignal`, and `Fluff`), then continue on groups and AOE prerequisites. |
+| 1 | Target mechanics and valid target masks | Affects every family and prevents wrong target application. | Use Area 2 witness spells `305`, `11820`, `339`, and `26813` plus query set `45` through `48` in `world_context_queries.sql` to decode target types `0`, `6`, and `7`, the `DAT_140c65b70 + 0x788` spell-id tree, remaining non-dead valid-target categories, and the next safe world-target families beyond the current `0x02` activation-object slice. Type `6` currently reduces to the single mechanic-`17` test row `11820`, backed by `ItemSpecial=3777` but still lacking a concrete `item2` owner. |
 | 2 | `Proc` validation | Conservative runtime now covers 1,747 rows across 1,486 spells, but retail parity still needs proving. | Validate kill, enter-combat, cast, damage, receive-damage, and heal-other fixtures against `proc-probe` and `proc-dispatch` traces; keep unsupported target-data tails diagnostic-only until new evidence lands. |
 | 3 | `RavelSignal` | 5,262 rows; high row count and likely content scripting. | Structural diagnostics are implemented; next blocker is decoding the receiver/script graph that consumes mode/signal/payload values. |
 | 4 | Shield/transference families | Smaller but clear formula semantics. | Validate `HealShields`, `DamageShields`, and `Transference` with shield pot, Warrior/rune, and life-drain fixtures. |
@@ -118,15 +118,16 @@ These families were rechecked against the imported `Spell4Effects` data and loca
 
 ## Verification Loop
 
-1. Query representative fixtures with `Tools/SpellReverseEngineering/world_context_queries.sql`.
-2. Inspect concrete spells with `/spell inspect4 <spell4Id>`.
-3. Cast with `/spell cast4 <spell4Id>` against a controlled caster/target.
-4. Compare diagnostics, outgoing packets, combat logs, entity state, and map changes.
-5. Promote a field mapping only when SQL shape, runtime behavior, and sniff/client evidence agree.
+1. Query representative fixtures with `Tools/SpellReverseEngineering/world_context_queries.sql` or select a witness from `Spell Reverse Engineering Runtime Candidates.md`.
+2. Record one evidence bundle using `Tools/SpellReverseEngineering/EVIDENCE_CAPTURE_LOOP.md`; prefer the structured JSON artifact from `/spell capture4 <spell4Id>` or `/spell diag4 <spell4Id>`, and keep the companion working note under `artifacts/verify/spell-evidence/<spell4Id>-<short-name>.md` when narrative comparison notes are still needed.
+3. Inspect concrete spells with `/spell inspect4 <spell4Id>`.
+4. Prefer `/spell capture4 <spell4Id>` against a controlled caster/target, or `/spell diag4 <spell4Id>` when blocked-immunity spell-broadcast follow-up is part of the fixture; use `/spell cast4 <spell4Id>` when a plain cast is sufficient.
+5. Compare diagnostics, exported JSON, outgoing packets, combat logs, entity state, map changes, and any spell-broadcast follow-up notes relevant to the fixture.
+6. Promote a field mapping only when SQL shape, runtime behavior, and sniff/client evidence agree.
 
 ## Last Verified Build
 
-`dotnet build Source\NexusForever.Game\NexusForever.Game.csproj` and `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj` passed on 2026-05-15.
+`dotnet build Source\NexusForever.Game\NexusForever.Game.csproj` and `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj` passed on 2026-05-16.
 
 Known warnings / environment notes:
 

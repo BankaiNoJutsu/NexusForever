@@ -32,6 +32,132 @@ function Get-ArtifactFingerprint {
     return ('sha256:{0}' -f ((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()))
 }
 
+function Read-KeyValuePropertiesFile {
+    param(
+        [string] $Path
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $null
+    }
+
+    $properties = @{}
+    foreach ($line in Get-Content -LiteralPath $Path) {
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
+        }
+
+        $trimmed = $line.Trim()
+        if ($trimmed.StartsWith('#') -or $trimmed.StartsWith('!')) {
+            continue
+        }
+
+        $separatorIndex = $trimmed.IndexOf('=')
+        if ($separatorIndex -lt 0) {
+            $separatorIndex = $trimmed.IndexOf(':')
+        }
+
+        if ($separatorIndex -lt 0) {
+            continue
+        }
+
+        $key = $trimmed.Substring(0, $separatorIndex).Trim()
+        if ([string]::IsNullOrWhiteSpace($key)) {
+            continue
+        }
+
+        $value = $trimmed.Substring($separatorIndex + 1).Trim()
+        $value = $value.Replace('\:', ':').Replace('\=', '=').Replace('\ ', ' ')
+        $value = $value.Replace('\t', "`t").Replace('\n', "`n").Replace('\r', "`r").Replace('\f', [string] [char] 12)
+        $value = $value.Replace('\\', [string] [char] 92)
+        $properties[$key] = $value
+    }
+
+    return $properties
+}
+
+function ConvertTo-NullableInt {
+    param(
+        [string] $Value
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return $null
+    }
+
+    $parsed = 0
+    if ([int]::TryParse($Value, [ref] $parsed)) {
+        return $parsed
+    }
+
+    return $null
+}
+
+function ConvertTo-NullableBool {
+    param(
+        [string] $Value
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return $null
+    }
+
+    $parsed = $false
+    if ([bool]::TryParse($Value, [ref] $parsed)) {
+        return $parsed
+    }
+
+    return $null
+}
+
+function Get-DecompileManifestSummary {
+    param(
+        [string] $ManifestPath,
+        [string] $ExpectedBinaryFingerprint,
+        [string] $ExpectedLabelFingerprint
+    )
+
+    $properties = Read-KeyValuePropertiesFile -Path $ManifestPath
+    if ($null -eq $properties) {
+        return $null
+    }
+
+    $manifestBinaryFingerprint = $properties['binary.fingerprint']
+    $manifestLabelFingerprint = $properties['labels.fingerprint']
+    return [ordered]@{
+        fingerprint                = $properties['fingerprint']
+        contextFingerprint         = $properties['context.fingerprint']
+        scriptVersion              = $properties['script.version']
+        labelsApplied              = ConvertTo-NullableBool -Value $properties['labels.applied']
+        labelFingerprint           = $manifestLabelFingerprint
+        labelFingerprintMatchesRun = if ([string]::IsNullOrWhiteSpace($ExpectedLabelFingerprint) -or [string]::IsNullOrWhiteSpace($manifestLabelFingerprint)) { $null } else { $manifestLabelFingerprint -eq $ExpectedLabelFingerprint }
+        binaryFingerprint          = $manifestBinaryFingerprint
+        binaryFingerprintMatchesRun = if ([string]::IsNullOrWhiteSpace($ExpectedBinaryFingerprint) -or [string]::IsNullOrWhiteSpace($manifestBinaryFingerprint)) { $null } else { $manifestBinaryFingerprint -eq $ExpectedBinaryFingerprint }
+        maxDecompiledFunctions     = ConvertTo-NullableInt -Value $properties['max.decompiledFunctions']
+        selectedCount              = ConvertTo-NullableInt -Value $properties['selected.count']
+        outputExists               = ConvertTo-NullableBool -Value $properties['output.exists']
+        reusedFragments            = ConvertTo-NullableInt -Value $properties['cache.reusedFragments']
+        decompiledFragments        = ConvertTo-NullableInt -Value $properties['cache.decompiledFragments']
+    }
+}
+
+function Finalize-TargetSummary {
+    param(
+        [System.Collections.IDictionary] $TargetSummary,
+        [string] $ExpectedBinaryFingerprint,
+        [string] $ExpectedLabelFingerprint
+    )
+
+    $TargetSummary.exported = Test-Path -LiteralPath $TargetSummary.exportDir
+    $TargetSummary.manifestExists = Test-Path -LiteralPath $TargetSummary.manifestPath
+    $TargetSummary.manifest = if ($TargetSummary.manifestExists) {
+        Get-DecompileManifestSummary -ManifestPath $TargetSummary.manifestPath -ExpectedBinaryFingerprint $ExpectedBinaryFingerprint -ExpectedLabelFingerprint $ExpectedLabelFingerprint
+    }
+    else {
+        $null
+    }
+}
+
 function ConvertTo-ProjectToken {
     param(
         [string] $Value
@@ -85,6 +211,8 @@ if (-not (Test-Path -LiteralPath $analyzeHeadless) -or -not (Test-Path -LiteralP
 $resolvedClientDir = (Resolve-Path -LiteralPath $ClientDir).Path
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 New-Item -ItemType Directory -Force -Path $ProjectDir | Out-Null
+$resolvedOutputDir = (Resolve-Path -LiteralPath $OutputDir).Path
+$resolvedProjectDir = (Resolve-Path -LiteralPath $ProjectDir).Path
 $logDir = Join-Path $PSScriptRoot 'logs'
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
@@ -113,86 +241,148 @@ else {
     $ProjectLayout
 }
 
-foreach ($target in $Targets) {
-    $targetName = [IO.Path]::GetFileNameWithoutExtension($target)
-    $binaryPath = Join-Path $resolvedClientDir $target
-    $binaryFingerprint = Get-ArtifactFingerprint -Path $binaryPath
-    $projectName = Get-GhidraProjectName -BaseProjectName $sharedProjectName -Target $target -Layout $effectiveProjectLayout
-    if ($effectiveProjectLayout -eq 'PerTarget' -and $ExportOnly -and -not (Test-GhidraProjectExists -Directory $ProjectDir -ProjectName $projectName)) {
-        if ($ProjectLayout -eq 'Auto' -and (Test-GhidraProjectExists -Directory $ProjectDir -ProjectName $sharedProjectName)) {
-            Write-Warning ("Per-target project {0} not found for {1}. Falling back to legacy shared project {2} for export-only. Run once without -ExportOnly to create the split project." -f $projectName, $target, $sharedProjectName)
-            $projectName = $sharedProjectName
+$runSummaryTargets = New-Object 'System.Collections.Generic.List[object]'
+
+try {
+    foreach ($target in $Targets) {
+        $targetName = [IO.Path]::GetFileNameWithoutExtension($target)
+        $binaryPath = Join-Path $resolvedClientDir $target
+        $binaryFingerprint = Get-ArtifactFingerprint -Path $binaryPath
+        $projectName = Get-GhidraProjectName -BaseProjectName $sharedProjectName -Target $target -Layout $effectiveProjectLayout
+        if ($effectiveProjectLayout -eq 'PerTarget' -and $ExportOnly -and -not (Test-GhidraProjectExists -Directory $ProjectDir -ProjectName $projectName)) {
+            if ($ProjectLayout -eq 'Auto' -and (Test-GhidraProjectExists -Directory $ProjectDir -ProjectName $sharedProjectName)) {
+                Write-Warning ("Per-target project {0} not found for {1}. Falling back to legacy shared project {2} for export-only. Run once without -ExportOnly to create the split project." -f $projectName, $target, $sharedProjectName)
+                $projectName = $sharedProjectName
+            }
+            else {
+                throw ("Export-only requested for {0}, but per-target Ghidra project {1} does not exist under {2}. Run once without -ExportOnly to create it, or use -ProjectLayout Shared." -f $target, $projectName, $ProjectDir)
+            }
+        }
+
+        $projectLogSuffix = if ($projectName -ne $sharedProjectName) { ".{0}" -f $projectName } else { '' }
+        $logSuffix = if ($ExtraPostScript) { ".{0}" -f ([IO.Path]::GetFileNameWithoutExtension($ExtraPostScript)) } else { '' }
+        $logPath = Join-Path $logDir ("{0}{1}{2}.ghidra.log" -f $targetName, $projectLogSuffix, $logSuffix)
+        $exportDir = Join-Path $resolvedOutputDir $target
+        $manifestPath = Join-Path $exportDir 'selected_decompiled.manifest'
+        $targetSummary = [ordered]@{
+            target = $target
+            binaryPath = $binaryPath
+            binaryFingerprint = $binaryFingerprint
+            projectName = $projectName
+            exportDir = $exportDir
+            manifestPath = $manifestPath
+            logPath = $logPath
+            status = 'pending'
+            exitCode = $null
+            projectLockFailure = $false
+            scriptFailure = $false
+            exported = $false
+            manifestExists = $false
+            manifest = $null
+        }
+
+        $ghidraArgs = @(
+            $ProjectDir,
+            $projectName
+        )
+
+        Write-Host ("Using Ghidra project {0}" -f $projectName)
+
+        if ($ExportOnly) {
+            Write-Host "Exporting existing Ghidra program $target"
+            $ghidraArgs += @(
+                '-process', $target,
+                '-noanalysis'
+            )
         }
         else {
-            throw ("Export-only requested for {0}, but per-target Ghidra project {1} does not exist under {2}. Run once without -ExportOnly to create it, or use -ProjectLayout Shared." -f $target, $projectName, $ProjectDir)
+            if (-not (Test-Path -LiteralPath $binaryPath)) {
+                throw "Target binary not found: $binaryPath"
+            }
+
+            Write-Host "Analyzing $binaryPath"
+            $ghidraArgs += @(
+                '-import', $binaryPath,
+                '-overwrite',
+                '-analysisTimeoutPerFile', '3600'
+            )
         }
-    }
 
-    $projectLogSuffix = if ($projectName -ne $sharedProjectName) { ".{0}" -f $projectName } else { '' }
-    $logSuffix = if ($ExtraPostScript) { ".{0}" -f ([IO.Path]::GetFileNameWithoutExtension($ExtraPostScript)) } else { '' }
-    $logPath = Join-Path $logDir ("{0}{1}{2}.ghidra.log" -f $targetName, $projectLogSuffix, $logSuffix)
-    $ghidraArgs = @(
-        $ProjectDir,
-        $projectName
-    )
+        $ghidraArgs += @('-scriptPath', $scriptPath)
+        if ($resolvedLabelMap) {
+            $ghidraArgs += @('-preScript', 'ApplyNexusForeverLabels.java', $resolvedLabelMap)
+        }
 
-    Write-Host ("Using Ghidra project {0}" -f $projectName)
-
-    if ($ExportOnly) {
-        Write-Host "Exporting existing Ghidra program $target"
         $ghidraArgs += @(
-            '-process', $target,
-            '-noanalysis'
+            '-postScript', 'ExportNexusForeverAnalysis.java', $OutputDir, $MaxDecompiledFunctions,
+            $DecompileMode, $ghidraVersion, $binaryFingerprint, $labelFingerprint,
+            $labelsApplied.ToString().ToLowerInvariant()
         )
-    }
-    else {
-        if (-not (Test-Path -LiteralPath $binaryPath)) {
-            throw "Target binary not found: $binaryPath"
+
+        if ($ExtraPostScript) {
+            $ghidraArgs += @('-postScript', $ExtraPostScript)
+            $ghidraArgs += $ExtraPostScriptArgs
         }
 
-        Write-Host "Analyzing $binaryPath"
-        $ghidraArgs += @(
-            '-import', $binaryPath,
-            '-overwrite',
-            '-analysisTimeoutPerFile', '3600'
-        )
-    }
+        & $analyzeHeadless @ghidraArgs 2>&1 | Tee-Object -FilePath $logPath
 
-    $ghidraArgs += @('-scriptPath', $scriptPath)
-    if ($resolvedLabelMap) {
-        $ghidraArgs += @('-preScript', 'ApplyNexusForeverLabels.java', $resolvedLabelMap)
-    }
+        $targetSummary.exitCode = $LASTEXITCODE
+        $projectLockFailure = Select-String -LiteralPath $logPath -SimpleMatch -Pattern 'Unable to lock project!' -Quiet
+        $targetSummary.projectLockFailure = [bool]$projectLockFailure
 
-    $ghidraArgs += @(
-        '-postScript', 'ExportNexusForeverAnalysis.java', $OutputDir, $MaxDecompiledFunctions,
-        $DecompileMode, $ghidraVersion, $binaryFingerprint, $labelFingerprint,
-        $labelsApplied.ToString().ToLowerInvariant()
-    )
+        if ($LASTEXITCODE -ne 0) {
+            $targetSummary.status = 'failed'
+            Finalize-TargetSummary -TargetSummary $targetSummary -ExpectedBinaryFingerprint $binaryFingerprint -ExpectedLabelFingerprint $labelFingerprint
+            $runSummaryTargets.Add([pscustomobject]$targetSummary)
 
-    if ($ExtraPostScript) {
-        $ghidraArgs += @('-postScript', $ExtraPostScript)
-        $ghidraArgs += $ExtraPostScriptArgs
-    }
-
-    & $analyzeHeadless @ghidraArgs 2>&1 | Tee-Object -FilePath $logPath
-
-    $projectLockFailure = Select-String -LiteralPath $logPath -SimpleMatch -Pattern 'Unable to lock project!' -Quiet
-
-    if ($LASTEXITCODE -ne 0) {
-        if ($projectLockFailure) {
-            throw ("Ghidra project {0} is already in use. Different-target runs avoid this by using split per-target projects (-ProjectLayout PerTarget, or Auto after the per-target project exists). Same-target runs still need to wait for the current holder to finish. See {1}." -f $projectName, $logPath)
+            if ($projectLockFailure) {
+                throw ("Ghidra project {0} is already in use. Different-target runs avoid this by using split per-target projects (-ProjectLayout PerTarget, or Auto after the per-target project exists). Same-target runs still need to wait for the current holder to finish. See {1}." -f $projectName, $logPath)
+            }
+            throw "Ghidra run failed for $target. See $logPath."
         }
-        throw "Ghidra run failed for $target. See $logPath."
+
+        $scriptFailure = Select-String -LiteralPath $logPath -SimpleMatch -Pattern @(
+            'SCRIPT ERROR',
+            'The class could not be found',
+            'Exception running script'
+        ) -Quiet
+        $targetSummary.scriptFailure = [bool]$scriptFailure
+        if ($scriptFailure) {
+            $targetSummary.status = 'failed'
+            Finalize-TargetSummary -TargetSummary $targetSummary -ExpectedBinaryFingerprint $binaryFingerprint -ExpectedLabelFingerprint $labelFingerprint
+            $runSummaryTargets.Add([pscustomobject]$targetSummary)
+            throw "Ghidra post-script failed for $target. See $logPath."
+        }
+
+        $targetSummary.status = 'success'
+        Finalize-TargetSummary -TargetSummary $targetSummary -ExpectedBinaryFingerprint $binaryFingerprint -ExpectedLabelFingerprint $labelFingerprint
+        $runSummaryTargets.Add([pscustomobject]$targetSummary)
+    }
+}
+finally {
+    $runSummary = [ordered]@{
+        timestampUtc = (Get-Date).ToUniversalTime().ToString('o')
+        clientDir = $resolvedClientDir
+        outputDir = $resolvedOutputDir
+        projectDir = $resolvedProjectDir
+        logDir = $logDir
+        decompileMode = $DecompileMode
+        projectLayout = $effectiveProjectLayout
+        exportOnly = [bool]$ExportOnly
+        noApplyLabels = [bool]$NoApplyLabels
+        labelsApplied = [bool]$labelsApplied
+        labelMap = if ($resolvedLabelMap) { $resolvedLabelMap } else { '' }
+        labelFingerprint = $labelFingerprint
+        maxDecompiledFunctions = $MaxDecompiledFunctions
+        extraPostScript = if ($ExtraPostScript) { $ExtraPostScript } else { '' }
+        extraPostScriptArgs = $ExtraPostScriptArgs
+        targetCount = $Targets.Count
+        targets = $runSummaryTargets
     }
 
-    $scriptFailure = Select-String -LiteralPath $logPath -SimpleMatch -Pattern @(
-        'SCRIPT ERROR',
-        'The class could not be found',
-        'Exception running script'
-    ) -Quiet
-    if ($scriptFailure) {
-        throw "Ghidra post-script failed for $target. See $logPath."
-    }
+    $summaryPath = Join-Path $logDir 'LATEST_RUN_SUMMARY.json'
+    $runSummary | ConvertTo-Json -Depth 6 | Out-File -LiteralPath $summaryPath -Encoding utf8
+    Write-Host "Run summary written to: $summaryPath"
 }
 
 Write-Host "Ghidra run complete. Exports: $OutputDir"

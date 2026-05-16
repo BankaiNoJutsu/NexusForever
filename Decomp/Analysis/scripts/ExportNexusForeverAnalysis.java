@@ -12,6 +12,7 @@
 //   imports.csv
 //   functions.csv
 //   selected_xrefs.csv
+//   selected_reasons_summary.csv
 //   selected_decompiled.c
 //
 // Selection is intentionally biased toward networking, packet, auth, and game-data
@@ -149,6 +150,7 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		writeStringsAndXrefs(programDir, listing, referenceManager, functionManager, selection);
 		selectLabeledFunctions(listing, selection);
 		writeSelectedXrefs(programDir, selection, functionManager);
+		writeSelectedReasonsReport(programDir, selection, functionManager, maxDecompiled);
 		writeSelectedDecompiled(programDir, selection, functionManager, maxDecompiled,
 			decompileSettings);
 
@@ -326,6 +328,37 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 						csv(selected.firstXref == null ? "" : selected.firstXref.toString()),
 						csv(reason));
 				}
+			}
+		}
+	}
+
+	private void writeSelectedReasonsReport(File programDir, Selection selection,
+			FunctionManager functionManager, int maxDecompiled) throws Exception {
+		File out = new File(programDir, "selected_reasons_summary.csv");
+		ArrayList<SelectedFunction> ordered = new ArrayList<>(selection.byEntry.values());
+		ordered.sort(Comparator.comparing((SelectedFunction item) -> item.priorityBucket())
+			.thenComparing(item -> item.entry.toString()));
+		ArrayList<SelectedFunction> selectedForDecompile =
+			getSelectedFunctionsForDecompilation(selection, functionManager, maxDecompiled);
+		Set<Address> selectedEntries = new LinkedHashSet<>();
+		for (SelectedFunction selectedFunction : selectedForDecompile) {
+			selectedEntries.add(selectedFunction.entry);
+		}
+
+		try (PrintWriter writer = new PrintWriter(new FileWriter(out))) {
+			writer.println(
+				"entry,name,priority_bucket,reason_count,selected_for_decompile,first_xref,reasons");
+			for (SelectedFunction selectedFunction : ordered) {
+				Function function = functionManager.getFunctionAt(selectedFunction.entry);
+				String functionName = function == null ? "" : function.getName();
+				writer.printf("%s,%s,%d,%d,%s,%s,%s%n",
+					csv(selectedFunction.entry.toString()),
+					csv(functionName),
+					selectedFunction.priorityBucket(),
+					selectedFunction.reasons.size(),
+					Boolean.toString(selectedEntries.contains(selectedFunction.entry)),
+					csv(selectedFunction.firstXref == null ? "" : selectedFunction.firstXref.toString()),
+					csv(joinReasons(selectedFunction)));
 			}
 		}
 	}

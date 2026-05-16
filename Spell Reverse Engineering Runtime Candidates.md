@@ -84,9 +84,33 @@ These rows cover client target-mechanic families that still map to unresolved se
 | Target type | Known mechanic ids | Concrete spell | Why it matters | Commands |
 | --- | --- | --- | --- | --- |
 | Type `0` | `1`, `2`, `44` | `Spell4=305`, base `305`, tier `1` | `Q388` anti-tank mine explosion is a simple concrete witness for the unresolved client `type 0` branch and remains a candidate for deeper `IsSelfSpell` tracing. | `/spell inspect4 305` then `/spell cast4 305` |
-| Type `6` | `17` | `Spell4=5157`, base `4526`, tier `1` | Consumable buff row mapped end-to-end to mechanic `17`; currently the cleanest inspect-first witness for unresolved client `type 6`, even though practical casting still depends on item context. | `/spell inspect4 5157`; cast through the matching item or consumable path if available |
+| Type `6` | `17` | `Spell4=11820`, base `8175`, tier `1` | The only current mechanic-`17` / type-`6` row in both local spell-data schemas: `[TEST] Recharge Item Batteries Full - Tier 1`. It is backed by `ItemSpecial=3777` with `spell4IdOnActivate=11820`, but current client tables expose zero `item2.itemSpecialId00` owners, so it is a documentation-grade inspect witness rather than a practical live item cast today. | `/spell inspect4 11820`; cast only if a matching item-special/use path is recovered |
 | Type `7` | `18`, `25`, `26`, `33`, `52`, `58`, `63`, `69` | `Spell4=339`, base `339`, tier `1` | Auto-attack witness for mechanic `25`; useful for the client service-lookup branch currently surfaced as unresolved `type 7`. | `/spell inspect4 339` then `/spell cast4 339` |
 | Type `7` | `18`, `25`, `26`, `33`, `52`, `58`, `63`, `69` | `Spell4=26813`, base `13307`, tier `1` | Client test AE witness for mechanic `18`; complements the auto-attack row with a non-basic-attack shape under the same unresolved branch. | `/spell inspect4 26813` then `/spell cast4 26813` |
+
+Area 2 follow-up for every unresolved target-mechanic witness:
+
+1. Run `/spell inspect4 <spell4>` and capture `Spell4TargetMechanics`, `Spell4ValidTargets`, target-angle, AOE constraints, and effect target flags.
+2. Run `/spell cast4 <spell4>` only when the cast path is practical, then keep the result diagnostic-only unless the client helper path is already proven.
+3. Cross-reference the witness against query `45` in `Tools/SpellReverseEngineering/world_context_queries.sql`, then compare the runtime shape with the current `Game.Spell:IsSelfSpell` evidence around `FUN_1403acd90`, `FUN_1403b4ec0`, and the spell-id keyed tree rooted at `DAT_140c65b70 + 0x788`.
+4. Record the outcome as one of: target-type dispatch confirmed, wrapper-layout offset confirmed, still blocked on helper decode, or still blocked on missing item/context path.
+
+## Service-Token Spellcast Witnesses
+
+These rows are the current canonical SQL-side witness set for the
+`ClientSpellCastWithServiceToken` / `ServiceTokenCastResult` boundary. Client
+decompile proves the property-flag gate, but the imported `spell4` rows in both
+local schemas currently expose zero `0x20000000` flag bits, so the durable
+table-side fixture set is the six `wildstar_client.Spell4ServiceTokenCost` rows.
+
+| Fixture | Concrete spell | Family evidence | Service-token evidence | Commands |
+| --- | --- | --- | --- | --- |
+| Recall Shard Service Token | `Spell4=8568`, base `7575`, tier `1` | Single `Teleport` effect (`effectType=65`) on target-mechanic id `1` / type `0`. | Cost row `10`; concrete recall witness for the `0x00C2` spellcast path. | `/spell inspect4 8568`; then trigger through the matching native service-token client flow if available |
+| Housing Recall Service Token | `Spell4=38408`, base `22919`, tier `1` | `HousingTeleport` plus delayed `Fluff` row (`effectType=22`, `17`). | Cost row `10`; concrete housing witness for the same boundary. | `/spell inspect4 38408`; then trigger through the matching native service-token client flow if available |
+| Exile Capital Teleport Service Token | `Spell4=70864`, base `47768`, tier `1` | Single `Teleport` effect (`effectType=65`). | Cost row `10`; capital-teleport witness. | `/spell inspect4 70864`; then trigger through the matching native service-token client flow if available |
+| Dominion Capital Teleport Service Token | `Spell4=70865`, base `47769`, tier `1` | Single `Teleport` effect (`effectType=65`). | Cost row `10`; capital-teleport witness. | `/spell inspect4 70865`; then trigger through the matching native service-token client flow if available |
+| Dev Cooldown Removal Test | `Spell4=83146`, base `58463`, tier `1` | `Fluff`-only target row for 4000 ms (`effectType=17`, `targetFlags=2`). | Cost row `2`; compact dev witness for the service-token result boundary. | `/spell inspect4 83146`; then trigger through the matching native service-token client flow if available |
+| Dev Cooldown Removal Test 2 | `Spell4=83153`, base `58470`, tier `1` | `Fluff`-only target row for 4000 ms (`effectType=17`, `targetFlags=2`). | Cost row `5`; second compact dev witness. | `/spell inspect4 83153`; then trigger through the matching native service-token client flow if available |
 
 ## EMM-Bearing Innate Fixtures
 
@@ -469,14 +493,15 @@ Most `ShieldOverload` rows have all-zero payload plus a duration. The current ru
 
 | Fixture | Context | Concrete spell | Proc evidence | Commands |
 | --- | --- | --- | --- | --- |
-| Momentum On Kill | Global item/talent proc | `Spell4=7116`, base `3574`, tier `1` | Trigger event `1`, trigger spell `7117`, chance `1.0`, target data `2`; validates on-kill shell. | `/spell inspect4 7116` then `/spell cast4 7116` |
-| Readiness Enter Combat | Global item/talent proc | `Spell4=4876`, base `2525`, tier `1` | Trigger event `6`, trigger spell `4877`, chance `1.0`, target data `2`; validates enter-combat shell. | `/spell inspect4 4876` then `/spell cast4 4876` |
-| Brutal Damage Proc | Global item special | `Spell4=4046`, base `2019`, tier `1` | Trigger event `12`, trigger spell `4047`, chance `0.15`, target data `4`; validates damage/on-hit shell. | `/spell inspect4 4046` then `/spell cast4 4046` |
-| Bleed Damage Proc | Global item special | `Spell4=4075`, base `2052`, tier `1` | Trigger event `12`, trigger spell `4076`, chance `0.2`, target data `4`, payload `DataBits05=6`. | `/spell inspect4 4075` then `/spell cast4 4075` |
-| Explosive Damage Proc | Global item special | `Spell4=4191`, base `2130`, tier `1` | Trigger event `12`, trigger spell `4192`, chance `0.35`, target data `4`; validates AOE trigger spell routing. | `/spell inspect4 4191` then `/spell cast4 4191` |
-| Warrior Confrontation | Deprecated Warrior proc | `Spell4=1024`, base `1024`, tier `1` | Trigger event `16`, trigger spell `1030`, chance `1.0`, duration `200`; validates damage-taken registration and duration cleanup. | `/spell inspect4 1024` then `/spell cast4 1024` |
-| Sprint Daze | Global movement proc | `Spell4=1316`, base `1316`, tier `1` | Trigger event `16`, trigger spell `40364`, chance `1.0`, target data `33`, extra filter payload in `DataBits06..08`. | `/spell inspect4 1316` then `/spell cast4 1316` |
-| Spellslinger Affinity | Global class proc | `Spell4=39063`, base `23829`, tier `1` | Trigger event `76`, trigger spell `79078`, chance `1.0`, duration `500`, cooldown-like `5000`, target data `17`; validates cooldown/target-route evidence. | `/spell inspect4 39063` then `/spell cast4 39063` |
+| Momentum On Kill | Global item/talent proc | `Spell4=7116`, base `6344`, tier `1` | Live `!spell inspect4` now confirms trigger event `1`, trigger spell `7117`, chance `1.0`, target data `2`, and the current threshold-table gap simply reports as unavailable instead of crashing. | `!spell inspect4 7116` then `!spell cast4 7116` |
+| Readiness Enter Combat | Global item/talent proc | `Spell4=4876`, base `2525`, tier `1` | Trigger event `6`, trigger spell `4877`, chance `1.0`, target data `2`; validates enter-combat shell. | `!spell inspect4 4876` then `!spell cast4 4876` |
+| Brutal Damage Proc | Global item special | `Spell4=4046`, base `3717`, tier `1` | Live `!spell inspect4` confirms trigger event `12`, trigger spell `4047`, chance `0.15`, target data `4`, and the current threshold-table gap simply reports as unavailable instead of crashing. | `!spell inspect4 4046` then `!spell cast4 4046` |
+| Bleed Damage Proc | Global item special | `Spell4=4075`, base `2052`, tier `1` | Trigger event `12`, trigger spell `4076`, chance `0.2`, target data `4`, payload `DataBits05=6`. | `!spell inspect4 4075` then `!spell cast4 4075` |
+| Explosive Damage Proc | Global item special | `Spell4=4191`, base `2130`, tier `1` | Trigger event `12`, trigger spell `4192`, chance `0.35`, target data `4`; validates AOE trigger spell routing. | `!spell inspect4 4191` then `!spell cast4 4191` |
+| Warrior Confrontation | Deprecated Warrior proc | `Spell4=1024`, base `1024`, tier `1` | Trigger event `16`, trigger spell `1030`, chance `1.0`, duration `200`; validates damage-taken registration, source/target inversion, and duration cleanup. | `!spell inspect4 1024` then `!spell cast4 1024` |
+| Charge Builder Brutality Proc | Global consumable proc | `Spell4=35054`, base `20866`, tier `1` | Clean event-`20` heal-other witness from the local spell mirror: trigger spell `35055`, chance `0.5`, target data `1`. Best validated by applying the proc shell, then performing a real heal on another unit with `!spell capturenext` armed. | `!spell inspect4 35054`, `!spell cast4 35054`, then `!spell capturenext` before a real heal-other action |
+| Sprint Daze | Global movement proc | `Spell4=1316`, base `1316`, tier `1` | Trigger event `16`, trigger spell `40364`, chance `1.0`, target data `33`, extra filter payload in `DataBits06..08`; high-value unsupported tail witness. | `!spell inspect4 1316` then `!spell cast4 1316` |
+| Spellslinger Affinity | Global class proc | `Spell4=39063`, base `23829`, tier `1` | Trigger event `76`, trigger spell `79078`, chance `1.0`, duration `500`, cooldown-like `5000`, target data `17`; high-value unsupported event/route witness. | `!spell inspect4 39063` then `!spell cast4 39063` |
 
 ## Unit State Set Fixtures
 

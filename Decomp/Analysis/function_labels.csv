@@ -1,3 +1,8 @@
+# NexusForever function label map.
+# Format: program,address,name,comment
+# Comment lines are ignored by ApplyNexusForeverLabels.java.
+# Add rows only when the function name is at least Mapped on the Evidence Ladder.
+# Re-export after edits and confirm the label appears in functions.csv and selected_decompiled.c.
 # program,address,name,comment
 StsConnLib64.MT.dll,18000fd10,StsConn_GetTransactionName,Maps STS transaction ids to transaction names.
 StsConnLib64.MT.dll,1800043d0,StsConn_SendLoginFinish,Builds /Auth/LoginFinish request fields.
@@ -33,6 +38,7 @@ WildStar64.exe,1400877a0,ClientICCommChannelJoin_WritePayload,Serialises world o
 WildStar64.exe,140088e60,Marketplace_AuctionSellOrderSubmit_WritePayload,Serialises world opcode 0x06DC ClientAuctionSellOrderSubmit as 64-bit item guid, 64-bit minimum bid, and 64-bit buyout price.
 WildStar64.exe,140089490,ClientFlightPathPurchase_WritePayload,Serialises world opcode 0x00FF payload as a 32-bit route-count followed by that many 32-bit TaxiRoute ids.
 WildStar64.exe,140089570,ClientSpellCastWithServiceToken_WritePayload,Serialises world opcode 0x00C2 payload as an 18-bit generated cast-context token plus a 32-bit Spell4 id.
+WildStar64.exe,14008b2f0,ClientQuestComplete_WritePayload,Serialises world opcode 0x035D ClientQuestComplete as a 15-bit quest id, 15-bit reward-selection value, and 1-bit communicator flag.
 WildStar64.exe,140093360,ClientCastSpell_WritePayload,Serialises world opcode 0x009A payload as a 32-bit generated context token, 16-bit action slot, resolved target entity id, and trailing boolean flag.
 WildStar64.exe,140093950,ClientCastSpellPosition_WritePayload,Serialises world opcode 0x009B payload as a 32-bit generated context token, 16-bit action slot, and three raw 32-bit target-position components.
 WildStar64.exe,140093d20,ActivateUnit0x0096_Advance168Bits,Advances 168 payload bits for world opcode 0x0096.
@@ -60,6 +66,11 @@ WildStar64.exe,1400ea3e0,ClientEvent_DispatchNamedEvent,Generic named client eve
 WildStar64.exe,140430e00,Loot_DispatchBindcheckEvent,Serializes the prepared loot object set into an itemDrop payload and dispatches the named client event LootBindcheck through the scene event sink.
 WildStar64.exe,14022df60,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 WildStar64.exe,14024bfa0,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
+WildStar64.exe,1401fc000,ClientDB_RegisterDatacube,Registers the Datacube client DB table using the Datacube and DB\\Datacube.tbl descriptors.
+WildStar64.exe,1401fc440,ClientDB_RegisterDatacubeVolume,Registers the DatacubeVolume client DB table using the DatacubeVolume and DB\\DatacubeVolume.tbl descriptors.
+WildStar64.exe,14021fe20,ClientDB_RegisterPathScientistDatacubeDiscovery,Registers the PathScientistDatacubeDiscovery client DB table using the PathScientistDatacubeDiscovery and DB\\PathScientistDatacubeDiscovery.tbl descriptors.
+WildStar64.exe,14022b4e0,ClientDB_RegisterQuestDirection,Registers the QuestDirection client DB table using the QuestDirection and DB\\QuestDirection.tbl descriptors.
+WildStar64.exe,14022b920,ClientDB_RegisterQuestDirectionEntry,Registers the QuestDirectionEntry client DB table using the QuestDirectionEntry and DB\\QuestDirectionEntry.tbl descriptors.
 WildStar64.exe,1403315a0,Network_SendMessageFailure,Handles a failed world-message send attempt.
 WildStar64.exe,140332580,Network_SendMessageById,Looks up message metadata by id and dispatches through world socket.
 WildStar64.exe,140333b90,Network_IcmpPing,Sends a single ICMP echo probe and returns response timing/status.
@@ -123,9 +134,11 @@ WildStar64.exe,1403a6b50,Trade_SendClientP2PTradingAddItem,Sends opcode 0x018D C
 WildStar64.exe,1403a6c50,Trade_SendClientP2PTradingRemoveItem,Sends opcode 0x0194 ClientP2PTradingRemoveItem with the 64-bit item guid from the local trade item entry.
 WildStar64.exe,1403a6ce0,Trade_SendClientP2PTradingSetMoney,Sends opcode 0x0197 ClientP2PTradingSetMoney with a 64-bit credit offer after local affordability and current-offer checks.
 WildStar64.exe,1403a6e00,Trade_SendClientP2PTradingCommit,Sends zero-payload opcode 0x0190 ClientP2PTradingCommit when an active local trade exists.
+WildStar64.exe,1403acd90,SpellService_ResolveSpellWrapper,Resolves the shared spell wrapper/service object used by Game.Spell target-type 0 and type 7 helper paths plus other interaction/service wrappers.
 WildStar64.exe,140214fe0,ClientDB_RegisterMatchingGameMap,Registers the MatchingGameMap client DB table using the MatchingGameMap and DB\\MatchingGameMap.tbl descriptors.
 WildStar64.exe,140215240,MatchingGameMap_LookupById,Resolves a MatchingGameMap record by id through the registered MatchingGameMap callback or the DAT_140c641f0 fallback dispatcher.
 WildStar64.exe,1403a11c0,ActionSet_CheckPvPRestriction,Checks whether the current PvP state permits action-set changes.
+WildStar64.exe,1403b4ec0,Game_Spell_IsSelfSpellDelegate,Undecompiled bool helper used by Game.Spell:IsSelfSpell after the spell wrapper/service lookup path resolves the active spell metadata.
 WildStar64.exe,1403bb480,ActionSet_SendPendingActionSetChanges,Sends or commits a validated action-set change request.
 WildStar64.exe,1403bb8d0,ActionSet_CheckUpdateSpellInProgress,Checks whether a spell/action-set update is already in progress.
 WildStar64.exe,1403db7f0,UnitState_UpdateCachedStateFields,Resolves the target unit for a raw unit-state record, forwards the state into FUN_14045bdc0, and refreshes the unit's cached raw state at +0x108 plus derived classification at +0x10c when the value changes.
@@ -139,6 +152,15 @@ WildStar64.exe,1403ebe80,Interaction_CheckEffectiveRange,Resolves the effective 
 WildStar64.exe,1403f4900,Network_SendOpcodePayloadHelper,Generic opcode+payload send helper that dispatches through DAT_140c65808 virtual send callbacks.
 WildStar64.exe,14042e120,UnitEvent_HandleEnteredCombat,Dispatches UnitEnteredCombat and conditional EnteredCombat events for the local player or current target.
 WildStar64.exe,14042e1b0,UnitEvent_DispatchTargetUnitChanged,Dispatches TargetUnitChanged with the local player's current target id.
+WildStar64.exe,14042e1f0,TargetThreatList_DispatchUpdatedEvent,Clamps the cached five-entry target threat list and dispatches TargetThreatListUpdated through the shared client event sink.
+WildStar64.exe,14042e350,Codex_DispatchToggleCodexEvent,Dispatches the ToggleCodex named event through the shared client event sink.
+WildStar64.exe,14042e380,QuestLog_DispatchToggleQuestLogEvent,Dispatches the ToggleQuestLog named event through the shared client event sink.
+WildStar64.exe,14042e3b0,QuestLog_DispatchShowQuestLogEvent,Dispatches the ShowQuestLog named event with an optional derived argument from the current quest-log state block.
+WildStar64.exe,14042e410,QuestLog_DispatchHideQuestLogEvent,Dispatches the HideQuestLog named event through the shared client event sink.
+WildStar64.exe,140426240,QuestRuntime_DispatchObjectiveUpdatedEvent,Dispatches the named QuestObjectiveUpdated client event from a quest-objective runtime node and completion-state flag.
+WildStar64.exe,140431a00,GalacticArchive_HandleLinkClick,Handles Link payloads with Archive:, Location:, or Schematic: prefixes, resolving the target and dispatching GalacticArchiveLinkClick or the linked location/work-order helper path.
+WildStar64.exe,14043bf30,Communicator_HandleQuestOrSpamMessage,Processes communicator message payloads, routing spam to Communicator_ShowSpamMsg and gated quest traffic to Communicator_ShowQuestMsg plus the follow-up local timer state.
+WildStar64.exe,140499a20,GalacticArchive_ApplyUnlockMaskAndDispatchEvents,Updates the local Galactic Archive unlock mask, dispatching GalacticArchiveRefresh plus GalacticArchiveArticleAdded and GalacticArchiveEntryAdded for newly unlocked bits.
 WildStar64.exe,1404aacb0,ActionSet_ValidateRequestedChanges,Validates a 12-entry action-set request and returns a LimitedActionSetResult.
 WildStar64.exe,1404acfa0,FlightPath_SendPurchaseRequest,Builds and sends opcode 0x00FF flight-path purchase payload from validated route data.
 WildStar64.exe,1404d9450,CSIKey_HandlePress,Handles the context-sensitive interaction key by gating on local busy state, dispatching the named CSIKeyPressed event when the active object consumes the press, routing stored CSI action kinds through a local switch table, and falling back to Interaction_AttemptTargetAction for the stored target path.
@@ -150,15 +172,20 @@ WildStar64.exe,14051dc00,RuneCrafting_SendClientRuneSlotReroll,Sends world opcod
 WildStar64.exe,14051e580,RuneCrafting_SendClientRuneSlotClear,Sends world opcode 0x085A ClientCraftingRuneSlotClear with item guid, rune slot index, recover flag, and currency-source flag.
 WildStar64.exe,14051ed80,RuneCrafting_SendClientRuneSlotAdd,Sends world opcode 0x0859 ClientCraftingRuneSlotAdd with item guid, non-fusion flag, and RuneType.
 WildStar64.exe,140520c10,ServiceToken_HandleCastResult,Handles ServiceTokenCastResult by gating on Spell4.PropertyFlags 0x20000000 and dispatching opcode 0x00C2 or result 0x014B.
+WildStar64.exe,140556780,Dialog_HandleResponseSelection,Dialog mode 3 response-selection handler; the DialogResponseType_QuestComplete branch forwards quest completion through Dialog_SendClientQuestComplete.
+WildStar64.exe,140557000,Dialog_SendClientQuestComplete,Builds and sends world opcode 0x035D ClientQuestComplete from the active dialog quest context, copying the communicator bit from the dialog state flag.
 WildStar64.exe,140559250,DeferredActionQueue_ArmTargetApproach,Clears the shared deferred-action queue, stores mode 1 with the supplied target id and a fixed 1.5 range, and immediately hands off to DeferredActionQueue_UpdateAndDispatch for the queued target-approach behavior.
 WildStar64.exe,1405592f0,DeferredActionQueue_ArmInteractionAction,Validates the deferred interaction-action profile gates, clears the local queue block, stores the target id, range, and interaction subkind, and then hands control to 140559920 for in-range retry or dispatch.
 WildStar64.exe,140559920,DeferredActionQueue_UpdateAndDispatch,Advances the shared deferred target-action queue each tick by tracking distance and short delays, clearing invalid queued state, and dispatching the queued interaction, spell-cast, activate-unit, or 0x009D action once range or state conditions allow.
+WildStar64.exe,14055b0e0,TargetSelection_ApplySelectionAndDispatch,Applies a new selected-unit id by clearing the cached target threat list, sending ClientEntitySelect 0x0185, dispatching TargetUnitChanged, and refreshing dependent selection and interaction state.
+WildStar64.exe,14055c0f0,TargetThreatList_RebuildAndDispatch,Rebuilds the cached target threat list from a five-id and five-threat buffer, prioritizes the source unit's current target when present, and dispatches TargetThreatListUpdated.
 WildStar64.exe,14055bdc0,SpellTarget_ResolveTargetEntity,Resolves an entity target from spell metadata, explicit target hints, and fallback proximity checks, then returns the resolved world-entity object.
 WildStar64.exe,140593db0,Tradeskill_SendClientTradeskillLearn,Sends world opcode 0x0857 ClientTradeskillLearn with the selected learn Tradeskill id and optional drop Tradeskill id after rejecting already-active professions.
 WildStar64.exe,14059a900,Tradeskill_SendClientTradeskillPickTalent,Sends world opcode 0x084E ClientTradeskillPickTalent with Tradeskill id, zero-based talent tier index, and TradeskillBonus id after validating the local tier/bonus selection.
 WildStar64.exe,14059acb0,Tradeskill_SendClientTradeskillResetTalents,Sends world opcode 0x0858 ClientTradeskillResetTalents with the active Tradeskill id when that profession has at least one selected talent.
 WildStar64.exe,14059b7c0,Crafting_SendClientCraftingAdditive,Sends world opcode 0x084A ClientCraftingAdditive with crafting station unit id plus additive and catalyst Item2 ids.
 WildStar64.exe,14059d250,RuneCrafting_SendClientRuneInstall,Sends world opcode 0x085B ClientCraftingRuneInstall with target item guid, rune item count, and rune Item2 id array.
+WildStar64.exe,1405a8a40,QuestRuntime_FindObjectiveNodeById,Hashes a quest-objective id into the DAT_140c65b80 store and returns the current runtime node when present.
 WildStar64.exe,1405cd070,QueuedStateReplay_FlushPendingRecords,Flushes queued replay records from linked-list storage and forwards each record into the queued replay dispatcher.
 WildStar64.exe,1405cd200,QueuedStateReplay_DispatchRecord,Jump-dispatches a single queued replay record into specialized worker helpers inside the UnitCreated-linked state replay cluster.
 WildStar64.exe,1405de2e0,Friendship_SetAutoResponseMessagesAndSend,Validates away and busy auto-response strings and sends opcode 0x03B7 ClientFriendshipSetAutoResponseMessage when the friendship service is loaded.
@@ -168,6 +195,7 @@ WildStar64.exe,1405e7fd0,Lua_GameSpell_Equals,Game.Spell __eq metamethod.
 WildStar64.exe,1405e8070,Lua_GameSpell_CreateOrWrap,Creates or wraps a Game.Spell Lua userdata value.
 WildStar64.exe,1405e81b0,Lua_GameSpell_Gc,Game.Spell __gc metamethod.
 WildStar64.exe,1405e8230,Lua_RegisterGameSpellBindings,Registers the Game.Spell Lua method/property bindings.
+WildStar64.exe,1405fb830,QuestRuntime_UpdateObjectiveStateAndDispatch,Updates quest-objective runtime state, refreshes local quest UI helpers, and dispatches QuestObjectiveUpdated or ContractObjectiveUpdated.
 WildStar64.exe,1405e95f0,Lua_GameSpell_GetId,Game.Spell:GetId Lua method.
 WildStar64.exe,1405e96a0,Lua_GameSpell_GetBaseSpellId,Game.Spell:GetBaseSpellId Lua method.
 WildStar64.exe,1405e9750,Lua_GameSpell_GetName,Game.Spell:GetName Lua method.
@@ -220,8 +248,195 @@ WildStar64.exe,1406a0570,Marketplace_SendClientCommoditySellOrderSubmit,Sends op
 WildStar64.exe,1406a0740,Marketplace_SendClientAuctionBuyOrderSubmit,Sends opcode 0x055E ClientAuctionBuyOrderSubmit with Item2 id, auction id, and offered amount from the selected item auction.
 WildStar64.exe,1406a1270,Marketplace_SendClientCommodityOrderCancel,Sends opcode 0x0093 ClientCommodityOrderCancel with commodity order id, Item2 id, and buy-order flag from the selected commodity order.
 WildStar64.exe,1406a20c0,Marketplace_SendClientAuctionCancel,Sends opcode 0x0094 ClientAuctionCancel with auction Item2 id and auction id from the selected item auction.
+WildStar64.exe,1406a3ba0,Lua_GameContract_Complete,Game.Contract Lua method that validates the selected contract and sends opcode 0x035D ClientQuestComplete with an optional reward selection and communicator bit cleared.
 WildStar64.exe,1406a4ab0,Lua_ICComm_SetReceivedMessageFunction,ICComm callback registration method for SetReceivedMessageFunction.
 WildStar64.exe,1406a4b60,Lua_ICComm_SetSendMessageResultFunction,ICComm callback registration method for SetSendMessageResultFunction.
+WildStar64.exe,14066a490,Lua_GalacticArchiveArticle___eq,Game.GalacticArchiveArticle.__eq Lua metamethod that compares two article userdata values by resolved underlying article id.
+WildStar64.exe,14066a6b0,Lua_GalacticArchiveArticle___gc,Game.GalacticArchiveArticle.__gc Lua metamethod that releases the wrapped article userdata reference.
+WildStar64.exe,14066a730,Lua_GalacticArchiveEntry___eq,Game.GalacticArchiveEntry.__eq Lua metamethod that compares two entry userdata values by resolved underlying entry id.
+WildStar64.exe,14066a930,Lua_GalacticArchiveEntry___gc,Game.GalacticArchiveEntry.__gc Lua metamethod that releases the wrapped entry userdata reference.
+WildStar64.exe,14066aa40,Lua_RegisterGalacticArchiveArticleBindings,Registers the Game.GalacticArchiveArticle Lua bindings plus LinkQueryType_All, LinkQueryType_Parents, and LinkQueryType_Children constants.
+WildStar64.exe,14066b300,Lua_GalacticArchiveArticle_GetTitle,Game.GalacticArchiveArticle.GetTitle Lua method.
+WildStar64.exe,14066b3e0,Lua_GalacticArchiveArticle_GetText,Game.GalacticArchiveArticle.GetText Lua method.
+WildStar64.exe,14066b5b0,Lua_GalacticArchiveArticle_GetLinkName,Game.GalacticArchiveArticle.GetLinkName Lua method.
+WildStar64.exe,14066b6f0,Lua_GalacticArchiveArticle_GetEntries,Game.GalacticArchiveArticle.GetEntries Lua method that returns wrapped child archive entries from the current article state.
+WildStar64.exe,14066b920,Lua_GalacticArchiveArticle_GetIcon,Game.GalacticArchiveArticle.GetIcon Lua method.
+WildStar64.exe,14066ba60,Lua_GalacticArchiveArticle_GetCreaturePortrait,Game.GalacticArchiveArticle.GetCreaturePortrait Lua method.
+WildStar64.exe,14066bb20,Lua_GalacticArchiveArticle_GetWorldZone,Game.GalacticArchiveArticle.GetWorldZone Lua method.
+WildStar64.exe,14066c710,Lua_RegisterGalacticArchiveEntryBindings,Registers the Game.GalacticArchiveEntry Lua bindings plus archive entry and entry-header enum constants including EldanArchive and TextWithPortrait/Icon.
+WildStar64.exe,14066cb20,Lua_GalacticArchiveEntry_GetTitle,Game.GalacticArchiveEntry.GetTitle Lua method.
+WildStar64.exe,14066cc50,Lua_GalacticArchiveEntry_GetText,Game.GalacticArchiveEntry.GetText Lua method.
+WildStar64.exe,14066ce50,Lua_GalacticArchiveEntry_GetScientistText,Game.GalacticArchiveEntry.GetScientistText Lua method.
+WildStar64.exe,14066d0c0,Lua_GalacticArchiveEntry_IsUnlocked,Game.GalacticArchiveEntry.IsUnlocked Lua method.
+WildStar64.exe,14066d1a0,Lua_GalacticArchiveEntry_IsViewed,Game.GalacticArchiveEntry.IsViewed Lua method.
+WildStar64.exe,14066d280,Lua_GalacticArchiveEntry_GetProgress,Game.GalacticArchiveEntry.GetProgress Lua method that returns 100 when the resolved entry state is already satisfied; otherwise computes a bounded completion percentage from the entry's requirement set.
+WildStar64.exe,14066d360,Lua_GalacticArchiveEntry_GetArticle,Resolves the current Game.GalacticArchiveEntry state object and wraps its associated Game.GalacticArchiveArticle for Lua.
+WildStar64.exe,14066d430,Lua_GalacticArchiveEntry_GetHeaderStyle,Game.GalacticArchiveEntry.GetHeaderStyle Lua method.
+WildStar64.exe,14066d520,Lua_GalacticArchiveEntry_GetBodyStyle,Game.GalacticArchiveEntry.GetBodyStyle Lua method.
+WildStar64.exe,14066d610,Lua_GalacticArchiveEntry_GetHeaderIcon,Game.GalacticArchiveEntry.GetHeaderIcon Lua method.
+WildStar64.exe,14066d770,Lua_GalacticArchiveEntry_GetHeaderCreature,Game.GalacticArchiveEntry.GetHeaderCreature Lua method.
+WildStar64.exe,14066d860,Lua_GalacticArchiveEntry_GetBodyImage,Game.GalacticArchiveEntry.GetBodyImage Lua method.
+WildStar64.exe,14066d9c0,Lua_GalacticArchiveEntry_GetCompletionTitle,Game.GalacticArchiveEntry.GetCompletionTitle Lua method.
+WildStar64.exe,14066dab0,GalacticArchiveEntry_ResolveStateObject,Resolves the live Galactic Archive state object associated with an entry's metadata key through the current archive lookup trees.
+WildStar64.exe,140678590,Lua_PathMission___eq,Game.PathMission.__eq Lua metamethod that compares two path mission userdata values by resolved underlying mission id.
+WildStar64.exe,140678790,Lua_PathMission___gc,Game.PathMission.__gc Lua metamethod that releases the wrapped path mission userdata reference.
+WildStar64.exe,14067b7c0,Lua_PathMission_GetId,Game.PathMission.GetId Lua method.
+WildStar64.exe,14067b840,Lua_PathMission_GetName,Game.PathMission.GetName Lua method.
+WildStar64.exe,14067b9c0,Lua_PathMission_GetSummary,Game.PathMission.GetSummary Lua method.
+WildStar64.exe,14067bcb0,Lua_PathMission_GetType,Game.PathMission.GetType Lua method.
+WildStar64.exe,14067bd30,Lua_PathMission_GetSubType,Game.PathMission.GetSubType Lua method.
+WildStar64.exe,14067be10,Lua_PathMission_GetDisplayType,Game.PathMission.GetDisplayType Lua method.
+WildStar64.exe,14067be90,Lua_PathMission_GetRewardData,Game.PathMission.GetRewardData Lua method.
+WildStar64.exe,14067c010,Lua_PathMission_GetRewardXp,Game.PathMission.GetRewardXp Lua method.
+WildStar64.exe,14067c090,Lua_PathMission_GetDistance,Game.PathMission.GetDistance Lua method.
+WildStar64.exe,14067c190,Lua_PathMission_IsInArea,Game.PathMission.IsInArea Lua method.
+WildStar64.exe,14067c220,Lua_PathMission_IsComplete,Game.PathMission.IsComplete Lua method.
+WildStar64.exe,14067c290,Lua_PathMission_IsOptional,Game.PathMission.IsOptional Lua method.
+WildStar64.exe,14067c300,Lua_PathMission_GetEpisode,Game.PathMission.GetEpisode Lua method.
+WildStar64.exe,14067c370,Lua_PathMission_GetNumCompleted,Game.PathMission.GetNumCompleted Lua method.
+WildStar64.exe,14067c3f0,Lua_PathMission_GetNumNeeded,Game.PathMission.GetNumNeeded Lua method.
+WildStar64.exe,14067c4e0,Lua_PathMission_IsStarted,Game.PathMission.IsStarted Lua method.
+WildStar64.exe,14067c470,Lua_PathMission_GetMissionState,Game.PathMission.GetMissionState Lua method.
+WildStar64.exe,14067c950,Lua_PathMission_GetMapIcon,Game.PathMission.GetMapIcon Lua method.
+WildStar64.exe,14067cb20,Lua_PathMission_GetMapLocations,Game.PathMission.GetMapLocations Lua method.
+WildStar64.exe,14067cfd0,Lua_PathMission_GetMapRegions,Game.PathMission.GetMapRegions Lua method.
+WildStar64.exe,14067c550,Lua_PathMission_GetUnlockString,Game.PathMission.GetUnlockString Lua method.
+WildStar64.exe,14067c750,Lua_PathMission_GetCompletedString,Game.PathMission.GetCompletedString Lua method.
+WildStar64.exe,14067d4e0,Lua_PathMission_GetScientistIcon,Game.PathMission.GetScientistIcon Lua method.
+WildStar64.exe,14067d660,Lua_PathMission_GetScientistFieldStudy,Game.PathMission.GetScientistFieldStudy Lua method.
+WildStar64.exe,14067d9a0,Lua_PathMission_GetScientistSpecimenSurvey,Game.PathMission.GetScientistSpecimenSurvey Lua method.
+WildStar64.exe,14067dd40,Lua_PathMission_GetScientistDatacubeDiscoveryZone,Game.PathMission.GetScientistDatacubeDiscoveryZone Lua method.
+WildStar64.exe,14067de30,Lua_PathMission_GetScientistExperimentationInfo,Game.PathMission.GetScientistExperimentationInfo Lua method.
+WildStar64.exe,14067e2d0,Lua_PathMission_GetScientistExperimentationCurrentPatterns,Game.PathMission.GetScientistExperimentationCurrentPatterns Lua method.
+WildStar64.exe,14067e670,Lua_PathMission_AttemptScientistExperimentation,Game.PathMission.AttemptScientistExperimentation Lua method.
+WildStar64.exe,14067e830,Lua_PathMission_RefreshScientistExperimentation,Game.PathMission.RefreshScientistExperimentation Lua method.
+WildStar64.exe,14067e870,Lua_PathMission_GetExplorerNodeInfo,Game.PathMission.GetExplorerNodeInfo Lua method.
+WildStar64.exe,14067ed30,Lua_PathMission_GetExplorerNodeCount,Game.PathMission.GetExplorerNodeCount Lua method.
+WildStar64.exe,14067edd0,Lua_PathMission_GetExplorerHuntStartCreature,Game.PathMission.GetExplorerHuntStartCreature Lua method.
+WildStar64.exe,14067ee70,Lua_PathMission_GetExplorerHuntStartText,Game.PathMission.GetExplorerHuntStartText Lua method.
+WildStar64.exe,14067ef90,Lua_PathMission_GetExplorerHuntSprite,Game.PathMission.GetExplorerHuntSprite Lua method.
+WildStar64.exe,14067f0e0,Lua_PathMission_GetExplorerClueStatus,Game.PathMission.GetExplorerClueStatus Lua method.
+WildStar64.exe,14067f1e0,Lua_PathMission_GetExplorerClueRatio,Game.PathMission.GetExplorerClueRatio Lua method.
+WildStar64.exe,14067f2f0,Lua_PathMission_GetExplorerClueString,Game.PathMission.GetExplorerClueString Lua method.
+WildStar64.exe,14067f4b0,Lua_PathMission_GetExplorerClueType,Game.PathMission.GetExplorerClueType Lua method.
+WildStar64.exe,14067f670,Lua_PathMission_GetExplorerPowerMapReadyText,Game.PathMission.GetExplorerPowerMapReadyText Lua method.
+WildStar64.exe,14067f780,Lua_PathMission_GetExplorerPowerMapInfo,Game.PathMission.GetExplorerPowerMapInfo Lua method.
+WildStar64.exe,14067fbf0,Lua_PathMission_IsExplorerPowerMapActive,Game.PathMission.IsExplorerPowerMapActive Lua method.
+WildStar64.exe,14067fcb0,Lua_PathMission_IsExplorerPowerMapReady,Game.PathMission.IsExplorerPowerMapReady Lua method.
+WildStar64.exe,14067fd70,Lua_PathMission_ShowExplorerClueHintArrow,Game.PathMission.ShowExplorerClueHintArrow Lua method.
+WildStar64.exe,14067fe10,Lua_PathMission_GetSettlerMayorInfo,Game.PathMission.GetSettlerMayorInfo Lua method.
+WildStar64.exe,140680180,Lua_PathMission_GetSettlerSheriffInfo,Game.PathMission.GetSettlerSheriffInfo Lua method.
+WildStar64.exe,1406805b0,Lua_PathMission_GetSettlerScoutInfo,Game.PathMission.GetSettlerScoutInfo Lua method.
+WildStar64.exe,140680ad0,Lua_PathMission_GetSettlerResourceRegions,Game.PathMission.GetSettlerResourceRegions Lua method.
+WildStar64.exe,140680e30,Lua_PathMission_GetSoldierHoldout,Game.PathMission.GetSoldierHoldout Lua method.
+WildStar64.exe,140680f60,Lua_PathMission_ShowHintArrow,Game.PathMission.ShowHintArrow Lua method.
+WildStar64.exe,14067dca0,Lua_PathMission_ShowPathChecklistHintArrow,Game.PathMission.ShowPathChecklistHintArrow Lua method.
+WildStar64.exe,140680ec0,Lua_PathMission_GetSpell,Game.PathMission.GetSpell Lua method.
+WildStar64.exe,140679e50,Lua_RegisterPathMissionBindings,Registers the Game.PathMission Lua bindings plus PlayerPathType, PathMissionState, and PathMissionType constants including Scientist_DatacubeDiscovery.
+WildStar64.exe,140684cd0,Lua_Challenges___eq,Game.Challenges.__eq Lua metamethod.
+WildStar64.exe,140684ed0,Lua_Challenges___gc,Game.Challenges.__gc Lua metamethod.
+WildStar64.exe,1406850e0,Lua_Challenges_GetId,Game.Challenges.GetId Lua method.
+WildStar64.exe,140685170,Lua_Challenges_GetType,Game.Challenges.GetType Lua method.
+WildStar64.exe,140685210,Lua_Challenges_GetCurrentCount,Game.Challenges.GetCurrentCount Lua method.
+WildStar64.exe,140685330,Lua_Challenges_GetTotalCount,Game.Challenges.GetTotalCount Lua method.
+WildStar64.exe,140685440,Lua_Challenges_GetCurrentTier,Game.Challenges.GetCurrentTier Lua method.
+WildStar64.exe,140685540,Lua_Challenges_GetDisplayTier,Game.Challenges.GetDisplayTier Lua method.
+WildStar64.exe,140685640,Lua_Challenges_GetCompletionCount,Game.Challenges.GetCompletionCount Lua method.
+WildStar64.exe,140685740,Lua_Challenges_GetCompletionTotal,Game.Challenges.GetCompletionTotal Lua method.
+WildStar64.exe,1406857d0,Lua_Challenges_GetLastRewardTier,Game.Challenges.GetLastRewardTier Lua method.
+WildStar64.exe,1406858d0,Lua_Challenges_GetRewardTrack,Game.Challenges.GetRewardTrack Lua method.
+WildStar64.exe,140685950,Lua_Challenges_IsTimeTiered,Game.Challenges.IsTimeTiered Lua method.
+WildStar64.exe,1406859e0,Lua_Challenges_IsActivated,Game.Challenges.IsActivated Lua method.
+WildStar64.exe,140685ad0,Lua_Challenges_IsInCooldown,Game.Challenges.IsInCooldown Lua method.
+WildStar64.exe,140685be0,Lua_Challenges_IsFullyComplete,Game.Challenges.IsFullyComplete Lua method.
+WildStar64.exe,140685cf0,Lua_Challenges_GetName,Game.Challenges.GetName Lua method.
+WildStar64.exe,140685db0,Lua_Challenges_GetDescription,Game.Challenges.GetDescription Lua method.
+WildStar64.exe,140685f70,Lua_Challenges_GetZoneInfo,Game.Challenges.GetZoneInfo Lua method.
+WildStar64.exe,1406860c0,Lua_Challenges_GetZoneRestrictionInfo,Game.Challenges.GetZoneRestrictionInfo Lua method.
+WildStar64.exe,140686240,Lua_Challenges_GetStartLocationRestrictionId,Game.Challenges.GetStartLocationRestrictionId Lua method.
+WildStar64.exe,1406862d0,Lua_Challenges_GetTimer,Game.Challenges.GetTimer Lua method.
+WildStar64.exe,1406863e0,Lua_Challenges_GetDuration,Game.Challenges.GetDuration Lua method.
+WildStar64.exe,1406864e0,Lua_Challenges_GetAllTierCounts,Game.Challenges.GetAllTierCounts Lua method.
+WildStar64.exe,140686730,Lua_Challenges_NeedsHintArrow,Game.Challenges.NeedsHintArrow Lua method.
+WildStar64.exe,1406867d0,Lua_Challenges_GetMapStartLocation,Game.Challenges.GetMapStartLocation Lua method.
+WildStar64.exe,140686b50,Lua_Challenges_GetMapStartRegions,Game.Challenges.GetMapStartRegions Lua method.
+WildStar64.exe,140686e20,Lua_Challenges_GetMapLocation,Game.Challenges.GetMapLocation Lua method.
+WildStar64.exe,1406871a0,Lua_Challenges_GetMapRegions,Game.Challenges.GetMapRegions Lua method.
+WildStar64.exe,140687610,Lua_Challenges_ShouldDisplayPercentProgress,Game.Challenges.ShouldDisplayPercentProgress Lua method.
+WildStar64.exe,1406876b0,Lua_Challenges_GetDistance,Game.Challenges.GetDistance Lua method.
+WildStar64.exe,140687820,Lua_PublicEvent___eq,Game.PublicEvent.__eq Lua metamethod.
+WildStar64.exe,140687a40,Lua_PublicEvent___gc,Game.PublicEvent.__gc Lua metamethod.
+WildStar64.exe,140689580,Lua_PublicEvent_RequestScoreboard,Game.PublicEvent.RequestScoreboard Lua method.
+WildStar64.exe,1406896f0,Lua_PublicEvent_GetName,Game.PublicEvent.GetName Lua method.
+WildStar64.exe,140689920,Lua_PublicEvent_GetId,Game.PublicEvent.GetId Lua method.
+WildStar64.exe,1406899b0,Lua_PublicEvent_IsActive,Game.PublicEvent.IsActive Lua method.
+WildStar64.exe,140689a50,Lua_PublicEvent_GetObjectives,Game.PublicEvent.GetObjectives Lua method.
+WildStar64.exe,140689c70,Lua_PublicEvent_GetObjective,Game.PublicEvent.GetObjective Lua method.
+WildStar64.exe,140689da0,Lua_PublicEvent_GetElapsedTime,Game.PublicEvent.GetElapsedTime Lua method.
+WildStar64.exe,140689e60,Lua_PublicEvent_GetTotalTime,Game.PublicEvent.GetTotalTime Lua method.
+WildStar64.exe,140689f20,Lua_PublicEvent_GetJoinedTeam,Game.PublicEvent.GetJoinedTeam Lua method.
+WildStar64.exe,140689fd0,Lua_PublicEvent_GetTeamCount,Game.PublicEvent.GetTeamCount Lua method.
+WildStar64.exe,14068a090,Lua_PublicEvent_GetMapZone,Game.PublicEvent.GetMapZone Lua method.
+WildStar64.exe,14068a1a0,Lua_PublicEvent_GetLocations,Game.PublicEvent.GetLocations Lua method.
+WildStar64.exe,14068a500,Lua_PublicEvent_GetMapRegions,Game.PublicEvent.GetMapRegions Lua method.
+WildStar64.exe,14068ad40,Lua_PublicEvent_ShowHintArrow,Game.PublicEvent.ShowHintArrow Lua method.
+WildStar64.exe,14068adb0,Lua_PublicEvent_GetTrackedUnits,Game.PublicEvent.GetTrackedUnits Lua method.
+WildStar64.exe,14068afb0,Lua_PublicEvent_GetLiveStats,Game.PublicEvent.GetLiveStats Lua method.
+WildStar64.exe,14068b140,Lua_PublicEvent_HasLiveStats,Game.PublicEvent.HasLiveStats Lua method.
+WildStar64.exe,14068b1f0,Lua_PublicEvent_GetMyStats,Game.PublicEvent.GetMyStats Lua method.
+WildStar64.exe,14068b410,Lua_PublicEvent_GetStatsToDisplay,Game.PublicEvent.GetStatsToDisplay Lua method.
+WildStar64.exe,14068b570,Lua_PublicEvent_GetTrackedSpawns,Game.PublicEvent.GetTrackedSpawns Lua method.
+WildStar64.exe,14068b750,Lua_PublicEvent_GetEventType,Game.PublicEvent.GetEventType Lua method.
+WildStar64.exe,14068b800,Lua_PublicEvent_GetParentEvent,Game.PublicEvent.GetParentEvent Lua method.
+WildStar64.exe,14068b8d0,Lua_PublicEvent_GetRewardType,Game.PublicEvent.GetRewardType Lua method.
+WildStar64.exe,14068b990,Lua_PublicEvent_GetRewardThreshold,Game.PublicEvent.GetRewardThreshold Lua method.
+WildStar64.exe,14050d090,Lua_PublicEvent_ShouldShowOnMiniMapEdge,Game.PublicEvent.ShouldShowOnMiniMapEdge Lua method.
+WildStar64.exe,14068ba90,Lua_PublicEvent_GetLiveEvent,Game.PublicEvent.GetLiveEvent Lua method.
+WildStar64.exe,14068bb80,Lua_PublicEvent_PrepareInfractionReport,Game.PublicEvent.PrepareInfractionReport Lua method.
+WildStar64.exe,14068bd60,Lua_PublicEvent_GetStat,Game.PublicEvent.GetStat Lua method.
+WildStar64.exe,14068be30,Lua_PublicEvent_ShouldShowMedalsUI,Game.PublicEvent.ShouldShowMedalsUI Lua method.
+WildStar64.exe,14068bf30,Lua_PublicEvent_IsPriorityDisplay,Game.PublicEvent.IsPriorityDisplay Lua method.
+WildStar64.exe,14068bff0,Lua_PublicEvent_GetEndMessage,Game.PublicEvent.GetEndMessage Lua method.
+WildStar64.exe,14068c220,Lua_PublicEvent_ShouldUseCustomTracker,Game.PublicEvent.ShouldUseCustomTracker Lua method.
+WildStar64.exe,140687ac0,Lua_PublicEventObjective___eq,Game.PublicEventObjective.__eq Lua metamethod.
+WildStar64.exe,140687cc0,Lua_PublicEventObjective___gc,Game.PublicEventObjective.__gc Lua metamethod.
+WildStar64.exe,14068d5b0,Lua_PublicEventObjective_GetDescription,Game.PublicEventObjective.GetDescription Lua method.
+WildStar64.exe,14068d8a0,Lua_PublicEventObjective_GetShortDescription,Game.PublicEventObjective.GetShortDescription Lua method.
+WildStar64.exe,14068db80,Lua_PublicEventObjective_GetObjectiveId,Game.PublicEventObjective.GetObjectiveId Lua method.
+WildStar64.exe,14068dc10,Lua_PublicEventObjective_GetSpell,Game.PublicEventObjective.GetSpell Lua method.
+WildStar64.exe,14068dd50,Lua_PublicEventObjective_GetStatus,Game.PublicEventObjective.GetStatus Lua method.
+WildStar64.exe,14068de40,Lua_PublicEventObjective_GetNotificationMode,Game.PublicEventObjective.GetNotificationMode Lua method.
+WildStar64.exe,14068df30,Lua_PublicEventObjective_GetElapsedTime,Game.PublicEventObjective.GetElapsedTime Lua method.
+WildStar64.exe,14068e020,Lua_PublicEventObjective_GetTotalTime,Game.PublicEventObjective.GetTotalTime Lua method.
+WildStar64.exe,14068e110,Lua_PublicEventObjective_GetCount,Game.PublicEventObjective.GetCount Lua method.
+WildStar64.exe,14068ed90,Lua_PublicEventObjective_ShowPercent,Game.PublicEventObjective.ShowPercent Lua method.
+WildStar64.exe,14068ee80,Lua_PublicEventObjective_ShowHealthBar,Game.PublicEventObjective.ShowHealthBar Lua method.
+WildStar64.exe,14068ef30,Lua_PublicEventObjective_GetRequiredCount,Game.PublicEventObjective.GetRequiredCount Lua method.
+WildStar64.exe,14068f140,Lua_PublicEventObjective_GetTeam,Game.PublicEventObjective.GetTeam Lua method.
+WildStar64.exe,14068f200,Lua_PublicEventObjective_GetOwningTeam,Game.PublicEventObjective.GetOwningTeam Lua method.
+WildStar64.exe,14068f2f0,Lua_PublicEventObjective_GetLocations,Game.PublicEventObjective.GetLocations Lua method.
+WildStar64.exe,14068f700,Lua_PublicEventObjective_GetMapRegions,Game.PublicEventObjective.GetMapRegions Lua method.
+WildStar64.exe,14068fff0,Lua_PublicEventObjective_ShowHintArrow,Game.PublicEventObjective.ShowHintArrow Lua method.
+WildStar64.exe,1406900a0,Lua_PublicEventObjective_GetObjectiveType,Game.PublicEventObjective.GetObjectiveType Lua method.
+WildStar64.exe,140690160,Lua_PublicEventObjective_GetEvent,Game.PublicEventObjective.GetEvent Lua method.
+WildStar64.exe,140690250,Lua_PublicEventObjective_IsBusy,Game.PublicEventObjective.IsBusy Lua method.
+WildStar64.exe,140690330,Lua_PublicEventObjective_ShouldShowOnMinimap,Game.PublicEventObjective.ShouldShowOnMinimap Lua method.
+WildStar64.exe,140690410,Lua_PublicEventObjective_ShouldShowOnMinimapEdge,Game.PublicEventObjective.ShouldShowOnMinimapEdge Lua method.
+WildStar64.exe,140690500,Lua_PublicEventObjective_GetTrackedUnits,Game.PublicEventObjective.GetTrackedUnits Lua method.
+WildStar64.exe,140690730,Lua_PublicEventObjective_IsHidden,Game.PublicEventObjective.IsHidden Lua method.
+WildStar64.exe,1406907f0,Lua_PublicEventObjective_GetCategory,Game.PublicEventObjective.GetCategory Lua method.
+WildStar64.exe,1406908b0,Lua_PublicEventObjective_ShouldShowRequiredCount,Game.PublicEventObjective.ShouldShowRequiredCount Lua method.
+WildStar64.exe,140690990,Lua_PublicEventObjective_GetParentObjective,Game.PublicEventObjective.GetParentObjective Lua method.
+WildStar64.exe,140690aa0,Lua_PublicEventObjective_GetLiveEventName,Game.PublicEventObjective.GetLiveEventName Lua method.
+WildStar64.exe,140690c20,Lua_PublicEventObjective_GetLiveEventSummary,Game.PublicEventObjective.GetLiveEventSummary Lua method.
+WildStar64.exe,140690e80,Lua_PublicEventObjective_GetMedalPoints,Game.PublicEventObjective.GetMedalPoints Lua method.
+WildStar64.exe,140690f20,Lua_PublicEventObjective_GetJoinMessage,Game.PublicEventObjective.GetJoinMessage Lua method.
+WildStar64.exe,140691150,Lua_PublicEventObjective_GetStartMessage,Game.PublicEventObjective.GetStartMessage Lua method.
+WildStar64.exe,140691380,Lua_PublicEventObjective_GetDisplayOrder,Game.PublicEventObjective.GetDisplayOrder Lua method.
+WildStar64.exe,14068e420,Lua_PublicEventObjective_GetContestedAreaOwningTeam,Game.PublicEventObjective.GetContestedAreaOwningTeam Lua method.
+WildStar64.exe,14068e520,Lua_PublicEventObjective_GetContestedAreaRatio,Game.PublicEventObjective.GetContestedAreaRatio Lua method.
+WildStar64.exe,14068e6c0,Lua_PublicEventObjective_GetVirtualDepotItems,Game.PublicEventObjective.GetVirtualDepotItems Lua method.
+WildStar64.exe,14068e970,Lua_PublicEventObjective_GetWarplotLocation,Game.PublicEventObjective.GetWarplotLocation Lua method.
 WildStar64.exe,140709460,Lua_RegisterGameLib,Registers GameLib Lua enums, constants, and global helpers.
 WildStar64.exe,140708d50,Lua_GameLib_GetPrimeLevelAchieved,GameLib.GetPrimeLevelAchieved Lua method.
 WildStar64.exe,140708da0,Lua_GameLib_GetWorldPrimeLevel,GameLib.GetWorldPrimeLevel Lua method.
@@ -237,6 +452,8 @@ WildStar64.exe,1407011b0,Lua_GameLib_ForfeitDuel,Sends zero-payload opcode 0x00E
 WildStar64.exe,140701290,Lua_GameLib_SetIgnoreDuelRequests,Sends opcode 0x0170 ClientSetIgnoreDuelRequests with the requested one-bit ignore-duel state only when it changes local flag bit 0x8.
 WildStar64.exe,14070e370,Lua_FriendshipLib_SetAutoResponseMessages,FriendshipLib.SetAutoResponseMessages Lua method; reads away and busy strings and forwards them to Friendship_SetAutoResponseMessagesAndSend.
 WildStar64.exe,14070e5d0,Lua_FriendshipLib_SetPersonalIgnoreStrangersState,FriendshipLib.SetPersonalIgnoreStrangersState Lua method; updates local ignore-strangers state and sends opcode 0x039E on state changes.
+WildStar64.exe,14072ee90,Lua_RegisterDialogResponseBindings,Registers the Game.DialogResponse Lua bindings and DialogResponseType_* constants including QuestComplete and QuestAccept.
+WildStar64.exe,1407a0fd0,SpellService_ResolveTargetFlags,Resolves the wrapper flags word read at +0x108 by Game.Spell:IsFreeformTarget after the target-type 7 spell-service lookup branch.
 WildStar64.exe,14074ae30,Trade_SendClientP2PTradingAcceptInvite,Sends zero-payload opcode 0x018C ClientP2PTradingAcceptInvite after current invite and target checks pass.
 WildStar64.exe,14074aed0,Trade_SendClientP2PTradingDeclineInvite,Sends zero-payload opcode 0x0191 ClientP2PTradingDeclineInvite when declining a pending trade invite.
 WildStar64.exe,14074b160,Trade_SendClientP2PTradingCommitFromUi,Sends zero-payload opcode 0x0190 ClientP2PTradingCommit from the UI path when active trade state exists.
@@ -285,6 +502,7 @@ WildStar64.exe,14060b750,CombatLog_DispatchCCStateEvent,Builds the CombatLogCCSt
 WildStar64.exe,14060bbc0,CombatLog_DispatchCCStateBreakEvent,Builds the CombatLogCCStateBreak named-event payload with caster context eState and derived strState before dispatching it through the scene event sink.
 WildStar64.exe,14060e210,CombatLog_DispatchModifyInterruptArmorEvent,Builds the CombatLogModifyInterruptArmor named-event payload including nAmount before dispatching it through the scene event sink.
 WildStar64.exe,14060f170,CombatLog_DispatchVitalModifierEvent,Builds the CombatLogVitalModifier named-event payload including nAmount and bShowCombatLog, then dispatches it through the scene event sink.
+WildStar64.exe,14093ec20,Communicator_RegisterSocietyChatChannels,Registers the chat.society00..19 communicator resource/channel entries during client setup; not the runtime Communicator_ShowQuestMsg path.
 WildStar64.exe,14007ae80,ClientSuggest_WritePayload,Serialises one wide string payload field; used by world opcodes 0x0833 ClientSuggest and 0x0233 ClientAccountItemClaimPendingItemGroup through the shared string writer thunk.
 WildStar64.exe,14007c7c0,ClientStuck_WritePayload,Serialises world opcode 0x0831 ClientStuck as a 3-bit UnstickType plus 32-bit generated context token.
 WildStar64.exe,14007c990,ClientReportBug_WritePayload,Serialises world opcode 0x0830 ClientReportBug as 16-bit bug category, selected unit id, Quest2 id, and description string.

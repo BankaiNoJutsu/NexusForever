@@ -20,10 +20,13 @@ implement server behavior from the evidence in the existing C# codebase.
 | `Decomp/Analysis/scripts/ApplyNexusForeverLabels.java` | Applies source-controlled function labels before export. |
 | `Decomp/Analysis/scripts/ExportNexusForeverAnalysis.java` | Writes repeatable CSV and decompiler exports. |
 | `Decomp/Analysis/scripts/DumpNearbyData.java` | Dumps nearby data-table slots and resolves pointer targets. |
+| `Decomp/Analysis/scripts/DumpAsciiAtAddress.java` | Dumps raw bytes and printable ASCII for short undefined strings. |
 | `Decomp/Analysis/scripts/InspectCodeAddress.java` | Decompiles a function or dumps raw instructions at a code address. |
 | `Decomp/Analysis/function_labels.csv` | Durable function label map. This is the main bridge from native addresses to named evidence. |
 | `Decomp/Analysis/INITIAL_FINDINGS.md` | Living summary of mapped behavior and follow-up implementation. |
+| `Decomp/Analysis/exports/<binary>/selected_reasons_summary.csv` | Selection audit for the focused export, including why a function was selected and whether it is inside the current decompile cutoff. |
 | `Decomp/Analysis/exports/<binary>` | Generated analysis exports. Ignored by Git. |
+| `Decomp/Analysis/logs/LATEST_RUN_SUMMARY.json` | Queryable summary of the last headless run, target set, project layout, log paths, and export outputs. |
 
 The default analysis targets are:
 
@@ -164,6 +167,49 @@ shallow. If the desired function is not selected, prefer improving
 `HIGH_VALUE_STRING_PATTERNS`, adding a durable label, or locating a better xref
 over exporting thousands of functions.
 
+## Selection Criteria Reference
+
+Functions enter the focused export in priority order:
+
+1. `label:` reasons from `Decomp/Analysis/function_labels.csv`
+2. `target:` reasons from `HIGH_VALUE_STRING_PATTERNS` in `ExportNexusForeverAnalysis.java`
+3. `import:` reasons from interesting import xrefs
+4. `string:` reasons from the broader keyword list
+
+Use `selected_reasons_summary.csv` in the matching export folder to see the
+exact reason set for each function, the priority bucket that won, the first xref
+that pulled it in, and whether it made the current `selected_decompiled.c`
+cutoff.
+
+Use this when a focused pass misses a target function:
+
+- Check whether a nearby anchor already selected the function through `selected_reasons_summary.csv`.
+- Add a durable label before widening keyword lists when the function meaning is already mapped.
+- Add a new high-value pattern only when the anchor is stable and specific enough to avoid export noise.
+- Raise `-MaxDecompiledFunctions` only after labels and durable string anchors still leave the selected set too shallow.
+
+## Export Caching And Invalidation
+
+`ExportNexusForeverAnalysis.java` keeps `selected_decompiled.c` fast by caching
+per-function fragments under `selected_decompiled_cache/<context-fingerprint>/`
+and reusing them when the selected set is stable.
+
+`-DecompileMode Auto` is the normal choice for repeated passes:
+
+- Reuses the existing `selected_decompiled.c` when the binary fingerprint, label state, Ghidra version, and selected function list are unchanged.
+- Reuses cached fragments for unchanged functions when the selected set expands or contracts.
+- Writes fresh CSV and text artifacts even when decompilation is skipped.
+
+Use `-DecompileMode Force` after interactive Ghidra edits or when you need to
+throw away cached decompile output. Use `-DecompileMode Skip` when the pass only
+needs strings, xrefs, imports, selection auditing, or helper-script output.
+
+The easiest ways to understand cache behavior are:
+
+- `selected_decompiled.manifest` in the export folder for decompile fingerprint details.
+- `selected_reasons_summary.csv` for the current selection and cutoff.
+- `logs/LATEST_RUN_SUMMARY.json` for the most recent headless run inputs and outputs.
+
 ### 3. Search Exports For Anchors
 
 Use `rg` first. Search the generated exports and source together so each native
@@ -185,10 +231,11 @@ When an anchor appears in `interesting_strings.csv`, open the matching rows in:
 
 1. `interesting_strings.csv` for the literal string and address.
 2. `string_xrefs.csv` for exact xref addresses, especially data-table refs.
-3. `selected_xrefs.csv` for the referencing function entry when the xref is code.
-4. `selected_decompiled.c` for the selected function body.
-5. `functions.csv` for nearby named or unlabeled functions.
-6. Source files under `Source/` for the current server behavior.
+3. `selected_reasons_summary.csv` for why the function stayed in the focused export and whether it is inside the current decompile cutoff.
+4. `selected_xrefs.csv` for the referencing function entry when the xref is code.
+5. `selected_decompiled.c` for the selected function body.
+6. `functions.csv` for nearby named or unlabeled functions.
+7. Source files under `Source/` for the current server behavior.
 
 ### 4. Map The Function
 

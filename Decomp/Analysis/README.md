@@ -74,6 +74,20 @@ without re-running full analysis:
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly
 ```
 
+Inspect the latest decompile manifests, selected-function counts, and fragment
+reuse after a run:
+
+```powershell
+.\Decomp\Analysis\Test-DecompileManifest.ps1
+```
+
+Fail fast when the latest run has a missing manifest, stale output, or a
+fingerprint mismatch against `logs\LATEST_RUN_SUMMARY.json`:
+
+```powershell
+.\Decomp\Analysis\Test-DecompileManifest.ps1 -FailOnMismatch
+```
+
 Single-target runs use per-target projects by default. If an older shared
 project exists but the split project has not been created yet, export-only Auto
 mode falls back to the shared project for compatibility. Run the same target
@@ -117,6 +131,13 @@ tables or raw code stubs:
 
 ```powershell
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -ExtraPostScript DumpNearbyData.java -ExtraPostScriptArgs @('140b73540','20')
+```
+
+Use the ASCII dumper when a short inline string has not been auto-defined in the
+listing:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -ExtraPostScript DumpAsciiAtAddress.java -ExtraPostScriptArgs @('140b2f000','16')
 ```
 
 Skip source-controlled labels when testing raw Ghidra output:
@@ -164,6 +185,10 @@ shared runs keep using `NexusForeverClient64`.
 
 Logs are written under `Decomp\Analysis\logs`.
 
+`logs\LATEST_RUN_SUMMARY.json` now includes a per-target manifest summary with
+selected-function counts and cache reuse/decompile counts, so targeted passes
+can confirm whether they reused the existing export or invalidated it.
+
 The client binaries, Ghidra projects, exports, and logs are reproducible local
 artifacts and are ignored by Git.
 
@@ -173,6 +198,10 @@ the generated exports.
 See [CONTINUATION_GUIDE.md](CONTINUATION_GUIDE.md) for the repeatable map,
 label, implement, and verification workflow to use when continuing the
 client-binary decompile.
+
+See [EVIDENCE_LOOP_PROCEDURE.md](EVIDENCE_LOOP_PROCEDURE.md) for the spell and
+packet evidence workflow that pairs the decompile exports with fixture SQL,
+`/spell inspect4`, `/spell cast4`, diagnostics, and packet comparisons.
 
 ## How To Use The First-Pass Output
 
