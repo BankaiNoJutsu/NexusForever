@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract.Entity;
+using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Loot;
+using NexusForever.WorldServer.Network.Message.Handler.Entity;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Loot
 {
@@ -15,8 +18,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Loot
 
         public void HandleMessage(IWorldSession session, ClientLootItem lootItem)
         {
-            log.LogDebug("Ignoring unsupported loot item request from player {PlayerGuid}: owner {OwnerUnitId}, loot {LootUnitId}, request {Request}.",
-                session.Player?.Guid, lootItem.OwnerUnitId, lootItem.LootUnitId, lootItem.Request);
+            if (lootItem.Request)
+            {
+                log.LogDebug("Ignoring unsupported loot request from player {PlayerGuid}: owner {OwnerUnitId}, loot {LootUnitId}.",
+                    session.Player?.Guid, lootItem.OwnerUnitId, lootItem.LootUnitId);
+                return;
+            }
+
+            IWorldEntity lootEntity = session.Player.GetVisible<IWorldEntity>(lootItem.LootUnitId);
+            if (lootEntity == null)
+                throw new InvalidPacketValueException();
+
+            if (ActivationInteractionGuards.TryRejectBusyTarget(session, lootEntity))
+                return;
+
+            if (ActivationInteractionGuards.TryRejectOutOfRangeTarget(session, lootEntity))
+                return;
+
+            log.LogDebug("Validated but unsupported loot collect request from player {PlayerGuid}: owner {OwnerUnitId}, loot {LootUnitId}.",
+                session.Player?.Guid, lootItem.OwnerUnitId, lootItem.LootUnitId);
         }
     }
 

@@ -12,7 +12,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
         public static bool TryRejectBusyTarget(IWorldSession session, IWorldEntity entity)
         {
-            if (entity is not IUnitEntity unitEntity || !unitEntity.IsBusy)
+            if (!entity.IsBusy)
                 return false;
 
             session.Player.SendGenericError(GenericError.TargetBusy);

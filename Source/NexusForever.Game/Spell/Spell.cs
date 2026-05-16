@@ -97,7 +97,7 @@ namespace NexusForever.Game.Spell
         /// <summary>
         /// Begin cast, checking prerequisites before initiating.
         /// </summary>
-        public void Cast()
+        public CastResult Cast()
         {
             if (status != SpellStatus.Initiating)
                 throw new InvalidOperationException();
@@ -108,13 +108,15 @@ namespace NexusForever.Game.Spell
             if (result != CastResult.Ok)
             {
                 SendSpellCastResult(result);
-                return;
+                status = SpellStatus.Finished;
+                return result;
             }
 
             if (!TryConsumeServiceTokenCost())
             {
                 SendSpellCastResult(CastResult.ServiceTokensInsufficentFunds);
-                return;
+                status = SpellStatus.Finished;
+                return CastResult.ServiceTokensInsufficentFunds;
             }
 
             if (Caster is IPlayer player)
@@ -133,7 +135,10 @@ namespace NexusForever.Game.Spell
             status = SpellStatus.Casting;
 
             log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} has started casting.");
+            return CastResult.Ok;
         }
+
+        CastResult ISpell.Cast() => Cast();
 
         private CastResult CheckCast()
         {
@@ -680,6 +685,58 @@ namespace NexusForever.Game.Spell
             log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} cast was cancelled.");
         }
 
+        public bool TryCancelEffect(IUnitEntity requester)
+        {
+            if (requester == null)
+                throw new ArgumentNullException();
+
+            if (status != SpellStatus.Executing || requester.Guid != Caster.Guid)
+                return false;
+
+            var removableEffects = new List<(SpellEffectInterpretation Effect, IWorldEntity Target, ISpellTargetEffectInfo Info)>();
+
+            foreach (ISpellTargetInfo targetInfo in targets)
+            {
+                foreach (ISpellTargetEffectInfo info in targetInfo.Effects)
+                {
+                    if (info.DropEffect || info.LifetimeEnded)
+                        continue;
+
+                    SpellEffectInterpretation effect = SpellEffectInterpreter.Interpret(info.Entry);
+                    if (BuildLifetimeRemovalAction(effect, targetInfo.Entity, info) == null)
+                        continue;
+
+                    if (targetInfo.Entity.Guid != requester.Guid)
+                        return false;
+
+                    removableEffects.Add((effect, targetInfo.Entity, info));
+                }
+            }
+
+            if (removableEffects.Count == 0)
+                return false;
+
+            bool removedAny = false;
+            foreach ((SpellEffectInterpretation effect, IWorldEntity target, ISpellTargetEffectInfo info) in removableEffects)
+            {
+                CancelLifetimeEvent(info);
+                removedAny |= TryRemoveActiveEffect(effect, target, info);
+            }
+
+            if (!removedAny)
+                return false;
+
+            if (lifetimeEvents.Count == 0)
+            {
+                status = SpellStatus.Finished;
+                SendSpellFinish();
+            }
+
+            return true;
+        }
+
+        bool ISpell.TryCancelEffect(IUnitEntity requester) => TryCancelEffect(requester);
+
         private void Execute()
         {
             status = SpellStatus.Executing;
@@ -995,6 +1052,7 @@ namespace NexusForever.Game.Spell
                         continue;
                     }
 
+                    ScheduleEffectLifetime(effect, effectTarget.Entity, info);
                     SpellEffectDiagnostics.TraceEffectResult(this, effectTarget.Entity, info);
                     executed = true;
                     continue;
@@ -1072,8 +1130,23 @@ namespace NexusForever.Game.Spell
         {
             switch ((SpellEffectType)effect.Entry.EffectType)
             {
+                case SpellEffectType.Proxy:
+                    SpellHandler.HandleEffectProxyWorld(this, target, info);
+                    return true;
+                case SpellEffectType.SpellForceRemove:
+                    SpellHandler.HandleEffectSpellForceRemoveWorld(this, target, info);
+                    return true;
                 case SpellEffectType.Activate:
                     SpellHandler.HandleEffectActivateWorld(this, target, info);
+                    return true;
+                case SpellEffectType.SetBusy:
+                    SpellHandler.HandleEffectSetBusyWorld(this, target, info);
+                    return true;
+                case SpellEffectType.DespawnUnit:
+                    SpellHandler.HandleEffectDespawnUnitWorld(this, target, info);
+                    return true;
+                case SpellEffectType.RavelSignal:
+                    SpellHandler.HandleEffectRavelSignalWorld(this, target, info);
                     return true;
                 case SpellEffectType.Fluff:
                     return true;
@@ -1081,6 +1154,28 @@ namespace NexusForever.Game.Spell
                     log.Warn($"Unhandled world-target spell effect {(SpellEffectType)effect.Entry.EffectType} for target {target.Guid} on spell {Parameters.SpellInfo.Entry.Id}.");
                     return false;
             }
+        }
+
+        private void ScheduleEffectLifetime(SpellEffectInterpretation effect, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
+            uint durationTime = GetEffectLifetimeDuration(effect);
+            if (durationTime == 0u)
+                return;
+
+            Action removalAction = BuildLifetimeRemovalAction(effect, target, info);
+            if (removalAction == null)
+                return;
+
+            SpellEffectDiagnostics.TraceEffectLifetime(this, effect, target.Guid, durationTime);
+
+            var lifetimeEvent = new SpellEvent(durationTime / 1000d, () =>
+            {
+                lifetimeEvents.Remove(info);
+                TryRemoveActiveEffect(effect, target, info);
+            });
+
+            lifetimeEvents[info] = lifetimeEvent;
+            events.EnqueueEvent(lifetimeEvent);
         }
 
         private void ScheduleEffectLifetime(SpellEffectInterpretation effect, IUnitEntity target, ISpellTargetEffectInfo info)
@@ -1130,7 +1225,37 @@ namespace NexusForever.Game.Spell
 
         private bool TryRemoveActiveEffect(SpellEffectInterpretation effect, IWorldEntity target, ISpellTargetEffectInfo info)
         {
-            return target is IUnitEntity unitTarget && TryRemoveActiveEffect(effect, unitTarget, info);
+            if (target is IUnitEntity unitTarget)
+                return TryRemoveActiveEffect(effect, unitTarget, info);
+
+            if (info.LifetimeEnded)
+                return false;
+
+            Action removalAction = BuildLifetimeRemovalAction(effect, target, info);
+            if (removalAction == null)
+                return false;
+
+            info.LifetimeEnded = true;
+            removalAction();
+            return true;
+        }
+
+        private Action BuildLifetimeRemovalAction(SpellEffectInterpretation effect, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
+            switch (effect.Entry.EffectType)
+            {
+                case SpellEffectType.SetBusy:
+                    if (effect.SetBusy == null || !effect.SetBusy.Busy)
+                        return null;
+
+                    return () =>
+                    {
+                        bool removed = target.RemoveBusy(info.EffectId);
+                        SpellEffectDiagnostics.TraceSetBusy(this, target, effect.SetBusy, removed, false, removed, removed ? 1u : 0u, null);
+                    };
+                default:
+                    return null;
+            }
         }
 
         private Action BuildLifetimeRemovalAction(SpellEffectInterpretation effect, IUnitEntity target, ISpellTargetEffectInfo info)
@@ -1280,6 +1405,18 @@ namespace NexusForever.Game.Spell
 
                         if (removed)
                             SendRemoveBuff(target.Guid);
+                    };
+                case SpellEffectType.SummonMount:
+                    if (target is not IPlayer mountPlayer)
+                        return null;
+
+                    return () =>
+                    {
+                        if (mountPlayer.PlatformGuid == null)
+                            return;
+
+                        mountPlayer.Dismount();
+                        SendRemoveBuff(target.Guid);
                     };
                 case SpellEffectType.ForcedMove:
                     if (effect.ForcedMove == null)

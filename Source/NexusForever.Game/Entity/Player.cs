@@ -847,11 +847,11 @@ namespace NexusForever.Game.Entity
                 });
             }
 
-            if (entity is IUnitEntity busyUnit && busyUnit.IsBusy)
+            if (entity is IWorldEntity busyEntity && busyEntity.IsBusy)
             {
                 Session.EnqueueMessageEncrypted(new ServerUnitInUse
                 {
-                    UnitId = busyUnit.Guid,
+                    UnitId = busyEntity.Guid,
                     InUse  = true
                 });
             }

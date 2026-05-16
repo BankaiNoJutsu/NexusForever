@@ -55,6 +55,7 @@ namespace NexusForever.Game.Abstract.Entity
         bool Sheathed { get; set; }
 
         StandState StandState { get; set; }
+        bool IsBusy { get; }
 
         /// <summary>
         /// Collection of guids currently targeting this <see cref="IWorldEntity"/>.
@@ -122,6 +123,11 @@ namespace NexusForever.Game.Abstract.Entity
         /// Invoked when <see cref="IWorldEntity"/>'s activation fails.
         /// </summary>
         void OnActivateFail(IPlayer activator);
+
+        void AddBusy(uint effectId, uint spell4Id, uint castingId, uint mode, uint contextId, uint dataBits02, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09);
+        bool RemoveBusy(uint effectId);
+        IReadOnlyCollection<uint> RemoveBusy(System.Func<uint, bool> spell4Predicate, uint maxCount);
+        IReadOnlyCollection<uint> ClearBusy(uint spell4Id, uint contextId);
 
         /// <summary>
         /// Return a collection of <see cref="IItemVisual"/> for <see cref="IWorldEntity"/>.

@@ -50,7 +50,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                     session.Player.CastSpell(itemSpecial.Spell4IdOnActivate, new SpellParameters
                     {
                         PrimaryTargetId = itemUse.TargetUnitId,
-                        Position        = itemUse.Position
+                        Position        = itemUse.Position,
+                        CancelActiveTrade = true
                     });
                 }
             }

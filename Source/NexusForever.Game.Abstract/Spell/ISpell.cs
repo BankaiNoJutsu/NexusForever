@@ -16,12 +16,17 @@ namespace NexusForever.Game.Abstract.Spell
         /// <summary>
         /// Begin cast, checking prerequisites before initiating.
         /// </summary>
-        void Cast();
+        CastResult Cast();
 
         /// <summary>
         /// Cancel cast with supplied <see cref="CastResult"/>.
         /// </summary>
         void CancelCast(CastResult result);
+
+        /// <summary>
+        /// Attempt to cancel a client-cancelable active effect owned by this spell for the supplied requester.
+        /// </summary>
+        bool TryCancelEffect(IUnitEntity requester);
 
         bool IsMovingInterrupted();
     }

@@ -7,11 +7,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
     {
         public void HandleMessage(IWorldSession session, ClientCancelEffect cancelSpell)
         {
-            //TODO: integrate into some Spell System removal queue & do the checks & handle stopped effects
-            session.Player.EnqueueToVisible(new ServerSpellFinish
-            {
-                ServerUniqueId = cancelSpell.ServerUniqueId
-            }, true);
+            session.Player.TryCancelSpellEffect(cancelSpell.ServerUniqueId);
         }
     }
 }

@@ -47,8 +47,8 @@ namespace NexusForever.WorldServer.Command.Handler
             context.GetTargetOrInvoker<IPlayer>().SpellManager.AddSpell(spell4BaseId, tier.Value);
         }
 
-        [Command(Permission.SpellCast, "Cast a base spell for target, optionally supplying the tier.", "cast")]
-        [CommandTarget(typeof(IUnitEntity))]
+        [Command(Permission.SpellCast, "Cast a base spell from a selected unit, or from the invoker at a selected world target, optionally supplying the tier.", "cast")]
+        [CommandTarget(typeof(IWorldEntity))]
         public void HandleSpellCast(ICommandContext context,
             [Parameter("Spell base id to cast from target.")]
             uint spell4BaseId,
@@ -71,14 +71,21 @@ namespace NexusForever.WorldServer.Command.Handler
                 return;
             }
 
-            context.GetTargetOrInvoker<IUnitEntity>().CastSpell(spell4BaseId, tier.Value, new SpellParameters
+            if (!TryResolveSpellCastSource(context, out IUnitEntity caster, out uint primaryTargetId))
             {
+                context.SendError("Spell cast requires a unit caster, or a player invoker with a selected world target.");
+                return;
+            }
+
+            caster.CastSpell(spell4BaseId, tier.Value, new SpellParameters
+            {
+                PrimaryTargetId        = primaryTargetId,
                 UserInitiatedSpellCast = false
             });
         }
 
-        [Command(Permission.SpellCast, "Cast a concrete Spell4 id for target.", "cast4", "castid")]
-        [CommandTarget(typeof(IUnitEntity))]
+        [Command(Permission.SpellCast, "Cast a concrete Spell4 id from a selected unit, or from the invoker at a selected world target.", "cast4", "castid")]
+        [CommandTarget(typeof(IWorldEntity))]
         public void HandleSpellCastSpell4(ICommandContext context,
             [Parameter("Concrete Spell4 id to cast from target.")]
             uint spell4Id)
@@ -90,8 +97,15 @@ namespace NexusForever.WorldServer.Command.Handler
                 return;
             }
 
-            context.GetTargetOrInvoker<IUnitEntity>().CastSpell(spell4Id, new SpellParameters
+            if (!TryResolveSpellCastSource(context, out IUnitEntity caster, out uint primaryTargetId))
             {
+                context.SendError("Spell cast requires a unit caster, or a player invoker with a selected world target.");
+                return;
+            }
+
+            caster.CastSpell(spell4Id, new SpellParameters
+            {
+                PrimaryTargetId        = primaryTargetId,
                 UserInitiatedSpellCast = false
             });
         }
@@ -163,6 +177,33 @@ namespace NexusForever.WorldServer.Command.Handler
                 target.SpellManager.SetSpellCooldown(spell4Id.Value, 0d);
             else
                 target.SpellManager.ResetAllSpellCooldowns();
+        }
+
+        private static bool TryResolveSpellCastSource(ICommandContext context, out IUnitEntity caster, out uint primaryTargetId)
+        {
+            primaryTargetId = 0u;
+
+            if (context.Target is IUnitEntity unitTarget)
+            {
+                caster = unitTarget;
+                return true;
+            }
+
+            if (context.Target != null && context.Invoker is IUnitEntity invoker)
+            {
+                caster          = invoker;
+                primaryTargetId = context.Target.Guid;
+                return true;
+            }
+
+            if (context.Invoker is IUnitEntity invokerOnly)
+            {
+                caster = invokerOnly;
+                return true;
+            }
+
+            caster = null;
+            return false;
         }
 
         private static void InspectSpell(ICommandContext context, ISpellBaseInfo spellBaseInfo, ISpellInfo spellInfo, byte tier)

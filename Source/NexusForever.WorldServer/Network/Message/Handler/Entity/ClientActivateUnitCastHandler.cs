@@ -42,11 +42,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 return;
             }
 
-            session.Player.CastSpell(spell4Id, new SpellParameters
+            CastResult castResult = session.Player.TryCastSpell(spell4Id, new SpellParameters
             {
                 PrimaryTargetId        = entity.Guid,
-                UserInitiatedSpellCast = false
+                UserInitiatedSpellCast = false,
+                CancelActiveTrade      = true
             });
+
+            if (castResult != CastResult.Ok)
+            {
+                entity.OnActivateFail(session.Player);
+                return;
+            }
 
             entity.OnActivateCast(session.Player);
             entity.OnActivateSuccess(session.Player);

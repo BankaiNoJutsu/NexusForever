@@ -188,7 +188,7 @@ namespace NexusForever.Game.Spell
             if (Owner.TargetGuid == null)
                 return 0u;
 
-            return Owner.GetVisible<IUnitEntity>(Owner.TargetGuid.Value) != null
+            return Owner.GetVisible<IWorldEntity>(Owner.TargetGuid.Value) != null
                 ? Owner.TargetGuid.Value
                 : 0u;
         }

@@ -763,6 +763,16 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.RavelSignal)]
         public static void HandleEffectRavelSignal(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
+            HandleEffectRavelSignalCore(spell, target, info);
+        }
+
+        public static void HandleEffectRavelSignalWorld(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
+            HandleEffectRavelSignalCore(spell, target, info);
+        }
+
+        private static void HandleEffectRavelSignalCore(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
             SpellEffectRavelSignalSemantics ravelSignal = SpellEffectInterpreter.Interpret(info).RavelSignal;
             if (ravelSignal == null)
                 return;
@@ -1326,35 +1336,40 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.Proxy)]
         public static void HandleEffectProxy(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            HandleProxySpell(spell, target, info);
+            HandleProxySpell(spell, target, target, info);
+        }
+
+        public static void HandleEffectProxyWorld(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
+            HandleProxySpell(spell, spell.Caster, target, info);
         }
 
         [SpellEffectHandler(SpellEffectType.ProxyLinearAE)]
         public static void HandleEffectProxyLinearAE(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            HandleProxySpell(spell, target, info);
+            HandleProxySpell(spell, target, target, info);
         }
 
         [SpellEffectHandler(SpellEffectType.ProxyChannel)]
         public static void HandleEffectProxyChannel(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            HandleProxySpell(spell, target, info);
+            HandleProxySpell(spell, target, target, info);
         }
 
         [SpellEffectHandler(SpellEffectType.ProxyChannelVariableTime)]
         public static void HandleEffectProxyChannelVariableTime(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            HandleProxySpell(spell, target, info);
+            HandleProxySpell(spell, target, target, info);
         }
 
-        private static void HandleProxySpell(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        private static void HandleProxySpell(ISpell spell, IUnitEntity proxyCaster, IWorldEntity target, ISpellTargetEffectInfo info)
         {
             SpellEffectProxySemantics proxy = SpellEffectInterpreter.Interpret(info).Proxy;
             if (proxy == null || proxy.Spell4Id == 0u)
                 return;
 
             SpellEffectDiagnostics.TraceProxy(spell, target, info, proxy);
-            target.CastSpell(proxy.Spell4Id, new SpellParameters
+            proxyCaster.CastSpell(proxy.Spell4Id, new SpellParameters
             {
                 ParentSpellInfo        = spell.Parameters.SpellInfo,
                 RootSpellInfo          = spell.Parameters.RootSpellInfo,
@@ -1365,6 +1380,16 @@ namespace NexusForever.Game.Spell
 
         [SpellEffectHandler(SpellEffectType.DespawnUnit)]
         public static void HandleEffectDespawnUnit(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            HandleEffectDespawnUnitCore(spell, target, info);
+        }
+
+        public static void HandleEffectDespawnUnitWorld(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
+            HandleEffectDespawnUnitCore(spell, target, info);
+        }
+
+        private static void HandleEffectDespawnUnitCore(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
         {
             bool removed = target is not IPlayer && target.InWorld;
             SpellEffectDiagnostics.TraceDespawnUnit(spell, target, info, removed);
@@ -1509,6 +1534,16 @@ namespace NexusForever.Game.Spell
 
         [SpellEffectHandler(SpellEffectType.SetBusy)]
         public static void HandleEffectSetBusy(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            HandleEffectSetBusyCore(spell, target, info);
+        }
+
+        public static void HandleEffectSetBusyWorld(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
+            HandleEffectSetBusyCore(spell, target, info);
+        }
+
+        private static void HandleEffectSetBusyCore(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
         {
             SpellEffectInterpretation interpretation = SpellEffectInterpreter.Interpret(info);
             SpellEffectSetBusySemantics setBusy = interpretation.SetBusy;
@@ -2320,6 +2355,22 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TraceForceRemove(spell, target, forceRemove, removeScope, removals.Count, removedProperties, removedCCStates.Count, null);
 
             SendTrackedStateRemovalMessages(spell, target, info, removals, false);
+        }
+
+        public static void HandleEffectSpellForceRemoveWorld(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectForceRemoveSemantics forceRemove = SpellEffectInterpreter.Interpret(info).ForceRemove;
+            if (forceRemove == null)
+                return;
+
+            if (!TryCreateForceRemovePredicate(forceRemove, out System.Func<uint, bool> predicate, out string removeScope, out string skippedReason))
+            {
+                SpellEffectDiagnostics.TraceForceRemove(spell, target, forceRemove, removeScope, 0, skippedReason);
+                return;
+            }
+
+            IReadOnlyCollection<uint> removedBusyEffectIds = target.RemoveBusy(predicate, uint.MaxValue);
+            SpellEffectDiagnostics.TraceForceRemove(spell, target, forceRemove, removeScope, removedBusyEffectIds.Count, null);
         }
 
         [SpellEffectHandler(SpellEffectType.SpellForceRemoveChanneled)]

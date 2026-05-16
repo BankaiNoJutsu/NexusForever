@@ -4,6 +4,7 @@ using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
+using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Game.Abstract.Entity
 {
@@ -38,7 +39,6 @@ namespace NexusForever.Game.Abstract.Entity
 
         bool IsStealthed { get; }
         bool IsAggroImmune { get; }
-        bool IsBusy { get; }
         bool IsShieldOverloaded { get; }
         uint CurrentAbsorption { get; }
         uint CurrentHealingAbsorption { get; }
@@ -46,10 +46,6 @@ namespace NexusForever.Game.Abstract.Entity
         bool HasUnitState(uint stateId);
         void AddUnitState(uint effectId, uint spell4Id, uint castingId, uint stateId, uint dataBits01, uint dataBits02, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09);
         bool RemoveUnitState(uint effectId);
-
-        void AddBusy(uint effectId, uint spell4Id, uint castingId, uint mode, uint contextId, uint dataBits02, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09);
-        bool RemoveBusy(uint effectId);
-        IReadOnlyCollection<uint> ClearBusy(uint spell4Id, uint contextId);
 
         bool IsImmuneToSpellEffect(SpellEffectType effectType);
         void AddSpellEffectImmunity(uint effectId, uint spell4Id, uint castingId, SpellEffectType effectType);
@@ -155,6 +151,11 @@ namespace NexusForever.Game.Abstract.Entity
         void CastSpell(uint spell4Id, ISpellParameters parameters);
 
         /// <summary>
+        /// Attempt to cast a <see cref="ISpell"/> with the supplied spell id and return the resulting cast status.
+        /// </summary>
+        CastResult TryCastSpell(uint spell4Id, ISpellParameters parameters);
+
+        /// <summary>
         /// Cast a <see cref="ISpell"/> with the supplied spell base id, tier and <see cref="ISpellParameters"/>.
         /// </summary>
         void CastSpell(uint spell4BaseId, byte tier, ISpellParameters parameters);
@@ -174,6 +175,11 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         /// <param name="castingId">Casting ID of the spell to cancel</param>
         void CancelSpellCast(uint castingId);
+
+        /// <summary>
+        /// Attempt to cancel a client-cancelable active spell effect by server unique id.
+        /// </summary>
+        bool TryCancelSpellEffect(uint serverUniqueId);
 
         /// <summary>
         /// Determine if this <see cref="IUnitEntity"/> can attack supplied <see cref="IUnitEntity"/>.

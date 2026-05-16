@@ -160,6 +160,8 @@ namespace NexusForever.Game.Entity
             }
         }
 
+        public bool IsBusy => busyStates.Count != 0;
+
         /// <summary>
         /// Collection of guids currently targeting this <see cref="IWorldEntity"/>.
         /// </summary>
@@ -224,6 +226,23 @@ namespace NexusForever.Game.Entity
 
         private bool emitVisual;
         private readonly Dictionary<ItemSlot, IItemVisual> itemVisuals = new();
+        protected readonly Dictionary</*effectId*/uint, BusyState> busyStates = new();
+
+        protected sealed class BusyState
+        {
+            public uint Spell4Id { get; init; }
+            public uint CastingId { get; init; }
+            public uint Mode { get; init; }
+            public uint ContextId { get; init; }
+            public uint DataBits02 { get; init; }
+            public uint DataBits03 { get; init; }
+            public uint DataBits04 { get; init; }
+            public uint DataBits05 { get; init; }
+            public uint DataBits06 { get; init; }
+            public uint DataBits07 { get; init; }
+            public uint DataBits08 { get; init; }
+            public uint DataBits09 { get; init; }
+        }
 
         #region Dependency Injection
 
@@ -561,6 +580,108 @@ namespace NexusForever.Game.Entity
         public virtual void OnActivateFail(IPlayer activator)
         {
             scriptCollection?.Invoke<IWorldEntityScript>(s => s.OnActivateFail(activator));
+        }
+
+        public void AddBusy(uint effectId, uint spell4Id, uint castingId, uint mode, uint contextId, uint dataBits02, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09)
+        {
+            bool wasBusy = IsBusy;
+
+            busyStates[effectId] = new BusyState
+            {
+                Spell4Id  = spell4Id,
+                CastingId = castingId,
+                Mode      = mode,
+                ContextId = contextId,
+                DataBits02 = dataBits02,
+                DataBits03 = dataBits03,
+                DataBits04 = dataBits04,
+                DataBits05 = dataBits05,
+                DataBits06 = dataBits06,
+                DataBits07 = dataBits07,
+                DataBits08 = dataBits08,
+                DataBits09 = dataBits09
+            };
+
+            BroadcastBusyStateIfChanged(wasBusy);
+        }
+
+        public bool RemoveBusy(uint effectId)
+        {
+            bool wasBusy = IsBusy;
+            bool removed = busyStates.Remove(effectId);
+            if (removed)
+                BroadcastBusyStateIfChanged(wasBusy);
+
+            return removed;
+        }
+
+        public IReadOnlyCollection<uint> RemoveBusy(System.Func<uint, bool> spell4Predicate, uint maxCount)
+        {
+            ArgumentNullException.ThrowIfNull(spell4Predicate);
+
+            var removedEffectIds = new List<uint>();
+            if (maxCount == 0u)
+                return removedEffectIds;
+
+            var removedSpell4Ids = new HashSet<uint>();
+
+            bool CanRemove(uint spell4Id)
+            {
+                return (removedSpell4Ids.Contains(spell4Id) || !HasReachedLimit()) && spell4Predicate(spell4Id);
+            }
+
+            bool HasReachedLimit()
+            {
+                return maxCount != uint.MaxValue && removedSpell4Ids.Count >= maxCount;
+            }
+
+            bool wasBusy = IsBusy;
+            foreach (KeyValuePair<uint, BusyState> state in busyStates.ToArray())
+            {
+                if (!CanRemove(state.Value.Spell4Id))
+                    continue;
+
+                busyStates.Remove(state.Key);
+                removedEffectIds.Add(state.Key);
+                removedSpell4Ids.Add(state.Value.Spell4Id);
+            }
+
+            BroadcastBusyStateIfChanged(wasBusy);
+
+            return removedEffectIds;
+        }
+
+        public IReadOnlyCollection<uint> ClearBusy(uint spell4Id, uint contextId)
+        {
+            bool wasBusy = IsBusy;
+            var removedEffectIds = new List<uint>();
+            foreach (KeyValuePair<uint, BusyState> state in busyStates.ToArray())
+            {
+                if (state.Value.Spell4Id != spell4Id)
+                    continue;
+
+                if (contextId != 0u && state.Value.ContextId != contextId)
+                    continue;
+
+                busyStates.Remove(state.Key);
+                removedEffectIds.Add(state.Key);
+            }
+
+            BroadcastBusyStateIfChanged(wasBusy);
+
+            return removedEffectIds;
+        }
+
+        protected void BroadcastBusyStateIfChanged(bool wasBusy)
+        {
+            if (wasBusy == IsBusy)
+                return;
+
+            EnqueueToVisible(new ServerUnitInUse
+            {
+                UnitId = Guid,
+                InUse  = IsBusy
+            }, true);
         }
 
         /// <summary>

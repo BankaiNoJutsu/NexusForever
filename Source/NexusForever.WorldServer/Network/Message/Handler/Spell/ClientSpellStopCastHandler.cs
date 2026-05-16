@@ -7,7 +7,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
     {
         public void HandleMessage(IWorldSession session, ClientSpellStopCast spellStopCast)
         {
-            // TODO: handle CastResult, client only sends SpellCancelled and SpellInterrupted
+            // TODO: handle CastResult; client only sends SpellCancelled and SpellInterrupted.
+            // TODO: TrailingFlag is currently only a modeled packet variant bit from native senders.
             session.Player.CancelSpellCast(spellStopCast.CastingId);
         }
     }

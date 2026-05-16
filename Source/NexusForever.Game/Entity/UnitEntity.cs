@@ -15,6 +15,7 @@ using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
+using NexusForever.Game.Trade;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Combat;
@@ -108,7 +109,6 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary</*effectId*/uint, TrackedSpellState> stealthStates = new();
         private readonly Dictionary</*effectId*/uint, TrackedSpellState> aggroImmuneStates = new();
         private readonly Dictionary</*effectId*/uint, UnitStateSetState> unitStateSetStates = new();
-        private readonly Dictionary</*effectId*/uint, BusyState> busyStates = new();
         private readonly Dictionary</*effectId*/uint, SpellEffectImmunityState> spellEffectImmunityStates = new();
         private readonly Dictionary</*effectId*/uint, SpellImmunityState> spellImmunityStates = new();
         private readonly Dictionary</*effectId*/uint, DelayDeathState> delayDeathStates = new();
@@ -130,7 +130,6 @@ namespace NexusForever.Game.Entity
         public uint ActiveCCStateMask => ccStates.Keys.Aggregate(0u, (mask, state) => mask | (1u << (int)state));
         public bool IsStealthed => stealthStates.Count != 0;
         public bool IsAggroImmune => aggroImmuneStates.Count != 0;
-        public bool IsBusy => busyStates.Count != 0;
         public bool IsShieldOverloaded => shieldOverloadStates.Count != 0;
         public uint CurrentAbsorption => (uint)Math.Min(uint.MaxValue, absorptionStates.Values.Aggregate(0ul, (total, state) => total + state.Amount));
         public uint CurrentHealingAbsorption => (uint)Math.Min(uint.MaxValue, healingAbsorptionStates.Values.Aggregate(0ul, (total, state) => total + state.Amount));
@@ -204,20 +203,6 @@ namespace NexusForever.Game.Entity
         {
             public uint StateId { get; init; }
             public uint DataBits01 { get; init; }
-            public uint DataBits02 { get; init; }
-            public uint DataBits03 { get; init; }
-            public uint DataBits04 { get; init; }
-            public uint DataBits05 { get; init; }
-            public uint DataBits06 { get; init; }
-            public uint DataBits07 { get; init; }
-            public uint DataBits08 { get; init; }
-            public uint DataBits09 { get; init; }
-        }
-
-        private sealed class BusyState : TrackedSpellState
-        {
-            public uint Mode { get; init; }
-            public uint ContextId { get; init; }
             public uint DataBits02 { get; init; }
             public uint DataBits03 { get; init; }
             public uint DataBits04 { get; init; }
@@ -674,72 +659,6 @@ namespace NexusForever.Game.Entity
         public bool RemoveUnitState(uint effectId)
         {
             return unitStateSetStates.Remove(effectId);
-        }
-
-        public void AddBusy(uint effectId, uint spell4Id, uint castingId, uint mode, uint contextId, uint dataBits02, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09)
-        {
-            bool wasBusy = IsBusy;
-
-            busyStates[effectId] = new BusyState
-            {
-                Spell4Id  = spell4Id,
-                CastingId = castingId,
-                Mode      = mode,
-                ContextId = contextId,
-                DataBits02 = dataBits02,
-                DataBits03 = dataBits03,
-                DataBits04 = dataBits04,
-                DataBits05 = dataBits05,
-                DataBits06 = dataBits06,
-                DataBits07 = dataBits07,
-                DataBits08 = dataBits08,
-                DataBits09 = dataBits09
-            };
-
-            BroadcastBusyStateIfChanged(wasBusy);
-        }
-
-        public bool RemoveBusy(uint effectId)
-        {
-            bool wasBusy = IsBusy;
-            bool removed = busyStates.Remove(effectId);
-            if (removed)
-                BroadcastBusyStateIfChanged(wasBusy);
-
-            return removed;
-        }
-
-        public IReadOnlyCollection<uint> ClearBusy(uint spell4Id, uint contextId)
-        {
-            bool wasBusy = IsBusy;
-            var removedEffectIds = new List<uint>();
-            foreach (KeyValuePair<uint, BusyState> state in busyStates.ToArray())
-            {
-                if (state.Value.Spell4Id != spell4Id)
-                    continue;
-
-                if (contextId != 0u && state.Value.ContextId != contextId)
-                    continue;
-
-                busyStates.Remove(state.Key);
-                removedEffectIds.Add(state.Key);
-            }
-
-            BroadcastBusyStateIfChanged(wasBusy);
-
-            return removedEffectIds;
-        }
-
-        private void BroadcastBusyStateIfChanged(bool wasBusy)
-        {
-            if (wasBusy == IsBusy)
-                return;
-
-            EnqueueToVisible(new ServerUnitInUse
-            {
-                UnitId = Guid,
-                InUse  = IsBusy
-            }, true);
         }
 
         public void AddScale(uint effectId, uint spell4Id, uint castingId, float previousScale, uint restoreTimeMs)
@@ -1726,14 +1645,22 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void CastSpell(uint spell4Id, ISpellParameters parameters)
         {
+            TryCastSpell(spell4Id, parameters);
+        }
+
+        public CastResult TryCastSpell(uint spell4Id, ISpellParameters parameters)
+        {
             if (parameters == null)
                 throw new ArgumentNullException();
+
+            if (!IsAlive)
+                return CastResult.CasterCannotBeDead;
 
             Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
             if (spell4Entry == null)
                 throw new ArgumentOutOfRangeException();
 
-            CastSpell(spell4Entry.Spell4BaseIdBaseSpell, (byte)spell4Entry.TierIndex, parameters);
+            return TryCastSpell(spell4Entry.Spell4BaseIdBaseSpell, (byte)spell4Entry.TierIndex, parameters);
         }
 
         /// <summary>
@@ -1741,8 +1668,16 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void CastSpell(uint spell4BaseId, byte tier, ISpellParameters parameters)
         {
+            TryCastSpell(spell4BaseId, tier, parameters);
+        }
+
+        private CastResult TryCastSpell(uint spell4BaseId, byte tier, ISpellParameters parameters)
+        {
             if (parameters == null)
                 throw new ArgumentNullException();
+
+            if (!IsAlive)
+                return CastResult.CasterCannotBeDead;
 
             ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4BaseId);
             if (spellBaseInfo == null)
@@ -1753,7 +1688,7 @@ namespace NexusForever.Game.Entity
                 throw new ArgumentOutOfRangeException();
 
             parameters.SpellInfo = spellInfo;
-            CastSpell(parameters);
+            return TryCastSpell(parameters);
         }
 
         /// <summary>
@@ -1761,8 +1696,13 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void CastSpell(ISpellParameters parameters)
         {
+            TryCastSpell(parameters);
+        }
+
+        private CastResult TryCastSpell(ISpellParameters parameters)
+        {
             if (!IsAlive)
-                return;
+                return CastResult.CasterCannotBeDead;
 
             if (parameters == null)
                 throw new ArgumentNullException();
@@ -1771,14 +1711,14 @@ namespace NexusForever.Game.Entity
             {
                 if (this is IPlayer player)
                     player.SendSystemMessage($"Unable to cast base spell {parameters.SpellInfo.BaseInfo.Entry.Id} because it is disabled.");
-                return;
+                return CastResult.SpellRemoved;
             }
 
             if (DisableManager.Instance.IsDisabled(DisableType.Spell, parameters.SpellInfo.Entry.Id))
             {
                 if (this is IPlayer player)
                     player.SendSystemMessage($"Unable to cast spell {parameters.SpellInfo.Entry.Id} because it is disabled.");
-                return;
+                return CastResult.SpellRemoved;
             }
 
             if (parameters.UserInitiatedSpellCast)
@@ -1789,8 +1729,23 @@ namespace NexusForever.Game.Entity
 
             var spell = new Spell.Spell(this, parameters);
             ProbeProcEvent("action-cast-any", ProcTriggerEventCandidate.ActionCastAny, this, ResolveProcProbePrimaryTarget(parameters), spell, null, null, "before-cast");
-            spell.Cast();
+            CastResult castResult = spell.Cast();
+            if (castResult != CastResult.Ok)
+            {
+                spell.Dispose();
+                return castResult;
+            }
+
+            if (this is IPlayer currentPlayer && ShouldCancelActiveTrade(parameters))
+                TradeManager.Instance.Cancel(currentPlayer);
+
             pendingSpells.Add(spell);
+            return CastResult.Ok;
+        }
+
+        private static bool ShouldCancelActiveTrade(ISpellParameters parameters)
+        {
+            return parameters.UserInitiatedSpellCast || parameters.CancelActiveTrade;
         }
 
         private IUnitEntity ResolveProcProbePrimaryTarget(ISpellParameters parameters)
@@ -1822,6 +1777,15 @@ namespace NexusForever.Game.Entity
         {
             ISpell spell = pendingSpells.SingleOrDefault(s => s.CastingId == castingId);
             spell?.CancelCast(CastResult.SpellCancelled);
+        }
+
+        public bool TryCancelSpellEffect(uint serverUniqueId)
+        {
+            ISpell spell = pendingSpells.SingleOrDefault(s => s.CastingId == serverUniqueId);
+            if (spell == null)
+                return false;
+
+            return spell.TryCancelEffect(this);
         }
 
         /// <summary>

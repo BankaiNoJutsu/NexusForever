@@ -14,7 +14,7 @@ namespace NexusForever.Network.Message
         ServerLogoutUpdate              = 0x0092,
         ClientCommodityOrderCancel      = 0x0093,
         ClientAuctionCancel             = 0x0094,
-        ClientActivateUnitCast          = 0x0097, // not sure about the name - almost the same as 0x00B3, but also initiates 0x07FD
+        ClientActivateUnitCast          = 0x0097, // activate-unit cast request with { ContextToken, ActivateUnitId }
         ClientCastPathExplorerSearching = 0x0099,
         ClientCastSpell                 = 0x009A,
         ClientCastSpellPosition         = 0x009B,
@@ -25,7 +25,7 @@ namespace NexusForever.Network.Message
         ServerAchievementUpdate         = 0x00AF,
         ClientRequestActionSetChanges   = 0x00B1,
         ServerActionSetClearCache       = 0x00B2, // server sends this after a ClientRequestActionSetChanges (0xB1)
-        ClientActivateUnit              = 0x00B3,
+        ClientActivateUnit              = 0x00B3, // direct activate-unit request with { ActivateUnitId }
         ClientLootAssignMaster          = 0x00B5,
         ClientFriendshipBlock           = 0x00B8,
         ServerBuybackItemUpdated        = 0x00BA,

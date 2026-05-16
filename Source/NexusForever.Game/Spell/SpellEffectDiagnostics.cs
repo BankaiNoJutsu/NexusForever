@@ -325,7 +325,7 @@ namespace NexusForever.Game.Spell
                 executionDelay.DataBits09);
         }
 
-        public static void TraceRavelSignal(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info, SpellEffectRavelSignalSemantics ravelSignal, string skippedReason)
+        public static void TraceRavelSignal(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info, SpellEffectRavelSignalSemantics ravelSignal, string skippedReason)
         {
             if (!log.IsTraceEnabled)
                 return;
@@ -973,7 +973,7 @@ namespace NexusForever.Game.Spell
                 unitState.DataBits09);
         }
 
-        public static void TraceSetBusy(ISpell spell, IUnitEntity target, SpellEffectSetBusySemantics setBusy, bool changed, bool applied, bool removed, uint removedCount, string skippedReason)
+        public static void TraceSetBusy(ISpell spell, IWorldEntity target, SpellEffectSetBusySemantics setBusy, bool changed, bool applied, bool removed, uint removedCount, string skippedReason)
         {
             if (!log.IsTraceEnabled)
                 return;
@@ -1563,7 +1563,29 @@ namespace NexusForever.Game.Spell
                 skippedReason);
         }
 
-        public static void TraceProxy(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info, SpellEffectProxySemantics proxy)
+        public static void TraceForceRemove(ISpell spell, IWorldEntity target, SpellEffectForceRemoveSemantics forceRemove, string removeScope, int removedBusyStates, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics force-remove spell4Id={0} castingId={1} target={2} removeType={3} removeTargetId={4} removeScope={5} dataBits02={6} dataBits03={7} dataBits04={8} dataBits05={9} dataBits06={10} removedBusyStates={11} skippedReason={12}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                forceRemove.RemoveType,
+                forceRemove.Spell4Id,
+                removeScope,
+                forceRemove.DataBits02,
+                forceRemove.DataBits03,
+                forceRemove.DataBits04,
+                forceRemove.DataBits05,
+                forceRemove.DataBits06,
+                removedBusyStates,
+                skippedReason);
+        }
+
+        public static void TraceProxy(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info, SpellEffectProxySemantics proxy)
         {
             if (!log.IsTraceEnabled)
                 return;
@@ -1581,7 +1603,7 @@ namespace NexusForever.Game.Spell
                 info.Entry.DurationTime);
         }
 
-        public static void TraceDespawnUnit(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info, bool removed)
+        public static void TraceDespawnUnit(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info, bool removed)
         {
             if (!log.IsTraceEnabled)
                 return;

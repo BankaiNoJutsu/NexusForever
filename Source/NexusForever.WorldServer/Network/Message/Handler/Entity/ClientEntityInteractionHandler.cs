@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Quest;
+using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
@@ -40,31 +41,36 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                     entityInteraction.Event == 49 ? GenericError.VendorTooFar : null))
                 return;
 
-            if (entity != null)
-            {
-                session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateEntity, entity.CreatureId, 1u);
-                session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.SucceedCSI, entity.CreatureId, 1u);
-                session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkTo, entity.CreatureId, 1u);
-                foreach (uint targetGroupId in assetManager.GetTargetGroupsForCreatureId(entity.CreatureId) ?? Enumerable.Empty<uint>())
-                    session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkToTargetGroup, targetGroupId, 1u);
-            }
+            if (TryHandleInteractionEvent(session, entityInteraction, entity))
+                UpdateInteractionObjectives(session, entity);
+        }
 
+        private bool TryHandleInteractionEvent(IWorldSession session, ClientEntityInteract entityInteraction, IWorldEntity entity)
+        {
             switch (entityInteraction.Event)
             {
                 case 37: // Quest NPC
                 {
+                    if (entity == null)
+                        throw new InvalidPacketValueException();
+
                     session.EnqueueMessageEncrypted(new ServerDialogStart
                     {
                         DialogUnitId = entityInteraction.Guid
                     });
-                    break;
+                    return true;
                 }
                 case 49: // Handle Vendor
+                    if (entity == null)
+                        throw new InvalidPacketValueException();
+
                     HandleVendor(session, entity);
-                    break;
+                    return true;
                 case 68: // "MailboxActivate"
-                    var mailboxEntity = session.Player.Map.GetEntity<IMailboxEntity>(entityInteraction.Guid);
-                    break;
+                    if (session.Player.Map.GetEntity<IMailboxEntity>(entityInteraction.Guid) == null)
+                        throw new InvalidPacketValueException();
+
+                    return true;
                 case 8: // "HousingGuildNeighborhoodBrokerOpen"
                 case 40:
                 case 41: // "ResourceConversionOpen"
@@ -92,10 +98,26 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 case 85: // "ContractBoardOpen"
                 case 86: // "BarberOpen"
                 case 87: // "MasterCraftsmanOpen"
+                    if (entity == null)
+                        throw new InvalidPacketValueException();
+
+                    return true;
                 default:
                     log.LogWarning($"Received unhandled interaction event {entityInteraction.Event} from Entity {entityInteraction.Guid}");
-                    break;
+                    return false;
             }
+        }
+
+        private void UpdateInteractionObjectives(IWorldSession session, IWorldEntity entity)
+        {
+            if (entity == null)
+                return;
+
+            session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateEntity, entity.CreatureId, 1u);
+            session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.SucceedCSI, entity.CreatureId, 1u);
+            session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkTo, entity.CreatureId, 1u);
+            foreach (uint targetGroupId in assetManager.GetTargetGroupsForCreatureId(entity.CreatureId) ?? Enumerable.Empty<uint>())
+                session.Player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkToTargetGroup, targetGroupId, 1u);
         }
 
         private void HandleVendor(IWorldSession session, IWorldEntity worldEntity)
