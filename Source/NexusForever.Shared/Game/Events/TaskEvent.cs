@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 
+using NexusForever.Shared.Diagnostics;
+
 namespace NexusForever.Shared.Game.Events
 {
     /// <summary>
@@ -10,6 +12,8 @@ namespace NexusForever.Shared.Game.Events
     {
         private readonly Task task;
         private readonly Action callback;
+        private readonly long queuedTimestamp = NexusForeverDiagnostics.GetTimestamp();
+        private long completionTimestamp;
 
         public TaskEvent(Task task, Action callback)
         {
@@ -22,7 +26,13 @@ namespace NexusForever.Shared.Game.Events
         /// </summary>
         public bool CanExecute()
         {
-            return task.IsCompleted;
+            if (!task.IsCompleted)
+                return false;
+
+            if (completionTimestamp == 0)
+                completionTimestamp = NexusForeverDiagnostics.GetTimestamp();
+
+            return true;
         }
 
         /// <summary>
@@ -30,7 +40,12 @@ namespace NexusForever.Shared.Game.Events
         /// </summary>
         public void Execute()
         {
+            if (completionTimestamp != 0)
+                NexusForeverDiagnostics.RecordEventTaskWait(nameof(TaskEvent), NexusForeverDiagnostics.GetElapsedMilliseconds(queuedTimestamp));
+
+            long callbackTimestamp = NexusForeverDiagnostics.GetTimestamp();
             callback.Invoke();
+            NexusForeverDiagnostics.RecordEventCallback(nameof(TaskEvent), NexusForeverDiagnostics.GetElapsedMilliseconds(callbackTimestamp));
         }
     }
 }

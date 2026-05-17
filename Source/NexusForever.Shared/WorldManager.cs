@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
+using NexusForever.Shared.Diagnostics;
 using NLog;
 
 namespace NexusForever.Shared
@@ -56,6 +57,7 @@ namespace NexusForever.Shared
 
                 Thread.Sleep(1);
                 lastTick = (double)stopwatch.ElapsedTicks / Stopwatch.Frequency;
+                NexusForeverDiagnostics.RecordTick(lastTick * 1000d);
             }
 
             log.Info("Stopped world thread.");

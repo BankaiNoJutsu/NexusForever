@@ -2,6 +2,8 @@
 using NexusForever.Network.Packet;
 using NexusForever.Network.World.Message.Model;
 
+using NexusForever.Shared.Diagnostics;
+
 namespace NexusForever.WorldServer.Network.Message.Handler
 {
     public class ClientPackedWorldHandler : IMessageHandler<IWorldSession, ClientPackedWorld>
@@ -11,7 +13,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler
             session.HandlePacket(new ClientGamePacket
             {
                 Data        = packedWorld.Data,
-                IsEncrypted = false
+                IsEncrypted = false,
+                QueuedTimestamp = NexusForeverDiagnostics.GetTimestamp()
             });
         }
     }

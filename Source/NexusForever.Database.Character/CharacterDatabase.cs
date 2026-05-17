@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using NexusForever.Database.Character.Model;
 using NexusForever.Database.Configuration.Model;
+using NexusForever.Shared.Diagnostics;
 using NLog;
 
 namespace NexusForever.Database.Character
@@ -23,24 +24,33 @@ namespace NexusForever.Database.Character
 
         public async Task Save(Action<CharacterContext> action)
         {
-            await using var context = new CharacterContext(config);
-            action.Invoke(context);
-            await context.SaveChangesAsync();
+            await NexusForeverDiagnostics.MeasureDatabaseAsync("character", nameof(Save), async () =>
+            {
+                await using var context = new CharacterContext(config);
+                action.Invoke(context);
+                await context.SaveChangesAsync();
+            });
         }
 
         public async Task Save(IDatabaseCharacter entity)
         {
-            await using var context = new CharacterContext(config);
-            entity.Save(context);
-            await context.SaveChangesAsync();
+            await NexusForeverDiagnostics.MeasureDatabaseAsync("character", nameof(Save), async () =>
+            {
+                await using var context = new CharacterContext(config);
+                entity.Save(context);
+                await context.SaveChangesAsync();
+            });
         }
 
         public async Task Save(IEnumerable<IDatabaseCharacter> entities)
         {
-            await using var context = new CharacterContext(config);
-            foreach (IDatabaseCharacter entity in entities)
-                entity.Save(context);
-            await context.SaveChangesAsync();
+            await NexusForeverDiagnostics.MeasureDatabaseAsync("character", nameof(Save), async () =>
+            {
+                await using var context = new CharacterContext(config);
+                foreach (IDatabaseCharacter entity in entities)
+                    entity.Save(context);
+                await context.SaveChangesAsync();
+            });
         }
 
         public void Migrate()
@@ -114,37 +124,40 @@ namespace NexusForever.Database.Character
 
         public async Task<List<CharacterModel>> GetCharacters(uint accountId)
         {
-            using var context = new CharacterContext(config);
-            return await context.Character.Where(c => c.AccountId == accountId)
-                .AsSplitQuery()
-                .Include(c => c.Appearance)
-                .Include(c => c.Customisation)
-                .Include(c => c.Item)
-                .Include(c => c.Bone)
-                .Include(c => c.Currency)
-                .Include(c => c.Path)
-                .Include(c => c.CharacterTitle)
-                .Include(c => c.Stat)
-                .Include(c => c.Costume)
-                    .ThenInclude(c => c.CostumeItem)
-                .Include(c => c.PetCustomisation)
-                .Include(c => c.PetFlair)
-                .Include(c => c.Keybinding)
-                .Include(c => c.Spell)
-                .Include(c => c.ActionSetShortcut)
-                .Include(c => c.ActionSetAmp)
-                .Include(c => c.Datacube)
-                .Include(c => c.Mail)
-                    .ThenInclude(c => c.Attachment)
-                        .ThenInclude(c => c.Item)
-                .Include(c => c.ZonemapHexgroup)
-                .Include(c => c.Quest)
-                    .ThenInclude(c => c.QuestObjective)
-                .Include(c => c.Entitlement)
-                .Include(c => c.Achievement)
-                .Include(c => c.TradeskillMaterials)
-                .Include(c => c.Reputation)
-                .ToListAsync();
+            return await NexusForeverDiagnostics.MeasureDatabaseAsync("character", nameof(GetCharacters), async () =>
+            {
+                using var context = new CharacterContext(config);
+                return await context.Character.Where(c => c.AccountId == accountId)
+                    .AsSplitQuery()
+                    .Include(c => c.Appearance)
+                    .Include(c => c.Customisation)
+                    .Include(c => c.Item)
+                    .Include(c => c.Bone)
+                    .Include(c => c.Currency)
+                    .Include(c => c.Path)
+                    .Include(c => c.CharacterTitle)
+                    .Include(c => c.Stat)
+                    .Include(c => c.Costume)
+                        .ThenInclude(c => c.CostumeItem)
+                    .Include(c => c.PetCustomisation)
+                    .Include(c => c.PetFlair)
+                    .Include(c => c.Keybinding)
+                    .Include(c => c.Spell)
+                    .Include(c => c.ActionSetShortcut)
+                    .Include(c => c.ActionSetAmp)
+                    .Include(c => c.Datacube)
+                    .Include(c => c.Mail)
+                        .ThenInclude(c => c.Attachment)
+                            .ThenInclude(c => c.Item)
+                    .Include(c => c.ZonemapHexgroup)
+                    .Include(c => c.Quest)
+                        .ThenInclude(c => c.QuestObjective)
+                    .Include(c => c.Entitlement)
+                    .Include(c => c.Achievement)
+                    .Include(c => c.TradeskillMaterials)
+                    .Include(c => c.Reputation)
+                    .ToListAsync();
+            });
         }
 
         public bool CharacterNameExists(string characterName)

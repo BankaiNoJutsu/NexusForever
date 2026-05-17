@@ -10,6 +10,7 @@ using NexusForever.Network.Session;
 using NexusForever.Network.Sts;
 using NexusForever.Network.Sts.Model;
 using NexusForever.Shared;
+using NexusForever.Shared.Diagnostics;
 using NexusForever.StsServer.Network.Message;
 using NexusForever.StsServer.Network.Packet;
 
@@ -75,6 +76,7 @@ namespace NexusForever.StsServer.Network
 
                 var packet = new ServerStsPacket(statusCode, status, stringWriter.ToString(), sequence, serverEncryption != null);
                 outgoingPackets.Enqueue(packet);
+                NexusForeverDiagnostics.RecordPacketQueueLength("sts", "outgoing", outgoingPackets.Count);
             }
         }
 
@@ -95,6 +97,7 @@ namespace NexusForever.StsServer.Network
                     if (onDeck.HasHeader && onDeck.HasBody)
                     {
                         incomingPackets.Enqueue(onDeck.GetPacket());
+                        NexusForeverDiagnostics.RecordPacketQueueLength("sts", "incoming", incomingPackets.Count);
                         onDeck = null;
                     }
                 }
@@ -107,11 +110,17 @@ namespace NexusForever.StsServer.Network
         {
             // process pending packet queue
             while (incomingPackets.TryDequeue(out ClientStsPacket packet))
+            {
+                NexusForeverDiagnostics.RecordPacketQueueLength("sts", "incoming", incomingPackets.Count);
                 HandlePacket(packet);
+            }
 
             // flush pending packet queue
             while (outgoingPackets.TryDequeue(out ServerStsPacket packet))
+            {
+                NexusForeverDiagnostics.RecordPacketQueueLength("sts", "outgoing", outgoingPackets.Count);
                 FlushPacket(packet);
+            }
 
             base.Update(lastTick);
         }
@@ -150,11 +159,14 @@ namespace NexusForever.StsServer.Network
                 message.Read(doc);
             }
 
+            long handlerStart = NexusForeverDiagnostics.GetTimestamp();
             handlerInfo.Delegate.Invoke(this, message);
+            NexusForeverDiagnostics.RecordStsTransaction(packet.Uri, handlerInfo.Delegate.Method.Name, NexusForeverDiagnostics.GetElapsedMilliseconds(handlerStart));
         }
 
         private void FlushPacket(ServerStsPacket packet)
         {
+            long start = NexusForeverDiagnostics.GetTimestamp();
             using (var stream = new MemoryStream())
             using (var writer = new StreamWriter(stream))
             {
@@ -181,6 +193,7 @@ namespace NexusForever.StsServer.Network
                     serverEncryption.Encrypt(buffer);
 
                 SendRaw(buffer);
+                NexusForeverDiagnostics.RecordPacketFlush("sts", packet.StatusCode.ToString(), buffer.Length, NexusForeverDiagnostics.GetElapsedMilliseconds(start));
             }
 
             if (serverNewEncryption != null)

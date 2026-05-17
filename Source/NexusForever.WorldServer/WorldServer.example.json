@@ -1,15 +1,22 @@
 {
     "Urls": "http://0.0.0.0:5000",
-    "Network": {
-        "Host": "0.0.0.0",
-        "Port": 24000,
+  "Network": {
+    "Host": "0.0.0.0",
+    "Port": 24000,
         "Internal": {
             "Broker": "RabbitMQ",
             "ConnectionString": "amqp://nexusforever:nexusforever@localhost:5672",
-            "InputQueue": "WorldServer_1"
-        }
-    },
-    "Database": {
+      "InputQueue": "WorldServer_1"
+    }
+  },
+  "Diagnostics": {
+    "Profiling": {
+      "Enabled": false,
+      "SlowOperationThresholdMs": 50,
+      "IncludePacketPayloadSizes": false
+    }
+  },
+  "Database": {
         "Auth": {
             "ConnectionString": "server=127.0.0.1;port=3306;user=nexusforever;password=nexusforever;database=nexus_forever_auth",
             "Provider": "MySql"

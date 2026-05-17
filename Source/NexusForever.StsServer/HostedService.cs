@@ -8,6 +8,7 @@ using NexusForever.Database.Configuration.Model;
 using NexusForever.Network.Session;
 using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
+using NexusForever.Shared.Diagnostics;
 using NexusForever.StsServer.Network;
 using NexusForever.StsServer.Network.Message;
 
@@ -53,7 +54,10 @@ namespace NexusForever.StsServer
             DatabaseManager.Instance.Initialise(SharedConfiguration.Instance.Get<DatabaseConfig>());
 
             // initialise world after all assets have loaded but before any network handlers might be invoked
-            worldManager.Initialise(networkManager.Update);
+            worldManager.Initialise(lastTick =>
+            {
+                NexusForeverDiagnostics.MeasureTickSubsystem("network", () => networkManager.Update(lastTick));
+            });
 
             // initialise network manager last to make sure the rest of the server is ready for invoked handlers
             messageManager.Initialise();

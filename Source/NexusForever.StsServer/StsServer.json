@@ -3,6 +3,13 @@
     "Host": "0.0.0.0",
     "Port": 6600
   },
+  "Diagnostics": {
+    "Profiling": {
+      "Enabled": false,
+      "SlowOperationThresholdMs": 50,
+      "IncludePacketPayloadSizes": false
+    }
+  },
   "Database": {
     "Auth": {
       "ConnectionString": "server=127.0.0.1;port=3306;user=nexusforever;password=nexusforever;database=nexus_forever_auth",

@@ -10,6 +10,7 @@ using NexusForever.Database;
 using NexusForever.Network.Configuration.Model;
 using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
+using NexusForever.Shared.Diagnostics;
 using NexusForever.StsServer.Network;
 using NLog;
 using NLog.Extensions.Logging;
@@ -42,6 +43,8 @@ namespace NexusForever.StsServer
                 })
                 .ConfigureServices((hb, sc) =>
                 {
+                    NexusForeverDiagnostics.Configure(hb.Configuration.GetSection("Diagnostics:Profiling"));
+
                     sc.AddHostedService<HostedService>();
 
                     sc.AddOptions<NetworkConfig>()

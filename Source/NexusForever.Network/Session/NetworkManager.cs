@@ -4,6 +4,7 @@ using System.Net;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NexusForever.Network.Configuration.Model;
+using NexusForever.Shared.Diagnostics;
 
 namespace NexusForever.Network.Session
 {
@@ -82,6 +83,8 @@ namespace NexusForever.Network.Session
         /// </summary>
         public void Update(double lastTick)
         {
+            NexusForeverDiagnostics.RecordActiveSessions(typeof(T).Name, sessions.Count);
+
             while (pendingAdd.TryDequeue(out T session))
                 AddSession(session);
 

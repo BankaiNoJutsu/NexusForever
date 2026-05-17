@@ -39,6 +39,7 @@ using NexusForever.Network.World.Message;
 using NexusForever.Script;
 using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
+using NexusForever.Shared.Diagnostics;
 using NexusForever.WorldServer.Command;
 using NexusForever.WorldServer.Network;
 
@@ -165,28 +166,28 @@ namespace NexusForever.WorldServer.Service
             worldManager.Initialise(lastTick =>
             {
                 // NetworkManager must be first and MapManager must come before everything else
-                networkManager.Update(lastTick);
-                MapManager.Instance.Update(lastTick);
+                NexusForeverDiagnostics.MeasureTickSubsystem("network", () => networkManager.Update(lastTick));
+                NexusForeverDiagnostics.MeasureTickSubsystem("map", () => MapManager.Instance.Update(lastTick));
 
-                BuybackManager.Instance.Update(lastTick);
-                GlobalQuestManager.Instance.Update(lastTick);
-                GlobalLootManager.Instance.Update(lastTick);
-                GlobalGuildManager.Instance.Update(lastTick);
-                GlobalResidenceManager.Instance.Update(lastTick); // must be after guild update
+                NexusForeverDiagnostics.MeasureTickSubsystem("buyback", () => BuybackManager.Instance.Update(lastTick));
+                NexusForeverDiagnostics.MeasureTickSubsystem("quest", () => GlobalQuestManager.Instance.Update(lastTick));
+                NexusForeverDiagnostics.MeasureTickSubsystem("loot", () => GlobalLootManager.Instance.Update(lastTick));
+                NexusForeverDiagnostics.MeasureTickSubsystem("guild", () => GlobalGuildManager.Instance.Update(lastTick));
+                NexusForeverDiagnostics.MeasureTickSubsystem("residence", () => GlobalResidenceManager.Instance.Update(lastTick)); // must be after guild update
 
-                loginQueueManager.Update(lastTick);
-                matchingManager.Update(lastTick);
-                matchManager.Update(lastTick);
-                duelManager.Update(lastTick);
-                icCommManager.Update(lastTick);
-                tradeManager.Update(lastTick);
+                NexusForeverDiagnostics.MeasureTickSubsystem("login-queue", () => loginQueueManager.Update(lastTick));
+                NexusForeverDiagnostics.MeasureTickSubsystem("matching", () => matchingManager.Update(lastTick));
+                NexusForeverDiagnostics.MeasureTickSubsystem("match", () => matchManager.Update(lastTick));
+                NexusForeverDiagnostics.MeasureTickSubsystem("duel", () => duelManager.Update(lastTick));
+                NexusForeverDiagnostics.MeasureTickSubsystem("iccomm", () => icCommManager.Update(lastTick));
+                NexusForeverDiagnostics.MeasureTickSubsystem("trade", () => tradeManager.Update(lastTick));
 
-                scriptManager.Update(lastTick);
+                NexusForeverDiagnostics.MeasureTickSubsystem("script", () => scriptManager.Update(lastTick));
 
-                ShutdownManager.Instance.Update(lastTick);
+                NexusForeverDiagnostics.MeasureTickSubsystem("shutdown", () => ShutdownManager.Instance.Update(lastTick));
 
                 // process commands after everything else in the tick has processed
-                CommandManager.Instance.Update(lastTick);
+                NexusForeverDiagnostics.MeasureTickSubsystem("command", () => CommandManager.Instance.Update(lastTick));
             });
 
             // initialise network and command managers last to make sure the rest of the server is ready for invoked handlers

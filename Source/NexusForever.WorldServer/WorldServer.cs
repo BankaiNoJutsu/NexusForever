@@ -19,6 +19,7 @@ using NexusForever.Script;
 using NexusForever.Script.Configuration.Model;
 using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
+using NexusForever.Shared.Diagnostics;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Internal.Handler;
 using NexusForever.WorldServer.Service;
@@ -55,6 +56,8 @@ namespace NexusForever.WorldServer
                 })
                 .ConfigureServices((hb, sc) =>
                 {
+                    NexusForeverDiagnostics.Configure(hb.Configuration.GetSection("Diagnostics:Profiling"));
+
                     // register world server service first since it needs to execute before the web host
                     sc.AddHostedService<HostedService>();
                     sc.AddHostedService<NetworkInternalHandlerHostedService>();

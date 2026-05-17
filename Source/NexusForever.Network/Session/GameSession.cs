@@ -6,6 +6,8 @@ using NexusForever.Network.Message;
 using NexusForever.Network.Packet;
 using NexusForever.Shared;
 
+using NexusForever.Shared.Diagnostics;
+
 namespace NexusForever.Network.Session
 {
     public abstract class GameSession : NetworkSession, IGameSession
@@ -56,6 +58,7 @@ namespace NexusForever.Network.Session
 
             var packet = new ServerGamePacket(opcode.Value, message);
             outgoingPackets.Enqueue(packet);
+            NexusForeverDiagnostics.RecordPacketQueueLength("world", "outgoing", outgoingPackets.Count);
             LogSpellPacketBoundary("outgoing-queued", opcode.Value, false, message.GetType().Name, packet.Data.Length);
         }
 
@@ -145,8 +148,10 @@ namespace NexusForever.Network.Session
                         incomingPackets.Enqueue(new ClientGamePacket
                         {
                             Data = onDeck.Data,
-                            IsEncrypted = false
+                            IsEncrypted = false,
+                            QueuedTimestamp = NexusForeverDiagnostics.GetTimestamp()
                         });
+                        NexusForeverDiagnostics.RecordPacketQueueLength("world", "incoming", incomingPackets.Count);
                         onDeck = null;
                     }
                 }
@@ -172,7 +177,10 @@ namespace NexusForever.Network.Session
 
             // process pending packet queue
             while (CanProcessIncomingPackets && incomingPackets.TryDequeue(out ClientGamePacket packet))
+            {
+                NexusForeverDiagnostics.RecordPacketQueueLength("world", "incoming", incomingPackets.Count);
                 HandlePacket(packet);
+            }
 
             // flush pending packet queue
             FlushPackets();
@@ -188,6 +196,8 @@ namespace NexusForever.Network.Session
                 using var reader = new ClientGamePacketReader();
                 reader.Initialise(packet, encryption);
                 GameMessageOpcode opcode = reader.ReadHeader();
+                if (packet.QueuedTimestamp != 0)
+                    NexusForeverDiagnostics.RecordPacketQueueWait("world", opcode.ToString(), NexusForeverDiagnostics.GetElapsedMilliseconds(packet.QueuedTimestamp));
 
                 //IReadable message = serviceScope.ServiceProvider.GetKeyedService<IReadable>(opcode);
                 IReadable message = serviceProvider.GetKeyedService<IReadable>(opcode);
@@ -234,7 +244,9 @@ namespace NexusForever.Network.Session
                 if (remaining > 0)
                     log.Warn($"Failed to read entire contents of packet {opcode}");
 
+                long handlerStart = NexusForeverDiagnostics.GetTimestamp();
                 handlerDelegate.Invoke(handler, this, message);
+                NexusForeverDiagnostics.RecordPacketHandler("world", opcode.ToString(), handlerType.Name, NexusForeverDiagnostics.GetElapsedMilliseconds(handlerStart));
             }
             catch (InvalidPacketValueException exception)
             {
@@ -292,11 +304,15 @@ namespace NexusForever.Network.Session
         public void FlushPackets()
         {
             while (CanProcessOutgoingPackets && outgoingPackets.TryDequeue(out ServerGamePacket packet))
+            {
+                NexusForeverDiagnostics.RecordPacketQueueLength("world", "outgoing", outgoingPackets.Count);
                 FlushPacket(packet);
+            }
         }
 
         private void FlushPacket(ServerGamePacket packet)
         {
+            long start = NexusForeverDiagnostics.GetTimestamp();
             using (var stream = new MemoryStream())
             using (var writer = new GamePacketWriter(stream))
             {
@@ -306,6 +322,7 @@ namespace NexusForever.Network.Session
 
                 SendRaw(stream.ToArray());
             }
+            NexusForeverDiagnostics.RecordPacketFlush("world", packet.Opcode.ToString(), packet.Data.Length, NexusForeverDiagnostics.GetElapsedMilliseconds(start));
         }
     }
 }

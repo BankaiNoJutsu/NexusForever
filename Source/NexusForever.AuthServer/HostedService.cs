@@ -12,6 +12,7 @@ using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
+using NexusForever.Shared.Diagnostics;
 
 namespace NexusForever.AuthServer
 {
@@ -59,7 +60,7 @@ namespace NexusForever.AuthServer
             // initialise world after all assets have loaded but before any network or command handlers might be invoked
             worldManager.Initialise(lastTick =>
             {
-                networkManager.Update(lastTick);
+                NexusForeverDiagnostics.MeasureTickSubsystem("network", () => networkManager.Update(lastTick));
             });
 
             // initialise network and command managers last to make sure the rest of the server is ready for invoked handlers

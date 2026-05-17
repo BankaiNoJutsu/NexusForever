@@ -99,6 +99,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusForever.LoadTest", "..\Tools\NexusForever.LoadTest\NexusForever.LoadTest.csproj", "{66490E91-B7FD-41A4-BD16-39BFCD0D8BA1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -257,6 +259,10 @@ Global
 		{53C37594-7203-DEC5-4BDD-64F35038B031}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53C37594-7203-DEC5-4BDD-64F35038B031}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53C37594-7203-DEC5-4BDD-64F35038B031}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66490E91-B7FD-41A4-BD16-39BFCD0D8BA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66490E91-B7FD-41A4-BD16-39BFCD0D8BA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66490E91-B7FD-41A4-BD16-39BFCD0D8BA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66490E91-B7FD-41A4-BD16-39BFCD0D8BA1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -2,6 +2,8 @@
 using NexusForever.Network.Packet;
 using NexusForever.Network.Session;
 
+using NexusForever.Shared.Diagnostics;
+
 namespace NexusForever.Network.Message.Handler
 {
     public class ClientEncryptedHandler : IMessageHandler<IGameSession, ClientEncrypted>
@@ -11,7 +13,8 @@ namespace NexusForever.Network.Message.Handler
             session.HandlePacket(new ClientGamePacket
             {
                 Data        = encrypted.Data,
-                IsEncrypted = true
+                IsEncrypted = true,
+                QueuedTimestamp = NexusForeverDiagnostics.GetTimestamp()
             });
         }
     }

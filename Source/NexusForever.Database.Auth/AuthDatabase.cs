@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Configuration.Model;
+using NexusForever.Shared.Diagnostics;
 using NLog;
 
 namespace NexusForever.Database.Auth
@@ -50,10 +51,13 @@ namespace NexusForever.Database.Auth
         /// </summary>
         public async Task<AccountModel> GetAccountByEmailAsync(string email)
         {
-            using var context = new AuthContext(config);
-            return await context.Account
-                .Include(a => a.AccountRole)
-                .SingleOrDefaultAsync(a => a.Email == email);
+            return await NexusForeverDiagnostics.MeasureDatabaseAsync("auth", nameof(GetAccountByEmailAsync), async () =>
+            {
+                using var context = new AuthContext(config);
+                return await context.Account
+                    .Include(a => a.AccountRole)
+                    .SingleOrDefaultAsync(a => a.Email == email);
+            });
         }
 
         /// <summary>
@@ -61,10 +65,13 @@ namespace NexusForever.Database.Auth
         /// </summary>
         public async Task<AccountModel> GetAccountByGameTokenAsync(string email, string gameToken)
         {
-            using var context = new AuthContext(config);
-            return await context.Account
-                .Include(a => a.AccountSuspension)
-                .SingleOrDefaultAsync(a => a.Email == email && a.GameToken == gameToken);
+            return await NexusForeverDiagnostics.MeasureDatabaseAsync("auth", nameof(GetAccountByGameTokenAsync), async () =>
+            {
+                using var context = new AuthContext(config);
+                return await context.Account
+                    .Include(a => a.AccountSuspension)
+                    .SingleOrDefaultAsync(a => a.Email == email && a.GameToken == gameToken);
+            });
         }
 
         /// <summary>
@@ -72,10 +79,13 @@ namespace NexusForever.Database.Auth
         /// </summary>
         public async Task<AccountModel> GetAccountByGameTokenAsync(string gameToken)
         {
-            using var context = new AuthContext(config);
-            return await context.Account
-                .Include(a => a.AccountRole)
-                .SingleOrDefaultAsync(a => a.GameToken == gameToken);
+            return await NexusForeverDiagnostics.MeasureDatabaseAsync("auth", nameof(GetAccountByGameTokenAsync), async () =>
+            {
+                using var context = new AuthContext(config);
+                return await context.Account
+                    .Include(a => a.AccountRole)
+                    .SingleOrDefaultAsync(a => a.GameToken == gameToken);
+            });
         }
 
         /// <summary>
@@ -83,18 +93,21 @@ namespace NexusForever.Database.Auth
         /// </summary>
         public async Task<AccountModel> GetAccountBySessionKeyAsync(string email, string sessionKey)
         {
-            using var context = new AuthContext(config);
-            return await context.Account
-                .AsSplitQuery()
-                .Include(a => a.AccountCostumeUnlock)
-                .Include(a => a.AccountCurrency)
-                .Include(a => a.AccountGenericUnlock)
-                .Include(a => a.AccountInventory)
-                .Include(a => a.AccountKeybinding)
-                .Include(a => a.AccountEntitlement)
-                .Include(a => a.AccountPermission)
-                .Include(a => a.AccountRole)
-                .SingleOrDefaultAsync(a => a.Email == email && a.SessionKey == sessionKey);
+            return await NexusForeverDiagnostics.MeasureDatabaseAsync("auth", nameof(GetAccountBySessionKeyAsync), async () =>
+            {
+                using var context = new AuthContext(config);
+                return await context.Account
+                    .AsSplitQuery()
+                    .Include(a => a.AccountCostumeUnlock)
+                    .Include(a => a.AccountCurrency)
+                    .Include(a => a.AccountGenericUnlock)
+                    .Include(a => a.AccountInventory)
+                    .Include(a => a.AccountKeybinding)
+                    .Include(a => a.AccountEntitlement)
+                    .Include(a => a.AccountPermission)
+                    .Include(a => a.AccountRole)
+                    .SingleOrDefaultAsync(a => a.Email == email && a.SessionKey == sessionKey);
+            });
         }
 
         /// <summary>
@@ -180,14 +193,17 @@ namespace NexusForever.Database.Auth
         /// </summary>
         public async Task UpdateAccountGameToken(uint accountId, string gameToken)
         {
-            using var context = new AuthContext(config);
-            EntityEntry<AccountModel> entity = context.Attach(new AccountModel
+            await NexusForeverDiagnostics.MeasureDatabaseAsync("auth", nameof(UpdateAccountGameToken), async () =>
             {
-                Id        = accountId,
-                GameToken = gameToken
+                using var context = new AuthContext(config);
+                EntityEntry<AccountModel> entity = context.Attach(new AccountModel
+                {
+                    Id        = accountId,
+                    GameToken = gameToken
+                });
+                entity.Property(p => p.GameToken).IsModified = true;
+                await context.SaveChangesAsync();
             });
-            entity.Property(p => p.GameToken).IsModified = true;
-            await context.SaveChangesAsync();
         }
 
         /// <summary>
@@ -195,14 +211,17 @@ namespace NexusForever.Database.Auth
         /// </summary>
         public async Task UpdateAccountSessionKey(uint accountId, string sessionKey)
         {
-            await using var context = new AuthContext(config);
-            EntityEntry<AccountModel> entity = context.Attach(new AccountModel
+            await NexusForeverDiagnostics.MeasureDatabaseAsync("auth", nameof(UpdateAccountSessionKey), async () =>
             {
-                Id         = accountId,
-                SessionKey = sessionKey
+                await using var context = new AuthContext(config);
+                EntityEntry<AccountModel> entity = context.Attach(new AccountModel
+                {
+                    Id         = accountId,
+                    SessionKey = sessionKey
+                });
+                entity.Property(p => p.SessionKey).IsModified = true;
+                await context.SaveChangesAsync();
             });
-            entity.Property(p => p.SessionKey).IsModified = true;
-            await context.SaveChangesAsync();
         }
 
         /// <summary>
@@ -226,10 +245,13 @@ namespace NexusForever.Database.Auth
 
         public ImmutableList<ServerModel> GetServers()
         {
-            using var context = new AuthContext(config);
-            return context.Server
-                .AsNoTracking()
-                .ToImmutableList();
+            return NexusForeverDiagnostics.MeasureDatabase("auth", nameof(GetServers), () =>
+            {
+                using var context = new AuthContext(config);
+                return context.Server
+                    .AsNoTracking()
+                    .ToImmutableList();
+            });
         }
 
         public ServerModel GetServer(ushort realmId)
@@ -242,10 +264,13 @@ namespace NexusForever.Database.Auth
 
         public ImmutableList<ServerMessageModel> GetServerMessages()
         {
-            using var context = new AuthContext(config);
-            return context.ServerMessage
-                .AsNoTracking()
-                .ToImmutableList();
+            return NexusForeverDiagnostics.MeasureDatabase("auth", nameof(GetServerMessages), () =>
+            {
+                using var context = new AuthContext(config);
+                return context.ServerMessage
+                    .AsNoTracking()
+                    .ToImmutableList();
+            });
         }
 
         public ImmutableList<PermissionModel> GetPermissions()
