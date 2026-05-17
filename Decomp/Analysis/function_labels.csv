@@ -602,6 +602,10 @@ WildStar64.exe,140397850,SpellCast_SendClientSpellCastState,Resolves the current
 WildStar64.exe,1403a25c0,Movement_UpdateAndSendFallStateOpcodes,Large movement update function that sends the observed 0x00FB fall-state float and 0x00FC landing-state movement payload branches.
 WildStar64.exe,1403c28f0,Vendor_SendClientRepairItemVendor,Sends opcode 0x014C for a vendor repair item request with item location and optional guild/current-value fields.
 WildStar64.exe,1403c2a20,Vendor_SendClientRepairAllItemsVendor,Sends opcode 0x014C for the repair-all vendor branch with a zero item identity and calculated total repair cost.
+WildStar64.exe,1403c2630,Vendor_SendClientSellItemToVendor,Validates vendor state and sends opcode 0x0166 with item location and quantity for SellItemToVendor.
+WildStar64.exe,1403c2850,Vendor_SendClientBuybackItemFromVendor,Validates inventory and buyback state before sending opcode 0x00BB with the selected buyback unique id.
+WildStar64.exe,14050cd50,Lua_GameLib_SellItemToVendor,GameLib SellItemToVendor Lua method that reads item location and quantity before routing opcode 0x0166.
+WildStar64.exe,14050ce20,Lua_GameLib_BuybackItemFromVendor,GameLib BuybackItemFromVendor Lua method that reads the buyback unique id before routing opcode 0x00BB.
 WildStar64.exe,14050ce40,Lua_GameLib_IsRepairVendor,GameLib repair-vendor status method that checks the current target and sends opcode 0x0167 with an empty payload.
 WildStar64.exe,14050cf00,Lua_GameLib_RepairAllItemsVendor,GameLib repair-all vendor method that routes the calculated repair-all request through opcode 0x014C.
 WildStar64.exe,1403980a0,SpellCast_SendClientToggleCastOn,Sends opcode 0x017E with value 1 and marks the local toggle-cast state enabled.
@@ -613,17 +617,32 @@ WildStar64.exe,140712490,Lua_CREDDExchangeLib_GetCREDDHistory,CREDDExchangeLib.G
 WildStar64.exe,1405194b0,CREDDExchange_SendClientOrderSubmit,Sends the CREDD exchange submit request through opcode 0x0265 or 0x026B depending on the buy/sell branch selected by UI state.
 WildStar64.exe,140519840,CREDDExchangeSubmit_ReadDirectionAndMoney,Reads the CREDD exchange submit direction and Game.Money amount and applies the buy-side credit/tax validation used before order submit.
 WildStar64.exe,1404b79d0,Housing_SendClientInteriorWallpaperUpdate,Builds changed six-slot residence plug item records and sends opcode 0x050D for interior wallpaper updates.
+WildStar64.exe,1404b73e0,Housing_SendClientPlugPlaceOrRotate,Builds opcode 0x0510 for plug placement or rotation with plot info id plug item id facing operation and contribution data.
+WildStar64.exe,1404b7540,Housing_SendClientPlugRemove,Builds opcode 0x0510 for plug removal with operation 2.
+WildStar64.exe,1404b7620,Housing_SendClientPlugRepair,Builds opcode 0x0510 for plug repair with operation 4 and HousingContributionInfo-derived costs.
+WildStar64.exe,1404bc060,Housing_ResolvePlotInfoForSelectedResidence,Resolves a HousingPlotInfo id for the selected residence property and plot index.
 WildStar64.exe,1406aca10,Lua_GameResidence_RemoveInteriorWallpaper,Game.Residence.RemoveInteriorWallpaper Lua method that collects the six interior wallpaper plug item slots and routes them through opcode 0x050D.
+WildStar64.exe,1406a54f0,Lua_GameHousingPlot_RemovePlug,Game.HousingPlot RemovePlug Lua method that sends opcode 0x0510 with the target plot info id and remove operation.
+WildStar64.exe,1406a5520,Lua_GameHousingPlot_PlacePlug,Game.HousingPlot PlacePlug Lua method that sends opcode 0x0510 with requested plug item id default facing and place operation.
+WildStar64.exe,1406a5630,Lua_GameHousingPlot_RepairPlug,Game.HousingPlot RepairPlug Lua method that sends opcode 0x0510 with repair operation and contribution data.
+WildStar64.exe,1406a5660,Lua_GameHousingPlot_SetPlugRotation,Game.HousingPlot SetPlugRotation Lua method that sends opcode 0x0510 with current plug item id and requested facing.
 WildStar64.exe,1404d1e40,GenericMap_SendClientNodeRequestOrChoose,Handles GenericMapNodeChoose by sending opcode 0x07CF for missing node data or dispatching the local GenericFloater when the node is already available.
 WildStar64.exe,1406f3050,Lua_GameLib_GenericMapNodeChoose,GameLib GenericMapNodeChoose Lua wrapper that reads the optional node id argument and calls the GenericMap node request/choose helper.
 WildStar64.exe,140634390,Spline2_SendClientStaleSplineRequests,Periodic Spline2 maintenance callback that sends opcode 0x081D with stale spline ids before rescheduling itself for the next ten-minute sweep.
 WildStar64.exe,140633380,Spline2_LoadAndScheduleClientRequests,Loads Spline2 and Spline2Node table-backed runtime data and schedules the periodic ClientSpline2Request maintenance callback.
 WildStar64.exe,1406febf0,Lua_GameLib_SpendAttributePoints,GameLib.SpendAttributePoints Lua method that validates local player state and sends opcode 0x017C with six 32-bit attribute point values.
 WildStar64.exe,1406fed20,Lua_GameLib_ResetAttributePoints,GameLib.ResetAttributePoints Lua method that validates local player state and sends opcode 0x0150 with an empty payload.
+WildStar64.exe,1406f69e0,Lua_GameLib_GetClassInnateAbilitySpells,GameLib GetClassInnateAbilitySpells Lua method registered in the class innate ability accessor table.
+WildStar64.exe,1406f6e60,Lua_GameLib_GetNumClassInnateAbilitySpells,GameLib GetNumClassInnateAbilitySpells Lua method registered in the class innate ability accessor table.
+WildStar64.exe,1406f6eb0,Lua_GameLib_GetCurrentClassInnateAbilitySpell,GameLib GetCurrentClassInnateAbilitySpell Lua method registered in the class innate ability accessor table.
+WildStar64.exe,1406f6f00,Lua_GameLib_IsCurrentInnateAbilityActive,GameLib IsCurrentInnateAbilityActive Lua method registered in the class innate ability accessor table.
+WildStar64.exe,1406f7030,Lua_GameLib_GetCurrentClassInnateAbilityIndex,GameLib GetCurrentClassInnateAbilityIndex Lua method registered in the class innate ability accessor table.
+WildStar64.exe,1406f7080,Lua_GameLib_SetCurrentClassInnateAbilityIndex,GameLib SetCurrentClassInnateAbilityIndex Lua method registered in the class innate ability accessor table.
 WildStar64.exe,14008b880,ClientMovementFallLand_WritePayload,Serialises opcode 0x00FC as one state bit followed by three raw 32-bit movement position fields.
 WildStar64.exe,140082c10,ClientCREDDExchangeBuyOrderSubmit_WritePayload,Serialises opcode 0x0265 as a 64-bit credit amount and one submit flag bit.
 WildStar64.exe,14009fb50,ClientCREDDExchangeSellOrderSubmit_WritePayload,Serialises opcode 0x026B as a target identity 64-bit credit amount and one submit flag bit.
 WildStar64.exe,14009ddd0,ClientHousingInteriorWallpaperUpdate_WritePayload,Serialises opcode 0x050D as six 32-bit slot flags followed by six DecorInfo records.
+WildStar64.exe,14009d560,ClientHousingPlugUpdate_WritePayload,Serialises opcode 0x0510 as residence identity plot info id plug item id facing unknown zero operation and five contribution records.
 WildStar64.exe,14009d0a0,Housing_WriteDecorInfoPayload,Serialises one housing DecorInfo record for decor update style payloads.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.

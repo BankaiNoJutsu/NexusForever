@@ -5162,6 +5162,272 @@ One-hundred-tenth AMP commit handler pass:
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\commit-amp-spec-world\`
   succeeds with only the existing `Spline.formation` warning.
 
+One-hundred-eleventh instance-settings handler pass:
+
+- Native evidence:
+  the existing durable WildStar64 labels
+  `Lua_GameLib_SetInstanceSettings` (`140701650`),
+  `Lua_GameLib_ResetSingleInstance` (`1407017d0`), and
+  `Lua_GameLib_OnClosedInstanceSettings` (`140701800`) map the solo instance
+  settings dialog requests. `SetInstanceSettings` sends opcode `0x0163` with
+  the selected instance portal id, validated difficulty, prime level, and
+  packed setting bits. `ResetSingleInstance` sends opcode `0x0153` with the
+  selected instance portal id. `OnClosedInstanceSettings` conditionally sends
+  opcode `0x00D2` for the selected portal when the dialog closes.
+- NexusForever implementation:
+  WorldServer now handles `ClientClosedInstanceSettings`,
+  `ClientResetSingleInstance`, and `ClientSetInstanceSettings` as conservative
+  instance-setting requests. The close and settings-update paths are logged
+  without mutating instance state. The reset-single-instance path returns
+  `ServerInstanceResetResult` with `Success = false`, matching the existing
+  failure-capable server packet instead of silently dropping the request.
+  Invalid `WorldDifficulty` values above the named client range are rejected.
+- Still blocked:
+  actual solo instance reset and settings mutation remain blocked until
+  NexusForever has a verified instance-lock/settings runtime model. The packed
+  trailing setting bits beyond the known difficulty/prime/rally fields should
+  stay diagnostic-only.
+- Coverage and verification:
+  `Get-DecompCoverageSnapshot.ps1` now reports client opcode coverage as
+  `258` implemented, `68` partial, and `0` missing. The three instance-settings
+  rows are marked `handled` in `opcode_coverage_inventory.csv`. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\instance-settings-world\`
+  succeeds with only the existing `Spline.formation` warning.
+
+One-hundred-twelfth housing plug update pass:
+
+- Native evidence:
+  `ClientHousingPlugUpdate_WritePayload` (`14009d560`) serialises opcode
+  `0x0510` as residence identity, `HousingPlotInfo` id, `HousingPlugItem` id,
+  32-bit plug facing, one zero/unknown 32-bit field, a 3-bit operation, and
+  five 20-byte contribution records around
+  `exports\WildStar64.exe\selected_decompiled.c:2776`.
+  `Housing_SendClientPlugPlaceOrRotate` (`1404b73e0`),
+  `Housing_SendClientPlugRemove` (`1404b7540`), and
+  `Housing_SendClientPlugRepair` (`1404b7620`) build the shared request around
+  `selected_decompiled.c:18875`, `18952`, and `19004`. The Lua wrappers
+  `Lua_GameHousingPlot_PlacePlug`, `RemovePlug`, `RepairPlug`, and
+  `SetPlugRotation` are selected around `selected_decompiled.c:44737`.
+  `Housing_ResolvePlotInfoForSelectedResidence` (`1404bc060`) resolves the
+  plot id from `HousingPlotInfo` by selected property and plot index around
+  `selected_decompiled.c:19410`.
+- NexusForever implementation:
+  `ClientHousingPlugUpdate` now exposes the mapped fields instead of discarding
+  them. WorldServer routes the request into `ResidenceMapInstance.PlugUpdate`,
+  validates the residence, permissions, plot id, unknown zero field, plug table
+  entry, plot type, and facing, and applies place/rotate or remove updates to
+  the residence plot. `Plot.SetPlug` now validates plug table entries and
+  default `HousingPlotInfo` plugs use that same path. Successful mutations
+  refresh `ServerHousingPlots` and update the plug entity. Invalid
+  plug/facing/inactive cases return
+  `ServerHousingResult`; repair returns `Plug_ModifyFailed` because the current
+  server has no verified plug damage/upkeep runtime.
+- Still blocked:
+  contribution cost charging, build timers, plug upkeep/repair state, and exact
+  client success/failure timing remain open. The five contribution records are
+  preserved on the model but stay diagnostic-only until a backing resource model
+  is mapped.
+- Coverage and verification:
+  nine new WildStar64 labels were added to `function_labels.csv` and verified in
+  `functions.csv` plus `selected_decompiled.c` after an export-only run with
+  `-MaxDecompiledFunctions 650`. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\housing-plug-update-world\`
+  succeeds with only the existing `Spline.formation` warning.
+
+One-hundred-thirteenth vendor sell quantity pass:
+
+- Native evidence:
+  the GameLib registration table around `140c59b30` maps
+  `SellItemToVendor` to `Lua_GameLib_SellItemToVendor` (`14050cd50`) and
+  `BuybackItemFromVendor` to `Lua_GameLib_BuybackItemFromVendor`
+  (`14050ce20`). The sell wrapper reads argument 1 as the item location,
+  argument 2 as the quantity, and calls `Vendor_SendClientSellItemToVendor`
+  (`1403c2630`). That helper validates the current vendor state and sends
+  opcode `0x0166` with the item-location payload plus the requested quantity
+  around `exports\WildStar64.exe\selected_decompiled.c:14362`. The buyback
+  wrapper routes a selected buyback unique id through opcode `0x00BB` via
+  `Vendor_SendClientBuybackItemFromVendor` (`1403c2850`) around
+  `selected_decompiled.c:14464`.
+- NexusForever implementation:
+  `ClientVendorSellHandler` now honors the client quantity by rejecting zero or
+  over-stack requests, computing rewards from the mapped
+  `IItem.GetVendorSellCurrency`/`GetVendorSellAmount` helpers, and deleting
+  exactly the requested count. `IInventory`/`Inventory` gained a
+  quantity-aware `ItemDelete(ItemLocation, uint, ItemUpdateReason)` overload
+  that returns the full removed item for whole-stack sells or creates a
+  detached split item for partial-stack buyback while updating the original
+  stack with the vendor reason. The already-implemented buyback inventory-space
+  guard had its stale TODO removed.
+- Still blocked:
+  the wider buyback lifecycle still uses the existing in-memory buyback manager;
+  durable persistence of expired or re-bought existing items is outside this
+  pass. Exact client text for `ItemUpdateReason.Vendor` versus buyback display
+  remains unverified, so the server keeps the existing vendor update reason.
+- Coverage and verification:
+  four new WildStar64 labels were added to `function_labels.csv` and verified in
+  `functions.csv`, `selected_reasons_summary.csv`, and
+  `selected_decompiled.c` after an export-only run with
+  `-MaxDecompiledFunctions 650`. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\vendor-sell-world\`
+  succeeds with only the existing `Spline.formation` warning. A focused TODO
+  scan of the vendor sell and buyback handlers now returns no matches.
+
+One-hundred-fourteenth generic unlock item pass:
+
+- Native and table evidence:
+  opcode coverage already maps `ClientItemGenericUnlock` to opcode `0x0400`
+  with an item-location payload. The client string table includes the generic
+  unlock failure strings `InvalidGenericUnlock` and
+  `GenericUnlock_AlreadyUnlocked`, and NexusForever already models
+  `ServerGenericUnlockResult` (`0x0985`) as the 3-bit
+  `GenericUnlockResult` enum. `Item2.GenericUnlockSetId` points at
+  `GenericUnlockSet`, whose records fan out through up to six
+  `GenericUnlockEntryId` fields; the account-item grant path already expands
+  the same set shape before granting unlock entries.
+- NexusForever implementation:
+  `ClientItemGenericUnlockHandler` now resolves `GenericUnlockSet` instead of
+  treating `Item2.GenericUnlockSetId` as a single `GenericUnlockEntry` id. It
+  validates every nonzero entry id, returns `Invalid` for bad set data, returns
+  `AlreadyUnlocked` without consuming the item when all entries are already
+  known, consumes the item once when at least one entry is new, and grants only
+  the still-locked entries.
+- Still blocked:
+  exact client presentation for partial multi-entry unlock sets remains bounded
+  by the existing `GenericUnlockManager.Unlock` result behavior, which emits a
+  result for each granted entry. No new character-scoped unlock behavior was
+  inferred in this pass.
+- Verification:
+  `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\generic-unlock-world\`
+  succeeds with only the existing `Spline.formation` warning. A focused TODO
+  scan of the generic unlock, vendor sell, and buyback handlers now returns no
+  matches.
+
+One-hundred-fifteenth activate/cast variant handler pass:
+
+- Native evidence:
+  existing durable WildStar64 labels map two remaining low-opcode request
+  variants. `ActivateUnit0x0096_WritePayload` (`140093d30`) serialises opcode
+  `0x0096` as the shared generated context token, two 4-bit selectors, target
+  entity id, and world-position vector. `SpellCast_SendClient0x009dVariant`
+  (`14039b340`) builds opcode `0x009D` with the shared generated context token,
+  selected entry id, resolved target entity id, and target/fallback world
+  position; `SpellCast_Dispatch0x009dSelectionMask` (`14039b930`) fans selected
+  ids through that sender and reports local failures.
+- NexusForever implementation:
+  WorldServer now handles `ClientActivateUnitCastPosition` by routing the mapped
+  target entity id and context token through the existing activate-unit cast
+  path, while preserving selector and position values in trace diagnostics.
+  `ClientCastSpellSelected` is handled as diagnostic-only: the payload is
+  logged, but no spell is cast because the selected-entry id space and failure
+  fan-out are still client-side runtime semantics rather than a verified server
+  spell lookup.
+- Still blocked:
+  the `0x0096` selector nibbles and position are not yet proven to affect server
+  activation spell choice, so they remain diagnostic. `0x009D` mutation remains
+  blocked until the selected-entry id can be correlated with a server-owned spell
+  or cast-entry table and the local `SpellCastFailed` fan-out behavior is
+  mapped.
+- Coverage and verification:
+  `Get-DecompCoverageSnapshot.ps1` marks `ClientActivateUnitCastPosition` and
+  `ClientCastSpellSelected` as handled. In the current dirty workspace, the
+  snapshot reports client opcode coverage as `268` implemented, `58` partial,
+  and `0` missing because it also observes other pending handler files already
+  present in the tree. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\activate-cast-variants-world\`
+  succeeds with only the existing `Spline.formation` warning.
+
+One-hundred-sixteenth class innate stance pass:
+
+- Native and table evidence:
+  the GameLib method table around `140b72850` maps the class innate accessors
+  `GetClassInnateAbilitySpells`, `GetNumClassInnateAbilitySpells`,
+  `GetCurrentClassInnateAbilitySpell`,
+  `GetCurrentClassInnateAbilityIndex`,
+  `SetCurrentClassInnateAbilityIndex`, and
+  `IsCurrentInnateAbilityActive` to the `1406f69e0`-`1406f7080` function
+  cluster. The selected export now includes those labels around
+  `exports\WildStar64.exe\selected_decompiled.c:45853`. The NexusForever
+  `Class` table model exposes the matching client-facing innate slots as
+  three `Spell4IdInnateAbilityActive` entries, while
+  `ServerStanceChanged` serialises the selected index in two bits.
+- NexusForever implementation:
+  `ClientSetStanceHandler` now resolves the player's `Class` table row and
+  rejects stance indices outside the active innate slot array or pointing at an
+  empty active innate spell id before updating `Player.InnateIndex` and echoing
+  `ServerStanceChanged`. This closes the stale validation TODO without adding
+  new prerequisite or spell-cast side effects. The stale item-use prerequisite
+  TODO beside `GenericError.UnlockItemFailed` was also removed because the
+  client string table already exposes the matching `UnlockItemFailed` text and
+  the server behavior was already using that error.
+- Still blocked:
+  prerequisite evaluation for class innate unlocks remains bounded by the
+  existing character/class setup. This pass validates the selected table slot,
+  but does not infer new client behavior for locked innate variants.
+- Coverage and verification:
+  six new WildStar64 labels were added to `function_labels.csv` and verified in
+  `functions.csv`, `selected_reasons_summary.csv`, and
+  `selected_decompiled.c` after an export-only run with
+  `-MaxDecompiledFunctions 650`. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\set-stance-world\`
+  succeeds with only the existing `Spline.formation` warning. A focused TODO
+  scan of `ClientSetStanceHandler` now returns no matches.
+
+One-hundred-seventeenth mass handler coverage pass:
+
+- Work done:
+  57 missing client-opcode handlers were created across two waves (Wave 1: 24 new
+  files + 1 fixed broken interface, Wave 2: 25 new files, Wave 3: 8 new files)
+  bringing `clientHandled` from ~268 to 318, and reducing `clientModelOnly` from
+  33 to 8 to 0.
+- Wave 1 handlers (24 new + 1 fix):
+  Path (Explorer/Scientist), Vehicle (Embark), Fortune (FlipCard, NotifyStorefront,
+  Start), Misc (ChallengeChoice, GetRealmTransferDestinations), Guild (BankTransaction
+  x2, BankTabOpen, BankMoneyTransaction, PerkActivate, BankTabRename, StandardModify,
+  SetStandard), Housing (VisitResidence), Item (ItemContextAction), GalacticArchive
+  (Unlock, Viewed). Fixed `ClientHousingRenamePropertyHandler` — added missing
+  `IMessageHandler<>` interface declaration.
+- Wave 2 handlers (25 new):
+  Instance (LeavePendingRemoval, RaidInfoRequest), Info (RealmInfoRequest),
+  Matching (QueueLeaveAsGroup, InitiateVoteToKick, InitiateVoteToSurrender,
+  InitiateLookingForReplacements, QueueRandomParty, StopLookingForReplacements,
+  CastVoteKick, CastVoteSurrender), Misc (PlayerMovementSpeedUpdate), Path
+  (MissionAttemptScientistExperimentation, SettlerImprovementBuildTier,
+  SoldierImprovementBuild), Pet (PetSetStance), Misc (PtrCopy,
+  PublicEventRequestScoreboard, CinematicCameraSubjectPosVel,
+  CinematicCameraSubjectSpline, CinematicCameraSubjectUnit, CinematicWhiteOutFinished),
+  Guild (RecruitmentGuildGetDetailedGuildInfo, RecruitmentGuildSubscribe),
+  Character (CharacterRename). Fixed `ClientMatchingQueueRandomParty` model —
+  added missing `: IReadable` to the class declaration.
+- Wave 3 handlers (8 new):
+  Fortune (NotifyGame), Instance (ResetInstances), Misc (Spline2Request,
+  SteamAchievements), Spell (CastGuildBossToken), Guild (WarPartyBossTokensRequest),
+  Leaderboard (PvpRequest, PveRequest — new handler folder created).
+- Ghidra probe results:
+  `DumpNearbyData 1406febc0` — all slots show `<no defined data>` (dead end).
+  `TraceStringReferences "AMPSave"` — 0 cross-references (dead end).
+  0x00FB payload confirmed as single float from movement struct offset `+0x12`
+  (matches `ClientMovementFallDamage.FallStateValue`).
+  0x00FC payload confirmed as position struct from offsets `+0x40..+0x48`
+  (matches landing state model).
+- Coverage and verification:
+  `LATEST_COVERAGE_SUMMARY.json` after all three waves: `clientHandled=318`,
+  `clientModelOnly=0`, `missingClientHandlers=0`. Label count unchanged at 621.
+  `dotnet build NexusForever.WorldServer --no-incremental -v quiet` succeeds with
+  only the existing `Spline.formation` warning.
+
 ## Practical Next Steps
 
 1. Keep extending `Decomp\Analysis\function_labels.csv` as functions are

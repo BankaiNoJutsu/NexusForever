@@ -6,13 +6,13 @@
 | --- | --- | --- | --- | --- | --- |
 | `Houston64.exe` | 25129 | 7508 | 6317 | 0 | 0 |
 | `StsConnLib64.MT.dll` | 4522 | 371 | 3406 | 863 | 40 |
-| `WildStar64.exe` | 24982 | 940 | 11000 | 2163 | 200 |
+| `WildStar64.exe` | 24983 | 959 | 11000 | 2181 | 200 |
 
 ## Opcode Coverage
 
 | Direction | Total | Implemented | Partial | Missing |
 | --- | --- | --- | --- | --- |
-| Client | 326 | 255 | 71 | 0 |
+| Client | 326 | 326 | 0 | 0 |
 | Server | 570 | 547 | 16 | 7 |
 | Core | 3 | 1 | 0 | 2 |
 
@@ -22,33 +22,7 @@ None.
 
 ## Queue: Client Opcodes Missing Handlers
 
-| Opcode | Hex | Model | Comment |
-| --- | --- | --- | --- |
-| `ClientActivateUnitCastPosition` | 0x0096 | `ClientActivateUnitCastPosition` | activate-unit family request with context token, selector nibbles, target id, and position |
-| `ClientCastPathExplorerSearching` | 0x0099 | `ClientPathExplorerCastSearching` |  |
-| `ClientCastSpellSelected` | 0x009D | `ClientCastSpellSelected` | spell-cast variant with context token, selected entry id, target id, and position |
-| `ClientItemContextAction` | 0x00B6 | `ClientItemContextAction` | inventory item-click/context action with item guid and selector bit |
-| `ClientCCStateStunUpdate` | 0x00C3 | `ClientCCStateStunUpdate` |  |
-| `ClientChallengeChoice` | 0x00C5 | `ClientChallengeChoice` |  |
-| `ClientClosedInstanceSettings` | 0x00D2 | `ClientClosedInstanceSettings` |  |
-| `ClientSpellCastState` | 0x00E3 | `ClientSpellCastState` | one-bit spell-cast state update from local cast gating |
-| `ClientPathScientistDismissScanbot` | 0x00F0 | `ClientPathScientistDismissScanbot` |  |
-| `ClientPathExplorerProgressReport` | 0x00F3 | `ClientPathExplorerProgressReport` |  |
-| `ClientPathExplorerPowerMapProgress` | 0x00F9 | `ClientPathExplorerPowerMapProgress` |  |
-| `ClientMovementFallDamage` | 0x00FB | `ClientMovementFallDamage` | movement/fall branch sends one float from local movement state |
-| `ClientGalacticArchiveUnlock` | 0x0103 | `ClientGalacticArchiveUnlock` |  |
-| `ClientGalacticArchiveViewed` | 0x0105 | `ClientGalacticArchiveViewed` |  |
-| `ClientMailTakeAllFromSelection` | 0x0125 | `ClientMailTakeAllFromSelection` |  |
-| `ClientResetSingleInstance` | 0x0153 | `ClientResetSingleInstance` |  |
-| `ClientPathScientistDismissScanbotPathAction` | 0x015F | `ClientPathScientistDismissScanbotPathAction` |  |
-| `ClientSetInstanceSettings` | 0x0163 | `ClientSetInstanceSettings` |  |
-| `ClientAbilityBookActivateSpell` | 0x017A | `ClientAbilityBookActivateSpell` |  |
-| `ClientSpellToggleCast` | 0x017E | `ClientSpellToggleCast` |  |
-| `ClientPathScientistRequestScanbot` | 0x0180 | `ClientPathScientistRequestScanbot` |  |
-| `ClientVehicleEmbark` | 0x01B0 | `ClientVehicleEmbark` |  |
-| `ClientDialogOpened` | 0x0356 | `ClientDialogOpened` |  |
-| `ClientCommunicatorAction` | 0x0360 | `ClientCommunicatorAction` |  |
-| `ClientFortuneFlipCard` | 0x03CD | `ClientFortuneFlipCard` |  |
+None.
 
 ## Queue: Server Opcodes Missing Models
 

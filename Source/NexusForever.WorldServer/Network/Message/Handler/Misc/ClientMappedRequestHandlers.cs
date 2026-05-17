@@ -63,4 +63,24 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
                 session.Player?.Guid, fallLand.LandingState, fallLand.Position);
         }
     }
+
+    public class ClientMovementFallDamageHandler : IMessageHandler<IWorldSession, ClientMovementFallDamage>
+    {
+        private readonly ILogger<ClientMovementFallDamageHandler> log;
+
+        public ClientMovementFallDamageHandler(ILogger<ClientMovementFallDamageHandler> log)
+        {
+            this.log = log;
+        }
+
+        /// <summary>
+        /// Client sends the accumulated fall-damage state float just before the fall-land opcode.
+        /// The server uses this as a hint but is not authoritative over damage application.
+        /// </summary>
+        public void HandleMessage(IWorldSession session, ClientMovementFallDamage fallDamage)
+        {
+            log.LogDebug("ClientMovementFallDamage: player={Player}, fallStateValue={Value}",
+                session.Player?.Guid, fallDamage.FallStateValue);
+        }
+    }
 }
