@@ -35,10 +35,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
         public void HandleMessage(IWorldSession session, ClientActivateUnitCast activateUnitCast)
         {
-            IWorldEntity entity = session.Player.GetVisible<IWorldEntity>(activateUnitCast.ActivateUnitId);
+            HandleMessageInternal(session, activateUnitCast.ActivateUnitId, activateUnitCast.ContextToken, nameof(ClientActivateUnitCast));
+        }
+
+        internal void HandleMessageInternal(IWorldSession session, uint activateUnitId, uint contextToken, string clientRequestSource)
+        {
+            IWorldEntity entity = session.Player.GetVisible<IWorldEntity>(activateUnitId);
             if (entity == null)
             {
-                IWorldEntity mapEntity = session.Player.Map?.GetEntity<IWorldEntity>(activateUnitCast.ActivateUnitId);
+                IWorldEntity mapEntity = session.Player.Map?.GetEntity<IWorldEntity>(activateUnitId);
                 if (mapEntity != null && IsTutorialHoverboardActivationEntity(mapEntity) && session.Player.CanSeeEntity(mapEntity))
                 {
                     entity = mapEntity;
@@ -46,7 +51,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 }
                 else if (session.Player.Map?.Entry?.Id == TutorialWorldId)
                 {
-                    log.Debug($"Tutorial hoverboard activate-cast ignored stale target: player={session.Player.Guid}, requestedEntity={activateUnitCast.ActivateUnitId}, mapEntity={mapEntity?.Guid ?? 0u}, creature={mapEntity?.CreatureId ?? 0u}.");
+                    log.Debug($"Tutorial hoverboard activate-cast ignored stale target: player={session.Player.Guid}, requestedEntity={activateUnitId}, mapEntity={mapEntity?.Guid ?? 0u}, creature={mapEntity?.CreatureId ?? 0u}.");
                     return;
                 }
                 else
@@ -91,8 +96,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 UserInitiatedSpellCast = false,
                 IgnoreGlobalCooldown   = true,
                 CancelActiveTrade      = true,
-                ClientContextToken     = activateUnitCast.ContextToken,
-                ClientRequestSource    = nameof(ClientActivateUnitCast)
+                ClientContextToken     = contextToken,
+                ClientRequestSource    = clientRequestSource
             };
 
             ClientSpellEvidenceCaptureHelper.ApplyPendingCapture(session, spellParameters);
