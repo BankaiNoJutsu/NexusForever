@@ -16,11 +16,11 @@ namespace NexusForever.IO.Map
         private static (uint gridX, uint gridY) GetGridCoord(Vector3 vector)
         {
             int gridX = MapDefines.WorldGridOrigin + (int)Math.Floor(vector.X / MapDefines.GridSize);
-            if (gridX < 0 || gridX > MapDefines.WorldGridCount)
+            if (gridX < 0 || gridX >= MapDefines.WorldGridCount)
                 throw new ArgumentOutOfRangeException($"Position X: {vector.X} is invalid!");
 
             int gridZ = MapDefines.WorldGridOrigin + (int)Math.Floor(vector.Z / MapDefines.GridSize);
-            if (gridZ < 0 || gridZ > MapDefines.WorldGridCount)
+            if (gridZ < 0 || gridZ >= MapDefines.WorldGridCount)
                 throw new ArgumentOutOfRangeException($"Position Z: {vector.Z} is invalid!");
 
             return ((uint)gridX, (uint)gridZ);
@@ -71,6 +71,11 @@ namespace NexusForever.IO.Map
         {
             MapFileGrid grid = GetGrid(vector);
             return grid?.GetTerrainHeight(vector);
+        }
+
+        public bool HasGrid(Vector3 vector)
+        {
+            return GetGrid(vector) != null;
         }
 
         private MapFileGrid GetGrid(Vector3 vector)

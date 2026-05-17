@@ -41,7 +41,9 @@ namespace NexusForever.Game.Abstract.Entity
         bool IsAggroImmune { get; }
         bool IsShieldOverloaded { get; }
         uint CurrentAbsorption { get; }
+        uint MaxAbsorption { get; }
         uint CurrentHealingAbsorption { get; }
+        uint MaxHealingAbsorption { get; }
 
         bool HasUnitState(uint stateId);
         void AddUnitState(uint effectId, uint spell4Id, uint castingId, uint stateId, uint dataBits01, uint dataBits02, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09);
@@ -175,6 +177,7 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         /// <param name="castingId">Casting ID of the spell to cancel</param>
         void CancelSpellCast(uint castingId);
+        void CancelSpellCast(uint castingId, CastResult result);
 
         /// <summary>
         /// Attempt to cancel a client-cancelable active spell effect by server unique id.

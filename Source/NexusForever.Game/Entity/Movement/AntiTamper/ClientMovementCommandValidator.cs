@@ -1,40 +1,70 @@
-﻿using NexusForever.Game.Abstract.Entity.Movement.AntiTamper;
+using System.Numerics;
+using NexusForever.Game.Abstract.Entity.Movement.AntiTamper;
+using NexusForever.Game.Static.Entity.Movement.Command.Mode;
+using NexusForever.Game.Static.Entity.Movement.Command.State;
 
 namespace NexusForever.Game.Entity.Movement.AntiTamper
 {
     public class ClientMovementCommandValidator : IClientMovementCommandValidator
     {
+        private const int MaxTimeDriftMilliseconds = 30_000;
+
+        private const StateFlags KnownStateMask =
+            StateFlags.Velocity
+            | StateFlags.Move
+            | StateFlags.Fall
+            | StateFlags.Jump
+            | StateFlags.Unknown80
+            | StateFlags.Unknown100
+            | StateFlags.Unknown200
+            | StateFlags.Unknown400
+            | StateFlags.DoubleJump
+            | StateFlags.RollForward
+            | StateFlags.RollBackward
+            | StateFlags.RotationWhileFalling;
+
         /// <summary>
         /// Validate the time between the client and server to ensure the client is not tampering with the time.
         /// </summary>
         public void ValidateTime(uint clientTime, uint serverTime)
         {
-            // TODO
-            int difference = (int)clientTime - (int)serverTime;
+            int difference = unchecked((int)(clientTime - serverTime));
+            if (Math.Abs(difference) > MaxTimeDriftMilliseconds)
+                throw new InvalidOperationException($"Client movement time drift exceeded {MaxTimeDriftMilliseconds}ms: {difference}ms.");
         }
 
         /// <summary>
         /// Validate the position from the client to ensure the client is not tampering with the position.
         /// </summary>
-        public void ValidatePosition()
+        public void ValidatePosition(Vector3 clientPosition)
         {
-            // TODO
+            if (!IsFinite(clientPosition))
+                throw new InvalidOperationException($"Invalid client movement position received: {clientPosition}.");
         }
 
         /// <summary>
         /// Validate the mode from the client to ensure the client is not tampering with the mode.
         /// </summary>
-        public void ValidateMode()
+        public void ValidateMode(ModeType mode)
         {
-            // TODO
+            if (!Enum.IsDefined(mode))
+                throw new InvalidOperationException($"Invalid client movement mode received: {mode}.");
         }
 
         /// <summary>
         /// Validate the state from the client to ensure the client is not tampering with the state.
         /// </summary>
-        public void ValidateState()
+        public void ValidateState(StateFlags state)
         {
-            // TODO
+            if ((state & ~KnownStateMask) != StateFlags.None)
+                throw new InvalidOperationException($"Invalid client movement state flags received: {state}.");
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return float.IsFinite(value.X)
+                && float.IsFinite(value.Y)
+                && float.IsFinite(value.Z);
         }
     }
 }

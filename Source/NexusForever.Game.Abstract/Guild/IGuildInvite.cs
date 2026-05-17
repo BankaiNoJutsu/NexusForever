@@ -4,5 +4,6 @@
     {
         ulong GuildId { get; set; }
         ulong InviteeId { get; set; }
+        DateTime ExpiresAt { get; set; }
     }
 }

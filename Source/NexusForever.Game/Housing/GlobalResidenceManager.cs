@@ -6,12 +6,14 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Character;
+using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Guild;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Housing;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Shared;
+using NexusForever.Shared.Configuration;
 using NLog;
 
 namespace NexusForever.Game.Housing
@@ -20,8 +22,7 @@ namespace NexusForever.Game.Housing
     {
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
 
-        // TODO: move this to the config file
-        private const double SaveDuration = 60d;
+        private static double SaveDuration => SharedConfiguration.Instance.Get<WorldConfig>()?.ResidenceSaveIntervalSeconds ?? 60d;
 
         /// <summary>
         /// Id to be assigned to the next created residence.

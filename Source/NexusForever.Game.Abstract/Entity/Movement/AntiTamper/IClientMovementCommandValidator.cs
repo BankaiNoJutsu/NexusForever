@@ -1,4 +1,8 @@
-﻿namespace NexusForever.Game.Abstract.Entity.Movement.AntiTamper
+using System.Numerics;
+using NexusForever.Game.Static.Entity.Movement.Command.Mode;
+using NexusForever.Game.Static.Entity.Movement.Command.State;
+
+namespace NexusForever.Game.Abstract.Entity.Movement.AntiTamper
 {
     public interface IClientMovementCommandValidator
     {
@@ -10,16 +14,16 @@
         /// <summary>
         /// Validate the position from the client to ensure the client is not tampering with the position.
         /// </summary>
-        void ValidatePosition();
+        void ValidatePosition(Vector3 clientPosition);
 
         /// <summary>
         /// Validate the mode from the client to ensure the client is not tampering with the mode.
         /// </summary>
-        void ValidateMode();
+        void ValidateMode(ModeType mode);
 
         /// <summary>
         /// Validate the state from the client to ensure the client is not tampering with the state.
         /// </summary>
-        void ValidateState();
+        void ValidateState(StateFlags state);
     }
 }

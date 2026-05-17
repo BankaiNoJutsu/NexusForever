@@ -12,6 +12,7 @@ namespace NexusForever.Game.Achievement
         public List<AchievementChecklistEntry> ChecklistEntries { get; }
 
         public bool IsPlayerAchievement => ((AchievementFlags)Entry.Flags & AchievementFlags.Guild) == 0;
+        public bool IsRealmFirst => (AchievementType)Entry.AchievementTypeId == AchievementType.RealmFirst;
 
         /// <summary>
         /// Create a new <see cref="IAchievementInfo"/> from <see cref="AchievementEntry"/>.

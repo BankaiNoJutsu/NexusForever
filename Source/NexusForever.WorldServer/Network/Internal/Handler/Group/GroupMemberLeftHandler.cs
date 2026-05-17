@@ -38,24 +38,26 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
             if (player == null)
                 return Task.CompletedTask;
 
-            player.Session.EnqueueMessageEncrypted(new ServerGroupLeave
+            return player.SynchroniseAsync(() =>
             {
-                GroupId = message.Group.Id,
-                Reason  = message.Reason
+                player.Session.EnqueueMessageEncrypted(new ServerGroupLeave
+                {
+                    GroupId = message.Group.Id,
+                    Reason  = message.Reason
+                });
+
+                if (message.Group.Match != null)
+                {
+                    IMatch match = matchManager.GetMatch(message.Group.Match.Value);
+                    if (match != null)
+                    {
+                        match.MatchExit(player, true);
+                        match.MatchLeave(message.RemovedMember.Identity.ToGameIdentity());
+                    }
+                }
+
+                return true;
             });
-
-            // TODO: Rawaho: this is not thread safe, matches should really be moved to a seperate server...
-            if (message.Group.Match != null)
-            {
-                IMatch match = matchManager.GetMatch(message.Group.Match.Value);
-                if (match == null)
-                    return Task.CompletedTask;
-
-                match.MatchExit(player, true);
-                match.MatchLeave(message.RemovedMember.Identity.ToGameIdentity());
-            }
-            
-            return Task.CompletedTask;
         }
     }
 }

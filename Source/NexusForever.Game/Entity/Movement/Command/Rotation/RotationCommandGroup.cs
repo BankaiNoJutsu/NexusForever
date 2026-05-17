@@ -137,22 +137,14 @@ namespace NexusForever.Game.Entity.Movement.Command.Rotation
             IsDirty = true;
         }
 
-        /// <summary>
-        /// NYI
-        /// </summary>
         public void SetRotationSpline()
         {
-            // TODO
-            throw new NotImplementedException();
+            SetRotationDefaults();
         }
 
-        /// <summary>
-        /// NYI
-        /// </summary>
         public void SetRotationMultiSpline()
         {
-            // TODO
-            throw new NotImplementedException();
+            SetRotationDefaults();
         }
 
         /// <summary>

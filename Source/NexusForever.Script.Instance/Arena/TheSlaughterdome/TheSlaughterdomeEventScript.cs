@@ -1,6 +1,11 @@
 ﻿using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map.Instance;
+using NexusForever.Game.Abstract.Matching;
+using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.PublicEvent;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Matching;
+using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 
@@ -11,7 +16,26 @@ namespace NexusForever.Script.Instance.Arena.TheSlaughterdome
     {
         private IPublicEvent publicEvent;
 
+        private const double AutoResurrectDelaySeconds = 5d;
+
         private readonly List<uint> doorEntities = [];
+        private readonly Dictionary<ulong, double> autoResurrectTimers = [];
+        private readonly Dictionary<ulong, uint> deathCounts = [];
+
+        #region Dependency Injection
+
+        private readonly IMatchingDataManager matchingDataManager;
+        private readonly IPlayerManager playerManager;
+
+        public TheSlaughterdomeEventScript(
+            IMatchingDataManager matchingDataManager,
+            IPlayerManager playerManager)
+        {
+            this.matchingDataManager = matchingDataManager;
+            this.playerManager       = playerManager;
+        }
+
+        #endregion
 
         /// <summary>
         /// Invoked when <see cref="IScript"/> is loaded.
@@ -84,15 +108,63 @@ namespace NexusForever.Script.Instance.Arena.TheSlaughterdome
             }
         }
 
+        public void Update(double lastTick)
+        {
+            foreach ((ulong characterId, double timer) in autoResurrectTimers.ToArray())
+            {
+                IPlayer player = playerManager.GetPlayer(characterId);
+                if (player == null || player.IsAlive)
+                {
+                    autoResurrectTimers.Remove(characterId);
+                    continue;
+                }
+
+                double remaining = timer - lastTick;
+                if (remaining > 0d)
+                {
+                    autoResurrectTimers[characterId] = remaining;
+                    continue;
+                }
+
+                autoResurrectTimers.Remove(characterId);
+                player.ResurrectionManager.Resurrect(ResurrectionType.Holocrypt);
+            }
+        }
+
         public void OnDeath(IUnitEntity entity)
         {
-            // TODO: resurrection timer and auto release
-            // TODO: spawn flag
+            if (entity is not IPlayer player)
+                return;
+
+            deathCounts.TryGetValue(player.CharacterId, out uint deaths);
+            deaths++;
+            deathCounts[player.CharacterId] = deaths;
+
+            publicEvent.UpdateStat(player, PublicEventStat.Deaths, deaths);
+            autoResurrectTimers[player.CharacterId] = AutoResurrectDelaySeconds;
         }
 
         public void OnResurrection(IPlayer player)
         {
-            // TODO: move to spawn position
+            autoResurrectTimers.Remove(player.CharacterId);
+            MoveToTeamSpawn(player);
+        }
+
+        private void MoveToTeamSpawn(IPlayer player)
+        {
+            if (publicEvent.Map is not IContentPvpMapInstance pvpMap || pvpMap.Match == null)
+                return;
+
+            IMatchTeam team = pvpMap.Match.GetTeam(player.Identity);
+            if (team == null)
+                return;
+
+            IMapEntrance entrance = matchingDataManager.GetMapEntrance(publicEvent.Map.Entry.Id, (byte)team.Team);
+            if (entrance == null)
+                return;
+
+            player.Rotation = entrance.Rotation;
+            player.TeleportToLocal(entrance.Position, false);
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Static.Achievement;
+using NexusForever.Database;
+using NexusForever.Database.Character;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Shared;
@@ -14,6 +16,10 @@ namespace NexusForever.Game.Achievement
         private readonly Dictionary<ushort, IAchievementInfo> achievements = new();
         private readonly Dictionary<AchievementType, List<IAchievementInfo>> characterAchievements = new();
         private readonly Dictionary<AchievementType, List<IAchievementInfo>> guildAchievements = new();
+        private readonly HashSet<ushort> completedCharacterRealmFirstAchievements = [];
+        private readonly HashSet<ushort> completedGuildRealmFirstAchievements = [];
+
+        private readonly object realmFirstLock = new();
 
         public void Initialise()
         {
@@ -29,11 +35,28 @@ namespace NexusForever.Game.Achievement
                 if (!collection.ContainsKey(type))
                     collection.Add(type, new List<IAchievementInfo>());
 
-                collection[type].Add(new AchievementInfo(entry));
+                collection[type].Add(info);
             }
+
+            LoadCompletedRealmFirstAchievements();
 
             TimeSpan span = DateTime.UtcNow - start;
             log.Info($"Initialised {achievements.Count} achievements in {span.TotalMilliseconds}ms.");
+        }
+
+        private void LoadCompletedRealmFirstAchievements()
+        {
+            CharacterDatabase database = DatabaseManager.Instance.GetDatabase<CharacterDatabase>();
+
+            completedCharacterRealmFirstAchievements.UnionWith(database.GetCompletedCharacterAchievementIds()
+                .Where(IsRealmFirstAchievement));
+            completedGuildRealmFirstAchievements.UnionWith(database.GetCompletedGuildAchievementIds()
+                .Where(IsRealmFirstAchievement));
+        }
+
+        private bool IsRealmFirstAchievement(ushort achievementId)
+        {
+            return achievements.TryGetValue(achievementId, out IAchievementInfo info) && info.IsRealmFirst;
         }
 
         /// <summary>
@@ -64,6 +87,21 @@ namespace NexusForever.Game.Achievement
                 return Enumerable.Empty<IAchievementInfo>();
 
             return achievements;
+        }
+
+        public bool TryClaimRealmFirstAchievement(IAchievementInfo info, bool isGuildAchievement)
+        {
+            if (!info.IsRealmFirst)
+                return false;
+
+            lock (realmFirstLock)
+            {
+                HashSet<ushort> completedAchievements = isGuildAchievement
+                    ? completedGuildRealmFirstAchievements
+                    : completedCharacterRealmFirstAchievements;
+
+                return completedAchievements.Add(info.Id);
+            }
         }
     }
 }

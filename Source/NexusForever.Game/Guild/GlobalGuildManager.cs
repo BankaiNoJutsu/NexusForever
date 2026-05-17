@@ -8,12 +8,14 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
+using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Chat;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Guild;
 using NexusForever.Network.World.Message.Model.Chat;
 using NexusForever.Shared;
+using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Game;
 using NLog;
 
@@ -23,8 +25,7 @@ namespace NexusForever.Game.Guild
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
-        // TODO: move this to the config file
-        private const double SaveDuration = 60d;
+        private static double SaveDuration => SharedConfiguration.Instance.Get<WorldConfig>()?.GuildSaveIntervalSeconds ?? 60d;
 
         /// <summary>
         /// Id to be assigned to the next created guild.

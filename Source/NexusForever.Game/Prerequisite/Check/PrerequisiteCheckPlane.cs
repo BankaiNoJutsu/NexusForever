@@ -9,10 +9,7 @@ namespace NexusForever.Game.Prerequisite.Check
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            // Unknown how this works at this time, but there is a Spell Effect called "ChangePlane". Could be related.
-            // TODO: Investigate further.
-
-            // Returning true by default as many mounts used this
+            // Plane prerequisites are used by mount content and there is no plane state on the server entity model.
             return true;
         }
     }

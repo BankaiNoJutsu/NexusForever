@@ -6,6 +6,7 @@ using NexusForever.Game.Static.Info;
 using NexusForever.Network.Internal.Message.Player;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Info;
+using NexusForever.Network.World.Message.Static;
 using Rebus.Handlers;
 
 namespace NexusForever.WorldServer.Network.Internal.Handler.Player
@@ -32,8 +33,7 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Player
 
             var baseData = new PlayerInfoBase
             {
-                // TODO: need to expand this to handle additional result codes...
-                ResultCode = (byte)(message.PlayerInfo != null ? 0 : 1),
+                ResultCode = GetResultCode(message),
                 Identity   = message.Target.ToNetworkIdentity()
             };
 
@@ -87,6 +87,13 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Player
             player.Session.EnqueueMessageEncrypted(response);
 
             return Task.CompletedTask;
+        }
+
+        private static PlayerInfoResult GetResultCode(PlayerInfoResponseMessage message)
+        {
+            return message.PlayerInfo != null
+                ? PlayerInfoResult.Ok
+                : PlayerInfoResult.CharacterUnknown;
         }
     }
 }

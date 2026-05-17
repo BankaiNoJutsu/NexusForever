@@ -64,5 +64,10 @@ namespace NexusForever.Game.Abstract.Entity
         /// Returns if item can be used as a bag for expanding inventory slots.
         /// </summary>
         bool IsEquippableBag();
+
+        /// <summary>
+        /// Returns if the item should become soulbound when equipped.
+        /// </summary>
+        bool CanBindOnEquip();
     }
 }

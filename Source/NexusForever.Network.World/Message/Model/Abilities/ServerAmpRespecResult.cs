@@ -18,8 +18,8 @@ namespace NexusForever.Network.World.Message.Model.Abilities
         public void Write(GamePacketWriter writer)
         {
             writer.Write(Results.Count, 7u);
-            Results.ForEach(Results => writer.Write(Results.SpecIndex, 3u));
-            Results.ForEach(Results => writer.Write(Results.Result, 3u));
+            Results.ForEach(result => writer.Write(result.SpecIndex, 3u));
+            Results.ForEach(result => writer.Write(result.Result, 6u));
         }
     }
 }

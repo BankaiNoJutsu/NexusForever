@@ -4,15 +4,19 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Mail;
+using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Mail;
 using NexusForever.Network.World.Message.Model.Mail;
+using NexusForever.Shared.Configuration;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
 namespace NexusForever.Game.Mail
 {
     public class MailItem : IMailItem
     {
+        private const float DefaultExpiryTimeDays = 30f;
+
         /// <summary>
         /// Determines which fields need saving for <see cref="IMailItem"/> when being saved to the database.
         /// </summary>
@@ -79,7 +83,7 @@ namespace NexusForever.Game.Mail
 
         public DeliverySpeed DeliverySpeed { get; }
         public DateTime CreateTime { get; }
-        public float ExpiryTime => 30f; // TODO: Make this configurable
+        public float ExpiryTime => SharedConfiguration.Instance.Get<WorldConfig>()?.MailExpiryDays ?? DefaultExpiryTimeDays;
 
         public bool PendingCreate => (saveMask & MailSaveMask.Create) != 0;
 

@@ -1,6 +1,7 @@
 ﻿using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -66,8 +67,7 @@ namespace NexusForever.Game.Entity
             if (petFlairs.ContainsKey(id))
                 throw new ArgumentException();
 
-            // TODO: check if prerequisites are met
-            if (entry.PrerequisiteId > 0)
+            if (entry.PrerequisiteId > 0 && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteId))
                 return;
 
             petFlairs.Add(id, new PetFlair(player.CharacterId, entry));

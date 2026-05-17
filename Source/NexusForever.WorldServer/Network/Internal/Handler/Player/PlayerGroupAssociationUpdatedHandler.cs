@@ -37,15 +37,17 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Player
             if (player == null)
                 return Task.CompletedTask;
 
-            // TODO: Rawaho: not thread safe
-            player.GroupAssociation = message.Group?.Id ?? 0;
-            player.EnqueueToVisible(new ServerEntityGroupAssociation
+            return player.SynchroniseAsync(() =>
             {
-                UnitId  = player.Guid,
-                GroupId = player.GroupAssociation
-            }, true);
+                player.GroupAssociation = message.Group?.Id ?? 0;
+                player.EnqueueToVisible(new ServerEntityGroupAssociation
+                {
+                    UnitId  = player.Guid,
+                    GroupId = player.GroupAssociation
+                }, true);
 
-            return Task.CompletedTask;
+                return true;
+            });
         }
     }
 }

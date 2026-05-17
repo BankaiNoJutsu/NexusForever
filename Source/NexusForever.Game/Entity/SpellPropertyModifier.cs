@@ -8,7 +8,7 @@ namespace NexusForever.Game.Entity
         public Property Property { get; }
         public uint Priority { get; }
         public List<IPropertyModifier> Alterations { get; } = new();
-        public uint StackCount { get; } // TODO: Should we have StackCount on this? I presume we just want to have spell effects stack up individually, not tracked in each SpellPropertyModifier
+        public uint StackCount { get; }
 
         public SpellPropertyModifier(Property property, uint priority, float value2, float value3, float value4, uint stackCount = 1)
         {

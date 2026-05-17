@@ -81,7 +81,7 @@ namespace NexusForever.Server.Friendship.Game.Account
         /// Get an <see cref="Account"/> with the specified email address.
         /// </summary>
         /// <remarks>
-        /// If the account does not exist in the database it will not be fetched from the API.
+        /// If the account does not exist in the database it will be fetched from the API and saved to the local database.
         /// A local cache is used to prevent multiple database calls for the same account during a single request.
         /// </remarks>
         /// <param name="email">Email of the <see cref="Account"/> to return.</param>
@@ -90,10 +90,16 @@ namespace NexusForever.Server.Friendship.Game.Account
             if (_accountEmailCache.TryGetValue(email, out Account account))
                 return account;
 
-            // TODO: should this also fetch from the API?
             AccountModel databaseAccount = await _repository.GetAccountAsync(email);
             if (databaseAccount == null)
-                return null;
+            {
+                API.Model.Account.Account apiAccount = await _apiClient.GetAccountAsync(email);
+                if (apiAccount == null)
+                    return null;
+
+                databaseAccount = apiAccount.ToDatabaseAccount();
+                _repository.AddAccount(databaseAccount);
+            }
 
             return InitialiseAccount(databaseAccount);
         }

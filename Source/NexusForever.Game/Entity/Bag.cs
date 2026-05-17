@@ -216,6 +216,31 @@ namespace NexusForever.Game.Entity
             log.Trace($"Resized bag {Location} from {items.Length - capacityChange} to {items.Length} slots.");
         }
 
+        public IItem[] CreateSnapshot()
+        {
+            return items.ToArray();
+        }
+
+        public void RestoreSnapshot(IItem[] snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+
+            items = snapshot.ToArray();
+            uint slotsRemaining = (uint)items.Length;
+            for (uint bagIndex = 0u; bagIndex < items.Length; bagIndex++)
+            {
+                IItem item = items[bagIndex];
+                if (item == null)
+                    continue;
+
+                item.Location = Location;
+                item.BagIndex = bagIndex;
+                slotsRemaining--;
+            }
+
+            SlotsRemaining = slotsRemaining;
+        }
+
         public IEnumerator<IItem> GetEnumerator()
         {
             return items

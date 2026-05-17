@@ -53,15 +53,8 @@ namespace NexusForever.Game.Achievement
             if (achievement.Info.Entry.CharacterTitleId != 0u)
                 owner.TitleManager.AddTitle((ushort)achievement.Info.Entry.CharacterTitleId);
 
-            // TODO
-            /*if (isRealmFirst)
-            {
-                MapManager.BroadcastMessage(new ServerRealmFirstAchievement
-                {
-                    AchievementId = achievement.Id,
-                    Player        = owner.Name
-                });
-            }*/
+            if (GlobalAchievementManager.Instance.TryClaimRealmFirstAchievement(achievement.Info, false))
+                BroadcastRealmFirstAchievement(achievement, false, owner.Name);
         }
     }
 }

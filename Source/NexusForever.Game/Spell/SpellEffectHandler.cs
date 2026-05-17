@@ -47,15 +47,24 @@ namespace NexusForever.Game.Spell
         private const uint ActionBarShortcutSetPacketMax = 0x3FFFu;
         private const uint OutfitInfoPacketMax = 0x7FFFu;
 
+        private static IDamageCalculator CreateDamageCalculator()
+        {
+            IFactory<IDamageCalculator> factory = LegacyServiceProvider.Provider.GetRequiredService<IFactory<IDamageCalculator>>();
+            return factory.Resolve();
+        }
+
+        private static IEntityFactory GetEntityFactory()
+        {
+            return LegacyServiceProvider.Provider.GetService<IEntityFactory>();
+        }
+
         [SpellEffectHandler(SpellEffectType.Damage)]
         public static void HandleEffectDamage(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
             if (!target.CanAttack(spell.Caster))
                 return;
 
-            // TODO: once spell effect handlers aren't static, this should be injected without the factory
-            var factory = LegacyServiceProvider.Provider.GetService<IFactory<IDamageCalculator>>();
-            var damageCalculator = factory.Resolve();
+            IDamageCalculator damageCalculator = CreateDamageCalculator();
             damageCalculator.CalculateDamage(spell.Caster, target, spell, info);
 
             target.TakeDamage(spell.Caster, info.Damage);
@@ -86,9 +95,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            // TODO: once spell effect handlers aren't static, this should be injected without the factory
-            var factory = LegacyServiceProvider.Provider.GetService<IFactory<IDamageCalculator>>();
-            var damageCalculator = factory.Resolve();
+            IDamageCalculator damageCalculator = CreateDamageCalculator();
             damageCalculator.CalculateDamage(spell.Caster, target, spell, info);
             if (info.DropEffect || info.Damage == null)
                 return;
@@ -148,9 +155,7 @@ namespace NexusForever.Game.Spell
             if (!target.IsAlive)
                 return;
 
-            // TODO: once spell effect handlers aren't static, this should be injected without the factory
-            var factory = LegacyServiceProvider.Provider.GetService<IFactory<IDamageCalculator>>();
-            var damageCalculator = factory.Resolve();
+            IDamageCalculator damageCalculator = CreateDamageCalculator();
             damageCalculator.CalculateHealing(spell.Caster, target, spell, info);
 
             target.ModifyHealth(info.Damage.AdjustedDamage, DamageType.Heal, spell.Caster);
@@ -162,9 +167,7 @@ namespace NexusForever.Game.Spell
             if (!target.IsAlive)
                 return;
 
-            // TODO: once spell effect handlers aren't static, this should be injected without the factory
-            var factory = LegacyServiceProvider.Provider.GetService<IFactory<IDamageCalculator>>();
-            var damageCalculator = factory.Resolve();
+            IDamageCalculator damageCalculator = CreateDamageCalculator();
             damageCalculator.CalculateShieldHealing(spell.Caster, target, spell, info);
 
             target.Shield += info.Damage.AdjustedDamage;
@@ -176,9 +179,7 @@ namespace NexusForever.Game.Spell
             if (!target.CanAttack(spell.Caster))
                 return;
 
-            // TODO: once spell effect handlers aren't static, this should be injected without the factory
-            var factory = LegacyServiceProvider.Provider.GetService<IFactory<IDamageCalculator>>();
-            var damageCalculator = factory.Resolve();
+            IDamageCalculator damageCalculator = CreateDamageCalculator();
             damageCalculator.CalculateShieldDamage(spell.Caster, target, spell, info);
 
             target.Shield = target.Shield > info.Damage.ShieldAbsorbAmount
@@ -193,9 +194,7 @@ namespace NexusForever.Game.Spell
             if (absorption == null || !target.IsAlive)
                 return;
 
-            // TODO: once spell effect handlers aren't static, this should be injected without the factory
-            var factory = LegacyServiceProvider.Provider.GetService<IFactory<IDamageCalculator>>();
-            var damageCalculator = factory.Resolve();
+            IDamageCalculator damageCalculator = CreateDamageCalculator();
             uint amount = damageCalculator.CalculateAbsorption(spell.Caster, target, spell, info);
             if (amount == 0u)
                 return;
@@ -211,9 +210,7 @@ namespace NexusForever.Game.Spell
             if (absorption == null || !target.IsAlive)
                 return;
 
-            // TODO: once spell effect handlers aren't static, this should be injected without the factory
-            var factory = LegacyServiceProvider.Provider.GetService<IFactory<IDamageCalculator>>();
-            var damageCalculator = factory.Resolve();
+            IDamageCalculator damageCalculator = CreateDamageCalculator();
             uint amount = damageCalculator.CalculateHealingAbsorption(spell.Caster, target, spell, info);
             if (amount == 0u)
                 return;
@@ -532,8 +529,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            // TODO: once spell effect handlers aren't static, this should be injected without the factory
-            var factory = LegacyServiceProvider.Provider.GetService<IEntityFactory>();
+            IEntityFactory factory = GetEntityFactory();
             if (factory == null)
             {
                 SpellEffectDiagnostics.TraceSummonCreature(spell, target, summonCreature, position, false, 0u, "missing-entity-factory");
@@ -615,8 +611,7 @@ namespace NexusForever.Game.Spell
                 }
             }
 
-            // TODO: once spell effect handlers aren't static, this should be injected without the factory
-            var factory = LegacyServiceProvider.Provider.GetService<IEntityFactory>();
+            IEntityFactory factory = GetEntityFactory();
             if (factory == null)
             {
                 SpellEffectDiagnostics.TraceSummonVehicle(spell, target, summonVehicle, position, false, false, 0u, "missing-entity-factory");
@@ -680,8 +675,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            // TODO: once spell effect handlers aren't static, this should be injected without the factory
-            var factory = LegacyServiceProvider.Provider.GetService<IEntityFactory>();
+            IEntityFactory factory = GetEntityFactory();
             if (factory == null)
             {
                 SpellEffectDiagnostics.TraceSummonTrap(spell, target, summonTrap, position, false, 0u, "missing-entity-factory");
@@ -1598,7 +1592,6 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.SummonMount)]
         public static void HandleEffectSummonMount(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            // TODO: handle NPC mounting?
             if (target is not IPlayer player)
             {
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "summon-mount", 0u, info.Entry.DataBits00, 0u, false, "target-not-player");
@@ -1617,10 +1610,14 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            // TODO: needs to be replaced once spell effect handlers aren't static
-            var factory = LegacyServiceProvider.Provider.GetService<IEntityFactory>();
+            IEntityFactory factory = GetEntityFactory();
+            if (factory == null)
+            {
+                SpellEffectDiagnostics.TracePlayerCollection(spell, target, "summon-mount", player.Guid, info.Entry.DataBits00, 0u, false, "missing-entity-factory");
+                return;
+            }
 
-            var mount = factory.CreateEntity<IMountEntity>();
+            IMountEntity mount = factory.CreateEntity<IMountEntity>();
             mount.Initialise(player, spell.Parameters.SpellInfo.Entry.Id, info.Entry.DataBits00, info.Entry.DataBits01, info.Entry.DataBits04);
             mount.EnqueuePassengerAdd(player, VehicleSeatType.Pilot, 0);
 
@@ -1843,8 +1840,7 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.FullScreenEffect)]
         public static void HandleFullScreenEffect(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            // TODO/FIXME: Add duration into the queue so that the spell will automatically finish at the correct time. This is a workaround for Full Screen Effects.
-            //events.EnqueueEvent(new Event.SpellEvent(info.Entry.DurationTime / 1000d, () => { status = SpellStatus.Finished; SendSpellFinish(); }));
+            // Duration-bearing spell effects are now finished by the central Spell lifetime scheduler.
         }
 
         [SpellEffectHandler(SpellEffectType.RapidTransport)]
@@ -1988,10 +1984,14 @@ namespace NexusForever.Game.Spell
                 player.VanityPetGuid = null;
             }
 
-            // TODO: needs to be replaced once spell effect handlers aren't static
-            var factory = LegacyServiceProvider.Provider.GetService<IEntityFactory>();
+            IEntityFactory factory = GetEntityFactory();
+            if (factory == null)
+            {
+                SpellEffectDiagnostics.TracePlayerCollection(spell, target, "summon-vanity-pet", player.Guid, info.Entry.DataBits00, 0u, false, "missing-entity-factory");
+                return;
+            }
 
-            var pet = factory.CreateEntity<IPetEntity>();
+            IPetEntity pet = factory.CreateEntity<IPetEntity>();
             pet.Initialise(player, info.Entry.DataBits00);
 
             var position = new MapPosition
@@ -3171,7 +3171,6 @@ namespace NexusForever.Game.Spell
             if (propertyModifier == null)
                 return;
 
-            // TODO: I suppose these could be cached somewhere instead of generating them every single effect?
             SpellPropertyModifier modifier =
                 new SpellPropertyModifier(propertyModifier.Property,
                     propertyModifier.Priority,

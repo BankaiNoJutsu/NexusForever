@@ -114,9 +114,11 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void SaveCostume(ClientCostumeSave costumeSave)
         {
-            // TODO: used for housing mannequins
             if (costumeSave.MannequinIndex != 0)
-                throw new NotImplementedException();
+            {
+                SendCostumeSaveResult(CostumeSaveResult.InvalidMannequinIndex);
+                return;
+            }
 
             if (costumeSave.Index < 0 || costumeSave.Index >= MaxCostumes)
             {
@@ -142,12 +144,11 @@ namespace NexusForever.Game.Entity
                     return;
                 }
 
-                // TODO: check item family
-                /*if ()
+                if (!itemEntry.IsEquippable())
                 {
                     SendCostumeSaveResult(CostumeSaveResult.UnusableItem);
                     return;
-                }*/
+                }
 
                 if (!player.Account.CostumeManager.HasItemUnlock(costumeItem.ItemId))
                 {
@@ -182,8 +183,6 @@ namespace NexusForever.Game.Entity
                 }
             }
 
-            // TODO: charge player
-
             if (costumes.TryGetValue((byte)costumeSave.Index, out ICostume costume))
                 costume.Update(costumeSave);
             else
@@ -205,7 +204,6 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void SetCostume(int index)
         {
-            // TODO: some packet to respond? client starts timer and sets index before sending packet so maybe not?
             if (index < -1 || index >= MaxCostumes)
                 throw new ArgumentOutOfRangeException();
 

@@ -4,11 +4,19 @@ namespace NexusForever.Network.Sts.Model
 {
     public class ServerErrorMessage : IWritable
     {
-        private int code;
+        public int Code { get; }
+        public string Server { get; }
+        public string Module { get; }
+        public int Line { get; }
+        public string Text { get; }
 
-        public ServerErrorMessage(int code)
+        public ServerErrorMessage(int code, string server = "sts", string module = "authentication", int line = 0, string text = null)
         {
-            this.code = code;
+            Code   = code;
+            Server = server;
+            Module = module;
+            Line   = line;
+            Text   = text ?? code.ToString();
         }
 
         public void Write(XmlWriter writer)
@@ -16,23 +24,23 @@ namespace NexusForever.Network.Sts.Model
             writer.WriteStartElement("Error");
 
             writer.WriteStartAttribute("code");
-            writer.WriteValue(code);
+            writer.WriteValue(Code);
             writer.WriteEndAttribute();
 
             writer.WriteStartAttribute("server");
-            writer.WriteValue(0); // TODO
+            writer.WriteValue(Server);
             writer.WriteEndAttribute();
 
             writer.WriteStartAttribute("module");
-            writer.WriteValue(0); // TODO
+            writer.WriteValue(Module);
             writer.WriteEndAttribute();
 
             writer.WriteStartAttribute("line");
-            writer.WriteValue(0); // TODO
+            writer.WriteValue(Line);
             writer.WriteEndAttribute();
 
             writer.WriteStartAttribute("text");
-            writer.WriteValue(0); // TODO
+            writer.WriteValue(Text);
             writer.WriteEndAttribute();
 
             writer.WriteEndElement();

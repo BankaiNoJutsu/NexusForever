@@ -30,6 +30,7 @@ namespace NexusForever.Server.GroupServer
 
             sc.AddRebusHandler<PlayerLoggedInHandler>();
             sc.AddRebusHandler<PlayerLoggedOutHandler>();
+            sc.AddRebusHandler<PlayerAbsorptionUpdatedHandler>();
             sc.AddRebusHandler<PlayerPositionUpdatedHandler>();
             sc.AddRebusHandler<PlayerPropertyUpdatedHandler>();
             sc.AddRebusHandler<PlayerStatUpdatedHandler>();

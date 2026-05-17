@@ -100,7 +100,7 @@ namespace NexusForever.Game.Entity
             get => GetStatInteger(Stat.Health) ?? 0u;
             protected set
             {
-                SetStat(Stat.Health, Math.Clamp(value, 0u, MaxHealth)); // TODO: Confirm MaxHealth is actually the maximum health would be at.
+                SetStat(Stat.Health, Math.Clamp(value, 0u, MaxHealth));
                 EnqueueToVisible(new ServerEntityHealthUpdate
                 {
                     UnitId = Guid,
@@ -118,7 +118,7 @@ namespace NexusForever.Game.Entity
         public uint Shield
         {
             get => GetStatInteger(Stat.Shield) ?? 0u;
-            set => SetStat(Stat.Shield, Math.Clamp(value, 0u, MaxShieldCapacity)); // TODO: Handle overshield
+            set => SetStat(Stat.Shield, Math.Clamp(value, 0u, MaxShieldCapacity));
         }
 
         public uint MaxShieldCapacity
@@ -303,9 +303,7 @@ namespace NexusForever.Game.Entity
             foreach (ICreatureInfoProperty property in creatureInfo.GetPropertyOverrides())
                 SetBaseProperty(property.Property, property.Value);
 
-            // TODO: handle this better
-            Health = MaxHealth;
-            Shield = MaxShieldCapacity;
+            ResetVitalsToMaximum();
         }
 
         /// <summary>
@@ -349,9 +347,7 @@ namespace NexusForever.Game.Entity
             foreach (EntityPropertyModel propertyModel in model.EntityProperty)
                 SetBaseProperty(propertyModel.Property, propertyModel.Value);
 
-            // TODO: handle this better
-            Health = MaxHealth;
-            Shield = MaxShieldCapacity;
+            ResetVitalsToMaximum();
         }
 
         /// <summary>
@@ -397,7 +393,11 @@ namespace NexusForever.Game.Entity
             foreach (EntityPropertyModel propertyModel in model.EntityProperty)
                 SetBaseProperty(propertyModel.Property, propertyModel.Value);
 
-            // TODO: handle this better
+            ResetVitalsToMaximum();
+        }
+
+        private void ResetVitalsToMaximum()
+        {
             Health = MaxHealth;
             Shield = MaxShieldCapacity;
         }
@@ -474,6 +474,7 @@ namespace NexusForever.Game.Entity
                 {
                     OnZoneUpdate();
                     scriptCollection?.Invoke<IWorldEntityScript>(s => s.OnEnterZone(this, Zone.Id));
+                    Map.OnEnterZone(this, Zone.Id);
                 }
             }
         }
@@ -549,8 +550,6 @@ namespace NexusForever.Game.Entity
 
             return entityCreatePacket;
         }
-
-        // TODO: research the difference between a standard activation and cast activation
 
         /// <summary>
         /// Invoked when <see cref="IWorldEntity"/> is activated.
@@ -809,12 +808,7 @@ namespace NexusForever.Game.Entity
             if (Type == EntityType.Pet)
                 return value;
 
-            // TODO: client also includes mentor level
-            uint level = Level;
-            /*if (MentorLevel.HasValue)
-                level = MentorLevel.Value;
-            else
-                level = Level;*/
+            uint level = GetEffectivePropertyLevel();
 
             Property levelProperty = property;
             if (property >= Property.MoveSpeedMultiplier)
@@ -1165,10 +1159,13 @@ namespace NexusForever.Game.Entity
             if (dispositionFromFactionInvoker.HasValue)
                 return dispositionFromFactionInvoker.Value;
 
-            // TODO: client does a few more checks, might not be 100% accurate
-
             // default to neutral if we have no disposition from other sources
             return Disposition.Neutral;
+        }
+
+        protected virtual uint GetEffectivePropertyLevel()
+        {
+            return Level;
         }
 
         private Disposition? GetDispositionFromFactionFriendship(IFactionNode node, Faction factionId)
@@ -1192,7 +1189,6 @@ namespace NexusForever.Game.Entity
                 Type     = type,
                 Text     = text,
                 Guid     = Guid,
-                // TODO: should this be based on the players session language?
                 FromName = GameTableManager.Instance.TextEnglish.GetEntry(CreatureEntry.LocalizedTextIdName)
             };
         }

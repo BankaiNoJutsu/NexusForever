@@ -7,6 +7,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable.Model;
+using NexusForever.Shared.Game;
 
 namespace NexusForever.Game.Quest
 {
@@ -56,6 +57,7 @@ namespace NexusForever.Game.Quest
         private QuestObjectiveSaveMask saveMask;
 
         private readonly IPlayer player;
+        private UpdateTimer objectiveTimer;
 
         /// <summary>
         /// Create a new <see cref="IQuestObjective"/> from an existing database model.
@@ -69,6 +71,9 @@ namespace NexusForever.Game.Quest
             Index         = model.Index;
             progress      = model.Progress;
             timer         = model.Timer;
+
+            if (timer != null)
+                objectiveTimer = new UpdateTimer(timer.Value / 1000d);
 
             if (IsChecklist() || UsesTargetGroups())
                 BuildTargets();
@@ -87,7 +92,8 @@ namespace NexusForever.Game.Quest
 
             if (objectiveInfo.Entry.MaxTimeAllowedMS != 0u)
             {
-                // TODO
+                objectiveTimer = new UpdateTimer(objectiveInfo.Entry.MaxTimeAllowedMS / 1000d);
+                Timer = objectiveInfo.Entry.MaxTimeAllowedMS;
             }
 
             if (IsChecklist() || UsesTargetGroups())
@@ -116,7 +122,8 @@ namespace NexusForever.Game.Quest
                     Id       = player.CharacterId,
                     QuestId  = (ushort)QuestInfo.Entry.Id,
                     Index    = Index,
-                    Progress = Progress
+                    Progress = Progress,
+                    Timer    = Timer
                 });
             }
             else
@@ -128,7 +135,7 @@ namespace NexusForever.Game.Quest
                     Index   = Index
                 };
 
-                EntityEntry<CharacterQuestObjectiveModel> entity = context.Entry(model);
+                EntityEntry<CharacterQuestObjectiveModel> entity = context.Attach(model);
                 if ((saveMask & QuestObjectiveSaveMask.Progress) != 0)
                 {
                     model.Progress = Progress;
@@ -137,7 +144,8 @@ namespace NexusForever.Game.Quest
 
                 if ((saveMask & QuestObjectiveSaveMask.Timer) != 0)
                 {
-                    // TODO
+                    model.Timer = Timer;
+                    entity.Property(p => p.Timer).IsModified = true;
                 }
             }
 
@@ -146,7 +154,11 @@ namespace NexusForever.Game.Quest
 
         public void Update(double lastTick)
         {
-            // TODO: update timer
+            if (objectiveTimer == null || IsComplete())
+                return;
+
+            objectiveTimer.Update(lastTick);
+            Timer = (uint)(objectiveTimer.Time * 1000d);
         }
 
         private bool IsDynamic()

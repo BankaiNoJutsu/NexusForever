@@ -7,7 +7,7 @@ namespace NexusForever.Network.World.Message.Model.Mail
     public class ServerMailResult : IWritable
     {
         // actions 2 and 3 invoke RefreshMail LUA event
-        public uint Action { get; set; } // TODO: Analyze sniffs for possible values
+        public MailResultAction Action { get; set; }
         public ulong MailId { get; set; }
         public GenericError Result { get; set; }
 

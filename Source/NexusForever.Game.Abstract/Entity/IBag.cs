@@ -53,5 +53,15 @@ namespace NexusForever.Game.Abstract.Entity
         /// Resize bag with supplied capacity change.
         /// </summary>
         void Resize(int capacityChange);
+
+        /// <summary>
+        /// Create a positional snapshot of all item slots in the bag.
+        /// </summary>
+        IItem[] CreateSnapshot();
+
+        /// <summary>
+        /// Restore a positional item snapshot previously created for this bag.
+        /// </summary>
+        void RestoreSnapshot(IItem[] snapshot);
     }
 }

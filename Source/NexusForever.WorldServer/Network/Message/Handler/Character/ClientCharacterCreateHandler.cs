@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -57,7 +58,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
 
             CharacterModifyResult? GetResult()
             {
-                // TODO: validate path
+                if (!Enum.IsDefined(typeof(Game.Static.PlayerPath.Path), (Game.Static.PlayerPath.Path)characterCreate.Path))
+                    return CharacterModifyResult.CreateFailed;
+
                 if (!textFilterManager.IsTextValid(characterCreate.Name)
                     || !textFilterManager.IsTextValid(characterCreate.Name, UserText.CharacterName))
                     return CharacterModifyResult.CreateFailed_InvalidName;
@@ -77,6 +80,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 if (creationEntry.CharacterCreationStartEnum == CharacterCreationStart.Level50
                     && !session.Account.CurrencyManager.CanAfford(AccountCurrencyType.MaxLevelToken, 1ul))
                     return CharacterModifyResult.CreateFailed_InsufficientFunds;
+
+                if (creationEntry.EntitlementIdRequired != 0u
+                    && session.Account.EntitlementManager.GetEntitlement((EntitlementType)creationEntry.EntitlementIdRequired)?.Amount is null or 0u)
+                {
+                    return CharacterModifyResult.CreateFailed_MissingEntitlement;
+                }
 
                 List<(uint Label, uint Value)> customisations = characterCreate.Labels
                     .Zip(characterCreate.Values, ValueTuple.Create)
@@ -104,11 +113,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 CharacterCreationEntry creationEntry = gameTableManager.CharacterCreation.GetEntry(characterCreate.CharacterCreationId);
                 if (creationEntry == null)
                     throw new InvalidPacketValueException();
-
-                if (creationEntry.EntitlementIdRequired != 0u)
-                {
-                    // TODO: Aurin engineer has this
-                }
 
                 var character = new CharacterModel
                 {
@@ -211,7 +215,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                     .SelectMany(b => b)
                     .Select(i => i);
 
-                //TODO: handle starting stats per class/race
+                // CharacterCreation does not currently expose class/race stat overrides, so seed the baseline stats used by the current progression model.
                 character.Stat.Add(new CharacterStatModel
                 {
                     Id    = character.Id,
@@ -243,15 +247,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                     Value = 1
                 });
 
-                // TODO: actually error check this
-                session.Events.EnqueueEvent(new TaskEvent(databaseManager.GetDatabase<CharacterDatabase>().Save(c =>
+                Task saveTask = databaseManager.GetDatabase<CharacterDatabase>().Save(c =>
                     {
                         c.Character.Add(character);
                         foreach (IItem item in items)
                             item.Save(c);
-                    }),
+                    });
+
+                session.Events.EnqueueEvent(new TaskEvent(saveTask,
                     () =>
                 {
+                    if (!saveTask.IsCompletedSuccessfully)
+                    {
+                        session.EnqueueMessageEncrypted(new ServerCharacterCreate
+                        {
+                            Result = CharacterModifyResult.CreateFailed_Internal
+                        });
+                        return;
+                    }
+
                     session.Characters.Add(character);
                     characterManager.AddCharacter(character);
 

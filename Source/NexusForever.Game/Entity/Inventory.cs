@@ -20,7 +20,6 @@ namespace NexusForever.Game.Entity
 
         private static ulong ItemLocationToDragDropData(InventoryLocation location, ushort slot)
         {
-            // TODO: research this more, client version of this is more complex
             return (ulong)location << 8 | slot;
         }
 
@@ -28,6 +27,7 @@ namespace NexusForever.Game.Entity
         private readonly IPlayer player;
         private readonly Dictionary<InventoryLocation, IBag> bags = new();
         private readonly List<IItem> deletedItems = new();
+        private double itemExpirationAccumulator;
 
         /// <summary>
         /// Create a new <see cref="IInventory"/> from <see cref="IPlayer"/> database model.
@@ -71,7 +71,7 @@ namespace NexusForever.Game.Entity
 
         public void Update(double lastTick)
         {
-            // TODO: tick items with limited lifespans
+            UpdateItemExpirations(lastTick);
         }
 
         public void Save(CharacterContext context)
@@ -250,7 +250,8 @@ namespace NexusForever.Game.Entity
             // update any existing stacks before creating new items
             if (info.IsStackable())
             {
-                foreach (IItem item in bag.Where(i => i.Info.Id == info.Id))
+                uint expirationTimeLeft = GetInitialExpirationTimeLeft(info);
+                foreach (IItem item in bag.Where(i => i.Info.Id == info.Id && i.ExpirationTimeLeft == expirationTimeLeft))
                 {
                     if (count == 0u)
                         break;
@@ -328,23 +329,28 @@ namespace NexusForever.Game.Entity
             // ItemWrongFaction
             // ItemCannotBeDeleted
 
-            IBag bag = GetBag(location);
-            if (bag == null)
+            if (item == null)
+                return GenericError.ItemBadId;
+            if (item.Info == null)
                 return GenericError.ItemNotValidForSlot;
 
-            if (bag.Slots < bagIndex + 1)
+            IBag dstBag = GetBag(location);
+            if (dstBag == null)
                 return GenericError.ItemNotValidForSlot;
 
-            if (IsInventoryFull(location))
+            if (bagIndex >= dstBag.Slots)
+                return GenericError.ItemNotValidForSlot;
+
+            IItem dstItem = dstBag.GetItem(bagIndex);
+            if (dstItem == null && item.Location != location && dstBag.SlotsRemaining == 0u)
                 return GenericError.ItemInventoryFull;
 
             if (location == InventoryLocation.Inventory)
             {
                 // when removing bag capacity, make sure there is enough room left for items in the inventory
-                if (item.Info.IsEquippableBag()
-                    && IsEquippableBagSlot(item.Location, item.BagIndex)
-                    && GetInventorySlotsRemaining(InventoryLocation.Inventory) < item.Info.Entry.MaxStackCount)
-                    return GenericError.ItemBagMustBeEmpty;
+                GenericError? bagCapacityError = CanApplyBagCapacityChangeForMove(item, dstItem, location, bagIndex);
+                if (bagCapacityError.HasValue)
+                    return bagCapacityError;
             }
             else if (location == InventoryLocation.Equipped)
             {
@@ -354,11 +360,21 @@ namespace NexusForever.Game.Entity
                 if (!item.Info.IsEquippableIntoSlot((EquippedItem)bagIndex))
                     return GenericError.ItemNotValidForSlot;
 
+                GenericError? bagCapacityError = CanApplyBagCapacityChangeForMove(item, dstItem, location, bagIndex);
+                if (bagCapacityError.HasValue)
+                    return bagCapacityError;
+
                 /*if (owner.Character.Class != item.Entry.ClassRequired)
 			        return GenericError.ItemWrongClass;
 
 		        if (owner.Character.Race != item.Entry.RaceRequired)
 			        return GenericError.ItemWrongRace;*/
+            }
+            else
+            {
+                GenericError? bagCapacityError = CanApplyBagCapacityChangeForMove(item, dstItem, location, bagIndex);
+                if (bagCapacityError.HasValue)
+                    return bagCapacityError;
             }
 
             return null;
@@ -388,7 +404,18 @@ namespace NexusForever.Game.Entity
             if (dstBag == null)
                 throw new ArgumentException();
 
+            GenericError? result = CanMoveItem(item, location, bagIndex);
+            if (result.HasValue)
+            {
+                player.Session.EnqueueMessageEncrypted(new ServerItemError
+                {
+                    ErrorCode = result.Value
+                });
+                return;
+            }
+
             IItem dstItem = dstBag.GetItem(bagIndex);
+            InventoryOperationSnapshot snapshot = CreateOperationSnapshot();
 
             try
             {
@@ -403,7 +430,7 @@ namespace NexusForever.Game.Entity
 
                         // ensure slot is still valid
                         // this can happen when removing a bag to a slot that was removed during the resize
-                        if (dstBag.Slots < bagIndex - 1)
+                        if (bagIndex >= dstBag.Slots)
                         {
                             uint? newBagIndex = dstBag.GetFirstAvailableBagIndex();
                             if (!newBagIndex.HasValue)
@@ -414,6 +441,8 @@ namespace NexusForever.Game.Entity
 
                         AddItem(item, location, bagIndex);
                     }
+
+                    BindOnEquip(item);
 
                     player.Session.EnqueueMessageEncrypted(new ServerItemMove
                     {
@@ -428,7 +457,8 @@ namespace NexusForever.Game.Entity
                 {
                     // item at destination with same entry, try and stack
                     if (dstItem.Info.IsStackable()
-                        && item.Info.Entry.Id == dstItem.Info.Entry.Id)
+                        && item.Info.Entry.Id == dstItem.Info.Entry.Id
+                        && item.ExpirationTimeLeft == dstItem.ExpirationTimeLeft)
                     {
                         uint newStackCount = Math.Min(dstItem.StackCount + item.StackCount, dstItem.Info.Entry.MaxStackCount);
                         uint oldStackCount = item.StackCount - (newStackCount - dstItem.StackCount);
@@ -456,13 +486,12 @@ namespace NexusForever.Game.Entity
                         bag.AddItem(dstItem, item.PreviousBagIndex);
                         dstBag.AddItem(item, dstItem.PreviousBagIndex);
 
-                        int capacityChange = (int)item.Info.Entry.MaxStackCount - (int)dstItem.Info.Entry.MaxStackCount;
+                        int capacityChange = (int)dstItem.Info.Entry.MaxStackCount - (int)item.Info.Entry.MaxStackCount;
                         if (capacityChange != 0)
                         {
-                            if (IsEquippableBagSlot(item.Location, item.BagIndex))
-                                InventoryResize(InventoryLocation.Inventory, capacityChange);
-                            if (IsEquippableBankBagSlot(item.Location, item.BagIndex))
-                                InventoryResize(InventoryLocation.PlayerBank, capacityChange);
+                            InventoryLocation? expandedLocation = GetExpandedBagLocation(dstItem.Location, dstItem.BagIndex);
+                            if (expandedLocation.HasValue)
+                                InventoryResize(expandedLocation.Value, capacityChange);
                         }
                     }
                     else
@@ -472,6 +501,9 @@ namespace NexusForever.Game.Entity
                         AddItem(item, dstItem.PreviousLocation, dstItem.PreviousBagIndex);
                         AddItem(dstItem, item.PreviousLocation, item.PreviousBagIndex);
                     }
+
+                    BindOnEquip(item);
+                    BindOnEquip(dstItem);
 
                     player.Session.EnqueueMessageEncrypted(new ServerItemSwap
                     {
@@ -490,8 +522,12 @@ namespace NexusForever.Game.Entity
             }
             catch (Exception exception)
             {
-                // TODO: rollback
+                RestoreOperationSnapshot(snapshot);
                 log.Fatal(exception);
+                player.Session.EnqueueMessageEncrypted(new ServerItemError
+                {
+                    ErrorCode = GenericError.DbFailure
+                });
             }
         }
 
@@ -522,6 +558,10 @@ namespace NexusForever.Game.Entity
                 throw new InvalidPacketValueException();
 
             var newItem = new Item(characterId, item.Info, Math.Min(count, item.Info.Entry.MaxStackCount));
+            newItem.ExpirationTimeLeft = item.ExpirationTimeLeft;
+            if (item.Soulbound)
+                newItem.MakeSoulbound();
+
             AddItem(newItem, newItemLocation.Location, newItemLocation.BagIndex);
 
             if (!player?.IsLoading ?? false)
@@ -579,6 +619,8 @@ namespace NexusForever.Game.Entity
                 Durability          = srcItem.Durability,
                 ExpirationTimeLeft  = srcItem.ExpirationTimeLeft
             };
+            if (srcItem.Soulbound)
+                splitItem.MakeSoulbound();
 
             ItemStackCountUpdate(srcItem, srcItem.StackCount - count, reason);
             return splitItem;
@@ -586,7 +628,17 @@ namespace NexusForever.Game.Entity
 
         private IItem ItemDelete(IBag bag, IItem item, ItemUpdateReason reason)
         {
-            bag.RemoveItem(item);
+            GenericError? bagCapacityError = CanRemoveItem(item);
+            if (bagCapacityError.HasValue)
+            {
+                player.Session.EnqueueMessageEncrypted(new ServerItemError
+                {
+                    ErrorCode = bagCapacityError.Value
+                });
+                return null;
+            }
+
+            RemoveItem(item);
             if (!item.PendingCreate)
             {
                 item.EnqueueDelete(true);
@@ -692,6 +744,7 @@ namespace NexusForever.Game.Entity
                 throw new ArgumentException();
 
             bag.AddItem(item, bagIndex);
+            BindOnEquip(item);
 
             if (location == InventoryLocation.Equipped && player != null)
                 ApplyProperties(item);
@@ -703,6 +756,12 @@ namespace NexusForever.Game.Entity
                 InventoryResize(InventoryLocation.Inventory, (int)item.Info.Entry.MaxStackCount);
             if (IsEquippableBankBagSlot(item.Location, item.BagIndex))
                 InventoryResize(InventoryLocation.PlayerBank, (int)item.Info.Entry.MaxStackCount);
+        }
+
+        private static void BindOnEquip(IItem item)
+        {
+            if (item.Location == InventoryLocation.Equipped && item.Info?.CanBindOnEquip() == true)
+                item.MakeSoulbound();
         }
 
         /// <summary>
@@ -744,13 +803,17 @@ namespace NexusForever.Game.Entity
 
             if (capacityChange < 0)
             {
-                for (uint bagIndex = bag.Slots - 1; bagIndex >= bag.Slots + capacityChange; bagIndex--)
+                int newSlotCount = checked((int)bag.Slots + capacityChange);
+                if (newSlotCount < 0)
+                    throw new ArgumentOutOfRangeException(nameof(capacityChange));
+
+                for (uint bagIndex = (uint)newSlotCount; bagIndex < bag.Slots; bagIndex++)
                 {
                     IItem item = bag.GetItem(bagIndex);
                     if (item == null)
                         continue;
 
-                    uint? newBagIndex = bag.GetFirstAvailableBagIndex();
+                    uint? newBagIndex = GetFirstAvailableBagIndex(bag, (uint)newSlotCount);
                     if (!newBagIndex.HasValue)
                         throw new InvalidOperationException();
 
@@ -760,6 +823,196 @@ namespace NexusForever.Game.Entity
             }
 
             bag.Resize(capacityChange);
+        }
+
+        private void UpdateItemExpirations(double lastTick)
+        {
+            if (lastTick <= 0d)
+                return;
+
+            itemExpirationAccumulator += lastTick;
+            if (itemExpirationAccumulator < 1d)
+                return;
+
+            uint elapsedSeconds = (uint)Math.Min(uint.MaxValue, Math.Floor(itemExpirationAccumulator));
+            itemExpirationAccumulator -= elapsedSeconds;
+
+            foreach (IItem item in bags.Values
+                .Where(b => b.Location != InventoryLocation.Ability)
+                .SelectMany(b => b)
+                .Where(i => i.ExpirationTimeLeft > 0u)
+                .ToList())
+            {
+                if (item.Location == InventoryLocation.None)
+                    continue;
+
+                if (item.ExpirationTimeLeft <= elapsedSeconds)
+                {
+                    IBag bag = GetBag(item.Location);
+                    if (bag != null)
+                        ItemDelete(bag, item, ItemUpdateReason.Expired);
+                }
+                else
+                    item.ExpirationTimeLeft -= elapsedSeconds;
+            }
+        }
+
+        private static uint? GetFirstAvailableBagIndex(IBag bag, uint maxExclusive)
+        {
+            for (uint bagIndex = 0u; bagIndex < bag.Slots && bagIndex < maxExclusive; bagIndex++)
+                if (bag.GetItem(bagIndex) == null)
+                    return bagIndex;
+
+            return null;
+        }
+
+        private GenericError? CanRemoveItem(IItem item)
+        {
+            if (item.Info?.IsEquippableBag() != true)
+                return null;
+
+            InventoryLocation? expandedLocation = GetExpandedBagLocation(item.Location, item.BagIndex);
+            if (!expandedLocation.HasValue)
+                return null;
+
+            return CanApplyBagCapacityChange(expandedLocation.Value, -(int)item.Info.Entry.MaxStackCount)
+                ? null
+                : GenericError.ItemBagMustBeEmpty;
+        }
+
+        private GenericError? CanApplyBagCapacityChangeForMove(IItem item, IItem dstItem, InventoryLocation location, uint bagIndex)
+        {
+            InventoryLocation? sourceExpandedLocation = item.Info?.IsEquippableBag() == true
+                ? GetExpandedBagLocation(item.Location, item.BagIndex)
+                : null;
+            InventoryLocation? destinationExpandedLocation = item.Info?.IsEquippableBag() == true
+                ? GetExpandedBagLocation(location, bagIndex)
+                : null;
+
+            if (sourceExpandedLocation.HasValue && sourceExpandedLocation != destinationExpandedLocation)
+            {
+                int capacityChange = -(int)item.Info.Entry.MaxStackCount;
+                if (dstItem?.Info?.IsEquippableBag() == true && location == sourceExpandedLocation.Value)
+                    capacityChange += (int)dstItem.Info.Entry.MaxStackCount;
+
+                uint? reservedBagIndex = dstItem == null && location == sourceExpandedLocation.Value ? bagIndex : null;
+                if (!CanApplyBagCapacityChange(sourceExpandedLocation.Value, capacityChange, reservedBagIndex))
+                    return GenericError.ItemBagMustBeEmpty;
+            }
+
+            if (destinationExpandedLocation.HasValue && destinationExpandedLocation != sourceExpandedLocation)
+            {
+                int capacityChange = (int)item.Info.Entry.MaxStackCount;
+                if (dstItem?.Info?.IsEquippableBag() == true)
+                    capacityChange -= (int)dstItem.Info.Entry.MaxStackCount;
+
+                if (!CanApplyBagCapacityChange(destinationExpandedLocation.Value, capacityChange))
+                    return GenericError.ItemBagMustBeEmpty;
+            }
+
+            return null;
+        }
+
+        private bool CanApplyBagCapacityChange(InventoryLocation location, int capacityChange, uint? reservedBagIndex = null)
+        {
+            if (capacityChange >= 0)
+                return true;
+
+            IBag bag = GetBag(location);
+            if (bag == null)
+                return false;
+
+            int newSlotCount = checked((int)bag.Slots + capacityChange);
+            if (newSlotCount < 0)
+                return false;
+
+            uint emptyRetainedSlots = 0u;
+            uint requiredRetainedSlots = 0u;
+            for (uint bagIndex = 0u; bagIndex < bag.Slots; bagIndex++)
+            {
+                IItem item = bag.GetItem(bagIndex);
+                if (bagIndex < newSlotCount)
+                {
+                    if (item == null)
+                        emptyRetainedSlots++;
+                }
+                else if (item != null)
+                    requiredRetainedSlots++;
+            }
+
+            if (reservedBagIndex.HasValue)
+            {
+                if (reservedBagIndex.Value < newSlotCount)
+                {
+                    if (bag.GetItem(reservedBagIndex.Value) == null)
+                    {
+                        if (emptyRetainedSlots == 0u)
+                            return false;
+
+                        emptyRetainedSlots--;
+                    }
+                }
+                else
+                    requiredRetainedSlots++;
+            }
+
+            return emptyRetainedSlots >= requiredRetainedSlots;
+        }
+
+        private InventoryLocation? GetExpandedBagLocation(InventoryLocation location, uint bagIndex)
+        {
+            if (IsEquippableBagSlot(location, bagIndex))
+                return InventoryLocation.Inventory;
+            if (IsEquippableBankBagSlot(location, bagIndex))
+                return InventoryLocation.PlayerBank;
+
+            return null;
+        }
+
+        private static uint GetInitialExpirationTimeLeft(IItemInfo info)
+        {
+            if (info?.Entry.ExpirationTimeMinutes is null or 0u)
+                return 0u;
+
+            ulong seconds = (ulong)info.Entry.ExpirationTimeMinutes * 60ul;
+            return seconds > uint.MaxValue ? uint.MaxValue : (uint)seconds;
+        }
+
+        private InventoryOperationSnapshot CreateOperationSnapshot()
+        {
+            var snapshot = new InventoryOperationSnapshot
+            {
+                DeletedItemCount = deletedItems.Count
+            };
+
+            foreach ((InventoryLocation location, IBag bag) in bags)
+            {
+                IItem[] bagItems = bag.CreateSnapshot();
+                snapshot.Bags.Add(location, bagItems);
+
+                foreach (IItem item in bagItems)
+                {
+                    if (item != null)
+                        snapshot.Items.TryAdd(item.Guid, new ItemOperationSnapshot(item));
+                }
+            }
+
+            return snapshot;
+        }
+
+        private void RestoreOperationSnapshot(InventoryOperationSnapshot snapshot)
+        {
+            foreach (ItemOperationSnapshot itemSnapshot in snapshot.Items.Values)
+                itemSnapshot.Restore();
+
+            foreach ((InventoryLocation location, IItem[] bagSnapshot) in snapshot.Bags)
+            {
+                IBag bag = GetBag(location);
+                bag?.RestoreSnapshot(bagSnapshot);
+            }
+
+            if (deletedItems.Count > snapshot.DeletedItemCount)
+                deletedItems.RemoveRange(snapshot.DeletedItemCount, deletedItems.Count - snapshot.DeletedItemCount);
         }
 
         /// <summary>
@@ -803,7 +1056,6 @@ namespace NexusForever.Game.Entity
             if (item.Info.Entry.MaxStackCount > 1 && item.StackCount > 0)
                 ItemStackCountUpdate(item, item.StackCount - 1);
 
-            // TODO: Set Deletion reason to 1, when consuming a single charge item.
             if (item.StackCount == 0 && item.Info.Entry.MaxStackCount > 1 || item.Charges == 0 && item.Info.Entry.MaxCharges > 0)
             {
                 ItemDelete(new ItemLocation
@@ -843,16 +1095,64 @@ namespace NexusForever.Game.Entity
         {
             foreach (KeyValuePair<Property, float> property in item.Info.Properties)
                 player.AddItemProperty(property.Key, (ItemSlot)item.Info.SlotEntry.Id, property.Value);
-
-            // TODO: Add properties from item's runes
         }
 
         private void RemoveProperties(IItem item)
         {
             foreach (KeyValuePair<Property, float> property in item.Info.Properties)
                 player.RemoveItemProperty(property.Key, (ItemSlot)item.Info.SlotEntry.Id);
+        }
 
-            // TODO: Remove properties from item's runes
+        private sealed class InventoryOperationSnapshot
+        {
+            public int DeletedItemCount { get; init; }
+            public Dictionary<InventoryLocation, IItem[]> Bags { get; } = new();
+            public Dictionary<ulong, ItemOperationSnapshot> Items { get; } = new();
+        }
+
+        private sealed class ItemOperationSnapshot
+        {
+            private readonly IItem item;
+            private readonly ulong? characterId;
+            private readonly InventoryLocation location;
+            private readonly InventoryLocation previousLocation;
+            private readonly uint bagIndex;
+            private readonly uint previousBagIndex;
+            private readonly uint stackCount;
+            private readonly uint charges;
+            private readonly float durability;
+            private readonly uint expirationTimeLeft;
+
+            public ItemOperationSnapshot(IItem item)
+            {
+                this.item = item;
+                characterId = item.CharacterId;
+                location = item.Location;
+                previousLocation = item.PreviousLocation;
+                bagIndex = item.BagIndex;
+                previousBagIndex = item.PreviousBagIndex;
+                stackCount = item.StackCount;
+                charges = item.Charges;
+                durability = item.Durability;
+                expirationTimeLeft = item.ExpirationTimeLeft;
+            }
+
+            public void Restore()
+            {
+                item.CharacterId = characterId;
+                item.Location = location;
+                item.PreviousLocation = previousLocation;
+                item.BagIndex = bagIndex;
+                item.PreviousBagIndex = previousBagIndex;
+
+                if (item.Info == null)
+                    return;
+
+                item.StackCount = stackCount;
+                item.Charges = charges;
+                item.Durability = durability;
+                item.ExpirationTimeLeft = expirationTimeLeft;
+            }
         }
 
         public IEnumerator<IBag> GetEnumerator()

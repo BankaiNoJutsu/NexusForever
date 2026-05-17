@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Matching.Match;
@@ -13,16 +14,19 @@ namespace NexusForever.Game.Map.Instance
 
         private readonly IMapLockManager mapLockManager;
         private readonly IMatchManager matchManager;
+        private readonly IGroupStateManager groupStateManager;
         private readonly IFactory<T> instanceFactory;
 
         public ContentInstancedMap(
             IMapLockManager mapLockManager,
             IMatchManager matchManager,
+            IGroupStateManager groupStateManager,
             IFactory<T> instanceFactory)
         {
-            this.mapLockManager = mapLockManager;
-            this.matchManager = matchManager;
-            this.instanceFactory = instanceFactory;
+            this.mapLockManager    = mapLockManager;
+            this.matchManager      = matchManager;
+            this.groupStateManager = groupStateManager;
+            this.instanceFactory   = instanceFactory;
         }
 
         #endregion
@@ -36,7 +40,12 @@ namespace NexusForever.Game.Map.Instance
                 return matchMapLock ?? mapLockManager.CreateMatchLock(match);
             }
 
-            // TODO: check group lock
+            if (groupStateManager.TryGetGroupForCharacter(player.Identity, out GroupLootState group)
+                && group.HasMember(player.Identity))
+            {
+                IMapLock groupMapLock = mapLockManager.GetGroupLock(group.GroupId, Entry.Id);
+                return groupMapLock ?? mapLockManager.CreateGroupLock(group, Entry.Id);
+            }
 
             IMapLock soloMapLock = mapLockManager.GetSoloLock(player.Identity, Entry.Id);
             return soloMapLock ?? mapLockManager.CreateSoloLock(player.Identity, Entry.Id);

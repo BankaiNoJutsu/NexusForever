@@ -37,7 +37,7 @@ namespace NexusForever.GameTable.Model
         public uint HousingWarplotBossTokenId;
         public uint GenericUnlockSetId;
         public ItemFlags Flags;
-        public uint BindFlags;
+        public ItemBindFlags BindFlags;
         public uint BuyFromVendorStackCount;
         [GameTableFieldArray(2)]
         public CurrencyType[] CurrencyTypeId;

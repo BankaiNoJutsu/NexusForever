@@ -1890,6 +1890,11 @@ namespace NexusForever.Database.Character
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(null);
 
+                entity.Property(e => e.Soulbound)
+                    .HasColumnName("soulbound")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
                 entity.Property(e => e.StackCount)
                     .HasColumnName("stackCount")
                     .HasColumnType("int(10) unsigned")

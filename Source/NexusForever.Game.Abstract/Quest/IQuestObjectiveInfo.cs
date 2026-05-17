@@ -15,6 +15,8 @@ namespace NexusForever.Game.Abstract.Quest
         /// </summary>
         bool IsSequential();
 
+        bool RequiresPreviousObjectives();
+
         /// <summary>
         /// Quest objective is hidden until previous objective is complete.
         /// </summary>

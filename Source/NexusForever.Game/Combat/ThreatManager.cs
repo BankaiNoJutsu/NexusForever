@@ -136,7 +136,6 @@ namespace NexusForever.Game.Combat
 
             owner.OnThreatRemoveTarget(hostileEntity);
 
-            // TODO: Handle the case of PvP where the only "end" would be death. Consider an "in-combat without threat" timer as a trigger, in PvP situations only.
             owner.GetVisible<IUnitEntity>(unitId)?.ThreatManager.RemoveHostile(owner.Guid);
 
             log.Trace($"Removed hostile {hostileEntity.HatedUnitId} from {owner.Guid}'s threat list.");

@@ -22,6 +22,7 @@ namespace NexusForever.Game.Entity
         private readonly IPlayer player;
         private readonly Queue<IMailItem> outgoingMail = new();
         private readonly List<IMailItem> pendingMail = new();
+        private readonly List<IMailItem> expiredMail = new();
         private readonly Dictionary<ulong, IMailItem> availableMail = new();
 
         // timer to check pending mail ever second
@@ -36,7 +37,9 @@ namespace NexusForever.Game.Entity
             foreach (CharacterMailModel mailModel in model.Mail)
             {
                 var mail = new MailItem(mailModel);
-                if (mail.IsReadyToDeliver())
+                if (IsExpired(mail))
+                    ExpireMail(mail, false);
+                else if (mail.IsReadyToDeliver())
                     availableMail.Add(mail.Id, mail);
                 else
                     pendingMail.Add(mail);
@@ -62,7 +65,7 @@ namespace NexusForever.Game.Entity
                 if (sendAvailableMail)
                     SendAvailableMail();
 
-                // TODO: remove expired mail
+                RemoveExpiredMail();
 
                 mailTimer.Reset();
             }
@@ -90,6 +93,11 @@ namespace NexusForever.Game.Entity
 
                 mail.Save(context);
             }
+
+            foreach (IMailItem mail in expiredMail)
+                mail.Save(context);
+
+            expiredMail.Clear();
         }
 
         /// <summary>
@@ -140,8 +148,6 @@ namespace NexusForever.Game.Entity
                 if (targetCharacter.CharacterId == player.CharacterId)
                     return GenericError.MailCannotMailSelf;
 
-                // TODO: Check that the player is not blocked
-
                 if (mailSend.CashOnDeliveryAmount > 0ul && mailSend.CreditsSent > 0ul)
                     return GenericError.MailCanNotHaveCoDAndGift;
 
@@ -162,7 +168,9 @@ namespace NexusForever.Game.Entity
                         if (item.Location == InventoryLocation.Equipped)
                             return GenericError.MailInvalidInventorySlot;
 
-                        // TODO: Check the Item can be traded.
+                        if (item.Soulbound)
+                            return GenericError.MailInvalidInventorySlot;
+
                         items.Add(item);
                     }
                 }
@@ -206,7 +214,7 @@ namespace NexusForever.Game.Entity
 
             player.Session.EnqueueMessageEncrypted(new ServerMailResult
             {
-                Action = 1,
+                Action = MailResultAction.Send,
                 MailId = 0,
                 Result = result
             });
@@ -250,8 +258,6 @@ namespace NexusForever.Game.Entity
             SendMail(parameters, items);
         }
 
-        // TODO: Handle sending mail from auctions to users upon auction end
-        // TODO: Handle sending mail from GMs to replace missing items
         private void SendMail(MailParameters parameters, IEnumerable<IItem> items)
         {
             var mail = new MailItem(parameters);
@@ -314,7 +320,6 @@ namespace NexusForever.Game.Entity
 
             if (result == GenericError.Ok)
             {
-                // TODO: Confirm that this user is allowed to delete this mail
                 mailItem.EnqueueDelete(true);
 
                 player.Session.EnqueueMessageEncrypted(new ServerMailUnavailable
@@ -325,7 +330,7 @@ namespace NexusForever.Game.Entity
 
             player.Session.EnqueueMessageEncrypted(new ServerMailResult
             {
-                Action = 5,
+                Action = MailResultAction.Delete,
                 MailId = mailId,
                 Result = result
             });
@@ -383,7 +388,7 @@ namespace NexusForever.Game.Entity
 
             player.Session.EnqueueMessageEncrypted(new ServerMailResult
             {
-                Action = 3,
+                Action = MailResultAction.PayCashOnDelivery,
                 MailId = mailId,
                 Result = result
             });
@@ -422,7 +427,7 @@ namespace NexusForever.Game.Entity
 
             player.Session.EnqueueMessageEncrypted(new ServerMailResult
             {
-                Action = 1,
+                Action = MailResultAction.Send,
                 MailId = mailId,
                 Result = result
             });
@@ -505,7 +510,7 @@ namespace NexusForever.Game.Entity
 
             player.Session.EnqueueMessageEncrypted(new ServerMailResult
             {
-                Action = 2,
+                Action = MailResultAction.TakeCash,
                 MailId = mailId,
                 Result = result
             });
@@ -523,6 +528,47 @@ namespace NexusForever.Game.Entity
 
             var entity = player.GetVisible<IWorldEntity>(unitId);
             return entity is IMailboxEntity && Vector3.DistanceSquared(player.Position, entity.Position) < entry.Datafloat0 * entry.Datafloat0; // Checking squared distance avoids a slow sqrt operation.
+        }
+
+        private void RemoveExpiredMail()
+        {
+            foreach (IMailItem mail in pendingMail.ToList())
+            {
+                if (!IsExpired(mail))
+                    continue;
+
+                pendingMail.Remove(mail);
+                ExpireMail(mail, false);
+            }
+
+            foreach (IMailItem mail in availableMail.Values.ToList())
+            {
+                if (!IsExpired(mail))
+                    continue;
+
+                availableMail.Remove(mail.Id);
+                ExpireMail(mail, true);
+            }
+        }
+
+        private void ExpireMail(IMailItem mail, bool notifyClient)
+        {
+            mail.EnqueueDelete(true);
+            expiredMail.Add(mail);
+
+            if (!notifyClient)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerMailUnavailable
+            {
+                MailId = mail.Id
+            });
+        }
+
+        private static bool IsExpired(IMailItem mail)
+        {
+            return mail.ExpiryTime > 0f
+                && DateTime.Now.Subtract(mail.CreateTime).TotalDays >= mail.ExpiryTime;
         }
 
         /// <summary>

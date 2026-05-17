@@ -62,13 +62,34 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
                 return;
             }
 
-            log.LogDebug("Flight-path purchase validated for player {PlayerGuid}: route chain [{RouteIds}], source node {SourceNode}, destination node {DestinationNode}, price {Price}. Taxi embark is not implemented yet.",
+            TaxiNodeEntry destinationNode = gameTableManager.TaxiNode.GetEntry(routes[^1].TaxiNodeIdDestination);
+            if (destinationNode == null)
+            {
+                RejectFlightPathPurchase(session, "destination node was not found");
+                return;
+            }
+
+            WorldLocation2Entry destinationLocation = gameTableManager.WorldLocation2.GetEntry(destinationNode.WorldLocation2Id);
+            if (destinationLocation == null)
+            {
+                RejectFlightPathPurchase(session, $"destination world location {destinationNode.WorldLocation2Id} was not found");
+                return;
+            }
+
+            if (!session.Player.CanTeleport())
+            {
+                session.Player.SendGenericError(GenericError.InstanceTransferPending);
+                return;
+            }
+
+            log.LogDebug("Flight-path purchase accepted for player {PlayerGuid}: route chain [{RouteIds}], source node {SourceNode}, destination node {DestinationNode}, price {Price}.",
                 session.Player?.Guid,
                 string.Join(", ", flightPathPurchase.RouteIds),
                 routes[0].TaxiNodeIdSource,
                 routes[^1].TaxiNodeIdDestination,
                 totalPrice);
-            session.Player.SendGenericError(GenericError.EmbarkNoSplineForTaxi);
+            session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, totalPrice);
+            session.Player.TeleportTo((ushort)destinationLocation.WorldId, destinationLocation.Position0, destinationLocation.Position1, destinationLocation.Position2);
         }
 
         private List<TaxiRouteEntry> ResolveRoutes(IReadOnlyList<uint> routeIds)

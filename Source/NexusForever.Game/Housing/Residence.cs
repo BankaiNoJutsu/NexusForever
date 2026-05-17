@@ -16,6 +16,9 @@ namespace NexusForever.Game.Housing
 {
     public class Residence : IResidence
     {
+        private const ushort ResidenceConstructionYardPlugItemId = 531;
+        private const ushort CommunityConstructionYardPlugItemId = 573;
+
         /// <summary>
         /// Determines which fields need saving for <see cref="IResidence"/> when being saved to the database.
         /// </summary>
@@ -341,8 +344,7 @@ namespace NexusForever.Game.Housing
 
             InitialiseDefaultPlots();
 
-            // TODO: find a better way to do this, this adds the construction yard plug
-            plots[0].SetPlug(531);
+            SetConstructionYardPlug(ResidenceConstructionYardPlugItemId);
         }
 
         /// <summary>
@@ -364,8 +366,12 @@ namespace NexusForever.Game.Housing
 
             InitialiseDefaultPlots();
 
-            // TODO: find a better way to do this
-            plots[0].SetPlug(573);
+            SetConstructionYardPlug(CommunityConstructionYardPlugItemId);
+        }
+
+        private void SetConstructionYardPlug(ushort plugItemId)
+        {
+            plots[0].SetPlug(plugItemId);
         }
 
         private void InitialiseDefaultPlots()
@@ -636,7 +642,6 @@ namespace NexusForever.Game.Housing
                 }
                 case ResidenceType.Residence:
                 {
-                    // TODO: roommates can also update decor
                     return player.CharacterId == OwnerId;
                 }
                 default:

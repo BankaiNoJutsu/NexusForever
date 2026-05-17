@@ -52,6 +52,7 @@ namespace NexusForever.Game.Spell
         private UnlockedSpellSaveMask saveMask;
 
         private UpdateTimer rechargeTimer;
+        private bool continuousCastHeld;
 
         /// <summary>
         /// Create a new <see cref="ICharacterSpell"/> from an existing database model.
@@ -155,12 +156,16 @@ namespace NexusForever.Game.Spell
         /// </summary>
         public void Cast(bool buttonPressed)
         {
-            // TODO: Handle continuous casting of spell for Player if button remains depressed
-
-            // If the player depresses button after the spell had exceeded its threshold, don't try and recast the spell until button is pressed down again.
             if (!buttonPressed)
+            {
+                continuousCastHeld = false;
+                return;
+            }
+
+            if (continuousCastHeld)
                 return;
 
+            continuousCastHeld = true;
             CastSpell();
         }
 

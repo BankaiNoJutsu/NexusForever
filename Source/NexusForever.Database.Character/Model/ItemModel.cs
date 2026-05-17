@@ -11,6 +11,7 @@
         public uint Charges { get; set; }
         public float Durability { get; set; }
         public uint ExpirationTimeLeft { get; set; }
+        public bool Soulbound { get; set; }
 
         public CharacterModel Character { get; set; }
         public CharacterMailAttachmentModel MailAttachment { get; set; }

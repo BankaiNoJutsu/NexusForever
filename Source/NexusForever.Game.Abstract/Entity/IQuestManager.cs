@@ -80,6 +80,11 @@ namespace NexusForever.Game.Abstract.Entity
         void QuestShare(ushort questId);
 
         /// <summary>
+        /// Receive a shared quest prompt from another <see cref="IPlayer"/>.
+        /// </summary>
+        void QuestShareReceive(ushort questId, uint sharerUnitId);
+
+        /// <summary>
         /// Accept or deny a shared quest from another <see cref="IPlayer"/>.
         /// </summary>
         void QuestShareResult(ushort questId, bool result);

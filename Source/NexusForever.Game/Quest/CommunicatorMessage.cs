@@ -37,13 +37,10 @@ namespace NexusForever.Game.Quest
             if (entry.WorldId != 0u && entry.WorldId != player.Map.Entry.Id)
                 return false;
 
-            // TODO: Skip this check until we have better WorldZoneId tracking
-            // It also appears as though this is more of a "Trigger when Player gets here".
-            // It's plausible this check should be "Has this player been to this zone id?".
-            //if (entry.WorldZoneId != 0u && entry.WorldZoneId != player.Zone.Id)
-            //    return false;
+            if (entry.WorldZoneId != 0u && player.Zone?.Id != entry.WorldZoneId)
+                return false;
 
-            if (entry.MinLevel != 0u && player.Level < entry.MaxLevel)
+            if (entry.MinLevel != 0u && player.Level < entry.MinLevel)
                 return false;
 
             if (entry.MaxLevel != 0u && player.Level > entry.MaxLevel)
@@ -65,12 +62,20 @@ namespace NexusForever.Game.Quest
             if (entry.ClassId != 0u && (Class)entry.ClassId != player.Class)
                 return false;
 
-            // TODO: reputation
+            if (entry.FactionIdReputation != 0u && !MeetsReputation(player))
+                return false;
 
             if (entry.PrerequisiteId != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteId))
                 return false;
 
             return true;
+        }
+
+        private bool MeetsReputation(IPlayer player)
+        {
+            float amount = player.ReputationManager.GetReputation((Faction)entry.FactionIdReputation)?.Amount ?? 0f;
+            return amount >= entry.ReputationMin
+                && (entry.ReputationMax == 0u || amount <= entry.ReputationMax);
         }
 
         /// <summary>

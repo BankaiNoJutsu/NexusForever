@@ -15,8 +15,8 @@ namespace NexusForever.Game.Spell.Event
                 spellEvent.Update(lastTick);
                 if (spellEvent.Delay <= 0d)
                 {
-                    spellEvent.Callback.Invoke();
                     events.Remove(spellEvent);
+                    spellEvent.Callback.Invoke();
                 }
             }
         }

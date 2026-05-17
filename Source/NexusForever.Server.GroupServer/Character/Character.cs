@@ -113,7 +113,6 @@ namespace NexusForever.Server.GroupServer.Character
             set => SetProperty(Property.InterruptArmorThreshold, value);
         }
 
-        // TODO
         public float Absorption { get; set; }
         public float MaxAbsorption { get; set; }
 
@@ -129,7 +128,6 @@ namespace NexusForever.Server.GroupServer.Character
             set => SetProperty(Property.BaseFocusPool, value);
         }
 
-        // TODO
         public float HealingAbsorb { get; set; }
         public float MaxHealingAbsorb { get; set; }
 
@@ -162,9 +160,10 @@ namespace NexusForever.Server.GroupServer.Character
             }
         }
 
-        // TODO
-        public uint PhaseFlags1 { get; } = 1;
-        public uint PhaseFlags2 { get; } = 1;
+        private const uint DefaultPhaseFlags = 1u;
+
+        public uint PhaseFlags1 { get; set; } = DefaultPhaseFlags;
+        public uint PhaseFlags2 { get; set; } = DefaultPhaseFlags;
 
         public bool StatsDirty
         {

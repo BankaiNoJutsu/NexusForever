@@ -233,13 +233,11 @@ namespace NexusForever.Game.Map
         {
             // make sure player position falls within a valid grid
             int radius = (MapDefines.GridSize * MapDefines.WorldGridCount) / 2;
-            if (position.X < -radius || position.X > radius
-                || position.Z < -radius || position.Z > radius)
+            if (position.X <= -radius || position.X >= radius
+                || position.Z <= -radius || position.Z >= radius)
                 return false;
 
-            // TODO: check if map file has a grid at position?
-
-            return true;
+            return File.HasGrid(position);
         }
 
         /// <summary>
@@ -524,7 +522,6 @@ namespace NexusForever.Game.Map
         /// </summary>
         public float? GetTerrainHeight(float x, float z)
         {
-            // TODO: handle cases for water and props
             return File.GetTerrainHeight(new Vector3(x, 0, z));
         }
 
@@ -533,8 +530,15 @@ namespace NexusForever.Game.Map
         /// </summary>
         public virtual ResurrectionType GetResurrectionType()
         {
-            // TODO: add support for Holocrypts and instances
             return ResurrectionType.None;
+        }
+
+        /// <summary>
+        /// Invoked when <see cref="IWorldEntity"/> enters a zone on the map.
+        /// </summary>
+        public virtual void OnEnterZone(IWorldEntity entity, uint zone)
+        {
+            scriptCollection?.Invoke<IMapScript>(s => s.OnEnterZone(entity, zone));
         }
 
         /// <summary>

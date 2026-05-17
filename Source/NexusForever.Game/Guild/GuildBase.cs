@@ -520,6 +520,7 @@ namespace NexusForever.Game.Guild
             messagePublisher.PublishAsync(new GuildDisbandedMessage
             {
                 GuildId = Id,
+                Type    = Type
             }).FireAndForgetAsync();
 
             saveMask |= GuildBaseSaveMask.Delete;
@@ -643,7 +644,6 @@ namespace NexusForever.Game.Guild
             newRank.AddMember(member);
             member.Rank = newRank;
 
-            // TODO: replace once GuildServer is implemented
             messagePublisher.PublishAsync(new GuildMemberRankUpdatedMessage
             {
                 GuildId = Id,
@@ -736,7 +736,6 @@ namespace NexusForever.Game.Guild
             {
                 GuildId = Id,
                 Type    = Type,
-                // TODO: replace once GuildServer is implemented
                 Member  = new Network.Internal.Message.Shared.Identity
                 {
                     Id      = characterId,

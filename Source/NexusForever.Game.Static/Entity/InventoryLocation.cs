@@ -1,6 +1,6 @@
 ﻿namespace NexusForever.Game.Static.Entity
 {
-    // TODO: research this more
+    // Locations without capacity metadata are preserved by numeric id until a table-backed capacity is mapped.
     public enum InventoryLocation
     {
         [InventoryLocation(30u)]

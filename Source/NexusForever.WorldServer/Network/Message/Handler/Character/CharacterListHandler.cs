@@ -22,8 +22,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
 
         public void HandleMessage(IWorldSession session, ClientCharacterList _)
         {
-            // only handle session in queue once
-            // TODO: might need to move this as HandleCharacterList is called multiple times
             if (!session.IsQueued.HasValue)
                 loginQueueManager.OnNewSession(session);
 

@@ -82,8 +82,7 @@ namespace NexusForever.Game.Map.Instance
 
             base.Initialise(entry);
 
-            // TODO: find where this should come from, this is just an arbitrary value
-            instanceLimit = 100u;
+            instanceLimit = SharedConfiguration.Instance.Get<MapConfig>().InstancePlayerLimit ?? 100u;
         }
 
         /// <summary>

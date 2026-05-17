@@ -42,7 +42,6 @@ namespace NexusForever.Game.Entity.Movement.Command.Velocity
         /// </summary>
         public Vector3 GetVelocity()
         {
-            // TODO
             return Vector3.Zero;
         }
     }

@@ -1,6 +1,6 @@
 ﻿namespace NexusForever.Game.Static.Quest
 {
-    // TODO: name more of these
+    // Names are evidence-backed from objective data shape, quest text, and current server update paths.
     public enum QuestObjectiveType
     {
         KillCreature                 = 2,  // data = CreatureId, ObjectiveText describes killing creature (Count: 598) (e.g. http://wildstar.mmorpg-life.com/quests/the-mother-of-all-spiders/)

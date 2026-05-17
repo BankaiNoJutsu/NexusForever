@@ -153,7 +153,7 @@ namespace NexusForever.Game.Quest
             reset  = model.Reset;
 
             if (timer != null)
-                questTimer = new UpdateTimer(timer.Value);
+                questTimer = new UpdateTimer(timer.Value / 1000d);
 
             foreach (CharacterQuestObjectiveModel objectiveModel in model.QuestObjective)
                 objectives.Add(new QuestObjective(player, info, info.Objectives[objectiveModel.Index], objectiveModel));
@@ -197,7 +197,6 @@ namespace NexusForever.Game.Quest
                 Timer = (uint)(questTimer.Time * 1000d);
             }
 
-            // TODO: objective timers
         }
 
         public void Save(CharacterContext context)
@@ -283,6 +282,9 @@ namespace NexusForever.Game.Quest
                     questTimer = null;
                 }
             }
+
+            foreach (IQuestObjective objective in objectives)
+                objective.Update(lastTick);
         }
 
         /// <summary>
@@ -362,7 +364,6 @@ namespace NexusForever.Game.Quest
                 scriptCollection?.Invoke<IQuestScript>(s => s.OnObjectiveUpdate(objective));
             }
 
-            // TODO: Should you be able to complete optional objectives after required are completed?
             if (RequiredObjectivesComplete())
                 CompleteOptionalObjectives();
 
@@ -399,7 +400,6 @@ namespace NexusForever.Game.Quest
 
             scriptCollection?.Invoke<IQuestScript>(s => s.OnObjectiveUpdate(objective));
 
-            // TODO: Should you be able to complete optional objectives after required are completed?
             if (RequiredObjectivesComplete())
                 CompleteOptionalObjectives();
 
@@ -425,7 +425,7 @@ namespace NexusForever.Game.Quest
 
         private bool CanUpdateObjective(IQuestObjective objective)
         {
-            if (objective.ObjectiveInfo.IsSequential())
+            if (objective.ObjectiveInfo.RequiresPreviousObjectives())
             {
                 for (int i = 0; i < objective.Index; i++)
                 {
@@ -437,7 +437,6 @@ namespace NexusForever.Game.Quest
                 }
             }
 
-            // TODO: client also checks objective flags 1 and 8 in the same function
             return true;
         }
 

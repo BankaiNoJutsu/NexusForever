@@ -22,6 +22,12 @@ namespace NexusForever.Game.Abstract.Entity
         uint Charges { get; set; }
         float Durability { get; set; }
         uint ExpirationTimeLeft { get; set; }
+        bool Soulbound { get; }
+
+        /// <summary>
+        /// Permanently bind this item to its current owner.
+        /// </summary>
+        void MakeSoulbound();
 
         // <summary>
         /// Returns the <see cref="CurrencyType"/> this <see cref="IItem"/> sells for at a vendor.

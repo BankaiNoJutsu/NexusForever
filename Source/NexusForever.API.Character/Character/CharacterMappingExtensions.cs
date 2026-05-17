@@ -9,12 +9,14 @@ namespace NexusForever.API.Character.Character
     {
         public static Model.Character.Character ToCharacter(this CharacterModel model, Server.Server server)
         {
+            ushort realmId = server.Id;
+
             return new Model.Character.Character()
             {
                 AccountId = model.AccountId,
                 Identity  = new Identity()
                 {
-                    RealmId = server.Id,
+                    RealmId = realmId,
                     Id      = model.Id,
                 },
                 IdentityName = new IdentityName()
@@ -27,7 +29,7 @@ namespace NexusForever.API.Character.Character
                 Class       = (Class)model.Class,
                 Path        = (Game.Static.PlayerPath.Path)model.ActivePath,
                 Faction     = (Faction)model.FactionId,
-                RealmId     = server.Id, // TODO
+                RealmId     = realmId,
                 WorldId     = model.WorldId,
                 WorldZoneId = model.WorldZoneId,
                 Position = new Position

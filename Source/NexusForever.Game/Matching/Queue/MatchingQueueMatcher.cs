@@ -30,10 +30,8 @@ namespace NexusForever.Game.Matching.Queue
         {
             log.LogTrace($"Matching queue proposal {matchingQueueProposal.Guid} against {matchingQueueGroups.Count} matching queue groups...");
 
-            // TODO: how smart should this be?
-            // currently we just match with the first matching queue group with valid criteria
-            // might be able to take into account queue times, priorty, etc...
-            foreach (IMatchingQueueGroup matchingQueueGroup in matchingQueueGroups)
+            foreach (IMatchingQueueGroup matchingQueueGroup in matchingQueueGroups
+                .OrderBy(GetOldestQueueTime))
             {
                 if (matchingQueueGroup.IsPaused)
                     continue;
@@ -47,6 +45,15 @@ namespace NexusForever.Game.Matching.Queue
             }
 
             return null;
+        }
+
+        private static DateTime GetOldestQueueTime(IMatchingQueueGroup matchingQueueGroup)
+        {
+            return matchingQueueGroup.GetTeams()
+                .SelectMany(t => t.GetMembers())
+                .Select(m => m.MatchingQueueProposal.QueueTime)
+                .DefaultIfEmpty(DateTime.MaxValue)
+                .Min();
         }
     }
 }

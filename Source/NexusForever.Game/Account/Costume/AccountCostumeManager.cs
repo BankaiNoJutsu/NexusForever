@@ -53,9 +53,8 @@ namespace NexusForever.Game.Account.Costume
                 return;
             }
 
-            UnlockItem(item.Id);
-
-            // TODO: make item soulbound
+            if (TryUnlockItem(item.Id))
+                item.MakeSoulbound();
         }
 
         /// <summary>
@@ -63,16 +62,21 @@ namespace NexusForever.Game.Account.Costume
         /// </summary>
         public void UnlockItem(uint itemId)
         {
+            TryUnlockItem(itemId);
+        }
+
+        private bool TryUnlockItem(uint itemId)
+        {
             if (costumeUnlocks.TryGetValue(itemId, out ICostumeUnlock costumeUnlock) && !costumeUnlock.PendingDelete)
             {
                 SendCostumeItemUnlock(CostumeUnlockResult.AlreadyKnown);
-                return;
+                return false;
             }
 
             if (costumeUnlocks.Count >= GetMaxUnlockItemCount())
             {
                 SendCostumeItemUnlock(CostumeUnlockResult.OutOfSpace);
-                return;
+                return false;
             }
 
             if (costumeUnlock != null)
@@ -81,6 +85,7 @@ namespace NexusForever.Game.Account.Costume
                 costumeUnlocks.Add(itemId, new CostumeUnlock(account, itemId));
 
             SendCostumeItemUnlock(CostumeUnlockResult.UnlockSuccess, itemId);
+            return true;
         }
 
         private uint GetMaxUnlockItemCount()

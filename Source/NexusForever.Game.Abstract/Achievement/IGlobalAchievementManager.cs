@@ -20,5 +20,7 @@ namespace NexusForever.Game.Abstract.Achievement
         /// Return all <see cref="IAchievementInfo"/>'s of <see cref="AchievementType"/> that can be completed by a guild.
         /// </summary>
         IEnumerable<IAchievementInfo> GetGuildAchievements(AchievementType type);
+
+        bool TryClaimRealmFirstAchievement(IAchievementInfo info, bool isGuildAchievement);
     }
 }

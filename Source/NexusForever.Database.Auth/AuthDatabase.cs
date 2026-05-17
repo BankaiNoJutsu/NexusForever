@@ -69,6 +69,7 @@ namespace NexusForever.Database.Auth
             {
                 using var context = new AuthContext(config);
                 return await context.Account
+                    .Include(a => a.AccountInventory)
                     .Include(a => a.AccountSuspension)
                     .SingleOrDefaultAsync(a => a.Email == email && a.GameToken == gameToken);
             });

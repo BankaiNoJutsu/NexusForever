@@ -27,12 +27,36 @@ namespace NexusForever.Script.Main.AI
             if (owner.Spline == null)
                 return;
 
-            // TODO: Rawaho, handle negative spline speed and additional modes...
-            if (owner.Spline.Mode > SplineMode.CyclicReverse || owner.Spline.Speed == -1)
+            if (!TryResolveSpline(owner.Spline.Mode, owner.Spline.Speed, out SplineMode mode, out float speed))
                 return;
 
             owner.MovementManager.SetMode(ModeType.Walk);
-            owner.MovementManager.LaunchSpline(owner.Spline.SplineId, owner.Spline.Mode, owner.Spline.Speed, false);
+            owner.MovementManager.LaunchSpline(owner.Spline.SplineId, mode, speed, false);
+        }
+
+        private static bool TryResolveSpline(SplineMode mode, float speed, out SplineMode resolvedMode, out float resolvedSpeed)
+        {
+            resolvedMode  = mode;
+            resolvedSpeed = MathF.Abs(speed);
+
+            if (resolvedSpeed == 0f || mode > SplineMode.CyclicReverse)
+                return false;
+
+            if (speed >= 0f)
+                return true;
+
+            resolvedMode = mode switch
+            {
+                SplineMode.OneShot             => SplineMode.OneShotReverse,
+                SplineMode.OneShotReverse      => SplineMode.OneShot,
+                SplineMode.BackAndForth        => SplineMode.BackAndForthReverse,
+                SplineMode.BackAndForthReverse => SplineMode.BackAndForth,
+                SplineMode.Cyclic              => SplineMode.CyclicReverse,
+                SplineMode.CyclicReverse       => SplineMode.Cyclic,
+                _                              => mode
+            };
+
+            return true;
         }
     }
 }

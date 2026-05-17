@@ -64,7 +64,6 @@ namespace NexusForever.Game.Reputation
         {
             Entry = entry;
 
-            // TODO: investigate why some factions have duplicate friendship factions
             relationships = GameTableManager.Instance.Faction2Relationship.Entries
                 .Where(e => (Faction)e.FactionId0 == FactionId)
                 .GroupBy(e => e.FactionId1)

@@ -107,17 +107,11 @@ namespace NexusForever.Game.Cinematic.Cinematics
                 });
             }
 
-            uint slot211 = 24;
-            switch (Player.Race)
+            uint slot211 = Player.Race switch
             {
-                case Race.Mechari:
-                case Race.Mordesh:
-                case Race.Granok:
-                case Race.Human: // TODO: Find right offset number
-                case Race.Draken: // TODO: Find right offset number
-                    slot211 = 69;
-                    break;
-            }
+                Race.Mechari or Race.Mordesh or Race.Granok or Race.Human or Race.Draken => 69,
+                _ => 24
+            };
             SetAsPlayerActor(GetActor(ACTOR_PLAYER), initialPosition, slot211);
         }
 

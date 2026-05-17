@@ -36,6 +36,7 @@ namespace NexusForever.Server.ChatServer.Network.Internal.Handler
             await _bus.Subscribe<GroupMemberRemovedMessage>();
 
             await _bus.Subscribe<GuildCreatedMessage>();
+            await _bus.Subscribe<GuildDisbandedMessage>();
             await _bus.Subscribe<GuildMemberAddedMessage>();
             await _bus.Subscribe<GuildMemberRankUpdatedMessage>();
             await _bus.Subscribe<GuildMemberRemovedMessage>();

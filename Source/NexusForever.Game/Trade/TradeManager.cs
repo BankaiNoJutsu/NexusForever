@@ -334,6 +334,7 @@ namespace NexusForever.Game.Trade
                 && item.Info != null
                 && item.CharacterId == owner.CharacterId
                 && item.Location == InventoryLocation.Inventory
+                && !item.Soulbound
                 && !item.Info.IsEquippableBag();
         }
 

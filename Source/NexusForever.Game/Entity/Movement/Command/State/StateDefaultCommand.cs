@@ -78,8 +78,6 @@ namespace NexusForever.Game.Entity.Movement.Command.State
                     break;
             }
 
-            // TODO: client does more, research this
-
             return flags;
         }
     }

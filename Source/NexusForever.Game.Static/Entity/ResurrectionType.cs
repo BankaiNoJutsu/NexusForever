@@ -10,8 +10,8 @@
         ExitInstance            = 32,
         WakeHereServiceToken    = 64,
 
-        // TODO: Add Holocrypt to below masks when we support them
         OpenWorld               = WakeHere | WakeHereServiceToken,
-        Dungeon                 = ExitInstance
+        Dungeon                 = ExitInstance,
+        ContentPvp              = Holocrypt
     }
 }

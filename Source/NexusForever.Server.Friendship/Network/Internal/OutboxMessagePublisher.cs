@@ -5,7 +5,6 @@ using NexusForever.Network.Internal;
 
 namespace NexusForever.Server.Friendship.Network.Internal
 {
-    // TODO: Rawaho, standardise this across all servers and move to a shared library.
     public class OutboxMessagePublisher : IInternalMessagePublisher
     {
         #region Dependency Injection
@@ -26,19 +25,14 @@ namespace NexusForever.Server.Friendship.Network.Internal
         /// <param name="message"></param>
         public async Task PublishAsync(object message)
         {
-            using var stream = new MemoryStream();
-            await JsonSerializer.SerializeAsync(stream, message, message.GetType());
-
-            stream.Position = 0;
-            using var reader = new StreamReader(stream);
-            string payload = await reader.ReadToEndAsync();
+            InternalMessagePayload payload = await InternalMessagePayloadSerialiser.SerialiseAsync(message);
 
             _repository.AddMessage(new InternalMessageModel
             {
                 Id        = Guid.NewGuid(),
                 CreatedAt = DateTime.UtcNow,
-                Type      = message.GetType().AssemblyQualifiedName,
-                Payload   = payload,
+                Type      = payload.Type,
+                Payload   = payload.Payload,
             });
         }
     }

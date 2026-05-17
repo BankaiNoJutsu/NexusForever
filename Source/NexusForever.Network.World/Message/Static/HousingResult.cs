@@ -1,6 +1,5 @@
 ﻿namespace NexusForever.Network.World.Message.Static
 {
-    // TODO: research this more
     public enum HousingResult
     {
         Success                     = 0, // Not used, and complains if sent to the client

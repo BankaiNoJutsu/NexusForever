@@ -27,6 +27,16 @@ namespace NexusForever.Game.Quest
             return ((QuestObjectiveFlags)Entry.Flags & QuestObjectiveFlags.Sequential) != 0;
         }
 
+        public bool RequiresPreviousObjectives()
+        {
+            const QuestObjectiveFlags flags =
+                QuestObjectiveFlags.Unknown0001
+                | QuestObjectiveFlags.Sequential
+                | QuestObjectiveFlags.Hidden;
+
+            return ((QuestObjectiveFlags)Entry.Flags & flags) != 0;
+        }
+
         /// <summary>
         /// Quest objective is hidden until previous objective is complete.
         /// </summary>

@@ -29,6 +29,7 @@ namespace NexusForever.Server.ChatServer.Network.Internal.Handler
 
             sc.AddSingleton<GuildChannelDataManager>();
             sc.AddRebusHandler<GuildCreatedHandler>();
+            sc.AddRebusHandler<GuildDisbandedHandler>();
             sc.AddRebusHandler<GuildMemberAddedHandler>();
             sc.AddRebusHandler<GuildMemberRankUpdatedHandler>();
             sc.AddRebusHandler<GuildMemberRemovedHandler>();

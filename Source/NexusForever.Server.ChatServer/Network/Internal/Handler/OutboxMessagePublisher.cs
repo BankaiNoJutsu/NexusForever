@@ -62,19 +62,14 @@ namespace NexusForever.Server.ChatServer.Network.Internal.Handler
 
         private async Task<InternalMessageModel> CreateMessage(object message)
         {
-            using var stream = new MemoryStream();
-            await JsonSerializer.SerializeAsync(stream, message, message.GetType());
-
-            stream.Position = 0;
-            using var reader = new StreamReader(stream);
-            string payload = await reader.ReadToEndAsync();
+            InternalMessagePayload payload = await InternalMessagePayloadSerialiser.SerialiseAsync(message);
 
             var model = new InternalMessageModel
             {
                 Id        = Guid.NewGuid(),
                 CreatedAt = DateTime.UtcNow,
-                Type      = message.GetType().AssemblyQualifiedName,
-                Payload   = payload,
+                Type      = payload.Type,
+                Payload   = payload.Payload,
             };
 
             return model;

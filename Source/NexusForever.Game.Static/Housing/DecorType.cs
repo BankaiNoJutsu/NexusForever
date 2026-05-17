@@ -1,6 +1,6 @@
 ﻿namespace NexusForever.Game.Static.Housing
 {
-    // TODO: research this more
+    // Numeric values are the client HousingDecorType ids; only crate behavior is currently special-cased by the server.
     public enum DecorType
     {
         Crate    = 0, // 8

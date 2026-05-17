@@ -23,13 +23,7 @@ namespace NexusForever.Game.Account.Currency
             this.account = account;
 
             foreach (AccountCurrencyModel currencyModel in model.AccountCurrency)
-            {
-                // Disabled Character Token for now due to causing server errors if the player tries to use it. TODO: Fix level 50 creation
-                if ((AccountCurrencyType)currencyModel.CurrencyId == AccountCurrencyType.MaxLevelToken)
-                    continue;
-
                 currencies.Add((AccountCurrencyType)currencyModel.CurrencyId, new AccountCurrency(account, currencyModel));
-            }
         }
 
         public void Save(AuthContext context)
@@ -93,7 +87,6 @@ namespace NexusForever.Game.Account.Currency
             if (!accountCurrency.CanAfford(amount))
                 throw new ArgumentException($"Trying to remove more currency {accountCurrency.CurrencyId} than the player has!");
 
-            // TODO: Ensure that we're not at cap - is there a cap?
             accountCurrency.SubtractAmount(amount);
             SendAccountCurrencyUpdate(accountCurrency, reason);
         }

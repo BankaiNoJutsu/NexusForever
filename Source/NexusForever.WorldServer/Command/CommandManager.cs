@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Systemd;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using NexusForever.Shared;
@@ -138,7 +139,7 @@ namespace NexusForever.WorldServer.Command
                 if (!typeof(CommandCategory).IsAssignableFrom(type))
                     continue;
 
-                CommandCategory category = (CommandCategory)Activator.CreateInstance(type);
+                CommandCategory category = (CommandCategory)ActivatorUtilities.CreateInstance(LegacyServiceProvider.Provider, type);
                 category.Build(attribute);
 
                 foreach (string command in attribute.Commands)

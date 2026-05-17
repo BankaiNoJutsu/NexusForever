@@ -3,6 +3,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
@@ -92,13 +93,11 @@ namespace NexusForever.Game.Entity
 
         public void GrantSpells()
         {
-            // TODO: TEMPORARY, this should eventually be used on level up
             foreach (SpellLevelEntry spellLevel in GameTableManager.Instance.SpellLevel.Entries
                 .Where(s => s.ClassId == (byte)player.Class && s.CharacterLevel <= player.Level)
                 .OrderBy(s => s.CharacterLevel))
             {
-                //FIXME
-                if (spellLevel.PrerequisiteId > 0)
+                if (spellLevel.PrerequisiteId > 0 && !PrerequisiteManager.Instance.Meets(player, spellLevel.PrerequisiteId))
                     continue;
 
                 Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spellLevel.Spell4Id);
@@ -374,7 +373,11 @@ namespace NexusForever.Game.Entity
             if (value == ActiveActionSet)
                 return SpecError.NoChange;
 
-            // TODO: handle other errors
+            if (!player.IsAlive)
+                return SpecError.InvalidPlayer;
+
+            if (player.InCombat)
+                return SpecError.InCombat;
 
             ActiveActionSet = value;
             return SpecError.Ok;

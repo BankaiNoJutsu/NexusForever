@@ -33,6 +33,14 @@ namespace NexusForever.Game.Achievement
             guild.Broadcast(BuildAchievementUpdate(updates));
         }
 
+        protected override void CompleteAchievement(IAchievement achievement)
+        {
+            base.CompleteAchievement(achievement);
+
+            if (GlobalAchievementManager.Instance.TryClaimRealmFirstAchievement(achievement.Info, true))
+                BroadcastRealmFirstAchievement(achievement, true, guild.Name);
+        }
+
         /// <summary>
         /// Update or complete player achievements of <see cref="AchievementType"/> as <see cref="IPlayer"/> with supplied object ids.
         /// </summary>

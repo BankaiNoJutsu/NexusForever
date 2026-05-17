@@ -53,7 +53,6 @@ namespace NexusForever.Game.Entity.Movement.Command.Move
         /// </summary>
         public Vector3 GetMove()
         {
-            // TODO
             return Vector3.Zero;
         }
     }

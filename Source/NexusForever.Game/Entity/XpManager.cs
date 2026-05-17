@@ -2,14 +2,23 @@
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Configuration.Model;
 using NexusForever.GameTable;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.Shared.Configuration;
 
 namespace NexusForever.Game.Entity
 {
     public class XpManager : IXpManager
     {
+        private const byte DefaultMaxCharacterLevel = 50;
+        private const float DefaultSignatureXpRate = 0.25f;
+        private const ushort HousingWorldId = 1229;
+        private const double HousingRestXpPercentPerHour = 0.0024d;
+        private const float RestXpCapLevelPercent = 1.5f;
+        private const float RestXpKillPercent = 0.5f;
+
         public uint TotalXp
         {
             get => totalXp;
@@ -73,30 +82,23 @@ namespace NexusForever.Game.Entity
             float xpForNextLevel = GameTableManager.Instance.XpPerLevel.GetEntry(player.Level + 1).MinXpForLevel;
 
             uint maximumBonusXp;
-            if (player.Level < 50)
-                maximumBonusXp = (uint)((xpForNextLevel - xpForLevel) * 1.5f);
+            if (player.Level < GetMaxCharacterLevel())
+                maximumBonusXp = (uint)((xpForNextLevel - xpForLevel) * RestXpCapLevelPercent);
             else
-                maximumBonusXp = 0; // TODO: Calculate Elder Gem Rest Bonus XP
+                maximumBonusXp = 0;
 
             double xpPercentEarned;
 
-            // TODO: Calculate Rest Bonus XP earned since last login, properly.
-            // Data from this video was used in initial calculations: https://www.youtube.com/watch?v=xEMMd7CGg4s
-            // Video is out of date, but the assumption is the formulas are the same just modified more post-F2P.
             double hoursSinceLogin = DateTime.UtcNow.Subtract((DateTime)model.LastOnline).TotalHours;
             switch (model.WorldId)
             {
-                case 1229:
-                    // TODO: Apply bonuses from decor or other things that increase rested XP gain.
-                    xpPercentEarned = hoursSinceLogin * 0.0024f;
+                case HousingWorldId:
+                    xpPercentEarned = hoursSinceLogin * HousingRestXpPercentPerHour;
                     break;
-                // TODO: Add support for home cities, towns and sleeping bag (?!) gain rates.
                 default:
                     xpPercentEarned = 0d;
                     break;
             }
-
-            // TODO: Apply bonuses from spells as necessary
 
             uint bonusXpValue = Math.Clamp((uint)((xpForNextLevel - xpForLevel) * xpPercentEarned), 0, maximumBonusXp);
             uint totalBonusXp = Math.Clamp(model.RestBonusXp + bonusXpValue, 0u, maximumBonusXp);
@@ -110,8 +112,7 @@ namespace NexusForever.Game.Entity
         /// <param name="reason"><see cref="ExpReason"/> for the experience grant</param>
         public void GrantXp(uint earnedXp, ExpReason reason = ExpReason.Cheat)
         {
-            // TODO: move to configuration option
-            const uint maxLevel = 50;
+            byte maxLevel = GetMaxCharacterLevel();
 
             if (earnedXp < 1)
                 return;
@@ -122,18 +123,16 @@ namespace NexusForever.Game.Entity
             if (player.Level >= maxLevel)
                 return;
 
-            // TODO: Apply XP bonuses from current spells or active events
-
             // Signature XP rate was 25% extra. 
             uint signatureXp = 0u;
             if (player.SignatureEnabled)
-                signatureXp = (uint)(earnedXp * 0.25f); // TODO: Make rate configurable.
+                signatureXp = (uint)(earnedXp * GetSignatureXpRate());
 
             // Calculate Rest XP Bonus
             uint restXp = 0u;
             if (reason == ExpReason.KillCreature)
             {
-                restXp = (uint)(earnedXp * 0.5f);
+                restXp = (uint)(earnedXp * RestXpKillPercent);
                 if (restXp > RestBonusXp)
                     restXp = RestBonusXp;
 
@@ -150,12 +149,14 @@ namespace NexusForever.Game.Entity
             
             uint totalXp = TotalXp + earnedXp + signatureXp + restXp;
 
-            uint xpToNextLevel = GameTableManager.Instance.XpPerLevel.GetEntry(player.Level + 1).MinXpForLevel;
-            while (totalXp >= xpToNextLevel && player.Level < maxLevel) // WorldServer.Rules.MaxLevel)
+            while (player.Level < maxLevel)
             {
-                GrantLevel((byte)(player.Level + 1));
+                byte nextLevel = (byte)(player.Level + 1);
+                uint xpToNextLevel = GameTableManager.Instance.XpPerLevel.GetEntry(nextLevel).MinXpForLevel;
+                if (totalXp < xpToNextLevel)
+                    break;
 
-                xpToNextLevel = GameTableManager.Instance.XpPerLevel.GetEntry(player.Level + 1).MinXpForLevel;
+                GrantLevel(nextLevel);
             }
 
             TotalXp += earnedXp + signatureXp + restXp;
@@ -172,7 +173,6 @@ namespace NexusForever.Game.Entity
                 case 5:
                 case 20:
                 case 40:
-                    // TODO: implement tuned group and raid creature rates.
                     baseXp = (uint)MathF.Round((25 + targetLevel + MathF.Pow(targetLevel + 1, 2)) / 5) * 5;
                     break;
                 case 0:
@@ -225,6 +225,16 @@ namespace NexusForever.Game.Entity
             // Unlock LAS slots
             // Unlock AMPs
             // Add feature access
+        }
+
+        private static byte GetMaxCharacterLevel()
+        {
+            return SharedConfiguration.Instance.Get<WorldConfig>()?.MaxCharacterLevel ?? DefaultMaxCharacterLevel;
+        }
+
+        private static float GetSignatureXpRate()
+        {
+            return SharedConfiguration.Instance.Get<WorldConfig>()?.SignatureXpRate ?? DefaultSignatureXpRate;
         }
     }
 }

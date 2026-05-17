@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Map.Lock;
 
@@ -14,6 +15,11 @@ namespace NexusForever.Game.Abstract.Map.Lock
         IMapLock CreateSoloLock(Identity identity, uint worldId);
 
         /// <summary>
+        /// Create a new group <see cref="IMapLock"/> for supplied group and world id.
+        /// </summary>
+        IMapLock CreateGroupLock(GroupLootState group, uint worldId);
+
+        /// <summary>
         /// Create a new match <see cref="IMapLock"/> for supplied <see cref="IMatch"/>.
         /// </summary>
         IMapLock CreateMatchLock(IMatch match);
@@ -22,6 +28,11 @@ namespace NexusForever.Game.Abstract.Map.Lock
         /// Return <see cref="IMapLock"/> for supplied character id and world id.
         /// </summary>
         IMapLock GetSoloLock(Identity identity, uint worldId);
+
+        /// <summary>
+        /// Return <see cref="IMapLock"/> for supplied group id and world id.
+        /// </summary>
+        IMapLock GetGroupLock(ulong groupId, uint worldId);
 
         /// <summary>
         /// Return <see cref="IMapLock"/> for supplied match guid and world id.

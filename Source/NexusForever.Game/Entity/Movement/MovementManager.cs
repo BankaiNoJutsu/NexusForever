@@ -269,7 +269,7 @@ namespace NexusForever.Game.Entity.Movement
                         if (suppressClientMovement)
                             break;
 
-                        commandValidator.ValidatePosition();
+                        commandValidator.ValidatePosition(setPosition.Position);
                         SetPosition(setPosition.Position, setPosition.Blend);
                         break;
                     }
@@ -296,13 +296,13 @@ namespace NexusForever.Game.Entity.Movement
                         break;
                     case SetStateCommand setState:
                     {
-                        commandValidator.ValidateState();
+                        commandValidator.ValidateState(setState.State);
                         SetState(CrowdControlStateRules.FilterClientStateFlags(setState.State, activeCCStateMask));
                         break;
                     }
                     case SetModeCommand setMode:
                     {
-                        commandValidator.ValidateMode();
+                        commandValidator.ValidateMode(setMode.Mode);
                         SetMode(setMode.Mode);
                         break;
                     }
@@ -542,20 +542,20 @@ namespace NexusForever.Game.Entity.Movement
             rotationCommandGroup.SetRotationKeys(times, rotations);
         }
 
-        /// <summary>
-        /// NYI
-        /// </summary>
         public void SetRotationSpline()
         {
-            throw new NotImplementedException();
+            if (!ServerControl)
+                return;
+
+            rotationCommandGroup.SetRotationSpline();
         }
 
-        /// <summary>
-        /// NYI
-        /// </summary>
         public void SetRotationMultiSpline()
         {
-            throw new NotImplementedException();
+            if (!ServerControl)
+                return;
+
+            rotationCommandGroup.SetRotationMultiSpline();
         }
 
         /// <summary>
@@ -744,10 +744,9 @@ namespace NexusForever.Game.Entity.Movement
             SetState(StateFlags.Move);
             SetMoveDefaults(false);
 
-            // TODO: implement spline rotation
-            /*if (rotation)
+            if (rotation)
                 SetRotationSpline();
-            else*/
+            else
                 SetRotationDefaults();
 
             SetPositionSpline(splineId, mode, speed);
@@ -788,9 +787,9 @@ namespace NexusForever.Game.Entity.Movement
                 Map   = entity.Map
             };
 
-            // TODO: calculate speed based on entity being followed.
             List<Vector3> nodes = generator.CalculatePath();
-            SetPositionPath(nodes, SplineType.Linear, SplineMode.OneShot, 8f);
+            float speed = Math.Max(entity.MovementManager.GetVelocity().Length(), 8f);
+            SetPositionPath(nodes, SplineType.Linear, SplineMode.OneShot, speed);
         }
     }
 }

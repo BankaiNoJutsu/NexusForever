@@ -70,6 +70,11 @@ namespace NexusForever.Game.Abstract.Map
         ResurrectionType GetResurrectionType();
 
         /// <summary>
+        /// Invoked when <see cref="IWorldEntity"/> enters a zone on the map.
+        /// </summary>
+        void OnEnterZone(IWorldEntity entity, uint zone);
+
+        /// <summary>
         /// Invoked when <see cref="IPublicEvent"/> finishes with the winning <see cref="IPublicEventTeam"/>.
         /// </summary>
         void OnPublicEventFinish(IPublicEvent publicEvent, IPublicEventTeam publicEventTeam);

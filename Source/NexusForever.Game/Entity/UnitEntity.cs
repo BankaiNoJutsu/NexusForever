@@ -97,10 +97,7 @@ namespace NexusForever.Game.Entity
 
         public IThreatManager ThreatManager { get; private set; }
 
-        /// <summary>
-        /// Initial stab at a timer to regenerate Health & Shield values.
-        /// </summary>
-        private UpdateTimer statUpdateTimer = new UpdateTimer(0.25); // TODO: Long-term this should be absorbed into individual timers for each Stat regeneration method
+        private UpdateTimer statUpdateTimer = new UpdateTimer(0.25);
 
         private UpdateTimer respawnTimer;
 
@@ -133,7 +130,9 @@ namespace NexusForever.Game.Entity
         public bool IsAggroImmune => aggroImmuneStates.Count != 0;
         public bool IsShieldOverloaded => shieldOverloadStates.Count != 0;
         public uint CurrentAbsorption => (uint)Math.Min(uint.MaxValue, absorptionStates.Values.Aggregate(0ul, (total, state) => total + state.Amount));
+        public uint MaxAbsorption => (uint)Math.Min(uint.MaxValue, absorptionStates.Values.Aggregate(0ul, (total, state) => total + state.MaxAmount));
         public uint CurrentHealingAbsorption => (uint)Math.Min(uint.MaxValue, healingAbsorptionStates.Values.Aggregate(0ul, (total, state) => total + state.Amount));
+        public uint MaxHealingAbsorption => (uint)Math.Min(uint.MaxValue, healingAbsorptionStates.Values.Aggregate(0ul, (total, state) => total + state.MaxAmount));
 
         private class TrackedSpellState
         {
@@ -247,6 +246,7 @@ namespace NexusForever.Game.Entity
         {
             public uint Spell4Id { get; init; }
             public uint CastingId { get; init; }
+            public uint MaxAmount { get; init; }
             public uint Amount { get; set; }
         }
 
@@ -858,8 +858,11 @@ namespace NexusForever.Game.Entity
             {
                 Spell4Id  = spell4Id,
                 CastingId = castingId,
+                MaxAmount = amount,
                 Amount    = amount
             };
+
+            OnAbsorptionUpdate();
         }
 
         public uint RemoveAbsorption(uint effectId)
@@ -867,6 +870,7 @@ namespace NexusForever.Game.Entity
             if (!absorptionStates.Remove(effectId, out AbsorptionState absorptionState))
                 return 0u;
 
+            OnAbsorptionUpdate();
             return absorptionState.Amount;
         }
 
@@ -889,6 +893,7 @@ namespace NexusForever.Game.Entity
                     break;
             }
 
+            OnAbsorptionUpdate();
             return amount - remaining;
         }
 
@@ -901,8 +906,11 @@ namespace NexusForever.Game.Entity
             {
                 Spell4Id  = spell4Id,
                 CastingId = castingId,
+                MaxAmount = amount,
                 Amount    = amount
             };
+
+            OnHealingAbsorptionUpdate();
         }
 
         public uint RemoveHealingAbsorption(uint effectId)
@@ -910,6 +918,7 @@ namespace NexusForever.Game.Entity
             if (!healingAbsorptionStates.Remove(effectId, out AbsorptionState absorptionState))
                 return 0u;
 
+            OnHealingAbsorptionUpdate();
             return absorptionState.Amount;
         }
 
@@ -932,7 +941,16 @@ namespace NexusForever.Game.Entity
                     break;
             }
 
+            OnHealingAbsorptionUpdate();
             return amount - remaining;
+        }
+
+        protected virtual void OnAbsorptionUpdate()
+        {
+        }
+
+        protected virtual void OnHealingAbsorptionUpdate()
+        {
         }
 
         public bool TryGetVitalMax(Vital vital, out float maxValue)
@@ -1608,7 +1626,6 @@ namespace NexusForever.Game.Entity
             {
                 foreach (IPropertyModifier alteration in spellModifier.Alterations)
                 {
-                    // TODO: Add checks to ensure we're not modifying FlatValue and Percentage in the same effect?
                     switch (alteration.ModType)
                     {
                         case ModType.FlatValue:
@@ -1630,9 +1647,6 @@ namespace NexusForever.Game.Entity
         {
             if (!IsAlive)
                 return;
-
-            // TODO: This should probably get moved to a Calculation Library/Manager at some point. There will be different timers on Stat refreshes, but right now the timer is hardcoded to every 0.25s.
-            // Probably worth considering an Attribute-grouped Class that allows us to run differentt regeneration methods & calculations for each stat.
 
             if (Health < MaxHealth)
                 ModifyHealth((uint)(MaxHealth / 200f), DamageType.Heal, null);
@@ -1776,8 +1790,18 @@ namespace NexusForever.Game.Entity
         /// <param name="castingId">Casting ID of the spell to cancel</param>
         public void CancelSpellCast(uint castingId)
         {
+            CancelSpellCast(castingId, CastResult.SpellCancelled);
+        }
+
+        /// <summary>
+        /// Cancel an <see cref="ISpell"/> based on its casting id.
+        /// </summary>
+        /// <param name="castingId">Casting ID of the spell to cancel</param>
+        /// <param name="result">Client supplied cancellation reason.</param>
+        public void CancelSpellCast(uint castingId, CastResult result)
+        {
             ISpell spell = pendingSpells.SingleOrDefault(s => s.CastingId == castingId);
-            spell?.CancelCast(CastResult.SpellCancelled);
+            spell?.CancelCast(result);
         }
 
         public bool TryCancelSpellEffect(uint serverUniqueId)
@@ -1822,8 +1846,9 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public bool IsValidAttackTarget()
         {
-            // TODO: Expand on this. There's bound to be flags or states that should prevent an entity from being attacked.
-            return (this is IPlayer or INonPlayerEntity);
+            return IsAlive
+                && !IsAggroImmune
+                && this is (IPlayer or INonPlayerEntity);
         }
 
         /// <summary>
@@ -1836,8 +1861,12 @@ namespace NexusForever.Game.Entity
 
             bool wasAlive = IsAlive;
 
-            // TODO: Calculate Threat properly
-            ThreatManager.UpdateThreat(attacker, (int)damageDescription.RawDamage);
+            uint threat = damageDescription.AdjustedDamage + damageDescription.ShieldAbsorbAmount;
+            if (threat == 0u && damageDescription.RawDamage != 0u)
+                threat = 1u;
+
+            if (threat != 0u)
+                ThreatManager.UpdateThreat(attacker, (int)Math.Min(int.MaxValue, threat));
 
             Shield -= damageDescription.ShieldAbsorbAmount;
             ModifyHealth(damageDescription.AdjustedDamage, damageDescription.DamageType, attacker);
@@ -1980,6 +2009,7 @@ namespace NexusForever.Game.Entity
         {
             DeathState = EntityDeathState.JustDied;
             scriptCollection?.Invoke<IUnitScript>(s => s.OnDeath());
+            Map?.PublicEventManager.OnDeath(this);
 
             foreach (ISpell spell in pendingSpells)
             {

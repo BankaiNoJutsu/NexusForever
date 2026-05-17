@@ -2,7 +2,6 @@
 
 namespace NexusForever.Network.World.Message.Model.Cinematic
 {
-    // TODO:: confirm
     [Message(GameMessageOpcode.ServerCinematicAdvanceToEnding)] 
     public class ServerCinematicAdvanceToEnding : IWritable
     {

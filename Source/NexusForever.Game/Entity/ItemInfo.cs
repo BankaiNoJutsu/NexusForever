@@ -132,9 +132,13 @@ namespace NexusForever.Game.Entity
                     case ItemStatType.Standard:
                         builder.Budgets.Add((Property)StatEntry.ItemStatData[i], budget);
                         break;
-                    // TODO: the data value is the RandomStatGroupId, choose a random stat?
                     case ItemStatType.RandomStatGroup:
+                    {
+                        if (TryGetRandomStatGroupProperty(StatEntry.ItemStatData[i], out Property property))
+                            builder.Budgets.Add(property, budget);
+
                         break;
+                    }
                     case ItemStatType.Unknown4:
                     {
                         // this one is weird...
@@ -144,6 +148,24 @@ namespace NexusForever.Game.Entity
                     }
                 }
             }
+        }
+
+        private static bool TryGetRandomStatGroupProperty(uint randomStatGroupId, out Property property)
+        {
+            ItemRandomStatEntry entry = GameTableManager.Instance.ItemRandomStat.Entries
+                .Where(e => e.ItemRandomStatGroupId == randomStatGroupId)
+                .OrderByDescending(e => e.Weight)
+                .ThenBy(e => e.Id)
+                .FirstOrDefault(e => (ItemStatType)e.ItemStatTypeEnum == ItemStatType.Standard);
+
+            if (entry == null)
+            {
+                property = default;
+                return false;
+            }
+
+            property = (Property)entry.ItemStatData;
+            return true;
         }
 
         private void CalculatePropertyValues(ItemInfoPropertyBuilder builder)
@@ -169,10 +191,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         private void CalculateImplicitProperties(ItemInfoPropertyBuilder builder)
         {
-            if (Entry.ItemImbuementId != 0u)
-            {
-                // TODO
-            }
+            // Item imbuements unlock rewards through their quest chain rather than adding baseline item stats here.
 
             if (SlotEntry != null && Entry.PowerLevel != 0u)
             {
@@ -186,10 +205,7 @@ namespace NexusForever.Game.Entity
                 }
             }
 
-            if (FamilyEntry.Id == 33u)
-            {
-                // TODO: runes
-            }
+            // Installed rune properties are per-item-instance data and are not part of the static ItemInfo budget.
         }
 
         /// <summary>
@@ -253,9 +269,6 @@ namespace NexusForever.Game.Entity
             float value = CalculatePrimaryBaseValue(formulaEntry);
 
             float support = Entry.SupportPowerPercentage;
-            // TODO: research more
-            /*if (dword60)
-                support = MathF.Abs(support) * (((dword60_6 * (1.0f / 255.0f)) * 2.0f) - 1.0f);*/
 
             GameFormulaEntry formulaEntry2 = GameTableManager.Instance.GameFormula.GetEntry(1265);
 
@@ -332,8 +345,8 @@ namespace NexusForever.Game.Entity
                     return (ushort)fallbackVisual.ItemDisplayId;
             }
 
-            // TODO: research this...
-            throw new NotImplementedException();
+            ItemDisplaySourceEntryEntry firstVisual = entries.FirstOrDefault();
+            return (ushort)(firstVisual?.ItemDisplayId ?? 0u);
         }
 
         /// <summary>
@@ -443,8 +456,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public bool IsStackable()
         {
-            // TODO: Figure out other non-stackable items, which have MaxStackCount > 1
-            return !IsEquippableBag() && Entry.MaxStackCount > 1u;
+            return !IsEquippable() && !IsEquippableBag() && Entry.MaxStackCount > 1u;
         }
 
         /// <summary>
@@ -454,6 +466,14 @@ namespace NexusForever.Game.Entity
         {
             // client checks this flag to show bag tutorial, should be enough
             return (FamilyEntry.Flags & SecondaryItemFlags.Bag) != 0;
+        }
+
+        /// <summary>
+        /// Returns if the item should become soulbound when equipped.
+        /// </summary>
+        public bool CanBindOnEquip()
+        {
+            return (Entry.BindFlags & ItemBindFlags.BindOnEquip) != 0;
         }
     }
 }

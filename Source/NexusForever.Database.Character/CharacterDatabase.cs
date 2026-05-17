@@ -209,6 +209,26 @@ namespace NexusForever.Database.Character
                 .ToList();
         }
 
+        public HashSet<ushort> GetCompletedCharacterAchievementIds()
+        {
+            using var context = new CharacterContext(config);
+            return context.CharacterAchievement
+                .Where(a => a.DateCompleted != null)
+                .Select(a => a.AchievementId)
+                .Distinct()
+                .ToHashSet();
+        }
+
+        public HashSet<ushort> GetCompletedGuildAchievementIds()
+        {
+            using var context = new CharacterContext(config);
+            return context.GuildAchievement
+                .Where(a => a.DateCompleted != null)
+                .Select(a => a.AchievementId)
+                .Distinct()
+                .ToHashSet();
+        }
+
         public List<ChatChannelModel> GetChatChannels()
         {
             using var context = new CharacterContext(config);

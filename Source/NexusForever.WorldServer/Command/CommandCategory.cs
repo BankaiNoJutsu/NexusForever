@@ -2,8 +2,10 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.RBAC;
+using NexusForever.Shared;
 using NexusForever.WorldServer.Command.Context;
 using NexusForever.WorldServer.Command.Static;
 
@@ -65,7 +67,7 @@ namespace NexusForever.WorldServer.Command
                 if (attribute == null)
                     continue;
 
-                CommandCategory category = (CommandCategory)Activator.CreateInstance(type);
+                CommandCategory category = (CommandCategory)ActivatorUtilities.CreateInstance(LegacyServiceProvider.Provider, type);
                 category.Build(attribute);
 
                 foreach (string command in attribute.Commands)

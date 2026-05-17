@@ -51,6 +51,20 @@ namespace NexusForever.Script.Template
         }
 
         /// <summary>
+        /// Invoked when a <see cref="IUnitEntity"/> dies on the map the public event is on.
+        /// </summary>
+        void OnDeath(IUnitEntity entity)
+        {
+        }
+
+        /// <summary>
+        /// Invoked when a <see cref="IPlayer"/> resurrects on the map the public event is on.
+        /// </summary>
+        void OnResurrection(IPlayer player)
+        {
+        }
+
+        /// <summary>
         /// Invoked when a PvP match <see cref="PvpGameState"/> changes on the same map the public event is on. 
         /// </summary>
         /// <remarks>

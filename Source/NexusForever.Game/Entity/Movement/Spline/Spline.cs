@@ -38,8 +38,6 @@ namespace NexusForever.Game.Entity.Movement.Spline
 
         public float Unknown30 { get; private set; }
 
-        private Vector3? formation;
-
         #region Dependency Injection
 
         private readonly ISplineTypeFactory splineTypeFactory;
@@ -219,17 +217,7 @@ namespace NexusForever.Game.Entity.Movement.Spline
             CalculatePoints(result.Offset, out ISplinePoint point, out int index, out ISplinePoint point2, out int index2);
 
             float t = CalculateT(result.Offset, point, index, point2, index2);
-            Vector3 position = Type.GetInterpolatedPosition(point, Points[point.Index + 1], t);
-            if (formation != null)
-                return GetFormationPosition(position);
-
-            return position;
-        }
-
-        private Vector3 GetFormationPosition(Vector3 position)
-        {
-            // TODO
-            return position;
+            return Type.GetInterpolatedPosition(point, Points[point.Index + 1], t);
         }
 
         /// <summary>

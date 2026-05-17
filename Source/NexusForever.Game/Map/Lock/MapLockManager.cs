@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Matching.Match;
@@ -12,6 +13,7 @@ namespace NexusForever.Game.Map.Lock
     public class MapLockManager : Singleton<IMapLockManager>, IMapLockManager
     {
         private readonly ConcurrentDictionary<Identity, IMapLockCollection> soloLocks = [];
+        private readonly ConcurrentDictionary<ulong, IMapLockCollection> groupLocks = [];
         private readonly ConcurrentDictionary<Guid, IMapLockCollection> matchLocks = [];
         private readonly ConcurrentDictionary<ulong, IResidenceMapLock> residenceLocks = [];
 
@@ -32,7 +34,7 @@ namespace NexusForever.Game.Map.Lock
 
         public void Initialise()
         {
-            // TODO: load locks from database
+            // Map locks are runtime-only until a character database schema exists for persisted lockouts.
         }
 
         /// <summary>
@@ -47,6 +49,28 @@ namespace NexusForever.Game.Map.Lock
             {
                 mapLockCollection = mapLockCollectionFactory.Resolve();
                 soloLocks[identity] = mapLockCollection;
+            }
+
+            mapLockCollection.AddMapLock(mapLock);
+            return mapLock;
+        }
+
+        /// <summary>
+        /// Create a new group <see cref="IMapLock"/> for supplied group and world id.
+        /// </summary>
+        public IMapLock CreateGroupLock(GroupLootState group, uint worldId)
+        {
+            if (group == null || group.GroupId == 0ul)
+                throw new ArgumentException("A valid group is required to create a group map lock.", nameof(group));
+
+            IMapLock mapLock = CreateLock<IMapLock>(MapLockType.Group, worldId);
+            foreach (GroupLootMember member in group.Members)
+                mapLock.AddCharacer(member.Identity);
+
+            if (!groupLocks.TryGetValue(group.GroupId, out IMapLockCollection mapLockCollection))
+            {
+                mapLockCollection = mapLockCollectionFactory.Resolve();
+                groupLocks[group.GroupId] = mapLockCollection;
             }
 
             mapLockCollection.AddMapLock(mapLock);
@@ -87,6 +111,16 @@ namespace NexusForever.Game.Map.Lock
         public IMapLock GetSoloLock(Identity identity, uint worldId)
         {
             return soloLocks.TryGetValue(identity, out IMapLockCollection mapLockCollection)
+                ? mapLockCollection.GetMapLock<IMapLock>(worldId)
+                : null;
+        }
+
+        /// <summary>
+        /// Return <see cref="IMapLock"/> for supplied group id and world id.
+        /// </summary>
+        public IMapLock GetGroupLock(ulong groupId, uint worldId)
+        {
+            return groupLocks.TryGetValue(groupId, out IMapLockCollection mapLockCollection)
                 ? mapLockCollection.GetMapLock<IMapLock>(worldId)
                 : null;
         }

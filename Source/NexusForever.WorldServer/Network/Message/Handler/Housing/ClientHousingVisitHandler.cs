@@ -9,6 +9,7 @@ using NexusForever.Game.Static.Housing;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 {
@@ -57,8 +58,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
             if (residence == null)
             {
-                //session.Player.SendGenericError();
-                // TODO: show error
+                SendHousingVisitResult(session, housingVisit, HousingResult.Visit_Failed);
                 return;
             }
 
@@ -66,13 +66,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
             {
                 case ResidencePrivacyLevel.Private:
                 {
-                    // TODO: show error
+                    SendHousingVisitResult(session, housingVisit, HousingResult.Visit_Private);
                     return;
                 }
-                // TODO: check if player is either a neighbour or roommate
                 case ResidencePrivacyLevel.NeighborsOnly:
-                    break;
+                    SendHousingVisitResult(session, housingVisit, HousingResult.InvalidPermissions);
+                    return;
                 case ResidencePrivacyLevel.RoommatesOnly:
+                    if (!residence.CanModifyResidence(session.Player))
+                    {
+                        SendHousingVisitResult(session, housingVisit, HousingResult.InvalidPermissions);
+                        return;
+                    }
                     break;
             }
 
@@ -89,6 +94,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                     MapLock = mapLock
                 },
                 Position = entrance.Position
+            });
+        }
+
+        private static void SendHousingVisitResult(IWorldSession session, ClientHousingVisit housingVisit, HousingResult result)
+        {
+            session.EnqueueMessageEncrypted(new ServerHousingResult
+            {
+                RealmId     = housingVisit.TargetResidence.RealmId,
+                ResidenceId = housingVisit.TargetResidence.ResidenceId,
+                PlayerName  = housingVisit.TargetResidenceName ?? housingVisit.TargetCommunityName ?? string.Empty,
+                Result      = result
             });
         }
     }

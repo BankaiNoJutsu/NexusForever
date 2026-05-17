@@ -193,6 +193,22 @@ namespace NexusForever.Game.PublicEvent
         }
 
         /// <summary>
+        /// Invoked when a <see cref="IUnitEntity"/> dies on owner <see cref="IBaseMap"/>.
+        /// </summary>
+        public void OnDeath(IUnitEntity entity)
+        {
+            InvokeScriptCollection<IPublicEventScript>(s => s.OnDeath(entity));
+        }
+
+        /// <summary>
+        /// Invoked when a <see cref="IPlayer"/> resurrects on owner <see cref="IBaseMap"/>.
+        /// </summary>
+        public void OnResurrection(IPlayer player)
+        {
+            InvokeScriptCollection<IPublicEventScript>(s => s.OnResurrection(player));
+        }
+
+        /// <summary>
         /// Update any objective for any public event <see cref="IPlayer"/> is part of that meets the supplied <see cref="PublicEventObjectiveType"/>, objectId and count.
         /// </summary>
         public void UpdateObjective(IPlayer player, PublicEventObjectiveType type, uint objectId, int count)

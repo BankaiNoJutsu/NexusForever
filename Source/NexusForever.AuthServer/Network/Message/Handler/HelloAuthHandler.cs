@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using NexusForever.Cryptography;
 using NexusForever.Database;
@@ -79,8 +80,7 @@ namespace NexusForever.AuthServer.Network.Message.Handler
                     return;
                 }
 
-                // TODO: might want to make this smarter in the future, eg: select a server the user has characters on
-                IServerInfo server = serverManager.Servers.FirstOrDefault(s => s.IsOnline);
+                IServerInfo server = SelectInitialRealm(account);
                 if (server == null)
                 {
                     SendServerAuthDenied(NpLoginResult.NoRealmsAvailableAtThisTime);
@@ -116,6 +116,21 @@ namespace NexusForever.AuthServer.Network.Message.Handler
                     });
                 }));
             }));
+        }
+
+        private IServerInfo SelectInitialRealm(AccountModel account)
+        {
+            IEnumerable<IServerInfo> onlineServers = serverManager.Servers
+                .Where(s => s.IsOnline)
+                .OrderBy(s => s.Model.Id);
+
+            HashSet<ushort> targetedRealms = account.AccountInventory
+                .Where(i => i.TargetRealmId != 0)
+                .Select(i => i.TargetRealmId)
+                .ToHashSet();
+
+            return onlineServers.FirstOrDefault(s => targetedRealms.Contains(s.Model.Id))
+                ?? onlineServers.FirstOrDefault();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
@@ -8,6 +9,7 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Game;
 using NLog;
 
@@ -162,6 +164,10 @@ namespace NexusForever.Game.Entity
                     if (!CanSpellCasterLocation())
                         return;
                     break;
+                case ResurrectionType.Holocrypt:
+                    if (!CanHolocrypt())
+                        return;
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -207,6 +213,11 @@ namespace NexusForever.Game.Entity
         private bool CanSpellCasterLocation()
         {
             return hasCasterResurrectionRequest;
+        }
+
+        private bool CanHolocrypt()
+        {
+            return ResurrectionType.HasFlag(ResurrectionType.Holocrypt);
         }
 
         private uint GetWakeHereCooldownMs()
@@ -270,8 +281,7 @@ namespace NexusForever.Game.Entity
 
         private uint GetCostForResurrection()
         {
-            // TODO: Calculate credit cost correctly. 0 for now.
-            return 0u;
+            return SharedConfiguration.Instance.Get<WorldConfig>()?.WakeHereCreditCost ?? 0u;
         }
 
         private uint GetServiceTokenCostForResurrection()

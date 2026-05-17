@@ -4,6 +4,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Achievement;
@@ -177,14 +178,17 @@ namespace NexusForever.Game.Achievement
         /// </summary>
         private bool CanUpdateAchievement(IPlayer player, AchievementEntry entry, uint objectId, uint objectIdAlt)
         {
-            // TODO: should the server also check PrerequisiteId?
             if (entry.PrerequisiteIdServer != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteIdServer))
                 return false;
             
             if (entry.PrerequisiteId != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteId))
                 return false;
 
-            // TODO: research PrerequisiteIdObjective and PrerequisiteIdObjectiveAlt
+            if (entry.PrerequisiteIdObjective != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteIdObjective))
+                return false;
+
+            if (entry.PrerequisiteIdObjectiveAlt != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteIdObjectiveAlt))
+                return false;
 
             if (entry.ObjectId != 0u && entry.ObjectId != objectId)
                 return false;
@@ -210,7 +214,6 @@ namespace NexusForever.Game.Achievement
             if (entry.ObjectIdAlt != 0u && entry.ObjectIdAlt != objectIdAlt)
                 return false;
 
-            // TODO: Research this case where both values are 0. It's assumed the checklist is checked by ID by a script.
             if (entry.ObjectId == 0u && entry.ObjectIdAlt == 0u)
                 return false;
 
@@ -221,6 +224,17 @@ namespace NexusForever.Game.Achievement
         {
             achievement.DateCompleted = DateTime.UtcNow;
             AchievementPoints += GetAchievementPoints(achievement.Info);
+        }
+
+        protected void BroadcastRealmFirstAchievement(IAchievement achievement, bool isGuildAchievement, string name)
+        {
+            foreach (IPlayer player in PlayerManager.Instance)
+                player.Session?.EnqueueMessageEncrypted(new ServerRealmFirstAchievement
+                {
+                    AchievementId      = achievement.Id,
+                    IsGuildAchievement = isGuildAchievement,
+                    Name               = name
+                });
         }
 
         /// <summary>

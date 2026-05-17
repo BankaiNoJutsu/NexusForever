@@ -52,10 +52,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
                 currencyChange.Add((currencyId, currencyAmount));
             }
 
+            IItem soldItem = session.Player.Inventory.ItemDelete(vendorSell.ItemLocation, vendorSell.Quantity, ItemUpdateReason.Vendor);
+            if (soldItem == null)
+                return;
+
             foreach ((CurrencyType currencyTypeId, ulong currencyAmount) in currencyChange)
                 session.Player.CurrencyManager.CurrencyAddAmount(currencyTypeId, currencyAmount);
 
-            IItem soldItem = session.Player.Inventory.ItemDelete(vendorSell.ItemLocation, vendorSell.Quantity, ItemUpdateReason.Vendor);
             buybackManager.AddItem(session.Player, soldItem, vendorSell.Quantity, currencyChange);
         }
     }

@@ -46,19 +46,25 @@ namespace NexusForever.Script.Instance.Arena.TheSlaughterdome
         {
             base.OnPvpMatchFinish(matchWinner, matchEndReason);
 
-            // TODO: this is a hack, really need local teleport implemented
-            /*foreach (IMatchTeam matchTeam in map.Match.GetTeams())
+            if (map.Match == null)
+                return;
+
+            foreach (IMatchTeam matchTeam in map.Match.GetTeams())
             {
-                var entrance = matchingDataManager.GetMapEntrance(map.Entry.Id, (byte)matchTeam.Team);
+                IMapEntrance entrance = matchingDataManager.GetMapEntrance(map.Entry.Id, (byte)matchTeam.Team);
+                if (entrance == null)
+                    continue;
 
                 foreach (IMatchTeamMember matchTeamMember in matchTeam.GetMembers())
                 {
-                    var player = playerManager.GetPlayer(matchTeamMember.CharacterId);
-                    player.SetControl(null);
-                    player.MovementManager.SetPosition(entrance.Position, false);
-                    player.MovementManager.SetRotation(entrance.Rotation, false);
+                    IPlayer player = playerManager.GetPlayer(matchTeamMember.Identity);
+                    if (player == null || player.Map != map)
+                        continue;
+
+                    player.Rotation = entrance.Rotation;
+                    player.TeleportToLocal(entrance.Position, false);
                 }
-            }*/
+            }
         }
     }
 }

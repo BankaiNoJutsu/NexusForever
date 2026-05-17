@@ -9,7 +9,6 @@ using NetworkBinding = NexusForever.Network.World.Message.Model.Shared.Binding;
 
 namespace NexusForever.Game.Option
 {
-    // TODO: split this further to seperate character and account keybind specific methods
     public class Keybinding : IKeybinding
     {
         [Flags]

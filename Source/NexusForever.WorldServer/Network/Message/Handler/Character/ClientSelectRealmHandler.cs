@@ -41,10 +41,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
             if (server.Model.Id == RealmContext.Instance.RealmId)
                 return;
 
-            // TODO: Return proper error packet if server is not online
             if (!server.IsOnline)
             {
-                session.EnqueueMessageEncrypted(new ServerForceKick());
+                session.EnqueueMessageEncrypted(new ServerRealmTransferResult
+                {
+                    Result = CharacterModifyResult.RealmTransferFailed_ServerDown
+                });
                 return;
             }
 

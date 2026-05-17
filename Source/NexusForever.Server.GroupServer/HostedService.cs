@@ -42,6 +42,7 @@ namespace NexusForever.Server.GroupServer
 
             await _bus.Subscribe<PlayerLoggedInMessage>();
             await _bus.Subscribe<PlayerLoggedOutMessage>();
+            await _bus.Subscribe<PlayerAbsorptionUpdatedMessage>();
             await _bus.Subscribe<PlayerPositionUpdatedMessage>();
             await _bus.Subscribe<PlayerPropertyUpdatedMessage>();
             await _bus.Subscribe<PlayerStatUpdatedMessage>();

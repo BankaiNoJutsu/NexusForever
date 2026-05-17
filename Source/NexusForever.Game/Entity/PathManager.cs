@@ -47,7 +47,6 @@ namespace NexusForever.Game.Entity
                         SetPathEntry(path, PathCreate(path));
             }
 
-            // TODO: Check for missing level up rewards.
         }
 
         /// <summary>
@@ -149,7 +148,6 @@ namespace NexusForever.Game.Entity
                 SendServerPathUpdateXp(entry.TotalXp);
             }
 
-            // TODO: Reward Elder XP after achieving rank 30
         }
 
         /// <summary>
@@ -219,7 +217,6 @@ namespace NexusForever.Game.Entity
         /// <param name="level">The level to grant the reward for</param>
         private void GrantLevelUpReward(Path path, uint level)
         {
-            // TODO: look at this in more in depth, might be a better way to handle
             uint baseRewardObjectId = (uint)path * MaxPathLevel + 7u; // 7 is the base offset
             uint pathRewardObjectId = baseRewardObjectId + Math.Clamp(level - 2, 0, 29); // level - 2 is used because the objectIDs start at level 2 and a -2 offset was needed
 
@@ -255,7 +252,6 @@ namespace NexusForever.Game.Entity
             if (pathRewardEntry == null)
                 throw new ArgumentNullException();
 
-            // TODO: Check if there's bag space. Otherwise queue? Or is there an overflow inventory?
             if (pathRewardEntry.Item2Id > 0)
                 player.Inventory.ItemCreate(InventoryLocation.Inventory, pathRewardEntry.Item2Id, 1, ItemUpdateReason.PathReward);
 
@@ -303,7 +299,7 @@ namespace NexusForever.Game.Entity
                 ActivePath                  = player.Path,
                 PathProgress                = paths.Values.Select(p => p.TotalXp).ToArray(),
                 PathUnlockedMask            = GetPathUnlockedMask(),
-                TimeSinceLastActivateInDays = GetCooldownTime() // TODO: Need to figure out timestamp calculations necessary for this value to update the client appropriately
+                TimeSinceLastActivateInDays = GetCooldownTime()
             });
         }
 

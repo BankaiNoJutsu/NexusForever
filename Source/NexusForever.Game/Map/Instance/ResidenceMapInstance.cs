@@ -6,10 +6,13 @@ using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
+using NexusForever.Game.Map;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Housing;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.IO.Map;
 using NexusForever.Network;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Abilities;
@@ -23,6 +26,7 @@ namespace NexusForever.Game.Map.Instance
     public class ResidenceMapInstance : MapInstance, IResidenceMapInstance
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+        private static readonly Vector3 ResidencePlotWorldOrigin = new(1472f, 0f, 1440f);
 
         // housing maps have unlimited vision range.
         public override float? VisionRange { get; protected set; } = null;
@@ -496,13 +500,24 @@ namespace NexusForever.Game.Map.Instance
 
             if (entry.CostCurrencyTypeId != 0u && entry.Cost != 0u)
             {
-                /*if (!player.CurrencyManager.CanAfford((byte)entry.CostCurrencyTypeId, entry.Cost))
+                if (entry.CostCurrencyTypeId > int.MaxValue
+                    || !Enum.IsDefined(typeof(CurrencyType), (int)entry.CostCurrencyTypeId))
+                    throw new InvalidPacketValueException();
+
+                CurrencyType currencyType = (CurrencyType)entry.CostCurrencyTypeId;
+                if (!player.CurrencyManager.CanAfford(currencyType, entry.Cost))
                 {
-                    // TODO: show error
+                    player.Session.EnqueueMessageEncrypted(new ServerHousingResult
+                    {
+                        RealmId     = realmContext.RealmId,
+                        ResidenceId = residence.Id,
+                        PlayerName  = player.Name,
+                        Result      = HousingResult.Decor_CannotAfford
+                    });
                     return;
                 }
 
-                player.CurrencyManager.CurrencySubtractAmount((byte)entry.CostCurrencyTypeId, entry.Cost);*/
+                player.CurrencyManager.CurrencySubtractAmount(currencyType, entry.Cost);
             }
 
             IDecor decor = residence.DecorCreate(entry);
@@ -550,7 +565,7 @@ namespace NexusForever.Game.Map.Instance
 
             HousingResult GetResult()
             {
-                if (!IsValidPlotForPosition(update))
+                if (!IsValidPlotForPosition(residence, update))
                     return HousingResult.Decor_InvalidPosition;
 
                 return HousingResult.Success;
@@ -580,7 +595,7 @@ namespace NexusForever.Game.Map.Instance
                 {
                     if (decor.Entry.Creature2IdActiveProp != 0u)
                     {
-                        // TODO: used for decor that have an associated entity
+                        log.Debug($"Decor {decor.DecorId} uses active prop creature {decor.Entry.Creature2IdActiveProp}; active prop spawning is deferred until decor entity backing is available.");
                     }
 
                     // crate->world
@@ -671,30 +686,40 @@ namespace NexusForever.Game.Map.Instance
         /// <summary>
         /// Used to confirm the position and PlotIndex are valid together when placing Decor
         /// </summary>
-        private bool IsValidPlotForPosition(DecorInfo update)
+        private bool IsValidPlotForPosition(IResidence residence, DecorInfo update)
         {
-            return true;
-
-            /*if (update.PlotIndex == int.MaxValue)
+            if (update.DecorType == DecorType.Crate || update.PlotIndex == int.MaxValue)
                 return true;
 
-            WorldSocketEntry worldSocketEntry = GameTableManager.Instance.WorldSocket.GetEntry(residenceOld.GetPlot((byte)update.PlotIndex).PlotEntry.WorldSocketId);
+            if (update.PlotIndex > byte.MaxValue)
+                return false;
 
-            // TODO: Calculate position based on individual maps on Community & Warplot residences
-            var worldPosition = new Vector3(1472f + update.Position.X, update.Position.Y, 1440f + update.Position.Z);
+            IPlot plot = residence.GetPlot((byte)update.PlotIndex);
+            if (plot?.PlotInfoEntry == null)
+                return false;
+
+            WorldSocketEntry worldSocketEntry = gameTableManager.WorldSocket.GetEntry(plot.PlotInfoEntry.WorldSocketId);
+            if (worldSocketEntry?.BoundIds == null || worldSocketEntry.BoundIds.All(bound => bound == 0u))
+                return true;
+
+            Vector3 worldPosition = ResidencePlotWorldOrigin + update.Position;
 
             (uint gridX, uint gridZ) = MapGrid.GetGridCoord(worldPosition);
             (uint localCellX, uint localCellZ) = MapCell.GetCellCoord(worldPosition);
             (uint globalCellX, uint globalCellZ) = (gridX * MapDefines.GridCellCount + localCellX, gridZ * MapDefines.GridCellCount + localCellZ);
 
-            // TODO: Investigate need for offset.
-            // Offset added due to calculation being +/- 1 sometimes when placing very close to plots. They were valid placements in the client, though.
-            uint maxBound = worldSocketEntry.BoundIds.Max() + 1;
-            uint minBound = worldSocketEntry.BoundIds.Min() - 1;
+            uint maxBound = worldSocketEntry.BoundIds.Max() + 1u;
+            uint minBound = worldSocketEntry.BoundIds
+                .Where(bound => bound != 0u)
+                .DefaultIfEmpty(1u)
+                .Min() - 1u;
 
             log.Debug($"IsValidPlotForPosition - PlotIndex: {update.PlotIndex}, Range: {minBound}-{maxBound}, Coords: {globalCellX}, {globalCellZ}");
 
-            return !(globalCellX >= minBound && globalCellX <= maxBound && globalCellZ >= minBound && globalCellZ <= maxBound);*/
+            return globalCellX >= minBound
+                && globalCellX <= maxBound
+                && globalCellZ >= minBound
+                && globalCellZ <= maxBound;
         }
 
         /// <summary>

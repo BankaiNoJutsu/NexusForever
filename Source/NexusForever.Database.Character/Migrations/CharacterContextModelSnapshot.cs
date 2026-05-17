@@ -1856,6 +1856,12 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnType("bigint(20) unsigned")
                         .HasColumnName("ownerId");
 
+                    b.Property<bool>("Soulbound")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("soulbound");
+
                     b.Property<uint>("StackCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10) unsigned")

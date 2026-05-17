@@ -12,6 +12,37 @@ namespace NexusForever.Game.Guild
 {
     public partial class GuildBase
     {
+        private const GuildRankPermission ValidRankPermissionMask =
+            GuildRankPermission.ReserveCommunityPlot
+            | GuildRankPermission.CreateAndRemoveRank
+            | GuildRankPermission.EditLowerRankPermissions
+            | GuildRankPermission.SpendInfluence
+            | GuildRankPermission.RenameRank
+            | GuildRankPermission.Vote
+            | GuildRankPermission.ChangeMemberRank
+            | GuildRankPermission.Invite
+            | GuildRankPermission.Kick
+            | GuildRankPermission.EditGuildHolomark
+            | GuildRankPermission.MemberChat
+            | GuildRankPermission.OfficerChat
+            | GuildRankPermission.BankTabRename
+            | GuildRankPermission.RemoveCommunityPlotReservation
+            | GuildRankPermission.ActivateWarPlotPlugs
+            | GuildRankPermission.AddWarPlotDeployables
+            | GuildRankPermission.AddWarPlotPlugs
+            | GuildRankPermission.RemoveWarPlotPlugs
+            | GuildRankPermission.RepairWarPlotPlugsOutOfMatch
+            | GuildRankPermission.RepairWarPlotPlugsInMatch
+            | GuildRankPermission.InitiateWarPlotSurrenderVotes
+            | GuildRankPermission.QueueTheWarPlot
+            | GuildRankPermission.UseWarPlotVehicles
+            | GuildRankPermission.KickPlayersfromWarPlot
+            | GuildRankPermission.MessageOfTheDay
+            | GuildRankPermission.DeleteCommunityDecor
+            | GuildRankPermission.BankTabLog
+            | GuildRankPermission.DecorateCommunity
+            | GuildRankPermission.ChangeCommunityRemodelOptions;
+
         [GuildOperationHandler(GuildOperation.Disband)]
         private IGuildResultInfo GuildOperationDisband(IGuildMember member, IPlayer player, ClientGuildOperation operation)
         {
@@ -217,7 +248,8 @@ namespace NexusForever.Game.Guild
                     || !TextFilterManager.Instance.IsTextValid(operation.TextValue, UserText.GuildRankName))
                     return new GuildResultInfo(GuildResult.InvalidRankName, referenceString: operation.TextValue);
 
-                // TODO: check if mask options are valid for this guild type
+                if (!IsRankPermissionMaskValid(operation.Data.UInt32Data))
+                    return new GuildResultInfo(GuildResult.InvalidRank, Identity, operation.TextValue, operation.Rank);
 
                 return new GuildResultInfo(GuildResult.Success);
             }
@@ -225,7 +257,7 @@ namespace NexusForever.Game.Guild
             IGuildResultInfo info = GetResult();
             if (info.Result == GuildResult.Success)
             {
-                AddRank((byte)operation.Rank, operation.TextValue, (GuildRankPermission)operation.Data.UInt32Data);
+                AddRank((byte)operation.Rank, operation.TextValue, NormaliseRankPermissions(operation.Data.UInt32Data));
                 AnnounceGuildRankChange();
                 AnnounceGuildResult(GuildResult.RankCreated, operation.Rank, operation.TextValue);
             }
@@ -319,7 +351,8 @@ namespace NexusForever.Game.Guild
                 if (rank == null)
                     return new GuildResultInfo(GuildResult.InvalidRank, Identity, operation.TextValue, operation.Rank);
                 
-                // TODO: check if mask options are valid for this guild type
+                if (!IsRankPermissionMaskValid(operation.Data.UInt32Data))
+                    return new GuildResultInfo(GuildResult.InvalidRank, Identity, operation.TextValue, operation.Rank);
 
                 if (member.Rank.Index >= operation.Rank)
                     return new GuildResultInfo(GuildResult.CanOnlyModifyLowerRanks);
@@ -330,9 +363,7 @@ namespace NexusForever.Game.Guild
             IGuildResultInfo info = GetResult();
             if (info.Result == GuildResult.Success)
             {
-                // TODO: research why disabled needs to be removed
-                var permissions = (GuildRankPermission)operation.Data.UInt32Data & ~GuildRankPermission.Disabled;
-                rank.Permissions = permissions;
+                rank.Permissions = NormaliseRankPermissions(operation.Data.UInt32Data);
 
                 AnnounceGuildRankChange();
                 AnnounceGuildResult(GuildResult.RankModified, operation.Rank, operation.TextValue);
@@ -351,6 +382,17 @@ namespace NexusForever.Game.Guild
         private void GuildOperationSetNameplateAffiliation(IGuildMember member, IPlayer player, ClientGuildOperation operation)
         {
             player.GuildManager.UpdateGuildAffiliation(Id);
+        }
+
+        private static bool IsRankPermissionMaskValid(uint permissionMask)
+        {
+            GuildRankPermission permissions = NormaliseRankPermissions(permissionMask);
+            return (permissions & ~ValidRankPermissionMask) == GuildRankPermission.None;
+        }
+
+        private static GuildRankPermission NormaliseRankPermissions(uint permissionMask)
+        {
+            return (GuildRankPermission)permissionMask & ~GuildRankPermission.Disabled;
         }
     }
 }

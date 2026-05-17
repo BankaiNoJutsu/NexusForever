@@ -97,10 +97,11 @@ namespace NexusForever.Game.Entity
 
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
-        // TODO: move this to the config file
-        private const double SaveDuration = 60d;
+        private static double SaveDuration => SharedConfiguration.Instance.Get<WorldConfig>()?.PlayerSaveIntervalSeconds ?? 60d;
 
         private const ushort TutorialWorldId = 3460;
+        private const float DefaultInteractionMaxRange = 5f;
+        private const uint ChairBusyEffectId = uint.MaxValue;
         private const ushort ExileMovementQuestId = 10513;
         private const ushort DominionMovementQuestId = 10521;
         private const ushort ExileCombatQuestId = 10518;
@@ -328,7 +329,22 @@ namespace NexusForever.Game.Entity
         public IAppearanceManager AppearanceManager { get; private set; }
         public IResurrectionManager ResurrectionManager { get; private set; }
 
-        public IVendorInfo SelectedVendorInfo { get; set; } // TODO unset this when too far away from vendor
+        public IVendorInfo SelectedVendorInfo
+        {
+            get => selectedVendorInfo;
+            set
+            {
+                selectedVendorInfo = value;
+                selectedVendorGuid = value == null
+                    ? null
+                    : visibleEntities.Values
+                        .OfType<INonPlayerEntity>()
+                        .FirstOrDefault(v => ReferenceEquals(v.VendorInfo, value))?.Guid;
+            }
+        }
+
+        private IVendorInfo selectedVendorInfo;
+        private uint? selectedVendorGuid;
 
         private bool forceSave;
         private bool saveInProgress;
@@ -340,6 +356,7 @@ namespace NexusForever.Game.Entity
         private Dictionary<Property, Dictionary<ItemSlot, /*value*/float>> itemProperties = new();
 
         private UpdateTimer relocationTimer = new(TimeSpan.FromSeconds(1));
+        private UpdateTimer ghostSpawnTimer;
 
         #region Dependency Injection
 
@@ -473,8 +490,10 @@ namespace NexusForever.Game.Entity
             TitleManager.Update(lastTick);
             SpellManager.Update(lastTick);
             CostumeManager.Update(lastTick);
+            Inventory.Update(lastTick);
             QuestManager.Update(lastTick);
             ResurrectionManager.Update(lastTick);
+            UpdatePendingGhostSpawn(lastTick);
 
             relocationTimer.Update(lastTick);
             if (relocationTimer.HasElapsed)
@@ -805,9 +824,37 @@ namespace NexusForever.Game.Entity
             saveMask |= PlayerSaveMask.Location;
 
             ZoneMapManager.OnRelocate(vector);
+            ClearSelectedVendorIfOutOfRange();
 
             if (!relocationTimer.IsTicking)
                 relocationTimer.Resume();
+        }
+
+        private void ClearSelectedVendorIfOutOfRange()
+        {
+            if (selectedVendorInfo == null)
+                return;
+
+            if (!selectedVendorGuid.HasValue)
+            {
+                SelectedVendorInfo = null;
+                return;
+            }
+
+            INonPlayerEntity vendor = GetVisible<INonPlayerEntity>(selectedVendorGuid.Value);
+            if (vendor == null || !ReferenceEquals(vendor.VendorInfo, selectedVendorInfo))
+            {
+                SelectedVendorInfo = null;
+                return;
+            }
+
+            Creature2Entry creatureEntry = GameTableManager.Instance.Creature2.GetEntry(vendor.CreatureId);
+            float maxRange = creatureEntry?.ActivateSpellMaxRange > 0f
+                ? creatureEntry.ActivateSpellMaxRange
+                : DefaultInteractionMaxRange;
+
+            if (Vector3.DistanceSquared(Position, vendor.Position) > maxRange * maxRange)
+                SelectedVendorInfo = null;
         }
 
         protected override void OnZoneUpdate()
@@ -932,7 +979,6 @@ namespace NexusForever.Game.Entity
 
         public ItemProficiency GetItemProficiencies()
         {
-            //TODO: Store proficiencies in DB table and load from there. Do they change ever after creation? Perhaps something for use on custom servers?
             ClassEntry classEntry = GameTableManager.Instance.Class.GetEntry((ulong)Class);
             return (ItemProficiency)classEntry.StartingItemProficiencies;
         }
@@ -1002,6 +1048,9 @@ namespace NexusForever.Game.Entity
                 return;
 
             base.RemoveVisible(entity);
+
+            if (selectedVendorGuid == entity.Guid)
+                SelectedVendorInfo = null;
 
             if (entity is IWorldEntity && entity != this)
             {
@@ -1463,12 +1512,7 @@ namespace NexusForever.Game.Entity
 
             currentChairGuid = chair.Guid;
 
-            // TODO: Emit interactive state from the entity instance itself
-            chair.EnqueueToVisible(new ServerUnitInUse
-            {
-                UnitId = chair.Guid,
-                InUse  = true
-            }, true);
+            chair.AddBusy(ChairBusyEffectId, 0u, 0u, 0u, Guid, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u);
             EnqueueToVisible(new ServerUnitSetChair
             {
                 UnitId      = Guid,
@@ -1489,12 +1533,7 @@ namespace NexusForever.Game.Entity
             if (currentChair == null)
                 throw new InvalidOperationException();
 
-            // TODO: Emit interactive state from the entity instance itself
-            currentChair.EnqueueToVisible(new ServerUnitInUse
-            {
-                UnitId = currentChair.Guid,
-                InUse  = false
-            }, true);
+            currentChair.RemoveBusy(ChairBusyEffectId);
             EnqueueToVisible(new ServerUnitSetChair
             {
                 UnitId      = Guid,
@@ -2067,8 +2106,6 @@ namespace NexusForever.Game.Entity
             }
 
             RemoveControlUnit();
-
-            // TODO: Remove pets, scanbots
         }
 
         private void RemoveControlUnit()
@@ -2201,7 +2238,6 @@ namespace NexusForever.Game.Entity
 
         protected override ServerEntityVisualUpdate BuildVisualUpdate()
         {
-            // TODO: note sure if this should be handled better? Should Race and Sex be on the world entity?
             // when emitting a visual update, include player specific properties
             ServerEntityVisualUpdate update = base.BuildVisualUpdate();
             update.Race = (byte)Race;
@@ -2281,6 +2317,28 @@ namespace NexusForever.Game.Entity
             }).FireAndForgetAsync();
         }
 
+        protected override void OnAbsorptionUpdate()
+        {
+            PublishAbsorptionUpdate();
+        }
+
+        protected override void OnHealingAbsorptionUpdate()
+        {
+            PublishAbsorptionUpdate();
+        }
+
+        private void PublishAbsorptionUpdate()
+        {
+            messagePublisher.PublishAsync(new PlayerAbsorptionUpdatedMessage
+            {
+                Identity         = Identity.ToInternalIdentity(),
+                Absorption       = CurrentAbsorption,
+                AbsorptionMax    = MaxAbsorption,
+                HealingAbsorb    = CurrentHealingAbsorption,
+                HealingAbsorbMax = MaxHealingAbsorption
+            }).FireAndForgetAsync();
+        }
+
         /// <summary>
         /// Determine if this <see cref="IPlayer"/> can attack supplied <see cref="IUnitEntity"/>.
         /// </summary>
@@ -2338,8 +2396,25 @@ namespace NexusForever.Game.Entity
             Dismount();
             RemoveControlUnit();
 
-            // TODO: Replace with DelayEvent (of 2 seconds) with map updates.
+            ghostSpawnTimer = new UpdateTimer(TimeSpan.FromSeconds(2d));
+        }
 
+        private void UpdatePendingGhostSpawn(double lastTick)
+        {
+            if (ghostSpawnTimer == null)
+                return;
+
+            if (IsAlive || Map == null)
+            {
+                ghostSpawnTimer = null;
+                return;
+            }
+
+            ghostSpawnTimer.Update(lastTick);
+            if (!ghostSpawnTimer.HasElapsed)
+                return;
+
+            ghostSpawnTimer = null;
             IGhostEntity ghost = entityFactory.CreateEntity<IGhostEntity>();
             ghost.Initialise(this);
 
@@ -2356,13 +2431,14 @@ namespace NexusForever.Game.Entity
 
         protected override void RewardKiller(IPlayer player)
         {
-            // TODO: handle PvP rewards
+            // PvP reward currencies are not awarded by the currently modeled duel flow.
         }
 
         protected void OnResurrection(IUnitEntity resurrector)
         {
             DeathState = null;
             RemoveControlUnit();
+            Map?.PublicEventManager.OnResurrection(this);
         }
     }
 }

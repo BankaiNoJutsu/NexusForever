@@ -100,8 +100,7 @@ namespace NexusForever.Game.Spell
                     float telegraphHeight = TelegraphDamage.Param01;
                     float telegraphLength = TelegraphDamage.Param02;
 
-                    // TODO: If target is higher or lower than telegraph height, this should not hit. Confirm functionality.
-                    if (position.Y >= Position.Y + telegraphHeight || position.Y <= Position.Y - telegraphHeight)
+                    if (MathF.Abs(position.Y - Position.Y) - hitRadius > telegraphHeight)
                         return false;
 
                     // Find the points in the local co-ordinate space

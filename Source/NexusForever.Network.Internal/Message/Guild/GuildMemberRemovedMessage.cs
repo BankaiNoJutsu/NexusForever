@@ -3,7 +3,6 @@ using NexusForever.Network.Internal.Message.Shared;
 
 namespace NexusForever.Network.Internal.Message.Guild
 {
-    // TODO: should be updated once GuildServer is implemented
     public class GuildMemberRemovedMessage
     {
         public ulong GuildId { get; set; }

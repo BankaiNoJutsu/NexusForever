@@ -9,8 +9,6 @@ namespace NexusForever.Game.Prerequisite.Check
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            // TODO: Only used in Mount check prerequisites. Its use is unknown.
-
             return true;
         }
     }

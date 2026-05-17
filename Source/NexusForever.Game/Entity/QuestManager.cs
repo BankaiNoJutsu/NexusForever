@@ -38,6 +38,7 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<ushort, IQuest> completedQuests = new();
         private readonly Dictionary<ushort, IQuest> inactiveQuests = new();
         private readonly Dictionary<ushort, IQuest> activeQuests = new();
+        private readonly Dictionary<ushort, uint> pendingSharedQuests = new();
 
         /// <summary>
         /// Create a new <see cref="IQuestManager"/> from existing <see cref="CharacterModel"/> database model.
@@ -271,7 +272,7 @@ namespace NexusForever.Game.Entity
                 if (info.Entry.Id != item.Info.Entry.Quest2IdActivation)
                     throw new QuestException($"Player {player.CharacterId} tried to start quest {info.Entry.Id} from invalid item {item.Info.Entry.Id}!");
 
-                // TODO: consume charge
+                player.Inventory.ItemUse(item);
             }
             else
             {
@@ -287,6 +288,27 @@ namespace NexusForever.Game.Entity
             // it's assumed that a player could never get here without cheating in some way
             if (!MeetsPrerequisites(info))
                 throw new QuestException($"Player {player.CharacterId} tried to start quest {info.Entry.Id} without meeting the prerequisites!");
+
+            QuestAdd(info);
+        }
+
+        private void QuestAddShared(IQuestInfo info, IQuest quest)
+        {
+            if (quest?.State is QuestState.Accepted or QuestState.Achieved)
+                throw new QuestException($"Player {player.CharacterId} tried to accept shared quest {info.Entry.Id} which is already in progress!");
+
+            if (quest?.State == QuestState.Completed)
+            {
+                if (info.Entry.QuestRepeatPeriodEnum == 0u)
+                    throw new QuestException($"Player {player.CharacterId} tried to accept shared quest {info.Entry.Id} which they have already completed!");
+
+                DateTime? resetTime = GetQuest((ushort)info.Entry.Id, GetQuestFlags.Completed).Reset;
+                if (DateTime.UtcNow < resetTime)
+                    throw new QuestException($"Player {player.CharacterId} tried to accept shared quest {info.Entry.Id} which hasn't reset yet!");
+            }
+
+            if (!MeetsPrerequisites(info))
+                throw new QuestException($"Player {player.CharacterId} tried to accept shared quest {info.Entry.Id} without meeting the prerequisites!");
 
             QuestAdd(info);
         }
@@ -326,10 +348,6 @@ namespace NexusForever.Game.Entity
                 if (activeQuests.Count > (entry?.Dataint0 ?? 40u))
                     return false;
             }
-            else
-            {
-                // TODO: contracts use reward property for max slots, RewardProperty.ActiveContractSlots
-            }
 
             return true;
         }
@@ -353,8 +371,6 @@ namespace NexusForever.Game.Entity
                 if (itemId != 0u)
                     player.Inventory.ItemCreate(InventoryLocation.Inventory, itemId, info.Entry.PushedItemCounts[i]);
             }
-
-            // TODO: virtual items
 
             IQuest quest = GetQuest((ushort)info.Entry.Id);
             if (quest == null)
@@ -556,7 +572,6 @@ namespace NexusForever.Game.Entity
 
             if (communicator)
             {
-                // TODO: check if this is complete, client seems to also refer to contact info
                 // for more see QuestTracker:HelperShowQuestCallbackBtn in LUA which contains the logic to show the complete button in the quest tracker
                 if (!quest.Info.IsCommunicatorReceived() && !allowStarterTutorialReceiverlessCompletion)
                     throw new QuestException($"Player {player.CharacterId} tried to complete quest {questId} without communicator message!");
@@ -622,12 +637,8 @@ namespace NexusForever.Game.Entity
                 if (!info.Rewards.TryGetValue(reward, out Quest2RewardEntry entry))
                     throw new QuestException($"Player {player.CharacterId} tried to complete quest {info.Entry.Id} with invalid reward!");
 
-                // TODO: make sure reward is valid for player, some rewards are conditional
-
                 RewardQuest(entry);
             }
-
-            // TODO: fixed rewards
 
             uint experience = info.GetRewardExperience();
             if (experience != 0u)
@@ -724,9 +735,29 @@ namespace NexusForever.Game.Entity
             if (recipient == null)
                 throw new QuestException($"Player {player.CharacterId} tried to share quest {questId} to an invalid player!");
 
-            // TODO
+            recipient.QuestManager.QuestShareReceive(questId, player.Guid);
 
             log.Trace($"Shared quest {questId} with player {recipient.Name}.");
+        }
+
+        /// <summary>
+        /// Receive a shared quest prompt from another <see cref="IPlayer"/>.
+        /// </summary>
+        public void QuestShareReceive(ushort questId, uint sharerUnitId)
+        {
+            IQuestInfo info = GlobalQuestManager.Instance.GetQuestInfo(questId);
+            if (info == null)
+                throw new ArgumentException($"Invalid quest {questId}!");
+
+            if (info.Entry.QuestShareEnum == 0u)
+                throw new QuestException($"Player {player.CharacterId} received unshareable quest {questId}!");
+
+            pendingSharedQuests[questId] = sharerUnitId;
+            player.Session.EnqueueMessageEncrypted(new ServerQuestShared
+            {
+                QuestId       = questId,
+                SharerUnitId = sharerUnitId
+            });
         }
 
         /// <summary>
@@ -734,7 +765,17 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void QuestShareResult(ushort questId, bool result)
         {
-            // TODO
+            if (!pendingSharedQuests.Remove(questId))
+                throw new QuestException($"Player {player.CharacterId} tried to respond to quest share {questId} without a pending share!");
+
+            if (!result)
+                return;
+
+            IQuestInfo info = GlobalQuestManager.Instance.GetQuestInfo(questId);
+            if (info == null)
+                throw new ArgumentException($"Invalid quest {questId}!");
+
+            QuestAddShared(info, GetQuest(questId, GetQuestFlags.All));
         }
 
         /// <summary>

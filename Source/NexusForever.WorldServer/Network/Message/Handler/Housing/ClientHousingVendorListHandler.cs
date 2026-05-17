@@ -26,16 +26,38 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                 ListType = 0
             };
 
-            // TODO: this isn't entirely correct
             foreach (HousingPlugItemEntry entry in gameTableManager.HousingPlugItem.Entries)
             {
                 serverHousingVendorList.PlugItems.Add(new ServerHousingVendorList.PlugItem
                 {
-                    PlugItemId = entry.Id
+                    PlugItemId     = entry.Id,
+                    Cost           = GetContributionCost(entry),
+                    PlugItemFlags  = entry.Flags
                 });
             }
 
             session.EnqueueMessageEncrypted(serverHousingVendorList);
+        }
+
+        private uint GetContributionCost(HousingPlugItemEntry entry)
+        {
+            uint[] contributionIds =
+            [
+                entry.HousingContributionInfoId00,
+                entry.HousingContributionInfoId01,
+                entry.HousingContributionInfoId02,
+                entry.HousingContributionInfoId03,
+                entry.HousingContributionInfoId04
+            ];
+
+            foreach (uint contributionId in contributionIds)
+            {
+                HousingContributionInfoEntry contribution = gameTableManager.HousingContributionInfo.GetEntry(contributionId);
+                if (contribution?.ContributionPointRequirement > 0u)
+                    return contribution.ContributionPointRequirement;
+            }
+
+            return 0u;
         }
     }
 }

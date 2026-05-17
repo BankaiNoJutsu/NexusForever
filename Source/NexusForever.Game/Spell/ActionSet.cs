@@ -364,7 +364,6 @@ namespace NexusForever.Game.Spell
                     ObjectId     = action?.ObjectId ?? 0,
                     Location     = new ItemLocation
                     {
-                        // TODO: this might not be correct, what about shortcuts that aren't spells?
                         Location = action != null ? InventoryLocation.Ability : (InventoryLocation)300, // no idea why 300, this is what retail did
                         BagIndex = (uint)(action?.Location ?? i)
                     }

@@ -6,5 +6,6 @@ namespace NexusForever.Game.Guild
     {
         public ulong GuildId { get; set; }
         public ulong InviteeId { get; set; }
+        public DateTime ExpiresAt { get; set; }
     }
 }

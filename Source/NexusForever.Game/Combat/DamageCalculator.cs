@@ -33,7 +33,7 @@ namespace NexusForever.Game.Combat
         /// Returns the calculated damage and updates the referenced <see cref="SpellTargetInfo.SpellTargetEffectInfo"/> appropriately.
         /// </summary>
         /// <remarks>
-        /// TODO: This should probably return an instance of a Class which describes all the damage done to both entities. Attackers can have reflected damage from this, etc.
+        /// The current combat log model records target-side damage; reflected damage is handled by separate effects/procs.
         /// </remarks>
         public void CalculateDamage(IUnitEntity attacker, IUnitEntity victim, ISpell spell, ISpellTargetEffectInfo info)
         {
@@ -49,7 +49,7 @@ namespace NexusForever.Game.Combat
             {
                 CasterId     = attacker.Guid,
                 TargetId     = victim.Guid,
-                SpellId      = spell.Parameters.SpellInfo.Entry.Id, // TODO: This was updated in order to use ISpell, check if correct
+                SpellId      = spell.Parameters.SpellInfo.Entry.Id,
                 CombatResult = CombatResult.Hit
             };
 
@@ -88,17 +88,10 @@ namespace NexusForever.Game.Combat
             damage = GetDamageAfterArmorMitigation(victim, info.Entry.DamageType, damage);
             damage = ApplyDamageTakenMultiplier(victim, info.Entry.DamageType, damage);
 
-            // TODO: Add in other attacking modifiers like Armor Pierce, Strikethrough, Multi-Hit, etc.
-
             if (CalculateCrit(ref damage, attacker, victim))
                 damageDescription.CombatResult = CombatResult.Critical;
 
-            uint preGlanceDamage = damage;
-            if (CalculateGlance(ref damage, attacker, victim))
-            {
-                uint glanceDamage = preGlanceDamage - damage;
-                // TODO: Add CombatLog
-            }
+            CalculateGlance(ref damage, attacker, victim);
 
             uint absorbedAmount = victim.ConsumeAbsorption(damage, info.Entry.DamageType);
             damage -= absorbedAmount;
@@ -107,8 +100,6 @@ namespace NexusForever.Game.Combat
             uint shieldedAmount = CalculateShieldAmount(damage, victim);
             damage -= shieldedAmount;
             damageDescription.ShieldAbsorbAmount = shieldedAmount;
-
-            // TODO: Add in other defensive modifiers
 
             damageDescription.AdjustedDamage = damage;
 
@@ -388,11 +379,6 @@ namespace NexusForever.Game.Combat
                 typeBaseDamage = effect.Damage.TypeBaseValue;
             }
 
-            if (caster.Type is not EntityType.Player and not EntityType.Ghost)
-            {
-                // TODO: some client code specific to non player entities
-            }
-
             float baseDamage = basePropertyDamage + ((typeBaseDamage + baseEntityDamage) * typeMultiplier);
 
             float propertyMultiplier = caster.GetProperty((Property)(entry.DamageType + 140)).Value;
@@ -579,8 +565,6 @@ namespace NexusForever.Game.Combat
         /// <remarks>Calculates chance to deflect an attack, avoiding all damage from that attack.</remarks>
         private bool CalculateDeflect(IUnitEntity attacker, IUnitEntity victim)
         {
-            // TODO: Add in Strikethrough Calculations (and that increases Armor Pierce)
-
             float deflectChance = GetRatingPercentMod(Property.RatingAvoidIncrease, victim);
             return IsSuccessfulChance(deflectChance);
         }
@@ -590,8 +574,6 @@ namespace NexusForever.Game.Combat
         /// </summary>
         private bool CalculateCrit(ref uint damage, IUnitEntity attacker, IUnitEntity victim)
         {
-            // TODO: Add in Crit Deflect and Critical Mitigation calculations
-
             float critRate = GetRatingPercentMod(Property.RatingCritChanceIncrease, attacker);
             if (critRate <= 0f)
                 return false;
@@ -737,7 +719,6 @@ namespace NexusForever.Game.Combat
                     baseValue = entity.GetPropertyValue(Property.BaseCritChance);
                     break;
                 case Property.RatingCritSeverityIncrease:
-                    // TODO: Confirm Property below
                     // baseValue = entity.GetPropertyValue(Property.CriticalHitSeverityMultiplier);
                     break;
                 case Property.RatingDamageReflectAmount:

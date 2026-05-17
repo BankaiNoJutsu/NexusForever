@@ -39,11 +39,20 @@ namespace NexusForever.Game.Matching.Queue
             if (!commonMatchingMaps.Any())
                 return null;
 
-            foreach (IMatchingQueueGroupTeam matchingQueueGroupTeam in matchingQueueGroup.GetTeams())
+            foreach (IMatchingQueueGroupTeam matchingQueueGroupTeam in matchingQueueGroup.GetTeams()
+                .OrderBy(GetOldestQueueTime))
                 if (Match(commonMatchingMaps, matchingQueueGroupTeam, matchingQueueProposal))
                     return matchingQueueGroupTeam;
 
             return null;
+        }
+
+        private static DateTime GetOldestQueueTime(IMatchingQueueGroupTeam matchingQueueGroupTeam)
+        {
+            return matchingQueueGroupTeam.GetMembers()
+                .Select(m => m.MatchingQueueProposal.QueueTime)
+                .DefaultIfEmpty(DateTime.MaxValue)
+                .Min();
         }
 
         private bool Match(IEnumerable<IMatchingMap> commonMatchingMaps, IMatchingQueueGroupTeam matchingQueueGroupTeam, IMatchingQueueProposal matchingQueueProposal)
@@ -77,10 +86,6 @@ namespace NexusForever.Game.Matching.Queue
                 if (!result.Success)
                     return false;
             }
-
-            // additional checks needed for match?
-            // TODO: MMR?
-            // TODO: Ignore list?
 
             return true;
         }

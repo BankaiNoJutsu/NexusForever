@@ -4,6 +4,7 @@
     public enum QuestObjectiveFlags
     {
         None        = 0x0000,
+        Unknown0001 = 0x0001,
         Sequential  = 0x0002,
         Hidden      = 0x0008,
         Optional    = 0x0020,

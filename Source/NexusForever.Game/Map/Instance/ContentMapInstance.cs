@@ -1,9 +1,11 @@
 ﻿using System.Numerics;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Matching.Match;
+using NexusForever.Game.Map;
 using NexusForever.Script;
 using NexusForever.Script.Template;
 
@@ -15,6 +17,8 @@ namespace NexusForever.Game.Map.Instance
         /// Active <see cref="IMatch"/> for map.
         /// </summary>
         public IMatch Match { get; private set; }
+
+        private readonly Dictionary<Identity, IMapPosition> playerReturnLocations = [];
 
         public override float? VisionRange { get; protected set; } = null;
 
@@ -62,14 +66,26 @@ namespace NexusForever.Game.Map.Instance
                     return mapPosition;
             }
 
-            // TODO: fallback to default return location
-            // maybe recall position?
+            if (playerReturnLocations.Remove(player.Identity, out IMapPosition returnLocation))
+                return returnLocation;
 
             return null;
         }
 
         protected override void AddEntity(IGridEntity entity, Vector3 vector)
         {
+            if (entity is IPlayer contentPlayer
+                && Match == null
+                && contentPlayer.PreviousMap?.Entry != null
+                && contentPlayer.PreviousMap.Entry.Id != Entry.Id)
+            {
+                playerReturnLocations[contentPlayer.Identity] = new MapPosition
+                {
+                    Info     = contentPlayer.PreviousMap,
+                    Position = contentPlayer.Position
+                };
+            }
+
             base.AddEntity(entity, vector);
 
             if (entity is IPlayer player)

@@ -9,5 +9,6 @@ namespace NexusForever.Game.Abstract.Achievement
         List<AchievementChecklistEntry> ChecklistEntries { get; }
 
         bool IsPlayerAchievement { get; }
+        bool IsRealmFirst { get; }
     }
 }

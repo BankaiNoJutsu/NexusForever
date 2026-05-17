@@ -51,15 +51,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 if (characterToDelete == null)
                     return (CharacterModifyResult.DeleteFailed, 0);
 
-                // TODO: Not sure if this is definitely the case, but put it in for good measure
-                if (characterToDelete.Mail.Count > 0)
-                {
-                    foreach (CharacterMailModel characterMail in characterToDelete.Mail)
-                    {
-                        if (characterMail.Attachment.Count > 0)
-                            return (CharacterModifyResult.DeleteFailed, 0);
-                    }
-                }
+                if (HasMailWithAttachments(characterToDelete))
+                    return (CharacterModifyResult.DeleteFailed, 0);
 
                 uint leaderCount = (uint)globalGuildManager.GetCharacterGuilds(characterToDelete.Id)
                     .Count(g => g.LeaderId == characterDelete.CharacterId);
@@ -113,7 +106,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 {
                     Result = deleteCheck.result
                 });
-            }));
+                }));
+        }
+
+        private static bool HasMailWithAttachments(CharacterModel character)
+        {
+            return character.Mail.Any(characterMail => characterMail.Attachment.Count > 0);
         }
     }
 }

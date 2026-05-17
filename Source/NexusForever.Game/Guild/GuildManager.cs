@@ -4,6 +4,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
+using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Guild;
@@ -11,6 +12,7 @@ using NexusForever.GameTable.Text.Filter;
 using NexusForever.GameTable.Text.Static;
 using NexusForever.Network.World.Message.Model.Guild;
 using NexusForever.Network.World.Message.Model.Shared;
+using NexusForever.Shared.Configuration;
 using NLog;
 using NetworkGuildMember = NexusForever.Network.World.Message.Model.Guild.GuildMember;
 
@@ -18,6 +20,9 @@ namespace NexusForever.Game.Guild
 {
     public class GuildManager : IGuildManager
     {
+        private const double DefaultGuildInviteExpirySeconds = 300d;
+        private const uint ShowNameplateRecruitmentAvailability = 1u;
+
         [Flags]
         public enum SaveMask
         {
@@ -177,7 +182,7 @@ namespace NexusForever.Game.Guild
                 if (guildAffiliation?.Id == guild.Id)
                 {
                     guildInit.ShowNameplateIndex = index;
-                    member.RecruitmentAvailability = 1; // TODO: research this
+                    member.RecruitmentAvailability = ShowNameplateRecruitmentAvailability;
                 }
 
                 guildInit.Self.Add(member);
@@ -282,6 +287,8 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public IGuildResultInfo CanInviteToGuild(ulong id)
         {
+            ClearExpiredInvite();
+
             IGuildBase guild = GlobalGuildManager.Instance.GetGuild(id);
             if (guild == null)
                 return new GuildResultInfo(GuildResult.NotAGuild);
@@ -310,7 +317,8 @@ namespace NexusForever.Game.Guild
             pendingInvite = new GuildInvite
             {
                 GuildId   = id,
-                InviteeId = invitee.CharacterId
+                InviteeId = invitee.CharacterId,
+                ExpiresAt = DateTime.UtcNow.AddSeconds(GetGuildInviteExpirySeconds())
             };
 
             owner.Session.EnqueueMessageEncrypted(new ServerGuildInvite
@@ -329,10 +337,10 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public IGuildResultInfo CanAcceptInviteToGuild()
         {
+            ClearExpiredInvite();
+
             if (pendingInvite == null)
                 return new GuildResultInfo(GuildResult.NoPendingInvites);
-
-            // TODO: check for expiry
 
             IGuildBase guild = GlobalGuildManager.Instance.GetGuild(pendingInvite.GuildId);
             if (guild == null)
@@ -368,6 +376,19 @@ namespace NexusForever.Game.Guild
             }
 
             pendingInvite = null;
+        }
+
+        private void ClearExpiredInvite()
+        {
+            if (pendingInvite == null || pendingInvite.ExpiresAt > DateTime.UtcNow)
+                return;
+
+            pendingInvite = null;
+        }
+
+        private static double GetGuildInviteExpirySeconds()
+        {
+            return SharedConfiguration.Instance.Get<WorldConfig>()?.GuildInviteExpirySeconds ?? DefaultGuildInviteExpirySeconds;
         }
 
         /// <summary>

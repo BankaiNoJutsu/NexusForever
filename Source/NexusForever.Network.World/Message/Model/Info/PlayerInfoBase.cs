@@ -1,12 +1,13 @@
-﻿using NexusForever.Game.Static.Reputation;
+using NexusForever.Game.Static.Reputation;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Shared;
+using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Network.World.Message.Model.Info
 {
     public class PlayerInfoBase : IWritable
     {
-        public byte ResultCode { get; set; } = 0; // values above zero indicate a failure. 5 = character deleted
+        public PlayerInfoResult ResultCode { get; set; }
         public Identity Identity { get; set; }
         public string Name { get; set; }
         public Faction Faction { get; set; }

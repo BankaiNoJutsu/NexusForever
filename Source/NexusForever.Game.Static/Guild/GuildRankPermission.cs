@@ -36,8 +36,8 @@
         DecorateCommunity              = 0x40000000,
         ChangeCommunityRemodelOptions  = 0x80000000,
 
-        // TODO: this might need to be moved, different guild types might have different default permissions
-        Leader                         = 0xFFFFFFFF - Disabled,
+        All                            = 0xFFFFFFFF & ~Disabled,
+        Leader                         = All,
         Council                        = OfficerChat | MemberChat | Kick | Invite | ChangeMemberRank | Vote
     }
 }

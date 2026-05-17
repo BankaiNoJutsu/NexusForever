@@ -28,7 +28,8 @@ namespace NexusForever.Game.Entity
             StackCount         = 0x0020,
             Charges            = 0x0040,
             Durability         = 0x0080,
-            ExpirationTimeLeft = 0x0100
+            ExpirationTimeLeft = 0x0100,
+            Soulbound          = 0x0200
         }
 
         public uint Id => Info?.Id ?? SpellEntry.Id;
@@ -111,7 +112,7 @@ namespace NexusForever.Game.Entity
             get => durability;
             set
             {
-                if (Durability > 1.0f)
+                if (value > 1.0f)
                     throw new ArgumentOutOfRangeException();
 
                 durability = value;
@@ -132,6 +133,21 @@ namespace NexusForever.Game.Entity
         }
 
         private uint expirationTimeLeft;
+
+        public bool Soulbound
+        {
+            get => soulbound;
+            private set
+            {
+                if (soulbound == value)
+                    return;
+
+                soulbound = value;
+                saveMask |= ItemSaveMask.Soulbound;
+            }
+        }
+
+        private bool soulbound;
 
         /// <summary>
         /// Returns if <see cref="IItem"/> is enqueued to be saved to the database.
@@ -158,6 +174,8 @@ namespace NexusForever.Game.Entity
             stackCount       = model.StackCount;
             charges          = model.Charges;
             durability       = model.Durability;
+            expirationTimeLeft = model.ExpirationTimeLeft;
+            soulbound        = model.Soulbound;
 
             if ((InventoryLocation)model.Location != InventoryLocation.Ability)
                 Info = ItemManager.Instance.GetItemInfo(model.ItemId);
@@ -180,6 +198,8 @@ namespace NexusForever.Game.Entity
             stackCount       = count;
             charges          = initialCharges;
             durability       = 1.0f;
+            expirationTimeLeft = GetInitialExpirationTimeLeft(info);
+            soulbound        = false;
             Info             = info;
 
             saveMask         = ItemSaveMask.Create;
@@ -199,6 +219,7 @@ namespace NexusForever.Game.Entity
             stackCount       = count;
             charges          = 0u;
             durability       = 0.0f;
+            soulbound        = false;
             SpellEntry       = entry;
 
             saveMask         = ItemSaveMask.Create;
@@ -210,6 +231,11 @@ namespace NexusForever.Game.Entity
         public void EnqueueDelete(bool state)
         {
             saveMask = ItemSaveMask.Delete;
+        }
+
+        public void MakeSoulbound()
+        {
+            Soulbound = true;
         }
 
         public void Save(CharacterContext context)
@@ -230,7 +256,8 @@ namespace NexusForever.Game.Entity
                     StackCount         = StackCount,
                     Charges            = Charges,
                     Durability         = Durability,
-                    ExpirationTimeLeft = ExpirationTimeLeft
+                    ExpirationTimeLeft = ExpirationTimeLeft,
+                    Soulbound          = Soulbound
                 });
             }
             else if ((saveMask & ItemSaveMask.Delete) != 0)
@@ -287,6 +314,11 @@ namespace NexusForever.Game.Entity
                     model.ExpirationTimeLeft = ExpirationTimeLeft;
                     entity.Property(p => p.ExpirationTimeLeft).IsModified = true;
                 }
+                if ((saveMask & ItemSaveMask.Soulbound) != 0)
+                {
+                    model.Soulbound = Soulbound;
+                    entity.Property(p => p.Soulbound).IsModified = true;
+                }
             }
 
             saveMask = ItemSaveMask.None;
@@ -309,6 +341,7 @@ namespace NexusForever.Game.Entity
                 StackCount = StackCount,
                 Charges    = Charges,
                 Durability = Durability,
+                ExpirationTimeLeft = ExpirationTimeLeft,
                 Unknown58  = new NetworkItem.UnknownStructure[2]
                 {
                     new NetworkItem.UnknownStructure(),
@@ -332,12 +365,16 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public uint GetVendorSellAmount(byte index)
         {
-            // TODO: Rawaho was lazy and didn't finish this
-            // GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(559);
-            // uint cost = Entry.PowerLevel * entry.Dataint01;
-
-            // TODO: Add calculations for Runes or other things that would increase worth amount.
             return Info.GetVendorSellAmount(index);
+        }
+
+        private static uint GetInitialExpirationTimeLeft(IItemInfo info)
+        {
+            if (info?.Entry.ExpirationTimeMinutes is null or 0u)
+                return 0u;
+
+            ulong seconds = (ulong)info.Entry.ExpirationTimeMinutes * 60ul;
+            return seconds > uint.MaxValue ? uint.MaxValue : (uint)seconds;
         }
     }
 }

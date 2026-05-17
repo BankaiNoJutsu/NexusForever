@@ -27,7 +27,7 @@ namespace NexusForever.Game.Cinematic.Cinematics
 
         private void SetupActors()
         {
-            // TODO: Need parse of Crimson Isle cinematic to finish
+            // Crimson Isle currently relies on the camera subject actor only.
         }
 
         private void SetupTexts()
