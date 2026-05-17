@@ -70,11 +70,25 @@ namespace NexusForever.Game.Loot
             return item;
         }
 
-        public void SendLootNotify(IPlayer player)
+        public void SendLootNotify(IPlayer player, bool includeGrantedItems = false)
         {
             List<NetworkLootItem> networkLootItems = [];
-            foreach (LootInstanceItem item in lootItems.Values.Where(i => !i.Delivered))
+            foreach (LootInstanceItem item in lootItems.Values)
             {
+                if (item.Delivered)
+                {
+                    if (!includeGrantedItems)
+                        continue;
+
+                    foreach (NetworkLootItem grantedItem in item.BuildGrantedNotificationItems())
+                    {
+                        grantedItem.Explosion = Explosion;
+                        networkLootItems.Add(grantedItem);
+                    }
+
+                    continue;
+                }
+
                 NetworkLootItem networkLootItem = item.Build();
                 networkLootItem.CanLoot = HasLooter(player.CharacterId) && item.CanLoot(player.CharacterId);
                 networkLootItem.Explosion = Explosion;
@@ -94,6 +108,23 @@ namespace NexusForever.Game.Loot
                 Explosion    = Explosion,
                 LootItems    = networkLootItems
             });
+        }
+
+        public bool DeliverAllLoot(IPlayer player, bool sendAsGrant = false)
+        {
+            if (!HasLooter(player.CharacterId))
+                throw new InvalidOperationException($"Character {player.CharacterId} is not permitted to loot owner {OwnerUnitId}.");
+
+            bool deliveredAny = false;
+            foreach (LootInstanceItem item in lootItems.Values.Where(i => !i.Delivered).ToList())
+            {
+                if (item.WinnerCharacterId == 0ul)
+                    item.SetWinner(player);
+
+                deliveredAny |= item.DeliverItem(player, sendAsGrant);
+            }
+
+            return deliveredAny;
         }
 
         public void SendLootRemove(IPlayer player)

@@ -74,6 +74,8 @@ namespace NexusForever.Game.Account.Inventory
             if (!items.Remove(id, out IAccountInventoryItem item))
                 return false;
 
+            SendItemDelete(id);
+
             if (!item.PendingCreate)
             {
                 item.EnqueueDelete(true);
@@ -104,7 +106,6 @@ namespace NexusForever.Game.Account.Inventory
                 grant.Apply(account, player);
 
             RemoveItem(id);
-            SendInventory();
             return GenericError.Ok;
         }
 
@@ -158,6 +159,14 @@ namespace NexusForever.Game.Account.Inventory
             account.Session.EnqueueMessageEncrypted(new ServerAccountItemAdd
             {
                 AccountItem = item.Build()
+            });
+        }
+
+        private void SendItemDelete(ulong id)
+        {
+            account.Session.EnqueueMessageEncrypted(new ServerAccountItemDelete
+            {
+                Id = id
             });
         }
 

@@ -211,8 +211,10 @@ namespace NexusForever.Game.Loot
             if (lootInstance.HasExpired)
                 return;
 
-            lootInstances.Add(lootInstance);
-            lootInstance.SendLootNotify(looter);
+            if (!lootInstance.DeliverAllLoot(looter))
+                return;
+
+            lootInstance.SendLootNotify(looter, includeGrantedItems: true);
         }
 
         private static Dictionary<ulong, uint> CreatePlayerLooterMap(IPlayer player)
@@ -540,7 +542,7 @@ namespace NexusForever.Game.Loot
 
         public void GiveLoot(IPlayer looter, AccountCurrencyType accountCurrencyType, uint count, uint ownerUnitId)
         {
-            GiveImmediateLoot(looter, LootItemType.AccountCurrency, (uint)accountCurrencyType, count, ownerUnitId);
+            GiveImmediateLoot(looter, LootItemType.AccountCurrency, (uint)accountCurrencyType, count, ownerUnitId, sendGrantedNotify: true);
         }
 
         public void GiveLoot(IPlayer looter, CurrencyType currencyType, uint count, uint ownerUnitId)
@@ -548,10 +550,25 @@ namespace NexusForever.Game.Loot
             GiveImmediateLoot(looter, LootItemType.Cash, (uint)currencyType, count, ownerUnitId);
         }
 
-        private static void GiveImmediateLoot(IPlayer looter, LootItemType type, uint staticId, uint count, uint ownerUnitId)
+        private static void GiveImmediateLoot(IPlayer looter, LootItemType type, uint staticId, uint count, uint ownerUnitId, bool sendGrantedNotify = false)
         {
             if (looter == null || count == 0u)
                 return;
+
+            if (sendGrantedNotify)
+            {
+                LootInstance lootInstance = new(ownerUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Creature)
+                {
+                    Explosion = true
+                };
+
+                LootInstanceItem grantedItem = lootInstance.AddLootItem(staticId, type, count);
+                grantedItem.SetWinner(looter);
+                if (grantedItem.DeliverItem(looter))
+                    lootInstance.SendLootNotify(looter, includeGrantedItems: true);
+
+                return;
+            }
 
             LootInstanceItem item = new(staticId, type, count);
             item.SetOwnerUnit(ownerUnitId);

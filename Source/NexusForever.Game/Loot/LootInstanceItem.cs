@@ -27,6 +27,7 @@ namespace NexusForever.Game.Loot
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         private const double ROLL_DURATION_SECONDS = 30d;
+        private const uint ACCOUNT_CURRENCY_SHOWER_ITEM_LIMIT = 50u;
 
         public uint Id { get; }
         public uint OwnerUnitId { get; private set; }
@@ -372,6 +373,42 @@ namespace NexusForever.Game.Loot
                 ItemQuality2Id    = ItemQualityId,
                 MasterList        = masterLootCandidates.Values.Select(i => i.ToNetworkIdentity()).ToList()
             };
+        }
+
+        public IEnumerable<NetworkLootItem> BuildGrantedNotificationItems()
+        {
+            if (Type == LootItemType.AccountCurrency)
+                return BuildGrantedAccountCurrencyNotificationItems();
+
+            NetworkLootItem item = Build();
+            item.LootUnitId = 0u;
+            item.CanLoot    = true;
+            item.Granted    = true;
+
+            return [item];
+        }
+
+        private IEnumerable<NetworkLootItem> BuildGrantedAccountCurrencyNotificationItems()
+        {
+            uint itemCount = Math.Min(Amount, ACCOUNT_CURRENCY_SHOWER_ITEM_LIMIT);
+            if (itemCount == 0u)
+                yield break;
+
+            uint baseAmount = Amount / itemCount;
+            uint remainder  = Amount % itemCount;
+            for (uint i = 0u; i < itemCount; i++)
+            {
+                yield return new NetworkLootItem
+                {
+                    LootUnitId     = 0u,
+                    Type           = Type,
+                    ItemId         = StaticId,
+                    Amount         = baseAmount + (i < remainder ? 1u : 0u),
+                    CanLoot        = true,
+                    Granted        = true,
+                    ItemQuality2Id = ItemQualityId
+                };
+            }
         }
 
         private uint GetItemQualityId()

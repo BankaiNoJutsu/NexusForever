@@ -860,6 +860,7 @@ namespace NexusForever.Network.Message
         ServerAccountItemCooldownSet    = 0x0974,
         ServerAccountItemAdd            = 0x0975,
         ServerAccountItemsPending       = 0x0979,
+        ServerAccountItemDelete         = 0x097C,
         ServerAccountTier               = 0x097F,
         ServerGenericUnlockAccountList  = 0x0981,
         ServerGenericUnlockAccount      = 0x0982,
