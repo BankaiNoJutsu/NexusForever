@@ -4213,6 +4213,313 @@ pass:
   stdout log has no `error`, `exception`, `failed`, `Fatal`, or `Unhandled`
   matches.
 
+Ninetieth kirmmin/latest loot subsystem follow-up implemented from this pass:
+
+- This pass refreshed the older `kirmmin/NexusForever` `latest` comparison
+  branch and confirmed local `HEAD` and `origin/latest` both remain at commit
+  `d9b4c0aa8b4f8ee111d799aa2f4d646d9304f1d1`. The old branch's portable loot
+  behavior is server-authored rather than decompiled client code: cached
+  creature/item loot tables, per-kill loot instances, `ClientLootItem`
+  request/collect handling, `ClientLootVacuum`, static item/cash/account
+  currency/virtual item delivery, quest-objective loot conditions, and kill XP.
+- Database follow-up implemented from this pass:
+  the current world context now maps the old branch loot tables
+  `entity_loot`, `item_loot`, `loot_group`, and `loot_item`, plus the current
+  data-mapping table `creature_loot`. Migration
+  `20260517013000_LootTables` creates all five tables with `IF NOT EXISTS` so
+  existing safe-import loot data is preserved.
+- Runtime loot follow-up implemented from this pass:
+  `GlobalLootManager` now initialises after items/quests, updates each world
+  tick, rolls both old-table loot groups and imported direct `creature_loot`
+  rows, keeps per-owner loot instances, sends `ServerLootNotify`, grants
+  selected loot via `ServerLootGrant`, removes exhausted loot with
+  `ServerLootRemove`, and re-notifies a player when a visible loot owner enters
+  scope. Imported `creature_loot.chance` is treated as the mapped `0..1`
+  probability and direct imported drops currently grant one static item per
+  successful roll to avoid over-interpreting aggregate-count columns.
+- Client handler follow-up implemented from this pass:
+  `ClientLootItem` now treats `OwnerUnitId` as the visible corpse/owner and
+  `LootUnitId` as the generated loot-item id. `Request=true` resends notify,
+  `Request=false` grants the selected loot item, and `ClientLootVacuum` grants
+  all permitted loot within the manager's 35m range.
+- Reward follow-up implemented from this pass:
+  non-player kill rewards now call `GrantXpForCreatureKill(...)` and
+  `GlobalLootManager.DropLoot(...)`. Rest XP for kill rewards is capped by the
+  player's available `RestBonusXp` and consumed when awarded, matching the old
+  branch behavior. `IQuestManager.IsActiveObjectiveId(...)` was added for old
+  loot group condition type `QuestObjectiveActive`.
+- Still blocked:
+  group/raid/master-loot rolls, loot-bag spell effects, offline mail delivery,
+  account-item delivery, random item stat generation, and exact retail stack
+  quantity semantics remain unmapped. The old branch's random Omnibit kill
+  shower was not ported because it has no table-backed evidence in this pass
+  and would mutate account currency on every eligible creature kill.
+- Verification:
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\loot-port\
+  -m:1 -v minimal --nologo` succeeds with only the pre-existing
+  `Spline.formation` warning. The normal-output build initially failed only
+  because the running `NexusForever.WorldServer` process locked its DLLs.
+  `.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1 -ClientDirectory
+  "I:\WildStar" -SkipClientLaunch` then stopped Auth/World, rebuilt normal
+  output, restarted both servers, and the fresh WorldServer log shows
+  `20260517013000_LootTables` applied and `GlobalLootManager` loaded loot for
+  `0` old-table creatures, `0` item tables, and `3795` imported creatures in
+  `924ms`. The fresh WorldServer process is running and the final log scan
+  shows no startup `exception`, `fatal`, or `unhandled` failures.
+
+Ninety-first loot table and loot-bag follow-up implemented from this pass:
+
+- This pass used `Various SQL\Drop_PR.sql` as the concrete old-table seed for
+  `Bag of OmniBits`: group probabilities `100 -> 50 -> 25`, loot item type `9`
+  (`AccountCurrency`) with static id `6` (`Omnibit`), and item loot id
+  `84623`. Local MySQL client data verified `wildstar_client.item2` row
+  `84623` is named `Bag of OmniBits`, has `item2CategoryId = 138`, and
+  `wildstar_client.item2category` row `138` is named `Loot Bag`.
+- Database follow-up implemented from this pass:
+  migration `20260517023000_OmnibitLootBagSeed` seeds the Bag of OmniBits loot
+  table using non-conflicting group ids `84623001..84623003`. The migration
+  keeps the `Drop_PR.sql` probabilities and amounts while avoiding reuse of
+  low group ids `1..3` that could collide with user-imported loot data.
+- Runtime loot follow-up implemented from this pass:
+  `GlobalLootManager` now ports the older branch's random Omnibit creature-kill
+  reward using the same `35%` chance and `7..(25 + player level)` amount range,
+  delivered through the current `ServerLootGrant` path. Loot validation now
+  accepts `LootItemType.AccountItem` when the current client account-item table
+  contains the static id.
+- Account-item delivery follow-up implemented from this pass:
+  `LootInstanceItem.DeliverItem(...)` now handles `LootItemType.AccountItem` by
+  adding the requested number of account inventory entries through
+  `IAccount.InventoryManager.AddItem(...)`, reusing the current account
+  inventory notification and persistence path.
+- Loot-bag packet follow-up implemented from this pass:
+  `ClientItemUseLootBag` is now parsed for opcode `0x015E` as item location
+  followed by item guid, matching `kirmmin/latest`. `ClientItemUseLootBagHandler`
+  validates the item exists, the guid matches, and the item is category `138`
+  before consuming the bag and dropping item-table loot. `ClientLootItem` also
+  now accepts `OwnerUnitId == player.Guid`, which is required because inventory
+  loot bags use the player as the loot owner rather than a visible corpse.
+- Superseded by later work:
+  group/master/roll loot remained diagnostic-only at the end of this pass. The
+  later ninety-fourth pass added the missing world-side group snapshot,
+  eligibility, loot-rule, roll-state, and master-assignment design.
+- Verification:
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\loot-followup\
+  -m:1 -v minimal --nologo` succeeds with `0` warnings and `0` errors.
+  `.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1 -ClientDirectory
+  "I:\WildStar" -SkipClientLaunch` rebuilt and restarted Auth/World, both
+  processes are responding, and the fresh WorldServer log shows migration
+  `20260517023000_OmnibitLootBagSeed` applied, `ClientItemUseLootBagHandler`
+  registered, and `GlobalLootManager` loaded loot for `0` old-table creatures,
+  `1` item, and `3795` imported creatures. Direct MySQL verification shows
+  `3` seeded `loot_group` rows, `3` seeded `loot_item` rows, `1`
+  `item_loot` row for item `84623`, and `198735` live `creature_loot` rows.
+  Fresh Auth/World log scans show no `[ERROR]`, `[FATAL]`, unhandled exception,
+  or `System.` exception output.
+
+Ninety-second loot client-event dispatcher follow-up mapped from this pass:
+
+- This pass stayed on the native client side and mapped the anonymous loot
+  client-event cluster around `140427d40..140430f60`. Direct
+  `InspectCodeAddress.java` passes show these helpers build Lua-style payload
+  tables and dispatch named client events through `ClientEvent_DispatchNamedEvent`
+  or the same shared event-dispatch thunk path already used elsewhere.
+- Ten durable WildStar64 labels were added. The full payload builders are:
+  `Loot_DispatchLootTakenByEvent -> 140427d40`, which builds `nLootId`,
+  `itemLoot`, and `unitLooter`; `Loot_DispatchChannelUpdateLootEvent ->
+  140427fa0`, which builds `ChannelUpdate_Loot` for item, currency, and
+  destroyed-item loot updates; `Loot_DispatchLootRollSelectedEvent ->
+  140428500`, which carries `nLootId`, `bNeed`, and `itemLoot`;
+  `Loot_DispatchLootRollPassedEvent -> 140428840`, which carries `nLootId`
+  and `itemLoot`; `Loot_DispatchLootRollEvent -> 140428ac0`, which carries
+  `nLootId`, roll state, and `itemLoot`; `Loot_DispatchLootRollWonEvent ->
+  140428e40`, which carries `nLootId`, `bNeed`, winner state, and `itemLoot`;
+  `Loot_DispatchLootAssignedEvent -> 140429180`; and
+  `Loot_DispatchLootRollAllPassedEvent -> 140429400`.
+- The same inspection pass also mapped two tiny event thunks that Ghidra had not
+  promoted to functions before the label pass:
+  `Loot_DispatchLootRollUpdateEventThunk -> 140430de0`, forwarding the
+  `LootRollUpdate` event name to the generic dispatcher, and
+  `Loot_DispatchMasterLootUpdateEventThunk -> 140430f60`, forwarding the
+  `MasterLootUpdate` event name. `ApplyNexusForeverLabels.java` created both
+  small functions on re-export.
+- No server implementation was added. These labels improve the client-side
+  event map for loot notifications, loot rolls, master loot, and channel-update
+  payloads, but they do not by themselves prove group loot eligibility, roll
+  resolution, master-loot assignment authority, or packet field semantics beyond
+  the already-implemented server loot flow. Group/master/roll loot remains
+  blocked on packet-state and group-membership evidence.
+- Verification:
+  `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -MaxDecompiledFunctions 600` applied `525` WildStar64 labels,
+  created the two small loot event thunk functions, reported `0` missing labels,
+  and rendered a fresh `selected_decompiled.c`. Focused checks confirm all 10
+  new loot event labels appear in `functions.csv` and `selected_decompiled.c`,
+  covering the selected block around `selected_decompiled.c:12685` through
+  `selected_decompiled.c:13975`.
+  `./Decomp/Analysis/Test-DecompileManifest.ps1 -FailOnMismatch` reports
+  `WildStar64.exe ok`.
+
+Ninety-third loot party/drop follow-up mapped from this pass:
+
+- This pass widened the loot surface into the nearby party/group and item-drop
+  request boundary. Focused `DumpNearbyData.java` and `InspectCodeAddress.java`
+  passes mapped the `GameLib` loot-roll/master-loot Lua binding table at
+  `140b72f60..140b72fb8`, the `GroupLib` loot-rule table at
+  `140b74ff0..140b75008`, and the direct `LootItemRequested` request sender.
+- Eleven durable WildStar64 labels were added. The loot request labels are:
+  `Loot_SendClientLootItemRequest -> 140516ae0`, which sends opcode `0x014F`
+  `ClientLootItem` with owner unit id, loot id, and the request bit set before
+  dispatching `LootItemRequested`; `Lua_GameLib_BuildLootRollEntry ->
+  1406fed70`, which builds Lua roll/master-loot entries with `nLootId`,
+  optional `nTimeLeft`, `itemDrop`, optional `bIsMaster`, `tLooters`, and
+  `tLootersOutOfRange`; `Lua_GameLib_GetLootRolls -> 1406ff290`;
+  `Lua_GameLib_RollOnLoot -> 1406ff680`, which sends opcode `0x015D`
+  `ClientLootRollAction` as Need or Greed; `Lua_GameLib_PassOnLoot ->
+  1406ff820`, which sends the same opcode with Pass; `Lua_GameLib_GetMasterLoot
+  -> 1406ff970`; and `Lua_GameLib_AssignMasterLoot -> 140700b30`, which sends
+  opcode `0x00B5` `ClientLootAssignMaster` with owner unit id, loot id, and the
+  assignee identity.
+- The party/group loot-rule side is now mapped as
+  `Group_HandleLootRulesChanged -> 140603560`, which applies incoming group
+  loot-rule state and dispatches `Group_LootRulesChanged` for the active group;
+  `Lua_GroupLib_SetLootRules -> 140743ff0`, which sends opcode `0x042E`
+  `ClientGroupLootRulesChange` with current group id plus four rule fields;
+  `Lua_GroupLib_GetLootRules -> 140744210`, which returns `eNormalRule`,
+  `eThresholdRule`, `eThresholdQuality`, and `eHarvestRule`; and
+  `Lua_RegisterGroupLib -> 140744d60`, which confirms the client-facing
+  `LootThreshold`, `LootRule`, and `HarvestLootRule` constant tables. The
+  observed constants match the current NexusForever enum values:
+  `LootRule.FreeForAll=0`, `RoundRobin=1`, `NeedBeforeGreed=2`, `Master=3`;
+  `HarvestLootRule.RoundRobin=0`, `FirstTagger=1`; and threshold qualities
+  `Inferior=1` through `Artifact=7`.
+- No new server implementation was added in this pass. The current network
+  models and handlers already line up with the mapped client request boundaries:
+  `ClientLootItem` uses the `0x014F` owner/loot/request-bit shape,
+  `ClientLootRollAction` uses the `0x015D` owner/loot/action shape,
+  `ClientLootAssignMaster` uses the `0x00B5` owner/loot/identity shape, and
+  `ClientGroupLootRulesChange` uses the `0x042E` group id and four-rule-field
+  shape. `ServerGroupLootRulesChange` still contains an unknown dword that the
+  client handler does not use for local rule fields in this mapping.
+- Still blocked:
+  exact retail group-loot eligibility, master-looter authority, round-robin
+  ordering under membership churn, `tLootersOutOfRange` UI behavior, and the
+  unknown `ServerGroupLootRulesChange` dword need runtime/sniff validation
+  before further behavior is treated as verified.
+- Verification:
+  `./Decomp/Analysis/run_ghidra_analysis.ps1 -ExportOnly -Targets
+  WildStar64.exe -MaxDecompiledFunctions 620` applied `536` WildStar64 labels,
+  reported `0` missing labels, and rendered a fresh `selected_decompiled.c`.
+  Focused checks confirmed all 11 new labels appear in both `functions.csv` and
+  `selected_decompiled.c`, covering the selected blocks around
+  `selected_decompiled.c:16152`, `23715`, `39276..39999`, and
+  `42867..43085`. `./Decomp/Analysis/Test-DecompileManifest.ps1
+  -FailOnMismatch` reports `WildStar64.exe ok` with `selectedCount=620`.
+
+Ninety-fourth mapped loot-table and group/master loot runtime pass:
+
+- Data mapping implementation:
+  `Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql` now
+  materialises safe `creature_loot` rows into the older runtime loot-table
+  shape. It creates/updates one flat `loot_group` per mapped Creature2 id using
+  the owned id range starting at `100000000000`, links it through
+  `entity_loot`, and inserts each mapped Item2 drop into `loot_item` as
+  `LootItemType.StaticItem`. The default count policy remains conservative
+  (`minCount = maxCount = 1`) to match the first live import; aggregate-derived
+  counts are available behind
+  `@nf_safe_import_creature_loot_counts_from_aggregates = 1`.
+- Runtime loot loading implementation:
+  `GlobalLootManager` now skips direct `creature_loot` rows for creatures that
+  already have mapped `loot_group` rows, preventing duplicate drops when both
+  representations are present. Mapped flat loot groups skip per-group child
+  lookups, reducing the fresh WorldServer load from about `25547ms` to roughly
+  `2.4..2.7s` for `3795` mapped creature groups plus the seeded Bag of
+  OmniBits item loot table.
+- Group manager implementation:
+  added a world-side `IGroupStateManager` / `GroupStateManager` cache. Internal
+  group messages now update that cache for joins, adds, removals, leaves,
+  promotions, loot-rule changes, disbands, and player group-association
+  updates. The cache resolves group members and maintains a per-group
+  round-robin cursor for loot assignment.
+- Group/master/roll loot implementation:
+  creature loot generation now builds an eligible group-looter set from online
+  same-map members within `35f` of the corpse. `LootInstanceItem` can now be
+  configured as free-for-all, assigned/round-robin, master-loot-only, or
+  need-before-greed roll loot. Roll items send `ServerLootRoll`, resolve after
+  all eligible players roll or after the roll timer, send `ServerLootWinner`,
+  and deliver to the winning online player. Master-loot items expose a
+  `MasterList`, validate the master and assignee, send an assigned
+  `ServerLootWinner`, and deliver through the existing grant path.
+- Packet handlers implemented:
+  `ClientLootRollActionHandler` and `ClientLootAssignMasterHandler` no longer
+  only log diagnostics; they now validate the session player and delegate to
+  `IGlobalLootManager.RollLoot(...)` and
+  `IGlobalLootManager.AssignMasterLoot(...)`.
+- Data verification:
+  applying the safe SQL import in refresh mode on localhost produced
+  `198735` `creature_loot` rows, `3795` mapped `loot_group` rows, `3795`
+  mapped `entity_loot` rows, and `198735` mapped `loot_item` rows. The same
+  verification run reported `95` `nf_map_*` staging tables, `17520` safe vendor
+  rows, and `17612` safe mapped creature rows.
+- Runtime verification:
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\group-loot\
+  -m:1 -v minimal --nologo` succeeds; the only warning is the pre-existing
+  `Spline.formation` field warning. `.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1
+  -ClientDirectory "I:\WildStar" -SkipClientLaunch` rebuilt and restarted the
+  local Auth/World stack. The fresh WorldServer log shows loot loaded for
+  `3795` old-table creatures, `1` item table, and `0` direct imported
+  creatures in `2729ms`; it also registers `ClientLootRollActionHandler`,
+  `ClientLootAssignMasterHandler`, and the `GroupDisbandedMessage`
+  subscription. A fresh scan found no `ERROR`, `FATAL`, unhandled exception, or
+  `System.` exception output.
+
+Ninety-fifth retail group-loot semantics pass:
+
+- Client evidence from the new labels:
+  `Lua_GameLib_BuildLootRollEntry` builds roll/master-loot Lua entries with
+  `nLootId`, optional `nTimeLeft`, `itemDrop`, `bIsMaster`, `tLooters`, and
+  `tLootersOutOfRange`. `Lua_GameLib_GetMasterLoot` passes a looter identity
+  list to that builder, and the client itself splits the list into in-range and
+  out-of-range entries. `Lua_GameLib_RollOnLoot` / `PassOnLoot` confirm
+  `LootRollAction` values `0=Need`, `1=Greed`, `2=Pass`.
+- Group-rule evidence:
+  `Lua_GroupLib_SetLootRules` sends the current group id plus the four rule
+  fields exposed by `Lua_GroupLib_GetLootRules`: `eNormalRule`,
+  `eThresholdRule`, `eThresholdQuality`, and `eHarvestRule`.
+  `Group_HandleLootRulesChanged` updates the same four decoded fields and only
+  dispatches `Group_LootRulesChanged` for the active group.
+- Runtime fixes:
+  `GroupStateManager.NextRoundRobinWinner` now advances through the full group
+  slot order and stores the last served group index, so temporary eligible-set
+  churn does not make the cursor rotate over a shrinking subset and then repeat
+  a member when the full group becomes eligible again.
+- Master-loot fixes:
+  loot generation now keeps corpse-range eligibility separate from same-map
+  master-loot candidates. The server still only permits in-range eligible
+  assignees, but the `MasterList` sent to the client includes same-map group
+  candidates so the retail UI path can populate `tLootersOutOfRange` itself.
+- Roll-timer note:
+  the client Lua table reports `nTimeLeft` as an expiry field minus its current
+  time counter. No server change was made yet because the labeled functions do
+  not prove whether `ServerLootNotify.RollTime` is decoded as a duration and
+  converted to an expiry, or decoded as an absolute expiry. Current server
+  behavior keeps sending the remaining duration, which is consistent with the
+  common decoded-duration path and avoids inventing a client clock.
+- Verification:
+  `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj --no-restore`
+  succeeds with only the pre-existing `Spline.formation` unused-field warning.
+  A full-solution build is still blocked by live local server processes locking
+  their bin outputs. The fast restart script rebuilt and restarted Auth/World,
+  and the fresh WorldServer log loaded `3795` old-table creature loot groups
+  plus `1` item table in `2539ms`, registered the group/loot packet handlers,
+  and had no post-restart `ERROR`, `FATAL`, unhandled exception, or exception
+  log entries.
+
 ## Practical Next Steps
 
 1. Keep extending `Decomp\Analysis\function_labels.csv` as functions are

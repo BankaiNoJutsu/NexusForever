@@ -63,7 +63,28 @@ WildStar64.exe,1400a73c0,NetworkBitWriter_Write4BitValue,Writes a 4-bit integer 
 WildStar64.exe,1400a74e0,NetworkBitWriter_Write5BitValue,Writes a 5-bit integer value into the packet bitstream.
 WildStar64.exe,1400a7540,NetworkBitWriter_WriteBits64,Writes up to 64 bits into the packet bitstream.
 WildStar64.exe,1400ea3e0,ClientEvent_DispatchNamedEvent,Generic named client event dispatcher used for UnitEvaded UnitEnteredCombat TargetUnitChanged GenericFloater and many UI or gameplay event names through the scene event sink.
+WildStar64.exe,140427d40,Loot_DispatchLootTakenByEvent,Builds the LootTakenBy named event payload with nLootId itemLoot and unitLooter before dispatching it through the scene event sink.
+WildStar64.exe,140427fa0,Loot_DispatchChannelUpdateLootEvent,Builds the ChannelUpdate_Loot named event payload for item currency and destroyed-item loot updates before dispatching it through the scene event sink.
+WildStar64.exe,140428500,Loot_DispatchLootRollSelectedEvent,Builds the LootRollSelected named event payload with nLootId bNeed and itemLoot before dispatching it through the scene event sink.
+WildStar64.exe,140428840,Loot_DispatchLootRollPassedEvent,Builds the LootRollPassed named event payload with nLootId and itemLoot before dispatching it through the scene event sink.
+WildStar64.exe,140428ac0,Loot_DispatchLootRollEvent,Builds the LootRoll named event payload with nLootId roll state and itemLoot before dispatching it through the scene event sink.
+WildStar64.exe,140428e40,Loot_DispatchLootRollWonEvent,Builds the LootRollWon named event payload with nLootId bNeed winner state and itemLoot before dispatching it through the scene event sink.
+WildStar64.exe,140429180,Loot_DispatchLootAssignedEvent,Builds the LootAssigned named event payload with nLootId and itemLoot before dispatching it through the scene event sink.
+WildStar64.exe,140429400,Loot_DispatchLootRollAllPassedEvent,Builds the LootRollAllPassed named event payload with nLootId and itemLoot before dispatching it through the scene event sink.
+WildStar64.exe,140430de0,Loot_DispatchLootRollUpdateEventThunk,Small thunk that forwards the LootRollUpdate event name to the generic named client event dispatcher.
 WildStar64.exe,140430e00,Loot_DispatchBindcheckEvent,Serializes the prepared loot object set into an itemDrop payload and dispatches the named client event LootBindcheck through the scene event sink.
+WildStar64.exe,140430f60,Loot_DispatchMasterLootUpdateEventThunk,Small thunk that forwards the MasterLootUpdate event name to the generic named client event dispatcher.
+WildStar64.exe,140516ae0,Loot_SendClientLootItemRequest,Sends opcode 0x014F ClientLootItem with owner unit id loot id and request bit set then dispatches LootItemRequested.
+WildStar64.exe,1406fed70,Lua_GameLib_BuildLootRollEntry,Builds one Lua loot roll or master-loot table entry with nLootId optional nTimeLeft itemDrop bIsMaster and looter lists.
+WildStar64.exe,1406ff290,Lua_GameLib_GetLootRolls,GameLib.GetLootRolls Lua method that returns the current loot-roll table built from active loot roll entries.
+WildStar64.exe,1406ff680,Lua_GameLib_RollOnLoot,GameLib.RollOnLoot Lua method that sends opcode 0x015D ClientLootRollAction with owner unit id loot id and Need or Greed action.
+WildStar64.exe,1406ff820,Lua_GameLib_PassOnLoot,GameLib.PassOnLoot Lua method that sends opcode 0x015D ClientLootRollAction with owner unit id loot id and Pass action.
+WildStar64.exe,1406ff970,Lua_GameLib_GetMasterLoot,GameLib.GetMasterLoot Lua method that returns the current master-loot table built from active master-loot entries.
+WildStar64.exe,140700b30,Lua_GameLib_AssignMasterLoot,GameLib.AssignMasterLoot Lua method that sends opcode 0x00B5 ClientLootAssignMaster with owner unit id loot id and assignee identity.
+WildStar64.exe,140603560,Group_HandleLootRulesChanged,Handles ServerGroupLootRulesChange by updating local loot-rule fields and dispatching Group_LootRulesChanged for the active group.
+WildStar64.exe,140743ff0,Lua_GroupLib_SetLootRules,GroupLib.SetLootRules Lua method that sends opcode 0x042E ClientGroupLootRulesChange with current group id and four loot-rule fields.
+WildStar64.exe,140744210,Lua_GroupLib_GetLootRules,GroupLib.GetLootRules Lua method that returns current group loot rules as eNormalRule eThresholdRule eThresholdQuality and eHarvestRule.
+WildStar64.exe,140744d60,Lua_RegisterGroupLib,Registers GroupLib methods and the LootThreshold LootRule HarvestLootRule and group result constant tables.
 WildStar64.exe,14022df60,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 WildStar64.exe,14024bfa0,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
 WildStar64.exe,1401fc000,ClientDB_RegisterDatacube,Registers the Datacube client DB table using the Datacube and DB\\Datacube.tbl descriptors.

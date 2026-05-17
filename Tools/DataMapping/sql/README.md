@@ -25,12 +25,17 @@ It currently covers:
 - `entity_vendor_category`
 - `entity_vendor_item`
 - `creature_loot`
+- `loot_group`
+- `entity_loot`
+- `loot_item`
 - `creature_info_property`
 - `creature_info_stat`
 
 The default mode is additive/idempotent: vendor rows use `INSERT IGNORE`,
-creature loot upserts by `(creatureId, itemId)`, and creature-info overrides
-insert missing rows after skipping conflicting template values.
+creature loot upserts by `(creatureId, itemId)`, mapped creature loot is also
+materialised into flat `loot_group`/`entity_loot`/`loot_item` rows, and
+creature-info overrides insert missing rows after skipping conflicting template
+values.
 
 For a refresh of owned mapped rows, run the SQL script from an interactive MySQL
 session and set:
@@ -41,9 +46,15 @@ SOURCE Tools/DataMapping/sql/apply_safe_world_imports_from_staging.sql;
 ```
 
 Refresh mode removes vendor rows for mapped vendor creatures, truncates the
-owned `creature_loot` table, and removes mapped creature-info property/stat IDs
-before reimporting. Use it when the staging maps were regenerated and you want
-the runtime tables to mirror the latest safe mapping output.
+owned `creature_loot` table, removes owned DataMapping runtime loot groups, and
+removes mapped creature-info property/stat IDs before reimporting. Use it when
+the staging maps were regenerated and you want the runtime tables to mirror the
+latest safe mapping output.
+
+By default generated runtime loot rows use `minCount = maxCount = 1`, matching
+the first live runtime import. To experiment with aggregate-derived stack sizes,
+set `@nf_safe_import_creature_loot_counts_from_aggregates = 1` before sourcing
+the apply script.
 
 Verification:
 

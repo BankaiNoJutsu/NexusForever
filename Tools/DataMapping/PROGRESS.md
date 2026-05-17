@@ -411,6 +411,7 @@ Other reference maps:
 - Phase 20: Creature bridge adjudication loop: generated candidate review queue, added manual override input, preserved original match audit columns, and made `reviewed` mappings eligible for safe apply scripts.
 - Phase 21: Unblocked high-confidence uncertain creature bridges with spatial live-entity evidence, promoted 944 reviewed overrides, hardened staging-table reloads, and reapplied all safe real DB imports with reviewed mappings included.
 - Phase 22: Added migration-style SQL import scripts that load safe vendor, loot, and creature-info data directly from `nf_map_*` staging tables, plus a verification SQL script for row counts and bridge-status checks.
+- Phase 23: Materialised safe mapped `creature_loot` rows into flat runtime `loot_group`, `entity_loot`, and `loot_item` rows, verified 3,795 mapped creature groups and 198,735 mapped loot items on localhost, and wired the server to prefer those old-table rows without duplicating the direct `creature_loot` path.
 
 ## Next Phases
 
@@ -418,7 +419,7 @@ Other reference maps:
    - Archive/account/customization, prerequisites, visuals, sound, UI, tutorials, path side tables, random text, model/item display, and reward rotation tables now have complete generic exports. Promote any cluster that needs gameplay import behavior into curated maps with table-specific bridge logic.
 
 2. Import hardening:
-   - Wire runtime loot generation to `creature_loot`; `UnitEntity.RewardKiller` still has the loot TODO.
+   - Keep broadening runtime loot verification, especially grouped players, master loot assignment, roll timeouts, and aggregate-derived stack-count policy.
    - Promote selected `nf_map_*` staging families into runtime managers only after the table has direct semantics and conflict policy. Good next candidates are creature spell/action inspection, quest/public-event/path read models, and reviewed spline candidates.
    - Review the 527 remaining medium-confidence creature bridge suggestions and polymorphic client `objectId*` columns before broadening apply scripts beyond safe `unique_name`/`scored_name`/`reviewed` rows.
 

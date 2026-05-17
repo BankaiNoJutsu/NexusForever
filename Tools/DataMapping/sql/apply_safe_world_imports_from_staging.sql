@@ -14,6 +14,9 @@
 USE `nexus_forever_world`;
 
 SET @nf_safe_import_replace_existing := IFNULL(@nf_safe_import_replace_existing, 0);
+SET @nf_loot_group_base := IFNULL(@nf_loot_group_base, 100000000000);
+SET @nf_loot_group_max := @nf_loot_group_base + 4294967295;
+SET @nf_safe_import_creature_loot_counts_from_aggregates := IFNULL(@nf_safe_import_creature_loot_counts_from_aggregates, 0);
 
 CREATE TABLE IF NOT EXISTS creature_loot (
   creatureId INT UNSIGNED NOT NULL,
@@ -34,6 +37,47 @@ CREATE TABLE IF NOT EXISTS creature_loot (
   KEY ix_creature_loot_item (itemId),
   KEY ix_creature_loot_chance (chance)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS loot_group (
+  `id` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  `parentId` BIGINT UNSIGNED NULL,
+  `probability` FLOAT NOT NULL DEFAULT 100,
+  `minDrop` INT UNSIGNED NOT NULL DEFAULT 0,
+  `maxDrop` INT UNSIGNED NOT NULL DEFAULT 0,
+  `conditionType` INT UNSIGNED NOT NULL DEFAULT 0,
+  `condition` INT UNSIGNED NOT NULL DEFAULT 0,
+  `comment` VARCHAR(200) NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `IX_loot_group_parentId` (`parentId`),
+  CONSTRAINT `FK__loot_group_parentId__loot_group_id`
+    FOREIGN KEY (`parentId`) REFERENCES loot_group (`id`)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS entity_loot (
+  `id` INT UNSIGNED NOT NULL DEFAULT 0,
+  `lootGroupId` BIGINT UNSIGNED NOT NULL,
+  `comment` VARCHAR(200) NULL DEFAULT '',
+  PRIMARY KEY (`id`, `lootGroupId`),
+  KEY `IX_entity_loot_lootGroupId` (`lootGroupId`),
+  CONSTRAINT `FK_entity_loot_loot_group_lootGroupId`
+    FOREIGN KEY (`lootGroupId`) REFERENCES loot_group (`id`)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS loot_item (
+  `id` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  `type` INT UNSIGNED NOT NULL DEFAULT 0,
+  `staticId` INT UNSIGNED NOT NULL DEFAULT 0,
+  `probability` FLOAT NOT NULL DEFAULT 100,
+  `minCount` INT UNSIGNED NOT NULL DEFAULT 0,
+  `maxCount` INT UNSIGNED NOT NULL DEFAULT 0,
+  `comment` VARCHAR(200) NULL DEFAULT '',
+  PRIMARY KEY (`id`, `type`, `staticId`),
+  CONSTRAINT `FK__loot_item_id__loot_group_id`
+    FOREIGN KEY (`id`) REFERENCES loot_group (`id`)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS creature_info_property (
   `id` INT UNSIGNED NOT NULL,
@@ -226,6 +270,91 @@ ON DUPLICATE KEY UPDATE
   sourceName = VALUES(sourceName),
   itemName = VALUES(itemName);
 
+DELETE li
+FROM loot_item li
+JOIN loot_group lg ON lg.id = li.id
+WHERE @nf_safe_import_replace_existing = 1
+  AND lg.id BETWEEN @nf_loot_group_base AND @nf_loot_group_max
+  AND lg.comment LIKE 'DataMapping creature_loot%';
+
+DELETE el
+FROM entity_loot el
+JOIN loot_group lg ON lg.id = el.lootGroupId
+WHERE @nf_safe_import_replace_existing = 1
+  AND lg.id BETWEEN @nf_loot_group_base AND @nf_loot_group_max
+  AND lg.comment LIKE 'DataMapping creature_loot%';
+
+DELETE FROM loot_group
+WHERE @nf_safe_import_replace_existing = 1
+  AND id BETWEEN @nf_loot_group_base AND @nf_loot_group_max
+  AND comment LIKE 'DataMapping creature_loot%';
+
+DROP TEMPORARY TABLE IF EXISTS tmp_nf_runtime_loot_groups;
+CREATE TEMPORARY TABLE tmp_nf_runtime_loot_groups ENGINE=InnoDB AS
+SELECT
+  creatureId,
+  CAST(@nf_loot_group_base + creatureId AS UNSIGNED) AS lootGroupId,
+  LEFT(CONCAT('DataMapping creature_loot: ', IFNULL(MIN(NULLIF(sourceName, '')), CONCAT('Creature2 ', creatureId))), 200) AS comment
+FROM creature_loot
+WHERE chance > 0
+GROUP BY creatureId;
+
+ALTER TABLE tmp_nf_runtime_loot_groups
+  ADD PRIMARY KEY (creatureId),
+  ADD UNIQUE KEY ux_tmp_nf_runtime_loot_groups_group (lootGroupId);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_nf_runtime_loot_items;
+CREATE TEMPORARY TABLE tmp_nf_runtime_loot_items ENGINE=InnoDB AS
+SELECT
+  CAST(@nf_loot_group_base + creatureId AS UNSIGNED) AS lootGroupId,
+  itemId,
+  CAST(LEAST(100, GREATEST(0, chance * 100)) AS DECIMAL(9,4)) AS probability,
+  1 AS minCount,
+  CAST(
+    CASE
+      WHEN @nf_safe_import_creature_loot_counts_from_aggregates = 1
+        AND IFNULL(dropTimes, 0) > 0
+        AND IFNULL(aggregateDropSum, 0) > IFNULL(dropTimes, 0)
+        THEN LEAST(100, GREATEST(1, CEIL(aggregateDropSum / dropTimes)))
+      ELSE 1
+    END AS UNSIGNED
+  ) AS maxCount,
+  LEFT(CONCAT('DataMapping creature_loot: ', IFNULL(NULLIF(itemName, ''), CONCAT('Item2 ', itemId))), 200) AS comment
+FROM creature_loot
+WHERE chance > 0
+  AND itemId > 0;
+
+ALTER TABLE tmp_nf_runtime_loot_items
+  ADD KEY ix_tmp_nf_runtime_loot_items_group (lootGroupId),
+  ADD KEY ix_tmp_nf_runtime_loot_items_item (itemId);
+
+INSERT INTO loot_group (`id`, `parentId`, `probability`, `minDrop`, `maxDrop`, `conditionType`, `condition`, `comment`)
+SELECT lootGroupId, NULL, 100, 0, 0, 0, 0, comment
+FROM tmp_nf_runtime_loot_groups
+ON DUPLICATE KEY UPDATE
+  `parentId` = VALUES(`parentId`),
+  `probability` = VALUES(`probability`),
+  `minDrop` = VALUES(`minDrop`),
+  `maxDrop` = VALUES(`maxDrop`),
+  `conditionType` = VALUES(`conditionType`),
+  `condition` = VALUES(`condition`),
+  `comment` = VALUES(`comment`);
+
+INSERT INTO entity_loot (`id`, `lootGroupId`, `comment`)
+SELECT creatureId, lootGroupId, comment
+FROM tmp_nf_runtime_loot_groups
+ON DUPLICATE KEY UPDATE
+  `comment` = VALUES(`comment`);
+
+INSERT INTO loot_item (`id`, `type`, `staticId`, `probability`, `minCount`, `maxCount`, `comment`)
+SELECT lootGroupId, 0, itemId, probability, minCount, maxCount, comment
+FROM tmp_nf_runtime_loot_items
+ON DUPLICATE KEY UPDATE
+  `probability` = VALUES(`probability`),
+  `minCount` = VALUES(`minCount`),
+  `maxCount` = VALUES(`maxCount`),
+  `comment` = VALUES(`comment`);
+
 DELETE FROM creature_info_property
 WHERE @nf_safe_import_replace_existing = 1
   AND `property` IN (7, 41);
@@ -274,5 +403,8 @@ SELECT 'entity_vendor' AS table_name, COUNT(*) AS row_count FROM entity_vendor
 UNION ALL SELECT 'entity_vendor_category', COUNT(*) FROM entity_vendor_category
 UNION ALL SELECT 'entity_vendor_item', COUNT(*) FROM entity_vendor_item
 UNION ALL SELECT 'creature_loot', COUNT(*) FROM creature_loot
+UNION ALL SELECT 'loot_group_mapped', COUNT(*) FROM loot_group WHERE comment LIKE 'DataMapping creature_loot%'
+UNION ALL SELECT 'entity_loot_mapped', COUNT(*) FROM entity_loot WHERE comment LIKE 'DataMapping creature_loot%'
+UNION ALL SELECT 'loot_item_mapped', COUNT(*) FROM loot_item li JOIN loot_group lg ON lg.id = li.id WHERE lg.comment LIKE 'DataMapping creature_loot%'
 UNION ALL SELECT 'creature_info_property', COUNT(*) FROM creature_info_property
 UNION ALL SELECT 'creature_info_stat', COUNT(*) FROM creature_info_stat;
