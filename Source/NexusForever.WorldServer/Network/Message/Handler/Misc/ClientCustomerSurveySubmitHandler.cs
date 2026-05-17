@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Support;
+using NexusForever.WorldServer.Support;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 {
@@ -19,8 +20,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
         /// </summary>
         public void HandleMessage(IWorldSession session, ClientCustomerSurveySubmit surveyResponse)
         {
-            log.LogDebug("Ignoring unsupported customer survey submit from player {PlayerGuid}: survey {SurveyType}, comment length {CommentLength}.",
-                session.Player?.Guid, surveyResponse.CustomerSurveyId, surveyResponse.Comment?.Length ?? 0);
+            bool stored = SupportSubmissionStore.TryAppend(log, session, "customer-survey", new
+            {
+                surveyResponse.CustomerSurveyId,
+                surveyResponse.Comment,
+                SurveyModel = surveyResponse.Survey
+            });
+
+            log.LogDebug("Stored customer survey submit from player {PlayerGuid}: survey {SurveyType}, comment length {CommentLength}, stored {Stored}.",
+                session.Player?.Guid, surveyResponse.CustomerSurveyId, surveyResponse.Comment?.Length ?? 0, stored);
         }
     }
 }

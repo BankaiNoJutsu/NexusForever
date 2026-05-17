@@ -2,6 +2,8 @@ using Microsoft.Extensions.Logging;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Shared;
+using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 {
@@ -16,11 +18,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
         public void HandleMessage(IWorldSession session, ClientHousingNeighborInvite housingNeighborInvite)
         {
-            log.LogDebug("Ignoring unsupported housing neighbor invite from player {PlayerGuid}: target residence {ResidenceId}/{RealmId}, target name length {TargetNameLength}.",
+            log.LogDebug("Rejecting housing neighbor invite from player {PlayerGuid}: neighbor backing store is not available, target residence {ResidenceId}/{RealmId}, target name length {TargetNameLength}.",
                 session.Player?.Guid,
                 housingNeighborInvite.TargetResidence.ResidenceId,
                 housingNeighborInvite.TargetResidence.RealmId,
                 housingNeighborInvite.TargetName?.Length ?? 0);
+
+            HousingNeighborResultSender.Send(session, housingNeighborInvite.TargetResidence, housingNeighborInvite.TargetName, HousingResult.Neighbor_PrivilegeRestricted);
         }
     }
 
@@ -35,8 +39,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
         public void HandleMessage(IWorldSession session, ClientHousingNeighborInviteResponse housingNeighborInviteResponse)
         {
-            log.LogDebug("Ignoring unsupported housing neighbor invite response from player {PlayerGuid}: accepted {Accepted}.",
+            log.LogDebug("Rejecting housing neighbor invite response from player {PlayerGuid}: no pending invite, accepted {Accepted}.",
                 session.Player?.Guid, housingNeighborInviteResponse.Accepted);
+
+            HousingNeighborResultSender.Send(session, new TargetResidence(), string.Empty, HousingResult.Neighbor_NoPendingInvite);
         }
     }
 
@@ -51,11 +57,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
         public void HandleMessage(IWorldSession session, ClientHousingNeighborEvict housingNeighborEvict)
         {
-            log.LogDebug("Ignoring unsupported housing neighbor evict request from player {PlayerGuid}: target residence {ResidenceId}/{RealmId}, target name length {TargetNameLength}.",
+            log.LogDebug("Rejecting housing neighbor evict request from player {PlayerGuid}: neighbor backing store is not available, target residence {ResidenceId}/{RealmId}, target name length {TargetNameLength}.",
                 session.Player?.Guid,
                 housingNeighborEvict.TargetResidence.ResidenceId,
                 housingNeighborEvict.TargetResidence.RealmId,
                 housingNeighborEvict.TargetName?.Length ?? 0);
+
+            HousingNeighborResultSender.Send(session, housingNeighborEvict.TargetResidence, housingNeighborEvict.TargetName, HousingResult.Neighbor_InvalidNeighbor);
         }
     }
 
@@ -73,12 +81,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
             if (housingNeighborSetPermission.Permission > 2u)
                 throw new InvalidPacketValueException($"Invalid housing neighbor permission received: {housingNeighborSetPermission.Permission}");
 
-            log.LogDebug("Ignoring unsupported housing neighbor permission request from player {PlayerGuid}: target residence {ResidenceId}/{RealmId}, target name length {TargetNameLength}, permission {Permission}.",
+            log.LogDebug("Rejecting housing neighbor permission request from player {PlayerGuid}: neighbor backing store is not available, target residence {ResidenceId}/{RealmId}, target name length {TargetNameLength}, permission {Permission}.",
                 session.Player?.Guid,
                 housingNeighborSetPermission.TargetResidence.ResidenceId,
                 housingNeighborSetPermission.TargetResidence.RealmId,
                 housingNeighborSetPermission.TargetName?.Length ?? 0,
                 housingNeighborSetPermission.Permission);
+
+            HousingNeighborResultSender.Send(session, housingNeighborSetPermission.TargetResidence, housingNeighborSetPermission.TargetName, HousingResult.Neighbor_InvalidNeighbor);
         }
     }
 
@@ -100,8 +110,22 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                     changedSlots++;
             }
 
-            log.LogDebug("Ignoring unsupported housing interior wallpaper update from player {PlayerGuid}: changed slots {ChangedSlots}, decor records {DecorCount}.",
+            log.LogDebug("Rejected housing interior wallpaper update from player {PlayerGuid}: interior slot wallpaper persistence is not mapped, changed slots {ChangedSlots}, decor records {DecorCount}.",
                 session.Player?.Guid, changedSlots, interiorWallpaperUpdate.DecorUpdates.Count);
+        }
+    }
+
+    internal static class HousingNeighborResultSender
+    {
+        public static void Send(IWorldSession session, TargetResidence targetResidence, string playerName, HousingResult result)
+        {
+            session.EnqueueMessageEncrypted(new ServerHousingResult
+            {
+                RealmId     = targetResidence.RealmId,
+                ResidenceId = targetResidence.ResidenceId,
+                PlayerName  = playerName ?? string.Empty,
+                Result      = result
+            });
         }
     }
 }

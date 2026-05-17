@@ -28,7 +28,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
         {
             MarketplaceRequestHelper.ValidateItem2(itemManager, request.Item2Id);
 
-            log.LogDebug("Returning empty commodity info for unsupported marketplace request from player {PlayerGuid}: item {Item2Id}.",
+            MarketplaceRequestHelper.SendDisabledStatus(session);
+
+            log.LogDebug("Returning empty commodity info for marketplace request from player {PlayerGuid}: item {Item2Id}, reason marketplace-service-unavailable.",
                 session.Player?.Guid, request.Item2Id);
             session.EnqueueMessageEncrypted(new ServerCommodityInfoResults
             {
@@ -48,7 +50,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
 
         public void HandleMessage(IWorldSession session, ClientRequestOwnedCommodityOrders request)
         {
-            log.LogDebug("Returning empty owned commodity orders for unsupported marketplace request from player {PlayerGuid}.",
+            MarketplaceRequestHelper.SendDisabledStatus(session);
+
+            log.LogDebug("Returning empty owned commodity orders for marketplace request from player {PlayerGuid}: reason marketplace-service-unavailable.",
                 session.Player?.Guid);
             session.EnqueueMessageEncrypted(new ServerOwnedCommodityOrders());
         }
@@ -65,7 +69,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
 
         public void HandleMessage(IWorldSession session, ClientRequestOwnedItemAuctions request)
         {
-            log.LogDebug("Returning empty owned item auctions for unsupported marketplace request from player {PlayerGuid}.",
+            MarketplaceRequestHelper.SendDisabledStatus(session);
+
+            log.LogDebug("Returning empty owned item auctions for marketplace request from player {PlayerGuid}: reason marketplace-service-unavailable.",
                 session.Player?.Guid);
             session.EnqueueMessageEncrypted(new ServerOwnedItemAuctions());
         }
@@ -91,7 +97,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
         {
             MarketplaceRequestHelper.ValidateAuctionSearch(gameTableManager, itemManager, request);
 
-            log.LogDebug("Returning empty auction search results for unsupported marketplace request from player {PlayerGuid}: page {Page}.",
+            MarketplaceRequestHelper.SendDisabledStatus(session);
+
+            log.LogDebug("Returning empty auction search results for marketplace request from player {PlayerGuid}: page {Page}, reason marketplace-service-unavailable.",
                 session.Player?.Guid, request.Page);
             session.EnqueueMessageEncrypted(new ServerAuctionSearchResults
             {
@@ -119,7 +127,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
             if (buyOrderSubmit.AuctionId == 0ul || buyOrderSubmit.AmountOffered == 0ul)
                 throw new InvalidPacketValueException();
 
-            log.LogDebug("Rejecting unsupported auction buy request from player {PlayerGuid}: auction {AuctionId}, item {Item2Id}, amount {AmountOffered}.",
+            MarketplaceRequestHelper.SendDisabledStatus(session);
+
+            log.LogDebug("Rejecting auction buy request from player {PlayerGuid}: auction {AuctionId}, item {Item2Id}, amount {AmountOffered}, reason marketplace-service-unavailable.",
                 session.Player?.Guid, buyOrderSubmit.AuctionId, buyOrderSubmit.Item2Id, buyOrderSubmit.AmountOffered);
             session.EnqueueMessageEncrypted(new ServerAuctionBidResult
             {
@@ -149,7 +159,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
             if (sellOrderSubmit.MinimumBid == 0ul || (sellOrderSubmit.BuyoutPrice != 0ul && sellOrderSubmit.BuyoutPrice < sellOrderSubmit.MinimumBid))
                 throw new InvalidPacketValueException();
 
-            log.LogDebug("Rejecting unsupported auction sell request from player {PlayerGuid}: item {ItemGuid}, minimum bid {MinimumBid}, buyout {BuyoutPrice}.",
+            MarketplaceRequestHelper.SendDisabledStatus(session);
+
+            log.LogDebug("Rejecting auction sell request from player {PlayerGuid}: item {ItemGuid}, minimum bid {MinimumBid}, buyout {BuyoutPrice}, reason marketplace-service-unavailable.",
                 session.Player?.Guid, sellOrderSubmit.ItemGuid, sellOrderSubmit.MinimumBid, sellOrderSubmit.BuyoutPrice);
             session.EnqueueMessageEncrypted(new ServerAuctionPostResult
             {
@@ -184,7 +196,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
             if (auctionCancel.AuctionId == 0ul)
                 throw new InvalidPacketValueException();
 
-            log.LogDebug("Rejecting unsupported auction cancel request from player {PlayerGuid}: auction {AuctionId}, item {Item2Id}.",
+            MarketplaceRequestHelper.SendDisabledStatus(session);
+
+            log.LogDebug("Rejecting auction cancel request from player {PlayerGuid}: auction {AuctionId}, item {Item2Id}, reason marketplace-service-unavailable.",
                 session.Player?.Guid, auctionCancel.AuctionId, auctionCancel.Item2Id);
             session.EnqueueMessageEncrypted(new ServerAuctionCancelResult
             {
@@ -215,7 +229,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
         {
             MarketplaceRequestHelper.ValidateCommodityOrder(itemManager, sellOrderSubmit.Order);
 
-            log.LogDebug("Rejecting unsupported commodity order request from player {PlayerGuid}: item {Item2Id}, quantity {Quantity}, buy order {IsBuyOrder}.",
+            MarketplaceRequestHelper.SendDisabledStatus(session);
+
+            log.LogDebug("Rejecting commodity order request from player {PlayerGuid}: item {Item2Id}, quantity {Quantity}, buy order {IsBuyOrder}, reason marketplace-service-unavailable.",
                 session.Player?.Guid, sellOrderSubmit.Order.Item2Id, sellOrderSubmit.Order.Quantity, sellOrderSubmit.Order.IsBuyOrder);
             session.EnqueueMessageEncrypted(new ServerCommodityOrderResult
             {
@@ -244,7 +260,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
             if (orderCancel.CommodityOrderId == 0ul)
                 throw new InvalidPacketValueException();
 
-            log.LogDebug("Ignoring unsupported commodity order cancel request from player {PlayerGuid}: order {CommodityOrderId}, item {Item2Id}, buy order {IsBuyOrder}.",
+            MarketplaceRequestHelper.SendDisabledStatus(session);
+
+            log.LogDebug("Ignoring commodity order cancel request from player {PlayerGuid}: order {CommodityOrderId}, item {Item2Id}, buy order {IsBuyOrder}, reason marketplace-service-unavailable.",
                 session.Player?.Guid, orderCancel.CommodityOrderId, orderCancel.Item2Id, orderCancel.IsBuyOrder);
         }
     }
@@ -290,6 +308,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
 
             foreach (IAuctionFilter filter in request.Filters)
                 ValidateAuctionFilter(filter);
+        }
+
+        public static void SendDisabledStatus(IWorldSession session)
+        {
+            session.EnqueueMessageEncrypted(new ServerMarketplaceStatus
+            {
+                Status = MarketplaceStatus.AuctionsDisabled | MarketplaceStatus.CommoditiesDisabled
+            });
         }
 
         public static void ValidateItem2(IItemManager itemManager, uint item2Id)

@@ -23,7 +23,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Option
                 throw new InvalidPacketValueException($"Invalid combat options received: casting={combatOptions.CastingOptions}, combatLog={combatOptions.CombatLogDisableFlags}");
             }
 
-            log.LogDebug("Ignoring unsupported combat option sync from player {PlayerGuid}: casting {CastingOptions}, disable other player logs {DisableOtherPlayers}, combat log disables {CombatLogDisables}.",
+            session.Player.CastingOptions = combatOptions.CastingOptions;
+            session.Player.DisableOtherPlayersCombatLogs = combatOptions.DisableOtherPlayersLogging;
+            session.Player.CombatLogDisableFlags = combatOptions.CombatLogDisableFlags;
+
+            log.LogDebug("Updated combat option sync from player {PlayerGuid}: casting {CastingOptions}, disable other player logs {DisableOtherPlayers}, combat log disables {CombatLogDisables}.",
                 session.Player?.Guid, combatOptions.CastingOptions, combatOptions.DisableOtherPlayersLogging, combatOptions.CombatLogDisableFlags);
         }
     }
@@ -44,16 +48,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Option
                 case OptionType.Casting:
                     if (!ClientOptionValidation.HasOnlyKnownCastingOptions((CastingOptionFlags)options.NewValue))
                         throw new InvalidPacketValueException($"Invalid casting options received: {options.NewValue}");
+                    session.Player.CastingOptions = (CastingOptionFlags)options.NewValue;
                     break;
                 case OptionType.SharedChallenge:
                     if (options.NewValue > 1u)
                         throw new InvalidPacketValueException($"Invalid shared challenge option received: {options.NewValue}");
+                    session.Player.SharedChallengeEnabled = options.NewValue != 0u;
                     break;
                 default:
                     throw new InvalidPacketValueException($"Invalid option type received: {options.Type}");
             }
 
-            log.LogDebug("Ignoring unsupported option update from player {PlayerGuid}: type {OptionType}, value {OptionValue}.",
+            log.LogDebug("Updated option from player {PlayerGuid}: type {OptionType}, value {OptionValue}.",
                 session.Player?.Guid, options.Type, options.NewValue);
         }
     }
@@ -69,7 +75,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Option
 
         public void HandleMessage(IWorldSession session, ClientCombatLogDisableOthers combatLogDisableOthers)
         {
-            log.LogDebug("Ignoring unsupported combat log disable-others update from player {PlayerGuid}: disable {DisableOtherPlayers}.",
+            session.Player.DisableOtherPlayersCombatLogs = combatLogDisableOthers.DisableOtherPlayers;
+
+            log.LogDebug("Updated combat log disable-others option from player {PlayerGuid}: disable {DisableOtherPlayers}.",
                 session.Player?.Guid, combatLogDisableOthers.DisableOtherPlayers);
         }
     }
@@ -88,7 +96,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Option
             if (!ClientOptionValidation.HasOnlyKnownCombatLogOptions(combatLogDisables.DisableFlags))
                 throw new InvalidPacketValueException($"Invalid combat log disable flags received: {combatLogDisables.DisableFlags}");
 
-            log.LogDebug("Ignoring unsupported combat log disable-flags update from player {PlayerGuid}: disables {CombatLogDisables}.",
+            session.Player.CombatLogDisableFlags = combatLogDisables.DisableFlags;
+
+            log.LogDebug("Updated combat log disable-flags option from player {PlayerGuid}: disables {CombatLogDisables}.",
                 session.Player?.Guid, combatLogDisables.DisableFlags);
         }
     }

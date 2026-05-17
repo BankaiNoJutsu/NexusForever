@@ -27,7 +27,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
         {
             if (!StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.Target))
             {
-                log.LogWarning("Rejecting storefront character purchase from player {PlayerGuid}: unsupported target {Target}.",
+                log.LogWarning("Rejecting storefront character purchase from player {PlayerGuid}: non-current target {Target}.",
                     session.Player?.Guid, purchase.Target);
                 StorefrontPurchaseHelper.SendFailure(session, GenericError.Params);
                 return;
@@ -57,7 +57,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 !StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.AccountTarget) ||
                 !string.IsNullOrWhiteSpace(purchase.RecipientName))
             {
-                log.LogDebug("Rejecting unsupported storefront account purchase/gift from player {PlayerGuid}: target {Target}, account target {AccountTarget}, recipient length {RecipientLength}.",
+                log.LogDebug("Rejecting storefront account purchase/gift from player {PlayerGuid}: target {Target}, account target {AccountTarget}, recipient length {RecipientLength}, reason gifting-target-evidence-gap.",
                     session.Player?.Guid, purchase.Target, purchase.AccountTarget, purchase.RecipientName?.Length ?? 0);
                 StorefrontPurchaseHelper.SendFailure(session, GenericError.Params);
                 return;
@@ -206,7 +206,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 if (itemData.Type != 0u)
                 {
                     error  = GenericError.Params;
-                    reason = $"unsupported offer item data type {itemData.Type}";
+                    reason = $"offer item data type {itemData.Type} evidence gap";
                     return false;
                 }
 

@@ -44,16 +44,52 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Map
     public class ClientGenericMapNodeChosenHandler : IMessageHandler<IWorldSession, ClientGenericMapNodeChosen>
     {
         private readonly ILogger<ClientGenericMapNodeChosenHandler> log;
+        private readonly IGameTableManager gameTableManager;
 
-        public ClientGenericMapNodeChosenHandler(ILogger<ClientGenericMapNodeChosenHandler> log)
+        public ClientGenericMapNodeChosenHandler(
+            ILogger<ClientGenericMapNodeChosenHandler> log,
+            IGameTableManager gameTableManager)
         {
-            this.log = log;
+            this.log              = log;
+            this.gameTableManager = gameTableManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientGenericMapNodeChosen genericMapNodeChosen)
         {
-            log.LogDebug("Ignoring unsupported generic map node choice from player {PlayerGuid}: node {GenericMapNodeId}.",
-                session.Player?.Guid, genericMapNodeChosen.GenericMapNodeId);
+            var node = gameTableManager.GenericMapNode.GetEntry(genericMapNodeChosen.GenericMapNodeId);
+            if (node == null)
+            {
+                log.LogDebug("Ignoring generic map node choice from player {PlayerGuid}: unknown node {GenericMapNodeId}.",
+                    session.Player?.Guid, genericMapNodeChosen.GenericMapNodeId);
+                return;
+            }
+
+            if (node.WorldLocation2Id == 0u)
+            {
+                log.LogDebug("Acknowledging generic map node choice from player {PlayerGuid}: node {GenericMapNodeId} has no destination.",
+                    session.Player?.Guid, genericMapNodeChosen.GenericMapNodeId);
+                session.EnqueueMessageEncrypted(new ServerGenericMapNode
+                {
+                    Node = new GenericMapNode
+                    {
+                        GenericMapModeId = genericMapNodeChosen.GenericMapNodeId,
+                        Enabled          = true
+                    }
+                });
+                return;
+            }
+
+            var location = gameTableManager.WorldLocation2.GetEntry(node.WorldLocation2Id);
+            if (location == null)
+            {
+                log.LogWarning("Unable to process generic map node choice from player {PlayerGuid}: node {GenericMapNodeId} references missing world location {WorldLocation2Id}.",
+                    session.Player?.Guid, genericMapNodeChosen.GenericMapNodeId, node.WorldLocation2Id);
+                return;
+            }
+
+            log.LogDebug("Teleporting player {PlayerGuid} from generic map node choice: node {GenericMapNodeId}, world location {WorldLocation2Id}.",
+                session.Player?.Guid, genericMapNodeChosen.GenericMapNodeId, node.WorldLocation2Id);
+            session.Player.TeleportTo((ushort)location.WorldId, location.Position0, location.Position1, location.Position2);
         }
     }
 }

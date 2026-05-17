@@ -185,6 +185,12 @@ namespace NexusForever.Game.Entity
             return spells.TryGetValue(spell4BaseId, out ICharacterSpell spell) ? spell : null;
         }
 
+        public ICharacterSpell GetSpellForSpell4Id(uint spell4Id)
+        {
+            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            return spell4Entry == null ? null : GetSpell(spell4Entry.Spell4BaseIdBaseSpell);
+        }
+
         /// <summary>
         /// Add a new <see cref="ICharacterSpell"/> created from supplied spell base id and tier.
         /// </summary>
@@ -474,6 +480,37 @@ namespace NexusForever.Game.Entity
                 IActionSet actionSet = GetActionSet(i);
                 player.Session.EnqueueMessageEncrypted(actionSet.BuildServerAmpList());
             }
+        }
+
+        public bool SetSpellActivation(uint spell4Id, bool active)
+        {
+            Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(spell4Id);
+            if (spell4Entry == null)
+                return false;
+
+            ICharacterSpell spell = GetSpell(spell4Entry.Spell4BaseIdBaseSpell);
+            if (spell == null)
+                return false;
+
+            byte tier = active
+                ? (byte)Math.Max(1, (int)spell.Tier)
+                : (byte)0;
+
+            if (spell.Tier != tier)
+                spell.Tier = tier;
+
+            if (!player.IsLoading)
+            {
+                player.Session.EnqueueMessageEncrypted(new ServerSpellUpdate
+                {
+                    Spell4BaseId = spell4Entry.Spell4BaseIdBaseSpell,
+                    TierIndex    = tier,
+                    SpecIndex    = ActiveActionSet,
+                    Activated    = active
+                });
+            }
+
+            return true;
         }
 
         private void SendServerAmpPowerUpdate()

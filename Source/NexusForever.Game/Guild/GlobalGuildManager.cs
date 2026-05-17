@@ -313,21 +313,7 @@ namespace NexusForever.Game.Guild
             {
                 log.Warn($"Received unhandled GuildOperation {operation.Operation}.");
 
-                player.Session.EnqueueMessageEncrypted(new ServerChat
-                {
-                    Channel  = new Channel
-                    {
-                        ChatChannelId = ChatChannelType.Debug
-                    },
-                    From = new Network.World.Message.Model.Shared.Identity
-                    {
-                        Id = 0,
-                        RealmId = 0,
-                    },
-                    FromName = "GlobalGuildManager",
-                    Text     = $"{operation.Operation} not implemented!",
-                });
-
+                GuildBase.SendGuildResult(player.Session, GuildResult.UnableToProcess, operation.GuildIdentity.ToGameIdentity());
                 return;
             }
 

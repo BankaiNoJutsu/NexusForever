@@ -11,5 +11,6 @@ namespace NexusForever.Network.Internal.Message.Chat
         public IdentityName RecipientName { get; set; }
         public ChatChannelText Text { get; set; }
         public bool IsAccountWhisper { get; set; }
+        public bool AutoResponse { get; set; }
     }
 }

@@ -37,7 +37,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemClaimPendingItemGroup claimPendingItemGroup)
         {
-            log.LogDebug("Rejecting unsupported pending account item group claim from player {PlayerGuid}: group {Group}.",
+            log.LogDebug("Rejecting pending account item group claim from player {PlayerGuid}: group {Group}, reason pending-group-store-unavailable.",
                 session.Player?.Guid, claimPendingItemGroup.Group);
             session.Account.InventoryManager.SendPendingItems();
             ClientAccountItemOperationResultHelper.Send(session, AccountOperation.ClaimPending, AccountOperationResult.InvalidPendingItem);
@@ -55,7 +55,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemReturnPendingItemGroup returnPendingItemGroup)
         {
-            log.LogDebug("Rejecting unsupported pending account item group return from player {PlayerGuid}: group {Group}.",
+            log.LogDebug("Rejecting pending account item group return from player {PlayerGuid}: group {Group}, reason pending-group-store-unavailable.",
                 session.Player?.Guid, returnPendingItemGroup.Group);
             session.Account.InventoryManager.SendPendingItems();
             ClientAccountItemOperationResultHelper.Send(session, AccountOperation.ReturnPending, AccountOperationResult.InvalidPendingItem);
@@ -73,7 +73,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemGiftPendingItemGroupToCharacter giftPendingItemGroup)
         {
-            log.LogDebug("Rejecting unsupported pending account item group character gift from player {PlayerGuid}: group {Group}, target {TargetCharacter}.",
+            log.LogDebug("Rejecting pending account item group character gift from player {PlayerGuid}: group {Group}, target {TargetCharacter}, reason pending-group-store-unavailable.",
                 session.Player?.Guid, giftPendingItemGroup.Group, giftPendingItemGroup.TargetCharacter);
             ClientAccountItemGiftPendingItemGroupHandler.RejectGift(session);
         }
@@ -90,7 +90,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemGiftPendingItemGroupToAccount giftPendingItemGroup)
         {
-            log.LogDebug("Rejecting unsupported pending account item group account gift from player {PlayerGuid}: group {Group}, target account {TargetAccountId}, unknown0 {Unknown0}, sender {SenderCharacter}.",
+            log.LogDebug("Rejecting pending account item group account gift from player {PlayerGuid}: group {Group}, target account {TargetAccountId}, unknown0 {Unknown0}, sender {SenderCharacter}, reason pending-group-store-unavailable.",
                 session.Player?.Guid, giftPendingItemGroup.Group, giftPendingItemGroup.TargetAccountId, giftPendingItemGroup.Unknown0, giftPendingItemGroup.SenderCharacter);
             ClientAccountItemGiftPendingItemGroupHandler.RejectGift(session);
         }

@@ -77,7 +77,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Friendship
 
         public void HandleMessage(IWorldSession session, ClientFriendshipSetAutoResponseMessage message)
         {
-            log.LogDebug("Ignoring unsupported auto-response update from player {PlayerGuid}: away length {AwayLength}, busy length {BusyLength}.",
+            session.Player.AwayAutoResponseMessage = message.AwayMessage ?? string.Empty;
+            session.Player.BusyAutoResponseMessage = message.BusyMessage ?? string.Empty;
+
+            log.LogDebug("Updated auto-response messages for player {PlayerGuid}: away length {AwayLength}, busy length {BusyLength}.",
                 session.Player?.Guid, message.AwayMessage?.Length ?? 0, message.BusyMessage?.Length ?? 0);
         }
     }

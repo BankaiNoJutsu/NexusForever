@@ -70,8 +70,13 @@ namespace NexusForever.Game.Chat
                 HandleChatServerChat(player, chat);
             else
             {
-                log.LogInformation($"ChatChannel {chat.Channel} has no handler implemented.");
-                SendMessage(player.Session, "Currently not implemented", "GlobalChatManager", ChatChannelType.Debug);
+                log.LogInformation("Rejecting chat message for unrouted channel {Channel} from player {PlayerGuid}.",
+                    chat.Channel, player.Guid);
+                player.Session.EnqueueMessageEncrypted(new ServerChatResult
+                {
+                    Channel    = chat.Channel,
+                    ChatResult = ChatResult.DoesntExist
+                });
             }
         }
 

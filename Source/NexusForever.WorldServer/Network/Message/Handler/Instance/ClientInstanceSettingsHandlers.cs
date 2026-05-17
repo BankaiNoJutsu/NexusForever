@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using NexusForever.Game.Static.Setting;
 using NexusForever.Network;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Instance;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Instance
@@ -33,7 +34,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Instance
 
         public void HandleMessage(IWorldSession session, ClientResetSingleInstance resetSingleInstance)
         {
-            log.LogDebug("Rejecting unsupported single instance reset from player {PlayerGuid}: portal unit id {InstancePortalUnitId}.",
+            log.LogDebug("Rejecting single instance reset from player {PlayerGuid}: no resettable instance lock for portal unit id {InstancePortalUnitId}.",
                 session.Player?.Guid, resetSingleInstance.InstancePortalUnitId);
 
             session.EnqueueMessageEncrypted(new ServerInstanceResetResult
@@ -57,7 +58,19 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Instance
             if (setInstanceSettings.Difficulty >= WorldDifficulty.Count)
                 throw new InvalidPacketValueException($"Invalid instance difficulty received: {setInstanceSettings.Difficulty}");
 
-            log.LogDebug("Ignoring unsupported instance settings update from player {PlayerGuid}: portal unit id {InstancePortalUnitId}, difficulty {Difficulty}, prime level {PrimeLevel}, rally {Rally}.",
+            session.Player.InstanceDifficulty       = setInstanceSettings.Difficulty;
+            session.Player.InstancePrimeLevel       = setInstanceSettings.PrimeLevel;
+            session.Player.InstanceScalingEnabled   = setInstanceSettings.Rally != 0u;
+
+            session.EnqueueMessageEncrypted(new ServerInstanceSettings
+            {
+                Difficulty                     = session.Player.InstanceDifficulty,
+                PrimeLevel                     = session.Player.InstancePrimeLevel,
+                Flags                          = session.Player.InstanceScalingEnabled ? ServerInstanceSettings.WorldSetting.WorldForcesLevelScaling : 0,
+                ClientEntitySendUpdateInterval = 125
+            });
+
+            log.LogDebug("Updated instance settings for player {PlayerGuid}: portal unit id {InstancePortalUnitId}, difficulty {Difficulty}, prime level {PrimeLevel}, rally {Rally}.",
                 session.Player?.Guid,
                 setInstanceSettings.InstancePortalUnitId,
                 setInstanceSettings.Difficulty,

@@ -27,7 +27,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             CraftingRuneRequestHelper.ValidateItem2(gameTableManager, additive.AdditiveItem2Id);
             CraftingRuneRequestHelper.ValidateItem2(gameTableManager, additive.CatalystItem2Id);
 
-            log.LogDebug("Ignoring unsupported crafting additive request from player {PlayerGuid}: station {StationUnitId}, additive {AdditiveItem2Id}, catalyst {CatalystItem2Id}.",
+            log.LogDebug("Rejected crafting additive request from player {PlayerGuid}: station {StationUnitId}, additive {AdditiveItem2Id}, catalyst {CatalystItem2Id}, reason active-craft-modifier-state-evidence-gap.",
                 session.Player?.Guid, additive.CraftingStationUnitId, additive.AdditiveItem2Id, additive.CatalystItem2Id);
         }
     }
@@ -44,7 +44,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingAbandon abandon)
         {
-            log.LogDebug("Ignoring unsupported crafting abandon request from player {PlayerGuid}.",
+            log.LogDebug("Rejected crafting abandon request from player {PlayerGuid}: reason active-craft-state-evidence-gap.",
                 session.Player?.Guid);
         }
     }
@@ -64,8 +64,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotAdd.ItemGuid);
             CraftingRuneRequestHelper.ValidateRuneType(runeSlotAdd.Type);
 
-            log.LogDebug("Ignoring unsupported rune slot add request from player {PlayerGuid}: item {ItemGuid}, isNotFusion {IsNotFusion}, type {RuneType}.",
+            log.LogDebug("Rejected rune slot add request from player {PlayerGuid}: item {ItemGuid}, isNotFusion {IsNotFusion}, type {RuneType}, reason item-rune-slot-state-evidence-gap.",
                 session.Player?.Guid, runeSlotAdd.ItemGuid, runeSlotAdd.IsNotFusion, runeSlotAdd.Type);
+            CraftingRuneRequestHelper.SendSigilResult(session, TradeskillResult.UnknownError);
         }
     }
 
@@ -83,8 +84,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         {
             CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotClear.ItemGuid);
 
-            log.LogDebug("Ignoring unsupported rune slot clear request from player {PlayerGuid}: item {ItemGuid}, slot {RuneSlotIndex}, recover {RecoverRune}, groupCurrency {UseGroupCurrency}.",
+            log.LogDebug("Rejected rune slot clear request from player {PlayerGuid}: item {ItemGuid}, slot {RuneSlotIndex}, recover {RecoverRune}, groupCurrency {UseGroupCurrency}, reason item-rune-slot-state-evidence-gap.",
                 session.Player?.Guid, runeSlotClear.ItemGuid, runeSlotClear.RuneSlotIndex, runeSlotClear.RecoverRune, runeSlotClear.UseGroupCurrency);
+            CraftingRuneRequestHelper.SendSigilResult(session, TradeskillResult.UnknownError);
         }
     }
 
@@ -108,8 +110,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             foreach (uint item2Id in runeInstall.RuneSlotItem2Id)
                 CraftingRuneRequestHelper.ValidateItem2(gameTableManager, item2Id);
 
-            log.LogDebug("Ignoring unsupported rune install request from player {PlayerGuid}: item {ItemGuid}, runeCount {RuneCount}.",
+            log.LogDebug("Rejected rune install request from player {PlayerGuid}: item {ItemGuid}, runeCount {RuneCount}, reason item-rune-slot-state-evidence-gap.",
                 session.Player?.Guid, runeInstall.ItemGuid, runeInstall.RuneSlotItem2Id.Length);
+            CraftingRuneRequestHelper.SendSigilResult(session, TradeskillResult.UnknownError);
         }
     }
 
@@ -128,8 +131,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotReroll.ItemGuid);
             CraftingRuneRequestHelper.ValidateRuneType(runeSlotReroll.Type);
 
-            log.LogDebug("Ignoring unsupported rune slot reroll request from player {PlayerGuid}: item {ItemGuid}, slot {SlotIndex}, type {RuneType}.",
+            log.LogDebug("Rejected rune slot reroll request from player {PlayerGuid}: item {ItemGuid}, slot {SlotIndex}, type {RuneType}, reason item-rune-slot-state-evidence-gap.",
                 session.Player?.Guid, runeSlotReroll.ItemGuid, runeSlotReroll.SlotIndex, runeSlotReroll.Type);
+            CraftingRuneRequestHelper.SendSigilResult(session, TradeskillResult.UnknownError);
         }
     }
 
@@ -157,6 +161,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         {
             if (!Enum.IsDefined(type))
                 throw new InvalidPacketValueException();
+        }
+
+        public static void SendSigilResult(IWorldSession session, TradeskillResult result)
+        {
+            session.EnqueueMessageEncrypted(new ServerTradeskillSigilResult
+            {
+                TradeskillSigilResult = result
+            });
         }
     }
 }

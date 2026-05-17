@@ -16,7 +16,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
 
         public void HandleMessage(IWorldSession session, ClientRewardUpdateRequest rewardUpdateRequest)
         {
-            log.LogDebug("Ignoring unsupported reward update request from player {PlayerGuid}: reward rotation index {RewardRotationIndex}.",
+            session.Account.RewardPropertyManager.SendInitialPackets();
+
+            log.LogDebug("Refreshed reward properties for player {PlayerGuid}: reward rotation index {RewardRotationIndex}.",
                 session.Player?.Guid, rewardUpdateRequest.RewardRotationIndex);
         }
     }

@@ -22,6 +22,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Friendship
 
         public void HandleMessage(IWorldSession session, ClientFriendshipAccountPersonalPresenceChange message)
         {
+            session.Player.PresenceState = message.Presence;
+
             messagePublisher.PublishAsync(new FriendshipAccountPresenceUpdateMessage
             {
                 AccountId = session.Account.Id,

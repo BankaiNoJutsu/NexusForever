@@ -470,7 +470,7 @@ namespace NexusForever.Game.Entity
 
             if (!IsSupportedProcTriggerEvent(state.TriggerEvent))
             {
-                SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, 0u, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", "unsupported-trigger-event");
+                SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, 0u, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", "evidence-gap-trigger-event");
                 return;
             }
 
@@ -544,7 +544,7 @@ namespace NexusForever.Game.Entity
                     return resolvedTarget != null;
                 default:
                     resolvedTarget = null;
-                    skippedReason = "unsupported-target-data";
+                    skippedReason = "evidence-gap-target-data";
                     return false;
             }
         }

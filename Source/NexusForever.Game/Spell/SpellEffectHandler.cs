@@ -131,7 +131,7 @@ namespace NexusForever.Game.Spell
             }
             else
             {
-                skippedReason = "unsupported-heal-vital";
+                skippedReason = "evidence-gap-heal-vital";
             }
 
             info.AddCombatLog(new CombatLogTransference
@@ -240,7 +240,7 @@ namespace NexusForever.Game.Spell
             }
 
             bool applied = target.TryModifyVital(vitalModifier.Vital, amount, out float appliedAmount, spell.Caster);
-            SpellEffectDiagnostics.TraceVitalModifier(spell, target, vitalModifier, mode, amount, appliedAmount, applied, applied ? string.Empty : "unsupported-vital");
+            SpellEffectDiagnostics.TraceVitalModifier(spell, target, vitalModifier, mode, amount, appliedAmount, applied, applied ? string.Empty : "evidence-gap-vital");
             if (!applied)
                 return;
 
@@ -331,7 +331,7 @@ namespace NexusForever.Game.Spell
 
             if (!target.TryGetVitalMax(vitalModifier.Vital, out float maxValue))
             {
-                skippedReason = "unsupported-vital-max";
+                skippedReason = "evidence-gap-vital-max";
                 return false;
             }
 
@@ -377,7 +377,7 @@ namespace NexusForever.Game.Spell
             }
 
             bool applied = target.TryModifyVital(sapVital.Vital, amount, out float appliedAmount, spell.Caster, info.Entry.DamageType);
-            SpellEffectDiagnostics.TraceSapVital(spell, target, sapVital, mode, amountSource, amount, appliedAmount, applied, applied ? string.Empty : "unsupported-vital");
+            SpellEffectDiagnostics.TraceSapVital(spell, target, sapVital, mode, amountSource, amount, appliedAmount, applied, applied ? string.Empty : "evidence-gap-vital");
             if (!applied)
                 return;
 
@@ -444,7 +444,7 @@ namespace NexusForever.Game.Spell
 
             if (!target.TryGetVitalMax(sapVital.Vital, out float maxValue))
             {
-                skippedReason = "unsupported-vital-max";
+                skippedReason = "evidence-gap-vital-max";
                 return false;
             }
 
@@ -1768,7 +1768,7 @@ namespace NexusForever.Game.Spell
 
             if (housingTeleport.Mode != 0u)
             {
-                SpellEffectDiagnostics.TraceHousingTeleport(spell, target, housingTeleport, escapeVariant, player.Guid, false, "unsupported-mode");
+                SpellEffectDiagnostics.TraceHousingTeleport(spell, target, housingTeleport, escapeVariant, player.Guid, false, "evidence-gap-mode");
                 return;
             }
 
@@ -2404,7 +2404,7 @@ namespace NexusForever.Game.Spell
 
             if (immunity.Mode != 0u)
             {
-                SpellEffectDiagnostics.TraceSpellImmunity(spell, target, immunity, false, false, "unsupported-mode");
+                SpellEffectDiagnostics.TraceSpellImmunity(spell, target, immunity, false, false, "evidence-gap-mode");
                 return;
             }
 
@@ -2564,7 +2564,7 @@ namespace NexusForever.Game.Spell
             Vital vital = ResolveClampVital(clampVital);
             if (vital != Vital.Health)
             {
-                SpellEffectDiagnostics.TraceClampVital(spell, target, clampVital, vital, target.Health, target.Health, false, false, "unsupported-vital");
+                SpellEffectDiagnostics.TraceClampVital(spell, target, clampVital, vital, target.Health, target.Health, false, false, "evidence-gap-vital");
                 return;
             }
 
@@ -3399,7 +3399,7 @@ namespace NexusForever.Game.Spell
                     return true;
                 default:
                     property = default;
-                    skippedReason = "unsupported-modifier-type";
+                    skippedReason = "evidence-gap-modifier-type";
                     return false;
             }
         }
@@ -3489,7 +3489,7 @@ namespace NexusForever.Game.Spell
                 return true;
             }
 
-            skippedReason = "unsupported-cooldown-mode";
+            skippedReason = "evidence-gap-cooldown-mode";
             return false;
         }
 

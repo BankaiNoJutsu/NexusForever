@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Static.Account;
+using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.CREDDExchange;
 
@@ -16,7 +17,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientCREDDExchangeRequestInfo requestInfo)
         {
-            log.LogDebug("Rejecting unsupported CREDD exchange info request from player {PlayerGuid}.",
+            log.LogDebug("Rejecting CREDD exchange info request from player {PlayerGuid}: reason exchange-service-unavailable.",
                 session.Player?.Guid);
             ClientAccountItemOperationResultHelper.Send(session, AccountOperation.GetCREDDExchangeInfo, AccountOperationResult.CREDDExchangeNotLoaded);
         }
@@ -33,7 +34,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientCREDDExchangeCancelOrder cancelOrder)
         {
-            log.LogDebug("Rejecting unsupported CREDD exchange cancel request from player {PlayerGuid}: order id {OrderId}.",
+            if (cancelOrder.OrderId == 0ul)
+                throw new InvalidPacketValueException();
+
+            log.LogDebug("Rejecting CREDD exchange cancel request from player {PlayerGuid}: order id {OrderId}, reason exchange-service-unavailable.",
                 session.Player?.Guid, cancelOrder.OrderId);
             ClientAccountItemOperationResultHelper.Send(session, AccountOperation.CancelCREDDOrder, AccountOperationResult.CREDDExchangeNotLoaded);
         }
@@ -50,7 +54,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientCREDDExchangeBuyOrderSubmit buyOrderSubmit)
         {
-            log.LogDebug("Rejecting unsupported CREDD exchange buy request from player {PlayerGuid}: credits {CreditAmount}, flag {SubmitFlag}.",
+            if (buyOrderSubmit.CreditAmount == 0ul)
+                throw new InvalidPacketValueException();
+
+            log.LogDebug("Rejecting CREDD exchange buy request from player {PlayerGuid}: credits {CreditAmount}, flag {SubmitFlag}, reason exchange-service-unavailable.",
                 session.Player?.Guid, buyOrderSubmit.CreditAmount, buyOrderSubmit.SubmitFlag);
             ClientAccountItemOperationResultHelper.Send(session, AccountOperation.BuyCREDD, AccountOperationResult.CREDDExchangeNotLoaded);
         }
@@ -67,7 +74,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientCREDDExchangeSellOrderSubmit sellOrderSubmit)
         {
-            log.LogDebug("Rejecting unsupported CREDD exchange sell request from player {PlayerGuid}: target {TargetIdentity}, credits {CreditAmount}, flag {SubmitFlag}.",
+            if (sellOrderSubmit.CreditAmount == 0ul)
+                throw new InvalidPacketValueException();
+
+            log.LogDebug("Rejecting CREDD exchange sell request from player {PlayerGuid}: target {TargetIdentity}, credits {CreditAmount}, flag {SubmitFlag}, reason exchange-service-unavailable.",
                 session.Player?.Guid, sellOrderSubmit.TargetIdentity, sellOrderSubmit.CreditAmount, sellOrderSubmit.SubmitFlag);
             ClientAccountItemOperationResultHelper.Send(session, AccountOperation.SellCREDD, AccountOperationResult.CREDDExchangeNotLoaded);
         }
@@ -84,7 +94,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientCREDDExchangeRequestHistory requestHistory)
         {
-            log.LogDebug("Rejecting unsupported CREDD exchange history request from player {PlayerGuid}.",
+            log.LogDebug("Rejecting CREDD exchange history request from player {PlayerGuid}: reason exchange-service-unavailable.",
                 session.Player?.Guid);
             ClientAccountItemOperationResultHelper.Send(session, AccountOperation.GetCREDDExchangeInfo, AccountOperationResult.CREDDExchangeNotLoaded);
         }

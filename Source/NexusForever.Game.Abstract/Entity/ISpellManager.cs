@@ -20,6 +20,11 @@ namespace NexusForever.Game.Abstract.Entity
         ICharacterSpell GetSpell(uint spell4BaseId);
 
         /// <summary>
+        /// Returns <see cref="ICharacterSpell"/> for an existing spell entry id.
+        /// </summary>
+        ICharacterSpell GetSpellForSpell4Id(uint spell4Id);
+
+        /// <summary>
         /// Add a new <see cref="ICharacterSpell"/> created from supplied spell base id and tier.
         /// </summary>
         void AddSpell(uint spell4BaseId, byte tier = 1);
@@ -28,6 +33,11 @@ namespace NexusForever.Game.Abstract.Entity
         /// Update existing <see cref="ICharacterSpell"/> with supplied tier. The base tier will be updated if no action set index is supplied.
         /// </summary>
         void UpdateSpell(uint spell4BaseId, byte tier, byte? actionSetIndex);
+
+        /// <summary>
+        /// Activate or deactivate an existing ability book spell.
+        /// </summary>
+        bool SetSpellActivation(uint spell4Id, bool active);
 
         /// <summary>
         /// Return the tier for supplied spell.

@@ -10,7 +10,9 @@ using NexusForever.Game.Abstract.Reputation;
 using NexusForever.Game.Chat;
 using NexusForever.Game.Map.Search;
 using NexusForever.Game.Reputation;
+using NexusForever.Game.Static.Combat;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Option;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Chat;
 using NexusForever.GameTable;
@@ -1098,8 +1100,44 @@ namespace NexusForever.Game.Entity
                 if (!includeSelf && (Guid == entity.Guid || ControllerGuid == entity.Guid))
                     continue;
 
+                if (message is ServerCombatLog combatLog && ShouldSuppressCombatLogForPlayer(player, combatLog))
+                    continue;
+
                 player.Session.EnqueueMessageEncrypted(message);
             }
+        }
+
+        private bool ShouldSuppressCombatLogForPlayer(IPlayer player, ServerCombatLog combatLog)
+        {
+            bool isSelf = Guid == player.Guid || ControllerGuid == player.Guid;
+            if (!isSelf && player.DisableOtherPlayersCombatLogs)
+                return true;
+
+            return GetCombatLogDisableFlag(combatLog.CombatLog.Type) is CombatLogOptions flag
+                && (player.CombatLogDisableFlags & flag) != 0;
+        }
+
+        private static CombatLogOptions? GetCombatLogDisableFlag(CombatLogType type)
+        {
+            return type switch
+            {
+                CombatLogType.Absorption or CombatLogType.HealingAbsorption => CombatLogOptions.DisableAbsorption,
+                CombatLogType.CCState or CombatLogType.CCStateBreak          => CombatLogOptions.DisableCCState,
+                CombatLogType.Damage or CombatLogType.DamageShields or CombatLogType.Reflect
+                    or CombatLogType.MultiHit or CombatLogType.MultiHitShields or CombatLogType.Lifesteal => CombatLogOptions.DisableDamage,
+                CombatLogType.FallingDamage                                 => CombatLogOptions.DisableFallingDamage,
+                CombatLogType.DelayDeath                                    => CombatLogOptions.DisableDelayDeath,
+                CombatLogType.Dispel                                        => CombatLogOptions.DisableDispel,
+                CombatLogType.Heal or CombatLogType.MultiHeal               => CombatLogOptions.DisableHeal,
+                CombatLogType.ModifyInterruptArmor                          => CombatLogOptions.DisableInterruptArmor,
+                CombatLogType.Transference                                  => CombatLogOptions.DisableTransference,
+                CombatLogType.VitalModifier                                 => CombatLogOptions.DisableVitalModifier,
+                CombatLogType.Deflect                                       => CombatLogOptions.DisableDeflect,
+                CombatLogType.Immune                                        => CombatLogOptions.DisableImmunity,
+                CombatLogType.Interrupted                                   => CombatLogOptions.DisableInterrupted,
+                CombatLogType.Death                                         => CombatLogOptions.DisableDeath,
+                _                                                           => null
+            };
         }
 
         /// <summary>

@@ -40,6 +40,7 @@ using NexusForever.Game.Static.Pvp;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.Game.Static.Reputation;
+using NexusForever.Game.Static.Setting;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Pvp;
 using NexusForever.GameTable;
@@ -256,6 +257,19 @@ namespace NexusForever.Game.Entity
         }
         private byte innateIndex;
 
+        public CastingOptionFlags CastingOptions { get; set; }
+        public bool SharedChallengeEnabled { get; set; }
+        public bool DisableOtherPlayersCombatLogs { get; set; }
+        public CombatLogOptions CombatLogDisableFlags { get; set; }
+        public AccountPresenceState PresenceState { get; set; }
+        public string AwayAutoResponseMessage { get; set; }
+        public string BusyAutoResponseMessage { get; set; }
+        public WorldDifficulty InstanceDifficulty { get; set; }
+        public uint InstancePrimeLevel { get; set; }
+        public bool InstanceScalingEnabled { get; set; }
+        public IReadOnlyList<uint> AttributePointAllocations => attributePointAllocations;
+        private readonly uint[] attributePointAllocations = new uint[6];
+
         public override uint Level
         {
             get => base.Level;
@@ -265,6 +279,8 @@ namespace NexusForever.Game.Entity
 
                 CalculateDefaultProperties();
                 SetBaseCharacterProperties();
+                if (!IsLoading)
+                    SendAttributePoints();
             }
         }
 
@@ -898,7 +914,14 @@ namespace NexusForever.Game.Entity
 
             ResidenceManager.SendHousingBasics();
             Session.EnqueueMessageEncrypted(new ServerHousingNeighbors());
-            Session.EnqueueMessageEncrypted(new ServerInstanceSettings() { ClientEntitySendUpdateInterval = 125 });
+            Session.EnqueueMessageEncrypted(new ServerInstanceSettings
+            {
+                Difficulty                     = InstanceDifficulty,
+                PrimeLevel                     = InstancePrimeLevel,
+                Flags                          = InstanceScalingEnabled ? ServerInstanceSettings.WorldSetting.WorldForcesLevelScaling : 0,
+                ClientEntitySendUpdateInterval = 125
+            });
+            SendAttributePoints();
 
             SetControl(this);
 
@@ -1573,6 +1596,69 @@ namespace NexusForever.Game.Entity
                     RealmId = 0,
                 },
                 Text = text
+            });
+        }
+
+        public uint GetTotalAttributePoints()
+        {
+            uint total = 0u;
+            for (uint level = 1u; level <= Level; level++)
+                total += GameTableManager.Instance.XpPerLevel.GetEntry(level)?.AttributePointsPerLevel ?? 0u;
+
+            return total;
+        }
+
+        public uint GetAvailableAttributePoints()
+        {
+            uint spent = 0u;
+            foreach (uint allocation in attributePointAllocations)
+                spent += allocation;
+
+            uint total = GetTotalAttributePoints();
+            return spent >= total ? 0u : total - spent;
+        }
+
+        public bool TrySpendAttributePoints(IReadOnlyList<uint> allocations, out uint availableAttributePoints)
+        {
+            if (allocations == null || allocations.Count != attributePointAllocations.Length)
+            {
+                availableAttributePoints = GetAvailableAttributePoints();
+                return false;
+            }
+
+            ulong spent = 0ul;
+            foreach (uint allocation in allocations)
+                spent += allocation;
+
+            uint total = GetTotalAttributePoints();
+            if (spent > total)
+            {
+                availableAttributePoints = GetAvailableAttributePoints();
+                return false;
+            }
+
+            for (int i = 0; i < attributePointAllocations.Length; i++)
+                attributePointAllocations[i] = allocations[i];
+
+            availableAttributePoints = total - (uint)spent;
+            SendAttributePoints();
+            return true;
+        }
+
+        public void ResetAttributePoints()
+        {
+            Array.Clear(attributePointAllocations);
+            SendAttributePoints();
+        }
+
+        public void SendAttributePoints()
+        {
+            if (Session == null)
+                return;
+
+            Session.EnqueueMessageEncrypted(new ServerAttributePoints
+            {
+                AttributePoints = GetAvailableAttributePoints()
             });
         }
 

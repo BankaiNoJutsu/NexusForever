@@ -13,12 +13,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             this.log = log;
         }
 
-        /// <summary>
-        /// Logs unsupported ability book activation changes.
-        /// </summary>
         public void HandleMessage(IWorldSession session, ClientAbilityBookActivateSpell activateSpell)
         {
-            log.LogDebug("Ignoring unsupported ClientAbilityBookActivateSpell: player={Player}, spell4Id={Spell4Id}, active={Active}",
+            if (!session.Player.SpellManager.SetSpellActivation(activateSpell.Spell4Id, activateSpell.Active))
+            {
+                log.LogWarning("Rejecting ability book activation change from player {Player}: spell4Id={Spell4Id}, active={Active}",
+                    session.Player?.Guid, activateSpell.Spell4Id, activateSpell.Active);
+                return;
+            }
+
+            log.LogDebug("Updated ability book activation for player {Player}: spell4Id={Spell4Id}, active={Active}",
                 session.Player?.Guid, activateSpell.Spell4Id, activateSpell.Active);
         }
     }

@@ -10,8 +10,10 @@ using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Reputation;
+using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Option;
+using NexusForever.Game.Static.Setting;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Static;
@@ -34,6 +36,17 @@ namespace NexusForever.Game.Abstract.Entity
         DateTime PathActivatedTime { get; }
         InputSets InputKeySet { get; set; }
         byte InnateIndex { get; set; }
+        CastingOptionFlags CastingOptions { get; set; }
+        bool SharedChallengeEnabled { get; set; }
+        bool DisableOtherPlayersCombatLogs { get; set; }
+        CombatLogOptions CombatLogDisableFlags { get; set; }
+        AccountPresenceState PresenceState { get; set; }
+        string AwayAutoResponseMessage { get; set; }
+        string BusyAutoResponseMessage { get; set; }
+        WorldDifficulty InstanceDifficulty { get; set; }
+        uint InstancePrimeLevel { get; set; }
+        bool InstanceScalingEnabled { get; set; }
+        IReadOnlyList<uint> AttributePointAllocations { get; }
 
         DateTime CreateTime { get; }
         double TimePlayedTotal { get; }
@@ -174,6 +187,11 @@ namespace NexusForever.Game.Abstract.Entity
 
         void SendGenericError(GenericError error);
         void SendSystemMessage(string text);
+        uint GetTotalAttributePoints();
+        uint GetAvailableAttributePoints();
+        bool TrySpendAttributePoints(IReadOnlyList<uint> allocations, out uint availableAttributePoints);
+        void ResetAttributePoints();
+        void SendAttributePoints();
 
         /// <summary>
         /// Returns whether this <see cref="IPlayer"/> is allowed to summon or be added to a vehicle.
