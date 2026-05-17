@@ -21,6 +21,7 @@ using NexusForever.Game.Customisation;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Guild;
 using NexusForever.Game.Housing;
+using NexusForever.Game.Loot;
 using NexusForever.Game.Map;
 using NexusForever.Game.Quest;
 using NexusForever.Game.RBAC;
@@ -143,6 +144,7 @@ namespace NexusForever.WorldServer.Service
             ItemManager.Instance.Initialise();
             GlobalSpellManager.Instance.Initialise();
             GlobalQuestManager.Instance.Initialise();
+            GlobalLootManager.Instance.Initialise();
 
             GlobalStorefrontManager.Instance.Initialise();
             ServerManager.Instance.Initialise(RealmContext.Instance.RealmId);
@@ -168,6 +170,7 @@ namespace NexusForever.WorldServer.Service
 
                 BuybackManager.Instance.Update(lastTick);
                 GlobalQuestManager.Instance.Update(lastTick);
+                GlobalLootManager.Instance.Update(lastTick);
                 GlobalGuildManager.Instance.Update(lastTick);
                 GlobalResidenceManager.Instance.Update(lastTick); // must be after guild update
 

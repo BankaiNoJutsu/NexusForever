@@ -755,6 +755,13 @@ namespace NexusForever.Game.Entity
                 quest.ObjectiveUpdate(id, progress);
         }
 
+        public bool IsActiveObjectiveId(uint objectiveId)
+        {
+            return activeQuests.Values
+                .SelectMany(q => q)
+                .Any(o => o.ObjectiveInfo.Id == objectiveId && !o.IsComplete());
+        }
+
         /// <summary>
         /// Returns a collection of all active quests.
         /// </summary>

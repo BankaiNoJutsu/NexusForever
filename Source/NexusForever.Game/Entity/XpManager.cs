@@ -132,7 +132,13 @@ namespace NexusForever.Game.Entity
             // Calculate Rest XP Bonus
             uint restXp = 0u;
             if (reason == ExpReason.KillCreature)
+            {
                 restXp = (uint)(earnedXp * 0.5f);
+                if (restXp > RestBonusXp)
+                    restXp = RestBonusXp;
+
+                RestBonusXp -= restXp;
+            }
 
             player.Session.EnqueueMessageEncrypted(new ServerExperienceGained
             {
@@ -153,6 +159,30 @@ namespace NexusForever.Game.Entity
             }
 
             TotalXp += earnedXp + signatureXp + restXp;
+        }
+
+        public void GrantXpForCreatureKill(uint targetLevel, uint groupValue, float targetXpMultiplier = 1f)
+        {
+            if (targetXpMultiplier < float.Epsilon)
+                targetXpMultiplier = 1f;
+
+            uint baseXp;
+            switch (groupValue)
+            {
+                case 5:
+                case 20:
+                case 40:
+                    // TODO: implement tuned group and raid creature rates.
+                    baseXp = (uint)MathF.Round((25 + targetLevel + MathF.Pow(targetLevel + 1, 2)) / 5) * 5;
+                    break;
+                case 0:
+                default:
+                    baseXp = (uint)MathF.Round((25 + targetLevel + MathF.Pow(targetLevel + 1, 2)) / 5) * 5;
+                    break;
+            }
+
+            baseXp = (uint)(baseXp * targetXpMultiplier);
+            GrantXp(baseXp, ExpReason.KillCreature);
         }
 
         /// <summary>

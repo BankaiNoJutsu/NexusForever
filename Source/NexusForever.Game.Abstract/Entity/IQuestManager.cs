@@ -95,6 +95,11 @@ namespace NexusForever.Game.Abstract.Entity
         void ObjectiveUpdate(uint id, uint progress);
 
         /// <summary>
+        /// Return whether an active quest has an incomplete objective with supplied ID.
+        /// </summary>
+        bool IsActiveObjectiveId(uint objectiveId);
+
+        /// <summary>
         /// Returns a collection of all active quests.
         /// </summary>
         IEnumerable<IQuest> GetActiveQuests();

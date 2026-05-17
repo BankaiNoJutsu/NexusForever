@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
+using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Loot;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Loot;
@@ -10,80 +12,112 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Loot
     public class ClientLootItemHandler : IMessageHandler<IWorldSession, ClientLootItem>
     {
         private readonly ILogger<ClientLootItemHandler> log;
+        private readonly IGlobalLootManager lootManager;
 
-        public ClientLootItemHandler(ILogger<ClientLootItemHandler> log)
+        public ClientLootItemHandler(
+            ILogger<ClientLootItemHandler> log,
+            IGlobalLootManager lootManager)
         {
             this.log = log;
+            this.lootManager = lootManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientLootItem lootItem)
         {
+            if (session.Player == null)
+                throw new InvalidPacketValueException();
+
+            IWorldEntity owner = lootItem.OwnerUnitId == session.Player.Guid
+                ? session.Player
+                : session.Player.GetVisible<IWorldEntity>(lootItem.OwnerUnitId);
+            if (owner == null)
+                throw new InvalidPacketValueException();
+
+            if (owner != session.Player && ActivationInteractionGuards.TryRejectBusyTarget(session, owner))
+                return;
+
             if (lootItem.Request)
             {
-                log.LogDebug("Ignoring unsupported loot request from player {PlayerGuid}: owner {OwnerUnitId}, loot {LootUnitId}.",
+                log.LogTrace("Loot notify request from player {PlayerGuid}: owner {OwnerUnitId}, loot {LootUnitId}.",
                     session.Player?.Guid, lootItem.OwnerUnitId, lootItem.LootUnitId);
+                lootManager.SendLootNotify(session.Player, lootItem.OwnerUnitId);
                 return;
             }
 
-            IWorldEntity lootEntity = session.Player.GetVisible<IWorldEntity>(lootItem.LootUnitId);
-            if (lootEntity == null)
-                throw new InvalidPacketValueException();
-
-            if (ActivationInteractionGuards.TryRejectBusyTarget(session, lootEntity))
-                return;
-
-            if (ActivationInteractionGuards.TryRejectOutOfRangeTarget(session, lootEntity))
-                return;
-
-            log.LogDebug("Validated but unsupported loot collect request from player {PlayerGuid}: owner {OwnerUnitId}, loot {LootUnitId}.",
+            log.LogTrace("Loot collect request from player {PlayerGuid}: owner {OwnerUnitId}, loot {LootUnitId}.",
                 session.Player?.Guid, lootItem.OwnerUnitId, lootItem.LootUnitId);
+            lootManager.GiveLoot(session.Player, lootItem.OwnerUnitId, lootItem.LootUnitId);
         }
     }
 
     public class ClientLootVacuumHandler : IMessageHandler<IWorldSession, ClientLootVacuum>
     {
         private readonly ILogger<ClientLootVacuumHandler> log;
+        private readonly IGlobalLootManager lootManager;
 
-        public ClientLootVacuumHandler(ILogger<ClientLootVacuumHandler> log)
+        public ClientLootVacuumHandler(
+            ILogger<ClientLootVacuumHandler> log,
+            IGlobalLootManager lootManager)
         {
             this.log = log;
+            this.lootManager = lootManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientLootVacuum lootVacuum)
         {
-            log.LogDebug("Ignoring unsupported loot vacuum request from player {PlayerGuid}.", session.Player?.Guid);
+            if (session.Player == null)
+                throw new InvalidPacketValueException();
+
+            log.LogTrace("Loot vacuum request from player {PlayerGuid}.", session.Player?.Guid);
+            lootManager.GiveAllLootInRange(session.Player);
         }
     }
 
     public class ClientLootRollActionHandler : IMessageHandler<IWorldSession, ClientLootRollAction>
     {
         private readonly ILogger<ClientLootRollActionHandler> log;
+        private readonly IGlobalLootManager lootManager;
 
-        public ClientLootRollActionHandler(ILogger<ClientLootRollActionHandler> log)
+        public ClientLootRollActionHandler(
+            ILogger<ClientLootRollActionHandler> log,
+            IGlobalLootManager lootManager)
         {
             this.log = log;
+            this.lootManager = lootManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientLootRollAction lootRollAction)
         {
-            log.LogDebug("Ignoring unsupported loot roll request from player {PlayerGuid}: owner {OwnerUnitId}, loot {LootUnitId}, action {Action}.",
+            if (session.Player == null)
+                throw new InvalidPacketValueException();
+
+            log.LogTrace("Loot roll request from player {PlayerGuid}: owner {OwnerUnitId}, loot {LootUnitId}, action {Action}.",
                 session.Player?.Guid, lootRollAction.OwnerUnitId, lootRollAction.LootUnitId, lootRollAction.Action);
+            lootManager.RollLoot(session.Player, lootRollAction.OwnerUnitId, lootRollAction.LootUnitId, lootRollAction.Action);
         }
     }
 
     public class ClientLootAssignMasterHandler : IMessageHandler<IWorldSession, ClientLootAssignMaster>
     {
         private readonly ILogger<ClientLootAssignMasterHandler> log;
+        private readonly IGlobalLootManager lootManager;
 
-        public ClientLootAssignMasterHandler(ILogger<ClientLootAssignMasterHandler> log)
+        public ClientLootAssignMasterHandler(
+            ILogger<ClientLootAssignMasterHandler> log,
+            IGlobalLootManager lootManager)
         {
             this.log = log;
+            this.lootManager = lootManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientLootAssignMaster lootAssignMaster)
         {
-            log.LogDebug("Ignoring unsupported master-loot assignment from player {PlayerGuid}: owner {OwnerUnitId}, loot {LootUnitId}, assignee {AssigneeId}.",
+            if (session.Player == null)
+                throw new InvalidPacketValueException();
+
+            log.LogTrace("Master-loot assignment from player {PlayerGuid}: owner {OwnerUnitId}, loot {LootUnitId}, assignee {AssigneeId}.",
                 session.Player?.Guid, lootAssignMaster.OwnerUnitId, lootAssignMaster.LootUnitId, lootAssignMaster.Assignee.Id);
+            lootManager.AssignMasterLoot(session.Player, lootAssignMaster.OwnerUnitId, lootAssignMaster.LootUnitId, lootAssignMaster.Assignee.ToGameIdentity());
         }
     }
 }

@@ -16,6 +16,11 @@ namespace NexusForever.Game.Abstract.Entity
         void GrantXp(uint earnedXp, ExpReason reason = ExpReason.Cheat);
 
         /// <summary>
+        /// Grants kill experience for a creature using level, difficulty group, and target XP multiplier.
+        /// </summary>
+        void GrantXpForCreatureKill(uint targetLevel, uint groupValue, float targetXpMultiplier = 1f);
+
+        /// <summary>
         /// Sets <see cref="IPlayer"/> to the supplied level and adjusts XP accordingly. Mainly for use with GM commands.
         /// </summary>
         /// <param name="newLevel">New level to be set</param>

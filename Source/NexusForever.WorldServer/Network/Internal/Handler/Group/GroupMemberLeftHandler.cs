@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Network.Internal.Message.Group;
 using NexusForever.Network.World.Message.Model;
@@ -14,19 +15,25 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
 
         private readonly IPlayerManager playerManager;
         private readonly IMatchManager matchManager;
+        private readonly IGroupStateManager groupStateManager;
 
         public GroupMemberLeftHandler(
             IPlayerManager playerManager,
-            IMatchManager matchManager)
+            IMatchManager matchManager,
+            IGroupStateManager groupStateManager)
         {
-            this.playerManager = playerManager;
-            this.matchManager  = matchManager;
+            this.playerManager      = playerManager;
+            this.matchManager       = matchManager;
+            this.groupStateManager = groupStateManager;
         }
 
         #endregion
 
         public Task Handle(GroupMemberLeftMessage message)
         {
+            groupStateManager.UpdateGroup(message.Group.ToGroupLootState());
+            groupStateManager.RemoveMember(message.Group.Id, message.RemovedMember.Identity.ToGameIdentity());
+
             IPlayer player = playerManager.GetPlayer(message.RemovedMember.Identity.ToGameIdentity());
             if (player == null)
                 return Task.CompletedTask;

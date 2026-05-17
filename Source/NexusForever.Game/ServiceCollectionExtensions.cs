@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.ICComm;
 using NexusForever.Game.Abstract.Pvp;
 using NexusForever.Game.Abstract.Trade;
@@ -10,9 +11,12 @@ using NexusForever.Game.Cinematic;
 using NexusForever.Game.Combat;
 using NexusForever.Game.Customisation;
 using NexusForever.Game.Entity;
+using NexusForever.Game.Group;
 using NexusForever.Game.Guild;
 using NexusForever.Game.Housing;
 using NexusForever.Game.ICComm;
+using NexusForever.Game.Abstract.Loot;
+using NexusForever.Game.Loot;
 using NexusForever.Game.Map;
 using NexusForever.Game.Matching;
 using NexusForever.Game.Prerequisite;
@@ -44,6 +48,8 @@ namespace NexusForever.Game
             sc.AddSingletonLegacy<IDuelManager, DuelManager>();
             sc.AddSingletonLegacy<IICCommManager, ICCommManager>();
             sc.AddSingletonLegacy<ITradeManager, TradeManager>();
+            sc.AddSingletonLegacy<IGroupStateManager, GroupStateManager>();
+            sc.AddSingletonLegacy<IGlobalLootManager, GlobalLootManager>();
 
             sc.AddGameAchievement();
             sc.AddGameCharacter();

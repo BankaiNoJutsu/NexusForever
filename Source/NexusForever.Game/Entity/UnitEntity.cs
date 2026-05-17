@@ -5,6 +5,7 @@ using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Combat;
 using NexusForever.Game.Configuration.Model;
+using NexusForever.Game.Loot;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Achievement;
@@ -2019,8 +2020,16 @@ namespace NexusForever.Game.Entity
 
             RewardPublicEventKiller(player, targetGroupIds);
 
-            // TODO: Reward XP
-            // TODO: Reward Loot
+            if (CreatureId > 0u)
+            {
+                uint groupValue = CreatureInfo?.DifficultyEntry?.GroupValue
+                    ?? GameTableManager.Instance.Creature2Difficulty.GetEntry(CreatureEntry?.Creature2DifficultyId ?? 0u)?.GroupValue
+                    ?? 0u;
+
+                player.XpManager.GrantXpForCreatureKill(Level, groupValue, GetPropertyValue(Property.XpMultiplier));
+            }
+
+            GlobalLootManager.Instance.DropLoot(player, this);
         }
 
         private void RewardPublicEventKiller(IPlayer player, IEnumerable<uint> targetGroupIds)

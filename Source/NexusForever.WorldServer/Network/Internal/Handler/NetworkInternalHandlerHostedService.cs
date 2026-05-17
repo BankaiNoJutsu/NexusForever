@@ -62,6 +62,7 @@ namespace NexusForever.WorldServer.Network.Internal.Handler
             await bus.Subscribe<FriendshipTypeUpdatedMessage>();
 
             await bus.Subscribe<GroupActionResultMessage>();
+            await bus.Subscribe<GroupDisbandedMessage>();
             await bus.Subscribe<GroupFlagsUpdatedMessage>();
             await bus.Subscribe<GroupLootRulesUpdatedMessage>();
             await bus.Subscribe<GroupMarkerUpdatedMessage>();

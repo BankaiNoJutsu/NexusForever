@@ -26,6 +26,7 @@ using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Map.Search;
 using NexusForever.Game.Guild;
 using NexusForever.Game.Housing;
+using NexusForever.Game.Loot;
 using NexusForever.Game.Map;
 using NexusForever.Game.Quest;
 using NexusForever.Game.Reputation;
@@ -955,7 +956,10 @@ namespace NexusForever.Game.Entity
             base.AddVisible(entity);
 
             if (entity is IWorldEntity worldEntity)
+            {
                 Session.EnqueueMessageEncrypted(worldEntity.BuildCreatePacket(IsLoading));
+                GlobalLootManager.Instance.SendLootNotifyForVisibleOwner(this, worldEntity);
+            }
 
             if (entity is IPlayer playerEntity)
                 Session.EnqueueMessageEncrypted(new ServerSetUnitPathType
