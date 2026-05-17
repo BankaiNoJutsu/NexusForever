@@ -4,6 +4,7 @@ using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
@@ -17,10 +18,18 @@ namespace NexusForever.Game.Account.Inventory
     public class AccountInventoryManager : IAccountInventoryManager
     {
         private readonly Dictionary<ulong, IAccountInventoryItem> items = new();
+        private readonly Dictionary<uint, AccountItemCooldown> cooldowns = new();
         private readonly List<IAccountInventoryItem> deletedItems = [];
 
         private readonly IAccount account;
         private ulong nextInventoryId = 1ul;
+
+        private static readonly IReadOnlyDictionary<uint, uint> CooldownGroupDurations = new Dictionary<uint, uint>
+        {
+            [1u] = 1800u,
+            [2u] = 1800u,
+            [3u] = 28800u
+        };
 
         public AccountInventoryManager(IAccount account, AccountModel model)
         {
@@ -32,6 +41,12 @@ namespace NexusForever.Game.Account.Inventory
                 items.Add(item.Id, item);
                 nextInventoryId = Math.Max(nextInventoryId, item.Id + 1ul);
             }
+
+            foreach (AccountItemCooldownModel cooldownModel in model.AccountItemCooldown)
+                cooldowns.TryAdd(cooldownModel.CooldownGroupId, new AccountItemCooldown(cooldownModel));
+
+            foreach (AccountItemCooldownGroupEntry cooldownEntry in GameTableManager.Instance.AccountItemCooldownGroup.Entries)
+                cooldowns.TryAdd(cooldownEntry.Id, new AccountItemCooldown(account.Id, cooldownEntry.Id));
         }
 
         public void Save(AuthContext context)
@@ -42,6 +57,9 @@ namespace NexusForever.Game.Account.Inventory
 
             foreach (IAccountInventoryItem item in items.Values)
                 item.Save(context);
+
+            foreach (AccountItemCooldown cooldown in cooldowns.Values)
+                cooldown.Save(context);
         }
 
         public IAccountInventoryItem GetItem(ulong id)
@@ -85,28 +103,40 @@ namespace NexusForever.Game.Account.Inventory
             return true;
         }
 
-        public GenericError TakeItem(IPlayer player, ulong id)
+        public AccountOperationResult TakeItem(IPlayer player, ulong id)
         {
             if (player == null)
-                return GenericError.Params;
+                return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.NoCharacter);
 
             if (!items.TryGetValue(id, out IAccountInventoryItem item))
-                return GenericError.ItemBadId;
+                return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.InvalidInventoryItem);
 
             if (item.ClaimState != AccountItemClaimState.CanClaim)
-                return GenericError.AccountItemMaxEntitlementCount;
+                return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.AlreadyClaimed);
 
             if (!IsTargetPlayer(player, item.TargetPlayerIdentity))
-                return GenericError.Params;
+                return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.NoCharacter);
+
+            if (item.Entry.PrerequisiteId != 0u && !PrerequisiteManager.Instance.Meets(player, item.Entry.PrerequisiteId))
+                return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.Prereq);
 
             if (!TryBuildGrantPlan(player, item.Entry, out List<IAccountItemGrant> grants, out GenericError error))
-                return error;
+                return SendAccountOperationResult(AccountOperation.TakeItem, ToAccountOperationResult(error));
+
+            uint cooldownGroupId = item.Entry.AccountItemCooldownGroupId;
+            if (cooldownGroupId != 0u && IsOnCooldown(cooldownGroupId))
+                return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.Cooldown);
 
             foreach (IAccountItemGrant grant in grants)
                 grant.Apply(account, player);
 
-            RemoveItem(id);
-            return GenericError.Ok;
+            if (cooldownGroupId != 0u)
+                SetCooldown(cooldownGroupId);
+
+            if (!HasAccountItemFlag(item.Entry, AccountItemFlag.MultiClaim))
+                RemoveItem(id);
+
+            return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.Ok);
         }
 
         public void SendInitialPackets()
@@ -134,6 +164,13 @@ namespace NexusForever.Game.Account.Inventory
 
         public void SendCooldowns()
         {
+            foreach (AccountItemCooldown cooldown in cooldowns.Values.OrderBy(c => c.CooldownGroupId))
+            {
+                if (cooldown.GetRemainingDuration() == 0u)
+                    continue;
+
+                account.Session.EnqueueMessageEncrypted(cooldown.Build());
+            }
         }
 
         public IEnumerator<IAccountInventoryItem> GetEnumerator()
@@ -168,6 +205,64 @@ namespace NexusForever.Game.Account.Inventory
             {
                 Id = id
             });
+        }
+
+        private AccountOperationResult SendAccountOperationResult(AccountOperation operation, AccountOperationResult result)
+        {
+            account.Session.EnqueueMessageEncrypted(new ServerAccountOperationResult
+            {
+                Operation = operation,
+                Result    = result
+            });
+
+            return result;
+        }
+
+        private bool IsOnCooldown(uint cooldownGroupId)
+        {
+            if (!cooldowns.TryGetValue(cooldownGroupId, out AccountItemCooldown cooldown))
+                return false;
+
+            return cooldown.GetRemainingDuration() > 0u;
+        }
+
+        private void SetCooldown(uint cooldownGroupId)
+        {
+            if (!cooldowns.TryGetValue(cooldownGroupId, out AccountItemCooldown cooldown))
+            {
+                cooldown = new AccountItemCooldown(account.Id, cooldownGroupId);
+                cooldowns.Add(cooldownGroupId, cooldown);
+            }
+
+            cooldown.TriggerWithDuration(GetCooldownDuration(cooldownGroupId));
+            if (cooldown.GetRemainingDuration() > 0u)
+                account.Session.EnqueueMessageEncrypted(cooldown.Build());
+        }
+
+        private static uint GetCooldownDuration(uint cooldownGroupId)
+        {
+            return CooldownGroupDurations.GetValueOrDefault(cooldownGroupId);
+        }
+
+        private static bool HasAccountItemFlag(AccountItemEntry entry, AccountItemFlag flag)
+        {
+            return ((AccountItemFlag)entry.Flags & flag) != 0;
+        }
+
+        private static AccountOperationResult ToAccountOperationResult(GenericError error)
+        {
+            return error switch
+            {
+                GenericError.Ok                            => AccountOperationResult.Ok,
+                GenericError.AccountItemMaxEntitlementCount => AccountOperationResult.MaxEntitlementCount,
+                GenericError.GenericUnlockAlreadyUnlocked  => AccountOperationResult.AlreadyClaimed,
+                GenericError.InvalidGenericUnlock          => AccountOperationResult.InvalidAccountItem,
+                GenericError.ItemBadId                     => AccountOperationResult.InvalidInventoryItem,
+                GenericError.ItemBadStaticData             => AccountOperationResult.InvalidAccountItem,
+                GenericError.MissingEntitlement            => AccountOperationResult.MissingEntitlement,
+                GenericError.Params                        => AccountOperationResult.GenericFail,
+                _                                          => AccountOperationResult.GenericFail
+            };
         }
 
         private static bool IsTargetPlayer(IPlayer player, NetworkIdentity targetPlayerIdentity)

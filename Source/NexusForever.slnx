@@ -54,6 +54,9 @@
     <Project Path="NexusForever.Script.Main/NexusForever.Script.Main.csproj" />
     <Project Path="NexusForever.Script.Olyssia/NexusForever.Script.Olyssia.csproj" />
   </Folder>
+  <Folder Name="/Server/Tests/">
+    <Project Path="NexusForever.Game.Tests/NexusForever.Game.Tests.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Packages.props" />
   </Folder>

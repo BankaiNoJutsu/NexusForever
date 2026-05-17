@@ -14,10 +14,13 @@ namespace NexusForever.Network.Message
         ServerLogoutUpdate              = 0x0092,
         ClientCommodityOrderCancel      = 0x0093,
         ClientAuctionCancel             = 0x0094,
+        ClientActivateUnitCastPosition  = 0x0096, // activate-unit family request with context token, selector nibbles, target id, and position
         ClientActivateUnitCast          = 0x0097, // activate-unit cast request with { ContextToken, ActivateUnitId }
+        ClientActivateUnitCastTarget    = 0x0098, // activate-unit family request with { ContextToken, TargetField }
         ClientCastPathExplorerSearching = 0x0099,
         ClientCastSpell                 = 0x009A,
         ClientCastSpellPosition         = 0x009B,
+        ClientCastSpellSelected         = 0x009D, // spell-cast variant with context token, selected entry id, target id, and position
         ServerChallengeShared           = 0x00A9,
         ServerChallengeShareTimeout     = 0x00AA,
         ServerChangeWorld               = 0x00AD,
@@ -27,6 +30,7 @@ namespace NexusForever.Network.Message
         ServerActionSetClearCache       = 0x00B2, // server sends this after a ClientRequestActionSetChanges (0xB1)
         ClientActivateUnit              = 0x00B3, // direct activate-unit request with { ActivateUnitId }
         ClientLootAssignMaster          = 0x00B5,
+        ClientItemContextAction         = 0x00B6, // inventory item-click/context action with item guid and selector bit
         ClientFriendshipBlock           = 0x00B8,
         ServerBuybackItemUpdated        = 0x00BA,
         ClientBuybackItemFromVendor     = 0x00BB,
@@ -47,13 +51,16 @@ namespace NexusForever.Network.Message
         ServerHideInstanceGameModeDialog = 0x00D3,
         ClientCombatOptions             = 0x00D5,
         ServerPublicEventEnd            = 0x00D6,
+        ClientConvertResource           = 0x00D7,
         ServerCostume                   = 0x00D8,
         ServerCostumeList               = 0x00D9,
         ServerCharacterCreate           = 0x00DC,
         ServerChannelUpdateLoot         = 0x00DD,
+        ClientDashCast                  = 0x00DE,
         ServerDatacubeUpdateList        = 0x00E0,
         ServerDatacubeUpdate            = 0x00E1,
         ServerDatacubeVolumeUpdate      = 0x00E2,
+        ClientSpellCastState            = 0x00E3, // one-bit spell-cast state update from local cast gating
         ClientResurrectRequest          = 0x00E4,
         ServerCharacterDeleteResult     = 0x00E6,
         ServerCharacterDisabled         = 0x00E7,
@@ -73,6 +80,8 @@ namespace NexusForever.Network.Message
         ServerPathExplorerPowerMapFailed = 0x00F8,
         ClientPathExplorerPowerMapProgress = 0x00F9,
         ServerPathExplorerPowerMapWaiting = 0x00FA,
+        ClientMovementFallDamage        = 0x00FB, // movement/fall branch sends one float from local movement state
+        ClientMovementFallLand          = 0x00FC, // movement state payload sent when local fall/landing state changes
         ServerCharacterFlagsUpdated     = 0x00FE,
         ClientFlightPathPurchase        = 0x00FF,
         ServerResurrectionState         = 0x0100,
@@ -128,6 +137,7 @@ namespace NexusForever.Network.Message
         ClientItemDelete                = 0x0149,
         ServerAbilityRemove             = 0x014A,
         ServerCharacterRenameResult     = 0x014B,
+        ClientRepairItemVendor          = 0x014C, // repair item/all vendor request; zero item branch carries total repair cost
         ClientEntityInteractChair       = 0x014E,
         ClientLootItem                  = 0x014F,
         ClientResetAttributePoints      = 0x0150,
@@ -148,6 +158,7 @@ namespace NexusForever.Network.Message
         ClientSetInstanceSettings       = 0x0163,
         ServerShowInstanceGameModeDialog = 0x0164,
         ClientSellItemToVendor          = 0x0166,
+        ClientRepairVendorStatusRequest = 0x0167,
         ClientMailSend                  = 0x0168,
         ServerAbilityPoints             = 0x0169,
         ClientNonSpellActionSetChanges  = 0x016A,
@@ -167,6 +178,7 @@ namespace NexusForever.Network.Message
         ServerSpellUpdate               = 0x017B,
         ClientSpendAttributePoints      = 0x017C,
         ClientItemSplit                 = 0x017D,
+        ClientSpellToggleCast           = 0x017E,
         ServerItemStackCountUpdate      = 0x017F,
         ClientItemMove                  = 0x0182,
         ClientItemMoveFromSupplySatchel = 0x0184,
@@ -204,6 +216,7 @@ namespace NexusForever.Network.Message
         ClientLootVacuum                = 0x01AD,
         ServerUnlockVanityPet           = 0x01AE,
         ClientVehicleDisembark          = 0x01AF,
+        ClientVehicleEmbark             = 0x01B0,
         ServerResurrectionShow          = 0x01B3,
         ServerZoneMap                   = 0x01B4,
         ServerChatAction                = 0x01B5,
@@ -292,6 +305,10 @@ namespace NexusForever.Network.Message
         ClientPacked                    = 0x025C, // the same as ClientEncrypted except the contents isn't encrypted?
         ServerPlayerCreate              = 0x025E,
         ServerEntityCreate              = 0x0262,
+        ClientCREDDExchangeBuyOrderSubmit = 0x0265,
+        ClientCREDDExchangeCancelOrder  = 0x0267,
+        ClientCREDDExchangeRequestInfo  = 0x0269,
+        ClientCREDDExchangeSellOrderSubmit = 0x026B,
         ServerSubscriptionInfo          = 0x033D,
         ServerCustomerSurveyRequest     = 0x033E,
         ClientCustomerSurveySubmit      = 0x033F,
@@ -376,14 +393,19 @@ namespace NexusForever.Network.Message
         ClientCheat                     = 0x03E0,
         ServerRealmBroadcast            = 0x03E1,
         ClientRequestCommodityInfo      = 0x03E6,
+        ClientCREDDExchangeRequestHistory = 0x03E7,
         ClientRequestOwnedCommodityOrders = 0x03EC,
         ClientRequestOwnedItemAuctions  = 0x03ED,
         ClientGetRealmTransferDestinations = 0x03EE,
+        ClientAccountItemGiftPendingItemGroupToAccount = 0x03F1,
+        ClientAccountItemGiftPendingItemGroupToCharacter = 0x03F2,
         ClientItemGenericUnlock         = 0x0400,
         ServerGroupMemberAdd            = 0x0405,
         ClientGroupFlagsChanged         = 0x0406,
         ClientGroupSetRole              = 0x0408,
         ServerGroupFlagsChanged         = 0x0410,
+        ClientGroupGotoGroupInstance    = 0x0411,
+        ClientGroupSetInstanceDifficulty = 0x0412,
         ClientGroupInvite               = 0x0416,
         ClientGroupInviteResponse       = 0x041A,
         ServerGroupInviteResult         = 0x041D,
@@ -475,8 +497,13 @@ namespace NexusForever.Network.Message
         ServerHousingVendorList         = 0x0508,
         ClientHousingRemodel            = 0x050A,
         ClientHousingDecorUpdate        = 0x050B,
+        ClientHousingInteriorWallpaperUpdate = 0x050D, // Residence.RemoveInteriorWallpaper/PurchaseInteriorWallpaper six-slot plug item update
         ClientHousingFlagsUpdate        = 0x050E,
         ClientHousingPlugUpdate         = 0x0510,
+        ClientHousingNeighborInvite     = 0x0512,
+        ClientHousingNeighborInviteResponse = 0x0513,
+        ClientHousingNeighborEvict      = 0x0515,
+        ClientHousingNeighborSetPermission = 0x0518,
         ClientHousingVendorList         = 0x0525,
         ServerHousingRandomCommunityList = 0x0526,
         ServerHousingRandomResidenceList = 0x0527,
@@ -486,6 +513,7 @@ namespace NexusForever.Network.Message
         ClientHousingRandomCommunityList = 0x052C,
         ClientHousingRandomResidenceList = 0x052D,
         ClientHousingReturn             = 0x052E,
+        ClientHousingVisitResidence     = 0x052F,
         ClientHousingVisit              = 0x0531,
         ServerHousingOwnership          = 0x0533,
         ServerHousingResult             = 0x0536,
@@ -703,7 +731,7 @@ namespace NexusForever.Network.Message
         ServerRecruitmentGuildsUpdate   = 0x076B,
         ServerRecruitmentGuildMinLevel  = 0x076C,
         ServerRecruitmentGuildsRecruiters = 0x076D,
-        ClientRecruitmentGuildGetDetailedGuildInfo = 0x776E,
+        ClientRecruitmentGuildGetDetailedGuildInfo = 0x076E,
         ClientRecruitmentGuildSubscribe = 0x076F,
         ServerPetDespawned              = 0x077F,
         ClientCharacterRename           = 0x0786,
@@ -718,6 +746,7 @@ namespace NexusForever.Network.Message
         ClientResetInstances            = 0x07B4,
         ClientAccountItemReturnPendingItemGroup = 0x07C6,
         ClientRewardUpdateRequest       = 0x07CC,
+        ClientGenericMapNodeRequest     = 0x07CF, // GenericMapNodeChoose sends missing node id before local GenericFloater
         ClientAuctionsByFilterRequest   = 0x07DC,
         ClientCharacterSelect           = 0x07DD,
         ClientRealmSelect               = 0x07DF,
@@ -752,6 +781,7 @@ namespace NexusForever.Network.Message
         Server081A                      = 0x081A, // spline related
         Server081B                      = 0x081B, // spline related
         Server081C                      = 0x081C, // spline related
+        ClientSpline2Request            = 0x081D, // periodic stale Spline2 id request
         ClientSteamAchievements         = 0x0823,
         ClientStorefrontPurchaseAccount = 0x0828,
         ClientStorefrontPurchaseCharacter = 0x082A,
@@ -855,6 +885,7 @@ namespace NexusForever.Network.Message
         ServerAccountCurrencyGrant      = 0x0967,
         ServerAccountEntitlements       = 0x0968,
         ServerAccountItems              = 0x096D,
+        ServerAccountOperationResult    = 0x0970,
         ServerSupportTicketResult       = 0x0972,
         ServerAccountEntitlement        = 0x0973,
         ServerAccountItemCooldownSet    = 0x0974,

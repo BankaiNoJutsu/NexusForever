@@ -202,6 +202,36 @@ namespace NexusForever.Database.Auth.Migrations
                     b.ToTable("account_inventory", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountItemCooldownModel", b =>
+                {
+                    b.Property<uint>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("id");
+
+                    b.Property<uint>("CooldownGroupId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("cooldownGroupId");
+
+                    b.Property<uint>("Duration")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("duration");
+
+                    b.Property<DateTime?>("Timestamp")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("timestamp")
+                        .HasDefaultValueSql("current_timestamp()");
+
+                    b.HasKey("Id", "CooldownGroupId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("account_item_cooldown", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountKeybindingModel", b =>
                 {
                     b.Property<uint>("Id")
@@ -1334,6 +1364,18 @@ namespace NexusForever.Database.Auth.Migrations
                     b.Navigation("Account");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountItemCooldownModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Auth.Model.AccountModel", "Account")
+                        .WithMany("AccountItemCooldown")
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__account_item_cooldown_id__account_id");
+
+                    b.Navigation("Account");
+                });
+
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountKeybindingModel", b =>
                 {
                     b.HasOne("NexusForever.Database.Auth.Model.AccountModel", "Account")
@@ -1434,6 +1476,8 @@ namespace NexusForever.Database.Auth.Migrations
                     b.Navigation("AccountGenericUnlock");
 
                     b.Navigation("AccountInventory");
+
+                    b.Navigation("AccountItemCooldown");
 
                     b.Navigation("AccountKeybinding");
 

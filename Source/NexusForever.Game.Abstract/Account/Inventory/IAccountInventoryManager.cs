@@ -12,7 +12,7 @@ namespace NexusForever.Game.Abstract.Account.Inventory
         IAccountInventoryItem AddItem(uint accountItemId, NetworkIdentity targetPlayerIdentity = null, AccountItemClaimState claimState = AccountItemClaimState.CanClaim, bool unknown1 = false, bool notify = true);
         bool CanAddItem(uint accountItemId);
         bool RemoveItem(ulong id);
-        GenericError TakeItem(IPlayer player, ulong id);
+        AccountOperationResult TakeItem(IPlayer player, ulong id);
         void SendInitialPackets();
         void SendInventory();
         void SendPendingItems();

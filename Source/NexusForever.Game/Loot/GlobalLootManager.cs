@@ -198,23 +198,29 @@ namespace NexusForever.Game.Loot
             return true;
         }
 
-        public void DropLoot(IPlayer looter, IItem lootedItem)
+        public bool HasLoot(IItem lootedItem)
+        {
+            return lootedItem?.Info != null && itemLoot.ContainsKey(lootedItem.Info.Entry.Id);
+        }
+
+        public bool DropLoot(IPlayer looter, IItem lootedItem)
         {
             if (looter == null || lootedItem?.Info == null)
-                return;
+                return false;
 
-            if (!itemLoot.ContainsKey(lootedItem.Info.Entry.Id))
-                return;
+            if (!HasLoot(lootedItem))
+                return false;
 
             LootInstance lootInstance = GenerateLootInstance(lootedItem.Info.Entry.Id, looter.Guid, looter, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Item);
             lootInstance.Explosion = true;
             if (lootInstance.HasExpired)
-                return;
+                return false;
 
             if (!lootInstance.DeliverAllLoot(looter))
-                return;
+                return false;
 
             lootInstance.SendLootNotify(looter, includeGrantedItems: true);
+            return true;
         }
 
         private static Dictionary<ulong, uint> CreatePlayerLooterMap(IPlayer player)

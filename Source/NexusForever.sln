@@ -101,6 +101,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusForever.LoadTest", "..\Tools\NexusForever.LoadTest\NexusForever.LoadTest.csproj", "{66490E91-B7FD-41A4-BD16-39BFCD0D8BA1}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{1F45BF13-0DEE-0B68-A389-BD099B0D7EDC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusForever.Game.Tests", "NexusForever.Game.Tests\NexusForever.Game.Tests.csproj", "{C2817330-9C14-45DA-A32E-F23FB5027EED}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -263,6 +267,10 @@ Global
 		{66490E91-B7FD-41A4-BD16-39BFCD0D8BA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{66490E91-B7FD-41A4-BD16-39BFCD0D8BA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{66490E91-B7FD-41A4-BD16-39BFCD0D8BA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2817330-9C14-45DA-A32E-F23FB5027EED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2817330-9C14-45DA-A32E-F23FB5027EED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2817330-9C14-45DA-A32E-F23FB5027EED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2817330-9C14-45DA-A32E-F23FB5027EED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -305,6 +313,8 @@ Global
 		{CCE9DD30-F893-4DBC-9366-B9E830FACA5C} = {F11199C0-850A-4DA7-A71B-C597581970D6}
 		{84BB8671-3B90-8CD2-AB71-FDD445F72B39} = {F11199C0-850A-4DA7-A71B-C597581970D6}
 		{53C37594-7203-DEC5-4BDD-64F35038B031} = {F11199C0-850A-4DA7-A71B-C597581970D6}
+		{1F45BF13-0DEE-0B68-A389-BD099B0D7EDC} = {F11199C0-850A-4DA7-A71B-C597581970D6}
+		{C2817330-9C14-45DA-A32E-F23FB5027EED} = {1F45BF13-0DEE-0B68-A389-BD099B0D7EDC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7D83B735-7E6A-4C1A-83C4-DD80682C2859}

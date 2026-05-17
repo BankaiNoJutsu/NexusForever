@@ -13,7 +13,8 @@ namespace NexusForever.Game.Abstract.Loot
         void Initialise();
 
         bool DropLoot(IPlayer looter, IWorldEntity lootedEntity);
-        void DropLoot(IPlayer looter, IItem lootedItem);
+        bool HasLoot(IItem lootedItem);
+        bool DropLoot(IPlayer looter, IItem lootedItem);
 
         void SendLootNotify(IPlayer looter, uint ownerUnitId);
         void SendLootNotifyForVisibleOwner(IPlayer looter, IWorldEntity owner);

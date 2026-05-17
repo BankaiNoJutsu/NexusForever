@@ -33,6 +33,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             if (item.Info.Entry.Item2CategoryId != LOOT_BAG_CATEGORY_ID)
                 throw new InvalidPacketValueException();
 
+            if (!lootManager.HasLoot(item))
+                throw new InvalidPacketValueException();
+
             if (session.Player.Inventory.ItemUse(item))
                 lootManager.DropLoot(session.Player, item);
         }

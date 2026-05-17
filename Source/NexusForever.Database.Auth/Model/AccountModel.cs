@@ -19,6 +19,7 @@ namespace NexusForever.Database.Auth.Model
         public ICollection<AccountExternalReferenceModel> AccountExternalReference { get; set; } = [];
         public ICollection<AccountGenericUnlockModel> AccountGenericUnlock { get; set; } = [];
         public ICollection<AccountInventoryModel> AccountInventory { get; set; } = [];
+        public ICollection<AccountItemCooldownModel> AccountItemCooldown { get; set; } = [];
         public ICollection<AccountKeybindingModel> AccountKeybinding { get; set; } = [];
         public ICollection<AccountPermissionModel> AccountPermission { get; set; } = [];
         public ICollection<AccountRoleModel> AccountRole { get; set; } = [];
