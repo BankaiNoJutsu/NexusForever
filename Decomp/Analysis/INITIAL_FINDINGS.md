@@ -3389,25 +3389,27 @@ Seventy-third account inventory blocked-path follow-up implemented from this pas
   request and raises `AccountPendingItemsReturned`.
 - `AccountItem_SendClientReturnPendingItemGroup` (`140006c50`) is now mapped as
   opcode `0x07C6` with the same single pending-group wide string shape used by
-  the claim request. The gift helpers remain mapped only at the boundary:
-  `AccountItem_SendClientGiftPendingItemGroupIdentityPayload` (`140006d60`)
+  the claim request. A later focused pass mapped the gift helpers:
+  `AccountItem_SendClientGiftPendingItemGroupToCharacter` (`140006d60`)
   sends opcode `0x03F2`, and
-  `AccountItem_SendClientGiftPendingItemGroupAlternatePayload` (`140006e50`)
-  sends opcode `0x03F1`, but their exact semantic fields are still blocked.
+  `AccountItem_SendClientGiftPendingItemGroupToAccount` (`140006e50`) sends
+  opcode `0x03F1`.
 - `StorefrontLib_PurchaseOffer` (`1404f1150`) confirms the Lua-facing purchase
   method routes normal purchases separately from recipient/extra-target flows.
   No server purchase-result UI packet was mapped from the result strings yet.
 - NexusForever now names and parses `ClientAccountItemReturnPendingItemGroup`
-  as opcode `0x07C6`, rejects it with a generic error like pending-group claim,
-  and resends the authoritative empty pending list. The `ServerAccountItemsPending`
+  as opcode `0x07C6`, rejects it with an account-operation result like
+  pending-group claim, and resends the authoritative empty pending list. The
+  `ServerAccountItemsPending`
   model was corrected from unknown scalar fields to the mapped pending-group
   identity layout, but the server only emits an empty list until pending group
   storage, gift semantics, and non-empty source/target identity meanings are
   verified.
-- Account-item cooldown mutation remains blocked: the native receive packet is
-  mapped, but current generated static data only exposes
-  `AccountItemCooldownGroupEntry.Id`, with no verified duration source to
-  enforce or persist.
+- Account-item cooldown mutation was left blocked in this pass because the
+  native receive packet was mapped but current generated static data only
+  exposed `AccountItemCooldownGroupEntry.Id`. The later one-hundredth pass
+  implements the old-branch-compatible persisted cooldown boundary for known
+  groups `1..3` while leaving additional duration policy blocked.
 - Verification: Ghidra export refresh with `-MaxDecompiledFunctions 430`
   applied 302 WildStar64 labels and selected the new account-item callbacks.
   `dotnet build
@@ -4560,6 +4562,260 @@ Ninety-sixth loot granted/explosion packet-field delta pass:
   output after the account-item delete packet change with
   `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
   --no-restore -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\loot-granted-delta\`.
+
+Ninety-seventh mapped opcode enum follow-up implemented from this pass:
+
+- This pass focused on extending
+  `Source\NexusForever.Network\Message\GameMessageOpcode.cs` from already
+  durable client evidence. A comparison of mapped `function_labels.csv` opcode
+  mentions and direct `Network_SendOpcodePayloadHelper(...)` calls in
+  `selected_decompiled.c` showed the selected native send-helper surface was
+  missing five enum names: `0x0096`, `0x0098`, `0x009D`, `0x03F1`, and
+  `0x03F2`. Other apparent gaps from the raw label scan were non-opcode
+  constants or offsets such as client table ids, audio offsets, and result enum
+  values.
+- NexusForever opcode coverage implemented:
+  `ClientActivateUnitCastPosition = 0x0096` names the mapped activate-unit
+  family request with context token, two selector nibbles, target id, and world
+  position; `ClientActivateUnitCastTarget = 0x0098` names the related
+  activate-unit family request with context token and target field;
+  `ClientCastSpellSelected = 0x009D` names the selected spell-cast variant with
+  context token, selected entry id, target id, and world position; and the
+  pending account-item gift boundary now has
+  `ClientAccountItemGiftPendingItemGroupToAccount = 0x03F1` plus
+  `ClientAccountItemGiftPendingItemGroupToCharacter = 0x03F2`.
+- Evidence locations:
+  the activate-unit and selected spell-cast sender labels are already selected
+  at `selected_decompiled.c:8236`, `8495`, `8737`, and `9119`; the pending
+  account-item gift helpers are selected at `selected_decompiled.c:158` and
+  `215`. The source enum now records the new low opcode entries around
+  `GameMessageOpcode.cs:17` and the account-item gift entries around
+  `GameMessageOpcode.cs:385`.
+- Still blocked:
+  this pass names opcodes only. It does not add message models or handlers for
+  `0x0096`, `0x0098`, `0x009D`, `0x03F1`, or `0x03F2`; the activate-unit and
+  spell-cast variants need a dedicated receive-model pass before server-side
+  parsing, and pending account-item gifting remains blocked on exact recipient
+  and delivery semantics.
+- Verification:
+  a focused send-helper comparison now reports `missingSendHelperOpcodes=0` for
+  the selected WildStar64 export. `dotnet build
+  Source\NexusForever.Network\NexusForever.Network.csproj --no-restore -m:1
+  -v minimal --nologo` succeeds with `0` warnings and `0` errors.
+
+Ninety-eighth development-only data boundary and item-container loot pass:
+
+- Runtime data boundary implemented from this pass:
+  `wildstar_client`, `jabbithole`, and `nf_map_*` are now documented as
+  development-only evidence/import inputs. Runtime code must consume only
+  promoted server-owned tables, `.tbl` data, scripts, or code assets. A focused
+  model test asserts that `WorldContext` does not map `nf_map_*`,
+  `wildstar_client`, or `jabbithole` tables.
+- Item-container runtime hardening:
+  `IGlobalLootManager` now exposes `HasLoot(IItem)` for server-owned item loot
+  availability, and item loot drops now return success/failure. Loot-bag use
+  validates that the consumed item has a loaded runtime `item_loot` table before
+  consuming the bag, keeping category-138 items without promoted loot data from
+  disappearing silently.
+- Promoted item-container test coverage:
+  new tests cover the safe-import `item_container_map.csv` policy represented
+  in runtime tables: a flat item-container `loot_group` with
+  `minDrop = maxDrop = 1` grants exactly one contained item, even when multiple
+  weighted rows roll.
+- No new client labels were added:
+  this pass did not need fresh decompile exports. It implements the already
+  verified runtime boundary around the item-loot path and records the
+  development/runtime data split for future mapping passes.
+
+Ninety-ninth packed-send opcode enum extension pass:
+
+- Send-helper sweep:
+  the selected WildStar64 export now includes the alternate packed send helper
+  at `Network_SendOpcodePayloadOrPackedHelper`. Tracing its direct callers
+  exposed eight enum gaps or mismatches: group `0x0411`/`0x0412`, housing
+  neighbor `0x0512`/`0x0513`/`0x0515`/`0x0518`, housing visit identity
+  `0x052F`, and recruitment-guild `0x076E`.
+- Recruitment correction:
+  `ClientRecruitmentGuildGetDetailedGuildInfo` was corrected from `0x776E` to
+  `0x076E`. A focused immediate scan found `0x076E` at
+  `RecruitmentGuild_SendClientGetDetailedGuildInfo` and found no `0x776E`
+  immediates in `WildStar64.exe`.
+- Group opcode map:
+  `GroupLib.GotoGroupInstance` sends `0x0411` with the current group id, and
+  `GroupLib.SetInstanceDifficulty` sends `0x0412` with the current group id
+  plus the requested difficulty. The enum now names these as
+  `ClientGroupGotoGroupInstance` and `ClientGroupSetInstanceDifficulty`.
+- Housing neighbor opcode map:
+  the HousingLib method table maps `NeighborInviteByName` to `0x0512`,
+  `NeighborEvict` to `0x0515`, `NeighborInviteAccept`/`NeighborInviteDecline`
+  to the boolean response opcode `0x0513`, and `NeighborSetPermission` to
+  `0x0518` with selected neighbor identity plus a `0..2` permission value.
+  The selected-residence visit helper sends `0x052F` with only a residence
+  identity, so the enum now names it `ClientHousingVisitResidence` while
+  leaving the existing fuller `ClientHousingVisit = 0x0531` intact.
+- Durable labels and export verification:
+  `function_labels.csv` now labels the packed send helper, the group and
+  recruitment wrappers, the housing event callbacks, the HousingLib neighbor
+  methods, and the identity-only housing visit sender. Re-exporting
+  `WildStar64.exe` with `-MaxDecompiledFunctions 620` applied `552` labels and
+  selected the new labels in `selected_decompiled.c`.
+- Remaining implementation boundary:
+  this pass names opcodes only. It does not add message models or handlers for
+  the newly named group or housing client packets because the server-side
+  mutation semantics and exact receive models still need a focused packet-model
+  pass.
+- Verification:
+  the selected send-helper comparison now reports no missing enum values for
+  direct calls through `Network_SendOpcodePayloadHelper`,
+  `Network_SendOpcodePayloadOrPackedHelper`, `FUN_140016010`, or
+  `FUN_1400161d0`. `dotnet build
+  Source\NexusForever.Network\NexusForever.Network.csproj --no-restore -m:1
+  -v minimal --nologo` and `dotnet build
+  Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -m:1 -v minimal --nologo` both succeed with `0` warnings and
+  `0` errors.
+
+One-hundredth account item cooldown/result delta pass:
+
+- Client/account evidence:
+  `ServerAccountItemCooldownSet_ReadPayload` at `14007a040` reads opcode
+  `0x0974` as two 32-bit fields: account item cooldown group and cooldown
+  seconds. The client Lua enum registration also exposes
+  `CodeEnumAccountOperation` and `CodeEnumAccountOperationResult`, and the old
+  `kirmmin/latest` branch used opcode `0x0970` as `ServerAccountOperationResult`
+  with 32-bit operation and result fields.
+- Runtime implementation:
+  NexusForever now has `ServerAccountOperationResult = 0x0970`, account
+  operation/result enums, and a packet model that writes the two 32-bit fields.
+  `AccountInventoryManager.TakeItem` sends operation results for success,
+  invalid inventory items, already-claimed state, target-character mismatch,
+  prerequisite failure, max entitlement/generic-unlock failures, and cooldown
+  rejection instead of relying on generic errors for the verified take path.
+- Cooldown implementation:
+  auth DB model/migration support for `account_item_cooldown` was added.
+  Account inventory load now includes persisted cooldowns, initializes missing
+  groups from `AccountItemCooldownGroup.tbl`, saves cooldown state, sends
+  nonzero initial cooldowns, checks cooldowns before claim, triggers known group
+  durations from the old branch (`1`/`2` = 1800 seconds, `3` = 28800 seconds),
+  and emits `ServerAccountItemCooldownSet` after triggering.
+- Account-currency packet cleanup:
+  the unused duplicate `ServerGrantAccountCurrency` class was removed so opcode
+  `0x0967` has a single registered model, the already-used
+  `ServerAccountCurrencyGrant` payload of `AccountCurrency`, `Unknown0`, and
+  `Unknown1`.
+- Still blocked at that point:
+  pending account-item group claim/return, gifting, coupon handling, and
+  retail cooldown durations for any groups beyond `1..3` needed focused native
+  or sniff evidence before replacing generic fallback paths or adding more
+  policy. A later focused pass mapped the gift request payloads and replaced
+  the pending/gift generic-error fallbacks with account-operation results.
+- Verification:
+  `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj --no-restore
+  -m:1 -v minimal --nologo` succeeds with only the pre-existing
+  `Spline.formation` warning. `dotnet build
+  Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -m:1 -v minimal --nologo` succeeds with `0` warnings and `0`
+  errors. A direct auth-project build initially hit a transient compiler output
+  file lock, then succeeded with isolated output using
+  `-p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\auth-cooldown\`.
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\account-cooldown-world\`
+  succeeds with only the pre-existing `Spline.formation` warning. `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo` passes `3` tests.
+
+One-hundred-first direct-send opcode enum extension pass:
+
+- Send-helper sweep:
+  a wider direct-send pass over the WildStar64 `Network_SendOpcodePayloadHelper`
+  surface found eighteen additional client opcode gaps. The enum now names
+  item context action `0x00B6`, resource conversion `0x00D7`, dash cast
+  `0x00DE`, spell cast state `0x00E3`, movement fall state `0x00FB`/`0x00FC`,
+  repair vendor `0x014C`/`0x0167`, spell toggle cast `0x017E`, vehicle embark
+  `0x01B0`, CREDD exchange `0x0265`/`0x0267`/`0x0269`/`0x026B`/`0x03E7`,
+  housing interior wallpaper update `0x050D`, generic map node request
+  `0x07CF`, and stale Spline2 request `0x081D`.
+- Durable labels:
+  `function_labels.csv` adds `24` WildStar64 labels for the mapped senders and
+  Lua/UI wrappers, including `Lua_GameLib_ConvertResource`,
+  `DashCast_SendClientDashCast`, repair-vendor senders,
+  `CREDDExchange_SendClientOrderSubmit`, `Lua_CREDDExchangeLib_GetCREDDHistory`,
+  `Lua_GameResidence_RemoveInteriorWallpaper`,
+  `GenericMap_SendClientNodeRequestOrChoose`, and
+  `Spline2_SendClientStaleSplineRequests`.
+- Evidence notes:
+  CREDD exchange table evidence maps `RequestExchangeInfo`, `CancelOrder`, and
+  `GetCREDDHistory`; the submit path selects buy/sell opcodes from UI state.
+  `Residence.RemoveInteriorWallpaper` collects six interior wallpaper plug-item
+  slots before sending `0x050D`. `GenericMapNodeChoose` sends `0x07CF` only when
+  node data is missing, otherwise it raises the local `GenericFloater`.
+  `0x081D` is tied to the Spline2/Spline2Node runtime cache and is kept as a
+  conservative stale Spline2 id request.
+- Remaining implementation boundary:
+  this pass names opcodes only. It does not add message models or handlers for
+  the newly named packets; the movement, repair, housing, generic-map, CREDD,
+  and Spline2 payloads still need dedicated receive-model passes before
+  server-side mutation.
+- Verification:
+  a clean CSV-only WildStar64 export applied `576` labels with `0` skipped or
+  missing labels after a full Auto export refreshed `selected_decompiled.c` but
+  returned a nonzero status after export. The direct helper trace reports
+  `records=348`, `immediateRecords=242`, `uniqueImmediate=175`, and
+  `missingImmediate=0`. A selected-decompile scan across the known send helpers
+  reports `selectedHelperCalls=116`, `unique=97`, and `missing=0`. `dotnet
+  build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -m:1 -v minimal --nologo` succeeds with `0` warnings and `0`
+  errors. The normal Network project build hit a transient `VBCSCompiler` lock,
+  then succeeded with `-p:UseSharedCompilation=false` and isolated
+  `BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\opcode-extension-network\`.
+
+One-hundred-second account item pending gift semantics pass:
+
+- AccountItemLib method-table mapping:
+  `DumpNearbyData` over `140b69860` tied `TakeAccountItem`,
+  `GiftPendingItemGroupToCharacter`, and `GiftPendingItemGroupToAccount` to
+  wrappers `1404e50f0`, `1404e5190`, and `1404e52d0`. Focused inspection
+  showed the character gift wrapper resolves a target character identity and
+  calls sender `140006d60`; the account gift wrapper resolves a target account
+  field and calls sender `140006e50`.
+- Gift packet payloads:
+  opcode `0x03F2` now has durable writer label
+  `ClientAccountItemGiftPendingItemGroupToCharacter_WritePayload`
+  (`140080990`) and serializes a pending group wide string followed by target
+  character identity. Opcode `0x03F1` now has durable writer label
+  `ClientAccountItemGiftPendingItemGroupToAccount_WritePayload` (`1400a0550`)
+  and serializes a pending group wide string, 64-bit target account field,
+  32-bit field, and current-character identity.
+- NexusForever implementation:
+  `GameMessageOpcode` now uses the client-facing gift names. Network.World
+  parses `ClientAccountItemGiftPendingItemGroupToCharacter` and
+  `ClientAccountItemGiftPendingItemGroupToAccount`. WorldServer handles both
+  gift requests as a non-mutating unsupported path by refreshing pending items
+  and sending `ServerAccountOperationResult` with `Operation=GiftItem` and
+  `Result=NoGifting`. Pending group claim/return fallbacks now also use
+  account-operation results (`ClaimPending`/`ReturnPending` with
+  `InvalidPendingItem`) instead of generic errors.
+- Still blocked:
+  coupon request/send semantics remain enum-only in the selected client
+  evidence: `RedeemCoupon` and `InvalidCoupon` are visible as account
+  operation/result names, but no request opcode or payload writer was mapped in
+  this pass. Cooldown durations beyond old-branch groups `1`, `2`, and `3`
+  remain blocked because `AccountItemCooldownGroup.tbl` exposes only `Id` in
+  current generated table models, while `AccountItemEntry` only references the
+  group id and the server packet carries seconds supplied by the server.
+- Verification:
+  a CSV-only WildStar64 export applied `581` labels with `0` skipped or
+  missing labels, and the new account gift labels appear in `functions.csv` and
+  `selected_reasons_summary.csv`. `dotnet build
+  Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -m:1 -v minimal --nologo` succeeds with `0` warnings and `0`
+  errors. The normal WorldServer output path was locked by a running
+  `NexusForever.WorldServer` process, so the focused build was repeated with
+  `-p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\account-item-gift-world\`
+  and succeeds with only the pre-existing `Spline.formation` warning.
 
 ## Practical Next Steps
 

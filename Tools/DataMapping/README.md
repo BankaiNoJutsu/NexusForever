@@ -345,7 +345,7 @@ Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
 
-That migration-style script imports vendor stock, creature loot, flat runtime creature loot groups, weighted item-container loot groups, and creature-info template overrides from `nf_map_*`. Creature-backed imports use only `unique_name`, `scored_name`, and `reviewed` creature bridges. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import.
+That migration-style script imports vendor stock, creature loot, flat runtime creature loot groups, weighted item-container loot groups, and creature-info template overrides from `nf_map_*` into explicit `nexus_forever_world` runtime tables. Runtime code must consume those promoted tables only, never the staging/source databases. Creature-backed imports use only `unique_name`, `scored_name`, and `reviewed` creature bridges. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import.
 
 Manual schema load example:
 
@@ -392,5 +392,5 @@ python Tools\DataMapping\apply_creature_info_overrides.py --apply
 - Vendor import is live for existing world entities only; mapped vendor creatures without an `entity` row are reported but not inserted.
 - Loot import is database-live and runtime-supported for mapped creature drops and mapped item-container loot bags. Generated creature loot rows default to one item per successful roll until aggregate stack semantics are reviewed further; generated item-container groups roll one weighted item per bag use.
 - Creature info overrides are runtime-supported creature template data. Existing entity-specific stats/properties still take precedence over template overrides.
-- `nf_map_*` staging imports are database-live reference/query data only; runtime code does not consume them until a feature explicitly reads from those tables.
+- `nf_map_*` staging imports are development/reference data only. Runtime code must not query them; feature work must promote reviewed rows into explicit runtime tables, scripts, or code-owned assets first.
 - Quest, path mission, and public event maps preserve Jabbithole game version and source IDs so later import logic can choose version policy explicitly.

@@ -549,16 +549,61 @@ WildStar64.exe,140080630,ServerAccountItems_ReadPayload,Reads opcode 0x096D as a
 WildStar64.exe,14007a040,ServerAccountItemCooldownSet_ReadPayload,Reads opcode 0x0974 as account item cooldown group and cooldown seconds.
 WildStar64.exe,140080510,ServerAccountItemsPending_ReadPayload,Reads opcode 0x0979 as a 32-bit count followed by pending account item group records of size 0x60.
 WildStar64.exe,1400a9b20,PendingAccountItemGroup_ReadPayload,Reads one pending account item group record used by opcode 0x0979, including ids, a wide string group key, claim state, and two identity payloads.
+WildStar64.exe,140080990,ClientAccountItemGiftPendingItemGroupToCharacter_WritePayload,Serialises opcode 0x03F2 as pending group wide string followed by target character identity.
+WildStar64.exe,1400a0550,ClientAccountItemGiftPendingItemGroupToAccount_WritePayload,Serialises opcode 0x03F1 as pending group wide string, a 64-bit target account field, a 32-bit field, and current character identity.
 WildStar64.exe,140006d00,AccountItem_SendClientAccountItemTake,Sends opcode 0x0839 from AccountItemLib:TakeAccountItem with one 64-bit account inventory id after validating it is present locally.
 WildStar64.exe,140006ba0,AccountItem_SendClientClaimPendingItemGroup,Sends opcode 0x0233 from AccountItemLib:ClaimPendingItemGroup with one pending group wide string after validating it is present locally.
 WildStar64.exe,140006c50,AccountItem_SendClientReturnPendingItemGroup,Sends opcode 0x07C6 with one pending group wide string after validating it is present locally.
-WildStar64.exe,140006d60,AccountItem_SendClientGiftPendingItemGroupIdentityPayload,Sends opcode 0x03F2 with a pending group wide string and two 64-bit UI-supplied fields after validating the group is present locally.
-WildStar64.exe,140006e50,AccountItem_SendClientGiftPendingItemGroupAlternatePayload,Sends opcode 0x03F1 with a pending group wide string, a UI-supplied field, and current-player identity fields after validating the group is present locally.
+WildStar64.exe,140006d60,AccountItem_SendClientGiftPendingItemGroupToCharacter,Sends opcode 0x03F2 from AccountItemLib:GiftPendingItemGroupToCharacter with a pending group wide string and target character identity after validating the group is present locally.
+WildStar64.exe,140006e50,AccountItem_SendClientGiftPendingItemGroupToAccount,Sends opcode 0x03F1 from AccountItemLib:GiftPendingItemGroupToAccount with a pending group wide string, target account field, 32-bit zero field, and current-character identity after validating the group is present locally.
+WildStar64.exe,1404e50f0,Lua_AccountItemLib_TakeAccountItem,AccountItemLib.TakeAccountItem Lua method wrapper that resolves the selected account inventory row and calls the 0x0839 sender.
+WildStar64.exe,1404e5190,Lua_AccountItemLib_GiftPendingItemGroupToCharacter,AccountItemLib.GiftPendingItemGroupToCharacter Lua method wrapper that resolves the selected pending group and target character identity before calling the 0x03F2 sender.
+WildStar64.exe,1404e52d0,Lua_AccountItemLib_GiftPendingItemGroupToAccount,AccountItemLib.GiftPendingItemGroupToAccount Lua method wrapper that resolves the selected pending group and target account field before calling the 0x03F1 sender.
 WildStar64.exe,140518b70,AccountItemUi_ClaimSelectedPendingItemGroup,UI callback that sends ClientAccountItemClaimPendingItemGroup for the selected pending group and dispatches AccountPendingItemsClaimed.
 WildStar64.exe,140518be0,AccountItemUi_TakeSelectedAccountItem,UI callback that sends ClientAccountItemTake for the selected account inventory item and dispatches AccountPendingItemTook.
 WildStar64.exe,140519260,AccountItemUi_GiftSelectedPendingItemGroup,UI callback that sends one of the pending-group gift request payloads for the selected pending group and dispatches AccountPendingItemsGifted.
 WildStar64.exe,140519440,AccountItemUi_ReturnSelectedPendingItemGroup,UI callback that sends ClientAccountItemReturnPendingItemGroup for the selected pending group and dispatches AccountPendingItemsReturned.
 WildStar64.exe,1404f1150,StorefrontLib_PurchaseOffer,Lua StorefrontLib PurchaseOffer method that reads the Game.Money purchase argument and routes normal purchases separately from recipient or extra-target purchase flows.
+WildStar64.exe,1403f4740,Network_SendOpcodePayloadOrPackedHelper,Generic opcode and payload send helper that dispatches through the resolved world socket and can wrap through 0x0244 ClientEncrypted when direct queueing needs a packed envelope.
+WildStar64.exe,140584840,RecruitmentGuild_SendClientGetDetailedGuildInfo,Sends opcode 0x076E with current realm id and selected recruitment guild identity through the packed send helper.
+WildStar64.exe,14069e5c0,Lua_GameRecruitmentGuild_GetDetailedGuildInfo,Game.RecruitmentGuild Lua method wrapper that sends ClientRecruitmentGuildGetDetailedGuildInfo and returns success as a Lua boolean.
+WildStar64.exe,140743f30,Lua_GroupLib_SetInstanceDifficulty,GroupLib.SetInstanceDifficulty Lua method that sends opcode 0x0412 with current group id and requested difficulty.
+WildStar64.exe,140744610,Lua_GroupLib_GotoGroupInstance,GroupLib.GotoGroupInstance Lua method that sends opcode 0x0411 with current group id after active-group checks.
+WildStar64.exe,1404b9db0,HousingEvent_SendClientNeighborInvite,Registered housing event callback that sends opcode 0x0512 with either a target name or current residence identity.
+WildStar64.exe,1404b9f10,HousingEvent_SendClientNeighborEvict,Registered housing event callback that sends opcode 0x0515 with either a target name or current residence identity.
+WildStar64.exe,1404ba070,HousingEvent_SendClientNeighborInviteAccept,Registered housing event callback that sends opcode 0x0513 with invite response value 1.
+WildStar64.exe,1404ba0a0,HousingEvent_SendClientNeighborInviteDecline,Registered housing event callback that sends opcode 0x0513 with invite response value 0.
+WildStar64.exe,1404ba0d0,HousingEvent_SendClientNeighborSetPermission,Registered housing event callback that sends opcode 0x0518 with target identity and permission value.
+WildStar64.exe,140735eb0,Lua_HousingLib_NeighborInviteByName,HousingLib.NeighborInviteByName Lua method that sends opcode 0x0512 with neighbor invite target data.
+WildStar64.exe,140735fb0,Lua_HousingLib_NeighborEvict,HousingLib.NeighborEvict Lua method that sends opcode 0x0515 with the selected neighbor residence identity.
+WildStar64.exe,140736050,Lua_HousingLib_NeighborInviteAccept,HousingLib.NeighborInviteAccept Lua method that sends opcode 0x0513 with invite response value 1.
+WildStar64.exe,140736080,Lua_HousingLib_NeighborInviteDecline,HousingLib.NeighborInviteDecline Lua method that sends opcode 0x0513 with invite response value 0.
+WildStar64.exe,1407360b0,Lua_HousingLib_NeighborSetPermission,HousingLib.NeighborSetPermission Lua method that sends opcode 0x0518 with selected neighbor identity and a 0..2 permission value.
+WildStar64.exe,1405b2390,Housing_SendClientVisitResidenceIdentity,Sends opcode 0x052F with a residence identity from the selected housing entry before dispatching the local visit result event.
+WildStar64.exe,1406d34c0,ItemAction_HandleInventoryItemClick,Handles inventory item click/context actions and sends opcode 0x00B6 with item guid plus a selector bit for selected branches.
+WildStar64.exe,1404ab040,ResourceConversion_SendClientConvertResource,Builds and sends opcode 0x00D7 ClientConvertResource after validating the selected conversion record and three caller-supplied resource fields.
+WildStar64.exe,14065eec0,Lua_GameLib_ConvertResource,GameLib.ConvertResource Lua method that resolves the active resource conversion target and routes the selected conversion fields into ClientConvertResource.
+WildStar64.exe,14039eff0,DashCast_SendClientDashCast,Handles DashCastSuccess client-side state updates and sends opcode 0x00DE with the resolved dash direction or state value.
+WildStar64.exe,140397850,SpellCast_SendClientSpellCastState,Resolves the current spell wrapper and sends opcode 0x00E3 with a one-bit spell-cast state value after local cast gating.
+WildStar64.exe,1403a25c0,Movement_UpdateAndSendFallStateOpcodes,Large movement update function that sends the observed 0x00FB fall-state float and 0x00FC landing-state movement payload branches.
+WildStar64.exe,1403c28f0,Vendor_SendClientRepairItemVendor,Sends opcode 0x014C for a vendor repair item request with item location and optional guild/current-value fields.
+WildStar64.exe,1403c2a20,Vendor_SendClientRepairAllItemsVendor,Sends opcode 0x014C for the repair-all vendor branch with a zero item identity and calculated total repair cost.
+WildStar64.exe,14050ce40,Lua_GameLib_IsRepairVendor,GameLib repair-vendor status method that checks the current target and sends opcode 0x0167 with an empty payload.
+WildStar64.exe,14050cf00,Lua_GameLib_RepairAllItemsVendor,GameLib repair-all vendor method that routes the calculated repair-all request through opcode 0x014C.
+WildStar64.exe,1403980a0,SpellCast_SendClientToggleCastOn,Sends opcode 0x017E with value 1 and marks the local toggle-cast state enabled.
+WildStar64.exe,1403981c0,SpellCast_SendClientToggleCastOff,Sends opcode 0x017E with value 0 and marks the local toggle-cast state disabled.
+WildStar64.exe,14039e260,Vehicle_SendClientEmbark,Validates the local vehicle-capable unit and target range before sending opcode 0x01B0 for the vehicle embark request.
+WildStar64.exe,1407123c0,Lua_CREDDExchangeLib_RequestExchangeInfo,CREDDExchangeLib.RequestExchangeInfo Lua method that sends opcode 0x0269 with an empty payload.
+WildStar64.exe,140712400,Lua_CREDDExchangeLib_CancelOrder,CREDDExchangeLib.CancelOrder Lua method that validates a Game.CREDDExchangeOrder and sends opcode 0x0267 with its order id.
+WildStar64.exe,140712490,Lua_CREDDExchangeLib_GetCREDDHistory,CREDDExchangeLib.GetCREDDHistory Lua method that sends opcode 0x03E7 with an empty payload.
+WildStar64.exe,1405194b0,CREDDExchange_SendClientOrderSubmit,Sends the CREDD exchange submit request through opcode 0x0265 or 0x026B depending on the buy/sell branch selected by UI state.
+WildStar64.exe,140519840,CREDDExchangeSubmit_ReadDirectionAndMoney,Reads the CREDD exchange submit direction and Game.Money amount and applies the buy-side credit/tax validation used before order submit.
+WildStar64.exe,1404b79d0,Housing_SendClientInteriorWallpaperUpdate,Builds changed six-slot residence plug item records and sends opcode 0x050D for interior wallpaper updates.
+WildStar64.exe,1406aca10,Lua_GameResidence_RemoveInteriorWallpaper,Game.Residence.RemoveInteriorWallpaper Lua method that collects the six interior wallpaper plug item slots and routes them through opcode 0x050D.
+WildStar64.exe,1404d1e40,GenericMap_SendClientNodeRequestOrChoose,Handles GenericMapNodeChoose by sending opcode 0x07CF for missing node data or dispatching the local GenericFloater when the node is already available.
+WildStar64.exe,1406f3050,Lua_GameLib_GenericMapNodeChoose,GameLib GenericMapNodeChoose Lua wrapper that reads the optional node id argument and calls the GenericMap node request/choose helper.
+WildStar64.exe,140634390,Spline2_SendClientStaleSplineRequests,Periodic Spline2 maintenance callback that sends opcode 0x081D with stale spline ids before rescheduling itself for the next ten-minute sweep.
+WildStar64.exe,140633380,Spline2_LoadAndScheduleClientRequests,Loads Spline2 and Spline2Node table-backed runtime data and schedules the periodic ClientSpline2Request maintenance callback.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.

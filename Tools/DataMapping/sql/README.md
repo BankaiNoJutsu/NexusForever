@@ -3,6 +3,10 @@
 These SQL scripts import the safe, reviewed mapping outputs from the `nf_map_*`
 staging tables into the real `nexus_forever_world` runtime tables.
 
+The staging/source databases are development-only. World/Auth runtime code must
+not query `wildstar_client`, `jabbithole`, or `nf_map_*`; it should consume only
+the runtime-owned tables populated by these imports.
+
 Recommended workflow from the repository root:
 
 ```powershell

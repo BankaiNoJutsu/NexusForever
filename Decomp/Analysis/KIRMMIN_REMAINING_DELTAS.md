@@ -46,9 +46,12 @@ Suggested validation:
 
 Current status:
 - Current code has `ServerAccountItemCooldownSet` with fields `AccountItemCooldownGroup` and `CooldownInSeconds`.
-- `AccountInventoryManager.SendCooldowns()` is empty.
+- `AccountInventoryManager.SendCooldowns()` now emits nonzero persisted cooldowns.
 - Current claim path uses `ClientAccountItemTake` opcode `0x0839`, which is the same opcode old branch called `ClientAccountItemBind`.
-- Current failure path sends generic errors rather than old branch's `ServerAccountOperationResult`.
+- Current take/claim success and failure path now sends `ServerAccountOperationResult = 0x0970` with 32-bit `AccountOperation` and `AccountOperationResult` fields.
+- Account-item cooldowns are persisted in auth DB table `account_item_cooldown`, initialized from `AccountItemCooldownGroup.tbl`, checked before claim, triggered for known cooldown groups, and sent with `ServerAccountItemCooldownSet`.
+- Unsupported pending account-item group claim/return paths now refresh the authoritative empty pending list and send `ServerAccountOperationResult` with `ClaimPending`/`ReturnPending` plus `InvalidPendingItem`.
+- Pending group gift request packets are now parsed: `0x03F2` is `GiftPendingItemGroupToCharacter` with group key plus target character identity, and `0x03F1` is `GiftPendingItemGroupToAccount` with group key, a 64-bit target account field, a 32-bit field, and current-character identity. Gifting remains non-mutating and returns `GiftItem` + `NoGifting`.
 
 Old branch behavior:
 - Tracks `AccountItemCooldown` records in auth DB.
@@ -60,12 +63,11 @@ Old branch behavior:
 Evidence:
 - `ServerAccountItemCooldownSet_ReadPayload` at `14007a040` reads opcode `0x0974` as cooldown group plus cooldown seconds.
 - Old branch `ServerAccountOperationResult` is opcode `0x0970`, payload `AccountOperation` as 32 bits then `AccountOperationResult` as 32 bits.
+- `AccountItemLib` maps `GiftPendingItemGroupToCharacter` to sender `140006d60` / writer `140080990` for opcode `0x03F2`, and `GiftPendingItemGroupToAccount` to sender `140006e50` / writer `1400a0550` for opcode `0x03F1`.
 
 Remaining work:
-- Add a current account cooldown model/manager, or adapt the current auth model if already present.
-- Implement cooldown load/save and nonzero cooldown sends.
-- Add `ServerAccountOperationResult = 0x0970` only after confirming the current client still expects the old field shape.
-- Decide whether current `GenericError` responses should remain in addition to operation result for unsupported paths.
+- Confirm retail cooldown durations beyond the mapped old-branch groups `1`, `2`, and `3` if more groups appear in current data.
+- Map non-empty pending group storage/delivery, actual gift delivery rules, coupon request packets, and exact coupon operation handling before enabling server-side mutation.
 
 ### P1: Group loot edge semantics
 
@@ -104,11 +106,9 @@ Remaining work:
 
 Current status:
 - `ServerAccountCurrencyGrant` is the used packet and matches the old branch model: `AccountCurrency`, `Unknown0`, `Unknown1`.
-- `ServerGrantAccountCurrency` also exists with the same opcode but a different payload shape and appears unused.
+- The duplicate `ServerGrantAccountCurrency` class with the same opcode and different payload has been removed, so runtime message registration has one model for `ServerAccountCurrencyGrant = 0x0967`.
 
 Remaining work:
-- Confirm which class is actually registered at runtime when two message models share `ServerAccountCurrencyGrant`.
-- Remove or quarantine the unused duplicate if it is not valid for this client build.
 - Old branch also grants CosmicReward when spending Omnibits/Protobucks. This is gameplay policy, not packet-required; port only if desired.
 
 ### P2: Random Omnibit shower tuning
@@ -161,7 +161,6 @@ Remaining work:
 ## Suggested Next Pass Order
 
 1. Validate `LootItem` boolean/field order with a live client test or sniff.
-2. Implement account item cooldowns plus `ServerAccountOperationResult` if the packet shape is confirmed.
-3. Tighten group loot semantics: master authority, round-robin churn, offline roll winners, and out-of-range candidate UI.
-4. Wire `ServerLootNotification`, `ServerLootCanLoot`, and `ServerLootBindOnPickup` only after field confirmation.
-5. Port low-risk quest scripts and add the missing killer-aware script hook if needed.
+2. Tighten remaining group loot semantics: explicit master authority, offline roll winners, and harvest/resource loot-rule routing.
+3. Wire `ServerLootNotification`, `ServerLootCanLoot`, and `ServerLootBindOnPickup` only after field confirmation.
+4. Port low-risk quest scripts and add the missing killer-aware script hook if needed.

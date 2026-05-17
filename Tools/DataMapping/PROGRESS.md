@@ -122,7 +122,7 @@ Safety policy used:
 - Duplicate creature template override candidates with conflicting values were skipped instead of guessed: 511 property keys and 14 stat keys.
 - Vendor stock was applied only for mapped vendor creatures that already have matching rows in `entity.creature`.
 - Vendor and creature-info backups were written under `Tools\DataMapping\output\backups` before live imports.
-- `nf_map_*` staging loads are additive/reference data and are not consumed by runtime code until a feature explicitly reads them. `nf_map_creature` now includes review/original mapping audit columns.
+- `nf_map_*` staging loads are additive development/reference data and must not be consumed by runtime code. Runtime features must first promote reviewed rows into explicit `nexus_forever_world` tables, scripts, or code-owned assets. `nf_map_creature` now includes review/original mapping audit columns.
 - `Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql` can now repeat the same safe runtime import directly from loaded `nf_map_*` staging tables. It materialises mapped creature drops and item-container loot bags into the runtime loot tables. `Tools\DataMapping\sql\verify_safe_world_imports.sql` verifies counts and bridge-status distribution.
 
 ## Implemented Maps
@@ -427,7 +427,7 @@ Other reference maps:
 
 2. Import hardening:
    - Keep broadening runtime loot verification, especially grouped players, master loot assignment, roll timeouts, and aggregate-derived stack-count policy.
-   - Promote selected `nf_map_*` staging families into runtime managers only after the table has direct semantics and conflict policy. Good next candidates are creature spell/action inspection, quest/public-event/path read models, and reviewed spline candidates.
+   - Promote selected `nf_map_*` staging families into server-owned runtime tables/assets only after the table has direct semantics and conflict policy. Good next candidates are creature spell/action inspection, quest/public-event/path read models, and reviewed spline candidates.
    - Review the 527 remaining medium-confidence creature bridge suggestions and polymorphic client `objectId*` columns before broadening apply scripts beyond safe `unique_name`/`scored_name`/`reviewed` rows.
 
 ## Implementation Notes
