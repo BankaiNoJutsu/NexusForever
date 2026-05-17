@@ -5471,6 +5471,122 @@ One-hundred-eighteenth final opcode coverage closure pass:
   Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
   -v minimal --nologo` succeeds with `0 Warning(s)` and `0 Error(s)`.
 
+One-hundred-nineteenth item binding follow-up:
+
+- Native client evidence:
+  `InspectCodeAddress 1403c17d0` maps the local item move validator. Before the
+  client sends opcode `0x0182 ClientItemMove`, it checks an item-template byte at
+  offset `+0x150` for bit `0x10`; if that bit is set and the item is moving into
+  the equip path, the client dispatches the named event
+  `ItemConfirmSoulboundOnEquip`. `DumpNearbyData 140b2f3c0` shows the matching
+  Lua item bind payload keys around `tBind`, `bSoulbound`, `bNoTrade`,
+  `bOnPickup`, and `bOnEquip`.
+- NexusForever implementation:
+  item instances now persist a `soulbound` state, expose `IItem.MakeSoulbound`,
+  preserve that state on stack splits and partial deletes, bind items when
+  moved into equipped slots if `Item2.BindFlags` contains `0x10`, and bind
+  costume-unlocked items after a successful account costume unlock. Soulbound
+  items are rejected from player trades and outgoing mail attachment sends.
+  The `1403c17d0` function label was added as
+  `ItemMove_ValidateAndMaybeConfirmBindOnEquip`.
+
+One-hundred-twentieth realm-first achievement follow-up:
+
+- Native client evidence:
+  `InspectCodeAddress 1403f38b0` maps the client-side realm-first presentation
+  path. The handler resolves the completed achievement, builds the achievement
+  name payload, and dispatches `RealmFirstAchievementAnnounce` with the
+  achievement id, guild/player flag, announcing name, and payload. The client
+  data mapping identifies realm-first achievement rows as achievement type
+  `116`.
+- NexusForever implementation:
+  `AchievementType.RealmFirst` now names type `116`. `GlobalAchievementManager`
+  loads already-completed character and guild realm-first ids from the character
+  database, claims a realm-first id only once per process, and the character and
+  guild achievement managers broadcast `ServerRealmFirstAchievement` when a
+  realm-first achievement is completed for the first time on that realm. The
+  residence autosave interval cleanup was also made real by moving the hardcoded
+  housing save period behind `WorldConfig.ResidenceSaveIntervalSeconds`.
+  Command categories now instantiate through `ActivatorUtilities`, and the
+  broadcast/realm command handlers use constructor-injected world services
+  instead of resolving those dependencies at command execution time.
+
+One-hundred-twenty-first marker completion follow-up:
+
+- Old-branch/script evidence:
+  the `kirmmin/latest` map scripts had concrete zone/objective behavior for
+  Crimson Isle crash-site quest `5596` objective `8255`, and Northern Wilds
+  Empowered Tower quest `3486` objective `4987` plus story panel `1575`.
+  Current `WorldEntity` only invoked entity `OnEnterZone` hooks, so the current
+  map-script markers could not run before a map-level zone hook existed.
+- NexusForever implementation:
+  map scripts now receive `OnEnterZone` through `IBaseMap`/`BaseMap`; Crimson
+  Isle and Northern Wilds port the old objective/story-panel callbacks into the
+  current script system; spline AI now supports negative spline speeds by
+  flipping to the paired reverse mode; Slaughterdome match finish and
+  resurrection flows use `TeleportToLocal` with team map entrances; and public
+  events now receive death/resurrection callbacks so the Slaughterdome event can
+  track deaths, auto-release to Holocrypt, and move resurrected players back to
+  their team spawn.
+- Server/service markers resolved:
+  STS error XML now writes real `server`, `module`, `line`, and `text`
+  attributes; friendship email account lookup hydrates missing accounts through
+  the account API; internal outbox payload serialization is shared by chat,
+  friendship, and group servers; guild disbands now publish guild type and the
+  chat server removes guild-referenced channels; group member absorption and
+  healing-absorb values now flow from world to group server; and auth initial
+  realm selection now prefers an online realm that already has account inventory
+  targeted to it before falling back to the first online realm.
+- Verification:
+  the literal marker scan for `Source` and this findings file returns no matches,
+  and `dotnet build Source\NexusForever.sln --no-restore -m:1 -v minimal
+  --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\todo-full-pass\`
+  succeeds with `0 Warning(s)` and `0 Error(s)`.
+
+One-hundred-twenty-second blocked-marker implementation follow-up:
+
+- Inventory expiration and rollback:
+  `Item2Entry.ExpirationTimeMinutes` and the existing item database/network
+  `ExpirationTimeLeft` field are now wired end-to-end. Items load persisted
+  expiration, new item instances initialize finite lifetimes in seconds, player
+  update ticks inventory expiration, expired items delete with
+  `ItemUpdateReason.Expired`, and network item payloads include the current
+  time left. Stack creation, stack moves, and splits preserve expiration
+  boundaries so finite-life stacks are not merged with different remaining
+  timers. `IBag`/`Bag` now expose positional snapshots, and `Inventory.ItemMove`
+  preflights shrinking equipped bag capacity and restores bag/item state on
+  unexpected multi-step move failures.
+- Repair vendor:
+  focused WildStar64 inspection mapped `Item_CalculateMaxDurability`
+  (`1403b5400`), `Item_CalculateDurabilityValue` (`1403b5360`),
+  `Item_CalculateRepairCost` (`1403b54a0`), and
+  `ServerItemDurabilityUpdate_ReadPayload` (`1403b9690`). The repair cost
+  helper uses GameFormula `0x022F`, the missing durability fraction, and an
+  item value term. NexusForever now validates a selected vendor, calculates
+  repair costs server-side, rejects insufficient credits, charges credits, and
+  restores durability for single-item and repair-all requests. Repair-all
+  client totals are logged on mismatch but not trusted.
+- Flight-path purchase:
+  `ClientFlightPathPurchaseHandler` now resolves the validated contiguous
+  route chain to the destination `TaxiNode.WorldLocation2Id`, checks teleport
+  eligibility, charges the summed route price, and teleports to the destination
+  world location. This completes paid route travel with current server movement
+  primitives; cinematic taxi spline/vehicle embark visuals remain a separate
+  unmapped precision gap.
+- Verification:
+  WildStar64 export applied `638` labels with `0` skipped or missing, and the
+  four new repair labels appear in `functions.csv`, `selected_reasons_summary.csv`,
+  and `selected_decompiled.c`. Full solution builds succeeded with isolated
+  output paths for inventory, repair, and flight-path slices:
+  `.nexusforever-runtime\build\blocked-inventory\`,
+  `.nexusforever-runtime\build\blocked-repair\`, and
+  `.nexusforever-runtime\build\blocked-flight\`, each with `0` warnings and
+  `0` errors. After the final inventory resize safety adjustment, the full
+  solution build was rerun at
+  `.nexusforever-runtime\build\blocked-final-2\` and also completed with
+  `0` warnings and `0` errors.
+
 ## Practical Next Steps
 
 1. Keep extending `Decomp\Analysis\function_labels.csv` as functions are

@@ -602,6 +602,10 @@ WildStar64.exe,140397850,SpellCast_SendClientSpellCastState,Resolves the current
 WildStar64.exe,1403a25c0,Movement_UpdateAndSendFallStateOpcodes,Large movement update function that sends the observed 0x00FB fall-state float and 0x00FC landing-state movement payload branches.
 WildStar64.exe,1403c28f0,Vendor_SendClientRepairItemVendor,Sends opcode 0x014C for a vendor repair item request with item location and optional guild/current-value fields.
 WildStar64.exe,1403c2a20,Vendor_SendClientRepairAllItemsVendor,Sends opcode 0x014C for the repair-all vendor branch with a zero item identity and calculated total repair cost.
+WildStar64.exe,1403b5400,Item_CalculateMaxDurability,Calculates max durability for repair from item data plus a GameFormula durability offset.
+WildStar64.exe,1403b5360,Item_CalculateDurabilityValue,Scales max durability by a durability fraction and clamps positive repaired values to at least one.
+WildStar64.exe,1403b54a0,Item_CalculateRepairCost,Calculates credit repair cost from missing durability fraction, GameFormula 0x022F multiplier, and item value.
+WildStar64.exe,1403b9690,ServerItemDurabilityUpdate_ReadPayload,Reads item identity and durability update payload then dispatches the ItemDurabilityUpdate client event.
 WildStar64.exe,1403c2630,Vendor_SendClientSellItemToVendor,Validates vendor state and sends opcode 0x0166 with item location and quantity for SellItemToVendor.
 WildStar64.exe,1403c2850,Vendor_SendClientBuybackItemFromVendor,Validates inventory and buyback state before sending opcode 0x00BB with the selected buyback unique id.
 WildStar64.exe,14050cd50,Lua_GameLib_SellItemToVendor,GameLib SellItemToVendor Lua method that reads item location and quantity before routing opcode 0x0166.
@@ -655,6 +659,8 @@ WildStar64.exe,1400afce0,ClientSpline2NodeData_ReadPayload,Reads opcode 0x081A a
 WildStar64.exe,1400afe10,ClientSpline2NodePositionData_WritePayload,Serialises opcode 0x081B as two raw ids three raw 32-bit position values and a counted uint payload.
 WildStar64.exe,1400affc0,ClientSpline2NodePositionData_ReadPayload,Reads opcode 0x081B as two raw ids three raw 32-bit position values and a counted uint payload.
 WildStar64.exe,1400979e0,ServerVehiclePassengerSelf_ReadPayload,Reads opcode 0x089B as self vehicle 2-bit seat type and 3-bit seat position.
+WildStar64.exe,1403c17d0,ItemMove_ValidateAndMaybeConfirmBindOnEquip,Validates an item move request and dispatches ItemConfirmSoulboundOnEquip before sending ClientItemMove when the destination equip path would bind the source item.
+WildStar64.exe,1403f38b0,RealmFirstAchievementAnnounce_Dispatch,Builds the RealmFirstAchievementAnnounce client event from achievement id guild flag source name and achievement-name payload.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
