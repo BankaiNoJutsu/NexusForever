@@ -88,6 +88,12 @@ fingerprint mismatch against `logs\LATEST_RUN_SUMMARY.json`:
 .\Decomp\Analysis\Test-DecompileManifest.ps1 -FailOnMismatch
 ```
 
+Generate the latest export and opcode coverage snapshot without rerunning Ghidra:
+
+```powershell
+.\Decomp\Analysis\Get-DecompCoverageSnapshot.ps1
+```
+
 Single-target runs use per-target projects by default. If an older shared
 project exists but the split project has not been created yet, export-only Auto
 mode falls back to the shared project for compatibility. Run the same target
@@ -189,8 +195,20 @@ Logs are written under `Decomp\Analysis\logs`.
 selected-function counts and cache reuse/decompile counts, so targeted passes
 can confirm whether they reused the existing export or invalidated it.
 
-The client binaries, Ghidra projects, exports, and logs are reproducible local
-artifacts and are ignored by Git.
+`Get-DecompCoverageSnapshot.ps1` writes reviewable coverage artifacts under
+`Decomp\Analysis\coverage` and keeps the machine-oriented JSON snapshot under
+`Decomp\Analysis\logs`:
+
+- `coverage\LATEST_COVERAGE_SUMMARY.md` - human-readable snapshot of export and opcode coverage.
+- `logs\LATEST_COVERAGE_SUMMARY.json` - machine-readable summary for automation and handoffs.
+- `coverage\export_coverage_inventory.csv` - per-target export coverage counts.
+- `coverage\opcode_coverage_inventory.csv` - opcode/model/handler inventory from `GameMessageOpcode.cs` and message source files.
+
+`run_ghidra_analysis.ps1` refreshes these coverage artifacts after each run.
+
+The client binaries, Ghidra projects, exports, and raw logs are reproducible
+local artifacts and are ignored by Git. Coverage reports live outside the
+ignored `logs` tree so they can be reviewed and committed when useful.
 
 See `INITIAL_FINDINGS.md` for the first pass of protocol/data anchors found in
 the generated exports.

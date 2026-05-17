@@ -218,6 +218,9 @@ DROP VIEW IF EXISTS world_proxy_chain_context;
 DROP VIEW IF EXISTS world_runtime_spell_candidates;
 DROP VIEW IF EXISTS world_nonplayer_creature_family_summary;
 DROP VIEW IF EXISTS world_nonplayer_effect_family_summary;
+    DROP VIEW IF EXISTS world_creature_spell_coverage_summary;
+    DROP VIEW IF EXISTS world_creature_spell_coverage_gaps;
+DROP VIEW IF EXISTS world_creature_activate_spell_context;
 DROP VIEW IF EXISTS world_creature_spell_context;
 DROP TABLE IF EXISTS world_effect_family_context;
 DROP TABLE IF EXISTS world_creature_placements;
@@ -306,6 +309,159 @@ JOIN creature_spells cs ON cs.creature_id = wcp.creature_id
 JOIN spells js ON js.id = cs.spell_id
 LEFT JOIN creature2 c ON c.ID = wcp.creature_id
 LEFT JOIN spell4 s4 ON s4.ID = js.game_id;
+
+CREATE VIEW world_creature_activate_spell_context AS
+SELECT
+    wcp.id AS placement_id,
+    wcp.source_file,
+    wcp.continent,
+    wcp.zone,
+    wcp.context,
+    wcp.source_index,
+    wcp.entity_type,
+    wcp.creature_id,
+    c2.description AS creature_description,
+    wcp.world_id,
+    wcp.area_id,
+    wcp.x,
+    wcp.y,
+    wcp.z,
+    0 AS activate_slot,
+    c2.spell4IdActivate00 AS spell4_id,
+    s4.spell4BaseIdBaseSpell AS spell4_base_id,
+    s4.tierIndex AS spell4_tier,
+    s4.description AS spell4_description,
+    c2.prerequisiteIdActivateSpell00 AS prerequisite_id_activate_spell,
+    c2.localizedTextIdActivateSpellText AS localized_text_id_activate_spell_text
+FROM world_creature_placements wcp
+JOIN creature2 c2 ON c2.ID = wcp.creature_id
+LEFT JOIN spell4 s4 ON s4.ID = c2.spell4IdActivate00
+WHERE c2.spell4IdActivate00 > 0
+UNION ALL
+SELECT
+    wcp.id AS placement_id,
+    wcp.source_file,
+    wcp.continent,
+    wcp.zone,
+    wcp.context,
+    wcp.source_index,
+    wcp.entity_type,
+    wcp.creature_id,
+    c2.description AS creature_description,
+    wcp.world_id,
+    wcp.area_id,
+    wcp.x,
+    wcp.y,
+    wcp.z,
+    1 AS activate_slot,
+    c2.spell4IdActivate01 AS spell4_id,
+    s4.spell4BaseIdBaseSpell AS spell4_base_id,
+    s4.tierIndex AS spell4_tier,
+    s4.description AS spell4_description,
+    c2.prerequisiteIdActivateSpell01 AS prerequisite_id_activate_spell,
+    c2.localizedTextIdActivateSpellText AS localized_text_id_activate_spell_text
+FROM world_creature_placements wcp
+JOIN creature2 c2 ON c2.ID = wcp.creature_id
+LEFT JOIN spell4 s4 ON s4.ID = c2.spell4IdActivate01
+WHERE c2.spell4IdActivate01 > 0
+UNION ALL
+SELECT
+    wcp.id AS placement_id,
+    wcp.source_file,
+    wcp.continent,
+    wcp.zone,
+    wcp.context,
+    wcp.source_index,
+    wcp.entity_type,
+    wcp.creature_id,
+    c2.description AS creature_description,
+    wcp.world_id,
+    wcp.area_id,
+    wcp.x,
+    wcp.y,
+    wcp.z,
+    2 AS activate_slot,
+    c2.spell4IdActivate02 AS spell4_id,
+    s4.spell4BaseIdBaseSpell AS spell4_base_id,
+    s4.tierIndex AS spell4_tier,
+    s4.description AS spell4_description,
+    c2.prerequisiteIdActivateSpell02 AS prerequisite_id_activate_spell,
+    c2.localizedTextIdActivateSpellText AS localized_text_id_activate_spell_text
+FROM world_creature_placements wcp
+JOIN creature2 c2 ON c2.ID = wcp.creature_id
+LEFT JOIN spell4 s4 ON s4.ID = c2.spell4IdActivate02
+WHERE c2.spell4IdActivate02 > 0
+UNION ALL
+SELECT
+    wcp.id AS placement_id,
+    wcp.source_file,
+    wcp.continent,
+    wcp.zone,
+    wcp.context,
+    wcp.source_index,
+    wcp.entity_type,
+    wcp.creature_id,
+    c2.description AS creature_description,
+    wcp.world_id,
+    wcp.area_id,
+    wcp.x,
+    wcp.y,
+    wcp.z,
+    3 AS activate_slot,
+    c2.spell4IdActivate03 AS spell4_id,
+    s4.spell4BaseIdBaseSpell AS spell4_base_id,
+    s4.tierIndex AS spell4_tier,
+    s4.description AS spell4_description,
+    c2.prerequisiteIdActivateSpell03 AS prerequisite_id_activate_spell,
+    c2.localizedTextIdActivateSpellText AS localized_text_id_activate_spell_text
+FROM world_creature_placements wcp
+JOIN creature2 c2 ON c2.ID = wcp.creature_id
+LEFT JOIN spell4 s4 ON s4.ID = c2.spell4IdActivate03
+WHERE c2.spell4IdActivate03 > 0;
+
+CREATE VIEW world_creature_spell_coverage_gaps AS
+SELECT
+    wcp.id AS placement_id,
+    wcp.source_file,
+    wcp.continent,
+    wcp.zone,
+    wcp.context,
+    wcp.source_index,
+    wcp.entity_type,
+    wcp.creature_id,
+    c.description AS creature_description,
+    wcp.world_id,
+    wcp.area_id,
+    wcp.x,
+    wcp.y,
+    wcp.z
+FROM world_creature_placements wcp
+LEFT JOIN creature2 c ON c.ID = wcp.creature_id
+LEFT JOIN creature_spells cs ON cs.creature_id = wcp.creature_id
+WHERE cs.id IS NULL;
+
+CREATE VIEW world_creature_spell_coverage_summary AS
+SELECT
+    wcp.source_file,
+    wcp.continent,
+    wcp.zone,
+    wcp.world_id,
+    COUNT(DISTINCT wcp.id) AS placements,
+    COUNT(DISTINCT wcp.creature_id) AS creatures,
+    COUNT(DISTINCT CASE WHEN cs.id IS NOT NULL THEN wcp.creature_id END) AS creatures_with_spell_rows,
+    COUNT(DISTINCT CASE WHEN cs.id IS NULL THEN wcp.creature_id END) AS creatures_without_spell_rows,
+    COUNT(DISTINCT CASE WHEN cs.id IS NULL THEN wcp.id END) AS placements_without_spell_rows,
+    GROUP_CONCAT(
+        DISTINCT CASE
+            WHEN cs.id IS NULL THEN CONCAT(wcp.creature_id, ':', LEFT(COALESCE(c.description, 'unknown creature'), 96))
+            ELSE NULL
+        END
+        ORDER BY wcp.creature_id SEPARATOR ' | '
+    ) AS missing_creatures
+FROM world_creature_placements wcp
+LEFT JOIN creature2 c ON c.ID = wcp.creature_id
+LEFT JOIN creature_spells cs ON cs.creature_id = wcp.creature_id
+GROUP BY wcp.source_file, wcp.continent, wcp.zone, wcp.world_id;
 
 CREATE TABLE world_effect_family_context AS
 SELECT

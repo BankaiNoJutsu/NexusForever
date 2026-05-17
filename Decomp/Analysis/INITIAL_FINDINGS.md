@@ -5,11 +5,11 @@ and exports in `Decomp\Analysis\exports`.
 
 ## Export Coverage
 
-| Binary | Functions | Strings | Interesting strings | Selected xrefs |
-| --- | ---: | ---: | ---: | ---: |
-| `WildStar64.exe` | 24,970 | 45,034 | 10,940 | 3,509 |
-| `Houston64.exe` | 25,129 | 29,460 | 6,317 | 1,952 |
-| `StsConnLib64.MT.dll` | 4,522 | 10,893 | 3,406 | 2,358 |
+| Binary | Functions | Strings | Durable labels | Interesting strings | Selected | Decompiled |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `Houston64.exe` | 25,129 | 29,460 | 7,508 | 6,317 | 0 | 0 |
+| `StsConnLib64.MT.dll` | 4,522 | 10,893 | 371 | 3,406 | 863 | 40 |
+| `WildStar64.exe` | 24,981 | 45,034 | 1,037 | 11,000 | 2,259 | 200 |
 
 The selected C exports are biased toward protocol/data anchors, so they are a
 starting point rather than a complete native source reconstruction.
@@ -4816,6 +4816,351 @@ One-hundred-second account item pending gift semantics pass:
   `-p:UseSharedCompilation=false
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\account-item-gift-world\`
   and succeeds with only the pre-existing `Spline.formation` warning.
+
+One-hundred-third CREDD exchange receive-model pass:
+
+- Implemented safe CREDD client receive models:
+  `ClientCREDDExchangeRequestInfo` (`0x0269`) and
+  `ClientCREDDExchangeRequestHistory` (`0x03E7`) are zero-byte messages.
+  `ClientCREDDExchangeCancelOrder` (`0x0267`) carries one 64-bit order id,
+  matching the durable native label evidence from
+  `Lua_CREDDExchangeLib_CancelOrder`.
+- Runtime behavior:
+  WorldServer now handles the three mapped CREDD requests as a non-mutating
+  unsupported path. Info/history requests return
+  `ServerAccountOperationResult` with `GetCREDDExchangeInfo` and
+  `CREDDExchangeNotLoaded`; cancel-order returns `CancelCREDDOrder` with
+  `CREDDExchangeNotLoaded`. This keeps the client request path parsed and
+  explicitly rejected until a real CREDD exchange service exists.
+- Still blocked:
+  buy/sell order submit opcodes `0x0265` and `0x026B` remain enum-only. The
+  selected client sender shows a four-field local payload split by buy/sell UI
+  state, but the exact packet writer bit widths for the money and selector
+  fields still need a focused writer-function pass before adding receive
+  models.
+- Coverage and verification:
+  `Get-DecompCoverageSnapshot.ps1` now reports client opcode coverage as
+  `235` implemented, `65` partial, and `26` missing. The three implemented
+  CREDD rows are marked `handled` in `opcode_coverage_inventory.csv`.
+  `dotnet build
+  Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -m:1 -v minimal --nologo` succeeds with `0` warnings and `0`
+  errors. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\credd-exchange-world\`
+  succeeds with only the pre-existing `Spline.formation` warning.
+
+One-hundred-fourth group instance receive-model pass:
+
+- Native evidence:
+  the existing durable WildStar64 labels
+  `Lua_GroupLib_GotoGroupInstance` (`140744610`) and
+  `Lua_GroupLib_SetInstanceDifficulty` (`140743f30`) map the two group
+  instance client sends. `GotoGroupInstance` sends `0x0411` with the current
+  group id after active-group checks. `SetInstanceDifficulty` sends `0x0412`
+  with the current group id and requested difficulty value.
+- NexusForever implementation:
+  `ClientGroupGotoGroupInstance` now parses the 64-bit group id.
+  `ClientGroupSetInstanceDifficulty` parses the 64-bit group id and the
+  2-bit `WorldDifficulty`, matching the existing instance-settings packet
+  encoding. WorldServer now has handlers for both messages. The goto request is
+  logged as an unsupported group-instance transfer. The difficulty request is
+  logged and rejected through `ServerGroupActionResult` with
+  `ChangeSettingsFailed` until group instance settings have a real backing
+  service.
+- Still blocked:
+  this pass does not implement teleporting to a group instance or mutating
+  group difficulty. The native client evidence maps the receive payloads, but
+  NexusForever still lacks a verified group-instance runtime path for those
+  mutations.
+- Coverage and verification:
+  `Get-DecompCoverageSnapshot.ps1` now reports client opcode coverage as
+  `237` implemented, `68` partial, and `21` missing. The two group instance
+  rows are marked `handled` in `opcode_coverage_inventory.csv`. `dotnet build
+  Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -m:1 -v minimal --nologo` succeeds with `0` warnings and `0`
+  errors. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\group-instance-world\`
+  succeeds with only the pre-existing `Spline.formation` warning.
+
+One-hundred-fifth mapped small client request pass:
+
+- Native evidence:
+  existing durable WildStar64 labels map several low-risk client request
+  packets. `ResourceConversion_SendClientConvertResource` (`1404ab040`) sends
+  `0x00D7` with a conversion id, selector/source field, and 64-bit resource
+  field after validating the selected conversion record. `DashCast_SendClientDashCast`
+  (`14039eff0`) sends `0x00DE` with a single direction/state value after local
+  dash-cast success handling. `Vendor_SendClientRepairItemVendor` (`1403c28f0`)
+  and `Vendor_SendClientRepairAllItemsVendor` (`1403c2a20`) share opcode
+  `0x014C` as a three-64-bit repair request, with the repair-all branch using a
+  zero item identity and a calculated total cost. `Lua_GameLib_IsRepairVendor`
+  (`14050ce40`) sends zero-byte `0x0167`. `GenericMap_SendClientNodeRequestOrChoose`
+  (`1404d1e40`) sends `0x07CF` only when the requested generic-map node is not
+  locally available; the node id matches the existing 14-bit generic-map packet
+  encoding.
+- NexusForever implementation:
+  WorldServer now handles `ClientConvertResource`, `ClientDashCast`,
+  `ClientRepairItemVendor`, and `ClientRepairVendorStatusRequest` as parsed
+  diagnostic-only requests. Resource conversion validates that the conversion id
+  exists before logging the unsupported path. `ClientGenericMapNodeRequest` now
+  parses a 14-bit node id and responds with `ServerGenericMapNode` for known
+  nodes, while unknown ids are logged and ignored. `ClientGenericMapNodeChosen`
+  now has a conservative unsupported handler so the already-modeled client
+  choice packet is no longer silently unhandled.
+- Still blocked:
+  item repair, resource conversion, and dash-cast server mutation remain
+  blocked. The selected client evidence maps the payloads, but safe server-side
+  repair cost application, conversion inventory/currency changes, and dash
+  state authority need dedicated runtime validation before mutation.
+- Coverage and verification:
+  `Get-DecompCoverageSnapshot.ps1` now reports client opcode coverage as
+  `243` implemented, `71` partial, and `12` missing. The six rows touched in
+  this pass are marked `handled` in `opcode_coverage_inventory.csv`. `dotnet
+  build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -m:1 -v minimal --nologo` succeeds with `0` warnings and `0`
+  errors. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\mapped-small-requests-world\`
+  succeeds with only the pre-existing `Spline.formation` warning.
+
+One-hundred-sixth housing neighbor receive-model pass:
+
+- Native evidence:
+  existing durable WildStar64 labels map the housing neighbor client requests.
+  `HousingEvent_SendClientNeighborInvite` (`1404b9db0`) and
+  `Lua_HousingLib_NeighborInviteByName` (`140735eb0`) send `0x0512` with
+  either a target residence identity or target player name. The matching evict
+  senders `1404b9f10` and `140735fb0` send `0x0515` with the same target
+  shape. `HousingEvent_SendClientNeighborInviteAccept`/`Decline`
+  (`1404ba070`/`1404ba0a0`) and their Lua wrappers send `0x0513` with an
+  accept value of `1` or `0`. `HousingEvent_SendClientNeighborSetPermission`
+  (`1404ba0d0`) and `Lua_HousingLib_NeighborSetPermission` (`1407360b0`) send
+  `0x0518` with the target identity/name and a permission value constrained by
+  the client to `0..2`.
+- NexusForever implementation:
+  `ClientHousingNeighborInvite`, `ClientHousingNeighborEvict`, and
+  `ClientHousingNeighborSetPermission` now parse target residence, target name,
+  and permission where applicable. `ClientHousingNeighborInviteResponse` now
+  has a WorldServer handler. The neighbor handlers log the mapped request data
+  and reject invalid permission values above `2`, but do not mutate residence
+  neighbor state.
+- Still blocked:
+  real neighbor invite persistence, pending-invite response handling, eviction,
+  and roommate/neighbor permission updates remain blocked until the server-side
+  housing relationship model is verified. `ClientHousingInteriorWallpaperUpdate`
+  remains enum-only because its six-slot interior wallpaper/remodel payload is
+  wider than this pass and needs a dedicated decode.
+- Coverage and verification:
+  `Get-DecompCoverageSnapshot.ps1` now reports client opcode coverage as
+  `248` implemented, `71` partial, and `7` missing. The four housing neighbor
+  rows are marked `handled` in `opcode_coverage_inventory.csv`. `dotnet build
+  Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -m:1 -v minimal --nologo` succeeds with `0` warnings and `0`
+  errors. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\housing-neighbor-world\`
+  succeeds with only the pre-existing `Spline.formation` warning.
+
+One-hundred-seventh attribute point receive-model pass:
+
+- Native evidence:
+  `GetAttributePoints`, `ResetAttributePoints`, and `SpendAttributePoints`
+  strings led back into the GameLib attribute point Lua methods. Direct caller
+  trace plus `InspectCodeAddress` confirmed `1406febf0` as
+  `Lua_GameLib_SpendAttributePoints`, which validates six Lua numeric
+  arguments, copies them into a 24-byte stack payload, and sends opcode
+  `0x017C`. The same inspection confirmed `1406fed20` as
+  `Lua_GameLib_ResetAttributePoints`, which validates local player/world state
+  and sends opcode `0x0150` with an empty payload. Both labels are now durable
+  rows in `Decomp\Analysis\function_labels.csv`.
+- NexusForever implementation:
+  `ClientSpendAttributePoints` now reads six `uint` attribute point values for
+  `ClientSpendAttributePoints` (`0x017C`), and
+  `ClientResetAttributePoints` models the zero-byte reset request
+  (`0x0150`). WorldServer has conservative diagnostic handlers for both
+  requests so the packets are recognized and logged without applying character
+  stat mutation.
+- Still blocked:
+  authoritative attribute allocation/refund behavior remains blocked on the
+  server-side character stat and attribute-point runtime model. The client
+  senders prove the wire shape, but not the validation rules, cost rules, or
+  resulting `ServerAttributePoints` update payload.
+- Coverage and verification:
+  `run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -DecompileMode
+  Auto` applies `583` labels and refreshes the WildStar selected decompile.
+  `Get-DecompCoverageSnapshot.ps1` now reports client opcode coverage as
+  `250` implemented, `72` partial, and `4` missing; the two attribute point
+  rows are marked `handled` in `opcode_coverage_inventory.csv`. `dotnet build
+  Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -m:1 -v minimal --nologo` succeeds with `0` warnings and `0`
+  errors. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\attribute-points-world\`
+  succeeds with only existing package-version warnings plus the existing
+  `Spline.formation` warning.
+
+One-hundred-eighth instance settings and AbilityBook mapping pass:
+
+- Native evidence:
+  `TraceStringReferences.java` on `SetInstanceSettings`,
+  `ResetSingleInstance`, and `AbilityBook`, plus `DumpNearbyData.java` on
+  `140b73130`, `140b73140`, and `140b75190`, resolved new method-table pairs.
+  `InspectCodeAddress.java` then confirmed `Lua_GameLib_GetInstanceSettings`
+  at `140701530`, `Lua_GameLib_SetInstanceSettings` at `140701650`,
+  `Lua_GameLib_ResetSingleInstance` at `1407017d0`, and
+  `Lua_GameLib_OnClosedInstanceSettings` at `140701800`.
+- The instance-settings helpers split cleanly into one local query and three
+  request paths: `GetInstanceSettings` returns `bWorldForcesLevelScaling` and
+  `eWorldDifficulty` from the current world state; `SetInstanceSettings` sends
+  opcode `0x0163` using the cached instance-portal id plus compact validated
+  setting bits; `ResetSingleInstance` sends opcode `0x0153`; and
+  `OnClosedInstanceSettings` conditionally sends opcode `0x00D2` after the
+  dialog closes, then clears the cached portal selection.
+- The adjacent ability table at `PTR_s_GetAbilitiesList_140b75160` maps
+  `Lua_AbilityBook_GetAbilitiesList` (`1407478d0`),
+  `Lua_AbilityBook_GetAbilityInfo` (`140747990`),
+  `Lua_AbilityBook_CheckSpellActivateRequirements` (`140747a80`),
+  `Lua_AbilityBook_ActivateSpell` (`140748190`),
+  `Lua_AbilityBook_UpdateSpellTier` (`140748390`),
+  `Lua_AbilityBook_ClearCachedLASUpdates` (`140748630`), and the registrar
+  `Lua_RegisterAbilityBook` (`140749690`).
+- `Lua_RegisterAbilityBook` calls
+  `FUN_140057020(param_1,"AbilityBook",&PTR_s_GetAbilitiesList_140b75160)` and
+  registers `CodeEnumSpecConstant`, `CodeEnumSpecError`, and
+  `CodeEnumEldanAvailability`.
+- `Lua_AbilityBook_ActivateSpell` validates the local player state, resolves the
+  spell wrapper, checks the local activation/tier gates, and sends opcode
+  `0x017A` with the spell id plus activation bit when the client-side checks
+  pass.
+- `Lua_AbilityBook_UpdateSpellTier` blocks on
+  `ActionSet_CheckUpdateSpellInProgress` and uses local tier/currency gates
+  before dispatching the client-side spell-tier update helper; it is not the
+  `ClientCommitAmpSpec` path.
+- NexusForever mapping status:
+  the existing packet models already line up with this evidence.
+  `ClientClosedInstanceSettings`, `ClientResetSingleInstance`,
+  `ClientSetInstanceSettings`, and `ClientAbilityBookActivateSpell` did not need
+  wire-shape changes in this pass. `Decomp\Analysis\function_labels.csv` now
+  carries the 11 new durable labels above so future export-only and
+  `InspectCodeAddress.java` passes surface those names directly in
+  `functions.csv`, `selected_xrefs.csv`, and targeted decompile output.
+- Still blocked:
+  the trailing packed setting bits in `ClientSetInstanceSettings` remain only
+  partially named from the Lua side, so server mutation should stay
+  conservative. `ClientCommitAmpSpec` remains a separate follow-up, and the full
+  return-table shapes for `GetAbilitiesList` / `GetAbilityInfo` are still wider
+  than the immediate packet-mapping need.
+- Coverage and verification:
+  `run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -ProjectLayout
+  PerTarget -DecompileMode Auto` now applies `594` WildStar64 labels with `0`
+  missing labels. The refreshed export carries the new names in
+  `functions.csv` and `selected_xrefs.csv`, while
+  `LATEST_COVERAGE_SUMMARY.md` remains at `250` implemented, `72` partial, and
+  `4` missing client opcodes because this pass only extended the decompile map.
+
+One-hundred-ninth remaining client missing-model pass:
+
+- Native evidence:
+  focused `FindImmediateInstructions.java` traces on `0x00FC`, `0x0265`,
+  `0x026B`, and `0x050D` resolved the registered payload writers and payload
+  sizes for the last missing client model rows. The shared packet registration
+  block `FUN_14006c290` proved the exact row pairs for the three previously
+  high-risk packets: `0x0265` uses semantic size `0x10` with advance helper
+  `140082c00` and writer `ClientCREDDExchangeBuyOrderSubmit_WritePayload`
+  (`140082c10`), `0x026B` uses semantic size `0x20` with advance helper
+  `14009fb40` and writer `ClientCREDDExchangeSellOrderSubmit_WritePayload`
+  (`14009fb50`), and `0x050D` uses semantic size `0x288` with advance helper
+  `14009ddb0` and writer `ClientHousingInteriorWallpaperUpdate_WritePayload`
+  (`14009ddd0`). The same pass also retained
+  `ClientMovementFallLand_WritePayload` (`14008b880`) and the shared
+  `Housing_WriteDecorInfoPayload` (`14009d0a0`) labels in the durable export.
+- Payload mapping:
+  `ClientMovementFallLand` (`0x00FC`) serializes one state bit followed by
+  three raw 32-bit movement position fields. `ClientCREDDExchangeBuyOrderSubmit`
+  (`0x0265`) serializes a 64-bit credit amount followed by one submit/selector
+  bit; its paired advance helper increments by `0x41` bits. `ClientCREDDExchangeSellOrderSubmit`
+  (`0x026B`) serializes an identity, a 64-bit credit amount, and the same
+  submit/selector bit; its paired advance helper increments by `0x8f` bits.
+  The housing interior wallpaper update (`0x050D`) serializes six 32-bit slot
+  flags followed by six `DecorInfo`-style records through the shared housing
+  decor writer. The writer emits the six slot flags first, then iterates six
+  times through `Housing_WriteDecorInfoPayload` with a `0x68` semantic stride,
+  while the paired advance helper adds `0xc0` bits for the slot flags and then
+  `0x2bc` bits for each `DecorInfo` record.
+- NexusForever implementation:
+  Network.World now has receive models for all four remaining client enum-only
+  opcodes, and the current CREDD / wallpaper shapes already match the recovered
+  writer evidence. WorldServer handles them as conservative diagnostics: CREDD
+  buy/sell return `ServerAccountOperationResult` with
+  `CREDDExchangeNotLoaded`, movement fall-land is logged only, and housing
+  interior wallpaper updates are logged without mutating residence state.
+- Still blocked:
+  CREDD exchange persistence/matching, authoritative landing-state movement
+  handling, and residence interior wallpaper mutation remain blocked on
+  server-side runtime semantics. This pass closes packet recognition and keeps
+  state mutation out of scope.
+- Coverage and verification:
+  WildStar64 export-only Auto applies `599` source-controlled labels with `0`
+  missing labels, and all five new labels appear in both `functions.csv` and
+  `selected_decompiled.c`. `Get-DecompCoverageSnapshot.ps1` now reports client
+  opcode coverage as `254` implemented, `72` partial, and `0` missing; the
+  client missing-model queue is `None`. `dotnet build
+  Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\missing-client-models-network\`
+  succeeds with `0` warnings and `0` errors. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\missing-client-models-world\`
+  succeeds with existing package-version warnings plus the existing
+  `Spline.formation` warning.
+
+One-hundred-tenth AMP commit handler pass:
+
+- Native evidence:
+  focused `FindImmediateInstructions.java` on `0x01A2` found the packet
+  registration row in `FUN_14006c290`, the sender at `1403d19a0`, and an
+  unrelated result/dispatch branch. The registration row maps opcode `0x01A2`
+  to advance helper `ClientCommitAmpSpec_AdvancePayload` (`140088270`) and
+  writer `ClientCommitAmpSpec_WritePayload` (`140088290`). The advance helper
+  adds `7` bits plus `count * 16` payload bits and `count * 2` semantic bytes.
+  The writer emits a 7-bit count followed by a contiguous array of 16-bit AMP
+  ids, matching the existing `ClientCommitAmpSpec` receive model.
+- Sender mapping:
+  `AbilityBook_SendClientCommitAmpSpec` (`1403d19a0`) reads the current spec AMP
+  list, appends pending AMP ids, sends opcode `0x01A2` through
+  `Network_SendOpcodePayloadHelper`, and clears the pending AMP cache. The
+  packet carries no spec index, so NexusForever treats it as an active-spec
+  request.
+- NexusForever implementation:
+  WorldServer now handles `ClientCommitAmpSpec` by validating the active spec,
+  player alive/combat gates, AMP ids, and available AMP power before adding
+  distinct new AMPs to the active action set. Validation failures return a
+  `ServerActionSet` result using the existing `LimitedActionSetResult` AMP
+  errors; successful commits send the refreshed `ServerAmpList`.
+- Still blocked:
+  exact client UI error presentation and deeper unlock/category-tier
+  requirements remain bounded by the current table/runtime validators. This
+  pass does not introduce a new asynchronous spell-update transaction gate.
+- Coverage and verification:
+  WildStar64 export-only Auto applies `602` source-controlled labels with `0`
+  missing labels and creates the split advance helper function at `140088270`.
+  The three new labels appear in `functions.csv`, `selected_reasons_summary.csv`,
+  and `selected_decompiled.c`. `dotnet build
+  Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -m:1 -v minimal --nologo` succeeds with `0` warnings and `0`
+  errors. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\commit-amp-spec-world\`
+  succeeds with only the existing `Spline.formation` warning.
 
 ## Practical Next Steps
 

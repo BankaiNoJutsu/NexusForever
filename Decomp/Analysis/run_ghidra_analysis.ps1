@@ -213,6 +213,7 @@ New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 New-Item -ItemType Directory -Force -Path $ProjectDir | Out-Null
 $resolvedOutputDir = (Resolve-Path -LiteralPath $OutputDir).Path
 $resolvedProjectDir = (Resolve-Path -LiteralPath $ProjectDir).Path
+$resolvedRepoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
 $logDir = Join-Path $PSScriptRoot 'logs'
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
@@ -383,6 +384,29 @@ finally {
     $summaryPath = Join-Path $logDir 'LATEST_RUN_SUMMARY.json'
     $runSummary | ConvertTo-Json -Depth 6 | Out-File -LiteralPath $summaryPath -Encoding utf8
     Write-Host "Run summary written to: $summaryPath"
+
+    $coverageScript = Join-Path $PSScriptRoot 'Get-DecompCoverageSnapshot.ps1'
+    if (Test-Path -LiteralPath $coverageScript -PathType Leaf) {
+        try {
+            $coverageSummary = & $coverageScript -RepoRoot $resolvedRepoRoot -OutputDir $resolvedOutputDir -LogDir $logDir -RunSummaryPath $summaryPath
+            if ($null -ne $coverageSummary) {
+                $runSummary.coverage = [ordered]@{
+                    summaryPath = $coverageSummary.summaryPath
+                    markdownPath = $coverageSummary.markdownPath
+                    exportInventoryPath = $coverageSummary.exportInventoryPath
+                    opcodeInventoryPath = $coverageSummary.opcodeInventoryPath
+                    exportTargetCount = $coverageSummary.exportTargetCount
+                    totalOpcodes = $coverageSummary.totalOpcodes
+                }
+
+                $runSummary | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $summaryPath -Encoding utf8
+                Write-Host ("Coverage summary written to: {0}" -f $coverageSummary.summaryPath)
+            }
+        }
+        catch {
+            Write-Warning ("Coverage snapshot generation failed: {0}" -f $_.Exception.Message)
+        }
+    }
 }
 
 Write-Host "Ghidra run complete. Exports: $OutputDir"

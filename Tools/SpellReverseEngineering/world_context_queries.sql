@@ -6,6 +6,73 @@
 -- Run an individual query by copying it into mysql, or use the helper views directly:
 --   mysql -ubankai -pbankai --batch --raw --database=nexus_spell_re -e "SELECT * FROM world_nonplayer_effect_family_summary ORDER BY placement_effect_rows DESC LIMIT 20;"
 
+-- 0. Source files with missing creature->spell coverage.
+SELECT
+  source_file,
+  world_id,
+  placements,
+  creatures,
+  creatures_with_spell_rows,
+  creatures_without_spell_rows,
+  placements_without_spell_rows
+FROM world_creature_spell_coverage_summary
+WHERE creatures_without_spell_rows > 0
+ORDER BY placements_without_spell_rows DESC, source_file
+LIMIT 30;
+
+-- 0b. Placement rows missing creature->spell coverage.
+SELECT
+  world_id,
+  source_file,
+  creature_id,
+  LEFT(creature_description, 120) AS creature,
+  COUNT(*) AS placements_missing
+FROM world_creature_spell_coverage_gaps
+GROUP BY world_id, source_file, creature_id, creature_description
+ORDER BY placements_missing DESC, world_id, creature_id
+LIMIT 50;
+
+-- 0c. Activate-spell coverage for placed entities.
+SELECT
+  world_id,
+  source_file,
+  creature_id,
+  LEFT(creature_description, 120) AS creature,
+  activate_slot,
+  spell4_id,
+  spell4_base_id,
+  spell4_tier,
+  LEFT(spell4_description, 120) AS spell,
+  prerequisite_id_activate_spell,
+  localized_text_id_activate_spell_text
+FROM world_creature_activate_spell_context
+ORDER BY world_id, creature_id, activate_slot
+LIMIT 50;
+
+-- 0d. Effect-family coverage for placed activate spells.
+SELECT
+  ac.world_id,
+  ac.source_file,
+  ac.creature_id,
+  LEFT(ac.creature_description, 120) AS creature,
+  ac.activate_slot,
+  ac.spell4_id,
+  LEFT(ac.spell4_description, 120) AS spell,
+  GROUP_CONCAT(DISTINCT CONCAT(e.effectType, ':', et.effectName) ORDER BY e.effectType SEPARATOR ', ') AS effect_families
+FROM world_creature_activate_spell_context ac
+JOIN spell4effects e ON e.spellId = ac.spell4_id
+LEFT JOIN spell_effect_type_names et ON et.effectType = e.effectType
+GROUP BY
+  ac.world_id,
+  ac.source_file,
+  ac.creature_id,
+  ac.creature_description,
+  ac.activate_slot,
+  ac.spell4_id,
+  ac.spell4_description
+ORDER BY ac.world_id, ac.creature_id, ac.activate_slot
+LIMIT 50;
+
 -- 1. Effect-family coverage for placed NonPlayer entities.
 SELECT *
 FROM world_nonplayer_effect_family_summary

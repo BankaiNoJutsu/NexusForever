@@ -24,9 +24,14 @@ implement server behavior from the evidence in the existing C# codebase.
 | `Decomp/Analysis/scripts/InspectCodeAddress.java` | Decompiles a function or dumps raw instructions at a code address. |
 | `Decomp/Analysis/function_labels.csv` | Durable function label map. This is the main bridge from native addresses to named evidence. |
 | `Decomp/Analysis/INITIAL_FINDINGS.md` | Living summary of mapped behavior and follow-up implementation. |
+| `Decomp/Analysis/Get-DecompCoverageSnapshot.ps1` | Generates the current export and opcode coverage inventories from local artifacts and source. |
 | `Decomp/Analysis/exports/<binary>/selected_reasons_summary.csv` | Selection audit for the focused export, including why a function was selected and whether it is inside the current decompile cutoff. |
 | `Decomp/Analysis/exports/<binary>` | Generated analysis exports. Ignored by Git. |
 | `Decomp/Analysis/logs/LATEST_RUN_SUMMARY.json` | Queryable summary of the last headless run, target set, project layout, log paths, and export outputs. |
+| `Decomp/Analysis/logs/LATEST_COVERAGE_SUMMARY.json` | Queryable snapshot of export counts plus opcode/model/handler coverage. |
+| `Decomp/Analysis/coverage/LATEST_COVERAGE_SUMMARY.md` | Human-readable coverage snapshot and priority queues. |
+| `Decomp/Analysis/coverage/export_coverage_inventory.csv` | Per-target export coverage counts for the current local snapshot. |
+| `Decomp/Analysis/coverage/opcode_coverage_inventory.csv` | Opcode/model/handler coverage inventory for the current local snapshot. |
 
 The default analysis targets are:
 
@@ -209,6 +214,7 @@ The easiest ways to understand cache behavior are:
 - `selected_decompiled.manifest` in the export folder for decompile fingerprint details.
 - `selected_reasons_summary.csv` for the current selection and cutoff.
 - `logs/LATEST_RUN_SUMMARY.json` for the most recent headless run inputs and outputs.
+- `coverage/LATEST_COVERAGE_SUMMARY.md` and `coverage/opcode_coverage_inventory.csv` for the current export and opcode backlog.
 
 ### 3. Search Exports For Anchors
 

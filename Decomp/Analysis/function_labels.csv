@@ -35,6 +35,8 @@ WildStar64.exe,14007ec70,ActivateUnitFamily_WriteTokenAndTargetFieldPair,Seriali
 WildStar64.exe,140085420,Marketplace_RequestCommodityInfo_WritePayload,Serialises world opcode 0x03E6 ClientRequestCommodityInfo as one 18-bit Item2 id inside a registered 4-byte object.
 WildStar64.exe,1400875e0,ClientICCommMessage_WritePayload,Serialises world opcode 0x054B ClientICCommMessage as 64-bit channel id, 32-bit message id, ASCII message text, and wide recipient name.
 WildStar64.exe,1400877a0,ClientICCommChannelJoin_WritePayload,Serialises world opcode 0x0546 ClientICCommChannelJoin as 3-bit channel type, 64-bit guild id, and wide channel name.
+WildStar64.exe,140088270,ClientCommitAmpSpec_AdvancePayload,Advances world opcode 0x01A2 ClientCommitAmpSpec as a 7-bit count plus count 16-bit AMP ids.
+WildStar64.exe,140088290,ClientCommitAmpSpec_WritePayload,Serialises world opcode 0x01A2 ClientCommitAmpSpec as a 7-bit count followed by count 16-bit AMP ids.
 WildStar64.exe,140088e60,Marketplace_AuctionSellOrderSubmit_WritePayload,Serialises world opcode 0x06DC ClientAuctionSellOrderSubmit as 64-bit item guid, 64-bit minimum bid, and 64-bit buyout price.
 WildStar64.exe,140089490,ClientFlightPathPurchase_WritePayload,Serialises world opcode 0x00FF payload as a 32-bit route-count followed by that many 32-bit TaxiRoute ids.
 WildStar64.exe,140089570,ClientSpellCastWithServiceToken_WritePayload,Serialises world opcode 0x00C2 payload as an 18-bit generated cast-context token plus a 32-bit Spell4 id.
@@ -162,6 +164,7 @@ WildStar64.exe,1403a11c0,ActionSet_CheckPvPRestriction,Checks whether the curren
 WildStar64.exe,1403b4ec0,Game_Spell_IsSelfSpellDelegate,Undecompiled bool helper used by Game.Spell:IsSelfSpell after the spell wrapper/service lookup path resolves the active spell metadata.
 WildStar64.exe,1403bb480,ActionSet_SendPendingActionSetChanges,Sends or commits a validated action-set change request.
 WildStar64.exe,1403bb8d0,ActionSet_CheckUpdateSpellInProgress,Checks whether a spell/action-set update is already in progress.
+WildStar64.exe,1403d19a0,AbilityBook_SendClientCommitAmpSpec,Sends opcode 0x01A2 ClientCommitAmpSpec with the current spec AMP list and clears the pending AMP cache.
 WildStar64.exe,1403db7f0,UnitState_UpdateCachedStateFields,Resolves the target unit for a raw unit-state record, forwards the state into FUN_14045bdc0, and refreshes the unit's cached raw state at +0x108 plus derived classification at +0x10c when the value changes.
 WildStar64.exe,1403db870,UnitState_ApplyResolvedState,Resolves the target unit for a raw unit-state update, applies the raw state value, and special-cases state 0 cleanup for the local subject/UI path.
 WildStar64.exe,1403db920,UnitState_MaybeDispatchUnitEvaded,Emits the UnitEvaded client event when a resolved unit-state update carries raw state value 4.
@@ -471,10 +474,21 @@ WildStar64.exe,140701150,Lua_GameLib_AcceptDuel,Sends zero-payload opcode 0x00E8
 WildStar64.exe,140701180,Lua_GameLib_DeclineDuel,Sends zero-payload opcode 0x00E9 ClientDuelDecline when the local duel state field is pending-request state 1.
 WildStar64.exe,1407011b0,Lua_GameLib_ForfeitDuel,Sends zero-payload opcode 0x00EA ClientDuelForfeit when the local duel state field is active-duel state 3.
 WildStar64.exe,140701290,Lua_GameLib_SetIgnoreDuelRequests,Sends opcode 0x0170 ClientSetIgnoreDuelRequests with the requested one-bit ignore-duel state only when it changes local flag bit 0x8.
+WildStar64.exe,140701530,Lua_GameLib_GetInstanceSettings,GameLib.GetInstanceSettings Lua method that returns bWorldForcesLevelScaling and eWorldDifficulty from the current world state.
+WildStar64.exe,140701650,Lua_GameLib_SetInstanceSettings,GameLib.SetInstanceSettings Lua method that packs the selected instance portal id plus validated difficulty and setting bits into opcode 0x0163 and clears the cached portal selection.
+WildStar64.exe,1407017d0,Lua_GameLib_ResetSingleInstance,GameLib.ResetSingleInstance Lua method that sends opcode 0x0153 with the selected instance portal id.
+WildStar64.exe,140701800,Lua_GameLib_OnClosedInstanceSettings,GameLib.OnClosedInstanceSettings Lua method that conditionally sends opcode 0x00D2 for the selected instance portal when the instance-settings dialog closes, then clears the cached portal selection.
 WildStar64.exe,14070e370,Lua_FriendshipLib_SetAutoResponseMessages,FriendshipLib.SetAutoResponseMessages Lua method; reads away and busy strings and forwards them to Friendship_SetAutoResponseMessagesAndSend.
 WildStar64.exe,14070e5d0,Lua_FriendshipLib_SetPersonalIgnoreStrangersState,FriendshipLib.SetPersonalIgnoreStrangersState Lua method; updates local ignore-strangers state and sends opcode 0x039E on state changes.
 WildStar64.exe,14072ee90,Lua_RegisterDialogResponseBindings,Registers the Game.DialogResponse Lua bindings and DialogResponseType_* constants including QuestComplete and QuestAccept.
 WildStar64.exe,1407a0fd0,SpellService_ResolveTargetFlags,Resolves the wrapper flags word read at +0x108 by Game.Spell:IsFreeformTarget after the target-type 7 spell-service lookup branch.
+WildStar64.exe,1407478d0,Lua_AbilityBook_GetAbilitiesList,AbilityBook.GetAbilitiesList Lua method.
+WildStar64.exe,140747990,Lua_AbilityBook_GetAbilityInfo,AbilityBook.GetAbilityInfo Lua method.
+WildStar64.exe,140747a80,Lua_AbilityBook_CheckSpellActivateRequirements,AbilityBook.CheckSpellActivateRequirements Lua method that evaluates local spell-activation gates for the requested spell.
+WildStar64.exe,140748190,Lua_AbilityBook_ActivateSpell,AbilityBook.ActivateSpell Lua method that validates the local player and spell wrapper state before sending opcode 0x017A with spell id and activation state.
+WildStar64.exe,140748390,Lua_AbilityBook_UpdateSpellTier,AbilityBook.UpdateSpellTier Lua method that validates local spell-tier progression and blocks while ActionSet_CheckUpdateSpellInProgress reports an active update.
+WildStar64.exe,140748630,Lua_AbilityBook_ClearCachedLASUpdates,AbilityBook.ClearCachedLASUpdates Lua method that clears cached local LAS and spell-tier update state.
+WildStar64.exe,140749690,Lua_RegisterAbilityBook,Registers AbilityBook Lua methods plus spec and Eldan availability enums.
 WildStar64.exe,14074ae30,Trade_SendClientP2PTradingAcceptInvite,Sends zero-payload opcode 0x018C ClientP2PTradingAcceptInvite after current invite and target checks pass.
 WildStar64.exe,14074aed0,Trade_SendClientP2PTradingDeclineInvite,Sends zero-payload opcode 0x0191 ClientP2PTradingDeclineInvite when declining a pending trade invite.
 WildStar64.exe,14074b160,Trade_SendClientP2PTradingCommitFromUi,Sends zero-payload opcode 0x0190 ClientP2PTradingCommit from the UI path when active trade state exists.
@@ -604,6 +618,13 @@ WildStar64.exe,1404d1e40,GenericMap_SendClientNodeRequestOrChoose,Handles Generi
 WildStar64.exe,1406f3050,Lua_GameLib_GenericMapNodeChoose,GameLib GenericMapNodeChoose Lua wrapper that reads the optional node id argument and calls the GenericMap node request/choose helper.
 WildStar64.exe,140634390,Spline2_SendClientStaleSplineRequests,Periodic Spline2 maintenance callback that sends opcode 0x081D with stale spline ids before rescheduling itself for the next ten-minute sweep.
 WildStar64.exe,140633380,Spline2_LoadAndScheduleClientRequests,Loads Spline2 and Spline2Node table-backed runtime data and schedules the periodic ClientSpline2Request maintenance callback.
+WildStar64.exe,1406febf0,Lua_GameLib_SpendAttributePoints,GameLib.SpendAttributePoints Lua method that validates local player state and sends opcode 0x017C with six 32-bit attribute point values.
+WildStar64.exe,1406fed20,Lua_GameLib_ResetAttributePoints,GameLib.ResetAttributePoints Lua method that validates local player state and sends opcode 0x0150 with an empty payload.
+WildStar64.exe,14008b880,ClientMovementFallLand_WritePayload,Serialises opcode 0x00FC as one state bit followed by three raw 32-bit movement position fields.
+WildStar64.exe,140082c10,ClientCREDDExchangeBuyOrderSubmit_WritePayload,Serialises opcode 0x0265 as a 64-bit credit amount and one submit flag bit.
+WildStar64.exe,14009fb50,ClientCREDDExchangeSellOrderSubmit_WritePayload,Serialises opcode 0x026B as a target identity 64-bit credit amount and one submit flag bit.
+WildStar64.exe,14009ddd0,ClientHousingInteriorWallpaperUpdate_WritePayload,Serialises opcode 0x050D as six 32-bit slot flags followed by six DecorInfo records.
+WildStar64.exe,14009d0a0,Housing_WriteDecorInfoPayload,Serialises one housing DecorInfo record for decor update style payloads.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.

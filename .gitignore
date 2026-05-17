@@ -356,4 +356,5 @@ all_wildstar_client_mysql.sql
 **/Decomp/Client64
 **/Decomp/Analysis/ghidra_projects
 **/Decomp/Analysis/exports
+# Keep durable coverage snapshots outside logs so they can be tracked separately.
 **/Decomp/Analysis/logs
