@@ -32,7 +32,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Path
                 if (needToUseTokens && !clientPathChangeRequest.OnCooldown)
                     return GenericError.PathChangeOnCooldown;
 
-                bool hasEnoughTokens = session.Account.CurrencyManager.CanAfford(AccountCurrencyType.ServiceToken, bypassCost); // TODO: Check user has enough tokens
+                bool hasEnoughTokens = session.Account.CurrencyManager.CanAfford(AccountCurrencyType.ServiceToken, bypassCost);
                 if (needToUseTokens && clientPathChangeRequest.OnCooldown && !hasEnoughTokens)
                     return GenericError.PathChangeInsufficientFunds;
 

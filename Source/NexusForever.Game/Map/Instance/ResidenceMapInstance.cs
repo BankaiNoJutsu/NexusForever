@@ -334,6 +334,146 @@ namespace NexusForever.Game.Map.Instance
         }
 
         /// <summary>
+        /// Handle plug placement, rotation, removal, or repair for a housing plot.
+        /// </summary>
+        public void PlugUpdate(IPlayer player, ClientHousingPlugUpdate housingPlugUpdate)
+        {
+            if (housingPlugUpdate.Identity.RealmId != realmContext.RealmId
+                || !residences.TryGetValue(housingPlugUpdate.Identity.Id, out IResidence residence)
+                || !residence.CanModifyResidence(player))
+                throw new InvalidPacketValueException();
+
+            if (housingPlugUpdate.Unknown0 != 0u)
+                throw new InvalidPacketValueException();
+
+            IPlot plot = residence.GetPlot(housingPlugUpdate.HousingPlotInfoId);
+            if (plot == null)
+                throw new InvalidPacketValueException();
+
+            HousingResult result = housingPlugUpdate.Operation switch
+            {
+                ClientHousingPlugUpdate.PlugUpdateOperation.PlaceOrRotate => PlugPlaceOrRotate(plot, housingPlugUpdate),
+                ClientHousingPlugUpdate.PlugUpdateOperation.Remove        => PlugRemove(plot),
+                ClientHousingPlugUpdate.PlugUpdateOperation.Repair        => HousingResult.Plug_ModifyFailed,
+                _                                                         => throw new InvalidPacketValueException()
+            };
+
+            if (result != HousingResult.Success)
+            {
+                player.Session.EnqueueMessageEncrypted(new ServerHousingResult
+                {
+                    RealmId     = realmContext.RealmId,
+                    ResidenceId = residence.Id,
+                    PlayerName  = player.Name,
+                    Result      = result
+                });
+                return;
+            }
+
+            SendResidencePlots(residence);
+        }
+
+        private HousingResult PlugPlaceOrRotate(IPlot plot, ClientHousingPlugUpdate housingPlugUpdate)
+        {
+            HousingPlugItemEntry entry = gameTableManager.HousingPlugItem.GetEntry(housingPlugUpdate.HousingPlugItemId);
+            if (entry == null)
+                return HousingResult.Plug_InvalidPlug;
+
+            if (entry.Id > ushort.MaxValue)
+                return HousingResult.Plug_InvalidPlug;
+
+            if (entry.HousingPlotTypeId != 0u && entry.HousingPlotTypeId != plot.PlotInfoEntry.PlotType)
+                return HousingResult.Plug_InvalidPlug;
+
+            if (!Enum.IsDefined(typeof(HousingPlugFacing), housingPlugUpdate.PlugFacing))
+                return HousingResult.Plug_CannotRotate;
+
+            bool isRotation = plot.PlugItemEntry?.Id == entry.Id;
+            if (!isRotation)
+            {
+                HousingResult placementResult = ValidateNewPlugPlacement(plot, entry, housingPlugUpdate);
+                if (placementResult != HousingResult.Success)
+                    return placementResult;
+            }
+
+            plot.PlugEntity?.RemoveFromMap();
+            if (!isRotation)
+                plot.SetPlug((ushort)entry.Id);
+
+            plot.PlugFacing = housingPlugUpdate.PlugFacing;
+            AddPlugEntity(plot);
+            return HousingResult.Success;
+        }
+
+        private static HousingResult ValidateNewPlugPlacement(IPlot plot, HousingPlugItemEntry entry, ClientHousingPlugUpdate housingPlugUpdate)
+        {
+            if (HasUnsupportedPlugPrerequisites(entry))
+                return HousingResult.Plug_PrereqNotMet;
+
+            if (HasUnsupportedPlugContributionCost(entry) || HasContributionPayload(housingPlugUpdate))
+                return HousingResult.Plug_CannotAfford;
+
+            if (HasUnsupportedPlugRuntime(entry))
+                return HousingResult.Plug_ModifyFailed;
+
+            if (entry.Id != plot.PlotInfoEntry.HousingPlugItemIdDefault)
+                return HousingResult.Plug_InvalidPlug;
+
+            return HousingResult.Success;
+        }
+
+        private static bool HasUnsupportedPlugPrerequisites(HousingPlugItemEntry entry)
+        {
+            return entry.HousingResourceIdPrerequisite00 != 0u
+                || entry.HousingResourceIdPrerequisite01 != 0u
+                || entry.HousingResourceIdPrerequisite02 != 0u
+                || entry.PrerequisiteId00 != 0u
+                || entry.PrerequisiteId01 != 0u
+                || entry.PrerequisiteId02 != 0u
+                || entry.PrerequisiteIdUnlock != 0u
+                || entry.AccountItemIdUpsell != 0u;
+        }
+
+        private static bool HasUnsupportedPlugContributionCost(HousingPlugItemEntry entry)
+        {
+            return entry.HousingContributionInfoId00 != 0u
+                || entry.HousingContributionInfoId01 != 0u
+                || entry.HousingContributionInfoId02 != 0u
+                || entry.HousingContributionInfoId03 != 0u
+                || entry.HousingContributionInfoId04 != 0u
+                || entry.HousingContributionInfoIdUpkeepCost00 != 0u
+                || entry.HousingContributionInfoIdUpkeepCost01 != 0u
+                || entry.HousingContributionInfoIdUpkeepCost02 != 0u
+                || entry.HousingContributionInfoIdUpkeepCost03 != 0u
+                || entry.HousingContributionInfoIdUpkeepCost04 != 0u;
+        }
+
+        private static bool HasUnsupportedPlugRuntime(HousingPlugItemEntry entry)
+        {
+            return entry.HousingBuildId != 0u
+                || entry.HousingUpkeepTypeEnum != 0u
+                || entry.UpkeepCharges != 0u
+                || entry.UpkeepTime > 0f;
+        }
+
+        private static bool HasContributionPayload(ClientHousingPlugUpdate housingPlugUpdate)
+        {
+            return housingPlugUpdate.ContributionData?.Any(b => b != 0) == true;
+        }
+
+        private HousingResult PlugRemove(IPlot plot)
+        {
+            if (plot.PlugItemEntry == null)
+                return HousingResult.Plug_NotActive;
+
+            plot.PlugEntity?.RemoveFromMap();
+            plot.PlugEntity    = null;
+            plot.PlugItemEntry = null;
+            plot.BuildState    = 0;
+            return HousingResult.Success;
+        }
+
+        /// <summary>
         /// Create and add <see cref="IDecor"/> from supplied <see cref="HousingDecorInfoEntry"/> to your crate.
         /// </summary>
         public void DecorCreate(IResidence residence, HousingDecorInfoEntry entry, uint quantity)

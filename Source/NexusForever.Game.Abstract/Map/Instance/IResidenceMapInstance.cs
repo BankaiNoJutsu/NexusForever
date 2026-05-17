@@ -34,6 +34,11 @@ namespace NexusForever.Game.Abstract.Map.Instance
         void DecorUpdate(IPlayer player, ClientHousingDecorUpdate housingDecorUpdate);
 
         /// <summary>
+        /// Handle plug placement, rotation, removal, or repair for a housing plot.
+        /// </summary>
+        void PlugUpdate(IPlayer player, ClientHousingPlugUpdate housingPlugUpdate);
+
+        /// <summary>
         /// Create and add <see cref="IDecor"/> from supplied <see cref="HousingDecorInfoEntry"/> to your crate.
         /// </summary>
         void DecorCreate(IResidence residence, HousingDecorInfoEntry entry, uint quantity);

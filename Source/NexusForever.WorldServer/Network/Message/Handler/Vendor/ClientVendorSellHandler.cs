@@ -31,32 +31,31 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
             if (item == null)
                 return;
 
-            IItemInfo info = item.Info;
-            if (info == null)
+            if (item.Info == null)
+                return;
+
+            if (vendorSell.Quantity == 0u || vendorSell.Quantity > item.StackCount)
                 return;
 
             float costMultiplier = vendorInfo.SellPriceMultiplier * vendorSell.Quantity;
-
-            // do all sanity checks before modifying currency
             var currencyChange = new List<(CurrencyType CurrencyTypeId, ulong CurrencyAmount)>();
-            for (int i = 0; i < info.Entry.CurrencyTypeIdSellToVendor.Length; i++)
+            for (byte i = 0; i < 2; i++)
             {
-                CurrencyType currencyId = info.Entry.CurrencyTypeIdSellToVendor[i];
+                CurrencyType currencyId = item.GetVendorSellCurrency(i);
                 if (currencyId == CurrencyType.None)
                     continue;
 
-                ulong currencyAmount = (ulong)(info.Entry.CurrencyAmountSellToVendor[i] * costMultiplier);
+                ulong currencyAmount = (ulong)(item.GetVendorSellAmount(i) * costMultiplier);
+                if (currencyAmount == 0ul)
+                    continue;
+
                 currencyChange.Add((currencyId, currencyAmount));
             }
-
-            // TODO Insert calculation for cost here
-            currencyChange.Add((CurrencyType.Credits, (ulong)(item.GetVendorSellAmount(0) * costMultiplier)));
 
             foreach ((CurrencyType currencyTypeId, ulong currencyAmount) in currencyChange)
                 session.Player.CurrencyManager.CurrencyAddAmount(currencyTypeId, currencyAmount);
 
-            // TODO Figure out why this is showing "You deleted [item]"
-            IItem soldItem = session.Player.Inventory.ItemDelete(vendorSell.ItemLocation, ItemUpdateReason.Vendor);
+            IItem soldItem = session.Player.Inventory.ItemDelete(vendorSell.ItemLocation, vendorSell.Quantity, ItemUpdateReason.Vendor);
             buybackManager.AddItem(session.Player, soldItem, vendorSell.Quantity, currencyChange);
         }
     }

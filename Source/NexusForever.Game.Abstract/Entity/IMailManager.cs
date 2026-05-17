@@ -51,5 +51,10 @@ namespace NexusForever.Game.Abstract.Entity
         /// Take cash from <see cref="IMailItem"/> with supplied id.
         /// </summary>
         void MailTakeCash(ulong mailId, uint unitId);
+
+        /// <summary>
+        /// Take all cash and attachments from each <see cref="IMailItem"/> in the supplied list.
+        /// </summary>
+        void MailTakeAllFromSelection(IEnumerable<ulong> mailIds, uint unitId);
     }
 }

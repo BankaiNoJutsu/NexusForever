@@ -105,6 +105,11 @@ namespace NexusForever.Game.Abstract.Entity
         IItem ItemDelete(ItemLocation from, ItemUpdateReason reason = ItemUpdateReason.Loot);
 
         /// <summary>
+        /// Delete a supplied amount of <see cref="IItem"/> at supplied <see cref="ItemLocation"/>.
+        /// </summary>
+        IItem ItemDelete(ItemLocation from, uint count, ItemUpdateReason reason = ItemUpdateReason.Loot);
+
+        /// <summary>
         /// Delete a supplied amount of an item.
         /// </summary>
         void ItemDelete(uint itemId, uint count = 1, ItemUpdateReason reason = ItemUpdateReason.Loot);

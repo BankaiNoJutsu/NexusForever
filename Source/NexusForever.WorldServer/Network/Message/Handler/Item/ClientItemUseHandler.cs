@@ -42,7 +42,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             {
                 if (itemSpecial.PrerequisiteIdGeneric00 > 0 && !prerequisiteManager.Meets(session.Player, itemSpecial.PrerequisiteIdGeneric00))
                 {
-                    session.Player.SendGenericError(GenericError.UnlockItemFailed); // TODO: Confirm right error message.
+                    session.Player.SendGenericError(GenericError.UnlockItemFailed);
                     return;
                 }
 

@@ -107,8 +107,10 @@ namespace NexusForever.Game.Housing
 
             if (entry.HousingPlugItemIdDefault != 0u)
             {
-                // TODO
-                // plugItemId = entry.HousingPlugItemIdDefault;
+                if (entry.HousingPlugItemIdDefault > ushort.MaxValue)
+                    throw new ArgumentOutOfRangeException(nameof(entry.HousingPlugItemIdDefault));
+
+                SetPlug((ushort)entry.HousingPlugItemIdDefault);
             }
 
             saveMask = PlotSaveMask.Create;
@@ -150,7 +152,7 @@ namespace NexusForever.Game.Housing
 
                 if ((saveMask & PlotSaveMask.PlugItemId) != 0)
                 {
-                    model.PlugItemId = (ushort)PlugItemEntry.Id;
+                    model.PlugItemId = (ushort)(PlugItemEntry?.Id ?? 0u);
                     entity.Property(p => p.PlugItemId).IsModified = true;
                 }
 
@@ -172,8 +174,11 @@ namespace NexusForever.Game.Housing
 
         public void SetPlug(ushort plugItemId)
         {
-            // TODO
-            PlugItemEntry  = GameTableManager.Instance.HousingPlugItem.GetEntry(plugItemId);
+            HousingPlugItemEntry entry = GameTableManager.Instance.HousingPlugItem.GetEntry(plugItemId);
+            if (entry == null)
+                throw new ArgumentOutOfRangeException(nameof(plugItemId));
+
+            PlugItemEntry = entry;
             BuildState = 4;
         }
     }

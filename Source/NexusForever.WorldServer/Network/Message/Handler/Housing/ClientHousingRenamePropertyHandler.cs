@@ -7,7 +7,7 @@ using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 {
-    public class ClientHousingRenamePropertyHandler
+    public class ClientHousingRenamePropertyHandler : IMessageHandler<IWorldSession, ClientHousingRenameProperty>
     {
         #region Dependency Injection
 

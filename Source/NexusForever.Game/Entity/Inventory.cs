@@ -555,6 +555,35 @@ namespace NexusForever.Game.Entity
             return ItemDelete(srcBag, srcItem, reason);
         }
 
+        /// <summary>
+        /// Delete a supplied amount of <see cref="IItem"/> at supplied <see cref="ItemLocation"/>.
+        /// </summary>
+        public IItem ItemDelete(ItemLocation from, uint count, ItemUpdateReason reason = ItemUpdateReason.Loot)
+        {
+            IBag srcBag = GetBag(from.Location);
+            if (srcBag == null)
+                throw new InvalidPacketValueException();
+
+            IItem srcItem = srcBag.GetItem(from.BagIndex);
+            if (srcItem == null)
+                throw new InvalidPacketValueException();
+
+            if (count == 0u || count > srcItem.StackCount)
+                throw new InvalidPacketValueException();
+
+            if (count == srcItem.StackCount)
+                return ItemDelete(srcBag, srcItem, reason);
+
+            IItem splitItem = new Item(characterId, srcItem.Info, count, srcItem.Charges)
+            {
+                Durability          = srcItem.Durability,
+                ExpirationTimeLeft  = srcItem.ExpirationTimeLeft
+            };
+
+            ItemStackCountUpdate(srcItem, srcItem.StackCount - count, reason);
+            return splitItem;
+        }
+
         private IItem ItemDelete(IBag bag, IItem item, ItemUpdateReason reason)
         {
             bag.RemoveItem(item);

@@ -26,7 +26,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
             if (buybackItem == null)
                 return;
 
-            //TODO Ensure player has room in inventory
             if (session.Player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) < 1)
             {
                 session.Player.SendGenericError(GenericError.ItemInventoryFull);

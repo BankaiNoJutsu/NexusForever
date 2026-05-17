@@ -445,6 +445,9 @@ namespace NexusForever.Game.Entity
                 if (mailAttachment == null)
                     return GenericError.MailNoAttachment;
 
+                if (mailItem.IsCashOnDelivery && !mailItem.HasPaidOrCollectedCurrency)
+                    return GenericError.MailInsufficientFunds;
+
                 if (unitId == 0u || !IsTargetMailBoxInRange(unitId))
                     return GenericError.MailMailBoxOutOfRange;
 
@@ -520,6 +523,27 @@ namespace NexusForever.Game.Entity
 
             var entity = player.GetVisible<IWorldEntity>(unitId);
             return entity is IMailboxEntity && Vector3.DistanceSquared(player.Position, entity.Position) < entry.Datafloat0 * entry.Datafloat0; // Checking squared distance avoids a slow sqrt operation.
+        }
+
+        /// <summary>
+        /// Take all cash and attachments from each <see cref="IMailItem"/> in the supplied list.
+        /// </summary>
+        public void MailTakeAllFromSelection(IEnumerable<ulong> mailIds, uint unitId)
+        {
+            foreach (ulong mailId in mailIds)
+            {
+                if (!availableMail.TryGetValue(mailId, out IMailItem mailItem))
+                    continue;
+
+                if (!mailItem.HasPaidOrCollectedCurrency && mailItem.CurrencyAmount > 0ul && !mailItem.IsCashOnDelivery)
+                    MailTakeCash(mailId, unitId);
+
+                if (mailItem.IsCashOnDelivery && !mailItem.HasPaidOrCollectedCurrency)
+                    continue;
+
+                foreach (IMailAttachment attachment in mailItem.ToList())
+                    MailTakeAttachment(mailId, attachment.Index, unitId);
+            }
         }
     }
 }
