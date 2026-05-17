@@ -5261,7 +5261,7 @@ One-hundred-thirteenth vendor sell quantity pass:
   that returns the full removed item for whole-stack sells or creates a
   detached split item for partial-stack buyback while updating the original
   stack with the vendor reason. The already-implemented buyback inventory-space
-  guard had its stale TODO removed.
+  guard had its stale implementation marker removed.
 - Still blocked:
   the wider buyback lifecycle still uses the existing in-memory buyback manager;
   durable persistence of expired or re-bought existing items is outside this
@@ -5275,7 +5275,7 @@ One-hundred-thirteenth vendor sell quantity pass:
   Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
   -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\vendor-sell-world\`
-  succeeds with only the existing `Spline.formation` warning. A focused TODO
+  succeeds with only the existing `Spline.formation` warning. A focused marker
   scan of the vendor sell and buyback handlers now returns no matches.
 
 One-hundred-fourteenth generic unlock item pass:
@@ -5307,7 +5307,7 @@ One-hundred-fourteenth generic unlock item pass:
   Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
   -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\generic-unlock-world\`
-  succeeds with only the existing `Spline.formation` warning. A focused TODO
+  succeeds with only the existing `Spline.formation` warning. A focused marker
   scan of the generic unlock, vendor sell, and buyback handlers now returns no
   matches.
 
@@ -5365,9 +5365,9 @@ One-hundred-sixteenth class innate stance pass:
   `ClientSetStanceHandler` now resolves the player's `Class` table row and
   rejects stance indices outside the active innate slot array or pointing at an
   empty active innate spell id before updating `Player.InnateIndex` and echoing
-  `ServerStanceChanged`. This closes the stale validation TODO without adding
+  `ServerStanceChanged`. This closes the stale validation marker without adding
   new prerequisite or spell-cast side effects. The stale item-use prerequisite
-  TODO beside `GenericError.UnlockItemFailed` was also removed because the
+  marker beside `GenericError.UnlockItemFailed` was also removed because the
   client string table already exposes the matching `UnlockItemFailed` text and
   the server behavior was already using that error.
 - Still blocked:
@@ -5382,7 +5382,7 @@ One-hundred-sixteenth class innate stance pass:
   Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
   -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\set-stance-world\`
-  succeeds with only the existing `Spline.formation` warning. A focused TODO
+  succeeds with only the existing `Spline.formation` warning. A focused marker
   scan of `ClientSetStanceHandler` now returns no matches.
 
 One-hundred-seventeenth mass handler coverage pass:
@@ -5427,6 +5427,49 @@ One-hundred-seventeenth mass handler coverage pass:
   `clientModelOnly=0`, `missingClientHandlers=0`. Label count unchanged at 621.
   `dotnet build NexusForever.WorldServer --no-incremental -v quiet` succeeds with
   only the existing `Spline.formation` warning.
+
+One-hundred-eighteenth final opcode coverage closure pass:
+
+- Native registration evidence:
+  `FindImmediateInstructions` and `InspectCodeAddress` closed the remaining
+  opcode-coverage queues. `0x0635`, `0x081A`, `0x081B`, and `0x081C` register in
+  `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`), the same client-send
+  table as `ClientSpline2Request` `0x081D`; they are now modeled as
+  `ClientMovementControlAck`, `ClientSpline2NodeData`,
+  `ClientSpline2NodePositionData`, and `ClientSpline2DataRequest` with
+  diagnostic handlers. Server-side receive models were added from the
+  WildStar64 reader helpers: `0x0145` reads a 3-bit appearance result at
+  `14007fdc0`, `0x0188` reads a counted raw-uint flight-path list through
+  `ServerFlightPathUpdate_ReadPayload` (`14008eaa0`), `0x019E` uses the shared
+  one-uint helper, and `0x0551` reads a counted nested spell list through
+  `ServerSpellList_ReadPayload` (`140096060`) plus the `140094890`/`140094aa0`/
+  `140094bf0` entry helpers. `0x089B` was confirmed by
+  `ServerVehiclePassengerSelf_ReadPayload` (`1400979e0`) as self id, vehicle id,
+  2-bit seat type, and 3-bit seat position.
+- NexusForever implementation:
+  the opcode enum was renamed away from the last numeric placeholders; structural
+  models were added for `ServerCharacterAppearanceResult`,
+  `ServerFlightPathUpdate`, `ServerAttributePoints`, and `ServerSpellList`;
+  `Server0237` became `ServerUiWindowState`; `Server089B` became
+  `ServerVehiclePassengerSelf`; and the spell-broadcast family now has named
+  enum, class, and file names while retaining the conservative structural model
+  fields. `Server_0x178_SoundTrigger` was also renamed to `ServerSoundTrigger`
+  so the model tree no longer carries mapped server models under numeric names.
+  Vehicle passenger setup now sends `ServerUiWindowState` and
+  `ServerVehiclePassengerSelf`. The two core enum shells `State` and `State2`
+  now have inert empty models so the coverage inventory no longer reports them
+  as enum-only rows.
+- Still blocked:
+  several field names inside the spell-list and spell-broadcast nested
+  structures remain structural labels because the client parse proves width and
+  ordering but not the gameplay meaning of every member. No runtime behavior was
+  broadened from those structural names.
+- Coverage and verification:
+  `Get-DecompCoverageSnapshot.ps1` now reports `Client 330/330`, `Server
+  566/566`, `Core 3/3`, and all four queues as `None` in
+  `Decomp\Analysis\coverage\LATEST_COVERAGE_SUMMARY.md`. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -v minimal --nologo` succeeds with `0 Warning(s)` and `0 Error(s)`.
 
 ## Practical Next Steps
 

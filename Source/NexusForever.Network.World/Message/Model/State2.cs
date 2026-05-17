@@ -2,14 +2,15 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
-    [Message(GameMessageOpcode.Server0635)]
-    public class Server0635 : IWritable
+    [Message(GameMessageOpcode.State2)]
+    public class State2 : IReadable, IWritable
     {
-        public uint Unknown0 { get; set; } = 0;
+        public void Read(GamePacketReader reader)
+        {
+        }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Unknown0);
         }
     }
 }

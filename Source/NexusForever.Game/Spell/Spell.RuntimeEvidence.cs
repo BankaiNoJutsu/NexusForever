@@ -34,10 +34,10 @@ namespace NexusForever.Game.Spell
 
             pendingDiagnosticSpellBroadcasts.Clear();
 
-            var message = new Server07FB
+            var message = new ServerSpellCastTargetReport
             {
                 CastingId = CastingId,
-                unknownStructure0 = diagnostics.Select(diagnostic => new Server07FB.UnknownStructure0
+                unknownStructure0 = diagnostics.Select(diagnostic => new ServerSpellCastTargetReport.UnknownStructure0
                 {
                     CasterId = diagnostic.TargetId,
                     Unknown4 = 0,
@@ -47,13 +47,13 @@ namespace NexusForever.Game.Spell
 
             SpellRuntimeEvidenceCollector.RecordPacketEvent(
                 this,
-                nameof(Server07FB),
+                nameof(ServerSpellCastTargetReport),
                 string.Join(", ", diagnostics.Select(diagnostic => $"{diagnostic.TargetId}:{diagnostic.Reason}:{diagnostic.BlockedEffectType}")),
                 entryCount: message.unknownStructure0.Count);
 
             log.Debug(
                 "SpellDiagnostics diagnostic-broadcast packet={0} castingId={1} entries={2}",
-                nameof(Server07FB),
+                nameof(ServerSpellCastTargetReport),
                 CastingId,
                 message.unknownStructure0.Count);
 

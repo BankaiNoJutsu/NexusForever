@@ -6,8 +6,8 @@ namespace NexusForever.Network.World.Message.Model
     /// Opaque spell follow-up packet carrying a concrete Spell4 id plus a boolean flag.
     /// Treat this as diagnostic-only until the client-side event meaning is mapped.
     /// </summary>
-    [Message(GameMessageOpcode.Server0814)]
-    public class Server0814 : IWritable
+    [Message(GameMessageOpcode.ServerSpellTriggerFlag)]
+    public class ServerSpellTriggerFlag : IWritable
     {
         public uint Spell4Id { get; set; }
         public bool Unknown0 { get; set; }

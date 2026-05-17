@@ -152,7 +152,6 @@ namespace NexusForever.Game.Entity
             if (player == null)
                 return;
 
-            // TODO: research this...
             player.Session.EnqueueMessageEncrypted(new ServerPathScientistUnitScanParameters
             {
                 UnitId = Guid,
@@ -160,14 +159,13 @@ namespace NexusForever.Game.Entity
                 IsScannable  = true
             });
 
-            // TODO: research this, something UI related
-            player.Session.EnqueueMessageEncrypted(new Server0237
+            player.Session.EnqueueMessageEncrypted(new ServerUiWindowState
             {
             });
 
             // sets vehicle guid, seat type and seat position to local self entity at client
             // might not be correct as ServerVehiclePassengerAdd does this too, used for changing seats instead?
-            player.Session.EnqueueMessageEncrypted(new Server089B
+            player.Session.EnqueueMessageEncrypted(new ServerVehiclePassengerSelf
             {
                 Self         = passenger.Guid,
                 Vehicle      = Guid,

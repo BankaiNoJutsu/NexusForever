@@ -6,8 +6,8 @@ namespace NexusForever.Network.World.Message.Model
     /// Opaque spell follow-up packet carrying a concrete Spell4 id and one event-like byte.
     /// The byte remains unnamed until client parse or sniff evidence identifies the event class.
     /// </summary>
-    [Message(GameMessageOpcode.Server0817)]
-    public class Server0817 : IWritable
+    [Message(GameMessageOpcode.ServerSpellEventByte)]
+    public class ServerSpellEventByte : IWritable
     {
         public uint Spell4Id { get; set; }
         public byte Unknown0 { get; set; }

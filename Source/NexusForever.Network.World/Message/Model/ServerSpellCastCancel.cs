@@ -3,8 +3,8 @@ using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Network.World.Message.Model
 {
-    [Message(GameMessageOpcode.Server07F9)]
-    public class Server07F9 : IWritable
+    [Message(GameMessageOpcode.ServerSpellCastCancel)]
+    public class ServerSpellCastCancel : IWritable
     {
         public uint ServerUniqueId { get; set; }
         public CastResult CastResult { get; set; }

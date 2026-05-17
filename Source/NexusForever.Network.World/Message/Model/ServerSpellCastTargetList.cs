@@ -6,8 +6,8 @@ namespace NexusForever.Network.World.Message.Model
     /// Opaque list-style spell broadcast follow-up packet.
     /// Current evidence suggests this replays a subset of spell-start or spell-go target data.
     /// </summary>
-    [Message(GameMessageOpcode.Server0811)]
-    public class Server0811 : IWritable
+    [Message(GameMessageOpcode.ServerSpellCastTargetList)]
+    public class ServerSpellCastTargetList : IWritable
     {
         public uint CastingId { get; set; }
         public List<uint> CasterId { get; set; } = new();

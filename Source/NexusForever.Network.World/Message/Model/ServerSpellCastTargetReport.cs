@@ -6,8 +6,8 @@ namespace NexusForever.Network.World.Message.Model
     /// Likely miss, immunity, or invalid-target follow-up packet for a spell cast.
     /// The current model is intentionally structural until the exact target-result semantics are proven.
     /// </summary>
-    [Message(GameMessageOpcode.Server07FB)]
-    public class Server07FB : IWritable
+    [Message(GameMessageOpcode.ServerSpellCastTargetReport)]
+    public class ServerSpellCastTargetReport : IWritable
     {
         public class UnknownStructure0 : IWritable
         {   

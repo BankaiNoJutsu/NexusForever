@@ -2,8 +2,8 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
-    [Message(GameMessageOpcode.Server07F5)]
-    public class Server07F5 : IWritable
+    [Message(GameMessageOpcode.ServerSpellCastTargetUnit2)]
+    public class ServerSpellCastTargetUnit2 : IWritable
     {
         public uint CastingId { get; set; }
         public uint CasterId { get; set; }

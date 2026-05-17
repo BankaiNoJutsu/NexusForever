@@ -6,8 +6,8 @@ namespace NexusForever.Network.World.Message.Model
     /// Opaque spell broadcast follow-up packet in the 0x07F5..0x0818 family.
     /// The current model preserves observed field widths until client parse or sniff evidence names the payload.
     /// </summary>
-    [Message(GameMessageOpcode.Server07F8)]
-    public class Server07F8 : IWritable
+    [Message(GameMessageOpcode.ServerSpellEffectNestedTargets)]
+    public class ServerSpellEffectNestedTargets : IWritable
     {
         public class UnknownStructure0 : IWritable
         {

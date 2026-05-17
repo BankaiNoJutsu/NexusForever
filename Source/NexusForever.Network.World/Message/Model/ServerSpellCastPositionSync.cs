@@ -4,8 +4,8 @@ using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model
 {
-    [Message(GameMessageOpcode.Server07FD)]
-    public class Server07FD : IWritable
+    [Message(GameMessageOpcode.ServerSpellCastPositionSync)]
+    public class ServerSpellCastPositionSync : IWritable
     {
         public uint Time { get; set; }
         public uint CastingId { get; set; }

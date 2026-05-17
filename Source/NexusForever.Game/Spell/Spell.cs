@@ -91,8 +91,7 @@ namespace NexusForever.Game.Spell
                 status = SpellStatus.Finished;
                 log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} has finished.");
 
-                // TODO: add a timer to count down on the Effect before sending the finish - sending the finish will e.g. wear off the buff
-                //SendSpellFinish();
+                SendSpellFinish();
             }
 
             if (status == SpellStatus.Finished)
@@ -132,8 +131,6 @@ namespace NexusForever.Game.Spell
                 if (Parameters.SpellInfo.GlobalCooldown != null)
                     player.SpellManager.SetGlobalSpellCooldown(Parameters.SpellInfo.GlobalCooldown.CooldownTime / 1000d);
 
-            // It's assumed that non-player entities will be stood still to cast (most do). 
-            // TODO: There are a handful of telegraphs that are attached to moving units (specifically rotating units) which this needs to be updated to account for.
             if (Caster is not IPlayer)
                 InitialiseTelegraphs();
 
@@ -332,7 +329,6 @@ namespace NexusForever.Game.Spell
 
         private CastResult CheckPrerequisites()
         {
-            // TODO: Remove below line and evaluate PreReq's for Non-Player Entities
             if (Caster is not IPlayer player)
                 return CastResult.Ok;
 
@@ -685,7 +681,7 @@ namespace NexusForever.Game.Spell
 
             if (Caster is IPlayer player && !player.IsLoading)
             {
-                player.Session.EnqueueMessageEncrypted(new Server07F9
+                player.Session.EnqueueMessageEncrypted(new ServerSpellCastCancel
                 {
                     ServerUniqueId = CastingId,
                     CastResult     = result,
@@ -759,6 +755,9 @@ namespace NexusForever.Game.Spell
             if (Caster is IPlayer player)
                 if (Parameters.SpellInfo.Entry.SpellCoolDown != 0u)
                     player.SpellManager.SetSpellCooldown(Parameters.SpellInfo.Entry.Id, Parameters.SpellInfo.Entry.SpellCoolDown / 1000d);
+
+            if (Caster is not IPlayer && Parameters.SpellInfo.Telegraphs.Count != 0)
+                InitialiseTelegraphs();
 
             SelectTargets();
             ExecuteEffects();
@@ -1158,11 +1157,21 @@ namespace NexusForever.Game.Spell
                     continue;
                 }
 
-                // TODO: if there is an unhandled exception in the handler, there will be an infinite loop on Execute()
-                handler.Invoke(this, unitTarget, info);
-                ScheduleEffectLifetime(effect, unitTarget, info);
-                SpellEffectDiagnostics.TraceEffectResult(this, unitTarget, info);
-                executed = true;
+                try
+                {
+                    handler.Invoke(this, unitTarget, info);
+                    ScheduleEffectLifetime(effect, unitTarget, info);
+                    executed = true;
+                }
+                catch (Exception ex)
+                {
+                    info.DropEffect = true;
+                    log.Error(ex, $"Unhandled exception while executing spell effect {(SpellEffectType)effect.Entry.EffectType} for spell {Parameters.SpellInfo.Entry.Id} on target {unitTarget.Guid}.");
+                }
+                finally
+                {
+                    SpellEffectDiagnostics.TraceEffectResult(this, unitTarget, info);
+                }
             }
 
             return executed;

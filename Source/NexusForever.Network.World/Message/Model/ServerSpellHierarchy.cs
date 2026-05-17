@@ -6,8 +6,8 @@ namespace NexusForever.Network.World.Message.Model
     /// Opaque spell hierarchy follow-up packet carrying root, parent, and current Spell4 ids.
     /// This is tracked as part of the broader 0x07F5..0x0818 spell broadcast family.
     /// </summary>
-    [Message(GameMessageOpcode.Server0816)]
-    public class Server0816 : IWritable
+    [Message(GameMessageOpcode.ServerSpellHierarchy)]
+    public class ServerSpellHierarchy : IWritable
     {
         public uint Spell4Id { get; set; }
         public uint RootSpell4Id { get; set; }

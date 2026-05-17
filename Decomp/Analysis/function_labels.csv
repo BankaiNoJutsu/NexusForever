@@ -644,6 +644,17 @@ WildStar64.exe,14009fb50,ClientCREDDExchangeSellOrderSubmit_WritePayload,Seriali
 WildStar64.exe,14009ddd0,ClientHousingInteriorWallpaperUpdate_WritePayload,Serialises opcode 0x050D as six 32-bit slot flags followed by six DecorInfo records.
 WildStar64.exe,14009d560,ClientHousingPlugUpdate_WritePayload,Serialises opcode 0x0510 as residence identity plot info id plug item id facing unknown zero operation and five contribution records.
 WildStar64.exe,14009d0a0,Housing_WriteDecorInfoPayload,Serialises one housing DecorInfo record for decor update style payloads.
+WildStar64.exe,1400a8190,ClientWorldOpcodeRegister_MovementSpline,Registers client-sent movement control and Spline2 opcodes 0x0635 through 0x081D including ack and Spline2 payload helpers.
+WildStar64.exe,14008eaa0,ServerFlightPathUpdate_ReadPayload,Reads opcode 0x0188 as a 32-bit count followed by count raw 32-bit flight path ids.
+WildStar64.exe,140096060,ServerSpellList_ReadPayload,Reads opcode 0x0551 as a counted spell list with nested tier and state records.
+WildStar64.exe,140094bf0,ServerSpellList_ReadSpellEntry,Reads one spell-list entry with three 32-bit ids an 18-bit base id active flag and nested lists.
+WildStar64.exe,140094aa0,ServerSpellList_ReadTierEntry,Reads one spell-list tier entry with Spell4 id tier/spec bytes flags action-set bits and variant records.
+WildStar64.exe,140094890,ServerSpellList_ReadVariantEntry,Reads one spell-list variant record with 19-bit effect id three raw 32-bit values and a 2-bit variant selector.
+WildStar64.exe,1400afb30,ClientSpline2NodeData_WritePayload,Serialises opcode 0x081A as Spline2 id 15-bit node id 2-bit mode and counted 10-uint node records.
+WildStar64.exe,1400afce0,ClientSpline2NodeData_ReadPayload,Reads opcode 0x081A as Spline2 id 15-bit node id 2-bit mode and counted 10-uint node records.
+WildStar64.exe,1400afe10,ClientSpline2NodePositionData_WritePayload,Serialises opcode 0x081B as two raw ids three raw 32-bit position values and a counted uint payload.
+WildStar64.exe,1400affc0,ClientSpline2NodePositionData_ReadPayload,Reads opcode 0x081B as two raw ids three raw 32-bit position values and a counted uint payload.
+WildStar64.exe,1400979e0,ServerVehiclePassengerSelf_ReadPayload,Reads opcode 0x089B as self vehicle 2-bit seat type and 3-bit seat position.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
