@@ -5538,8 +5538,9 @@ One-hundred-twenty-first marker completion follow-up:
   realm selection now prefers an online realm that already has account inventory
   targeted to it before falling back to the first online realm.
 - Verification:
-  the literal marker scan for `Source` and this findings file returns no matches,
-  and `dotnet build Source\NexusForever.sln --no-restore -m:1 -v minimal
+  at that checkpoint, the literal marker scan for `Source` and this findings
+  file returned no active TODO-style source items, and
+  `dotnet build Source\NexusForever.sln --no-restore -m:1 -v minimal
   --nologo -p:UseSharedCompilation=false
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\todo-full-pass\`
   succeeds with `0 Warning(s)` and `0 Error(s)`.
@@ -5586,6 +5587,54 @@ One-hundred-twenty-second blocked-marker implementation follow-up:
   solution build was rerun at
   `.nexusforever-runtime\build\blocked-final-2\` and also completed with
   `0` warnings and `0` errors.
+
+Current broad-marker implementation audit:
+
+- Implemented this pass:
+  ability-book activation persists spell activation state and selected spell
+  casting now resolves the selected action-set spell; combat-log/options
+  requests persist runtime preferences and suppress outgoing combat logs where
+  requested; support, bug, feedback, and survey submissions are written to a
+  local JSONL store with invalid survey ids rejected; stuck requests now map
+  recall-transmat, recall-house, and suicide actions to server behavior; chat
+  now returns a deterministic result for unrouted channels; account presence
+  auto-responses store away/busy text and prevent whisper loops; unhandled guild
+  operations return a protocol guild result instead of chat text; group instance
+  and housing-neighbor requests return explicit client-visible failures when no
+  backing destination/store exists; attribute-point spend/reset validates and
+  sends the player allocation snapshot; instance settings store difficulty,
+  prime level, and scaling on the player and echo them to the client; generic
+  map node selection validates the node and teleports when a mapped
+  `WorldLocation2` exists; reward update refreshes account reward properties;
+  resource conversion mutates item, currency, and reputation resources for the
+  mapped conversion modes; marketplace handlers now validate request data,
+  return disabled marketplace status, and send empty or disabled-result
+  responses; CREDD exchange handlers reject malformed zero ids/amounts before
+  returning `CREDDExchangeNotLoaded`; fixed-recipe craft requests consume known
+  `TradeskillSchematic2` material costs from the supply satchel/inventory,
+  verify inventory capacity, create the output item, and send
+  `ServerCraftingFinish` success; rune operations validate target/rune data and
+  send `ServerTradeskillSigilResult.UnknownError` while item rune instance state
+  remains unmapped.
+- Remaining evidence gaps:
+  marketplace and CREDD still lack durable order books, bid/post/cancel state,
+  commodity matching, escrow, mail settlement, and price history; account
+  pending-item groups and gifting still lack a pending-group store plus
+  recipient-routing semantics; storefront gifting and non-account-item offer
+  item data remain blocked on exact offer-effect delivery semantics; tradeskill
+  learn, talent, and reset requests lack persisted profession state; complex
+  crafting, catalysts, additives, discovery rolls, station constraints, and
+  loot-backed outputs need more client/runtime evidence before mutation; rune
+  slot add/clear/install/reroll still need item-instance rune storage and exact
+  result mapping; spell runtime `evidence-gap-*` diagnostic keys identify
+  unmapped spell-effect families or modes and are deliberately diagnostic-only.
+- Current broad marker scan interpretation:
+  source hits are now intentional identifiers or prose: C# `partial` classes,
+  command text for "partial name" searches, client-facing `Blocked` spell flag
+  and crowd-control names, spell evidence collector `BlockedEffect` terminology
+  for immunity-prevented effects, and comments that describe partially filled
+  marketplace/fortune messages. Active source work items now use named
+  `evidence-gap-*` reasons when implementation would require unmapped state.
 
 ## Practical Next Steps
 
