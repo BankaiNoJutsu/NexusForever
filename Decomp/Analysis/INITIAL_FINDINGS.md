@@ -4520,6 +4520,47 @@ Ninety-fifth retail group-loot semantics pass:
   and had no post-restart `ERROR`, `FATAL`, unhandled exception, or exception
   log entries.
 
+Ninety-sixth loot granted/explosion packet-field delta pass:
+
+- Packet-field evidence:
+  the existing native labels prove the client-side roll/master-loot Lua path
+  consumes `itemDrop`, `bIsMaster`, `nTimeLeft`, `tLooters`, and
+  `tLootersOutOfRange`. The broader export also contains `bCanLoot`,
+  `eLootItemType`, and multiple `bGranted` strings in the loot/item-drop band,
+  while `kirmmin/latest` serializes loot items with `CanLoot`, roll state,
+  explosion state, and a granted bit before `RollTime`/random data/master-list
+  fields. This pass treats `Granted` as the portable old-branch packet field
+  without removing the newer `OnlyMasterLootable` field used by the current
+  group/master implementation.
+- Runtime fixes:
+  `NexusForever.Network.World.Message.Model.Loot.LootItem` now carries and
+  writes a `Granted` bit. `LootInstance` can now build a granted notification
+  view that includes already-delivered items instead of filtering them out.
+  Loot bags now follow the old branch's packet path more closely: consume the
+  bag, deliver all generated contents without individual grant packets, then
+  send an explosion `ServerLootNotify` with granted loot entries. Immediate
+  account-currency loot, including random Omnibit kills, now also sends an
+  explosion/granted notify after applying the currency reward.
+- Account-item packet delta:
+  current opcodes now include `ServerAccountItemDelete = 0x097C`, with a
+  one-field payload containing the account inventory id. Account-item claim/take
+  removal sends this packet and no longer refreshes the full account-item list
+  after every successful claim, matching the old branch's explicit delete path
+  more closely.
+- Account-currency shower note:
+  the old branch split account-currency notify payloads into up to 50 granted
+  loot entries for the visual shower. The current implementation keeps that
+  packet shape but distributes the total amount across the entries so the
+  notification amounts sum to the actual granted currency amount.
+- Verification:
+  `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj --no-restore`
+  succeeds with only the pre-existing `Spline.formation` warning. A normal
+  WorldServer build is blocked by the live `NexusForever.WorldServer` process
+  locking its bin output, but the same project builds successfully to isolated
+  output after the account-item delete packet change with
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\loot-granted-delta\`.
+
 ## Practical Next Steps
 
 1. Keep extending `Decomp\Analysis\function_labels.csv` as functions are

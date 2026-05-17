@@ -104,8 +104,14 @@ Inserted/updated live world data:
 - `entity_vendor_category`: 180 rows
 - `entity_vendor_item`: 7,480 rows
 - `creature_loot`: 198,735 rows
-- `creature_info_property`: 9,317 rows
-- `creature_info_stat`: 1,415 rows
+- mapped creature `loot_group`: 3,795 rows
+- mapped creature `entity_loot`: 3,795 rows
+- mapped creature `loot_item`: 198,735 rows
+- mapped item-container `loot_group`: 272 rows
+- mapped item-container `item_loot`: 272 rows
+- mapped item-container `loot_item`: 23,865 rows
+- `creature_info_property`: 9,308 rows
+- `creature_info_stat`: 1,414 rows
 - `nf_map_*`: 95 staging/reference tables loaded with 6,383,288 exact rows
 
 Safety policy used:
@@ -117,7 +123,7 @@ Safety policy used:
 - Vendor stock was applied only for mapped vendor creatures that already have matching rows in `entity.creature`.
 - Vendor and creature-info backups were written under `Tools\DataMapping\output\backups` before live imports.
 - `nf_map_*` staging loads are additive/reference data and are not consumed by runtime code until a feature explicitly reads them. `nf_map_creature` now includes review/original mapping audit columns.
-- `Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql` can now repeat the same safe runtime import directly from loaded `nf_map_*` staging tables. `Tools\DataMapping\sql\verify_safe_world_imports.sql` verifies counts and bridge-status distribution.
+- `Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql` can now repeat the same safe runtime import directly from loaded `nf_map_*` staging tables. It materialises mapped creature drops and item-container loot bags into the runtime loot tables. `Tools\DataMapping\sql\verify_safe_world_imports.sql` verifies counts and bridge-status distribution.
 
 ## Implemented Maps
 
@@ -412,6 +418,7 @@ Other reference maps:
 - Phase 21: Unblocked high-confidence uncertain creature bridges with spatial live-entity evidence, promoted 944 reviewed overrides, hardened staging-table reloads, and reapplied all safe real DB imports with reviewed mappings included.
 - Phase 22: Added migration-style SQL import scripts that load safe vendor, loot, and creature-info data directly from `nf_map_*` staging tables, plus a verification SQL script for row counts and bridge-status checks.
 - Phase 23: Materialised safe mapped `creature_loot` rows into flat runtime `loot_group`, `entity_loot`, and `loot_item` rows, verified 3,795 mapped creature groups and 198,735 mapped loot items on localhost, and wired the server to prefer those old-table rows without duplicating the direct `creature_loot` path.
+- Phase 24: Extended runtime item loot import by materialising `item_container_map.csv` into weighted `item_loot` groups for loot bags: 272 mapped container groups and 23,865 mapped contained-item rows on localhost.
 
 ## Next Phases
 

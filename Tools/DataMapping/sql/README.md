@@ -13,7 +13,7 @@ Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
 
-The apply script imports only rows whose creature bridge is one of:
+Creature-backed imports only use rows whose creature bridge is one of:
 
 - `unique_name`
 - `scored_name`
@@ -27,15 +27,17 @@ It currently covers:
 - `creature_loot`
 - `loot_group`
 - `entity_loot`
+- `item_loot`
 - `loot_item`
 - `creature_info_property`
 - `creature_info_stat`
 
 The default mode is additive/idempotent: vendor rows use `INSERT IGNORE`,
 creature loot upserts by `(creatureId, itemId)`, mapped creature loot is also
-materialised into flat `loot_group`/`entity_loot`/`loot_item` rows, and
-creature-info overrides insert missing rows after skipping conflicting template
-values.
+materialised into flat `loot_group`/`entity_loot`/`loot_item` rows,
+`item_container_map.csv` is materialised into weighted `item_loot` groups for
+loot bags, and creature-info overrides insert missing rows after skipping
+conflicting template values.
 
 For a refresh of owned mapped rows, run the SQL script from an interactive MySQL
 session and set:
@@ -46,15 +48,18 @@ SOURCE Tools/DataMapping/sql/apply_safe_world_imports_from_staging.sql;
 ```
 
 Refresh mode removes vendor rows for mapped vendor creatures, truncates the
-owned `creature_loot` table, removes owned DataMapping runtime loot groups, and
-removes mapped creature-info property/stat IDs before reimporting. Use it when
-the staging maps were regenerated and you want the runtime tables to mirror the
-latest safe mapping output.
+owned `creature_loot` table, removes owned DataMapping creature/item runtime
+loot groups, and removes mapped creature-info property/stat IDs before
+reimporting. Use it when the staging maps were regenerated and you want the
+runtime tables to mirror the latest safe mapping output.
 
 By default generated runtime loot rows use `minCount = maxCount = 1`, matching
 the first live runtime import. To experiment with aggregate-derived stack sizes,
 set `@nf_safe_import_creature_loot_counts_from_aggregates = 1` before sourcing
 the apply script.
+
+Generated item-container loot groups use `minDrop = maxDrop = 1` and item
+probabilities weighted by `nf_map_item_container.drop_times`.
 
 Verification:
 

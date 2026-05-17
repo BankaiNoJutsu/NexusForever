@@ -345,7 +345,7 @@ Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
 
-That migration-style script imports vendor stock, creature loot, flat runtime loot groups, and creature-info template overrides from `nf_map_*` using only `unique_name`, `scored_name`, and `reviewed` creature bridges. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import.
+That migration-style script imports vendor stock, creature loot, flat runtime creature loot groups, weighted item-container loot groups, and creature-info template overrides from `nf_map_*`. Creature-backed imports use only `unique_name`, `scored_name`, and `reviewed` creature bridges. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import.
 
 Manual schema load example:
 
@@ -373,14 +373,14 @@ python Tools\DataMapping\apply_creature_loot.py
 python Tools\DataMapping\apply_creature_loot.py --apply
 ```
 
-`apply_creature_loot.py` creates/upserts `nexus_forever_world.creature_loot` from safe, de-duplicated `creature_loot_map.csv` rows. The current localhost apply upserted 198,735 creature-item loot rows for 3,795 creatures and 18,504 items. Runtime loot generation is now wired through `GlobalLootManager`; the SQL staging import also mirrors those rows into flat `loot_group`, `entity_loot`, and `loot_item` rows so the older loot-table path is populated too.
+`apply_creature_loot.py` creates/upserts `nexus_forever_world.creature_loot` from safe, de-duplicated `creature_loot_map.csv` rows. The current localhost apply upserted 198,735 creature-item loot rows for 3,795 creatures and 18,504 items. Runtime loot generation is now wired through `GlobalLootManager`; the SQL staging import also mirrors those rows into flat `loot_group`, `entity_loot`, and `loot_item` rows so the older loot-table path is populated too. The same SQL import now maps `item_container_map.csv` into `item_loot` groups for loot bags: 272 container items and 23,865 weighted contained-item rows on localhost.
 
 ```powershell
 python Tools\DataMapping\apply_creature_info_overrides.py
 python Tools\DataMapping\apply_creature_info_overrides.py --apply
 ```
 
-`apply_creature_info_overrides.py` imports high-confidence creature template overrides from `creature_map.csv` into `creature_info_property` and `creature_info_stat`. By default it inserts only missing `BaseHealth`, `ShieldCapacityMax`, and `InterruptArmour` rows for `unique_name`/`scored_name`/`reviewed` creature bridges, and skips duplicate creature mappings with conflicting values. The current localhost tables contain 9,317 property overrides and 1,415 stat overrides after skipping 511 conflicting property keys and 14 conflicting stat keys.
+`apply_creature_info_overrides.py` imports high-confidence creature template overrides from `creature_map.csv` into `creature_info_property` and `creature_info_stat`. By default it inserts only missing `BaseHealth`, `ShieldCapacityMax`, and `InterruptArmour` rows for `unique_name`/`scored_name`/`reviewed` creature bridges, and skips duplicate creature mappings with conflicting values. The current localhost SQL staging import contains 9,308 property overrides and 1,414 stat overrides after skipping 511 conflicting property keys and 14 conflicting stat keys.
 
 ## Current Limitations
 
@@ -390,7 +390,7 @@ python Tools\DataMapping\apply_creature_info_overrides.py --apply
 - AI actions skip `creature2ActionSetId = 0` because the client has no matching `Creature2ActionSet` row for ID 0.
 - Spline mapping is spatial only and disabled by default.
 - Vendor import is live for existing world entities only; mapped vendor creatures without an `entity` row are reported but not inserted.
-- Loot import is database-live and runtime-supported for mapped creature drops. Generated flat loot groups intentionally default to one item per successful roll until aggregate stack semantics are reviewed further.
+- Loot import is database-live and runtime-supported for mapped creature drops and mapped item-container loot bags. Generated creature loot rows default to one item per successful roll until aggregate stack semantics are reviewed further; generated item-container groups roll one weighted item per bag use.
 - Creature info overrides are runtime-supported creature template data. Existing entity-specific stats/properties still take precedence over template overrides.
 - `nf_map_*` staging imports are database-live reference/query data only; runtime code does not consume them until a feature explicitly reads from those tables.
 - Quest, path mission, and public event maps preserve Jabbithole game version and source IDs so later import logic can choose version policy explicitly.
