@@ -6,6 +6,7 @@ using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Achievement;
 using NexusForever.Game.Character;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Prerequisite;
@@ -633,6 +634,7 @@ namespace NexusForever.Game.Account.Inventory
             public void Apply(IAccount account, IPlayer player)
             {
                 account.CurrencyManager.CurrencyAddAmount(CurrencyType, Amount);
+                AccountCurrencyAchievementUpdater.Update(player, CurrencyType, Amount);
             }
         }
 

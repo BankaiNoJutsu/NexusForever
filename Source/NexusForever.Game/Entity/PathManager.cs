@@ -235,6 +235,8 @@ namespace NexusForever.Game.Entity
 
             GetPathEntry(path).LevelRewarded = (byte)level;
             player.AchievementManager.SetAchievementProgress(player, AchievementType.PathLevel, (uint)path, 0u, level);
+            if (level >= MaxPathLevel)
+                player.AchievementManager.CheckAchievements(player, AchievementType.GuildMaxPathLevel, 0u);
             player.CastSpell(53234, new Spell.SpellParameters());
         }
 

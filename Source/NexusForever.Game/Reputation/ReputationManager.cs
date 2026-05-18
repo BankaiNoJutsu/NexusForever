@@ -68,6 +68,9 @@ namespace NexusForever.Game.Reputation
             if (previousLevel == null || currentLevel > previousLevel)
                 owner.AchievementManager.CheckAchievements(owner, AchievementType.ReputationLevel, (uint)factionId, (uint)currentLevel);
 
+            if ((previousLevel == null || previousLevel < FactionLevel.Beloved) && currentLevel >= FactionLevel.Beloved)
+                owner.AchievementManager.CheckAchievements(owner, AchievementType.GuildBelovedReputation, (uint)FactionLevel.Beloved);
+
             owner.Session.EnqueueMessageEncrypted(new ServerReputationUpdate
             {
                 FactionId = factionId,

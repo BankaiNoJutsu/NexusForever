@@ -3,6 +3,7 @@ using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Costume;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Achievement;
 using NexusForever.Game.Account.Costume;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
@@ -45,7 +46,7 @@ namespace NexusForever.Game.Account.Costume
         /// <summary>
         /// Unlock costume item with supplied <see cref="IItem"/>.
         /// </summary>
-        public void UnlockItem(IItem item)
+        public void UnlockItem(IPlayer player, IItem item)
         {
             if (item == null)
             {
@@ -54,7 +55,18 @@ namespace NexusForever.Game.Account.Costume
             }
 
             if (TryUnlockItem(item.Id))
+            {
                 item.MakeSoulbound();
+                CostumeAchievementUpdater.Update(player, item.Id);
+            }
+        }
+
+        /// <summary>
+        /// Unlock costume item with supplied <see cref="IItem"/>.
+        /// </summary>
+        public void UnlockItem(IItem item)
+        {
+            UnlockItem(null, item);
         }
 
         /// <summary>
@@ -62,7 +74,8 @@ namespace NexusForever.Game.Account.Costume
         /// </summary>
         public void UnlockItem(uint itemId)
         {
-            TryUnlockItem(itemId);
+            if (TryUnlockItem(itemId))
+                CostumeAchievementUpdater.Update(null, itemId);
         }
 
         private bool TryUnlockItem(uint itemId)

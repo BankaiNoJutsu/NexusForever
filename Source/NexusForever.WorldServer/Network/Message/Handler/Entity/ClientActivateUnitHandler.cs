@@ -61,6 +61,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             tradeManager.Cancel(session.Player);
             entity.OnActivateSuccess(session.Player);
             InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(session.Player, entity, assetManager, includeActivateEntity: true);
+            ActivationAchievementUpdater.Update(session.Player, entity);
 
             if (IsTutorialHoverboardActivationEntity(entity))
                 log.Debug($"Tutorial hoverboard activate success: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");

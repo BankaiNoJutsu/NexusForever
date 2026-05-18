@@ -101,14 +101,18 @@ namespace NexusForever.Game.Achievement
                 throw new ArgumentException();
 
             IAchievement achievement = GetAchievement(id);
-            if (info.ChecklistEntries.Count == 0)
-                achievement.Data0 = GetRequiredProgress(info.Entry.Value);
+            if (info.ChecklistEntries.Count == 0 || AchievementProgressRules.UsesChecklistValueProgress(info))
+            {
+                achievement.Data0 = AchievementProgressRules.GetRequiredProgress(info.Entry.Value);
+                foreach (AchievementChecklistEntry entry in info.ChecklistEntries)
+                    achievement.Data1 |= 1u << (int)entry.Bit;
+            }
             else
                 foreach (AchievementChecklistEntry entry in info.ChecklistEntries)
                     achievement.Data0 |= 1u << (int)entry.Bit;
 
             Debug.Assert(achievement.IsComplete());
-            CompleteAchievement(achievement);
+            CompleteAchievement(null, achievement);
             SendAchievementUpdate(achievement);
         }
 
@@ -172,7 +176,33 @@ namespace NexusForever.Game.Achievement
                         return false;
 
                     achievement = GetAchievement(info.Id);
-                    achievement.Data0 = AddProgress(achievement.Data0, count, GetRequiredProgress(info.Entry.Value));
+                    achievement.Data0 = AddProgress(achievement.Data0, count, AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
+                    sendUpdate = true;
+                }
+            }
+            else if (AchievementProgressRules.UsesChecklistValueProgress(info))
+            {
+                if (count == 0u)
+                    return false;
+
+                achievement = GetAchievement(info.Id);
+                bool matchedNewChecklistEntry = false;
+                foreach (AchievementChecklistEntry entry in info.ChecklistEntries)
+                {
+                    if (!CanUpdateChecklist(target, entry, objectId, objectIdAlt))
+                        continue;
+
+                    uint bit = 1u << (int)entry.Bit;
+                    if ((achievement.Data1 & bit) != 0u)
+                        continue;
+
+                    achievement.Data1 |= bit;
+                    matchedNewChecklistEntry = true;
+                }
+
+                if (matchedNewChecklistEntry)
+                {
+                    achievement.Data0 = AddProgress(achievement.Data0, count, AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
                     sendUpdate = true;
                 }
             }
@@ -194,7 +224,7 @@ namespace NexusForever.Game.Achievement
             }
 
             if (achievement != null && achievement.IsComplete())
-                CompleteAchievement(achievement);
+                CompleteAchievement(target, achievement);
 
             return sendUpdate;
         }
@@ -217,13 +247,13 @@ namespace NexusForever.Game.Achievement
                 return false;
 
             IAchievement achievement = GetAchievement(info.Id);
-            uint progress = Math.Min(Math.Max(achievement.Data0, value), GetRequiredProgress(info.Entry.Value));
+            uint progress = Math.Min(Math.Max(achievement.Data0, value), AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
             if (progress == achievement.Data0)
                 return false;
 
             achievement.Data0 = progress;
             if (achievement.IsComplete())
-                CompleteAchievement(achievement);
+                CompleteAchievement(target, achievement);
 
             return true;
         }
@@ -243,6 +273,11 @@ namespace NexusForever.Game.Achievement
                 return false;
 
             if (entry.PrerequisiteIdObjectiveAlt != 0u && !PrerequisiteManager.Instance.Meets(player, entry.PrerequisiteIdObjectiveAlt))
+                return false;
+
+            if ((AchievementType)entry.AchievementTypeId == AchievementType.EnterWorldZone
+                && entry.WorldZoneId != 0u
+                && entry.WorldZoneId != objectId)
                 return false;
 
             if (entry.ObjectId != 0u && entry.ObjectId != objectId)
@@ -281,6 +316,11 @@ namespace NexusForever.Game.Achievement
             AchievementPoints += GetAchievementPoints(achievement.Info);
         }
 
+        protected virtual void CompleteAchievement(IPlayer target, IAchievement achievement)
+        {
+            CompleteAchievement(achievement);
+        }
+
         protected void BroadcastRealmFirstAchievement(IAchievement achievement, bool isGuildAchievement, string name)
         {
             foreach (IPlayer player in PlayerManager.Instance)
@@ -304,11 +344,6 @@ namespace NexusForever.Game.Achievement
                 3u => 50u,
                 _ => 0u
             };
-        }
-
-        private static uint GetRequiredProgress(uint value)
-        {
-            return value == 0u ? 1u : value;
         }
 
         private static uint AddProgress(uint current, uint count, uint required)

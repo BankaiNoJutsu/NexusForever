@@ -976,6 +976,7 @@ namespace NexusForever.Game.Entity
                     });
                 }
 
+                AchievementManager.CheckAchievements(this, AchievementType.EnterWorldZone, Zone.Id);
                 QuestManager.ObjectiveUpdate(QuestObjectiveType.EnterZone, Zone.Id, 1);
             }
 

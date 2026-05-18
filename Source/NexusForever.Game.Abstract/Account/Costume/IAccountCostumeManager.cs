@@ -13,6 +13,11 @@ namespace NexusForever.Game.Abstract.Account.Costume
         /// <summary>
         /// Unlock costume item with supplied <see cref="IItem"/>.
         /// </summary>
+        void UnlockItem(IPlayer player, IItem item);
+
+        /// <summary>
+        /// Unlock costume item with supplied <see cref="IItem"/>.
+        /// </summary>
         void UnlockItem(IItem item);
 
         /// <summary>

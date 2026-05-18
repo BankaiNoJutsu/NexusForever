@@ -26,4 +26,13 @@ public class QuestPrerequisiteTests
     {
         Assert.False(QuestManager.MeetsFactionLevelRequirement(FactionLevel.Beloved, (uint)FactionLevel.Beloved + 1u, false));
     }
+
+    [Theory]
+    [InlineData(39, 40u, true)]
+    [InlineData(40, 40u, false)]
+    [InlineData(41, 40u, false)]
+    public void HasActiveQuestCapacity_RejectsWhenCountReachesClientLimit(int activeQuestCount, uint maximumActiveQuests, bool expected)
+    {
+        Assert.Equal(expected, QuestManager.HasActiveQuestCapacity(activeQuestCount, maximumActiveQuests));
+    }
 }

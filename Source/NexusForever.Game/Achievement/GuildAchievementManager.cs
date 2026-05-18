@@ -41,6 +41,14 @@ namespace NexusForever.Game.Achievement
                 BroadcastRealmFirstAchievement(achievement, true, guild.Name);
         }
 
+        protected override void CompleteAchievement(IPlayer target, IAchievement achievement)
+        {
+            base.CompleteAchievement(target, achievement);
+
+            if (target != null)
+                CheckAchievements(target, AchievementType.AchievementComplete, achievement.Id);
+        }
+
         /// <summary>
         /// Update or complete player achievements of <see cref="AchievementType"/> as <see cref="IPlayer"/> with supplied object ids.
         /// </summary>

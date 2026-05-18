@@ -9,7 +9,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Costume
         public void HandleMessage(IWorldSession session, ClientCostumeItemUnlock costumeItemUnlock)
         {
             IItem item = session.Player.Inventory.GetItem(costumeItemUnlock.Location);
-            session.Player.Account.CostumeManager.UnlockItem(item);
+            session.Player.Account.CostumeManager.UnlockItem(session.Player, item);
         }
     }
 }

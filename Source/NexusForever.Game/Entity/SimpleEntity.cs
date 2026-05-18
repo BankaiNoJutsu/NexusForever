@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Spell;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
@@ -48,6 +49,8 @@ namespace NexusForever.Game.Entity
 
         public override void OnActivate(IPlayer activator)
         {
+            activator.AchievementManager.CheckAchievements(activator, AchievementType.ActivateCreature, CreatureId);
+
             if (CreatureEntry.DatacubeId != 0u)
                 activator.DatacubeManager.AddDatacube((ushort)CreatureEntry.DatacubeId, int.MaxValue);
         }
@@ -55,6 +58,8 @@ namespace NexusForever.Game.Entity
         public override void OnActivateCast(IPlayer activator)
         {
             uint progress = (uint)(1 << QuestChecklistIdx);
+
+            activator.AchievementManager.CheckAchievements(activator, AchievementType.ActivateCreature, CreatureId);
 
             if (CreatureEntry.DatacubeId != 0u)
             {

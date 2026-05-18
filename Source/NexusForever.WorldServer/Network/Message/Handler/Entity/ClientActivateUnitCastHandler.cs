@@ -115,6 +115,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             entity.OnActivateCast(session.Player);
             entity.OnActivateSuccess(session.Player);
             InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(session.Player, entity, assetManager, includeActivateEntity: false);
+            ActivationAchievementUpdater.Update(session.Player, entity);
 
             if (IsTutorialHoverboardActivationEntity(entity))
                 log.Debug($"Tutorial hoverboard activate-cast success: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, spell4Id={spell4Id}.");

@@ -1925,7 +1925,12 @@ namespace NexusForever.Game.Entity
 
             damageDescription.KilledTarget = wasAlive && !IsAlive;
             if (damageDescription.KilledTarget)
+            {
+                if (attacker is IPlayer player && damageDescription.CombatResult == CombatResult.Critical)
+                    player.AchievementManager.CheckAchievements(player, AchievementType.CriticalDeathblow, 0u);
+
                 attacker.ProbeProcEvent("target-killed", ProcTriggerEventCandidate.KillTarget, attacker, this, null, null, damageDescription, "after-apply");
+            }
         }
 
         /// <summary>
@@ -2113,6 +2118,7 @@ namespace NexusForever.Game.Entity
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroup, CreatureId, 1u);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroups, CreatureId, 1u);
             player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureEntry, CreatureId);
+            player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureChecklist, CreatureId);
 
             List<uint> targetGroupIds = (AssetManager.Instance.GetTargetGroupsForCreatureId(CreatureId) ?? Enumerable.Empty<uint>()).ToList();
             foreach (uint targetGroupId in targetGroupIds)

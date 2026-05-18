@@ -1,4 +1,6 @@
 ﻿using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
@@ -42,6 +44,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Chat
                 StandState = standState,
                 EmoteId    = emote.EmoteId
             });
+
+            UpdateTargetedEmoteAchievements(session, emote);
+        }
+
+        private static void UpdateTargetedEmoteAchievements(IWorldSession session, ClientEmote emote)
+        {
+            if (!emote.Targeted || emote.TargetUnitId == 0u)
+                return;
+
+            IWorldEntity target = session.Player.GetVisible<IWorldEntity>(emote.TargetUnitId);
+            if (target == null)
+                return;
+
+            session.Player.AchievementManager.CheckAchievements(session.Player, AchievementType.EmoteTargetCreature, target.CreatureId, emote.EmoteId);
         }
     }
 }

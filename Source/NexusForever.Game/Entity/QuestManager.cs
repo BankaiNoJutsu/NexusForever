@@ -2,6 +2,7 @@
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Achievement;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Quest;
 using NexusForever.Game.Static;
@@ -365,7 +366,7 @@ namespace NexusForever.Game.Entity
             {
                 GameFormulaEntry entry = GameTableManager.Instance.GameFormula.GetEntry(655);
                 // client also hard codes 40 if entry doesn't exist
-                if (activeQuests.Count > (entry?.Dataint0 ?? 40u))
+                if (!HasActiveQuestCapacity(activeQuests.Count, entry?.Dataint0 ?? 40u))
                     return false;
             }
 
@@ -381,6 +382,12 @@ namespace NexusForever.Game.Entity
             return compareLessOrEqual
                 ? currentLevel <= required
                 : currentLevel >= required;
+        }
+
+        public static bool HasActiveQuestCapacity(int activeQuestCount, uint maximumActiveQuests)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(activeQuestCount);
+            return (uint)activeQuestCount < maximumActiveQuests;
         }
 
         private bool MeetsFactionLevelPrerequisites(Quest2Entry entry)
@@ -676,11 +683,32 @@ namespace NexusForever.Game.Entity
 
             LogTutorialRegionQuestLifecycle(communicator ? "completed-via-communicator" : "completed", questId, quest.State);
             player.AchievementManager.CheckAchievements(player, AchievementType.QuestComplete, questId);
+            player.AchievementManager.CheckAchievements(player, AchievementType.QuestCompleteChecklist, questId);
+            player.AchievementManager.CheckAchievements(player, AchievementType.QuestCompleteChecklistCount, questId);
+            UpdateContractAchievements(quest.Info);
         }
 
         private static bool AllowsStarterTutorialReceiverlessCompletion(ushort questId)
         {
             return receiverlessStarterTutorialQuestIds.Contains(questId);
+        }
+
+        private void UpdateContractAchievements(IQuestInfo info)
+        {
+            if (!info.IsContract())
+                return;
+
+            player.AchievementManager.CheckAchievements(player, AchievementType.ContractComplete, info.Entry.Type);
+
+            PeriodicQuestGroupEntry periodicQuestGroupEntry = GameTableManager.Instance.PeriodicQuestGroup.GetEntry(info.Entry.PeriodicQuestGroupId);
+            if (periodicQuestGroupEntry == null)
+                return;
+
+            if (periodicQuestGroupEntry.ContractQualityEnum != 0u)
+                player.AchievementManager.CheckAchievements(player, AchievementType.ContractQualityComplete, periodicQuestGroupEntry.ContractQualityEnum);
+
+            if (periodicQuestGroupEntry.ContractTypeEnum != 0u)
+                player.AchievementManager.CheckAchievements(player, AchievementType.ContractTypeComplete, periodicQuestGroupEntry.ContractTypeEnum);
         }
 
         private void RewardQuest(IQuestInfo info, ushort reward)
@@ -733,7 +761,7 @@ namespace NexusForever.Game.Entity
                     if (Enum.IsDefined((AccountCurrencyType)entry.ObjectId))
                     {
                         player.Account.CurrencyManager.CurrencyAddAmount((AccountCurrencyType)entry.ObjectId, entry.ObjectAmount);
-                        player.AchievementManager.CheckAchievements(player, AchievementType.AccountCurrencyEarned, entry.ObjectId, count: entry.ObjectAmount);
+                        AccountCurrencyAchievementUpdater.Update(player, (AccountCurrencyType)entry.ObjectId, entry.ObjectAmount);
                     }
                     else
                         log.Warn($"Unhandled invalid quest account currency reward objectId {entry.ObjectId}!");

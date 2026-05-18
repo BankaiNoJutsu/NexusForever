@@ -244,6 +244,8 @@ namespace NexusForever.Game.Entity
 
             player.Level = newLevel;
             player.AchievementManager.SetAchievementProgress(player, AchievementType.CharacterLevel, 0u, 0u, newLevel);
+            if (oldLevel < DefaultMaxCharacterLevel && newLevel >= DefaultMaxCharacterLevel)
+                player.AchievementManager.CheckAchievements(player, AchievementType.ClassLevel50, (uint)player.Class);
 
             // Grant Rewards for level up
             player.SpellManager.GrantSpells();

@@ -153,8 +153,8 @@ namespace NexusForever.Game.Achievement
             if (DateCompleted != null)
                 return true;
 
-            if (Info.ChecklistEntries.Count == 0)
-                return Data0 >= (Info.Entry.Value == 0u ? 1u : Info.Entry.Value);
+            if (Info.ChecklistEntries.Count == 0 || AchievementProgressRules.UsesChecklistValueProgress(Info))
+                return Data0 >= AchievementProgressRules.GetRequiredProgress(Info.Entry.Value);
 
             return Info.ChecklistEntries.All(entry => (Data0 & (1u << (int)entry.Bit)) != 0);
         }

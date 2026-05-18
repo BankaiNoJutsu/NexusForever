@@ -361,6 +361,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                 Pass = true,
                 TradeskillSchematic2IdCrafted = schematic.Id,
                 Item2IdCrafted = item2IdCrafted,
+                HotOrCold = CraftingDiscovery.Success,
                 EarnedXp = earnedXp
             });
         }

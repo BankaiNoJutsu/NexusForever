@@ -1,4 +1,7 @@
 ﻿using NexusForever.Game.Abstract.PublicEvent;
+using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Entity;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
@@ -60,8 +63,19 @@ namespace NexusForever.Game.PublicEvent
         {
             Status = status;
             BroadcastObjectiveStatusUpdate();
+            if (status == PublicEventStatus.Succeeded)
+                UpdateObjectiveCompletionAchievements();
 
             Team.PublicEvent.InvokeScriptCollection<IPublicEventScript>(s => s.OnPublicEventObjectiveStatus(this));
+        }
+
+        private void UpdateObjectiveCompletionAchievements()
+        {
+            foreach (IPublicEventTeamMember member in Team.GetMembers())
+            {
+                IPlayer player = PlayerManager.Instance.GetPlayer(member.CharacterId);
+                player?.AchievementManager.CheckAchievements(player, AchievementType.PublicEventObjectiveComplete, Entry.Id);
+            }
         }
 
         private void BroadcastObjectiveUpdate()

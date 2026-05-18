@@ -1,6 +1,6 @@
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Static.Achievement;
+using NexusForever.Game.Achievement;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
@@ -323,7 +323,7 @@ namespace NexusForever.Game.Loot
             {
                 case LootItemType.AccountCurrency:
                     player.Account.CurrencyManager.CurrencyAddAmount((AccountCurrencyType)StaticId, Amount);
-                    player.AchievementManager.CheckAchievements(player, AchievementType.AccountCurrencyEarned, StaticId, count: Amount);
+                    AccountCurrencyAchievementUpdater.Update(player, (AccountCurrencyType)StaticId, Amount);
                     break;
                 case LootItemType.AccountItem:
                     for (uint i = 0; i < Amount; i++)
