@@ -41,8 +41,9 @@ namespace NexusForever.Game.Combat
 
             IDamageDescription damageDescription = new SpellTargetInfo.SpellTargetEffectInfo.DamageDescription
             {
-                DamageType   = info.Entry.DamageType,
-                CombatResult = CombatResult.Hit
+                DamageType        = info.Entry.DamageType,
+                ThreatMultiplier  = ResolveThreatMultiplier(spell, info.Entry),
+                CombatResult      = CombatResult.Hit
             };
 
             var castData = new CombatLogCastData
@@ -145,6 +146,7 @@ namespace NexusForever.Game.Combat
                 AbsorbedAmount   = absorbedHeal,
                 AdjustedDamage   = adjustedHeal,
                 OverkillAmount   = overheal,
+                ThreatMultiplier = 1f,
                 CombatResult     = CombatResult.Hit
             };
 
@@ -208,6 +210,7 @@ namespace NexusForever.Game.Combat
                 RawScaledDamage = rawHeal,
                 AdjustedDamage  = adjustedHeal,
                 OverkillAmount  = overheal,
+                ThreatMultiplier = 1f,
                 CombatResult    = CombatResult.Hit
             };
 
@@ -254,6 +257,7 @@ namespace NexusForever.Game.Combat
                 ShieldAbsorbAmount = adjustedDamage,
                 AdjustedDamage     = 0u,
                 OverkillAmount     = overkill,
+                ThreatMultiplier   = ResolveThreatMultiplier(spell, info.Entry),
                 CombatResult       = CombatResult.Hit
             };
 
@@ -359,6 +363,32 @@ namespace NexusForever.Game.Combat
                 SpellId      = spell.Parameters.SpellInfo.Entry.Id,
                 CombatResult = CombatResult.Hit
             };
+        }
+
+        private static float ResolveThreatMultiplier(ISpell spell, Spell4EffectsEntry damageEntry)
+        {
+            float multiplier = float.IsFinite(damageEntry.ThreatMultiplier) && damageEntry.ThreatMultiplier > 0f
+                ? damageEntry.ThreatMultiplier
+                : 1f;
+
+            foreach (Spell4EffectsEntry effectEntry in spell.Parameters.SpellInfo.Effects)
+            {
+                if (effectEntry.EffectType != SpellEffectType.ThreatModification)
+                    continue;
+
+                if (effectEntry.DataBits00 != 130u)
+                    continue;
+
+                if (effectEntry.DelayTime != damageEntry.DelayTime)
+                    continue;
+
+                if (!float.IsFinite(effectEntry.ThreatMultiplier) || effectEntry.ThreatMultiplier < 0f)
+                    continue;
+
+                multiplier *= effectEntry.ThreatMultiplier;
+            }
+
+            return multiplier;
         }
 
         /// <summary>

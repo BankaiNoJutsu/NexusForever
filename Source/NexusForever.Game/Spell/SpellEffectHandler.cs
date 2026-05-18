@@ -131,7 +131,7 @@ namespace NexusForever.Game.Spell
             }
             else
             {
-                skippedReason = "evidence-gap-heal-vital";
+                skippedReason = "unknown-heal-vital";
             }
 
             info.AddCombatLog(new CombatLogTransference
@@ -233,14 +233,14 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (!TryResolveVitalModifierAmount(target, interpretation, vitalModifier, out float amount, out string mode, out string skippedReason))
+            if (!TryResolveVitalModifierAmount(spell.Caster, target, interpretation, vitalModifier, out float amount, out string mode, out string skippedReason))
             {
                 SpellEffectDiagnostics.TraceVitalModifier(spell, target, vitalModifier, mode, amount, 0f, false, skippedReason);
                 return;
             }
 
             bool applied = target.TryModifyVital(vitalModifier.Vital, amount, out float appliedAmount, spell.Caster);
-            SpellEffectDiagnostics.TraceVitalModifier(spell, target, vitalModifier, mode, amount, appliedAmount, applied, applied ? string.Empty : "evidence-gap-vital");
+            SpellEffectDiagnostics.TraceVitalModifier(spell, target, vitalModifier, mode, amount, appliedAmount, applied, applied ? string.Empty : "unknown-vital");
             if (!applied)
                 return;
 
@@ -260,6 +260,7 @@ namespace NexusForever.Game.Spell
         }
 
         private static bool TryResolveVitalModifierAmount(
+            IUnitEntity caster,
             IUnitEntity target,
             SpellEffectInterpretation interpretation,
             SpellEffectVitalModifierSemantics vitalModifier,
@@ -271,42 +272,61 @@ namespace NexusForever.Game.Spell
             mode          = "none";
             skippedReason = string.Empty;
 
-            if (interpretation.Parameters.Any(p => p.Type != SpellEffectParameterType.None))
+            float resolvedAmount = 0f;
+            List<string> modes = [];
+            if (TryResolveSpellEffectParameterAmount(caster, target, interpretation.Parameters, out float parameterAmount))
             {
-                skippedReason = "parameter-driven";
+                resolvedAmount += parameterAmount;
+                modes.Add("parameter");
+            }
+
+            if (TryResolveSignedRangeAmount(vitalModifier.DataBits01, vitalModifier.DataBits02, out float primaryRangeAmount))
+            {
+                resolvedAmount += primaryRangeAmount;
+                modes.Add(vitalModifier.DataBits01 == vitalModifier.DataBits02 ? "flat" : "range");
+            }
+
+            if (TryResolveSignedRangeAmount(vitalModifier.DataBits03, vitalModifier.DataBits04, out float secondaryRangeAmount))
+            {
+                resolvedAmount += secondaryRangeAmount;
+                modes.Add(vitalModifier.DataBits03 == vitalModifier.DataBits04 ? "secondary-flat" : "secondary-range");
+            }
+
+            if (TryResolvePercentVitalModifierAmount(target, vitalModifier, out float percentAmount, out skippedReason))
+            {
+                resolvedAmount += percentAmount;
+                modes.Add("percent-max");
+            }
+            else if (!string.IsNullOrEmpty(skippedReason) && modes.Count == 0)
+            {
                 return false;
             }
 
-            if (TryResolveFlatVitalModifierAmount(vitalModifier, out amount))
+            if (!float.IsFinite(resolvedAmount) || MathF.Abs(resolvedAmount) < 0.0001f)
             {
-                mode = "flat";
-                return true;
+                skippedReason = "zero-amount";
+                return false;
             }
 
-            if (TryResolvePercentVitalModifierAmount(target, vitalModifier, out amount, out skippedReason))
-            {
-                mode = "percent-max";
-                return true;
-            }
-
-            if (string.IsNullOrEmpty(skippedReason))
-                skippedReason = "ambiguous-payload";
-
-            return false;
+            amount = resolvedAmount;
+            mode   = string.Join("+", modes);
+            return true;
         }
 
-        private static bool TryResolveFlatVitalModifierAmount(SpellEffectVitalModifierSemantics vitalModifier, out float amount)
+        private static bool TryResolveSignedRangeAmount(uint rawMin, uint rawMax, out float amount)
         {
             amount = 0f;
-            if (vitalModifier.DataBits01 == 0u ||
-                vitalModifier.DataBits01 != vitalModifier.DataBits02 ||
-                vitalModifier.DataBits01 == VitalModifierSentinel ||
-                vitalModifier.DataBits01 > VitalModifierMaxConservativeFlatAmount)
-            {
+            if (rawMin == 0u && rawMax == 0u)
                 return false;
-            }
 
-            amount = vitalModifier.DataBits01;
+            int signedMin = unchecked((int)rawMin);
+            int signedMax = unchecked((int)rawMax);
+            int low = Math.Min(signedMin, signedMax);
+            int high = Math.Max(signedMin, signedMax);
+
+            amount = low == high
+                ? low
+                : (float)Random.Shared.NextInt64(low, (long)high + 1L);
             return true;
         }
 
@@ -315,36 +335,20 @@ namespace NexusForever.Game.Spell
             amount        = 0f;
             skippedReason = string.Empty;
 
-            if (vitalModifier.DataBits01 != 0u ||
-                vitalModifier.DataBits02 != 0u ||
-                vitalModifier.DataBits03 != 0u ||
-                vitalModifier.DataBits04 != 0u)
-            {
-                return false;
-            }
-
             if (!float.IsFinite(vitalModifier.DataFloat05) || vitalModifier.DataFloat05 <= 0f)
             {
-                skippedReason = "invalid-percent";
                 return false;
             }
 
             if (!target.TryGetVitalMax(vitalModifier.Vital, out float maxValue))
             {
-                skippedReason = "evidence-gap-vital-max";
+                skippedReason = "unknown-vital-max";
                 return false;
             }
 
             float fraction = vitalModifier.DataFloat05 <= 1f
                 ? vitalModifier.DataFloat05
-                : vitalModifier.DataFloat05 <= 100f
-                    ? vitalModifier.DataFloat05 / 100f
-                    : 0f;
-            if (fraction <= 0f)
-            {
-                skippedReason = "percent-out-of-range";
-                return false;
-            }
+                : vitalModifier.DataFloat05 / 100f;
 
             amount = maxValue * fraction;
             return amount > 0f;
@@ -364,20 +368,14 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (interpretation.Parameters.Any(p => p.Type != SpellEffectParameterType.None))
-            {
-                SpellEffectDiagnostics.TraceSapVital(spell, target, sapVital, "none", "none", 0f, 0f, false, "parameter-driven");
-                return;
-            }
-
-            if (!TryResolveSapVitalAmount(target, sapVital, out float amount, out string mode, out string amountSource, out string skippedReason))
+            if (!TryResolveSapVitalAmount(spell.Caster, target, interpretation, sapVital, out float amount, out string mode, out string amountSource, out string skippedReason))
             {
                 SpellEffectDiagnostics.TraceSapVital(spell, target, sapVital, mode, amountSource, amount, 0f, false, skippedReason);
                 return;
             }
 
             bool applied = target.TryModifyVital(sapVital.Vital, amount, out float appliedAmount, spell.Caster, info.Entry.DamageType);
-            SpellEffectDiagnostics.TraceSapVital(spell, target, sapVital, mode, amountSource, amount, appliedAmount, applied, applied ? string.Empty : "evidence-gap-vital");
+            SpellEffectDiagnostics.TraceSapVital(spell, target, sapVital, mode, amountSource, amount, appliedAmount, applied, applied ? string.Empty : "unknown-vital");
             if (!applied)
                 return;
 
@@ -397,7 +395,9 @@ namespace NexusForever.Game.Spell
         }
 
         private static bool TryResolveSapVitalAmount(
+            IUnitEntity caster,
             IUnitEntity target,
+            SpellEffectInterpretation interpretation,
             SpellEffectSapVitalSemantics sapVital,
             out float amount,
             out string mode,
@@ -409,55 +409,41 @@ namespace NexusForever.Game.Spell
             amountSource  = "none";
             skippedReason = string.Empty;
 
-            if (sapVital.DataBits04 != 0u ||
-                sapVital.DataFloat05 != 0f ||
-                sapVital.DataBits06 != 0u ||
-                sapVital.DataBits07 != 0u ||
-                sapVital.DataBits08 != 0u ||
-                sapVital.DataBits09 != 0u)
-            {
-                skippedReason = "secondary-payload";
-                return false;
-            }
-
-            if (sapVital.Mode > 2u)
-            {
-                skippedReason = "unknown-mode";
-                return false;
-            }
-
-            if (!TrySelectSapVitalScalar(sapVital, out float scalar, out amountSource, out skippedReason))
+            TryResolveSpellEffectParameterAmount(caster, target, interpretation.Parameters, out float parameterAmount);
+            if (!TrySelectSapVitalScalar(sapVital, parameterAmount, out float scalar, out amountSource, out skippedReason))
                 return false;
 
             float magnitude = MathF.Abs(scalar);
-            if (amountSource == "dataFloat01" && magnitude > 1f)
+            bool flatAmount = amountSource is "parameter" ||
+                amountSource == "dataFloat01" && magnitude > 1f ||
+                amountSource == "dataFloat02" && magnitude > 100f;
+            float resolvedAmount;
+            if (flatAmount)
             {
-                skippedReason = "ambiguous-datafloat01";
-                return false;
+                resolvedAmount = magnitude;
+                mode = "flat";
+            }
+            else
+            {
+                if (!target.TryGetVitalMax(sapVital.Vital, out float maxValue))
+                {
+                    skippedReason = "unknown-vital-max";
+                    return false;
+                }
+
+                float fraction = magnitude <= 1f
+                    ? magnitude
+                    : magnitude / 100f;
+                if (!float.IsFinite(fraction) || fraction <= 0f)
+                {
+                    skippedReason = "invalid-fraction";
+                    return false;
+                }
+
+                resolvedAmount = maxValue * fraction;
+                mode = "percent-max";
             }
 
-            if (amountSource == "dataFloat02" && magnitude > 100f)
-            {
-                skippedReason = "percent-out-of-range";
-                return false;
-            }
-
-            if (!target.TryGetVitalMax(sapVital.Vital, out float maxValue))
-            {
-                skippedReason = "evidence-gap-vital-max";
-                return false;
-            }
-
-            float fraction = magnitude <= 1f
-                ? magnitude
-                : magnitude / 100f;
-            if (!float.IsFinite(fraction) || fraction <= 0f)
-            {
-                skippedReason = "invalid-fraction";
-                return false;
-            }
-
-            float resolvedAmount = maxValue * fraction;
             if (!float.IsFinite(resolvedAmount) || resolvedAmount <= 0f)
             {
                 skippedReason = "invalid-amount";
@@ -467,22 +453,29 @@ namespace NexusForever.Game.Spell
             if (sapVital.Mode == 1u && scalar > 0f)
             {
                 amount = resolvedAmount;
-                mode   = "restore-percent-max";
+                mode   = $"restore-{mode}";
             }
             else
             {
                 amount = -resolvedAmount;
-                mode   = sapVital.Mode == 1u ? "signed-drain-percent-max" : "drain-percent-max";
+                mode   = sapVital.Mode == 1u ? $"signed-drain-{mode}" : $"drain-{mode}";
             }
 
             return true;
         }
 
-        private static bool TrySelectSapVitalScalar(SpellEffectSapVitalSemantics sapVital, out float scalar, out string amountSource, out string skippedReason)
+        private static bool TrySelectSapVitalScalar(SpellEffectSapVitalSemantics sapVital, float parameterAmount, out float scalar, out string amountSource, out string skippedReason)
         {
             scalar        = 0f;
             amountSource  = "none";
             skippedReason = string.Empty;
+
+            if (float.IsFinite(parameterAmount) && MathF.Abs(parameterAmount) >= 0.0001f)
+            {
+                scalar       = parameterAmount;
+                amountSource = "parameter";
+                return true;
+            }
 
             if (float.IsFinite(sapVital.DataFloat02) && sapVital.DataFloat02 != 0f)
             {
@@ -500,6 +493,54 @@ namespace NexusForever.Game.Spell
 
             skippedReason = "zero-amount";
             return false;
+        }
+
+        private static bool TryResolveSpellEffectParameterAmount(IUnitEntity caster, IUnitEntity target, IReadOnlyList<SpellEffectParameter> parameters, out float amount)
+        {
+            amount = 0f;
+            if (parameters == null || parameters.All(p => p.Type == SpellEffectParameterType.None))
+                return false;
+
+            GameFormulaEntry formulaEntry = GameTableManager.Instance.GameFormula.GetEntry(1266);
+            foreach (SpellEffectParameter parameter in parameters.Where(p => p.Type != SpellEffectParameterType.None))
+            {
+                float intermediateValue = parameter.Type switch
+                {
+                    SpellEffectParameterType.Brutality               => caster.GetPropertyValue(Property.Strength),
+                    SpellEffectParameterType.Finesse                 => caster.GetPropertyValue(Property.Dexterity),
+                    SpellEffectParameterType.Tech                    => caster.GetPropertyValue(Property.Technology),
+                    SpellEffectParameterType.Moxie                   => caster.GetPropertyValue(Property.Magic),
+                    SpellEffectParameterType.Insight                 => caster.GetPropertyValue(Property.Wisdom),
+                    SpellEffectParameterType.Grit                    => caster.GetPropertyValue(Property.Stamina),
+                    SpellEffectParameterType.AssaultPower            => caster.GetPropertyValue(Property.AssaultRating) * (formulaEntry?.Datafloat0 ?? 0.25f),
+                    SpellEffectParameterType.SupportPower            => caster.GetPropertyValue(Property.SupportRating) * (formulaEntry?.Datafloat01 ?? 0.25f),
+                    SpellEffectParameterType.TargetMaxHealth         => target.MaxHealth,
+                    SpellEffectParameterType.CasterMaxHealth         => caster.MaxHealth,
+                    SpellEffectParameterType.CasterShieldCapacity    => caster.Shield,
+                    SpellEffectParameterType.TargetShieldCapacity    => target.Shield,
+                    SpellEffectParameterType.CasterMaxShieldCapacity => caster.MaxShieldCapacity,
+                    SpellEffectParameterType.TargetMaxShieldCapacity => target.MaxShieldCapacity,
+                    SpellEffectParameterType.ItemBudget              => parameter.Value,
+                    SpellEffectParameterType.TargetCurrentHealth     => target.Health,
+                    SpellEffectParameterType.TargetMissingHealth     => target.MaxHealth - target.Health,
+                    SpellEffectParameterType.TargetMissingShields    => target.MaxShieldCapacity - target.Shield,
+                    SpellEffectParameterType.CasterCurrentHealth     => caster.Health,
+                    SpellEffectParameterType.CasterMissingHealth     => caster.MaxHealth - caster.Health,
+                    SpellEffectParameterType.CasterMissingShields    => caster.MaxShieldCapacity - caster.Shield,
+                    SpellEffectParameterType.PerLevel                => caster.Level,
+                    SpellEffectParameterType.Weapon                  => parameter.Value,
+                    SpellEffectParameterType.WeaponDPS               => parameter.Value,
+                    _                                                => 0f
+                };
+
+                amount += intermediateValue * parameter.Value;
+            }
+
+            if (!float.IsFinite(amount) || MathF.Abs(amount) < 0.0001f)
+                return false;
+
+            amount = amount >= 0f ? MathF.Ceiling(amount) : MathF.Floor(amount);
+            return true;
         }
 
         [SpellEffectHandler(SpellEffectType.SummonCreature)]
@@ -828,8 +869,11 @@ namespace NexusForever.Game.Spell
                 case 5u:
                     SetThreat(spell, target, threat, ResolveThreatAmount(threat), "fixate");
                     break;
+                case 130u:
+                    TraceThreatMultiplier(spell, target, threat, info.Entry.ThreatMultiplier);
+                    break;
                 default:
-                    SpellEffectDiagnostics.TraceThreatModification(spell, target, threat, "none", 0u, 0u, 0u, 0u, "unknown-mode");
+                    ApplyThreatDelta(spell, target, threat, ResolveThreatAmount(threat), $"add-mode-{threat.Mode}");
                     break;
             }
         }
@@ -873,6 +917,16 @@ namespace NexusForever.Game.Spell
             return spell.Caster is IPlayer
                 ? (target, spell.Caster)
                 : (spell.Caster, target);
+        }
+
+        private static void TraceThreatMultiplier(ISpell spell, IUnitEntity target, SpellEffectThreatModificationSemantics threat, float multiplier)
+        {
+            (IUnitEntity owner, IUnitEntity hated) = ResolveThreatOwnerAndHated(spell, target);
+            uint beforeThreat = owner.ThreatManager.GetHostile(hated.Guid)?.Threat ?? 0u;
+            string skippedReason = float.IsFinite(multiplier) && multiplier >= 0f
+                ? string.Empty
+                : "invalid-threat-multiplier";
+            SpellEffectDiagnostics.TraceThreatModification(spell, target, threat, $"damage-threat-multiplier:{multiplier:R}", owner.Guid, hated.Guid, beforeThreat, beforeThreat, skippedReason);
         }
 
         private static uint ResolveThreatAmount(SpellEffectThreatModificationSemantics threat)
@@ -1489,16 +1543,9 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.UnitStateSet)]
         public static void HandleEffectUnitStateSet(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            SpellEffectInterpretation interpretation = SpellEffectInterpreter.Interpret(info);
-            SpellEffectUnitStateSetSemantics unitState = interpretation.UnitStateSet;
+            SpellEffectUnitStateSetSemantics unitState = SpellEffectInterpreter.Interpret(info).UnitStateSet;
             if (unitState == null)
                 return;
-
-            if (interpretation.Parameters.Any(p => p.Type != SpellEffectParameterType.None))
-            {
-                SpellEffectDiagnostics.TraceUnitStateSet(spell, target, unitState, false, false, false, "parameter-driven");
-                return;
-            }
 
             if (unitState.StateId == 0u)
             {
@@ -1538,16 +1585,9 @@ namespace NexusForever.Game.Spell
 
         private static void HandleEffectSetBusyCore(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)
         {
-            SpellEffectInterpretation interpretation = SpellEffectInterpreter.Interpret(info);
-            SpellEffectSetBusySemantics setBusy = interpretation.SetBusy;
+            SpellEffectSetBusySemantics setBusy = SpellEffectInterpreter.Interpret(info).SetBusy;
             if (setBusy == null)
                 return;
-
-            if (interpretation.Parameters.Any(p => p.Type != SpellEffectParameterType.None))
-            {
-                SpellEffectDiagnostics.TraceSetBusy(spell, target, setBusy, false, false, false, 0u, "parameter-driven");
-                return;
-            }
 
             if (setBusy.Busy)
             {
@@ -1763,12 +1803,6 @@ namespace NexusForever.Game.Spell
             if (player == null)
             {
                 SpellEffectDiagnostics.TraceHousingTeleport(spell, target, housingTeleport, escapeVariant, 0u, false, "no-player-owner");
-                return;
-            }
-
-            if (housingTeleport.Mode != 0u)
-            {
-                SpellEffectDiagnostics.TraceHousingTeleport(spell, target, housingTeleport, escapeVariant, player.Guid, false, "evidence-gap-mode");
                 return;
             }
 
@@ -2290,7 +2324,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            uint spell4Id = ResolveSpell4Id(cooldown.Spell4Id);
+            uint spell4Id = ResolveSpell4Id(cooldown.Spell4Id, spell.Parameters.SpellInfo.Entry.Id);
             if (spell4Id == 0u)
             {
                 SpellEffectDiagnostics.TraceModifySpellCooldown(spell, target, cooldown, "none", 0u, 0d, 0d, "no-concrete-spell4-target");
@@ -2401,12 +2435,6 @@ namespace NexusForever.Game.Spell
             SpellImmunitySemantics immunity = SpellEffectInterpreter.Interpret(info).SpellImmunity;
             if (immunity == null)
                 return;
-
-            if (immunity.Mode != 0u)
-            {
-                SpellEffectDiagnostics.TraceSpellImmunity(spell, target, immunity, false, false, "evidence-gap-mode");
-                return;
-            }
 
             Spell4Entry immuneSpell = GameTableManager.Instance.Spell4.GetEntry(immunity.Spell4Id);
             if (immuneSpell == null)
@@ -2562,9 +2590,9 @@ namespace NexusForever.Game.Spell
             }
 
             Vital vital = ResolveClampVital(clampVital);
-            if (vital != Vital.Health)
+            if (vital == Vital.Invalid)
             {
-                SpellEffectDiagnostics.TraceClampVital(spell, target, clampVital, vital, target.Health, target.Health, false, false, "evidence-gap-vital");
+                SpellEffectDiagnostics.TraceClampVital(spell, target, clampVital, vital, target.Health, target.Health, false, false, "unknown-vital");
                 return;
             }
 
@@ -2583,47 +2611,23 @@ namespace NexusForever.Game.Spell
 
         private static Vital ResolveClampVital(SpellEffectClampVitalSemantics clampVital)
         {
+            if (Enum.IsDefined(typeof(Vital), (int)clampVital.VitalMode))
+                return (Vital)clampVital.VitalMode;
+
             return Vital.Health;
         }
 
         [SpellEffectHandler(SpellEffectType.ShieldOverload)]
         public static void HandleEffectShieldOverload(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            SpellEffectInterpretation interpretation = SpellEffectInterpreter.Interpret(info);
-            SpellEffectShieldOverloadSemantics shieldOverload = interpretation.ShieldOverload;
+            SpellEffectShieldOverloadSemantics shieldOverload = SpellEffectInterpreter.Interpret(info).ShieldOverload;
             if (shieldOverload == null)
                 return;
-
-            if (interpretation.Parameters.Any(p => p.Type != SpellEffectParameterType.None))
-            {
-                SpellEffectDiagnostics.TraceShieldOverload(spell, target, shieldOverload, target.Shield, target.Shield, false, false, "parameter-driven");
-                return;
-            }
-
-            if (!IsSimpleShieldOverload(shieldOverload))
-            {
-                SpellEffectDiagnostics.TraceShieldOverload(spell, target, shieldOverload, target.Shield, target.Shield, false, false, "secondary-payload");
-                return;
-            }
 
             uint shieldBefore = target.Shield;
             target.AddShieldOverload(info.EffectId, spell.Parameters.SpellInfo.Entry.Id, spell.CastingId);
             target.Shield = 0u;
             SpellEffectDiagnostics.TraceShieldOverload(spell, target, shieldOverload, shieldBefore, target.Shield, true, false, null);
-        }
-
-        private static bool IsSimpleShieldOverload(SpellEffectShieldOverloadSemantics shieldOverload)
-        {
-            return shieldOverload.DataBits00 == 0u &&
-                shieldOverload.DataBits01 == 0u &&
-                shieldOverload.DataBits02 == 0u &&
-                shieldOverload.DataBits03 == 0u &&
-                shieldOverload.DataBits04 == 0u &&
-                shieldOverload.DataBits05 == 0u &&
-                shieldOverload.DataBits06 == 0u &&
-                shieldOverload.DataBits07 == 0u &&
-                shieldOverload.DataBits08 == 0u &&
-                shieldOverload.DataBits09 == 0u;
         }
 
         [SpellEffectHandler(SpellEffectType.GrantXP)]
@@ -2680,7 +2684,8 @@ namespace NexusForever.Game.Spell
                     SpellEffectDiagnostics.TracePathXpModify(spell, target, pathXp, "add-levels", true, null);
                     break;
                 default:
-                    SpellEffectDiagnostics.TracePathXpModify(spell, target, pathXp, "unknown", false, "unknown-mode");
+                    player.PathManager.AddXp(pathXp.Amount);
+                    SpellEffectDiagnostics.TracePathXpModify(spell, target, pathXp, $"add-xp-mode-{pathXp.Mode}", true, null);
                     break;
             }
         }
@@ -2696,12 +2701,6 @@ namespace NexusForever.Game.Spell
             if (player == null)
             {
                 SpellEffectDiagnostics.TraceGrantLevelScaledXp(spell, target, levelScaledXp, 0u, false, "no-player-owner");
-                return;
-            }
-
-            if (levelScaledXp.Mode != 1u)
-            {
-                SpellEffectDiagnostics.TraceGrantLevelScaledXp(spell, target, levelScaledXp, 0u, false, "unknown-mode");
                 return;
             }
 
@@ -3373,6 +3372,15 @@ namespace NexusForever.Game.Spell
 
             switch (personalMod.ModifierType)
             {
+                case 0:
+                    property = Property.DamageDealtMultiplierMelee;
+                    return true;
+                case 1:
+                    property = Property.DamageDealtMultiplierRanged;
+                    return true;
+                case 2:
+                    property = Property.DamageDealtMultiplierSpell;
+                    return true;
                 case 3:
                     property = Property.DamageDealtMultiplierPhysical;
                     return true;
@@ -3391,6 +3399,9 @@ namespace NexusForever.Game.Spell
                 case 8:
                     property = Property.DamageTakenMultiplierMagic;
                     return true;
+                case 9:
+                    property = Property.DamageMitigationPctOffset;
+                    return true;
                 case 12:
                     property = Property.HealingMultiplierIncoming;
                     return true;
@@ -3399,7 +3410,7 @@ namespace NexusForever.Game.Spell
                     return true;
                 default:
                     property = default;
-                    skippedReason = "evidence-gap-modifier-type";
+                    skippedReason = "unknown-modifier-type";
                     return false;
             }
         }
@@ -3460,28 +3471,6 @@ namespace NexusForever.Game.Spell
             action = null;
             skippedReason = null;
 
-            if (float.IsFinite(cooldown.DataFloat03) && cooldown.DataFloat03 <= -1f)
-            {
-                afterCooldown = Math.Max(0d, beforeCooldown - Math.Abs(cooldown.DataFloat03) / 1000d);
-                action = "reduce-float-ms";
-                return true;
-            }
-
-            int signedDataBits05 = unchecked((int)cooldown.DataBits05);
-            if (signedDataBits05 < 0)
-            {
-                afterCooldown = Math.Max(0d, beforeCooldown - Math.Abs(signedDataBits05) / 1000d);
-                action = "reduce-int-ms";
-                return true;
-            }
-
-            if (float.IsFinite(cooldown.DataFloat03) && cooldown.DataFloat03 >= 1f)
-            {
-                afterCooldown = cooldown.DataFloat03 / 1000d;
-                action = "set-float-ms";
-                return true;
-            }
-
             if (cooldown.DataFloat03 == 0f && cooldown.Operation == 0u)
             {
                 afterCooldown = 0d;
@@ -3489,8 +3478,56 @@ namespace NexusForever.Game.Spell
                 return true;
             }
 
-            skippedReason = "evidence-gap-cooldown-mode";
-            return false;
+            if (float.IsFinite(cooldown.DataFloat03) && MathF.Abs(cooldown.DataFloat03) >= 0.0001f)
+            {
+                if (cooldown.DataFloat03 <= -1f)
+                {
+                    afterCooldown = Math.Max(0d, beforeCooldown - Math.Abs(cooldown.DataFloat03) / 1000d);
+                    action = "reduce-float-ms";
+                    return true;
+                }
+
+                if (cooldown.DataFloat03 < 0f)
+                {
+                    afterCooldown = Math.Max(0d, beforeCooldown * Math.Max(0d, 1d - Math.Abs(cooldown.DataFloat03)));
+                    action = "reduce-float-ratio";
+                    return true;
+                }
+
+                if (cooldown.DataFloat03 < 1f)
+                {
+                    afterCooldown = Math.Max(0d, beforeCooldown * cooldown.DataFloat03);
+                    action = "scale-float-ratio";
+                    return true;
+                }
+
+                afterCooldown = cooldown.DataFloat03 / 1000d;
+                action = "set-float-ms";
+                return true;
+            }
+
+            int signedDataBits04 = unchecked((int)cooldown.DataBits04);
+            if (signedDataBits04 != 0)
+            {
+                afterCooldown = signedDataBits04 < 0
+                    ? Math.Max(0d, beforeCooldown - Math.Abs(signedDataBits04) / 1000d)
+                    : beforeCooldown + signedDataBits04 / 1000d;
+                action = signedDataBits04 < 0 ? "reduce-int04-ms" : "extend-int04-ms";
+                return true;
+            }
+
+            int signedDataBits05 = unchecked((int)cooldown.DataBits05);
+            if (signedDataBits05 != 0)
+            {
+                afterCooldown = signedDataBits05 < 0
+                    ? Math.Max(0d, beforeCooldown - Math.Abs(signedDataBits05) / 1000d)
+                    : beforeCooldown + signedDataBits05 / 1000d;
+                action = signedDataBits05 < 0 ? "reduce-int05-ms" : "extend-int05-ms";
+                return true;
+            }
+
+            action = "no-op";
+            return true;
         }
 
         private static void SendTrackedStateRemovalMessages(

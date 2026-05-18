@@ -468,12 +468,6 @@ namespace NexusForever.Game.Entity
             if (!observedTriggerEvent.HasValue || observedTriggerEvent.Value != state.TriggerEvent)
                 return;
 
-            if (!IsSupportedProcTriggerEvent(state.TriggerEvent))
-            {
-                SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, 0u, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", "evidence-gap-trigger-event");
-                return;
-            }
-
             if (!TryResolveProcTarget(state.TargetData, source, target, out IUnitEntity resolvedTarget, out string skippedReason))
             {
                 SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, 0u, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", skippedReason);
@@ -517,20 +511,11 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        private static bool IsSupportedProcTriggerEvent(uint triggerEvent)
-        {
-            return triggerEvent is ProcTriggerEventCandidate.KillTarget
-                or ProcTriggerEventCandidate.EnterCombat
-                or ProcTriggerEventCandidate.ActionCastAny
-                or ProcTriggerEventCandidate.DealDamage
-                or ProcTriggerEventCandidate.ReceiveDamage
-                or ProcTriggerEventCandidate.HealOther;
-        }
-
         private bool TryResolveProcTarget(uint targetData, IUnitEntity source, IUnitEntity target, out IUnitEntity resolvedTarget, out string skippedReason)
         {
             switch (targetData)
             {
+                case 0u:
                 case 1u:
                 case 2u:
                 case 9u:
@@ -538,14 +523,21 @@ namespace NexusForever.Game.Entity
                     skippedReason = null;
                     return true;
                 case 4u:
+                case 10u:
                 case 12u:
+                case 14u:
+                case 17u:
+                case 18u:
+                case 20u:
+                case 34u:
+                case 36u:
                     resolvedTarget = ResolveProcCounterpartTarget(source, target);
                     skippedReason = resolvedTarget == null ? "missing-counterpart-target" : null;
                     return resolvedTarget != null;
                 default:
-                    resolvedTarget = null;
-                    skippedReason = "evidence-gap-target-data";
-                    return false;
+                    resolvedTarget = ResolveProcCounterpartTarget(source, target) ?? this;
+                    skippedReason = null;
+                    return true;
             }
         }
 
@@ -965,6 +957,10 @@ namespace NexusForever.Game.Entity
                     return maxValue > 0f;
                 case Vital.Focus:
                     return TryGetPositiveProperty(Property.BaseFocusPool, out maxValue);
+                case Vital.KineticCell:
+                case Vital.MedicCore:
+                case Vital.Volatility:
+                    return TryGetPositiveProperty(Property.ResourceMax1, out maxValue);
                 case Vital.Resource0:
                     return TryGetPositiveProperty(Property.ResourceMax0, out maxValue);
                 case Vital.Resource1:
@@ -979,6 +975,20 @@ namespace NexusForever.Game.Entity
                     return TryGetPositiveProperty(Property.ResourceMax5, out maxValue);
                 case Vital.Resource6:
                     return TryGetPositiveProperty(Property.ResourceMax6, out maxValue);
+                case Vital.StalkerA:
+                case Vital.StalkerB:
+                case Vital.StalkerC:
+                    return TryGetPositiveProperty(Property.ResourceMax3, out maxValue);
+                case Vital.SpellSurge:
+                    return TryGetPositiveProperty(Property.ResourceMax4, out maxValue);
+                case Vital.Resource7:
+                    return TryGetPositiveProperty(Property.ResourceMax7, out maxValue);
+                case Vital.Resource8:
+                    return TryGetPositiveProperty(Property.ResourceMax8, out maxValue);
+                case Vital.Resource9:
+                    return TryGetPositiveProperty(Property.ResourceMax9, out maxValue);
+                case Vital.Resource10:
+                    return TryGetPositiveProperty(Property.ResourceMax10, out maxValue);
                 case Vital.InterruptArmor:
                     maxValue = GetPropertyValue(Property.InterruptArmorThreshold);
                     if (!float.IsFinite(maxValue) || maxValue <= 0f)
@@ -1026,6 +1036,11 @@ namespace NexusForever.Game.Entity
                 case Vital.Focus:
                     value = GetStatFloat(Stat.Focus) ?? 0f;
                     return true;
+                case Vital.KineticCell:
+                case Vital.MedicCore:
+                case Vital.Volatility:
+                    value = GetStatFloat(Stat.Resource1) ?? 0f;
+                    return true;
                 case Vital.Resource0:
                     value = GetStatFloat(Stat.Resource0) ?? 0f;
                     return true;
@@ -1047,6 +1062,17 @@ namespace NexusForever.Game.Entity
                 case Vital.Resource6:
                     value = GetStatFloat(Stat.Resource6) ?? 0f;
                     return true;
+                case Vital.StalkerA:
+                case Vital.StalkerB:
+                case Vital.StalkerC:
+                    value = GetStatFloat(Stat.Resource3) ?? 0f;
+                    return true;
+                case Vital.SpellSurge:
+                    value = GetStatFloat(Stat.Resource4) ?? 0f;
+                    return true;
+                case Vital.Resource7:
+                    value = GetStatFloat(Stat.Dash) ?? 0f;
+                    return true;
                 case Vital.InterruptArmor:
                     value = InterruptArmor;
                     return true;
@@ -1067,6 +1093,10 @@ namespace NexusForever.Game.Entity
                     return TrySetUnsignedVital(oldValue, newValue, value => Shield = value, out appliedAmount);
                 case Vital.Focus:
                     return TrySetFloatVital(oldValue, newValue, Stat.Focus, out appliedAmount);
+                case Vital.KineticCell:
+                case Vital.MedicCore:
+                case Vital.Volatility:
+                    return TrySetFloatVital(oldValue, newValue, Stat.Resource1, out appliedAmount);
                 case Vital.Resource0:
                     return TrySetFloatVital(oldValue, newValue, Stat.Resource0, out appliedAmount);
                 case Vital.Resource1:
@@ -1081,6 +1111,14 @@ namespace NexusForever.Game.Entity
                     return TrySetFloatVital(oldValue, newValue, Stat.Resource5, out appliedAmount);
                 case Vital.Resource6:
                     return TrySetFloatVital(oldValue, newValue, Stat.Resource6, out appliedAmount);
+                case Vital.StalkerA:
+                case Vital.StalkerB:
+                case Vital.StalkerC:
+                    return TrySetFloatVital(oldValue, newValue, Stat.Resource3, out appliedAmount);
+                case Vital.SpellSurge:
+                    return TrySetFloatVital(oldValue, newValue, Stat.Resource4, out appliedAmount);
+                case Vital.Resource7:
+                    return TrySetFloatVital(oldValue, newValue, Stat.Dash, out appliedAmount);
                 case Vital.InterruptArmor:
                     return TrySetUnsignedVital(oldValue, newValue, value => InterruptArmor = value, out appliedAmount);
                 default:
@@ -1861,15 +1899,29 @@ namespace NexusForever.Game.Entity
 
             bool wasAlive = IsAlive;
 
-            uint threat = damageDescription.AdjustedDamage + damageDescription.ShieldAbsorbAmount;
-            if (threat == 0u && damageDescription.RawDamage != 0u)
-                threat = 1u;
+            uint baseThreat = damageDescription.AdjustedDamage + damageDescription.ShieldAbsorbAmount;
+            if (baseThreat == 0u && damageDescription.RawDamage != 0u)
+                baseThreat = 1u;
+
+            float threatMultiplier = float.IsFinite(damageDescription.ThreatMultiplier) && damageDescription.ThreatMultiplier >= 0f
+                ? damageDescription.ThreatMultiplier
+                : 1f;
+            double scaledThreat = Math.Ceiling(baseThreat * (double)threatMultiplier);
+            uint threat = scaledThreat >= uint.MaxValue
+                ? uint.MaxValue
+                : (uint)scaledThreat;
 
             if (threat != 0u)
                 ThreatManager.UpdateThreat(attacker, (int)Math.Min(int.MaxValue, threat));
 
             Shield -= damageDescription.ShieldAbsorbAmount;
             ModifyHealth(damageDescription.AdjustedDamage, damageDescription.DamageType, attacker);
+
+            if (damageDescription.AdjustedDamage != 0u || damageDescription.ShieldAbsorbAmount != 0u)
+            {
+                attacker.ProbeProcEvent("deal-damage", ProcTriggerEventCandidate.DealDamage, attacker, this, null, null, damageDescription, "after-apply");
+                ProbeProcEvent("receive-damage", ProcTriggerEventCandidate.ReceiveDamage, attacker, this, null, null, damageDescription, "after-apply");
+            }
 
             damageDescription.KilledTarget = wasAlive && !IsAlive;
             if (damageDescription.KilledTarget)
@@ -1887,6 +1939,7 @@ namespace NexusForever.Game.Entity
             if (type != DamageType.Heal && amount >= Health && TryConsumeDelayDeath(source, amount))
                 return;
 
+            uint previousHealth = Health;
             long newHealth = Health;
             if (type == DamageType.Heal)
                 newHealth += amount;
@@ -1897,6 +1950,9 @@ namespace NexusForever.Game.Entity
             ApplyVitalClamps();
 
             scriptCollection?.Invoke<IUnitScript>(s => s.OnHealthChange(source, amount, type));
+
+            if (type == DamageType.Heal && source != null && source.Guid != Guid && Health > previousHealth)
+                source.ProbeProcEvent("heal-other", ProcTriggerEventCandidate.HealOther, source, this, null, null, null, "after-apply");
 
             if (Health == 0)
                 OnDeath();
@@ -1914,6 +1970,9 @@ namespace NexusForever.Game.Entity
                     case Vital.Health:
                         ApplyHealthClamp(state.Ratio);
                         break;
+                    default:
+                        ApplyGenericVitalClamp(state.Vital, state.Ratio);
+                        break;
                 }
             }
         }
@@ -1926,6 +1985,19 @@ namespace NexusForever.Game.Entity
             uint cap = Math.Max(1u, (uint)MathF.Ceiling(MaxHealth * ratio));
             if (Health > cap)
                 Health = cap;
+        }
+
+        private void ApplyGenericVitalClamp(Vital vital, float ratio)
+        {
+            if (!float.IsFinite(ratio) || ratio <= 0f || ratio >= 1f)
+                return;
+
+            if (!TryGetVitalValue(vital, out float value) || !TryGetVitalMax(vital, out float maxValue))
+                return;
+
+            float cap = MathF.Max(1f, MathF.Ceiling(maxValue * ratio));
+            if (value > cap)
+                TrySetVitalValue(vital, value, cap, null, null, out _);
         }
 
         private bool TryConsumeDelayDeath(IUnitEntity source, uint preventedDamage)

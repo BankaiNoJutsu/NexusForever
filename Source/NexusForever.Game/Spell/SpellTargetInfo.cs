@@ -20,6 +20,7 @@ namespace NexusForever.Game.Spell
                 public uint ShieldAbsorbAmount { get; set; }
                 public uint AdjustedDamage { get; set; }
                 public uint OverkillAmount { get; set; }
+                public float ThreatMultiplier { get; set; } = 1f;
                 public bool KilledTarget { get; set; }
                 public CombatResult CombatResult { get; set; }
             }
@@ -50,6 +51,7 @@ namespace NexusForever.Game.Spell
                     RawDamage       = damage,
                     RawScaledDamage = damage,
                     AdjustedDamage  = damage,
+                    ThreatMultiplier = 1f,
                     CombatResult    = CombatResult.Hit
                 };
             }
