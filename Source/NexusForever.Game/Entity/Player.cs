@@ -33,6 +33,7 @@ using NexusForever.Game.Reputation;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Chat;
+using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Option;
@@ -53,6 +54,7 @@ using NexusForever.Network.World.Entity.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Abilities;
 using NexusForever.Network.World.Message.Model.Chat;
+using NexusForever.Network.World.Message.Model.Crafting;
 using NexusForever.Network.World.Message.Model.Info;
 using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Model.Pvp;
@@ -103,6 +105,7 @@ namespace NexusForever.Game.Entity
         private const ushort TutorialWorldId = 3460;
         private const float DefaultInteractionMaxRange = 5f;
         private const uint ChairBusyEffectId = uint.MaxValue;
+        private const uint MaxTradeskillTalentTiers = 10u;
         private const ushort ExileMovementQuestId = 10513;
         private const ushort DominionMovementQuestId = 10521;
         private const ushort ExileCombatQuestId = 10518;
@@ -269,6 +272,8 @@ namespace NexusForever.Game.Entity
         public bool InstanceScalingEnabled { get; set; }
         public IReadOnlyList<uint> AttributePointAllocations => attributePointAllocations;
         private readonly uint[] attributePointAllocations = new uint[6];
+        private readonly Dictionary<TradeskillType, TradeskillState> tradeskills = [];
+        private readonly List<TradeskillState> deletedTradeskills = [];
 
         public override uint Level
         {
@@ -427,6 +432,12 @@ namespace NexusForever.Game.Entity
             CreateTime        = model.CreateTime;
             TimePlayedTotal   = model.TimePlayedTotal;
             TimePlayedLevel   = model.TimePlayedLevel;
+
+            foreach (CharacterTradeskillModel tradeskillModel in model.Tradeskill)
+            {
+                var tradeskillState = TradeskillState.FromModel(tradeskillModel);
+                tradeskills[(TradeskillType)tradeskillModel.TradeskillId] = tradeskillState;
+            }
 
             foreach (CharacterStatModel statModel in model.Stat)
             {
@@ -754,11 +765,51 @@ namespace NexusForever.Game.Entity
             QuestManager.Save(context);
             AchievementManager.Save(context);
             SupplySatchelManager.Save(context);
+            SaveTradeskills(context);
             XpManager.Save(context);
             ReputationManager.Save(context);
             GuildManager.Save(context);
             EntitlementManager.Save(context);
             AppearanceManager.Save(context);
+        }
+
+        private void SaveTradeskills(CharacterContext context)
+        {
+            foreach (TradeskillState tradeskill in deletedTradeskills)
+            {
+                if (!tradeskill.PendingCreate)
+                    context.Remove(tradeskill.BuildModel());
+            }
+            deletedTradeskills.Clear();
+
+            foreach (TradeskillState tradeskill in tradeskills.Values)
+            {
+                CharacterTradeskillModel model = tradeskill.BuildModel();
+                if (tradeskill.PendingCreate)
+                {
+                    context.Add(model);
+                }
+                else if (tradeskill.Dirty)
+                {
+                    EntityEntry<CharacterTradeskillModel> entity = context.Attach(model);
+                    entity.Property(p => p.TradeskillXp).IsModified = true;
+                    entity.Property(p => p.IsActive).IsModified = true;
+                    entity.Property(p => p.PropertyProficiencyFlags).IsModified = true;
+                    entity.Property(p => p.TalentPoints).IsModified = true;
+                    entity.Property(p => p.TalentTier00).IsModified = true;
+                    entity.Property(p => p.TalentTier01).IsModified = true;
+                    entity.Property(p => p.TalentTier02).IsModified = true;
+                    entity.Property(p => p.TalentTier03).IsModified = true;
+                    entity.Property(p => p.TalentTier04).IsModified = true;
+                    entity.Property(p => p.TalentTier05).IsModified = true;
+                    entity.Property(p => p.TalentTier06).IsModified = true;
+                    entity.Property(p => p.TalentTier07).IsModified = true;
+                    entity.Property(p => p.TalentTier08).IsModified = true;
+                    entity.Property(p => p.TalentTier09).IsModified = true;
+                }
+
+                tradeskill.ClearSaveState();
+            }
         }
 
         protected override IEntityModel BuildEntityModel()
@@ -981,6 +1032,7 @@ namespace NexusForever.Game.Entity
             ZoneMapManager.SendInitialPackets();
             Account.CurrencyManager.SendInitialPackets();
             Account.InventoryManager.SendInitialPackets();
+            SendTradeskillInitialPackets();
             QuestManager.SendInitialPackets();
             AchievementManager.SendInitialPackets(null);
             Account.RewardPropertyManager.SendInitialPackets();
@@ -1660,6 +1712,102 @@ namespace NexusForever.Game.Entity
             {
                 AttributePoints = GetAvailableAttributePoints()
             });
+        }
+
+        public bool HasTradeskill(TradeskillType tradeskillId)
+        {
+            return tradeskills.TryGetValue(tradeskillId, out TradeskillState tradeskill) && tradeskill.IsActive != 0u;
+        }
+
+        public bool LearnTradeskill(TradeskillType toLearnTradeskillId, TradeskillType toDropTradeskillId)
+        {
+            if (toDropTradeskillId != 0 && tradeskills.Remove(toDropTradeskillId, out TradeskillState droppedTradeskill))
+            {
+                droppedTradeskill.MarkDeleted();
+                deletedTradeskills.Add(droppedTradeskill);
+                SendProfessionUpdate(BuildInactiveTradeskillInfo(toDropTradeskillId));
+            }
+
+            if (!tradeskills.TryGetValue(toLearnTradeskillId, out TradeskillState learnedTradeskill))
+            {
+                learnedTradeskill = TradeskillState.Create(CharacterId, toLearnTradeskillId);
+                tradeskills.Add(toLearnTradeskillId, learnedTradeskill);
+            }
+
+            learnedTradeskill.IsActive = 1u;
+            learnedTradeskill.EnsureTalentPointBudget(MaxTradeskillTalentTiers);
+            learnedTradeskill.MarkDirty();
+
+            SendProfessionUpdate(learnedTradeskill.BuildInfo());
+            QuestManager.ObjectiveUpdate(QuestObjectiveType.LearnTradeskill, (uint)toLearnTradeskillId, 1u);
+            return true;
+        }
+
+        public bool PickTradeskillTalent(TradeskillType tradeskillId, uint tier, uint tradeskillBonusId)
+        {
+            if (tier >= MaxTradeskillTalentTiers || !HasTradeskill(tradeskillId))
+                return false;
+
+            TradeskillState tradeskill = tradeskills[tradeskillId];
+            int index = (int)tier;
+            if (tradeskill.TalentTierIds[index] == 0u)
+            {
+                if (tradeskill.TalentPoints == 0u)
+                    return false;
+
+                tradeskill.TalentPoints--;
+            }
+
+            tradeskill.TalentTierIds[index] = tradeskillBonusId;
+            tradeskill.MarkDirty();
+
+            SendProfessionUpdate(tradeskill.BuildInfo());
+            return true;
+        }
+
+        public bool ResetTradeskillTalents(TradeskillType tradeskillId)
+        {
+            if (!HasTradeskill(tradeskillId))
+                return false;
+
+            TradeskillState tradeskill = tradeskills[tradeskillId];
+            Array.Clear(tradeskill.TalentTierIds);
+            tradeskill.TalentPoints = MaxTradeskillTalentTiers;
+            tradeskill.MarkDirty();
+
+            SendProfessionUpdate(tradeskill.BuildInfo());
+            Session.EnqueueMessageEncrypted(new ServerTradeskillRelearnCooldown());
+            return true;
+        }
+
+        public void SendTradeskillInitialPackets()
+        {
+            Session.EnqueueMessageEncrypted(new ServerProfessionsLoad
+            {
+                Tradeskills = tradeskills.Values
+                    .OrderBy(t => t.TradeskillId)
+                    .Select(t => t.BuildInfo())
+                    .ToList()
+            });
+
+            Session.EnqueueMessageEncrypted(new ServerProfessionModifiers());
+        }
+
+        private void SendProfessionUpdate(TradeskillInfo tradeskillInfo)
+        {
+            Session.EnqueueMessageEncrypted(new ServerProfessionUpdate
+            {
+                Tradeskill = tradeskillInfo
+            });
+        }
+
+        private static TradeskillInfo BuildInactiveTradeskillInfo(TradeskillType tradeskillId)
+        {
+            return new TradeskillInfo
+            {
+                TradeskillId = tradeskillId,
+                IsActive     = 0u
+            };
         }
 
         /// <summary>
@@ -2525,6 +2673,123 @@ namespace NexusForever.Game.Entity
             DeathState = null;
             RemoveControlUnit();
             Map?.PublicEventManager.OnResurrection(this);
+        }
+
+        private sealed class TradeskillState
+        {
+            public ulong CharacterId { get; init; }
+            public TradeskillType TradeskillId { get; init; }
+            public uint TradeskillXp { get; set; }
+            public uint IsActive { get; set; }
+            public uint PropertyProficiencyFlags { get; set; }
+            public uint TalentPoints { get; set; }
+            public uint[] TalentTierIds { get; } = new uint[MaxTradeskillTalentTiers];
+            public bool PendingCreate { get; private set; }
+            public bool Dirty { get; private set; }
+
+            public static TradeskillState Create(ulong characterId, TradeskillType tradeskillId)
+            {
+                return new TradeskillState
+                {
+                    CharacterId   = characterId,
+                    TradeskillId  = tradeskillId,
+                    IsActive      = 1u,
+                    TalentPoints  = MaxTradeskillTalentTiers,
+                    PendingCreate = true
+                };
+            }
+
+            public static TradeskillState FromModel(CharacterTradeskillModel model)
+            {
+                var state = new TradeskillState
+                {
+                    CharacterId               = model.Id,
+                    TradeskillId              = (TradeskillType)model.TradeskillId,
+                    TradeskillXp              = model.TradeskillXp,
+                    IsActive                  = model.IsActive,
+                    PropertyProficiencyFlags  = model.PropertyProficiencyFlags,
+                    TalentPoints              = model.TalentPoints
+                };
+
+                state.TalentTierIds[0] = model.TalentTier00;
+                state.TalentTierIds[1] = model.TalentTier01;
+                state.TalentTierIds[2] = model.TalentTier02;
+                state.TalentTierIds[3] = model.TalentTier03;
+                state.TalentTierIds[4] = model.TalentTier04;
+                state.TalentTierIds[5] = model.TalentTier05;
+                state.TalentTierIds[6] = model.TalentTier06;
+                state.TalentTierIds[7] = model.TalentTier07;
+                state.TalentTierIds[8] = model.TalentTier08;
+                state.TalentTierIds[9] = model.TalentTier09;
+
+                return state;
+            }
+
+            public void EnsureTalentPointBudget(uint maxTalentPoints)
+            {
+                uint selectedTalents = (uint)TalentTierIds.Count(t => t != 0u);
+                if (selectedTalents >= maxTalentPoints)
+                {
+                    TalentPoints = 0u;
+                    return;
+                }
+
+                if (TalentPoints == 0u)
+                    TalentPoints = maxTalentPoints - selectedTalents;
+            }
+
+            public void MarkDirty()
+            {
+                if (!PendingCreate)
+                    Dirty = true;
+            }
+
+            public void MarkDeleted()
+            {
+                Dirty = false;
+            }
+
+            public void ClearSaveState()
+            {
+                PendingCreate = false;
+                Dirty         = false;
+            }
+
+            public TradeskillInfo BuildInfo()
+            {
+                return new TradeskillInfo
+                {
+                    TradeskillId              = TradeskillId,
+                    TradeskillXp              = TradeskillXp,
+                    IsActive                  = IsActive,
+                    PropertyProficiencyFlags  = PropertyProficiencyFlags,
+                    TalentPoints              = TalentPoints,
+                    TradeskillTalentTierIds   = TalentTierIds.ToArray()
+                };
+            }
+
+            public CharacterTradeskillModel BuildModel()
+            {
+                return new CharacterTradeskillModel
+                {
+                    Id                       = CharacterId,
+                    TradeskillId             = (uint)TradeskillId,
+                    TradeskillXp             = TradeskillXp,
+                    IsActive                 = IsActive,
+                    PropertyProficiencyFlags = PropertyProficiencyFlags,
+                    TalentPoints             = TalentPoints,
+                    TalentTier00             = TalentTierIds[0],
+                    TalentTier01             = TalentTierIds[1],
+                    TalentTier02             = TalentTierIds[2],
+                    TalentTier03             = TalentTierIds[3],
+                    TalentTier04             = TalentTierIds[4],
+                    TalentTier05             = TalentTierIds[5],
+                    TalentTier06             = TalentTierIds[6],
+                    TalentTier07             = TalentTierIds[7],
+                    TalentTier08             = TalentTierIds[8],
+                    TalentTier09             = TalentTierIds[9]
+                };
+            }
         }
     }
 }

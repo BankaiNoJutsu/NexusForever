@@ -556,6 +556,115 @@ namespace NexusForever.Game.Loot
             GiveImmediateLoot(looter, LootItemType.Cash, (uint)currencyType, count, ownerUnitId);
         }
 
+        public bool TryGenerateLoot(uint lootGroupId, IPlayer looter, uint rollCount, out IReadOnlyList<GeneratedLootItem> items, out string reason)
+        {
+            items  = [];
+            reason = string.Empty;
+
+            if (looter == null)
+            {
+                reason = "no-looter";
+                return false;
+            }
+
+            if (lootGroupId == 0u)
+            {
+                reason = "missing-loot-group";
+                return false;
+            }
+
+            if (rollCount == 0u)
+            {
+                reason = "zero-roll-count";
+                return false;
+            }
+
+            LootGroupModel lootGroupModel = DatabaseManager.Instance.GetDatabase<WorldDatabase>().GetLootGroup(lootGroupId);
+            if (lootGroupModel == null)
+            {
+                reason = $"unknown-loot-group:{lootGroupId}";
+                return false;
+            }
+
+            var lootGroup = new LootGroup(lootGroupModel);
+            var generatedItems = new Dictionary<(LootItemType Type, uint StaticId), uint>();
+            for (uint i = 0u; i < rollCount; i++)
+            {
+                foreach ((LootItem item, uint count) in lootGroup.GenerateLootDrops(looter))
+                {
+                    if (count == 0u)
+                        continue;
+
+                    if (!CanDeliverLootItem(item))
+                    {
+                        reason = $"invalid-loot-item:{item.Type}:{item.StaticId}";
+                        return false;
+                    }
+
+                    var key = (item.Type, item.StaticId);
+                    ulong total = generatedItems.GetValueOrDefault(key) + (ulong)count;
+                    if (total > uint.MaxValue)
+                    {
+                        reason = $"loot-count-overflow:{item.Type}:{item.StaticId}";
+                        return false;
+                    }
+
+                    generatedItems[key] = (uint)total;
+                }
+            }
+
+            if (generatedItems.Count == 0)
+            {
+                reason = $"empty-loot-group:{lootGroupId}";
+                return false;
+            }
+
+            items = generatedItems
+                .Select(i => new GeneratedLootItem(i.Key.Type, i.Key.StaticId, i.Value))
+                .ToList();
+            return true;
+        }
+
+        public bool CanDeliverGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, out string reason)
+        {
+            reason = string.Empty;
+            if (looter == null)
+            {
+                reason = "no-looter";
+                return false;
+            }
+
+            ArgumentNullException.ThrowIfNull(items);
+
+            foreach (GeneratedLootItem item in items)
+            {
+                if (item.Count == 0u)
+                {
+                    reason = $"zero-loot-count:{item.Type}:{item.StaticId}";
+                    return false;
+                }
+
+                if (!CanDeliverLootItem(item))
+                {
+                    reason = $"invalid-loot-item:{item.Type}:{item.StaticId}";
+                    return false;
+                }
+            }
+
+            return CanHoldStaticLoot(looter, items.Where(i => i.Type == LootItemType.StaticItem), out reason);
+        }
+
+        public void GiveGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId, bool sendGrantedNotify = false)
+        {
+            if (looter == null)
+                return;
+
+            ArgumentNullException.ThrowIfNull(items);
+
+            foreach (GeneratedLootItem item in items)
+                GiveImmediateLoot(looter, item.Type, item.StaticId, item.Count, ownerUnitId, sendGrantedNotify);
+        }
+
         private static void GiveImmediateLoot(IPlayer looter, LootItemType type, uint staticId, uint count, uint ownerUnitId, bool sendGrantedNotify = false)
         {
             if (looter == null || count == 0u)
@@ -580,6 +689,77 @@ namespace NexusForever.Game.Loot
             item.SetOwnerUnit(ownerUnitId);
             item.SetWinner(looter);
             item.DeliverItem(looter);
+        }
+
+        private static bool CanDeliverLootItem(GeneratedLootItem item)
+        {
+            return item.Type switch
+            {
+                LootItemType.AccountCurrency => Enum.IsDefined(typeof(AccountCurrencyType), item.StaticId),
+                LootItemType.AccountItem     => GameTableManager.Instance.AccountItem.GetEntry(item.StaticId) != null,
+                LootItemType.Cash            => Enum.IsDefined(typeof(CurrencyType), item.StaticId),
+                LootItemType.StaticItem      => ItemManager.Instance.GetItemInfo(item.StaticId) != null,
+                LootItemType.VirtualItem     => GameTableManager.Instance.VirtualItem.GetEntry(item.StaticId) != null,
+                _                            => false
+            };
+        }
+
+        private static bool CanHoldStaticLoot(IPlayer looter, IEnumerable<GeneratedLootItem> staticItems, out string reason)
+        {
+            reason = string.Empty;
+
+            IBag inventoryBag = looter.Inventory.SingleOrDefault(bag => bag.Location == InventoryLocation.Inventory);
+            if (inventoryBag == null)
+            {
+                reason = "missing-inventory-bag";
+                return false;
+            }
+
+            ulong remainingSlots = inventoryBag.SlotsRemaining;
+            foreach (IGrouping<uint, GeneratedLootItem> itemGroup in staticItems.GroupBy(i => i.StaticId))
+            {
+                IItemInfo itemInfo = ItemManager.Instance.GetItemInfo(itemGroup.Key);
+                if (itemInfo == null)
+                {
+                    reason = $"invalid-static-item:{itemGroup.Key}";
+                    return false;
+                }
+
+                ulong remainingCount = itemGroup.Aggregate(0ul, (current, item) => current + item.Count);
+                if (itemInfo.IsStackable())
+                {
+                    foreach (IItem item in inventoryBag.Where(i => i.Info.Id == itemInfo.Id && i.ExpirationTimeLeft == 0u))
+                    {
+                        if (item.StackCount >= item.Info.Entry.MaxStackCount)
+                            continue;
+
+                        remainingCount -= Math.Min(remainingCount, item.Info.Entry.MaxStackCount - item.StackCount);
+                        if (remainingCount == 0ul)
+                            break;
+                    }
+                }
+
+                if (remainingCount == 0ul)
+                    continue;
+
+                uint perNewStack = itemInfo.IsStackable() ? itemInfo.Entry.MaxStackCount : 1u;
+                if (perNewStack == 0u)
+                {
+                    reason = $"invalid-stack-size:{itemInfo.Id}";
+                    return false;
+                }
+
+                ulong requiredSlots = (remainingCount + perNewStack - 1ul) / perNewStack;
+                if (requiredSlots > remainingSlots)
+                {
+                    reason = "inventory-full";
+                    return false;
+                }
+
+                remainingSlots -= requiredSlots;
+            }
+
+            return true;
         }
     }
 }

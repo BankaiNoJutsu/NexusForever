@@ -11,6 +11,7 @@ using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Reputation;
 using NexusForever.Game.Static.Chat;
+using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Option;
 using NexusForever.Game.Static.Setting;
@@ -192,6 +193,11 @@ namespace NexusForever.Game.Abstract.Entity
         bool TrySpendAttributePoints(IReadOnlyList<uint> allocations, out uint availableAttributePoints);
         void ResetAttributePoints();
         void SendAttributePoints();
+        bool HasTradeskill(TradeskillType tradeskillId);
+        bool LearnTradeskill(TradeskillType toLearnTradeskillId, TradeskillType toDropTradeskillId);
+        bool PickTradeskillTalent(TradeskillType tradeskillId, uint tier, uint tradeskillBonusId);
+        bool ResetTradeskillTalents(TradeskillType tradeskillId);
+        void SendTradeskillInitialPackets();
 
         /// <summary>
         /// Returns whether this <see cref="IPlayer"/> is allowed to summon or be added to a vehicle.
@@ -209,12 +215,12 @@ namespace NexusForever.Game.Abstract.Entity
         void SyncStarterTutorialEntityVisibility();
 
         /// <summary>
-        /// Recover starter tutorial quest progression when the retail client flow is still partially unmapped.
+        /// Recover starter tutorial quest progression when the retail client flow needs compatibility recovery.
         /// </summary>
         void TryRecoverStarterTutorialQuestProgression();
 
         /// <summary>
-        /// Recover starter tutorial quest progression when the retail client flow is still partially unmapped.
+        /// Recover starter tutorial quest progression when the retail client flow needs compatibility recovery.
         /// </summary>
         void TryRecoverStarterTutorialQuestProgression(bool allowCombatTransitionRecovery);
 

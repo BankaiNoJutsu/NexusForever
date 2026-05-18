@@ -5,6 +5,7 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Crafting;
+using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 {
@@ -26,7 +27,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             TradeskillRequestHelper.ValidateTradeskill(gameTableManager, learn.ToLearnTradeskillId);
             TradeskillRequestHelper.ValidateTradeskill(gameTableManager, learn.ToDropTradeskillId, true);
 
-            log.LogDebug("Rejected tradeskill learn request from player {PlayerGuid}: learn {LearnTradeskillId}, drop {DropTradeskillId}, reason profession-persistence-evidence-gap.",
+            if (session.Player == null || !session.Player.LearnTradeskill(learn.ToLearnTradeskillId, learn.ToDropTradeskillId))
+            {
+                log.LogDebug("Rejected tradeskill learn request from player {PlayerGuid}: learn {LearnTradeskillId}, drop {DropTradeskillId}.",
+                    session.Player?.Guid, learn.ToLearnTradeskillId, learn.ToDropTradeskillId);
+                session.Player?.SendGenericError(GenericError.Params);
+                return;
+            }
+
+            log.LogDebug("Completed tradeskill learn request from player {PlayerGuid}: learn {LearnTradeskillId}, drop {DropTradeskillId}.",
                 session.Player?.Guid, learn.ToLearnTradeskillId, learn.ToDropTradeskillId);
         }
     }
@@ -52,7 +61,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
             TradeskillRequestHelper.ValidateBonusForTradeskill(gameTableManager, pickTalent.TradeskillId, pickTalent.TradeskillBonusId);
 
-            log.LogDebug("Rejected tradeskill pick-talent request from player {PlayerGuid}: tradeskill {TradeskillId}, tier {Tier}, bonus {TradeskillBonusId}, reason profession-talent-persistence-evidence-gap.",
+            if (session.Player == null || !session.Player.PickTradeskillTalent(pickTalent.TradeskillId, pickTalent.Tier, pickTalent.TradeskillBonusId))
+            {
+                log.LogDebug("Rejected tradeskill pick-talent request from player {PlayerGuid}: tradeskill {TradeskillId}, tier {Tier}, bonus {TradeskillBonusId}.",
+                    session.Player?.Guid, pickTalent.TradeskillId, pickTalent.Tier, pickTalent.TradeskillBonusId);
+                session.Player?.SendGenericError(GenericError.Params);
+                return;
+            }
+
+            log.LogDebug("Completed tradeskill pick-talent request from player {PlayerGuid}: tradeskill {TradeskillId}, tier {Tier}, bonus {TradeskillBonusId}.",
                 session.Player?.Guid, pickTalent.TradeskillId, pickTalent.Tier, pickTalent.TradeskillBonusId);
         }
     }
@@ -74,9 +91,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         {
             TradeskillRequestHelper.ValidateTradeskill(gameTableManager, resetTalents.TradeskillId);
 
-            log.LogDebug("Rejected tradeskill reset-talents request from player {PlayerGuid}: tradeskill {TradeskillId}, reason profession-talent-persistence-evidence-gap.",
-                session.Player?.Guid, resetTalents.TradeskillId);
-            session.EnqueueMessageEncrypted(new ServerTradeskillRelearnCooldown());
+            if (session.Player == null || !session.Player.ResetTradeskillTalents(resetTalents.TradeskillId))
+            {
+                log.LogDebug("Rejected tradeskill reset-talents request from player {PlayerGuid}: tradeskill {TradeskillId}.",
+                    session.Player?.Guid, resetTalents.TradeskillId);
+                session.Player?.SendGenericError(GenericError.Params);
+                session.EnqueueMessageEncrypted(new ServerTradeskillRelearnCooldown());
+                return;
+            }
+
+            log.LogDebug("Completed tradeskill reset-talents request from player {PlayerGuid}: tradeskill {TradeskillId}.",
+                session.Player.Guid, resetTalents.TradeskillId);
         }
     }
 

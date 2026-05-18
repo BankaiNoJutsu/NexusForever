@@ -184,6 +184,17 @@ namespace NexusForever.Database.World
                 .ToImmutableList();
         }
 
+        public LootGroupModel GetLootGroup(ulong id)
+        {
+            using var context = new WorldContext(config);
+            return context.LootGroup.Where(i => i.Id == id)
+                .Include(e => e.ChildGroup)
+                    .ThenInclude(e => e.Item)
+                .Include(e => e.Item)
+                .AsNoTracking()
+                .SingleOrDefault();
+        }
+
         public ImmutableList<CreatureLootModel> GetCreatureLoot()
         {
             using var context = new WorldContext(config);

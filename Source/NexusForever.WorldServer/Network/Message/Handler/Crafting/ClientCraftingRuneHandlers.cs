@@ -1,11 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Crafting;
+using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Crafting;
+using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 {
@@ -27,8 +31,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             CraftingRuneRequestHelper.ValidateItem2(gameTableManager, additive.AdditiveItem2Id);
             CraftingRuneRequestHelper.ValidateItem2(gameTableManager, additive.CatalystItem2Id);
 
-            log.LogDebug("Rejected crafting additive request from player {PlayerGuid}: station {StationUnitId}, additive {AdditiveItem2Id}, catalyst {CatalystItem2Id}, reason active-craft-modifier-state-evidence-gap.",
-                session.Player?.Guid, additive.CraftingStationUnitId, additive.AdditiveItem2Id, additive.CatalystItem2Id);
+            bool applied = CraftingRuneRequestHelper.ApplyCraftingAdditive(session, additive.AdditiveItem2Id, additive.CatalystItem2Id);
+            log.LogDebug("Processed crafting additive request from player {PlayerGuid}: station {StationUnitId}, additive {AdditiveItem2Id}, catalyst {CatalystItem2Id}, applied {Applied}.",
+                session.Player?.Guid, additive.CraftingStationUnitId, additive.AdditiveItem2Id, additive.CatalystItem2Id, applied);
         }
     }
 
@@ -44,8 +49,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingAbandon abandon)
         {
-            log.LogDebug("Rejected crafting abandon request from player {PlayerGuid}: reason active-craft-state-evidence-gap.",
-                session.Player?.Guid);
+            CraftingRuneRequestHelper.ClearCraftingAdditives(session);
+            log.LogDebug("Processed crafting abandon request from player {PlayerGuid}.", session.Player?.Guid);
         }
     }
 
@@ -61,12 +66,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingRuneSlotAdd runeSlotAdd)
         {
-            CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotAdd.ItemGuid);
+            IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotAdd.ItemGuid);
             CraftingRuneRequestHelper.ValidateRuneType(runeSlotAdd.Type);
 
-            log.LogDebug("Rejected rune slot add request from player {PlayerGuid}: item {ItemGuid}, isNotFusion {IsNotFusion}, type {RuneType}, reason item-rune-slot-state-evidence-gap.",
-                session.Player?.Guid, runeSlotAdd.ItemGuid, runeSlotAdd.IsNotFusion, runeSlotAdd.Type);
-            CraftingRuneRequestHelper.SendSigilResult(session, TradeskillResult.UnknownError);
+            TradeskillResult result = CraftingRuneRequestHelper.AddRuneSlot(item, runeSlotAdd.Type);
+            log.LogDebug("Processed rune slot add request from player {PlayerGuid}: item {ItemGuid}, isNotFusion {IsNotFusion}, type {RuneType}, result {Result}.",
+                session.Player?.Guid, runeSlotAdd.ItemGuid, runeSlotAdd.IsNotFusion, runeSlotAdd.Type, result);
+            CraftingRuneRequestHelper.SendSigilResult(session, result);
         }
     }
 
@@ -82,11 +88,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingRuneSlotClear runeSlotClear)
         {
-            CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotClear.ItemGuid);
+            IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotClear.ItemGuid);
 
-            log.LogDebug("Rejected rune slot clear request from player {PlayerGuid}: item {ItemGuid}, slot {RuneSlotIndex}, recover {RecoverRune}, groupCurrency {UseGroupCurrency}, reason item-rune-slot-state-evidence-gap.",
-                session.Player?.Guid, runeSlotClear.ItemGuid, runeSlotClear.RuneSlotIndex, runeSlotClear.RecoverRune, runeSlotClear.UseGroupCurrency);
-            CraftingRuneRequestHelper.SendSigilResult(session, TradeskillResult.UnknownError);
+            TradeskillResult result = CraftingRuneRequestHelper.ClearRuneSlot(session, item, runeSlotClear.RuneSlotIndex, runeSlotClear.RecoverRune);
+            log.LogDebug("Processed rune slot clear request from player {PlayerGuid}: item {ItemGuid}, slot {RuneSlotIndex}, recover {RecoverRune}, groupCurrency {UseGroupCurrency}, result {Result}.",
+                session.Player?.Guid, runeSlotClear.ItemGuid, runeSlotClear.RuneSlotIndex, runeSlotClear.RecoverRune, runeSlotClear.UseGroupCurrency, result);
+            CraftingRuneRequestHelper.SendSigilResult(session, result);
         }
     }
 
@@ -105,14 +112,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingRuneInstall runeInstall)
         {
-            CraftingRuneRequestHelper.GetInventoryItem(session, runeInstall.ItemGuid);
+            IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeInstall.ItemGuid);
 
             foreach (uint item2Id in runeInstall.RuneSlotItem2Id)
                 CraftingRuneRequestHelper.ValidateItem2(gameTableManager, item2Id);
 
-            log.LogDebug("Rejected rune install request from player {PlayerGuid}: item {ItemGuid}, runeCount {RuneCount}, reason item-rune-slot-state-evidence-gap.",
-                session.Player?.Guid, runeInstall.ItemGuid, runeInstall.RuneSlotItem2Id.Length);
-            CraftingRuneRequestHelper.SendSigilResult(session, TradeskillResult.UnknownError);
+            TradeskillResult result = CraftingRuneRequestHelper.InstallRunes(session, item, runeInstall.RuneSlotItem2Id);
+            log.LogDebug("Processed rune install request from player {PlayerGuid}: item {ItemGuid}, runeCount {RuneCount}, result {Result}.",
+                session.Player?.Guid, runeInstall.ItemGuid, runeInstall.RuneSlotItem2Id.Length, result);
+            CraftingRuneRequestHelper.SendSigilResult(session, result);
         }
     }
 
@@ -128,17 +136,23 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public void HandleMessage(IWorldSession session, ClientCraftingRuneSlotReroll runeSlotReroll)
         {
-            CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotReroll.ItemGuid);
+            IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotReroll.ItemGuid);
             CraftingRuneRequestHelper.ValidateRuneType(runeSlotReroll.Type);
 
-            log.LogDebug("Rejected rune slot reroll request from player {PlayerGuid}: item {ItemGuid}, slot {SlotIndex}, type {RuneType}, reason item-rune-slot-state-evidence-gap.",
-                session.Player?.Guid, runeSlotReroll.ItemGuid, runeSlotReroll.SlotIndex, runeSlotReroll.Type);
-            CraftingRuneRequestHelper.SendSigilResult(session, TradeskillResult.UnknownError);
+            TradeskillResult result = CraftingRuneRequestHelper.RerollRuneSlot(item, runeSlotReroll.SlotIndex, runeSlotReroll.Type);
+            log.LogDebug("Processed rune slot reroll request from player {PlayerGuid}: item {ItemGuid}, slot {SlotIndex}, type {RuneType}, result {Result}.",
+                session.Player?.Guid, runeSlotReroll.ItemGuid, runeSlotReroll.SlotIndex, runeSlotReroll.Type, result);
+            CraftingRuneRequestHelper.SendSigilResult(session, result);
         }
     }
 
     internal static class CraftingRuneRequestHelper
     {
+        private const int MaxRuneSlots = 8;
+        private static readonly object syncRoot = new();
+        private static readonly Dictionary<ulong, List<RuneSlotState>> runeSlotsByItemGuid = [];
+        private static readonly Dictionary<ulong, CraftingModifierState> activeCraftingModifiersByCharacterId = [];
+
         public static void ValidateItem2(IGameTableManager gameTableManager, uint item2Id)
         {
             if (item2Id == 0u)
@@ -169,6 +183,122 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             {
                 TradeskillSigilResult = result
             });
+        }
+
+        public static bool ApplyCraftingAdditive(IWorldSession session, uint additiveItem2Id, uint catalystItem2Id)
+        {
+            if (session.Player == null)
+                return false;
+
+            lock (syncRoot)
+            {
+                activeCraftingModifiersByCharacterId[session.Player.CharacterId] = new CraftingModifierState(additiveItem2Id, catalystItem2Id);
+            }
+
+            return true;
+        }
+
+        public static void ClearCraftingAdditives(IWorldSession session)
+        {
+            if (session.Player == null)
+                return;
+
+            lock (syncRoot)
+                activeCraftingModifiersByCharacterId.Remove(session.Player.CharacterId);
+        }
+
+        public static TradeskillResult AddRuneSlot(IItem item, RuneType type)
+        {
+            lock (syncRoot)
+            {
+                List<RuneSlotState> slots = GetRuneSlots(item.Guid);
+                if (slots.Count >= MaxRuneSlots)
+                    return TradeskillResult.RuneSlotLimit;
+
+                slots.Add(new RuneSlotState(type));
+                return TradeskillResult.Success;
+            }
+        }
+
+        public static TradeskillResult ClearRuneSlot(IWorldSession session, IItem item, uint slotIndex, bool recoverRune)
+        {
+            lock (syncRoot)
+            {
+                List<RuneSlotState> slots = GetRuneSlots(item.Guid);
+                if (slotIndex >= slots.Count)
+                    return TradeskillResult.InvalidSlot;
+
+                RuneSlotState slot = slots[(int)slotIndex];
+                if (recoverRune && slot.RuneItem2Id != 0u)
+                    session.Player.Inventory.ItemCreate(InventoryLocation.Inventory, slot.RuneItem2Id, 1u, ItemUpdateReason.TradeskillGlyph);
+
+                slot.RuneItem2Id = 0u;
+                return TradeskillResult.Success;
+            }
+        }
+
+        public static TradeskillResult InstallRunes(IWorldSession session, IItem item, IReadOnlyList<uint> runeItem2Ids)
+        {
+            if (session.Player == null)
+                return TradeskillResult.UnknownError;
+
+            lock (syncRoot)
+            {
+                List<RuneSlotState> slots = GetRuneSlots(item.Guid);
+                if (runeItem2Ids.Count > slots.Count)
+                    return TradeskillResult.InvalidSlot;
+
+                foreach (uint runeItem2Id in runeItem2Ids.Where(id => id != 0u))
+                {
+                    if (!session.Player.Inventory.HasItemCount(runeItem2Id, 1u))
+                        return TradeskillResult.MissingRune;
+                }
+
+                foreach (uint runeItem2Id in runeItem2Ids.Where(id => id != 0u))
+                    session.Player.Inventory.ItemDelete(runeItem2Id, 1u, ItemUpdateReason.TradeskillGlyph);
+
+                for (int i = 0; i < runeItem2Ids.Count; i++)
+                    slots[i].RuneItem2Id = runeItem2Ids[i];
+
+                return TradeskillResult.Success;
+            }
+        }
+
+        public static TradeskillResult RerollRuneSlot(IItem item, uint slotIndex, RuneType type)
+        {
+            lock (syncRoot)
+            {
+                List<RuneSlotState> slots = GetRuneSlots(item.Guid);
+                if (slotIndex >= slots.Count)
+                    return TradeskillResult.InvalidSlot;
+
+                slots[(int)slotIndex].Type = type;
+                return TradeskillResult.Success;
+            }
+        }
+
+        private static List<RuneSlotState> GetRuneSlots(ulong itemGuid)
+        {
+            if (!runeSlotsByItemGuid.TryGetValue(itemGuid, out List<RuneSlotState> slots))
+            {
+                slots = [];
+                runeSlotsByItemGuid.Add(itemGuid, slots);
+            }
+
+            return slots;
+        }
+
+        private sealed record CraftingModifierState(uint AdditiveItem2Id, uint CatalystItem2Id);
+
+        private sealed class RuneSlotState
+        {
+            public RuneType Type { get; set; }
+            public uint RuneItem2Id { get; set; }
+
+            public RuneSlotState(RuneType type)
+            {
+                Type = type;
+            }
         }
     }
 }

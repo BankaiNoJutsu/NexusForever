@@ -4,7 +4,9 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Loot;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
@@ -19,22 +21,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         private readonly ILogger<ClientCraftingSimpleCraftHandler> log;
         private readonly IGameTableManager gameTableManager;
         private readonly IItemManager itemManager;
+        private readonly IGlobalLootManager lootManager;
 
         public ClientCraftingSimpleCraftHandler(
             ILogger<ClientCraftingSimpleCraftHandler> log,
             IGameTableManager gameTableManager,
-            IItemManager itemManager)
+            IItemManager itemManager,
+            IGlobalLootManager lootManager)
         {
             this.log              = log;
             this.gameTableManager = gameTableManager;
             this.itemManager      = itemManager;
+            this.lootManager      = lootManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientCraftingSimpleCraft craft)
         {
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
 
-            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, schematic, 1u, out string reason))
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, 1u, out string reason))
             {
                 log.LogDebug("Completed simple craft request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}.",
                     session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id);
@@ -51,13 +56,19 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
     {
         private readonly ILogger<ClientCraftingComplexCraftHandler> log;
         private readonly IGameTableManager gameTableManager;
+        private readonly IItemManager itemManager;
+        private readonly IGlobalLootManager lootManager;
 
         public ClientCraftingComplexCraftHandler(
             ILogger<ClientCraftingComplexCraftHandler> log,
-            IGameTableManager gameTableManager)
+            IGameTableManager gameTableManager,
+            IItemManager itemManager,
+            IGlobalLootManager lootManager)
         {
             this.log              = log;
             this.gameTableManager = gameTableManager;
+            this.itemManager      = itemManager;
+            this.lootManager      = lootManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientCraftingComplexCraft craft)
@@ -65,9 +76,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
             CraftingCraftRequestHelper.ValidateItem(gameTableManager, craft.PowerCoreItem2Id);
 
-            log.LogDebug("Rejected complex craft request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, powerCore {PowerCoreItem2Id}, charges {ChargeCount}, reason complex-craft-state-evidence-gap.",
-                session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.PowerCoreItem2Id, craft.ChargeCounts?.Length ?? 0);
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, 1u, out string reason, craft.PowerCoreItem2Id))
+            {
+                log.LogDebug("Completed complex craft request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, powerCore {PowerCoreItem2Id}, charges {ChargeCount}.",
+                    session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.PowerCoreItem2Id, craft.ChargeCounts?.Length ?? 0);
+                return;
+            }
 
+            log.LogDebug("Rejected complex craft request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, powerCore {PowerCoreItem2Id}, charges {ChargeCount}, reason {Reason}.",
+                session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.PowerCoreItem2Id, craft.ChargeCounts?.Length ?? 0, reason);
             CraftingCraftRequestHelper.SendCraftFailure(session, schematic);
         }
     }
@@ -77,15 +94,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         private readonly ILogger<ClientCraftingCraftItemHandler> log;
         private readonly IGameTableManager gameTableManager;
         private readonly IItemManager itemManager;
+        private readonly IGlobalLootManager lootManager;
 
         public ClientCraftingCraftItemHandler(
             ILogger<ClientCraftingCraftItemHandler> log,
             IGameTableManager gameTableManager,
-            IItemManager itemManager)
+            IItemManager itemManager,
+            IGlobalLootManager lootManager)
         {
             this.log              = log;
             this.gameTableManager = gameTableManager;
             this.itemManager      = itemManager;
+            this.lootManager      = lootManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientCraftingCraftItem craft)
@@ -93,18 +113,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
             CraftingCraftRequestHelper.ValidateItem(gameTableManager, craft.CatalystItem2Id);
 
-            string reason = string.Empty;
-            if (craft.CatalystItem2Id == 0u &&
-                CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, schematic, craft.SchematicCount, out reason))
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, craft.SchematicCount, out string reason, craft.CatalystItem2Id))
             {
                 log.LogDebug("Completed craft-item request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, count {SchematicCount}.",
                     session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.SchematicCount);
                 return;
             }
 
-            string failureReason = craft.CatalystItem2Id != 0u ? "catalyst-craft-state-evidence-gap" : reason;
             log.LogDebug("Rejected craft-item request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, count {SchematicCount}, catalyst {CatalystItem2Id}, reason {Reason}.",
-                session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.SchematicCount, craft.CatalystItem2Id, failureReason);
+                session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.SchematicCount, craft.CatalystItem2Id, reason);
             CraftingCraftRequestHelper.SendCraftFailure(session, schematic);
         }
     }
@@ -114,22 +131,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         private readonly ILogger<ClientCraftingCraftItemAutoCraftHandler> log;
         private readonly IGameTableManager gameTableManager;
         private readonly IItemManager itemManager;
+        private readonly IGlobalLootManager lootManager;
 
         public ClientCraftingCraftItemAutoCraftHandler(
             ILogger<ClientCraftingCraftItemAutoCraftHandler> log,
             IGameTableManager gameTableManager,
-            IItemManager itemManager)
+            IItemManager itemManager,
+            IGlobalLootManager lootManager)
         {
             this.log              = log;
             this.gameTableManager = gameTableManager;
             this.itemManager      = itemManager;
+            this.lootManager      = lootManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientCraftingCraftItemAutoCraft craft)
         {
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
 
-            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, schematic, craft.SchematicCount, out string reason))
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, craft.SchematicCount, out string reason))
             {
                 log.LogDebug("Completed auto-craft request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, count {SchematicCount}.",
                     session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.SchematicCount);
@@ -170,9 +190,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             IWorldSession session,
             IGameTableManager gameTableManager,
             IItemManager itemManager,
+            IGlobalLootManager lootManager,
             TradeskillSchematic2Entry schematic,
             uint craftCount,
-            out string reason)
+            out string reason,
+            uint extraConsumeItem2Id = 0u)
         {
             reason = string.Empty;
 
@@ -188,33 +210,76 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                 return false;
             }
 
-            if (schematic.Item2IdOutput == 0u || schematic.OutputCount == 0u)
+            bool hasDirectOutput = schematic.Item2IdOutput != 0u && schematic.OutputCount != 0u;
+            IItemInfo outputInfo = null;
+            uint totalOutputCount = 0u;
+            IReadOnlyList<GeneratedLootItem> generatedLoot = [];
+            uint item2IdCrafted = 0u;
+
+            if (!hasDirectOutput && schematic.LootId == 0u)
             {
-                reason = schematic.LootId != 0u ? "loot-output-evidence-gap" : "missing-output";
+                reason = "missing-output";
                 return false;
             }
 
-            if (!TryMultiply(schematic.OutputCount, craftCount, out uint totalOutputCount))
+            if (hasDirectOutput && !TryMultiply(schematic.OutputCount, craftCount, out totalOutputCount))
             {
                 reason = "output-count-overflow";
                 return false;
             }
 
-            IItemInfo outputInfo = itemManager.GetItemInfo(schematic.Item2IdOutput);
-            if (outputInfo == null)
+            if (hasDirectOutput)
             {
-                reason = "invalid-output-item";
-                return false;
-            }
+                outputInfo = itemManager.GetItemInfo(schematic.Item2IdOutput);
+                if (outputInfo == null)
+                {
+                    reason = "invalid-output-item";
+                    return false;
+                }
 
-            if (!CanCreateInventoryItem(session.Player.Inventory, outputInfo, totalOutputCount))
+                if (!CanCreateInventoryItem(session.Player.Inventory, outputInfo, totalOutputCount))
+                {
+                    reason = "inventory-full";
+                    session.Player.SendGenericError(GenericError.ItemInventoryFull);
+                    return false;
+                }
+
+                item2IdCrafted = outputInfo.Id;
+            }
+            else
             {
-                reason = "inventory-full";
-                session.Player.SendGenericError(GenericError.ItemInventoryFull);
-                return false;
+                if (!lootManager.TryGenerateLoot(schematic.LootId, session.Player, craftCount, out generatedLoot, out reason))
+                {
+                    reason = $"loot-output:{reason}";
+                    return false;
+                }
+
+                if (!lootManager.CanDeliverGeneratedLoot(session.Player, generatedLoot, out reason))
+                {
+                    if (reason == "inventory-full")
+                        session.Player.SendGenericError(GenericError.ItemInventoryFull);
+
+                    reason = $"loot-delivery:{reason}";
+                    return false;
+                }
+
+                item2IdCrafted = generatedLoot
+                    .FirstOrDefault(i => i.Type == LootItemType.StaticItem)
+                    .StaticId;
             }
 
             var debits = new List<MaterialDebit>();
+            if (extraConsumeItem2Id != 0u)
+            {
+                if (!TryBuildMaterialDebit(session.Player, gameTableManager, extraConsumeItem2Id, craftCount, out MaterialDebit extraDebit))
+                {
+                    reason = $"missing-extra-item:{extraConsumeItem2Id}:{craftCount}";
+                    return false;
+                }
+
+                debits.Add(extraDebit);
+            }
+
             foreach (MaterialRequirement requirement in GetMaterialRequirements(schematic))
             {
                 if (!TryMultiply(requirement.Count, craftCount, out uint totalMaterialCount))
@@ -235,8 +300,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             foreach (MaterialDebit debit in debits)
                 ApplyMaterialDebit(session.Player, debit);
 
-            session.Player.Inventory.ItemCreate(InventoryLocation.Inventory, outputInfo, totalOutputCount, ItemUpdateReason.Crafting);
-            SendCraftSuccess(session, schematic, outputInfo.Id);
+            if (hasDirectOutput)
+                session.Player.Inventory.ItemCreate(InventoryLocation.Inventory, outputInfo, totalOutputCount, ItemUpdateReason.Crafting);
+            else
+                lootManager.GiveGeneratedLoot(session.Player, generatedLoot, session.Player.Guid, sendGrantedNotify: true);
+
+            SendCraftSuccess(session, schematic, item2IdCrafted);
             return true;
         }
 

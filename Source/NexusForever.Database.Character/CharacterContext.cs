@@ -31,6 +31,7 @@ namespace NexusForever.Database.Character
         public DbSet<CharacterSpellModel> CharacterSpell { get; set; }
         public DbSet<CharacterStatModel> CharacterStat { get; set; }
         public DbSet<CharacterTitleModel> CharacterTitle { get; set; }
+        public DbSet<CharacterTradeskillModel> CharacterTradeskill { get; set; }
         public DbSet<CharacterTradeskillMaterialModel> CharacterTradeskillMaterial { get; set; }
         public DbSet<CharacterZonemapHexgroupModel> CharacterZonemapHexgroup { get; set; }
         public DbSet<ChatChannelModel> ChatChannel { get; set; }
@@ -1541,6 +1542,99 @@ namespace NexusForever.Database.Character
                     .WithMany(p => p.TradeskillMaterials)
                     .HasForeignKey(d => d.Id)
                     .HasConstraintName("FK__character_tradeskill_material_id__character_id");
+            });
+
+            modelBuilder.Entity<CharacterTradeskillModel>(entity =>
+            {
+                entity.ToTable("character_tradeskill");
+
+                entity.HasKey(e => new { e.Id, e.TradeskillId })
+                    .HasName("PRIMARY");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TradeskillId)
+                    .HasColumnName("tradeskillId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TradeskillXp)
+                    .HasColumnName("tradeskillXp")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.IsActive)
+                    .HasColumnName("isActive")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.PropertyProficiencyFlags)
+                    .HasColumnName("propertyProficiencyFlags")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TalentPoints)
+                    .HasColumnName("talentPoints")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TalentTier00)
+                    .HasColumnName("talentTier00")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TalentTier01)
+                    .HasColumnName("talentTier01")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TalentTier02)
+                    .HasColumnName("talentTier02")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TalentTier03)
+                    .HasColumnName("talentTier03")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TalentTier04)
+                    .HasColumnName("talentTier04")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TalentTier05)
+                    .HasColumnName("talentTier05")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TalentTier06)
+                    .HasColumnName("talentTier06")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TalentTier07)
+                    .HasColumnName("talentTier07")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TalentTier08)
+                    .HasColumnName("talentTier08")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TalentTier09)
+                    .HasColumnName("talentTier09")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.HasOne(d => d.Character)
+                    .WithMany(p => p.Tradeskill)
+                    .HasForeignKey(d => d.Id)
+                    .HasConstraintName("FK__character_tradeskill_id__character_id");
             });
 
             modelBuilder.Entity<CharacterZonemapHexgroupModel>(entity =>

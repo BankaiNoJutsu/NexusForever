@@ -8,6 +8,8 @@ using NexusForever.Shared;
 
 namespace NexusForever.Game.Abstract.Loot
 {
+    public readonly record struct GeneratedLootItem(LootItemType Type, uint StaticId, uint Count);
+
     public interface IGlobalLootManager : IUpdate
     {
         void Initialise();
@@ -28,5 +30,9 @@ namespace NexusForever.Game.Abstract.Loot
         void GiveLoot(IPlayer looter, VirtualItemEntry entry, uint count, uint ownerUnitId);
         void GiveLoot(IPlayer looter, AccountCurrencyType accountCurrencyType, uint count, uint ownerUnitId);
         void GiveLoot(IPlayer looter, CurrencyType currencyType, uint count, uint ownerUnitId);
+
+        bool TryGenerateLoot(uint lootGroupId, IPlayer looter, uint rollCount, out IReadOnlyList<GeneratedLootItem> items, out string reason);
+        bool CanDeliverGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, out string reason);
+        void GiveGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId, bool sendGrantedNotify = false);
     }
 }
