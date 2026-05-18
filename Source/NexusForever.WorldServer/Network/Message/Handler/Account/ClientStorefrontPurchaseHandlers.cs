@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using NexusForever.Game;
+using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Character;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Static.Account;
 using NexusForever.Network.Message;
@@ -34,7 +38,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             }
 
             StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
-                purchase.OfferId, purchase.CurrencyId, StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session), "character");
+                purchase.OfferId, purchase.CurrencyId,
+                accountItemIds =>
+                {
+                    NetworkIdentity targetPlayerIdentity = StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session);
+                    foreach (uint accountItemId in accountItemIds)
+                        session.Account.InventoryManager.AddItem(accountItemId, targetPlayerIdentity);
+                },
+                "character");
         }
     }
 
@@ -42,29 +53,88 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
     {
         private readonly ILogger<ClientStorefrontPurchaseAccountHandler> log;
         private readonly IGlobalStorefrontManager globalStorefrontManager;
+        private readonly ICharacterManager characterManager;
+        private readonly IPlayerManager playerManager;
 
         public ClientStorefrontPurchaseAccountHandler(
             ILogger<ClientStorefrontPurchaseAccountHandler> log,
-            IGlobalStorefrontManager globalStorefrontManager)
+            IGlobalStorefrontManager globalStorefrontManager,
+            ICharacterManager characterManager,
+            IPlayerManager playerManager)
         {
             this.log                     = log;
             this.globalStorefrontManager = globalStorefrontManager;
+            this.characterManager        = characterManager;
+            this.playerManager           = playerManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientStorefrontPurchaseAccount purchase)
         {
-            if (!StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.Target) ||
-                !StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.AccountTarget) ||
-                !string.IsNullOrWhiteSpace(purchase.RecipientName))
+            if (!StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.Target))
             {
-                log.LogDebug("Rejecting storefront account purchase/gift from player {PlayerGuid}: target {Target}, account target {AccountTarget}, recipient length {RecipientLength}, reason gifting-target-evidence-gap.",
+                log.LogDebug("Rejecting storefront account purchase from player {PlayerGuid}: non-current target {Target}, account target {AccountTarget}, recipient length {RecipientLength}.",
                     session.Player?.Guid, purchase.Target, purchase.AccountTarget, purchase.RecipientName?.Length ?? 0);
                 StorefrontPurchaseHelper.SendFailure(session, GenericError.Params);
                 return;
             }
 
+            bool hasRecipientName = !string.IsNullOrWhiteSpace(purchase.RecipientName);
+            bool hasAccountTarget = purchase.AccountTarget.Id != 0ul && !StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.AccountTarget);
+            if (hasRecipientName || hasAccountTarget)
+            {
+                if (!TryResolveGiftRecipient(session, purchase, out IPlayer recipient, out NetworkIdentity recipientIdentity))
+                    return;
+
+                StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
+                    purchase.OfferId, purchase.CurrencyId,
+                    accountItemIds => recipient.Account.InventoryManager.AddPendingItemGroup(accountItemIds, StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session), recipientIdentity),
+                    "account gift");
+                return;
+            }
+
             StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
-                purchase.OfferId, purchase.CurrencyId, new NetworkIdentity(), "account");
+                purchase.OfferId, purchase.CurrencyId,
+                accountItemIds =>
+                {
+                    foreach (uint accountItemId in accountItemIds)
+                        session.Account.InventoryManager.AddItem(accountItemId);
+                },
+                "account");
+        }
+
+        private bool TryResolveGiftRecipient(IWorldSession session, ClientStorefrontPurchaseAccount purchase, out IPlayer recipient, out NetworkIdentity recipientIdentity)
+        {
+            recipient         = null;
+            recipientIdentity = null;
+
+            ICharacter character = !string.IsNullOrWhiteSpace(purchase.RecipientName)
+                ? characterManager.GetCharacter(purchase.RecipientName)
+                : characterManager.GetCharacter(purchase.AccountTarget.Id);
+
+            if (character == null)
+            {
+                log.LogDebug("Rejecting storefront account gift from player {PlayerGuid}: unknown recipient name {RecipientName}, account target {AccountTarget}.",
+                    session.Player?.Guid, purchase.RecipientName, purchase.AccountTarget);
+                StorefrontPurchaseHelper.SendFailure(session, GenericError.Params);
+                return false;
+            }
+
+            recipient = playerManager.GetPlayerByAccountId(character.AccountId);
+            if (recipient == null)
+            {
+                log.LogDebug("Rejecting storefront account gift from player {PlayerGuid}: recipient character {CharacterId} account {AccountId} is offline.",
+                    session.Player?.Guid, character.CharacterId, character.AccountId);
+                StorefrontPurchaseHelper.SendFailure(session, GenericError.Params);
+                return false;
+            }
+
+            recipientIdentity = new NetworkIdentity
+            {
+                RealmId = RealmContext.Instance.RealmId,
+                Id      = character.CharacterId
+            };
+
+            return true;
         }
     }
 
@@ -76,7 +146,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             ILogger log,
             uint offerId,
             ushort currencyId,
-            NetworkIdentity targetPlayerIdentity,
+            Action<IReadOnlyList<uint>> deliverItems,
             string purchaseScope)
         {
             if (session.Player == null)
@@ -140,8 +210,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             if (chargeAmount > 0ul)
                 session.Account.CurrencyManager.CurrencySubtractAmount(accountCurrencyType, chargeAmount);
 
-            foreach (uint accountItemId in accountItemIds)
-                session.Account.InventoryManager.AddItem(accountItemId, targetPlayerIdentity);
+            deliverItems(accountItemIds);
 
             log.LogDebug("Completed storefront {PurchaseScope} purchase for player {PlayerGuid}: offer {OfferId}, currency {CurrencyId}, price {Price}, account items {AccountItemCount}.",
                 purchaseScope, session.Player.Guid, offerId, currencyId, chargeAmount, accountItemIds.Count);
@@ -203,13 +272,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
             foreach (IOfferItemData itemData in offerItem.Items)
             {
-                if (itemData.Type != 0u)
-                {
-                    error  = GenericError.Params;
-                    reason = $"offer item data type {itemData.Type} evidence gap";
-                    return false;
-                }
-
                 if (itemData.Amount == 0u)
                 {
                     error  = GenericError.ItemBadStaticData;

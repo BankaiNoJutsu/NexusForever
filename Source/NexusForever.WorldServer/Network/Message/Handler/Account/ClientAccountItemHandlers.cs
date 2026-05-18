@@ -37,10 +37,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemClaimPendingItemGroup claimPendingItemGroup)
         {
-            log.LogDebug("Rejecting pending account item group claim from player {PlayerGuid}: group {Group}, reason pending-group-store-unavailable.",
-                session.Player?.Guid, claimPendingItemGroup.Group);
-            session.Account.InventoryManager.SendPendingItems();
-            ClientAccountItemOperationResultHelper.Send(session, AccountOperation.ClaimPending, AccountOperationResult.InvalidPendingItem);
+            AccountOperationResult result = session.Account.InventoryManager.ClaimPendingItemGroup(session.Player, claimPendingItemGroup.Group);
+            if (result != AccountOperationResult.Ok)
+            {
+                log.LogDebug("Rejecting pending account item group claim from player {PlayerGuid}: group {Group}, result {Result}.",
+                    session.Player?.Guid, claimPendingItemGroup.Group, result);
+            }
         }
     }
 
@@ -55,10 +57,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemReturnPendingItemGroup returnPendingItemGroup)
         {
-            log.LogDebug("Rejecting pending account item group return from player {PlayerGuid}: group {Group}, reason pending-group-store-unavailable.",
-                session.Player?.Guid, returnPendingItemGroup.Group);
-            session.Account.InventoryManager.SendPendingItems();
-            ClientAccountItemOperationResultHelper.Send(session, AccountOperation.ReturnPending, AccountOperationResult.InvalidPendingItem);
+            AccountOperationResult result = session.Account.InventoryManager.ReturnPendingItemGroup(returnPendingItemGroup.Group);
+            if (result != AccountOperationResult.Ok)
+            {
+                log.LogDebug("Rejecting pending account item group return from player {PlayerGuid}: group {Group}, result {Result}.",
+                    session.Player?.Guid, returnPendingItemGroup.Group, result);
+            }
         }
     }
 
@@ -73,9 +77,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemGiftPendingItemGroupToCharacter giftPendingItemGroup)
         {
-            log.LogDebug("Rejecting pending account item group character gift from player {PlayerGuid}: group {Group}, target {TargetCharacter}, reason pending-group-store-unavailable.",
-                session.Player?.Guid, giftPendingItemGroup.Group, giftPendingItemGroup.TargetCharacter);
-            ClientAccountItemGiftPendingItemGroupHandler.RejectGift(session);
+            AccountOperationResult result = session.Account.InventoryManager.GiftPendingItemGroupToCharacter(giftPendingItemGroup.Group, giftPendingItemGroup.TargetCharacter);
+            if (result != AccountOperationResult.Ok)
+            {
+                log.LogDebug("Rejecting pending account item group character gift from player {PlayerGuid}: group {Group}, target {TargetCharacter}, result {Result}.",
+                    session.Player?.Guid, giftPendingItemGroup.Group, giftPendingItemGroup.TargetCharacter, result);
+            }
         }
     }
 
@@ -90,18 +97,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemGiftPendingItemGroupToAccount giftPendingItemGroup)
         {
-            log.LogDebug("Rejecting pending account item group account gift from player {PlayerGuid}: group {Group}, target account {TargetAccountId}, unknown0 {Unknown0}, sender {SenderCharacter}, reason pending-group-store-unavailable.",
-                session.Player?.Guid, giftPendingItemGroup.Group, giftPendingItemGroup.TargetAccountId, giftPendingItemGroup.Unknown0, giftPendingItemGroup.SenderCharacter);
-            ClientAccountItemGiftPendingItemGroupHandler.RejectGift(session);
-        }
-    }
-
-    internal static class ClientAccountItemGiftPendingItemGroupHandler
-    {
-        public static void RejectGift(IWorldSession session)
-        {
-            session.Account.InventoryManager.SendPendingItems();
-            ClientAccountItemOperationResultHelper.Send(session, AccountOperation.GiftItem, AccountOperationResult.NoGifting);
+            AccountOperationResult result = session.Account.InventoryManager.GiftPendingItemGroupToAccount(giftPendingItemGroup.Group, giftPendingItemGroup.TargetAccountId, giftPendingItemGroup.SenderCharacter);
+            if (result != AccountOperationResult.Ok)
+            {
+                log.LogDebug("Rejecting pending account item group account gift from player {PlayerGuid}: group {Group}, target account {TargetAccountId}, unknown0 {Unknown0}, sender {SenderCharacter}, result {Result}.",
+                    session.Player?.Guid, giftPendingItemGroup.Group, giftPendingItemGroup.TargetAccountId, giftPendingItemGroup.Unknown0, giftPendingItemGroup.SenderCharacter, result);
+            }
         }
     }
 

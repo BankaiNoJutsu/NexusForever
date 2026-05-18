@@ -1,9 +1,13 @@
 using System.Collections;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Inventory;
+using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Character;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
@@ -18,11 +22,13 @@ namespace NexusForever.Game.Account.Inventory
     public class AccountInventoryManager : IAccountInventoryManager
     {
         private readonly Dictionary<ulong, IAccountInventoryItem> items = new();
+        private readonly Dictionary<string, List<PendingAccountItem>> pendingGroups = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<uint, AccountItemCooldown> cooldowns = new();
         private readonly List<IAccountInventoryItem> deletedItems = [];
 
         private readonly IAccount account;
         private ulong nextInventoryId = 1ul;
+        private ulong nextPendingItemId = 1ul;
 
         private static readonly IReadOnlyDictionary<uint, uint> CooldownGroupDurations = new Dictionary<uint, uint>
         {
@@ -82,6 +88,45 @@ namespace NexusForever.Game.Account.Inventory
             return item;
         }
 
+        public string AddPendingItemGroup(IEnumerable<uint> accountItemIds, NetworkIdentity senderIdentity = null, NetworkIdentity targetPlayerIdentity = null, string group = null, bool notify = true)
+        {
+            ArgumentNullException.ThrowIfNull(accountItemIds);
+
+            List<uint> accountItemIdList = accountItemIds.ToList();
+            if (accountItemIdList.Count == 0)
+                throw new ArgumentException("Pending account item group must contain at least one item.", nameof(accountItemIds));
+
+            foreach (uint accountItemId in accountItemIdList)
+            {
+                if (!CanAddItem(accountItemId))
+                    throw new ArgumentException($"Account item {accountItemId} does not exist!", nameof(accountItemIds));
+            }
+
+            string groupName = string.IsNullOrWhiteSpace(group)
+                ? $"pending:{account.Id}:{Guid.NewGuid():N}"
+                : group;
+
+            if (pendingGroups.ContainsKey(groupName))
+                throw new ArgumentException($"Pending account item group {groupName} already exists.", nameof(group));
+
+            pendingGroups.Add(groupName, accountItemIdList
+                .Select(accountItemId => new PendingAccountItem
+                {
+                    Id             = GetNextPendingItemId(),
+                    AccountItemId  = accountItemId,
+                    Group          = groupName,
+                    SenderIdentity = CloneIdentity(senderIdentity),
+                    TargetIdentity = CloneIdentity(targetPlayerIdentity),
+                    ClaimState     = AccountItemClaimState.CanClaim
+                })
+                .ToList());
+
+            if (notify)
+                SendPendingItems();
+
+            return groupName;
+        }
+
         public bool CanAddItem(uint accountItemId)
         {
             return GameTableManager.Instance.AccountItem.GetEntry(accountItemId) != null;
@@ -139,6 +184,84 @@ namespace NexusForever.Game.Account.Inventory
             return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.Ok);
         }
 
+        public AccountOperationResult ClaimPendingItemGroup(IPlayer player, string group)
+        {
+            if (player == null)
+                return SendAccountOperationResult(AccountOperation.ClaimPending, AccountOperationResult.NoCharacter);
+
+            if (!TryGetPendingGroup(group, out List<PendingAccountItem> pendingItems))
+                return SendAccountOperationResult(AccountOperation.ClaimPending, AccountOperationResult.InvalidPendingItem);
+
+            if (pendingItems.Any(i => i.ClaimState != AccountItemClaimState.CanClaim))
+                return SendAccountOperationResult(AccountOperation.ClaimPending, AccountOperationResult.AlreadyClaimed);
+
+            if (pendingItems.Any(i => !IsTargetPlayer(player, i.TargetIdentity)))
+                return SendAccountOperationResult(AccountOperation.ClaimPending, AccountOperationResult.NoCharacter);
+
+            foreach (PendingAccountItem pendingItem in pendingItems)
+            {
+                if (!CanAddItem(pendingItem.AccountItemId))
+                    return SendAccountOperationResult(AccountOperation.ClaimPending, AccountOperationResult.InvalidAccountItem);
+            }
+
+            foreach (PendingAccountItem pendingItem in pendingItems)
+                AddItem(pendingItem.AccountItemId, pendingItem.TargetIdentity, pendingItem.ClaimState, pendingItem.Unknown1);
+
+            pendingGroups.Remove(group);
+            SendPendingItems();
+
+            return SendAccountOperationResult(AccountOperation.ClaimPending, AccountOperationResult.Ok);
+        }
+
+        public AccountOperationResult ReturnPendingItemGroup(string group)
+        {
+            if (!TryGetPendingGroup(group, out _))
+                return SendAccountOperationResult(AccountOperation.ReturnPending, AccountOperationResult.InvalidPendingItem);
+
+            pendingGroups.Remove(group);
+            SendPendingItems();
+
+            return SendAccountOperationResult(AccountOperation.ReturnPending, AccountOperationResult.Ok);
+        }
+
+        public AccountOperationResult GiftPendingItemGroupToCharacter(string group, NetworkIdentity targetCharacter)
+        {
+            if (!TryGetPendingGroup(group, out List<PendingAccountItem> pendingItems))
+                return SendAccountOperationResult(AccountOperation.GiftItem, AccountOperationResult.InvalidPendingItem);
+
+            if (targetCharacter == null || targetCharacter.Id == 0ul)
+                return SendAccountOperationResult(AccountOperation.GiftItem, AccountOperationResult.NoCharacter);
+
+            if (targetCharacter.RealmId != 0u && targetCharacter.RealmId != RealmContext.Instance.RealmId)
+                return SendAccountOperationResult(AccountOperation.GiftItem, AccountOperationResult.NoCharacter);
+
+            ICharacter character = CharacterManager.Instance.GetCharacter(targetCharacter.Id);
+            if (character == null)
+                return SendAccountOperationResult(AccountOperation.GiftItem, AccountOperationResult.NoCharacter);
+
+            var targetIdentity = new NetworkIdentity
+            {
+                RealmId = RealmContext.Instance.RealmId,
+                Id      = character.CharacterId
+            };
+
+            return GiftPendingItemGroup(group, pendingItems, character.AccountId, targetIdentity);
+        }
+
+        public AccountOperationResult GiftPendingItemGroupToAccount(string group, ulong targetAccountId, NetworkIdentity senderCharacter)
+        {
+            if (!TryGetPendingGroup(group, out List<PendingAccountItem> pendingItems))
+                return SendAccountOperationResult(AccountOperation.GiftItem, AccountOperationResult.InvalidPendingItem);
+
+            if (targetAccountId == 0ul || targetAccountId > uint.MaxValue)
+                return SendAccountOperationResult(AccountOperation.GiftItem, AccountOperationResult.InvalidFriend);
+
+            foreach (PendingAccountItem pendingItem in pendingItems)
+                pendingItem.SenderIdentity = CloneIdentity(senderCharacter);
+
+            return GiftPendingItemGroup(group, pendingItems, (uint)targetAccountId, new NetworkIdentity());
+        }
+
         public void SendInitialPackets()
         {
             SendInventory();
@@ -159,7 +282,15 @@ namespace NexusForever.Game.Account.Inventory
 
         public void SendPendingItems()
         {
-            account.Session.EnqueueMessageEncrypted(new ServerAccountItemsPending());
+            account.Session.EnqueueMessageEncrypted(new ServerAccountItemsPending
+            {
+                PendingGroups = pendingGroups.Values
+                    .SelectMany(g => g)
+                    .OrderBy(i => i.Group, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(i => i.Id)
+                    .Select(i => i.Build())
+                    .ToList()
+            });
         }
 
         public void SendCooldowns()
@@ -191,6 +322,14 @@ namespace NexusForever.Game.Account.Inventory
             return nextInventoryId++;
         }
 
+        private ulong GetNextPendingItemId()
+        {
+            if (nextPendingItemId == 0ul)
+                throw new InvalidOperationException("No pending account item ids are available.");
+
+            return nextPendingItemId++;
+        }
+
         private void SendItemAdd(IAccountInventoryItem item)
         {
             account.Session.EnqueueMessageEncrypted(new ServerAccountItemAdd
@@ -216,6 +355,38 @@ namespace NexusForever.Game.Account.Inventory
             });
 
             return result;
+        }
+
+        private bool TryGetPendingGroup(string group, out List<PendingAccountItem> pendingItems)
+        {
+            pendingItems = null;
+            return !string.IsNullOrWhiteSpace(group) && pendingGroups.TryGetValue(group, out pendingItems) && pendingItems.Count != 0;
+        }
+
+        private AccountOperationResult GiftPendingItemGroup(string group, List<PendingAccountItem> pendingItems, uint targetAccountId, NetworkIdentity targetIdentity)
+        {
+            if (targetAccountId == account.Id)
+            {
+                foreach (PendingAccountItem pendingItem in pendingItems)
+                    pendingItem.TargetIdentity = CloneIdentity(targetIdentity);
+
+                SendPendingItems();
+                return SendAccountOperationResult(AccountOperation.GiftItem, AccountOperationResult.Ok);
+            }
+
+            IPlayer targetPlayer = PlayerManager.Instance.GetPlayerByAccountId(targetAccountId);
+            if (targetPlayer == null)
+                return SendAccountOperationResult(AccountOperation.GiftItem, AccountOperationResult.NoConnection);
+
+            targetPlayer.Account.InventoryManager.AddPendingItemGroup(
+                pendingItems.Select(i => i.AccountItemId),
+                pendingItems.FirstOrDefault()?.SenderIdentity,
+                targetIdentity);
+
+            pendingGroups.Remove(group);
+            SendPendingItems();
+
+            return SendAccountOperationResult(AccountOperation.GiftItem, AccountOperationResult.Ok);
         }
 
         private bool IsOnCooldown(uint cooldownGroupId)
@@ -272,6 +443,18 @@ namespace NexusForever.Game.Account.Inventory
 
             return targetPlayerIdentity.Id == player.Identity.Id &&
                 (targetPlayerIdentity.RealmId == 0u || targetPlayerIdentity.RealmId == player.Identity.RealmId);
+        }
+
+        private static NetworkIdentity CloneIdentity(NetworkIdentity identity)
+        {
+            if (identity == null)
+                return new NetworkIdentity();
+
+            return new NetworkIdentity
+            {
+                RealmId = identity.RealmId,
+                Id      = identity.Id
+            };
         }
 
         private static bool TryBuildGrantPlan(IPlayer player, AccountItemEntry entry, out List<IAccountItemGrant> grants, out GenericError error)
@@ -469,6 +652,30 @@ namespace NexusForever.Game.Account.Inventory
             public void Apply(IAccount account, IPlayer player)
             {
                 account.GenericUnlockManager.Unlock(GenericUnlockEntryId);
+            }
+        }
+
+        private sealed class PendingAccountItem
+        {
+            public ulong Id { get; init; }
+            public uint AccountItemId { get; init; }
+            public string Group { get; init; }
+            public NetworkIdentity SenderIdentity { get; set; }
+            public NetworkIdentity TargetIdentity { get; set; }
+            public AccountItemClaimState ClaimState { get; init; }
+            public bool Unknown1 { get; init; }
+
+            public ServerAccountItemsPending.PendingAccountItemGroup Build()
+            {
+                return new ServerAccountItemsPending.PendingAccountItemGroup
+                {
+                    Id             = Id,
+                    AccountItemId  = AccountItemId,
+                    Group          = Group,
+                    SenderIdentity = CloneIdentity(SenderIdentity),
+                    ClaimState     = ClaimState,
+                    TargetIdentity = CloneIdentity(TargetIdentity)
+                };
             }
         }
     }

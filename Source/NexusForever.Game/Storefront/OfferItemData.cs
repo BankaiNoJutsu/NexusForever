@@ -35,7 +35,10 @@ namespace NexusForever.Game.Storefront
             {
                 Type          = Type,
                 AccountItemId = ItemId,
-                Amount        = Amount
+                Amount        = Amount,
+                Type1Unknown0 = ItemId,
+                Type1Unknown1 = Amount,
+                Type2Unknown0 = ItemId
             };
         }
     }
