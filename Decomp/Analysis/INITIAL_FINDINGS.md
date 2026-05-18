@@ -5639,6 +5639,255 @@ Current broad-marker implementation audit:
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\unmapped-payload-fixes-final-2\`
   succeeds with `0 Warning(s)` and `0 Error(s)`.
 
+Offline WildStar wiki path ability follow-up:
+
+- Settler campfire evidence:
+  the archived `Settler's Campfire` wiki page says the activated campfire grants
+  Back in Action for 60 minutes with max-health bonuses of 3%, 4%, and 5% by
+  tier. Client `Spell4Effects` rows for spells `32759`, `32771`, and `32772`
+  contain the direct `SettlerCampfire` effect (`0x0069`) with
+  `DataBits00=0/1/2` and a 3600000 ms duration. The matching Back in Action
+  activation spells `32766`, `32777`, and `32778` apply
+  `UnitPropertyModifier` to `Property.BaseHealth` with multipliers `1.03`,
+  `1.04`, and `1.05` for the same duration.
+- Runtime scope:
+  NexusForever now maps the direct `SettlerCampfire` effect tier index to the
+  corresponding Back in Action spell and casts it through the existing spell
+  pipeline. This is intentionally limited to the table-backed buff bridge; it
+  does not claim to implement spawned campfire object behavior, aura seating
+  rules, or rested-XP/decor mechanics.
+- Remaining blocker:
+  one-hop proxied campfire aura spells `32760`, `32775`, and `32776` expose
+  `RestedXpDecorBonus` (`0x006D`) in addition to handled heal/fluff/despawn
+  effects. The live client table also uses that effect for housing decor
+  comfort/lighting/aroma/ambience/pride spells with `DataBits00` interpreted as
+  floats such as `0.2`, `0.4`, and `0.6`; campfire tiers use `0.25` and `0.5`
+  plus `parameterValue00=0.04`. NexusForever currently persists `RestBonusXp`
+  and accrues housing rest XP on login, but there is no mapped evidence yet for
+  how this spell effect modifies the persisted pool over time, how
+  `parameterValue00` participates, or how decor bonuses stack. The effect
+  therefore remains diagnostic/audit-only until its payload and runtime
+  persistence behavior are mapped from stronger client/server evidence.
+- Rested XP direct modifier follow-up:
+  `ModifyRestedXP` (`0x0086`) is separate from the decor/aura bonus. The live
+  client table has only three rows for it: `71362` (`Primal Elixir- Bonus Rest
+  XP - Mystery Box Item`) with `DataBits00=1.5f`, `81790` debug with
+  `DataBits00=-1.4999f`, and `82271` (`MTX Store - Restorative Flask - Fills
+  Rest XP Bar`) with `DataBits00=5.0f`. That supports interpreting
+  `DataBits00` as a signed current-level XP span multiplier, clamped by the
+  same rested XP cap the server already uses. NexusForever now implements this
+  direct spell effect by modifying persisted `RestBonusXp`; it intentionally
+  does not treat `RestedXpDecorBonus` as equivalent.
+- Client rested-XP UI accessors:
+  `TraceStringReferences` found no direct code xrefs for the
+  `RestedXpDecorBonus` or `ModifyRestedXP` enum-name strings. The actual Lua
+  accessors are registered in a callback table: `GameLib.GetRestXp` starts at
+  `14050cbc0` and returns the current player state field at offset `0x1688`,
+  while `GameLib.GetRestXpKillCreaturePool` at `14050cbf0` reads the same field
+  and applies a coefficient from a client lookup (`FUN_140200220(0x155)`,
+  value at `+0x18`) for display. These are mapped as read/display accessors,
+  not evidence for decor-bonus persistence or stacking.
+- Rested XP state mutation decompile pass:
+  a focused `0x1688` sweep plus caller/string tracing maps the client-side
+  rested-XP pool as current-player state rather than a spell-effect runtime
+  accumulator. `ServerPlayerCreate_ApplyPlayerXpState` at `1403b5f80` copies
+  total XP from payload offset `0x90` into player offset `0x1678`, copies the
+  rested XP pool from payload offset `0x94` into offset `0x1688`, then calls
+  `PlayerXpState_DispatchUiXpChanged` and later dispatches `CharacterCreated`
+  from string `140afb680`. The same UI helper at `1403c6d80` reads `0x1688`
+  and dispatches `UI_XPChanged` from string `140afd380` with the rested pool as
+  the last visible argument. `ServerExperienceGained_ApplyPlayerXpState` at
+  `1403c8760` adds the packet's total-XP field to `0x1678`, subtracts the
+  packet's rested-XP amount from `0x1688`, calls the same UI helper, and
+  dispatches `ExperienceGained` from string `140afd4b8` including the rested
+  branch with reason `0x10`. This correlates directly with NexusForever
+  `ServerPlayerCreate.RestBonusXp` and `ServerExperienceGained.RestXpAmount`.
+  Additional current-player/state-machine handlers at `140037f30` and
+  `1400461e0` also copy state payload values into `DAT_140c635f0 + 0x1688`,
+  but the pass found no client function that adds decor/aura value into the
+  rested pool over time.
+- RestedXpDecorBonus blocker state:
+  client `Spell4Effects` rows for effect `109` are table evidence only. The
+  campfire/decor rows use `DataBits00` float magnitudes from `0.1` through
+  `2.0`; campfire and sleeping-bag-style rows also carry
+  `parameterValue00=0.04` and a not-in-combat prerequisite (`390`). The native
+  client has no code reference to the `RestedXpDecorBonus` enum-name string at
+  `140abc1b0`; `TraceStringReferences` reports zero refs, and the rested-XP
+  field sweep found only state copy, UI read, Lua read, constructor/reset, and
+  experience-consumption paths. This leaves the effect mapped-only/blocked:
+  server implementation still needs stronger evidence for accrual timing,
+  whether `DataBits00` is additive or multiplicative, how
+  `parameterValue00=0.04` participates, stack/cap rules across decor sources,
+  and persistence timing.
+
+Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
+
+- Quest reward enum evidence:
+  focused `InspectCodeAddress.java` at WildStar64.exe address `1406625d0`
+  maps the Lua `Game.Quest` reward constants. The durable label
+  `Lua_RegisterQuestConstants` records `Quest2RewardType_Item=1`,
+  `Reputation=2`, `Money=3`, `TradeSkillXp=4`, `GrantTradeskill=5`,
+  `AccountItem=6`, `AccountCurrency=7`, `GenericUnlockAccount=8`,
+  `GenericUnlockCharacter=9`, and `RotationEssence=10`. Client
+  `Quest2Reward.tbl` rows with type `4` use `objectId` values from
+  `TradeskillTier.ID`, which map to `TradeskillTier.TradeSkillId` and tier XP
+  fields; type `5` rows use profession ids; type `7` rows use account currency
+  ids. NexusForever now grants the mapped tradeskill XP, profession, and
+  account-currency quest rewards through `QuestManager`.
+- Quest prerequisite scope:
+  NexusForever now validates `Quest2.PrerequisiteItem` through the runtime
+  inventory count API and blocks `QuestIdExclusionPreq0..2` when the excluded
+  quest is already known in the character's active, inactive, or completed
+  quest state. `QuestPrerequisite_CanAccept` (`140552550`) delegates faction
+  reputation gates to `QuestPrerequisite_CheckFactionLevel` (`140552eb0`),
+  which walks the three `Quest2.FactionIdPreq*` fields at offsets `0xb0`,
+  `0xb4`, and `0xb8`; for each nonzero faction it compares the current faction
+  level against `FactionLevelPreq*` at `+0x0c`, using `FactionLevelCompPreq*`
+  at `+0x18` as the comparator. A clear comparator bit requires current level
+  `>=` required level, and a set comparator bit requires current level `<=`
+  required level. NexusForever now applies that logic through
+  `QuestManager.MeetsFactionLevelRequirement`.
+- Quest receiver-routing scope:
+  `Dialog_BuildCreatureQuestResponses` (`140557470`) builds creature dialog
+  quest responses by walking the selected creature's `Creature2.QuestIdGiven`
+  and `Creature2.QuestIdReceive` arrays and local quest runtime state;
+  `Dialog_BuildCommunicatorQuestResponses` (`140557e50`) does the same for
+  communicator-delivered quests. Both paths feed `Dialog_SendClientQuestComplete`
+  (`140557000`), whose `ClientQuestComplete` packet remains only
+  `{ quest id, reward selection, communicator bit }`. Client data also
+  correlates the `Quest2` alternate receiver prerequisite/direction rows with
+  ordinary `Creature2.QuestIdReceive` receivers: the pass found 207 Quest2 rows
+  with alternate receiver prerequisite/direction data and all 207 have at least
+  one Creature2 receiver. This maps `Quest2.WorldLocation2IdReceiver`,
+  `WorldLocation2IdAltReceiver*`, `PrerequisiteIdAltReceiver*`,
+  `QuestDirectionIdAltReceiver*`, and `QuestDirectionIdCompletion` as
+  client-side dialog/map guidance metadata rather than server completion
+  authority. NexusForever should continue validating non-communicator
+  completion through visible `Creature2.QuestIdReceive` receivers unless a
+  future packet/state producer exposes an authoritative receiver/location
+  selection.
+- Quest virtual item follow-up:
+  `Lua_GameItemData_GetVirtualItems` (`1404165e0`) registers the
+  `Game.ItemData.GetVirtualItems` Lua method. Its quest branch calls
+  `QuestRuntime_BuildVirtualItemList` (`1405fcd70`), which walks current quest
+  runtime state, reads the four `Quest2.VirtualItemIdPushed*` ids at offsets
+  `0x160..0x16c`, counts at `0x170..0x17c`, and objective flags at
+  `0x180..0x18c`, and returns virtual item triples with a quest owner id. It
+  also derives virtual items from `QuestObjective` type `32`
+  (`VirtualCollect`) when objective state and flags allow it. This maps pushed
+  quest virtual items as a client-derived UI/inventory projection from local
+  `Quest2` data plus server-sent quest/objective state; no separate server
+  item grant or persistent inventory mutation is supported by this evidence.
+  The existing server `VirtualCollect` objective updates from virtual loot stay
+  the runtime mutation path.
+- Schematic/tradeskill runtime scope:
+  learned and discovered `TradeskillSchematic2` state is now stored per
+  character, emitted in the profession load packet, and updated by the
+  `GiveSchematic` spell effect path. Fixed-recipe crafting now grants tier
+  craft XP from `TradeskillTier`, and quest reward type `4` uses the same
+  tier-to-profession mapping. The additive packet path is implemented only up
+  to the mapped safe boundary: `ClientCraftingAdditive_WritePayload`
+  (`1400a5f20`) serializes the crafting station plus additive and catalyst
+  `Item2` ids, and `Crafting_SendClientCraftingAdditive` (`14059b7c0`) performs
+  client-side max-additive/error gating before sending opcode `0x084A`.
+  NexusForever validates those `Item2` rows through `TradeskillAdditiveId` and
+  `TradeskillCatalystId`, bounds transient modifiers by `MaxAdditives`, consumes
+  the selected additive/catalyst items with `TradeskillAdditiveCost` after a
+  successful fixed-recipe craft, and clears the transient modifier list. Hot/cold
+  discovery math, fail/crit outputs, additive/catalyst output math, harvesting
+  behavior, and durable rune state remain blocked pending narrower
+  packet/table/runtime evidence.
+- Achievement trigger scope:
+  client achievement rows and DataMapping names now correlate several
+  additional type ids with server-owned events: crafted item (`35`), tradeskill
+  tier (`37`), crafted-item checklist (`40`), reputation level (`42`),
+  character level (`54`), title earned (`56`), path level (`64`), earned
+  currency (`75`), duel participation (`97`), duel wins (`98`),
+  guild/circle joins (`106`), group joins (`107`), friend additions (`108`),
+  housing plug placement (`111`), housing decor purchases (`113`), and account
+  currency collection (`137`). The earned-currency rows are data-backed by
+  `Achievement.tbl.sql` type `75`
+  object ids matching `CurrencyType.Credits = 1` and `CurrencyType.Renown = 2`,
+  and NexusForever updates them from actual credited `CurrencyManager`
+  additions after caps are applied. The group and friend rows are data-backed by
+  ids `4885`/`4886` and update from the internal group-join and friendship-add
+  or friend-and-rival update handlers. Housing plug/decor rows are data-backed
+  by ids `4996`-`4998`/`4999`-`5002`; NexusForever updates them from successful
+  non-rotation plug placement and costed decor purchase paths only. Account
+  currency collection rows are data-backed by account-currency object ids in
+  `Achievement.tbl.sql` (for example OmniBits `6` and essence ids `15`-`18`);
+  NexusForever updates them from quest and loot account-currency grants where
+  the active player context is available, while account-only/store grants remain
+  outside this mapped trigger path. The duel rows are data-backed by
+  `Achievement.tbl.sql` ids `4372`-`4374`
+  (participate) and `4251`/`4370`/`4371` (wins), plus matching Jabbithole
+  names/descriptions; NexusForever updates them from the server-owned active
+  duel finish path for defeated/client-forfeit results. The guild/circle join
+  rows are data-backed by `Achievement.tbl.sql` ids `4883`/`4884`, whose
+  `ObjectId` values match `GuildType.Guild = 1` and `GuildType.Circle = 2`;
+  NexusForever updates them from `GuildManager.JoinGuild`. These are
+  implemented through existing runtime events rather than native enum-name
+  decompile evidence. The scalar achievement completion path now clamps
+  progress at the required value and treats client rows with `Value=0` as a
+  one-event requirement, which matches the many table rows that describe a
+  single named action without a positive counter. Remaining achievement type
+  ids stay data-only until their event families are mapped to concrete server
+  events.
+- Galactic Archive runtime scope:
+  per-character article unlock/view masks are now persisted and sent through
+  the existing Galactic Archive packet models. The client mapping at
+  `GalacticArchive_ApplyUnlockMaskAndDispatchEvents` (`140499a20`) supports the
+  high article-unlocked bit plus lower entry bits used by the server state.
+  `GalacticArchiveEntry_CalculateProgress` (`140499b40`) maps
+  `ArchiveEntryUnlockRule` type `0` to achievement progress through
+  `Achievement_ProgressCategoryFromType` (`1406428d0`) and
+  `Achievement_GetProgressValue` (`140642b30`), type `1` to PathMission
+  progress through `PathMissionRuntime_FindById` (`1403d7bc0`),
+  `PathMissionRuntime_GetCurrentProgress` (`14056d0d0`), and
+  `PathMissionRuntime_GetRequiredProgress` (`14056d330`), and type `2` to
+  completed quest state through `QuestRuntime_GetQuestState` (`1405fbc40`).
+  NexusForever now routes archive rule unlocks through achievement completion
+  for type `0` and quest completion for type `2`; type `1` remains blocked
+  because this server does not persist or evaluate PathMission completion state.
+  The PathMission client-report side is mapped but not a completion authority:
+  `PathExplorer_TrySendProgressReportOrTypeObjectProgress` (`14056fbe0`) and
+  `PathExplorer_TrySendProgressReport` (`1405700f0`) scan local PathMission
+  runtime objectives and send `ClientPathExplorerProgressReport` (`0x00F3`)
+  when explorer-node proximity/objective checks pass. The `0x00F9`
+  `ClientPathExplorerPowerMapProgress` branch at `14056fbe0` sends
+  `PathMission.ObjectId` from the PathMission row offset `+0x14` for the
+  type-`0x12` progress path, not `PathMission.Id`; NexusForever now names that
+  parsed field `PathExplorerPowerMapId`. These reports still do not provide a
+  trusted persisted PathMission-completion source for ArchiveEntryUnlockRule
+  type `1`; that remains blocked until path mission progress/completion is
+  server-owned and persisted.
+- Rotation essence blocker:
+  Quest reward type `10` is confirmed as `RotationEssence`. The active client
+  reward builder at `Lua_GameQuest_BuildRewardTables` (`140665c80`) queues type
+  `10` rows separately, looks up the quest's
+  `WorldZone.RewardRotationContentId` through `WorldZone_GetEntry`
+  (`14024db80`), and resolves the active expansion by
+  `(RewardRotationContentId, Quest2.Id)`. `RewardRotation_ResolveActiveRewards`
+  (`140638ad0`) reads the loaded active reward-rotation state, returns active
+  essence account-currency ids, and applies the `RewardRotationModifier`
+  property `38` multiplier. `QuestReward_ExpandRotationEssence` (`140667790`)
+  then expands each type `10` row into a Lua AccountCurrency reward with
+  `eAccountCurrencyType=<active essence currency id>` and
+  `nAmount=Quest2Reward.objectAmount * activeMultiplier`.
+  `RewardRotation_ApplyServerScheduleUpdate` (`140636280`) is the client-side
+  schedule update consumer: it accepts server-provided 0x14-byte schedule
+  entries, resolves `RewardRotationContent`, stores item/essence/modifier rows
+  with expiration and granted flags, removes expired rows, and dispatches
+  `RewardRotationsUpdated`. `RewardRotation_GetLoadedScheduleForContent`
+  (`140636c40`) requests refreshes through `Reward_SendRewardUpdateRequest`
+  (`140636ba0`, world opcode `0x07CC`) when the content-type cache expires, and
+  `Lua_GameLib_GetRewardRotation` (`140709210`) /
+  `Lua_GameLib_GetRewardRotations` (`140709370`) expose only those loaded
+  schedules to UI. The static `Quest2Reward` rows use `objectId=0`, so a server
+  grant still needs an authoritative schedule source plus the matching server
+  update opcode/model before it can safely pick the currency id and multiplier.
+  No static or random essence grant was added.
+
 ## Practical Next Steps
 
 1. Keep extending `Decomp\Analysis\function_labels.csv` as functions are

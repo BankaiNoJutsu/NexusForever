@@ -181,6 +181,7 @@ WildStar64.exe,14042e350,Codex_DispatchToggleCodexEvent,Dispatches the ToggleCod
 WildStar64.exe,14042e380,QuestLog_DispatchToggleQuestLogEvent,Dispatches the ToggleQuestLog named event through the shared client event sink.
 WildStar64.exe,14042e3b0,QuestLog_DispatchShowQuestLogEvent,Dispatches the ShowQuestLog named event with an optional derived argument from the current quest-log state block.
 WildStar64.exe,14042e410,QuestLog_DispatchHideQuestLogEvent,Dispatches the HideQuestLog named event through the shared client event sink.
+WildStar64.exe,1404165e0,Lua_GameItemData_GetVirtualItems,Game.ItemData.GetVirtualItems Lua method that returns quest/path/challenge/public-event virtual item entries with owner metadata.
 WildStar64.exe,140426240,QuestRuntime_DispatchObjectiveUpdatedEvent,Dispatches the named QuestObjectiveUpdated client event from a quest-objective runtime node and completion-state flag.
 WildStar64.exe,140431a00,GalacticArchive_HandleLinkClick,Handles Link payloads with Archive:, Location:, or Schematic: prefixes, resolving the target and dispatching GalacticArchiveLinkClick or the linked location/work-order helper path.
 WildStar64.exe,14043bf30,Communicator_HandleQuestOrSpamMessage,Processes communicator message payloads, routing spam to Communicator_ShowSpamMsg and gated quest traffic to Communicator_ShowQuestMsg plus the follow-up local timer state.
@@ -198,6 +199,9 @@ WildStar64.exe,14051ed80,RuneCrafting_SendClientRuneSlotAdd,Sends world opcode 0
 WildStar64.exe,140520c10,ServiceToken_HandleCastResult,Handles ServiceTokenCastResult by gating on Spell4.PropertyFlags 0x20000000 and dispatching opcode 0x00C2 or result 0x014B.
 WildStar64.exe,140556780,Dialog_HandleResponseSelection,Dialog mode 3 response-selection handler; the DialogResponseType_QuestComplete branch forwards quest completion through Dialog_SendClientQuestComplete.
 WildStar64.exe,140557000,Dialog_SendClientQuestComplete,Builds and sends world opcode 0x035D ClientQuestComplete from the active dialog quest context, copying the communicator bit from the dialog state flag.
+WildStar64.exe,140557470,Dialog_BuildCreatureQuestResponses,Builds quest dialog response text for a selected creature by walking Creature2 given/receive quest ids and local quest runtime state.
+WildStar64.exe,140557e50,Dialog_BuildCommunicatorQuestResponses,Builds communicator quest dialog response text by walking communicator-delivered quest ids and local quest runtime state.
+WildStar64.exe,1405581c0,Dialog_SetResponseTextAndQuestData,Stores dialog response text and quest/reward data, falling back through localized text when the preferred response text is empty.
 WildStar64.exe,140559250,DeferredActionQueue_ArmTargetApproach,Clears the shared deferred-action queue, stores mode 1 with the supplied target id and a fixed 1.5 range, and immediately hands off to DeferredActionQueue_UpdateAndDispatch for the queued target-approach behavior.
 WildStar64.exe,1405592f0,DeferredActionQueue_ArmInteractionAction,Validates the deferred interaction-action profile gates, clears the local queue block, stores the target id, range, and interaction subkind, and then hands control to 140559920 for in-range retry or dispatch.
 WildStar64.exe,140559920,DeferredActionQueue_UpdateAndDispatch,Advances the shared deferred target-action queue each tick by tracking distance and short delays, clearing invalid queued state, and dispatching the queued interaction, spell-cast, activate-unit, or 0x009D action once range or state conditions allow.
@@ -220,6 +224,7 @@ WildStar64.exe,1405e8070,Lua_GameSpell_CreateOrWrap,Creates or wraps a Game.Spel
 WildStar64.exe,1405e81b0,Lua_GameSpell_Gc,Game.Spell __gc metamethod.
 WildStar64.exe,1405e8230,Lua_RegisterGameSpellBindings,Registers the Game.Spell Lua method/property bindings.
 WildStar64.exe,1405fb830,QuestRuntime_UpdateObjectiveStateAndDispatch,Updates quest-objective runtime state, refreshes local quest UI helpers, and dispatches QuestObjectiveUpdated or ContractObjectiveUpdated.
+WildStar64.exe,1405fcd70,QuestRuntime_BuildVirtualItemList,Builds client virtual item triples from Quest2 VirtualItemIdPushed fields and VirtualCollect objective state using local quest/objective runtime state.
 WildStar64.exe,1405e95f0,Lua_GameSpell_GetId,Game.Spell:GetId Lua method.
 WildStar64.exe,1405e96a0,Lua_GameSpell_GetBaseSpellId,Game.Spell:GetBaseSpellId Lua method.
 WildStar64.exe,1405e9750,Lua_GameSpell_GetName,Game.Spell:GetName Lua method.
@@ -266,8 +271,24 @@ WildStar64.exe,1405eecf0,Lua_GameSpell_ShouldHideCooldownInTooltip,Game.Spell:Sh
 WildStar64.exe,1405eedb0,Lua_GameSpell_GetSpellServiceTokenCost,Game.Spell:GetSpellServiceTokenCost Lua method.
 WildStar64.exe,14068c2c0,Lua_RegisterPublicEventConstants,Registers public event status/category/objective constants for Lua.
 WildStar64.exe,1406a6160,Lua_GameHousingPlot_GetPlugUpgradeInfo,Housing plot Lua accessor near tSpell4IdAbility anchor.
-WildStar64.exe,140636ba0,Reward_SendRewardUpdateRequest,Throttles reward update requests and sends world opcode 0x07CC.
+WildStar64.exe,14022fb40,RewardRotationContent_GetEntry,Looks up RewardRotationContent by id through the client game-table manager.
+WildStar64.exe,14024db80,WorldZone_GetEntry,Looks up WorldZone by id through the client game-table manager.
+WildStar64.exe,140634870,RewardRotation_BuildLuaRewardList,Builds Lua reward rotation entries from loaded item/essence/modifier schedule arrays including seconds remaining multiplier and granted flags.
+WildStar64.exe,140636280,RewardRotation_ApplyServerScheduleUpdate,Applies server-provided reward rotation schedule entries keyed by content id and reward type then expires stale rows and dispatches RewardRotationsUpdated.
+WildStar64.exe,140636ba0,Reward_SendRewardUpdateRequest,Throttles reward update requests for reward-rotation content-type indices and sends world opcode 0x07CC.
+WildStar64.exe,140636c40,RewardRotation_GetLoadedScheduleForContent,Returns the loaded schedule bucket for a RewardRotationContent id and requests a server refresh when the content-type cache has expired.
+WildStar64.exe,140636d10,Lua_GameLib_BuildRewardRotations,Requests refreshes for reward-rotation content types and builds Lua GetRewardRotations data from loaded schedules.
+WildStar64.exe,140638ad0,RewardRotation_ResolveActiveRewards,Resolves active reward rotation entries into item and essence account-currency ids and applies RewardRotationModifier property 38 multipliers.
+WildStar64.exe,1406428d0,Achievement_ProgressCategoryFromType,Maps AchievementType ids to client progress category families used by Galactic Archive achievement-rule progress.
+WildStar64.exe,140642b30,Achievement_GetProgressValue,Computes current achievement progress/count from achievement runtime state according to the achievement progress category.
 WildStar64.exe,14065e6c0,Lua_GameLib_PurchaseFlightPath,GameLib.PurchaseFlightPath Lua callback that validates route inputs and forwards purchase requests.
+WildStar64.exe,1406625d0,Lua_RegisterQuestConstants,Registers Game.Quest Lua constants including Quest2RewardType ids: Item=1 Reputation=2 Money=3 TradeSkillXp=4 GrantTradeskill=5 AccountItem=6 AccountCurrency=7 GenericUnlockAccount=8 GenericUnlockCharacter=9 RotationEssence=10.
+WildStar64.exe,140665c80,Lua_GameQuest_BuildRewardTables,Builds Game.Quest reward Lua tables and queues Quest2Reward RotationEssence rows for active reward-rotation expansion.
+WildStar64.exe,140667790,QuestReward_ExpandRotationEssence,Expands Quest2Reward type 10 RotationEssence rows into AccountCurrency reward rows using active reward-rotation essence ids and multiplier.
+WildStar64.exe,140709210,Lua_GameLib_GetRewardRotation,GameLib.GetRewardRotation Lua callback that returns a loaded reward-rotation schedule for one content id.
+WildStar64.exe,140709370,Lua_GameLib_GetRewardRotations,GameLib.GetRewardRotations Lua callback that returns loaded reward-rotation schedules for all content types.
+WildStar64.exe,140552550,QuestPrerequisite_CanAccept,Evaluates client quest accept prerequisites and returns failure reason ids for faction/race/class/level/item/prereq/faction-level checks.
+WildStar64.exe,140552eb0,QuestPrerequisite_CheckFactionLevel,Checks Quest2 FactionIdPreq/FactionLevelPreq/FactionLevelCompPreq triples; comp clear requires current level >= required and comp set requires current level <= required.
 WildStar64.exe,1406a0570,Marketplace_SendClientCommoditySellOrderSubmit,Sends opcode 0x06DA ClientCommoditySellOrderSubmit with the 0x38-byte commodity order payload staged from marketplace UI state.
 WildStar64.exe,1406a0740,Marketplace_SendClientAuctionBuyOrderSubmit,Sends opcode 0x055E ClientAuctionBuyOrderSubmit with Item2 id, auction id, and offered amount from the selected item auction.
 WildStar64.exe,1406a1270,Marketplace_SendClientCommodityOrderCancel,Sends opcode 0x0093 ClientCommodityOrderCancel with commodity order id, Item2 id, and buy-order flag from the selected commodity order.
@@ -302,6 +323,15 @@ WildStar64.exe,14066d770,Lua_GalacticArchiveEntry_GetHeaderCreature,Game.Galacti
 WildStar64.exe,14066d860,Lua_GalacticArchiveEntry_GetBodyImage,Game.GalacticArchiveEntry.GetBodyImage Lua method.
 WildStar64.exe,14066d9c0,Lua_GalacticArchiveEntry_GetCompletionTitle,Game.GalacticArchiveEntry.GetCompletionTitle Lua method.
 WildStar64.exe,14066dab0,GalacticArchiveEntry_ResolveStateObject,Resolves the live Galactic Archive state object associated with an entry's metadata key through the current archive lookup trees.
+WildStar64.exe,140499b40,GalacticArchiveEntry_CalculateProgress,Computes Galactic Archive entry progress from ArchiveEntryUnlockRule rows: type 0 achievement progress, type 1 PathMission progress, and type 2 completed quest state.
+WildStar64.exe,1405fbc40,QuestRuntime_GetQuestState,Returns client quest runtime state for a Quest2 id; completed quests return state 3.
+WildStar64.exe,1403d7bc0,PathMissionRuntime_FindById,Finds a current PathMission runtime object by PathMission id.
+WildStar64.exe,1403d7c30,PathMissionRuntime_IsMissionVisibleForUnit,Checks PathMission runtime visibility/eligibility against player path/faction and optional prerequisite.
+WildStar64.exe,140491c60,PathMissionContent_FindById,Resolves PathMission static/runtime content by PathMission id and owning path episode group.
+WildStar64.exe,14056d0d0,PathMissionRuntime_GetCurrentProgress,Computes current PathMission progress for the mission's type-specific runtime state.
+WildStar64.exe,14056d330,PathMissionRuntime_GetRequiredProgress,Computes required PathMission progress/count for the mission's type-specific table data.
+WildStar64.exe,14056fbe0,PathExplorer_TrySendProgressReportOrTypeObjectProgress,Scans local PathMission runtime objectives and sends ClientPathExplorerProgressReport for reached explorer nodes or ClientPathExplorerPowerMapProgress with the PathMission ObjectId for type 0x12 progress.
+WildStar64.exe,1405700f0,PathExplorer_TrySendProgressReport,Scans local PathMission runtime objectives and sends ClientPathExplorerProgressReport when the player reaches an explorer node world-location radius.
 WildStar64.exe,140678590,Lua_PathMission___eq,Game.PathMission.__eq Lua metamethod that compares two path mission userdata values by resolved underlying mission id.
 WildStar64.exe,140678790,Lua_PathMission___gc,Game.PathMission.__gc Lua metamethod that releases the wrapped path mission userdata reference.
 WildStar64.exe,14067b7c0,Lua_PathMission_GetId,Game.PathMission.GetId Lua method.
@@ -608,6 +638,11 @@ WildStar64.exe,1403b54a0,Item_CalculateRepairCost,Calculates credit repair cost 
 WildStar64.exe,1403b9690,ServerItemDurabilityUpdate_ReadPayload,Reads item identity and durability update payload then dispatches the ItemDurabilityUpdate client event.
 WildStar64.exe,1403c2630,Vendor_SendClientSellItemToVendor,Validates vendor state and sends opcode 0x0166 with item location and quantity for SellItemToVendor.
 WildStar64.exe,1403c2850,Vendor_SendClientBuybackItemFromVendor,Validates inventory and buyback state before sending opcode 0x00BB with the selected buyback unique id.
+WildStar64.exe,14050cbc0,Lua_GameLib_GetRestXp,GameLib.GetRestXp Lua method that returns the local player's current rested XP pool from current player state offset 0x1688.
+WildStar64.exe,14050cbf0,Lua_GameLib_GetRestXpKillCreaturePool,GameLib.GetRestXpKillCreaturePool Lua method that returns current rested XP adjusted by a client lookup coefficient used for kill creature pool display.
+WildStar64.exe,1403b5f80,ServerPlayerCreate_ApplyPlayerXpState,Applies the large current player creation state payload including total XP and rested XP pool before dispatching CharacterCreated.
+WildStar64.exe,1403c6d80,PlayerXpState_DispatchUiXpChanged,Calculates level XP progress from player XP state and dispatches UI_XPChanged with total XP level range and rested XP pool.
+WildStar64.exe,1403c8760,ServerExperienceGained_ApplyPlayerXpState,Applies the experience gained payload by adding total XP subtracting the rested XP amount and dispatching ExperienceGained events.
 WildStar64.exe,14050cd50,Lua_GameLib_SellItemToVendor,GameLib SellItemToVendor Lua method that reads item location and quantity before routing opcode 0x0166.
 WildStar64.exe,14050ce20,Lua_GameLib_BuybackItemFromVendor,GameLib BuybackItemFromVendor Lua method that reads the buyback unique id before routing opcode 0x00BB.
 WildStar64.exe,14050ce40,Lua_GameLib_IsRepairVendor,GameLib repair-vendor status method that checks the current target and sends opcode 0x0167 with an empty payload.
