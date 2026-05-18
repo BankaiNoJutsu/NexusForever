@@ -5714,7 +5714,10 @@ Offline WildStar wiki path ability follow-up:
   client has no code reference to the `RestedXpDecorBonus` enum-name string at
   `140abc1b0`; `TraceStringReferences` reports zero refs, and the rested-XP
   field sweep found only state copy, UI read, Lua read, constructor/reset, and
-  experience-consumption paths. This leaves the effect mapped-only/blocked:
+  experience-consumption paths. A follow-up `TraceStringReferences.java` pass
+  on `RestedReward` at `1409d0be0` found only a data pointer at `140c1b630`
+  and no function xref chain, so it does not identify an accrual or stacking
+  path either. This leaves the effect mapped-only/blocked:
   server implementation still needs stronger evidence for accrual timing,
   whether `DataBits00` is additive or multiplicative, how
   `parameterValue00=0.04` participates, stack/cap rules across decor sources,
@@ -5799,26 +5802,70 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   packet/table/runtime evidence.
 - Achievement trigger scope:
   client achievement rows and DataMapping names now correlate several
-  additional type ids with server-owned events: crafted item (`35`), tradeskill
-  tier (`37`), crafted-item checklist (`40`), reputation level (`42`),
-  character level (`54`), title earned (`56`), path level (`64`), earned
-  currency (`75`), duel participation (`97`), duel wins (`98`),
+  additional type ids with server-owned events: world-zone entry (`8`), crafted
+  item (`35`), tradeskill tier (`37`), crafted-item checklist (`40`),
+  reputation level (`42`), character level (`54`), title earned (`56`), path
+  level (`64`), earned currency (`75`), guild beloved-reputation totals (`67`),
+  guild max-path-level totals (`92`), duel participation (`97`), duel wins
+  (`98`), class level-50 transitions (`103`), critical deathblows (`105`),
   guild/circle joins (`106`), group joins (`107`), friend additions (`108`),
-  housing plug placement (`111`), housing decor purchases (`113`), and account
-  currency collection (`137`). The earned-currency rows are data-backed by
-  `Achievement.tbl.sql` type `75`
+  housing plug placement (`111`), housing decor purchases (`113`), contract
+  quality completions (`130`), contract type completions (`131`), overall
+  contract completions (`133`), account currency collection (`137`), costume
+  unlock ownership (`38`), costume set ownership (`141`), and total primal
+  essence collection (`152`). The
+  world-zone entry rows are data-backed by
+  ids `1386`/`2414`/`2637`-`2641`, all of which carry the target
+  `WorldZoneId` with no object ids; NexusForever filters these type `8` rows
+  against the actual `Player.OnZoneUpdate` zone id before advancing them. The
+  guild beloved-reputation rows are
+  data-backed by `Achievement.tbl.sql` ids `4119`/`4120`/`4122`, whose
+  `ObjectId` is `10` (`FactionLevel.Beloved`) and whose values are cumulative
+  guild thresholds `75`/`150`/`250`; NexusForever updates them only when a
+  character crosses into `Beloved` in server-owned reputation state, forwarding
+  through the existing guild achievement manager. The class level-50 rows are
+  data-backed by ids `4941`-`4963` and `5092`/`5115`-`5119`, whose `ObjectId`
+  values match the playable `Class` enum ids `1`/`2`/`3`/`4`/`5`/`7`; the server
+  updates them when a character reaches the data-backed level-50 cap, which
+  covers both personal and guild rows through the normal character-to-guild
+  achievement forwarding path. The guild max-path-level rows are data-backed by
+  ids `4615`-`4617`, all guild-only rows with values `10`/`20`/`35`; the server
+  updates them when a character reaches `PathRewardGrant.MaxPathLevel` through
+  the persisted path XP/level reward path. The critical-deathblow rows are
+  data-backed by ids `4929`-`4938`, all with zero object filters and cumulative
+  values; NexusForever advances them from the damage pipeline only when the
+  authoritative `IDamageDescription` says the hit both killed the target and
+  had `CombatResult.Critical`. The earned-currency rows are
+  data-backed by `Achievement.tbl.sql` type `75`
   object ids matching `CurrencyType.Credits = 1` and `CurrencyType.Renown = 2`,
   and NexusForever updates them from actual credited `CurrencyManager`
   additions after caps are applied. The group and friend rows are data-backed by
   ids `4885`/`4886` and update from the internal group-join and friendship-add
   or friend-and-rival update handlers. Housing plug/decor rows are data-backed
   by ids `4996`-`4998`/`4999`-`5002`; NexusForever updates them from successful
-  non-rotation plug placement and costed decor purchase paths only. Account
-  currency collection rows are data-backed by account-currency object ids in
+  non-rotation plug placement and costed decor purchase paths only. The
+  contract rows are data-backed by `Achievement.tbl.sql` ids `6063`/`6064` and
+  `6067`-`6075`: type `133` uses `ObjectId=13`, which matches the `Quest2.Type`
+  used by contract quests; type `130` uses `ObjectId` values from
+  `PeriodicQuestGroup.ContractQualityEnum`; and type `131` uses `ObjectId`
+  values from `PeriodicQuestGroup.ContractTypeEnum`. NexusForever updates those
+  rows only after a server-owned contract quest completion, and only emits the
+  type/quality counters when the completed contract has a valid
+  `PeriodicQuestGroup` row. Type `129` (`On the Right Track`) stays blocked
+  because its `ObjectId=4` does not map to the persisted contract quest/type/
+  quality state and appears to need a separate contract-track or streak source.
+  Account currency collection rows are data-backed by account-currency object ids in
   `Achievement.tbl.sql` (for example OmniBits `6` and essence ids `15`-`18`);
-  NexusForever updates them from quest and loot account-currency grants where
-  the active player context is available, while account-only/store grants remain
-  outside this mapped trigger path. The duel rows are data-backed by
+  NexusForever updates them from quest, loot, and account-item claim
+  account-currency grants where the active player context is available. The
+  type `152` Primal Matrix rows `7130`/`7143`/`7144` have `ObjectId=0` and
+  thresholds `375000`/`1250000`/`4000000`; DataMapping names/descriptions say
+  they count collected primal essences, and `AccountCurrencyType.tbl.sql` maps
+  primal essence currencies to `Crimson=15`, `Cobalt=16`, `Viridian=17`, and
+  `Violet=18`, so the same server-owned account-currency grant helper now also
+  advances type `152` only when one of those four currency ids is credited.
+  Catalog/store purchase state remains outside this mapped trigger path until a
+  grant is claimed or otherwise server-owned. The duel rows are data-backed by
   `Achievement.tbl.sql` ids `4372`-`4374`
   (participate) and `4251`/`4370`/`4371` (wins), plus matching Jabbithole
   names/descriptions; NexusForever updates them from the server-owned active
@@ -5827,12 +5874,135 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   `ObjectId` values match `GuildType.Guild = 1` and `GuildType.Circle = 2`;
   NexusForever updates them from `GuildManager.JoinGuild`. These are
   implemented through existing runtime events rather than native enum-name
-  decompile evidence. The scalar achievement completion path now clamps
+  decompile evidence. Costume ownership rows are data-backed by
+  `AchievementChecklist` item ids: type `38` rows such as `4749`/`4752`/`5339`
+  use single `Item2` ids for wardrobe-unlock items, while type `141` rows such
+  as `6825`/`6829`/`6830` and `6942`/`6943` use checklist `Item2` ids for
+  multi-piece costume sets. NexusForever now advances both type ids only after
+  a successful server-owned `AccountCostumeUnlock` mutation from
+  `ClientCostumeItemUnlock`, which is persisted in the auth account model and
+  echoed through the existing costume item list/unlock packets. Type `140`
+  remains blocked: its `Protostar Premium Fabkit Owner` checklist ids
+  `535`-`538` are `HousingPlugItem` ids, and the current housing plug placement
+  path explicitly rejects non-default, costed, prerequisite, upkeep, and upsell
+  plugs rather than owning the premium fabkit unlock/purchase state. Type `45`
+  is now implemented as counted quest-completion checklist achievements rather
+  than broad zone quest counters: DataMapping has 23 type `45` rows and 315
+  checklist rows, 311 of those checklist `ObjectId` values resolve to
+  `Quest2.ID`, and every type `45` achievement has at least `Value` Quest2-backed
+  checklist rows available. The remaining four Whitevale checklist object ids
+  (`5415`, `5563`, `5565`, and `5566`) do not resolve to `Quest2.ID`; they stay
+  inert in the quest-completion trigger, which is safe because the corresponding
+  achievements need only 20 completions from larger 29-row lists. The client
+  progress helper maps type `45` to a raw `Data0` value family rather than the
+  checklist bit-count family (`Achievement_ProgressCategoryFromType` at
+  `1406428d0`, consumed by `Achievement_GetProgressValue` at `140642b30`), so
+  NexusForever stores the visible counted progress in `Data0` and uses `Data1`
+  only as a server-side credited-checklist bitmask to prevent duplicate quest
+  credit. Type `5` is now
+  implemented as Creature2 kill checklist achievements: all 428 unique type `5`
+  checklist object ids in the mapped client achievement rows resolve to
+  `Creature2.ID` values in `Creature2.tbl.sql`, and the client progress helper
+  maps type `5` to the checklist bit-count family
+  (`Achievement_ProgressCategoryFromType` at `1406428d0`, consumed by
+  `Achievement_GetProgressValue` at `140642b30`). NexusForever now advances
+  type `5` from the same server-owned creature kill reward path as type `1`,
+  while guild type `5` rows are forwarded only when the killing player is in an
+  online group with more than one member and every member belongs to the same
+  guild. This keeps the "all guild group" rows from advancing for solo or mixed
+  groups. Type `6` is now implemented as Quest2 completion checklist
+  achievements: DataMapping has 436 type `6` rows with 1,741 checklist rows,
+  every nonzero checklist `ObjectId` resolves to `Quest2.ID`, and the row
+  descriptions cover episode completion, quest-delivery bundles, and other
+  multi-quest achievements. The client progress helper maps type `6` to the
+  same checklist bit-count family as type `5` and type `7`
+  (`Achievement_ProgressCategoryFromType` at `1406428d0`, consumed by
+  `Achievement_GetProgressValue` at `140642b30`). NexusForever now advances
+  type `6` from the existing server-owned quest completion path immediately
+  after the scalar quest-complete trigger, using the completed `Quest2.Id` as
+  the checklist object id. Type `7` is now
+  implemented as completion-driven meta achievements: `AchievementChecklist`
+  rows for type `7` overwhelmingly use child `Achievement.Id` values as their
+  object ids, and the client progress helpers map type `7` to the checklist
+  bit-count progress family (`Achievement_ProgressCategoryFromType` at
+  `1406428d0`, consumed by `Achievement_GetProgressValue` at `140642b30`).
+  NexusForever now feeds completed achievement ids back through the existing
+  checklist manager for character and guild achievements. Type `44` remains
+  deliberately blocked despite sharing the checklist progress category,
+  because its checklist object ids mix achievement-like ids with item/design
+  ids such as Skullcano design entries; treating all of them as child
+  achievements would over-award unrelated rows. Type `15` is now implemented as
+  scalar Creature2 discovery-object activation: all 29 type `15` rows in
+  DataMapping carry a nonzero `ObjectId`, each resolves to `Creature2.ID`, and
+  the row/object descriptions are direct interaction discoveries such as Eldan
+  lockboxes, datacubes, Eldan secret projectors, the Curiositybot, SMAC pickup,
+  and secret-room relic/key objects. Type `15` is not in the client checklist
+  category switch, so it uses the default scalar `Data0` progress path
+  (`Achievement_ProgressCategoryFromType` at `1406428d0`, consumed by
+  `Achievement_GetProgressValue` at `140642b30`). NexusForever now advances
+  type `15` from the shared activation-success updater used by both
+  `ClientActivateUnitHandler` and `ClientActivateUnitCastHandler`, after the
+  normal visibility/range/busy and activate-spell success gates, relying on
+  the achievement `ObjectId` filter to restrict updates to those mapped
+  Creature2 ids. Type `16` is now implemented as
+  simple Creature2 activation achievements: DataMapping shows its checklist
+  object ids are interactive `Creature2` ids (for example `2128` uses Auroria
+  datacube creature ids `25461`-`25480`, while book/lore/social rows use the
+  same Creature2-id shape), and the server owns the activation path in
+  `SimpleEntity.OnActivate`/`OnActivateCast` plus the persisted datacube/journal
+  managers. The trigger is therefore scoped to successful simple-object
+  activation and still relies on the achievement checklist rows to select the
+  eligible Creature2 ids. Type `82` is now implemented as secret-stash
+  discovery on shared activation success: DataMapping has 18 type `82` rows,
+  all nonzero `ObjectId` values resolve to `Creature2.ID` rows whose
+  descriptions are `Secret Stash`, hidden-room, or collectable focus objects,
+  and each relevant `Creature2.CreationTypeEnum` value is `8`
+  (`EntityType.CollectableUnit`). The client progress helper maps type `82` to
+  scalar `Data0` progress (`Achievement_ProgressCategoryFromType` at
+  `1406428d0`, consumed by `Achievement_GetProgressValue` at `140642b30`).
+  `CollectableUnitEntity` does not inherit `SimpleEntity`, so NexusForever now
+  advances type `82` from `ClientActivateUnitHandler` after the shared
+  visibility, busy, range, `OnActivateSuccess`, and activation-objective path,
+  using the achievement `ObjectId` filter to restrict updates to those mapped
+  Creature2 ids. Type `143` is now implemented as public-event objective
+  completion: all 22 type `143` rows in DataMapping point at
+  `PublicEventObjective.ID` values for public event `705` (Redmoon Terror), and
+  the mapped rows cover the normal boss objectives plus the explicit
+  no-death/alternate achievement objectives. The client progress helper leaves
+  type `143` in the default scalar `Data0` family
+  (`Achievement_ProgressCategoryFromType` at `1406428d0`, consumed by
+  `Achievement_GetProgressValue` at `140642b30`). NexusForever now advances
+  type `143` only when a server-owned `PublicEventObjective` transitions to
+  `PublicEventStatus.Succeeded`, awarding online team members with the
+  completed objective id as the achievement object id. Guild type `143` rows
+  are forwarded only through the existing all-online same-guild group gate, so
+  "while in a guild group" rows do not advance from solo, unguilded, or mixed
+  groups. Type `104` is now implemented as targeted creature emotes:
+  DataMapping has 14 checklist rows for the 12 type `104` achievements, with
+  each checklist `ObjectId` resolving to a `Creature2.ID` and each
+  `ObjectIdAlt` resolving to an `Emotes.ID` (`cry`, `flex`, `dance`, `laugh`,
+  `wave`, `hug`, `taunt`, `applaud`, `salute`, or `pat`). The client progress
+  helper maps type `104` to the checklist bit-count family
+  (`Achievement_ProgressCategoryFromType` at `1406428d0`, consumed by
+  `Achievement_GetProgressValue` at `140642b30`). NexusForever now advances
+  type `104` from `ClientEmoteHandler` only after the emote id is validated and
+  the targeted unit id resolves to a visible `IWorldEntity`, passing
+  `(target.CreatureId, emote.EmoteId)` into the checklist filter. Untargeted or
+  stale-target emotes therefore remain cosmetic only. The scalar achievement
+  completion path now clamps
   progress at the required value and treats client rows with `Value=0` as a
   one-event requirement, which matches the many table rows that describe a
-  single named action without a positive counter. Remaining achievement type
-  ids stay data-only until their event families are mapped to concrete server
-  events.
+  single named action without a positive counter. After the type `45` pass, the
+  offline achievement audit still leaves 41 type ids data-only:
+  `9`, `12`, `13`, `14`, `22`, `26`, `33`, `44`, `46`, `55`, `57`, `61`,
+  `62`, `63`, `65`, `66`, `68`, `72`, `73`, `76`, `77`, `79`, `83`, `85`,
+  `86`, `87`, `88`, `89`, `94`, `96`, `101`, `102`, `109`, `112`, `114`,
+  `118`, `121`, `129`, `140`, `156`, and `157`. These stay blocked because
+  the corresponding event families are not server-owned yet: account/housing
+  unlocks, scripted world interactions, salvage/discovery crafting, public-event
+  medals, kill streak/path mission/challenge systems, PvP stats/ratings,
+  taxi unlock persistence, housing neighbor/visitor/upgrades, reward tracks,
+  and primal-matrix spend/unlock state.
 - Galactic Archive runtime scope:
   per-character article unlock/view masks are now persisted and sent through
   the existing Galactic Archive packet models. The client mapping at
@@ -5886,7 +6056,98 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   schedules to UI. The static `Quest2Reward` rows use `objectId=0`, so a server
   grant still needs an authoritative schedule source plus the matching server
   update opcode/model before it can safely pick the currency id and multiplier.
-  No static or random essence grant was added.
+  A follow-up allocator trace for `FUN_1403374e0` found one 0x14-byte array
+  packet-reader candidate at `FUN_14009f6b0`, but direct inspection shows that
+  function reads an unrelated packet shape before allocating the row array and
+  has no recovered xref into `RewardRotation_ApplyServerScheduleUpdate`.
+  Pointer-pattern and caller traces still do not recover the reward-rotation
+  server response reader/opcode. No static or random essence grant was added.
+- Taxi unlock persistence blocker:
+  Type `101` achievements (`4714`/`4715`, `Making Connections`) remain
+  mapped-only. The client can receive an authoritative unlocked flight-path
+  list through opcode `0x0188`, parsed by `ServerFlightPathUpdate_ReadPayload`
+  (`14008eaa0`) as a 32-bit count followed by raw 32-bit ids. The flight-path
+  purchase flow calls the newly labelled
+  `FlightPath_IsNodeUnlockedOrAvailable` (`1404ad9b0`), which checks a loaded
+  node tree at manager offset `+0x110` before falling through static TaxiNode
+  flags or the taxi prerequisite helper. The rapid transport flow now has
+  `RapidTransport_IsNodeUsableForPlayer` (`1404ada70`), which gates node
+  type/faction/static flags and then calls the same prerequisite helper with a
+  rapid-transport mode; `RapidTransport_CanUseNode` (`1404adfe0`) also checks
+  world/range constraints before sending opcode `0x0141`. NexusForever has
+  packet models and purchase/rapid-transport handlers, but no character-owned
+  TaxiNode/FlightPath persistence model, no initial `ServerFlightPathUpdate`
+  population, and no trusted unlock mutation path. Implementing type `101` or
+  unlocking taxi nodes from use would therefore overreach the mapped server
+  state; it stays blocked until a persisted unlock table and server-owned
+  discovery/unlock rule are added and verified.
+- Crafting hot/cold discovery finish mapping:
+  opcode `0x0853` is now labelled as `ServerCraftingFinish_ReadPayload`
+  (`1400a4560`). The client reads one pass bit, 15-bit crafted
+  `TradeskillSchematic2` id, 18-bit crafted `Item2` id, a raw unused uint,
+  32-bit `CodeEnumCraftingDiscoveryHotCold`, 4-bit direction, earned XP, and a
+  counted returned-material id array. `Crafting_HandleServerCraftingFinish`
+  (`1405e6690`) consumes the decoded payload and dispatches the
+  `CraftingDiscoveryHotCold` client event only when the craft passed and the
+  hot/cold enum is not `Success` (`3`). The `CodeEnumCraftingDiscoveryHotCold`
+  registration in `Lua_RegisterCraftingBindings` (`1405a3000`) confirms
+  `Cold=0`, `Warm=1`, `Hot=2`, and `Success=3`. NexusForever's fixed-recipe
+  success path now writes `CraftingDiscovery.Success`, because that path does
+  not yet own discovery-coordinate math and should not emit a false `Cold`
+  discovery result. The actual hot/cold schematic discovery mechanic remains
+  blocked: `Lua_Crafting_GetSchematicInfo` (`140599010`) and
+  `Lua_Crafting_AddCoordinateDiscoveryInfo` (`14059e9a0`) show the UI-side
+  discovery fields (`fRadius`, `fVectorX`, `fVectorY`, `fDiscoveryAngle`,
+  `fDiscoveryDistanceMin`, `fDiscoveryDistanceMax`, `bIsUndiscovered`) being
+  derived from `TradeskillSchematic2` data and player modifier state, but the
+  authoritative craft-stat coordinate interpretation and discovery-unlock
+  mutation rule are still unmapped.
+- Durable rune state blocker:
+  the client-to-server rune request packet family remains mapped (`0x0859`
+  add slot, `0x085A` clear, `0x085B` install, `0x085C` reroll), and
+  `RuneCrafting_SendClientRuneInstall` (`14059d250`) validates the local item
+  rune array before sending item-guid plus rune Item2 ids. NexusForever now
+  validates those requests and mutates a runtime-only `Dictionary<ulong,
+  List<RuneSlotState>>`, including rune item consume/recover behavior. The
+  durable side is still blocked: `ItemModel` persists only item id, location,
+  stack/charges, durability, expiration, and soulbound state; the item packet
+  has opaque `RandomGlyphData`/`Glyphs` fields, but the slot-type packing and
+  installed-rune serialization are not mapped to a database-owned item model.
+  Persisting or broadcasting rune state without that mapping would risk
+  corrupting item serialization or losing runes across save/load.
+- Harvesting blocker:
+  `Harvest_DispatchItemsSentToOwnerEvent` (`1404bbb80`) is now labelled as the
+  client consumer that builds `{ item, nCount }` Lua rows and dispatches
+  `HarvestItemsSentToOwner` from a server harvest-item payload. The payload
+  shape proves the client can display item/count harvest results, while
+  `TradeskillHarvestingInfo.tbl` only supplies tier/prerequisite/minimap
+  metadata. NexusForever currently has `HarvestUnitEntity`/`HousingHarvestPlug`
+  entity shells and group `HarvestLootRule` settings, but no server-owned
+  harvest interaction handler, no authoritative node depletion/respawn state,
+  and no mapped material/XP grant path. Harvesting stays blocked until those
+  server mutations and the outbound harvest-result packet/model are mapped
+  together.
+- Quest cap and tradeskill naming follow-up:
+  `QuestPrerequisite_CanAccept` (`140552550`) reads `GameFormula` id `0x28f`
+  (`655`), falls back to `0x28` (`40`) when the row is absent, and returns the
+  prerequisite failure once the current quest count is greater than or equal to
+  that limit around `exports\WildStar64.exe\selected_decompiled.c:25105`.
+  Local MySQL confirms `wildstar_client.GameFormula` row `655` has
+  `Dataint0=40`. NexusForever now mirrors the inclusive client gate through
+  `QuestManager.HasActiveQuestCapacity`, so non-contract quest acceptance stops
+  at exactly the client limit instead of allowing one extra active quest.
+  The same audit pass confirmed `wildstar_client.Tradeskill` id `16` resolves
+  through `stringsenus` to `Technologist`, matching
+  `Tools\DataMapping\output\tradeskill_client_map.csv`; the server enum now
+  uses `Technologist = 16` instead of the stale `Augmentor` name.
+  Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -v minimal --nologo` passed with `56` tests, and
+  `python Tools\WikiArchiveAudit\audit_wildstar_wiki.py --domain tradeskills
+  --archive-dir artifacts\wildstar-fandom-wiki-2026-05-18` passed with
+  tradeskill id `16` shown as `Technologist` for both client and server.
+  `Decomp\Analysis\Test-DecompileManifest.ps1 -FailOnMismatch` reported the
+  `WildStar64.exe` export manifest as `ok`.
 
 ## Practical Next Steps
 

@@ -188,6 +188,8 @@ WildStar64.exe,14043bf30,Communicator_HandleQuestOrSpamMessage,Processes communi
 WildStar64.exe,140499a20,GalacticArchive_ApplyUnlockMaskAndDispatchEvents,Updates the local Galactic Archive unlock mask, dispatching GalacticArchiveRefresh plus GalacticArchiveArticleAdded and GalacticArchiveEntryAdded for newly unlocked bits.
 WildStar64.exe,1404aacb0,ActionSet_ValidateRequestedChanges,Validates a 12-entry action-set request and returns a LimitedActionSetResult.
 WildStar64.exe,1404acfa0,FlightPath_SendPurchaseRequest,Builds and sends opcode 0x00FF flight-path purchase payload from validated route data.
+WildStar64.exe,1404ad9b0,FlightPath_IsNodeUnlockedOrAvailable,Checks the loaded flight-path node tree at manager+0x110 for a TaxiNode id; absent nodes fall through static node flags or the taxi prerequisite helper with mode 1.
+WildStar64.exe,1404ada70,RapidTransport_IsNodeUsableForPlayer,Checks rapid-transport node type/faction/static flags and then falls through to the taxi prerequisite helper with mode 2.
 WildStar64.exe,1404d9450,CSIKey_HandlePress,Handles the context-sensitive interaction key by gating on local busy state, dispatching the named CSIKeyPressed event when the active object consumes the press, routing stored CSI action kinds through a local switch table, and falling back to Interaction_AttemptTargetAction for the stored target path.
 WildStar64.exe,1404e7f60,Lua_RegisterAccountEntitlementEnums,Registers account currency/operation and entitlement Lua enums.
 WildStar64.exe,14050e830,Lua_BuildResurrectionInfoTable,Builds the resurrection Lua info table including wake-here flags and service-token cost.
@@ -615,6 +617,7 @@ WildStar64.exe,140743f30,Lua_GroupLib_SetInstanceDifficulty,GroupLib.SetInstance
 WildStar64.exe,140744610,Lua_GroupLib_GotoGroupInstance,GroupLib.GotoGroupInstance Lua method that sends opcode 0x0411 with current group id after active-group checks.
 WildStar64.exe,1404b9db0,HousingEvent_SendClientNeighborInvite,Registered housing event callback that sends opcode 0x0512 with either a target name or current residence identity.
 WildStar64.exe,1404b9f10,HousingEvent_SendClientNeighborEvict,Registered housing event callback that sends opcode 0x0515 with either a target name or current residence identity.
+WildStar64.exe,1404bbb80,Harvest_DispatchItemsSentToOwnerEvent,Builds item/count Lua tables from a server harvest-item payload and dispatches the HarvestItemsSentToOwner client event.
 WildStar64.exe,1404ba070,HousingEvent_SendClientNeighborInviteAccept,Registered housing event callback that sends opcode 0x0513 with invite response value 1.
 WildStar64.exe,1404ba0a0,HousingEvent_SendClientNeighborInviteDecline,Registered housing event callback that sends opcode 0x0513 with invite response value 0.
 WildStar64.exe,1404ba0d0,HousingEvent_SendClientNeighborSetPermission,Registered housing event callback that sends opcode 0x0518 with target identity and permission value.
@@ -694,6 +697,11 @@ WildStar64.exe,1400afce0,ClientSpline2NodeData_ReadPayload,Reads opcode 0x081A a
 WildStar64.exe,1400afe10,ClientSpline2NodePositionData_WritePayload,Serialises opcode 0x081B as two raw ids three raw 32-bit position values and a counted uint payload.
 WildStar64.exe,1400affc0,ClientSpline2NodePositionData_ReadPayload,Reads opcode 0x081B as two raw ids three raw 32-bit position values and a counted uint payload.
 WildStar64.exe,1400979e0,ServerVehiclePassengerSelf_ReadPayload,Reads opcode 0x089B as self vehicle 2-bit seat type and 3-bit seat position.
+WildStar64.exe,1400a4560,ServerCraftingFinish_ReadPayload,Reads opcode 0x0853 as pass schematic item unused hot/cold direction earned XP and returned material ids.
+WildStar64.exe,1405e6690,Crafting_HandleServerCraftingFinish,Handles decoded ServerCraftingFinish and dispatches CraftingDiscoveryHotCold only when a successful craft reports hot/cold other than Success.
+WildStar64.exe,140599010,Lua_Crafting_GetSchematicInfo,Builds the Lua schematic info table for a TradeskillSchematic2 row including output material known flags and coordinate crafting details.
+WildStar64.exe,14059e9a0,Lua_Crafting_AddCoordinateDiscoveryInfo,Adds coordinate-crafting discovery fields such as radius vector angle min/max distance and undiscovered flags to schematic Lua info.
+WildStar64.exe,1405a3000,Lua_RegisterCraftingBindings,Registers Game.Crafting Lua bindings including CodeEnumCraftingDiscoveryHotCold Cold Warm Hot and Success values.
 WildStar64.exe,1403c17d0,ItemMove_ValidateAndMaybeConfirmBindOnEquip,Validates an item move request and dispatches ItemConfirmSoulboundOnEquip before sending ClientItemMove when the destination equip path would bind the source item.
 WildStar64.exe,1403f38b0,RealmFirstAchievementAnnounce_Dispatch,Builds the RealmFirstAchievementAnnounce client event from achievement id guild flag source name and achievement-name payload.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
