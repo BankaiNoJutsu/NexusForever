@@ -226,11 +226,24 @@ python Tools\WikiArchiveAudit\audit_wildstar_wiki.py `
 Current achievement notes:
 
 - Persistence, initial/update packets, checklist and scalar completion, title
-  grants, realm-firsts, quest completion, creature kills, crafted items,
-  tradeskill tiers, reputation levels, map completion, character levels, titles
-  earned, path levels, currency gains, item consume, duel participation/wins,
-  guild/circle joins, group joins, friend additions, housing plug placement,
-  housing decor purchases, account-currency grants from quest/loot paths, and
+  grants, realm-firsts, quest completion, creature kills, world-zone entry,
+  quest-completion checklist achievements, counted quest-completion checklist
+  achievements for Quest Finder-style "complete any N listed quests" rows,
+  completion-driven meta achievements, simple-object activation for
+  Creature2-backed lore/datacube achievements, shared activation success for
+  scalar Creature2 discovery-object achievements, crafted items, tradeskill tiers,
+  Creature2-backed kill checklist achievements with guild rows gated by
+  all-online same-guild group state, Creature2-backed secret-stash discovery
+  achievements from shared activation success,
+  reputation levels, map completion, character levels, titles earned, path
+  levels, guild beloved-reputation totals, currency gains, item consume, guild
+  max-path-level totals, duel participation/wins, class level-50 transitions,
+  targeted creature/emote achievements, critical deathblows, guild/circle joins,
+  group joins, friend additions,
+  housing plug placement, housing decor purchases, contract completions by
+  overall/type/quality, account-currency grants from quest/loot/account-item
+  claim paths, primal essence totals from those same account-currency grant
+  paths, costume item unlock ownership, public-event objective success, and
   `AchievementAdvance` spell grants are covered.
 - Remaining client achievement type ids stay data-only until each trigger
   family is mapped to a runtime event.
@@ -267,14 +280,14 @@ Current tradeskill notes:
 - Profession persistence, learned/discovered schematic persistence,
   learn/drop/talent/reset, active-profession validation for schematic crafting,
   direct item outputs, material debits, additive/catalyst item validation and
-  consumption, satchel updates, craft XP, quest tradeskill XP, and
-  crafting/rune packet surfaces are covered.
-- Relearn cost/cooldown semantics, hot/cold discovery, fail/crit outputs,
-  additive/catalyst output math, harvesting behavior, and durable rune state
-  remain explicit `INFO` blockers.
-- Client data and wiki text disagree on naming for tradeskill id 16:
-  server code currently names it `Augmentor`, while the wiki-facing profession
-  is Technologist.
+  consumption, satchel updates, craft XP, quest tradeskill XP,
+  non-discovery craft-finish `Success` hot/cold state, and crafting/rune packet
+  surfaces are covered.
+- Relearn cost/cooldown semantics, hot/cold discovery math/unlocks, fail/crit
+  outputs, additive/catalyst output math, harvesting behavior, and durable rune
+  state remain explicit `INFO` blockers.
+- Client data, wiki text, and server enum naming now agree that tradeskill id
+  16 is Technologist.
 
 ### `lore`
 

@@ -3027,26 +3027,46 @@ def build_achievements_report(archive_dir: Path, client_sql_dir: Path, root: Pat
         if name in {
             "KillCreatureEntry",
             "KillCreatureGroup",
+            "KillCreatureChecklist",
             "QuestComplete",
+            "QuestCompleteChecklist",
+            "AchievementComplete",
+            "EnterWorldZone",
+            "DiscoverObject",
+            "ActivateCreature",
             "CraftItem",
             "TradeskillTier",
+            "CostumeUnlock",
             "CraftItemChecklist",
             "ReputationLevel",
+            "QuestCompleteChecklistCount",
             "MapComplete",
             "CharacterLevel",
             "TitleEarned",
             "PathLevel",
+            "GuildBelovedReputation",
             "CurrencyEarned",
             "ItemConsume",
+            "FindSecretStash",
+            "GuildMaxPathLevel",
             "DuelParticipate",
             "DuelWin",
+            "ClassLevel50",
+            "EmoteTargetCreature",
+            "CriticalDeathblow",
             "GuildOrCircleJoin",
             "GroupJoin",
             "FriendAdd",
             "HousingPlugPlace",
             "HousingDecorPurchase",
             "RealmFirst",
+            "ContractQualityComplete",
+            "ContractTypeComplete",
+            "ContractComplete",
             "AccountCurrencyEarned",
+            "CostumeSetUnlock",
+            "PublicEventObjectiveComplete",
+            "PrimalEssenceEarned",
         }
     }
     blocked_runtime_type_ids = sorted(set(achievement_type_counts) - runtime_trigger_type_ids)
@@ -3077,6 +3097,10 @@ def build_achievements_report(archive_dir: Path, client_sql_dir: Path, root: Pat
     guild_achievement_text = read_text(root / "Source" / "NexusForever.Game" / "Achievement" / "GuildAchievementManager.cs")
     quest_manager_text = read_text(root / "Source" / "NexusForever.Game" / "Entity" / "QuestManager.cs")
     unit_entity_text = read_text(root / "Source" / "NexusForever.Game" / "Entity" / "UnitEntity.cs")
+    simple_entity_text = read_text(root / "Source" / "NexusForever.Game" / "Entity" / "SimpleEntity.cs")
+    client_activate_unit_handler_text = read_text(root / "Source" / "NexusForever.WorldServer" / "Network" / "Message" / "Handler" / "Entity" / "ClientActivateUnitHandler.cs")
+    client_activate_unit_cast_handler_text = read_text(root / "Source" / "NexusForever.WorldServer" / "Network" / "Message" / "Handler" / "Entity" / "ClientActivateUnitCastHandler.cs")
+    activation_achievement_updater_text = read_text(root / "Source" / "NexusForever.WorldServer" / "Network" / "Message" / "Handler" / "Entity" / "ActivationAchievementUpdater.cs")
     inventory_text = read_text(root / "Source" / "NexusForever.Game" / "Entity" / "Inventory.cs")
     currency_manager_text = read_text(root / "Source" / "NexusForever.Game" / "Entity" / "CurrencyManager.cs")
     player_text = read_text(root / "Source" / "NexusForever.Game" / "Entity" / "Player.cs")
@@ -3089,8 +3113,15 @@ def build_achievements_report(archive_dir: Path, client_sql_dir: Path, root: Pat
     reputation_manager_text = read_text(root / "Source" / "NexusForever.Game" / "Reputation" / "ReputationManager.cs")
     zone_map_text = read_text(root / "Source" / "NexusForever.Game" / "Map" / "ZoneMapManager.cs")
     spell_handler_text = read_text(root / "Source" / "NexusForever.Game" / "Spell" / "SpellEffectHandler.cs")
+    emote_handler_text = read_text(root / "Source" / "NexusForever.WorldServer" / "Network" / "Message" / "Handler" / "Chat" / "ClientEmoteHandler.cs")
     craft_handler_text = read_text(root / "Source" / "NexusForever.WorldServer" / "Network" / "Message" / "Handler" / "Crafting" / "ClientCraftingCraftHandlers.cs")
     loot_instance_item_text = read_text(root / "Source" / "NexusForever.Game" / "Loot" / "LootInstanceItem.cs")
+    account_inventory_text = read_text(root / "Source" / "NexusForever.Game" / "Account" / "Inventory" / "AccountInventoryManager.cs")
+    account_currency_achievement_text = read_text(root / "Source" / "NexusForever.Game" / "Achievement" / "AccountCurrencyAchievementUpdater.cs")
+    account_costume_manager_text = read_text(root / "Source" / "NexusForever.Game" / "Account" / "Costume" / "AccountCostumeManager.cs")
+    costume_achievement_text = read_text(root / "Source" / "NexusForever.Game" / "Achievement" / "CostumeAchievementUpdater.cs")
+    costume_unlock_handler_text = read_text(root / "Source" / "NexusForever.WorldServer" / "Network" / "Message" / "Handler" / "Costume" / "ClientCostumeItemUnlockHandler.cs")
+    public_event_objective_text = read_text(root / "Source" / "NexusForever.Game" / "PublicEvent" / "PublicEventObjective.cs")
     group_joined_handler_text = read_text(root / "Source" / "NexusForever.WorldServer" / "Network" / "Internal" / "Handler" / "Group" / "GroupMemberJoinedHandler.cs")
     friendship_added_handler_text = read_text(root / "Source" / "NexusForever.WorldServer" / "Network" / "Internal" / "Handler" / "Friendship" / "FriendshipAddedHandler.cs")
     friendship_type_handler_text = read_text(root / "Source" / "NexusForever.WorldServer" / "Network" / "Internal" / "Handler" / "Friendship" / "FriendshipTypeUpdatedHandler.cs")
@@ -3115,8 +3146,25 @@ def build_achievements_report(archive_dir: Path, client_sql_dir: Path, root: Pat
         and "TryClaimRealmFirstAchievement" in guild_achievement_text
         and "ServerRealmFirstAchievement" in base_achievement_text,
         "Quest completion triggers achievements": "AchievementType.QuestComplete" in quest_manager_text,
+        "Quest completion triggers checklist achievements": "AchievementType.QuestCompleteChecklist" in quest_manager_text,
+        "Quest completion triggers counted checklist achievements": "AchievementType.QuestCompleteChecklistCount" in quest_manager_text
+        and "UsesChecklistValueProgress" in base_achievement_text,
+        "Achievement completion triggers meta achievements": "AchievementType.AchievementComplete" in character_achievement_text
+        and "AchievementType.AchievementComplete" in guild_achievement_text,
         "Creature kill triggers achievements": "AchievementType.KillCreatureEntry" in unit_entity_text
         and "AchievementType.KillCreatureGroup" in unit_entity_text,
+        "Creature kill triggers checklist creature achievements": "AchievementType.KillCreatureChecklist" in unit_entity_text
+        and "IsAllGuildGroup" in character_achievement_text,
+        "World-zone entry triggers achievements": "AchievementType.EnterWorldZone" in player_text
+        and "entry.WorldZoneId" in base_achievement_text,
+        "Simple object activation triggers creature-id achievements": "AchievementType.ActivateCreature" in simple_entity_text
+        and "DatacubeManager" in simple_entity_text,
+        "Shared activation success triggers discovery-object achievements": "AchievementType.DiscoverObject" in activation_achievement_updater_text
+        and "ActivationAchievementUpdater.Update" in client_activate_unit_handler_text
+        and "ActivationAchievementUpdater.Update" in client_activate_unit_cast_handler_text,
+        "Shared activation success triggers secret-stash achievements": "AchievementType.FindSecretStash" in activation_achievement_updater_text
+        and "ActivationAchievementUpdater.Update" in client_activate_unit_handler_text
+        and "ActivationAchievementUpdater.Update" in client_activate_unit_cast_handler_text,
         "Crafting triggers crafted-item achievements": "AchievementType.CraftItem" in craft_handler_text
         and "AchievementType.CraftItemChecklist" in craft_handler_text,
         "Tradeskill tier changes trigger achievements": "AchievementType.TradeskillTier" in player_text
@@ -3129,11 +3177,23 @@ def build_achievements_report(archive_dir: Path, client_sql_dir: Path, root: Pat
         "Title grants trigger achievements": "AchievementType.TitleEarned" in title_manager_text,
         "Path level changes trigger achievements": "AchievementType.PathLevel" in path_manager_text
         and "SetAchievementProgress" in path_manager_text,
+        "Guild beloved reputation totals trigger achievements": "AchievementType.GuildBelovedReputation" in reputation_manager_text
+        and "FactionLevel.Beloved" in reputation_manager_text,
         "Currency gains trigger earned-currency achievements": "AchievementType.CurrencyEarned" in currency_manager_text
         and "CurrencyAddAmount" in currency_manager_text,
         "Item consume triggers achievements": "AchievementType.ItemConsume" in inventory_text,
+        "Guild max-path-level totals trigger achievements": "AchievementType.GuildMaxPathLevel" in path_manager_text
+        and "MaxPathLevel" in path_manager_text,
         "Duel completion triggers participation and win achievements": "AchievementType.DuelParticipate" in duel_manager_text
         and "AchievementType.DuelWin" in duel_manager_text,
+        "Class level-50 transitions trigger achievements": "AchievementType.ClassLevel50" in xp_manager_text
+        and "player.Class" in xp_manager_text,
+        "Targeted emotes trigger creature/emote checklist achievements": "AchievementType.EmoteTargetCreature" in emote_handler_text
+        and "TargetUnitId" in emote_handler_text
+        and "emote.EmoteId" in emote_handler_text,
+        "Critical deathblows trigger achievements": "AchievementType.CriticalDeathblow" in unit_entity_text
+        and "CombatResult.Critical" in unit_entity_text
+        and "KilledTarget" in unit_entity_text,
         "Guild and circle joins trigger achievements": "AchievementType.GuildOrCircleJoin" in guild_manager_text
         and "GuildType" in guild_manager_text,
         "Group joins trigger achievements": "AchievementType.GroupJoin" in group_joined_handler_text,
@@ -3141,8 +3201,23 @@ def build_achievements_report(archive_dir: Path, client_sql_dir: Path, root: Pat
         and "AchievementType.FriendAdd" in friendship_type_handler_text,
         "Housing plug placement triggers achievements": "AchievementType.HousingPlugPlace" in residence_map_text,
         "Housing decor purchases trigger achievements": "AchievementType.HousingDecorPurchase" in residence_map_text,
-        "Account currency grants trigger achievements": "AchievementType.AccountCurrencyEarned" in quest_manager_text
-        and "AchievementType.AccountCurrencyEarned" in loot_instance_item_text,
+        "Contract completions trigger contract achievements": "AchievementType.ContractComplete" in quest_manager_text
+        and "AchievementType.ContractQualityComplete" in quest_manager_text
+        and "AchievementType.ContractTypeComplete" in quest_manager_text
+        and "PeriodicQuestGroup.GetEntry" in quest_manager_text,
+        "Account currency grants trigger achievements": "AccountCurrencyAchievementUpdater.Update" in quest_manager_text
+        and "AccountCurrencyAchievementUpdater.Update" in loot_instance_item_text
+        and "AccountCurrencyAchievementUpdater.Update" in account_inventory_text
+        and "AchievementType.AccountCurrencyEarned" in account_currency_achievement_text,
+        "Primal essence account-currency grants trigger total achievements": "AchievementType.PrimalEssenceEarned" in account_currency_achievement_text
+        and "IsPrimalEssence" in account_currency_achievement_text,
+        "Costume item unlocks trigger wardrobe achievements": "CostumeAchievementUpdater.Update" in account_costume_manager_text
+        and "AchievementType.CostumeUnlock" in costume_achievement_text
+        and "AchievementType.CostumeSetUnlock" in costume_achievement_text
+        and "UnlockItem(session.Player, item)" in costume_unlock_handler_text,
+        "Public event objective success triggers objective achievements": "AchievementType.PublicEventObjectiveComplete" in public_event_objective_text
+        and "PublicEventStatus.Succeeded" in public_event_objective_text
+        and "Team.GetMembers()" in public_event_objective_text,
         "AchievementAdvance spell effect grants achievements": "SpellEffectType.AchievementAdvance" in spell_handler_text
         and "GrantAchievement" in spell_handler_text,
         "ServerAchievementInit serializes achievements": "ServerAchievementInit" in server_achievement_init_text
@@ -3163,7 +3238,7 @@ def build_achievements_report(archive_dir: Path, client_sql_dir: Path, root: Pat
 
     lines.append("")
     lines.append(
-        "- Result: INFO, persistence, packets, checklist/value completion, titles, realm-firsts, and mapped trigger paths are covered; remaining client achievement types stay blocked until their event families are mapped."
+        "- Result: INFO, persistence, packets, checklist/value completion, titles, realm-firsts, completion-driven meta achievements, and mapped trigger paths are covered; remaining client achievement types stay blocked until their event families are mapped."
     )
     lines.append("")
 
@@ -3371,6 +3446,9 @@ def build_tradeskills_report(archive_dir: Path, client_sql_dir: Path, root: Path
         "Craft finish packet serializes success, crafted schematic, item, and earned XP fields": "TradeskillSchematic2IdCrafted" in server_crafting_finish_text
         and "Item2IdCrafted" in server_crafting_finish_text
         and "EarnedXp" in server_crafting_finish_text,
+        "Fixed-recipe craft success reports non-discovery Success hot/cold state": "HotOrCold = CraftingDiscovery.Success" in crafting_handler_text
+        and "HotOrCold" in server_crafting_finish_text
+        and "Success = 3" in read_text(root / "Source" / "NexusForever.Game.Static" / "Crafting" / "CraftingDiscovery.cs"),
         "Player persists and serializes learned/discovered schematic state": "CharacterSchematicModel" in character_schematic_model_text
         and "SaveSchematics(context)" in player_text
         and "LearnedSchematics = learnedSchematics" in player_text
@@ -3405,7 +3483,7 @@ def build_tradeskills_report(archive_dir: Path, client_sql_dir: Path, root: Path
     if schematics_with_fail_output or schematics_with_crit_output:
         warnings.append("TradeskillSchematic2 rows include fail/crit outputs; current fixed-recipe handler only returns normal direct/loot output")
     if schematics_with_discovery:
-        warnings.append("TradeskillSchematic2 rows include discovery vectors; hot/cold discovery semantics remain blocked")
+        warnings.append("TradeskillSchematic2 rows include discovery vectors; fixed-recipe finish now reports Success, but hot/cold discovery math and unlock semantics remain blocked")
     additive_consumption_covered = (
         "TryBuildCraftingModifierItemCounts" in crafting_handler_text
         and "ValidateCraftingAdditive" in rune_handler_text
@@ -3422,7 +3500,7 @@ def build_tradeskills_report(archive_dir: Path, client_sql_dir: Path, root: Path
 
     lines.append("")
     lines.append(
-        "- Result: INFO, profession persistence, learn/drop/talent/reset, fixed recipe crafting, material debits, additive/catalyst item validation and consumption, satchel updates, learned schematic state, craft/quest XP, and rune packet surfaces are covered; hot/cold discovery, harvesting, additive/catalyst output math, fail/crit outputs, and durable rune state remain blocked."
+        "- Result: INFO, profession persistence, learn/drop/talent/reset, fixed recipe crafting, material debits, additive/catalyst item validation and consumption, satchel updates, learned schematic state, craft/quest XP, non-discovery craft-finish Success hot/cold state, and rune packet surfaces are covered; hot/cold discovery math/unlocks, harvesting, additive/catalyst output math, fail/crit outputs, and durable rune state remain blocked."
     )
     lines.append("")
 
