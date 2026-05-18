@@ -3,6 +3,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Configuration.Model;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.GameTable;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
@@ -78,14 +79,8 @@ namespace NexusForever.Game.Entity
             if (model.LastOnline == null)
                 return;
 
-            float xpForLevel     = GameTableManager.Instance.XpPerLevel.GetEntry(player.Level).MinXpForLevel;
-            float xpForNextLevel = GameTableManager.Instance.XpPerLevel.GetEntry(player.Level + 1).MinXpForLevel;
-
-            uint maximumBonusXp;
-            if (player.Level < GetMaxCharacterLevel())
-                maximumBonusXp = (uint)((xpForNextLevel - xpForLevel) * RestXpCapLevelPercent);
-            else
-                maximumBonusXp = 0;
+            uint levelXpSpan = GetCurrentLevelXpSpan();
+            uint maximumBonusXp = GetMaximumRestBonusXp(levelXpSpan);
 
             double xpPercentEarned;
 
@@ -100,9 +95,38 @@ namespace NexusForever.Game.Entity
                     break;
             }
 
-            uint bonusXpValue = Math.Clamp((uint)((xpForNextLevel - xpForLevel) * xpPercentEarned), 0, maximumBonusXp);
+            uint bonusXpValue = Math.Clamp((uint)(levelXpSpan * xpPercentEarned), 0, maximumBonusXp);
             uint totalBonusXp = Math.Clamp(model.RestBonusXp + bonusXpValue, 0u, maximumBonusXp);
             RestBonusXp = totalBonusXp;
+        }
+
+        public uint ModifyRestBonusXp(float levelSpanMultiplier)
+        {
+            if (float.IsNaN(levelSpanMultiplier) || float.IsInfinity(levelSpanMultiplier))
+                return RestBonusXp;
+
+            uint levelXpSpan = GetCurrentLevelXpSpan();
+            uint maximumBonusXp = GetMaximumRestBonusXp(levelXpSpan);
+            RestBonusXp = CalculateModifiedRestBonusXp(RestBonusXp, levelXpSpan, maximumBonusXp, levelSpanMultiplier);
+            return RestBonusXp;
+        }
+
+        public static uint CalculateModifiedRestBonusXp(uint currentRestBonusXp, uint levelXpSpan, uint maximumRestBonusXp, float levelSpanMultiplier)
+        {
+            if (float.IsNaN(levelSpanMultiplier) || float.IsInfinity(levelSpanMultiplier))
+                return Math.Min(currentRestBonusXp, maximumRestBonusXp);
+
+            if (levelXpSpan == 0u || maximumRestBonusXp == 0u)
+                return 0u;
+
+            double modifiedRestBonusXp = currentRestBonusXp + levelXpSpan * (double)levelSpanMultiplier;
+            if (modifiedRestBonusXp <= 0d)
+                return 0u;
+
+            if (modifiedRestBonusXp >= maximumRestBonusXp)
+                return maximumRestBonusXp;
+
+            return (uint)modifiedRestBonusXp;
         }
 
         /// <summary>
@@ -219,6 +243,7 @@ namespace NexusForever.Game.Entity
                 return;
 
             player.Level = newLevel;
+            player.AchievementManager.SetAchievementProgress(player, AchievementType.CharacterLevel, 0u, 0u, newLevel);
 
             // Grant Rewards for level up
             player.SpellManager.GrantSpells();
@@ -235,6 +260,21 @@ namespace NexusForever.Game.Entity
         private static float GetSignatureXpRate()
         {
             return SharedConfiguration.Instance.Get<WorldConfig>()?.SignatureXpRate ?? DefaultSignatureXpRate;
+        }
+
+        private uint GetCurrentLevelXpSpan()
+        {
+            if (player.Level >= GetMaxCharacterLevel())
+                return 0u;
+
+            uint xpForLevel     = GameTableManager.Instance.XpPerLevel.GetEntry(player.Level).MinXpForLevel;
+            uint xpForNextLevel = GameTableManager.Instance.XpPerLevel.GetEntry(player.Level + 1).MinXpForLevel;
+            return xpForNextLevel > xpForLevel ? xpForNextLevel - xpForLevel : 0u;
+        }
+
+        private static uint GetMaximumRestBonusXp(uint levelXpSpan)
+        {
+            return (uint)(levelXpSpan * RestXpCapLevelPercent);
         }
     }
 }

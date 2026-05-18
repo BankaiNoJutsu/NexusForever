@@ -7,6 +7,7 @@ using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Map;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Housing;
 using NexusForever.Game.Static.Spell;
@@ -356,7 +357,7 @@ namespace NexusForever.Game.Map.Instance
 
             HousingResult result = housingPlugUpdate.Operation switch
             {
-                ClientHousingPlugUpdate.PlugUpdateOperation.PlaceOrRotate => PlugPlaceOrRotate(plot, housingPlugUpdate),
+                ClientHousingPlugUpdate.PlugUpdateOperation.PlaceOrRotate => PlugPlaceOrRotate(player, plot, housingPlugUpdate),
                 ClientHousingPlugUpdate.PlugUpdateOperation.Remove        => PlugRemove(plot),
                 ClientHousingPlugUpdate.PlugUpdateOperation.Repair        => HousingResult.Plug_ModifyFailed,
                 _                                                         => throw new InvalidPacketValueException()
@@ -377,7 +378,7 @@ namespace NexusForever.Game.Map.Instance
             SendResidencePlots(residence);
         }
 
-        private HousingResult PlugPlaceOrRotate(IPlot plot, ClientHousingPlugUpdate housingPlugUpdate)
+        private HousingResult PlugPlaceOrRotate(IPlayer player, IPlot plot, ClientHousingPlugUpdate housingPlugUpdate)
         {
             HousingPlugItemEntry entry = gameTableManager.HousingPlugItem.GetEntry(housingPlugUpdate.HousingPlugItemId);
             if (entry == null)
@@ -406,6 +407,9 @@ namespace NexusForever.Game.Map.Instance
 
             plot.PlugFacing = housingPlugUpdate.PlugFacing;
             AddPlugEntity(plot);
+            if (!isRotation)
+                player.AchievementManager.CheckAchievements(player, AchievementType.HousingPlugPlace, 0u);
+
             return HousingResult.Success;
         }
 
@@ -521,6 +525,9 @@ namespace NexusForever.Game.Map.Instance
             }
 
             IDecor decor = residence.DecorCreate(entry);
+            if (entry.CostCurrencyTypeId != 0u && entry.Cost != 0u)
+                player.AchievementManager.CheckAchievements(player, AchievementType.HousingDecorPurchase, 0u);
+
             decor.Type = update.DecorType;
             decor.PlotIndex = update.PlotIndex;
 

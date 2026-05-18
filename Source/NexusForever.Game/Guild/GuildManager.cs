@@ -6,6 +6,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Entity;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Guild;
 using NexusForever.GameTable.Text.Filter;
@@ -433,6 +434,8 @@ namespace NexusForever.Game.Guild
             guild.JoinGuild(owner);
 
             GlobalGuildManager.Instance.TrackCharacterGuild(owner.CharacterId, guild.Id);
+
+            owner.AchievementManager.CheckAchievements(owner, AchievementType.GuildOrCircleJoin, (uint)guild.Type);
         }
 
         /// <summary>

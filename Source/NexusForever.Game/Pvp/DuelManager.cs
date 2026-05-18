@@ -1,5 +1,6 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Pvp;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Pvp;
 using NexusForever.Network.Message;
@@ -273,12 +274,27 @@ namespace NexusForever.Game.Pvp
         {
             RemoveSession(session);
 
+            UpdateDuelAchievements(winner, loser, reason);
+
             SendToParticipants(session, new ServerDuelResult
             {
                 WinnerUnitId = winner?.Guid ?? 0u,
                 LoserUnitId  = loser?.Guid ?? 0u,
                 Reason       = reason
             });
+        }
+
+        private static void UpdateDuelAchievements(IPlayer winner, IPlayer loser, DuelFinishReason reason)
+        {
+            if (winner == null || loser == null)
+                return;
+
+            if (reason != DuelFinishReason.Defeated && reason != DuelFinishReason.Forfeited2)
+                return;
+
+            winner.AchievementManager.CheckAchievements(winner, AchievementType.DuelParticipate, 0u);
+            loser.AchievementManager.CheckAchievements(loser, AchievementType.DuelParticipate, 0u);
+            winner.AchievementManager.CheckAchievements(winner, AchievementType.DuelWin, 0u);
         }
 
         private void RemoveSession(DuelSession session)

@@ -8,6 +8,7 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Customisation;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Character;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Account;
@@ -76,6 +77,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 CharacterCreationEntry creationEntry = gameTableManager.CharacterCreation.GetEntry(characterCreate.CharacterCreationId);
                 if (creationEntry == null)
                     return CharacterModifyResult.CreateFailed_Internal;
+
+                if (!CharacterCreationValidation.HasSupportedStartingLocation(creationEntry, characterManager))
+                    return CharacterModifyResult.CreateFailed;
 
                 if (creationEntry.CharacterCreationStartEnum == CharacterCreationStart.Level50
                     && !session.Account.CurrencyManager.CanAfford(AccountCurrencyType.MaxLevelToken, 1ul))

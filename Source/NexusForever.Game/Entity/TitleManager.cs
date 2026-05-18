@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
@@ -111,6 +112,8 @@ namespace NexusForever.Game.Entity
             }
             else
                 titles.Add(titleId, new Title(player.CharacterId, entry));
+
+            player.AchievementManager.CheckAchievements(player, AchievementType.TitleEarned, 0u);
 
             if (!suppress)
             {

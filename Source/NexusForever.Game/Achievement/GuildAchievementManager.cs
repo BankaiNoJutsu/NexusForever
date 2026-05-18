@@ -48,5 +48,13 @@ namespace NexusForever.Game.Achievement
         {
             CheckAchievements(target, GlobalAchievementManager.Instance.GetGuildAchievements(type), objectId, objectIdAlt, count);
         }
+
+        /// <summary>
+        /// Set current progress for guild achievements of <see cref="AchievementType"/> as <see cref="IPlayer"/> with supplied object ids.
+        /// </summary>
+        public override void SetAchievementProgress(IPlayer target, AchievementType type, uint objectId, uint objectIdAlt, uint value)
+        {
+            SetAchievementProgress(target, GlobalAchievementManager.Instance.GetGuildAchievements(type), objectId, objectIdAlt, value);
+        }
     }
 }

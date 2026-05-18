@@ -146,6 +146,7 @@ namespace NexusForever.Database.Character
                     .Include(c => c.ActionSetShortcut)
                     .Include(c => c.ActionSetAmp)
                     .Include(c => c.Datacube)
+                    .Include(c => c.GalacticArchive)
                     .Include(c => c.Mail)
                         .ThenInclude(c => c.Attachment)
                             .ThenInclude(c => c.Item)
@@ -157,6 +158,7 @@ namespace NexusForever.Database.Character
                     .Include(c => c.Tradeskill)
                     .Include(c => c.TradeskillMaterials)
                     .Include(c => c.Reputation)
+                    .Include(c => c.Schematic)
                     .ToListAsync();
             });
         }

@@ -2,6 +2,7 @@
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.Network.Internal.Message.Group;
 using NexusForever.Network.Internal.Message.Group.Shared;
 using NexusForever.Network.World.Message.Model;
@@ -33,6 +34,8 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
             IPlayer player = playerManager.GetPlayer(message.AddedMember.Identity.ToGameIdentity());
             if (player == null)
                 return Task.CompletedTask;
+
+            player.AchievementManager.CheckAchievements(player, AchievementType.GroupJoin, 0u);
 
             player.Session.EnqueueMessageEncrypted(new ServerGroupJoin
             {

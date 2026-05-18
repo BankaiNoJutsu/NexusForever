@@ -33,5 +33,10 @@ namespace NexusForever.Game.Abstract.Achievement
         /// Update or complete any achievements of <see cref="AchievementType"/> as <see cref="IPlayer"/> with supplied object ids.
         /// </summary>
         void CheckAchievements(IPlayer target, AchievementType type, uint objectId, uint objectIdAlt = 0, uint count = 1);
+
+        /// <summary>
+        /// Set current progress for threshold achievements of <see cref="AchievementType"/> as <see cref="IPlayer"/> with supplied object ids.
+        /// </summary>
+        void SetAchievementProgress(IPlayer target, AchievementType type, uint objectId, uint objectIdAlt, uint value);
     }
 }

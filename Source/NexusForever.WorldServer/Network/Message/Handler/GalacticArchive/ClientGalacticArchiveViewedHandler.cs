@@ -15,8 +15,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.GalacticArchive
 
         public void HandleMessage(IWorldSession session, ClientGalacticArchiveViewed archiveViewed)
         {
+            bool viewed = session.Player?.GalacticArchiveManager.MarkArticleViewed(archiveViewed.ArchiveArticleId) ?? false;
             log.LogDebug("ClientGalacticArchiveViewed: player={Player} articleId={ArticleId}",
                 session.Player?.Guid, archiveViewed.ArchiveArticleId);
+
+            if (!viewed)
+                log.LogDebug("Rejected Galactic Archive viewed request from player {Player}: invalid or locked article {ArticleId}.",
+                    session.Player?.Guid, archiveViewed.ArchiveArticleId);
         }
     }
 }

@@ -94,6 +94,7 @@ namespace NexusForever.Game.Abstract.Entity
         IPetCustomisationManager PetCustomisationManager { get; }
         ICharacterKeybindingManager KeybindingManager { get; }
         IDatacubeManager DatacubeManager { get; }
+        IGalacticArchiveManager GalacticArchiveManager { get; }
         IMailManager MailManager { get; }
         IZoneMapManager ZoneMapManager { get; }
         IQuestManager QuestManager { get; }
@@ -195,8 +196,13 @@ namespace NexusForever.Game.Abstract.Entity
         void SendAttributePoints();
         bool HasTradeskill(TradeskillType tradeskillId);
         bool LearnTradeskill(TradeskillType toLearnTradeskillId, TradeskillType toDropTradeskillId);
+        uint AddTradeskillXp(TradeskillType tradeskillId, uint amount);
+        uint AddTradeskillXpForTier(uint tradeskillTierId, uint amount);
         bool PickTradeskillTalent(TradeskillType tradeskillId, uint tier, uint tradeskillBonusId);
         bool ResetTradeskillTalents(TradeskillType tradeskillId);
+        bool HasLearnedSchematic(uint tradeskillSchematic2Id);
+        bool LearnSchematic(uint tradeskillSchematic2Id, bool discovered = false);
+        bool DiscoverSchematic(uint tradeskillSchematic2Id);
         void SendTradeskillInitialPackets();
 
         /// <summary>

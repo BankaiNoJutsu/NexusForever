@@ -32,6 +32,7 @@ using NexusForever.Game.Quest;
 using NexusForever.Game.Reputation;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Entity;
@@ -274,6 +275,7 @@ namespace NexusForever.Game.Entity
         private readonly uint[] attributePointAllocations = new uint[6];
         private readonly Dictionary<TradeskillType, TradeskillState> tradeskills = [];
         private readonly List<TradeskillState> deletedTradeskills = [];
+        private readonly Dictionary<uint, SchematicState> schematics = [];
 
         public override uint Level
         {
@@ -335,6 +337,7 @@ namespace NexusForever.Game.Entity
         public IPetCustomisationManager PetCustomisationManager { get; private set; }
         public ICharacterKeybindingManager KeybindingManager { get; private set; }
         public IDatacubeManager DatacubeManager { get; private set; }
+        public IGalacticArchiveManager GalacticArchiveManager { get; private set; }
         public IMailManager MailManager { get; private set; }
         public IZoneMapManager ZoneMapManager { get; private set; }
         public IQuestManager QuestManager { get; private set; }
@@ -439,6 +442,14 @@ namespace NexusForever.Game.Entity
                 tradeskills[(TradeskillType)tradeskillModel.TradeskillId] = tradeskillState;
             }
 
+            foreach (CharacterSchematicModel schematicModel in model.Schematic)
+            {
+                if (GameTableManager.Instance.TradeskillSchematic2.GetEntry(schematicModel.TradeskillSchematic2Id) == null)
+                    continue;
+
+                schematics[schematicModel.TradeskillSchematic2Id] = SchematicState.FromModel(schematicModel);
+            }
+
             foreach (CharacterStatModel statModel in model.Stat)
             {
                 var statValue = new StatValue(statModel);
@@ -470,6 +481,7 @@ namespace NexusForever.Game.Entity
             PetCustomisationManager = new PetCustomisationManager(this, model);
             KeybindingManager       = new CharacterKeybindingManager(this, model);
             DatacubeManager         = new DatacubeManager(this, model);
+            GalacticArchiveManager  = new GalacticArchiveManager(this, model);
             MailManager             = new MailManager(this, model);
             ZoneMapManager          = new ZoneMapManager(this, model);
             QuestManager            = new QuestManager(this, model);
@@ -760,12 +772,14 @@ namespace NexusForever.Game.Entity
             KeybindingManager.Save(context);
             SpellManager.Save(context);
             DatacubeManager.Save(context);
+            GalacticArchiveManager.Save(context);
             MailManager.Save(context);
             ZoneMapManager.Save(context);
             QuestManager.Save(context);
             AchievementManager.Save(context);
             SupplySatchelManager.Save(context);
             SaveTradeskills(context);
+            SaveSchematics(context);
             XpManager.Save(context);
             ReputationManager.Save(context);
             GuildManager.Save(context);
@@ -809,6 +823,25 @@ namespace NexusForever.Game.Entity
                 }
 
                 tradeskill.ClearSaveState();
+            }
+        }
+
+        private void SaveSchematics(CharacterContext context)
+        {
+            foreach (SchematicState schematic in schematics.Values)
+            {
+                CharacterSchematicModel model = schematic.BuildModel();
+                if (schematic.PendingCreate)
+                    context.Add(model);
+                else if (schematic.Dirty)
+                {
+                    EntityEntry<CharacterSchematicModel> entity = context.Attach(model);
+                    entity.Property(p => p.Discovered).IsModified = true;
+                    entity.Property(p => p.DiscoveryCoordinateX).IsModified = true;
+                    entity.Property(p => p.DiscoveryCoordinateY).IsModified = true;
+                }
+
+                schematic.ClearSaveState();
             }
         }
 
@@ -1028,6 +1061,7 @@ namespace NexusForever.Game.Entity
             SpellManager.SendInitialPackets();
             PetCustomisationManager.SendInitialPackets();
             DatacubeManager.SendInitialPackets();
+            GalacticArchiveManager.SendInitialPackets();
             MailManager.SendInitialPackets();
             ZoneMapManager.SendInitialPackets();
             Account.CurrencyManager.SendInitialPackets();
@@ -1728,6 +1762,7 @@ namespace NexusForever.Game.Entity
                 SendProfessionUpdate(BuildInactiveTradeskillInfo(toDropTradeskillId));
             }
 
+            bool wasActive = HasTradeskill(toLearnTradeskillId);
             if (!tradeskills.TryGetValue(toLearnTradeskillId, out TradeskillState learnedTradeskill))
             {
                 learnedTradeskill = TradeskillState.Create(CharacterId, toLearnTradeskillId);
@@ -1740,7 +1775,54 @@ namespace NexusForever.Game.Entity
 
             SendProfessionUpdate(learnedTradeskill.BuildInfo());
             QuestManager.ObjectiveUpdate(QuestObjectiveType.LearnTradeskill, (uint)toLearnTradeskillId, 1u);
+            if (!wasActive)
+                CheckTradeskillTierAchievements(toLearnTradeskillId, 0u, learnedTradeskill.TradeskillXp);
             return true;
+        }
+
+        public uint AddTradeskillXp(TradeskillType tradeskillId, uint amount)
+        {
+            if (amount == 0u || !HasTradeskill(tradeskillId))
+                return 0u;
+
+            TradeskillState tradeskill = tradeskills[tradeskillId];
+            uint previousXp = tradeskill.TradeskillXp;
+            tradeskill.TradeskillXp = uint.MaxValue - tradeskill.TradeskillXp < amount
+                ? uint.MaxValue
+                : tradeskill.TradeskillXp + amount;
+
+            if (tradeskill.TradeskillXp == previousXp)
+                return 0u;
+
+            tradeskill.MarkDirty();
+            SendProfessionUpdate(tradeskill.BuildInfo());
+            CheckTradeskillTierAchievements(tradeskillId, previousXp, tradeskill.TradeskillXp);
+            return tradeskill.TradeskillXp - previousXp;
+        }
+
+        private void CheckTradeskillTierAchievements(TradeskillType tradeskillId, uint previousXp, uint currentXp)
+        {
+            foreach (TradeskillTierEntry tierEntry in GameTableManager.Instance.TradeskillTier.Entries
+                .Where(entry => entry.TradeSkillId == (uint)tradeskillId
+                    && entry.RequiredXp <= currentXp
+                    && (entry.RequiredXp == 0u ? previousXp == 0u : entry.RequiredXp > previousXp)))
+                AchievementManager.CheckAchievements(this, AchievementType.TradeskillTier, tierEntry.Id);
+        }
+
+        public uint AddTradeskillXpForTier(uint tradeskillTierId, uint amount)
+        {
+            if (amount == 0u)
+                return 0u;
+
+            TradeskillTierEntry tierEntry = GameTableManager.Instance.TradeskillTier.GetEntry(tradeskillTierId);
+            if (tierEntry == null || tierEntry.TradeSkillId == 0u)
+                return 0u;
+
+            var tradeskillId = (TradeskillType)tierEntry.TradeSkillId;
+            if (!Enum.IsDefined(tradeskillId))
+                return 0u;
+
+            return AddTradeskillXp(tradeskillId, amount);
         }
 
         public bool PickTradeskillTalent(TradeskillType tradeskillId, uint tier, uint tradeskillBonusId)
@@ -1780,17 +1862,93 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
+        public bool HasLearnedSchematic(uint tradeskillSchematic2Id)
+        {
+            return schematics.ContainsKey(tradeskillSchematic2Id);
+        }
+
+        public bool LearnSchematic(uint tradeskillSchematic2Id, bool discovered = false)
+        {
+            TradeskillSchematic2Entry schematicEntry = GameTableManager.Instance.TradeskillSchematic2.GetEntry(tradeskillSchematic2Id);
+            if (schematicEntry == null)
+                return false;
+
+            if (!Enum.IsDefined((TradeskillType)schematicEntry.TradeSkillId))
+                return false;
+
+            if (schematics.TryGetValue(tradeskillSchematic2Id, out SchematicState existingSchematic))
+            {
+                if (discovered && !existingSchematic.Discovered)
+                {
+                    existingSchematic.Discovered = true;
+                    existingSchematic.DiscoveryCoordinateX = schematicEntry.VectorX;
+                    existingSchematic.DiscoveryCoordinateY = schematicEntry.VectorY;
+                    existingSchematic.MarkDirty();
+                }
+
+                return false;
+            }
+
+            SchematicState schematic = SchematicState.Create(CharacterId, schematicEntry, discovered);
+            schematics.Add(tradeskillSchematic2Id, schematic);
+
+            Session.EnqueueMessageEncrypted(new ServerSchematicAddLearned
+            {
+                TradeskillId           = (TradeskillType)schematicEntry.TradeSkillId,
+                TradeskillSchematic2Id = tradeskillSchematic2Id,
+                DiscoveryCoordinates   = new Vector2(schematic.DiscoveryCoordinateX, schematic.DiscoveryCoordinateY)
+            });
+
+            QuestManager.ObjectiveUpdate(QuestObjectiveType.ObtainSchematic, tradeskillSchematic2Id, 1u);
+            return true;
+        }
+
+        public bool DiscoverSchematic(uint tradeskillSchematic2Id)
+        {
+            return LearnSchematic(tradeskillSchematic2Id, true);
+        }
+
         public void SendTradeskillInitialPackets()
         {
+            List<uint> learnedSchematics = schematics.Keys
+                .OrderBy(s => s)
+                .ToList();
+
             Session.EnqueueMessageEncrypted(new ServerProfessionsLoad
             {
                 Tradeskills = tradeskills.Values
                     .OrderBy(t => t.TradeskillId)
                     .Select(t => t.BuildInfo())
-                    .ToList()
+                    .ToList(),
+                LearnedSchematics = learnedSchematics,
+                DiscoveredSchematics = schematics.Values
+                    .Where(s => s.Discovered)
+                    .OrderBy(s => s.TradeskillSchematic2Id)
+                    .Select(s => new ServerProfessionsLoad.DiscoveredSchematic
+                    {
+                        TradeskillSchematic2Id = s.TradeskillSchematic2Id,
+                        Coordinates = new Vector2(s.DiscoveryCoordinateX, s.DiscoveryCoordinateY)
+                    })
+                    .ToList(),
+                LearnedSchematicDiscoveredFlags = BuildLearnedSchematicDiscoveredFlags(learnedSchematics)
             });
 
             Session.EnqueueMessageEncrypted(new ServerProfessionModifiers());
+        }
+
+        private List<uint> BuildLearnedSchematicDiscoveredFlags(IReadOnlyList<uint> learnedSchematics)
+        {
+            var flags = new List<uint>();
+            for (int i = 0; i < learnedSchematics.Count; i++)
+            {
+                if (i % 32 == 0)
+                    flags.Add(0u);
+
+                if (schematics.TryGetValue(learnedSchematics[i], out SchematicState schematic) && schematic.Discovered)
+                    flags[^1] |= 1u << (i % 32);
+            }
+
+            return flags;
         }
 
         private void SendProfessionUpdate(TradeskillInfo tradeskillInfo)
@@ -2673,6 +2831,66 @@ namespace NexusForever.Game.Entity
             DeathState = null;
             RemoveControlUnit();
             Map?.PublicEventManager.OnResurrection(this);
+        }
+
+        private sealed class SchematicState
+        {
+            public ulong CharacterId { get; init; }
+            public uint TradeskillSchematic2Id { get; init; }
+            public bool Discovered { get; set; }
+            public float DiscoveryCoordinateX { get; set; }
+            public float DiscoveryCoordinateY { get; set; }
+            public bool PendingCreate { get; private set; }
+            public bool Dirty { get; private set; }
+
+            public static SchematicState Create(ulong characterId, TradeskillSchematic2Entry schematicEntry, bool discovered)
+            {
+                return new SchematicState
+                {
+                    CharacterId              = characterId,
+                    TradeskillSchematic2Id   = schematicEntry.Id,
+                    Discovered               = discovered,
+                    DiscoveryCoordinateX     = schematicEntry.VectorX,
+                    DiscoveryCoordinateY     = schematicEntry.VectorY,
+                    PendingCreate            = true
+                };
+            }
+
+            public static SchematicState FromModel(CharacterSchematicModel model)
+            {
+                return new SchematicState
+                {
+                    CharacterId              = model.Id,
+                    TradeskillSchematic2Id   = model.TradeskillSchematic2Id,
+                    Discovered               = model.Discovered,
+                    DiscoveryCoordinateX     = model.DiscoveryCoordinateX,
+                    DiscoveryCoordinateY     = model.DiscoveryCoordinateY
+                };
+            }
+
+            public void MarkDirty()
+            {
+                if (!PendingCreate)
+                    Dirty = true;
+            }
+
+            public void ClearSaveState()
+            {
+                PendingCreate = false;
+                Dirty         = false;
+            }
+
+            public CharacterSchematicModel BuildModel()
+            {
+                return new CharacterSchematicModel
+                {
+                    Id                    = CharacterId,
+                    TradeskillSchematic2Id = TradeskillSchematic2Id,
+                    Discovered            = Discovered,
+                    DiscoveryCoordinateX  = DiscoveryCoordinateX,
+                    DiscoveryCoordinateY  = DiscoveryCoordinateY
+                };
+            }
         }
 
         private sealed class TradeskillState

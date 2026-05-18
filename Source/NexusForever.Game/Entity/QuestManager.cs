@@ -5,10 +5,13 @@ using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Quest;
 using NexusForever.Game.Static;
+using NexusForever.Game.Static.Account;
+using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
+using NexusForever.Game.Reputation;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
@@ -176,6 +179,11 @@ namespace NexusForever.Game.Entity
             return GetQuest(questId)?.State;
         }
 
+        public bool HasCompletedQuest(ushort questId)
+        {
+            return GetQuestState(questId) == QuestState.Completed;
+        }
+
         private IQuest GetQuest(ushort questId, GetQuestFlags flags = GetQuestFlags.All)
         {
             if ((flags & GetQuestFlags.Active) != 0
@@ -325,6 +333,10 @@ namespace NexusForever.Game.Entity
                 return false;
             if (player.Level < info.Entry.PrerequisiteLevel)
                 return false;
+            if (info.Entry.PrerequisiteItem != 0u && !player.Inventory.HasItemCount(info.Entry.PrerequisiteItem, 1u))
+                return false;
+            if (!MeetsFactionLevelPrerequisites(info.Entry))
+                return false;
 
             if (!info.PrerequisiteQuests.IsEmpty)
             {
@@ -335,6 +347,14 @@ namespace NexusForever.Game.Entity
                     preReqQuestsCompleted = info.PrerequisiteQuests.All(q => GetQuestState((ushort)q.Id) == QuestState.Completed);
 
                 if (!preReqQuestsCompleted)
+                    return false;
+            }
+
+            foreach (uint exclusionQuestId in GetQuestExclusionPrerequisites(info.Entry))
+            {
+                if (exclusionQuestId > ushort.MaxValue)
+                    return false;
+                if (GetQuestState((ushort)exclusionQuestId) != null)
                     return false;
             }
 
@@ -350,6 +370,44 @@ namespace NexusForever.Game.Entity
             }
 
             return true;
+        }
+
+        public static bool MeetsFactionLevelRequirement(FactionLevel currentLevel, uint requiredLevel, bool compareLessOrEqual)
+        {
+            if (requiredLevel > (uint)FactionLevel.Beloved)
+                return false;
+
+            var required = (FactionLevel)requiredLevel;
+            return compareLessOrEqual
+                ? currentLevel <= required
+                : currentLevel >= required;
+        }
+
+        private bool MeetsFactionLevelPrerequisites(Quest2Entry entry)
+        {
+            return MeetsFactionLevelPrerequisite(entry.FactionIdPreq0, entry.FactionLevelPreq0, entry.FactionLevelCompPreq0)
+                && MeetsFactionLevelPrerequisite(entry.FactionIdPreq01, entry.FactionLevelPreq01, entry.FactionLevelCompPreq01)
+                && MeetsFactionLevelPrerequisite(entry.FactionIdPreq02, entry.FactionLevelPreq02, entry.FactionLevelCompPreq02);
+        }
+
+        private bool MeetsFactionLevelPrerequisite(uint factionId, uint requiredLevel, bool compareLessOrEqual)
+        {
+            if (factionId == 0u)
+                return true;
+
+            float reputationAmount = player.ReputationManager.GetReputation((Faction)factionId)?.Amount ?? 0f;
+            FactionLevel currentLevel = FactionNode.GetFactionLevel(reputationAmount);
+            return MeetsFactionLevelRequirement(currentLevel, requiredLevel, compareLessOrEqual);
+        }
+
+        private static IEnumerable<uint> GetQuestExclusionPrerequisites(Quest2Entry entry)
+        {
+            if (entry.QuestIdExclusionPreq0 != 0u)
+                yield return entry.QuestIdExclusionPreq0;
+            if (entry.QuestIdExclusionPreq1 != 0u)
+                yield return entry.QuestIdExclusionPreq1;
+            if (entry.QuestIdExclusionPreq2 != 0u)
+                yield return entry.QuestIdExclusionPreq2;
         }
 
         /// <summary>
@@ -656,8 +714,29 @@ namespace NexusForever.Game.Entity
                 case QuestRewardType.Item:
                     player.Inventory.ItemCreate(InventoryLocation.Inventory, entry.ObjectId, entry.ObjectAmount);
                     break;
+                case QuestRewardType.Reputation:
+                    player.ReputationManager.UpdateReputation((Faction)entry.ObjectId, entry.ObjectAmount);
+                    break;
                 case QuestRewardType.Money:
                     player.CurrencyManager.CurrencyAddAmount((CurrencyType)entry.ObjectId, entry.ObjectAmount);
+                    break;
+                case QuestRewardType.TradeSkillXp:
+                    player.AddTradeskillXpForTier(entry.ObjectId, entry.ObjectAmount);
+                    break;
+                case QuestRewardType.TradeSkill:
+                    if (Enum.IsDefined((TradeskillType)entry.ObjectId))
+                        player.LearnTradeskill((TradeskillType)entry.ObjectId, 0);
+                    else
+                        log.Warn($"Unhandled invalid quest tradeskill reward objectId {entry.ObjectId}!");
+                    break;
+                case QuestRewardType.AccountCurrency:
+                    if (Enum.IsDefined((AccountCurrencyType)entry.ObjectId))
+                    {
+                        player.Account.CurrencyManager.CurrencyAddAmount((AccountCurrencyType)entry.ObjectId, entry.ObjectAmount);
+                        player.AchievementManager.CheckAchievements(player, AchievementType.AccountCurrencyEarned, entry.ObjectId, count: entry.ObjectAmount);
+                    }
+                    else
+                        log.Warn($"Unhandled invalid quest account currency reward objectId {entry.ObjectId}!");
                     break;
                 default:
                 {

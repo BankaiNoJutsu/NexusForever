@@ -46,6 +46,15 @@ namespace NexusForever.Game.Achievement
             target.GuildManager.Guild?.AchievementManager.CheckAchievements(target, type, objectId, objectIdAlt, count);
         }
 
+        /// <summary>
+        /// Set current progress for player achievements of <see cref="AchievementType"/> as <see cref="IPlayer"/> with supplied object ids.
+        /// </summary>
+        public override void SetAchievementProgress(IPlayer target, AchievementType type, uint objectId, uint objectIdAlt, uint value)
+        {
+            SetAchievementProgress(target, GlobalAchievementManager.Instance.GetCharacterAchievements(type), objectId, objectIdAlt, value);
+            target.GuildManager.Guild?.AchievementManager.SetAchievementProgress(target, type, objectId, objectIdAlt, value);
+        }
+
         protected override void CompleteAchievement(IAchievement achievement)
         {
             base.CompleteAchievement(achievement);

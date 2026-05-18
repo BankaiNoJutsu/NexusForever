@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Loot;
+using NexusForever.Game.Static.Achievement;
+using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.GameTable;
@@ -168,6 +170,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         private readonly record struct MaterialDebit(uint Item2Id, ushort MaterialId, uint SatchelCount, uint InventoryCount);
 
+        private readonly record struct ItemDebit(uint Item2Id, uint Count, ItemUpdateReason Reason);
+
         public static TradeskillSchematic2Entry GetSchematic(IGameTableManager gameTableManager, uint tradeskillSchematic2Id)
         {
             TradeskillSchematic2Entry schematic = gameTableManager.TradeskillSchematic2.GetEntry(tradeskillSchematic2Id);
@@ -208,6 +212,22 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             {
                 reason = "zero-count";
                 return false;
+            }
+
+            if (schematic.TradeSkillId != 0u)
+            {
+                TradeskillType requiredTradeskill = (TradeskillType)schematic.TradeSkillId;
+                if (!Enum.IsDefined(requiredTradeskill))
+                {
+                    reason = $"invalid-tradeskill:{schematic.TradeSkillId}";
+                    return false;
+                }
+
+                if (!session.Player.HasTradeskill(requiredTradeskill))
+                {
+                    reason = $"missing-tradeskill:{schematic.TradeSkillId}";
+                    return false;
+                }
             }
 
             bool hasDirectOutput = schematic.Item2IdOutput != 0u && schematic.OutputCount != 0u;
@@ -297,15 +317,31 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                 debits.Add(debit);
             }
 
+            var modifierDebits = new List<ItemDebit>();
+            if (!CraftingRuneRequestHelper.TryBuildCraftingModifierItemCounts(session, gameTableManager, schematic, out IReadOnlyDictionary<uint, uint> modifierItemCounts, out reason))
+                return false;
+
+            foreach ((uint item2Id, uint count) in modifierItemCounts)
+                modifierDebits.Add(new ItemDebit(item2Id, count, ItemUpdateReason.TradeskillAdditiveCost));
+
             foreach (MaterialDebit debit in debits)
                 ApplyMaterialDebit(session.Player, debit);
+
+            foreach (ItemDebit debit in modifierDebits)
+                session.Player.Inventory.ItemDelete(debit.Item2Id, debit.Count, debit.Reason);
 
             if (hasDirectOutput)
                 session.Player.Inventory.ItemCreate(InventoryLocation.Inventory, outputInfo, totalOutputCount, ItemUpdateReason.Crafting);
             else
                 lootManager.GiveGeneratedLoot(session.Player, generatedLoot, session.Player.Guid, sendGrantedNotify: true);
 
-            SendCraftSuccess(session, schematic, item2IdCrafted);
+            GrantCraftingAchievements(session.Player, hasDirectOutput
+                ? [new GeneratedLootItem(LootItemType.StaticItem, outputInfo.Id, totalOutputCount)]
+                : generatedLoot);
+
+            uint earnedXp = GrantCraftingXp(session.Player, gameTableManager, schematic, craftCount);
+            SendCraftSuccess(session, schematic, item2IdCrafted, earnedXp);
+            CraftingRuneRequestHelper.ClearCraftingAdditives(session);
             return true;
         }
 
@@ -318,14 +354,48 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             });
         }
 
-        private static void SendCraftSuccess(IWorldSession session, TradeskillSchematic2Entry schematic, uint item2IdCrafted)
+        private static void SendCraftSuccess(IWorldSession session, TradeskillSchematic2Entry schematic, uint item2IdCrafted, uint earnedXp)
         {
             session.EnqueueMessageEncrypted(new ServerCraftingFinish
             {
                 Pass = true,
                 TradeskillSchematic2IdCrafted = schematic.Id,
-                Item2IdCrafted = item2IdCrafted
+                Item2IdCrafted = item2IdCrafted,
+                EarnedXp = earnedXp
             });
+        }
+
+        private static uint GrantCraftingXp(IPlayer player, IGameTableManager gameTableManager, TradeskillSchematic2Entry schematic, uint craftCount)
+        {
+            if (schematic.TradeSkillId == 0u || craftCount == 0u)
+                return 0u;
+
+            var tradeskillId = (TradeskillType)schematic.TradeSkillId;
+            if (!Enum.IsDefined(tradeskillId))
+                return 0u;
+
+            uint tier = schematic.Tier + 1u;
+            TradeskillTierEntry tierEntry = gameTableManager.TradeskillTier.Entries
+                .FirstOrDefault(entry => entry.TradeSkillId == schematic.TradeSkillId && entry.Tier == tier);
+            if (tierEntry == null || tierEntry.CraftXp == 0u)
+                return 0u;
+
+            if (!TryMultiply(tierEntry.CraftXp, craftCount, out uint totalCraftXp))
+                totalCraftXp = uint.MaxValue;
+
+            return player.AddTradeskillXp(tradeskillId, totalCraftXp);
+        }
+
+        private static void GrantCraftingAchievements(IPlayer player, IEnumerable<GeneratedLootItem> craftedItems)
+        {
+            foreach (GeneratedLootItem item in craftedItems)
+            {
+                if (item.Type != LootItemType.StaticItem || item.StaticId == 0u || item.Count == 0u)
+                    continue;
+
+                player.AchievementManager.CheckAchievements(player, AchievementType.CraftItem, item.StaticId, 0u, item.Count);
+                player.AchievementManager.CheckAchievements(player, AchievementType.CraftItemChecklist, item.StaticId);
+            }
         }
 
         private static IEnumerable<MaterialRequirement> GetMaterialRequirements(TradeskillSchematic2Entry schematic)

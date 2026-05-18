@@ -15,8 +15,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Path
 
         public void HandleMessage(IWorldSession session, ClientPathExplorerPowerMapProgress powerMapProgress)
         {
-            log.LogDebug("ClientPathExplorerPowerMapProgress: player={Player} missionId={MissionId}",
-                session.Player?.Guid, powerMapProgress.PathMissionId);
+            log.LogDebug("ClientPathExplorerPowerMapProgress: player={Player} powerMapId={PowerMapId}",
+                session.Player?.Guid, powerMapProgress.PathExplorerPowerMapId);
         }
     }
 }

@@ -2,6 +2,7 @@ using System.Collections;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -100,7 +101,11 @@ namespace NexusForever.Game.Entity
             if (currency.Entry.CapAmount > 0)
                 amount = Math.Min(amount, currency.Entry.CapAmount);
 
+            ulong addedAmount = amount - currency.Amount;
             CurrencyAmountUpdate(currency, amount, isLoot);
+
+            if (addedAmount != 0ul)
+                player.AchievementManager.CheckAchievements(player, AchievementType.CurrencyEarned, (uint)currency.Entry.Id, count: ToAchievementCount(addedAmount));
         }
 
         private ICurrency CurrencyCreate(CurrencyTypeEntry currencyEntry)
@@ -170,6 +175,11 @@ namespace NexusForever.Game.Entity
                 Stat = (byte)(currency.Id - 1),
                 NewValue = currency.Amount
             });
+        }
+
+        private static uint ToAchievementCount(ulong amount)
+        {
+            return amount > uint.MaxValue ? uint.MaxValue : (uint)amount;
         }
 
         IEnumerator IEnumerable.GetEnumerator()

@@ -16,7 +16,6 @@ using NexusForever.Game.Map;
 using NexusForever.Game.Map.Lock;
 using NexusForever.Game.Map.Search;
 using NexusForever.Game.Spell.Effect;
-using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.Entity.Movement.Command.State;
 using NexusForever.Game.Static.Entity;
@@ -1410,6 +1409,37 @@ namespace NexusForever.Game.Spell
             HandleProxySpell(spell, target, target, info);
         }
 
+        [SpellEffectHandler(SpellEffectType.SettlerCampfire)]
+        public static void HandleEffectSettlerCampfire(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectSettlerCampfireSemantics campfire = SpellEffectInterpreter.Interpret(info).SettlerCampfire;
+            if (campfire == null)
+                return;
+
+            if (!SettlerCampfireSpell.TryGetBackInActionSpell4Id(campfire.TierIndex, out uint backInActionSpell4Id))
+            {
+                SpellEffectDiagnostics.TraceSettlerCampfire(spell, target, campfire, 0u, false, "unknown-tier");
+                return;
+            }
+
+            if (GameTableManager.Instance.Spell4.GetEntry(backInActionSpell4Id) == null)
+            {
+                SpellEffectDiagnostics.TraceSettlerCampfire(spell, target, campfire, backInActionSpell4Id, false, "unknown-back-in-action-spell");
+                return;
+            }
+
+            SpellEffectDiagnostics.TraceSettlerCampfire(spell, target, campfire, backInActionSpell4Id, true, null);
+            spell.Caster.CastSpell(backInActionSpell4Id, new SpellParameters
+            {
+                ParentSpellInfo        = spell.Parameters.SpellInfo,
+                RootSpellInfo          = spell.Parameters.RootSpellInfo,
+                PrimaryTargetId        = target.Guid,
+                UserInitiatedSpellCast = false,
+                ClientContextToken     = spell.Parameters.ClientContextToken,
+                ClientRequestSource    = spell.Parameters.ClientRequestSource
+            });
+        }
+
         private static void HandleProxySpell(ISpell spell, IUnitEntity proxyCaster, IWorldEntity target, ISpellTargetEffectInfo info)
         {
             SpellEffectProxySemantics proxy = SpellEffectInterpreter.Interpret(info).Proxy;
@@ -2715,6 +2745,31 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TraceGrantLevelScaledXp(spell, target, levelScaledXp, amount, true, null);
         }
 
+        [SpellEffectHandler(SpellEffectType.ModifyRestedXP)]
+        public static void HandleEffectModifyRestedXp(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectModifyRestedXpSemantics modifyRestedXp = SpellEffectInterpreter.Interpret(info).ModifyRestedXp;
+            if (modifyRestedXp == null)
+                return;
+
+            IPlayer player = GetPlayerSpellOwner(spell, target);
+            if (player == null)
+            {
+                SpellEffectDiagnostics.TraceModifyRestedXp(spell, target, modifyRestedXp, 0u, 0u, false, "no-player-owner");
+                return;
+            }
+
+            if (float.IsNaN(modifyRestedXp.LevelSpanMultiplier) || float.IsInfinity(modifyRestedXp.LevelSpanMultiplier))
+            {
+                SpellEffectDiagnostics.TraceModifyRestedXp(spell, target, modifyRestedXp, player.XpManager.RestBonusXp, player.XpManager.RestBonusXp, false, "invalid-multiplier");
+                return;
+            }
+
+            uint previousRestBonusXp = player.XpManager.RestBonusXp;
+            uint currentRestBonusXp = player.XpManager.ModifyRestBonusXp(modifyRestedXp.LevelSpanMultiplier);
+            SpellEffectDiagnostics.TraceModifyRestedXp(spell, target, modifyRestedXp, previousRestBonusXp, currentRestBonusXp, true, null);
+        }
+
         [SpellEffectHandler(SpellEffectType.GiveAugmentPowerToPlayer)]
         public static void HandleEffectGiveAugmentPowerToPlayer(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
@@ -2880,15 +2935,8 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            player.Session.EnqueueMessageEncrypted(new ServerSchematicAddLearned
-            {
-                TradeskillId            = (TradeskillType)schematicEntry.TradeSkillId,
-                TradeskillSchematic2Id  = giveSchematic.TradeskillSchematic2Id,
-                DiscoveryCoordinates    = new Vector2(schematicEntry.VectorX, schematicEntry.VectorY)
-            });
-
-            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ObtainSchematic, giveSchematic.TradeskillSchematic2Id, 1u);
-            SpellEffectDiagnostics.TraceGiveSchematic(spell, target, giveSchematic, player.Guid, schematicEntry.TradeSkillId, true, "packet-only");
+            bool learned = player.LearnSchematic(giveSchematic.TradeskillSchematic2Id);
+            SpellEffectDiagnostics.TraceGiveSchematic(spell, target, giveSchematic, player.Guid, schematicEntry.TradeSkillId, learned, learned ? null : "already-learned");
         }
 
         [SpellEffectHandler(SpellEffectType.RewardPropertyModifier)]

@@ -55,8 +55,16 @@ namespace NexusForever.Game.Entity
             if (GameTableManager.Instance.Datacube.GetEntry(id) == null)
                 throw new ArgumentException();
 
+            uint hash = DatacubeHash(id, DatacubeType.Datacube);
+            if (datacubes.TryGetValue(hash, out IDatacube existingDatacube))
+            {
+                existingDatacube.Progress |= progress;
+                SendDatacube(existingDatacube);
+                return;
+            }
+
             var datacube = new Datacube(player, id, DatacubeType.Datacube, progress);
-            datacubes.Add(DatacubeHash(id, DatacubeType.Datacube), datacube);
+            datacubes.Add(hash, datacube);
 
             SendDatacube(datacube);
         }
@@ -69,8 +77,16 @@ namespace NexusForever.Game.Entity
             if (GameTableManager.Instance.DatacubeVolume.GetEntry(id) == null)
                 throw new ArgumentException();
 
+            uint hash = DatacubeHash(id, DatacubeType.Journal);
+            if (datacubes.TryGetValue(hash, out IDatacube existingDatacube))
+            {
+                existingDatacube.Progress |= progress;
+                SendDatacubeVolume(existingDatacube);
+                return;
+            }
+
             var datacube = new Datacube(player, id, DatacubeType.Journal, progress);
-            datacubes.Add(DatacubeHash(id, DatacubeType.Journal), datacube);
+            datacubes.Add(hash, datacube);
 
             SendDatacubeVolume(datacube);
         }

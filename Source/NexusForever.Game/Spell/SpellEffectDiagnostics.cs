@@ -481,6 +481,33 @@ namespace NexusForever.Game.Spell
                 threatTransfer.DataBits05);
         }
 
+        public static void TraceSettlerCampfire(ISpell spell, IUnitEntity target, SpellEffectSettlerCampfireSemantics campfire, uint backInActionSpell4Id, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics settler-campfire spell4Id={0} baseSpell4Id={1} castingId={2} caster={3} target={4} tierIndex={5} backInActionSpell4Id={6} applied={7} skippedReason={8} dataBits01={9} dataBits02={10} dataBits03={11} dataBits04={12} dataBits05={13} dataBits06={14} dataBits07={15} dataBits08={16} dataBits09={17}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.Parameters.SpellInfo.BaseInfo.Entry.Id,
+                spell.CastingId,
+                spell.Caster.Guid,
+                target.Guid,
+                campfire.TierIndex,
+                backInActionSpell4Id,
+                applied,
+                skippedReason,
+                campfire.DataBits01,
+                campfire.DataBits02,
+                campfire.DataBits03,
+                campfire.DataBits04,
+                campfire.DataBits05,
+                campfire.DataBits06,
+                campfire.DataBits07,
+                campfire.DataBits08,
+                campfire.DataBits09);
+        }
+
         public static void TraceDispel(ISpell spell, IUnitEntity target, SpellEffectDispelSemantics dispel, uint maxCount, int removedCount)
         {
             if (!log.IsTraceEnabled)
@@ -1093,6 +1120,28 @@ namespace NexusForever.Game.Spell
                 levelScaledXp.DataBits03,
                 levelScaledXp.DataBits04,
                 levelScaledXp.DataBits05);
+        }
+
+        public static void TraceModifyRestedXp(ISpell spell, IUnitEntity target, SpellEffectModifyRestedXpSemantics modifyRestedXp, uint previousRestBonusXp, uint currentRestBonusXp, bool applied, string skippedReason)
+        {
+            if (!log.IsTraceEnabled)
+                return;
+
+            log.Trace(
+                "SpellDiagnostics modify-rested-xp spell4Id={0} castingId={1} target={2} levelSpanMultiplier={3:R} previousRestBonusXp={4} currentRestBonusXp={5} applied={6} skippedReason={7} dataBits01={8} dataBits02={9} dataBits03={10} dataBits04={11} dataBits05={12}",
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                target.Guid,
+                modifyRestedXp.LevelSpanMultiplier,
+                previousRestBonusXp,
+                currentRestBonusXp,
+                applied,
+                skippedReason,
+                modifyRestedXp.DataBits01,
+                modifyRestedXp.DataBits02,
+                modifyRestedXp.DataBits03,
+                modifyRestedXp.DataBits04,
+                modifyRestedXp.DataBits05);
         }
 
         public static void TraceGiveAugmentPowerToPlayer(ISpell spell, IUnitEntity target, SpellEffectGiveAugmentPowerToPlayerSemantics augmentPower, bool applied, string skippedReason)

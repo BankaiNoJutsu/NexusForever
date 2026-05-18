@@ -19,6 +19,7 @@ namespace NexusForever.Database.Character
         public DbSet<CharacterCustomisationModel> CharacterCustomisation { get; set; }
         public DbSet<CharacterDatacubeModel> CharacterDatacube { get; set; }
         public DbSet<CharacterEntitlementModel> CharacterEntitlement { get; set; }
+        public DbSet<CharacterGalacticArchiveModel> CharacterGalacticArchive { get; set; }
         public DbSet<CharacterKeybindingModel> CharacterKeybinding { get; set; }
         public DbSet<CharacterMailModel> CharacterMail { get; set; }
         public DbSet<CharacterMailAttachmentModel> CharacterMailAttachment { get; set; }
@@ -28,6 +29,7 @@ namespace NexusForever.Database.Character
         public DbSet<CharacterQuestModel> CharacterQuest { get; set; }
         public DbSet<CharacterQuestObjectiveModel> CharacterQuestObjective { get; set; }
         public DbSet<CharacterReputation> CharacterReputation { get; set; }
+        public DbSet<CharacterSchematicModel> CharacterSchematic { get; set; }
         public DbSet<CharacterSpellModel> CharacterSpell { get; set; }
         public DbSet<CharacterStatModel> CharacterStat { get; set; }
         public DbSet<CharacterTitleModel> CharacterTitle { get; set; }
@@ -1000,6 +1002,39 @@ namespace NexusForever.Database.Character
                     .HasConstraintName("FK__character_entitlement_id__character_id");
             });
 
+            modelBuilder.Entity<CharacterGalacticArchiveModel>(entity =>
+            {
+                entity.ToTable("character_galactic_archive");
+
+                entity.HasKey(e => new { e.Id, e.ArchiveArticleId })
+                    .HasName("PRIMARY");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.ArchiveArticleId)
+                    .HasColumnName("archiveArticleId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.UnlockedFlags)
+                    .HasColumnName("unlockedFlags")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.ViewedFlags)
+                    .HasColumnName("viewedFlags")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.HasOne(d => d.Character)
+                    .WithMany(p => p.GalacticArchive)
+                    .HasForeignKey(d => d.Id)
+                    .HasConstraintName("FK__character_galactic_archive_id__character_id");
+            });
+
             modelBuilder.Entity<CharacterKeybindingModel>(entity =>
             {
                 entity.ToTable("character_keybinding");
@@ -1424,6 +1459,44 @@ namespace NexusForever.Database.Character
                     .WithMany(p => p.Reputation)
                     .HasForeignKey(d => d.Id)
                     .HasConstraintName("FK__character_reputation_id__character_id");
+            });
+
+            modelBuilder.Entity<CharacterSchematicModel>(entity =>
+            {
+                entity.ToTable("character_schematic");
+
+                entity.HasKey(e => new { e.Id, e.TradeskillSchematic2Id })
+                    .HasName("PRIMARY");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TradeskillSchematic2Id)
+                    .HasColumnName("tradeskillSchematic2Id")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.Discovered)
+                    .HasColumnName("discovered")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.DiscoveryCoordinateX)
+                    .HasColumnName("discoveryCoordinateX")
+                    .HasColumnType("float")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.DiscoveryCoordinateY)
+                    .HasColumnName("discoveryCoordinateY")
+                    .HasColumnType("float")
+                    .HasDefaultValue(0);
+
+                entity.HasOne(d => d.Character)
+                    .WithMany(p => p.Schematic)
+                    .HasForeignKey(d => d.Id)
+                    .HasConstraintName("FK__character_schematic_id__character_id");
             });
 
             modelBuilder.Entity<CharacterSpellModel>(entity =>

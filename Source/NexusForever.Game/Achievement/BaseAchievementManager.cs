@@ -102,7 +102,7 @@ namespace NexusForever.Game.Achievement
 
             IAchievement achievement = GetAchievement(id);
             if (info.ChecklistEntries.Count == 0)
-                achievement.Data0 = info.Entry.Value;
+                achievement.Data0 = GetRequiredProgress(info.Entry.Value);
             else
                 foreach (AchievementChecklistEntry entry in info.ChecklistEntries)
                     achievement.Data0 |= 1u << (int)entry.Bit;
@@ -118,6 +118,11 @@ namespace NexusForever.Game.Achievement
         public abstract void CheckAchievements(IPlayer target, AchievementType type, uint objectId, uint objectIdAlt = 0u, uint count = 1u);
 
         /// <summary>
+        /// Set current progress for threshold achievements of <see cref="AchievementType"/> as <see cref="IPlayer"/> with supplied object ids.
+        /// </summary>
+        public abstract void SetAchievementProgress(IPlayer target, AchievementType type, uint objectId, uint objectIdAlt, uint value);
+
+        /// <summary>
         /// Update or complete a collection of achievements as <see cref="IPlayer"/> sending the result to the client.
         /// </summary>
         protected void CheckAchievements(IPlayer target, IEnumerable<IAchievementInfo> achievements, uint objectId, uint objectIdAlt, uint count)
@@ -125,6 +130,20 @@ namespace NexusForever.Game.Achievement
             var updates = new List<IAchievement>();
             foreach (IAchievementInfo info in achievements)
                 if (CheckAchievement(target, info, objectId, objectIdAlt, count))
+                    updates.Add(GetAchievement(info.Id));
+
+            if (updates.Count != 0)
+                SendAchievementUpdate(updates);
+        }
+
+        /// <summary>
+        /// Set current progress for a collection of achievements as <see cref="IPlayer"/> sending the result to the client.
+        /// </summary>
+        protected void SetAchievementProgress(IPlayer target, IEnumerable<IAchievementInfo> achievements, uint objectId, uint objectIdAlt, uint value)
+        {
+            var updates = new List<IAchievement>();
+            foreach (IAchievementInfo info in achievements)
+                if (SetAchievementProgress(target, info, objectId, objectIdAlt, value))
                     updates.Add(GetAchievement(info.Id));
 
             if (updates.Count != 0)
@@ -149,8 +168,11 @@ namespace NexusForever.Game.Achievement
             {
                 if (CanUpdateAchievement(target, info.Entry, objectId, objectIdAlt))
                 {
+                    if (count == 0u)
+                        return false;
+
                     achievement = GetAchievement(info.Id);
-                    achievement.Data0 += count;
+                    achievement.Data0 = AddProgress(achievement.Data0, count, GetRequiredProgress(info.Entry.Value));
                     sendUpdate = true;
                 }
             }
@@ -162,7 +184,11 @@ namespace NexusForever.Game.Achievement
                     if (!CanUpdateChecklist(target, entry, objectId, objectIdAlt))
                         continue;
 
-                    achievement.Data0 |= 1u << (int)entry.Bit;
+                    uint bit = 1u << (int)entry.Bit;
+                    if ((achievement.Data0 & bit) != 0u)
+                        continue;
+
+                    achievement.Data0 |= bit;
                     sendUpdate = true;
                 }
             }
@@ -171,6 +197,35 @@ namespace NexusForever.Game.Achievement
                 CompleteAchievement(achievement);
 
             return sendUpdate;
+        }
+
+        /// <summary>
+        /// Set current progress for <see cref="AchievementInfo"/> as <see cref="IPlayer"/> with supplied object ids.
+        /// </summary>
+        private bool SetAchievementProgress(IPlayer target, IAchievementInfo info, uint objectId, uint objectIdAlt, uint value)
+        {
+            if (HasCompletedAchievement(info.Id))
+                return false;
+
+            if (DisableManager.Instance.IsDisabled(DisableType.Achievement, info.Id))
+                return false;
+
+            if (info.ChecklistEntries.Count != 0)
+                return CheckAchievement(target, info, objectId, objectIdAlt, 1u);
+
+            if (!CanUpdateAchievement(target, info.Entry, objectId, objectIdAlt))
+                return false;
+
+            IAchievement achievement = GetAchievement(info.Id);
+            uint progress = Math.Min(Math.Max(achievement.Data0, value), GetRequiredProgress(info.Entry.Value));
+            if (progress == achievement.Data0)
+                return false;
+
+            achievement.Data0 = progress;
+            if (achievement.IsComplete())
+                CompleteAchievement(achievement);
+
+            return true;
         }
 
         /// <summary>
@@ -249,6 +304,22 @@ namespace NexusForever.Game.Achievement
                 3u => 50u,
                 _ => 0u
             };
+        }
+
+        private static uint GetRequiredProgress(uint value)
+        {
+            return value == 0u ? 1u : value;
+        }
+
+        private static uint AddProgress(uint current, uint count, uint required)
+        {
+            if (current >= required)
+                return current;
+
+            if (uint.MaxValue - current < count)
+                return required;
+
+            return Math.Min(current + count, required);
         }
 
         /// <summary>

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Spell;
 using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Abilities;
 using NexusForever.Network.World.Message.Static;
@@ -58,6 +59,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             actionSet = session.Player.SpellManager.GetActionSet(actionSetIndex);
             newAmps = GetDistinctNewAmpIds(actionSet, commitAmpSpec.Amps)
                 .ToList();
+            HashSet<ushort> selectedAmpIds = actionSet.Amps
+                .Select(amp => checked((ushort)amp.Entry.Id))
+                .Concat(newAmps)
+                .ToHashSet();
 
             ushort requiredAmpPower = 0;
             foreach (ushort ampId in newAmps)
@@ -65,6 +70,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 var entry = GameTableManager.Instance.EldanAugmentation.GetEntry(ampId);
                 if (entry == null)
                     return LimitedActionSetResult.EldanAugmentationInvalidId;
+
+                if (!IsValidForPlayerClass(session, entry))
+                    return LimitedActionSetResult.UnknownClassId;
+
+                if (!HasRequiredAmp(entry, selectedAmpIds))
+                    return LimitedActionSetResult.EldanAugmentationInvalidSeries;
 
                 requiredAmpPower += (ushort)entry.PowerCost;
                 if (requiredAmpPower > actionSet.AmpPoints)
@@ -83,6 +94,19 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             return requestedAmpIds
                 .Distinct()
                 .Where(ampId => !existingAmpIds.Contains(ampId));
+        }
+
+        private static bool IsValidForPlayerClass(IWorldSession session, EldanAugmentationEntry entry)
+        {
+            return entry.ClassId == 0u || entry.ClassId == (uint)session.Player.Class;
+        }
+
+        private static bool HasRequiredAmp(EldanAugmentationEntry entry, HashSet<ushort> selectedAmpIds)
+        {
+            if (entry.EldanAugmentationIdRequired == 0u)
+                return true;
+
+            return selectedAmpIds.Contains(checked((ushort)entry.EldanAugmentationIdRequired));
         }
 
         private static void SendActionSetResult(IWorldSession session, byte actionSetIndex, LimitedActionSetResult result)

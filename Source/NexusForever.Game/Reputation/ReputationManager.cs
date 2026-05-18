@@ -4,6 +4,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Reputation;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Reputation;
@@ -51,13 +52,21 @@ namespace NexusForever.Game.Reputation
             if (faction == null)
                 throw new ArgumentException($"Invalid faction id {factionId}!");
 
+            FactionLevel? previousLevel = null;
             if (!reputations.TryGetValue(factionId, out IReputation reputation))
             {
                 reputation = new Reputation(owner, faction, value);
                 reputations.Add(reputation.Id, reputation);
             }
             else
+            {
+                previousLevel = FactionNode.GetFactionLevel(reputation.Amount);
                 reputation.Amount += value;
+            }
+
+            FactionLevel currentLevel = FactionNode.GetFactionLevel(reputation.Amount);
+            if (previousLevel == null || currentLevel > previousLevel)
+                owner.AchievementManager.CheckAchievements(owner, AchievementType.ReputationLevel, (uint)factionId, (uint)currentLevel);
 
             owner.Session.EnqueueMessageEncrypted(new ServerReputationUpdate
             {

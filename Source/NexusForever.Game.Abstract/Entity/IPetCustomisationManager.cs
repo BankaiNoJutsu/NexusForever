@@ -30,6 +30,11 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         IPetCustomisation GetCustomisation(PetType type, uint objectId);
 
+        /// <summary>
+        /// Unlock scientist scanbot customisation with supplied profile id.
+        /// </summary>
+        void UnlockScanBotProfile(uint id);
+
         void SendInitialPackets();
     }
 }

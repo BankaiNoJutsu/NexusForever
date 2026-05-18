@@ -154,7 +154,7 @@ namespace NexusForever.Game.Achievement
                 return true;
 
             if (Info.ChecklistEntries.Count == 0)
-                return Data0 == Info.Entry.Value;
+                return Data0 >= (Info.Entry.Value == 0u ? 1u : Info.Entry.Value);
 
             return Info.ChecklistEntries.All(entry => (Data0 & (1u << (int)entry.Bit)) != 0);
         }

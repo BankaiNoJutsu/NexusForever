@@ -3,6 +3,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Prerequisite;
+using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PlayerPath;
 using NexusForever.GameTable;
@@ -17,7 +18,7 @@ namespace NexusForever.Game.Entity
     public class PathManager : IPathManager
     {
         private const uint MaxPathCount = 4u;
-        private const uint MaxPathLevel = 30u;
+        private const uint MaxPathLevel = PathRewardGrant.MaxPathLevel;
 
         private readonly IPlayer player;
         private readonly Dictionary<Path, IPathEntry> paths = new();
@@ -217,20 +218,13 @@ namespace NexusForever.Game.Entity
         /// <param name="level">The level to grant the reward for</param>
         private void GrantLevelUpReward(Path path, uint level)
         {
-            uint baseRewardObjectId = (uint)path * MaxPathLevel + 7u; // 7 is the base offset
-            uint pathRewardObjectId = baseRewardObjectId + Math.Clamp(level - 2, 0, 29); // level - 2 is used because the objectIDs start at level 2 and a -2 offset was needed
+            uint pathRewardObjectId = PathRewardGrant.GetLevelRewardObjectId(path, level);
 
             IEnumerable<PathRewardEntry> pathRewardEntries = GameTableManager.Instance.PathReward.Entries
                 .Where(x => x.ObjectId == pathRewardObjectId);
             foreach (PathRewardEntry pathRewardEntry in pathRewardEntries)
             {
-                if (pathRewardEntry.PathRewardFlags > 0)
-                    continue;
-
-                if (pathRewardEntry.PathRewardTypeEnum != 0)
-                    continue;
-
-                if (pathRewardEntry.Item2Id == 0 && pathRewardEntry.Spell4Id == 0 && pathRewardEntry.CharacterTitleId == 0)
+                if (!PathRewardGrant.IsGrantableLevelReward(pathRewardEntry))
                     continue;
 
                 if (pathRewardEntry.PrerequisiteId > 0 && !PrerequisiteManager.Instance.Meets(player, pathRewardEntry.PrerequisiteId))
@@ -240,6 +234,7 @@ namespace NexusForever.Game.Entity
             }
 
             GetPathEntry(path).LevelRewarded = (byte)level;
+            player.AchievementManager.SetAchievementProgress(player, AchievementType.PathLevel, (uint)path, 0u, level);
             player.CastSpell(53234, new Spell.SpellParameters());
         }
 
@@ -263,6 +258,9 @@ namespace NexusForever.Game.Entity
 
             if (pathRewardEntry.CharacterTitleId > 0)
                 player.TitleManager.AddTitle((ushort)pathRewardEntry.CharacterTitleId);
+
+            if (pathRewardEntry.PathScientistScanBotProfileId > 0)
+                player.PetCustomisationManager.UnlockScanBotProfile(pathRewardEntry.PathScientistScanBotProfileId);
         }
 
         private PathUnlockedMask GetPathUnlockedMask()

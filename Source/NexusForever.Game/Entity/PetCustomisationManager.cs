@@ -155,6 +155,36 @@ namespace NexusForever.Game.Entity
             return customisation;
         }
 
+        /// <summary>
+        /// Unlock scientist scanbot customisation with supplied profile id.
+        /// </summary>
+        public void UnlockScanBotProfile(uint id)
+        {
+            PathScientistScanBotProfileEntry entry = GameTableManager.Instance.PathScientistScanBotProfile.GetEntry(id);
+            if (entry == null)
+                throw new ArgumentOutOfRangeException();
+
+            UnlockCustomisation(PetType.ScanBot, id);
+        }
+
+        private void UnlockCustomisation(PetType type, uint objectId)
+        {
+            ulong hash = PetCustomisationHash(type, objectId);
+            if (petCustomisations.ContainsKey(hash))
+                return;
+
+            var customisation = new PetCustomisation(player.CharacterId, type, objectId);
+            petCustomisations.Add(hash, customisation);
+
+            if (!player.IsLoading)
+            {
+                player.Session.EnqueueMessageEncrypted(new ServerPetCustomisation
+                {
+                    PetCustomisation = customisation.Build()
+                });
+            }
+        }
+
         public void SendInitialPackets()
         {
             var petCustomisationList = new ServerPetCustomisationList

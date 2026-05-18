@@ -20,6 +20,11 @@ namespace NexusForever.Game.Abstract.Entity
         QuestState? GetQuestState(ushort questId);
 
         /// <summary>
+        /// Return whether the supplied quest has been completed.
+        /// </summary>
+        bool HasCompletedQuest(ushort questId);
+
+        /// <summary>
         /// Mention a quest from supplied quest id, skipping any prerequisites checks.
         /// </summary>
         void QuestMention(ushort questId);
