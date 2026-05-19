@@ -8784,3 +8784,436 @@ FUN_14067b760() → PathMission_ResolveCurrent() → pathMissionRuntimeObj (vtab
 `GetRewardXp` uses game table id `0x17a` (PathRewardTable); `entry + 0x04` = xpRewardAmount.
 Default fallback = 50 (`0x32`).
 
+---
+
+## Network Opcodes — Batch 6 (GroupLib / CREDDExchange / Housing / Friendship)
+
+| Opcode | Name | Payload Layout |
+|--------|------|----------------|
+| `0x267` | `CancelCREDDOrder` | `{0:u64, 0:u64, orderId:u64}` |
+| `0x269` | `RequestExchangeInfo` | empty |
+| `0x39e` | `FriendshipIgnoreStrangersState` | `{state:u32}` |
+| `0x411` | `GotoGroupInstance` | `{groupInstanceId:u64}` |
+| `0x412` | `SetInstanceDifficulty` | `{groupInstanceId:u64, difficultyId:u32}` |
+| `0x513` | `NeighborInviteResponse` | `{accepted:u32}` (1=accept, 0=decline) |
+| `0x515` | `NeighborEvict` | `{neighborId_lo:u64, neighborId_hi:u64}` (from `lVar1+0xb8/+0xc0`) |
+| `0x518` | `NeighborSetPermission` | `{neighborId_lo:u64, neighborId_hi:u64, permissionLevel:u32}` |
+
+---
+
+## GroupLib System
+
+### Entity Offsets
+- `entity + 0x6c50` = groupContextPtr (null if not in a group)
+- `entity + 0x6c10` = groupContextObj
+
+### GroupContext Fields
+- `groupContext + 0x48` = groupInstanceId (uint64)
+
+### Named Functions
+- `FUN_140601fb0(entity+0x6c10)` = `IsGroupLeader` — returns non-zero if local player is leader
+
+---
+
+## CREDDExchangeLib System
+
+### Globals
+- `DAT_140c635f0 + 0x1708` = creddPendingOrderFlag (non-zero if pending CREDD order exists)
+
+### AccountItemLib Layout
+- `DAT_140c635f0 + 0x15d0` = accountItemList
+  - `accountItemList + 0x70` = count
+  - `accountItemList + 0x68` = arrayPtr (stride 0x40 per AccountItem entry)
+- Named call: `AccountItem_SendClientAccountItemTake(luaState, itemEntry)` — takes item from account
+
+---
+
+## GameContract System
+
+### Lua_GameContract_Complete Pattern
+- Resolves handle via `FUN_140056ab0(_, 1, "Game.Contract")`
+- `*(handle + 8)` = contractRuntimeData
+- `contractRuntimeData + 0x08` = questObjectiveNodeId
+- Calls `QuestRuntime_FindObjectiveNodeById(_, questObjectiveNodeId)` to get objective node
+- Type check: `FUN_1405a4850(_, 0x55)` = test if objective type == 0x55
+
+---
+
+## GalacticArchive System
+
+### Architecture Overview
+- `DAT_140c65898 + 0x78` = globalEntityPtr guard (must be non-null)
+- `DAT_140c65990` = GalacticArchiveService (used for all article/entry lookups)
+- `FUN_14048d310(servicePtr, id)` = **generic BST/service lookup by ID** — called as:
+  - `GalacticArchiveService_GetArticleById(DAT_140c65990, articleId)`
+  - `ScientistExperimentation_LookupById(DAT_140c65950, subDataId)` (same function, different service)
+  - This is a generic helper; prior label `ScientistExperimentation_LookupById` was incorrect
+
+### GalacticArchiveEntry Handle Resolution
+```
+FUN_140056ab0(luaState, 1, "Game.GalacticArchiveEntry") → handle
+*(handle + 8) = handleInnerData
+*(*(handle+8) + 8) = dataPtr
+GalacticArchiveEntry_ResolveStateObject(dataPtr, *dataPtr) → stateObj
+```
+
+### GalacticArchiveEntry handleInnerData Vtable
+- `+0x18` = GetStaticData (returns staticDataPtr)
+- `+0x28` = GetTitleStringId (returns int32 string ID)
+- `+0x30` = GetArticleId (returns int32 article ID)
+
+### GalacticArchiveEntry stateObj Vtable
+- `+0x18` = GetArticle (returns articleObj; push via `FUN_140432f20`)
+- `+0x58` = GetIntegerField(fieldId) — returns integer IDs for:
+  - `headerStyle`, `bodyStyle`, `headerCreature`, `iconId` etc. (client-defined field enum)
+
+### GalacticArchiveEntry Named Functions
+- `GalacticArchiveEntry_ResolveStateObject(dataPtr, *dataPtr)` = resolve state object from data ptr
+- `GalacticArchiveEntry_CalculateProgress(stateObj, entryId)` = returns float progress (0.0–1.0)
+
+### GalacticArchiveArticle Handle Resolution
+```
+FUN_140056ab0(luaState, 1, "Game.GalacticArchiveArticle") → handle
+*(handle + 8) = handleInnerData
+*(*(handle+8) + 8) = staticDataPtr
+```
+
+### GalacticArchiveArticle handleInnerData Vtable
+- `+0x18` = GetArticleStaticData (inner static data, used in GetText)
+- `+0x28` = GetTitleStringId
+- `+0x30` = GetArticleId
+
+### GalacticArchiveArticle articleObj Vtable
+- `+0x18` = GetArticleText (iterates up to 6 text entries)
+- `+0x20` = GetStaticData (returns articleStaticData)
+- `+0x48` = IsActive (returns bool)
+
+### GalacticArchiveArticle staticData Fields
+- `+0x04` = creaturePortraitId (int32)
+- `+0x08` = iconPathStringId (int32)
+- `+0x80` = worldZoneId (int32)
+- `+0x88` = linkNameId (int32)
+
+### Named Functions (Article)
+- `FUN_14048d310(DAT_140c65990, articleId)` = `GalacticArchiveService_GetArticleById` (generic BST lookup)
+- `FUN_140432f20(luaState, articleObj)` = `Lua_PushGalacticArchiveArticleObject`
+
+---
+
+## PublicEventObjective System
+
+### Handle Resolution Pattern
+```
+FUN_140056ab0(luaState, 1, "Game.PublicEventObjective") → handle
+*(handle + 8) = handleInnerData
+*(*(handle+8) + 8) = objData
+*(objData + 8) = objectiveId (uint32)
+(*DAT_140c65980 + 0x30)(DAT_140c65980, objectiveId, 0) → objLivePtr
+```
+- `DAT_140c65980` = PublicEventService (confirmed; `+0x30` in service vtable = GetObjectiveById)
+- Note: `+0x30` in *service* vtable vs `+0x28` in *event* vtable (GetObjectiveByIndex)
+
+### PublicEventObjective liveObj Vtable Map
+- `+0x28` = GetEventLiveObj (returns the parent PublicEvent live object)
+- `+0x30` = GetStaticData (returns staticDataWrapper; `*(staticDataWrapper+8)+0x58` = displayOrder int)
+- `+0x68` = IsActive (returns non-zero if objective is active/live; guards most reads)
+- `+0x140` = GetDisplayData (returns object; `*(result+8)+0x58` = displayOrder)
+- `+0x148` = GetProgressFloat (used in ShowPercent when not IsPercent mode)
+- `+0x150` = GetObjectiveType (int) — known types: `0x17`=contested, `0x18`=countA, `0x19`=countB, `0x1f`=showRequired
+- `+0x170` = GetTeamIndex (no IsActive guard; valid even if not fully active)
+- `+0x1d8` = IsPercentMode (bool — if true, show as %; otherwise show raw count progress)
+- `+0x1e0` = ShouldShowHealthBar (bool)
+- `+0x1e8` = IsHidden (bool)
+- `+0x1f0` = GetCategory (int)
+
+### PublicEventObjective ShouldShowRequiredCount Logic
+- Types `0x18`, `0x19`, `0x1f` → show required count (default true)
+- Other types → check staticData via `+0x30` for an additional flag
+
+### PublicEventObjective GetEvent / GetParentObjective
+Both functions:
+1. Call `+0x28` to get event live obj
+2. Check `+0x68` (IsActive)
+3. If active: call `+0x28` again to get event or parent; call into event vtable for further resolution
+
+---
+
+## PublicEvent System — Complete (34 functions)
+
+### Standard Resolution Chain
+```
+entity+0x78 (guard) → FUN_140056ab0(_, 1, "Game.PublicEvent") → handle
+*(handle+8) = handleInnerData
+(*handleInnerData_vtable+0x20)(handleInnerData) = GetId → eventId
+FUN_140498a40(DAT_140c65980, eventId, 0) → liveObj
+(*liveObj_vtable+0x68)(liveObj) = IsActive
+```
+
+### handleInnerData Vtable
+- `+0x18` = GetStaticData
+- `+0x20` = GetId (returns eventId uint32)
+
+### liveObj Vtable — Complete Map
+- `+0x18` = GetEventData → eventDataWrapper; `*(eventDataWrapper+8)+0x28` = flagBits uint32
+- `+0x20` = GetStaticData → `+0x1c` = parentEventId; `+0x24` = liveEventId
+- `+0x28` = GetEventType (int)
+- `+0x38` = GetTotalTime (ms, int32)
+- `+0x68` = IsActive (bool guard)
+- `+0x78` = GetElapsedTime (ms, int32)
+- `+0x90` = GetObjectiveByIndex(idx) → objectiveLivePtr
+- `+0x98` = HasLiveStats (bool)
+- `+0xa0` = GetRewardThreshold(thresholdIdx) → thresholdObj
+- `+0xa8` = GetRewardType (int)
+- `+0x170` = GetJoinedTeam
+- `+0x178` = GetTeamCount
+- `+0x188` = ShowHintArrow (no return)
+
+### liveObj flagBits (at `*(eventDataWrapper+8)+0x28`)
+- Bit 12 = showMedalsUI for Exile path
+- Bit 13 = showMedalsUI for Dominion path
+- Bit 14 = isPriorityDisplay
+- Bit 15 = shouldUseCustomTracker
+
+### liveObj Stats Layout
+- `liveObj + 0xec` = statsArray (inline, max 0xce = 206 entries)
+- `FUN_1405f8a80(liveObj+0xec, statId)` = `PublicEventStats_LookupByStatId` — returns stat value
+
+### Parent/Child Event Relationships
+- `liveObj->GetStaticData()+0x1c` = parentEventId (0 if none)
+- `liveObj->GetStaticData()+0x24` = liveEventId (0 if none)
+- `FUN_140688bf0(luaState, parentEventId)` = push parent PublicEvent as Lua userdata
+- `FUN_14020fd40(liveEventId)` = `LiveEvent_LookupById`
+- `FUN_1406b91f0(luaState, liveEventObj)` = push LiveEvent as Lua object
+- `*(liveEvent+0x0c) & 8` = some LiveEvent active/valid flag
+
+### PrepareInfractionReport
+- `liveObj + 0x1c8` = objectiveCount (used for bounds check on report building)
+
+### RequestScoreboard (Window Registry)
+- `DAT_140c63650 + 0x2f8` = LuaWindowRegistry array (ptr array of window ptrs)
+- `DAT_140c63650 + 0x300` = LuaWindowRegistry count
+- Each entry: `*(windowPtr + 400)` = associated Lua state ptr
+
+### ShouldShowMedalsUI
+- `entity + 0x6424` = playerPathType (Soldier=0, Settler=1, Scientist=2, Explorer=3)
+- Exile path: flagBit 12; Dominion path: flagBit 13
+
+### GetRewardThreshold
+- Takes 2nd Lua arg as threshold index
+- Calls `liveObj_vtable+0xa0(liveObj, thresholdIndex)` → thresholdObj
+
+### Named Functions (PublicEvent)
+- `FUN_140498a40(DAT_140c65980, eventId, 0)` = `PublicEventService_GetLiveEventById`
+- `FUN_1405f8a80` = `PublicEventStats_LookupByStatId`
+- `FUN_140688bf0` = `Lua_PushPublicEventObjectByParentId`
+- `FUN_14020fd40` = `LiveEvent_LookupById`
+- `FUN_1406b91f0` = `Lua_PushLiveEventObject`
+
+---
+
+## HousingLib System
+
+### Housing Neighbor Opcodes (see Batch 6 above)
+
+### Entity / Neighbor Data
+- `FUN_1404b7220()` = `Housing_GetCurrentNeighborSelection` — returns null if no selection
+- neighborObj: `+0xb8` = neighborId_lo (u64), `+0xc0` = neighborId_hi (u64)
+- `entity + 0x6838` = friendship/housing subsystem ptr (auto-response messages, neighbor list)
+- `FUN_1405df7c0(entity+0x6838)` = check if friendship service is connected/ready
+
+### GameHousingPlot Functions
+- `FUN_140056ab0(_, 1, "Game.HousingPlot")` → plotHandle; `*(plotHandle+8)` = plotId (uint32)
+- Named calls: `Housing_SendClientPlugRemove(luaState, plotId)`, `Housing_SendClientPlugRepair(luaState, plotId)`
+- `SetPlugRotation` uses: `FUN_1400f26a0(windowCtx+0x180, 2)` = get float arg from Lua
+
+### Friendship Ignore Strangers
+- `entity + 0x6ae0` = current ignoreStrangers state (int); only sends opcode if changed
+- `FUN_1405df7c0(entity+0x6838)` = `Friendship_IsConnected`
+- `Friendship_SetAutoResponseMessagesAndSend(entity+0x6838, msg1, msg2)` = named call
+
+---
+
+## ActionSetLib System
+
+### ActionSet Globals
+- `DAT_140c659c0` = ActionSetSlotUnlockTable (`+0x08` = slotDataArrayPtr; `+0x10` = slotCount)
+  - Each entry is uint32 (0=always unlocked; non-zero = item/tier requirement)
+- `DAT_140c659a0` = ActionSetService (vtable `+0x18` = CheckSlotRequirement)
+
+### IsSlotUnlocked Return Values
+- `0x18` = slot out of range (error)
+- `0` = slot not found
+- `1` = always unlocked (requirement == 0)
+- `2` = locked (requirement not met)
+- `3` = unlocked (requirement met)
+
+### entity + 0x6490 Guard
+- `entity + 0x6490` = trading/combat system ptr (non-null if in trade/combat)
+- `*(entity+0x6490 + 0x2ac)` = flag that blocks ability changes (e.g., in combat)
+
+### entity + 0xa90 / 0xa98 (IsNew / NewSpells Tracking)
+- `entity + 0xa90` = newSpells array ptr (ptr array, each `+0x40`=spellId, `+0x48`=isNewFlag)
+- `entity + 0xa98` = newSpells count
+
+### ClearCachedLASUpdates
+- Clears `entity + 0x1458` (LAS pending update cache)
+- Resets `entity + 0x6ddc` = 0xffffffff (dirty/invalid sentinel)
+
+---
+
+## GameSpell / SpellWrapper System
+
+### Globals
+- `DAT_140c65b70` = SpellService (the primary spell data/wrapper service)
+
+### Handle Resolution
+```
+FUN_140056ab0(luaState, 1, "Game.Spell") → handle
+*(handle+8) = handleInnerData
+*(*(handle+8)+8) = spellId (uint32) — first field of innerData
+SpellService_ResolveSpellWrapper(DAT_140c65b70, spellId, entity) → spellWrapper
+```
+- `SpellService_ResolveSpellWrapper` is already named in the codebase
+- `FUN_1405e9400(luaState, 1)` = alternate resolver used by cooldown/GCD functions (live instance)
+
+### SpellWrapper Layout (via `lVar4 = spellWrapper`)
+- `lVar4 + 0x70` = ptr to Spell4 static data (spellDataPtr — points to full Spell4 struct)
+
+### Spell4 Static Data Fields (via `*(longlong *)(spellWrapper + 0x70)`)
+| Offset | Type | Field | Source function |
+|--------|------|-------|----------------|
+| `+0x00` | int32 | spellId | `GetId` |
+| `+0x04` | int32 | baseSpellId | `GetBaseSpellId`, `IsNew` |
+| `+0x08` | byte | tier | `GetTier` |
+| `+0x18` | int32 | castMethod | `GetCastMethod` |
+| `+0xf4` | int32 | school | `GetSchool` |
+| `+0xf8` | int32 | classRequirement | `GetClass` |
+| `+0x10c` | uint32 | flagBits | `IsBeneficial` (bit 26 = isBeneficial) |
+
+### SpellService Range Functions
+- `FUN_1403ad8f0(DAT_140c65b70, spellId, entity)` = `SpellService_GetMaximumRange` → float
+- `FUN_1403ad860(DAT_140c65b70, spellId, entity)` = `SpellService_GetMinimumRange` → float
+
+### Cooldown Layout (from live spell instance `lVar5 = FUN_1405e9400(...)`)
+- `*(uint **)(lVar5 + 0x38)` = ptr to cooldown data; `*ptr` = base cooldown ms (uint32)
+- `FUN_1404823c0(lVar5)` = check if cooldown reduction applies (returns non-zero if active)
+- `entity+0x78 → +0xa04` = cooldown reduction float multiplier (applied if above check passes)
+- `FUN_14046a890(entity, liveSpellInst, effectiveCooldownMs)` = compute final effective cooldown ms
+- Result conversion: `(float)ms * 0.001` → seconds
+
+### Active Cooldowns (GetCooldownRemaining)
+- `entity+0x78 → +0x1608` = active cooldown linked list head
+- Node fields: `+0x04` = cooldown type (type-1 < 2 to match); `+0x20` = cooldown data ptr
+- GCD time: `FUN_14023dc80(*(spellDataPtr+0x28))` = look up GCD group; `FUN_14046a760(...)` = get GCD ms
+
+### GetIcon
+- `FUN_1405645b0(spellWrapper)` = `SpellWrapper_GetIconPathString` → returns string/object
+- Then `FUN_14018f0e0(local_28, iconString)` → char* at `*(result+8)`
+
+---
+
+## AbilityBook System
+
+### Window Context Pattern (AbilityBook / ActionSet)
+Many AbilityBook/ActionSet functions look up the window context:
+```
+(iterates DAT_140c63650+0x2f8 window array)
+*(window + 0x180) = window-local Lua args/context object
+FUN_1400f26a0(windowCtx + 0x180, argIndex) = get Lua arg from window context
+```
+
+### AbilityBook Globals
+- `entity + 0x6490` = combat/trade system ptr (blocks spell activation when `+0x2ac != 0`)
+
+### AbilityBook Named Function Patterns
+- `GetAbilitiesList` / `GetAbilityInfo`: use window context + `FUN_1400f26a0` for args
+- `ActivateSpell`: guards on `entity+0x6490 → +0x2ac == 0`
+- `UpdateSpellTier`: same guard + `ActionSet_CheckUpdateSpellInProgress()` additional check
+- `ClearCachedLASUpdates`: clears `entity+0x1458`; resets `entity+0x6ddc = 0xffffffff`
+
+---
+
+## ICComm System
+
+### Lua_ICComm Pattern
+Both `SetReceivedMessageFunction` and `SetSendMessageResultFunction` follow identical logic:
+1. `FUN_140056ab0(luaState, 1, "Game.ICComm")` — resolves ICComm channel handle (result unused beyond type check)
+2. `FUN_140056bb0(luaState, 2)` — get 2nd arg (the callback function)
+3. Check if 2nd arg is a function (`*(param_1+0x18)+0x28` type tag == 5)
+4. If valid, copy function reference onto Lua stack and return it
+
+### ICComm Note
+These functions only validate and pass the callback — actual callback registration is internal.
+The `Game.ICComm` handle type tracks per-channel state.
+
+---
+
+## Crafting System
+
+### Lua_Crafting Functions (2 named)
+- `GetSchematicInfo` and `AddCoordinateDiscoveryInfo` — internal crafting helpers
+- Both use the standard window context pattern (`DAT_140c63650+0x2f8`)
+
+---
+
+## GameResidence / GameRecruitmentGuild / GameItemData
+
+### Lua_GameResidence_RemoveInteriorWallpaper
+- Resolves handle via `FUN_140056ab0(_, 1, "Game.Residence")`
+- Uses window context lookup pattern (`DAT_140c63650+0x2f8/+0x300`)
+- Sends housing network payload (pattern same as other Housing opcodes)
+
+### Lua_GameRecruitmentGuild_GetDetailedGuildInfo
+- Resolves handle via `FUN_140056ab0(_, 1, "Game.RecruitmentGuild")`
+- Calls `RecruitmentGuild_SendClientGetDetailedGuildInfo()` — named
+- Returns bool (non-zero = request sent successfully)
+
+### Lua_GameItemData_GetVirtualItems
+- Provides virtual item list; depends on game table service
+
+---
+
+## New Function Labels (Batch 6 — this session)
+
+| Address | Proposed Label | Context |
+|---------|---------------|---------|
+| `1403ad860` | `SpellService_GetMinimumRange` | GetMinimumRange → (service, spellId, entity) |
+| `1403ad8f0` | `SpellService_GetMaximumRange` | GetMaximumRange → (service, spellId, entity) |
+| `1404823c0` | `SpellLiveInst_HasCooldownReduction` | GetCooldownTime |
+| `14046a760` | `SpellService_GetGCDMilliseconds` | GetGCDTime |
+| `14046a890` | `SpellService_GetEffectiveCooldownMs` | GetCooldownTime |
+| `1405645b0` | `SpellWrapper_GetIconPathString` | GetIcon |
+| `1405e9400` | `SpellWrapper_ResolveLiveInstance` | GetCooldownTime/Remaining/GCD |
+| `14023dc80` | `SpellService_GetGCDGroupEntry` | GetGCDTime |
+| `1404b7220` | `Housing_GetCurrentNeighborSelection` | NeighborEvict/SetPermission |
+| `1405df7c0` | `Friendship_IsConnected` | SetPersonalIgnoreStrangersState |
+| `140432f20` | `Lua_PushGalacticArchiveArticleObject` | GalacticArchiveEntry.GetArticle |
+| `14020fd40` | `LiveEvent_LookupById` | PublicEvent.GetLiveEvent |
+| `1406b91f0` | `Lua_PushLiveEventObject` | PublicEvent.GetLiveEvent |
+| `140688bf0` | `Lua_PushPublicEventObjectByParentId` | PublicEvent.GetParentEvent |
+| `1405f8a80` | `PublicEventStats_LookupByStatId` | PublicEvent.GetStat |
+| `140498a40` | `PublicEventService_GetLiveEventById` | PublicEvent standard chain |
+| `14077cce0` | `ExplorerNode_GetCurrentNode` | PathMission.GetMapIcon |
+| `140720b10` | `ExplorerNode_GetDistanceAndDirection` | PathMission.GetDistance |
+| `140721f50` | `ExplorerHunt_LookupById` | PathMission.GetScoutInfo |
+| `1407209f0` | `ExplorerHunt_GetClueByIndex` | PathMission.GetClueInfo |
+| `14021e2c0` | `ExplorerPowerMap_LookupById` | PathMission.PowerMap |
+| `140220080` | `ScientistDatacubeDiscovery_LookupById` | PathMission.Scientist |
+| `140220d40` | `ScientistFieldStudy_LookupById` | PathMission.Scientist |
+| `140221180` | `ScientistSpecimenSurvey_LookupById` | PathMission.Scientist |
+| `140222f40` | `SettlerSheriff_LookupById` | PathMission.Settler |
+| `140223380` | `SettlerMission_LookupById` | PathMission.Settler types 4–6 |
+| `1406195b0` | `ScientistExperimentation_Refresh` | PathMission.RefreshExperimentation |
+| `14077d240` | `ExplorerClue_ShowHintArrow` | PathMission.ShowExplorerClueHintArrow |
+| `14056b7b0` | `PowerMap_GetProgressFloat` | PathMission.PowerMap progress |
+| `14056f370` | `PathMission_ShowHintArrow` | PathMission.ShowHintArrow |
+| `140571400` | `PathMission_ShowChecklistHintArrow` | PathMission.ShowPathChecklistHintArrow |
+| `1403d3470` | `Lua_PushSpellObject` | PathMission.GetSpell |
+| `14056c2b0` | `PathMission_GetPositionHandle` | PathMission.GetDistance |
+| `14024b980` | `PositionHandle_GetPosObject` | PathMission.GetDistance |
+
+### Relabeling Required
+- Row `14048d310` (was: `ScientistExperimentation_LookupById`) → rename to `Service_LookupEntityById`
+  - This is a generic BST/service lookup used across GalacticArchive, ScientistExperimentation, and others
+  - Takes `(servicePtr, id)` → returns object or null
+

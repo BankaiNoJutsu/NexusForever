@@ -818,7 +818,7 @@ WildStar64.exe,1406b9790,RewardTrack_PushLuaObject,Pushes a RewardTrack Lua user
 WildStar64.exe,14048d5a0,ChallengesService_HasPercentProgress,Returns non-zero if the challenge should display percent-style progress.
 WildStar64.exe,14067b760,PathMission_ResolveCurrent,Resolves the current path mission runtime object from Lua context; returns null if none.
 WildStar64.exe,140491bd0,PathEpisode_LookupById,Looks up a PathEpisode object by 32-bit episode ID from the path episode service.
-WildStar64.exe,14048d310,ScientistExperimentation_LookupById,Looks up a scientist experimentation mission entry by sub-data ID.
+WildStar64.exe,14048d310,Service_LookupEntityById,Generic BST/service lookup by 32-bit ID; takes (servicePtr, id) — used for GalacticArchive articles and ScientistExperimentation entries.
 WildStar64.exe,140617410,SoldierHoldout_LookupById,Looks up a soldier holdout mission entry by sub-data ID.
 WildStar64.exe,140222b00,SettlerMayor_LookupById,Looks up a settler mayor mission entry by sub-data ID.
 WildStar64.exe,140721ef0,ExplorerNode_LookupById,Looks up an explorer node mission entry by type and sub-data ID.
@@ -828,3 +828,37 @@ WildStar64.exe,1403ba420,SpellWrapper_GetActiveForMission,Returns the active spe
 WildStar64.exe,1404331c0,Lua_PushSoldierHoldoutObject,Pushes a soldier holdout Lua userdata onto the stack from a holdout pointer.
 WildStar64.exe,140432ba0,Lua_PushPathEpisodeObject,Pushes a path episode Lua userdata onto the stack from an episode object.
 WildStar64.exe,140432d60,Lua_PushPublicEventObjectiveObject,Pushes a PublicEventObjective Lua userdata from an objective pointer.
+WildStar64.exe,1403ad860,SpellService_GetMinimumRange,Returns minimum cast range (float) for a spell ID; takes (spellService, spellId, entity).
+WildStar64.exe,1403ad8f0,SpellService_GetMaximumRange,Returns maximum cast range (float) for a spell ID; takes (spellService, spellId, entity).
+WildStar64.exe,1404823c0,SpellLiveInst_HasCooldownReduction,Returns non-zero if cooldown reduction is currently active for this live spell instance.
+WildStar64.exe,14046a760,SpellService_GetGCDMilliseconds,Returns GCD time in milliseconds for the given GCD group entry.
+WildStar64.exe,14046a890,SpellService_GetEffectiveCooldownMs,Computes final effective cooldown in ms applying reduction; takes (entity, liveSpellInst, baseCooldownMs).
+WildStar64.exe,1405645b0,SpellWrapper_GetIconPathString,Returns icon asset path string object from a spell wrapper.
+WildStar64.exe,1405e9400,SpellWrapper_ResolveLiveInstance,Resolves a live spell instance from the Lua stack (used by cooldown/GCD functions).
+WildStar64.exe,14023dc80,SpellService_GetGCDGroupEntry,Looks up a GCD group entry by the group ID stored at spellData+0x28.
+WildStar64.exe,1404b7220,Housing_GetCurrentNeighborSelection,Returns the currently selected neighbor object; null if no selection.
+WildStar64.exe,1405df7c0,Friendship_IsConnected,Returns non-zero if the friendship/housing service connection is ready.
+WildStar64.exe,140432f20,Lua_PushGalacticArchiveArticleObject,Pushes a GalacticArchiveArticle Lua userdata from an article state object.
+WildStar64.exe,14020fd40,LiveEvent_LookupById,Looks up a live event object by 32-bit live event ID.
+WildStar64.exe,1406b91f0,Lua_PushLiveEventObject,Pushes a LiveEvent Lua userdata onto the stack from a live event object.
+WildStar64.exe,140688bf0,Lua_PushPublicEventObjectByParentId,Pushes a parent PublicEvent Lua userdata by parentEventId from static data.
+WildStar64.exe,1405f8a80,PublicEventStats_LookupByStatId,Looks up a stat value in the PublicEvent inline stats array by statId; array starts at liveObj+0xec.
+WildStar64.exe,140498a40,PublicEventService_GetLiveEventById,Returns the live PublicEvent object for a given event ID; takes (service, eventId, 0).
+WildStar64.exe,14077cce0,ExplorerNode_GetCurrentNode,Returns the current active explorer node object for a mission; takes (missionObj, 0).
+WildStar64.exe,140720b10,ExplorerNode_GetDistanceAndDirection,Computes distance and direction from player to an explorer node; takes (nodeObj, playerPosPtr, outResult).
+WildStar64.exe,140721f50,ExplorerHunt_LookupById,Looks up an explorer hunt mission entry by sub-data ID.
+WildStar64.exe,1407209f0,ExplorerHunt_GetClueByIndex,Returns a clue object from an explorer hunt by index; clueObj+0x8=clueId, +0x10+0x8=clueType.
+WildStar64.exe,14021e2c0,ExplorerPowerMap_LookupById,Looks up an explorer power map mission entry by sub-data ID.
+WildStar64.exe,140220080,ScientistDatacubeDiscovery_LookupById,Looks up a scientist datacube discovery mission entry by sub-data ID.
+WildStar64.exe,140220d40,ScientistFieldStudy_LookupById,Looks up a scientist field study mission entry by sub-data ID.
+WildStar64.exe,140221180,ScientistSpecimenSurvey_LookupById,Looks up a scientist specimen survey mission entry by sub-data ID.
+WildStar64.exe,140222f40,SettlerSheriff_LookupById,Looks up a settler sheriff mission entry by sub-data ID.
+WildStar64.exe,140223380,SettlerMission_LookupById,Looks up a settler mission entry (types 4-6: resource/scout/sheriff) by sub-data ID.
+WildStar64.exe,1406195b0,ScientistExperimentation_Refresh,Refreshes the scientist experimentation active patterns from server state.
+WildStar64.exe,14077d240,ExplorerClue_ShowHintArrow,Shows the hint arrow for an explorer clue in the current mission.
+WildStar64.exe,14056b7b0,PowerMap_GetProgressFloat,Returns the current float progress (0.0-1.0) for an explorer power map mission.
+WildStar64.exe,14056f370,PathMission_ShowHintArrow,Shows the generic hint arrow for the current path mission.
+WildStar64.exe,140571400,PathMission_ShowChecklistHintArrow,Shows the checklist-specific hint arrow for a path mission (IsInChecklist guard at vtable+0x30).
+WildStar64.exe,1403d3470,Lua_PushSpellObject,Pushes a spell object Lua userdata onto the stack from a spell data pointer.
+WildStar64.exe,14056c2b0,PathMission_GetPositionHandle,Returns the position handle object for a path mission (used in distance calculations).
+WildStar64.exe,14024b980,PositionHandle_GetPosObject,Returns the position object (XYZ at +0x0c/+0x10/+0x14 and radius at +0x04) from a position handle.
