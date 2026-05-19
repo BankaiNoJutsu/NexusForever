@@ -745,6 +745,11 @@ namespace NexusForever.Network.Message
         ClientReplayLevelRequest        = 0x07A5,
         ClientResetInstances            = 0x07B4,
         ClientAccountItemReturnPendingItemGroup = 0x07C6,
+        ServerRewardRotationEntryStateUpsert = 0x07C7, // inference: lowest delta opcode → add/upsert entry-state row
+        ServerRewardRotationEntryStateArray  = 0x07C8,
+        ServerRewardRotationEntryStateUpdate = 0x07C9, // inference: middle delta opcode → update entry-state row
+        ServerRewardRotationScheduleArray    = 0x07CA,
+        ServerRewardRotationEntryStateRemove = 0x07CB, // inference: highest delta opcode → remove entry-state row
         ClientRewardUpdateRequest       = 0x07CC,
         ClientGenericMapNodeRequest     = 0x07CF, // GenericMapNodeChoose sends missing node id before local GenericFloater
         ClientAuctionsByFilterRequest   = 0x07DC,

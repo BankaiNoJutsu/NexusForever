@@ -208,19 +208,47 @@ namespace NexusForever.Game.Loot
             if (looter == null || lootedItem?.Info == null)
                 return false;
 
-            if (!HasLoot(lootedItem))
+            if (!TryGenerateItemLoot(lootedItem, looter, out IReadOnlyList<GeneratedLootItem> items, out _))
                 return false;
 
-            LootInstance lootInstance = GenerateLootInstance(lootedItem.Info.Entry.Id, looter.Guid, looter, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Item);
-            lootInstance.Explosion = true;
-            if (lootInstance.HasExpired)
+            if (!CanDeliverGeneratedLoot(looter, items, out _))
                 return false;
 
-            if (!lootInstance.DeliverAllLoot(looter))
+            return TryDeliverGeneratedItemLoot(looter, items, looter.Guid);
+        }
+
+        public bool TryUseLootBag(IPlayer looter, IItem lootedItem, out string reason)
+        {
+            reason = string.Empty;
+            if (looter == null)
+            {
+                reason = "no-looter";
+                return false;
+            }
+
+            if (lootedItem?.Info == null)
+            {
+                reason = "missing-item";
+                return false;
+            }
+
+            if (!TryGenerateItemLoot(lootedItem, looter, out IReadOnlyList<GeneratedLootItem> items, out reason))
                 return false;
 
-            lootInstance.SendLootNotify(looter, includeGrantedItems: true);
-            return true;
+            if (!CanDeliverGeneratedLoot(looter, items, out reason))
+                return false;
+
+            if (!looter.Inventory.ItemUse(lootedItem))
+            {
+                reason = "item-use-failed";
+                return false;
+            }
+
+            if (TryDeliverGeneratedItemLoot(looter, items, looter.Guid))
+                return true;
+
+            reason = "loot-delivery-failed";
+            return false;
         }
 
         private static Dictionary<ulong, uint> CreatePlayerLooterMap(IPlayer player)
@@ -404,13 +432,98 @@ namespace NexusForever.Game.Loot
         {
             return item.Type switch
             {
-                LootItemType.AccountCurrency => Enum.IsDefined(typeof(AccountCurrencyType), item.StaticId),
+                LootItemType.AccountCurrency => IsDefinedAccountCurrency(item.StaticId),
                 LootItemType.AccountItem     => GameTableManager.Instance.AccountItem.GetEntry(item.StaticId) != null,
-                LootItemType.Cash            => Enum.IsDefined(typeof(CurrencyType), item.StaticId),
+                LootItemType.Cash            => IsDefinedCharacterCurrency(item.StaticId),
                 LootItemType.StaticItem      => ItemManager.Instance.GetItemInfo(item.StaticId) != null,
                 LootItemType.VirtualItem     => GameTableManager.Instance.VirtualItem.GetEntry(item.StaticId) != null,
                 _                            => false
             };
+        }
+
+        private bool TryGenerateItemLoot(IItem lootedItem, IPlayer looter, out IReadOnlyList<GeneratedLootItem> items, out string reason)
+        {
+            items  = [];
+            reason = string.Empty;
+
+            if (lootedItem?.Info == null)
+            {
+                reason = "missing-item";
+                return false;
+            }
+
+            if (!itemLoot.TryGetValue(lootedItem.Info.Entry.Id, out List<LootGroup> itemLootGroups) || itemLootGroups.Count == 0)
+            {
+                reason = $"missing-item-loot:{lootedItem.Info.Entry.Id}";
+                return false;
+            }
+
+            var generatedItems = new Dictionary<(LootItemType Type, uint StaticId), uint>();
+            foreach (LootGroup lootGroup in itemLootGroups)
+            {
+                foreach ((LootItem item, uint count) in lootGroup.GenerateLootDrops(looter))
+                {
+                    if (count == 0u)
+                        continue;
+
+                    if (!CanDeliverLootItem(item))
+                    {
+                        reason = $"invalid-loot-item:{item.Type}:{item.StaticId}";
+                        return false;
+                    }
+
+                    var key = (item.Type, item.StaticId);
+                    ulong total = generatedItems.GetValueOrDefault(key) + (ulong)count;
+                    if (total > uint.MaxValue)
+                    {
+                        reason = $"loot-count-overflow:{item.Type}:{item.StaticId}";
+                        return false;
+                    }
+
+                    generatedItems[key] = (uint)total;
+                }
+            }
+
+            if (generatedItems.Count == 0)
+            {
+                reason = $"empty-item-loot:{lootedItem.Info.Entry.Id}";
+                return false;
+            }
+
+            items = generatedItems
+                .Select(i => new GeneratedLootItem(i.Key.Type, i.Key.StaticId, i.Value))
+                .ToList();
+            return true;
+        }
+
+        private static bool TryDeliverGeneratedItemLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId)
+        {
+            if (looter == null)
+                return false;
+
+            ArgumentNullException.ThrowIfNull(items);
+
+            LootInstance lootInstance = new(ownerUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Item)
+            {
+                Explosion = true
+            };
+
+            bool addedAny = false;
+            foreach (GeneratedLootItem item in items)
+            {
+                if (item.Count == 0u)
+                    continue;
+
+                LootInstanceItem grantedItem = lootInstance.AddLootItem(item.StaticId, item.Type, item.Count);
+                grantedItem.SetWinner(looter);
+                addedAny = true;
+            }
+
+            if (!addedAny || !lootInstance.DeliverAllLoot(looter))
+                return false;
+
+            lootInstance.SendLootNotify(looter, includeGrantedItems: true);
+            return true;
         }
 
         public void SendLootNotify(IPlayer looter, uint ownerUnitId)
@@ -651,7 +764,13 @@ namespace NexusForever.Game.Loot
                 }
             }
 
-            return CanHoldStaticLoot(looter, items.Where(i => i.Type == LootItemType.StaticItem), out reason);
+            List<GeneratedLootItem> staticItems = items
+                .Where(i => i.Type == LootItemType.StaticItem)
+                .ToList();
+            if (staticItems.Count == 0)
+                return true;
+
+            return CanHoldStaticLoot(looter, staticItems, out reason);
         }
 
         public void GiveGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId, bool sendGrantedNotify = false)
@@ -695,13 +814,25 @@ namespace NexusForever.Game.Loot
         {
             return item.Type switch
             {
-                LootItemType.AccountCurrency => Enum.IsDefined(typeof(AccountCurrencyType), item.StaticId),
+                LootItemType.AccountCurrency => IsDefinedAccountCurrency(item.StaticId),
                 LootItemType.AccountItem     => GameTableManager.Instance.AccountItem.GetEntry(item.StaticId) != null,
-                LootItemType.Cash            => Enum.IsDefined(typeof(CurrencyType), item.StaticId),
+                LootItemType.Cash            => IsDefinedCharacterCurrency(item.StaticId),
                 LootItemType.StaticItem      => ItemManager.Instance.GetItemInfo(item.StaticId) != null,
                 LootItemType.VirtualItem     => GameTableManager.Instance.VirtualItem.GetEntry(item.StaticId) != null,
                 _                            => false
             };
+        }
+
+        private static bool IsDefinedAccountCurrency(uint staticId)
+        {
+            return staticId <= int.MaxValue
+                && Enum.IsDefined(typeof(AccountCurrencyType), (int)staticId)
+                && GameTableManager.Instance.AccountCurrencyType.GetEntry(staticId) != null;
+        }
+
+        private static bool IsDefinedCharacterCurrency(uint staticId)
+        {
+            return staticId <= int.MaxValue && Enum.IsDefined(typeof(CurrencyType), (int)staticId);
         }
 
         private static bool CanHoldStaticLoot(IPlayer looter, IEnumerable<GeneratedLootItem> staticItems, out string reason)

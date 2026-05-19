@@ -2,6 +2,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Loot;
 using NexusForever.Network;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message.Static;
 using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Item
@@ -36,8 +37,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             if (!lootManager.HasLoot(item))
                 throw new InvalidPacketValueException();
 
-            if (session.Player.Inventory.ItemUse(item))
-                lootManager.DropLoot(session.Player, item);
+            if (!lootManager.TryUseLootBag(session.Player, item, out string reason) && reason == "inventory-full")
+                session.Player.SendGenericError(GenericError.ItemInventoryFull);
         }
     }
 }

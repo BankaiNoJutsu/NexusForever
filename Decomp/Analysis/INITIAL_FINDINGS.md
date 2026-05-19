@@ -6129,6 +6129,15 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   `RewardRotation_UpsertEntryState`, `RewardRotation_UpdateEntryState`, or
   `RewardRotation_RemoveEntryState`. No static or random essence grant was
   added.
+  Follow-up implemented from this pass: NexusForever now defines writable
+  server message models for the mapped reward-rotation schedule array
+  (`0x07CA`), entry-state array (`0x07C8`), and three single-row entry-state
+  delta opcodes (`0x07C7`, `0x07C9`, `0x07CB`) using the field widths recovered
+  from `RewardRotation_ScheduleRow_ReadPayload` (`1400a1d90`) and
+  `RewardRotation_EntryStateRow_ReadPayload` (`1400a1ee0`). The three delta
+  model names remain conservative/inference-backed; no reward-rotation schedule
+  source, static grant, random essence grant, or entry-state mutation service was
+  added.
 - Taxi unlock persistence blocker:
   Type `101` achievements (`4714`/`4715`, `Making Connections`) remain
   mapped-only. The client can receive an authoritative unlocked flight-path

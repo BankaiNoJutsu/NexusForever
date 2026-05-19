@@ -6,6 +6,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared.Game;
@@ -333,6 +334,23 @@ namespace NexusForever.Game.Loot
                     player.CurrencyManager.CurrencyAddAmount((CurrencyType)StaticId, Amount, isLoot: true);
                     break;
                 case LootItemType.StaticItem:
+                    if (!TryCanDeliverStaticItem(player, out bool inventoryFull))
+                    {
+                        if (inventoryFull)
+                        {
+                            player.Session.EnqueueMessageEncrypted(new ServerItemError
+                            {
+                                ErrorCode = GenericError.ItemInventoryFull
+                            });
+                        }
+                        else
+                        {
+                            log.Warn($"Failed to validate static loot item {StaticId} for player {player.CharacterId}.");
+                        }
+
+                        return false;
+                    }
+
                     player.Inventory.ItemCreate(InventoryLocation.Inventory, StaticId, Amount, ItemUpdateReason.Loot);
                     break;
                 case LootItemType.VirtualItem:
@@ -388,6 +406,52 @@ namespace NexusForever.Game.Loot
             item.Granted    = true;
 
             return [item];
+        }
+
+        private bool TryCanDeliverStaticItem(IPlayer player, out bool inventoryFull)
+        {
+            inventoryFull = false;
+
+            IBag inventoryBag = player.Inventory.SingleOrDefault(bag => bag.Location == InventoryLocation.Inventory);
+            if (inventoryBag == null)
+            {
+                inventoryFull = true;
+                return false;
+            }
+
+            IItemInfo itemInfo = ItemManager.Instance.GetItemInfo(StaticId);
+            if (itemInfo == null)
+                return false;
+
+            ulong remainingCount = Amount;
+            if (itemInfo.IsStackable())
+            {
+                foreach (IItem item in inventoryBag.Where(i => i.Info.Id == itemInfo.Id && i.ExpirationTimeLeft == 0u))
+                {
+                    if (item.StackCount >= item.Info.Entry.MaxStackCount)
+                        continue;
+
+                    remainingCount -= Math.Min(remainingCount, item.Info.Entry.MaxStackCount - item.StackCount);
+                    if (remainingCount == 0ul)
+                        return true;
+                }
+            }
+
+            if (remainingCount == 0ul)
+                return true;
+
+            uint perNewStack = itemInfo.IsStackable() ? itemInfo.Entry.MaxStackCount : 1u;
+            if (perNewStack == 0u)
+                return false;
+
+            ulong requiredSlots = (remainingCount + perNewStack - 1ul) / perNewStack;
+            if (requiredSlots > inventoryBag.SlotsRemaining)
+            {
+                inventoryFull = true;
+                return false;
+            }
+
+            return true;
         }
 
         private IEnumerable<NetworkLootItem> BuildGrantedAccountCurrencyNotificationItems()
