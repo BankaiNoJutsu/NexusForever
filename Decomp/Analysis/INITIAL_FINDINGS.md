@@ -8504,3 +8504,283 @@ Return value semantics:
 |--------|-----------|------|---------|
 | `0x17a` (378) | Client→Server | ActivateSpell | `{spellId:uint32, isShiftHeld:byte}` |
 
+
+---
+
+## Network Opcodes — Additional (Batch 5)
+
+| Opcode | Direction | Name | Payload |
+|--------|-----------|------|---------|
+| `0xb5` (181) | Client→Server | AssignMasterLoot | `{lootId:uint32, rollId:uint32, targetEntityGuid:uint128}` |
+| `0x14c` (332) | Client→Server | RepairAllItems | `{vendorEntityGuid:uint64, 0:uint64, 0:uint64}` |
+| `0x150` (336) | Client→Server | ResetAttributePoints | `{0:byte}` |
+| `0x153` (339) | Client→Server | ResetSingleInstance | `{instanceId:uint32}` |
+| `0x15d` (349) | Client→Server | LootRoll | `{rollId:uint32, lootId:uint32, rollType:uint32}` (rollType: 0=greed,1=need,2=pass) |
+| `0x163` (355) | Client→Server | SetInstanceSettings | `{instanceId:uint32, difficultyId:uint32, levelScaling:uint64}` |
+| `0x167` (359) | Client→Server | IsRepairVendorQuery | `{0:byte}` |
+| `0x170` (368) | Client→Server | SetCharacterFlags | `{flags:uint32}` |
+| `0x173` (371) | Client→Server | TogglePvpFlags | `{enabled:uint32}` |
+| `0xd2` (210) | Client→Server | ConfirmInstanceSettings | `{instanceId:uint32}` |
+| `0x830` (2096) | Client→Server | ReportBug | `{bugTypeId:ushort, itemId:uint32, zoneId:uint32, descriptionPtr:string}` |
+
+## Entity Fields — Instance and Loot System
+
+| Offset | Type | Name | Notes |
+|--------|------|------|-------|
+| `entity + 0x6328` | uint32 | `characterFlags` | Bit 3 (0x8) = ignoreDuelRequests |
+| `entity + 0x6640` | uint32 | `interactTargetEntityId` | Currently-interacted-with entity ID |
+| `entity + 0x6644` | int32 | `interactType` | 0x31 = vendor/repair NPC |
+| `entity + 0x7d84` | uint32 | `activeInstanceId` | Current instance ID for settings operations |
+| `entity + 0x7d90` | ptr | `lootServicePtr` | Loot management sub-object |
+| `entity + 0x6ee4` | int32 | `duelStateFlag` | 1=pending, 3=in duel |
+
+## Loot Service Sub-Object (entity + 0x7d90 ptr)
+
+| Offset | Type | Name | Notes |
+|--------|------|------|-------|
+| `+0x28` | BST | `masterLootBST` | BST keyed by lootId; node `+0x2c` = rollId; `+0x28` = 8-byte loot entry |
+| `+0x48` | BST | `rollLootBST` | BST keyed by lootId; node `+0x2c` = rollId; `+0x28` = loot data |
+| `+0x68` | BST | `pendingMasterLootBST` | Pending master loot entries |
+
+## Innate Ability Array Layout (entity + 0x6d90)
+
+Confirmed from `Lua_GameLib_GetClassInnateAbilitySpells` and `GetCurrentClassInnateAbilitySpell`.
+
+- Base: `entity + 0x6d90` = ptr to InnateAbilityState struct
+- `InnateState + 0x08 + index * 4` = spellId array (iterates over count from `InnateAbility_GetCount`)
+- `InnateState + 0x30` = selected index (int64)
+- Pattern: stride 4 bytes per innate spell entry starting at `InnateState + 0x14` (`+0x08 + first index offset`)
+
+## Entity Vendor Interaction Check
+
+```
+entity.interactType (entity + 0x6644) == 0x31 → vendor/repair NPC
+FUN_1403d90d0(entity, entity.interactTargetEntityId) → resolve interacted entity
+interactedEntity + 0x36d8 → is repair vendor flag (non-zero = repairs available)
+entity + 0x15f8 → current currency/resource available for repair
+```
+
+## Global Pointers — Additional
+
+| Global | Name | Notes |
+|--------|------|-------|
+| `DAT_140c636a8` | `gameServerTimeBase` | Time origin for loot roll timer |
+| `DAT_140c63650` | `LuaWindowRegistry` | `+0x2f8` = window ptr array; `+0x300` = window count |
+| `DAT_140c65c20` | `RewardRotationService` | Non-null = reward rotation loaded |
+
+
+---
+
+## Challenges System (Lua_Challenges_* batch)
+
+### Challenges Object Layout
+
+All Challenges functions resolve via:
+```
+FUN_140056ab0(param_1, 1, "Game.Challenges") → handle
+*(longlong *)(handle + 8) + 8 → challengeDataPtr
+```
+
+**Challenge static data (`challengeDataPtr`):**
+
+| Offset | Type | Name | Source |
+|--------|------|------|--------|
+| `+0x00` | uint32 | `challengeId` | `GetId`: `*challengeDataPtr` |
+| `+0x04` | uint32 | `challengeType` | `GetType` |
+| `+0x0c` | uint32 | `challengeFlags` | `IsTimeTiered`: bit 3 = isTimeTiered; bit 4 (0x10) = hasBeenOnCooldown |
+| `+0x14` | uint32 | `rewardTrackId` | `GetRewardTrack` |
+| `+0x18` | int32 | `completionTotal` | `GetCompletionTotal` |
+| `+0x24` | int32 | `startLocationRestrictionId` | `GetStartLocationRestrictionId` |
+| `+0x2c` | uint32 | `tiersArrayPtr` | `GetAllTierCounts`: `challengeDataPtr + 0x2c` = tier array start (stride 4, 0xFFFFFFFF = end sentinel); `challengeDataPtr[3]` = flags, `challengeDataPtr + 0x0c` = isTimeTiered bit |
+| `+0x38` | uint32 | `zoneId` | `GetZoneInfo` |
+| `+0x44` | uint32 | `nameStringId` | `GetName` |
+| `+0x48` | uint32 | `descriptionStringId` | `GetDescription` |
+
+**Challenge runtime state** (via `DAT_140c65948 + 0x30` BST, keyed by challengeId):
+
+| Node offset | Name | Notes |
+|-------------|------|-------|
+| `node + 0x20` | key = challengeId | BST node key |
+| `node + 0x24` | displayTier (int32) | `GetDisplayTier` |
+| `node + 0x28` | runtimeStatePtr | |
+
+**runtimeChallengeState fields:**
+
+| Offset | Type | Name | Source |
+|--------|------|------|--------|
+| `+0x14` | int32 | `currentCount` | `GetCurrentCount` |
+| `+0x1c` | int32 | `completionCount` | `GetCompletionCount` |
+| `+0x28` | int32 | `currentTier` | `GetCurrentTier` |
+| `+0x30` | int32 | `isActivated` | `IsActivated`: non-zero = active |
+| `+0x34` | int32 | `cooldownTimerActive` | `IsInCooldown` secondary check |
+| `+0x40` | uint32 | `durationMs` | `GetDuration` |
+| `+0x48` | int32 | `cooldownType` | `IsInCooldown`: 0 = cooldown fully active |
+
+**Timer type** (`GetTimer` logic):
+```
+if (runtimeState + 0x30) != 0: timerMode = 2 (active count-up)
+elif (runtimeState + 0x34) != 0: timerMode = 4 (cooldown count-down)
+FUN_14048dd20(runtimeState, challengeId, timerMode) → remaining float
+```
+
+**All-tier info** (`GetAllTierCounts`):
+- `challengeDataPtr + 0x2c` = start of tier goal count array (uint32 each, 0xFFFFFFFF = end)
+- If isTimeTiered: goalCount in ms divided by 1000 for display
+- `FUN_14048f880(challengeId)` = checks if challenge is in "max score" mode (goals shown as 100)
+
+### Global: ChallengesService
+
+| Global | Offset | Name |
+|--------|--------|------|
+| `DAT_140c65948` | `+0x30` | activeChallengesStateBST |
+| `DAT_140c65948` | `+0xd0` | challengeDisplayTierBST |
+
+---
+
+## PublicEvent / PublicEventObjective System
+
+### Globals
+
+| Global | Name | Notes |
+|--------|------|-------|
+| `DAT_140c65980` | `PublicEventService` | `+0x30` vtbl slot = `GetObjectiveById`; `+0x00` vtbl slot = base; used by `FUN_140498a40` as `GetEventById` |
+
+### PublicEvent Object (vtable interface)
+
+Resolution pattern:
+```
+FUN_140056ab0(param_1, 1, "Game.PublicEvent") → handle
+*(longlong **)(*(longlong *)(handle + 8) + 8) → publicEventObjPtr (has vtable)
+(*vtbl + 0x20)(obj) → getEventId() → uint32
+FUN_140498a40(PublicEventService, eventId, 0) → liveEventObj (has vtable)
+```
+
+**PublicEvent vtable slot map:**
+
+| VTbl offset | Function | Return | Source |
+|-------------|----------|--------|--------|
+| `+0x20` | `GetId()` | uint32 | `GetId`, `IsActive`, `GetElapsedTime` |
+| `+0x28` | `GetEventType()` | int32 | `GetEventType` |
+| `+0x38` | `GetTotalTime()` | int32 ms | `GetTotalTime` (requires IsActive) |
+| `+0x48` | `GetObjectivesIterator()` | iterator | `GetObjectives` |
+| `+0x68` | `IsActive()` | bool | `IsActive` |
+| `+0x78` | `GetElapsedTime()` | int32 ms | `GetElapsedTime` (requires IsActive) |
+| `+0x90` | `GetObjectiveByIndex(idx)` | objPtr | `GetObjective` |
+| `+0xa0` | `GetRewardThreshold(tier)` | int32 | `GetRewardThreshold` |
+| `+0xa8` | `GetRewardType()` | int32 | `GetRewardType` (requires IsActive) |
+| `+0x170` | `GetJoinedTeam()` | int32 | `GetJoinedTeam` |
+| `+0x178` | `GetTeamCount()` | int32 | `GetTeamCount` (requires IsActive) |
+
+### PublicEventObjective Object (vtable interface)
+
+Resolution pattern:
+```
+FUN_140056ab0(param_1, 1, "Game.PublicEventObjective") → handle
+*(longlong *)(*(longlong *)(handle + 8) + 8) → objHandleData
+*(uint **)(objHandleData + 8) → objectiveData ptr
+  objectiveData[0] = objectiveId (uint32)
+  objectiveData + 0x04 = eventId (uint32)
+  objectiveData + 0x14 = homeTeamIndex (int32)
+  objectiveData + 0x18 = descriptionStringId
+  objectiveData + 0x1c = altDescriptionStringId
+(*DAT_140c65980 + 0x30)(service, objectiveId, 0) → publicEventObjectiveObj (vtable)
+```
+
+**PublicEventObjective vtable slot map:**
+
+| VTbl offset | Function | Return | Source |
+|-------------|----------|--------|--------|
+| `+0x28` | `GetParentEvent()` | eventPtr | `GetStatus`, `IsBusy`, `GetElapsedTime` |
+| `+0x30` | `IsValidForStatusCheck()` | bool | `GetObjectiveType` |
+| `+0x38` | `GetStatus()` | int32 enum | `GetStatus` |
+| `+0x68` | `IsActive()` | bool | multiple |
+| `+0x88` | `GetProgressFloat()` | float | `GetCount` when type==0x17 (contested) |
+| `+0xa0` | `IsBusy()` | bool | `IsBusy` |
+| `+0xa8` | `GetElapsedTime()` | int32 ms | `GetElapsedTime` |
+| `+0x140` | `GetDescriptionStringId()` | ? | `GetObjectiveType` intermediate |
+| `+0x150` | `GetObjectiveType()` | int32 | `GetObjectiveType`, `GetCount`, `GetRequiredCount` |
+| `+0x180` | `GetTotalTime()` | int32 ms | `GetTotalTime` |
+| `+0x1d8` | `GetRequiredCount2()` | int32 | `GetRequiredCount` |
+| `+0x1e0` | `ShowHealthBar()` | bool | `ShowHealthBar` |
+| `+0x1e8` | `IsHidden()` | bool | `IsHidden` |
+
+**Objective types (from GetCount branching):**
+- `0x17` = contested area (count = progressFloat × 100)
+- `0x18`, `0x1b`, `0x1e`, `0x19`, `0x20` = various count-type objectives
+
+
+---
+
+## PathMission System (Lua_PathMission_* batch)
+
+### Resolution and Vtable
+
+All PathMission functions use:
+```
+FUN_14067b760() → PathMission_ResolveCurrent() → pathMissionRuntimeObj (vtable)
+```
+
+**PathMission vtable slots:**
+
+| VTbl offset | Function | Return | Source |
+|-------------|----------|--------|--------|
+| `+0x08` | `GetSpellForMission()` | spellId | `GetSpell` |
+| `+0x28` | `IsVisibleOrStarted()` | bool | `GetSettlerMayorInfo` guard |
+| `+0x38` | `IsComplete()` | bool | `IsComplete` |
+| `+0xd0` | `GetMissionState()` | int32 | `GetMissionState`, `GetType`, `GetNumCompleted`, etc. |
+
+**GetMissionState return values:**
+- 1 = not started/unavailable (returns 0 to Lua)
+- 2 = in-progress/available
+- 3 = started/active (`IsStarted` checks `==3`)
+
+**`plVar4[6]`** (= `*(pathMissionObj + 0x30)`) = `pathMissionDataPtr`:
+
+| Offset | Type | Name | Source |
+|--------|------|------|--------|
+| `+0x00` | uint32 | `missionId` | `GetId`: `*(int *)*pathMissionDataPtr` |
+| `+0x0c` | int32 | `missionType` | `GetType`, type dispatch |
+| `+0x10` | int32 | `displayType` | `GetDisplayType`; default -1 (`0xbff...`) |
+| `+0x14` | uint32 | `subDataId` | Type-specific table lookup id |
+| `+0x18` | uint32 | `nameStringId` | `GetName` |
+| `+0x20` | uint32 | `episodeId` | `GetEpisode` |
+
+### PathMission Type Constants (missionType at +0x0c)
+
+| Value | Path | Sub-type | Lookup function |
+|-------|------|----------|-----------------|
+| `0` | Soldier | Holdout | `FUN_140617410(dataPtr, subDataId)` |
+| `2` | Scientist | General | `FUN_14021fc40(subDataId)` → scientist table entry |
+| `4-6` | Settler | Varies | Settler-specific lookups |
+| `0xe` | Scientist | Datacube | `FUN_14021fc40(subDataId)` |
+| `0x16` | Scientist | Experimentation | `FUN_14048d310(ScientistExperimentationService, subDataId)` |
+| `0x19` | Settler | Mayor | `DAT_140c65970` (SettlerPathService), `FUN_140222b00(subDataId)` |
+| `0x1b` | Explorer | Node | `FUN_140721ef0(type, subDataId)` → explorerData `+0x18` = nodeCount |
+
+### Named PathMission Functions
+
+| Address | Name |
+|---------|------|
+| `1404067b760` | `PathMission_ResolveCurrent` |
+| `140491bd0` | `PathEpisode_LookupById` |
+| `1403ba420` | `SpellWrapper_GetActiveForMission` |
+| `14048d310` | `ScientistExperimentation_LookupById` |
+| `140617410` | `SoldierHoldout_LookupById` |
+| `140222b00` | `SettlerMayor_LookupById` |
+| `140721ef0` | `ExplorerNode_LookupById` |
+| `14021fc40` | `ScientistMission_LookupById` |
+| `140200220` | `GameTable_GetEntryById` |
+
+### Related Globals
+
+| Global | Name | Notes |
+|--------|------|-------|
+| `DAT_140c65950` | `ScientistExperimentationService` | Used in experimentation lookup |
+| `DAT_140c65968` | `PathEpisodeService` | Used in `GetEpisode` |
+| `DAT_140c65970` | `SettlerPathService` | Used in settler mayor; `+0x08` must == 1 (settler path active) |
+
+### Reward XP
+
+`GetRewardXp` uses game table id `0x17a` (PathRewardTable); `entry + 0x04` = xpRewardAmount.
+Default fallback = 50 (`0x32`).
+

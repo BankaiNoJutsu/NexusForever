@@ -805,3 +805,26 @@ WildStar64.exe,1403bacc0,SpellBook_GetSpellTierData,Returns tier progression dat
 WildStar64.exe,1407a1440,SpellWrapper_BuildForTier,Builds or retrieves the resolved spell wrapper for a specific tier of a spell.
 WildStar64.exe,1403bb340,SpellBook_SendTierUpdateRequest,Sends spell tier update request after validating new tier affordability.
 WildStar64.exe,1403c1ea0,ActionSet_GetSlotData,Returns action slot data pointer for a given slot index and action set byte.
+WildStar64.exe,1400f26a0,LootRoll_GetLootIdFromHandle,Resolves loot roll ID from item handle passed as first Lua argument.
+WildStar64.exe,1403d90d0,Entity_ResolveById,Looks up a world entity by its 32-bit ID; returns null if not found.
+WildStar64.exe,1406622c0,Lua_GetEntityFromArg,Resolves a Lua argument to an entity userdata pointer.
+WildStar64.exe,140569f10,Item_HasEquippedArmor,Returns non-zero if entity has equipped armor items eligible for repair.
+WildStar64.exe,1403ac780,Entity_GetEquipmentSlot,Returns equipment slot pointer for a given slot index on entity+0xa0.
+WildStar64.exe,140498a40,PublicEventService_GetEventById,Looks up a live PublicEvent object by its 32-bit event ID.
+WildStar64.exe,14048d940,ChallengesService_NeedsHintArrow,Returns non-zero if the given challenge ID needs a hint arrow displayed.
+WildStar64.exe,14048dd20,ChallengesService_GetTimerRemaining,Returns remaining timer float for a challenge in a given timer mode (2=active 4=cooldown).
+WildStar64.exe,14048f880,ChallengesService_IsMaxScoreMode,Returns non-zero if the challenge is in max-score display mode (goals shown as 100).
+WildStar64.exe,1406b9790,RewardTrack_PushLuaObject,Pushes a RewardTrack Lua userdata object onto the Lua stack by track ID.
+WildStar64.exe,14048d5a0,ChallengesService_HasPercentProgress,Returns non-zero if the challenge should display percent-style progress.
+WildStar64.exe,14067b760,PathMission_ResolveCurrent,Resolves the current path mission runtime object from Lua context; returns null if none.
+WildStar64.exe,140491bd0,PathEpisode_LookupById,Looks up a PathEpisode object by 32-bit episode ID from the path episode service.
+WildStar64.exe,14048d310,ScientistExperimentation_LookupById,Looks up a scientist experimentation mission entry by sub-data ID.
+WildStar64.exe,140617410,SoldierHoldout_LookupById,Looks up a soldier holdout mission entry by sub-data ID.
+WildStar64.exe,140222b00,SettlerMayor_LookupById,Looks up a settler mayor mission entry by sub-data ID.
+WildStar64.exe,140721ef0,ExplorerNode_LookupById,Looks up an explorer node mission entry by type and sub-data ID.
+WildStar64.exe,14021fc40,ScientistMission_LookupById,Looks up a scientist mission entry (general/datacube) by sub-data ID.
+WildStar64.exe,140200220,GameTable_GetEntryById,Returns a game table entry pointer by integer ID; table 0x17a = PathRewardTable.
+WildStar64.exe,1403ba420,SpellWrapper_GetActiveForMission,Returns the active spell wrapper for a path mission objective.
+WildStar64.exe,1404331c0,Lua_PushSoldierHoldoutObject,Pushes a soldier holdout Lua userdata onto the stack from a holdout pointer.
+WildStar64.exe,140432ba0,Lua_PushPathEpisodeObject,Pushes a path episode Lua userdata onto the stack from an episode object.
+WildStar64.exe,140432d60,Lua_PushPublicEventObjectiveObject,Pushes a PublicEventObjective Lua userdata from an objective pointer.
