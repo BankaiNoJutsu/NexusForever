@@ -6733,3 +6733,135 @@ equivalent of `fMaxTime` from the runtime wrapper. No server change needed.
 | SpellTarget_ResolveAndValidateWrapper | 140398800 | Server validates wrappers via GameTable; no change needed |
 | SpellTarget_ValidateTargetRelationship | 1403b44b0 | Dead/faction checks in server spell validation; no change needed |
 | Channel data fInitialDelay/fMaxTime | 1405ed640 | Server uses Spell4Entry.CastTime; consistent |
+
+
+---
+
+## SpellTarget_ValidateWrapperAndTargets (FUN_1403ace00 @ 1403ace00)
+
+**Called by:** SpellTarget_ResolveAndValidateWrapper as the final validation gate.
+
+### Summary
+
+This is the gatekeeper that confirms the resolved spell wrapper allows the chosen
+target. It re-runs SpellService_ResolveSpellWrapper, reads two ValidTargets IDs
+from the inner spell-wrapper struct, and calls a virtual ValidTargets-check
+dispatch for both the primary and the secondary target.
+
+### Entry Guard
+
+FUN_1403ae8c0(DAT_140c65b70) is called first. If its return value is neither
+  nor  x13d, the function returns that value immediately without further
+work. Only when the pre-condition state is OK (0) or the conditional-state (0x13d)
+does validation proceed.
+
+### Pseudocode
+
+`c
+ulonglong SpellTarget_ValidateWrapperAndTargets(
+    undefined8 param_1,     // context
+    undefined4 *param_2,    // spell_result array (param_2[0]=spell4_id, param_2[7]=target_id, param_2[9]=secondary_id)
+    undefined8 param_3,
+    undefined8 *param_4,    // failure-code output list (nullable)
+    undefined8 param_5,
+    int param_6) {
+
+    uVar1 = DAT_140c65b70;              // global spell service obj
+    pre_state = FUN_1403ae8c0(uVar1);   // get current pre-condition state
+
+    if (pre_state != 0 && pre_state != 0x13d)
+        return pre_state;               // early pass-through if unknown state
+
+    if (param_6 != 0 && pre_state == 0x13d &&
+        (param_4 == null || param_4[0x14] == 0))
+        return 0x13d;                   // conditional-state early exit
+
+    // resolve entities
+    lVar4 = FUN_1403d90d0(DAT_140c65898, param_2[7]);   // primary entity
+    lVar5 = FUN_1403d90d0(DAT_140c65898, param_2[9]);   // secondary entity
+
+    if (lVar4 == 0) return 0x1e;  // primary entity not found
+
+    // re-resolve wrapper (entity-level BST or global hash)
+    lVar6 = SpellService_ResolveSpellWrapper(uVar1, *param_2, lVar4);
+    if (lVar6 == 0) return 4;     // no wrapper
+
+    inner = *(lVar6 + 0x70);      // inner spell-info struct
+
+    valid_primary   = *(int *)(inner + 0x168);   // ValidTargets primary ID (0 = any)
+    valid_secondary = *(int *)(inner + 0x16c);   // ValidTargets secondary ID
+
+    prop_flags_byte = *(byte *)(inner + 0x108);  // SpellPropertyFlags low byte
+    aoe_data_ptr    = *(lVar6 + 0x40);           // AoE data pointer
+
+    primary_ok = (valid_primary == 0)            // 0 = no restriction
+        || (aoe_data_ptr != 0 && (prop_flags_byte & 0x02))  // AoE + PropertyFlags bit 1
+        || (*DAT_140c659a0_vtable_0x18(DAT_140c659a0, lVar4, valid_primary, lVar5, 0, 0) != 0);
+
+    if (!primary_ok) {
+        record_failure_code(param_4, 0x97);  // primary target invalid
+        return 0x97;
+    }
+
+    if (valid_secondary != 0 && lVar5 != 0 &&
+        *DAT_140c659a0_vtable_0x18(DAT_140c659a0, lVar5, valid_secondary, lVar4, 0, 0) == 0) {
+        record_failure_code(param_4, 0x119);  // secondary target invalid
+        return 0x119;
+    }
+
+    return pre_state;  // 0 or 0x13d = success
+}
+`
+
+### Spell Wrapper Inner Struct (spell_wrapper + 0x70) — New Fields
+
+| Offset | Type | Name | Notes |
+|--------|------|------|-------|
+| +0x108 | byte | PropertyFlags low byte | Bit 1 (0x02): combined with AoE data bypasses primary ValidTargets |
+| +0x168 | int | ValidTargets primary ID | 0 = any target accepted; runtime ID into Spell4ValidTargets table |
+| +0x16c | int | ValidTargets secondary ID | Secondary target ValidTargets ID; 0 = no secondary check |
+
+These complement the fields decoded in prior sessions (+0x40=AoE data ptr,
++0x50=channel data, +0x70=inner info struct).
+
+### ValidTargets Dispatch
+
+The ValidTargets check calls a virtual at *DAT_140c659a0 + 0x18:
+`
+(*(*DAT_140c659a0 + 0x18))(DAT_140c659a0, entity, validtargets_id, other_entity, 0, 0)
+`
+DAT_140c659a0 is a separate service object (not the same as DAT_140c65b70
+spell service). The vtable offset  x18 (slot 3) dispatches to the actual
+ValidTargets lookup. This is not yet decoded; likely SpellService_CheckValidTargets.
+
+### Error Code Table
+
+| Code | Hex | Meaning |
+|------|-----|---------|
+| 0 | 0x00 | Success |
+| 4 | 0x04 | No spell wrapper resolved |
+| 30 | 0x1e | Primary entity not found in world |
+| 151 | 0x97 | Primary target fails ValidTargets check |
+| 281 | 0x119 | Secondary target fails ValidTargets check |
+| 317 | 0x13d | Pre-condition pass-through (conditional state) |
+
+### PropertyFlags Bit 1 — AoE ValidTargets Override
+
+When spell_wrapper + 0x40 (AoE data pointer) is non-null **and**
+spell_wrapper + 0x70 + 0x108 bit 1 (0x02) is set, the primary ValidTargets
+check always passes. This is consistent with AoE spells that hit all entities
+in radius regardless of normal ValidTargets restrictions.
+
+Current SpellPropertyFlags in the server does not include bit 0x02. This bit
+is a note for future investigation — it may be relevant for spells that should
+bypass target restrictions when in AoE mode.
+
+### Server Implementation Status
+
+| Concern | Status |
+|---------|--------|
+| ValidTargets primary check | Server CheckPrimaryTargetValidMask uses Spell4ValidTargets.TargetBitmask — functionally equivalent to client alid_primary_id |
+| ValidTargets secondary check | Server has no secondary ValidTargets path currently; secondary target used for e.g. buff transfers |
+| PropertyFlags bit 1 AoE bypass | Not in server; noted for future when AoE spells show unexpected target rejection |
+| Error codes 0x97/0x119 | Client-side only; server has its own CastResult enum |
+| No server changes needed this pass | ✓ |
