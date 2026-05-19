@@ -36,7 +36,7 @@
                             chunk = new Prop();
                             break;
                         default:
-                            throw new NotImplementedException();
+                            continue;
                     }
 
                     using (var chunkStream = new MemoryStream(chunkData))

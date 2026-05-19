@@ -13,12 +13,12 @@ namespace NexusForever.IO.Map
         private static (uint cellX, uint cellY) GetCellCoord(Vector3 vector)
         {
             int x = (int)Math.Floor(MapDefines.GridCellCount * (MapDefines.WorldGridOrigin + vector.X / MapDefines.GridSize));
-            if (x < 0 || x > MapDefines.WorldGridCount * MapDefines.GridCellCount)
+            if (x < 0 || x >= MapDefines.WorldGridCount * MapDefines.GridCellCount)
                 throw new ArgumentOutOfRangeException($"Position X: {vector.X} is invalid!");
 
             int z = (int)Math.Floor(MapDefines.GridCellCount * (MapDefines.WorldGridOrigin + vector.Z / MapDefines.GridSize));
-            if (z < 0 || z > MapDefines.WorldGridCount * MapDefines.GridCellCount)
-                throw new ArgumentOutOfRangeException($"Position Z: {vector.X} is invalid!");
+            if (z < 0 || z >= MapDefines.WorldGridCount * MapDefines.GridCellCount)
+                throw new ArgumentOutOfRangeException($"Position Z: {vector.Z} is invalid!");
 
             return ((uint)x & MapDefines.GridCellCount - 1, (uint)z & MapDefines.GridCellCount - 1);
         }

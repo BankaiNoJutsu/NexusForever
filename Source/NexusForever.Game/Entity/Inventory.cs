@@ -1070,6 +1070,12 @@ namespace NexusForever.Game.Entity
 
         public void ItemMoveToSupplySatchel(IItem item, uint amount)
         {
+            if (item == null)
+                throw new ArgumentNullException();
+
+            if (amount == 0u || amount > item.StackCount)
+                throw new InvalidPacketValueException();
+
             if (player.SupplySatchelManager.IsFull(item))
                 return;
 

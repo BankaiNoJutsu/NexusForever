@@ -4,6 +4,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
-    <OutputPath>$(SolutionDir)\NexusForever.WorldServer\bin\$(Configuration)</OutputPath>
+    <OutputPath>$(MSBuildThisFileDirectory)..\NexusForever.WorldServer\bin\$(Configuration)</OutputPath>
   </PropertyGroup>
 </Project>

@@ -108,9 +108,9 @@ namespace NexusForever.Game.Map
                     Task.WaitAll(tasks.ToArray());
                 }
             }
-            catch
+            catch (Exception exception)
             {
-                // ignored.
+                log.Error(exception, "Failed to update one or more maps.");
             }
 
             sw.Stop();
@@ -164,7 +164,7 @@ namespace NexusForever.Game.Map
         public bool CanCreateInstance(IPlayer player)
         {
             if (instanceCounts.TryGetValue(player.CharacterId, out uint instanceCount)
-                && instanceCount > (SharedConfiguration.Instance.Get<MapConfig>().MaxInstances ?? 10u))
+                && instanceCount >= (SharedConfiguration.Instance.Get<MapConfig>().MaxInstances ?? 10u))
                 return false;
 
             return true;

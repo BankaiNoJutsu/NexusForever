@@ -40,11 +40,11 @@ namespace NexusForever.Game.Map
         public static (uint gridX, uint gridZ) GetGridCoord(Vector3 vector)
         {
             int gridX = MapDefines.WorldGridOrigin + (int)Math.Floor(vector.X / MapDefines.GridSize);
-            if (gridX < 0 || gridX > MapDefines.WorldGridCount)
+            if (gridX < 0 || gridX >= MapDefines.WorldGridCount)
                 throw new ArgumentOutOfRangeException($"Position X: {vector.X} is invalid!");
 
             int gridZ = MapDefines.WorldGridOrigin + (int)Math.Floor(vector.Z / MapDefines.GridSize);
-            if (gridZ < 0 || gridZ > MapDefines.WorldGridCount)
+            if (gridZ < 0 || gridZ >= MapDefines.WorldGridCount)
                 throw new ArgumentOutOfRangeException($"Position Z: {vector.Z} is invalid!");
 
             return ((uint)gridX, (uint)gridZ);

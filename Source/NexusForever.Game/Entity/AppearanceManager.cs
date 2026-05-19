@@ -150,12 +150,25 @@ namespace NexusForever.Game.Entity
 
         private void UpdateBones(IList<float> bones)
         {
-            for (byte i = 0; i < bones.Count; i++)
+            if (bones.Count > byte.MaxValue + 1)
+                throw new ArgumentOutOfRangeException(nameof(bones));
+
+            for (int i = 0; i < bones.Count; i++)
             {
-                if (characterBones.TryGetValue(i, out IBone bone))
+                byte boneIndex = (byte)i;
+                if (characterBones.TryGetValue(boneIndex, out IBone bone))
                     bone.BoneValue = bones[i];
                 else
-                    characterBones.Add(i, new Bone(owner.CharacterId, i, bones[i]));
+                    characterBones.Add(boneIndex, new Bone(owner.CharacterId, boneIndex, bones[i]));
+            }
+
+            foreach (byte boneIndex in characterBones.Keys.Where(i => i >= bones.Count).ToList())
+            {
+                if (!characterBones.Remove(boneIndex, out IBone bone))
+                    continue;
+
+                bone.Delete();
+                deletedCharacterBones.Add(bone);
             }
 
             owner.EnqueueToVisible(new ServerEntityBoneUpdate
@@ -165,15 +178,6 @@ namespace NexusForever.Game.Entity
                     .Select(b => b.BoneValue)
                     .ToList()
             }, true);
-
-            for (byte i = (byte)characterBones.Count; i >= bones.Count; i--)
-            {
-                if (!characterBones.Remove(i, out IBone bone))
-                    continue;
-
-                bone.Delete();
-                deletedCharacterBones.Add(bone);
-            }
         }
     }
 }

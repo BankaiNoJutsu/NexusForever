@@ -62,9 +62,14 @@ namespace NexusForever.IO.Map
                                 worldZoneBounds[x, y] = reader.ReadByte();
                         break;
                     }
+                    case Flags.Aura:
+                    case Flags.Liquid:
+                    {
+                        break;
+                    }
 
                     default:
-                        throw new NotImplementedException();
+                        throw new InvalidDataException($"Unknown map cell flag {flag}.");
                 }
             }
         }
