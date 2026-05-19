@@ -196,6 +196,10 @@ function Get-ExportCoverageRecord {
     $manifestPath = Join-Path $ExportPath 'selected_decompiled.manifest'
     $manifest = Read-KeyValuePropertiesFile -Path $manifestPath
     $latestRunTarget = Get-LatestRunSummaryTarget -LatestRunSummary $LatestRunSummary -Target $target
+    $selectionAuditSelectedForDecompile = Get-BoolCount -Rows $selectedReasons -PropertyName 'selected_for_decompile'
+    $manifestSelectedCount = if ($null -eq $manifest) { $null } else { ConvertTo-NullableInt -Value $manifest['selected.count'] }
+    $reusedFragments = if ($null -eq $manifest) { $null } else { ConvertTo-NullableInt -Value $manifest['cache.reusedFragments'] }
+    $decompiledFragments = if ($null -eq $manifest) { $null } else { ConvertTo-NullableInt -Value $manifest['cache.decompiledFragments'] }
 
     $durableLabelCount = @($functions | Where-Object {
         [string] $_.external -ne 'True' -and -not (Test-IsDefaultGhidraFunctionName -Name ([string] $_.name))
@@ -216,15 +220,17 @@ function Get-ExportCoverageRecord {
         strings = $strings.Count
         interestingStrings = $interestingStrings.Count
         stringXrefs = $stringXrefs.Count
-        selectedFunctions = $selectedReasons.Count
-        selectedForDecompile = Get-BoolCount -Rows $selectedReasons -PropertyName 'selected_for_decompile'
+        selectedFunctions = if ($null -ne $manifestSelectedCount -and $manifestSelectedCount -gt $selectedReasons.Count) { $manifestSelectedCount } else { $selectedReasons.Count }
+        selectedForDecompile = if ($null -ne $decompiledFragments -and $decompiledFragments -gt $selectionAuditSelectedForDecompile) { $decompiledFragments } else { $selectionAuditSelectedForDecompile }
+        selectionAuditRows = $selectedReasons.Count
+        selectionAuditSelectedForDecompile = $selectionAuditSelectedForDecompile
         labelAnchoredSelections = @($selectedReasons | Where-Object { [string] $_.reasons -match '(^| \|\| )label:' }).Count
         targetAnchoredSelections = @($selectedReasons | Where-Object { [string] $_.reasons -match '(^| \|\| )target:' }).Count
         importAnchoredSelections = @($selectedReasons | Where-Object { [string] $_.reasons -match '(^| \|\| )import:' }).Count
         stringAnchoredSelections = @($selectedReasons | Where-Object { [string] $_.reasons -match '(^| \|\| )string:' }).Count
-        manifestSelectedCount = if ($null -eq $manifest) { $null } else { ConvertTo-NullableInt -Value $manifest['selected.count'] }
-        reusedFragments = if ($null -eq $manifest) { $null } else { ConvertTo-NullableInt -Value $manifest['cache.reusedFragments'] }
-        decompiledFragments = if ($null -eq $manifest) { $null } else { ConvertTo-NullableInt -Value $manifest['cache.decompiledFragments'] }
+        manifestSelectedCount = $manifestSelectedCount
+        reusedFragments = $reusedFragments
+        decompiledFragments = $decompiledFragments
     }
 }
 

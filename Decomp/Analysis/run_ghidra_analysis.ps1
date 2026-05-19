@@ -141,6 +141,27 @@ function Get-DecompileManifestSummary {
     }
 }
 
+function Resolve-EffectiveMaxDecompiledFunctions {
+    param(
+        [string] $ManifestPath,
+        [int] $RequestedMaxDecompiledFunctions,
+        [bool] $MaxExplicitlySet,
+        [bool] $ExportOnly,
+        [string] $ExtraPostScript
+    )
+
+    if ($MaxExplicitlySet -or -not $ExportOnly -or [string]::IsNullOrWhiteSpace($ExtraPostScript)) {
+        return $RequestedMaxDecompiledFunctions
+    }
+
+    $manifest = Get-DecompileManifestSummary -ManifestPath $ManifestPath -ExpectedBinaryFingerprint '' -ExpectedLabelFingerprint ''
+    if ($null -eq $manifest -or $null -eq $manifest.maxDecompiledFunctions -or $manifest.maxDecompiledFunctions -le 0) {
+        return $RequestedMaxDecompiledFunctions
+    }
+
+    return $manifest.maxDecompiledFunctions
+}
+
 function Finalize-TargetSummary {
     param(
         [System.Collections.IDictionary] $TargetSummary,
@@ -235,6 +256,7 @@ if (-not $NoApplyLabels -and (Test-Path -LiteralPath $LabelMap)) {
 
 $labelsApplied = $null -ne $resolvedLabelMap
 $labelFingerprint = if ($labelsApplied) { Get-ArtifactFingerprint -Path $resolvedLabelMap } else { '' }
+$maxDecompiledFunctionsExplicitlySet = $PSBoundParameters.ContainsKey('MaxDecompiledFunctions')
 $effectiveProjectLayout = if ($ProjectLayout -eq 'Auto') {
     if ($AllClientBinaries -or $Targets.Count -gt 1) { 'Shared' } else { 'PerTarget' }
 }
@@ -265,6 +287,12 @@ try {
         $logPath = Join-Path $logDir ("{0}{1}{2}.ghidra.log" -f $targetName, $projectLogSuffix, $logSuffix)
         $exportDir = Join-Path $resolvedOutputDir $target
         $manifestPath = Join-Path $exportDir 'selected_decompiled.manifest'
+        $effectiveMaxDecompiledFunctions = Resolve-EffectiveMaxDecompiledFunctions `
+            -ManifestPath $manifestPath `
+            -RequestedMaxDecompiledFunctions $MaxDecompiledFunctions `
+            -MaxExplicitlySet $maxDecompiledFunctionsExplicitlySet `
+            -ExportOnly ([bool] $ExportOnly) `
+            -ExtraPostScript $ExtraPostScript
         $targetSummary = [ordered]@{
             target = $target
             binaryPath = $binaryPath
@@ -273,6 +301,8 @@ try {
             exportDir = $exportDir
             manifestPath = $manifestPath
             logPath = $logPath
+            requestedMaxDecompiledFunctions = $MaxDecompiledFunctions
+            effectiveMaxDecompiledFunctions = $effectiveMaxDecompiledFunctions
             status = 'pending'
             exitCode = $null
             projectLockFailure = $false
@@ -288,6 +318,9 @@ try {
         )
 
         Write-Host ("Using Ghidra project {0}" -f $projectName)
+        if ($effectiveMaxDecompiledFunctions -ne $MaxDecompiledFunctions) {
+            Write-Host ("Preserving manifest max decompile depth {0} for {1} because -ExtraPostScript was used without an explicit -MaxDecompiledFunctions override." -f $effectiveMaxDecompiledFunctions, $target)
+        }
 
         if ($ExportOnly) {
             Write-Host "Exporting existing Ghidra program $target"
@@ -315,7 +348,7 @@ try {
         }
 
         $ghidraArgs += @(
-            '-postScript', 'ExportNexusForeverAnalysis.java', $OutputDir, $MaxDecompiledFunctions,
+            '-postScript', 'ExportNexusForeverAnalysis.java', $OutputDir, $effectiveMaxDecompiledFunctions,
             $DecompileMode, $ghidraVersion, $binaryFingerprint, $labelFingerprint,
             $labelsApplied.ToString().ToLowerInvariant()
         )
@@ -374,6 +407,7 @@ finally {
         labelsApplied = [bool]$labelsApplied
         labelMap = if ($resolvedLabelMap) { $resolvedLabelMap } else { '' }
         labelFingerprint = $labelFingerprint
+        requestedMaxDecompiledFunctions = $MaxDecompiledFunctions
         maxDecompiledFunctions = $MaxDecompiledFunctions
         extraPostScript = if ($ExtraPostScript) { $ExtraPostScript } else { '' }
         extraPostScriptArgs = $ExtraPostScriptArgs

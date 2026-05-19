@@ -6269,6 +6269,18 @@ descriptions in `function_labels.csv` have been annotated with the inferred
 opcode mapping.  A full reward rotation manager (send-side integration) is a
 separate follow-up task.
 
+Reward-rotation table registration follow-up:
+
+- Houston and WildStar now both have durable client DB registration labels for
+  `MatchTypeRewardRotationContent`, `RewardRotationContent`,
+  `RewardRotationItem`, `RewardRotationEssence`, and
+  `RewardRotationModifier`. The functions are mapped by exact table descriptor
+  strings and `DB\*.tbl` paths in the selected exports.
+- This improves the reward-rotation table evidence trail only. It does not
+  unblock live schedule generation: the static table definitions identify
+  content/reward catalogs, but no server-owned schedule timing or entry-state
+  mutation source is proven by these registration functions alone.
+
 ## Practical Next Steps
 
 1. Keep extending `Decomp\Analysis\function_labels.csv` as functions are
@@ -7210,9 +7222,28 @@ is now safely implementable.
 `SpellEffectType.RavelSignal = 0x51 = 81`. The WildStar client has two
 spell-effect dispatch tables split at `DespawnUnit = 0x61 = 97`:
 
-**High-range dispatch** (effectTypes `0x61`–`0x972`): Entity vtable[11] at
-`0x1403ec6a0`, dispatch index = `effectType − 0x61`, jump table at
-`0x1403f1344`, 645 non-default entries out of 2322 total.
+**High-range dispatch** (effectTypes `0x61`–`0x972`): `Entity_ExecuteSpellEffectHighRange`
+at `0x1403ec6a0`, dispatch index = `effectType − 0x61`, jump table at `0x1403f1344`
+(raw int32 RVA offsets relative to `0x140000000` image base, readable directly from
+the PE `.text` section at file offset `0x3F0744`).
+
+Jump table statistics: 2322 total entries, **645 non-default**, default handler
+`0x1403F12D2`. The dispatch function also guards on `entity+0x7928 != 0` (network
+connection live) and `param_2 == entity+0x7928+0x98` (channel ID match) before dispatch;
+stores a tick at `entity+0x7b4c`.
+
+First non-default entries (effectType → handler):
+
+| effectType | Name (SpellEffectType.cs) | Handler |
+|---|---|---|
+| 0x061 | DespawnUnit | 0x1403EC9FF |
+| 0x068 | UNUSED104 | 0x1403F0B50 |
+| 0x070 | DisguiseOutfit | 0x1403F102F |
+| 0x07E | SetMatchingEligibility | 0x1403EEF04 |
+| 0x091 | UnitPropertyConversion | 0x1403EEB67 |
+| 0x092 | ActivateSpellCooldown | 0x1403F103D |
+
+Full table saved to `session-state/files/highrange-dispatch-table.csv`.
 
 **Low-range dispatch** (effectTypes `0x01`–`0x60`): Function at `0x1406b1300`,
 dispatch index = `effectType − 1`, two-level table:
@@ -7232,8 +7263,9 @@ epilogue at `0x1406b321e` — the same default path as `SpellForceRemove`,
 `Stealth`, and most other types in that range. Only effectTypes 4, 5, 6, 8,
 and 27 have dedicated handlers in the low-range table; all others, including
 RavelSignal, fall through to the shared epilogue. This means the client routes
-RavelSignal entirely through the Ravel/Lua scripting runtime (`CRavel` component
-at `entity+0x7928`) rather than a dedicated C++ spell-effect handler.
+RavelSignal entirely through the Ravel/Lua scripting runtime rather than a
+dedicated C++ spell-effect handler. (The actual CRavel component offset is not
+yet mapped — see **Remaining unknowns** below.)
 
 **Server implementation** (verified with `dotnet build`; 200/200 tests pass):
 - `IWorldEntityScript.OnSignal(uint signalId)` — new script callback (default
@@ -7253,8 +7285,10 @@ at `entity+0x7928`) rather than a dedicated C++ spell-effect handler.
   component (own instance vs. group vs. summoner) rather than changing the
   C++-level dispatch. Current implementation ignores Mode and always calls
   `OnSignal` on the resolved target; refine when mode semantics are confirmed.
-- CRavel class layout: the CRavel component sits at `entity+0x7928`; its
-  constructor address and vtable are still unrecovered.
+- CRavel class layout: the actual entity offset for the CRavel component is
+  **unknown** — `entity+0x7928` was previously misidentified as CRavel but is
+  the network connection handle (see `entity+0x7928` row in the field offset
+  table below). The CRavel component offset remains unrecovered.
 
 ---
 
@@ -7318,8 +7352,38 @@ TargetGroup schema: `(ID, localizedTextIdDisplayString, type, data0..data6)`.
 | +0xdc  | int32  | ClassId | EntityCriteria_GetClassId |
 | +0x118 | ptr    | Faction2 component; vtable[+0x18]() = Faction2Id | EntityCriteria_GetFaction2Id + TargetGroup xref |
 | +0x140 | int32  | Creature2Id (template/prototype creature ID) | EntityCriteria_GetCreature2Id + TargetGroup xref |
+| +0x6420| bool   | Not-connected flag: set to `(entity+0x7928 == 0)` | Network_SendOpcodePayloadOrPackedHelper |
+| +0x7928| ptr    | Network connection handle (session object); +0x98 = channel/session ID | Network_SendOpcodePayloadOrPackedHelper (1403f4740), Network_SendOpcodePayloadHelper (1403f4900), Entity_ExecuteSpellEffectHighRange (1403ec6a0) |
+| +0x7b4c| uint32 | Timestamp/tick written before high-range spell effect dispatch | Entity_ExecuteSpellEffectHighRange (1403ec6a0) |
 
 **Server implication:** No server code changes needed. All 13 checkType semantics are
 now fully decoded. The existing `TargetBitmask` simplified projection remains the
 verified server path. `entity+0x118` maps to `IWorldEntity.Faction1`/`Faction2` and
 `entity+0x140` maps to `IWorldEntity.CreatureId` — both already exist on server entities.
+
+---
+
+### Spell4StackGroup ClientDB Query Thunks (P18 background)
+
+`DAT_140c642f0` = global pointer to the loaded `Spell4StackGroup` ClientDB reader.
+Populated by `ClientDB_RegisterSpell4StackGroup` (`14023afa0`) on first access.
+Released by `ClientDB_FlushAllTables` (`14024e5e0`) during shutdown/reload.
+
+Three standard ClientDB query thunks share the same hot-swap override pattern:
+
+| Function | Address | Vtable slot | Semantics |
+|---|---|---|---|
+| `Spell4StackGroup_GetAllRows` | `14023b1b0` | `*DB + 0x28` (vtable[5]) | Returns all rows / row count — no ID parameter |
+| `Spell4StackGroup_GetById` | `14023b200` | `*DB + 0x18` (vtable[3]) | Looks up one row by uint32 ID |
+| `Spell4StackGroup_GetByIndex` | `14023b260` | `*DB + 0x20` (vtable[4]) | Looks up one row by sequential index |
+
+Hot-swap override globals (DAT_140c63838 / 140c63840 / 140c63848):  
+Each thunk checks an override function pointer first — if non-null, the override is
+called instead of the DB vtable. This is the standard WildStar ClientDB mock/hot-patch
+hook used in testing. Under normal gameplay the overrides are null.
+
+**P18 implication:** `Spell4StackGroup` arbitration on the client is entirely through
+these thunks. The server-side `GameTableManager.Instance.Spell4StackGroup` already
+loads the same table data. Implementing stack-group arbitration requires mapping the
+server spell-instance lifecycle to match the group rules (stack limit, exclusive flags)
+in `Spell4StackGroupEntry`; no new decomp is needed for the DB query side.

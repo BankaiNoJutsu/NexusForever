@@ -74,6 +74,12 @@ without re-running full analysis:
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly
 ```
 
+When `-ExtraPostScript` is used without an explicit `-MaxDecompiledFunctions`,
+the runner inherits the current manifest cutoff for that target so helper
+passes do not accidentally shrink `selected_reasons_summary.csv` or the
+coverage snapshot. Pass `-MaxDecompiledFunctions` explicitly when you
+intentionally want a smaller or larger focused export.
+
 Inspect the latest decompile manifests, selected-function counts, and fragment
 reuse after a run:
 

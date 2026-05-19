@@ -131,6 +131,13 @@ focused helper script:
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -MaxDecompiledFunctions 340 -ExtraPostScript DumpNearbyData.java -ExtraPostScriptArgs @('140b73540','20')
 ```
 
+If you omit `-MaxDecompiledFunctions` on a helper-script export-only pass, the
+runner preserves the current manifest cutoff for that target. This keeps
+`selected_reasons_summary.csv`, the manifest, and the coverage snapshot aligned
+with the existing `selected_decompiled.c` breadth. Pass
+`-MaxDecompiledFunctions` explicitly when you intentionally want to narrow or
+widen the focused export.
+
 Re-export commands now default to manifest-based reuse for `selected_decompiled.c`.
 If the binary fingerprint, label state, `-MaxDecompiledFunctions`, exporter
 version, and ordered top-N selected functions are unchanged, the exporter keeps

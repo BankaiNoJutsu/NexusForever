@@ -99,6 +99,11 @@ WildStar64.exe,1401fc440,ClientDB_RegisterDatacubeVolume,Registers the DatacubeV
 WildStar64.exe,14021fe20,ClientDB_RegisterPathScientistDatacubeDiscovery,Registers the PathScientistDatacubeDiscovery client DB table using the PathScientistDatacubeDiscovery and DB\\PathScientistDatacubeDiscovery.tbl descriptors.
 WildStar64.exe,14022b4e0,ClientDB_RegisterQuestDirection,Registers the QuestDirection client DB table using the QuestDirection and DB\\QuestDirection.tbl descriptors.
 WildStar64.exe,14022b920,ClientDB_RegisterQuestDirectionEntry,Registers the QuestDirectionEntry client DB table using the QuestDirectionEntry and DB\\QuestDirectionEntry.tbl descriptors.
+WildStar64.exe,140215ca0,ClientDB_RegisterMatchTypeRewardRotationContent,Registers the MatchTypeRewardRotationContent client DB table using the MatchTypeRewardRotationContent and DB\\MatchTypeRewardRotationContent.tbl descriptors.
+WildStar64.exe,14022f8e0,ClientDB_RegisterRewardRotationContent,Registers the RewardRotationContent client DB table using the RewardRotationContent and DB\\RewardRotationContent.tbl descriptors.
+WildStar64.exe,14022fd20,ClientDB_RegisterRewardRotationItem,Registers the RewardRotationItem client DB table using the RewardRotationItem and DB\\RewardRotationItem.tbl descriptors.
+WildStar64.exe,140230160,ClientDB_RegisterRewardRotationEssence,Registers the RewardRotationEssence client DB table using the RewardRotationEssence and DB\\RewardRotationEssence.tbl descriptors.
+WildStar64.exe,1402305a0,ClientDB_RegisterRewardRotationModifier,Registers the RewardRotationModifier client DB table using the RewardRotationModifier and DB\\RewardRotationModifier.tbl descriptors.
 WildStar64.exe,1403315a0,Network_SendMessageFailure,Handles a failed world-message send attempt.
 WildStar64.exe,140332580,Network_SendMessageById,Looks up message metadata by id and dispatches through world socket.
 WildStar64.exe,140333b90,Network_IcmpPing,Sends a single ICMP echo probe and returns response timing/status.
@@ -744,9 +749,19 @@ WildStar64.exe,1405e6690,Crafting_HandleServerCraftingFinish,Handles decoded Ser
 WildStar64.exe,140599010,Lua_Crafting_GetSchematicInfo,Builds the Lua schematic info table for a TradeskillSchematic2 row including output material known flags and coordinate crafting details.
 WildStar64.exe,14059e9a0,Lua_Crafting_AddCoordinateDiscoveryInfo,Adds coordinate-crafting discovery fields such as radius vector angle min/max distance and undiscovered flags to schematic Lua info.
 WildStar64.exe,1405a3000,Lua_RegisterCraftingBindings,Registers Game.Crafting Lua bindings including CodeEnumCraftingDiscoveryHotCold Cold Warm Hot and Success values.
+WildStar64.exe,1403ec6a0,Entity_ExecuteSpellEffectHighRange,Dispatches high-range spell effects (effectTypes 0x61-0x972) via jump table at 0x1403f1344; guards on entity+0x7928 (network connection) non-null and channel-ID match before dispatch; writes timestamp to entity+0x7b4c.
 WildStar64.exe,1403c17d0,ItemMove_ValidateAndMaybeConfirmBindOnEquip,Validates an item move request and dispatches ItemConfirmSoulboundOnEquip before sending ClientItemMove when the destination equip path would bind the source item.
 WildStar64.exe,1403f38b0,RealmFirstAchievementAnnounce_Dispatch,Builds the RealmFirstAchievementAnnounce client event from achievement id guild flag source name and achievement-name payload.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
+Houston64.exe,1400d4c80,ClientDB_RegisterMatchTypeRewardRotationContent,Registers the MatchTypeRewardRotationContent client DB table using the MatchTypeRewardRotationContent and DB\\MatchTypeRewardRotationContent.tbl descriptors.
+Houston64.exe,1400ee8c0,ClientDB_RegisterRewardRotationContent,Registers the RewardRotationContent client DB table using the RewardRotationContent and DB\\RewardRotationContent.tbl descriptors.
+Houston64.exe,1400eed00,ClientDB_RegisterRewardRotationItem,Registers the RewardRotationItem client DB table using the RewardRotationItem and DB\\RewardRotationItem.tbl descriptors.
+Houston64.exe,1400ef140,ClientDB_RegisterRewardRotationEssence,Registers the RewardRotationEssence client DB table using the RewardRotationEssence and DB\\RewardRotationEssence.tbl descriptors.
+Houston64.exe,1400ef580,ClientDB_RegisterRewardRotationModifier,Registers the RewardRotationModifier client DB table using the RewardRotationModifier and DB\\RewardRotationModifier.tbl descriptors.
 WildStar64.exe,1406b1300,Entity_ExecuteSpellEffectLowRange,Handles spell effectTypes 0x01-0x60; dispatch at +0x207; two-level byte+int32 table; only types 4/5/6/8/27 have unique handlers; RavelSignal(0x51) and most others fall through to epilogue at 0x1406b321e; signature: rcx=entity rbx edx=effectType r13d r8d=flags r9=wide-string.
+WildStar64.exe,14023b1b0,Spell4StackGroup_GetAllRows,ClientDB query thunk for Spell4StackGroup; hot-swap override at DAT_140c63838 or fallback to vtable[5](DB) (no-arg all-rows read); sibling of 14023b200 and 14023b260.
+WildStar64.exe,14023b200,Spell4StackGroup_GetById,ClientDB query thunk for Spell4StackGroup; hot-swap override at DAT_140c63840 or fallback to vtable[3](DB id) (GetById lookup); sibling of 14023b1b0 and 14023b260.
+WildStar64.exe,14023b260,Spell4StackGroup_GetByIndex,ClientDB query thunk for Spell4StackGroup; hot-swap override at DAT_140c63848 or fallback to vtable[4](DB index) (GetByIndex lookup); sibling of 14023b1b0 and 14023b200.
+WildStar64.exe,14024e5e0,ClientDB_FlushAllTables,Releases all ClientDB singleton pointers via vtable[1]() destructor and nulls each global; called during shutdown/reload; touches DAT_140c642f0 (Spell4StackGroup) along with ~40+ other DB globals.
