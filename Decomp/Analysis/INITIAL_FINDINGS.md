@@ -1,4 +1,4 @@
-# Client64 Initial Reverse-Engineering Findings
+﻿# Client64 Initial Reverse-Engineering Findings
 
 Generated from the Ghidra headless project in `Decomp\Analysis\ghidra_projects`
 and exports in `Decomp\Analysis\exports`.
@@ -762,12 +762,12 @@ Spell self-targeting and LAS text follow-up implemented from this pass:
   future runs: `SpellService_ResolveSpellWrapper` at `1403acd90` resolves the
   shared spell wrapper/service object, `Game_Spell_IsSelfSpellDelegate` at
   `1403b4ec0` is the unresolved 56-byte bool helper behind the deeper
-  `IsSelfSpell` branches, and `SpellService_ResolveTargetFlags` at `1407a0fd0`
-  is the wrapper-flag accessor used by `IsFreeformTarget` after the type-`7`
+  `IsSelfSpell` branches, and `SpellService_LookupSpellWrapperById` at
+  `1407a0fd0` is the wrapper hash lookup used by `IsFreeformTarget` after the type-`7`
   service lookup branch.
 - Direct recheck of the labeled `SpellService_ResolveSpellWrapper` body now
   tightens that shared wrapper path further. Before falling back to
-  `SpellService_ResolveTargetFlags(param_1)`, it checks whether `param_3`
+  `SpellService_LookupSpellWrapperById(param_1)`, it checks whether `param_3`
   matches either `*(DAT_140c65898 + 0x78)` or `*(DAT_140c65898 + 0x6490)` and,
   on that narrow global-context match, returns `FUN_1405a5b90()`. That is
   documentation-grade evidence that the unresolved type-`0` fallback and the
@@ -6515,14 +6515,14 @@ In CharacterSpell.ResolvePrimaryTargetId():
 ## SpellService Type-7 Service Tree and Spell Wrapper Hash Map (800-function export)
 
 ### Functions decoded
-- SpellService_ResolveTargetFlags @ 1407a0fd0 (misnamed: actually a spell wrapper lookup)
+- SpellService_LookupSpellWrapperById @ 1407a0fd0
 - SpellService_ResolveSpellWrapper @ 1403acd90
 - Lua_GameSpell_IsSelfSpell @ 1405ee4a0
 - Lua_GameSpell_IsFreeformTarget @ 1405ee640
 
 ### Spell Wrapper Hash Map (service_obj + 0x540)
 
-SpellService_ResolveTargetFlags is a chained hash map lookup at spell_service_obj + 0x540:
+SpellService_LookupSpellWrapperById is a chained hash map lookup at spell_service_obj + 0x540:
 - +0x08 = bucket count (ulonglong)
 - +0x10 = bucket array pointer
 - +0x18 = hash function (code pointer)
@@ -6533,7 +6533,7 @@ ode + 0x18 (4th 8-byte element) = spell wrapper pointer, or 0 if not found
 
 SpellService_ResolveSpellWrapper wraps this:
 1. If param_3 == player_entity (DAT_140c65898 + 0x78) or current_target (+0x6490), try context-aware path via FUN_1405a5b90
-2. Otherwise falls back to SpellService_ResolveTargetFlags hash map
+2. Otherwise falls back to SpellService_LookupSpellWrapperById hash map
 
 ### Service Tree (service_obj + 0x788)
 
@@ -7171,7 +7171,7 @@ Decoded from `SpellCast_ValidateAndDispatch`, `SpellCast_SendClientSpellCastStat
 | `+0x11e0` | float | `positionX` | World position X |
 | `+0x11e4` | float | `positionY` | World position Y |
 | `+0x11e8` | float | `positionZ` | World position Z |
-| `+0x540` | hash map | `targetFlagsMap` | SpellId → target flags; `SpellService_ResolveTargetFlags` |
+| `+0x540` | hash map | `spellWrapperByIdMap` | Spell4 id -> spell wrapper; `SpellService_LookupSpellWrapperById` |
 | `+0x6364` | int32 | `currentSpellTrackingId` | Set when slot index == 2 |
 | `+0x6490` | pointer | `castContext` | Follow-up/chain cast context sub-struct |
 | `+0x6648` | int32 | `spellCastState` | Value 7 = specific in-progress state |
@@ -7425,12 +7425,12 @@ FUN_140240b40 not yet decoded; low priority (tracing code).
 
 ---
 
-### SpellService_ResolveTargetFlags (1407a0fd0) — Already Documented
+### SpellService_LookupSpellWrapperById (1407a0fd0) — Already Documented
 
 Confirmed from this session: the function was already labeled in the Ghidra
 project from a prior session and is present in unction_labels.csv. It
 performs a chained hash table lookup at service_obj + 0x540 by spell4_id
-and returns the stored flags/wrapper value. All callers now use the proper name.
+and returns the stored spell wrapper pointer. All callers now use the proper name.
 
 ---
 
@@ -7438,7 +7438,7 @@ and returns the stored flags/wrapper value. All callers now use the proper name.
 
 | Old FUN_ Reference | Proper Name | Used In |
 |--------------------|------------|---------|
-| FUN_1407a0fd0 | SpellService_ResolveTargetFlags | SpellTarget_ResolveAndValidateWrapper label |
+| FUN_1407a0fd0 | SpellService_LookupSpellWrapperById | SpellTarget_ResolveAndValidateWrapper label |
 | FUN_1403b4a10 | SpellTarget_LogValidationMask | SpellTarget_ValidateTargetRelationship label |
 | FUN_1403b4a20 | ValidTargetsCriteria_Evaluate | SpellTarget_ValidateTargetRelationship label |
 | FUN_14046c580 | Entity_GetFactionRelationship | SpellTarget_ValidateTargetRelationship label |
@@ -7609,6 +7609,12 @@ First non-default entries (effectType → handler):
 | 0x092 | ActivateSpellCooldown | 0x1403F103D |
 
 Full table saved to `session-state/files/highrange-dispatch-table.csv`.
+
+The high-range handler addresses in this table are embedded jump-table case
+targets inside `Entity_ExecuteSpellEffectHighRange`, not independent Ghidra
+function entries. Keep them in this finding/tracker context rather than in
+`function_labels.csv`; the durable function label belongs on the containing
+entry point at `0x1403ec6a0`.
 
 **Low-range dispatch** (effectTypes `0x01`–`0x60`): Function at `0x1406b1300`,
 dispatch index = `effectType − 1`, two-level table:
@@ -7830,6 +7836,7 @@ From `ActionSet_SendPendingActionSetChanges`, `CSIAction_HandleCurrentTargetAppr
 | `+0xaa8` | BST root | `actionSlotBST` | BST of SpellId → action slot data (same structure as +0x7d18) |
 | `+0x1460` | linked list | `actionSetChangeQueue` | Pending action set change entries |
 | `+0x1468` | int64 | `actionSetChangeCount` | Count of pending changes in queue |
+| `+0x66e4` | uint32 | `spellCastTimestamp` | Timestamp written when cast begins; `SpellCast_CancelCurrentCast` guards against cancels within 3000 ms of this value |
 | `+0x66e8` | pointer | `threatListEntries` | Dynamic array of {entityId:uint32, threatAmount:uint32} pairs |
 | `+0x66f0` | int64 | `threatListCount` | Count of entries in threat list |
 | `+0x6dec` byte | byte | `actionSetStateByte` | Action set state flag byte |
@@ -8121,6 +8128,7 @@ From `SpellCast_ValidateAndDispatch`, `SpellCast_ResolveTargetsAndValidate`, `Sp
 
 | Sub-offset | Type | Name | Notes |
 |------------|------|------|-------|
+| `+0xc0` | uint32 | `activeChannelTargetEntityId` | Entity ID of current channel/active cast target; checked in SpellCast_CancelCurrentCast and SpellCast_IsToggleSpellActive |
 | `+0x1600` | uint32 | `activeToggleSpellId` | ID of the currently active toggle spell (non-zero if toggled on) |
 | `+0x2ac` | int32 | `castUpdateInProgress` | Non-zero = cast or action-set update is in progress; blocks further casts |
 
@@ -8166,7 +8174,7 @@ From `Lua_GameLib_GetClassInnateAbilitySpells`, `Lua_GameLib_GetCurrentClassInna
 
 | Offset | Type | Name | Notes |
 |--------|------|------|-------|
-| `+0x540` | hash_map | `targetFlagsHashMap` | Hash map of entityId → target flags; used by `SpellService_ResolveTargetFlags` |
+| `+0x540` | hash_map | `spellWrapperByIdMap` | Hash map of Spell4 id -> spell wrapper; used by `SpellService_LookupSpellWrapperById` |
 
 ## Network Opcodes — Additional (Batch 3)
 
@@ -8236,7 +8244,7 @@ For the action slot BST (`entity+0xaa8`):
 
 | Address | Name |
 |---------|------|
-| `1407a0fd0` | `SpellService_ResolveTargetFlags` |
+| `1407a0fd0` | `SpellService_LookupSpellWrapperById` |
 
 
 ---
@@ -8361,7 +8369,7 @@ All offsets relative to `inner = *(longlong *)(wrapper + 0x70)`.
 
 | SpellService offset | Type | Name |
 |--------------------|------|------|
-| `+0x540` | hashmap | `targetFlagsHashMap` |
+| `+0x540` | hashmap | `spellWrapperByIdMap` |
 | `+0x788` | BST | `selfSpellDelegateBST` |
 
 ## Entity+0x78 Active State Fields — Cooldown Tracking
@@ -8369,7 +8377,7 @@ All offsets relative to `inner = *(longlong *)(wrapper + 0x70)`.
 | Sub-offset | Type | Name | Notes |
 |------------|------|------|-------|
 | `+0x0dc` | int32 | `abilityTierIndex` | Index for spell pricing lookup (range 0-22) |
-| `+0xa04` | float | `cooldownScaleFactor` | Applied when `FUN_1404823c0(wrapper) != 0` |
+| `+0xa04` | float | `cooldownScaleFactor` | Applied when `SpellWrapper_HasPlayerAbilityClass(wrapper) != 0` |
 | `+0x1608` | ptr | `cooldownListHead` | Linked list of active cooldowns |
 
 ## Cooldown List Node Layout
@@ -8389,17 +8397,17 @@ Each cooldown node (linked list via `node + 0x88`):
 
 | Address | Name |
 |---------|------|
-| `1403ad860` | `SpellService_GetMinRange` |
-| `1403ad8f0` | `SpellService_GetMaxRange` |
+| `1403ad860` | `SpellService_GetMinimumRange` |
+| `1403ad8f0` | `SpellService_GetMaximumRange` |
 | `14054e340` | `SpellInner_ResolveCastTimeMs` |
-| `14046a890` | `SpellWrapper_ResolveCooldown` |
+| `14046a890` | `SpellService_GetEffectiveCooldownMs` |
 | `140195f70` | `CooldownNode_GetRemainingMs` |
-| `14023dc80` | `GCDGroup_LookupById` |
-| `14046a760` | `SpellService_ResolveGCDTime` |
+| `14023dc80` | `SpellService_GetSpellCooldownEntry` |
+| `14046a760` | `SpellService_GetGCDMilliseconds` |
 | `1407a16f0` | `ChargeService_GetChargesForSpell` |
-| `1405a4d90` | `SpellServiceToken_GetCostAmount` |
+| `1405a4d90` | `SpellService_GetTokenCostValue` |
 | `1405e73e0` | `InnateAbility_GetCount` |
-| `1405e9400` | `SpellLuaArg_ResolveWrapper` |
+| `1405e9400` | `SpellWrapper_ResolveLiveInstance` |
 | `140462a90` | `Entity_GetInnateResourceValue` |
 
 
@@ -8474,7 +8482,7 @@ From `Lua_AbilityBook_ActivateSpell`, `Lua_AbilityBook_UpdateSpellTier`.
 
 | Address | Name |
 |---------|------|
-| `1404823c0` | `SpellWrapper_IsPlayerAbility` |
+| `1404823c0` | `SpellWrapper_HasPlayerAbilityClass` |
 | `1403bb170` | `SpellBook_IsSpellLearned` |
 | `1403bb040` | `SpellBook_IsSpellSlotCompatible` |
 | `1403bacc0` | `SpellBook_GetSpellTierData` |
@@ -8753,7 +8761,7 @@ FUN_14067b760() → PathMission_ResolveCurrent() → pathMissionRuntimeObj (vtab
 | `2` | Scientist | General | `FUN_14021fc40(subDataId)` → scientist table entry |
 | `4-6` | Settler | Varies | Settler-specific lookups |
 | `0xe` | Scientist | Datacube | `FUN_14021fc40(subDataId)` |
-| `0x16` | Scientist | Experimentation | `FUN_14048d310(ScientistExperimentationService, subDataId)` |
+| `0x16` | Scientist | Experimentation | `Service_LookupEntityById(ScientistExperimentationService, subDataId)` |
 | `0x19` | Settler | Mayor | `DAT_140c65970` (SettlerPathService), `FUN_140222b00(subDataId)` |
 | `0x1b` | Explorer | Node | `FUN_140721ef0(type, subDataId)` → explorerData `+0x18` = nodeCount |
 
@@ -8764,7 +8772,7 @@ FUN_14067b760() → PathMission_ResolveCurrent() → pathMissionRuntimeObj (vtab
 | `1404067b760` | `PathMission_ResolveCurrent` |
 | `140491bd0` | `PathEpisode_LookupById` |
 | `1403ba420` | `SpellWrapper_GetActiveForMission` |
-| `14048d310` | `ScientistExperimentation_LookupById` |
+| `14048d310` | `Service_LookupEntityById` |
 | `140617410` | `SoldierHoldout_LookupById` |
 | `140222b00` | `SettlerMayor_LookupById` |
 | `140721ef0` | `ExplorerNode_LookupById` |
@@ -9103,7 +9111,7 @@ SpellService_ResolveSpellWrapper(DAT_140c65b70, spellId, entity) → spellWrappe
 ### Additional Named Functions (GameSpell)
 - `FUN_140564fb0(_, spellId)` = `SpellService_GetThresholdTimeEntry` — returns threshold data for a spell
 - `FUN_14034bdd0(worldZoneId)` = `WorldZone_GetNameString` — returns zone name string
-- `FUN_1405a4d90(spellDataPtr, spellId)` = `SpellService_GetTokenCostValue` — returns service token cost
+- `FUN_1405a4d90(_, spellId)` = `SpellService_GetTokenCostValue` — returns service token cost from `Spell4ServiceTokenCost`
 - `FUN_140501210(luaState, tokenCostResult)` = `Lua_PushSpellTokenCostResult` — push token cost onto stack
 
 ### SpellService Range Functions
@@ -9112,14 +9120,18 @@ SpellService_ResolveSpellWrapper(DAT_140c65b70, spellId, entity) → spellWrappe
 
 ### Cooldown Layout (from live spell instance `lVar5 = FUN_1405e9400(...)`)
 - `*(uint **)(lVar5 + 0x38)` = ptr to cooldown data; `*ptr` = base cooldown ms (uint32)
-- `FUN_1404823c0(lVar5)` = check if cooldown reduction applies (returns non-zero if active)
+- `FUN_1404823c0(lVar5)` = `SpellWrapper_HasPlayerAbilityClass`; checks spellData+0x198 class/category values 1, 2, or 7 before player cooldown scaling
 - `entity+0x78 → +0xa04` = cooldown reduction float multiplier (applied if above check passes)
 - `FUN_14046a890(entity, liveSpellInst, effectiveCooldownMs)` = compute final effective cooldown ms
 - Result conversion: `(float)ms * 0.001` → seconds
 
 ### Active Cooldowns (GetCooldownRemaining)
 - `entity+0x78 → +0x1608` = active cooldown linked list head
-- Node fields: `+0x04` = cooldown type (type-1 < 2 to match); `+0x20` = cooldown data ptr
+- Node fields: `+0x04` = cooldown type (type-1 < 2 to match); `+0x20` = cooldown data ptr; `+0x88` = next node ptr
+- **CooldownNode inner timer** (pointed to by active list node `+0x20`):
+  - `timer+0x04` = expiry tick (uint32); remaining ms = `timer[+0x04] - *(DAT_140c63728+0xe8)`
+  - `DAT_140c63728+0xe8` = global game tick counter (uint32); incremented each frame
+  - Access is Win32 mutex-protected inside `CooldownNode_GetRemainingMs`
 - GCD time: `FUN_14023dc80(*(spellDataPtr+0x28))` = look up GCD group; `FUN_14046a760(...)` = get GCD ms
 
 ### GetIcon
@@ -9195,12 +9207,12 @@ The `Game.ICComm` handle type tracks per-channel state.
 |---------|---------------|---------|
 | `1403ad860` | `SpellService_GetMinimumRange` | GetMinimumRange → (service, spellId, entity) |
 | `1403ad8f0` | `SpellService_GetMaximumRange` | GetMaximumRange → (service, spellId, entity) |
-| `1404823c0` | `SpellLiveInst_HasCooldownReduction` | GetCooldownTime |
+| `1404823c0` | `SpellWrapper_HasPlayerAbilityClass` | GetCooldownTime / AbilityBook gates |
 | `14046a760` | `SpellService_GetGCDMilliseconds` | GetGCDTime |
 | `14046a890` | `SpellService_GetEffectiveCooldownMs` | GetCooldownTime |
 | `1405645b0` | `SpellWrapper_GetIconPathString` | GetIcon |
 | `1405e9400` | `SpellWrapper_ResolveLiveInstance` | GetCooldownTime/Remaining/GCD |
-| `14023dc80` | `SpellService_GetGCDGroupEntry` | GetGCDTime |
+| `14023dc80` | `SpellService_GetSpellCooldownEntry` | GetGCDTime |
 | `1404b7220` | `Housing_GetCurrentNeighborSelection` | NeighborEvict/SetPermission |
 | `1405df7c0` | `Friendship_IsConnected` | SetPersonalIgnoreStrangersState |
 | `140432f20` | `Lua_PushGalacticArchiveArticleObject` | GalacticArchiveEntry.GetArticle |
@@ -9228,8 +9240,47 @@ The `Game.ICComm` handle type tracks per-channel state.
 | `14056c2b0` | `PathMission_GetPositionHandle` | PathMission.GetDistance |
 | `14024b980` | `PositionHandle_GetPosObject` | PathMission.GetDistance |
 
-### Relabeling Required
-- Row `14048d310` (was: `ScientistExperimentation_LookupById`) → rename to `Service_LookupEntityById`
-  - This is a generic BST/service lookup used across GalacticArchive, ScientistExperimentation, and others
-  - Takes `(servicePtr, id)` → returns object or null
+### Relabeling Completed
+- Row `14048d310` was relabeled from the older
+  `ScientistExperimentation_LookupById` hypothesis to `Service_LookupEntityById`.
+  This is a generic BST/service lookup used across GalacticArchive,
+  ScientistExperimentation, and others. It takes `(servicePtr, id)` and returns
+  the matching object or null.
+
+---
+
+## Function Label Hygiene Pass
+
+`Decomp/Analysis/function_labels.csv` was deduplicated after the spell, path,
+public-event, and cooldown mapping batches left several repeated
+`WildStar64.exe` address rows. The retained rows were rechecked against
+`functions.csv` and `selected_decompiled.c`; a few names/comments were tightened
+where the last exported name was too narrow:
+
+- `14023dc80` -> `SpellService_GetSpellCooldownEntry`
+- `1403ac780` -> `Entity_GetIndexedSlotEntry`
+- `1403ad860` -> `SpellService_GetMinimumRange`
+- `1403ad8f0` -> `SpellService_GetMaximumRange`
+- `1403d90d0` -> `Entity_ResolveById`
+- `14046a760` -> `SpellService_GetGCDMilliseconds`
+- `14046a890` -> `SpellService_GetEffectiveCooldownMs`
+- `1404823c0` -> `SpellWrapper_HasPlayerAbilityClass`
+- `140498a40` -> `PublicEventService_GetLiveEventById`
+- `14054e340` -> `SpellInner_ResolveCastTimeMs`
+- `14055bdc0` -> `SpellTarget_ResolveTargetEntity`
+- `1405a4d90` -> `SpellService_GetTokenCostValue`
+- `1405e9400` -> `SpellWrapper_ResolveLiveInstance`
+- `1407a0fd0` -> `SpellService_LookupSpellWrapperById`
+
+The high-range spell-effect case targets at `1403ec9ff`, `1403eef04`,
+`1403eeb67`, `1403f102f`, `1403f103d`, and the default target `1403f12d2`
+were also removed from `function_labels.csv` because they are jump-table
+targets inside `Entity_ExecuteSpellEffectHighRange`, not standalone function
+entries. Their addresses remain documented in the RavelSignal dispatch
+architecture section above.
+
+`scripts/ApplyNexusForeverLabels.java` now preserves comma-containing comments
+by treating everything after the name as the comment field, and it reports
+duplicate rows for the current program/address during label application. No
+runtime NexusForever behavior changed in this pass.
 

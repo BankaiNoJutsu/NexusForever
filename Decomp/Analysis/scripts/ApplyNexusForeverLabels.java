@@ -11,7 +11,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
@@ -45,6 +48,8 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 		int created = 0;
 		int skipped = 0;
 		int missing = 0;
+		int duplicates = 0;
+		Map<String, String> labelsByAddress = new HashMap<>();
 
 		try (BufferedReader reader = new BufferedReader(new FileReader(labelMap))) {
 			String line;
@@ -73,6 +78,15 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 
 				Address address = toAddr(parts[1]);
 				String name = parts[2];
+				String key = programName.toLowerCase(Locale.ROOT) + ":" +
+					address.toString().toLowerCase(Locale.ROOT);
+				String previousName = labelsByAddress.put(key, name);
+				if (previousName != null) {
+					printerr("Duplicate label row " + lineNumber + " for " + programName + " " +
+						parts[1] + ": " + previousName + " -> " + name);
+					duplicates++;
+				}
+
 				Function function = functionManager.getFunctionAt(address);
 				if (function == null) {
 					function = functionManager.getFunctionContaining(address);
@@ -94,9 +108,10 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 					function.setName(name, SourceType.USER_DEFINED);
 				}
 
-				if (parts.length >= 4 && !parts[3].isEmpty()) {
+				String commentText = joinCsvRemainder(parts, 3);
+				if (!commentText.isEmpty()) {
 					String existingComment = function.getComment();
-					String comment = "NexusForever: " + parts[3];
+					String comment = "NexusForever: " + commentText;
 					if (existingComment == null ||
 						existingComment.trim().isEmpty() ||
 						existingComment.startsWith("NexusForever: ")) {
@@ -109,7 +124,8 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 		}
 
 		println("Applied NexusForever labels for " + programName + ": applied=" + applied +
-			", created=" + created + ", skipped=" + skipped + ", missing=" + missing);
+			", created=" + created + ", skipped=" + skipped + ", missing=" + missing +
+			", duplicateRows=" + duplicates);
 	}
 
 	private String[] splitCsv(String line) {
@@ -139,5 +155,20 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 
 		fields.add(field.toString().trim());
 		return fields.toArray(new String[0]);
+	}
+
+	private String joinCsvRemainder(String[] parts, int startIndex) {
+		if (parts.length <= startIndex) {
+			return "";
+		}
+
+		StringBuilder builder = new StringBuilder();
+		for (int i = startIndex; i < parts.length; i++) {
+			if (i > startIndex) {
+				builder.append(", ");
+			}
+			builder.append(parts[i]);
+		}
+		return builder.toString().trim();
 	}
 }

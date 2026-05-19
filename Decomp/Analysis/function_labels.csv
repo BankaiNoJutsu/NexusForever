@@ -135,7 +135,7 @@ WildStar64.exe,14033bf90,NetworkIOCP_PostRecv,Posts an overlapped WSARecv reques
 WildStar64.exe,14033c7e0,NetworkIOCP_SendQueued,Batches queued buffers into an overlapped WSASend request.
 WildStar64.exe,14033ec10,NetworkSocket_DestroyClosesocket,Destructor path that closes the socket and releases buffers.
 WildStar64.exe,14033ece0,NetworkSocket_CloseSocket,Closes an active socket and clears its handle.
-WildStar64.exe,140398800,SpellTarget_ResolveAndValidateWrapper,Resolves the spell wrapper for a candidate target entity. param_1=context, param_2=spell_result_out, param_3=target_entity_ptr, param_4=extra_ctx, param_5=extra_ptr, param_6/7=pass-through. If *param_2==0 returns 4 (no wrapper). If target is local player (DAT_140c65898+0x78) or current target (+0x6490), calls Entity_LookupSpellWrapperInBST on that entity. Falls back to SpellService_ResolveTargetFlags hash map. On success fills param_2[9] from param_4+8, param_2[0xd..f] from param_5, then calls SpellTarget_ValidateWrapperAndTargets for final validation and returns its result.
+WildStar64.exe,140398800,SpellTarget_ResolveAndValidateWrapper,Resolves the spell wrapper for a candidate target entity. param_1=context, param_2=spell_result_out, param_3=target_entity_ptr, param_4=extra_ctx, param_5=extra_ptr, param_6/7=pass-through. If *param_2==0 returns 4 (no wrapper). If target is local player (DAT_140c65898+0x78) or current target (+0x6490), calls Entity_LookupSpellWrapperInBST on that entity. Falls back to SpellService_LookupSpellWrapperById hash map. On success fills param_2[9] from param_4+8, param_2[0xd..f] from param_5, then calls SpellTarget_ValidateWrapperAndTargets for final validation and returns its result.
 WildStar64.exe,1403ace00,SpellTarget_ValidateWrapperAndTargets,Final spell wrapper and ValidTargets gate called by SpellTarget_ResolveAndValidateWrapper. Entry guard: FUN_1403ae8c0(DAT_140c65b70) must return 0 or 0x13d. Resolves primary target entity from param_2[7] and secondary from param_2[9] via FUN_1403d90d0. Calls SpellService_ResolveSpellWrapper with spell4_id=*param_2 and primary entity. Reads ValidTargets primary ID at spell_wrapper+0x70+0x168 (0=any target accepted). Calls (*DAT_140c659a0+0x18) virtual for ValidTargets check; SpellPropertyFlags bit 1 (0x02) at spell_wrapper+0x70+0x108 combined with AoE data at spell_wrapper+0x40 bypasses primary check. Then checks secondary ValidTargets ID at spell_wrapper+0x70+0x16c. Error codes: 0x1e=primary entity not found; 4=no wrapper; 0x97(151)=primary target invalid; 0x119(281)=secondary target invalid; 0x13d(317)=pass-through from pre-condition state.
 WildStar64.exe,1403988d0,SpellCast_ResolveTargetsAndValidate,Shared spell-cast target-preparation helper that resolves target entity ids, drives repeated target validation/expansion through SpellTarget_ResolveAndValidateWrapper, conditionally sends zero-byte opcode 0x018F ClientP2PTradingCancelTrade for the matching local-trade path, and returns the resulting cast status.
 WildStar64.exe,1403991b0,GuildBossToken_SendClientCastGuildBossToken,Builds and sends opcode 0x094F ClientCastGuildBossToken payload with guild identity, the resolved guild-boss token item2 id, and the shared generated context token.
@@ -169,7 +169,7 @@ WildStar64.exe,1403a6b50,Trade_SendClientP2PTradingAddItem,Sends opcode 0x018D C
 WildStar64.exe,1403a6c50,Trade_SendClientP2PTradingRemoveItem,Sends opcode 0x0194 ClientP2PTradingRemoveItem with the 64-bit item guid from the local trade item entry.
 WildStar64.exe,1403a6ce0,Trade_SendClientP2PTradingSetMoney,Sends opcode 0x0197 ClientP2PTradingSetMoney with a 64-bit credit offer after local affordability and current-offer checks.
 WildStar64.exe,1403a6e00,Trade_SendClientP2PTradingCommit,Sends zero-payload opcode 0x0190 ClientP2PTradingCommit when an active local trade exists.
-WildStar64.exe,1403acd90,SpellService_ResolveSpellWrapper,Resolves the shared spell wrapper/service object. param_1=service_obj, param_2=spell4_id, param_3=entity_ptr. If param_3 matches local player (+0x78) or current target (+0x6490), calls Entity_LookupSpellWrapperInBST for context-aware lookup from entity+0x7d18 BST; else falls back to SpellService_ResolveTargetFlags hash map at service_obj+0x540. Returns 0 if not found.
+WildStar64.exe,1403acd90,SpellService_ResolveSpellWrapper,Resolves the shared spell wrapper/service object. param_1=service_obj, param_2=spell4_id, param_3=entity_ptr. If param_3 matches local player (+0x78) or current target (+0x6490), calls Entity_LookupSpellWrapperInBST for context-aware lookup from entity+0x7d18 BST; else falls back to SpellService_LookupSpellWrapperById hash map at service_obj+0x540. Returns 0 if not found.
 WildStar64.exe,140214fe0,ClientDB_RegisterMatchingGameMap,Registers the MatchingGameMap client DB table using the MatchingGameMap and DB\\MatchingGameMap.tbl descriptors.
 WildStar64.exe,140215240,MatchingGameMap_LookupById,Resolves a MatchingGameMap record by id through the registered MatchingGameMap callback or the DAT_140c641f0 fallback dispatcher.
 WildStar64.exe,1403a11c0,ActionSet_CheckPvPRestriction,Checks whether the current PvP state permits action-set changes.
@@ -291,7 +291,7 @@ WildStar64.exe,1405eda10,Lua_GameSpell_GetProxyChannelData,Game.Spell:GetProxyCh
 WildStar64.exe,1405edef0,Lua_GameSpell_GetIcon,Game.Spell:GetIcon Lua method.
 WildStar64.exe,1405edff0,Lua_GameSpell_GetAbilityCharges,Game.Spell:GetAbilityCharges Lua method.
 WildStar64.exe,1405ee4a0,Lua_GameSpell_IsSelfSpell,Game.Spell:IsSelfSpell Lua method. If inner_struct[6]==7 (TargetType 7), looks up service tree at service_obj+0x788 (balanced BST keyed by spell4 ID; node+0x10=right, +0x18=left, +0x20=key, +0x28=service_spell_array); if found, resolves service wrapper and calls Game_Spell_IsSelfSpellDelegate on it. Fallback bitmask 0x85 (bits 0/2/7=TargetTypes 0/2/7 are self) plus shape-type-3 with TargetType 4/8 as self.
-WildStar64.exe,1405ee640,Lua_GameSpell_IsFreeformTarget,Game.Spell:IsFreeformTarget Lua method. Same type-7 service tree lookup as IsSelfSpell; if found calls SpellService_ResolveTargetFlags then reads spell_wrapper+0x70+0x108 bit 22 (0x400000)=IsFreeformTarget. Non-type-7 path reads same bit from original wrapper. Confirms Spell4PropertyFlags bit 22 = IsFreeformTarget; matches server SpellTargetingFlags.FreeformTarget=0x400000 from Spell4BaseEntry.
+WildStar64.exe,1405ee640,Lua_GameSpell_IsFreeformTarget,Game.Spell:IsFreeformTarget Lua method. Same type-7 service tree lookup as IsSelfSpell; if found calls SpellService_LookupSpellWrapperById then reads spell_wrapper+0x70+0x108 bit 22 (0x400000)=IsFreeformTarget. Non-type-7 path reads same bit from original wrapper. Confirms Spell4PropertyFlags bit 22 = IsFreeformTarget; matches server SpellTargetingFlags.FreeformTarget=0x400000 from Spell4BaseEntry.
 WildStar64.exe,1405ee7b0,Lua_GameSpell_IsMovingInterrupted,Game.Spell:IsMovingInterrupted Lua method.
 WildStar64.exe,1405ee870,Lua_GameSpell_GetLasTierDesc,Game.Spell:GetLasTierDesc Lua method.
 WildStar64.exe,1405eeab0,Lua_GameSpell_GetLasBonusEachTierDesc,Game.Spell:GetLasBonusEachTierDesc Lua method.
@@ -558,7 +558,7 @@ WildStar64.exe,140701800,Lua_GameLib_OnClosedInstanceSettings,GameLib.OnClosedIn
 WildStar64.exe,14070e370,Lua_FriendshipLib_SetAutoResponseMessages,FriendshipLib.SetAutoResponseMessages Lua method; reads away and busy strings and forwards them to Friendship_SetAutoResponseMessagesAndSend.
 WildStar64.exe,14070e5d0,Lua_FriendshipLib_SetPersonalIgnoreStrangersState,FriendshipLib.SetPersonalIgnoreStrangersState Lua method; updates local ignore-strangers state and sends opcode 0x039E on state changes.
 WildStar64.exe,14072ee90,Lua_RegisterDialogResponseBindings,Registers the Game.DialogResponse Lua bindings and DialogResponseType_* constants including QuestComplete and QuestAccept.
-WildStar64.exe,1407a0fd0,SpellService_ResolveTargetFlags,Hash map lookup at service_obj+0x540 (chained hash table): maps spell4 ID → spell wrapper. Hash function at lVar1+0x18; bucket count at lVar1+0x08; chain walk with hash compare + key equality. Returns 0 if not found, else wrapper pointer at node+0x18 from bucket chain. Called by SpellService_ResolveSpellWrapper fallback path and Lua_GameSpell_IsFreeformTarget type-7 service override path.
+WildStar64.exe,1407a0fd0,SpellService_LookupSpellWrapperById,Hash map lookup at service_obj+0x540 (chained hash table) by Spell4 id. Hash function at map+0x18; bucket count at map+0x08; chain walk compares hash and key. Returns 0 if not found, else the spell wrapper pointer stored at node+0x18. Called by SpellService_ResolveSpellWrapper fallback path and Lua_GameSpell_IsFreeformTarget type-7 service override path.
 WildStar64.exe,1407478d0,Lua_AbilityBook_GetAbilitiesList,AbilityBook.GetAbilitiesList Lua method.
 WildStar64.exe,140747990,Lua_AbilityBook_GetAbilityInfo,AbilityBook.GetAbilityInfo Lua method.
 WildStar64.exe,140747a80,Lua_AbilityBook_CheckSpellActivateRequirements,AbilityBook.CheckSpellActivateRequirements Lua method that evaluates local spell-activation gates for the requested spell.
@@ -767,38 +767,16 @@ WildStar64.exe,14023b260,Spell4StackGroup_GetByIndex,ClientDB query thunk for Sp
 WildStar64.exe,14024e5e0,ClientDB_FlushAllTables,Releases all ClientDB singleton pointers via vtable[1]() destructor and nulls each global; called during shutdown/reload; touches DAT_140c642f0 (Spell4StackGroup) along with ~40+ other DB globals.
 WildStar64.exe,14055e180,Spell4Manager_BuildRuntimeData,Large initialization function (~10KB); iterates ALL Spell4Visual rows (via &PTR_u_Spell4Visual_140a6d658) then ALL Spell4 rows (via &PTR_u_Spell4_140a6d0a8); for each Spell4 row (puVar28) looks up Spell4Base by puVar28[2]=offset0x10 (via &PTR_u_Spell4Base_140a6d118); validates cross-refs and builds runtime arrays; Spell4 struct offsets confirmed: 0x10=Spell4BaseId 0xb8=StackGroupId 0x114=AoeTargetConstraintsId 0x12c-0x134=SpellCoolDown[0..2]; Spell4Base offsets: +8=HitResultsId +0xc=TargetMechanicsId +0x10=TargetAngleId +0x14=PrerequisitesId +0x18=ValidTargetsId +0x1c/0x34=TargetGroupId.
 WildStar64.exe,1402391e0,ClientDB_RegisterSpell4HitResults,Registers the Spell4HitResults client DB table; checks DAT_140c651c8 and DAT_140c63970; allocates object with PTR_u_Spell4HitResults_140a82e30 descriptor; loads DB\Spell4HitResults.tbl.
-WildStar64.exe,1403ec9ff,Entity_ExecuteSpellEffect_DespawnUnit,High-range dispatch stub for effectType 0x61 (DespawnUnit); embedded case target within Entity_ExecuteSpellEffectHighRange (1403ec6a0).
-WildStar64.exe,1403eef04,Entity_ExecuteSpellEffect_SetMatchingEligibility,High-range dispatch stub for effectType 0x7E (SetMatchingEligibility); embedded case target within Entity_ExecuteSpellEffectHighRange (1403ec6a0).
-WildStar64.exe,1403eeb67,Entity_ExecuteSpellEffect_UnitPropertyConversion,High-range dispatch stub for effectType 0x91 (UnitPropertyConversion); embedded case target within Entity_ExecuteSpellEffectHighRange (1403ec6a0).
-WildStar64.exe,1403f102f,Entity_ExecuteSpellEffect_DisguiseOutfit,High-range dispatch stub for effectType 0x70 (DisguiseOutfit); embedded case target within Entity_ExecuteSpellEffectHighRange (1403ec6a0).
-WildStar64.exe,1403f103d,Entity_ExecuteSpellEffect_ActivateSpellCooldown,High-range dispatch stub for effectType 0x92 (ActivateSpellCooldown); embedded case target within Entity_ExecuteSpellEffectHighRange (1403ec6a0).
-WildStar64.exe,1403f12d2,Entity_ExecuteSpellEffect_HighRange_Default,Default/no-op handler for unimplemented high-range effectTypes in Entity_ExecuteSpellEffectHighRange (1403ec6a0); used by 1677 of 2322 high-range slots.
-WildStar64.exe,14055bdc0,SpellTarget_ResolveTargetEntity,Resolves the entity to target for a spell cast. Reads targeting mode and type from spell data; uses cursor target (entity+0x108) for types 1/3/5/8 or self (entity+0x08) for types 0/2/6/7; auto-selects nearby entity within 4.0 units when no cursor target. Returns resolved entity pointer or 0.
-WildStar64.exe,1403ac780,ActionSet_GetHotkeySlotFromSet,Retrieves a hotkey slot from the entity's ActionSet storage at entity+0xa0; used in SpellCast_ValidateAndDispatch and SpellCast_SendClientSpellCastState.
-WildStar64.exe,1403d90d0,Entity_ResolveEntityById,Resolves an entity pointer from an entity ID; called throughout spell system. Takes entity+world context plus entity ID; returns entity pointer or 0.
 WildStar64.exe,14055a5f0,Entity_FindNearestTargetable,Finds nearest valid targetable entity within range; used in SpellTarget_ResolveTargetEntity for auto-target when no cursor target set (range from GameTable[0x145]+0x18 = 4.0 default).
-WildStar64.exe,1405e9400,SpellCooldown_GetForSpell,Gets the SpellCooldown object for the first arg spell; cooldown value at +0x38 (uint ptr); used in Lua_GameSpell_GetCooldownTime.
-WildStar64.exe,1403ad8f0,SpellService_GetMaximumRange,Computes maximum cast range for a spell by ID. Args: spellService, SpellId, entityContext. Returns float (range in units).
-WildStar64.exe,1403ad860,SpellService_GetMinimumRange,Computes minimum cast range for a spell by ID. Args: spellService, SpellId, entityContext. Returns float (range in units).
-WildStar64.exe,14054e340,SpellService_GetCastTimeMs,Computes cast time in ms for a spell. Args: innerDataPtr, SpellId, entityContext. Returns uint32 milliseconds.
 WildStar64.exe,14039e400,SpellCast_CancelCurrentCast,Cancels the current in-progress spell cast; called when overriding/superseding cast.
 WildStar64.exe,14047bfd0,SpellCast_IsToggleSpellActive,Checks whether a toggle spell is currently active; returns non-zero if active. Used in SendClientSpellCastState to short-circuit toggle re-cast.
 WildStar64.exe,14046afc0,SpellCooldown_StartCooldownForSpell,Starts/resets cooldown for a resolved spell wrapper. Args: entity, spellWrapper, flag.
 WildStar64.exe,1403ad690,SpellService_IsInRange,Returns non-zero if caster is within range of target for a given spell.
-WildStar64.exe,1407a0fd0,SpellService_ResolveTargetFlags,Resolves target flags from SpellService+0x540 hash map by entityId.
-WildStar64.exe,1403ad860,SpellService_GetMinRange,Returns minimum cast range (float) for a spell given active entity state.
-WildStar64.exe,1403ad8f0,SpellService_GetMaxRange,Returns maximum cast range (float) for a spell given active entity state.
 WildStar64.exe,14054e340,SpellInner_ResolveCastTimeMs,Resolves actual cast time in milliseconds from inner data and entity active state.
-WildStar64.exe,14046a890,SpellWrapper_ResolveCooldown,Resolves actual cooldown duration in milliseconds accounting for scale factor.
 WildStar64.exe,140195f70,CooldownNode_GetRemainingMs,Reads remaining cooldown time in milliseconds from a cooldown list node timer.
-WildStar64.exe,14023dc80,GCDGroup_LookupById,Looks up GCD group entry by group ID; entry+0x04 = GCD duration ms.
-WildStar64.exe,14046a760,SpellService_ResolveGCDTime,Resolves actual GCD time in milliseconds considering entity state modifiers.
 WildStar64.exe,1407a16f0,ChargeService_GetChargesForSpell,Returns pointer to charge counter for a spell ID; null if no charge system applies.
-WildStar64.exe,1405a4d90,SpellServiceToken_GetCostAmount,Returns service token cost amount for a spell that has inner+0x108 bit 29 set.
 WildStar64.exe,1405e73e0,InnateAbility_GetCount,Returns count of innate ability spells for the player entity.
-WildStar64.exe,1405e9400,SpellLuaArg_ResolveWrapper,Helper: reads first Lua arg as Game.Spell and resolves the C++ spell wrapper.
 WildStar64.exe,140462a90,Entity_GetInnateResourceValue,Queries current innate resource value from entity active state.
-WildStar64.exe,1404823c0,SpellWrapper_IsPlayerAbility,Returns non-zero if wrapper represents a player LAS ability (activatable/tier-upgradable).
 WildStar64.exe,1403bb170,SpellBook_IsSpellLearned,Returns non-zero if the entity has learned the given spell ID.
 WildStar64.exe,1403bb040,SpellBook_IsSpellSlotCompatible,Returns non-zero if the spell is compatible with its LAS slot type.
 WildStar64.exe,1403bacc0,SpellBook_GetSpellTierData,Returns tier progression data pointer for a spell given entity and action set byte.
@@ -809,8 +787,7 @@ WildStar64.exe,1400f26a0,LootRoll_GetLootIdFromHandle,Resolves loot roll ID from
 WildStar64.exe,1403d90d0,Entity_ResolveById,Looks up a world entity by its 32-bit ID; returns null if not found.
 WildStar64.exe,1406622c0,Lua_GetEntityFromArg,Resolves a Lua argument to an entity userdata pointer.
 WildStar64.exe,140569f10,Item_HasEquippedArmor,Returns non-zero if entity has equipped armor items eligible for repair.
-WildStar64.exe,1403ac780,Entity_GetEquipmentSlot,Returns equipment slot pointer for a given slot index on entity+0xa0.
-WildStar64.exe,140498a40,PublicEventService_GetEventById,Looks up a live PublicEvent object by its 32-bit event ID.
+WildStar64.exe,1403ac780,Entity_GetIndexedSlotEntry,Returns a pointer from entity+0xa0 indexed slot storage for a selector/index pair; selectors 0,1,2,5,8,9,10 choose distinct pointer arrays.
 WildStar64.exe,14048d940,ChallengesService_NeedsHintArrow,Returns non-zero if the given challenge ID needs a hint arrow displayed.
 WildStar64.exe,14048dd20,ChallengesService_GetTimerRemaining,Returns remaining timer float for a challenge in a given timer mode (2=active 4=cooldown).
 WildStar64.exe,14048f880,ChallengesService_IsMaxScoreMode,Returns non-zero if the challenge is in max-score display mode (goals shown as 100).
@@ -830,12 +807,12 @@ WildStar64.exe,140432ba0,Lua_PushPathEpisodeObject,Pushes a path episode Lua use
 WildStar64.exe,140432d60,Lua_PushPublicEventObjectiveObject,Pushes a PublicEventObjective Lua userdata from an objective pointer.
 WildStar64.exe,1403ad860,SpellService_GetMinimumRange,Returns minimum cast range (float) for a spell ID; takes (spellService, spellId, entity).
 WildStar64.exe,1403ad8f0,SpellService_GetMaximumRange,Returns maximum cast range (float) for a spell ID; takes (spellService, spellId, entity).
-WildStar64.exe,1404823c0,SpellLiveInst_HasCooldownReduction,Returns non-zero if cooldown reduction is currently active for this live spell instance.
-WildStar64.exe,14046a760,SpellService_GetGCDMilliseconds,Returns GCD time in milliseconds for the given GCD group entry.
-WildStar64.exe,14046a890,SpellService_GetEffectiveCooldownMs,Computes final effective cooldown in ms applying reduction; takes (entity, liveSpellInst, baseCooldownMs).
+WildStar64.exe,1404823c0,SpellWrapper_HasPlayerAbilityClass,Checks the five class/category values at spellData+0x198 for values 1, 2, or 7; used as a player-ability gate and to decide whether player cooldown scaling applies.
+WildStar64.exe,14046a760,SpellService_GetGCDMilliseconds,Returns effective GCD milliseconds for a cooldown id and base duration after applying active entity modifiers.
+WildStar64.exe,14046a890,SpellService_GetEffectiveCooldownMs,Computes final cooldown milliseconds for a live spell instance by applying active cooldown modifiers to the base duration.
 WildStar64.exe,1405645b0,SpellWrapper_GetIconPathString,Returns icon asset path string object from a spell wrapper.
 WildStar64.exe,1405e9400,SpellWrapper_ResolveLiveInstance,Resolves a live spell instance from the Lua stack (used by cooldown/GCD functions).
-WildStar64.exe,14023dc80,SpellService_GetGCDGroupEntry,Looks up a GCD group entry by the group ID stored at spellData+0x28.
+WildStar64.exe,14023dc80,SpellService_GetSpellCooldownEntry,Looks up the SpellCoolDown table entry referenced by spellData+0x28; Lua_GameSpell_GetGCDTime uses entry+0x04 as the base GCD duration.
 WildStar64.exe,1404b7220,Housing_GetCurrentNeighborSelection,Returns the currently selected neighbor object; null if no selection.
 WildStar64.exe,1405df7c0,Friendship_IsConnected,Returns non-zero if the friendship/housing service connection is ready.
 WildStar64.exe,140432f20,Lua_PushGalacticArchiveArticleObject,Pushes a GalacticArchiveArticle Lua userdata from an article state object.
@@ -843,7 +820,7 @@ WildStar64.exe,14020fd40,LiveEvent_LookupById,Looks up a live event object by 32
 WildStar64.exe,1406b91f0,Lua_PushLiveEventObject,Pushes a LiveEvent Lua userdata onto the stack from a live event object.
 WildStar64.exe,140688bf0,Lua_PushPublicEventObjectByParentId,Pushes a parent PublicEvent Lua userdata by parentEventId from static data.
 WildStar64.exe,1405f8a80,PublicEventStats_LookupByStatId,Looks up a stat value in the PublicEvent inline stats array by statId; array starts at liveObj+0xec.
-WildStar64.exe,140498a40,PublicEventService_GetLiveEventById,Returns the live PublicEvent object for a given event ID; takes (service, eventId, 0).
+WildStar64.exe,140498a40,PublicEventService_GetLiveEventById,Looks up a live PublicEvent object by event id in the tree selected by the third argument; most observed callers pass 0 for that selector.
 WildStar64.exe,14077cce0,ExplorerNode_GetCurrentNode,Returns the current active explorer node object for a mission; takes (missionObj, 0).
 WildStar64.exe,140720b10,ExplorerNode_GetDistanceAndDirection,Computes distance and direction from player to an explorer node; takes (nodeObj, playerPosPtr, outResult).
 WildStar64.exe,140721f50,ExplorerHunt_LookupById,Looks up an explorer hunt mission entry by sub-data ID.
@@ -864,5 +841,5 @@ WildStar64.exe,14056c2b0,PathMission_GetPositionHandle,Returns the position hand
 WildStar64.exe,14024b980,PositionHandle_GetPosObject,Returns the position object (XYZ at +0x0c/+0x10/+0x14 and radius at +0x04) from a position handle.
 WildStar64.exe,140564fb0,SpellService_GetThresholdTimeEntry,Returns threshold time data for a spell; takes (service, spellId).
 WildStar64.exe,14034bdd0,WorldZone_GetNameString,Returns the display name string for a world zone ID.
-WildStar64.exe,1405a4d90,SpellService_GetTokenCostValue,Returns the spell service token cost value; takes (spellDataPtr, spellId).
+WildStar64.exe,1405a4d90,SpellService_GetTokenCostValue,Iterates Spell4ServiceTokenCost rows and returns the token cost value for the supplied Spell4 id; the first argument is unused in the observed decompile.
 WildStar64.exe,140501210,Lua_PushSpellTokenCostResult,Pushes a spell token cost result object onto the Lua stack.
