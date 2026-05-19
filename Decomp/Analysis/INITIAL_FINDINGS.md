@@ -6865,3 +6865,194 @@ bypass target restrictions when in AoE mode.
 | PropertyFlags bit 1 AoE bypass | Not in server; noted for future when AoE spells show unexpected target rejection |
 | Error codes 0x97/0x119 | Client-side only; server has its own CastResult enum |
 | No server changes needed this pass | ✓ |
+
+
+---
+
+## ValidTargetsCriteria_Evaluate, Entity_GetFactionRelationship, SpellTarget_LogValidationMask
+
+### ValidTargetsCriteria_Evaluate (FUN_1403b4a20 @ 1403b4a20)
+
+**Called by:** vtable dispatch from SpellTarget_ValidateTargetRelationship when 	arget_mask is non-zero.
+
+This is the heart of the client-side Spell4ValidTargets evaluation. It takes
+an entity and a criteria descriptor struct, dispatches on the checkType field,
+and tests the entity's attribute against up to 7 allowed/excluded values.
+
+#### Criteria Struct Layout
+
+`
+struct ValidTargetsCriteria {
+    int id;           // [0] = criteria row ID (used in cases 10/11 as "current" to skip self)
+    int unk1;         // [1] = unused in this function
+    int checkType;    // [2] = dispatch key (1-13)
+    int values[7];    // [3..9] = up to 7 int IDs; 0 = empty slot
+};
+`
+
+#### Check Types
+
+| checkType | Entity Vtable | Semantics |
+|-----------|---------------|-----------|
+| 1 | +0x10 | Must match one of values[] |
+| 2 | +0x10 | Must NOT match any of values[] |
+| 3 | +0x30 | Must match one of values[] |
+| 4 | +0x30 | Must NOT match any of values[] |
+| 5 | +0x20 | Must match one of values[] |
+| 6 | +0x20 | Must NOT match any of values[] |
+| 7 | +0x28 | Must match one of values[] |
+| 8 | +0x28 | Must NOT match any of values[] |
+| 9 | +0x18 | Recursive sub-criteria (passes values[] as sub-array of 7) |
+| 10 | +0x08 → recurse | At least one related-entity passes recursive check |
+| 11 | +0x08 → recurse | All related-entities fail recursive check |
+| 12 (0xc) | +0x38 | Must match one of values[] |
+| 13 (0xd) | +0x38 | Must NOT match any of values[] |
+
+Entity vtable slots queried (attribute getters):
+- +0x08: get related/owner entity pointer
+- +0x10: attribute A (faction class? faction group?)
+- +0x18: recursive criteria dispatcher
+- +0x20: attribute C
+- +0x28: attribute D
+- +0x30: attribute B
+- +0x38: attribute E
+
+Return codes:   = pass,  x59 = fail,  x13d = conditional pass.
+
+#### Pseudocode (abbreviated)
+
+`c
+ulonglong ValidTargetsCriteria_Evaluate(entity *param_1, int *param_2) {
+    if (param_2 == null) return 0x59;
+
+    int *values = param_2 + 3;  // values[0..6]
+
+    switch (param_2[2]) {  // checkType
+    case 1:  // must-match attribute A
+        attr = (*vtable_0x10)(param_1);
+        for (i=0; i<7; i++) if (values[i] && attr==values[i]) return 0;  // pass
+        return 0x59;  // no match = fail
+    case 2:  // must-not-match attribute A
+        attr = (*vtable_0x10)(param_1);
+        for (i=0; i<7; i++) if (values[i] && attr==values[i]) return 0x59;  // match = fail
+        return 0;  // no match = pass
+    // ... cases 3-8: same pattern with vtable +0x30, +0x20, +0x28, +0x38
+    case 9:  // recursive sub-criteria
+        return (*vtable_0x18)(param_1, values, 7);
+    case 10:  // any related-entity passes
+        for (i=0; i<7; i++) {
+            if (values[i] && param_2[0]!=values[i]) {
+                related = (*vtable_0x08)(param_1);
+                result = ValidTargetsCriteria_Evaluate(param_1, related);
+                if (result==0 || result==0x13d) return 0;  // pass if any match
+            }
+        }
+        return 0x59;
+    case 11:  // no related-entity passes (inverse of 10)
+        ...
+    }
+}
+`
+
+#### Server Implication
+
+The server uses Spell4ValidTargets.TargetBitmask as a simple bitfield for
+target checks. The client has a richer multi-criteria system with 13 check types
+and per-row value arrays. The server's ValidTargetObjectMask=0x02 and
+ValidTargetDeadMask=0x08 are a simplified projection of this system.
+
+**No server changes required** — the server's bitfield approach is functionally
+correct for currently implemented spells.
+
+---
+
+### Entity_GetFactionRelationship (FUN_14046c580 @ 14046c580)
+
+**Called by:** SpellTarget_ValidateTargetRelationship to read the relationship
+group of param_1 relative to caster context param_2.
+
+#### Logic Summary
+
+`c
+undefined4 Entity_GetFactionRelationship(entity *param_1, context *param_2) {
+    // Default result from GameTable row 0x19e (Faction table ID 414)
+    row = FUN_140200220(0x19e);
+    result = (row != 0) ? *(int *)(row + 4) : 0;
+
+    // Special path: entity type 0x14
+    if (*(int *)(param_1 + 0x80) == 0x14) {
+        faction_entry = FUN_1401f31e0(*(int *)(param_2 + 0xdc));
+        if (faction_entry != 0 &&
+            FUN_14045a950(param_1, *(int *)(param_2 + 8)) != 0)
+            return *(int *)(faction_entry + 0x54);  // override faction
+    } else {
+        // Default path: faction-override array at entity+0x18+0xc0
+        state = *(longlong *)(param_1 + 0x18);
+        if (state != 0 &&
+            *(int *)(state + 0x6c) == 0 &&    // flag A cleared
+            *(int *)(state + 0x148) == 0) {   // flag B cleared
+            array = *(longlong *)(state + 0xc0);  // faction-override entries (max 4)
+            for (i=0; i<4; i++) {
+                id = *(int *)(array + 0x10 + i*4);
+                if (id == 0 || ValidTargets_Check(param_2, id, param_1)) {
+                    return *(int *)(array + i*4);  // return matching override
+                }
+            }
+        }
+    }
+    return result;
+}
+`
+
+#### New Entity/State Struct Fields
+
+| Expression | Meaning |
+|-----------|---------|
+| ntity + 0x80 | Entity type int (0x14 = special type) |
+| ntity + 0x18 | State/component struct pointer |
+| ntity+0x18 + 0x6c | Flag A (must be 0 for faction override to apply) |
+| ntity+0x18 + 0x148 | Flag B (must be 0 for faction override to apply) |
+| ntity+0x18 + 0xc0 | Pointer to faction-override entry array (up to 4 entries) |
+| context + 0xdc | Faction entry ID in context |
+| context + 0x08 | Caster membership ID for FUN_14045a950 check |
+
+#### Server Implication
+
+Server faction checking uses IWorldEntity relationship queries and doesn't model
+the client's faction-override array or entity-type-0x14 special path. These are
+client presentation details. **No server change needed.**
+
+---
+
+### SpellTarget_LogValidationMask (FUN_1403b4a10 @ 1403b4a10)
+
+`c
+void SpellTarget_LogValidationMask(undefined8 param_1, undefined4 param_2) {
+    FUN_140240b40(param_2);  // diagnostic/tracing call
+}
+`
+
+Thin oid wrapper — passes param_2 (target_mask uint) to FUN_140240b40.
+Has no return value and cannot affect validation results. Likely a diagnostics
+or client-side logging call invoked via vtable when target validation fails.
+FUN_140240b40 not yet decoded; low priority (tracing code).
+
+---
+
+### SpellService_ResolveTargetFlags (1407a0fd0) — Already Documented
+
+Confirmed from this session: the function was already labeled in the Ghidra
+project from a prior session and is present in unction_labels.csv. It
+performs a chained hash table lookup at service_obj + 0x540 by spell4_id
+and returns the stored flags/wrapper value. All callers now use the proper name.
+
+---
+
+### Updated Function Name Cross-References
+
+| Old FUN_ Reference | Proper Name | Used In |
+|--------------------|------------|---------|
+| FUN_1407a0fd0 | SpellService_ResolveTargetFlags | SpellTarget_ResolveAndValidateWrapper label |
+| FUN_1403b4a10 | SpellTarget_LogValidationMask | SpellTarget_ValidateTargetRelationship label |
+| FUN_1403b4a20 | ValidTargetsCriteria_Evaluate | SpellTarget_ValidateTargetRelationship label |
+| FUN_14046c580 | Entity_GetFactionRelationship | SpellTarget_ValidateTargetRelationship label |
