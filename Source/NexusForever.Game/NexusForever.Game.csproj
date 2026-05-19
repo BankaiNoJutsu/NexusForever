@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>NexusForever.Game.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\NexusForever.Database.Auth\NexusForever.Database.Auth.csproj" />
     <ProjectReference Include="..\NexusForever.Database.Character\NexusForever.Database.Character.csproj" />
     <ProjectReference Include="..\NexusForever.Database.World\NexusForever.Database.World.csproj" />

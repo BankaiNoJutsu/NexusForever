@@ -238,6 +238,9 @@ namespace NexusForever.Game.Spell
 
             CastResult result = CheckPrimaryTargetValidMask(target);
             if (result == CastResult.Ok)
+                result = CheckPrimaryTargetCastGroup(target);
+
+            if (result == CastResult.Ok)
                 result = CheckPrimaryTargetAngle(target);
 
             if (result == CastResult.Ok)
@@ -271,6 +274,17 @@ namespace NexusForever.Game.Spell
             return IsHostileToTarget(unitTarget) && UnitStateSetRules.TryGetHostileEffectImmuneState(unitTarget, out _)
                 ? CastResult.TargetInvulnerable
                 : CastResult.Ok;
+        }
+
+        private CastResult CheckPrimaryTargetCastGroup(IWorldEntity target)
+        {
+            TargetGroupEntry castGroup = Parameters.SpellInfo.BaseInfo.CastGroup;
+            if (castGroup == null)
+                return CastResult.Ok;
+
+            return TargetGroupCriteriaEvaluator.Evaluate(castGroup, target, GameTableManager.Instance)
+                ? CastResult.Ok
+                : CastResult.TargetUnknown;
         }
 
         private bool IsHostileToTarget(IUnitEntity target)
@@ -832,17 +846,21 @@ namespace NexusForever.Game.Spell
             if (!IsTargetLivingStateAllowed(entity))
                 return false;
 
-            if (constraints == null)
-                return true;
+            if (constraints != null)
+            {
+                float range = GetHorizontalDistance(selectionOrigin, entity.Position);
+                if (constraints.MinRange > 0f && range < constraints.MinRange)
+                    return false;
 
-            float range = GetHorizontalDistance(selectionOrigin, entity.Position);
-            if (constraints.MinRange > 0f && range < constraints.MinRange)
-                return false;
+                if (constraints.MaxRange > 0f && range > constraints.MaxRange)
+                    return false;
 
-            if (constraints.MaxRange > 0f && range > constraints.MaxRange)
-                return false;
+                if (constraints.Angle > 0f && constraints.Angle < 360f && !IsWithinAngle(entity, selectionOrigin, selectionRotation, constraints.Angle))
+                    return false;
+            }
 
-            if (constraints.Angle > 0f && constraints.Angle < 360f && !IsWithinAngle(entity, selectionOrigin, selectionRotation, constraints.Angle))
+            TargetGroupEntry aoeGroup = Parameters.SpellInfo.BaseInfo.AoeGroup;
+            if (aoeGroup != null && !TargetGroupCriteriaEvaluator.Evaluate(aoeGroup, entity, GameTableManager.Instance))
                 return false;
 
             return true;

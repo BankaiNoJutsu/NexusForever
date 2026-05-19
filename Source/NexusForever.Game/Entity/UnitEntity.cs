@@ -1662,6 +1662,46 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
+        /// Evict the oldest property-modifier casting from the StackGroup identified by <paramref name="stackGroupId"/>
+        /// when the number of active castings from that group reaches <paramref name="stackCap"/>.
+        /// </summary>
+        public void EnforceSpellPropertyStackGroupCap(uint stackGroupId, uint stackCap)
+        {
+            if (stackGroupId == 0u || stackCap == 0u)
+                return;
+
+            var castingToEffects = new Dictionary<uint, List<(uint EffectId, Property Property)>>();
+            foreach (KeyValuePair<Property, Dictionary<uint, SpellPropertyState>> prop in spellProperties)
+            {
+                foreach (KeyValuePair<uint, SpellPropertyState> state in prop.Value)
+                {
+                    Spell4Entry spell4Entry = GameTableManager.Instance.Spell4.GetEntry(state.Value.Spell4Id);
+                    if (spell4Entry == null || spell4Entry.Spell4StackGroupId != stackGroupId)
+                        continue;
+
+                    if (!castingToEffects.TryGetValue(state.Value.CastingId, out List<(uint, Property)> effects))
+                    {
+                        effects = new List<(uint, Property)>();
+                        castingToEffects[state.Value.CastingId] = effects;
+                    }
+
+                    effects.Add((state.Key, prop.Key));
+                }
+            }
+
+            if (castingToEffects.Count < stackCap)
+                return;
+
+            uint oldestCastingId = uint.MaxValue;
+            foreach (uint castingId in castingToEffects.Keys)
+                if (castingId < oldestCastingId)
+                    oldestCastingId = castingId;
+
+            foreach ((uint effectId, Property property) in castingToEffects[oldestCastingId])
+                RemoveSpellProperty(property, effectId);
+        }
+
+        /// <summary>
         /// Return all <see cref="IPropertyModifier"/> for this <see cref="IUnitEntity"/>'s <see cref="Property"/>
         /// </summary>
         private IEnumerable<ISpellPropertyModifier> GetSpellPropertyModifiers(Property property)

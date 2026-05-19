@@ -153,6 +153,12 @@ namespace NexusForever.Game.Abstract.Entity
         bool RemoveSpellProperties(uint spell4Id);
 
         /// <summary>
+        /// Evict the oldest property-modifier casting from the StackGroup identified by <paramref name="stackGroupId"/>
+        /// when the number of active castings from that group reaches <paramref name="stackCap"/>.
+        /// </summary>
+        void EnforceSpellPropertyStackGroupCap(uint stackGroupId, uint stackCap);
+
+        /// <summary>
         /// Cast a <see cref="ISpell"/> with the supplied spell id and <see cref="ISpellParameters"/>.
         /// </summary>
         void CastSpell(uint spell4Id, ISpellParameters parameters);

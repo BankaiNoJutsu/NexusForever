@@ -1715,9 +1715,6 @@ namespace NexusForever.Game.Spell
             else
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "summon-mount", player.Guid, info.Entry.DataBits00, spell.Parameters.SpellInfo.Entry.Id, false, "map-cannot-enter");
 
-            // FIXME: also cast 52539,Riding License - Riding Skill 1 - SWC - Tier 1,34464
-            // FIXME: also cast 80530,Mount Sprint  - Tier 2,36122
-
             player.CastSpell(52539, new SpellParameters());
             player.CastSpell(80530, new SpellParameters());
         }
@@ -2627,7 +2624,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            uint healthBefore = target.Health;
+            uint valueBefore = GetVitalValueForDiagnostics(target, vital);
             target.AddVitalClamp(
                 info.EffectId,
                 spell.Parameters.SpellInfo.Entry.Id,
@@ -2637,15 +2634,26 @@ namespace NexusForever.Game.Spell
                 clampVital.Mode,
                 clampVital.VitalMode);
 
-            SpellEffectDiagnostics.TraceClampVital(spell, target, clampVital, vital, healthBefore, target.Health, true, false, null);
+            SpellEffectDiagnostics.TraceClampVital(spell, target, clampVital, vital, valueBefore, GetVitalValueForDiagnostics(target, vital), true, false, null);
         }
 
         private static Vital ResolveClampVital(SpellEffectClampVitalSemantics clampVital)
         {
-            if (Enum.IsDefined(typeof(Vital), (int)clampVital.VitalMode))
+            if (clampVital.VitalMode != 0u && Enum.IsDefined(typeof(Vital), (int)clampVital.VitalMode))
                 return (Vital)clampVital.VitalMode;
 
-            return Vital.Health;
+            // Mode != 0 signals an explicit non-health vital; VitalMode was not recognised so reject.
+            return clampVital.Mode != 0u ? Vital.Invalid : Vital.Health;
+        }
+
+        private static uint GetVitalValueForDiagnostics(IUnitEntity target, Vital vital)
+        {
+            return vital switch
+            {
+                Vital.Health         => target.Health,
+                Vital.ShieldCapacity => target.Shield,
+                _                    => 0u
+            };
         }
 
         [SpellEffectHandler(SpellEffectType.ShieldOverload)]
@@ -2654,6 +2662,12 @@ namespace NexusForever.Game.Spell
             SpellEffectShieldOverloadSemantics shieldOverload = SpellEffectInterpreter.Interpret(info).ShieldOverload;
             if (shieldOverload == null)
                 return;
+
+            if (shieldOverload.DataBits00 != 0u || shieldOverload.DataBits01 != 0u || shieldOverload.DataBits02 != 0u)
+            {
+                SpellEffectDiagnostics.TraceShieldOverload(spell, target, shieldOverload, target.Shield, target.Shield, false, false, "non-zero-payload");
+                return;
+            }
 
             uint shieldBefore = target.Shield;
             target.AddShieldOverload(info.EffectId, spell.Parameters.SpellInfo.Entry.Id, spell.CastingId);
@@ -3218,6 +3232,10 @@ namespace NexusForever.Game.Spell
             SpellEffectUnitPropertyModifierSemantics propertyModifier = SpellEffectInterpreter.Interpret(info).UnitPropertyModifier;
             if (propertyModifier == null)
                 return;
+
+            Spell4StackGroupEntry stackGroup = spell.Parameters.SpellInfo.StackGroup;
+            if (stackGroup != null && stackGroup.StackCap > 0u)
+                target.EnforceSpellPropertyStackGroupCap(spell.Parameters.SpellInfo.Entry.Spell4StackGroupId, stackGroup.StackCap);
 
             SpellPropertyModifier modifier =
                 new SpellPropertyModifier(propertyModifier.Property,
