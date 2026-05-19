@@ -7056,3 +7056,102 @@ and returns the stored flags/wrapper value. All callers now use the proper name.
 | FUN_1403b4a10 | SpellTarget_LogValidationMask | SpellTarget_ValidateTargetRelationship label |
 | FUN_1403b4a20 | ValidTargetsCriteria_Evaluate | SpellTarget_ValidateTargetRelationship label |
 | FUN_14046c580 | Entity_GetFactionRelationship | SpellTarget_ValidateTargetRelationship label |
+
+---
+
+### ValidTargetsCriteria_Evaluate — CriteriaProxy Vtable Full Decode
+
+**Vtable at data address `140b66440` (concrete CriteriaProxy implementation).**
+
+A second abstract vtable exists at `140b66400` sharing slots 0/1 but with `_purecall` for slots 2-7.
+
+**CriteriaProxy struct layout (confirmed):**
+```c
+struct CriteriaProxy {
+    void**  vtable;      // [+0x00] points to vtable data at 140b66440
+    Entity* entity;      // [+0x08] entity pointer from SpellTarget_ValidateTargetRelationship local_10
+};
+```
+
+**Full vtable slot map:**
+
+| Data Addr  | Vtable Slot | Function Addr | Label / Semantic |
+|------------|-------------|---------------|-----------------|
+| 140b66440  | [+0x00]     | 1403b4910     | `CriteriaProxy_VTable0` (destructor/RTTI, 24 refs, role unconfirmed) |
+| 140b66448  | [+0x08]     | 1403b4a10     | `EntityCriteria_GetRelatedCriteriaThunk` — `MOV ECX,EDX; JMP Spell4ValidTargets_GetCriteriaById` |
+| 140b66450  | [+0x10]     | 1403b4940     | `EntityCriteria_GetFactionGroupId` — `[entity+0x18]+0x00` |
+| 140b66458  | [+0x18]     | 1403b4960     | `EntityCriteria_EvalSubCriteria` — 3-param recursive evaluator (checkType 9) |
+| 140b66460  | [+0x20]     | 1403b49a0     | `EntityCriteria_GetRaceId` — `entity+0xd8` |
+| 140b66468  | [+0x28]     | 1403b49b0     | `EntityCriteria_GetClassId` — `entity+0xdc` |
+| 140b66470  | [+0x30]     | 1403b49c0     | `EntityCriteria_GetAttr2_Unk118` — `[entity+0x118]->vtable[+0x18]()` virtual call |
+| 140b66478  | [+0x38]     | 1403b49e0     | `EntityCriteria_GetUnitRaceId` — `*[entity+0xd0]` |
+| 140b66480  | [+0x40]     | 1403b4a00     | `EntityCriteria_GetField0x140` — `entity+0x140` (role unconfirmed) |
+
+**`ValidTargetsCriteria_Evaluate` checkType → confirmed semantic:**
+
+| checkType | Vtable Slot | Function | Semantic | Confirmation Source |
+|-----------|-------------|----------|----------|---------------------|
+| 1 (must-match)   | [+0x10] | 1403b4940 | **FactionGroupId** = `[entity+0x18+0x00]` | Entity_GetFactionRelationship; entity+0x18 = faction-state struct |
+| 2 (must-not)     | [+0x10] | 1403b4940 | **FactionGroupId** (inverse) | same |
+| 3 (must-match)   | [+0x30] | 1403b49c0 | **attr2** = `[entity+0x118]->vtable[+0x18]()` | virtual call; component at +0x118 unidentified |
+| 4 (must-not)     | [+0x30] | 1403b49c0 | **attr2** (inverse) | same |
+| 5 (must-match)   | [+0x20] | 1403b49a0 | **RaceId** = `entity+0xd8` | Lua_GameUnit_GetRaceId @ 14064a080 |
+| 6 (must-not)     | [+0x20] | 1403b49a0 | **RaceId** (inverse) | same |
+| 7 (must-match)   | [+0x28] | 1403b49b0 | **ClassId** = `entity+0xdc` | Lua_GameUnit_GetClassId @ 14064a1a0 |
+| 8 (must-not)     | [+0x28] | 1403b49b0 | **ClassId** (inverse) | same |
+| 9                | [+0x18] | 1403b4960 | **Nested sub-criteria** (recursive, 3-param) | ValidTargetsCriteria_Evaluate body |
+| 10               | [+0x08] | 1403b4a10 | **Related-criteria lookup** (must-match, recursive) | thunk → Spell4ValidTargets_GetCriteriaById |
+| 11               | [+0x08] | 1403b4a10 | **Related-criteria lookup** (must-not, recursive) | same |
+| 12 (0xc, must-match) | [+0x38] | 1403b49e0 | **UnitRaceId** = `*[entity+0xd0]` | Lua_GameUnit_GetUnitRaceId @ 14064a100 |
+| 13 (0xd, must-not)  | [+0x38] | 1403b49e0 | **UnitRaceId** (inverse) | same |
+
+**Forwarding thunk `1403b4a10` mechanics:**
+- Assembly: `MOV ECX, EDX; JMP 0x140240b40`
+- When called from checkTypes 10/11: caller passes CriteriaProxy in RCX, criteria-entry ID (from values array `*piVar6`) in RDX
+- Thunk ignores proxy (RCX), copies ID to ECX, jumps to `Spell4ValidTargets_GetCriteriaById`
+- Returns pointer to criteria struct for recursive `ValidTargetsCriteria_Evaluate` call
+- **Previously mislabeled** as `SpellTarget_LogValidationMask`; corrected
+
+**`Spell4ValidTargets_GetCriteriaById` (`140240b40`):**
+- Takes a uint32 criteria ID, returns pointer to the criteria struct (int array)
+- Called by the thunk for types 10/11; likely called elsewhere for top-level criteria resolution
+
+**Entity field offsets confirmed from vtable decode + Lua_GameUnit cross-reference:**
+
+| Offset | Type   | Meaning | Source |
+|--------|--------|---------|--------|
+| +0x18  | ptr    | Faction-state component (first int = FactionGroupId) | EntityCriteria_GetFactionGroupId + Entity_GetFactionRelationship |
+| +0x24  | byte   | Dead flag (bit 0) | SpellTarget_ValidateTargetRelationship |
+| +0x80  | int32  | Entity type (0x14 = special faction path) | Entity_GetFactionRelationship |
+| +0xd0  | ptr    | UnitRace component (first int = UnitRaceId) | EntityCriteria_GetUnitRaceId + Lua_GameUnit_GetUnitRaceId |
+| +0xd8  | int32  | RaceId | EntityCriteria_GetRaceId + Lua_GameUnit_GetRaceId |
+| +0xdc  | int32  | ClassId | EntityCriteria_GetClassId + Lua_GameUnit_GetClassId |
+| +0x118 | ptr    | Unknown component (virtual attr2, vtable[+0x18] called) | EntityCriteria_GetAttr2_Unk118 |
+| +0x140 | int32  | Unknown int field (vtable slot 8) | EntityCriteria_GetField0x140 |
+
+**Remaining unknowns:**
+- `entity+0x118` component identity — what attribute does checkType 3/4 filter?
+- `entity+0x140` field semantic
+- `1403b4910` vtable slot 0 role
+
+**Server implication — no code change needed.**
+The server's `Spell4ValidTargets.TargetBitmask` (a simplified bitfield projection of the client's
+criteria rows) correctly covers the known criteria semantics. The new confirmed mappings
+(FactionGroupId, RaceId, ClassId, UnitRaceId) validate that the server's coarse bitmask approach
+is sufficient and the criteria system does not require server-side criteria row evaluation.
+
+---
+
+### Updated Function Name Cross-References (addendum)
+
+| Old FUN_ Reference | Proper Name | Notes |
+|--------------------|------------|-------|
+| FUN_140240b40 | Spell4ValidTargets_GetCriteriaById | Criteria ID→struct lookup; forwarding target of 1403b4a10 |
+| FUN_1403b4940 | EntityCriteria_GetFactionGroupId | vtable[+0x10]; entity+0x18+0x00 |
+| FUN_1403b4960 | EntityCriteria_EvalSubCriteria | vtable[+0x18]; checkType 9 |
+| FUN_1403b49a0 | EntityCriteria_GetRaceId | vtable[+0x20]; entity+0xd8 |
+| FUN_1403b49b0 | EntityCriteria_GetClassId | vtable[+0x28]; entity+0xdc |
+| FUN_1403b49c0 | EntityCriteria_GetAttr2_Unk118 | vtable[+0x30]; entity+0x118 virtual call |
+| FUN_1403b49e0 | EntityCriteria_GetUnitRaceId | vtable[+0x38]; *[entity+0xd0] |
+| FUN_1403b4a00 | EntityCriteria_GetField0x140 | vtable[+0x40]; entity+0x140 |
+| FUN_1403b4a10 | EntityCriteria_GetRelatedCriteriaThunk | vtable[+0x08]; previously mislabeled SpellTarget_LogValidationMask |

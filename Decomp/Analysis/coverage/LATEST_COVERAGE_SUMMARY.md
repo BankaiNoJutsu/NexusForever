@@ -4,9 +4,9 @@
 
 | Target | Functions | Durable labels | Interesting strings | Selected | Decompiled |
 | --- | --- | --- | --- | --- | --- |
-| `Houston64.exe` | 25129 | 7508 | 6395 | 1597 | 800 |
-| `StsConnLib64.MT.dll` | 4522 | 371 | 3406 | 863 | 800 |
-| `WildStar64.exe` | 24985 | 1144 | 11000 | 2353 | 800 |
+| `Houston64.exe` | 25129 | 7508 | 6395 | 1597 | 1000 |
+| `StsConnLib64.MT.dll` | 4522 | 371 | 3406 | 863 | 863 |
+| `WildStar64.exe` | 24985 | 1152 | 11000 | 2360 | 1000 |
 
 ## Opcode Coverage
 
