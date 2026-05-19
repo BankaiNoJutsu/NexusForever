@@ -2,7 +2,8 @@
 
 namespace NexusForever.Network.World.Message.Model.Loot
 {
-    // Trigger BindOnPickup dialog when looting an item
+    // Packet model retained for evidence-backed validation only.
+    // Runtime does not currently enqueue this opcode until bind-confirmation semantics are confirmed.
     [Message(GameMessageOpcode.ServerLootBindOnPickup)]
     public class ServerLootBindOnPickup : IWritable
     {

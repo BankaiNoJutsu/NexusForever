@@ -19,6 +19,7 @@
     <ProjectReference Include="..\NexusForever.Database.World\NexusForever.Database.World.csproj" />
     <ProjectReference Include="..\NexusForever.Game\NexusForever.Game.csproj" />
     <ProjectReference Include="..\NexusForever.Script.Instance\NexusForever.Script.Instance.csproj" />
+    <ProjectReference Include="..\NexusForever.WorldServer\NexusForever.WorldServer.csproj" />
   </ItemGroup>
 
   <ItemGroup>

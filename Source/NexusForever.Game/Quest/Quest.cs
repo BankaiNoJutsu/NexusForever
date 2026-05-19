@@ -65,6 +65,7 @@ namespace NexusForever.Game.Quest
 
         public ushort Id => (ushort)Info.Entry.Id;
         public IQuestInfo Info { get; }
+        public IPlayer Player => player;
 
         public QuestState State
         {

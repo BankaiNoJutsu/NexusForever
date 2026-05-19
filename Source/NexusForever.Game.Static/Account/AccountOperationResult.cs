@@ -20,6 +20,7 @@ namespace NexusForever.Game.Static.Account
         NoRegift                  = 0x000F,
         NoGifting                 = 0x0010,
         InvalidFriend             = 0x0011,
+        // The selected-client evidence only proves this enum value; the coupon request/response flow is still unmapped.
         InvalidCoupon             = 0x0012,
         CannotReturn              = 0x0013,
         Prereq                    = 0x0014,

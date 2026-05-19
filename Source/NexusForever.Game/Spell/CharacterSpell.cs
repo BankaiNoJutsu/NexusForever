@@ -11,7 +11,8 @@ namespace NexusForever.Game.Spell
     public class CharacterSpell : ICharacterSpell
     {
         // IsSelfSpellDelegate bitmask 0x85: bits 0, 2, 7 → types 0, 2, 7 are "self-spell" (no targeting cursor)
-        // SpellTarget_ResolveTargetEntity entity cases: 0,2,6,7 → caster entity; 1,3,5,8 → current target; 4/default → none
+        // SpellTarget_ResolveTargetEntity client entity cases: 0,2,6,7 -> caster entity; 1,3,5,8 -> current target; 4/default -> none.
+        // Server-side type 7 still resolves through the current visible target for effect application.
         private const uint TargetTypeNoExplicitTarget = 0u; // self/caster-centered (e.g., mine explosion spell 305)
         private const uint TargetTypeSingleTarget = 1u;
         private const uint TargetTypeSelfAoe = 2u;

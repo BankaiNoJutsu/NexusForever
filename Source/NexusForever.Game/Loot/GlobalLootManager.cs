@@ -540,6 +540,20 @@ namespace NexusForever.Game.Loot
             SendLootNotify(looter, owner.Guid);
         }
 
+        public bool TryGetLootRuntimeSnapshot(IPlayer looter, uint ownerUnitId, out LootRuntimeSnapshot snapshot)
+        {
+            snapshot = null;
+            if (looter == null)
+                return false;
+
+            LootInstance lootInstance = lootInstances.FirstOrDefault(i => i.OwnerUnitId == ownerUnitId && i.HasLooter(looter.CharacterId) && !i.HasExpired);
+            if (lootInstance == null)
+                return false;
+
+            snapshot = lootInstance.CreateRuntimeSnapshot(looter);
+            return true;
+        }
+
         public void GiveLoot(IPlayer looter, uint ownerUnitId, uint lootUnitId)
         {
             if (looter == null)

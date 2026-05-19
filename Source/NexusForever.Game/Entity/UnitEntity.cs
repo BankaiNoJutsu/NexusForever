@@ -63,6 +63,7 @@ namespace NexusForever.Game.Entity
         }
 
         private EntityDeathState? deathState;
+        private IUnitEntity killedBy;
 
         /// <summary>
         /// Determines whether or not this <see cref="IUnitEntity"/> is in combat.
@@ -420,6 +421,27 @@ namespace NexusForever.Game.Entity
             return procStates.Remove(effectId);
         }
 
+        public IReadOnlyCollection<ProcRegistrationSnapshot> CreateProcRegistrationSnapshot()
+        {
+            return procStates.OrderBy(state => state.Key)
+                .Select(state => new ProcRegistrationSnapshot(
+                    state.Key,
+                    state.Value.Spell4Id,
+                    state.Value.CastingId,
+                    state.Value.TriggerEvent,
+                    state.Value.TriggerSpell4Id,
+                    state.Value.Chance,
+                    state.Value.TargetData,
+                    state.Value.CooldownMsOrSentinel,
+                    state.Value.CooldownRemainingSeconds,
+                    state.Value.DataBits05,
+                    state.Value.DataBits06,
+                    state.Value.DataBits07,
+                    state.Value.DataBits08,
+                    state.Value.DataBits09))
+                .ToArray();
+        }
+
         public void ProbeProcEvent(string eventName, uint? triggerEvent, IUnitEntity source, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo effectInfo, IDamageDescription damageDescription, string phase)
         {
             if (procStates.Count == 0)
@@ -468,7 +490,14 @@ namespace NexusForever.Game.Entity
             if (!observedTriggerEvent.HasValue || observedTriggerEvent.Value != state.TriggerEvent)
                 return;
 
-            if (!TryResolveProcTarget(state.TargetData, source, target, out IUnitEntity resolvedTarget, out string skippedReason))
+            ProcDispatchEvidenceBoundarySnapshot boundary = ProcDispatchEvidenceBoundary.Describe(state.TriggerEvent, state.TargetData);
+            if (!boundary.IsConservativelyDispatchSupported || !boundary.TargetRoute.HasValue)
+            {
+                SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, 0u, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", boundary.BlockedReason);
+                return;
+            }
+
+            if (!TryResolveProcTarget(boundary.TargetRoute.Value, source, target, out IUnitEntity resolvedTarget, out string skippedReason))
             {
                 SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, 0u, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", skippedReason);
                 return;
@@ -511,33 +540,22 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        private bool TryResolveProcTarget(uint targetData, IUnitEntity source, IUnitEntity target, out IUnitEntity resolvedTarget, out string skippedReason)
+        private bool TryResolveProcTarget(ProcDispatchTargetRoute route, IUnitEntity source, IUnitEntity target, out IUnitEntity resolvedTarget, out string skippedReason)
         {
-            switch (targetData)
+            switch (route)
             {
-                case 0u:
-                case 1u:
-                case 2u:
-                case 9u:
+                case ProcDispatchTargetRoute.Holder:
                     resolvedTarget = this;
                     skippedReason = null;
                     return true;
-                case 4u:
-                case 10u:
-                case 12u:
-                case 14u:
-                case 17u:
-                case 18u:
-                case 20u:
-                case 34u:
-                case 36u:
+                case ProcDispatchTargetRoute.Counterpart:
                     resolvedTarget = ResolveProcCounterpartTarget(source, target);
                     skippedReason = resolvedTarget == null ? "missing-counterpart-target" : null;
                     return resolvedTarget != null;
                 default:
-                    resolvedTarget = ResolveProcCounterpartTarget(source, target) ?? this;
-                    skippedReason = null;
-                    return true;
+                    resolvedTarget = null;
+                    skippedReason = "unsupported-target-data";
+                    return false;
             }
         }
 
@@ -1960,7 +1978,10 @@ namespace NexusForever.Game.Entity
                 source.ProbeProcEvent("heal-other", ProcTriggerEventCandidate.HealOther, source, this, null, null, null, "after-apply");
 
             if (Health == 0)
+            {
+                killedBy = source;
                 OnDeath();
+            }
         }
 
         private void ApplyVitalClamps()
@@ -2086,6 +2107,12 @@ namespace NexusForever.Game.Entity
         {
             DeathState = EntityDeathState.JustDied;
             scriptCollection?.Invoke<IUnitScript>(s => s.OnDeath());
+
+            IUnitEntity killer = killedBy;
+            killedBy = null;
+            if (killer != null)
+                scriptCollection?.Invoke<IUnitScript>(s => s.OnKilled(killer));
+
             Map?.PublicEventManager.OnDeath(this);
 
             foreach (ISpell spell in pendingSpells)

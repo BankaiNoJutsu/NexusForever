@@ -57,7 +57,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemReturnPendingItemGroup returnPendingItemGroup)
         {
-            AccountOperationResult result = session.Account.InventoryManager.ReturnPendingItemGroup(returnPendingItemGroup.Group);
+            AccountOperationResult result = session.Account.InventoryManager.ReturnPendingItemGroup(session.Player, returnPendingItemGroup.Group);
             if (result != AccountOperationResult.Ok)
             {
                 log.LogDebug("Rejecting pending account item group return from player {PlayerGuid}: group {Group}, result {Result}.",
@@ -77,7 +77,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemGiftPendingItemGroupToCharacter giftPendingItemGroup)
         {
-            AccountOperationResult result = session.Account.InventoryManager.GiftPendingItemGroupToCharacter(giftPendingItemGroup.Group, giftPendingItemGroup.TargetCharacter);
+            AccountOperationResult result = session.Account.InventoryManager.GiftPendingItemGroupToCharacter(session.Player, giftPendingItemGroup.Group, giftPendingItemGroup.TargetCharacter);
             if (result != AccountOperationResult.Ok)
             {
                 log.LogDebug("Rejecting pending account item group character gift from player {PlayerGuid}: group {Group}, target {TargetCharacter}, result {Result}.",
@@ -97,7 +97,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemGiftPendingItemGroupToAccount giftPendingItemGroup)
         {
-            AccountOperationResult result = session.Account.InventoryManager.GiftPendingItemGroupToAccount(giftPendingItemGroup.Group, giftPendingItemGroup.TargetAccountId, giftPendingItemGroup.SenderCharacter);
+            AccountOperationResult result = session.Account.InventoryManager.GiftPendingItemGroupToAccount(session.Player, giftPendingItemGroup.Group, giftPendingItemGroup.TargetAccountId, giftPendingItemGroup.SenderCharacter);
             if (result != AccountOperationResult.Ok)
             {
                 log.LogDebug("Rejecting pending account item group account gift from player {PlayerGuid}: group {Group}, target account {TargetAccountId}, unknown0 {Unknown0}, sender {SenderCharacter}, result {Result}.",

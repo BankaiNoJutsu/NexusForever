@@ -87,7 +87,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
                 StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
                     purchase.OfferId, purchase.CurrencyId,
-                    accountItemIds => recipient.Account.InventoryManager.AddPendingItemGroup(accountItemIds, StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session), recipientIdentity),
+                    accountItemIds => recipient.Account.InventoryManager.AddPendingItemGroup(accountItemIds, StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session), recipientIdentity, senderAccountId: session.Account.Id),
                     "account gift");
                 return;
             }

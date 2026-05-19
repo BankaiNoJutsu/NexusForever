@@ -14,5 +14,26 @@ namespace NexusForever.Game.Static.Spell
         public const uint DealDamage    = 12u;
         public const uint ReceiveDamage = 16u;
         public const uint HealOther     = 20u;
+
+        public static bool IsConservativelySupported(uint triggerEvent)
+        {
+            return TryGetConservativeLabel(triggerEvent, out _);
+        }
+
+        public static bool TryGetConservativeLabel(uint triggerEvent, out string label)
+        {
+            label = triggerEvent switch
+            {
+                KillTarget    => "kill-target candidate",
+                EnterCombat   => "enter-combat candidate",
+                ActionCastAny => "action-cast-any candidate",
+                DealDamage    => "deal-damage candidate",
+                ReceiveDamage => "receive-damage candidate",
+                HealOther     => "heal-other candidate",
+                _             => null
+            };
+
+            return label != null;
+        }
     }
 }

@@ -53,6 +53,7 @@ then relog before retrying.
 !spell cast4 7116
 !spell inspect4 4046
 !spell cast4 4046
+!spell procstates
 ```
 
 When the question depends on the real client-originated trigger spell rather than the command-driven proc holder application, arm the next live request first:
@@ -112,6 +113,7 @@ Current conservative routing rules are:
 - trigger events `1`, `6`, `10`, `12`, `16`, and `20` are supported
 - `targetData` `1`, `2`, and `9` target the proc holder
 - `targetData` `4` and `12` target the counterpart unit in the observed event
+- `ProcDispatchEvidenceBoundary` is the single runtime gate for proc dispatch, so unsupported trigger events and unsupported `targetData` tails stay evidence-only even if a future probe hook reports a matching raw value
 - cooldown from `DataBits04` is consumed only when the trigger cast queues successfully
 - same-chain reentry is blocked per proc effect id
 
@@ -130,7 +132,15 @@ Current probe hook points:
 - `heal-other` / `heal-self` and shield-heal equivalents after heal calculation and before application
 - `target-killed` after normal damage, `Kill`, or support-stuck death application
 
-Each `SpellDiagnostics proc-probe` row includes the proc holder, source/target, observed event candidate, whether it matches the active proc state's trigger event, trigger spell/casting/effect context, damage or heal amounts when available, and the raw proc fields. `SpellDiagnostics proc-dispatch` now records the resolved target, cooldown state, cast action, and skipped reason for matched proc states.
+Each `SpellDiagnostics proc-probe` row includes the proc holder, source/target, observed event candidate, whether it matches the active proc state's trigger event, trigger spell/casting/effect context, damage or heal amounts when available, and the raw proc fields. `SpellDiagnostics proc-dispatch` now records the resolved target, cooldown state, cast action, skipped reason, and the conservative dispatch boundary for matched proc states.
+
+`!spell procstates` now dumps the active proc registrations on the selected unit or invoker, including the conservative event label, target-data route label, cooldown state, raw tail bits, and the current dispatch boundary. Use it immediately after `!spell cast4 <proc-holder>` to confirm registration before collecting live evidence with `!spell capturenext`.
+
+Implemented on 2026-05-19: proc diagnostics now keep a bounded recent registration/probe/dispatch history per holder even when trace logging is off. Use:
+
+- `!spell procreport` to export a structured JSON artifact under `artifacts\verify\proc-evidence` with active registrations, recent probe/dispatch history, and unsupported-tail summaries
+- `!spell procunsupported` for a compact in-game summary of unsupported trigger-event and `targetData` tails plus the recent blocked/skipped reasons
+- `!spell procstates` for the current active registrations before triggering the live action you want to compare
 
 ## Next Evidence Step
 

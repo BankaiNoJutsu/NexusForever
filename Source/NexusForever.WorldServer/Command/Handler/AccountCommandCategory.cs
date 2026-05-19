@@ -1,12 +1,15 @@
-﻿using NexusForever.Cryptography;
+using NexusForever.Cryptography;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
+using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Account.Inventory;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.Shared.Configuration;
 using NexusForever.WorldServer.Command.Context;
 using NexusForever.WorldServer.Command.Convert;
 using NexusForever.WorldServer.Command.Static;
+using NexusForever.WorldServer.Network;
 
 namespace NexusForever.WorldServer.Command.Handler
 {
@@ -45,6 +48,55 @@ namespace NexusForever.WorldServer.Command.Handler
                 context.SendMessage($"Account {email} successfully removed!");
             else
                 context.SendMessage($"Cannot find account with Email: {email}");
+        }
+
+        [Command(Permission.Account, "Arm runtime evidence export for the next blocked pending-group transfer attempted by the invoker.", "capturenext", "capture", "evidencenext")]
+        public void HandleAccountCaptureNext(ICommandContext context)
+        {
+            if (!TryGetInvokerSession(context, out IWorldSession session))
+                return;
+
+            session.ArmNextAccountRuntimeEvidenceCapture();
+            context.SendMessage($"Next blocked pending-group transfer for this player will export a runtime evidence artifact under {AccountRuntimeEvidenceCollector.GetOutputDirectoryHint()}. Use !account couponblockers for the current coupon blocker snapshot.");
+        }
+
+        [Command(Permission.Account, "Export a coupon blocker report using the current enum-only mapping and unsupported-path notes.", "couponblockers", "couponreport")]
+        public void HandleAccountCouponBlockers(ICommandContext context)
+        {
+            if (!TryGetInvokerPlayer(context, out IPlayer player))
+                return;
+
+            string outputPath = AccountRuntimeEvidenceCollector.ExportCouponBlockerReport(
+                player,
+                "manual-command",
+                "Manual coupon blocker snapshot exported without mapping a coupon request packet or implementing coupon runtime policy.");
+            if (string.IsNullOrWhiteSpace(outputPath))
+            {
+                context.SendError("Failed to export coupon blocker report. Check server logs for details.");
+                return;
+            }
+
+            context.SendMessage($"Coupon blocker report exported to {outputPath}.");
+        }
+
+        private static bool TryGetInvokerPlayer(ICommandContext context, out IPlayer player)
+        {
+            player = context.Invoker as IPlayer;
+            if (player != null)
+                return true;
+
+            context.SendError("This command requires a player invoker.");
+            return false;
+        }
+
+        private static bool TryGetInvokerSession(ICommandContext context, out IWorldSession session)
+        {
+            session = (context.Invoker as IPlayer)?.Session as IWorldSession;
+            if (session != null)
+                return true;
+
+            context.SendError("This command requires a player invoker with an active world session.");
+            return false;
         }
     }
 }

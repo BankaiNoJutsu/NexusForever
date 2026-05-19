@@ -2,7 +2,8 @@
 
 namespace NexusForever.Network.World.Message.Model.Loot
 {
-    // Sets CanLoot flag on the loot
+    // Packet model retained for evidence-backed validation only.
+    // Runtime currently sends CanLoot inside ServerLootNotify instead of enqueuing this opcode.
     [Message(GameMessageOpcode.ServerLootCanLoot)]
     public class ServerLootCanLoot : IWritable
     {

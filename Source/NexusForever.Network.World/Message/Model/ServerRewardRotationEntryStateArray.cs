@@ -18,6 +18,7 @@ namespace NexusForever.Network.World.Message.Model
 
             public void Write(GamePacketWriter writer)
             {
+                RewardRotationWireValidation.ValidateEntryStateTypeId(TypeId, $"{nameof(ServerRewardRotationEntryStateArray)} entry row");
                 writer.Write(TypeId, 3u);
                 writer.Write(ContentId);
                 writer.Write(RewardTypeId);
@@ -31,7 +32,11 @@ namespace NexusForever.Network.World.Message.Model
         public void Write(GamePacketWriter writer)
         {
             writer.Write(Entries.Count);
-            Entries.ForEach(e => e.Write(writer));
+            for (int i = 0; i < Entries.Count; i++)
+            {
+                EntryStateRow entry = Entries[i] ?? throw new InvalidOperationException($"{nameof(ServerRewardRotationEntryStateArray)} entry {i} is null.");
+                entry.Write(writer);
+            }
         }
     }
 }

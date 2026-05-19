@@ -1,5 +1,6 @@
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Achievement;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
@@ -228,8 +229,6 @@ namespace NexusForever.Game.Loot
 
         public ServerLootWinner BuildRollWinnerMessage(out GameIdentity winnerIdentity)
         {
-            rollFinalised = true;
-
             List<LootRollRecord> allRolls = [];
             foreach (GameIdentity identity in eligibleIdentities.Values)
             {
@@ -281,6 +280,23 @@ namespace NexusForever.Game.Loot
             };
         }
 
+        public void ResolveRollWinner(GameIdentity identity, uint guid)
+        {
+            ArgumentNullException.ThrowIfNull(identity);
+
+            rollFinalised = true;
+            ClearPendingLootState();
+            SetWinner(identity, guid);
+        }
+
+        public void ResolveAssignedWinner(GameIdentity identity, uint guid)
+        {
+            ArgumentNullException.ThrowIfNull(identity);
+
+            ClearPendingLootState();
+            SetWinner(identity, guid);
+        }
+
         private static ServerLootWinner.LootRoll BuildNetworkRoll(LootRollRecord record)
         {
             return new ServerLootWinner.LootRoll
@@ -303,6 +319,8 @@ namespace NexusForever.Game.Loot
 
         public void MarkDeliveredWithoutWinner()
         {
+            rollFinalised = true;
+            ClearPendingLootState();
             Delivered = true;
         }
 
@@ -454,6 +472,29 @@ namespace NexusForever.Game.Loot
             return true;
         }
 
+        public LootRuntimeSnapshotItem CreateRuntimeSnapshot(ulong viewerCharacterId, bool viewerIsTrackedLooter)
+        {
+            return new LootRuntimeSnapshotItem
+            {
+                LootUnitId = Id,
+                Type = Type,
+                ItemId = StaticId,
+                Amount = Amount,
+                Delivered = Delivered,
+                ViewerCanLoot = viewerIsTrackedLooter && viewerCharacterId != 0ul && CanLoot(viewerCharacterId),
+                RequiresRoll = RequiresRoll,
+                OnlyMasterLootable = OnlyMasterLootable,
+                RollTime = RollTime,
+                ItemQuality2Id = ItemQualityId,
+                WinnerCharacterId = WinnerCharacterId,
+                WinnerGuid = WinnerGuid,
+                EligibleCharacterIds = eligibleIdentities.Keys.OrderBy(id => id).ToList(),
+                MasterCharacterIds = masterIdentities.Keys.OrderBy(id => id).ToList(),
+                MasterCandidateCharacterIds = masterLootCandidates.Keys.OrderBy(id => id).ToList(),
+                MasterListCount = (uint)masterLootCandidates.Count
+            };
+        }
+
         private IEnumerable<NetworkLootItem> BuildGrantedAccountCurrencyNotificationItems()
         {
             uint itemCount = Math.Min(Amount, ACCOUNT_CURRENCY_SHOWER_ITEM_LIMIT);
@@ -475,6 +516,16 @@ namespace NexusForever.Game.Loot
                     ItemQuality2Id = ItemQualityId
                 };
             }
+        }
+
+        private void ClearPendingLootState()
+        {
+            RequiresRoll       = false;
+            OnlyMasterLootable = false;
+            rollTimer          = null;
+
+            masterIdentities.Clear();
+            masterLootCandidates.Clear();
         }
 
         private uint GetItemQualityId()

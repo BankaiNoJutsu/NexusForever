@@ -1,7 +1,8 @@
-﻿using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Spell.Effect;
@@ -138,6 +139,79 @@ namespace NexusForever.WorldServer.Command.Handler
 
             session.ArmNextClientSpellEvidenceCapture(true);
             context.SendMessage($"Next supported real client spell request will export runtime evidence and emit guarded diagnostic broadcasts under {SpellRuntimeEvidenceCollector.GetOutputDirectoryHint()}.");
+        }
+
+        [Command(Permission.Spell, "List active proc registrations on the selected unit or invoker with conservative dispatch evidence labels.", "procstates", "procs", "procstate")]
+        [CommandTarget(typeof(IUnitEntity))]
+        public void HandleSpellInspectProcStates(ICommandContext context)
+        {
+            IUnitEntity target = context.GetTargetOrInvoker<IUnitEntity>();
+            IReadOnlyCollection<ProcRegistrationSnapshot> procStates = target.CreateProcRegistrationSnapshot();
+            if (procStates.Count == 0)
+            {
+                context.SendMessage($"Unit {target.Guid} has no active proc registrations.");
+                return;
+            }
+
+            context.SendMessage($"Unit {target.Guid} active proc registrations: {procStates.Count}.");
+            foreach (ProcRegistrationSnapshot procState in procStates)
+            {
+                ProcDispatchEvidenceBoundarySnapshot boundary = ProcDispatchEvidenceBoundary.Describe(procState.TriggerEvent, procState.TargetData);
+                context.SendMessage(
+                    $"Proc effect {procState.EffectId}: holder {DescribeSpell4(procState.Spell4Id)}, casting {procState.CastingId}, trigger event {procState.TriggerEvent} ({boundary.TriggerEventLabel}, {(boundary.TriggerEventSupported ? "dispatch-supported" : "dispatch-unsupported")}), trigger spell4 {DescribeSpell4(procState.TriggerSpell4Id)}, chance {procState.Chance:R}, target data {procState.TargetData} ({boundary.TargetDataLabel}, route {boundary.TargetRouteLabel}), cooldown/sentinel {procState.CooldownMsOrSentinel}, cooldownRemaining {procState.CooldownRemainingSeconds:R}s, boundary {boundary.DispatchSupportLabel}, data {procState.DataBits05}/{procState.DataBits06}/{procState.DataBits07}/{procState.DataBits08}/{procState.DataBits09}");
+            }
+
+            context.SendMessage($"Use !spell capturenext before the real client action, !spell procreport after the live event for a structured registration/probe/dispatch artifact under {ProcRuntimeEvidenceCollector.GetOutputDirectoryHint()}, or !spell procunsupported for a compact unsupported-tail summary.");
+        }
+
+        [Command(Permission.Spell, "Export a structured proc evidence report for the selected unit or invoker, including recent registration/probe/dispatch observations and unsupported-tail summaries.", "procreport", "procevidence", "procreview")]
+        [CommandTarget(typeof(IUnitEntity))]
+        public void HandleSpellProcReport(ICommandContext context)
+        {
+            IUnitEntity target = context.GetTargetOrInvoker<IUnitEntity>();
+            ProcRuntimeEvidenceSummary summary = ProcRuntimeEvidenceCollector.CreateSummary(target);
+            string outputPath = ProcRuntimeEvidenceCollector.ExportReport(
+                target,
+                "manual-command",
+                "Manual proc evidence report exported without widening unsupported trigger-event or targetData dispatch.");
+            if (string.IsNullOrWhiteSpace(outputPath))
+            {
+                context.SendError("Failed to export proc evidence report. Check server logs for details.");
+                return;
+            }
+
+            context.SendMessage(
+                $"Proc evidence report exported to {outputPath} (active {summary.ActiveRegistrationCount}, unsupported active {summary.UnsupportedRegistrationCount}, recent observations {summary.RecentObservationCount}, recent unsupported {summary.RecentUnsupportedObservationCount}).");
+        }
+
+        [Command(Permission.Spell, "Summarize unsupported proc trigger-event and targetData tails on the selected unit or invoker, plus recent evidence-only probe/dispatch observations.", "procunsupported", "proctails", "proctail")]
+        [CommandTarget(typeof(IUnitEntity))]
+        public void HandleSpellProcUnsupported(ICommandContext context)
+        {
+            IUnitEntity target = context.GetTargetOrInvoker<IUnitEntity>();
+            ProcRuntimeEvidenceSummary summary = ProcRuntimeEvidenceCollector.CreateSummary(target);
+            if (summary.UnsupportedRegistrationCount == 0 && summary.RecentUnsupportedObservationCount == 0)
+            {
+                context.SendMessage($"Unit {target.Guid} has no unsupported proc trigger-event or targetData tails in the active registrations or recent observation buffer. Use !spell procreport for the full structured artifact under {ProcRuntimeEvidenceCollector.GetOutputDirectoryHint()}.");
+                return;
+            }
+
+            var builder = new StringBuilder();
+            builder.AppendLine($"Unit {target.Guid} unsupported proc evidence: active {summary.UnsupportedRegistrationCount}/{summary.ActiveRegistrationCount}, recent unsupported observations {summary.RecentUnsupportedObservationCount}/{summary.RecentObservationCount}.");
+
+            if (summary.UnsupportedActiveTriggerEvents.Count > 0)
+                builder.AppendLine($"Active unsupported trigger events: {FormatProcEvidenceCounts(summary.UnsupportedActiveTriggerEvents)}.");
+            if (summary.UnsupportedActiveTargetData.Count > 0)
+                builder.AppendLine($"Active unsupported targetData tails: {FormatProcEvidenceCounts(summary.UnsupportedActiveTargetData)}.");
+            if (summary.RecentUnsupportedTriggerEvents.Count > 0)
+                builder.AppendLine($"Recent unsupported proc trigger events: {FormatProcEvidenceCounts(summary.RecentUnsupportedTriggerEvents)}.");
+            if (summary.RecentUnsupportedTargetData.Count > 0)
+                builder.AppendLine($"Recent unsupported proc targetData tails: {FormatProcEvidenceCounts(summary.RecentUnsupportedTargetData)}.");
+            if (summary.RecentBlockedReasons.Count > 0)
+                builder.AppendLine($"Recent blocked or skipped reasons: {FormatProcEvidenceCounts(summary.RecentBlockedReasons)}.");
+
+            builder.AppendLine($"Use !spell procreport to export the full registration/probe/dispatch artifact under {ProcRuntimeEvidenceCollector.GetOutputDirectoryHint()} without widening dispatch.");
+            context.SendMessage(builder.ToString());
         }
 
         [Command(Permission.Spell, "Inspect decoded spell effect rows for a base spell tier.", "inspect")]
@@ -346,18 +420,33 @@ namespace NexusForever.WorldServer.Command.Handler
 
         private static string DescribeProcTriggerEventCandidate(uint triggerEvent)
         {
-            string label = triggerEvent switch
-            {
-                ProcTriggerEventCandidate.KillTarget    => "kill-target candidate",
-                ProcTriggerEventCandidate.EnterCombat   => "enter-combat candidate",
-                ProcTriggerEventCandidate.ActionCastAny => "action-cast-any candidate",
-                ProcTriggerEventCandidate.DealDamage    => "deal-damage candidate",
-                ProcTriggerEventCandidate.ReceiveDamage => "receive-damage candidate",
-                ProcTriggerEventCandidate.HealOther     => "heal-other candidate",
-                _                                       => null
-            };
+            ProcDispatchEvidenceBoundarySnapshot boundary = ProcDispatchEvidenceBoundary.Describe(triggerEvent, 1u);
+            if (!boundary.TriggerEventSupported)
+                return " (dispatch-unsupported, evidence-only)";
 
-            return label != null ? $" ({label})" : string.Empty;
+            return $" ({boundary.TriggerEventLabel}, dispatch-supported)";
+        }
+
+        private static string DescribeProcTargetDataCandidate(uint targetData)
+        {
+            ProcDispatchEvidenceBoundarySnapshot boundary = ProcDispatchEvidenceBoundary.Describe(ProcTriggerEventCandidate.DealDamage, targetData);
+            if (!boundary.TargetDataSupported)
+                return " (dispatch-unsupported, evidence-only tail)";
+
+            return $" ({boundary.TargetDataLabel}, route {boundary.TargetRouteLabel}, dispatch-supported)";
+        }
+
+        private static string FormatProcEvidenceCounts(IEnumerable<ProcRuntimeEvidenceValueCount> counts)
+        {
+            return string.Join(", ", counts.Select(count =>
+                !string.IsNullOrWhiteSpace(count.Label)
+                    ? $"{count.Value} ({count.Label}) x{count.Count}"
+                    : $"{count.Value} x{count.Count}"));
+        }
+
+        private static string FormatProcEvidenceCounts(IEnumerable<ProcRuntimeEvidenceStringCount> counts)
+        {
+            return string.Join(", ", counts.Select(count => $"{count.Value} x{count.Count}"));
         }
 
         private static string DescribeCombatLogHandlerCandidate(SpellEffectType effectType)
@@ -777,7 +866,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 return $"threat transfer mode {effect.ThreatTransfer.Mode}, ratio/percent {effect.ThreatTransfer.RatioOrPercent:R}, data {effect.ThreatTransfer.DataBits02}/{effect.ThreatTransfer.DataBits03}/{effect.ThreatTransfer.DataBits04}/{effect.ThreatTransfer.DataBits05}";
 
             if (effect.Proc != null)
-                return $"proc trigger event {effect.Proc.TriggerEvent}{DescribeProcTriggerEventCandidate(effect.Proc.TriggerEvent)}, trigger spell4 {DescribeSpell4(effect.Proc.TriggerSpell4Id)}, chance {effect.Proc.Chance:R}, target data {effect.Proc.TargetData}, cooldown/sentinel {effect.Proc.CooldownMsOrSentinel}, data {effect.Proc.DataBits05}/{effect.Proc.DataBits06}/{effect.Proc.DataBits07}/{effect.Proc.DataBits08}/{effect.Proc.DataBits09}";
+                return $"proc trigger event {effect.Proc.TriggerEvent}{DescribeProcTriggerEventCandidate(effect.Proc.TriggerEvent)}, trigger spell4 {DescribeSpell4(effect.Proc.TriggerSpell4Id)}, chance {effect.Proc.Chance:R}, target data {effect.Proc.TargetData}{DescribeProcTargetDataCandidate(effect.Proc.TargetData)}, cooldown/sentinel {effect.Proc.CooldownMsOrSentinel}, data {effect.Proc.DataBits05}/{effect.Proc.DataBits06}/{effect.Proc.DataBits07}/{effect.Proc.DataBits08}/{effect.Proc.DataBits09}";
 
             if (effect.DelayDeath != null)
                 return $"delay death mode {effect.DelayDeath.Mode}, trigger spell4 {DescribeSpell4(effect.DelayDeath.TriggerSpell4Id)}, trigger delay {effect.DelayDeath.TriggerDelayMs}ms, data {effect.DelayDeath.DataBits03}/{effect.DelayDeath.DataBits04}/{effect.DelayDeath.DataBits05}/{effect.DelayDeath.DataBits06}/{effect.DelayDeath.DataBits07}/{effect.DelayDeath.DataBits08}/{effect.DelayDeath.DataBits09}";

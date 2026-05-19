@@ -7,7 +7,7 @@ using NexusForever.Network.Session;
 
 namespace NexusForever.WorldServer.Network
 {
-    public interface IWorldSession : IGameSession
+    public interface IWorldSession : IGameSession, ILootEvidenceCaptureSession, IAccountRuntimeEvidenceCaptureSession, IRewardRotationEvidenceCaptureSession
     {
         IAccount Account { get; }
         IPlayer Player { get; set; }
@@ -27,9 +27,9 @@ namespace NexusForever.WorldServer.Network
         /// </summary>
         void Initialise(AccountModel account);
 
+        void SetEncryptionKey(byte[] sessionKey);
+
         void ArmNextClientSpellEvidenceCapture(bool emitDiagnosticSpellBroadcasts = false);
         bool TryConsumeNextClientSpellEvidenceCapture(out bool emitDiagnosticSpellBroadcasts);
-
-        void SetEncryptionKey(byte[] sessionKey);
     }
 }

@@ -3,8 +3,8 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model.Loot
 {
-    // Notifies the player when someone else loots an item.
-    // Ignored if LooterUnitId is the player's UnitId
+    // Packet model retained for evidence-backed validation only.
+    // Runtime does not currently enqueue this packet; ChatFormatLoot.LootUnitId must match LootUnitId if it is wired later.
     [Message(GameMessageOpcode.ServerLootNotification)]
     public class ServerLootNotification : IWritable
     {

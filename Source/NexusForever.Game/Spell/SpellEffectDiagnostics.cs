@@ -825,6 +825,15 @@ namespace NexusForever.Game.Spell
 
         public static void TraceProc(ISpell spell, IUnitEntity target, SpellEffectProcSemantics proc, bool applied, bool removed, string skippedReason)
         {
+            ProcRuntimeEvidenceCollector.RecordProcRegistration(
+                target?.Guid ?? 0u,
+                spell?.Parameters?.SpellInfo?.Entry?.Id ?? 0u,
+                spell?.CastingId ?? 0u,
+                proc,
+                applied,
+                removed,
+                skippedReason);
+
             if (!log.IsTraceEnabled)
                 return;
 
@@ -858,6 +867,37 @@ namespace NexusForever.Game.Spell
 
         public static void TraceProcProbe(IUnitEntity holder, string eventName, string phase, uint? observedTriggerEvent, uint sourceGuid, uint targetGuid, uint triggerSpell4Id, uint triggerCastingId, uint triggerSpell4EffectId, IDamageDescription damage, uint procEffectId, uint procSpell4Id, uint procCastingId, uint procTriggerEvent, uint procTriggerSpell4Id, float procChance, uint procTargetData, uint procCooldownMsOrSentinel, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09)
         {
+            ProcRuntimeEvidenceCollector.RecordProcProbe(
+                holder?.Guid ?? 0u,
+                eventName,
+                phase,
+                observedTriggerEvent,
+                sourceGuid,
+                targetGuid,
+                triggerSpell4Id,
+                triggerCastingId,
+                triggerSpell4EffectId,
+                damage?.RawDamage,
+                damage?.AdjustedDamage,
+                damage?.AbsorbedAmount,
+                damage?.ShieldAbsorbAmount,
+                damage?.OverkillAmount,
+                damage?.KilledTarget,
+                damage?.CombatResult.ToString(),
+                procEffectId,
+                procSpell4Id,
+                procCastingId,
+                procTriggerEvent,
+                procTriggerSpell4Id,
+                procChance,
+                procTargetData,
+                procCooldownMsOrSentinel,
+                dataBits05,
+                dataBits06,
+                dataBits07,
+                dataBits08,
+                dataBits09);
+
             if (!log.IsTraceEnabled)
                 return;
 
@@ -905,6 +945,26 @@ namespace NexusForever.Game.Spell
 
         public static void TraceProcDispatch(IUnitEntity holder, string eventName, string phase, uint? observedTriggerEvent, uint sourceGuid, uint targetGuid, uint resolvedTargetGuid, uint procEffectId, uint procSpell4Id, uint procCastingId, uint procTriggerEvent, uint procTriggerSpell4Id, float procChance, uint procTargetData, uint procCooldownMsOrSentinel, double procCooldownRemainingSeconds, string action, string skippedReason)
         {
+            ProcRuntimeEvidenceCollector.RecordProcDispatch(
+                holder?.Guid ?? 0u,
+                eventName,
+                phase,
+                observedTriggerEvent,
+                sourceGuid,
+                targetGuid,
+                resolvedTargetGuid,
+                procEffectId,
+                procSpell4Id,
+                procCastingId,
+                procTriggerEvent,
+                procTriggerSpell4Id,
+                procChance,
+                procTargetData,
+                procCooldownMsOrSentinel,
+                procCooldownRemainingSeconds,
+                action,
+                skippedReason);
+
             if (!log.IsTraceEnabled)
                 return;
 

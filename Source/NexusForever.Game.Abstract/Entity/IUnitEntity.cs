@@ -64,6 +64,11 @@ namespace NexusForever.Game.Abstract.Entity
         bool RemoveProc(uint effectId);
 
         /// <summary>
+        /// Create a snapshot of active proc registrations for debugging and evidence capture.
+        /// </summary>
+        IReadOnlyCollection<ProcRegistrationSnapshot> CreateProcRegistrationSnapshot();
+
+        /// <summary>
         /// Emit diagnostic-only evidence for active proc states against an observed runtime event.
         /// </summary>
         void ProbeProcEvent(string eventName, uint? triggerEvent, IUnitEntity source, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo effectInfo, IDamageDescription damageDescription, string phase);

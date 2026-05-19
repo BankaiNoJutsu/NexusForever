@@ -40,6 +40,8 @@ Remaining work:
 
 Suggested validation:
 - Capture a client session where loot bag, solo corpse loot, need/greed loot, and master loot all render.
+- Use `!loot capturenext` before the live action to export `artifacts\verify\loot-evidence\*.json`; the artifact records the current `LootItem` field/boolean order, the runtime `ParentUnitId` mirror, and shape-only payload references for `ServerLootNotification`, `ServerLootCanLoot`, and `ServerLootBindOnPickup` without wiring them into gameplay.
+- Use `!loot inspect [ownerUnitId]` (or target the corpse/container first) to dump the active runtime loot snapshot before comparing packet bytes.
 - If one mode breaks, inspect the first differing boolean field before touching gameplay logic.
 
 ### P1: Account item cooldowns and operation result
@@ -50,8 +52,8 @@ Current status:
 - Current claim path uses `ClientAccountItemTake` opcode `0x0839`, which is the same opcode old branch called `ClientAccountItemBind`.
 - Current take/claim success and failure path now sends `ServerAccountOperationResult = 0x0970` with 32-bit `AccountOperation` and `AccountOperationResult` fields.
 - Account-item cooldowns are persisted in auth DB table `account_item_cooldown`, initialized from `AccountItemCooldownGroup.tbl`, checked before claim, triggered for known cooldown groups, and sent with `ServerAccountItemCooldownSet`.
-- Unsupported pending account-item group claim/return paths now refresh the authoritative empty pending list and send `ServerAccountOperationResult` with `ClaimPending`/`ReturnPending` plus `InvalidPendingItem`.
-- Pending group gift request packets are now parsed: `0x03F2` is `GiftPendingItemGroupToCharacter` with group key plus target character identity, and `0x03F1` is `GiftPendingItemGroupToAccount` with group key, a 64-bit target account field, a 32-bit field, and current-character identity. Gifting remains non-mutating and returns `GiftItem` + `NoGifting`.
+- Pending account-item groups now keep authoritative runtime list state: claim removes the group after moving items into account inventory, unsupported/failing claim/return/gift attempts resend the current pending list before `ServerAccountOperationResult`, and return uses `CannotReturn` while external gift retries use `NoRegift` when a safe route is not available.
+- Pending group gift request packets are actionable within the current bounded model: `0x03F2` routes an ungifted pending group to an online target character/account while preserving the character target identity, and `0x03F1` validates the embedded current-character identity before routing an ungifted pending group to an online target account. Returned groups route back only to the recorded online sender account.
 
 Old branch behavior:
 - Tracks `AccountItemCooldown` records in auth DB.
@@ -67,7 +69,7 @@ Evidence:
 
 Remaining work:
 - Confirm retail cooldown durations beyond the mapped old-branch groups `1`, `2`, and `3` if more groups appear in current data.
-- Map non-empty pending group storage/delivery, actual gift delivery rules, coupon request packets, and exact coupon operation handling before enabling server-side mutation.
+- Offline pending-group persistence/delivery, unmapped coupon request packets, and exact coupon operation handling remain blocked pending further evidence.
 
 ### P1: Group loot edge semantics
 
@@ -100,6 +102,7 @@ Current packet models exist but are not wired:
 
 Remaining work:
 - Map these from decompile/sniff before use. They may be needed for retail-like group loot feedback, BoP prompts, and delayed can-loot updates after roll/master resolution.
+- Compare the live-capture template payloads from `artifacts\verify\loot-evidence` against client sniffs before wiring any of these opcodes into gameplay.
 - `ChatFormatLoot` says its `LootUnitId` must match `ServerLootNotification`, so group loot chat and notification path should be validated together.
 
 ### P2: Account-currency grant model cleanup

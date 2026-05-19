@@ -55,5 +55,12 @@ namespace NexusForever.Script.Template
         void OnDeath()
         {
         }
+
+        /// <summary>
+        /// Invoked when <see cref="IUnitEntity"/> is killed, providing the killer.
+        /// </summary>
+        void OnKilled(IUnitEntity killer)
+        {
+        }
     }
 }

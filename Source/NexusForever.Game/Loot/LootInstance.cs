@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Loot;
+using NexusForever.Game.Abstract.Loot;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Shared;
@@ -73,6 +74,7 @@ namespace NexusForever.Game.Loot
         public void SendLootNotify(IPlayer player, bool includeGrantedItems = false)
         {
             List<NetworkLootItem> networkLootItems = [];
+            List<LootPacketDiagnostics.NotifyItemState> diagnosticItems = [];
             foreach (LootInstanceItem item in lootItems.Values)
             {
                 if (item.Delivered)
@@ -84,6 +86,7 @@ namespace NexusForever.Game.Loot
                     {
                         grantedItem.Explosion = Explosion;
                         networkLootItems.Add(grantedItem);
+                        diagnosticItems.Add(LootPacketDiagnostics.CaptureNotifyItemState(item, grantedItem));
                     }
 
                     continue;
@@ -93,21 +96,46 @@ namespace NexusForever.Game.Loot
                 networkLootItem.CanLoot = HasLooter(player.CharacterId) && item.CanLoot(player.CharacterId);
                 networkLootItem.Explosion = Explosion;
                 networkLootItems.Add(networkLootItem);
+                diagnosticItems.Add(LootPacketDiagnostics.CaptureNotifyItemState(item, networkLootItem));
             }
 
             if (networkLootItems.Count == 0)
             {
+                LootPacketDiagnostics.TraceLootNotifySuppressed(
+                    player.CharacterId,
+                    OwnerUnitId,
+                    includeGrantedItems,
+                    Explosion,
+                    lootItems.Count,
+                    lootItems.Values.Count(item => item.Delivered));
+                LootRuntimeEvidenceCollector.RecordSuppressedNotifyIfArmed(
+                    player,
+                    OwnerUnitId,
+                    includeGrantedItems,
+                    Explosion,
+                    lootItems.Count,
+                    lootItems.Values.Count(item => item.Delivered));
                 SendLootRemove(player);
                 return;
             }
 
-            player.Session.EnqueueMessageEncrypted(new ServerLootNotify
+            uint parentUnitId = OwnerUnitId;
+            LootPacketDiagnostics.TraceLootNotify(
+                player.CharacterId,
+                OwnerUnitId,
+                parentUnitId,
+                includeGrantedItems,
+                Explosion,
+                diagnosticItems);
+            var notify = new ServerLootNotify
             {
                 OwnerUnitId  = OwnerUnitId,
-                ParentUnitId = OwnerUnitId,
+                ParentUnitId = parentUnitId,
                 Explosion    = Explosion,
                 LootItems    = networkLootItems
-            });
+            };
+            LootRuntimeEvidenceCollector.RecordNotifyIfArmed(player, notify, includeGrantedItems, diagnosticItems);
+            player.Session.EnqueueMessageEncrypted(notify);
         }
 
         public bool DeliverAllLoot(IPlayer player, bool sendAsGrant = false)
@@ -195,17 +223,41 @@ namespace NexusForever.Game.Loot
             if (!looterGuids.TryGetValue(assignee.Id, out uint assigneeGuid))
                 return false;
 
+            item.ResolveAssignedWinner(assignee, assigneeGuid);
+            BroadcastToAudience(item, item.BuildAssignedWinnerMessage(assignee));
+
             IPlayer assigneePlayer = PlayerManager.Instance.GetPlayer(assignee);
             if (assigneePlayer == null)
-                return false;
+                return true;
 
-            item.SetWinner(assignee, assigneeGuid);
-            BroadcastToAudience(item, item.BuildAssignedWinnerMessage(assignee));
             bool delivered = item.DeliverItem(assigneePlayer);
             if (delivered && HasExpired)
                 BroadcastToAudience(item, new ServerLootRemove { OwnerUnitId = OwnerUnitId });
 
-            return delivered;
+            return true;
+        }
+
+        public LootRuntimeSnapshot CreateRuntimeSnapshot(IPlayer viewer)
+        {
+            ulong viewerCharacterId = viewer?.CharacterId ?? 0ul;
+
+            return new LootRuntimeSnapshot
+            {
+                OwnerUnitId = OwnerUnitId,
+                ParentUnitIdRuntimeValue = OwnerUnitId,
+                ParentUnitIdNotes = "Current runtime mirrors OwnerUnitId because LootInstance does not yet track a distinct parent source.",
+                LootEntityType = LootEntityType,
+                LooterType = LooterType,
+                Explosion = Explosion,
+                HasExpired = HasExpired,
+                ViewerCharacterId = viewerCharacterId,
+                ViewerIsTrackedLooter = viewer != null && HasLooter(viewerCharacterId),
+                TrackedLooterCharacterIds = looterGuids.Keys.OrderBy(id => id).ToList(),
+                Items = lootItems.Values
+                    .OrderBy(item => item.Id)
+                    .Select(item => item.CreateRuntimeSnapshot(viewerCharacterId, viewer != null && HasLooter(viewerCharacterId)))
+                    .ToList()
+            };
         }
 
         private void FinaliseRoll(LootInstanceItem item)
@@ -221,16 +273,12 @@ namespace NexusForever.Game.Loot
                 return;
             }
 
+            item.ResolveRollWinner(winnerIdentity, winnerGuid);
+
             IPlayer winner = PlayerManager.Instance.GetPlayer(winnerIdentity);
             if (winner == null)
-            {
-                item.MarkDeliveredWithoutWinner();
-                if (HasExpired)
-                    BroadcastToAudience(item, new ServerLootRemove { OwnerUnitId = OwnerUnitId });
                 return;
-            }
 
-            item.SetWinner(winnerIdentity, winnerGuid);
             item.DeliverItem(winner);
             if (HasExpired)
                 BroadcastToAudience(item, new ServerLootRemove { OwnerUnitId = OwnerUnitId });

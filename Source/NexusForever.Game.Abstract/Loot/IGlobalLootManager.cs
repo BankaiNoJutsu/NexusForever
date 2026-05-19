@@ -21,6 +21,7 @@ namespace NexusForever.Game.Abstract.Loot
 
         void SendLootNotify(IPlayer looter, uint ownerUnitId);
         void SendLootNotifyForVisibleOwner(IPlayer looter, IWorldEntity owner);
+        bool TryGetLootRuntimeSnapshot(IPlayer looter, uint ownerUnitId, out LootRuntimeSnapshot snapshot);
 
         void GiveLoot(IPlayer looter, uint ownerUnitId, uint lootUnitId);
         void GiveAllLootInRange(IPlayer looter);

@@ -1,10 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.ICComm;
 using NexusForever.Game.Abstract.Pvp;
 using NexusForever.Game.Abstract.Trade;
 using NexusForever.Game.Achievement;
+using NexusForever.Game.Account.Inventory;
 using NexusForever.Game.Character;
 using NexusForever.Game.Chat;
 using NexusForever.Game.Cinematic;
@@ -50,6 +52,7 @@ namespace NexusForever.Game
             sc.AddSingletonLegacy<ITradeManager, TradeManager>();
             sc.AddSingletonLegacy<IGroupStateManager, GroupStateManager>();
             sc.AddSingletonLegacy<IGlobalLootManager, GlobalLootManager>();
+            sc.AddSingletonLegacy<IPendingAccountItemGroupDelivery, AccountInventoryManager.OnlinePendingAccountItemGroupDelivery>();
 
             sc.AddGameAchievement();
             sc.AddGameCharacter();

@@ -34,6 +34,9 @@ namespace NexusForever.WorldServer.Network
 
         private bool captureNextClientSpellEvidence;
         private bool emitDiagnosticSpellBroadcastsOnNextClientSpellEvidence;
+        private bool captureNextLootEvidence;
+        private bool captureNextAccountRuntimeEvidence;
+        private bool captureNextRewardRotationEvidence;
 
         #region Dependency Injection
 
@@ -131,6 +134,48 @@ namespace NexusForever.WorldServer.Network
 
             captureNextClientSpellEvidence = false;
             emitDiagnosticSpellBroadcastsOnNextClientSpellEvidence = false;
+            return true;
+        }
+
+        public void ArmNextLootEvidenceCapture()
+        {
+            captureNextLootEvidence = true;
+        }
+
+        public bool TryConsumeNextLootEvidenceCapture()
+        {
+            if (!captureNextLootEvidence)
+                return false;
+
+            captureNextLootEvidence = false;
+            return true;
+        }
+
+        public void ArmNextAccountRuntimeEvidenceCapture()
+        {
+            captureNextAccountRuntimeEvidence = true;
+        }
+
+        public bool TryConsumeNextAccountRuntimeEvidenceCapture()
+        {
+            if (!captureNextAccountRuntimeEvidence)
+                return false;
+
+            captureNextAccountRuntimeEvidence = false;
+            return true;
+        }
+
+        public void ArmNextRewardRotationEvidenceCapture()
+        {
+            captureNextRewardRotationEvidence = true;
+        }
+
+        public bool TryConsumeNextRewardRotationEvidenceCapture()
+        {
+            if (!captureNextRewardRotationEvidence)
+                return false;
+
+            captureNextRewardRotationEvidence = false;
             return true;
         }
 
