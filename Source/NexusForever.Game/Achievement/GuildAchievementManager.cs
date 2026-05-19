@@ -46,7 +46,7 @@ namespace NexusForever.Game.Achievement
             base.CompleteAchievement(target, achievement);
 
             if (target != null)
-                CheckAchievements(target, AchievementType.AchievementComplete, achievement.Id);
+                target.AchievementManager.CheckAchievements(target, AchievementType.AchievementComplete, achievement.Id);
         }
 
         /// <summary>

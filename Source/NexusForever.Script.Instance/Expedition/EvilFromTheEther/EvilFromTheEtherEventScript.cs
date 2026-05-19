@@ -308,6 +308,7 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
         private void OnPhaseGoToPrimaryPowerPlant()
         {
             publicEvent.ActivateObjective(PublicEventObjective.GoToPrimaryPowerPlant, mapInstance.PlayerCount);
+            SeedParticipantsInRangeObjective(PublicEventObjective.GoToPrimaryPowerPlant, securityChiefKondovichDoorGuid, primaryPowerPlantDoorGuid);
         }
 
         private void OnPhaseKillSecurityChiefKondovich()
@@ -320,6 +321,7 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
         {
             publicEvent.ResetObjective(PublicEventObjective.GoToPrimaryPowerPlant);
             publicEvent.ActivateObjective(PublicEventObjective.GoToPrimaryPowerPlant);
+            SeedParticipantsInRangeObjective(PublicEventObjective.GoToPrimaryPowerPlant, securityChiefKondovichDoorGuid, primaryPowerPlantDoorGuid);
             BroadcastCommunicatorMessage(CommunicatorMessage.CaptainWeir8);
         }
 
@@ -466,6 +468,26 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
                 },
                 Position = position
             });
+        }
+
+        private void SeedParticipantsInRangeObjective(PublicEventObjective objectiveId, params uint[] entityGuids)
+        {
+            HashSet<ulong> characterIds = [];
+            foreach (uint entityGuid in entityGuids)
+            {
+                if (entityGuid == 0u)
+                    continue;
+
+                IGridEntity entity = mapInstance.GetEntity<IGridEntity>(entityGuid);
+                if (entity == null)
+                    continue;
+
+                foreach (IPlayer player in entity.GetInRange<IPlayer>(0u))
+                    characterIds.Add(player.CharacterId);
+            }
+
+            if (characterIds.Count > 0)
+                publicEvent.UpdateObjective(objectiveId, characterIds.Count);
         }
 
         private void BroadcastCommunicatorMessage(CommunicatorMessage message)

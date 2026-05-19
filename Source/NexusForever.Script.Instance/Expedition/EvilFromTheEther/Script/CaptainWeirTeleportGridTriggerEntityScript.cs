@@ -29,7 +29,7 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
                 return;
 
             player.TeleportToLocal(new Vector3(-398.65857f, -842.03436f, 119.298386f));
-            trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.Script, 8242, 1);
+            trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.Script, 8243, 1);
         }
     }
 }

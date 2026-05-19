@@ -6,11 +6,13 @@ using NexusForever.Game;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Achievement;
 using NexusForever.Game.Static.Achievement;
+using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Achievement;
 
+[Collection(LegacyServiceProviderCollection.Name)]
 public class AchievementProgressTests
 {
     [Fact]

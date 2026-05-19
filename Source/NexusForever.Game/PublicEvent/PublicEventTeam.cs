@@ -151,7 +151,7 @@ namespace NexusForever.Game.PublicEvent
                 log.LogTrace($"Updated public event team {Team} objective {objective.Entry.Id} with count {count}.");
             }
 
-            IsFinialised = RequiredObjectivesCompleted();
+            RefreshFinalisedState();
         }
 
         private bool RequiredObjectivesCompleted()
@@ -170,6 +170,7 @@ namespace NexusForever.Game.PublicEvent
                 return;
 
             objective.UpdateObjective(count);
+            RefreshFinalisedState();
         }
 
         /// <summary>
@@ -185,6 +186,7 @@ namespace NexusForever.Game.PublicEvent
 
             objective.DynamicMax = max;
             objective.ActivateObjective();
+            RefreshFinalisedState();
         }
 
         /// <summary>
@@ -196,6 +198,12 @@ namespace NexusForever.Game.PublicEvent
                 return;
 
             objective.ResetObjective();
+            RefreshFinalisedState();
+        }
+
+        private void RefreshFinalisedState()
+        {
+            IsFinialised = RequiredObjectivesCompleted();
         }
 
         /// <summary>

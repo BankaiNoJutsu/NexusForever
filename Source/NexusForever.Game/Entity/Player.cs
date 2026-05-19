@@ -274,7 +274,6 @@ namespace NexusForever.Game.Entity
         public IReadOnlyList<uint> AttributePointAllocations => attributePointAllocations;
         private readonly uint[] attributePointAllocations = new uint[6];
         private readonly Dictionary<TradeskillType, TradeskillState> tradeskills = [];
-        private readonly List<TradeskillState> deletedTradeskills = [];
         private readonly Dictionary<uint, SchematicState> schematics = [];
 
         public override uint Level
@@ -789,13 +788,6 @@ namespace NexusForever.Game.Entity
 
         private void SaveTradeskills(CharacterContext context)
         {
-            foreach (TradeskillState tradeskill in deletedTradeskills)
-            {
-                if (!tradeskill.PendingCreate)
-                    context.Remove(tradeskill.BuildModel());
-            }
-            deletedTradeskills.Clear();
-
             foreach (TradeskillState tradeskill in tradeskills.Values)
             {
                 CharacterTradeskillModel model = tradeskill.BuildModel();
@@ -1756,15 +1748,19 @@ namespace NexusForever.Game.Entity
 
         public bool LearnTradeskill(TradeskillType toLearnTradeskillId, TradeskillType toDropTradeskillId)
         {
-            if (toDropTradeskillId != 0 && tradeskills.Remove(toDropTradeskillId, out TradeskillState droppedTradeskill))
+            if (toDropTradeskillId != 0
+                && toDropTradeskillId != toLearnTradeskillId
+                && tradeskills.TryGetValue(toDropTradeskillId, out TradeskillState droppedTradeskill)
+                && droppedTradeskill.IsActive != 0u)
             {
-                droppedTradeskill.MarkDeleted();
-                deletedTradeskills.Add(droppedTradeskill);
+                droppedTradeskill.IsActive = 0u;
+                droppedTradeskill.MarkDirty();
                 SendProfessionUpdate(BuildInactiveTradeskillInfo(toDropTradeskillId));
             }
 
             bool wasActive = HasTradeskill(toLearnTradeskillId);
-            if (!tradeskills.TryGetValue(toLearnTradeskillId, out TradeskillState learnedTradeskill))
+            bool alreadyKnown = tradeskills.TryGetValue(toLearnTradeskillId, out TradeskillState learnedTradeskill);
+            if (!alreadyKnown)
             {
                 learnedTradeskill = TradeskillState.Create(CharacterId, toLearnTradeskillId);
                 tradeskills.Add(toLearnTradeskillId, learnedTradeskill);
@@ -1776,7 +1772,7 @@ namespace NexusForever.Game.Entity
 
             SendProfessionUpdate(learnedTradeskill.BuildInfo());
             QuestManager.ObjectiveUpdate(QuestObjectiveType.LearnTradeskill, (uint)toLearnTradeskillId, 1u);
-            if (!wasActive)
+            if (!wasActive && !alreadyKnown)
                 CheckTradeskillTierAchievements(toLearnTradeskillId, 0u, learnedTradeskill.TradeskillXp);
             return true;
         }
@@ -2961,11 +2957,6 @@ namespace NexusForever.Game.Entity
             {
                 if (!PendingCreate)
                     Dirty = true;
-            }
-
-            public void MarkDeleted()
-            {
-                Dirty = false;
             }
 
             public void ClearSaveState()

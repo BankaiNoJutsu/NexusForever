@@ -52,7 +52,7 @@ namespace NexusForever.Game.Reputation
             if (faction == null)
                 throw new ArgumentException($"Invalid faction id {factionId}!");
 
-            FactionLevel? previousLevel = null;
+            FactionLevel previousLevel = FactionNode.GetFactionLevel(0f);
             if (!reputations.TryGetValue(factionId, out IReputation reputation))
             {
                 reputation = new Reputation(owner, faction, value);
@@ -65,10 +65,11 @@ namespace NexusForever.Game.Reputation
             }
 
             FactionLevel currentLevel = FactionNode.GetFactionLevel(reputation.Amount);
-            if (previousLevel == null || currentLevel > previousLevel)
-                owner.AchievementManager.CheckAchievements(owner, AchievementType.ReputationLevel, (uint)factionId, (uint)currentLevel);
+            if (currentLevel > previousLevel)
+                for (int level = (int)previousLevel + 1; level <= (int)currentLevel; level++)
+                    owner.AchievementManager.CheckAchievements(owner, AchievementType.ReputationLevel, (uint)factionId, (uint)(FactionLevel)level);
 
-            if ((previousLevel == null || previousLevel < FactionLevel.Beloved) && currentLevel >= FactionLevel.Beloved)
+            if (previousLevel < FactionLevel.Beloved && currentLevel >= FactionLevel.Beloved)
                 owner.AchievementManager.CheckAchievements(owner, AchievementType.GuildBelovedReputation, (uint)FactionLevel.Beloved);
 
             owner.Session.EnqueueMessageEncrypted(new ServerReputationUpdate

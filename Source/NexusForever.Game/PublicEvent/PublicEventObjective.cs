@@ -29,13 +29,12 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void Initialise(IPublicEventTeam team, PublicEventObjectiveEntry entry)
         {
-            Team   = team;
-            Entry  = entry;
+            Team  = team;
+            Entry = entry;
+            ResetProgress();
+
             Status = entry.PublicEventObjectiveFlags.HasFlag(PublicEventObjectiveFlag.InitialObjective)
                 ? PublicEventStatus.Active : PublicEventStatus.Inactive;
-
-            if (entry.FailureTimeMs > 0)
-                failureTimer = new UpdateTimer(TimeSpan.FromMilliseconds(entry.FailureTimeMs));
         }
 
         /// <summary>
@@ -43,7 +42,7 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void Update(double lastTick)
         {
-            if (IsBusy)
+            if (IsBusy || Status != PublicEventStatus.Active)
                 return;
 
             elapsedTimer += lastTick;
@@ -166,10 +165,23 @@ namespace NexusForever.Game.PublicEvent
             if (Status != PublicEventStatus.Succeeded)
                 return;
 
-            Count      = 0;
-            DynamicMax = 0;
-
+            ResetProgress();
             SetStatus(PublicEventStatus.Inactive);
+        }
+
+        private void ResetProgress()
+        {
+            Count        = 0;
+            DynamicMax   = 0;
+            elapsedTimer = 0d;
+            failureTimer = CreateFailureTimer();
+        }
+
+        private UpdateTimer CreateFailureTimer()
+        {
+            return Entry?.FailureTimeMs > 0
+                ? new UpdateTimer(TimeSpan.FromMilliseconds(Entry.FailureTimeMs))
+                : null;
         }
 
         public Network.World.Message.Model.Shared.PublicEventObjective Build()

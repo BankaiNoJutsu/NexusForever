@@ -133,22 +133,21 @@ namespace NexusForever.Game.Entity
                 throw new ArgumentException("XP must be greater than 0.");
 
             Path path = player.Path;
+            IPathEntry entry = GetPathEntry(path);
+            bool xpChanged = false;
 
             if (GetCurrentLevel(path) < MaxPathLevel)
             {
-                IPathEntry entry = GetPathEntry(path);
-
                 checked
                 {
                     entry.TotalXp += xp;
                 }
-
-                foreach (uint level in CheckForLevelUp(entry.TotalXp, xp))
-                    GrantLevelUpReward(path, level);
-
-                SendServerPathUpdateXp(entry.TotalXp);
+                xpChanged = true;
             }
 
+            GrantOutstandingLevelRewards(path, entry.TotalXp);
+            if (xpChanged)
+                SendServerPathUpdateXp(entry.TotalXp);
         }
 
         /// <summary>
@@ -161,14 +160,20 @@ namespace NexusForever.Game.Entity
 
             Path path = player.Path;
             uint currentLevel = GetCurrentLevel(path);
+            IPathEntry entry = GetPathEntry(path);
             if (currentLevel >= MaxPathLevel)
+            {
+                GrantOutstandingLevelRewards(path, entry.TotalXp);
                 return;
+            }
 
             uint targetLevel = Math.Min(currentLevel + levels, MaxPathLevel);
             uint targetXp = GetPathXpForLevel(path, targetLevel);
-            IPathEntry entry = GetPathEntry(path);
             if (targetXp <= entry.TotalXp)
+            {
+                GrantOutstandingLevelRewards(path, entry.TotalXp);
                 return;
+            }
 
             AddXp(targetXp - entry.TotalXp);
         }
@@ -188,27 +193,20 @@ namespace NexusForever.Game.Entity
                 .Last(x => x.PathLevel == level && x.PathTypeEnum == (uint)path).PathXP;
         }
 
-        /// <summary>
-        /// Get the level based on an amount of XP.
-        /// </summary>
-        /// <param name="xp">The XP value to get the level by</param>
-        private uint GetLevelByExperience(uint xp)
+        private void GrantOutstandingLevelRewards(Path path, uint totalXp)
         {
-            return GameTableManager.Instance.PathLevel.Entries
-                .Last(x => x.PathXP <= xp && x.PathTypeEnum == (uint)player.Path).PathLevel;
-        }
+            IPathEntry entry = GetPathEntry(path);
+            if (entry.LevelRewarded >= MaxPathLevel)
+                return;
 
-        /// <summary>
-        /// Check to see if a level up should happen based on current XP and XP just earned.
-        /// </summary>
-        /// <param name="totalXp">Path XP after XP earned has been applied</param>
-        /// <param name="xpGained">XP just earned</param>
-        private IEnumerable<uint> CheckForLevelUp(uint totalXp, uint xpGained)
-        {
-            uint currentLevel = GetLevelByExperience(totalXp - xpGained);
-            return GameTableManager.Instance.PathLevel.Entries
-                .Where(x => x.PathLevel > currentLevel && x.PathXP <= totalXp && x.PathTypeEnum == (uint)player.Path)
-                .Select(e => e.PathLevel);
+            byte rewardedLevel = entry.LevelRewarded;
+            foreach (uint level in GameTableManager.Instance.PathLevel.Entries
+                .Where(x => x.PathTypeEnum == (uint)path
+                    && x.PathLevel > rewardedLevel
+                    && x.PathXP <= totalXp)
+                .OrderBy(x => x.PathLevel)
+                .Select(e => e.PathLevel))
+                GrantLevelUpReward(path, level);
         }
 
         /// <summary>

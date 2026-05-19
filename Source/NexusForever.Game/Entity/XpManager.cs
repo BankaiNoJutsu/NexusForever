@@ -147,7 +147,7 @@ namespace NexusForever.Game.Entity
             if (player.Level >= maxLevel)
                 return;
 
-            // Signature XP rate was 25% extra. 
+            // Signature XP rate was 25% extra.
             uint signatureXp = 0u;
             if (player.SignatureEnabled)
                 signatureXp = (uint)(earnedXp * GetSignatureXpRate());
@@ -170,7 +170,7 @@ namespace NexusForever.Game.Entity
                 SignatureXpAmount = signatureXp,
                 Reason            = reason
             });
-            
+
             uint totalXp = TotalXp + earnedXp + signatureXp + restXp;
 
             while (player.Level < maxLevel)
@@ -220,9 +220,10 @@ namespace NexusForever.Game.Entity
                 return;
 
             uint newXp = GameTableManager.Instance.XpPerLevel.GetEntry(newLevel).MinXpForLevel;
+            uint xpGained = newXp > TotalXp ? newXp - TotalXp : 0u;
             player.Session.EnqueueMessageEncrypted(new ServerExperienceGained
             {
-                TotalXpGained     = newXp - TotalXp,
+                TotalXpGained     = xpGained,
                 RestXpAmount      = 0,
                 SignatureXpAmount = 0,
                 Reason            = reason
@@ -243,6 +244,10 @@ namespace NexusForever.Game.Entity
                 return;
 
             player.Level = newLevel;
+
+            if (newLevel <= oldLevel)
+                return;
+
             player.AchievementManager.SetAchievementProgress(player, AchievementType.CharacterLevel, 0u, 0u, newLevel);
             if (oldLevel < DefaultMaxCharacterLevel && newLevel >= DefaultMaxCharacterLevel)
                 player.AchievementManager.CheckAchievements(player, AchievementType.ClassLevel50, (uint)player.Class);

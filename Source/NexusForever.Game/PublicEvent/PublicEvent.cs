@@ -327,6 +327,8 @@ namespace NexusForever.Game.PublicEvent
                 return;
 
             publicEventTeam.UpdateObjective(entry.Id, count);
+            if (publicEventTeam.IsFinialised)
+                Finish(publicEventTeam.Team);
         }
 
         /// <summary>

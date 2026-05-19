@@ -21,6 +21,7 @@ namespace NexusForever.Game.Account.Inventory
         public uint Duration { get; private set; }
 
         private AccountItemCooldownSaveMask saveMask;
+        private bool isPersisted;
 
         public AccountItemCooldown(AccountItemCooldownModel model)
         {
@@ -29,7 +30,8 @@ namespace NexusForever.Game.Account.Inventory
             TimeUsed        = model.Timestamp;
             Duration        = model.Duration;
 
-            saveMask = AccountItemCooldownSaveMask.None;
+            saveMask    = AccountItemCooldownSaveMask.None;
+            isPersisted = true;
         }
 
         public AccountItemCooldown(uint accountId, uint cooldownGroupId)
@@ -37,7 +39,7 @@ namespace NexusForever.Game.Account.Inventory
             AccountId       = accountId;
             CooldownGroupId = cooldownGroupId;
 
-            saveMask = AccountItemCooldownSaveMask.Create;
+            saveMask = AccountItemCooldownSaveMask.None;
         }
 
         public void Save(AuthContext context)
@@ -50,6 +52,7 @@ namespace NexusForever.Game.Account.Inventory
             if ((saveMask & AccountItemCooldownSaveMask.Create) != 0)
             {
                 context.Add(model);
+                isPersisted = true;
             }
             else if ((saveMask & AccountItemCooldownSaveMask.Modify) != 0)
             {
@@ -66,8 +69,9 @@ namespace NexusForever.Game.Account.Inventory
             Duration = duration;
             TimeUsed = DateTime.UtcNow;
 
-            if ((saveMask & AccountItemCooldownSaveMask.Create) == 0)
-                saveMask |= AccountItemCooldownSaveMask.Modify;
+            saveMask |= isPersisted
+                ? AccountItemCooldownSaveMask.Modify
+                : AccountItemCooldownSaveMask.Create;
         }
 
         public uint GetRemainingDuration()
