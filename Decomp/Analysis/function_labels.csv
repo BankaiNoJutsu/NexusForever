@@ -53,6 +53,11 @@ WildStar64.exe,1400f06f0,Lua_InsertStringIntPair,Resolves a key string and inser
 WildStar64.exe,14009ab70,Marketplace_AuctionCancel_WritePayload,Serialises world opcode 0x0094 ClientAuctionCancel as 64-bit auction id plus 18-bit Item2 id inside a registered 0x10-byte object.
 WildStar64.exe,14009b500,ClientFriendshipRemoveByName_WritePayload,Serialises world opcode 0x03C2 ClientFriendshipRemoveByName as name and realm wide strings followed by a 4-bit FriendshipType.
 WildStar64.exe,14009b700,ClientFriendshipSetNoteByName_WritePayload,Serialises world opcode 0x03C8 ClientFriendshipSetNoteByName as name, realm, and note wide strings.
+WildStar64.exe,1400a1d90,RewardRotation_ScheduleRow_ReadPayload,Reads one 0x14-byte reward-rotation schedule row as 32-bit content id, 14-bit reward/key id, float duration, 8-bit reward type, and trailing 32-bit value.
+WildStar64.exe,1400a1e20,ServerRewardRotationScheduleArray_ReadPayload,Reads server opcode 0x07CA as a 32-bit count plus pointer-backed 0x14-byte reward-rotation schedule rows via RewardRotation_ScheduleRow_ReadPayload.
+WildStar64.exe,1400a1ee0,RewardRotation_EntryStateRow_ReadPayload,Reads one 0x14-byte reward-rotation entry-state row as a 3-bit leading field, two 32-bit ids, an 8-bit state flag, and a trailing 32-bit value.
+WildStar64.exe,1400a2040,RewardRotation_EntryStateDelta_ReadPayload,Null-guard thunk registered as the reader for server delta opcodes 0x07C7/0x07C9/0x07CB; validates param_3 non-null then tail-calls RewardRotation_EntryStateRow_ReadPayload.
+WildStar64.exe,1400a1f80,ServerRewardRotationEntryStateArray_ReadPayload,Reads server opcode 0x07C8 as a 32-bit count plus pointer-backed 0x14-byte reward-rotation entry-state rows via RewardRotation_EntryStateRow_ReadPayload.
 WildStar64.exe,1400a53c0,ClientCraftingRuneSlotAdd_WritePayload,Serialises world opcode 0x0859 payload as a 64-bit item guid, 1-bit non-fusion flag, and 5-bit RuneType.
 WildStar64.exe,1400a5550,ClientCraftingRuneSlotClear_WritePayload,Serialises world opcode 0x085A payload as a 64-bit item guid, 32-bit rune slot index, 1-bit recover flag, and 1-bit use-group-currency flag.
 WildStar64.exe,1400a5780,ClientCraftingRuneSlotReroll_WritePayload,Serialises world opcode 0x085C payload as a 64-bit item guid, 32-bit rune slot index, and 5-bit RuneType.
@@ -161,7 +166,7 @@ WildStar64.exe,1403acd90,SpellService_ResolveSpellWrapper,Resolves the shared sp
 WildStar64.exe,140214fe0,ClientDB_RegisterMatchingGameMap,Registers the MatchingGameMap client DB table using the MatchingGameMap and DB\\MatchingGameMap.tbl descriptors.
 WildStar64.exe,140215240,MatchingGameMap_LookupById,Resolves a MatchingGameMap record by id through the registered MatchingGameMap callback or the DAT_140c641f0 fallback dispatcher.
 WildStar64.exe,1403a11c0,ActionSet_CheckPvPRestriction,Checks whether the current PvP state permits action-set changes.
-WildStar64.exe,1403b4ec0,Game_Spell_IsSelfSpellDelegate,Undecompiled bool helper used by Game.Spell:IsSelfSpell after the spell wrapper/service lookup path resolves the active spell metadata.
+WildStar64.exe,1403b4ec0,Game_Spell_IsSelfSpellDelegate,Bool helper used by Game.Spell:IsSelfSpell. Reads target-mechanics wrapper at param_1+0x70. Bitmask 0x85 (10000101b) at +0x7c=TargetType: bits 0/2/7 set → TargetTypes 0/2/7 are self-spell. Additional case: TargetType 4 or 8 with +0x18==3 and +0x9c==0. IsSelfSpell=true means no targeting cursor needed (UI-only); server ResolvePrimaryTargetId returns Owner.Guid for type 0 and uses current target for type 7 (auto-attack).
 WildStar64.exe,1403bb480,ActionSet_SendPendingActionSetChanges,Sends or commits a validated action-set change request.
 WildStar64.exe,1403bb8d0,ActionSet_CheckUpdateSpellInProgress,Checks whether a spell/action-set update is already in progress.
 WildStar64.exe,1403d19a0,AbilityBook_SendClientCommitAmpSpec,Sends opcode 0x01A2 ClientCommitAmpSpec with the current spec AMP list and clears the pending AMP cache.
@@ -287,6 +292,26 @@ WildStar64.exe,14065e6c0,Lua_GameLib_PurchaseFlightPath,GameLib.PurchaseFlightPa
 WildStar64.exe,1406625d0,Lua_RegisterQuestConstants,Registers Game.Quest Lua constants including Quest2RewardType ids: Item=1 Reputation=2 Money=3 TradeSkillXp=4 GrantTradeskill=5 AccountItem=6 AccountCurrency=7 GenericUnlockAccount=8 GenericUnlockCharacter=9 RotationEssence=10.
 WildStar64.exe,140665c80,Lua_GameQuest_BuildRewardTables,Builds Game.Quest reward Lua tables and queues Quest2Reward RotationEssence rows for active reward-rotation expansion.
 WildStar64.exe,140667790,QuestReward_ExpandRotationEssence,Expands Quest2Reward type 10 RotationEssence rows into AccountCurrency reward rows using active reward-rotation essence ids and multiplier.
+WildStar64.exe,140635b60,RewardRotation_BuildContentContextIndex,Builds the reward-rotation content lookup from WorldZone World MatchTypeRewardRotationContent and PublicEvent rows into the local manager index.
+WildStar64.exe,140636840,RewardRotation_LoadEntryStateArray,Loads a 0x14-byte reward-rotation entry-state array into the local sorted buffer and replays each entry through the content-refresh helper.
+WildStar64.exe,1406368d0,RewardRotation_UpsertEntryState,Upserts one reward-rotation entry-state row into the local sorted buffer then refreshes the affected content bucket. Inference: consumer for server opcode 0x07C7 (lowest of three entry-state delta opcodes; dispatch is runtime-only).
+WildStar64.exe,1406369c0,RewardRotation_UpdateEntryState,Updates the state field for one existing reward-rotation entry row and refreshes the affected content bucket. Inference: consumer for server opcode 0x07C9 (middle of three entry-state delta opcodes; dispatch is runtime-only).
+WildStar64.exe,140636ac0,RewardRotation_RemoveEntryState,Removes one reward-rotation entry row from the local sorted buffer and clears the affected content bucket. Inference: consumer for server opcode 0x07CB (highest of three entry-state delta opcodes; dispatch is runtime-only).
+WildStar64.exe,140639060,RewardRotation_BuildLuaRotationRewards,Builds Game.MatchMakingEntry rotation-reward Lua output fields including bRewardsLocked and arRewards from loaded reward-rotation schedule state.
+WildStar64.exe,140639710,RewardRotation_BuildLuaItemReward,Serializes one loaded reward-rotation item row into the Game.MatchMakingEntry.GetRotationRewards Lua payload.
+WildStar64.exe,140639c80,RewardRotation_BuildLuaEssenceReward,Serializes one loaded reward-rotation essence row into the Game.MatchMakingEntry.GetRotationRewards Lua payload.
+WildStar64.exe,140639e60,RewardRotation_BuildLuaModifierReward,Serializes one loaded reward-rotation modifier/property row into the Game.MatchMakingEntry.GetRotationRewards Lua payload.
+WildStar64.exe,14063a0e0,RewardRotation_ApplyEntryStateToLoadedContent,Marks matching loaded item essence or modifier rows as granted when an entry-state row applies to the current content bucket.
+WildStar64.exe,14063a270,RewardRotation_ClearEntryStateFromLoadedContent,Clears the granted bit on matching loaded item essence or modifier rows when an entry-state row is removed from the current content bucket.
+WildStar64.exe,14063a490,RewardRotation_ClearContentContextIndex,Releases the per-content lookup/index buckets and their loaded item essence and modifier schedule vectors.
+WildStar64.exe,14063a590,RewardRotation_AppendScheduleEntry,Appends one 0x18 reward schedule row to an item essence or modifier vector and returns the inserted index.
+WildStar64.exe,14063a640,RewardRotation_RemoveScheduleEntry,Removes one 0x18 reward schedule row from an item essence or modifier vector by index.
+WildStar64.exe,14063a760,RewardRotation_AppendEntryStateRows,Appends a batch of 0x14 entry-state rows to the local sorted entry-state buffer.
+WildStar64.exe,14063a810,RewardRotation_InsertEntryStateRow,Inserts one 0x14 entry-state row into the local sorted entry-state buffer at the requested index.
+WildStar64.exe,14063a8f0,RewardRotation_SortEntryStateRows,Sorts the local 0x14 entry-state buffer through an index-based comparator and rewrites the buffer into sorted order.
+WildStar64.exe,14063aa90,RewardRotation_HasEntryStateFlag,Tests whether a matching local entry-state row currently carries the granted/active bit for the requested reward type.
+WildStar64.exe,14063abc0,RewardRotation_RemoveEntryStateRow,Removes one 0x14 entry-state row from the local sorted entry-state buffer by index.
+WildStar64.exe,1407091e0,Lua_GameLib_RequestRewardUpdate,GameLib.RequestRewardUpdate Lua method that forwards one reward-rotation content-type index through Reward_SendRewardUpdateRequest.
 WildStar64.exe,140709210,Lua_GameLib_GetRewardRotation,GameLib.GetRewardRotation Lua callback that returns a loaded reward-rotation schedule for one content id.
 WildStar64.exe,140709370,Lua_GameLib_GetRewardRotations,GameLib.GetRewardRotations Lua callback that returns loaded reward-rotation schedules for all content types.
 WildStar64.exe,140552550,QuestPrerequisite_CanAccept,Evaluates client quest accept prerequisites and returns failure reason ids for faction/race/class/level/item/prereq/faction-level checks.
@@ -498,7 +523,6 @@ WildStar64.exe,140708d50,Lua_GameLib_GetPrimeLevelAchieved,GameLib.GetPrimeLevel
 WildStar64.exe,140708da0,Lua_GameLib_GetWorldPrimeLevel,GameLib.GetWorldPrimeLevel Lua method.
 WildStar64.exe,140708dd0,Lua_GameLib_GetWorldMaxPrimeLevel,GameLib.GetWorldMaxPrimeLevel Lua method.
 WildStar64.exe,140708e60,Lua_GameLib_GetWorldHeroismMenaceLevel,GameLib.GetWorldHeroismMenaceLevel Lua method.
-WildStar64.exe,1407091e0,Lua_GameLib_RequestRewardUpdate,GameLib.RequestRewardUpdate Lua method.
 WildStar64.exe,140706140,Map_BuildRapidTransportNodeInfoTable,Builds map rapid-transport node info including availability flags and money costs.
 WildStar64.exe,140701090,Lua_GameLib_TogglePvpFlags,Sends opcode 0x0173 ClientPvpToggleFlags with a one-bit desired PvP flag state after local combat map and current flag checks.
 WildStar64.exe,140701120,Lua_GameLib_InitiateDuel,Sends zero-payload opcode 0x00EC ClientDuelInitiate; target identity is supplied by the selected unit rather than this packet.
@@ -583,6 +607,7 @@ WildStar64.exe,14051d2e0,Support_SendClientSupportTicket,Builds and sends opcode
 WildStar64.exe,14053bcc0,Support_SendClientStuck,Builds and sends opcode 0x0831 ClientStuck with UnstickType and generated cast-context token after local stuck/teleport checks.
 WildStar64.exe,14063b9f0,Support_SendClientSuggest,Builds and sends opcode 0x0833 ClientSuggest from the slash-command suggestion text.
 WildStar64.exe,140700340,Lua_GameLib_ReportBug,Builds and sends opcode 0x0830 ClientReportBug with bug category, selected unit id, Quest2 id, and description text.
+WildStar64.exe,14073c340,Lua_GameMatchMakingEntry_GetRotationRewards,Game.MatchMakingEntry.GetRotationRewards Lua method registered in the MatchMakingEntry callback table; resolves one reward context and builds the Lua reward payload through RewardRotation_BuildLuaRotationRewards.
 WildStar64.exe,14073e640,IncidentReport_SendClientIncidentReport,Builds and sends opcode 0x06C5 ClientIncidentReport from the IncidentReportLib/Game.IncidentReport report object.
 WildStar64.exe,14006bd80,NetworkBitWriter_WriteRaw32,Serialises one raw 32-bit value into the packet bitstream.
 WildStar64.exe,140085170,NetworkBitWriter_WriteIdentity,Serialises an Identity payload as a 14-bit realm id followed by a 64-bit identity id.

@@ -6056,12 +6056,79 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   schedules to UI. The static `Quest2Reward` rows use `objectId=0`, so a server
   grant still needs an authoritative schedule source plus the matching server
   update opcode/model before it can safely pick the currency id and multiplier.
-  A follow-up allocator trace for `FUN_1403374e0` found one 0x14-byte array
-  packet-reader candidate at `FUN_14009f6b0`, but direct inspection shows that
-  function reads an unrelated packet shape before allocating the row array and
-  has no recovered xref into `RewardRotation_ApplyServerScheduleUpdate`.
-  Pointer-pattern and caller traces still do not recover the reward-rotation
-  server response reader/opcode. No static or random essence grant was added.
+  That opcode/model family is now partly recovered from the world-message
+  registrar `FUN_14006c290`: `ServerRewardRotationScheduleArray_ReadPayload`
+  (`1400a1e20`) is registered for opcode `0x07CA` with a 0x10-byte
+  count-plus-pointer object and allocates `count * 0x14` before calling
+  `RewardRotation_ScheduleRow_ReadPayload` (`1400a1d90`) for each row. That row
+  parser reads the exact schedule shape already inferred from
+  `RewardRotation_ApplyServerScheduleUpdate`: 32-bit content id, 14-bit
+  reward/key id, float duration, 8-bit reward type, and trailing 32-bit value.
+  `ServerRewardRotationEntryStateArray_ReadPayload` (`1400a1f80`) is
+  registered for opcode `0x07C8` with the same 0x10-byte count-plus-pointer
+  object and allocates `count * 0x14` before calling
+  `RewardRotation_EntryStateRow_ReadPayload` (`1400a1ee0`) for each row. That
+  entry-state row parser reads a 3-bit leading field, two 32-bit ids, an 8-bit
+  flag/state byte, and a trailing 32-bit value, which matches the local
+  entry-state buffer lane better than the schedule lane.
+  The surrounding unlabeled reward cluster is now partly mapped as manager-side
+  state helpers rather than candidate packet readers:
+  `RewardRotation_BuildContentContextIndex` (`140635b60`) builds the local
+  content lookup from `WorldZone.RewardRotationContentId`,
+  `World.RewardRotationContentId`, `MatchTypeRewardRotationContent`, and
+  `PublicEvent.RewardRotationContentId`; `RewardRotation_LoadEntryStateArray`
+  (`140636840`) loads a sorted 0x14-byte entry-state array and replays each row
+  through the shared content-refresh helper; `RewardRotation_UpsertEntryState`
+  (`1406368d0`), `RewardRotation_UpdateEntryState` (`1406369c0`), and
+  `RewardRotation_RemoveEntryState` (`140636ac0`) mutate one keyed row in that
+  same sorted buffer and refresh or clear the affected content bucket. These
+  shapes tighten the reward manager model, but they still do not expose the
+  actual server reader or opcode that feeds those entry rows.
+  The next helper layer under that cluster is now mapped too:
+  `RewardRotation_ApplyEntryStateToLoadedContent` (`14063a0e0`) and
+  `RewardRotation_ClearEntryStateFromLoadedContent` (`14063a270`) toggle the
+  granted bit on matching loaded item/essence/modifier rows inside one content
+  bucket; `RewardRotation_AppendScheduleEntry` (`14063a590`) and
+  `RewardRotation_RemoveScheduleEntry` (`14063a640`) are the 0x18
+  schedule-vector push/erase helpers used by the schedule consumer; and
+  `RewardRotation_AppendEntryStateRows` (`14063a760`),
+  `RewardRotation_InsertEntryStateRow` (`14063a810`),
+  `RewardRotation_SortEntryStateRows` (`14063a8f0`),
+  `RewardRotation_HasEntryStateFlag` (`14063aa90`), and
+  `RewardRotation_RemoveEntryStateRow` (`14063abc0`) manage the sorted 0x14
+  local entry-state buffer. `RewardRotation_ClearContentContextIndex`
+  (`14063a490`) tears down the per-content lookup and its loaded schedule
+  vectors. This confirms the whole mapped helper layer is still local
+  state/index maintenance rather than the missing network reader.
+  A separate callback-table trace now resolves the higher Lua consumer too:
+  `Lua_GameMatchMakingEntry_GetRotationRewards` (`14073c340`) sits in the
+  `Game.MatchMakingEntry` method table beside the string
+  `GetRotationRewards` (`140b488d8`) and is the only recovered direct caller of
+  `RewardRotation_BuildLuaRotationRewards` (`140639060`). That builder emits
+  the `bRewardsLocked`/`arRewards` Lua fields from already-loaded schedule
+  state, and it fans out through
+  `RewardRotation_BuildLuaItemReward` (`140639710`),
+  `RewardRotation_BuildLuaEssenceReward` (`140639c80`), and
+  `RewardRotation_BuildLuaModifierReward` (`140639e60`). This cleanly separates
+  the mapped MatchMakingEntry/UI serialization lane from the still-unmapped
+  server response reader.
+  A follow-up allocator trace for `FUN_1403374e0` found one unrelated 0x14-byte
+  array reader at `FUN_14009f6b0`, but the actual reward reader family is now
+  recovered through raw immediate searches instead of direct xrefs. The reward
+  manager consumers still show only unwind/data references when traced as
+  functions, but the authoritative opcode registrations now live in
+  `FUN_14006c290`: the one-row entry-state reader thunk at non-function
+  address `1400a2040` validates `R8` and tail-jumps into
+  `RewardRotation_EntryStateRow_ReadPayload` (`1400a1ee0`), and that 0x14-byte
+  reader is registered for opcodes `0x07CB`, `0x07C9`, and `0x07C7`. This
+  tightens the blocker substantially: the client request opcode (`0x07CC`), the
+  schedule-array load opcode (`0x07CA`), the entry-state-array load opcode
+  (`0x07C8`), and the three single-row entry-state delta opcodes
+  (`0x07CB`/`0x07C9`/`0x07C7`) are now known. The remaining open question is the
+  exact semantic split between those three delta opcodes — which one feeds
+  `RewardRotation_UpsertEntryState`, `RewardRotation_UpdateEntryState`, or
+  `RewardRotation_RemoveEntryState`. No static or random essence grant was
+  added.
 - Taxi unlock persistence blocker:
   Type `101` achievements (`4714`/`4715`, `Making Connections`) remain
   mapped-only. The client can receive an authoritative unlocked flight-path
@@ -6149,6 +6216,50 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   `Decomp\Analysis\Test-DecompileManifest.ps1 -FailOnMismatch` reported the
   `WildStar64.exe` export manifest as `ok`.
 
+### Reward rotation entry-state delta opcodes (0x07C7, 0x07C9, 0x07CB)
+
+Opcodes `0x07C8` and `0x07CA` were confirmed by their registered reader labels
+(`ServerRewardRotationEntryStateArray_ReadPayload` at `1400a1f80` and
+`ServerRewardRotationScheduleArray_ReadPayload` at `1400a1e20`).  The three
+remaining delta opcodes (`0x07C7`, `0x07C9`, `0x07CB`) all register the same
+null-guard thunk at `1400a2040` as their reader, which tail-calls
+`RewardRotation_EntryStateRow_ReadPayload` at `1400a1ee0`.
+
+The three consumer functions for the delta opcodes are confirmed at addresses
+`1406368d0` (`RewardRotation_UpsertEntryState`), `1406369c0`
+(`RewardRotation_UpdateEntryState`), and `140636ac0`
+(`RewardRotation_RemoveEntryState`).
+
+The mapping of opcode -> consumer is **inference-level** (Level 2 on the
+evidence ladder).  Every static analysis path was exhausted before falling back
+to ordering-based inference:
+
+- All three delta opcodes register identical reader/size/callback args -
+  no discriminating static field.
+- `FindAllCallsAndJumpsToTargets.java` (full `0x140001000`-`0x140957000` scan)
+  found **zero** direct CALL or JMP instructions to any consumer function.
+- A full PE section search found **zero** 8-byte absolute pointer values for
+  any consumer address; only `.pdata`/`.rdata` xdata BeginAddress RVAs appear.
+- There are no EntryState-keyed wide-string event names in `.rdata`.
+- The consumer functions are reached exclusively via runtime heap-allocated
+  function pointer tables - static analysis cannot trace the path.
+
+**Inferred mapping** (standard WildStar CRUD opcode ordering, consistent with
+adjacent confirmed opcodes `0x07C8`/`0x07CA`):
+
+| Opcode   | Consumer function                    |
+|----------|--------------------------------------|
+| `0x07C7` | `RewardRotation_UpsertEntryState`   |
+| `0x07C9` | `RewardRotation_UpdateEntryState`   |
+| `0x07CB` | `RewardRotation_RemoveEntryState`   |
+
+All five opcodes (`0x07C7`-`0x07CB`) have been added to `GameMessageOpcode.cs`
+and corresponding `IWritable` server message model classes have been created in
+`Source\NexusForever.Network.World\Message\Model\`.  The consumer function
+descriptions in `function_labels.csv` have been annotated with the inferred
+opcode mapping.  A full reward rotation manager (send-side integration) is a
+separate follow-up task.
+
 ## Practical Next Steps
 
 1. Keep extending `Decomp\Analysis\function_labels.csv` as functions are
@@ -6158,3 +6269,63 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
    `GameMessageOpcode.cs`, the STS models, and generated `GameTable` models.
 3. Add narrower high-value patterns to `ExportNexusForeverAnalysis.java` when a
    new subsystem becomes the focus.
+
+### `Game_Spell_IsSelfSpellDelegate` target-type bitmask decode (`1403b4ec0`)
+
+The 56-byte `Game_Spell_IsSelfSpellDelegate` function is now fully decoded.
+It is called by the `Lua_GameSpell_IsSelfSpell` path (`1405ee4a0`) after the
+spell-service wrapper resolves the active spell metadata.
+
+**Decoded pseudocode:**
+```c
+undefined8 Game_Spell_IsSelfSpellDelegate(longlong param_1) {
+  longlong lVar2 = *(longlong *)(param_1 + 0x70);  // ptr to target-mechanics runtime object
+  uint uVar1    = *(uint *)(lVar2 + 0x7c);         // TargetType (uint)
+  if (((7 < uVar1) || ((0x85U >> (uVar1 & 0x1f) & 1) == 0)) &&
+     ((*(int *)(lVar2 + 0x18) != 3 ||
+      ((*(int *)(lVar2 + 0x9c) != 0 || ((uVar1 - 4 & 0xfffffffb) != 0)))))) {
+    return 0;   // NOT a self-spell
+  }
+  return 1;     // IS a self-spell
+}
+```
+
+**Bitmask `0x85U = 10000101b`:** bits 0, 2, 7 set →
+TargetTypes 0, 2, and 7 are all "self-spell" per the client UI.
+
+**Additional self-spell case:** TargetType 4 (or 8) with
+`lVar2 + 0x18 == 3` (shape field) AND `lVar2 + 0x9c == 0` (constraint field).
+
+**Runtime wrapper field offsets (within target-mechanics runtime object at param_1+0x70):**
+
+| Offset | Type  | Meaning                               |
+|--------|-------|---------------------------------------|
+| +0x18  | int   | Shape/AOE type (3 = special gate)     |
+| +0x7c  | uint  | TargetType (main dispatch value)      |
+| +0x9c  | int   | Constraint field (0 = gate passes)    |
+
+**IsSelfSpell semantics vs. server ResolvePrimaryTargetId:**
+
+`IsSelfSpell` is a Lua UI function that determines whether a targeting cursor
+is shown.  TargetType 7 returning "self-spell" means the UI auto-fires at the
+current combat target without a manual aim (auto-attack behavior).  The server
+`ResolvePrimaryTargetId` must NOT blindly mirror `IsSelfSpell`:
+
+| TargetType | IsSelfSpell | Server ResolvePrimaryTargetId        |
+|------------|-------------|--------------------------------------|
+| 0          | true        | return `Owner.Guid` (self)           |
+| 2          | true        | return `Owner.Guid` (already done)   |
+| 7          | true (UI)   | return `Owner.TargetGuid` if visible |
+
+**Evidence witnesses (from `Spell4TargetMechanics` + spell4 joins):**
+
+- TargetType 0, mechanic 1: spell4=305 ("Q388 anti-tank mine explosion") — self-centered explosion.
+- TargetType 7, mechanic 25: spell4=339 (auto-attack) — fires at current enemy target.
+- TargetType 7, mechanic 18: spell4=26813 (client test AE) — AE shape.
+- TargetType 6, mechanic 17: spell4=11820 ("[TEST] Recharge Item Batteries Full") — item-activation only; no live witnesses; kept as return 0u pending further evidence.
+
+**Server implementation applied** (`CharacterSpell.ResolvePrimaryTargetId`):
+- Added constants `TargetTypeNoExplicitTarget = 0u` and `TargetTypeServiceLookup = 7u`.
+- TargetType 0 now returns `Owner.Guid` (merged with TargetTypeSelfAoe branch).
+- TargetType 7 now falls through to the current-target path (like SingleTarget/TargetAoe/Chain).
+- TargetType 6 remains as `return 0u` — insufficient evidence for a live item-activation path.

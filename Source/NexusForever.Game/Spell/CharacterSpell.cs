@@ -10,10 +10,13 @@ namespace NexusForever.Game.Spell
 {
     public class CharacterSpell : ICharacterSpell
     {
+        // IsSelfSpellDelegate bitmask 0x85: bits 0, 2, 7 → types 0, 2, 7 are "self-spell"
+        private const uint TargetTypeNoExplicitTarget = 0u; // self/caster-centered (e.g., mine explosion spell 305)
         private const uint TargetTypeSingleTarget = 1u;
         private const uint TargetTypeSelfAoe = 2u;
         private const uint TargetTypeTargetAoe = 3u;
         private const uint TargetTypeChain = 5u;
+        private const uint TargetTypeServiceLookup = 7u; // per-spell service tree (includes auto-attack spell 339)
 
         [Flags]
         public enum UnlockedSpellSaveMask
@@ -184,10 +187,10 @@ namespace NexusForever.Game.Spell
         {
             uint targetType = BaseInfo.TargetMechanics?.TargetType ?? 0u;
 
-            if (targetType == TargetTypeSelfAoe)
+            if (targetType == TargetTypeSelfAoe || targetType == TargetTypeNoExplicitTarget)
                 return Owner.Guid;
 
-            if (targetType is not TargetTypeSingleTarget and not TargetTypeTargetAoe and not TargetTypeChain)
+            if (targetType is not TargetTypeSingleTarget and not TargetTypeTargetAoe and not TargetTypeChain and not TargetTypeServiceLookup)
                 return 0u;
 
             if (Owner.TargetGuid == null)
