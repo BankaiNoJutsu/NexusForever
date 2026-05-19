@@ -9085,10 +9085,26 @@ SpellService_ResolveSpellWrapper(DAT_140c65b70, spellId, entity) → spellWrappe
 | `+0x00` | int32 | spellId | `GetId` |
 | `+0x04` | int32 | baseSpellId | `GetBaseSpellId`, `IsNew` |
 | `+0x08` | byte | tier | `GetTier` |
-| `+0x18` | int32 | castMethod | `GetCastMethod` |
+| `+0x18` | int32 | castMethod (value 7 = freeform) | `GetCastMethod`, `IsFreeformTarget` |
+| `+0x78` | float | targetAngle | `GetTargetAngle` |
 | `+0xf4` | int32 | school | `GetSchool` |
 | `+0xf8` | int32 | classRequirement | `GetClass` |
-| `+0x10c` | uint32 | flagBits | `IsBeneficial` (bit 26 = isBeneficial) |
+| `+0x108` | uint32 | interruptAndCostFlags (bit 29 = hasServiceTokenCost) | `IsMovingInterrupted`, `GetSpellServiceTokenCost` |
+| `+0x10c` | uint32 | flagBits (bit 26 = isBeneficial, bit 28 = hideCooldownInTooltip) | `IsBeneficial`, `ShouldHideCooldownInTooltip` |
+| `+0x164` | int32 | requiredWorldZoneId (0 = none) | `GetRequiredWorldZone` |
+
+### SpellWrapper Instance Fields (via `spellWrapper` directly, not `+0x70`)
+- `spellWrapper + 0x50` = channelDataPtr (non-null if spell has channel/proxy channel data)
+
+### SpellService Level Tier Table
+- `DAT_140c65b70 + 0x58 + playerLevel * 0x10` = per-level data entry
+- `entity+0x78 → +0xdc` = playerLevel (int; 0–0x16 = levels 1–23 check in GetRequiredLevel/GetPrice)
+
+### Additional Named Functions (GameSpell)
+- `FUN_140564fb0(_, spellId)` = `SpellService_GetThresholdTimeEntry` — returns threshold data for a spell
+- `FUN_14034bdd0(worldZoneId)` = `WorldZone_GetNameString` — returns zone name string
+- `FUN_1405a4d90(spellDataPtr, spellId)` = `SpellService_GetTokenCostValue` — returns service token cost
+- `FUN_140501210(luaState, tokenCostResult)` = `Lua_PushSpellTokenCostResult` — push token cost onto stack
 
 ### SpellService Range Functions
 - `FUN_1403ad8f0(DAT_140c65b70, spellId, entity)` = `SpellService_GetMaximumRange` → float

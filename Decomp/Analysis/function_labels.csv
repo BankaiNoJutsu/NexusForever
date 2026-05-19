@@ -862,3 +862,7 @@ WildStar64.exe,140571400,PathMission_ShowChecklistHintArrow,Shows the checklist-
 WildStar64.exe,1403d3470,Lua_PushSpellObject,Pushes a spell object Lua userdata onto the stack from a spell data pointer.
 WildStar64.exe,14056c2b0,PathMission_GetPositionHandle,Returns the position handle object for a path mission (used in distance calculations).
 WildStar64.exe,14024b980,PositionHandle_GetPosObject,Returns the position object (XYZ at +0x0c/+0x10/+0x14 and radius at +0x04) from a position handle.
+WildStar64.exe,140564fb0,SpellService_GetThresholdTimeEntry,Returns threshold time data for a spell; takes (service, spellId).
+WildStar64.exe,14034bdd0,WorldZone_GetNameString,Returns the display name string for a world zone ID.
+WildStar64.exe,1405a4d90,SpellService_GetTokenCostValue,Returns the spell service token cost value; takes (spellDataPtr, spellId).
+WildStar64.exe,140501210,Lua_PushSpellTokenCostResult,Pushes a spell token cost result object onto the Lua stack.
