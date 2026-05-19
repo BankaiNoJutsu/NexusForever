@@ -773,3 +773,14 @@ WildStar64.exe,1403eeb67,Entity_ExecuteSpellEffect_UnitPropertyConversion,High-r
 WildStar64.exe,1403f102f,Entity_ExecuteSpellEffect_DisguiseOutfit,High-range dispatch stub for effectType 0x70 (DisguiseOutfit); embedded case target within Entity_ExecuteSpellEffectHighRange (1403ec6a0).
 WildStar64.exe,1403f103d,Entity_ExecuteSpellEffect_ActivateSpellCooldown,High-range dispatch stub for effectType 0x92 (ActivateSpellCooldown); embedded case target within Entity_ExecuteSpellEffectHighRange (1403ec6a0).
 WildStar64.exe,1403f12d2,Entity_ExecuteSpellEffect_HighRange_Default,Default/no-op handler for unimplemented high-range effectTypes in Entity_ExecuteSpellEffectHighRange (1403ec6a0); used by 1677 of 2322 high-range slots.
+WildStar64.exe,14055bdc0,SpellTarget_ResolveTargetEntity,Resolves the entity to target for a spell cast. Reads targeting mode and type from spell data; uses cursor target (entity+0x108) for types 1/3/5/8 or self (entity+0x08) for types 0/2/6/7; auto-selects nearby entity within 4.0 units when no cursor target. Returns resolved entity pointer or 0.
+WildStar64.exe,1403ac780,ActionSet_GetHotkeySlotFromSet,Retrieves a hotkey slot from the entity's ActionSet storage at entity+0xa0; used in SpellCast_ValidateAndDispatch and SpellCast_SendClientSpellCastState.
+WildStar64.exe,1403d90d0,Entity_ResolveEntityById,Resolves an entity pointer from an entity ID; called throughout spell system. Takes entity+world context plus entity ID; returns entity pointer or 0.
+WildStar64.exe,14055a5f0,Entity_FindNearestTargetable,Finds nearest valid targetable entity within range; used in SpellTarget_ResolveTargetEntity for auto-target when no cursor target set (range from GameTable[0x145]+0x18 = 4.0 default).
+WildStar64.exe,1405e9400,SpellCooldown_GetForSpell,Gets the SpellCooldown object for the first arg spell; cooldown value at +0x38 (uint ptr); used in Lua_GameSpell_GetCooldownTime.
+WildStar64.exe,1403ad8f0,SpellService_GetMaximumRange,Computes maximum cast range for a spell by ID. Args: spellService, SpellId, entityContext. Returns float (range in units).
+WildStar64.exe,1403ad860,SpellService_GetMinimumRange,Computes minimum cast range for a spell by ID. Args: spellService, SpellId, entityContext. Returns float (range in units).
+WildStar64.exe,14054e340,SpellService_GetCastTimeMs,Computes cast time in ms for a spell. Args: innerDataPtr, SpellId, entityContext. Returns uint32 milliseconds.
+WildStar64.exe,14039e400,SpellCast_CancelCurrentCast,Cancels the current in-progress spell cast; called when overriding/superseding cast.
+WildStar64.exe,14047bfd0,SpellCast_IsToggleSpellActive,Checks whether a toggle spell is currently active; returns non-zero if active. Used in SendClientSpellCastState to short-circuit toggle re-cast.
+WildStar64.exe,14046afc0,SpellCooldown_StartCooldownForSpell,Starts/resets cooldown for a resolved spell wrapper. Args: entity, spellWrapper, flag.

@@ -6916,6 +6916,98 @@ assigned by Ghidra from nearby strings):
 | `140a6d0e0` | Spell4AoeTargetConstraints |
 | `140a6d498` | Spell4StackGroup (previously confirmed) |
 
+---
+
+## ValidTargetsCriteria_Evaluate — Full Criteria Type Decode
+
+Decoded from `ValidTargetsCriteria_Evaluate @ 1403b4a20`.
+
+`param_1` = CriteriaProxy pointer; `param_2` = TargetGroup row (int array).
+
+### TargetGroup Row Layout
+
+| Field index | Byte offset | Name | Notes |
+|------------|------------|------|-------|
+| `row[0]` | +0x00 | `id` | Row ID |
+| `row[1]` | +0x04 | `(unknown)` | Not directly used in this function |
+| `row[2]` | +0x08 | `criteriaType` | Switch discriminator (1–13 confirmed) |
+| `row[3..9]` | +0x0c..+0x24 | `values[0..6]` | 7 int32 value slots for the type |
+
+### Criteria Type → Semantic
+
+| Type | Odd/Even | CriteriaProxy vtable slot | Semantic |
+|------|----------|--------------------------|----------|
+| 1 | must-include | `+0x10` FactionGroupId | entity FactionGroupId MUST be in values[0..6] |
+| 2 | must-exclude | `+0x10` FactionGroupId | entity FactionGroupId MUST NOT be in values[0..6] |
+| 3 | must-include | `+0x30` Attr2_Unk118 | entity Attr2_Unk118 MUST be in values[0..6] |
+| 4 | must-exclude | `+0x30` Attr2_Unk118 | entity Attr2_Unk118 MUST NOT be in values[0..6] |
+| 5 | must-include | `+0x20` RaceId | entity RaceId MUST be in values[0..6] |
+| 6 | must-exclude | `+0x20` RaceId | entity RaceId MUST NOT be in values[0..6] |
+| 7 | must-include | `+0x28` ClassId | entity ClassId MUST be in values[0..6] |
+| 8 | must-exclude | `+0x28` ClassId | entity ClassId MUST NOT be in values[0..6] |
+| 9 | special | `+0x18` Field0x140_ListMatch | passes entire `values[0..6]` array; checks entity+0x140 list |
+| 10 | all-pass | `+0x08` GetSubCriteria | all non-zero entries must recursively pass |
+| 11 | all-fail | `+0x08` GetSubCriteria | all non-zero entries must recursively fail |
+| 12 | must-include | `+0x38` UnitRaceId | entity UnitRaceId (via entity+0xd0 ptr) MUST be in values[0..6] |
+| 13 | must-exclude | `+0x38` UnitRaceId | entity UnitRaceId MUST NOT be in values[0..6] |
+
+Return codes:
+- `0` = pass (target valid / no restriction triggered)
+- `0x59` = fail (target invalid, excluded, or restriction triggered)
+- `0x13d` = conditional pass (neutral/ignored state from recursive calls)
+
+### CriteriaProxy Vtable Slot Usage (from ValidTargetsCriteria_Evaluate)
+
+| Vtable byte offset | Cases | Role | Confirmed label |
+|-------------------|-------|------|----------------|
+| `+0x08` | 10, 11 | `GetSubCriteria()` → sub-criteria row for recursive eval | `EntityCriteria_GetRelatedCriteriaThunk @ 1403b4a10` |
+| `+0x10` | 1, 2 | getter: FactionGroupId | `EntityCriteria_GetFactionGroupId @ 1403b4940` (entity+0x18) |
+| `+0x18` | 9 | `MultiCheck(values, count)` → array-based eval (CheckType9) | `EntityCriteria_GetField0x140_ListMatch @ 1403b4960` (entity+0x140) |
+| `+0x20` | 5, 6 | getter: RaceId | `EntityCriteria_GetRaceId @ 1403b49a0` (entity+0xd8) |
+| `+0x28` | 7, 8 | getter: ClassId | `EntityCriteria_GetClassId @ 1403b49b0` (entity+0xdc) |
+| `+0x30` | 3, 4 | getter: Attr2_Unk118 | `EntityCriteria_GetAttr2_Unk118 @ 1403b49c0` (entity+0x118) |
+| `+0x38` | 12, 13 | getter: UnitRaceId | `EntityCriteria_GetUnitRaceId @ 1403b49e0` (entity+0xd0 ptr) |
+
+---
+
+## Entity Struct — Faction/Targeting Fields
+
+Decoded from `Entity_GetFactionRelationship @ 14046c580`.
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x18` | pointer | `factionData` | Sub-struct pointer; faction rules live here |
+| `+0x80` | int32 | `entityType` | 0x14 = special NPC type with override faction path |
+| `*(factionData + 0x6c)` | int32 | `factionLockFlag` | Non-zero → suppress normal faction lookup |
+| `*(factionData + 0x148)` | int32 | `factionLockFlag2` | Non-zero → suppress normal faction lookup |
+| `*(factionData + 0xc0)` | pointer | `factionRelTable` | Pointer to 4-entry int32 array of faction relationship IDs |
+
+The function iterates the 4-entry `factionRelTable`, calling a ValidTargets check for each. The
+first entry whose check passes (or whose ID is zero) is returned. The default fallback is
+`GameTable[0x19e]` field[+4].
+
+For `entityType == 0x14`:
+- `param_2 + 0xdc` = faction entry ID field in a context object
+- `FUN_1401f31e0` = Faction GetById
+- The relationship is at `faction_entry + 0x54`
+
+
+| Descriptor address | DB name |
+|-------------------|---------|
+| `140a6d0a8` | Spell4 |
+| `140a6d118` | Spell4Base |
+| `140a6d658` | Spell4Visual |
+| `140a6dff8` | VisualEffect |
+| `140a6d6c8` | SpellCoolDown |
+| `140a6d930` | TargetGroup |
+| `140a6d540` | Spell4TargetMechanics |
+| `140a6d508` | Spell4TargetAngle |
+| `140a6d620` | Spell4ValidTargets |
+| `140a6d310` | Spell4HitResults |
+| `140a6d380` | Spell4Prerequisites |
+| `140a6d0e0` | Spell4AoeTargetConstraints |
+| `140a6d498` | Spell4StackGroup (previously confirmed) |
+
 | +0x108 | byte | PropertyFlags low byte | Bit 1 (0x02): combined with AoE data bypasses primary ValidTargets |
 | +0x168 | int | ValidTargets primary ID | 0 = any target accepted; runtime ID into Spell4ValidTargets table |
 | +0x16c | int | ValidTargets secondary ID | Secondary target ValidTargets ID; 0 = no secondary check |
@@ -6964,6 +7056,175 @@ bypass target restrictions when in AoE mode.
 | PropertyFlags bit 1 AoE bypass | Not in server; noted for future when AoE spells show unexpected target rejection |
 | Error codes 0x97/0x119 | Client-side only; server has its own CastResult enum |
 | No server changes needed this pass | ✓ |
+
+---
+
+## SpellWrapper (Resolved) Object Layout
+
+Decoded from `Lua_GameSpell_GetId @ 1405e95f0`, `GetBaseSpellId @ 1405e96a0`,
+`GetTier @ 1405e9840`, `GetChannelData`, `SpellTarget_ValidateWrapperAndTargets`,
+`SpellCast_ValidateAndDispatch`.
+
+`SpellService_ResolveSpellWrapper(spellServiceGlobal, spellId, entityContext)` → `lVar`.
+
+### SpellWrapper Top-level Fields
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x40` | pointer | `aoeDataPtr` | Non-null for AoE spells; used in ValidTargets bypass check |
+| `+0x50` | pointer | `channelDataPtr` | Non-null for channeled spells |
+| `+0x70` | pointer | `innerDataPtr` | Pointer to inner spell data struct |
+
+### SpellWrapper InnerData (at `*(wrapper + 0x70)`)
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x00` | int32 | `Spell4Id` | Spell ID |
+| `+0x04` | int32 | `Spell4BaseId` | Base spell ID (Lua: GetBaseSpellId) |
+| `+0x08` | byte | `tier` | Spell tier (Lua: GetTier) |
+| `+0x18` | int32 | `targetingMode` | 3 = no target; used in SpellTarget_ResolveTargetEntity |
+| `+0x70` | float | `tierCount?` | Float used in range calculation: `fVar7 = *(float *)(inner + 0x70) - 1.0` |
+| `+0x7c` | int32 | `targetingType` | Target type code (see table below) |
+| `+0x80` | int32 | `overrideSpellId` | Redirect/linked spell ID (0 = none) |
+| `+0x108` | byte | `propertyFlagsByte` | Bit 1 (0x02): AoE ValidTargets bypass flag |
+| `+0x128` | int32 | `validationBypassFlag` | Non-zero: skip relationship check for primary target |
+| `+0x154` | uint32 | `spellFlagsWord` | Bit 0x400: override/substitute enabled; Bit 0x200: item use mode |
+| `+0x168` | int32 | `validTargetsPrimaryId` | ValidTargets ID for caster check (0 = none) |
+| `+0x16c` | int32 | `validTargetsSecondaryId` | ValidTargets ID for target check (0 = none) |
+| `+0x180` | int32 | `substituteSpellId` | Substitute spell (when flags word bit 0x400 set) |
+| `+0x198` | int32 | `prerequisiteId` | Prerequisites ID (Spell4Prerequisites table); 0 = none |
+| `+0x1b0` | int32 | `questInteractionFlag` | Non-zero: cast triggers QuestInteraction flow |
+| `+0x1d0` | int32 | `tradeskillVendorFlag` | Non-zero: triggers tradeskill/vendor flow |
+| `+0x1d8` | int32 | `additionalInteractionFlag` | Non-zero: used for NPC activation |
+
+### ChannelData Struct (at `*(wrapper + 0x50)`)
+
+| Byte offset | Type | Name | Lua key |
+|------------|------|------|---------|
+| `+0x00` | uint32 | `initialDelayMs` | "fInitialDelay" (milliseconds) |
+| `+0x04` | uint32 | `maxTimeMs` | "fMaxTime" (milliseconds) |
+
+### TargetingType Codes (from SpellTarget_ResolveTargetEntity)
+
+| TargetingType value | Behavior | Entity field used |
+|--------------------|----------|------------------|
+| 0 | Self-target | `entity + 0x8` (self entity ID) |
+| 1 | Cursor/selected target | `entity + 0x108` (cursor target ID) |
+| 2 | Self-target | `entity + 0x8` |
+| 3 | Cursor/selected target | `entity + 0x108` |
+| 4 | Item targeting | `entity + 0x6ce8..0x6d00` (item-use spell context) |
+| 5 | Cursor/selected target | `entity + 0x108` |
+| 6 | Self-target | `entity + 0x8` |
+| 7 | Self-target | `entity + 0x8` |
+| 8 | Cursor/selected target | `entity + 0x108` |
+| other | No target | 0 |
+| `inner+0x18 == 3` | No target override | 0 (overrides targetingType) |
+
+Bitmask `0x12a = 0b100101010` (bits 1,3,5,8 set) = types that use cursor target. Used for auto-select nearest when no cursor target is set (within 4.0 units, uses hitbox radii).
+
+---
+
+## Entity Struct — Spell Cast / Action Slots
+
+Decoded from `SpellCast_ValidateAndDispatch`, `SpellCast_SendClientSpellCastState`,
+`SpellCast_SendClientCastSpellOrPosition`, `SpellCast_ResolveTargetsAndValidate`,
+`SpellTarget_ResolveTargetEntity`, `Entity_LookupSpellWrapperInBST`.
+
+### Entity Core Spell Fields
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x08` | int32 | `entityId` | Own entity ID (confirmed many times) |
+| `+0x18` | pointer | `factionData` | Faction rules sub-object |
+| `+0x78` | pointer | `activeSpellContext` | Points to current active spell; `*(context+0x98)` = Spell4Id |
+| `+0x80` | int32 | `entityType` | 0x14 = special NPC type |
+| `+0xa0` | struct | `actionSetStorage` | ActionSet/HotkeySet container |
+| `+0xa90` | pointer | `actionBarSlotArray` | Pointer to array of hotkey slot pointers |
+| `+0xa98` | uint64 | `actionBarSlotCount` | Number of action bar slots |
+| `+0x108` | int32 | `cursorTargetId` | Current cursor/mouse-over target entity ID |
+| `+0x11e0` | float | `positionX` | World position X |
+| `+0x11e4` | float | `positionY` | World position Y |
+| `+0x11e8` | float | `positionZ` | World position Z |
+| `+0x540` | hash map | `targetFlagsMap` | SpellId → target flags; `SpellService_ResolveTargetFlags` |
+| `+0x6364` | int32 | `currentSpellTrackingId` | Set when slot index == 2 |
+| `+0x6490` | pointer | `castContext` | Follow-up/chain cast context sub-struct |
+| `+0x6648` | int32 | `spellCastState` | Value 7 = specific in-progress state |
+| `+0x6658` | struct | `castSubContext` | Cast phase sub-context |
+| `+0x6718` | pointer | `globalEntityContext` | Context pointer checked in multicast scenario |
+| `+0x67b0` | int32 | `pendingSpellCheckId` | Pending spell for cooldown validation |
+| `+0x6ce8` | pointer | `itemUseSpellWrapper` | Item-use spell context, field 1 |
+| `+0x6cf0` | uint64 | `itemUseSpellData1` | Item-use spell context, field 2 |
+| `+0x6cf8` | uint64 | `itemUseSpellData2` | Item-use spell context, field 3 |
+| `+0x6d00` | uint64 | `itemUseSpellData3` | Item-use spell context, field 4 (low 32 = 9 for TargetingType 4) |
+| `+0x6d10` | struct | `targetingContext` | Targeting context used by SpellCast_ResolveTargetsAndValidate |
+| `+0x6d90` | pointer | `spellTranslateService` | Spell ID translation service (wraps spell objects) |
+| `+0x7040` | pointer | `unkFlag7040` | Non-null triggers FUN_14057a2c0 at start of cast |
+| `+0x7340` | pointer | `luaEventContext` | Used to dispatch named Lua events (SpellCastFailed etc.) |
+| `+0x7b4c` | int32 | `effectDispatchStatus` | Written during spell effect dispatch |
+| `+0x7ba0` | byte | `groundTargetFlags` | Bit 0: in ground-targeted mode |
+| `+0x7d18` | BST root | `spellWrapperBST` | BST of SpellId → SpellWrapper; `Entity_LookupSpellWrapperInBST` |
+
+### Entity CastContext Sub-struct (at `*(entity + 0x6490)`)
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x108` | int32 | `chainCastSpellId` | SpellId of chain/follow-up spell |
+| `+0x1cc` | int32 | `channelInterruptFlag` | Non-zero: interrupt current channel first |
+| `+0x1070` bit 0x200 | flag | `someCastMode` | Combined with AoE data check |
+
+### SpellWrapper BST Node Layout (at entity+0x7d18)
+
+BST sorted by SpellId. Each node:
+| Byte offset | Type | Name |
+|------------|------|------|
+| `+0x10` | pointer | left child |
+| `+0x18` | pointer | right child |
+| `+0x20` | uint32 | SpellId (key) |
+| `+0x28` | pointer | SpellWrapper (value) |
+
+### ActionBar Slot Object (from `SpellCast_SendClientCastSpellOrPosition`)
+
+- `*(param_1 + 0xa90)` = pointer to array; indexed by slot number (0-based)
+- Each entry is a pointer to a slot object with vtable
+- Slot vtable `+0x70` = validation function (returns 0x1c = locked/disabled)
+
+### SpellCast Return Codes (Extended)
+
+| Code | Hex | Meaning |
+|------|-----|---------|
+| 0 | 0x00 | Success |
+| 4 | 0x04 | No spell resolved / slot has no spell |
+| 17 | 0x11 | Prerequisite failed |
+| 22 | 0x16 | No ActionSet slot for this cast |
+| 23 | 0x17 | No valid NPC interaction |
+| 30 | 0x1e | No active target (entity+0x78 = null) |
+| 105 | 0x69 | Out of range (triggers deferred approach) |
+| 151 | 0x97 | Caster fails ValidTargets check |
+| 281 | 0x119 | Secondary target fails ValidTargets check |
+| 279 | 0x117 | GiveItem range check failed |
+| 317 | 0x13d | Conditional pass-through |
+| 0x11d | 285 | Action slot locked/disabled |
+
+---
+
+## SpellService Globals
+
+| Address | Name | Role |
+|---------|------|------|
+| `DAT_140c65b70` | `SpellServiceGlobal` | Main spell service; passed to `SpellService_ResolveSpellWrapper` |
+| `DAT_140c65898` | `LocalPlayerEntityGlobal` | Global ptr to local player entity |
+| `DAT_140c659a0` | `ValidTargetsServiceGlobal` | Target validation service; vtable slot `+0x18` = check fn |
+| `DAT_140c65b70` | `SpellServiceGlobal` | Also passed to ResolveTargetFlags, GetMaximumRange, GetMinimumRange |
+
+---
+
+## Auto-Target Logic (SpellTarget_ResolveTargetEntity)
+
+When `targetingType` is cursor-based (types 1,3,5,8) AND `param_5 == 0` (no cursor target) AND `param_4 == 0`:
+1. Load `GameTable[0x145]` field `+0x18` = float range threshold (default 4.0)
+2. Call `FUN_14055a5f0` = `FindNearestTargetable(entity, 1, 1, ...)` → returns entityId
+3. If entity found AND distance < (range + both hitbox radii): `TargetSelection_ApplySelectionAndDispatch(entity, nearbyId)`
+4. Use the nearby entity as the target
 
 
 ---
