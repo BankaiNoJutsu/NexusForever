@@ -6559,3 +6559,177 @@ Both Lua_GameSpell_IsSelfSpell and Lua_GameSpell_IsFreeformTarget use the same t
 3. BST lower_bound search for spell4 ID
 4. If found: resolve service spell wrapper and call delegate on it
 5. If not found: fall through to standard bitmask/flags check
+## Entity Spell Wrapper BST and Target Resolution Functions
+
+### Functions decoded (InspectCodeAddress pass, May 2026)
+
+This section documents three closely related target-validation functions discovered
+by direct `InspectCodeAddress.java` decompile.
+
+---
+
+### Entity_LookupSpellWrapperInBST @ 1405a5b90
+
+Performs a BST lower_bound lookup to find a spell wrapper by spell4 ID on a
+specific entity object.
+
+```c
+undefined8 Entity_LookupSpellWrapperInBST(longlong entity, uint spell4_id) {
+    longlong root = *(longlong *)(entity + 0x7d18);  // map header sentinel
+    longlong candidate = root;
+    longlong node = *(longlong *)(root + 8);         // root->_M_parent (first real node)
+    while (node != 0) {
+        if (*(uint *)(node + 0x20) < spell4_id) {
+            node = *(longlong *)(node + 0x18);       // go right
+        } else {
+            candidate = node;
+            node = *(longlong *)(node + 0x10);       // go left, track candidate
+        }
+    }
+    if ((candidate == root) || (spell4_id < *(uint *)(candidate + 0x20))) {
+        candidate = root;  // no exact match found
+    }
+    if (candidate != root) {
+        return *(undefined8 *)(candidate + 0x28);    // return spell_wrapper ptr
+    }
+    return 0;
+}
+```
+
+**Per-entity spell wrapper BST (at `entity + 0x7d18`):**
+- `entity + 0x7d18` = pointer to `std::map<spell4_id, spell_wrapper*>` header
+- Map sentinel node: `+0x08` = root node
+- BST node layout:
+  - `+0x10` = left child
+  - `+0x18` = right child
+  - `+0x20` = key: spell4 ID (uint)
+  - `+0x28` = value: spell_wrapper pointer
+
+This is a per-entity cache of spell wrappers distinct from the global spell
+service hash map at `service_obj + 0x540`. When a spell targets the local player
+or the player's current target, the client uses this entity-level lookup rather
+than the global hash map.
+
+**Called by:** `SpellService_ResolveSpellWrapper @ 1403acd90` when `param_3` is
+the local player entity (`DAT_140c65898 + 0x78`) or current target (`+0x6490`).
+
+**Server implication:** No change needed. The server resolves spell wrappers from
+the GameTable entries directly. The entity-level BST is a client-side optimization
+for rapid per-entity lookups and does not affect server target selection logic.
+
+---
+
+### SpellTarget_ResolveAndValidateWrapper @ 140398800
+
+Gate function that resolves the spell wrapper for a candidate target and, on
+success, populates result fields and calls the downstream validator.
+
+```c
+undefined8 SpellTarget_ResolveAndValidateWrapper(
+    undefined8 context, int *spell_result, longlong target_entity,
+    longlong extra_ctx, int *extra_ptr, undefined8 p6, undefined8 p7)
+{
+    if (*spell_result != 0) {
+        if (target_entity != 0) {
+            bool is_self_or_target =
+                (*(longlong *)(DAT_140c65898 + 0x78) == target_entity) ||
+                (*(longlong *)(DAT_140c65898 + 0x6490) == target_entity);
+            longlong wrapper = 0;
+            if (is_self_or_target) {
+                wrapper = DAT_140c65898;
+            }
+            if (wrapper != 0) {
+                wrapper = Entity_LookupSpellWrapperInBST(wrapper, spell4_id);
+                if (wrapper != 0) goto found;
+            }
+        }
+        wrapper = FUN_1407a0fd0(DAT_140c65b70);  // global fallback lookup
+        if (wrapper != 0) {
+found:
+            if (extra_ctx != 0) spell_result[9] = *(int *)(extra_ctx + 8);
+            if (extra_ptr != null) {
+                spell_result[0xd] = extra_ptr[0];
+                spell_result[0xe] = extra_ptr[1];
+                spell_result[0xf] = extra_ptr[2];
+            }
+            return FUN_1403ace00(extra_ptr, spell_result, p6, p7);
+        }
+    }
+    return 4;  // error: no valid spell wrapper
+}
+```
+
+**Key observations:**
+- Returns `4` when `*spell_result == 0` or no wrapper found (error code 4)
+- Local player is at `DAT_140c65898 + 0x78`; current target at `DAT_140c65898 + 0x6490`
+- Entity-level BST lookup takes priority over the global fallback
+- Populates `spell_result[0xd/0xe/0xf]` from `extra_ptr` (likely world position)
+- `spell_result[9]` gets a value from `extra_ctx + 8` (likely the spell4 ID)
+
+---
+
+### SpellTarget_ValidateTargetRelationship @ 1403b44b0
+
+Validates that a spell target meets relationship and alive requirements.
+
+```c
+undefined8 SpellTarget_ValidateTargetRelationship(
+    undefined8 p1, int expected_faction, int target_mask,
+    longlong target_entity, longlong has_faction_check, undefined8 caster_ctx)
+{
+    if (has_faction_check != 0) {
+        int relation = FUN_14046c580(target_entity, caster_ctx);  // GetRelation
+        if (relation == expected_faction) return 0;  // same group — OK
+        if ((*(byte *)(target_entity + 0x24) & 1) != 0) {  // target is dead
+            if (target_mask == 0) return 0x59;  // error: dead target
+            goto validate_mask;
+        }
+    }
+    if (target_mask == 0) return 0;
+validate_mask:
+    // vtable dispatch through FUN_1403b4a10 and FUN_1403b4a20
+    return FUN_1403b4a20(&vtable, FUN_1403b4a10(&vtable, target_mask));
+}
+```
+
+**Key observations:**
+- `target_entity + 0x24` byte bit 0 = dead flag (entity alive/dead state)
+- Error code `0x59` (89 decimal) = dead-target rejection
+- `FUN_14046c580` = entity relationship query (faction/group comparison)
+- `expected_faction` = 0 means self-group check; if target is in same faction as
+  caster the validation short-circuits to success (return 0)
+- `target_mask == 0` = no further type-check needed; non-zero triggers vtable
+  dispatch to `FUN_1403b4a10`/`FUN_1403b4a20` for deeper interactable/relation checks
+
+**Entity dead flag:** `entity + 0x24` bit 0 = dead.
+- This is a client-side dead marker distinct from health == 0 checks.
+
+**Server implication:** Server already validates dead targets separately; no server
+change needed. The `0x59` error code maps to a client-side `SpellCastFailed`
+result that is not surfaced to the server.
+
+---
+
+### Channel Data Struct Confirmation (`Lua_GameSpell_GetChannelData @ 1405ed640`)
+
+The channel data struct at `spell_wrapper + 0x50` (decoded from GetChannelData):
+
+| Offset | Type | Meaning |
+|--------|------|---------|
+| `+0x00` | uint | `fInitialDelay` in milliseconds (returned as `/ 1000.0` seconds) |
+| `+0x04` | uint | `fMaxTime` in milliseconds (returned as `/ 1000.0` seconds) |
+
+The Lua method returns both values as seconds. The server uses
+`Spell4Entry.CastTime / 1000d` for execute timing — this is the game-table
+equivalent of `fMaxTime` from the runtime wrapper. No server change needed.
+
+---
+
+### Server Implementation Status
+
+| Function | Address | Server Status |
+|----------|---------|---------------|
+| Entity_LookupSpellWrapperInBST | 1405a5b90 | Client-only cache; no server equivalent needed |
+| SpellTarget_ResolveAndValidateWrapper | 140398800 | Server validates wrappers via GameTable; no change needed |
+| SpellTarget_ValidateTargetRelationship | 1403b44b0 | Dead/faction checks in server spell validation; no change needed |
+| Channel data fInitialDelay/fMaxTime | 1405ed640 | Server uses Spell4Entry.CastTime; consistent |
