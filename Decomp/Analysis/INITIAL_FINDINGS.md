@@ -6329,3 +6329,162 @@ current combat target without a manual aim (auto-attack behavior).  The server
 - TargetType 0 now returns `Owner.Guid` (merged with TargetTypeSelfAoe branch).
 - TargetType 7 now falls through to the current-target path (like SingleTarget/TargetAoe/Chain).
 - TargetType 6 remains as `return 0u` — insufficient evidence for a live item-activation path.
+
+### `SpellCast_ResolveTargetsAndValidate` target-validation flow decode (`1403988d0`)
+
+The 1005-byte `SpellCast_ResolveTargetsAndValidate` function is the shared spell-cast
+target-preparation helper that resolves target entity IDs and runs range/validity checks.
+
+**Key behaviours decoded:**
+
+- **Trade-partner intercept** (`param_1 + 0x6718 != 0`): If the caster is in an active
+  trade and the target entity GUID matches the trade partner at `DAT_140c65898 + 0x78` or
+  `DAT_140c65898 + 0x6490`, the function sends opcode `0x18F` (399) as a trade-partner
+  cast notification.
+
+- **TargetType 2 (SelfAoe) fast path**: An early branch fires when
+  `TargetType == 2` AND `wrapper+0x10c` bit `0x4000000` is NOT set AND
+  `wrapper+0x108 != 0`. Calls `FUN_140398800` (heavy validator) directly
+  rather than going through `SpellTarget_ResolveTargetEntity`. This confirms
+  that the server's "always return `Owner.Guid` for type 2" logic is
+  consistent with the client intent for normal self-AOE casts.
+
+- **General target path**: If `*param_5 == 0`, calls
+  `SpellTarget_ResolveTargetEntity(param_1, spell_entity, spell_wrapper, 0, ...)`.
+  This is the labelled function at `14055bdc0` (770 bytes, **not yet decompiled**).
+  It is the definitive target-resolution function that enforces all target masks,
+  range, facing angle, and valid-target category checks.
+
+- **Position-AOE (TargetType 4) storage pattern** (from `SpellCast_ValidateAndDispatch`
+  at `1403998e0`): TargetType 4 pending cast is written to
+  `param_1 + 0x6ce8` (spell wrapper ptr), `+0x6cf0` (flags pair `0x100000000`),
+  `+0x6cf8` (explicit position data), `+0x6d00` (state word `9`). The server
+  mirrors this by storing `Parameters.Position` before dispatching.
+
+- **Known error codes** (`int` return):
+
+| Code | Hex   | Meaning (inferred from context)             |
+|------|-------|---------------------------------------------|
+| 0    | 0x00  | Success                                     |
+| 5    | 0x05  | Service check failed (no service node)      |
+| 0x11 | 17    | Prerequisite failed                         |
+| 0x16 | 22    | No spell object resolved                    |
+| 0x1e | 30    | No local player entity                      |
+| 0x33 | 51    | Trade-loop break condition                  |
+| 0x43 | 67    | Error code (triggers trade-partner re-check)|
+| 0x45 | 69    | Error code (same trade-partner re-check)    |
+| 0x69 | 105   | Early bail from self-AOE fast path          |
+| 0x119| 281   | Payload `uStack_130 = 1`                    |
+| 0x13d| 317   | Success-equivalent in trade path            |
+
+**Important unresolved function:** `SpellTarget_ResolveTargetEntity` at `14055bdc0`
+(770 bytes) is the entity-lookup + valid-target-category enforcement entry point.
+Adding it to the Ghidra selection is the next step for decoding non-dead valid-target
+masks, facing-angle gates, and range-check subtleties.
+
+### `UnitState_*` packet structure decode (`1403db7f0`–`1403db920`)
+
+Three labelled functions near `0x1403db7f0` decode the server `UnitState` packet
+structure and entity state fields:
+
+**`UnitState_UpdateCachedStateFields` (`1403db7f0`):**
+```c
+// param_2 = int[3]: [0]=entity_guid, [1]=new_state_value, [2]=secondary_state_data
+longlong entity = FUN_1403d90d0(param_1, param_2[0]);
+FUN_14045bdc0(entity, param_2[1], param_2[2]);
+// If entity is NOT the local player:
+if (entity + 0x108 != param_2[1]) {
+    entity + 0x108 = param_2[1];  // current unit state value
+    entity + 0x10c = FUN_14045a950(entity);  // derived state flags
+}
+```
+**Entity fields confirmed:**
+- `entity + 0x108`: current `UnitState` value (also used as spell-wrapper targeting flags)
+- `entity + 0x10c`: derived flags computed from state; bit `0x02` = valid interactable target;
+  bit `0x4000000` = self-AOE gate
+
+**`UnitState_ApplyResolvedState` (`1403db870`):**
+```c
+// param_2 = uint[4]: [0]=entity_guid, [1]=state_value, [2]=?, [3]=dismount_flag
+if (entity == local_player && param_2[1] == 0) {
+    // Clear player state: resets param_1+0x1b80 and param_1+0x71a0+0x54
+}
+FUN_14045e740(entity, param_2[1]);  // applies the state
+if (entity.mounted && param_2[1] != 0) return;
+if (entity.mounted && param_2[3] != 0) trigger_dismount();
+```
+
+**`UnitState_MaybeDispatchUnitEvaded` (`1403db920`):**
+- State value **4** = `"UnitEvaded"` → fires client event `"UnitEvaded"` with entity GUID.
+- This is the client-side cosmetic evade-float-text trigger.
+
+---
+
+## SpellTarget_ResolveTargetEntity Decode (14055bdc0, 770 bytes)
+### Run: 350-function Ghidra export (ranked #287 among labeled)
+
+### Function Signature and Purpose
+`
+SpellTarget_ResolveTargetEntity(longlong player, longlong caster, longlong spell_ctx, int explicit_id, int current_target_id)
+`
+Resolves the entity reference to use for a spell's primary target. Returns a world-entity pointer via
+FUN_1403d90d0(player, resolved_id).
+
+### TargetType Entity Switch Table (primary dispatch)
+`c
+if (wrapper+0x18 == 3) {
+    param_5 = 0;  // shape-type 3 = no entity (position-AOE)
+} else {
+    switch (wrapper+0x7c) {  // TargetType
+    case 0:  // NoExplicitTarget (mine explosion)
+    case 2:  // SelfAoe
+    case 6:  // ItemActivation
+    case 7:  // ServiceLookup / auto-attack
+        param_5 = *(int *)(caster + 8);  // caster entity ID = self
+        break;
+    case 1:  // SingleTarget
+    case 3:  // TargetAoe (target-centered)
+    case 5:  // (unknown label)
+    case 8:  // (unknown label)
+        if (param_5 == 0)
+            param_5 = *(int *)(caster + 0x108);  // entity's current target
+        break;
+    default:  // case 4 = PositionAoe
+        param_5 = 0;  // no entity, position only
+    }
+}
+`
+
+### Key Semantics
+- **Entity resolution is for telegraph anchoring / UI, not final damage target.**  
+  Type 7 (auto-attack) returns the caster entity here; server-side damage still targets Owner.TargetGuid.
+- **TargetType 6 (ItemActivation) is confirmed self-targeting**: client groups it with 0/2/7.
+- **TargetTypes 5 and 8 are confirmed single-target category** (use current target if none explicit).
+
+### Auto-Target Fallback (bitmask 0x12a)
+When xplicit_id == 0 AND esolved_id == 0 AND TargetType is in bitmask  x12a:
+-  x12a = 100101010b → bits 1, 3, 5, 8 → TargetTypes 1, 3, 5, 8 get auto-target fallback.
+- Searches nearby valid entities within ~5 yards (config entry 0x145 → lVar4+0x18, default 5.0f).
+- If found and within range: calls TargetSelection_ApplySelectionAndDispatch(player, entity_id) to select that entity.
+
+### Entity Field Offsets (confirmed)
+| Offset | Content |
+|--------|---------|
+| ntity + 0x08 | entity GUID / ID (uint) |
+| ntity + 0x108 | current UnitState value |
+| ntity + 0x11e0 | x position (float) |
+| ntity + 0x11e4 | y position (float) |
+| ntity + 0x11e8 | z position (float) |
+| ntity + 0x16f0 | bounding-sphere object pointer (call +0x50 to get sphere; radius at +0x30) |
+
+### Special Override Path (flags param_1+0x7ba0 bit 0)
+When player+0x7ba0 & 1 AND wrapper+0x10c bit 26 AND wrapper+0x10c bit 28:
+- Reads secondary entity ID from player+0x6490 → +0x108.
+- Performs relationship check via FUN_14045a950 and bounding check via FUN_140466b90.
+- Result: overridden entity replaces normal entity target.
+
+### Server Implementation Applied
+In CharacterSpell.ResolvePrimaryTargetId():
+- **TargetType 6**: now returns Owner.Guid (previously returned  u; client evidence confirms self-targeting).
+- **TargetTypes 5 and 8**: now included in the "use current target" path (were falling through to  u).
+- TargetType 7 server-side still returns Owner.TargetGuid (client returns caster entity for telegraph anchoring, but server needs combat target for effect application).
