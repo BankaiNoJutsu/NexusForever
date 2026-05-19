@@ -26,6 +26,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
 
         public void HandleMessage(IWorldSession session, ClientCharacterAppearanceChange appearanceChange)
         {
+            if (appearanceChange.Bones.Count > byte.MaxValue + 1)
+                throw new InvalidPacketValueException();
+
             List<(uint Label, uint Value)> customisations = appearanceChange.Labels
                 .Zip(appearanceChange.Values, ValueTuple.Create)
                 .ToList();

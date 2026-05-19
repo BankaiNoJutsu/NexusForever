@@ -98,6 +98,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 if (!customisationManager.Validate(creationEntry.RaceId, creationEntry.Sex, creationEntry.FactionId, customisations))
                     return CharacterModifyResult.CreateFailed;
 
+                if (characterCreate.Bones.Count > byte.MaxValue + 1)
+                    return CharacterModifyResult.CreateFailed;
+
                 return null;
             }
 
