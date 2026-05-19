@@ -4,16 +4,16 @@
 
 | Target | Functions | Durable labels | Interesting strings | Selected | Decompiled |
 | --- | --- | --- | --- | --- | --- |
-| `Houston64.exe` | 25129 | 7508 | 6317 | 0 | 0 |
-| `StsConnLib64.MT.dll` | 4522 | 371 | 3406 | 863 | 40 |
-| `WildStar64.exe` | 24984 | 1019 | 11000 | 2230 | 450 |
+| `Houston64.exe` | 25129 | 7508 | 6395 | 1597 | 800 |
+| `StsConnLib64.MT.dll` | 4522 | 371 | 3406 | 863 | 800 |
+| `WildStar64.exe` | 24985 | 1144 | 11000 | 2353 | 800 |
 
 ## Opcode Coverage
 
 | Direction | Total | Implemented | Partial | Missing |
 | --- | --- | --- | --- | --- |
 | Client | 330 | 330 | 0 | 0 |
-| Server | 566 | 566 | 0 | 0 |
+| Server | 571 | 571 | 0 | 0 |
 | Core | 3 | 3 | 0 | 0 |
 
 ## Queue: Client Opcodes Missing Models

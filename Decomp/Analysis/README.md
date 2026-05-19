@@ -139,6 +139,13 @@ tables or raw code stubs:
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -ExtraPostScript DumpNearbyData.java -ExtraPostScriptArgs @('140b73540','20')
 ```
 
+Trace direct callers of a mapped function when a subsystem appears to be wired
+through registration tables or callback dispatch:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -ExtraPostScript TraceFunctionCallers.java -ExtraPostScriptArgs @('140636280','6')
+```
+
 Use the ASCII dumper when a short inline string has not been auto-defined in the
 listing:
 

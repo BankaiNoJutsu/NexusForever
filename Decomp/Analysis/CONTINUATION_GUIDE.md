@@ -22,6 +22,7 @@ implement server behavior from the evidence in the existing C# codebase.
 | `Decomp/Analysis/scripts/DumpNearbyData.java` | Dumps nearby data-table slots and resolves pointer targets. |
 | `Decomp/Analysis/scripts/DumpAsciiAtAddress.java` | Dumps raw bytes and printable ASCII for short undefined strings. |
 | `Decomp/Analysis/scripts/InspectCodeAddress.java` | Decompiles a function or dumps raw instructions at a code address. |
+| `Decomp/Analysis/scripts/TraceFunctionCallers.java` | Lists direct references to a target function and prints each caller instruction window. |
 | `Decomp/Analysis/function_labels.csv` | Durable function label map. This is the main bridge from native addresses to named evidence. |
 | `Decomp/Analysis/INITIAL_FINDINGS.md` | Living summary of mapped behavior and follow-up implementation. |
 | `Decomp/Analysis/Get-DecompCoverageSnapshot.ps1` | Generates the current export and opcode coverage inventories from local artifacts and source. |
