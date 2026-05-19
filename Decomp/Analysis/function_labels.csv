@@ -784,24 +784,24 @@ WildStar64.exe,14054e340,SpellService_GetCastTimeMs,Computes cast time in ms for
 WildStar64.exe,14039e400,SpellCast_CancelCurrentCast,Cancels the current in-progress spell cast; called when overriding/superseding cast.
 WildStar64.exe,14047bfd0,SpellCast_IsToggleSpellActive,Checks whether a toggle spell is currently active; returns non-zero if active. Used in SendClientSpellCastState to short-circuit toggle re-cast.
 WildStar64.exe,14046afc0,SpellCooldown_StartCooldownForSpell,Starts/resets cooldown for a resolved spell wrapper. Args: entity, spellWrapper, flag.
-1403ad690,SpellService_IsInRange
-1407a0fd0,SpellService_ResolveTargetFlags
-1403ad860,SpellService_GetMinRange
-1403ad8f0,SpellService_GetMaxRange
-14054e340,SpellInner_ResolveCastTimeMs
-14046a890,SpellWrapper_ResolveCooldown
-140195f70,CooldownNode_GetRemainingMs
-14023dc80,GCDGroup_LookupById
-14046a760,SpellService_ResolveGCDTime
-1407a16f0,ChargeService_GetChargesForSpell
-1405a4d90,SpellServiceToken_GetCostAmount
-1405e73e0,InnateAbility_GetCount
-1405e9400,SpellLuaArg_ResolveWrapper
-140462a90,Entity_GetInnateResourceValue
-1404823c0,SpellWrapper_IsPlayerAbility
-1403bb170,SpellBook_IsSpellLearned
-1403bb040,SpellBook_IsSpellSlotCompatible
-1403bacc0,SpellBook_GetSpellTierData
-1407a1440,SpellWrapper_BuildForTier
-1403bb340,SpellBook_SendTierUpdateRequest
-1403c1ea0,ActionSet_GetSlotData
+WildStar64.exe,1403ad690,SpellService_IsInRange,Returns non-zero if caster is within range of target for a given spell.
+WildStar64.exe,1407a0fd0,SpellService_ResolveTargetFlags,Resolves target flags from SpellService+0x540 hash map by entityId.
+WildStar64.exe,1403ad860,SpellService_GetMinRange,Returns minimum cast range (float) for a spell given active entity state.
+WildStar64.exe,1403ad8f0,SpellService_GetMaxRange,Returns maximum cast range (float) for a spell given active entity state.
+WildStar64.exe,14054e340,SpellInner_ResolveCastTimeMs,Resolves actual cast time in milliseconds from inner data and entity active state.
+WildStar64.exe,14046a890,SpellWrapper_ResolveCooldown,Resolves actual cooldown duration in milliseconds accounting for scale factor.
+WildStar64.exe,140195f70,CooldownNode_GetRemainingMs,Reads remaining cooldown time in milliseconds from a cooldown list node timer.
+WildStar64.exe,14023dc80,GCDGroup_LookupById,Looks up GCD group entry by group ID; entry+0x04 = GCD duration ms.
+WildStar64.exe,14046a760,SpellService_ResolveGCDTime,Resolves actual GCD time in milliseconds considering entity state modifiers.
+WildStar64.exe,1407a16f0,ChargeService_GetChargesForSpell,Returns pointer to charge counter for a spell ID; null if no charge system applies.
+WildStar64.exe,1405a4d90,SpellServiceToken_GetCostAmount,Returns service token cost amount for a spell that has inner+0x108 bit 29 set.
+WildStar64.exe,1405e73e0,InnateAbility_GetCount,Returns count of innate ability spells for the player entity.
+WildStar64.exe,1405e9400,SpellLuaArg_ResolveWrapper,Helper: reads first Lua arg as Game.Spell and resolves the C++ spell wrapper.
+WildStar64.exe,140462a90,Entity_GetInnateResourceValue,Queries current innate resource value from entity active state.
+WildStar64.exe,1404823c0,SpellWrapper_IsPlayerAbility,Returns non-zero if wrapper represents a player LAS ability (activatable/tier-upgradable).
+WildStar64.exe,1403bb170,SpellBook_IsSpellLearned,Returns non-zero if the entity has learned the given spell ID.
+WildStar64.exe,1403bb040,SpellBook_IsSpellSlotCompatible,Returns non-zero if the spell is compatible with its LAS slot type.
+WildStar64.exe,1403bacc0,SpellBook_GetSpellTierData,Returns tier progression data pointer for a spell given entity and action set byte.
+WildStar64.exe,1407a1440,SpellWrapper_BuildForTier,Builds or retrieves the resolved spell wrapper for a specific tier of a spell.
+WildStar64.exe,1403bb340,SpellBook_SendTierUpdateRequest,Sends spell tier update request after validating new tier affordability.
+WildStar64.exe,1403c1ea0,ActionSet_GetSlotData,Returns action slot data pointer for a given slot index and action set byte.
