@@ -1,7 +1,10 @@
-﻿using System.Linq.Expressions;
+﻿using System;
+using System.Linq.Expressions;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Chat.Format;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Chat;
+using NexusForever.Network;
 using NexusForever.Network.Internal.Message.Chat.Shared.Format;
 using NexusForever.Network.Internal.Message.Chat.Shared.Format.Model;
 using NexusForever.Network.World.Chat;
@@ -129,6 +132,20 @@ namespace NexusForever.Game.Chat.Format
             localFormatters.Add(type, lambdaExpression.Compile());
         }
 
+        private static InvalidPacketValueException CreateUnsupportedFormatException(ChatFormatType type, string conversion)
+        {
+            return new InvalidPacketValueException($"Unsupported chat format type {type} for {conversion} conversion.");
+        }
+
+        private object ResolveFormatter(Type formatterType, ChatFormatType formatType)
+        {
+            object formatter = serviceProvider.GetService(formatterType);
+            if (formatter == null)
+                throw new InvalidOperationException($"Formatter service {formatterType.Name} for chat format type {formatType} is not registered.");
+
+            return formatter;
+        }
+
         /// <summary>
         /// Converts a collection of <see cref="ChatFormat"/> to a collection of <see cref="ChatChannelTextFormat"/>.
         /// </summary>
@@ -146,11 +163,9 @@ namespace NexusForever.Game.Chat.Format
 
                 if (!internalFormatterTypes.TryGetValue(format.Type, out Type type)
                     || !internalFormatters.TryGetValue(format.Type, out Func<object, IPlayer, IChatFormatModel, IChatChannelTextFormatModel> formatterDelegate))
-                    throw new NotImplementedException();
+                    throw CreateUnsupportedFormatException(format.Type, "internal");
 
-                object formatter = serviceProvider.GetService(type);
-                if (formatter == null)
-                    throw new NotImplementedException($"Formatter for type {format.Type} not registered.");
+                object formatter = ResolveFormatter(type, format.Type);
 
                 internalFormat.Model = formatterDelegate(formatter, player, format.Model);
                 internalFormat.Type  = internalFormat.Model.Type;
@@ -175,11 +190,9 @@ namespace NexusForever.Game.Chat.Format
 
                 if (!networkFormatterTypes.TryGetValue(format.Type, out Type type)
                     || !networkFormatters.TryGetValue(format.Type, out Func<object, IChatChannelTextFormatModel, IChatFormatModel> formatterDelegate))
-                    throw new NotImplementedException();
+                    throw CreateUnsupportedFormatException(format.Type, "network");
 
-                object formatter = serviceProvider.GetService(type);
-                if (formatter == null)
-                    throw new NotImplementedException($"Formatter for type {format.Type} not registered.");
+                object formatter = ResolveFormatter(type, format.Type);
 
                 networkFormat.Model = formatterDelegate(formatter, format.Model);
                 networkFormat.Type  = networkFormat.Model.Type;
@@ -210,9 +223,7 @@ namespace NexusForever.Game.Chat.Format
                     StopIndex  = format.StopIndex
                 };
 
-                object formatter = serviceProvider.GetService(type);
-                if (formatter == null)
-                    throw new NotImplementedException($"Formatter for type {format.Type} not registered.");
+                object formatter = ResolveFormatter(type, format.Type);
 
                 localFormat.Model = formatterDelegate(formatter, player, format.Model);
                 localFormat.Type  = localFormat.Model.Type;

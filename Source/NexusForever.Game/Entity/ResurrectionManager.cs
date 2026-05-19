@@ -169,7 +169,8 @@ namespace NexusForever.Game.Entity
                         return;
                     break;
                 default:
-                    throw new NotImplementedException();
+                    log.Warn("Player {0} requested unsupported resurrection type {1}.", owner.Guid, type);
+                    return;
             }
 
             // delbrately not using property to prevent sending update packet

@@ -32,7 +32,8 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
             is EntityCommand.SetPositionKeys
             or EntityCommand.SetPositionPath
             or EntityCommand.SetPositionSpline
-            or EntityCommand.SetPositionMultiSpline;
+            or EntityCommand.SetPositionMultiSpline
+            or EntityCommand.SetPositionProjectile;
 
         /// <summary>
         /// Current position entity command.
@@ -324,19 +325,31 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
         }
 
         /// <summary>
-        /// NYI
+        /// Set the position based on the supplied splines, <see cref="SplineMode"/> and speed.
         /// </summary>
-        public void SetPositionMultiSpline()
+        public void SetPositionMultiSpline(List<ushort> splineIds, SplineMode mode, float speed)
         {
-            throw new NotImplementedException();
+            Finalise();
+
+            var command = factory.Resolve<PositionMultiSplineCommand>();
+            command.Initialise(splineIds, mode, speed);
+            Command = command;
+
+            IsDirty = true;
         }
 
         /// <summary>
-        /// NYI
+        /// Set the position using projectile motion to the supplied destination and facing.
         /// </summary>
-        public void SetPositionProjectile()
+        public void SetPositionProjectile(Vector3 position, Vector3 rotation, TimeSpan flightTime, float gravity)
         {
-            throw new NotImplementedException();
+            Finalise();
+
+            var command = factory.Resolve<PositionProjectileCommand>();
+            command.Initialise(movementManager, position, rotation, flightTime, gravity);
+            Command = command;
+
+            IsDirty = true;
         }
     }
 }

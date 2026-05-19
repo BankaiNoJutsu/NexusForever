@@ -23,7 +23,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public T CreateEntity<T>() where T : IGridEntity
         {
-            return serviceProvider.GetService<T>();
+            return serviceProvider.GetRequiredService<T>();
         }
 
         /// <summary>
@@ -36,44 +36,44 @@ namespace NexusForever.Game.Entity
         {
             return type switch
             {
-                EntityType.NonPlayer          => serviceProvider.GetService<INonPlayerEntity>(),
-                EntityType.Chest              => serviceProvider.GetService<IChestEntity>(),
-                EntityType.Destructible       => serviceProvider.GetService<IDestructibleEntity>(),
-                EntityType.Vehicle            => serviceProvider.GetService<IVehicleEntity>(),
-                EntityType.Door               => serviceProvider.GetService<IDoorEntity>(),
-                EntityType.HarvestUnit        => serviceProvider.GetService<IHarvestUnitEntity>(),
-                EntityType.CorpseUnit         => serviceProvider.GetService<ICorpseUnitEntity>(),
-                EntityType.Mount              => serviceProvider.GetService<IMountEntity>(),
-                EntityType.CollectableUnit    => serviceProvider.GetService<ICollectableUnitEntity>(),
-                EntityType.Taxi               => serviceProvider.GetService<ITaxiEntity>(),
-                EntityType.Simple             => serviceProvider.GetService<ISimpleEntity>(),
-                EntityType.Platform           => serviceProvider.GetService<IPlatformEntity>(),
-                EntityType.MailBox            => serviceProvider.GetService<IMailboxEntity>(),
-                EntityType.AiTurret           => serviceProvider.GetService<IAiTurretEntity>(),
-                EntityType.InstancePortal     => serviceProvider.GetService<IInstancePortalEntity>(),
-                EntityType.Plug               => serviceProvider.GetService<IPlugEntity>(),
-                EntityType.Residence          => serviceProvider.GetService<IResidenceEntity>(),
-                EntityType.StructuredPlug     => serviceProvider.GetService<IStructuredPlugEntity>(),
-                EntityType.PinataLoot         => serviceProvider.GetService<IPinataLootEntity>(),
-                EntityType.BindPoint          => serviceProvider.GetService<IBindPointEntity>(),
-                EntityType.Player             => serviceProvider.GetService<IPlayer>(),
-                EntityType.Hidden             => serviceProvider.GetService<IHiddenEntity>(),
-                EntityType.Trigger            => serviceProvider.GetService<ITriggerEntity>(),
-                EntityType.Ghost              => serviceProvider.GetService<IGhostEntity>(),
-                EntityType.Pet                => serviceProvider.GetService<IPetEntity>(),
-                EntityType.EsperPet           => serviceProvider.GetService<IEsperPetEntity>(),
-                EntityType.WorldUnit          => serviceProvider.GetService<IWorldUnitEntity>(),
-                EntityType.ScannerUnit        => serviceProvider.GetService<IScannerUnitEntity>(),
-                EntityType.Camera             => serviceProvider.GetService<ICameraEntity>(),
-                EntityType.Trap               => serviceProvider.GetService<ITrapEntity>(),
-                EntityType.DestructibleDoor   => serviceProvider.GetService<IDestructibleDoorEntity>(),
-                EntityType.Pickup             => serviceProvider.GetService<IPickupEntity>(),
-                EntityType.SimpleCollidable   => serviceProvider.GetService<ISimpleCollidableEntity>(),
-                EntityType.HousingMannequin   => serviceProvider.GetService<IHousingMannequinEntity>(),
-                EntityType.HousingHarvestPlug => serviceProvider.GetService<IHousingHarvestPlugEntity>(),
-                EntityType.HousingPlant       => serviceProvider.GetService<IHousingPlantEntity>(),
-                EntityType.Lockbox            => serviceProvider.GetService<ILockboxEntity>(),
-                _                             => throw new NotImplementedException()
+                EntityType.NonPlayer          => serviceProvider.GetRequiredService<INonPlayerEntity>(),
+                EntityType.Chest              => serviceProvider.GetRequiredService<IChestEntity>(),
+                EntityType.Destructible       => serviceProvider.GetRequiredService<IDestructibleEntity>(),
+                EntityType.Vehicle            => serviceProvider.GetRequiredService<IVehicleEntity>(),
+                EntityType.Door               => serviceProvider.GetRequiredService<IDoorEntity>(),
+                EntityType.HarvestUnit        => serviceProvider.GetRequiredService<IHarvestUnitEntity>(),
+                EntityType.CorpseUnit         => serviceProvider.GetRequiredService<ICorpseUnitEntity>(),
+                EntityType.Mount              => serviceProvider.GetRequiredService<IMountEntity>(),
+                EntityType.CollectableUnit    => serviceProvider.GetRequiredService<ICollectableUnitEntity>(),
+                EntityType.Taxi               => serviceProvider.GetRequiredService<ITaxiEntity>(),
+                EntityType.Simple             => serviceProvider.GetRequiredService<ISimpleEntity>(),
+                EntityType.Platform           => serviceProvider.GetRequiredService<IPlatformEntity>(),
+                EntityType.MailBox            => serviceProvider.GetRequiredService<IMailboxEntity>(),
+                EntityType.AiTurret           => serviceProvider.GetRequiredService<IAiTurretEntity>(),
+                EntityType.InstancePortal     => serviceProvider.GetRequiredService<IInstancePortalEntity>(),
+                EntityType.Plug               => serviceProvider.GetRequiredService<IPlugEntity>(),
+                EntityType.Residence          => serviceProvider.GetRequiredService<IResidenceEntity>(),
+                EntityType.StructuredPlug     => serviceProvider.GetRequiredService<IStructuredPlugEntity>(),
+                EntityType.PinataLoot         => serviceProvider.GetRequiredService<IPinataLootEntity>(),
+                EntityType.BindPoint          => serviceProvider.GetRequiredService<IBindPointEntity>(),
+                EntityType.Player             => serviceProvider.GetRequiredService<IPlayer>(),
+                EntityType.Hidden             => serviceProvider.GetRequiredService<IHiddenEntity>(),
+                EntityType.Trigger            => serviceProvider.GetRequiredService<ITriggerEntity>(),
+                EntityType.Ghost              => serviceProvider.GetRequiredService<IGhostEntity>(),
+                EntityType.Pet                => serviceProvider.GetRequiredService<IPetEntity>(),
+                EntityType.EsperPet           => serviceProvider.GetRequiredService<IEsperPetEntity>(),
+                EntityType.WorldUnit          => serviceProvider.GetRequiredService<IWorldUnitEntity>(),
+                EntityType.ScannerUnit        => serviceProvider.GetRequiredService<IScannerUnitEntity>(),
+                EntityType.Camera             => serviceProvider.GetRequiredService<ICameraEntity>(),
+                EntityType.Trap               => serviceProvider.GetRequiredService<ITrapEntity>(),
+                EntityType.DestructibleDoor   => serviceProvider.GetRequiredService<IDestructibleDoorEntity>(),
+                EntityType.Pickup             => serviceProvider.GetRequiredService<IPickupEntity>(),
+                EntityType.SimpleCollidable   => serviceProvider.GetRequiredService<ISimpleCollidableEntity>(),
+                EntityType.HousingMannequin   => serviceProvider.GetRequiredService<IHousingMannequinEntity>(),
+                EntityType.HousingHarvestPlug => serviceProvider.GetRequiredService<IHousingHarvestPlugEntity>(),
+                EntityType.HousingPlant       => serviceProvider.GetRequiredService<IHousingPlantEntity>(),
+                EntityType.Lockbox            => serviceProvider.GetRequiredService<ILockboxEntity>(),
+                _                             => throw new InvalidOperationException($"Unsupported world entity type {type}.")
             };
         }
     }

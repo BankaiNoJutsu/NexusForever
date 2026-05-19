@@ -2,12 +2,13 @@
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.World.Entity;
+using NexusForever.Network.World.Entity.Model;
 
 namespace NexusForever.Game.Entity
 {
     public class PinataLootEntity : WorldEntity, IPinataLootEntity
     {
-        public override EntityType Type => EntityType.Chest;
+        public override EntityType Type => EntityType.PinataLoot;
 
         #region Dependency Injection
 
@@ -20,7 +21,10 @@ namespace NexusForever.Game.Entity
 
         protected override IEntityModel BuildEntityModel()
         {
-            throw new NotImplementedException();
+            return new PinataLootEntityModel
+            {
+                CreatureId = CreatureId
+            };
         }
     }
 }

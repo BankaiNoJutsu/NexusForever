@@ -1,3 +1,4 @@
+﻿using System;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Network.Message;
@@ -15,7 +16,7 @@ namespace NexusForever.Network.World.Message.Model
         {
             public void Write(GamePacketWriter writer)
             {
-                throw new NotImplementedException();
+                throw new InvalidOperationException("ServerEntityCreate spell initialisation data requires a mapped payload before it can be serialised.");
             }
         }
 
@@ -37,6 +38,8 @@ namespace NexusForever.Network.World.Message.Model
                     case 1:
                         writer.Write(Unknown1, 17u);
                         break;
+                    default:
+                        throw new InvalidOperationException($"Unsupported {nameof(UnknownStructureA8)} type {Type}.");
                 }
             }
         }
@@ -61,6 +64,8 @@ namespace NexusForever.Network.World.Message.Model
                         writer.Write(ActivePropId);
                         writer.Write(SocketId, 14u);
                         break;
+                    default:
+                        throw new InvalidOperationException($"Unsupported {nameof(WorldPlacement)} type {Type}.");
                 }
             }
         }
@@ -85,6 +90,8 @@ namespace NexusForever.Network.World.Message.Model
                         writer.Write(Unknown1);
                         writer.Write(Unknown2, 18);
                         break;
+                    default:
+                        throw new InvalidOperationException($"Unsupported {nameof(UnknownStructureC8)} type {Type}.");
                 }
             }
         }
@@ -115,6 +122,12 @@ namespace NexusForever.Network.World.Message.Model
 
         public void Write(GamePacketWriter writer)
         {
+            if (EntityModel == null)
+                throw new InvalidOperationException($"ServerEntityCreate for entity {Guid} is missing an entity model.");
+
+            if (SpellInitData.Count != 0)
+                throw new InvalidOperationException($"ServerEntityCreate for entity {Guid} cannot serialise unmapped spell initialisation data.");
+
             writer.Write(Guid);
             writer.Write(Type, 6);
             EntityModel.Write(writer);

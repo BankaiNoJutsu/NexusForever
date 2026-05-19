@@ -21,7 +21,7 @@ namespace NexusForever.Game.Entity.Movement.Command.Rotation
         public bool RequiresSynchronisation => command.Command
             is EntityCommand.SetRotationKeys
             or EntityCommand.SetRotationSpline
-            or EntityCommand.SetPositionMultiSpline
+            or EntityCommand.SetRotationMultiSpline
             or EntityCommand.SetRotationSpin;
 
         private IRotationCommand command;

@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game.Static.Who;
+using NexusForever.Network;
 using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model.Who.Parameter
@@ -42,7 +43,7 @@ namespace NexusForever.Network.World.Message.Model.Who.Parameter
                     Data = new WhoParameterFaction();
                     break;
                 default:
-                    throw new NotImplementedException();
+                    throw new InvalidPacketValueException($"Unsupported who parameter type {Type}.");
             }
 
             Data.Read(reader);

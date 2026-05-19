@@ -41,13 +41,13 @@ namespace NexusForever.Game.Abstract.Entity.Movement.Command.Position
         void SetPositionSpline(ushort splineId, SplineMode mode, float speed);
 
         /// <summary>
-        /// NYI
+        /// Set the position based on the supplied splines, <see cref="SplineMode"/> and speed.
         /// </summary>
-        void SetPositionMultiSpline();
+        void SetPositionMultiSpline(List<ushort> splineIds, SplineMode mode, float speed);
 
         /// <summary>
-        /// NYI
+        /// Set the position using projectile motion to the supplied destination and facing.
         /// </summary>
-        void SetPositionProjectile();
+        void SetPositionProjectile(Vector3 position, Vector3 rotation, TimeSpan flightTime, float gravity);
     }
 }

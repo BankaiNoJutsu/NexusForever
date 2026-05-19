@@ -129,9 +129,9 @@ namespace NexusForever.Game.Abstract.Entity.Movement
         void SetPositionMultiSpline(List<ushort> splineIds, SplineMode mode, float speed);
 
         /// <summary>
-        /// NYI
+        /// Set the position using projectile motion to the supplied destination and facing.
         /// </summary>
-        void SetPositionProjectile();
+        void SetPositionProjectile(Vector3 position, Vector3 rotation, TimeSpan flightTime, float gravity);
 
         /// <summary>
         /// Return the current velocity.
@@ -192,12 +192,12 @@ namespace NexusForever.Game.Abstract.Entity.Movement
         void SetRotationKeys(List<uint> times, List<Vector3> rotations);
 
         /// <summary>
-        /// NYI
+        /// Set rotation defaults for spline-driven position movement.
         /// </summary>
         void SetRotationSpline();
 
         /// <summary>
-        /// NYI
+        /// Set rotation defaults for multi-spline-driven position movement.
         /// </summary>
         void SetRotationMultiSpline();
 

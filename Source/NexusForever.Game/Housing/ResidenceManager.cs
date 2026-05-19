@@ -1,4 +1,5 @@
-﻿using NexusForever.Game.Abstract.Entity;
+﻿using System;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Static.Housing;
 using NexusForever.GameTable.Model;
@@ -65,7 +66,7 @@ namespace NexusForever.Game.Housing
                 ResidencePrivacyLevel.Private       => ServerHousingBasics.ResidencePrivacyLevelFlags.Private,
                 ResidencePrivacyLevel.NeighborsOnly => ServerHousingBasics.ResidencePrivacyLevelFlags.NeighborsOnly,
                 ResidencePrivacyLevel.RoommatesOnly => ServerHousingBasics.ResidencePrivacyLevelFlags.RoommatesOnly,
-                _                                   => throw new NotImplementedException()
+                _                                   => throw new InvalidOperationException($"Unsupported residence privacy level {Residence?.PrivacyLevel}.")
             };
 
             owner.Session.EnqueueMessageEncrypted(new ServerHousingBasics

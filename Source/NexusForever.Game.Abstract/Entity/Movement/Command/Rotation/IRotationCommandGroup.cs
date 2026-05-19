@@ -26,12 +26,12 @@ namespace NexusForever.Game.Abstract.Entity.Movement.Command.Rotation
         void SetRotationKeys(List<uint> times, List<Vector3> rotations);
 
         /// <summary>
-        /// NYI
+        /// Set rotation defaults for spline-driven position movement.
         /// </summary>
         void SetRotationSpline();
 
         /// <summary>
-        /// NYI
+        /// Set rotation defaults for multi-spline-driven position movement.
         /// </summary>
         void SetRotationMultiSpline();
 

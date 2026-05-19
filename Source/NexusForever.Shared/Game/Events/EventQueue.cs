@@ -55,7 +55,7 @@ namespace NexusForever.Shared.Game.Events
                         case ConditionalEventType.Blocking:
                             return;
                         default:
-                            throw new NotImplementedException();
+                            throw new InvalidOperationException($"Unsupported conditional event type {pending.Type}.");
                     }
                 }
 

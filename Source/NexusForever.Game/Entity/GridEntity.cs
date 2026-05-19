@@ -320,6 +320,9 @@ namespace NexusForever.Game.Entity
                 throw new ArgumentOutOfRangeException();
 
             RangeCheck = range;
+
+            foreach (IGridEntity entity in visibleEntities.Values.ToList())
+                CheckEntityInRange(entity);
         }
 
         /// <summary>
@@ -365,7 +368,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public IEnumerable<T> GetInRange<T>(uint guid) where T : IGridEntity
         {
-            return visibleEntities.Values.Cast<T>();
+            return inRangeEntities.Values.OfType<T>();
         }
     }
 }

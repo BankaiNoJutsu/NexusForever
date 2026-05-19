@@ -425,15 +425,21 @@ namespace NexusForever.Game.Entity.Movement
         /// </summary>
         public void SetPositionMultiSpline(List<ushort> splineIds, SplineMode mode, float speed)
         {
-            throw new NotImplementedException();
+            if (!ServerControl)
+                return;
+
+            positionCommandGroup.SetPositionMultiSpline(splineIds, mode, speed);
         }
 
         /// <summary>
-        /// NYI
+        /// Set the position using projectile motion to the supplied destination and facing.
         /// </summary>
-        public void SetPositionProjectile()
+        public void SetPositionProjectile(Vector3 position, Vector3 rotation, TimeSpan flightTime, float gravity)
         {
-            throw new NotImplementedException();
+            if (!ServerControl)
+                return;
+
+            positionCommandGroup.SetPositionProjectile(position, rotation, flightTime, gravity);
         }
 
         /// <summary>

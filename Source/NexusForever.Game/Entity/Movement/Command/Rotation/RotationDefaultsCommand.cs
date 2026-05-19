@@ -59,7 +59,9 @@ namespace NexusForever.Game.Entity.Movement.Command.Rotation
             IPositionCommand command = group.Command;
             if (command.Command is EntityCommand.SetPositionSpline
                 or EntityCommand.SetPositionPath
-                or EntityCommand.SetPositionKeys)
+                or EntityCommand.SetPositionKeys
+                or EntityCommand.SetPositionMultiSpline
+                or EntityCommand.SetPositionProjectile)
                 return command.GetRotation();
 
             return rotation;

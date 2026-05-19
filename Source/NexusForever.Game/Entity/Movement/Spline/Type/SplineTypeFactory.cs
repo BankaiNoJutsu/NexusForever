@@ -24,7 +24,7 @@ namespace NexusForever.Game.Entity.Movement.Spline.Type
             {
                 SplineType.Linear     => serviceProvider.GetRequiredService<SplineTypeLinear>(),
                 SplineType.CatmullRom => serviceProvider.GetRequiredService<SplineTypeCatmullRom>(),
-                _                     => throw new NotImplementedException()
+                _                     => throw new InvalidOperationException($"Unsupported spline type {type}.")
             };
         }
     }

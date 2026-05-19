@@ -28,7 +28,7 @@ namespace NexusForever.Game.Entity.Movement.Spline.Mode
                 SplineMode.OneShotReverse      => serviceProvider.GetRequiredService<SplineModeOneShotReverse>(),
                 SplineMode.BackAndForthReverse => serviceProvider.GetRequiredService<SplineModeBackAndForthReverse>(),
                 SplineMode.CyclicReverse       => serviceProvider.GetRequiredService<SplineModeCyclicReverse>(),
-                _                              => throw new NotImplementedException()
+                _                              => throw new InvalidOperationException($"Unsupported spline mode {mode}.")
             };
         }
     }

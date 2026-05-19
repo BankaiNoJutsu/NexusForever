@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game.Static.Chat;
+using NexusForever.Network;
 using NexusForever.Network.World.Chat;
 
 namespace NexusForever.Network.World.Message.Model.Chat
@@ -25,7 +26,7 @@ namespace NexusForever.Network.World.Message.Model.Chat
 
             Model = chatFormatFactory.NewChatFormatModel(Type);
             if (Model == null)
-                throw new NotImplementedException();
+                throw new InvalidPacketValueException($"Unsupported chat format type {Type}.");
 
             Model.Read(reader);
         }
