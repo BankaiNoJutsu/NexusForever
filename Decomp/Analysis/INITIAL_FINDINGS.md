@@ -7089,10 +7089,10 @@ struct CriteriaProxy {
 | 140b66440  | [+0x00]     | 1403b4910     | `CriteriaProxy_VTable0` (destructor/RTTI, 24 refs, role unconfirmed) |
 | 140b66448  | [+0x08]     | 1403b4a10     | `EntityCriteria_GetRelatedCriteriaThunk` — `MOV ECX,EDX; JMP Spell4ValidTargets_GetCriteriaById` |
 | 140b66450  | [+0x10]     | 1403b4940     | `EntityCriteria_GetFactionGroupId` — `[entity+0x18]+0x00` |
-| 140b66458  | [+0x18]     | 1403b4960     | `EntityCriteria_GetField0x140_ListMatch` — reads entity+0x140 DWORD, list-match (checkType 9) |
+| 140b66458  | [+0x18]     | 1403b4960     | `EntityCriteria_GetCreature2Id_ListMatch` — reads entity+0x140 (Creature2Id) DWORD, list-match (checkType 9) |
 | 140b66460  | [+0x20]     | 1403b49a0     | `EntityCriteria_GetRaceId` — `entity+0xd8` |
 | 140b66468  | [+0x28]     | 1403b49b0     | `EntityCriteria_GetClassId` — `entity+0xdc` |
-| 140b66470  | [+0x30]     | 1403b49c0     | `EntityCriteria_GetAttr2_Unk118` — `[entity+0x118]->vtable[+0x18]()` virtual call |
+| 140b66470  | [+0x30]     | 1403b49c0     | `EntityCriteria_GetFaction2Id` — `[entity+0x118]->vtable[+0x18]()` returns Faction2Id; entity+0x118 = Faction2 component |
 | 140b66478  | [+0x38]     | 1403b49e0     | `EntityCriteria_GetUnitRaceId` — `*[entity+0xd0]` |
 | 140b66480  | [+0x40]     | 1403b4a00     | `EntityCriteria_GetField0x140` — `entity+0x140` (role unconfirmed) |
 
@@ -7102,13 +7102,13 @@ struct CriteriaProxy {
 |-----------|-------------|----------|----------|---------------------|
 | 1 (must-match)   | [+0x10] | 1403b4940 | **FactionGroupId** = `[entity+0x18+0x00]` | Entity_GetFactionRelationship; entity+0x18 = faction-state struct |
 | 2 (must-not)     | [+0x10] | 1403b4940 | **FactionGroupId** (inverse) | same |
-| 3 (must-match)   | [+0x30] | 1403b49c0 | **attr2** = `[entity+0x118]->vtable[+0x18]()` | virtual call; component at +0x118 unidentified |
-| 4 (must-not)     | [+0x30] | 1403b49c0 | **attr2** (inverse) | same |
+| 3 (must-match)   | [+0x30] | 1403b49c0 | **Faction2Id** = `[entity+0x118]->vtable[+0x18]()` | TargetGroup type=3/4 data value range cross-reference (all values 166–1112 are valid Faction2 IDs; min Faction2 ID = 164) |
+| 4 (must-not)     | [+0x30] | 1403b49c0 | **Faction2Id** (inverse) | same |
 | 5 (must-match)   | [+0x20] | 1403b49a0 | **RaceId** = `entity+0xd8` | Lua_GameUnit_GetRaceId @ 14064a080 |
 | 6 (must-not)     | [+0x20] | 1403b49a0 | **RaceId** (inverse) | same |
 | 7 (must-match)   | [+0x28] | 1403b49b0 | **ClassId** = `entity+0xdc` | Lua_GameUnit_GetClassId @ 14064a1a0 |
 | 8 (must-not)     | [+0x28] | 1403b49b0 | **ClassId** (inverse) | same |
-| 9                | [+0x18] | 1403b4960 | **entity+0x140 DWORD list-match** (3-param: proxy, values_ptr, count=7) — NOT recursive sub-criteria | ValidTargetsCriteria_Evaluate body + binary disasm confirmed |
+| 9                | [+0x18] | 1403b4960 | **Creature2Id list-match** (entity+0x140 vs up to 7 Creature2 IDs) — confirmed via TargetGroup type=9 data cross-reference | TargetGroup type=9 data values (2202, 2441, 3086, 4859–4861, etc.) all verified as valid Creature2 IDs |
 | 10               | [+0x08] | 1403b4a10 | **Related-criteria lookup** (must-match, recursive) | thunk → Spell4ValidTargets_GetCriteriaById |
 | 11               | [+0x08] | 1403b4a10 | **Related-criteria lookup** (must-not, recursive) | same |
 | 12 (0xc, must-match) | [+0x38] | 1403b49e0 | **UnitRaceId** = `*[entity+0xd0]` | Lua_GameUnit_GetUnitRaceId @ 14064a100 |
@@ -7135,13 +7135,11 @@ struct CriteriaProxy {
 | +0xd0  | ptr    | UnitRace component (first int = UnitRaceId) | EntityCriteria_GetUnitRaceId + Lua_GameUnit_GetUnitRaceId |
 | +0xd8  | int32  | RaceId | EntityCriteria_GetRaceId + Lua_GameUnit_GetRaceId |
 | +0xdc  | int32  | ClassId | EntityCriteria_GetClassId + Lua_GameUnit_GetClassId |
-| +0x118 | ptr    | Unknown component; when non-null: `mov rax,[rcx]; jmp [rax+0x18]` — vtable[+0x18]() on component returns attr2 int. Returns 0 if null. checkType 3/4 filter. | EntityCriteria_GetAttr2_Unk118 (confirmed disasm) |
-| +0x140 | int32  | Unknown DWORD — read as `mov r9d,[rax+0x140]` by checkType 9 list-match (vtable[+0x18]=1403b4960) and as `mov eax,[rax+0x140]` by vtable[+0x40] simple getter (1403b4a00). Semantic unconfirmed. | EntityCriteria_GetField0x140 + EntityCriteria_GetField0x140_ListMatch |
+| +0x118 | ptr    | Faction2 component; `vtable[+0x18]()` returns Faction2Id (int32). Returns 0 if null. checkType 3/4 filter. Evidence: all TargetGroup type=3/4 data values (166–1112) fall within the Faction2 table ID range (min=164). In NexusForever: IWorldEntity.Faction1/Faction2 are `Faction` enum values whose integers are Faction2 IDs (Dominion=166, Exile=167). | EntityCriteria_GetFaction2Id confirmed + TargetGroup cross-reference |
+| +0x140 | int32  | Creature2Id (entity's template/prototype creature ID). checkType 9 list-match via vtable[+0x18] (1403b4960), simple getter via vtable[+0x40] (1403b4a00). Evidence: all TargetGroup type=9 data values (2202, 2441, 3086, 4859–4861, etc.) verified as valid Creature2 IDs. Players return 0. In NexusForever: IWorldEntity.CreatureId. | EntityCriteria_GetCreature2Id + TargetGroup cross-reference |
 
 **Remaining unknowns:**
-- `entity+0x118` component identity — what attribute does checkType 3/4 filter?
-- `entity+0x140` field semantic
-- `1403b4910` vtable slot 0 role
+- `1403b4910` vtable slot 0 role (destructor/RTTI, 24 refs; role unconfirmed)
 
 **Server implication — no code change needed.**
 The server's `Spell4ValidTargets.TargetBitmask` (a simplified bitfield projection of the client's
@@ -7157,12 +7155,12 @@ is sufficient and the criteria system does not require server-side criteria row 
 |--------------------|------------|-------|
 | FUN_140240b40 | Spell4ValidTargets_GetCriteriaById | Criteria ID→struct lookup; forwarding target of 1403b4a10 |
 | FUN_1403b4940 | EntityCriteria_GetFactionGroupId | vtable[+0x10]; entity+0x18+0x00 |
-| FUN_1403b4960 | EntityCriteria_GetField0x140_ListMatch | vtable[+0x18]; reads entity+0x140 DWORD, list-match; checkType 9 (NOT recursive sub-criteria) |
+| FUN_1403b4960 | EntityCriteria_GetCreature2Id_ListMatch | vtable[+0x18]; reads entity+0x140 (Creature2Id) DWORD, list-match; checkType 9 (NOT recursive sub-criteria) |
 | FUN_1403b49a0 | EntityCriteria_GetRaceId | vtable[+0x20]; entity+0xd8 |
 | FUN_1403b49b0 | EntityCriteria_GetClassId | vtable[+0x28]; entity+0xdc |
-| FUN_1403b49c0 | EntityCriteria_GetAttr2_Unk118 | vtable[+0x30]; entity+0x118 virtual call |
+| FUN_1403b49c0 | EntityCriteria_GetFaction2Id | vtable[+0x30]; entity+0x118 = Faction2 component; vtable[+0x18]() returns Faction2Id |
 | FUN_1403b49e0 | EntityCriteria_GetUnitRaceId | vtable[+0x38]; *[entity+0xd0] |
-| FUN_1403b4a00 | EntityCriteria_GetField0x140 | vtable[+0x40]; entity+0x140 |
+| FUN_1403b4a00 | EntityCriteria_GetCreature2Id | vtable[+0x40]; entity+0x140 = Creature2Id |
 | FUN_1403b4a10 | EntityCriteria_GetRelatedCriteriaThunk | vtable[+0x08]; previously mislabeled SpellTarget_LogValidationMask |
 
 ## Recent mapped-function blocker audit (2026-05-19)
@@ -7181,14 +7179,16 @@ is now safely implementable.
   `service_obj+0x540` are mapped as client wrapper/UI lookup structures. They do
   not expose a server-owned data source that would change target selection, and
   the current server current-target path for type `7` remains the safe behavior.
-- `ValidTargetsCriteria_Evaluate` and the CriteriaProxy vtable are mapped far
-  enough to explain faction-group, race, class, unit-race, nested criteria, and
-  related-criteria checks. Full server-side criteria evaluation is still not
-  implementable: `Spell4ValidTargetsEntry` currently exposes only `Id` and
-  `TargetBitmask`, while the criteria value arrays are not present in the
-  generated runtime model and `entity+0x118`/`entity+0x140` remain unnamed.
-  The existing `TargetBitmask` projection therefore stays the verified server
-  path.
+- `ValidTargetsCriteria_Evaluate` and the CriteriaProxy vtable are now fully decoded:
+  faction-group, Faction2, race, class, unit-race, Creature2Id, nested criteria, and
+  related-criteria checks are all identified. `entity+0x118` is the Faction2 component
+  (vtable[+0x18]() returns Faction2Id; confirmed by TargetGroup type=3/4 data correlation —
+  all values fall within Faction2 ID range, min=164). `entity+0x140` is the Creature2Id
+  (confirmed by TargetGroup type=9 data correlation — values 2202, 2441, 3086, etc. are
+  valid Creature2 IDs; in NexusForever: `IWorldEntity.CreatureId`). Full server-side criteria
+  evaluation remains unnecessary: `Spell4ValidTargetsEntry` currently exposes only `Id` and
+  `TargetBitmask`, and the existing `TargetBitmask` projection is the verified server path.
+  No server code changes needed.
 - Reward rotation network row shapes are implemented as writable packet models
   for opcodes `0x07C7` through `0x07CB`, but the manager remains blocked for
   grants and send-side state because no authoritative schedule source or
@@ -7256,3 +7256,70 @@ at `entity+0x7928`) rather than a dedicated C++ spell-effect handler.
 - CRavel class layout: the CRavel component sits at `entity+0x7928`; its
   constructor address and vtable are still unrecovered.
 
+---
+
+### entity+0x118 = Faction2 Component (Faction2Id); entity+0x140 = Creature2Id
+
+**Discovery method:** Cross-reference of `Spell4ValidTargets_GetCriteriaById`
+(`140240b40`) data source against WildStar client table schema, then
+correlation of TargetGroup `type`/`data0..data6` values against known game tables.
+
+**`Spell4ValidTargets_GetCriteriaById` source confirmed:**
+`PTR_u_TargetGroup_140a6d930` → loads from `DB\TargetGroup.tbl`. The returned row
+pointer is the `int*` criteria struct passed to `ValidTargetsCriteria_Evaluate`.
+TargetGroup schema: `(ID, localizedTextIdDisplayString, type, data0..data6)`.
+`type` = checkType (1–13); `data0..data6` = up to 7 value IDs to match against.
+
+**entity+0x118 = Faction2 component → Faction2Id:**
+- `EntityCriteria_GetFaction2Id` (`1403b49c0`) reads `[entity+0x118]` as a
+  component pointer → calls `vtable[+0x18]()` → returns Faction2Id (int32).
+  Returns 0 if the component pointer is null.
+- checkType 3 (must-match) and 4 (must-not-match) compare the entity's Faction2Id
+  against `data0..data6` values from the TargetGroup row.
+- **Evidence:** All TargetGroup type=3/4 data values fall within Faction2 table ID
+  range (min ID = 164): 166, 167, 170, 171, 189, 190, 192, 193, 218, 219, 248,
+  249, 274, 278, 284, 307, 312, 340, 390, 430, 463, 473, 478, 498, 510, 518, 521,
+  523, 631, 651, 652, 682, 776, 1112 — all verified as valid Faction2 IDs.
+- **Distinction from checkType 1/2:** checkType 1/2 use FactionGroupId (`entity+0x18`
+  faction-state struct, first dword) — coarser Exile/Dominion/Neutral grouping.
+  checkType 3/4 use Faction2Id — a finer-grained specific faction affiliation from
+  the `Faction2` hierarchy table.
+- **NexusForever mapping:** `IWorldEntity.Faction1` and `Faction2` are `Faction`
+  enum values whose underlying uint integers ARE Faction2 IDs (Faction.Dominion=166,
+  Faction.Exile=167). `FactionSet` spell effect already stores/restores Faction2 per
+  entity via `DataBits00`. `Faction2Entry` exists in GameTableManager.
+
+**entity+0x140 = Creature2Id:**
+- `EntityCriteria_GetCreature2Id_ListMatch` (`1403b4960`, vtable[+0x18]) and
+  `EntityCriteria_GetCreature2Id` (`1403b4a00`, vtable[+0x40]) both read
+  `entity+0x140` as int32.
+- checkType 9 performs a list-match: entity's Creature2Id vs. data0..data6 (up to
+  7 Creature2 IDs from the TargetGroup row).
+- **Evidence:** All TargetGroup type=9 data values verified as valid Creature2 IDs:
+  2202, 2203, 2277–2282, 2352–2353, 2365, 2385, 2410–2411, 2441, 3086, 3830,
+  3944–3945, 4298, 4859, 4860, 4861, 6292, 6879, 6880, 6881, 6882.
+  Creature2 ID 2441 = `[PH] Moonfrenzy Tunnel - Dynamic Event - Object`.
+- Players return 0 for this field (no template creature ID for player characters).
+- **NexusForever mapping:** `IWorldEntity.CreatureId` (uint) is the Creature2
+  template ID. `IWorldEntity.CreatureEntry` is the resolved `Creature2Entry`.
+  For non-player entities, `CreatureId` matches what entity+0x140 holds.
+
+**type=12 UnitRaceId cross-verification:**
+- TargetGroup type=12 values (5, 226, 232, 233) verified against UnitRace table:
+  IDs 226 and 232 confirmed present. Confirms vtable[+0x38] = UnitRaceId mapping.
+
+**Updated entity field offset table (complete):**
+
+| Offset | Type   | Meaning | Source |
+|--------|--------|---------|--------|
+| +0x18  | ptr    | Faction-state component (first int = FactionGroupId) | EntityCriteria_GetFactionGroupId |
+| +0xd0  | ptr    | UnitRace component (first int = UnitRaceId) | EntityCriteria_GetUnitRaceId |
+| +0xd8  | int32  | RaceId | EntityCriteria_GetRaceId |
+| +0xdc  | int32  | ClassId | EntityCriteria_GetClassId |
+| +0x118 | ptr    | Faction2 component; vtable[+0x18]() = Faction2Id | EntityCriteria_GetFaction2Id + TargetGroup xref |
+| +0x140 | int32  | Creature2Id (template/prototype creature ID) | EntityCriteria_GetCreature2Id + TargetGroup xref |
+
+**Server implication:** No server code changes needed. All 13 checkType semantics are
+now fully decoded. The existing `TargetBitmask` simplified projection remains the
+verified server path. `entity+0x118` maps to `IWorldEntity.Faction1`/`Faction2` and
+`entity+0x140` maps to `IWorldEntity.CreatureId` — both already exist on server entities.

@@ -126,28 +126,24 @@ Remaining work:
 
 ### P3: Quest/content script ports from old branch
 
-Old branch scripts still not ported:
-- `Q10510_LearningToShop`
-- `NorthernWilds/Q3486-EmpoweredTower`
-- `NorthernWilds/Q3487-Shellshock`
-- `NorthernWilds/Q3667-TheTower`
-- `NorthernWilds/Q3673-ContactWithThayd`
-- `CrimsonIsle/Q5573-PoweringDown`
-- `CrimsonIsle/Q5584-VenomousIntent`
-- `CrimsonIsle/Q5594-LastResistance`
-- `CrimsonIsle/Q5604-TacticalDemolitions`
-- `CrimsonIsle/Q8855-StasisInterrupted`
+**All 10 quest/entity scripts now ported (2026-05-19).** Infrastructure changes also landed:
+- `IQuest.Player` property added (exposes player from quest context)
+- `IUnitScript.OnKilled(IUnitEntity killer)` default method added
+- `UnitEntity.OnDeath()` wired to dispatch `OnKilled` with local-copy/clear pattern
+- 4 cinematic marker interfaces and concrete implementations ported
+- `ScriptFilterCreatureId` now uses `params uint[]` overload for multi-creature scripts
 
-Current script support is better structured, but a few old script hooks need translation:
-- Old `QuestScript.OnQuestStateChange(Player, Quest, QuestState)` maps to current owned `IQuestScript.OnQuestStateChange(newState, oldState)` plus `IOwnedScript<IQuest>`.
-- Old `OnObjectiveUpdate(Player, Quest, QuestObjective)` maps to current `OnObjectiveUpdate(IQuestObjective)` plus owner access.
-- Old creature hooks such as `OnActivateSuccess`, `OnEnterRange`, and `OnAddToMap` mostly exist in current interfaces.
-- Old `OnDeathRewardGrant(WorldEntity me, WorldEntity killer)` does not have a direct current script hook with killer context; add a safe current hook before porting scripts that require killer/player attribution.
-
-Recommended approach:
-- Port the simple objective/range scripts first.
-- Port cinematic-completion scripts only after confirming the corresponding cinematic classes and quest objective ids exist in current code.
-- Treat these as content fixes, not packet fixes.
+Scripts landed:
+- `Q10510LearningToShop` — item/title-check objective
+- `NorthernWilds/Q3486EmpoweredTower` — cinematic + loot crystal entity
+- `NorthernWilds/Q3487Shellshock` — cannon activate + Ultrabot path + achievement
+- `NorthernWilds/Q3667TheTower` — ControlPanel enter-range objective
+- `NorthernWilds/Q3673ContactWithThayd` — cinematic (13-actor, actor visibility)
+- `CrimsonIsle/Q5573PoweringDown` — cinematic + objective update
+- `CrimsonIsle/Q5584VenomousIntent` — Broodmother self-kill
+- `CrimsonIsle/Q5594LastResistance` — ShipControls achieve + teleport, Warbot killed
+- `CrimsonIsle/Q5604TacticalDemolitions` — cinematic + objective update
+- `CrimsonIsle/Q8855StasisInterrupted` — stasis entity enter-range x2
 
 ### P3: Loot data mapping completeness
 
