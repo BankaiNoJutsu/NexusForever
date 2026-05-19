@@ -162,7 +162,7 @@ WildStar64.exe,1403a6b50,Trade_SendClientP2PTradingAddItem,Sends opcode 0x018D C
 WildStar64.exe,1403a6c50,Trade_SendClientP2PTradingRemoveItem,Sends opcode 0x0194 ClientP2PTradingRemoveItem with the 64-bit item guid from the local trade item entry.
 WildStar64.exe,1403a6ce0,Trade_SendClientP2PTradingSetMoney,Sends opcode 0x0197 ClientP2PTradingSetMoney with a 64-bit credit offer after local affordability and current-offer checks.
 WildStar64.exe,1403a6e00,Trade_SendClientP2PTradingCommit,Sends zero-payload opcode 0x0190 ClientP2PTradingCommit when an active local trade exists.
-WildStar64.exe,1403acd90,SpellService_ResolveSpellWrapper,Resolves the shared spell wrapper/service object used by Game.Spell target-type 0 and type 7 helper paths plus other interaction/service wrappers.
+WildStar64.exe,1403acd90,SpellService_ResolveSpellWrapper,Resolves the shared spell wrapper/service object. param_1=service_obj, param_2=spell4_id, param_3=entity_ptr. If param_3 matches local player (+0x78) or current target (+0x6490), calls FUN_1405a5b90() for context-aware lookup; else falls back to SpellService_ResolveTargetFlags hash map at service_obj+0x540. Returns 0 if not found.
 WildStar64.exe,140214fe0,ClientDB_RegisterMatchingGameMap,Registers the MatchingGameMap client DB table using the MatchingGameMap and DB\\MatchingGameMap.tbl descriptors.
 WildStar64.exe,140215240,MatchingGameMap_LookupById,Resolves a MatchingGameMap record by id through the registered MatchingGameMap callback or the DAT_140c641f0 fallback dispatcher.
 WildStar64.exe,1403a11c0,ActionSet_CheckPvPRestriction,Checks whether the current PvP state permits action-set changes.
@@ -269,8 +269,8 @@ WildStar64.exe,1405ed640,Lua_GameSpell_GetChannelData,Game.Spell:GetChannelData 
 WildStar64.exe,1405eda10,Lua_GameSpell_GetProxyChannelData,Game.Spell:GetProxyChannelData Lua method.
 WildStar64.exe,1405edef0,Lua_GameSpell_GetIcon,Game.Spell:GetIcon Lua method.
 WildStar64.exe,1405edff0,Lua_GameSpell_GetAbilityCharges,Game.Spell:GetAbilityCharges Lua method.
-WildStar64.exe,1405ee4a0,Lua_GameSpell_IsSelfSpell,Game.Spell:IsSelfSpell Lua method.
-WildStar64.exe,1405ee640,Lua_GameSpell_IsFreeformTarget,Game.Spell:IsFreeformTarget Lua method.
+WildStar64.exe,1405ee4a0,Lua_GameSpell_IsSelfSpell,Game.Spell:IsSelfSpell Lua method. If inner_struct[6]==7 (TargetType 7), looks up service tree at service_obj+0x788 (balanced BST keyed by spell4 ID; node+0x10=right, +0x18=left, +0x20=key, +0x28=service_spell_array); if found, resolves service wrapper and calls Game_Spell_IsSelfSpellDelegate on it. Fallback bitmask 0x85 (bits 0/2/7=TargetTypes 0/2/7 are self) plus shape-type-3 with TargetType 4/8 as self.
+WildStar64.exe,1405ee640,Lua_GameSpell_IsFreeformTarget,Game.Spell:IsFreeformTarget Lua method. Same type-7 service tree lookup as IsSelfSpell; if found calls SpellService_ResolveTargetFlags then reads spell_wrapper+0x70+0x108 bit 22 (0x400000)=IsFreeformTarget. Non-type-7 path reads same bit from original wrapper. Confirms Spell4PropertyFlags bit 22 = IsFreeformTarget; matches server SpellTargetingFlags.FreeformTarget=0x400000 from Spell4BaseEntry.
 WildStar64.exe,1405ee7b0,Lua_GameSpell_IsMovingInterrupted,Game.Spell:IsMovingInterrupted Lua method.
 WildStar64.exe,1405ee870,Lua_GameSpell_GetLasTierDesc,Game.Spell:GetLasTierDesc Lua method.
 WildStar64.exe,1405eeab0,Lua_GameSpell_GetLasBonusEachTierDesc,Game.Spell:GetLasBonusEachTierDesc Lua method.
@@ -537,7 +537,7 @@ WildStar64.exe,140701800,Lua_GameLib_OnClosedInstanceSettings,GameLib.OnClosedIn
 WildStar64.exe,14070e370,Lua_FriendshipLib_SetAutoResponseMessages,FriendshipLib.SetAutoResponseMessages Lua method; reads away and busy strings and forwards them to Friendship_SetAutoResponseMessagesAndSend.
 WildStar64.exe,14070e5d0,Lua_FriendshipLib_SetPersonalIgnoreStrangersState,FriendshipLib.SetPersonalIgnoreStrangersState Lua method; updates local ignore-strangers state and sends opcode 0x039E on state changes.
 WildStar64.exe,14072ee90,Lua_RegisterDialogResponseBindings,Registers the Game.DialogResponse Lua bindings and DialogResponseType_* constants including QuestComplete and QuestAccept.
-WildStar64.exe,1407a0fd0,SpellService_ResolveTargetFlags,Resolves the wrapper flags word read at +0x108 by Game.Spell:IsFreeformTarget after the target-type 7 spell-service lookup branch.
+WildStar64.exe,1407a0fd0,SpellService_ResolveTargetFlags,Hash map lookup at service_obj+0x540 (chained hash table): maps spell4 ID → spell wrapper. Hash function at lVar1+0x18; bucket count at lVar1+0x08; chain walk with hash compare + key equality. Returns 0 if not found, else wrapper pointer at node+0x18 from bucket chain. Called by SpellService_ResolveSpellWrapper fallback path and Lua_GameSpell_IsFreeformTarget type-7 service override path.
 WildStar64.exe,1407478d0,Lua_AbilityBook_GetAbilitiesList,AbilityBook.GetAbilitiesList Lua method.
 WildStar64.exe,140747990,Lua_AbilityBook_GetAbilityInfo,AbilityBook.GetAbilityInfo Lua method.
 WildStar64.exe,140747a80,Lua_AbilityBook_CheckSpellActivateRequirements,AbilityBook.CheckSpellActivateRequirements Lua method that evaluates local spell-activation gates for the requested spell.

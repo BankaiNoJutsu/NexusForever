@@ -6488,3 +6488,74 @@ In CharacterSpell.ResolvePrimaryTargetId():
 - **TargetType 6**: now returns Owner.Guid (previously returned  u; client evidence confirms self-targeting).
 - **TargetTypes 5 and 8**: now included in the "use current target" path (were falling through to  u).
 - TargetType 7 server-side still returns Owner.TargetGuid (client returns caster entity for telegraph anchoring, but server needs combat target for effect application).
+
+---
+
+## SpellService Type-7 Service Tree and Spell Wrapper Hash Map (800-function export)
+
+### Functions decoded
+- SpellService_ResolveTargetFlags @ 1407a0fd0 (misnamed: actually a spell wrapper lookup)
+- SpellService_ResolveSpellWrapper @ 1403acd90
+- Lua_GameSpell_IsSelfSpell @ 1405ee4a0
+- Lua_GameSpell_IsFreeformTarget @ 1405ee640
+
+### Spell Wrapper Hash Map (service_obj + 0x540)
+
+SpellService_ResolveTargetFlags is a chained hash map lookup at spell_service_obj + 0x540:
+- +0x08 = bucket count (ulonglong)
+- +0x10 = bucket array pointer
+- +0x18 = hash function (code pointer)
+- +0x20 = key equality function (code pointer)
+- Bucket chain nodes: [hash64, 64bit-next, key_uint, value_spell_wrapper_ptr]
+- Returns 
+ode + 0x18 (4th 8-byte element) = spell wrapper pointer, or 0 if not found
+
+SpellService_ResolveSpellWrapper wraps this:
+1. If param_3 == player_entity (DAT_140c65898 + 0x78) or current_target (+0x6490), try context-aware path via FUN_1405a5b90
+2. Otherwise falls back to SpellService_ResolveTargetFlags hash map
+
+### Service Tree (service_obj + 0x788)
+
+For **TargetType 7** spells, a per-spell override binary tree at service_obj + 0x788:
+- Balanced BST (std::map style / red-black tree variant)
+- 	ree_root = *(service_obj + 0x788) — sentinel/root node
+- oot + 0x08 = first real node (tree start)
+- Tree node structure:
+  - 
+ode + 0x10 = right child pointer
+  - 
+ode + 0x18 = left child pointer
+  - 
+ode + 0x20 = key: spell4 ID (uint)
+  - 
+ode + 0x28 = pointer to service spell array
+- Traversal: classic BST lower_bound on spell4 ID
+- Service spell array: rray[0] = first service entry, rray[0] + 4 = spell4 ID of service spell
+
+When found, calls SpellService_ResolveSpellWrapper on rray[0] + 4 to get a secondary wrapper, then reads its flags or calls Game_Spell_IsSelfSpellDelegate on it.
+
+### Spell4 PropertyFlags bits confirmed (at spell_wrapper + 0x70 + 0x108)
+
+| Bit | Hex | Server constant | Meaning |
+|---|---|---|---|
+| 6 |  x00000040 | (SpellTargetingFlags.InterruptOnMove) | IsMovingInterrupted |
+| 22 |  x00400000 | SpellTargetingFlags.FreeformTarget | IsFreeformTarget |
+| 29 |  x20000000 | SpellPropertyFlags.HasServiceTokenCost | ServiceToken cast behavior |
+
+Note: The server reads IsFreeformTarget and IsMovingInterrupted from Spell4BaseEntry.TargetingFlags (via SpellBaseInfo), not Spell4Entry.PropertyFlags. Both use the same bit value  x400000, confirming the mapping is consistent across tables.
+
+### IsSelfSpell bitmask confirmation
+
+Game_Spell_IsSelfSpellDelegate checks spell_wrapper + 0x70 + 0x7c (TargetType) against bitmask  x85:
+-  x85 = 10000101b → TargetTypes **0** (NoExplicitTarget), **2** (SelfAoe), **7** (ServiceLookup) → IsSelfSpell = true
+- Additional rule: shape-type +0x18 == 3 AND +0x9c == 0 AND TargetType ∈ {4, 8} → also self
+- IsSelfSpell = true means the UI auto-casts without a targeting cursor; no change to server ResolvePrimaryTargetId
+
+### Service tree lookup in IsSelfSpell / IsFreeformTarget
+
+Both Lua_GameSpell_IsSelfSpell and Lua_GameSpell_IsFreeformTarget use the same tree:
+1. Check if inner struct field [6] (at +0x18) == 7 (TargetType ServiceLookup)
+2. Get spell4 ID from *inner_struct (first uint)
+3. BST lower_bound search for spell4 ID
+4. If found: resolve service spell wrapper and call delegate on it
+5. If not found: fall through to standard bitmask/flags check
