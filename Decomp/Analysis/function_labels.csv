@@ -784,3 +784,24 @@ WildStar64.exe,14054e340,SpellService_GetCastTimeMs,Computes cast time in ms for
 WildStar64.exe,14039e400,SpellCast_CancelCurrentCast,Cancels the current in-progress spell cast; called when overriding/superseding cast.
 WildStar64.exe,14047bfd0,SpellCast_IsToggleSpellActive,Checks whether a toggle spell is currently active; returns non-zero if active. Used in SendClientSpellCastState to short-circuit toggle re-cast.
 WildStar64.exe,14046afc0,SpellCooldown_StartCooldownForSpell,Starts/resets cooldown for a resolved spell wrapper. Args: entity, spellWrapper, flag.
+1403ad690,SpellService_IsInRange
+1407a0fd0,SpellService_ResolveTargetFlags
+1403ad860,SpellService_GetMinRange
+1403ad8f0,SpellService_GetMaxRange
+14054e340,SpellInner_ResolveCastTimeMs
+14046a890,SpellWrapper_ResolveCooldown
+140195f70,CooldownNode_GetRemainingMs
+14023dc80,GCDGroup_LookupById
+14046a760,SpellService_ResolveGCDTime
+1407a16f0,ChargeService_GetChargesForSpell
+1405a4d90,SpellServiceToken_GetCostAmount
+1405e73e0,InnateAbility_GetCount
+1405e9400,SpellLuaArg_ResolveWrapper
+140462a90,Entity_GetInnateResourceValue
+1404823c0,SpellWrapper_IsPlayerAbility
+1403bb170,SpellBook_IsSpellLearned
+1403bb040,SpellBook_IsSpellSlotCompatible
+1403bacc0,SpellBook_GetSpellTierData
+1407a1440,SpellWrapper_BuildForTier
+1403bb340,SpellBook_SendTierUpdateRequest
+1403c1ea0,ActionSet_GetSlotData

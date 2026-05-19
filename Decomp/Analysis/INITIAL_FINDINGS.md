@@ -7077,25 +7077,48 @@ Decoded from `Lua_GameSpell_GetId @ 1405e95f0`, `GetBaseSpellId @ 1405e96a0`,
 
 ### SpellWrapper InnerData (at `*(wrapper + 0x70)`)
 
-| Byte offset | Type | Name | Notes |
-|------------|------|------|-------|
-| `+0x00` | int32 | `Spell4Id` | Spell ID |
-| `+0x04` | int32 | `Spell4BaseId` | Base spell ID (Lua: GetBaseSpellId) |
-| `+0x08` | byte | `tier` | Spell tier (Lua: GetTier) |
-| `+0x18` | int32 | `targetingMode` | 3 = no target; used in SpellTarget_ResolveTargetEntity |
-| `+0x70` | float | `tierCount?` | Float used in range calculation: `fVar7 = *(float *)(inner + 0x70) - 1.0` |
+| Byte offset | Type | Name | Lua accessor / Notes |
+|------------|------|------|----------------------|
+| `+0x00` | int32 | `Spell4Id` | `GetId` |
+| `+0x04` | int32 | `Spell4BaseId` | `GetBaseSpellId` |
+| `+0x08` | byte | `tier` | `GetTier` |
+| `+0x18` | int32 | `castMethod` | `GetCastMethod`; 3 = no-target mode; 7 = freeform/chain composite |
+| `+0x70` | float | `tierCountFloat` | Range calc: `fVar7 = *(float *)(inner + 0x70) - 1.0` |
+| `+0x78` | float | `targetAngle` | `GetTargetAngle` (radians) |
 | `+0x7c` | int32 | `targetingType` | Target type code (see table below) |
 | `+0x80` | int32 | `overrideSpellId` | Redirect/linked spell ID (0 = none) |
-| `+0x108` | byte | `propertyFlagsByte` | Bit 1 (0x02): AoE ValidTargets bypass flag |
+| `+0x9c` | int32 | `targetSubType` | Alternate target qualifier; non-zero overrides IsSelfSpell check |
+| `+0xf4` | int32 | `damageSchool` | `GetSchool`; damage school enum |
+| `+0xf8` | int32 | `primaryEffectType` | Primary spell effect type number (e.g., 0xe, 0x24) |
+| `+0xfc` | int32 | `spellSlotType` | ActionSet slot type: 5 = ability (slots 0-7), non-5 = passive/AMP |
+| `+0x108` | uint32 | `propertyFlags` | Bit field — see PropertyFlags table below |
+| `+0x10c` | uint32 | `beneficialFlags` | Bit field — see BeneficialFlags table below |
 | `+0x128` | int32 | `validationBypassFlag` | Non-zero: skip relationship check for primary target |
 | `+0x154` | uint32 | `spellFlagsWord` | Bit 0x400: override/substitute enabled; Bit 0x200: item use mode |
 | `+0x168` | int32 | `validTargetsPrimaryId` | ValidTargets ID for caster check (0 = none) |
 | `+0x16c` | int32 | `validTargetsSecondaryId` | ValidTargets ID for target check (0 = none) |
 | `+0x180` | int32 | `substituteSpellId` | Substitute spell (when flags word bit 0x400 set) |
+| `+0x184` | uint32 | `thresholdTimeMs` | `GetThresholdTime`; threshold cast time in milliseconds |
 | `+0x198` | int32 | `prerequisiteId` | Prerequisites ID (Spell4Prerequisites table); 0 = none |
 | `+0x1b0` | int32 | `questInteractionFlag` | Non-zero: cast triggers QuestInteraction flow |
 | `+0x1d0` | int32 | `tradeskillVendorFlag` | Non-zero: triggers tradeskill/vendor flow |
 | `+0x1d8` | int32 | `additionalInteractionFlag` | Non-zero: used for NPC activation |
+
+**PropertyFlags (`inner + 0x108`) bit map:**
+
+| Bit | Mask | Name |
+|-----|------|------|
+| 1 | `0x00000002` | AoEValidTargetsBypass |
+| 6 | `0x00000040` | IsMovingInterrupted (`IsMovingInterrupted` Lua getter) |
+| 22 | `0x00400000` | IsFreeformTarget (`IsFreeformTarget` Lua getter) |
+| 29 | `0x20000000` | ServiceTokenRequired |
+
+**BeneficialFlags (`inner + 0x10c`) bit map:**
+
+| Bit | Mask | Name |
+|-----|------|------|
+| 26 | `0x04000000` | IsBeneficial (`IsBeneficial` Lua getter) |
+| 28 | `0x10000000` | IsGroundTargeted (bypass check in SpellTarget_ResolveTargetEntity) |
 
 ### ChannelData Struct (at `*(wrapper + 0x50)`)
 
@@ -7104,23 +7127,26 @@ Decoded from `Lua_GameSpell_GetId @ 1405e95f0`, `GetBaseSpellId @ 1405e96a0`,
 | `+0x00` | uint32 | `initialDelayMs` | "fInitialDelay" (milliseconds) |
 | `+0x04` | uint32 | `maxTimeMs` | "fMaxTime" (milliseconds) |
 
-### TargetingType Codes (from SpellTarget_ResolveTargetEntity)
+### TargetingType Codes (from SpellTarget_ResolveTargetEntity and Game_Spell_IsSelfSpellDelegate)
 
-| TargetingType value | Behavior | Entity field used |
-|--------------------|----------|------------------|
-| 0 | Self-target | `entity + 0x8` (self entity ID) |
-| 1 | Cursor/selected target | `entity + 0x108` (cursor target ID) |
-| 2 | Self-target | `entity + 0x8` |
-| 3 | Cursor/selected target | `entity + 0x108` |
-| 4 | Item targeting | `entity + 0x6ce8..0x6d00` (item-use spell context) |
-| 5 | Cursor/selected target | `entity + 0x108` |
-| 6 | Self-target | `entity + 0x8` |
-| 7 | Self-target | `entity + 0x8` |
-| 8 | Cursor/selected target | `entity + 0x108` |
-| other | No target | 0 |
-| `inner+0x18 == 3` | No target override | 0 (overrides targetingType) |
+| TargetingType value | Behavior | Entity field used | IsSelfSpell |
+|--------------------|----------|------------------|-------------|
+| 0 | Self-target | `entity + 0x8` (self entity ID) | Yes (0x85 bit 0) |
+| 1 | Cursor/selected target | `entity + 0x108` (cursor target ID) | No |
+| 2 | Self-target | `entity + 0x8` | Yes (0x85 bit 2) |
+| 3 | Cursor/selected target | `entity + 0x108` | No |
+| 4 | Item targeting | `entity + 0x6ce8..0x6d00` (item-use spell context) | No |
+| 5 | Cursor/selected target | `entity + 0x108` | No |
+| 6 | Self-target | `entity + 0x8` | No (0x85 bit 6 unset — self-ID but not "self spell") |
+| 7 | Self-target | `entity + 0x8` | Yes (0x85 bit 7) |
+| 8 | Cursor/selected target | `entity + 0x108` | No |
+| other | No target | 0 | No |
+| `inner+0x18 == 3` | No target override | 0 (overrides targetingType) | No |
 
-Bitmask `0x12a = 0b100101010` (bits 1,3,5,8 set) = types that use cursor target. Used for auto-select nearest when no cursor target is set (within 4.0 units, uses hitbox radii).
+`IsSelfSpell` bitmask: `0x85 = 0b10000101` → bits 0, 2, 7 set = types {0, 2, 7} are "self" type.
+`Game_Spell_IsSelfSpellDelegate @ ?`: reads `inner + 0x7c`, uses bitmask 0x85; also checks `inner+0x9c`.
+
+Cursor-target bitmask: `0x12a = 0b100101010` (bits 1,3,5,8 set) = types that auto-select nearest when no cursor target set (within 4.0 units, uses hitbox radii).
 
 ---
 
@@ -7726,3 +7752,755 @@ these thunks. The server-side `GameTableManager.Instance.Spell4StackGroup` alrea
 loads the same table data. Implementing stack-group arbitration requires mapping the
 server spell-instance lifecycle to match the group rules (stack limit, exclusive flags)
 in `Spell4StackGroupEntry`; no new decomp is needed for the DB query side.
+
+---
+
+## Spell Network Opcodes (Additional)
+
+Decoded from `SpellCast_SendClientToggleCastOn`, `SpellCast_SendClientToggleCastOff`,
+`SpellCast_SendClientSpellStopCast`, `SpellEffect_SendClientCancelEffect`.
+
+| Opcode (hex) | Direction | Name | Payload |
+|-------------|-----------|------|---------|
+| `0x17e` | Client→Server | ToggleCast | `{1}` = on, `{0}` = off; preceded by validation |
+| `0x801` | Client→Server | SpellStopCast | `{entityId, reasonCode, 0}`; `reasonCode < 0x14c` has string mapping |
+| `0x802` | Client→Server | CancelEffect | `{effectSequenceId, ...}` sent when cancelling effect type 0xe or 0x24 |
+
+### Toggle Cast State
+- `entity + 0x6820` = current toggle cast state: 0 = off, 1 = on
+
+### Active Effect Struct Fields (param_2 in SpellEffect_SendClientCancelEffect)
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x5c` | uint32 | `effectSequenceId` | Sent in CancelEffect opcode payload |
+| `+0x138` (`[0x27]`) | pointer | `spellWrapper` | Spell wrapper pointer for this effect |
+| `+0x158` (`[0x2b]`) | int32 | `casterEntityId` | Entity ID of the caster |
+
+Cancellable effect types (via opcode 0x802): `0xe` (14) and `0x24` (36).
+Targeting mode 10 requires the caster to match local player for cancel.
+
+---
+
+## QuestPrerequisite Faction Level Check
+
+Decoded from `QuestPrerequisite_CheckFactionLevel @ ?`.
+
+The Spell4Prerequisites row has 3 faction level check slots at row offsets:
+
+| Row byte offset | Field | Notes |
+|----------------|-------|-------|
+| `+0xb0` | factionId[0] | 0 = skip this slot |
+| `+0xbc` | factionId[1] | |
+| `+0xc8` | factionId[2] | |
+| `+0xb0+0x0c` | minLevel[0] | Required faction level |
+| `+0xb0+0x18` | direction[0] | 0 = must be >= minLevel; non-zero = must be < minLevel |
+
+Iterates prerequisite row offsets 0xb0..0xbc (3 slots × 4 bytes apart).
+`(*factionObj + 0x28)(factionObj)` = vtable GetFactionLevel.
+
+
+---
+
+## SpellWrapper InnerData — Additional Fields
+
+Decoded from `ActionSet_ValidateRequestedChanges`, `ServiceToken_HandleCastResult`.
+
+Additional `inner` struct (at `*(wrapper + 0x70)`) fields:
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0xf8` | int32 | `primaryEffectType` | Primary spell effect type (e.g., 0xe, 0x24, 0x70) |
+| `+0xfc` | int32 | `spellSlotType` | Type for ActionSet validation: 5 = ability (slots 0-7), non-5 = passive/AMP (slots 8-11) |
+| `+0x108` | uint32 | `propertyFlags` | Full 32-bit flags: bit 0x02 = AoE ValidTargets bypass; bit 0x20000000 = ServiceToken required |
+
+Note: `+0x108` was previously documented as a byte with only bit 0x02; it is a full uint32.
+
+## Entity Struct — Additional Fields
+
+From `ActionSet_SendPendingActionSetChanges`, `CSIAction_HandleCurrentTargetApproach`,
+`TargetThreatList_RebuildAndDispatch`, `ActionSet_ValidateRequestedChanges`.
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x80` | int32 | `entityType` | 0x14 = NPC, 0x17 = untargetable entity type |
+| `+0x250` | int32 | `movementBlockFlag1` | Non-zero = entity blocked/obstacle (can't approach) |
+| `+0x254` | int32 | `movementBlockFlag2` | Non-zero = entity blocked/obstacle (can't approach) |
+| `+0x2ac` | int32 | `inCombatFlag` | Non-zero = in combat (blocks ActionSet changes) |
+| `+0xaa8` | BST root | `actionSlotBST` | BST of SpellId → action slot data (same structure as +0x7d18) |
+| `+0x1460` | linked list | `actionSetChangeQueue` | Pending action set change entries |
+| `+0x1468` | int64 | `actionSetChangeCount` | Count of pending changes in queue |
+| `+0x66e8` | pointer | `threatListEntries` | Dynamic array of {entityId:uint32, threatAmount:uint32} pairs |
+| `+0x66f0` | int64 | `threatListCount` | Count of entries in threat list |
+| `+0x6dec` byte | byte | `actionSetStateByte` | Action set state flag byte |
+| `+0xd50` | int32 | `approachEnabledFlag` | Non-zero = deferred target approach enabled |
+
+## DeferredActionQueue Struct (at entity+0x70b0)
+
+From `DeferredActionQueue_ArmTargetApproach`.
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x04` | int32 | `approachType` | 0xffffffff = none, 1 = approach target |
+| `+0x08` | pointer | `approachData` | Cleared on reset |
+| `+0x0c` | int32 | `targetEntityId` | Entity ID to approach |
+| `+0x10` | int32 | `flag1` | Cleared on reset |
+| `+0x3c` | float | `approachRange` | Default 1.5 (0x3fc00000); minimum approach distance |
+| `+0x40` | int32 | `approachState` | Cleared on reset |
+| `+0x48` | int32 | `approachTimeout` | Default 300 ms |
+| `+0x4c` | int64 | `approachSlot` | -1 = any slot |
+| `+0x54` | int32 | `approachSpellId` | 0xffffffff = any spell |
+| `+0x80` | int32 | `flag2` | Cleared on reset |
+| `+0x90` | pointer | `resetHandlerObj` | Vtable at +0x98 = reset callback |
+
+## ActionSet Validation Rules
+
+From `ActionSet_ValidateRequestedChanges`:
+- Valid action set index range: 1..22 (param_3 - 1 in range 0..21)
+- Must NOT be in combat (entity+0x2ac == 0)
+- Exact 12 spells per action set (0x30 bytes = 12 × int32)
+- Slots 0..7: spell `inner+0xfc` MUST equal 5 (ability type)
+- Slots 8..11: spell `inner+0xfc` MUST NOT equal 5 (passive/AMP type)
+
+
+---
+
+## SpellWrapper InnerData — Innate Cost / GCD / RequiredLevel Fields
+
+From `Lua_GameSpell_GetCasterInnateCosts`, `Lua_GameSpell_GetGCDTime`, `Lua_GameSpell_GetRequiredLevel`.
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x28` | uint32 | `gcdGroupId` | GCD group table ID (looked up via Spell4GcdData); 0 = no GCD |
+| `+0xa8` | int32 | `innateCostType1` | First innate resource type (0..30); 0xf = mana/ChargeAmt reset |
+| `+0xac` | int32 | `innateCostType2` | Second innate resource type (0..30) |
+| `+0xb0` | int32 | `innateCostAmount1` | Amount of type1 resource consumed on cast |
+| `+0xb4` | int32 | `innateCostAmount2` | Amount of type2 resource consumed on cast |
+| `+0x190` | uint64 | `innateActivationThreshold` | Minimum innate value required to activate via AbilityBook |
+
+GCD time lookup chain: `inner+0x28 → Spell4GcdData row → base GCD ms → FUN_14046a760(entity+0x78, gcdGroupId, basems) = effective GCD remaining`.
+
+## SpellWrapper Top-Level — Additional Fields
+
+From `Lua_GameSpell_GetCooldownTime`, `Lua_GameSpell_GetCasterInnateRequirements`.
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x38` | ptr | `cooldownDataPtr` | Points to cooldown data; `[0]` = base cooldown ms (uint32) |
+| `+0x40` innate data | | `innateData` | When `*(wrapper+0x40)` non-null: `+0x10` = innateRequirementValue1, `+0x14` = innateRequirementValue2 (int32 each; > 0 = active requirement) |
+
+## AoE Data Struct (at `*(wrapper + 0x40)`)
+
+From `Lua_GameSpell_GetCasterInnateRequirements`:
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x10` | int32 | `innateReqValue1` | First innate requirement value (> 0 = active) |
+| `+0x14` | int32 | `innateReqValue2` | Second innate requirement value (> 0 = active) |
+
+## Entity Struct — Additional Fields
+
+From `SpellCast_SendClient0x009dVariant`, `Lua_AbilityBook_ActivateSpell`, `SpellTarget_ValidateTargetRelationship`.
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x24` | byte | `entityFlags` | Bit 0 (0x01) = player-controlled; blocks some faction bypass paths |
+| `+0x1480` | BST root | `spellSelectionBST` | BST for opcode 0x9d: node `+0x20`=SpellId, `+0x24`=slotType (1=quest, 2=other) |
+| `+0x6d10` | float | `fallbackPosX` | Fallback cast position X when no entity target for opcode 0x9d |
+| `+0x6d14` | float | `fallbackPosY` | Fallback cast position Y |
+| `+0x6d18` | float | `fallbackPosZ` | Fallback cast position Z |
+
+## Entity+0x78 Context Sub-Struct Fields
+
+`entity+0x78` = entity active spell/ability state pointer (non-null = entity active in world).
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0xdc` | int32 | `classId` | Entity class ID (0..22 max); used for spell level requirement lookup |
+| `+0xa04` | float | `cooldownReductionMult` | Cooldown reduction multiplier (e.g., 1.0 = no reduction) |
+| `+0x1608` | linked list | `activeCooldownList` | Active cooldown tracking list; entries: `+0x04`=type, `+0x08`=spellId, `+0x0c`=groupId, `+0x20`=timerPtr, `+0x88`=next |
+
+## SpellService (DAT_140c65b70) — Additional Fields
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x58` | array | `classSpellLevelTable` | Array of ClassEntry (0x10 bytes each), indexed by classId 0..22; `[0]`=pairArrayPtr, `[8]`=count |
+| `+0x788` | BST | `spellChainBST` | SpellId → chain/variant data; used when `castMethod == 7` (freeform/chain spells) |
+
+## Network Opcodes — Additional
+
+| Opcode | Direction | Name | Payload |
+|--------|-----------|------|---------|
+| `0x9d` | Client→Server | SpellCastVariant | `{spellId:uint32, targetValidation:uint32, entityId:uint32, posX:float, posY:float, posZ:float}` |
+| `0x17a` | Client→Server | ActivateSpell | `{hasTarget:byte, spellBaseId:uint32}` |
+
+## SpellCast Return Codes — Additional
+
+| Return Code | Name | Condition |
+|------------|------|-----------|
+| `0x0d` (13) | SpellNotAvailable | `FUN_1403a1630(entity, baseSpellId, 1) == 0` — spell unlock check failed |
+| `0x59` (89) | InvalidTargetRelationship | Faction relationship mismatch in SpellTarget_ValidateTargetRelationship |
+
+## ServerSpellList Packet Format
+
+From `ServerSpellList_ReadPayload`, `_ReadSpellEntry`, `_ReadTierEntry`, `_ReadVariantEntry`.
+
+```
+ServerSpellList {
+    spellCount: uint32 [32 bits]
+    spells: SpellEntry[spellCount]          // 0x40 bytes each
+}
+
+SpellEntry (0x40 bytes) {
+    +0x00: uint32 [32 bits]                 // SpellId (probable)
+    +0x04: uint32 [32 bits]                 // Spell4BaseId (probable)
+    +0x08: uint32 [32 bits]                 // field3
+    +0x0c: uint16 [18 bits]                 // field4
+    +0x10: byte   [1 bit]                   // isNew flag
+    +0x14: uint32 [32 bits]                 // tierCount
+    +0x18: ptr    → TierEntry[tierCount]    // 0x18 bytes each
+    +0x20: byte   [8 bits]                  // variantGroupCount
+    +0x28: ptr    → unknown[count]          // 0x1c bytes each
+    +0x30: byte   [8 bits]                  // cooldownGroupCount
+    +0x38: ptr    → CooldownGroup[count]    // 0x20 bytes each
+}
+
+TierEntry (0x18 bytes) {
+    +0x00: uint32 [32 bits]                 // spell/tier ID
+    +0x04: byte   [8 bits]                  // byte field1
+    +0x05: byte   [8 bits]                  // byte field2
+    +0x06: uint16 [16 bits]                 // field3
+    +0x08: nibble [4 bits]                  // field4
+    +0x0c: byte   [8 bits]                  // variantCount
+    +0x10: ptr    → VariantEntry[count]     // 0x50 bytes each
+}
+
+VariantEntry (0x50 bytes) {
+    +0x00: uint   [19 bits]                 // spellId (up to 524287)
+    +0x04: uint32 [32 bits]                 // field2
+    +0x08: uint32 [32 bits]                 // field3
+    +0x0c: uint32 [32 bits]                 // field4
+    +0x10: enum   [2 bits]                  // type (0 or 1; selects union branch at +0x18)
+    +0x18: varies                           // union data based on type
+}
+```
+
+
+---
+
+## SpellWrapper Top-Level — Effect Array and Additional Fields
+
+From `Lua_GameSpell_GetProxyChannelData`.
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x28` | int32 | `effectCount` | Number of SpellEffect entries in the effect array |
+| `+0x30` | ptr | `effectEntries` | Pointer to SpellEffect array; stride = 0xa8 (168) bytes per entry |
+
+### SpellEffect Entry (0xa8 bytes, within effect array)
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x10` | int32 | `effectType` | Spell effect type enum; 0x1a = ProxyChannel |
+| `+0x40` | uint32 | `proxySpellId` | Valid when effectType == 0x1a; target proxy spell |
+
+## SpellWrapper Inner Field Rename
+
+`inner + 0xf8` confirmed by `Lua_GameSpell_GetClass`: this field is the spell **activation class** (an internal category enum, not character class). Values 0xe and 0x24 are treated as cancellable by `SpellEffect_SendClientCancelEffect`. Renamed from `primaryEffectType` to `spellActivationClass`.
+
+## Entity Struct — Additional Fields
+
+From `ActivateUnit_SendClientActivateUnitCast`, `DashCast_SendClientDashCast`, `Interaction_AttemptTargetAction`.
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x18` | ptr | `worldInstancePtr` | Non-null = entity is in world; vtable slot used in many checks |
+| `+0x34ec` | byte | `debugFlag` | Non-zero triggers debug print in activate unit path |
+| `+0x6648` | uint32 | `queuedCastTarget` | Cleared on cast failure; set to 0 |
+| `+0x664c` | uint32 | `queuedCastTargetId` | Written with cursor target entity ID on cast failure |
+| `+0x6650` | uint32 | `queuedCastSpellId` | Written with spell ID on cast failure |
+| `+0x70b8` | uint32 | `deferredQueueApproachData` | DeferredActionQueue+0x08 flag; non-zero = clear queue on success |
+| `+0x75d8` | uint32 | `dashLimitFlag` | Non-zero = dash not allowed (some restriction) |
+| `+0x78d8` | uint32 | `dashActiveFlag` | 0 = not dashing, 1 = dash cast active |
+| `+0x78e0` | uint32 | `dashStartTimestamp` | Game tick when dash started |
+| `+0x78e8` | int32 | `dashDirection` | Direction/type of dash |
+| `+0x7188` | ptr | `vehicleMountObj` | Vehicle/mount sub-object; vtable+0x68=get mount state, vtable+0x70=get mount entity ID |
+| `+0x7190` | uint32 | `lastActivateTimestamp` | Game tick of last unit activation; rate-limits to 1000ms |
+| `+0x7198` | ptr | `someMovementObj` | Sub-object; vtable+0x50 = some movement lock flag |
+| `+0x7330` | ptr | `specialMovementState` | Passed to FUN_14055a260 (special movement state check) |
+
+## Entity+0x1908 — Interaction Script Object
+
+| Sub-offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `[0]` (`+0x00`) | int32 | `interactionType` | 0x65 = blocked, 0x4d = class-restricted, other = open |
+| `+0x04` byte | byte | `enabledFlag` | Non-zero = interaction available |
+| `+0x09` byte | byte | `canDeferApproach` | Non-zero = allows DeferredActionQueue approach arm |
+| `+0x0d` byte | byte | `hasPostFeedback` | Non-zero = calls Interaction_HandlePostActionTargetFeedback |
+| `[4]` (`+0x10`) | float | `interactionRange` | Default 5.0 if 0 |
+| `[0x10]` (`+0x40`) | ptr | `activationHandlerFn` | Function ptr for activation callback |
+
+## CastContext Sub-Struct — Additional Fields
+
+From `DashCast_SendClientDashCast`, `ActionSet_CheckUpdateSpellInProgress`.
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x358` | ptr | `dashStatePtr1` | Must be non-null for dash to proceed |
+| `+0x4c8` | ptr | `dashBlockerPtr` | Must be null for dash to proceed |
+| `+0x1070` | uint32 | `castModeFlags` | Bit 4 (0x04): blocks DeferredActionQueue dispatch; bit 0x100: required for dash; bit 0x200: main cast mode |
+| `+0x1088` | int32 | `dashBlockFlag` | Non-zero = block dash cast |
+| `+0x15c0` | linked list | `spellStateList` | Update-in-progress state chain; each entry has vtable+0x08 = GetStateId, entry+0x10 = next |
+
+## Network Opcodes — Additional
+
+| Opcode | Direction | Name | Payload |
+|--------|-----------|------|---------|
+| `0x94f` | Client→Server | GuildBossTokenCast | `{entryData, localSpellId, ..., timestamp}` |
+| `0x97` | Client→Server | ActivateUnitCast | `{casterEntityId, targetEntityId, ...}` |
+| `0xb3` | Client→Server | SelectTargetEntity | `{entityId:uint32}` |
+| `0x35b` | Client→Server | QuestAccept | `{paramData, questId}` |
+| `0x365` | Client→Server | QuestComplete | `{questId:uint32}` |
+
+## SpellService — Additional Globals
+
+| Address | Name | Notes |
+|---------|------|-------|
+| `DAT_140c65b80` | QuestServiceGlobal | `*DAT_140c65b80` = QuestRuntime pointer |
+| `DAT_140c659c0` | ActionBarSlotTable | Slot count at `+0x10`, slot prereq array at `+0x08` (int32 each); up to 24 entries |
+| `DAT_140c65b98` | MatchingGameMapService | `+0x108` = inMatchingGame flag; `+0x114` = matchType (1=rated, 2=arena) |
+| `DAT_140c658d8` | DebugLogService | Used for debug output |
+| `DAT_140c65990` | ?? | Called FUN_14049aa10(DAT_140c65990) in interaction success path |
+| `DAT_140c7de18` | GuildBossTokenEntryList | Ptr to list; `DAT_140c7de20` = count |
+| `DAT_140c635f0` | GameTimeGlobal | `+0x1680` = current game tick or timestamp |
+
+## Return Codes — Additional
+
+| Code | Name | Function |
+|------|------|----------|
+| 0x1f (31) | InvalidEntity | entity+0x18 == 0 or entity resolve failed |
+| 0x5b (91) | EntityNotInWorld | entity+0x18 == 0 or interaction object has no world instance |
+| 0x64 (100) | ActivationNotAvailable | Interaction script disabled or no handler |
+| 0x106 (262) | ActivationRateLimited | Within 1000ms of last activation (entity+0x7190) |
+| 0x13d (317) | CastQueued | SpellCast deferred/queued (not failed) |
+
+## SpellService Functions — Additional Label
+
+| Address | Name | Signature |
+|---------|------|-----------|
+| `1403ad690` | `SpellService_IsInRange` | `(castContext, targetEntity, minRange, maxRange, 0) → bool` |
+
+
+---
+
+## Entity Struct — Additional Fields (Batch 3)
+
+From `SpellCast_ValidateAndDispatch`, `SpellCast_ResolveTargetsAndValidate`, `SpellCast_SendClientToggleCastOn/Off`, `AbilityBook_SendClientCommitAmpSpec`.
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0xc0` | int32 | `primaryCursorTargetId` | Cursor target entity ID tracked on entity; compared to castContext+0x08 |
+| `+0x6364` | uint32 | `pendingFallbackSpellId` | Cleared on cast abort; set to current spellId under certain conditions |
+| `+0x6718` | ptr | `activeCastContext2` | Second cast context ptr; non-null triggers opcode 0x18f notification |
+| `+0x6820` | uint32 | `toggleCastActiveFlag` | 1 = toggle cast ON, 0 = toggle cast OFF |
+| `+0x67b0` | uint32 | `substituteMountSpellId` | Pending auto-attack or mount substitute spell ID |
+| `+0x6ce8` | uint64 | `substituteCastWrapperPtr` | SpellWrapper ptr for substitute cast (targeting type 4) |
+| `+0x6cf0` | uint64 | `substituteCastFlag` | Value 0x100000000 when substitute active |
+| `+0x6cf8` | uint64 | `substituteCastPositionPtr` | Position data for substitute cast |
+| `+0x6d00` | uint64 | `substituteCastSlot` | Slot/count; high byte = 9 |
+| `+0x6e70` | ptr | `ampSpecDataPtr0` | AMP spec array (uint16 entries) for action set 0 |
+| `+0x6e78` | uint64 | `ampSpecCount0` | Count of AMP entries for action set 0 |
+| `+0x6e80..6ea8` | — | `ampSpec1..3` | Repeat pattern for action sets 1-3: `+0x6e80/0x6e88`, `+0x6e90/0x6e98`, `+0x6ea0/0x6ea8` |
+| `+0x6eb0` | ptr | `stagedAmpSpecPtr` | Staged/pending AMP node entries ptr |
+| `+0x6eb8` | uint64 | `stagedAmpSpecCount` | Number of staged AMP entries (if non-zero, pending commit) |
+| `+0x7040` | ptr | `specialResolvePath` | Non-null triggers FUN_14057a2c0 in target resolve |
+| `+0x7258` | ptr | `vehicleOrMountStateObj` | `+0x14` = state type (3 or 8 = locked for toggle cast) |
+| `+0x7ba0` | uint32 | `castingOptionFlags` | Bit 0 = self-cast mode; bit 1 = "self-cast mode" toggle (from Options_SendClientOptionsCasting) |
+
+## Entity+0x78 Active State Sub-Struct — Additional Fields
+
+| Sub-offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x1600` | uint32 | `activeToggleSpellId` | ID of the currently active toggle spell (non-zero if toggled on) |
+| `+0x2ac` | int32 | `castUpdateInProgress` | Non-zero = cast or action-set update is in progress; blocks further casts |
+
+## CastContext — Additional Fields
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x08` | uint32 | `cursorTargetId` | Primary cursor/tab target entity ID in cast context |
+| `+0x37a0` | int32 | `serviceTokenCastBlocker` | Non-zero = block service token cast |
+| `+0x2ac` | int32 | `updateInProgressFlag` | Same semantic as entity+0x78+0x2ac; shared flag across sub-systems |
+
+## Entity World Instance Sub-Struct (entity+0x18 dereferences)
+
+| Sub-offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x6c` | int32 | `dungeonInstanceFlag` | Non-zero = dungeon/instanced zone |
+| `+0x148` | int32 | `raidInstanceFlag` | Non-zero = raid instance |
+| `+0xc0` | ptr | `factionRelTablePtr` | Ptr to array of up to 4 faction relationship entries (each 4 bytes = criteriaId) |
+
+## Entity Position Fields
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x11e0` | float | `posX` | World X position |
+| `+0x11e4` | float | `posY` | World Y position |
+| `+0x11e8` | float | `posZ` | World Z position |
+| `+0x16f0` | ptr | `boundingVolumeObj` | Sub-object; vtable+0x50(1) returns bounds; `+0x30` = sphere radius |
+
+## Entity Innate Ability Struct (entity+0x6d90)
+
+From `Lua_GameLib_GetClassInnateAbilitySpells`, `Lua_GameLib_GetCurrentClassInnateAbilitySpell`.
+
+| Sub-offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x08` | uint32[n] | `innateSpellIds` | Array of innate spell IDs; each 4 bytes |
+| `+0x30` | int32 | `selectedInnateIndex` | Current selected innate spell index (0-based) |
+
+## SpellWrapper Inner — Field Rename
+
+`inner + 0xf8` was `primaryEffectType`; corrected name: `spellActivationClass` (returned by `Lua_GameSpell_GetClass`; values 0xe and 0x24 treated as cancellable by `SpellEffect_SendClientCancelEffect`).
+
+## SpellService — Additional Fields
+
+| Offset | Type | Name | Notes |
+|--------|------|------|-------|
+| `+0x540` | hash_map | `targetFlagsHashMap` | Hash map of entityId → target flags; used by `SpellService_ResolveTargetFlags` |
+
+## Network Opcodes — Additional (Batch 3)
+
+| Opcode | Direction | Name | Payload |
+|--------|-----------|------|---------|
+| `0xc2` (194) | Client→Server | ServiceTokenSpellCast | `{spell4BaseId:uint32, serviceTokenId:uint32}` |
+| `0x12b` (299) | Client→Server | CastingOptionsUpdate | `{reserved:uint32, optionFlags:uint32}` where bit 1 = selfcast |
+| `0x17e` (382) | Client→Server | ToggleCast | `{enabled:byte}` — 1 = on, 0 = off |
+| `0x18f` (399) | Server→Client | SpellContextNotify | `{0:byte}` — sent when cast context changes |
+| `0x1a2` (418) | Client→Server | CommitAmpSpec | `{count:byte, ampNodeIds[count]:uint16}` |
+| `0x801` (2049) | Client→Server | SpellStopCast | `{reason:uint32, reasonAux:uint32, 0:uint32}` |
+
+## Return Codes — ActionSet Specific
+
+| Code | Name | Context |
+|------|------|---------|
+| 4 | InvalidSetIndex | ActionSet index out of range 1-22 |
+| 0x16 | InvalidSpellCount | ActionSet must have exactly 12 spells |
+| 0x17 | NullEntity | Entity ptr is null |
+| 0x18 | SlotTypeMismatch | Slot 0-7 must be type 5; slots 8-11 must not be |
+| 0x1e | UpdateInProgress | castContext+0x2ac is non-zero (action set update locked) |
+| 0x14b | ServiceTokenInvalid | Service token expired or invalid timestamp |
+| 0x80004005 | FeatureDisabled | Deferred action feature flag is disabled |
+
+## DeferredActionQueue — Confirmed Full Layout (entity+0x70b0)
+
+| Sub-offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x00` | uint32 | `type_high` | Unused / header |
+| `+0x04` | int32 | `actionType` | 1=approach, 2=interaction/activate, 3=castViaActionSlot, 4=castViaSlotIndex; -1=idle |
+| `+0x08` | uint64 | `reserved/cleared` | Reset to 0 on arm |
+| `+0x0c` | uint32 | `targetEntityId` | Target entity for approach/interaction |
+| `+0x10` | uint32 | `cleared` | Reset to 0 |
+| `+0x3c` | float | `rangeParam` | 1.5f for approach; interaction-specific range otherwise |
+| `+0x40` | uint32 | `cleared2` | Reset to 0 |
+| `+0x48` | uint32 | `timeoutMs` | Default 300ms |
+| `+0x4c` | int64 | `timedOut` | -1 = unset (not timed out) |
+| `+0x54` | int32 | `slotOrRange` | -1 = unset; 1 = standard; interaction slot index |
+| `+0x80` | uint32 | `cleared3` | Reset to 0 |
+| `+0x90` | ptr | `subStateObj` | Sub-object (vtable+0x98 = clear sub-state) |
+
+## AMP Spec System
+
+- `entity + 0x6e70 + setIndex * 0x10` = ptr to AMP node ID array (uint16 per entry) for action set `setIndex`
+- `entity + 0x6e78 + setIndex * 0x10` = count of AMP entries for that set
+- `entity + 0x6eb0` = staged/additional AMP node ptr (pending additions)
+- `entity + 0x6eb8` = staged AMP count (non-zero = commit needed)
+- AMP nodes are uint16 (2 bytes each); up to 255 total per commit (count field is byte)
+
+## BST Structure (spell wrapper BST at entity+0x7d18, action slot BST at entity+0xaa8)
+
+From `Entity_LookupSpellWrapperInBST`, `ActionSet_SendPendingActionSetChanges`.
+
+| BST Node Offset | Type | Name | Notes |
+|----------------|------|------|-------|
+| `+0x08` | ptr | `root` (sentinel) | Non-null = tree has entries |
+| `+0x10` | ptr | `leftChild` | Smaller keys |
+| `+0x18` | ptr | `rightChild` | Larger keys |
+| `+0x20` | uint32 | `key` | Key (SpellId or slotIndex) |
+| `+0x28` | ptr/val | `value` | SpellWrapper ptr or slot data ptr |
+
+For the action slot BST (`entity+0xaa8`):
+- Slot data at `*(node+0x28)`: `[1]` = count of action set entries; `*(slot + setIndex*8)` = per-set action entry
+- Action entry: `+0x04` = spellId, `+0x08` = enabled flag (non-zero = slot unlocked)
+
+## Labeled Functions — Additional
+
+| Address | Name |
+|---------|------|
+| `1407a0fd0` | `SpellService_ResolveTargetFlags` |
+
+
+---
+
+## Entity Struct — Additional Fields (Batch 4)
+
+From `Lua_GameLib_*` and `SpellCast_SendClientToggleCastOn`, `Lua_GameLib_TogglePvpFlags`, `Lua_GameLib_GetRestXp`, etc.
+
+| Byte offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x1688` | int32 | `restXp` | Current rest XP pool |
+| `+0x6424` | int32 | `worldDifficulty` | World difficulty enum |
+| `+0x6428` | int32 | `worldPrimeLevel` | Current world prime level |
+| `+0x642c` | int32 | `worldForcesLevelScaling` | Non-zero = zone forces level scaling |
+| `+0x6820` | uint32 | `toggleCastActiveFlag` | 1 = toggle ability currently on |
+| `+0x6ee4` | int32 | `duelStateFlag` | 1 = pending duel request (can accept/decline) |
+| `+0x7258` | ptr | `worldContextObjPtr` | World/zone context sub-object; `+0x14` = contextType (3 or 8 = action locked); `+0x54` = heroismMenaceLevel |
+
+## Entity+0x78 Active State Sub-Struct — Additional Fields (Batch 2)
+
+From `Lua_GameLib_SpendAttributePoints`, `Lua_GameLib_TogglePvpFlags`.
+
+| Sub-offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x250` | int32 | `attributePointSpendBlocker` | Non-zero = cannot spend attribute points |
+| `+0x15a8` | uint32 | `characterStateFlags` | Bit 1 (0x2) = actions blocked (dead/incapacitated) |
+
+## Network Opcodes — Additional (Batch 4)
+
+| Opcode | Direction | Name | Payload |
+|--------|-----------|------|---------|
+| `0xe8` (232) | Client→Server | DuelAccept | `{0:byte}` |
+| `0xe9` (233) | Client→Server | DuelDecline | `{0:byte}` |
+| `0xec` (236) | Client→Server | DuelInitiate | `{0:byte}` |
+| `0x173` (371) | Client→Server | TogglePvpFlags | `{enabled:uint32}` |
+| `0x17c` (380) | Client→Server | SpendAttributePoints | `{attrDeltas[n]:uint32}` variadic |
+
+## Innate Ability System
+
+- `entity + 0x6d90` = ptr to InnateAbilityState struct
+  - `+0x08` = uint32 array of innate spell IDs (0-based, `+0x08 + index * 4`)
+  - `+0x30` = selected index (int32, 0-based)
+- `FUN_1405e7490(innateState, index, 1)` = sets selected innate ability index (0-based)
+- `FUN_1405e73e0()` = returns count of innate ability spells
+- `FUN_140469920(entity+0x78, spellId)` = checks if given spell is currently active/toggled on entity
+
+## Challenges System
+
+- `DAT_140c65948` = ChallengesService ptr; `+0x30` = challenges BST root
+- Challenge entry (at BST node+0x28): `+0x48` = cooldownActive (0 = cooling down); `+0x34` = cooldownTimer (non-zero = in cooldown)
+- Challenge data: `data[0]` = challengeId, `data[3]` bit 4 (0x10) = has cooldown type
+
+## DB Table Addresses (ClientDB)
+
+| Global | Table Name | Notes |
+|--------|-----------|-------|
+| `DAT_140c651c8` | Spell4HitResults | `DB\Spell4HitResults.tbl` |
+| `DAT_140c63908` | Spell4ValidTargets | vtable+0x18 = GetById |
+| `DAT_140c642f0` | Spell4StackGroup | vtable+0x18 = GetById, vtable+0x28 = GetAllRows |
+| `DAT_140c65c20` | RewardRotationService | Reward rotation global; non-zero = loaded |
+
+
+---
+
+## SpellWrapper InnerData Layout — Expanded (Batch 2)
+
+From `Lua_GameSpell_*` function analysis.
+
+All offsets relative to `inner = *(longlong *)(wrapper + 0x70)`.
+
+| Inner offset | Type | Name | Notes |
+|-------------|------|------|-------|
+| `+0x00` | uint32 | `baseSpellId` | Primary spell key; used in all lookups |
+| `+0x04` | uint32 | `tierOrVariantId` | Tier/variant id; used for charge lookup |
+| `+0x18` | int32 | `castMethod` | Cast method enum: 3=no-target, 7=threshold-accumulate |
+| `+0x28` | uint32 | `gcdGroupId` | GCD group ID; lookup with `FUN_14023dc80` |
+| `+0x78` | float | `targetAngle` | AoE cone angle (radians) |
+| `+0x7c` | uint32 | `targetType` | 0,2,7=self; 1,3,5,8=cursor; 4=no-target/item |
+| `+0x9c` | int32 | `selfSpellRestrictionFlag` | 0=normal self-target allowed |
+| `+0xa8` | int32 | `cost1Type` | Innate cost 1 type (1-30; 0xf=innate resource) |
+| `+0xac` | int32 | `cost2Type` | Innate cost 2 type |
+| `+0xb0` | int32 | `cost1Amount` | Innate cost 1 amount |
+| `+0xb4` | int32 | `cost2Amount` | Innate cost 2 amount |
+| `+0xd0` | int32 | `reagentCount` | Total reagent count |
+| `+0xdc` | uint32 | `reagentId1` | Reagent item ID slot 1 |
+| `+0xe0` | uint32 | `reagentId2` | Reagent item ID slot 2 |
+| `+0xe4` | uint32 | `reagentId3` | Reagent item ID slot 3 |
+| `+0xf4` | int32 | `spellSchool` | Spell school enum |
+| `+0xf8` | int32 | `spellActivationClass` | Activation class (0xe/0x24=cancellable) |
+| `+0x108` | uint32 | `flagBits2` | Bit 1=AoE bypass; Bit 6=movingInterrupted; Bit 29=hasServiceTokenCost |
+| `+0x10c` | uint32 | `flagBits3` | Bit 26=IsBeneficial; Bit 28=IsGroundTargeted |
+| `+0x154` | uint32 | `miscFlags` | Bit 9=substituteCheck2; Bit 10=substituteCheck1 |
+| `+0x168` | ptr | `casterCriteriaPtr` | Caster fails → return 0x97 |
+| `+0x16c` | ptr | `secondaryCriteriaPtr` | Secondary fails → return 0x119 |
+| `+0x180` | uint32 | `substituteSpellRef` | Substitute spell lookup reference |
+| `+0x184` | uint32 | `thresholdTime` | Threshold cast time (uint32 ms) |
+| `+0x198` | uint32 | `prerequisiteId` | Prerequisite ID (0=none); fail → return 0x11 |
+| `+0x1b0` | ptr | `questInteractionPtr` | Non-null → quest accept/retry flow |
+| `+0x1d0` | ptr | `tradeskillVendorPtr` | Non-null → tradeskill vendor flow |
+| `+0x1d8` | ptr | `tradeskillVendorPtr2` | Second tradeskill vendor check |
+
+## SpellWrapper Object Layout — Full (Consolidated)
+
+| Wrapper offset | Type | Name | Notes |
+|---------------|------|------|-------|
+| `+0x08` | ptr | `secondInnerPtr` | `+0x48` = castTimeOverrideMs (uint32) |
+| `+0x28` | int32 | `effectCount` | Number of spell effects |
+| `+0x30` | ptr | `effectEntriesPtr` | Array of 0xa8-byte effect entries |
+| `+0x38` | ptr | `cooldownDataPtr` | `[0]` = cooldownMs; used in cooldown checks |
+| `+0x40` | ptr | `innateRequirementsDataPtr` | `+0x10/0x14`=casterReqs; `+0x20`=targetReq |
+| `+0x50` | ptr | `channelDataPtr` | `+0x00`=initialDelayMs; `+0x04`=maxTimeMs |
+| `+0x70` | ptr | `innerDataPtr` | Primary spell behavior data (full layout above) |
+
+## SpellEffect Entry Layout (0xa8 bytes per entry)
+
+| Effect offset | Type | Name | Notes |
+|--------------|------|------|-------|
+| `+0x10` | int32 | `effectType` | 0x1a=ProxyChannel, 0x26=Tradeskill |
+| `+0x40` | uint32 | `effectParam1` | ProxyChannel: proxySpellId; Tradeskill: tradeskillId |
+
+## SpellService Internals (DAT_140c65b70)
+
+| SpellService offset | Type | Name |
+|--------------------|------|------|
+| `+0x540` | hashmap | `targetFlagsHashMap` |
+| `+0x788` | BST | `selfSpellDelegateBST` |
+
+## Entity+0x78 Active State Fields — Cooldown Tracking
+
+| Sub-offset | Type | Name | Notes |
+|------------|------|------|-------|
+| `+0x0dc` | int32 | `abilityTierIndex` | Index for spell pricing lookup (range 0-22) |
+| `+0xa04` | float | `cooldownScaleFactor` | Applied when `FUN_1404823c0(wrapper) != 0` |
+| `+0x1608` | ptr | `cooldownListHead` | Linked list of active cooldowns |
+
+## Cooldown List Node Layout
+
+Each cooldown node (linked list via `node + 0x88`):
+
+| Offset | Type | Name | Notes |
+|--------|------|------|-------|
+| `+0x04` | int32 | `type` | 1 or 2 |
+| `+0x08` | int32 | `spellId` | Spell ID this cooldown is for |
+| `+0x0c` | int32 | `secondaryId` | Matched against cooldownData secondary field |
+| `+0x10` | struct | `timerData` | `FUN_140195f70(node+0x10)` = remaining ms |
+| `+0x20` | ptr | `timerPtr` | Must be non-null for active cooldown |
+| `+0x88` | ptr | `nextNode` | Next cooldown in linked list |
+
+## New Function Labels
+
+| Address | Name |
+|---------|------|
+| `1403ad860` | `SpellService_GetMinRange` |
+| `1403ad8f0` | `SpellService_GetMaxRange` |
+| `14054e340` | `SpellInner_ResolveCastTimeMs` |
+| `14046a890` | `SpellWrapper_ResolveCooldown` |
+| `140195f70` | `CooldownNode_GetRemainingMs` |
+| `14023dc80` | `GCDGroup_LookupById` |
+| `14046a760` | `SpellService_ResolveGCDTime` |
+| `1407a16f0` | `ChargeService_GetChargesForSpell` |
+| `1405a4d90` | `SpellServiceToken_GetCostAmount` |
+| `1405e73e0` | `InnateAbility_GetCount` |
+| `1405e9400` | `SpellLuaArg_ResolveWrapper` |
+| `140462a90` | `Entity_GetInnateResourceValue` |
+
+
+---
+
+## SpellWrapper InnerData — Additional Flag Bits
+
+From `Lua_GameSpell_IsFreeformTarget`, `ShouldHideCooldownInTooltip`, `GetRequiredWorldZone`.
+
+**inner + 0x108 (flagBits2) — Updated:**
+| Bit | Mask | Name |
+|-----|------|------|
+| 1 | 0x000002 | AoE bypass |
+| 6 | 0x000040 | isMovingInterrupted |
+| 22 | 0x400000 | isFreeformTarget (ground-target / free-position) |
+| 29 | 0x20000000 | hasServiceTokenCost |
+
+**inner + 0x10c (flagBits3) — Updated:**
+| Bit | Mask | Name |
+|-----|------|------|
+| 9 | 0x200 | hideCooldownInTooltip |
+| 26 | 0x4000000 | IsBeneficial |
+| 28 | 0x10000000 | IsGroundTargeted |
+
+**inner + 0x164 (new field):** `requiredWorldZoneId` (int32; 0=none)
+
+## SpellWrapper secondInnerPtr Layout (wrapper + 0x08)
+
+`secondInner = *(longlong *)(wrapper + 0x08)`
+
+| Inner offset | Type | Name | Notes |
+|-------------|------|------|-------|
+| `+0x34` | uint32 | `lasTierDescStringId` | LAS tier description string ID |
+| `+0x38` | uint32 | `lasBonusTierDescStringId` | LAS bonus-per-tier description string ID |
+| `+0x48` | uint32 | `castTimeOverrideMs` | Override cast time in milliseconds |
+
+## Entity Tradeskill Array
+
+| Offset | Type | Name | Notes |
+|--------|------|------|-------|
+| `entity + 0x1698` | ptr | `tradeskillListPtr` | Array of pointers to tradeskill entries |
+| `entity + 0x16a0` | uint64 | `tradeskillCount` | Count of tradeskills |
+
+Each tradeskill entry ptr: `entry + 0x08` = tradeskillId (int32)
+
+
+---
+
+## AbilityBook — Spell Activation and Tier System
+
+From `Lua_AbilityBook_ActivateSpell`, `Lua_AbilityBook_UpdateSpellTier`.
+
+### Entity Fields (Ability/Action System)
+
+| Offset | Type | Name | Notes |
+|--------|------|------|-------|
+| `entity + 0x6dd8` | uint32 | `currentActionSetIndex` | Active action set index |
+| `entity + 0x6ddc` | uint32 | `pendingActionSetIndex` | 0xFFFFFFFF = none pending |
+| `entity + 0x6dec` | byte | `activeActionSetByte` | Action set index as byte (same value) |
+| `entity + 0x15f8` | uint64 | `abilityActivationThreshold` | Entity level/point threshold for ability activation |
+
+### SpellInnerData
+
+- `inner + 0x190` (offset 400) = `abilityActivationCost` (uint32) — must be ≤ entity+0x15f8
+
+### ActionSet Slot Data
+
+- `FUN_1403c1ea0(entity, slotIndex, actionSetByte)` = `ActionSet_GetSlotData` — returns slot data ptr
+- Slot data `+0x118` = `slotSpellId` (uint32)
+
+### Key Function Labels (AbilityBook)
+
+| Address | Name |
+|---------|------|
+| `1404823c0` | `SpellWrapper_IsPlayerAbility` |
+| `1403bb170` | `SpellBook_IsSpellLearned` |
+| `1403bb040` | `SpellBook_IsSpellSlotCompatible` |
+| `1403bacc0` | `SpellBook_GetSpellTierData` |
+| `1407a1440` | `SpellWrapper_BuildForTier` |
+| `1403bb340` | `SpellBook_SendTierUpdateRequest` |
+| `1403c1ea0` | `ActionSet_GetSlotData` |
+
+## ActionSetLib — Slot Unlock System
+
+From `Lua_ActionSetLib_IsSlotUnlocked`.
+
+- `DAT_140c659c0` = `ActionSetSlotUnlockService` — slot unlock criteria table
+  - `+0x08` = ptr to array of criteriaIds (int32 per slot)
+  - `+0x10` = count (max slot index in table)
+  - CriteriaId == 0 → slot always unlocked (return 1)
+  - CriteriaId != 0 → checked via criteria vtable at DAT_140c659a0
+
+Return value semantics:
+- 1 = unlocked (no criteria or criteria passed)
+- 2 = locked (has criteria; criteria not met)
+- 0x17 (23) = no active entity state
+- 0x18 (24) = slot index out of criteria table range
+
+## Network Opcodes — Additional (Batch 4 cont.)
+
+| Opcode | Direction | Name | Payload |
+|--------|-----------|------|---------|
+| `0x17a` (378) | Client→Server | ActivateSpell | `{spellId:uint32, isShiftHeld:byte}` |
+
