@@ -6331,13 +6331,13 @@ current combat target without a manual aim (auto-attack behavior).  The server
 - TargetType 0, mechanic 1: spell4=305 ("Q388 anti-tank mine explosion") — self-centered explosion.
 - TargetType 7, mechanic 25: spell4=339 (auto-attack) — fires at current enemy target.
 - TargetType 7, mechanic 18: spell4=26813 (client test AE) — AE shape.
-- TargetType 6, mechanic 17: spell4=11820 ("[TEST] Recharge Item Batteries Full") — item-activation only; no live witnesses; kept as return 0u pending further evidence.
+- TargetType 6, mechanic 17: spell4=11820 ("[TEST] Recharge Item Batteries Full") — item-activation. Later `SpellTarget_ResolveTargetEntity` evidence supersedes the earlier blocker and confirms caster/self resolution.
 
 **Server implementation applied** (`CharacterSpell.ResolvePrimaryTargetId`):
 - Added constants `TargetTypeNoExplicitTarget = 0u` and `TargetTypeServiceLookup = 7u`.
 - TargetType 0 now returns `Owner.Guid` (merged with TargetTypeSelfAoe branch).
 - TargetType 7 now falls through to the current-target path (like SingleTarget/TargetAoe/Chain).
-- TargetType 6 remains as `return 0u` — insufficient evidence for a live item-activation path.
+- TargetType 6 now returns `Owner.Guid` after the later `SpellTarget_ResolveTargetEntity` decode confirmed caster/self resolution.
 
 ### `SpellCast_ResolveTargetsAndValidate` target-validation flow decode (`1403988d0`)
 
@@ -6496,7 +6496,7 @@ When player+0x7ba0 & 1 AND wrapper+0x10c bit 26 AND wrapper+0x10c bit 28:
 In CharacterSpell.ResolvePrimaryTargetId():
 - **TargetType 6**: now returns Owner.Guid (previously returned  u; client evidence confirms self-targeting).
 - **TargetTypes 5 and 8**: now included in the "use current target" path (were falling through to  u).
-- TargetType 7 server-side still returns Owner.TargetGuid (client returns caster entity for telegraph anchoring, but server needs combat target for effect application).
+- TargetType 7 server-side still returns Owner.TargetGuid when the selected target is visible; the client-side IsSelfSpell flag is a UI auto-fire/cursor rule, not a server self-targeting rule.
 
 ---
 
@@ -7089,7 +7089,7 @@ struct CriteriaProxy {
 | 140b66440  | [+0x00]     | 1403b4910     | `CriteriaProxy_VTable0` (destructor/RTTI, 24 refs, role unconfirmed) |
 | 140b66448  | [+0x08]     | 1403b4a10     | `EntityCriteria_GetRelatedCriteriaThunk` — `MOV ECX,EDX; JMP Spell4ValidTargets_GetCriteriaById` |
 | 140b66450  | [+0x10]     | 1403b4940     | `EntityCriteria_GetFactionGroupId` — `[entity+0x18]+0x00` |
-| 140b66458  | [+0x18]     | 1403b4960     | `EntityCriteria_EvalSubCriteria` — 3-param recursive evaluator (checkType 9) |
+| 140b66458  | [+0x18]     | 1403b4960     | `EntityCriteria_GetField0x140_ListMatch` — reads entity+0x140 DWORD, list-match (checkType 9) |
 | 140b66460  | [+0x20]     | 1403b49a0     | `EntityCriteria_GetRaceId` — `entity+0xd8` |
 | 140b66468  | [+0x28]     | 1403b49b0     | `EntityCriteria_GetClassId` — `entity+0xdc` |
 | 140b66470  | [+0x30]     | 1403b49c0     | `EntityCriteria_GetAttr2_Unk118` — `[entity+0x118]->vtable[+0x18]()` virtual call |
@@ -7108,7 +7108,7 @@ struct CriteriaProxy {
 | 6 (must-not)     | [+0x20] | 1403b49a0 | **RaceId** (inverse) | same |
 | 7 (must-match)   | [+0x28] | 1403b49b0 | **ClassId** = `entity+0xdc` | Lua_GameUnit_GetClassId @ 14064a1a0 |
 | 8 (must-not)     | [+0x28] | 1403b49b0 | **ClassId** (inverse) | same |
-| 9                | [+0x18] | 1403b4960 | **Nested sub-criteria** (recursive, 3-param) | ValidTargetsCriteria_Evaluate body |
+| 9                | [+0x18] | 1403b4960 | **entity+0x140 DWORD list-match** (3-param: proxy, values_ptr, count=7) — NOT recursive sub-criteria | ValidTargetsCriteria_Evaluate body + binary disasm confirmed |
 | 10               | [+0x08] | 1403b4a10 | **Related-criteria lookup** (must-match, recursive) | thunk → Spell4ValidTargets_GetCriteriaById |
 | 11               | [+0x08] | 1403b4a10 | **Related-criteria lookup** (must-not, recursive) | same |
 | 12 (0xc, must-match) | [+0x38] | 1403b49e0 | **UnitRaceId** = `*[entity+0xd0]` | Lua_GameUnit_GetUnitRaceId @ 14064a100 |
@@ -7135,8 +7135,8 @@ struct CriteriaProxy {
 | +0xd0  | ptr    | UnitRace component (first int = UnitRaceId) | EntityCriteria_GetUnitRaceId + Lua_GameUnit_GetUnitRaceId |
 | +0xd8  | int32  | RaceId | EntityCriteria_GetRaceId + Lua_GameUnit_GetRaceId |
 | +0xdc  | int32  | ClassId | EntityCriteria_GetClassId + Lua_GameUnit_GetClassId |
-| +0x118 | ptr    | Unknown component (virtual attr2, vtable[+0x18] called) | EntityCriteria_GetAttr2_Unk118 |
-| +0x140 | int32  | Unknown int field (vtable slot 8) | EntityCriteria_GetField0x140 |
+| +0x118 | ptr    | Unknown component; when non-null: `mov rax,[rcx]; jmp [rax+0x18]` — vtable[+0x18]() on component returns attr2 int. Returns 0 if null. checkType 3/4 filter. | EntityCriteria_GetAttr2_Unk118 (confirmed disasm) |
+| +0x140 | int32  | Unknown DWORD — read as `mov r9d,[rax+0x140]` by checkType 9 list-match (vtable[+0x18]=1403b4960) and as `mov eax,[rax+0x140]` by vtable[+0x40] simple getter (1403b4a00). Semantic unconfirmed. | EntityCriteria_GetField0x140 + EntityCriteria_GetField0x140_ListMatch |
 
 **Remaining unknowns:**
 - `entity+0x118` component identity — what attribute does checkType 3/4 filter?
@@ -7157,10 +7157,46 @@ is sufficient and the criteria system does not require server-side criteria row 
 |--------------------|------------|-------|
 | FUN_140240b40 | Spell4ValidTargets_GetCriteriaById | Criteria ID→struct lookup; forwarding target of 1403b4a10 |
 | FUN_1403b4940 | EntityCriteria_GetFactionGroupId | vtable[+0x10]; entity+0x18+0x00 |
-| FUN_1403b4960 | EntityCriteria_EvalSubCriteria | vtable[+0x18]; checkType 9 |
+| FUN_1403b4960 | EntityCriteria_GetField0x140_ListMatch | vtable[+0x18]; reads entity+0x140 DWORD, list-match; checkType 9 (NOT recursive sub-criteria) |
 | FUN_1403b49a0 | EntityCriteria_GetRaceId | vtable[+0x20]; entity+0xd8 |
 | FUN_1403b49b0 | EntityCriteria_GetClassId | vtable[+0x28]; entity+0xdc |
 | FUN_1403b49c0 | EntityCriteria_GetAttr2_Unk118 | vtable[+0x30]; entity+0x118 virtual call |
 | FUN_1403b49e0 | EntityCriteria_GetUnitRaceId | vtable[+0x38]; *[entity+0xd0] |
 | FUN_1403b4a00 | EntityCriteria_GetField0x140 | vtable[+0x40]; entity+0x140 |
 | FUN_1403b4a10 | EntityCriteria_GetRelatedCriteriaThunk | vtable[+0x08]; previously mislabeled SpellTarget_LogValidationMask |
+
+## Recent mapped-function blocker audit (2026-05-19)
+
+Recent target-validation and reward-rotation labels were rechecked against the
+current NexusForever runtime surfaces to see whether any previously blocked work
+is now safely implementable.
+
+- `SpellTarget_ResolveTargetEntity` target types `5`, `6`, and `8` are already
+  implemented in `CharacterSpell.ResolvePrimaryTargetId`: `0`/`2`/`6` resolve to
+  the caster and `1`/`3`/`5`/`7`/`8` resolve through the current visible target.
+  Type `7` is intentionally different from the client entity/anchoring switch:
+  the client groups it with caster resolution for UI auto-fire behavior, while
+  the server keeps it on the selected combat target for effect application.
+- The type-`7` service tree at `service_obj+0x788` and wrapper hash map at
+  `service_obj+0x540` are mapped as client wrapper/UI lookup structures. They do
+  not expose a server-owned data source that would change target selection, and
+  the current server current-target path for type `7` remains the safe behavior.
+- `ValidTargetsCriteria_Evaluate` and the CriteriaProxy vtable are mapped far
+  enough to explain faction-group, race, class, unit-race, nested criteria, and
+  related-criteria checks. Full server-side criteria evaluation is still not
+  implementable: `Spell4ValidTargetsEntry` currently exposes only `Id` and
+  `TargetBitmask`, while the criteria value arrays are not present in the
+  generated runtime model and `entity+0x118`/`entity+0x140` remain unnamed.
+  The existing `TargetBitmask` projection therefore stays the verified server
+  path.
+- Reward rotation network row shapes are implemented as writable packet models
+  for opcodes `0x07C7` through `0x07CB`, but the manager remains blocked for
+  grants and send-side state because no authoritative schedule source or
+  verified delta-opcode semantic split has been recovered.
+- Previously blocked account pending-item groups have already moved to runtime
+  state with claim, return, and online gift routing. No additional recent
+  decompile addition changes that boundary.
+- Taxi unlock persistence, durable rune persistence, hot/cold discovery
+  mutation, harvest node/material grants, `RavelSignal` receiver behavior, and
+  `UpdateSpellInProgress` still lack the required server-owned state model or
+  receiver/transaction evidence. They remain blocked rather than guessed.
