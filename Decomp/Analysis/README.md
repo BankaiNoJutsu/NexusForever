@@ -60,6 +60,9 @@ or invalidated entries.
 Single-target runs now default to isolated per-target Ghidra projects, which
 removes project-lock contention between targeted runs against different
 binaries. Multi-target and full-pass runs keep the shared project by default.
+For multi-binary export refreshes, prefer `Start-DecompileBatch.ps1`; it starts
+one isolated runner per target, writes per-run summaries under `logs\runs`, and
+refreshes coverage once after all workers complete.
 
 Run a smaller or larger decompiler export:
 
@@ -116,6 +119,18 @@ automation:
 
 ```powershell
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -Targets WildStar64.exe -ProjectLayout PerTarget
+```
+
+Seed or refresh the default target projects in parallel:
+
+```powershell
+.\Decomp\Analysis\Start-DecompileBatch.ps1 -Analyze -ProjectLayout PerTarget -MaxParallel 3
+```
+
+Re-export the default targets in parallel from existing per-target projects:
+
+```powershell
+.\Decomp\Analysis\Start-DecompileBatch.ps1 -MaxDecompiledFunctions 2400 -MaxParallel 3
 ```
 
 Force a fresh `selected_decompiled.c` rebuild after manual Ghidra project edits
@@ -203,6 +218,12 @@ create per-target projects such as `NexusForeverClient64_WildStar64`, while
 shared runs keep using `NexusForeverClient64`.
 
 Logs are written under `Decomp\Analysis\logs`.
+Batch runs write per-target summaries and job output logs under
+`Decomp\Analysis\logs\runs\<run-id>\`. The batch wrapper then writes
+`batch_summary.json` in that run folder and updates `logs\LATEST_RUN_SUMMARY.json`
+unless `-NoLatestSummary` is supplied. Individual `run_ghidra_analysis.ps1`
+workers can also use `-RunId`, `-SummaryPath`, and `-SkipCoverage` directly when
+automation needs collision-free output.
 
 `logs\LATEST_RUN_SUMMARY.json` now includes a per-target manifest summary with
 selected-function counts and cache reuse/decompile counts, so targeted passes

@@ -142,6 +142,12 @@ Set up and run the decompile workflow only when the task needs it:
 .\Decomp\Analysis\Get-DecompCoverageSnapshot.ps1
 ```
 
+For multi-binary export refreshes, prefer the parallel-safe batch wrapper:
+
+```powershell
+.\Decomp\Analysis\Start-DecompileBatch.ps1 -MaxDecompiledFunctions 2400 -MaxParallel 3
+```
+
 Run the load-test harness commands listed in
 `Tools/NexusForever.LoadTest/README.md` only against a prepared local server.
 

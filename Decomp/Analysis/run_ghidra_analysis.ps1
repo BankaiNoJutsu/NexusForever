@@ -11,6 +11,9 @@ param(
     [string] $DecompileMode = 'Auto',
     [ValidateSet('Auto', 'Shared', 'PerTarget')]
     [string] $ProjectLayout = 'Auto',
+    [string] $RunId = '',
+    [string] $SummaryPath = '',
+    [switch] $SkipCoverage,
     [switch] $AllClientBinaries,
     [switch] $NoApplyLabels,
     [switch] $ExportOnly,
@@ -244,6 +247,43 @@ if ($AllClientBinaries) {
         Select-Object -ExpandProperty Name
 }
 
+$runToken = if ([string]::IsNullOrWhiteSpace($RunId)) { '' } else { ConvertTo-ProjectToken -Value $RunId }
+$runLogDir = if ([string]::IsNullOrWhiteSpace($runToken)) {
+    $logDir
+}
+else {
+    Join-Path (Join-Path $logDir 'runs') $runToken
+}
+New-Item -ItemType Directory -Force -Path $runLogDir | Out-Null
+$resolvedRunLogDir = (Resolve-Path -LiteralPath $runLogDir).Path
+
+if ([string]::IsNullOrWhiteSpace($SummaryPath)) {
+    $summaryFileName = if ([string]::IsNullOrWhiteSpace($runToken)) {
+        'LATEST_RUN_SUMMARY.json'
+    }
+    elseif ($Targets.Count -eq 1) {
+        ('{0}.run_summary.json' -f (ConvertTo-ProjectToken -Value ([IO.Path]::GetFileNameWithoutExtension($Targets[0]))))
+    }
+    else {
+        'run_summary.json'
+    }
+
+    $SummaryPath = Join-Path $resolvedRunLogDir $summaryFileName
+}
+
+$summaryPathIsRooted = [IO.Path]::IsPathRooted($SummaryPath)
+$effectiveSummaryPath = if ($summaryPathIsRooted) { $SummaryPath } else { Join-Path (Get-Location).Path $SummaryPath }
+$summaryParent = Split-Path -Parent $effectiveSummaryPath
+if (-not [string]::IsNullOrWhiteSpace($summaryParent)) {
+    New-Item -ItemType Directory -Force -Path $summaryParent | Out-Null
+}
+$resolvedSummaryPath = if (Test-Path -LiteralPath $effectiveSummaryPath -PathType Leaf) {
+    (Resolve-Path -LiteralPath $effectiveSummaryPath).Path
+}
+else {
+    Join-Path (Resolve-Path -LiteralPath $summaryParent).Path (Split-Path -Leaf $effectiveSummaryPath)
+}
+
 $env:JAVA_HOME = (Resolve-Path -LiteralPath $javaHome).Path
 $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 
@@ -284,7 +324,7 @@ try {
 
         $projectLogSuffix = if ($projectName -ne $sharedProjectName) { ".{0}" -f $projectName } else { '' }
         $logSuffix = if ($ExtraPostScript) { ".{0}" -f ([IO.Path]::GetFileNameWithoutExtension($ExtraPostScript)) } else { '' }
-        $logPath = Join-Path $logDir ("{0}{1}{2}.ghidra.log" -f $targetName, $projectLogSuffix, $logSuffix)
+        $logPath = Join-Path $resolvedRunLogDir ("{0}{1}{2}.ghidra.log" -f $targetName, $projectLogSuffix, $logSuffix)
         $exportDir = Join-Path $resolvedOutputDir $target
         $manifestPath = Join-Path $exportDir 'selected_decompiled.manifest'
         $effectiveMaxDecompiledFunctions = Resolve-EffectiveMaxDecompiledFunctions `
@@ -396,13 +436,16 @@ try {
 finally {
     $runSummary = [ordered]@{
         timestampUtc = (Get-Date).ToUniversalTime().ToString('o')
+        runId = $RunId
         clientDir = $resolvedClientDir
         outputDir = $resolvedOutputDir
         projectDir = $resolvedProjectDir
-        logDir = $logDir
+        logDir = $resolvedRunLogDir
+        summaryPath = $resolvedSummaryPath
         decompileMode = $DecompileMode
         projectLayout = $effectiveProjectLayout
         exportOnly = [bool]$ExportOnly
+        skipCoverage = [bool]$SkipCoverage
         noApplyLabels = [bool]$NoApplyLabels
         labelsApplied = [bool]$labelsApplied
         labelMap = if ($resolvedLabelMap) { $resolvedLabelMap } else { '' }
@@ -415,14 +458,16 @@ finally {
         targets = $runSummaryTargets
     }
 
-    $summaryPath = Join-Path $logDir 'LATEST_RUN_SUMMARY.json'
-    $runSummary | ConvertTo-Json -Depth 6 | Out-File -LiteralPath $summaryPath -Encoding utf8
-    Write-Host "Run summary written to: $summaryPath"
+    $runSummary | ConvertTo-Json -Depth 6 | Out-File -LiteralPath $resolvedSummaryPath -Encoding utf8
+    Write-Host "Run summary written to: $resolvedSummaryPath"
 
     $coverageScript = Join-Path $PSScriptRoot 'Get-DecompCoverageSnapshot.ps1'
-    if (Test-Path -LiteralPath $coverageScript -PathType Leaf) {
+    if ($SkipCoverage) {
+        Write-Host "Coverage snapshot skipped."
+    }
+    elseif (Test-Path -LiteralPath $coverageScript -PathType Leaf) {
         try {
-            $coverageSummary = & $coverageScript -RepoRoot $resolvedRepoRoot -OutputDir $resolvedOutputDir -LogDir $logDir -RunSummaryPath $summaryPath
+            $coverageSummary = & $coverageScript -RepoRoot $resolvedRepoRoot -OutputDir $resolvedOutputDir -LogDir $resolvedRunLogDir -RunSummaryPath $resolvedSummaryPath
             if ($null -ne $coverageSummary) {
                 $runSummary.coverage = [ordered]@{
                     summaryPath = $coverageSummary.summaryPath
@@ -433,7 +478,7 @@ finally {
                     totalOpcodes = $coverageSummary.totalOpcodes
                 }
 
-                $runSummary | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $summaryPath -Encoding utf8
+                $runSummary | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $resolvedSummaryPath -Encoding utf8
                 Write-Host ("Coverage summary written to: {0}" -f $coverageSummary.summaryPath)
             }
         }

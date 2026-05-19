@@ -155,6 +155,23 @@ project. If you only have the legacy shared project on disk, export-only Auto
 mode falls back to it until the per-target project is seeded by a non-export
 run.
 
+For multi-binary refreshes, use the batch wrapper instead of one shared
+multi-target run:
+
+```powershell
+.\Decomp\Analysis\Start-DecompileBatch.ps1 -MaxDecompiledFunctions 2400 -MaxParallel 3
+```
+
+The wrapper starts one `run_ghidra_analysis.ps1` worker per target with
+collision-free `-RunId`, `-SummaryPath`, and `-SkipCoverage` settings, then
+writes `logs\runs\<run-id>\batch_summary.json` and refreshes the latest coverage
+once after all workers complete. Use `-Analyze -ProjectLayout PerTarget` when a
+target needs its split project seeded before export-only runs:
+
+```powershell
+.\Decomp\Analysis\Start-DecompileBatch.ps1 -Analyze -ProjectLayout PerTarget -MaxParallel 3
+```
+
 Use `-ProjectLayout Shared` when you intentionally want the old single-project
 behavior for a targeted pass:
 
@@ -695,6 +712,9 @@ Before finalizing implementation:
 - Naming helpers too specifically before callers are understood.
 - Broadening export patterns until every function is selected. Add narrow
   high-value patterns or labels instead.
+- Running parallel workers against the shared Ghidra project or shared latest
+  summary. Use `Start-DecompileBatch.ps1` or give each worker its own `-RunId`
+  and `-SummaryPath`.
 - Mutating spell state from unknown `DataBits` because the value "looks like"
   an id. Prove the id space and behavior first.
 - Implementing crypto, anti-tamper, or token behavior from partial structure.

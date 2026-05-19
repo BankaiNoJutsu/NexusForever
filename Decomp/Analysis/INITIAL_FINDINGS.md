@@ -6838,6 +6838,84 @@ ulonglong SpellTarget_ValidateWrapperAndTargets(
 
 | Offset | Type | Name | Notes |
 |--------|------|------|-------|
+| +0x108 | byte | SpellPropertyFlags_low | Low byte of SpellPropertyFlags; bit 1 = AoE property |
+| +0x168 | int32 | ValidTargets_primary_id | Primary ValidTargets row ID; 0 = no restriction |
+| +0x16c | int32 | ValidTargets_secondary_id | Secondary ValidTargets row ID; checked only if secondary entity present |
+
+---
+
+## Spell4 and Spell4Base Table Field Offsets
+
+Discovered from `Spell4Manager_BuildRuntimeData @ 14055e180`.
+The function iterates ALL Spell4 rows and ALL Spell4Visual rows, validates every
+cross-reference ID, and builds runtime lookup structures in a large manager object
+(`param_1`). This is the authoritative source of Spell4 and Spell4Base field offsets
+derived from client-code binary analysis.
+
+### Spell4 Row Struct Offsets
+
+Ghidra types `puVar28` as `ulonglong*` pointing to a Spell4 row. The 4-byte ID
+fields are read as `(int)puVar28[N]` = low 32 bits at byte offset `N*8`.
+
+| Byte offset | Ghidra accessor | Field name | Notes |
+|------------|-----------------|------------|-------|
+| `+0x10` | `(int)puVar28[2]` | `Spell4BaseId` | FK → Spell4Base table |
+| `+0xb8` | `(int)puVar28[0x2d]` | `StackGroupId` | FK → Spell4StackGroup table; 0 = no stack group |
+| `+0x114` | `*(int*)(puVar28+0x114)` | `AoeTargetConstraintsId` | FK → Spell4AoeTargetConstraints; 0 = none |
+| `+0x12c` | `*(int*)(puVar28+0x12c)` | `SpellCoolDownId[0]` | First cooldown slot |
+| `+0x130` | `*(int*)(puVar28+0x130)` | `SpellCoolDownId[1]` | Second cooldown slot |
+| `+0x134` | `*(int*)(puVar28+0x134)` | `SpellCoolDownId[2]` | Third cooldown slot |
+
+### Spell4Base Row Struct Offsets
+
+Ghidra types `lVar26` as `longlong` pointing to a Spell4Base row (GetById via
+`&PTR_u_Spell4Base_140a6d118` using the Spell4BaseId from the Spell4 row).
+
+| Byte offset | Ghidra accessor | Field name | Notes |
+|------------|-----------------|------------|-------|
+| `+0x08` | `*(int*)(lVar26+8)` | `HitResultsId` | FK → Spell4HitResults |
+| `+0x0c` | `*(int*)(lVar26+0xc)` | `TargetMechanicsId` | FK → Spell4TargetMechanics |
+| `+0x10` | `*(int*)(lVar26+0x10)` | `TargetAngleId` | FK → Spell4TargetAngle |
+| `+0x14` | `*(int*)(lVar26+0x14)` | `PrerequisitesId` | FK → Spell4Prerequisites; 0 = none |
+| `+0x18` | `*(int*)(lVar26+0x18)` | `ValidTargetsId` | FK → Spell4ValidTargets |
+| `+0x1c` | `*(int*)(lVar26+0x1c)` | `TargetGroupId` | FK → TargetGroup (primary); 0 = none |
+| `+0x34` | `*(int*)(lVar26+0x34)` | `TargetGroupId2` | FK → TargetGroup (secondary/alternate); 0 = none |
+| `+0x50` | `*(int*)(lVar26+0x50)` | `TargetCategory` | Controls which runtime collection spell goes into; values 1 and 3 have distinct handling |
+
+### Universal ClientDB Hot-Swap Function Pointers (Confirmed from 14055e180)
+
+These three globals are confirmed as universal DB hot-swap pointers used by ALL ClientDB tables —
+NOT specific to Spell4StackGroup as previously labeled. The DB-specific pointer is passed
+as the first argument.
+
+| Global address | Role | Example call |
+|---------------|------|------|
+| `DAT_140c63838` | `ClientDB_GetAllRows(db_ptr)` | `(*DAT_140c63838)(&PTR_u_Spell4_140a6d0a8)` |
+| `DAT_140c63840` | `ClientDB_GetById(db_ptr, id, hotswap_ctx)` | `(*DAT_140c63840)(&PTR_u_Spell4Base_140a6d118, id, DAT_140c63858)` |
+| `DAT_140c63848` | `ClientDB_GetByIndex(db_ptr, index, hotswap_ctx)` | `(*DAT_140c63848)(&PTR_u_Spell4_140a6d0a8, i, DAT_140c63858)` |
+| `DAT_140c63858` | hot-swap context (3rd arg to GetById/GetByIndex) | passed through |
+
+### ClientDB Descriptor (PTR_u_*) Addresses — Newly Confirmed
+
+The function accesses the following DB descriptor pointer addresses (PTR_u_* labels
+assigned by Ghidra from nearby strings):
+
+| Descriptor address | DB name |
+|-------------------|---------|
+| `140a6d0a8` | Spell4 |
+| `140a6d118` | Spell4Base |
+| `140a6d658` | Spell4Visual |
+| `140a6dff8` | VisualEffect |
+| `140a6d6c8` | SpellCoolDown |
+| `140a6d930` | TargetGroup |
+| `140a6d540` | Spell4TargetMechanics |
+| `140a6d508` | Spell4TargetAngle |
+| `140a6d620` | Spell4ValidTargets |
+| `140a6d310` | Spell4HitResults |
+| `140a6d380` | Spell4Prerequisites |
+| `140a6d0e0` | Spell4AoeTargetConstraints |
+| `140a6d498` | Spell4StackGroup (previously confirmed) |
+
 | +0x108 | byte | PropertyFlags low byte | Bit 1 (0x02): combined with AoE data bypasses primary ValidTargets |
 | +0x168 | int | ValidTargets primary ID | 0 = any target accepted; runtime ID into Spell4ValidTargets table |
 | +0x16c | int | ValidTargets secondary ID | Secondary target ValidTargets ID; 0 = no secondary check |
