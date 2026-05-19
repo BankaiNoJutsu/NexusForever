@@ -351,20 +351,19 @@ namespace NexusForever.Game.Spell
                 executionDelay.DataBits09);
         }
 
-        public static void TraceRavelSignal(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info, SpellEffectRavelSignalSemantics ravelSignal, string skippedReason)
+        public static void TraceRavelSignal(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info, SpellEffectRavelSignalSemantics ravelSignal)
         {
             if (!log.IsTraceEnabled)
                 return;
 
             log.Trace(
-                "SpellDiagnostics ravel-signal spell4Id={0} castingId={1} target={2} spell4EffectId={3} mode={4} signalId={5} skippedReason={6} dataBits02={7} dataBits03={8} dataBits04={9} dataBits05={10} dataBits06={11} dataBits07={12} dataBits08={13} dataBits09={14}",
+                "SpellDiagnostics ravel-signal spell4Id={0} castingId={1} target={2} spell4EffectId={3} mode={4} signalId={5} dataBits02={6} dataBits03={7} dataBits04={8} dataBits05={9} dataBits06={10} dataBits07={11} dataBits08={12} dataBits09={13}",
                 spell.Parameters.SpellInfo.Entry.Id,
                 spell.CastingId,
                 target.Guid,
                 info.Entry.Id,
                 ravelSignal.Mode,
                 ravelSignal.SignalId,
-                skippedReason,
                 ravelSignal.DataBits02,
                 ravelSignal.DataBits03,
                 ravelSignal.DataBits04,
@@ -829,8 +828,10 @@ namespace NexusForever.Game.Spell
             if (!log.IsTraceEnabled)
                 return;
 
+            ProcDispatchEvidenceBoundarySnapshot boundary = ProcDispatchEvidenceBoundary.Describe(proc.TriggerEvent, proc.TargetData);
+
             log.Trace(
-                "SpellDiagnostics proc spell4Id={0} castingId={1} target={2} triggerEvent={3} triggerSpell4Id={4} chance={5:R} targetData={6} cooldownMsOrSentinel={7} applied={8} removed={9} skippedReason={10} dataBits05={11} dataBits06={12} dataBits07={13} dataBits08={14} dataBits09={15}",
+                "SpellDiagnostics proc spell4Id={0} castingId={1} target={2} triggerEvent={3} triggerSpell4Id={4} chance={5:R} targetData={6} cooldownMsOrSentinel={7} applied={8} removed={9} skippedReason={10} triggerEventDispatchSupported={11} triggerEventLabel={12} targetDataDispatchSupported={13} targetDataLabel={14} targetDataRoute={15} conservativeDispatchBoundary={16} dataBits05={17} dataBits06={18} dataBits07={19} dataBits08={20} dataBits09={21}",
                 spell.Parameters.SpellInfo.Entry.Id,
                 spell.CastingId,
                 target.Guid,
@@ -842,6 +843,12 @@ namespace NexusForever.Game.Spell
                 applied,
                 removed,
                 skippedReason,
+                boundary.TriggerEventSupported,
+                boundary.TriggerEventLabel,
+                boundary.TargetDataSupported,
+                boundary.TargetDataLabel,
+                boundary.TargetRouteLabel,
+                boundary.DispatchSupportLabel,
                 proc.DataBits05,
                 proc.DataBits06,
                 proc.DataBits07,
@@ -854,9 +861,10 @@ namespace NexusForever.Game.Spell
             if (!log.IsTraceEnabled)
                 return;
 
+            ProcDispatchEvidenceBoundarySnapshot boundary = ProcDispatchEvidenceBoundary.Describe(procTriggerEvent, procTargetData);
             bool triggerEventMatches = observedTriggerEvent.HasValue && observedTriggerEvent.Value == procTriggerEvent;
             log.Trace(
-                "SpellDiagnostics proc-probe event={0} phase={1} holder={2} source={3} target={4} observedTriggerEvent={5} triggerEventMatches={6} procEffectId={7} procSpell4Id={8} procCastingId={9} procTriggerEvent={10} procTriggerSpell4Id={11} procChance={12:R} procTargetData={13} procCooldownMsOrSentinel={14} triggerSpell4Id={15} triggerCastingId={16} triggerSpell4EffectId={17} rawAmount={18} adjustedAmount={19} absorbed={20} shieldAbsorb={21} overkill={22} killedTarget={23} combatResult={24} dataBits05={25} dataBits06={26} dataBits07={27} dataBits08={28} dataBits09={29}",
+                "SpellDiagnostics proc-probe event={0} phase={1} holder={2} source={3} target={4} observedTriggerEvent={5} triggerEventMatches={6} procEffectId={7} procSpell4Id={8} procCastingId={9} procTriggerEvent={10} procTriggerSpell4Id={11} procChance={12:R} procTargetData={13} procCooldownMsOrSentinel={14} procTriggerEventDispatchSupported={15} procTriggerEventLabel={16} procTargetDataDispatchSupported={17} procTargetDataLabel={18} procTargetRoute={19} conservativeDispatchBoundary={20} triggerSpell4Id={21} triggerCastingId={22} triggerSpell4EffectId={23} rawAmount={24} adjustedAmount={25} absorbed={26} shieldAbsorb={27} overkill={28} killedTarget={29} combatResult={30} dataBits05={31} dataBits06={32} dataBits07={33} dataBits08={34} dataBits09={35}",
                 eventName,
                 phase,
                 holder.Guid,
@@ -872,6 +880,12 @@ namespace NexusForever.Game.Spell
                 procChance,
                 procTargetData,
                 procCooldownMsOrSentinel,
+                boundary.TriggerEventSupported,
+                boundary.TriggerEventLabel,
+                boundary.TargetDataSupported,
+                boundary.TargetDataLabel,
+                boundary.TargetRouteLabel,
+                boundary.DispatchSupportLabel,
                 triggerSpell4Id,
                 triggerCastingId,
                 triggerSpell4EffectId,
@@ -894,8 +908,9 @@ namespace NexusForever.Game.Spell
             if (!log.IsTraceEnabled)
                 return;
 
+            ProcDispatchEvidenceBoundarySnapshot boundary = ProcDispatchEvidenceBoundary.Describe(procTriggerEvent, procTargetData);
             log.Trace(
-                "SpellDiagnostics proc-dispatch event={0} phase={1} holder={2} source={3} target={4} observedTriggerEvent={5} resolvedTarget={6} procEffectId={7} procSpell4Id={8} procCastingId={9} procTriggerEvent={10} procTriggerSpell4Id={11} procChance={12:R} procTargetData={13} procCooldownMsOrSentinel={14} procCooldownRemainingSeconds={15:R} action={16} skippedReason={17}",
+                "SpellDiagnostics proc-dispatch event={0} phase={1} holder={2} source={3} target={4} observedTriggerEvent={5} resolvedTarget={6} procEffectId={7} procSpell4Id={8} procCastingId={9} procTriggerEvent={10} procTriggerSpell4Id={11} procChance={12:R} procTargetData={13} procCooldownMsOrSentinel={14} procCooldownRemainingSeconds={15:R} procTriggerEventDispatchSupported={16} procTriggerEventLabel={17} procTargetDataDispatchSupported={18} procTargetDataLabel={19} procTargetRoute={20} conservativeDispatchBoundary={21} action={22} skippedReason={23}",
                 eventName,
                 phase,
                 holder.Guid,
@@ -912,6 +927,12 @@ namespace NexusForever.Game.Spell
                 procTargetData,
                 procCooldownMsOrSentinel,
                 procCooldownRemainingSeconds,
+                boundary.TriggerEventSupported,
+                boundary.TriggerEventLabel,
+                boundary.TargetDataSupported,
+                boundary.TargetDataLabel,
+                boundary.TargetRouteLabel,
+                boundary.DispatchSupportLabel,
                 action,
                 skippedReason);
         }

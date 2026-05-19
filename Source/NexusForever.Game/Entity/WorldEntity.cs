@@ -1308,8 +1308,14 @@ namespace NexusForever.Game.Entity
             scriptCollection?.Invoke<IWorldEntityScript>(s => s.OnUnsummon(entity));
         }
 
+        /// <inheritdoc />
+        public void SendSignal(uint signalId)
+        {
+            scriptCollection?.Invoke<IWorldEntityScript>(s => s.OnSignal(signalId));
+        }
+
         /// <summary>
-        /// Set platform to suppled <see cref="IWorldEntity"/> with optional position and rotation offsets.
+        /// Set platform to suppled <see cref="IWorldEntity"/>with optional position and rotation offsets.
         /// </summary>
         public void SetPlatform(IWorldEntity entity, Vector3 position = default, Vector3 rotation = default)
         {

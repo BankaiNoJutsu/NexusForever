@@ -261,6 +261,11 @@ namespace NexusForever.Game.Abstract.Entity
         void OnUnsummon(IWorldEntity entity);
 
         /// <summary>
+        /// Dispatch a Ravel signal to this <see cref="IWorldEntity"/>'s script collection.
+        /// </summary>
+        void SendSignal(uint signalId);
+
+        /// <summary>
         /// Set platform to suppled <see cref="IWorldEntity"/> with optional position and rotation offsets.
         /// </summary>
         void SetPlatform(IWorldEntity entity, Vector3 position = default, Vector3 rotation = default);

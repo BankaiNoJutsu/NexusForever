@@ -811,7 +811,8 @@ namespace NexusForever.Game.Spell
             if (ravelSignal == null)
                 return;
 
-            SpellEffectDiagnostics.TraceRavelSignal(spell, target, info, ravelSignal, "receiver-not-implemented");
+            target.SendSignal(ravelSignal.SignalId);
+            SpellEffectDiagnostics.TraceRavelSignal(spell, target, info, ravelSignal);
         }
 
         [SpellEffectHandler(SpellEffectType.ModifyInterruptArmor)]

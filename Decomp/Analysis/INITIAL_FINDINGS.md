@@ -7197,6 +7197,62 @@ is now safely implementable.
   state with claim, return, and online gift routing. No additional recent
   decompile addition changes that boundary.
 - Taxi unlock persistence, durable rune persistence, hot/cold discovery
-  mutation, harvest node/material grants, `RavelSignal` receiver behavior, and
+  mutation, harvest node/material grants, and
   `UpdateSpellInProgress` still lack the required server-owned state model or
   receiver/transaction evidence. They remain blocked rather than guessed.
+- `RavelSignal` receiver behavior is now implemented at the script-dispatch
+  level: `HandleEffectRavelSignal` calls `target.SendSignal(signalId)`, which
+  invokes `IWorldEntityScript.OnSignal(signalId)` on the target entity's script
+  collection. The binary dispatch architecture is mapped in the section below.
+
+### RavelSignal spell effect dispatch architecture
+
+`SpellEffectType.RavelSignal = 0x51 = 81`. The WildStar client has two
+spell-effect dispatch tables split at `DespawnUnit = 0x61 = 97`:
+
+**High-range dispatch** (effectTypes `0x61`–`0x972`): Entity vtable[11] at
+`0x1403ec6a0`, dispatch index = `effectType − 0x61`, jump table at
+`0x1403f1344`, 645 non-default entries out of 2322 total.
+
+**Low-range dispatch** (effectTypes `0x01`–`0x60`): Function at `0x1406b1300`,
+dispatch index = `effectType − 1`, two-level table:
+```asm
+1406b1503: lea  eax, [r13 − 1]      ; effectType − 1 = index
+1406b1507: cmp  eax, 0x5f           ; bounds check (max index 95)
+1406b150a: ja   0x1406b321e         ; out of range → epilogue
+1406b1510: lea  rdx, [rip − 0x6b1517]  ; rdx = 0x140000000
+1406b1517: movzx eax, byte ptr [rdx + rax + 0x6b338c]  ; byte compression table
+1406b151f: mov  ecx, dword ptr [rdx + rax*4 + 0x6b3364] ; int32 offset table
+1406b1526: add  rcx, rdx
+1406b1529: jmp  rcx
+```
+
+RavelSignal (effectType `0x51`, index `0x50`) maps to the low-range dispatch
+epilogue at `0x1406b321e` — the same default path as `SpellForceRemove`,
+`Stealth`, and most other types in that range. Only effectTypes 4, 5, 6, 8,
+and 27 have dedicated handlers in the low-range table; all others, including
+RavelSignal, fall through to the shared epilogue. This means the client routes
+RavelSignal entirely through the Ravel/Lua scripting runtime (`CRavel` component
+at `entity+0x7928`) rather than a dedicated C++ spell-effect handler.
+
+**Server implementation** (verified with `dotnet build`; 200/200 tests pass):
+- `IWorldEntityScript.OnSignal(uint signalId)` — new script callback (default
+  no-op); implementing this in a C# entity script fires when any
+  `RavelSignal` effect targets that entity.
+- `IWorldEntity.SendSignal(uint signalId)` / `WorldEntity.SendSignal` — invokes
+  `IWorldEntityScript.OnSignal` via the entity's script collection.
+- `HandleEffectRavelSignalCore` now calls `target.SendSignal(ravelSignal.SignalId)`.
+- `SpellEffectDiagnostics.TraceRavelSignal` — `skippedReason` parameter removed
+  since dispatch is now live.
+
+**Remaining unknowns:**
+- `RavelSignalSemantics.Mode` (DataBits00): values 1–5 dominant in the 5,262
+  game-table rows. Mode is structurally decoded but not semantically confirmed.
+  The target entity is already resolved by the spell targeting system before the
+  effect handler runs, so Mode may select a sub-receiver within the CRavel
+  component (own instance vs. group vs. summoner) rather than changing the
+  C++-level dispatch. Current implementation ignores Mode and always calls
+  `OnSignal` on the resolved target; refine when mode semantics are confirmed.
+- CRavel class layout: the CRavel component sits at `entity+0x7928`; its
+  constructor address and vtable are still unrecovered.
+

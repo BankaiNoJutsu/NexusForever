@@ -749,3 +749,4 @@ WildStar64.exe,1403f38b0,RealmFirstAchievementAnnounce_Dispatch,Builds the Realm
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
+WildStar64.exe,1406b1300,Entity_ExecuteSpellEffectLowRange,Handles spell effectTypes 0x01-0x60; dispatch at +0x207; two-level byte+int32 table; only types 4/5/6/8/27 have unique handlers; RavelSignal(0x51) and most others fall through to epilogue at 0x1406b321e; signature: rcx=entity rbx edx=effectType r13d r8d=flags r9=wide-string.

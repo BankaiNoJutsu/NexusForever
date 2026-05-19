@@ -46,5 +46,12 @@ namespace NexusForever.Script.Template
         void OnUnsummon(IWorldEntity entity)
         {
         }
+
+        /// <summary>
+        /// Invoked when a RavelSignal spell effect is received by this <see cref="IWorldEntity"/>.
+        /// </summary>
+        void OnSignal(uint signalId)
+        {
+        }
     }
 }
