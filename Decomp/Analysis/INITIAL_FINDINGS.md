@@ -4229,6 +4229,16 @@ Eighty-fifth Rider's Reef combat projector follow-up implemented from this pass:
   WorldServer output folder. The projector-activation fallback also no longer
   requires the player to remain inside the small hoverboard finish volume once
   `73735` activation has succeeded.
+- Relocation recovery follow-up implemented from this pass:
+  a local retry showed `!teleport location 51734` could place a character at
+  the combat projector without making the projector usable when the finish-area
+  progression had not been re-evaluated after the server-side relocation.
+  `Player.OnRelocate(...)` now re-runs the Rider's Reef tutorial area-objective
+  recovery after loading for active starter/follow-up tutorial quests, then
+  refreshes tutorial entity visibility and progression. This keeps the normal
+  hoverboard course path intact while allowing GM/debug teleports and other
+  server-side relocations to recover the same finish trigger state that
+  entered-world recovery already handled.
 - Still blocked: full Rider's Reef recovery still needs an in-client fresh
   Exile and Dominion validation pass for world `3460`, including projector
   activation, cinematic timing, transport target, and post-transition combat
@@ -6815,8 +6825,8 @@ if (wrapper+0x18 == 3) {
 
 ### Auto-Target Fallback (bitmask 0x12a)
 When xplicit_id == 0 AND
-esolved_id == 0 AND TargetType is in bitmask  x12a:
--  x12a = 100101010b → bits 1, 3, 5, 8 → TargetTypes 1, 3, 5, 8 get auto-target fallback.
+esolved_id == 0 AND TargetType is in bitmask x12a:
+- x12a = 100101010b → bits 1, 3, 5, 8 → TargetTypes 1, 3, 5, 8 get auto-target fallback.
 - Searches nearby valid entities within ~5 yards (config entry 0x145 → lVar4+0x18, default 5.0f).
 - If found and within range: calls TargetSelection_ApplySelectionAndDispatch(player, entity_id) to select that entity.
 
@@ -6838,8 +6848,8 @@ When player+0x7ba0 & 1 AND wrapper+0x10c bit 26 AND wrapper+0x10c bit 28:
 
 ### Server Implementation Applied
 In CharacterSpell.ResolvePrimaryTargetId():
-- **TargetType 6**: now returns Owner.Guid (previously returned  u; client evidence confirms self-targeting).
-- **TargetTypes 5 and 8**: now included in the "use current target" path (were falling through to  u).
+- **TargetType 6**: now returns Owner.Guid (previously returned u; client evidence confirms self-targeting).
+- **TargetTypes 5 and 8**: now included in the "use current target" path (were falling through to u).
 - TargetType 7 server-side still returns Owner.TargetGuid when the selected target is visible; the client-side IsSelfSpell flag is a UI auto-fire/cursor rule, not a server self-targeting rule.
 
 ---
@@ -6892,16 +6902,16 @@ When found, calls SpellService_ResolveSpellWrapper on rray[0] + 4 to get a seco
 
 | Bit | Hex | Server constant | Meaning |
 |---|---|---|---|
-| 6 |  x00000040 | (SpellTargetingFlags.InterruptOnMove) | IsMovingInterrupted |
-| 22 |  x00400000 | SpellTargetingFlags.FreeformTarget | IsFreeformTarget |
-| 29 |  x20000000 | SpellPropertyFlags.HasServiceTokenCost | ServiceToken cast behavior |
+| 6 | x00000040 | (SpellTargetingFlags.InterruptOnMove) | IsMovingInterrupted |
+| 22 | x00400000 | SpellTargetingFlags.FreeformTarget | IsFreeformTarget |
+| 29 | x20000000 | SpellPropertyFlags.HasServiceTokenCost | ServiceToken cast behavior |
 
-Note: The server reads IsFreeformTarget and IsMovingInterrupted from Spell4BaseEntry.TargetingFlags (via SpellBaseInfo), not Spell4Entry.PropertyFlags. Both use the same bit value  x400000, confirming the mapping is consistent across tables.
+Note: The server reads IsFreeformTarget and IsMovingInterrupted from Spell4BaseEntry.TargetingFlags (via SpellBaseInfo), not Spell4Entry.PropertyFlags. Both use the same bit value x400000, confirming the mapping is consistent across tables.
 
 ### IsSelfSpell bitmask confirmation
 
-Game_Spell_IsSelfSpellDelegate checks spell_wrapper + 0x70 + 0x7c (TargetType) against bitmask  x85:
--  x85 = 10000101b → TargetTypes **0** (NoExplicitTarget), **2** (SelfAoe), **7** (ServiceLookup) → IsSelfSpell = true
+Game_Spell_IsSelfSpellDelegate checks spell_wrapper + 0x70 + 0x7c (TargetType) against bitmask x85:
+- x85 = 10000101b → TargetTypes **0** (NoExplicitTarget), **2** (SelfAoe), **7** (ServiceLookup) → IsSelfSpell = true
 - Additional rule: shape-type +0x18 == 3 AND +0x9c == 0 AND TargetType ∈ {4, 8} → also self
 - IsSelfSpell = true means the UI auto-casts without a targeting cursor; no change to server ResolvePrimaryTargetId
 
@@ -7105,7 +7115,7 @@ dispatch for both the primary and the secondary target.
 ### Entry Guard
 
 FUN_1403ae8c0(DAT_140c65b70) is called first. If its return value is neither
-  nor  x13d, the function returns that value immediately without further
+ nor x13d, the function returns that value immediately without further
 work. Only when the pre-condition state is OK (0) or the conditional-state (0x13d)
 does validation proceed.
 
@@ -7355,7 +7365,7 @@ The ValidTargets check calls a virtual at *DAT_140c659a0 + 0x18:
 (*(*DAT_140c659a0 + 0x18))(DAT_140c659a0, entity, validtargets_id, other_entity, 0, 0)
 `
 DAT_140c659a0 is a separate service object (not the same as DAT_140c65b70
-spell service). The vtable offset  x18 (slot 3) dispatches to the actual
+spell service). The vtable offset x18 (slot 3) dispatches to the actual
 ValidTargets lookup. This is not yet decoded; likely SpellService_CheckValidTargets.
 
 ### Error Code Table
@@ -7636,7 +7646,7 @@ Entity vtable slots queried (attribute getters):
 - +0x30: attribute B
 - +0x38: attribute E
 
-Return codes:   = pass,  x59 = fail,  x13d = conditional pass.
+Return codes:  = pass, x59 = fail, x13d = conditional pass.
 
 #### Pseudocode (abbreviated)
 
@@ -9825,3 +9835,261 @@ Spell broadcast runtime listener follow-up mapped from this pass:
   storing the non-negative delta against `+0x84` into wrapper-local queued work
   records at `spellWrapper + 0x1b8/+0x1c0`.
 
+Quest objective placeholder follow-up from source/runtime coverage:
+
+- `QuestObjectiveType.Unknown10` has been renamed to
+  `QuestObjectiveType.ScriptedTargetGroupChecklist`. The existing runtime
+  already treated this objective type as both target-group backed and
+  checklist-backed in `AssetManager` and `QuestObjective`, and the Northern
+  Wilds `Q3487Shellshock` script updates it with the activated owner's
+  `CreatureId` plus `QuestChecklistIdx`. The safer boundary is therefore a
+  scripted target/checklist objective rather than a fully generic unknown
+  quest type.
+- No behavioral expansion was made in this pass; the rename documents behavior
+  that was already implemented. Other `Unknown*`, `DataBits*`, `Client0x*`,
+  and `Server0x*` placeholders remain blocked unless a future pass can tie
+  their wire shapes to stable semantics. The movement/spline registration
+  cluster currently provides payload layouts for several unresolved opcodes,
+  but not enough evidence for safe semantic names.
+
+Evidence-backed restoration workboard follow-up:
+
+- `plan-evidenceBackedRestorationEpic.prompt.md` now carries the active
+  execution workboard for the restoration epic, including the placeholder
+  baseline and the distinction between implemented, validation-pending, and
+  blocked items.
+- The Riders' Reef tutorial direction-table blocker is currently implemented in
+  source: `QuestDirection` and `QuestDirectionEntry` are default `[GameData]`
+  tables, and `Quest.SendObjectiveWorldLocationUpdates()` resolves direction
+  world locations before indicator fallback. A focused regression test now
+  guards the table-manager loading contract instead of widening tutorial
+  runtime behavior. Verification: the focused
+  `GameTableManagerGameDataContractTests` filter passed, then the full
+  `NexusForever.Game.Tests` project passed with 316 tests, and
+  `dotnet build Source\NexusForever.sln -v minimal --nologo` passed with 0
+  warnings and 0 errors.
+- Live smoke should now use the local client root `I:\WildStar`; that path has
+  both `Client64\WildStar64.exe` and `Patch`. The NPE map asset
+  `NewPlayerExperience.nfmap` is present and should be smoke-tested with
+  `-ClientDirectory "I:\WildStar"`. No staged `*Ether*.nfmap` or
+  `*Expedition*.nfmap` asset was found for the world `3404` expedition smoke,
+  so that blocker is now narrowed to regenerating or locating the expedition map
+  asset from `I:\WildStar\Patch` before running the live world `3404` flow.
+
+Evidence-backed restoration runtime convergence follow-up:
+
+- `MapGenerator` now uses the `SharpCompress` version supplied through
+  `Nexus.Archive`, avoiding the local `LzmaStream` constructor mismatch during
+  patch extraction. With that fix, world `3404` generation from
+  `I:\WildStar\Patch` produced the staged map asset
+  `.nexusforever-runtime\assets\map\ShiphandHungerFromtheVoid.nfmap`.
+- Portable RabbitMQ startup now repairs reused volume ownership and the
+  `.erlang.cookie` permissions before readiness checks. This unblocked the
+  standalone local stack without requiring a manual Docker volume reset.
+- Character EF migration metadata is complete for the three already-present
+  2026 migrations: `ItemSoulbound`, `CharacterTradeskill`, and
+  `CharacterSchematicArchive`. The local `nexus_forever_character` database now
+  has `item.soulbound`, `character_tradeskill`, `character_schematic`, and
+  `character_galactic_archive`. `dotnet ef migrations has-pending-model-changes`
+  reports no Character or World model drift after the Character and World
+  snapshot refreshes.
+- The default runtime game-table contract now includes
+  `ItemRandomStat`, `ItemRandomStatGroup`, `ArchiveArticle`, `ArchiveEntry`,
+  and `ArchiveEntryUnlockRule`. This addresses the two observed WorldServer
+  startup/enter-world crashes: null random-stat tables during item-info cache
+  construction and null archive tables during galactic-archive initial packet
+  generation. `ItemInfoPropertyBuilder` now also accumulates duplicate property
+  budgets from standard and random-stat sources.
+- The load-test login-world harness now writes GUID `Data2` and `Data3` as
+  16-bit fields in `ClientHelloAuth` and reports `ServerAuthDenied` values
+  explicitly. Before this fix Auth rejected the packet as `ErrorInvalidToken`;
+  after the fix Auth returned a realm ticket and the harness completed through
+  world entry.
+- Local runtime verification used `I:\WildStar`,
+  `.nexusforever-runtime\assets\tbl`, and `.nexusforever-runtime\assets\map`.
+  The final run started Auth, STS, World, and RabbitMQ on ports `23115`, `6600`,
+  `24000`, and `5672`, then
+  `dotnet run --project Tools\NexusForever.LoadTest -- run login-world --user loadtest0001@example.local --password loadtest --samples 1 --warmup 0`
+  passed with `1/1` success and artifact
+  `artifacts\load-tests\login-world-20260520-181053.json`. A fresh post-run
+  scan of NexusForever service logs found no `ERROR` or `FATAL` entries.
+- World database verification recorded `Evil from the Ether.sql` in `version`,
+  found `237` world `3404` `entity` rows, `12` world `3404` `entity_script`
+  rows, and `431` world `3460` `entity` rows. Remaining world `3460` and world
+  `3404` work is now manual client playthrough validation, not an automated
+  backend startup blocker.
+
+Rider's Reef hoverboard course follow-up:
+
+- A live playthrough reached world location `51734` without teleporting, but
+  character `19` remained on quest `10527` with objective `21323` still at `0`.
+  The saved position was near the combat-projector landing spot while
+  `WorldLocation2` `51734` has radius `1`, and the imported finish-line entity
+  `73595` sits several meters away from the tiny world-location center. The
+  runtime now applies a Rider's Reef-only recovery padding for `51734` in both
+  immediate client movement updates and entered-world/relocate recovery, so the
+  retail client landing spot advances the ride objective and exposes projector
+  `73735`.
+- The combat projector behavior remains mapped to the existing activation
+  evidence: creature `73735` casts spell `87061`, queues the combat-projector
+  cinematic, then transports Exile characters to `51739` and Dominion
+  characters to `52898`. The projector is intentionally actionable only after
+  the hoverboard projector objective and ride-finish objective are complete.
+- Booster creatures `73461` were imported as simple entities and visible after
+  the hoverboard course unlocked, but had no activate spell or script behavior.
+  `Spell4` contains NPEU `Power Boost` spells for part 1 and hoverboard-related
+  speed behavior, including mount-speed property changes. A narrow
+  `TutorialHoverboardBoosterEntityScript` now attaches to creature `73461`,
+  range-checks mounted tutorial players, and sends a forward velocity boost on
+  the controlled hoverboard mover without changing global movement logic.
+
+Rider's Reef post-hoverboard live-log follow-up:
+
+- A fresh client pass with character `20` completed the shield/hoverboard
+  projector path and reached the combat simulation, but the live
+  `worldserver.log` showed three separate runtime faults. Booster contact raised
+  `InvalidCastException` because `TutorialHoverboardBoosterEntityScript`
+  resolved the player's `PlatformGuid` as `IUnitEntity`, while hoverboards are
+  `MountEntity -> VehicleEntity -> WorldEntity`. The booster script now resolves
+  and boosts an `IWorldEntity`, so the controlled mount receives the velocity
+  command instead of throwing.
+- The same pass force-disconnected during projector/objective handling with
+  `InvalidOperationException: Collection was modified; enumeration operation
+  may not execute` from `QuestManager.ObjectiveUpdate(...)`. Objective updates
+  can complete a quest and move it between active/completed dictionaries while
+  the manager is still iterating active quests. `QuestManager` now snapshots
+  active quests for update, initial world-location packet emission, objective
+  broadcasts, and `GetActiveQuests()` callers.
+- A later disconnect path came from `ClientDashCast.Read(...)` reading a
+  required 32-bit value from a short/empty body even though the handler only
+  logs and ignores the packet. The model now treats a short body as the default
+  state instead of throwing `EndOfStreamException`.
+- Combat simulation clustering had two mapped contributors in the current data:
+  the world import already contains the Exile first-wave battle beasts, mines,
+  and turrets, while the map fallback was still adding extra Exile first-wave
+  entities; and tutorial combat AI used the 50m leash as its initial aggro
+  radius. The Exile fallback now only supplies the missing final wave
+  (`73492`/`73567` near `51740`), while starter tutorial combat creatures keep
+  the 50m leash but require a 14m initial aggro check unless they are directly
+  damaged.
+- Verification: `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo`,
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo`, and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  -v minimal --nologo` all passed. STS/Auth/World were restarted, ports
+  `6600`, `23115`, `24000`, and `5000` are listening, and the fresh WorldServer
+  startup section after `2026-05-20 20:28:29` has no `ERROR`, `Exception`, or
+  fatal matches.
+
+Rider's Reef heartbeat and diagnostics follow-up:
+
+- A second live run still disconnected after the previous heartbeat workaround
+  removal. The fresh `worldserver.log` showed character `20` force-logged out
+  with `LogoutReason.AccountDisconnected` at `2026-05-20 20:48:56 UTC`, roughly
+  300 seconds after world entry. The only notable inbound keepalive-like packet
+  in that world session was unhandled `State(0x00000000)`; no
+  `ClientPregameKeepAlive` packet appeared before the flatline. This maps the
+  remaining disconnect to server-side liveness accounting, not to the earlier
+  quest/projector exception path.
+- Runtime heartbeat handling now treats any successful nonzero socket receive
+  as liveness, logs explicit heartbeat flatlines with the 300s timeout, and
+  downgrades expected socket-abort/read-reset disconnects to debug context
+  instead of generic socket-read errors. `State` and `State2` are also registered
+  as no-op heartbeat-refresh messages so the client packet that appeared in the
+  log no longer lands in the unhandled-packet path.
+- `WorldSession.OnDisconnect()` now logs account, character, player guid, world,
+  zone, position, and remaining heartbeat before logout finalisation. If another
+  disconnect happens, the log should now show whether it was a heartbeat
+  flatline, client-side close/reset, or a gameplay exception.
+- Starter tutorial `CombatAI` diagnostics were added for the known Rider's Reef
+  combat creatures. The trace/debug path records load-time leash/aggro settings,
+  accepted and rejected aggro decisions, target invalidation, chase decisions,
+  and auto-attack cast/range skips, scoped to player-facing tutorial combat so
+  global creature logs stay manageable.
+- Loot tracing already had packet-shape diagnostics and client request-handler
+  traces; this pass added the missing server-side decision trail. Creature and
+  item loot generation now traces recipient selection, loot-table/direct-row
+  rolls, rejected/deliverable items, generated loot instances, notify sends,
+  collect/vacuum/roll/master-loot resolution, owner/range failures, loot-bag
+  failure reasons, and per-item delivery/roll rejection details.
+- Verification: `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo`,
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo`, and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed with
+  `340/340` tests. The first parallel verification attempt hit transient C#
+  compiler file locks only; the sequential rerun passed.
+
+Rider's Reef loot and self-anchored combat validation follow-up:
+
+- Fresh WorldServer log review after the loot diagnostics showed no `ERROR`,
+  `FATAL`, or unhandled exception during the reported no-loot/combat window.
+  Creature `73464` generated loot three times, but the server found no
+  `entity_loot`/`loot_group` table rows and no imported `creature_loot` rows for
+  that Creature2 id. A localhost `nexus_forever_world` query confirmed zero
+  `creature_loot` and zero `entity_loot` rows for the known Rider's Reef combat
+  creature ids checked (`73464`, `73465`, `73473`, `73492`, `73494`, `73566`,
+  `73567`, `73735`, `74862`). Random OmniBit kill rewards still rolled and sent
+  granted/explosion `ServerLootNotify` packets when the chance hit, so the
+  static corpse-loot gap is data coverage, not a thrown runtime failure.
+- The same log showed repeated player spell failures:
+  `SpellDiagnostics primary-target-validation spell4Id=32893/32812 ... target=22
+  result=TargetOrientation ... targetAngle=180 targetMechanic=2/16`, where
+  caster `22` was also target `22`. Later successful casts from the same spells
+  selected hostile targets through telegraph/effect targeting. This maps the
+  player-facing "only attack when in front" symptom to primary-target angle
+  validation being applied to the caster's own position for self-anchored
+  telegraph spells. `Spell.CheckPrimaryTargetAngle` now skips angle checks when
+  the resolved primary target is the caster; external primary targets still use
+  the target-angle gate.
+- Immediate granted loot now follows the already mapped loot-bag explosion path
+  more closely: the delivered item updates inventory/currency first and then
+  sends the granted/explosion `ServerLootNotify`, without also sending an
+  individual `ServerLootGrant` for the same visual-shower item. This keeps random
+  OmniBit kill notifications on the cleaner granted-notify path.
+- Verification: `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed,
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed,
+  and `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed
+  with `345/345` tests. Earlier verification attempts were blocked only by the
+  live WorldServer DLL lock and one self-inflicted parallel MSBuild `obj` lock.
+  WorldServer was then relaunched as PID `31952`; ports `5000` and `24000` are
+  listening, Auth/STs remain on `23115`/`6600`, and the fresh
+  `NexusForever.WorldServer_20260520_31952.log` contains no log-level `ERROR`,
+  `FATAL`, unhandled, or exception entries after startup.
+
+Rider's Reef retail video starter-quest evidence follow-up:
+
+- Retail YouTube evidence from `B1T4TRL9A_A` ("Navigating Nexus Quest
+  Wildstar", uploaded `2016-06-08`) shows the hoverboard course unlocking after
+  the hoverboard projector, then blue rings/arrows and gold booster pads carrying
+  the player to the finish before combat-projector `Upload` transport.
+  `o0ADNHDjDQ4` ("The Face of the Enemy Quest Wildstar", uploaded
+  `2016-06-08`) is Dominion-side evidence: its first combat wave is Virtual
+  Defense Daguns, while the Exile-side first wave remains the imported Dominion
+  Battle Beast setup already present in world `3460`. The shared quest pacing is
+  still first-wave kills, three mine detonations, two interrupt/destroy turret
+  steps, then three elite kills; no corpse-loot interaction is visible in these
+  clips.
+- The latest local WorldServer log showed `TutorialHoverboardBoosterEntityScript`
+  instances loading for creature `73461`, but no `booster applied` entries while
+  the player reported visible boosters that did not accelerate. Hoverboards are
+  controlled `MountEntity`/`VehicleEntity` movers, so the range event can arrive
+  for the vehicle rather than the passenger player. The booster script now
+  resolves either a direct player or the pilot of an `IVehicleEntity`, validates
+  the same tutorial quest state, and applies the velocity boost to the actual
+  mover. This keeps the faction-specific combat creatures unchanged while
+  matching the retail booster-pad behavior seen in `B1T4TRL9A_A`.
+- Verification: after stopping the old WorldServer PID `31952`, both
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
+  --no-restore -v minimal --nologo` and
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -v minimal --nologo` passed with `0` warnings and `0` errors.
+  WorldServer was relaunched as PID `26228`; the fresh
+  `NexusForever.WorldServer_20260520_26228.log` shows the rebuilt
+  `TutorialHoverboardBoosterEntityScript` being discovered and contains no
+  startup `ERROR`, `FATAL`, or exception matches in the checked window.
