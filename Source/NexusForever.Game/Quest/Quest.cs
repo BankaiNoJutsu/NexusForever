@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
@@ -206,15 +205,15 @@ namespace NexusForever.Game.Quest
             {
                 if ((saveMask & QuestSaveMask.Create) != 0)
                 {
-                    context.Add(new CharacterQuestModel
+                    CharacterQuestModel model = context.CharacterQuest.Find(player.CharacterId, Id);
+                    if (model == null)
                     {
-                        Id      = player.CharacterId,
-                        QuestId = Id,
-                        State   = (byte)State,
-                        Flags   = (byte)Flags,
-                        Timer   = Timer,
-                        Reset   = Reset
-                    });
+                        context.Add(BuildModel());
+                    }
+                    else
+                    {
+                        ApplySaveMask(model, QuestSaveMask.State | QuestSaveMask.Flags | QuestSaveMask.Timer | QuestSaveMask.Reset);
+                    }
                 }
                 else if ((saveMask & QuestSaveMask.Delete) != 0)
                 {
@@ -228,35 +227,14 @@ namespace NexusForever.Game.Quest
                 }
                 else
                 {
-                    var model = new CharacterQuestModel
+                    CharacterQuestModel model = context.CharacterQuest.Find(player.CharacterId, Id);
+                    if (model == null)
                     {
-                        Id      = player.CharacterId,
-                        QuestId = Id
-                    };
-
-                    EntityEntry<CharacterQuestModel> entity = context.Attach(model);
-                    if ((saveMask & QuestSaveMask.State) != 0)
-                    {
-                        model.State = (byte)State;
-                        entity.Property(p => p.State).IsModified = true;
+                        context.Add(BuildModel());
                     }
-
-                    if ((saveMask & QuestSaveMask.Flags) != 0)
+                    else
                     {
-                        model.Flags = (byte)Flags;
-                        entity.Property(p => p.Flags).IsModified = true;
-                    }
-
-                    if ((saveMask & QuestSaveMask.Reset) != 0)
-                    {
-                        model.Reset = Reset;
-                        entity.Property(p => p.Reset).IsModified = true;
-                    }
-
-                    if ((saveMask & QuestSaveMask.Timer) != 0)
-                    {
-                        model.Timer = Timer;
-                        entity.Property(p => p.Timer).IsModified = true;
+                        ApplySaveMask(model, saveMask);
                     }
                 }
 
@@ -265,6 +243,34 @@ namespace NexusForever.Game.Quest
 
             foreach (IQuestObjective objective in objectives)
                 objective.Save(context);
+        }
+
+        private CharacterQuestModel BuildModel()
+        {
+            return new CharacterQuestModel
+            {
+                Id      = player.CharacterId,
+                QuestId = Id,
+                State   = (byte)State,
+                Flags   = (byte)Flags,
+                Timer   = Timer,
+                Reset   = Reset
+            };
+        }
+
+        private void ApplySaveMask(CharacterQuestModel model, QuestSaveMask mask)
+        {
+            if ((mask & QuestSaveMask.State) != 0)
+                model.State = (byte)State;
+
+            if ((mask & QuestSaveMask.Flags) != 0)
+                model.Flags = (byte)Flags;
+
+            if ((mask & QuestSaveMask.Reset) != 0)
+                model.Reset = Reset;
+
+            if ((mask & QuestSaveMask.Timer) != 0)
+                model.Timer = Timer;
         }
 
         public void Update(double lastTick)

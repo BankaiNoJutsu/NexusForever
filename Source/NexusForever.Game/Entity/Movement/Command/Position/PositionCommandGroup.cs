@@ -43,6 +43,9 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
         private readonly UpdateTimer relocationTimer = new(TimeSpan.FromSeconds(1));
         private Vector3 lastPosition;
 
+        private const uint TutorialHoverboardFinishWorldLocationId = 51734u;
+        private const float TutorialHoverboardFinishRecoveryPadding = 6f;
+
         private IMovementManager movementManager;
 
         #region Dependency Injection
@@ -274,7 +277,10 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
                 new Vector2(position.X, position.Z),
                 new Vector2(worldLocation.Position0, worldLocation.Position2));
 
-            float horizontalRange = worldLocation.Radius + targetRadius;
+            float horizontalPadding = worldLocation.Id == TutorialHoverboardFinishWorldLocationId
+                ? MathF.Max(targetRadius, TutorialHoverboardFinishRecoveryPadding)
+                : targetRadius;
+            float horizontalRange = worldLocation.Radius + horizontalPadding;
             if (horizontalDistanceSquared > horizontalRange * horizontalRange)
                 return false;
 

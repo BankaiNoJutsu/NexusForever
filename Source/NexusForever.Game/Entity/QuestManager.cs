@@ -112,7 +112,7 @@ namespace NexusForever.Game.Entity
         public void Update(double lastTick)
         {
             var botchedQuests = new List<IQuest>();
-            foreach (IQuest quest in activeQuests.Values)
+            foreach (IQuest quest in activeQuests.Values.ToList())
             {
                 quest.Update(lastTick);
                 if (quest.State == QuestState.Botched)
@@ -160,7 +160,7 @@ namespace NexusForever.Game.Entity
                     }).ToList()
             });
 
-            foreach (IQuest quest in activeQuests.Values)
+            foreach (IQuest quest in activeQuests.Values.ToList())
                 quest.SendObjectiveWorldLocationUpdates();
         }
 
@@ -477,6 +477,8 @@ namespace NexusForever.Game.Entity
             // remove existing quest from its current home before
             switch (quest.State)
             {
+                case QuestState.Accepted:
+                case QuestState.Achieved:
                 case QuestState.Abandoned:
                     activeQuests.Remove(quest.Id);
                     break;
@@ -890,7 +892,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void ObjectiveUpdate(QuestObjectiveType type, uint data, uint progress)
         {
-            foreach (IQuest quest in activeQuests.Values)
+            foreach (IQuest quest in activeQuests.Values.ToList())
                 quest.ObjectiveUpdate(type, data, progress);
         }
 
@@ -899,7 +901,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void ObjectiveUpdate(uint id, uint progress)
         {
-            foreach (IQuest quest in activeQuests.Values)
+            foreach (IQuest quest in activeQuests.Values.ToList())
                 quest.ObjectiveUpdate(id, progress);
         }
 
@@ -915,7 +917,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public IEnumerable<IQuest> GetActiveQuests()
         {
-            return activeQuests.Values;
+            return activeQuests.Values.ToList();
         }
     }
 }

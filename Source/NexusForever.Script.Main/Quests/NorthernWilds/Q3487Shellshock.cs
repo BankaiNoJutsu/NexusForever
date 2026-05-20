@@ -22,7 +22,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         public void OnActivateSuccess(IPlayer activator)
         {
-            activator.QuestManager.ObjectiveUpdate(QuestObjectiveType.Unknown10, owner.CreatureId, owner.QuestChecklistIdx);
+            activator.QuestManager.ObjectiveUpdate(QuestObjectiveType.ScriptedTargetGroupChecklist, owner.CreatureId, owner.QuestChecklistIdx);
         }
     }
 

@@ -263,6 +263,7 @@ namespace NexusForever.Game.Entity.Movement
                 {
                     case SetTimeCommand setTime:
                         commandValidator.ValidateTime(setTime.Time, GetTime());
+                        timeCommandGroup.SetTime(TimeSpan.FromMilliseconds(setTime.Time));
                         break;
                     case SetPositionCommand setPosition:
                     {

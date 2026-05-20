@@ -7,12 +7,13 @@ namespace NexusForever.Game.Entity.Movement.AntiTamper
 {
     public class ClientMovementCommandValidator : IClientMovementCommandValidator
     {
-        private const int MaxTimeDriftMilliseconds = 30_000;
-
         private const StateFlags KnownStateMask =
             StateFlags.Velocity
             | StateFlags.Move
+            | StateFlags.Unknown04
             | StateFlags.Fall
+            | StateFlags.Unknown10
+            | StateFlags.Unknown20
             | StateFlags.Jump
             | StateFlags.ModeNonWalk
             | StateFlags.ModeWalk
@@ -28,9 +29,8 @@ namespace NexusForever.Game.Entity.Movement.AntiTamper
         /// </summary>
         public void ValidateTime(uint clientTime, uint serverTime)
         {
-            int difference = unchecked((int)(clientTime - serverTime));
-            if (Math.Abs(difference) > MaxTimeDriftMilliseconds)
-                throw new InvalidOperationException($"Client movement time drift exceeded {MaxTimeDriftMilliseconds}ms: {difference}ms.");
+            // Client-owned movement sends the client's simulation clock. Debug-world stalls can create
+            // large but valid deltas, so treat finite SetTime values as synchronization input.
         }
 
         /// <summary>

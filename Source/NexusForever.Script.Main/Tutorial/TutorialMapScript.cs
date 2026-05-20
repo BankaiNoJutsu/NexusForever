@@ -28,6 +28,21 @@ namespace NexusForever.Script.Main.Tutorial
             }
         }
 
+        private sealed class CreatureSearchCheck : ISearchCheck<IWorldEntity>
+        {
+            private readonly uint creatureId;
+
+            public CreatureSearchCheck(uint creatureId)
+            {
+                this.creatureId = creatureId;
+            }
+
+            public bool CheckEntity(IWorldEntity entity)
+            {
+                return entity.CreatureId == creatureId;
+            }
+        }
+
         private sealed class TutorialMapInfo : IMapInfo
         {
             public required GameTable.Model.WorldEntry Entry { get; init; }
@@ -44,12 +59,6 @@ namespace NexusForever.Script.Main.Tutorial
         private const ushort DominionMovementQuestId = 10521;
         private const ushort ExileHoverboardQuestId = 10527;
         private const ushort DominionHoverboardQuestId = 10532;
-        private const uint ExileCombatStartWorldLocationId = 51739u;
-        private const uint ExileCombatMineEasyWorldLocationId = 51662u;
-        private const uint ExileCombatMineMediumWorldLocationId = 51663u;
-        private const uint ExileCombatMineHardWorldLocationId = 51664u;
-        private const uint ExileCombatTurretWorldLocationId00 = 51671u;
-        private const uint ExileCombatTurretWorldLocationId01 = 52753u;
         private const uint ExileCombatFinalWorldLocationId = 51740u;
         private const uint DominionCombatStartWorldLocationId = 52898u;
         private const uint DominionCombatMineEasyWorldLocationId = 52899u;
@@ -192,33 +201,25 @@ namespace NexusForever.Script.Main.Tutorial
             if (exileCombatLaneSpawned || owner == null)
                 return;
 
-            WorldLocation2Entry start = gameTableManager.WorldLocation2.GetEntry(ExileCombatStartWorldLocationId);
-            WorldLocation2Entry easyMine = gameTableManager.WorldLocation2.GetEntry(ExileCombatMineEasyWorldLocationId);
-            WorldLocation2Entry mediumMine = gameTableManager.WorldLocation2.GetEntry(ExileCombatMineMediumWorldLocationId);
-            WorldLocation2Entry hardMine = gameTableManager.WorldLocation2.GetEntry(ExileCombatMineHardWorldLocationId);
-            WorldLocation2Entry turret00 = gameTableManager.WorldLocation2.GetEntry(ExileCombatTurretWorldLocationId00);
-            WorldLocation2Entry turret01 = gameTableManager.WorldLocation2.GetEntry(ExileCombatTurretWorldLocationId01);
             WorldLocation2Entry final = gameTableManager.WorldLocation2.GetEntry(ExileCombatFinalWorldLocationId);
 
-            if (start == null || easyMine == null || mediumMine == null || hardMine == null || turret00 == null || turret01 == null || final == null)
+            if (final == null)
             {
-                log.LogWarning("Unable to spawn Rider's Reef Exile combat lane on map {MapId}: one or more world locations are missing.",
-                    owner.Entry.Id);
+                log.LogWarning("Unable to spawn Rider's Reef Exile final combat wave on map {MapId}: world location {WorldLocationId} is missing.",
+                    owner.Entry.Id,
+                    ExileCombatFinalWorldLocationId);
                 return;
             }
 
-            SpawnTutorialEntity<INonPlayerEntity>(73464u, ToVector3(start) + new Vector3(-8f, 0f, -6f));
-            SpawnTutorialEntity<INonPlayerEntity>(73464u, ToVector3(start) + new Vector3(12f, 0f, 4f));
-            SpawnTutorialEntity<INonPlayerEntity>(73464u, ToVector3(easyMine) + new Vector3(-10f, 0f, -10f));
-            SpawnTutorialEntity<INonPlayerEntity>(73464u, ToVector3(mediumMine) + new Vector3(12f, 0f, -14f));
-            SpawnTutorialEntity<INonPlayerEntity>(73464u, ToVector3(hardMine) + new Vector3(-8f, 0f, -16f));
-
-            SpawnTutorialEntity<ISimpleCollidableEntity>(73463u, ToVector3(easyMine));
-            SpawnTutorialEntity<ISimpleCollidableEntity>(73667u, ToVector3(mediumMine));
-            SpawnTutorialEntity<ISimpleCollidableEntity>(73668u, ToVector3(hardMine));
-
-            SpawnTutorialEntity<INonPlayerEntity>(73494u, ToVector3(turret00));
-            SpawnTutorialEntity<INonPlayerEntity>(73494u, ToVector3(turret01));
+            if (owner.Search(ToVector3(final), 30f, new CreatureSearchCheck(73492u)).Any()
+                || owner.Search(ToVector3(final), 30f, new CreatureSearchCheck(73567u)).Any())
+            {
+                log.LogDebug("Skipping Rider's Reef Exile final combat wave fallback on map {MapId}: imported final-wave hostiles are already active near world location {WorldLocationId}.",
+                    owner.Entry.Id,
+                    ExileCombatFinalWorldLocationId);
+                exileCombatLaneSpawned = true;
+                return;
+            }
 
             Vector3 finalPosition = ToVector3(final);
             SpawnTutorialEntity<INonPlayerEntity>(73492u, finalPosition + new Vector3(-9f, 0f, -6f));
@@ -226,7 +227,7 @@ namespace NexusForever.Script.Main.Tutorial
             SpawnTutorialEntity<INonPlayerEntity>(73492u, finalPosition + new Vector3(14f, 0f, -9f));
 
             exileCombatLaneSpawned = true;
-            log.LogDebug("Spawned Rider's Reef Exile combat lane on map {MapId}: battleBeasts=5, mines=3, turrets=2, legionnaires=3.",
+            log.LogDebug("Spawned Rider's Reef Exile final combat wave on map {MapId}: legionnaires=3.",
                 owner.Entry.Id);
         }
 

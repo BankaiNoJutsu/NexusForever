@@ -130,6 +130,31 @@ namespace NexusForever.Game.Entity
         public bool IsStealthed => stealthStates.Count != 0;
         public bool IsAggroImmune => aggroImmuneStates.Count != 0;
         public bool IsShieldOverloaded => shieldOverloadStates.Count != 0;
+        public bool HasTrackedSpellState(uint spell4Id)
+        {
+            if (spell4Id == 0u)
+                return false;
+
+            return spellProperties.Values.Any(states => states.Values.Any(state => state.Spell4Id == spell4Id))
+                || ccStates.Values.Any(states => states.Values.Any(state => state.Spell4Id == spell4Id))
+                || stealthStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || aggroImmuneStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || spellEffectImmunityStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || spellImmunityStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || delayDeathStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || procStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || vitalClampStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || shieldOverloadStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || unitStateSetStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || busyStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || scaleStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || factionStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || itemVisualSwapStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || disguiseOutfitStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || mimicDisguiseStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || absorptionStates.Values.Any(state => state.Spell4Id == spell4Id)
+                || healingAbsorptionStates.Values.Any(state => state.Spell4Id == spell4Id);
+        }
         public uint CurrentAbsorption => (uint)Math.Min(uint.MaxValue, absorptionStates.Values.Aggregate(0ul, (total, state) => total + state.Amount));
         public uint MaxAbsorption => (uint)Math.Min(uint.MaxValue, absorptionStates.Values.Aggregate(0ul, (total, state) => total + state.MaxAmount));
         public uint CurrentHealingAbsorption => (uint)Math.Min(uint.MaxValue, healingAbsorptionStates.Values.Aggregate(0ul, (total, state) => total + state.Amount));

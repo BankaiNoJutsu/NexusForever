@@ -9,7 +9,7 @@
         ActivateEntity               = 5,  // data = CreatureId, ObjectiveText describes interacting with creature (Count: 1556)
         KillTargetGroups             = 8,  // data = TargetGroupId, ObjectiveText describes killing creatures of a type, TargetGroups contain other TargetGroup IDs that contain creature IDs (Count: 498)
         ActivateEntity2              = 9,  // data = CreatureId, ObjectiveText describes interacting with Creature (Count: 18)
-        Unknown10                    = 10, // data = unknown, ObjectiveTexts are pretty varied: killing, completing challenges or dungeons on certain difficult - maybe scripted updates (Count: 52)
+        ScriptedTargetGroupChecklist = 10, // data = TargetGroupId or script-updated target id; progress is stored as checklist bits (Count: 52)
         SpellSuccess                 = 11, // data = Spell4Id, ObjectiveText describes casting spell that interacts with creature or location (Count: 128)
         SucceedCSI                   = 12, // data = CreatureId, ObjectiveText describes interacting with object after succeeding a ClientSideInteraction event (Count: 1187)
         SpellSuccess2                = 13, // data = Spell4Id, ObjectiveText describes casting spell (Count: 3)

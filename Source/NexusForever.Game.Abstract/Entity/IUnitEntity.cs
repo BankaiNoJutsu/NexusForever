@@ -40,6 +40,7 @@ namespace NexusForever.Game.Abstract.Entity
         bool IsStealthed { get; }
         bool IsAggroImmune { get; }
         bool IsShieldOverloaded { get; }
+        bool HasTrackedSpellState(uint spell4Id);
         uint CurrentAbsorption { get; }
         uint MaxAbsorption { get; }
         uint CurrentHealingAbsorption { get; }

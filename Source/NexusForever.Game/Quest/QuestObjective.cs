@@ -1,4 +1,3 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using System.Numerics;
 using NexusForever.Game;
@@ -117,39 +116,48 @@ namespace NexusForever.Game.Quest
 
             if ((saveMask & QuestObjectiveSaveMask.Create) != 0)
             {
-                context.Add(new CharacterQuestObjectiveModel
+                CharacterQuestObjectiveModel model = context.CharacterQuestObjective.Find(player.CharacterId, (ushort)QuestInfo.Entry.Id, Index);
+                if (model == null)
                 {
-                    Id       = player.CharacterId,
-                    QuestId  = (ushort)QuestInfo.Entry.Id,
-                    Index    = Index,
-                    Progress = Progress,
-                    Timer    = Timer
-                });
+                    context.Add(BuildModel());
+                }
+                else
+                {
+                    model.Progress = Progress;
+                    model.Timer    = Timer;
+                }
             }
             else
             {
-                var model = new CharacterQuestObjectiveModel
+                CharacterQuestObjectiveModel model = context.CharacterQuestObjective.Find(player.CharacterId, (ushort)QuestInfo.Entry.Id, Index);
+                if (model == null)
                 {
-                    Id      = player.CharacterId,
-                    QuestId = (ushort)QuestInfo.Entry.Id,
-                    Index   = Index
-                };
-
-                EntityEntry<CharacterQuestObjectiveModel> entity = context.Attach(model);
-                if ((saveMask & QuestObjectiveSaveMask.Progress) != 0)
-                {
-                    model.Progress = Progress;
-                    entity.Property(p => p.Progress).IsModified = true;
+                    context.Add(BuildModel());
                 }
-
-                if ((saveMask & QuestObjectiveSaveMask.Timer) != 0)
+                else
                 {
-                    model.Timer = Timer;
-                    entity.Property(p => p.Timer).IsModified = true;
+                    if ((saveMask & QuestObjectiveSaveMask.Progress) != 0)
+                        model.Progress = Progress;
+
+                    if ((saveMask & QuestObjectiveSaveMask.Timer) != 0)
+                        model.Timer = Timer;
                 }
             }
 
+
             saveMask = QuestObjectiveSaveMask.None;
+        }
+
+        private CharacterQuestObjectiveModel BuildModel()
+        {
+            return new CharacterQuestObjectiveModel
+            {
+                Id       = player.CharacterId,
+                QuestId  = (ushort)QuestInfo.Entry.Id,
+                Index    = Index,
+                Progress = Progress,
+                Timer    = Timer
+            };
         }
 
         public void Update(double lastTick)
@@ -176,7 +184,7 @@ namespace NexusForever.Game.Quest
         private bool IsChecklist()
         {
             return ObjectiveInfo.Type is QuestObjectiveType.ActivateTargetGroupChecklist
-                or QuestObjectiveType.Unknown10;
+                or QuestObjectiveType.ScriptedTargetGroupChecklist;
         }
 
         private bool UsesTargetGroups()
@@ -186,7 +194,7 @@ namespace NexusForever.Game.Quest
                     or QuestObjectiveType.KillTargetGroup
                     or QuestObjectiveType.KillTargetGroups
                     or QuestObjectiveType.TalkToTargetGroup
-                    or QuestObjectiveType.Unknown10
+                    or QuestObjectiveType.ScriptedTargetGroupChecklist
                 || ObjectiveInfo.Type == QuestObjectiveType.ActivateEntity && ObjectiveInfo.Entry.TargetGroupIdRewardPane != 0u;
         }
 

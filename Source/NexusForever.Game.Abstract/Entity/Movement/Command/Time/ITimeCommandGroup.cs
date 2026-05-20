@@ -18,6 +18,11 @@
         uint GetTime();
 
         /// <summary>
+        /// Set the current server time.
+        /// </summary>
+        void SetTime(TimeSpan timeSpan);
+
+        /// <summary>
         /// Reset the current server time to 0.
         /// </summary>
         /// <remarks>

@@ -197,6 +197,7 @@ namespace NexusForever.Game.Entity
 
             player.SetPlatform(this);
             player.TryRecoverStarterTutorialQuestProgression();
+            player.SyncStarterTutorialEntityVisibility();
 
             passengers.Add(passenger);
             OnPassengerAdd(player, passenger.SeatType, passenger.SeatPosition);

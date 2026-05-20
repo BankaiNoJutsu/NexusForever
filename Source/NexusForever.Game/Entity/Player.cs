@@ -136,6 +136,7 @@ namespace NexusForever.Game.Entity
         private const uint TutorialCombatMortarHazardCreatureId = 75096u;
         private const uint TutorialHoverboardProjectorActivateSpellId = 86744u;
         private const uint TutorialHoverboardFinishWorldLocationId = 51734u;
+        private const float TutorialHoverboardFinishRecoveryPadding = 6f;
 
         private static readonly ushort[] starterTutorialQuestIds = [ExileMovementQuestId, DominionMovementQuestId, ExileHoverboardQuestId, DominionHoverboardQuestId];
         private static readonly ushort[] receiverlessTutorialQuestIds = [ExileMovementQuestId, DominionMovementQuestId, ExileHoverboardQuestId, DominionHoverboardQuestId, ExileCombatQuestId, DominionCombatQuestId];
@@ -917,6 +918,7 @@ namespace NexusForever.Game.Entity
 
             ZoneMapManager.OnRelocate(vector);
             ClearSelectedVendorIfOutOfRange();
+            TryRecoverStarterTutorialOnRelocate();
 
             if (!relocationTimer.IsTicking)
                 relocationTimer.Resume();
@@ -1479,7 +1481,26 @@ namespace NexusForever.Game.Entity
 
             GrantTutorialQuestIfMissing(movementQuestId);
             GrantTutorialQuestIfMissing(hoverboardQuestId);
-            SyncStarterTutorialAreaObjectives();
+            SyncStarterTutorialAreaObjectives(logNoOverlap: true);
+        }
+
+        private void TryRecoverStarterTutorialOnRelocate()
+        {
+            if (IsLoading || Map?.Entry?.Id != TutorialWorldId)
+                return;
+
+            bool hasRelevantActiveQuest = QuestManager.GetActiveQuests()
+                .Any(q => starterTutorialQuestIds.Contains(q.Id) || followUpTutorialQuestIds.Contains(q.Id));
+            if (!hasRelevantActiveQuest)
+                return;
+
+            bool updatedAreaObjectives = SyncStarterTutorialAreaObjectives(logNoOverlap: false);
+            bool recoveredRide = TryRecoverStarterTutorialHoverboardRideObjective();
+
+            if (updatedAreaObjectives || recoveredRide)
+                SyncStarterTutorialEntityVisibility();
+
+            TryRecoverStarterTutorialQuestProgression(allowCombatTransitionRecovery: true);
         }
 
         private void GrantTutorialQuestIfMissing(ushort questId)
@@ -1495,15 +1516,18 @@ namespace NexusForever.Game.Entity
             log.Debug($"Entered-world Rider's Reef recovery granted tutorial quest {questId} to player {Guid}.");
         }
 
-        private void SyncStarterTutorialAreaObjectives()
+        private bool SyncStarterTutorialAreaObjectives(bool logNoOverlap)
         {
             int furthestReachedIndex = GetFurthestReachedTutorialWorldLocationIndex();
             if (furthestReachedIndex < 0)
             {
-                log.Debug($"Entered-world Rider's Reef recovery found no world-location overlap for player {Guid}: position ({Position.X}, {Position.Y}, {Position.Z}), hit radius {HitRadius}, starter states [{FormatQuestStates(starterTutorialQuestIds)}].");
-                return;
+                if (logNoOverlap)
+                    log.Debug($"Entered-world Rider's Reef recovery found no world-location overlap for player {Guid}: position ({Position.X}, {Position.Y}, {Position.Z}), hit radius {HitRadius}, starter states [{FormatQuestStates(starterTutorialQuestIds)}].");
+
+                return false;
             }
 
+            bool updated = false;
             foreach (IQuest quest in QuestManager.GetActiveQuests().Where(q => starterTutorialQuestIds.Contains(q.Id)))
             {
                 for (int index = 0; index <= furthestReachedIndex; index++)
@@ -1513,9 +1537,12 @@ namespace NexusForever.Game.Entity
                     {
                         log.Debug($"Entered-world Rider's Reef recovery advanced player {Guid}: quest {quest.Id}, objective {objective.ObjectiveInfo.Id}, world location {worldLocationId}, furthest index {furthestReachedIndex}.");
                         quest.ObjectiveUpdate(objective.ObjectiveInfo.Id, 1u);
+                        updated = true;
                     }
                 }
             }
+
+            return updated;
         }
 
         private int GetFurthestReachedTutorialWorldLocationIndex()
@@ -1526,7 +1553,7 @@ namespace NexusForever.Game.Entity
             for (int index = 0; index < tutorialWorldLocationIds.Length; index++)
             {
                 WorldLocation2Entry worldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(tutorialWorldLocationIds[index]);
-                if (worldLocation != null && IsInsideWorldLocation(Position, worldLocation, horizontalPadding))
+                if (worldLocation != null && IsInsideStarterTutorialWorldLocation(Position, worldLocation, horizontalPadding))
                     furthestIndex = index;
             }
 
@@ -1574,6 +1601,14 @@ namespace NexusForever.Game.Entity
 
             return worldLocation.MaxVerticalDistance <= 0f
                 || MathF.Abs(position.Y - worldLocation.Position1) <= worldLocation.MaxVerticalDistance;
+        }
+
+        private static bool IsInsideStarterTutorialWorldLocation(Vector3 position, WorldLocation2Entry worldLocation, float horizontalPadding = 0f)
+        {
+            if (worldLocation.Id == TutorialHoverboardFinishWorldLocationId)
+                horizontalPadding = MathF.Max(horizontalPadding, TutorialHoverboardFinishRecoveryPadding);
+
+            return IsInsideWorldLocation(position, worldLocation, horizontalPadding);
         }
 
         private bool HasAnyQuestState(IEnumerable<ushort> questIds)
@@ -2127,7 +2162,7 @@ namespace NexusForever.Game.Entity
                 return false;
 
             WorldLocation2Entry finishWorldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(TutorialHoverboardFinishWorldLocationId);
-            if (finishWorldLocation == null || !IsInsideWorldLocation(Position, finishWorldLocation, HitRadius * 0.5f))
+            if (finishWorldLocation == null || !IsInsideStarterTutorialWorldLocation(Position, finishWorldLocation, HitRadius * 0.5f))
                 return false;
 
             Dismount();
@@ -2274,11 +2309,11 @@ namespace NexusForever.Game.Entity
 
         private bool TryRecoverStarterTutorialHoverboardRideObjective()
         {
-            if (Map?.Entry?.Id != TutorialWorldId || PlatformGuid == null)
+            if (Map?.Entry?.Id != TutorialWorldId)
                 return false;
 
             WorldLocation2Entry finishWorldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(TutorialHoverboardFinishWorldLocationId);
-            if (finishWorldLocation == null || !IsInsideWorldLocation(Position, finishWorldLocation, HitRadius * 0.5f))
+            if (finishWorldLocation == null || !IsInsideStarterTutorialWorldLocation(Position, finishWorldLocation, HitRadius * 0.5f))
                 return false;
 
             bool updated = false;
@@ -2310,7 +2345,7 @@ namespace NexusForever.Game.Entity
             if (requireFinishWorldLocation)
             {
                 WorldLocation2Entry finishWorldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(TutorialHoverboardFinishWorldLocationId);
-                if (finishWorldLocation == null || !IsInsideWorldLocation(Position, finishWorldLocation, HitRadius * 0.5f))
+                if (finishWorldLocation == null || !IsInsideStarterTutorialWorldLocation(Position, finishWorldLocation, HitRadius * 0.5f))
                     return false;
             }
 

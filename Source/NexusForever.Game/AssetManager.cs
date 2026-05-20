@@ -143,7 +143,7 @@ namespace NexusForever.Game
                     || (QuestObjectiveType)o.Type == QuestObjectiveType.KillTargetGroup
                     || (QuestObjectiveType)o.Type == QuestObjectiveType.KillTargetGroups
                     || (QuestObjectiveType)o.Type == QuestObjectiveType.TalkToTargetGroup
-                    || (QuestObjectiveType)o.Type == QuestObjectiveType.Unknown10))
+                    || (QuestObjectiveType)o.Type == QuestObjectiveType.ScriptedTargetGroupChecklist))
             {
                 uint targetGroupId = questObjectiveEntry.Data > 0u
                     ? questObjectiveEntry.Data

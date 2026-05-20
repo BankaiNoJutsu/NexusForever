@@ -1,4 +1,6 @@
 using System.Numerics;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract.Combat;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement.Command;
@@ -18,6 +20,7 @@ namespace NexusForever.Script.Main.AI
 {
     public class CombatAI : IUnitScript, IOwnedScript<ICreatureEntity>
     {
+        private const float StarterTutorialCombatAggroRange = 14f;
         private const float StarterTutorialCombatLeashRange = 50f;
 
         private static readonly HashSet<uint> starterTutorialCombatCreatureIds =
@@ -46,13 +49,16 @@ namespace NexusForever.Script.Main.AI
 
         private readonly IFactory<ISpellParameters> spellParametersFactory;
         private readonly IGameTableManager gameTableManager;
+        private readonly ILogger<CombatAI> log;
 
         public CombatAI(
             IFactory<ISpellParameters> spellParametersFactory,
-            IGameTableManager gameTableManager)
+            IGameTableManager gameTableManager,
+            ILogger<CombatAI> log = null)
         {
             this.spellParametersFactory = spellParametersFactory;
             this.gameTableManager       = gameTableManager;
+            this.log                    = log ?? NullLogger<CombatAI>.Instance;
         }
 
         #endregion
@@ -64,6 +70,23 @@ namespace NexusForever.Script.Main.AI
         {
             entity = owner;
             entity.SetInRangeCheck(GetEffectiveLeashRange());
+
+            if (IsStarterTutorialCombatCreature())
+            {
+                log.LogDebug(
+                    "Starter tutorial combat AI loaded for creature {CreatureId} guid {Guid}: leashRange={LeashRange}, effectiveLeashRange={EffectiveLeashRange}, aggroRange={AggroRange}, leashPosition=({LeashX}, {LeashY}, {LeashZ}), position=({X}, {Y}, {Z}).",
+                    entity.CreatureId,
+                    entity.Guid,
+                    entity.LeashRange,
+                    GetEffectiveLeashRange(),
+                    StarterTutorialCombatAggroRange,
+                    entity.LeashPosition.X,
+                    entity.LeashPosition.Y,
+                    entity.LeashPosition.Z,
+                    entity.Position.X,
+                    entity.Position.Y,
+                    entity.Position.Z);
+            }
         }
 
         /// <summary>
@@ -107,22 +130,64 @@ namespace NexusForever.Script.Main.AI
 
             IUnitEntity target = entity.Map.GetEntity<IUnitEntity>(entity.TargetGuid.Value);
             if (target == null)
+            {
+                if (ShouldLogStarterTutorialCombat())
+                    log.LogTrace("Starter tutorial combat AI auto-attack skipped for creature {CreatureId} guid {Guid}: target {TargetGuid} was not found.", entity.CreatureId, entity.Guid, entity.TargetGuid.Value);
+
                 return;
+            }
 
             if (!entity.CanAttack(target))
+            {
+                if (ShouldLogStarterTutorialCombat(target))
+                    log.LogTrace("Starter tutorial combat AI auto-attack skipped for creature {CreatureId} guid {Guid}: cannot attack target {TargetGuid}.", entity.CreatureId, entity.Guid, target.Guid);
+
                 return;
+            }
 
             uint spell4Id = autoAttacks[autoAttackIndex];
             autoAttackIndex = (autoAttackIndex + 1) % autoAttacks.Count;
 
             Spell4Entry spell4Entry = gameTableManager.Spell4.GetEntry(spell4Id);
             if (spell4Entry == null)
+            {
+                if (ShouldLogStarterTutorialCombat(target))
+                    log.LogTrace("Starter tutorial combat AI auto-attack skipped for creature {CreatureId} guid {Guid}: spell {Spell4Id} was not found.", entity.CreatureId, entity.Guid, spell4Id);
+
                 return;
+            }
 
             chaseDistance = Math.Min(chaseDistance, spell4Entry.TargetMaxRange);
 
-            if (Vector3.Distance(entity.Position, target.Position) > spell4Entry.TargetMaxRange)
+            float distance = Vector3.Distance(entity.Position, target.Position);
+            if (distance > spell4Entry.TargetMaxRange)
+            {
+                if (ShouldLogStarterTutorialCombat(target))
+                {
+                    log.LogTrace(
+                        "Starter tutorial combat AI auto-attack skipped for creature {CreatureId} guid {Guid}: target {TargetGuid} is {Distance}m away, maxRange={MaxRange}m, chaseDistance={ChaseDistance}m.",
+                        entity.CreatureId,
+                        entity.Guid,
+                        target.Guid,
+                        distance,
+                        spell4Entry.TargetMaxRange,
+                        chaseDistance);
+                }
+
                 return;
+            }
+
+            if (ShouldLogStarterTutorialCombat(target))
+            {
+                log.LogTrace(
+                    "Starter tutorial combat AI casting auto-attack {Spell4Id} for creature {CreatureId} guid {Guid} at target {TargetGuid}; distance={Distance}m, maxRange={MaxRange}m.",
+                    spell4Id,
+                    entity.CreatureId,
+                    entity.Guid,
+                    target.Guid,
+                    distance,
+                    spell4Entry.TargetMaxRange);
+            }
 
             ISpellParameters spellParameters = spellParametersFactory.Resolve();
             spellParameters.PrimaryTargetId = entity.TargetGuid.Value;
@@ -136,13 +201,54 @@ namespace NexusForever.Script.Main.AI
 
             IUnitEntity target = entity.Map.GetEntity<IUnitEntity>(entity.TargetGuid.Value);
             if (target == null)
+            {
+                if (ShouldLogStarterTutorialCombat())
+                    log.LogTrace("Starter tutorial combat AI chase skipped for creature {CreatureId} guid {Guid}: target {TargetGuid} was not found.", entity.CreatureId, entity.Guid, entity.TargetGuid.Value);
+
                 return;
+            }
 
             if (!entity.CanAttack(target))
-                return;
+            {
+                if (ShouldLogStarterTutorialCombat(target))
+                    log.LogTrace("Starter tutorial combat AI chase skipped for creature {CreatureId} guid {Guid}: cannot attack target {TargetGuid}.", entity.CreatureId, entity.Guid, target.Guid);
 
-            if (Vector3.Distance(entity.Position, target.Position) < chaseDistance)
                 return;
+            }
+
+            float distance = Vector3.Distance(entity.Position, target.Position);
+            if (distance < chaseDistance)
+            {
+                if (ShouldLogStarterTutorialCombat(target))
+                {
+                    log.LogTrace(
+                        "Starter tutorial combat AI chase skipped for creature {CreatureId} guid {Guid}: target {TargetGuid} is within chase distance; distance={Distance}m, chaseDistance={ChaseDistance}m.",
+                        entity.CreatureId,
+                        entity.Guid,
+                        target.Guid,
+                        distance,
+                        chaseDistance);
+                }
+
+                return;
+            }
+
+            if (ShouldLogStarterTutorialCombat(target))
+            {
+                log.LogTrace(
+                    "Starter tutorial combat AI following target {TargetGuid} for creature {CreatureId} guid {Guid}; distance={Distance}m, followDistance={FollowDistance}m, creaturePosition=({X}, {Y}, {Z}), targetPosition=({TargetX}, {TargetY}, {TargetZ}).",
+                    target.Guid,
+                    entity.CreatureId,
+                    entity.Guid,
+                    distance,
+                    chaseDistance / 2f,
+                    entity.Position.X,
+                    entity.Position.Y,
+                    entity.Position.Z,
+                    target.Position.X,
+                    target.Position.Y,
+                    target.Position.Z);
+            }
 
             entity.MovementManager.Follow(target, chaseDistance / 2f);
         }
@@ -163,7 +269,7 @@ namespace NexusForever.Script.Main.AI
         /// </summary>
         public void OnEnterRange(IGridEntity entity)
         {
-            AggroEntity(entity);
+            AggroEntity(entity, true);
         }
 
         /// <summary>
@@ -194,32 +300,129 @@ namespace NexusForever.Script.Main.AI
             if (type is DamageType.Heal or null)
                 return;
 
-            AggroEntity(source);
+            AggroEntity(source, false);
         }
 
         private bool IsWithinLeash(IUnitEntity unit)
         {
-            return Vector2.Distance(
-                new Vector2(entity.LeashPosition.X, entity.LeashPosition.Z),
-                new Vector2(unit.Position.X, unit.Position.Z)) <= GetEffectiveLeashRange();
+            return GetLeashDistance(unit) <= GetEffectiveLeashRange();
         }
 
-        private void AggroEntity(IGridEntity source)
+        private bool IsWithinAggroRange(IUnitEntity unit)
+        {
+            return GetAggroDistance(unit) <= GetEffectiveAggroRange();
+        }
+
+        private float GetLeashDistance(IUnitEntity unit)
+        {
+            return Vector2.Distance(
+                new Vector2(entity.LeashPosition.X, entity.LeashPosition.Z),
+                new Vector2(unit.Position.X, unit.Position.Z));
+        }
+
+        private float GetAggroDistance(IUnitEntity unit)
+        {
+            return Vector2.Distance(
+                new Vector2(entity.Position.X, entity.Position.Z),
+                new Vector2(unit.Position.X, unit.Position.Z));
+        }
+
+        private float GetEffectiveAggroRange()
+        {
+            return IsStarterTutorialCombatCreature()
+                ? StarterTutorialCombatAggroRange
+                : GetEffectiveLeashRange();
+        }
+
+        private void AggroEntity(IGridEntity source, bool requireAggroRange)
         {
             if (!entity.IsAlive || entity.InCombat)
+            {
+                if (IsStarterTutorialCombatCreature())
+                    log.LogTrace("Starter tutorial combat AI aggro skipped for creature {CreatureId} guid {Guid}: alive={IsAlive}, inCombat={InCombat}.", entity.CreatureId, entity.Guid, entity.IsAlive, entity.InCombat);
+
                 return;
+            }
 
             if (source is not IUnitEntity unit)
+            {
+                if (IsStarterTutorialCombatCreature())
+                    log.LogTrace("Starter tutorial combat AI aggro skipped for creature {CreatureId} guid {Guid}: source {SourceGuid} is not a unit.", entity.CreatureId, entity.Guid, source?.Guid);
+
                 return;
+            }
 
             if (IsStarterTutorialCombatCreature() && unit is not IPlayer)
+            {
+                log.LogTrace("Starter tutorial combat AI aggro skipped for creature {CreatureId} guid {Guid}: source unit {SourceGuid} is not a player.", entity.CreatureId, entity.Guid, unit.Guid);
                 return;
+            }
 
             if (!entity.CanAttack(unit))
+            {
+                if (ShouldLogStarterTutorialCombat(unit))
+                    log.LogTrace("Starter tutorial combat AI aggro skipped for creature {CreatureId} guid {Guid}: cannot attack unit {TargetGuid}.", entity.CreatureId, entity.Guid, unit.Guid);
+
                 return;
+            }
 
             if (!IsWithinLeash(unit))
+            {
+                if (ShouldLogStarterTutorialCombat(unit))
+                {
+                    log.LogTrace(
+                        "Starter tutorial combat AI aggro skipped for creature {CreatureId} guid {Guid}: unit {TargetGuid} outside leash; leashDistance={LeashDistance}m, leashRange={LeashRange}m, unitPosition=({UnitX}, {UnitY}, {UnitZ}), leashPosition=({LeashX}, {LeashY}, {LeashZ}).",
+                        entity.CreatureId,
+                        entity.Guid,
+                        unit.Guid,
+                        GetLeashDistance(unit),
+                        GetEffectiveLeashRange(),
+                        unit.Position.X,
+                        unit.Position.Y,
+                        unit.Position.Z,
+                        entity.LeashPosition.X,
+                        entity.LeashPosition.Y,
+                        entity.LeashPosition.Z);
+                }
+
                 return;
+            }
+
+            if (requireAggroRange && !IsWithinAggroRange(unit))
+            {
+                if (ShouldLogStarterTutorialCombat(unit))
+                {
+                    log.LogTrace(
+                        "Starter tutorial combat AI aggro skipped for creature {CreatureId} guid {Guid}: unit {TargetGuid} outside aggro range; aggroDistance={AggroDistance}m, aggroRange={AggroRange}m, creaturePosition=({X}, {Y}, {Z}), unitPosition=({UnitX}, {UnitY}, {UnitZ}).",
+                        entity.CreatureId,
+                        entity.Guid,
+                        unit.Guid,
+                        GetAggroDistance(unit),
+                        GetEffectiveAggroRange(),
+                        entity.Position.X,
+                        entity.Position.Y,
+                        entity.Position.Z,
+                        unit.Position.X,
+                        unit.Position.Y,
+                        unit.Position.Z);
+                }
+
+                return;
+            }
+
+            if (ShouldLogStarterTutorialCombat(unit))
+            {
+                log.LogDebug(
+                    "Starter tutorial combat AI aggro accepted for creature {CreatureId} guid {Guid}: target {TargetGuid}, requireAggroRange={RequireAggroRange}, aggroDistance={AggroDistance}m, aggroRange={AggroRange}m, leashDistance={LeashDistance}m, leashRange={LeashRange}m.",
+                    entity.CreatureId,
+                    entity.Guid,
+                    unit.Guid,
+                    requireAggroRange,
+                    GetAggroDistance(unit),
+                    GetEffectiveAggroRange(),
+                    GetLeashDistance(unit),
+                    GetEffectiveLeashRange());
+            }
 
             ISpellParameters spellParameters = spellParametersFactory.Resolve();
             entity.CastSpell(41368, spellParameters);
@@ -328,6 +531,18 @@ namespace NexusForever.Script.Main.AI
             if (target != null && entity.CanAttack(target) && IsWithinLeash(target))
                 return true;
 
+            if (ShouldLogStarterTutorialCombat(target))
+            {
+                log.LogDebug(
+                    "Starter tutorial combat AI target invalid for creature {CreatureId} guid {Guid}: targetGuid={TargetGuid}, targetFound={TargetFound}, canAttack={CanAttack}, withinLeash={WithinLeash}.",
+                    entity.CreatureId,
+                    entity.Guid,
+                    entity.TargetGuid.Value,
+                    target != null,
+                    target != null && entity.CanAttack(target),
+                    target != null && IsWithinLeash(target));
+            }
+
             if (target != null)
                 entity.ThreatManager.RemoveHostile(target.Guid);
             else
@@ -369,6 +584,12 @@ namespace NexusForever.Script.Main.AI
         private bool IsStarterTutorialCombatCreature()
         {
             return starterTutorialCombatCreatureIds.Contains(entity.CreatureId);
+        }
+
+        private bool ShouldLogStarterTutorialCombat(IUnitEntity unit = null)
+        {
+            return IsStarterTutorialCombatCreature()
+                && (unit == null || unit is IPlayer);
         }
     }
 }

@@ -102,9 +102,34 @@ public class MovementManagerTests
         Assert.Empty(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPositionProjectile)));
     }
 
+    [Fact]
+    public void HandleClientEntityCommands_ClientTimeSynchronisesMovementClock()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create();
+        harness.Manager.ServerControl = false;
+
+        harness.Manager.HandleClientEntityCommands(
+        [
+            new NetworkEntityCommand
+            {
+                Model = new SetTimeCommand
+                {
+                    Time = 365339u
+                }
+            }
+        ], 0u);
+
+        var validateInvocation = Assert.Single(harness.ValidatorProxy.GetInvocations(nameof(IClientMovementCommandValidator.ValidateTime)));
+        Assert.Equal(365339u, Assert.IsType<uint>(validateInvocation.Arguments[0]));
+
+        var timeInvocation = Assert.Single(harness.TimeProxy.GetInvocations(nameof(ITimeCommandGroup.SetTime)));
+        Assert.Equal(TimeSpan.FromMilliseconds(365339u), Assert.IsType<TimeSpan>(timeInvocation.Arguments[0]));
+    }
+
     private sealed class MovementManagerHarness
     {
         public MovementManager Manager { get; }
+        public RecordingDispatchProxy<ITimeCommandGroup> TimeProxy { get; }
         public RecordingDispatchProxy<IPositionCommandGroup> PositionProxy { get; }
         public RecordingDispatchProxy<IVelocityCommandGroup> VelocityProxy { get; }
         public RecordingDispatchProxy<IMoveCommandGroup> MoveProxy { get; }
@@ -113,6 +138,7 @@ public class MovementManagerTests
 
         private MovementManagerHarness(
             MovementManager manager,
+            RecordingDispatchProxy<ITimeCommandGroup> timeProxy,
             RecordingDispatchProxy<IPositionCommandGroup> positionProxy,
             RecordingDispatchProxy<IVelocityCommandGroup> velocityProxy,
             RecordingDispatchProxy<IMoveCommandGroup> moveProxy,
@@ -120,6 +146,7 @@ public class MovementManagerTests
             RecordingDispatchProxy<IClientMovementCommandValidator> validatorProxy)
         {
             Manager        = manager;
+            TimeProxy      = timeProxy;
             PositionProxy  = positionProxy;
             VelocityProxy  = velocityProxy;
             MoveProxy      = moveProxy;
@@ -129,7 +156,7 @@ public class MovementManagerTests
 
         public static MovementManagerHarness Create(uint activeCCStateMask = 0u)
         {
-            ITimeCommandGroup timeGroup = RecordingDispatchProxy<ITimeCommandGroup>.Create(out _);
+            ITimeCommandGroup timeGroup = RecordingDispatchProxy<ITimeCommandGroup>.Create(out RecordingDispatchProxy<ITimeCommandGroup> timeProxy);
             IPlatformCommandGroup platformGroup = RecordingDispatchProxy<IPlatformCommandGroup>.Create(out _);
             IPositionCommandGroup positionGroup = RecordingDispatchProxy<IPositionCommandGroup>.Create(out RecordingDispatchProxy<IPositionCommandGroup> positionProxy);
             IVelocityCommandGroup velocityGroup = RecordingDispatchProxy<IVelocityCommandGroup>.Create(out RecordingDispatchProxy<IVelocityCommandGroup> velocityProxy);
@@ -157,7 +184,7 @@ public class MovementManagerTests
 
             manager.Initialise(owner);
 
-            return new MovementManagerHarness(manager, positionProxy, velocityProxy, moveProxy, stateProxy, validatorProxy);
+            return new MovementManagerHarness(manager, timeProxy, positionProxy, velocityProxy, moveProxy, stateProxy, validatorProxy);
         }
     }
 }
