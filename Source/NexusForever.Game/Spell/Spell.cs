@@ -318,12 +318,20 @@ namespace NexusForever.Game.Spell
         private CastResult CheckPrimaryTargetAngle(IWorldEntity target)
         {
             float targetAngle = Parameters.SpellInfo.BaseInfo.TargetAngle?.TargetAngle ?? 0f;
-            if (targetAngle <= 0f || targetAngle >= 360f)
+            if (!ShouldApplyPrimaryTargetAngle(Caster.Guid, target.Guid, targetAngle))
                 return CastResult.Ok;
 
             return IsWithinCasterAngle(target, targetAngle)
                 ? CastResult.Ok
                 : CastResult.TargetOrientation;
+        }
+
+        internal static bool ShouldApplyPrimaryTargetAngle(uint casterGuid, uint targetGuid, float targetAngle)
+        {
+            if (targetAngle <= 0f || targetAngle >= 360f)
+                return false;
+
+            return casterGuid != targetGuid;
         }
 
         private CastResult CheckPrimaryTargetRange(float horizontalRange, float effectiveRange, float verticalDelta)

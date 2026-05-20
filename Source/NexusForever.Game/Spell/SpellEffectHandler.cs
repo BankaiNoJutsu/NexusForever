@@ -65,6 +65,8 @@ namespace NexusForever.Game.Spell
 
             IDamageCalculator damageCalculator = CreateDamageCalculator();
             damageCalculator.CalculateDamage(spell.Caster, target, spell, info);
+            if (info.DropEffect || info.Damage == null)
+                return;
 
             target.TakeDamage(spell.Caster, info.Damage);
         }
@@ -2248,7 +2250,7 @@ namespace NexusForever.Game.Spell
 
         private static ushort ResolveCrowdControlDiminishingReturnsId(CCState state)
         {
-            return (ushort)(GameTableManager.Instance.CCStates.GetEntry((uint)state)?.CcStateDiminishingReturnsId ?? 0u);
+            return (ushort)(GameTableManager.Instance.CCStates?.GetEntry((uint)state)?.CcStateDiminishingReturnsId ?? 0u);
         }
 
         [SpellEffectHandler(SpellEffectType.SpellDispel)]

@@ -206,6 +206,25 @@ public class PacketPlaceholderNamingTests
     }
 
     [Fact]
+    public void ClientCinematicCameraSubjectPosVel_ReadInitializesPosition()
+    {
+        byte[] packetData = BuildCinematicCameraSubjectPosVelPacket();
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        var message = new ClientCinematicCameraSubjectPosVel();
+        message.Read(reader);
+
+        Assert.Equal(1.25f, message.Position.Vector.X);
+        Assert.Equal(-2.5f, message.Position.Vector.Y);
+        Assert.Equal(3.75f, message.Position.Vector.Z);
+        Assert.Equal(4.5f, message.Velocity.X);
+        Assert.Equal(-5.5f, message.Velocity.Y);
+        Assert.Equal(6.5f, message.Velocity.Z);
+    }
+
+    [Fact]
     public void ServerEntityDestroy_WriteSerializesGuidAndFlag()
     {
         var message = new ServerEntityDestroy
@@ -390,6 +409,23 @@ public class PacketPlaceholderNamingTests
             writer.Write(targetAccountId);
             writer.Write(reservedZero);
             senderCharacter.Write(writer);
+            writer.FlushBits();
+        }
+
+        return stream.ToArray();
+    }
+
+    private static byte[] BuildCinematicCameraSubjectPosVelPacket()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new GamePacketWriter(stream))
+        {
+            writer.Write(1.25f);
+            writer.Write(-2.5f);
+            writer.Write(3.75f);
+            writer.Write(4.5f);
+            writer.Write(-5.5f);
+            writer.Write(6.5f);
             writer.FlushBits();
         }
 

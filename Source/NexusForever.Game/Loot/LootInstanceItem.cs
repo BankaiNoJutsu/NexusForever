@@ -64,6 +64,7 @@ namespace NexusForever.Game.Loot
 
         public void AddToAmount(uint amount)
         {
+            log.Trace($"Loot item amount merge: ownerUnit={OwnerUnitId}, lootUnitId={Id}, type={Type}, staticId={StaticId}, previousAmount={Amount}, addedAmount={amount}.");
             Amount += amount;
         }
 
@@ -195,16 +196,28 @@ namespace NexusForever.Game.Loot
         public bool TryRecordRoll(IPlayer player, LootRollAction action)
         {
             if (!RequiresRoll || Delivered || rollFinalised)
+            {
+                log.Trace($"Loot roll rejected for player {player?.CharacterId.ToString() ?? "none"}, lootUnitId={Id}, item={StaticId}: requiresRoll={RequiresRoll}, delivered={Delivered}, rollFinalised={rollFinalised}.");
                 return false;
+            }
 
             if (!Enum.IsDefined(typeof(LootRollAction), action))
+            {
+                log.Trace($"Loot roll rejected for player {player?.CharacterId.ToString() ?? "none"}, lootUnitId={Id}, item={StaticId}: invalid action {action}.");
                 return false;
+            }
 
             if (!eligibleIdentities.ContainsKey(player.CharacterId))
+            {
+                log.Trace($"Loot roll rejected for player {player.CharacterId}, lootUnitId={Id}, item={StaticId}: player is not eligible; eligible=[{string.Join(",", eligibleIdentities.Keys)}].");
                 return false;
+            }
 
             if (rollRecords.ContainsKey(player.CharacterId))
+            {
+                log.Trace($"Loot roll rejected for player {player.CharacterId}, lootUnitId={Id}, item={StaticId}: player already rolled.");
                 return false;
+            }
 
             rollRecords.Add(player.CharacterId, new LootRollRecord
             {
@@ -212,6 +225,7 @@ namespace NexusForever.Game.Loot
                 Action   = action,
                 Value    = GetRollValue(action)
             });
+            log.Trace($"Loot roll recorded for player {player.CharacterId}, lootUnitId={Id}, item={StaticId}, action={action}, value={rollRecords[player.CharacterId].Value}.");
 
             return true;
         }
@@ -336,8 +350,12 @@ namespace NexusForever.Game.Loot
                 throw new InvalidOperationException($"Winner character {WinnerCharacterId} does not match player {player.CharacterId}.");
 
             if (Delivered)
+            {
+                log.Trace($"Loot delivery skipped for player {player.CharacterId}, lootUnitId={Id}, item={StaticId}: already delivered.");
                 return false;
+            }
 
+            log.Trace($"Loot delivery started for player {player.CharacterId}, ownerUnit={OwnerUnitId}, lootUnitId={Id}, type={Type}, staticId={StaticId}, amount={Amount}, sendAsGrant={sendAsGrant}.");
             switch (Type)
             {
                 case LootItemType.AccountCurrency:
@@ -356,6 +374,7 @@ namespace NexusForever.Game.Loot
                     {
                         if (inventoryFull)
                         {
+                            log.Trace($"Loot static item delivery failed for player {player.CharacterId}, ownerUnit={OwnerUnitId}, lootUnitId={Id}, item={StaticId}, amount={Amount}: inventory full.");
                             player.Session.EnqueueMessageEncrypted(new ServerItemError
                             {
                                 ErrorCode = GenericError.ItemInventoryFull
@@ -380,6 +399,7 @@ namespace NexusForever.Game.Loot
             }
 
             Delivered = true;
+            log.Trace($"Loot delivery succeeded for player {player.CharacterId}, ownerUnit={OwnerUnitId}, lootUnitId={Id}, type={Type}, staticId={StaticId}, amount={Amount}, sendAsGrant={sendAsGrant}.");
 
             if (sendAsGrant)
                 SendGrant(player);

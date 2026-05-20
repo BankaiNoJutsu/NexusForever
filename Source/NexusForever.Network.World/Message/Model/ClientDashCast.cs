@@ -9,7 +9,8 @@ namespace NexusForever.Network.World.Message.Model
 
         public void Read(GamePacketReader reader)
         {
-            DirectionOrState = reader.ReadUInt();
+            if (reader.BytesRemaining >= sizeof(uint))
+                DirectionOrState = reader.ReadUInt();
         }
     }
 }
