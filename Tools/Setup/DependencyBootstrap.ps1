@@ -274,6 +274,26 @@ function Wait-NexusSetupRabbitMqReady {
     throw "Portable RabbitMQ container '$ContainerName' did not become ready within $TimeoutSeconds seconds."
 }
 
+function Repair-NexusSetupRabbitMqVolumePermissions {
+    param(
+        [string] $DockerCli,
+        [string] $ContainerName,
+        [string] $Image
+    )
+
+    Write-Info "Repairing portable RabbitMQ volume permissions for $ContainerName"
+    Invoke-NexusSetupExternalCommand -FilePath $DockerCli -Arguments @(
+        'run',
+        '--rm',
+        '--volumes-from', $ContainerName,
+        '--user', 'root',
+        $Image,
+        'sh',
+        '-lc',
+        'chown -R rabbitmq:rabbitmq /var/lib/rabbitmq && if [ -f /var/lib/rabbitmq/.erlang.cookie ]; then chmod 600 /var/lib/rabbitmq/.erlang.cookie; fi'
+    ) | Out-Null
+}
+
 function Ensure-NexusSetupPortableMariaDb {
     param(
         [string] $DockerCli,
@@ -369,6 +389,13 @@ function Ensure-NexusSetupPortableRabbitMq {
             $Image
         ) | Out-Null
         $created = $true
+    }
+
+    Repair-NexusSetupRabbitMqVolumePermissions -DockerCli $DockerCli -ContainerName $ContainerName -Image $Image
+    $inspect = Get-NexusSetupDockerInspect -DockerCli $DockerCli -ContainerName $ContainerName
+    if (!$inspect.State.Running) {
+        Write-Info "Starting portable RabbitMQ container $ContainerName after volume permission repair"
+        Invoke-NexusSetupExternalCommand -FilePath $DockerCli -Arguments @('start', $ContainerName) | Out-Null
     }
 
     Wait-NexusSetupRabbitMqReady -DockerCli $DockerCli -ContainerName $ContainerName

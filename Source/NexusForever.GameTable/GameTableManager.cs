@@ -44,10 +44,17 @@ namespace NexusForever.GameTable
         public GameTable<AchievementTextEntry> AchievementText { get; private set; }
         public GameTable<ActionBarShortcutSetEntry> ActionBarShortcutSet { get; private set; }
         public GameTable<ActionSlotPrereqEntry> ActionSlotPrereq { get; private set; }
+        [GameData]
         public GameTable<ArchiveArticleEntry> ArchiveArticle { get; private set; }
+
         public GameTable<ArchiveCategoryEntry> ArchiveCategory { get; private set; }
+
+        [GameData]
         public GameTable<ArchiveEntryEntry> ArchiveEntry { get; private set; }
+
+        [GameData]
         public GameTable<ArchiveEntryUnlockRuleEntry> ArchiveEntryUnlockRule { get; private set; }
+
         public GameTable<ArchiveLinkEntry> ArchiveLink { get; private set; }
         public GameTable<AttributeMilestoneGroupEntry> AttributeMilestoneGroup { get; private set; }
         public GameTable<AttributeMiniMilestoneGroupEntry> AttributeMiniMilestoneGroup { get; private set; }
@@ -299,7 +306,10 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<ItemQualityEntry> ItemQuality { get; private set; }
 
+        [GameData]
         public GameTable<ItemRandomStatEntry> ItemRandomStat { get; private set; }
+
+        [GameData]
         public GameTable<ItemRandomStatGroupEntry> ItemRandomStatGroup { get; private set; }
         public GameTable<ItemRuneInstanceEntry> ItemRuneInstance { get; private set; }
         public GameTable<ItemSetEntry> ItemSet { get; private set; }

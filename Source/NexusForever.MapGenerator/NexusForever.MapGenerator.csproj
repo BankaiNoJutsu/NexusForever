@@ -9,7 +9,11 @@
     <PackageReference Include="CommandLineParser" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Nexus.Archive" />
-    <PackageReference Include="SharpCompress" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-6c8g-7p36-r338" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-jp7f-grcv-6mjf" />
   </ItemGroup>
 
   <ItemGroup>

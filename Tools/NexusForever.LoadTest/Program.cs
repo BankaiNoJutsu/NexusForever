@@ -18,6 +18,7 @@ using NexusForever.Database.Configuration.Model;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network;
+using NexusForever.Network.Auth.Static;
 using NexusForever.Network.Message;
 using PlayerClass = NexusForever.Game.Static.Entity.Class;
 using PlayerPath = NexusForever.Game.Static.PlayerPath.Path;
@@ -753,6 +754,14 @@ internal sealed class GameProtocolClient : IAsyncDisposable
                 continue;
 
             GameFrame inner = DecryptInner(frame);
+            if (inner.Opcode == GameMessageOpcode.ServerAuthDenied)
+            {
+                using var deniedStream = new MemoryStream(inner.Body);
+                using var deniedReader = new GamePacketReader(deniedStream);
+                var result = deniedReader.ReadEnum<NpLoginResult>(32u);
+                throw new InvalidOperationException($"Auth denied: {result}");
+            }
+
             if (inner.Opcode != GameMessageOpcode.ServerRealmInfo)
                 continue;
 
@@ -903,8 +912,8 @@ internal static class PacketWriters
     {
         byte[] bytes = guid.ToByteArray();
         writer.Write(BitConverter.ToInt32(bytes, 0));
-        writer.Write(BitConverter.ToInt16(bytes, 4));
-        writer.Write(BitConverter.ToInt16(bytes, 6));
+        writer.Write(BitConverter.ToUInt16(bytes, 4));
+        writer.Write(BitConverter.ToUInt16(bytes, 6));
         writer.WriteBytes(bytes.Skip(8).ToArray(), 8u);
     }
 }

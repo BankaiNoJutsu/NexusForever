@@ -17,7 +17,7 @@ namespace NexusForever.Database.World.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.7")
+                .HasAnnotation("ProductVersion", "9.0.16")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -60,6 +60,103 @@ namespace NexusForever.Database.World.Migrations
                         .HasName("PRIMARY");
 
                     b.ToTable("creature_info_stat", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.World.Model.CreatureLootModel", b =>
+                {
+                    b.Property<uint>("CreatureId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("creatureId");
+
+                    b.Property<uint>("ItemId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("itemId");
+
+                    b.Property<uint>("AggregateDropCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("aggregateDropCount");
+
+                    b.Property<uint>("AggregateDropSum")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("aggregateDropSum");
+
+                    b.Property<decimal>("Chance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(12,8)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("chance");
+
+                    b.Property<uint>("DropTimes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("dropTimes");
+
+                    b.Property<uint>("GameVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("gameVersion");
+
+                    b.Property<string>("ItemName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(255)")
+                        .HasDefaultValue("")
+                        .HasColumnName("itemName");
+
+                    b.Property<uint>("LastSeenIn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("lastSeenIn");
+
+                    b.Property<string>("MatchStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(32)")
+                        .HasDefaultValue("")
+                        .HasColumnName("matchStatus");
+
+                    b.Property<uint>("SourceDropId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("sourceDropId");
+
+                    b.Property<string>("SourceName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(255)")
+                        .HasDefaultValue("")
+                        .HasColumnName("sourceName");
+
+                    b.Property<uint>("VersionedCreatureDropAggregateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("versionedCreatureDropAggregateId");
+
+                    b.Property<uint>("VersionedItemDropAggregateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("versionedItemDropAggregateId");
+
+                    b.HasKey("CreatureId", "ItemId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("Chance")
+                        .HasDatabaseName("ix_creature_loot_chance");
+
+                    b.HasIndex("ItemId")
+                        .HasDatabaseName("ix_creature_loot_item");
+
+                    b.ToTable("creature_loot", (string)null);
                 });
 
             modelBuilder.Entity("NexusForever.Database.World.Model.DisableModel", b =>
@@ -120,6 +217,32 @@ namespace NexusForever.Database.World.Migrations
                     b.ToTable("entity_event", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.World.Model.EntityLootModel", b =>
+                {
+                    b.Property<uint>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("id");
+
+                    b.Property<ulong>("LootGroupId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("lootGroupId");
+
+                    b.Property<string>("Comment")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(200)")
+                        .HasDefaultValue("")
+                        .HasColumnName("comment");
+
+                    b.HasKey("Id", "LootGroupId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("LootGroupId");
+
+                    b.ToTable("entity_loot", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.World.Model.EntityModel", b =>
                 {
                     b.Property<uint>("Id")
@@ -164,6 +287,12 @@ namespace NexusForever.Database.World.Migrations
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("faction2");
 
+                    b.Property<byte>("Mode")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("mode");
+
                     b.Property<ushort>("OutfitInfo")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("smallint(5) unsigned")
@@ -175,12 +304,6 @@ namespace NexusForever.Database.World.Migrations
                         .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("questChecklistIdx");
-
-                    b.Property<byte>("Mode")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(3) unsigned")
-                        .HasDefaultValue((byte)0)
-                        .HasColumnName("mode");
 
                     b.Property<float>("Rx")
                         .ValueGeneratedOnAdd()
@@ -274,6 +397,7 @@ namespace NexusForever.Database.World.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("ScriptName")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("varchar(150)")
                         .HasDefaultValue("")
                         .HasColumnName("scriptName");
@@ -476,6 +600,137 @@ namespace NexusForever.Database.World.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("entity_vendor", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.World.Model.ItemLootModel", b =>
+                {
+                    b.Property<uint>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("id");
+
+                    b.Property<ulong>("LootGroupId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("lootGroupId");
+
+                    b.Property<string>("Comment")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(200)")
+                        .HasDefaultValue("")
+                        .HasColumnName("comment");
+
+                    b.HasKey("Id", "LootGroupId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("LootGroupId");
+
+                    b.ToTable("item_loot", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.World.Model.LootGroupModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("id");
+
+                    b.Property<string>("Comment")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(200)")
+                        .HasDefaultValue("")
+                        .HasColumnName("comment");
+
+                    b.Property<uint>("Condition")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("condition");
+
+                    b.Property<uint>("ConditionType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("conditionType");
+
+                    b.Property<uint>("MaxDrop")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("maxDrop");
+
+                    b.Property<uint>("MinDrop")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("minDrop");
+
+                    b.Property<ulong?>("ParentId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("parentId");
+
+                    b.Property<float>("Probability")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(100f)
+                        .HasColumnName("probability");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("loot_group", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.World.Model.LootItemModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("id");
+
+                    b.Property<uint>("Type")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("type");
+
+                    b.Property<uint>("StaticId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("staticId");
+
+                    b.Property<string>("Comment")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(200)")
+                        .HasDefaultValue("")
+                        .HasColumnName("comment");
+
+                    b.Property<uint>("MaxCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("maxCount");
+
+                    b.Property<uint>("MinCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("minCount");
+
+                    b.Property<float>("Probability")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(100f)
+                        .HasColumnName("probability");
+
+                    b.HasKey("Id", "Type", "StaticId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("loot_item", (string)null);
                 });
 
             modelBuilder.Entity("NexusForever.Database.World.Model.MapEntranceModel", b =>
@@ -839,6 +1094,18 @@ namespace NexusForever.Database.World.Migrations
                     b.Navigation("Entity");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.World.Model.EntityLootModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.World.Model.LootGroupModel", "LootGroup")
+                        .WithMany()
+                        .HasForeignKey("LootGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_entity_loot_loot_group_lootGroupId");
+
+                    b.Navigation("LootGroup");
+                });
+
             modelBuilder.Entity("NexusForever.Database.World.Model.EntityPropertyModel", b =>
                 {
                     b.HasOne("NexusForever.Database.World.Model.EntityModel", "Entity")
@@ -923,6 +1190,40 @@ namespace NexusForever.Database.World.Migrations
                     b.Navigation("Entity");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.World.Model.ItemLootModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.World.Model.LootGroupModel", "LootGroup")
+                        .WithMany()
+                        .HasForeignKey("LootGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_item_loot_loot_group_lootGroupId");
+
+                    b.Navigation("LootGroup");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.World.Model.LootGroupModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.World.Model.LootGroupModel", "Parent")
+                        .WithMany("ChildGroup")
+                        .HasForeignKey("ParentId")
+                        .HasConstraintName("FK__loot_group_parentId__loot_group_id");
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.World.Model.LootItemModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.World.Model.LootGroupModel", "LootGroup")
+                        .WithMany("Item")
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__loot_item_id__loot_group_id");
+
+                    b.Navigation("LootGroup");
+                });
+
             modelBuilder.Entity("NexusForever.Database.World.Model.StoreOfferGroupCategoryModel", b =>
                 {
                     b.HasOne("NexusForever.Database.World.Model.StoreCategoryModel", "Category")
@@ -999,6 +1300,13 @@ namespace NexusForever.Database.World.Migrations
                     b.Navigation("EntityVendorCategory");
 
                     b.Navigation("EntityVendorItem");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.World.Model.LootGroupModel", b =>
+                {
+                    b.Navigation("ChildGroup");
+
+                    b.Navigation("Item");
                 });
 
             modelBuilder.Entity("NexusForever.Database.World.Model.StoreCategoryModel", b =>

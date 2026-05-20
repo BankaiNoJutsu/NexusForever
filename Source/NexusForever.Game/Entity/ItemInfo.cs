@@ -130,12 +130,12 @@ namespace NexusForever.Game.Entity
                     case ItemStatType.None:
                         continue;
                     case ItemStatType.Standard:
-                        builder.Budgets.Add((Property)StatEntry.ItemStatData[i], budget);
+                        builder.AddBudget((Property)StatEntry.ItemStatData[i], budget);
                         break;
                     case ItemStatType.RandomStatGroup:
                     {
                         if (TryGetRandomStatGroupProperty(StatEntry.ItemStatData[i], out Property property))
-                            builder.Budgets.Add(property, budget);
+                            builder.AddBudget(property, budget);
 
                         break;
                     }

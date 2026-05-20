@@ -7,5 +7,12 @@ namespace NexusForever.Game.Entity
     {
         public ImmutableDictionary<Property, float>.Builder Budgets { get; } = ImmutableDictionary.CreateBuilder<Property, float>();
         public ImmutableDictionary<Property, float>.Builder Properties { get; } = ImmutableDictionary.CreateBuilder<Property, float>();
+
+        public void AddBudget(Property property, float budget)
+        {
+            Budgets[property] = Budgets.TryGetValue(property, out float existingBudget)
+                ? existingBudget + budget
+                : budget;
+        }
     }
 }

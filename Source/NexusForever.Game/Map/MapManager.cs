@@ -22,6 +22,7 @@ namespace NexusForever.Game.Map
         }
 
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
+        private const long MapUpdateWarningThresholdMilliseconds = 100;
 
         private readonly ConcurrentQueue<PendingAdd> pendingAdds = new();
         private readonly Dictionary</*worldId*/ uint, IMap> maps = new();
@@ -81,7 +82,7 @@ namespace NexusForever.Game.Map
             }
 
             sw.Stop();
-            if (sw.ElapsedMilliseconds > 10)
+            if (sw.ElapsedMilliseconds > MapUpdateWarningThresholdMilliseconds)
                 log.Warn($"{pendingAdds.Count} pending add(s) took {sw.ElapsedMilliseconds}ms to process!");
         }
 
@@ -114,7 +115,7 @@ namespace NexusForever.Game.Map
             }
 
             sw.Stop();
-            if (sw.ElapsedMilliseconds > 10)
+            if (sw.ElapsedMilliseconds > MapUpdateWarningThresholdMilliseconds)
                 log.Warn($"{maps.Count} map(s) took {sw.ElapsedMilliseconds}ms to update!");
         }
 

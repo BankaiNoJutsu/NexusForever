@@ -46,6 +46,9 @@ param(
     [string] $Configuration = 'Debug',
     [string] $TargetFramework = 'net10.0',
 
+    [ValidateSet('Trace', 'Debug', 'Info', 'Warn', 'Error', 'Fatal', 'Off')]
+    [string] $LogLevel = 'Trace',
+
     [string] $ClientDirectory = '',
     [string] $ClientExecutable = '',
     [string] $PatchDirectory = '',
@@ -327,6 +330,31 @@ function Get-ProcessLogDirectory {
     $logDirectory = Join-Path $RepoRoot '.nexusforever-runtime\logs'
     New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
     (Resolve-Path -LiteralPath $logDirectory).Path
+}
+
+function Set-NexusLogLevel {
+    param(
+        [string] $ProjectName,
+        [string] $Level
+    )
+
+    $buildOutput = Join-Path $RepoRoot "Source\$ProjectName\bin\$Configuration\$TargetFramework"
+    $nlogPath = Join-Path $buildOutput 'nlog.config'
+
+    if (!(Test-Path -LiteralPath $nlogPath -PathType Leaf)) {
+        Write-Info "No nlog.config found at $nlogPath; skipping log level override"
+        return
+    }
+
+    $content = Get-Content -LiteralPath $nlogPath -Raw
+    $updated = $content -replace '(?<=<variable\s+name="minLogLevel"\s+)value="[^"]*"', "value=""$Level"""
+    if ($updated -eq $content -and $Level -ne 'Trace') {
+        Write-Warning "Could not update minLogLevel variable in $nlogPath. The variable tag may be missing."
+        return
+    }
+
+    Set-Content -LiteralPath $nlogPath -Value $updated -Encoding utf8
+    Write-Info "Set log level to $Level in $nlogPath"
 }
 
 function Get-ProcessLogPaths {
@@ -848,6 +876,7 @@ function Start-StandaloneServers {
         }
 
         Write-Info "Starting $($server.Name)"
+        Set-NexusLogLevel -ProjectName $server.Project -Level $LogLevel
         Remove-Item -LiteralPath $logPaths.StandardOutput, $logPaths.StandardError -Force -ErrorAction SilentlyContinue
         $process = Start-Process -FilePath $exePath -WorkingDirectory $workingDirectory -WindowStyle Hidden -RedirectStandardOutput $logPaths.StandardOutput -RedirectStandardError $logPaths.StandardError -PassThru
 

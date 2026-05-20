@@ -30,6 +30,9 @@ param(
     [string] $Configuration = 'Debug',
     [string] $TargetFramework = 'net10.0',
 
+    [ValidateSet('Trace', 'Debug', 'Info', 'Warn', 'Error', 'Fatal', 'Off')]
+    [string] $LogLevel = 'Trace',
+
     [string] $ClientDirectory = '',
     [string] $ClientExecutable = '',
     [string] $PatchDirectory = '',
@@ -187,6 +190,7 @@ $launcherParameters = @{
     PortableRabbitMqImage               = $PortableRabbitMqImage
     Configuration                       = $Configuration
     TargetFramework                     = $TargetFramework
+    LogLevel                            = $LogLevel
     ClientDirectory                     = $ClientDirectory
     ClientExecutable                    = $ClientExecutable
     PatchDirectory                      = $PatchDirectory
