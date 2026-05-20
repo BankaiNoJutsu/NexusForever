@@ -18,7 +18,7 @@ namespace NexusForever.Network.World.Entity.Command
             Position   = reader.ReadVector3();
             Rotation   = reader.ReadVector3();
             FlightTime = reader.ReadUInt();
-            Gravity    = reader.ReadUInt();
+            Gravity    = reader.ReadSingle();
             Offset     = reader.ReadUInt();
             Blend      = reader.ReadBit();
         }

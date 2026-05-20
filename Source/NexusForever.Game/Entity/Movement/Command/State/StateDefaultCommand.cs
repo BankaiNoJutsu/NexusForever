@@ -65,16 +65,16 @@ namespace NexusForever.Game.Entity.Movement.Command.State
             switch (movementManager.GetMode())
             {
                 case ModeType.Walk:
-                    flags |= StateFlags.Unknown100;
+                    flags |= StateFlags.ModeWalk;
                     break;
                 case ModeType.Swim:
-                    flags |= StateFlags.Unknown80 | StateFlags.Unknown200;
+                    flags |= StateFlags.ModeNonWalk | StateFlags.ModeSwim;
                     break;
                 case ModeType.Slide:
-                    flags |= StateFlags.Unknown80 | StateFlags.Unknown400;
+                    flags |= StateFlags.ModeNonWalk | StateFlags.ModeSlide;
                     break;
                 case ModeType.Free:
-                    flags |= StateFlags.Unknown80;
+                    flags |= StateFlags.ModeNonWalk;
                     break;
             }
 

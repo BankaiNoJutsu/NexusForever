@@ -14,10 +14,10 @@ namespace NexusForever.Game.Entity.Movement.AntiTamper
             | StateFlags.Move
             | StateFlags.Fall
             | StateFlags.Jump
-            | StateFlags.Unknown80
-            | StateFlags.Unknown100
-            | StateFlags.Unknown200
-            | StateFlags.Unknown400
+            | StateFlags.ModeNonWalk
+            | StateFlags.ModeWalk
+            | StateFlags.ModeSwim
+            | StateFlags.ModeSlide
             | StateFlags.DoubleJump
             | StateFlags.RollForward
             | StateFlags.RollBackward

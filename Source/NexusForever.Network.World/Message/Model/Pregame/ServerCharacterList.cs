@@ -77,6 +77,9 @@ namespace NexusForever.Network.World.Message.Model.Pregame
                 writer.Write(RequiresRename);
                 writer.Write(GearMask);
 
+                if (Labels.Count != Values.Count)
+                    throw new InvalidOperationException($"{nameof(ServerCharacterList)} character {Id} requires {nameof(Labels)} and {nameof(Values)} to have the same count.");
+
                 writer.Write(Labels.Count, 4);
                 for (int i = 0; i < Labels.Count; i++)
                     writer.Write(Labels[i]);

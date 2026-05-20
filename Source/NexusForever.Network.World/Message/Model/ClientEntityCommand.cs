@@ -20,7 +20,7 @@ namespace NexusForever.Network.World.Message.Model
                 EntityCommand command     = reader.ReadEnum<EntityCommand>(5);
                 IEntityCommandModel model = EntityCommandManager.Instance.NewEntityCommand(command);
                 if (model == null)
-                    return;
+                    throw new InvalidPacketValueException($"Unsupported entity command {command}.");
 
                 model.Read(reader);
                 Commands.Add(new NetworkEntityCommand

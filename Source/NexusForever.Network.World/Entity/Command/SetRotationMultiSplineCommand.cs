@@ -24,9 +24,9 @@ namespace NexusForever.Network.World.Entity.Command
                 SplineIds.Add(reader.ReadUInt());
 
             Speed                 = reader.ReadPackedFloat();
-            Position              = reader.ReadUInt();
-            TakeoffLocationHeight = reader.ReadUInt();
-            LandingLocationHeight = reader.ReadUInt();
+            Position              = reader.ReadSingle();
+            TakeoffLocationHeight = reader.ReadSingle();
+            LandingLocationHeight = reader.ReadSingle();
             Mode                  = reader.ReadByte(4u);
             Offset                = reader.ReadUInt();
             MultiSplineFlags      = reader.ReadUInt();

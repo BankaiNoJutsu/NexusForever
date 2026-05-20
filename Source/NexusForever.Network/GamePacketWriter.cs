@@ -42,6 +42,13 @@ namespace NexusForever.Network
 
         private void WriteBits(ulong value, uint bits)
         {
+            if (bits < sizeof(ulong) * 8)
+            {
+                ulong maxValue = (1ul << (int)bits) - 1ul;
+                if (value > maxValue)
+                    throw new ArgumentOutOfRangeException(nameof(value), value, $"Value exceeds the {bits}-bit wire limit.");
+            }
+
             for (int i = 0; i < bits; i++)
                 Write(Convert.ToBoolean((value >> i) & 1));
         }

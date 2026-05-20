@@ -236,10 +236,6 @@ namespace NexusForever.Network.Session
                     && opcode != GameMessageOpcode.ClientEntityCommand)
                     log.Trace($"Received packet {opcode}(0x{opcode:X}).");
 
-                // FIXME workaround for now. possible performance impact. 
-                // ClientPing does not currently work and the session times out after 300s -> this keeps the session alive if -any- client packet is received
-                Heartbeat.OnHeartbeat();
-
                 uint remaining = reader.ReadBody(message);
                 if (remaining > 0)
                     log.Warn($"Failed to read entire contents of packet {opcode}");

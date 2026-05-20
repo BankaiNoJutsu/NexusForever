@@ -1,20 +1,27 @@
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Map;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network;
+using NexusForever.Network.Message;
+using NexusForever.Network.World.Entity;
+using NexusForever.Network.World.Entity.Command;
 using NexusForever.Network.World.Entity.Model;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.IO.Map;
+using NexusForever.Shared;
 using SharedItem = NexusForever.Network.World.Message.Model.Shared.Item;
 
 namespace NexusForever.Game.Tests.Entity;
 
+[Collection(LegacyServiceProviderCollection.Name)]
 public class ProtocolRuntimeHardeningTests
 {
     [Fact]
@@ -129,6 +136,140 @@ public class ProtocolRuntimeHardeningTests
         Assert.Empty(update.Bones);
     }
 
+    [Fact]
+    public void GamePacketWriter_WriteRejectsValueOutsideBitWidth()
+    {
+        using var stream = new MemoryStream();
+        using var writer = new GamePacketWriter(stream);
+
+        ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => writer.Write(8u, 3u));
+
+        Assert.Contains("3-bit wire limit", exception.Message);
+    }
+
+    [Fact]
+    public void GamePacketReader_ReadBitRejectsTruncatedStream()
+    {
+        using var stream = new MemoryStream();
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Throws<EndOfStreamException>(() => reader.ReadBit());
+    }
+
+    [Fact]
+    public void SetPositionKeysCommand_WriteRejectsMismatchedTimesAndPositions()
+    {
+        var command = new SetPositionKeysCommand
+        {
+            Times = [1u],
+            Positions = []
+        };
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => WritePacket(command));
+
+        Assert.Contains("same count", exception.Message);
+    }
+
+    [Fact]
+    public void ClientEntityCommand_ReadRejectsUnsupportedCommandType()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var entityCommandManager = new EntityCommandManager();
+        entityCommandManager.Initialise();
+
+        LegacyServiceProvider.Provider = new ServiceCollection()
+            .AddSingleton(entityCommandManager)
+            .BuildServiceProvider();
+
+        try
+        {
+            byte[] packetData;
+            using var stream = new MemoryStream();
+            using (var writer = new GamePacketWriter(stream))
+            {
+                writer.Write(123u);
+                writer.Write(1u);
+                writer.Write(31u, 5u);
+                writer.FlushBits();
+                packetData = stream.ToArray();
+            }
+
+            using var reader = new GamePacketReader(new MemoryStream(packetData));
+
+            InvalidPacketValueException exception = Assert.Throws<InvalidPacketValueException>(() => new ClientEntityCommand().Read(reader));
+
+            Assert.Contains("Unsupported entity command", exception.Message);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SetPositionMultiSplineCommand_ReadRoundTripsPackedSpeedAndFloatFields()
+    {
+        var command = new SetPositionMultiSplineCommand
+        {
+            SplineIds = [1u, 2u],
+            Speed = 2f,
+            Position = 3.25f,
+            TakeoffLocationHeight = 4.5f,
+            LandingLocationHeight = 5.75f
+        };
+
+        SetPositionMultiSplineCommand roundTripped = ReadPacket<SetPositionMultiSplineCommand>(WritePacket(command));
+
+        Assert.Equal(command.SplineIds, roundTripped.SplineIds);
+        Assert.Equal(command.Speed, roundTripped.Speed);
+        Assert.Equal(command.Position, roundTripped.Position);
+        Assert.Equal(command.TakeoffLocationHeight, roundTripped.TakeoffLocationHeight);
+        Assert.Equal(command.LandingLocationHeight, roundTripped.LandingLocationHeight);
+    }
+
+    [Fact]
+    public void SetRotationSplineCommand_ReadRoundTripsFloatPosition()
+    {
+        var command = new SetRotationSplineCommand
+        {
+            SplineId = 3u,
+            Speed = 4,
+            Position = 7.5f
+        };
+
+        SetRotationSplineCommand roundTripped = ReadPacket<SetRotationSplineCommand>(WritePacket(command));
+
+        Assert.Equal(command.Position, roundTripped.Position);
+    }
+
+    [Fact]
+    public void SetPositionProjectileCommand_ReadRoundTripsFloatGravity()
+    {
+        var command = new SetPositionProjectileCommand
+        {
+            Gravity = 9.75f
+        };
+
+        SetPositionProjectileCommand roundTripped = ReadPacket<SetPositionProjectileCommand>(WritePacket(command));
+
+        Assert.Equal(command.Gravity, roundTripped.Gravity);
+    }
+
+    [Fact]
+    public void ServerCharacterListCharacter_WriteRejectsMismatchedCustomisationLabelsAndValues()
+    {
+        var character = new ServerCharacterList.Character
+        {
+            Id = 1ul,
+            Name = "Tester"
+        };
+        character.Labels.Add(1u);
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => WritePacket(character));
+
+        Assert.Contains("Labels", exception.Message);
+    }
+
     private static ServerEntityCreate CreateEntityCreatePacket()
     {
         return new ServerEntityCreate
@@ -198,11 +339,27 @@ public class ProtocolRuntimeHardeningTests
         field.SetValue(instance, value);
     }
 
-    private static void WritePacket(ServerEntityCreate packet)
+    private static byte[] WritePacket(IWritable packet)
     {
         using var stream = new MemoryStream();
-        using var writer = new GamePacketWriter(stream);
-        packet.Write(writer);
-        writer.FlushBits();
+        using (var writer = new GamePacketWriter(stream))
+        {
+            packet.Write(writer);
+            writer.FlushBits();
+        }
+
+        return stream.ToArray();
+    }
+
+    private static T ReadPacket<T>(byte[] packetData)
+        where T : IReadable, new()
+    {
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        var packet = new T();
+        packet.Read(reader);
+
+        return packet;
     }
 }

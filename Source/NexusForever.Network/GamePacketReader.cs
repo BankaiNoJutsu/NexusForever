@@ -47,7 +47,12 @@ namespace NexusForever.Network
             if (currentBitPosition > 7)
             {
                 currentBitPosition = 0;
-                currentBitValue = (byte)stream.ReadByte();
+
+                int value = stream.ReadByte();
+                if (value == -1)
+                    throw new EndOfStreamException();
+
+                currentBitValue = (byte)value;
             }
 
             return ((currentBitValue >> currentBitPosition) & 1) != 0;

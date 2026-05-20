@@ -27,9 +27,9 @@ namespace NexusForever.Network.World.Entity.Command
                 SplineIds.Add(reader.ReadUInt());
 
             Speed                 = reader.ReadPackedFloat();
-            Position              = reader.ReadUInt();
-            TakeoffLocationHeight = reader.ReadUInt();
-            LandingLocationHeight = reader.ReadUInt();
+            Position              = reader.ReadSingle();
+            TakeoffLocationHeight = reader.ReadSingle();
+            LandingLocationHeight = reader.ReadSingle();
             FormationData         = reader.ReadPackedVector3();
             Mode                  = reader.ReadEnum<SplineMode>(4u);
             Offset                = reader.ReadUInt();
@@ -44,7 +44,7 @@ namespace NexusForever.Network.World.Entity.Command
             foreach (var splineId in SplineIds)
                 writer.Write(splineId);
 
-            writer.Write(Speed);
+            writer.WritePackedFloat(Speed);
             writer.Write(Position);
             writer.Write(TakeoffLocationHeight);
             writer.Write(LandingLocationHeight);

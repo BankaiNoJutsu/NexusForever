@@ -25,6 +25,8 @@ namespace NexusForever.Network.World.Entity.Command
 
         public void Write(GamePacketWriter writer)
         {
+            EntityCommandWireValidation.RequireSameCount(Times, nameof(Times), States, nameof(States), nameof(SetStateKeysCommand));
+
             writer.Write(Times.Count, 8u);
 
             foreach (uint time in Times)

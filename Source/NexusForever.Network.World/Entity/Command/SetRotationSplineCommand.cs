@@ -17,7 +17,7 @@ namespace NexusForever.Network.World.Entity.Command
         {
             SplineId            = reader.ReadUInt();
             Speed               = reader.ReadUShort();
-            Position            = reader.ReadUInt();
+            Position            = reader.ReadSingle();
             Mode                = reader.ReadByte(4u);
             Offset              = reader.ReadUInt();
             Blend               = reader.ReadBit();

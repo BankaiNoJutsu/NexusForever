@@ -36,7 +36,7 @@ namespace NexusForever.Game.Entity.Movement.Spline
         /// </remarks>
         public float Offset => Position / (Type.Length + (Type.DelayLength * Speed));
 
-        public float Unknown30 { get; private set; }
+        public float InverseTotalDuration { get; private set; }
 
         #region Dependency Injection
 
@@ -138,8 +138,8 @@ namespace NexusForever.Game.Entity.Movement.Spline
 
             Points[^2].Offsets.Add(1.0f);
 
-            // not really sure what this is... but it's used in the calculation of t
-            Unknown30 = v15;
+            // Normalize segment delays into the same 0..1 offset space as spline travel.
+            InverseTotalDuration = v15;
         }
 
         /// <summary>
@@ -200,9 +200,9 @@ namespace NexusForever.Game.Entity.Movement.Spline
 
             float v25 = 0f;
             if (point2 == Points[^2] && index2 == point2.Offsets.Count - 1)
-                v25 = point2.Lengths[index2].Delay * Unknown30;
+                v25 = point2.Lengths[index2].Delay * InverseTotalDuration;
 
-            float v26 = (point.Lengths[index].Delay * Unknown30) + point.Offsets[index];
+            float v26 = (point.Lengths[index].Delay * InverseTotalDuration) + point.Offsets[index];
             float v54 = (offset - v26) * (1.0f / (point2.Offsets[index2] - v25 - v26));
 
             return (tLength * Math.Clamp(v54, 0.0f, 1.0f)) + point.Lengths[index].T;
