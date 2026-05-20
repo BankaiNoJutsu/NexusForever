@@ -100,8 +100,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             AccountOperationResult result = session.Account.InventoryManager.GiftPendingItemGroupToAccount(session.Player, giftPendingItemGroup.Group, giftPendingItemGroup.TargetAccountId, giftPendingItemGroup.SenderCharacter);
             if (result != AccountOperationResult.Ok)
             {
-                log.LogDebug("Rejecting pending account item group account gift from player {PlayerGuid}: group {Group}, target account {TargetAccountId}, unknown0 {Unknown0}, sender {SenderCharacter}, result {Result}.",
-                    session.Player?.Guid, giftPendingItemGroup.Group, giftPendingItemGroup.TargetAccountId, giftPendingItemGroup.Unknown0, giftPendingItemGroup.SenderCharacter, result);
+                log.LogDebug("Rejecting pending account item group account gift from player {PlayerGuid}: group {Group}, target account {TargetAccountId}, reservedZero {ReservedZero}, sender {SenderCharacter}, result {Result}.",
+                    session.Player?.Guid, giftPendingItemGroup.Group, giftPendingItemGroup.TargetAccountId, giftPendingItemGroup.ReservedZero, giftPendingItemGroup.SenderCharacter, result);
             }
         }
     }

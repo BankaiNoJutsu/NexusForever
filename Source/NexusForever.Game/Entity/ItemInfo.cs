@@ -374,7 +374,7 @@ namespace NexusForever.Game.Entity
                 vendorBuyCurrency = Entry.CurrencyTypeId;
                 vendorBuyAmount   = Entry.CurrencyAmount;
 
-                if ((Entry.Flags & ItemFlags.Unknown200) != 0)
+                if ((Entry.Flags & ItemFlags.VendorBuyUsesWarCoins) != 0)
                     vendorBuyCurrency[0] = CurrencyType.WarCoin;
             }
             else

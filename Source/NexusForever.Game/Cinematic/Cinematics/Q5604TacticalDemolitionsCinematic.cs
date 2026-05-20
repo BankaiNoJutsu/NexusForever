@@ -13,7 +13,7 @@ namespace NexusForever.Game.Cinematic.Cinematics
         protected override void Setup()
         {
             Duration          = 15000;
-            InitialFlags      = CinematicFlags.EndImmediate | CinematicFlags.Unknown2 | CinematicFlags.NotifyServer;
+            InitialFlags      = CinematicFlags.EndImmediate | CinematicFlags.UsesTransitionDurationSet | CinematicFlags.NotifyServer;
             InitialCancelMode = CancelType.EndImmediate;
             StartTransition   = new Transition(0, CameraAddFlags.AddCamera, 2, 750, 1000, 1500);
             EndTransition     = new Transition(13500, CameraAddFlags.WhiteOut, 0);

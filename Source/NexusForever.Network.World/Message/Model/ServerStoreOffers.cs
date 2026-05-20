@@ -36,10 +36,10 @@ namespace NexusForever.Network.World.Message.Model
                     public ushort AccountItemId { get; set; } // 15
                     public uint Amount { get; set; }
 
-                    public uint Type1Unknown0 { get; set; }
-                    public uint Type1Unknown1 { get; set; }
+                    public uint Type1AccountItemId { get; set; }
+                    public uint Type1Amount { get; set; }
 
-                    public uint Type2Unknown0 { get; set; }
+                    public uint Type2AccountItemId { get; set; }
 
                     public void Write(GamePacketWriter writer)
                     {
@@ -51,11 +51,11 @@ namespace NexusForever.Network.World.Message.Model
                                 writer.Write(Amount);
                                 break;
                             case 1:
-                                writer.Write(Type1Unknown0);
-                                writer.Write(Type1Unknown1);
+                                writer.Write(Type1AccountItemId);
+                                writer.Write(Type1Amount);
                                 break;
                             case 2:
-                                writer.Write(Type2Unknown0);
+                                writer.Write(Type2AccountItemId);
                                 break;
                         }
                     }

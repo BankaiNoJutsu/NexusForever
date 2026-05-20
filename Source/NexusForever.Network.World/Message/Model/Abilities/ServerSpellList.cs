@@ -39,11 +39,59 @@ namespace NexusForever.Network.World.Message.Model.Abilities
         {
             public class VariantEntry : IWritable
             {
+                public class VariantType0Data : IWritable
+                {
+                    public uint Value0 { get; set; }
+                    public byte Value1 { get; set; }
+                    public uint Value2 { get; set; }
+                    public uint Value3 { get; set; }
+                    public uint Value4 { get; set; }
+                    public uint Value5 { get; set; }
+                    public uint Value6 { get; set; }
+
+                    public void Write(GamePacketWriter writer)
+                    {
+                        writer.Write(Value0);
+                        writer.Write(Value1);
+                        writer.Write(Value2);
+                        writer.Write(Value3);
+                        writer.Write(Value4);
+                        writer.Write(Value5);
+                        writer.Write(Value6);
+                    }
+                }
+
+                public class VariantType1Data : IWritable
+                {
+                    public ushort Value0 { get; set; }
+                    public uint Value1 { get; set; }
+                    public byte Value2 { get; set; }
+                    public uint Value3 { get; set; }
+                    public uint Value4 { get; set; }
+                    public uint Value5 { get; set; }
+                    public uint Value6 { get; set; }
+                    public uint Value7 { get; set; }
+
+                    public void Write(GamePacketWriter writer)
+                    {
+                        writer.Write(Value0);
+                        writer.Write(Value1);
+                        writer.Write(Value2);
+                        writer.Write(Value3);
+                        writer.Write(Value4);
+                        writer.Write(Value5);
+                        writer.Write(Value6);
+                        writer.Write(Value7);
+                    }
+                }
+
                 public uint Spell4EffectId { get; set; }
                 public uint Value0 { get; set; }
                 public uint Value1 { get; set; }
                 public uint Value2 { get; set; }
                 public byte VariantType { get; set; }
+                public VariantType0Data Type0Data { get; set; } = new();
+                public VariantType1Data Type1Data { get; set; } = new();
 
                 public void Write(GamePacketWriter writer)
                 {
@@ -52,6 +100,13 @@ namespace NexusForever.Network.World.Message.Model.Abilities
                     writer.Write(Value1);
                     writer.Write(Value2);
                     writer.Write(VariantType, 2u);
+
+                    if (VariantType == 0)
+                        Type0Data.Write(writer);
+                    else if (VariantType == 1)
+                        Type1Data.Write(writer);
+                    else
+                        throw new global::System.InvalidOperationException();
                 }
             }
 

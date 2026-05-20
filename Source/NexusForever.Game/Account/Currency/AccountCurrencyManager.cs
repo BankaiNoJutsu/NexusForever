@@ -119,7 +119,7 @@ namespace NexusForever.Game.Account.Currency
             account.Session.EnqueueMessageEncrypted(new ServerAccountCurrencyGrant
             {
                 AccountCurrency = accountCurrency.Build(),
-                Unknown0 = reason
+                Reason = reason
             });
         }
     }

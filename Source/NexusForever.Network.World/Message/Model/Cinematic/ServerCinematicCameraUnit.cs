@@ -2,7 +2,7 @@
 
 namespace NexusForever.Network.World.Message.Model.Cinematic
 {
-    [Message(GameMessageOpcode.ServerCinematicCameraSubject)]
+    [Message(GameMessageOpcode.ServerCinematicCameraUnit)]
     public class ServerCinematicCameraUnit : IWritable
     {
         public uint Delay { get; set; }

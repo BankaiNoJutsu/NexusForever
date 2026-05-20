@@ -2,7 +2,7 @@
 
 namespace NexusForever.Network.World.Message.Model.PlayerPath
 {
-    [Message(GameMessageOpcode.ServerPathSoliderWhackAMoleBurrows)]
+    [Message(GameMessageOpcode.ServerPathSoldierWhackAMoleBurrows)]
     public class ServerPathSoldierWhackAMoleBurrows : IWritable
     {
         public uint DelayUntilPop { get; set; }

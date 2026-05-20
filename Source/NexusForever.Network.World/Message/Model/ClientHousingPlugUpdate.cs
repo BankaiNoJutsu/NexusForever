@@ -18,7 +18,7 @@ namespace NexusForever.Network.World.Message.Model
         public uint HousingPlotInfoId { get; set; }
         public uint HousingPlugItemId { get; set; }
         public HousingPlugFacing PlugFacing { get; set; }
-        public uint Unknown0 { get; set; }
+        public uint Reserved { get; set; }
         public PlugUpdateOperation Operation { get; set; }
         public byte[] ContributionData { get; set; }
 
@@ -29,7 +29,7 @@ namespace NexusForever.Network.World.Message.Model
             HousingPlotInfoId = reader.ReadUInt();
             HousingPlugItemId = reader.ReadUInt();
             PlugFacing        = reader.ReadEnum<HousingPlugFacing>(32u);
-            Unknown0          = reader.ReadUInt();
+            Reserved          = reader.ReadUInt();
             Operation         = reader.ReadEnum<PlugUpdateOperation>(3u);
 
             // HousingContribution related, client function that sends this looks up values from HousingContributionInfo.tbl.

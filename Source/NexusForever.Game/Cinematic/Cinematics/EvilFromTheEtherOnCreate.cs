@@ -20,7 +20,7 @@ namespace NexusForever.Game.Cinematic.Cinematics
         protected override void Setup()
         {
             Duration          = 28200;
-            InitialFlags      = CinematicFlags.EndImmediate | CinematicFlags.Unknown2 | CinematicFlags.NotifyServer;
+            InitialFlags      = CinematicFlags.EndImmediate | CinematicFlags.UsesTransitionDurationSet | CinematicFlags.NotifyServer;
             InitialCancelMode = CancelType.EndImmediate;
             CinematicId       = 0;
 

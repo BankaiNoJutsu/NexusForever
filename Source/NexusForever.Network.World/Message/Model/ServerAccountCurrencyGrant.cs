@@ -7,14 +7,14 @@ namespace NexusForever.Network.World.Message.Model
     public class ServerAccountCurrencyGrant : IWritable
     {
         public AccountCurrency AccountCurrency { get; set; }
-        public ulong Unknown0 { get; set; }
-        public ulong Unknown1 { get; set; }
+        public ulong Reason { get; set; }
+        public ulong Reserved { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
             AccountCurrency.Write(writer);
-            writer.Write(Unknown0);
-            writer.Write(Unknown1);
+            writer.Write(Reason);
+            writer.Write(Reserved);
         }
     }
 }

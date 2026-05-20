@@ -9,20 +9,20 @@ using NexusForever.Network.World.Message.Model.Pvp;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
 {
-    public class ClientDuelInitateHandler : IMessageHandler<IWorldSession, ClientDuelInitate>
+    public class ClientDuelInitiateHandler : IMessageHandler<IWorldSession, ClientDuelInitiate>
     {
-        private readonly ILogger<ClientDuelInitateHandler> log;
+        private readonly ILogger<ClientDuelInitiateHandler> log;
         private readonly IDuelManager duelManager;
 
-        public ClientDuelInitateHandler(
-            ILogger<ClientDuelInitateHandler> log,
+        public ClientDuelInitiateHandler(
+            ILogger<ClientDuelInitiateHandler> log,
             IDuelManager duelManager)
         {
             this.log         = log;
             this.duelManager = duelManager;
         }
 
-        public void HandleMessage(IWorldSession session, ClientDuelInitate duelInitiate)
+        public void HandleMessage(IWorldSession session, ClientDuelInitiate duelInitiate)
         {
             IPlayer target = GetSelectedPlayer(session.Player);
             if (target == null)

@@ -3,7 +3,7 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model.Shared
 {
-    public class TargetInfo : IWritable // same used for 0x0818
+    public class TargetInfo : IWritable
     {
         public class EffectInfo : IWritable
         {

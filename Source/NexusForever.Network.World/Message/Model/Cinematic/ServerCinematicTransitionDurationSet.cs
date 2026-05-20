@@ -3,7 +3,7 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model.Cinematic
 {
-    [Message(GameMessageOpcode.ServerCinematicScaleTransition)]
+    [Message(GameMessageOpcode.ServerCinematicTransitionDurationSet)]
     public class ServerCinematicTransitionDurationSet : IWritable
     {
         public ScaleTransitionType Type { get; set; }

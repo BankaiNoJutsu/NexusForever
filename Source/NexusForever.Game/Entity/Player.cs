@@ -1158,8 +1158,8 @@ namespace NexusForever.Game.Entity
             {
                 Session.EnqueueMessageEncrypted(new ServerEntityDestroy
                 {
-                    Guid     = entity.Guid,
-                    Unknown0 = true
+                    Guid = entity.Guid,
+                    Flag = true
                 });
             }
         }
@@ -2173,8 +2173,8 @@ namespace NexusForever.Game.Entity
 
             Session.EnqueueMessageEncrypted(new ServerEntityDestroy
             {
-                Guid     = entity.Guid,
-                Unknown0 = true
+                Guid = entity.Guid,
+                Flag = true
             });
 
             log.Debug($"Tutorial hoverboard forced destroy for player {Guid}: entity={entity.Guid}, creature={worldEntity.CreatureId}, wasVisible={wasVisible}, progress [{FormatStarterHoverboardQuestProgress()}].");

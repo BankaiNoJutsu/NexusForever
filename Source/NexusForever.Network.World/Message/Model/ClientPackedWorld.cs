@@ -12,13 +12,13 @@ namespace NexusForever.Network.World.Message.Model
         private const byte PackedWorldEnvelopeType19 = 19;
 
         // The native client sends envelope type 11 or 19 depending on the packed-world sender.
-        public byte Unknown0 { get; private set; }
-        public bool IsKnownEnvelopeType => Unknown0 is PackedWorldEnvelopeType11 or PackedWorldEnvelopeType19;
+        public byte EnvelopeType { get; private set; }
+        public bool IsKnownEnvelopeType => EnvelopeType is PackedWorldEnvelopeType11 or PackedWorldEnvelopeType19;
         public byte[] Data { get; private set; }
 
         public void Read(GamePacketReader reader)
         {
-            Unknown0 = reader.ReadByte(5u);
+            EnvelopeType = reader.ReadByte(5u);
             reader.ResetBits();
 
             uint length = reader.ReadUInt();

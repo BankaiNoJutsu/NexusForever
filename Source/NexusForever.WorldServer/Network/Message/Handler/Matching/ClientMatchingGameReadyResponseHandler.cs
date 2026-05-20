@@ -1,16 +1,16 @@
-﻿using NexusForever.Game.Abstract.Matching.Match;
+using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 {
-    public class ClientMatchingMatchReadyResponseHandler : IMessageHandler<IWorldSession, ClientMatchingGameReadyResponse>
+    public class ClientMatchingGameReadyResponseHandler : IMessageHandler<IWorldSession, ClientMatchingGameReadyResponse>
     {
         #region Dependency Injection
 
         private readonly IMatchManager matchManager;
 
-        public ClientMatchingMatchReadyResponseHandler(
+        public ClientMatchingGameReadyResponseHandler(
             IMatchManager matchManager)
         {
             this.matchManager = matchManager;

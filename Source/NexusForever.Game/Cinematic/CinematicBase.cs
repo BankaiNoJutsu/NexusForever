@@ -148,7 +148,7 @@ namespace NexusForever.Game.Cinematic
             if (playerActor == null)
                 return;
 
-            Player.Session.EnqueueMessageEncrypted(new ServerCinematic022B());
+            Player.Session.EnqueueMessageEncrypted(new ServerCinematicDelayFlag());
             Player.Session.EnqueueMessageEncrypted(new ServerCinematicTransitionPosition
             {
                 Position = new Position(Player.Position)

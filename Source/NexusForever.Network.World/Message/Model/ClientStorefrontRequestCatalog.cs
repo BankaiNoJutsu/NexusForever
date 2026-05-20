@@ -5,11 +5,11 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ClientStorefrontRequestCatalog)]
     public class ClientStorefrontRequestCatalog : IReadable
     {
-        public ushort Unknown0 { get; private set; }
+        public ushort CatalogContext { get; private set; }
 
         public void Read(GamePacketReader reader)
         {
-            Unknown0 = reader.ReadUShort(14u);
+            CatalogContext = reader.ReadUShort(14u);
         }
     }
 }

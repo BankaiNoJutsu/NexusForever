@@ -8,14 +8,14 @@ namespace NexusForever.Network.World.Message.Model
     {
         public string Group { get; private set; }
         public ulong TargetAccountId { get; private set; }
-        public uint Unknown0 { get; private set; }
+        public uint ReservedZero { get; private set; }
         public Identity SenderCharacter { get; } = new();
 
         public void Read(GamePacketReader reader)
         {
             Group           = reader.ReadWideString();
             TargetAccountId = reader.ReadULong();
-            Unknown0        = reader.ReadUInt();
+            ReservedZero    = reader.ReadUInt();
             SenderCharacter.Read(reader);
         }
     }
