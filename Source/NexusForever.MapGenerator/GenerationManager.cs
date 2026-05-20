@@ -137,11 +137,13 @@ namespace NexusForever.MapGenerator
                 }
             }
 
-            // FIXME: this happens for worlds with no terrain information, this is usually an instance where props are used as terrain
-            if (!mapFile.Any())
+            bool hasTerrainGridData = mapFile.Any();
+            if (!hasTerrainGridData)
             {
-                log.Info($"Map {mapFile.Asset} has no grid information, skipping");
-                return;
+                string emptyMapReason = gridRequests.Count == 0
+                    ? "no area grid files were found"
+                    : "no terrain grid data could be extracted from the discovered area grids";
+                log.Info($"Map {mapFile.Asset} has no terrain grid data ({emptyMapReason}); writing an empty base map file.");
             }
 
             // Path.ChangeExtension(mapFile.Asset, "nfmap")

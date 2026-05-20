@@ -757,8 +757,19 @@ namespace NexusForever.WorldServer.Command.Handler
         private static string DescribeStackGroup(Spell4StackGroupEntry entry)
         {
             return entry != null
-                ? $"{entry.Id} cap {entry.StackCap}, type {entry.StackTypeEnum}"
+                ? $"{entry.Id} cap {entry.StackCap}, type {entry.StackTypeEnum} (runtime oldest-only)"
                 : "0";
+        }
+
+        private static string DescribeShieldOverloadPayload(SpellEffectShieldOverloadSemantics shieldOverload)
+        {
+            bool allZeroRuntimeShape = shieldOverload.DataBits00 == 0u
+                && shieldOverload.DataBits01 == 0u
+                && shieldOverload.DataBits02 == 0u;
+
+            return allZeroRuntimeShape
+                ? " (all-zero runtime-supported)"
+                : " (non-zero payload diagnostic-only)";
         }
 
         private static string DescribeUnitState(uint stateId)
@@ -875,7 +886,7 @@ namespace NexusForever.WorldServer.Command.Handler
                 return $"clamp vital mode {effect.ClampVital.Mode}, vital mode {effect.ClampVital.VitalMode}, ratio {effect.ClampVital.Ratio:R}, data {effect.ClampVital.DataBits03}/{effect.ClampVital.DataBits04}/{effect.ClampVital.DataBits05}/{effect.ClampVital.DataBits06}/{effect.ClampVital.DataBits07}/{effect.ClampVital.DataBits08}/{effect.ClampVital.DataBits09}";
 
             if (effect.ShieldOverload != null)
-                return $"shield overload data {effect.ShieldOverload.DataBits00}/{effect.ShieldOverload.DataBits01}/{effect.ShieldOverload.DataBits02}/{effect.ShieldOverload.DataBits03}/{effect.ShieldOverload.DataBits04}/{effect.ShieldOverload.DataBits05}/{effect.ShieldOverload.DataBits06}/{effect.ShieldOverload.DataBits07}/{effect.ShieldOverload.DataBits08}/{effect.ShieldOverload.DataBits09}";
+                return $"shield overload data {effect.ShieldOverload.DataBits00}/{effect.ShieldOverload.DataBits01}/{effect.ShieldOverload.DataBits02}/{effect.ShieldOverload.DataBits03}/{effect.ShieldOverload.DataBits04}/{effect.ShieldOverload.DataBits05}/{effect.ShieldOverload.DataBits06}/{effect.ShieldOverload.DataBits07}/{effect.ShieldOverload.DataBits08}/{effect.ShieldOverload.DataBits09}{DescribeShieldOverloadPayload(effect.ShieldOverload)}";
 
             if (effect.GrantXp != null)
                 return $"grant xp amount {effect.GrantXp.Amount}, data {effect.GrantXp.DataBits01}/{effect.GrantXp.DataBits02}/{effect.GrantXp.DataBits03}/{effect.GrantXp.DataBits04}/{effect.GrantXp.DataBits05}";

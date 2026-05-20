@@ -348,7 +348,7 @@ namespace NexusForever.Game.Map.Instance
                 || !residence.CanModifyResidence(player))
                 throw new InvalidPacketValueException();
 
-            if (housingPlugUpdate.Unknown0 != 0u)
+            if (housingPlugUpdate.Reserved != 0u)
                 throw new InvalidPacketValueException();
 
             IPlot plot = residence.GetPlot(housingPlugUpdate.HousingPlotInfoId);

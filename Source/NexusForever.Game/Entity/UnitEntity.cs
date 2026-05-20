@@ -1662,8 +1662,9 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
-        /// Evict the oldest property-modifier casting from the StackGroup identified by <paramref name="stackGroupId"/>
+        /// Conservatively evict the oldest property-modifier casting from the StackGroup identified by <paramref name="stackGroupId"/>
         /// when the number of active castings from that group reaches <paramref name="stackCap"/>.
+        /// <see cref="Spell4StackGroupEntry.StackTypeEnum"/> is intentionally ignored until the client arbitration semantics are mapped.
         /// </summary>
         public void EnforceSpellPropertyStackGroupCap(uint stackGroupId, uint stackCap)
         {
@@ -1692,6 +1693,7 @@ namespace NexusForever.Game.Entity
             if (castingToEffects.Count < stackCap)
                 return;
 
+            // StackTypeEnum semantics are still unresolved; the conservative runtime always evicts the oldest casting.
             uint oldestCastingId = uint.MaxValue;
             foreach (uint castingId in castingToEffects.Keys)
                 if (castingId < oldestCastingId)

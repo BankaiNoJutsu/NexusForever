@@ -9,6 +9,10 @@ public class ProcDispatchEvidenceBoundaryTests
     [InlineData(ProcTriggerEventCandidate.DealDamage, 2u, ProcDispatchTargetRoute.Holder)]
     [InlineData(ProcTriggerEventCandidate.DealDamage, 9u, ProcDispatchTargetRoute.Holder)]
     [InlineData(ProcTriggerEventCandidate.ReceiveDamage, 4u, ProcDispatchTargetRoute.Counterpart)]
+    [InlineData(ProcTriggerEventCandidate.ReceiveDamageMelee, 4u, ProcDispatchTargetRoute.Counterpart)]
+    [InlineData(ProcTriggerEventCandidate.ReceiveDamageMelee, 12u, ProcDispatchTargetRoute.Counterpart)]
+    [InlineData(ProcTriggerEventCandidate.ReceiveDamageRanged, 4u, ProcDispatchTargetRoute.Counterpart)]
+    [InlineData(ProcTriggerEventCandidate.ReceiveDamageMagic, 4u, ProcDispatchTargetRoute.Counterpart)]
     [InlineData(ProcTriggerEventCandidate.HealOther, 12u, ProcDispatchTargetRoute.Counterpart)]
     public void Describe_AllowsSupportedTriggerEventAndTargetData(uint triggerEvent, uint targetData, ProcDispatchTargetRoute expectedRoute)
     {
@@ -25,7 +29,6 @@ public class ProcDispatchEvidenceBoundaryTests
     [InlineData(0u)]
     [InlineData(5u)]
     [InlineData(11u)]
-    [InlineData(17u)]
     public void Describe_BlocksUnsupportedTriggerEvents(uint triggerEvent)
     {
         ProcDispatchEvidenceBoundarySnapshot boundary = ProcDispatchEvidenceBoundary.Describe(triggerEvent, 1u);

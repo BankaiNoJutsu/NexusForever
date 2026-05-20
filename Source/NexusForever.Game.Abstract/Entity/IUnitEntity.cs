@@ -153,8 +153,9 @@ namespace NexusForever.Game.Abstract.Entity
         bool RemoveSpellProperties(uint spell4Id);
 
         /// <summary>
-        /// Evict the oldest property-modifier casting from the StackGroup identified by <paramref name="stackGroupId"/>
+        /// Conservatively evict the oldest property-modifier casting from the StackGroup identified by <paramref name="stackGroupId"/>
         /// when the number of active castings from that group reaches <paramref name="stackCap"/>.
+        /// <see cref="Spell4StackGroupEntry.StackTypeEnum"/> is intentionally ignored until the client arbitration semantics are mapped.
         /// </summary>
         void EnforceSpellPropertyStackGroupCap(uint stackGroupId, uint stackCap);
 

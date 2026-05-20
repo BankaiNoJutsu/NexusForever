@@ -107,6 +107,7 @@ namespace NexusForever.Game.Combat
             info.AddDamage(damageDescription);
             attacker.ProbeProcEvent("damage-dealt", ProcTriggerEventCandidate.DealDamage, attacker, victim, spell, info, damageDescription, "after-calculate-before-apply");
             victim.ProbeProcEvent("damage-received", ProcTriggerEventCandidate.ReceiveDamage, attacker, victim, spell, info, damageDescription, "after-calculate-before-apply");
+            ProbeReceiveDamageSchoolVariant(attacker, victim, spell, info, damageDescription);
 
             if (log.IsEnabled(LogLevel.Trace))
             {
@@ -287,6 +288,19 @@ namespace NexusForever.Game.Combat
 
             attacker.ProbeProcEvent("shield-damage-dealt", ProcTriggerEventCandidate.DealDamage, attacker, victim, spell, info, damageDescription, "after-calculate-before-apply");
             victim.ProbeProcEvent("shield-damage-received", ProcTriggerEventCandidate.ReceiveDamage, attacker, victim, spell, info, damageDescription, "after-calculate-before-apply");
+            ProbeReceiveDamageSchoolVariant(attacker, victim, spell, info, damageDescription);
+        }
+
+        private static void ProbeReceiveDamageSchoolVariant(IUnitEntity attacker, IUnitEntity victim, ISpell spell, ISpellTargetEffectInfo info, IDamageDescription damageDescription)
+        {
+            if (spell == null)
+                return;
+
+            if (!ProcTriggerEventCandidate.TryGetReceiveDamageSchoolTriggerEvent(spell.Parameters.SpellInfo.BaseInfo.School, out uint triggerEvent)
+                || !ProcTriggerEventCandidate.TryGetConservativeLabel(triggerEvent, out string eventName))
+                return;
+
+            victim.ProbeProcEvent(eventName, triggerEvent, attacker, victim, spell, info, damageDescription, "after-calculate-before-apply");
         }
 
         public uint CalculateAbsorption(IUnitEntity caster, IUnitEntity target, ISpell spell, ISpellTargetEffectInfo info)

@@ -20,7 +20,7 @@ namespace NexusForever.Game.Spell
         private const uint TargetTypeItemActivation = 6u; // item activation; entity = caster (mechanic 17, e.g., spell 11820)
         private const uint TargetTypeServiceLookup = 7u; // per-spell service tree (includes auto-attack spell 339)
         private const uint TargetTypeChain = 5u;
-        private const uint TargetTypeUnknown8 = 8u; // single-target category; auto-target fallback bitmask 0x12a (bits 1,3,5,8)
+        private const uint TargetTypeCursorOrSelectedTarget = 8u; // current-target category with auto-target fallback bitmask 0x12a (bits 1,3,5,8)
 
         [Flags]
         public enum UnlockedSpellSaveMask
@@ -194,7 +194,7 @@ namespace NexusForever.Game.Spell
             if (targetType == TargetTypeSelfAoe || targetType == TargetTypeNoExplicitTarget || targetType == TargetTypeItemActivation)
                 return Owner.Guid;
 
-            if (targetType is not TargetTypeSingleTarget and not TargetTypeTargetAoe and not TargetTypeChain and not TargetTypeServiceLookup and not TargetTypeUnknown8)
+            if (targetType is not TargetTypeSingleTarget and not TargetTypeTargetAoe and not TargetTypeChain and not TargetTypeServiceLookup and not TargetTypeCursorOrSelectedTarget)
                 return 0u;
 
             if (Owner.TargetGuid == null)
