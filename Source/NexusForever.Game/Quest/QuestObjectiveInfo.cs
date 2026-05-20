@@ -30,7 +30,7 @@ namespace NexusForever.Game.Quest
         public bool RequiresPreviousObjectives()
         {
             const QuestObjectiveFlags flags =
-                QuestObjectiveFlags.Unknown0001
+                QuestObjectiveFlags.RequiresPreviousObjectives
                 | QuestObjectiveFlags.Sequential
                 | QuestObjectiveFlags.Hidden;
 
@@ -53,9 +53,9 @@ namespace NexusForever.Game.Quest
             return ((QuestObjectiveFlags)Entry.Flags & QuestObjectiveFlags.Optional) != 0;
         }
 
-        public bool HasUnknown0200()
+        public bool DisablesDynamicProgress()
         {
-            return ((QuestObjectiveFlags)Entry.Flags & QuestObjectiveFlags.Unknown0200) != 0;
+            return ((QuestObjectiveFlags)Entry.Flags & QuestObjectiveFlags.DisablesDynamicProgress) != 0;
         }
     }
 }

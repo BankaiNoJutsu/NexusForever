@@ -61,4 +61,26 @@ public class PublicEventObjectiveTests
 
         Assert.Equal(PublicEventStatus.Failed, objective.Status);
     }
+
+    [Fact]
+    public void UpdateObjective_UsesDynamicMaxCountWhenFlagSet()
+    {
+        (NexusForever.Game.PublicEvent.PublicEventTeam team, PublicEventObjectiveModel objective) = PublicEventTestSupport.CreateTeamWithObjective(new PublicEventObjectiveEntry
+        {
+            Id                              = 103,
+            Count                           = 1,
+            PublicEventTeamId               = PublicEventTeam.PublicTeam,
+            PublicEventObjectiveFlags       = PublicEventObjectiveFlag.UsesDynamicMaxCount,
+            PublicEventObjectiveCategoryEnum = PublicEventObjectiveCategory.Main
+        });
+
+        team.ActivateObjective(103u, 3u);
+        objective.UpdateObjective(2);
+
+        Assert.Equal(PublicEventStatus.Active, objective.Status);
+
+        objective.UpdateObjective(1);
+
+        Assert.Equal(PublicEventStatus.Succeeded, objective.Status);
+    }
 }

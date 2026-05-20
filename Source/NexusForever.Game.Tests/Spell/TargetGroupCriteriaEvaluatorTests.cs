@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
@@ -74,6 +75,18 @@ public class TargetGroupCriteriaEvaluatorTests
         proxy.SetProperty("TargetGroup", CreateGameTable(subEntries));
         return gtm;
     }
+
+    #region Enum names
+
+    [Fact]
+    public void TargetGroupType_EvaluatorMappedPlaceholders_ExposeStableNames()
+    {
+        Assert.Equal(7, (int)TargetGroupType.PlayerClassIdGroup);
+        Assert.Equal(9, (int)TargetGroupType.CreatureIdListGroup);
+        Assert.Equal(13, (int)TargetGroupType.NotCreatureRaceIdGroup);
+    }
+
+    #endregion
 
     #region Null entry
 

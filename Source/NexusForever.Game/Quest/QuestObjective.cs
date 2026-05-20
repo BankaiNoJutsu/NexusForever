@@ -166,11 +166,11 @@ namespace NexusForever.Game.Quest
             // dynamic objectives have their progress based on percentage rather than count
             return ObjectiveInfo.Type is QuestObjectiveType.KillCreature
                     or QuestObjectiveType.KillTargetGroups
-                    or QuestObjectiveType.Unknown15
+                    or QuestObjectiveType.KillNamedCreature
                     or QuestObjectiveType.KillTargetGroup
                     or QuestObjectiveType.KillCreature2
                 && ObjectiveInfo.Entry.Count > 1u
-                && !ObjectiveInfo.HasUnknown0200();
+                && !ObjectiveInfo.DisablesDynamicProgress();
         }
 
         private bool IsChecklist()

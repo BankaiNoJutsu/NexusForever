@@ -27,6 +27,6 @@ namespace NexusForever.Game.Abstract.Quest
         /// </summary>
         bool IsOptional();
 
-        bool HasUnknown0200();
+        bool DisablesDynamicProgress();
     }
 }

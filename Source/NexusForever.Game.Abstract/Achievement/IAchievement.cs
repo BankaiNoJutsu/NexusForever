@@ -7,8 +7,9 @@ namespace NexusForever.Game.Abstract.Achievement
     {
         IAchievementInfo Info { get; }
         ushort Id { get; }
-        uint Data0 { get; set; }
-        uint Data1 { get; set; }
+        uint ProgressCount { get; set; }
+        uint CompletedChecklistMask { get; set; }
+        uint CreditedChecklistMask { get; set; }
         DateTime? DateCompleted { get; set; }
 
         /// <summary>

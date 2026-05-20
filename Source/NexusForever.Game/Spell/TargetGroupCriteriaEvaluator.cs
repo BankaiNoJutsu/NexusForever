@@ -32,7 +32,9 @@ namespace NexusForever.Game.Spell
 
             switch (entry.Type)
             {
-                // Types 1 & 2: FactionGroupId — no clear server-side analog; pass without warning.
+                // Types 1 & 2: client-side FactionGroupId from the faction-state component.
+                // NexusForever only exposes Faction1/Faction2, and those are not a proven analog,
+                // so keep these rows pass-through until the relationship mapping is decoded.
                 case 1:
                 case 2:
                     return true;

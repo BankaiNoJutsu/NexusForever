@@ -26,7 +26,7 @@ public class AchievementProgressTests
                 Value = 3
             }))
         {
-            Data0 = 5
+            ProgressCount = 5
         };
 
         Assert.True(achievement.IsComplete());
@@ -43,7 +43,7 @@ public class AchievementProgressTests
                 Value = 0
             }))
         {
-            Data0 = 1
+            ProgressCount = 1
         };
 
         Assert.True(achievement.IsComplete());
@@ -79,7 +79,7 @@ public class AchievementProgressTests
                 new AchievementChecklistEntry { Bit = 1u, ObjectId = 101u },
                 new AchievementChecklistEntry { Bit = 2u, ObjectId = 102u }))
         {
-            Data0 = 2
+            ProgressCount = 2
         };
 
         Assert.True(achievement.IsComplete());
@@ -108,14 +108,14 @@ public class AchievementProgressTests
             manager.Check(info, 100u);
 
             Assert.False(manager.Get(info.Id).IsComplete());
-            Assert.Equal(1u, manager.Get(info.Id).Data0);
-            Assert.Equal(1u, manager.Get(info.Id).Data1);
+            Assert.Equal(1u, manager.Get(info.Id).ProgressCount);
+            Assert.Equal(1u, manager.Get(info.Id).CreditedChecklistMask);
 
             manager.Check(info, 101u);
 
             Assert.True(manager.Get(info.Id).IsComplete());
-            Assert.Equal(2u, manager.Get(info.Id).Data0);
-            Assert.Equal(3u, manager.Get(info.Id).Data1);
+            Assert.Equal(2u, manager.Get(info.Id).ProgressCount);
+            Assert.Equal(3u, manager.Get(info.Id).CreditedChecklistMask);
         }
         finally
         {

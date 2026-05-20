@@ -12,39 +12,42 @@ namespace NexusForever.Game.Achievement
         [Flags]
         protected enum SaveMask
         {
-            None          = 0x00,
-            Create        = 0x01,
-            Data0         = 0x02,
-            Data1         = 0x04,
-            TimeCompleted = 0x08
+            None                 = 0x00,
+            Create               = 0x01,
+            ProgressState        = 0x02,
+            CreditedChecklistMask = 0x04,
+            TimeCompleted        = 0x08
         }
 
         public IAchievementInfo Info { get; }
         public ushort Id => Info.Id;
 
-        public uint Data0
+        public uint ProgressCount
         {
-            get => data0;
+            get => progressState;
+            set => SetProgressState(value);
+        }
+
+        public uint CompletedChecklistMask
+        {
+            get => progressState;
+            set => SetProgressState(value);
+        }
+
+        // Data0 stores either scalar progress or the completed checklist bitmask depending on the achievement type.
+        private uint progressState;
+
+        public uint CreditedChecklistMask
+        {
+            get => creditedChecklistMask;
             set
             {
-                saveMask |= SaveMask.Data0;
-                data0 = value;
+                saveMask |= SaveMask.CreditedChecklistMask;
+                creditedChecklistMask = value;
             }
         }
 
-        private uint data0;
-
-        public uint Data1
-        {
-            get => data1;
-            set
-            {
-                saveMask |= SaveMask.Data1;
-                data1 = value;
-            }
-        }
-
-        private uint data1;
+        private uint creditedChecklistMask;
 
         public DateTime? DateCompleted
         {
@@ -70,8 +73,8 @@ namespace NexusForever.Game.Achievement
         {
             ownerId       = model.Id;
             Info          = info;
-            data0         = model.Data0;
-            data1         = model.Data1;
+            progressState = model.Data0;
+            creditedChecklistMask = model.Data1;
             DateCompleted = model.DateCompleted;
         }
 
@@ -97,8 +100,8 @@ namespace NexusForever.Game.Achievement
                 {
                     Id            = ownerId,
                     AchievementId = Id,
-                    Data0         = Data0,
-                    Data1         = Data1,
+                    Data0         = progressState,
+                    Data1         = creditedChecklistMask,
                     DateCompleted = DateCompleted
                 });
             }
@@ -111,14 +114,14 @@ namespace NexusForever.Game.Achievement
                 };
 
                 EntityEntry<T> entity = context.Attach(model);
-                if ((saveMask & SaveMask.Data0) != 0)
+                if ((saveMask & SaveMask.ProgressState) != 0)
                 {
-                    model.Data0 = Data0;
+                    model.Data0 = progressState;
                     entity.Property(p => p.Data0).IsModified = true;
                 }
-                if ((saveMask & SaveMask.Data1) != 0)
+                if ((saveMask & SaveMask.CreditedChecklistMask) != 0)
                 {
-                    model.Data1 = Data1;
+                    model.Data1 = creditedChecklistMask;
                     entity.Property(p => p.Data1).IsModified = true;
                 }
                 if ((saveMask & SaveMask.TimeCompleted) != 0)
@@ -139,8 +142,8 @@ namespace NexusForever.Game.Achievement
             return new()
             {
                 AchievementId = Id,
-                Data0         = Data0,
-                Data1         = Data1,
+                Data0         = progressState,
+                Data1         = creditedChecklistMask,
                 DateCompleted = (ulong)(DateCompleted?.ToFileTimeUtc() ?? 0L)
             };
         }
@@ -154,9 +157,15 @@ namespace NexusForever.Game.Achievement
                 return true;
 
             if (Info.ChecklistEntries.Count == 0 || AchievementProgressRules.UsesChecklistValueProgress(Info))
-                return Data0 >= AchievementProgressRules.GetRequiredProgress(Info.Entry.Value);
+                return ProgressCount >= AchievementProgressRules.GetRequiredProgress(Info.Entry.Value);
 
-            return Info.ChecklistEntries.All(entry => (Data0 & (1u << (int)entry.Bit)) != 0);
+            return Info.ChecklistEntries.All(entry => (CompletedChecklistMask & (1u << (int)entry.Bit)) != 0);
+        }
+
+        private void SetProgressState(uint value)
+        {
+            saveMask |= SaveMask.ProgressState;
+            progressState = value;
         }
     }
 }

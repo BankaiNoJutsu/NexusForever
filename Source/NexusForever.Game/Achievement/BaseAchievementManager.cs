@@ -103,13 +103,13 @@ namespace NexusForever.Game.Achievement
             IAchievement achievement = GetAchievement(id);
             if (info.ChecklistEntries.Count == 0 || AchievementProgressRules.UsesChecklistValueProgress(info))
             {
-                achievement.Data0 = AchievementProgressRules.GetRequiredProgress(info.Entry.Value);
+                achievement.ProgressCount = AchievementProgressRules.GetRequiredProgress(info.Entry.Value);
                 foreach (AchievementChecklistEntry entry in info.ChecklistEntries)
-                    achievement.Data1 |= 1u << (int)entry.Bit;
+                    achievement.CreditedChecklistMask |= 1u << (int)entry.Bit;
             }
             else
                 foreach (AchievementChecklistEntry entry in info.ChecklistEntries)
-                    achievement.Data0 |= 1u << (int)entry.Bit;
+                    achievement.CompletedChecklistMask |= 1u << (int)entry.Bit;
 
             Debug.Assert(achievement.IsComplete());
             CompleteAchievement(null, achievement);
@@ -176,7 +176,7 @@ namespace NexusForever.Game.Achievement
                         return false;
 
                     achievement = GetAchievement(info.Id);
-                    achievement.Data0 = AddProgress(achievement.Data0, count, AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
+                    achievement.ProgressCount = AddProgress(achievement.ProgressCount, count, AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
                     sendUpdate = true;
                 }
             }
@@ -193,16 +193,16 @@ namespace NexusForever.Game.Achievement
                         continue;
 
                     uint bit = 1u << (int)entry.Bit;
-                    if ((achievement.Data1 & bit) != 0u)
+                    if ((achievement.CreditedChecklistMask & bit) != 0u)
                         continue;
 
-                    achievement.Data1 |= bit;
+                    achievement.CreditedChecklistMask |= bit;
                     matchedNewChecklistEntry = true;
                 }
 
                 if (matchedNewChecklistEntry)
                 {
-                    achievement.Data0 = AddProgress(achievement.Data0, count, AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
+                    achievement.ProgressCount = AddProgress(achievement.ProgressCount, count, AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
                     sendUpdate = true;
                 }
             }
@@ -215,10 +215,10 @@ namespace NexusForever.Game.Achievement
                         continue;
 
                     uint bit = 1u << (int)entry.Bit;
-                    if ((achievement.Data0 & bit) != 0u)
+                    if ((achievement.CompletedChecklistMask & bit) != 0u)
                         continue;
 
-                    achievement.Data0 |= bit;
+                    achievement.CompletedChecklistMask |= bit;
                     sendUpdate = true;
                 }
             }
@@ -247,11 +247,11 @@ namespace NexusForever.Game.Achievement
                 return false;
 
             IAchievement achievement = GetAchievement(info.Id);
-            uint progress = Math.Min(Math.Max(achievement.Data0, value), AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
-            if (progress == achievement.Data0)
+            uint progress = Math.Min(Math.Max(achievement.ProgressCount, value), AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
+            if (progress == achievement.ProgressCount)
                 return false;
 
-            achievement.Data0 = progress;
+            achievement.ProgressCount = progress;
             if (achievement.IsComplete())
                 CompleteAchievement(target, achievement);
 
