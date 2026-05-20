@@ -1,4 +1,4 @@
-﻿# Client64 Initial Reverse-Engineering Findings
+# Client64 Initial Reverse-Engineering Findings
 
 Generated from the Ghidra headless project in `Decomp\Analysis\ghidra_projects`
 and exports in `Decomp\Analysis\exports`.
@@ -857,6 +857,159 @@ Innate spell accessor and unresolved self-spell-branch follow-up implemented fro
   `Spell4Effects.EmmComparison` / `EmmValue`, alongside effect timing so live
   casts can correlate base innate costs with per-tick drains without guessing
   what EMM means yet.
+
+Spell broadcast registration follow-up from this pass:
+
+- A full `InspectCodeAddress` decompile of the WildStar64 registration block
+  `FUN_14006c290` superseded the earlier partial caller-window inference for
+  this spell family.
+- The corrected client registration block wires `0x0814 -> 140096000`,
+  `0x0815 -> 140080d30`, `0x0816 -> 140095f30`, `0x0817 -> 140095fb0`,
+  `0x0818 -> 140095e60`, and the previously conflicted
+  `ServerSpellList_ReadPayload` reader actually sits at `0x0551 -> 140096060`.
+- `140096000` reads one 18-bit `Spell4Id` plus one trailing 1-bit flag, which
+  makes it the current best client parse match for the source-side
+  `ServerSpellTriggerFlag` payload shape, but at opcode `0x0814`, not `0x0815`.
+- `140080d30` is a shared non-function code stub that reads only one 18-bit
+  `Spell4Id` into a 4-byte object, so the client-side `0x0815` payload is now
+  structurally smaller than the current source `ServerSpellTriggerFlag` model.
+- The full registration-block decompile now shows that `140080d30` is the
+  existing shared `ServerUInt18_ReadPayload` stub, reused by non-spell server
+  opcodes `0x00B0`, `0x0129` (`ServerUnlockMount`), and `0x01AE`
+  (`ServerUnlockVanityPet`) in addition to `0x0815`. That is hard evidence that
+  `0x0815` is a generic one-field `18-bit Spell4Id` payload, not a spell-only
+  trigger-flag packet.
+- `140095f30` validates `0x0816` as three 18-bit `Spell4Id` values followed by
+  one 32-bit casting id, matching the current `ServerSpellHierarchy` model.
+- `140095fb0` validates `0x0817` as one 18-bit `Spell4Id` plus one trailing
+  byte, matching the current `ServerSpellEventByte` model.
+- `140095e60` shows that `0x0818` reads one 32-bit leading field and then one
+  `ServerSpellList_ReadTierEntry` structure at `+0x8`, so the current
+  `ServerSpellTargetInfo` placeholder is now structurally conflicted.
+- `TraceFunctionCallers` on `ServerSpellList_ReadTierEntry` (`140094aa0`) now
+  shows `ServerOpcode0818_ReadLeadingUInt32AndTierEntry` as a direct caller
+  alongside `ServerSpellList_ReadSpellEntry`, which ties `0x0818` into the
+  spell-list tier/state helper family rather than the current `TargetInfo`
+  helper assumption.
+- `ServerSpellList_ReadTierEntry` field order is now explicit: `Spell4Id @ +0`,
+  one byte at `+4`, one byte at `+5`, a 16-bit field at `+6`, a 4-bit field
+  stored at `+8`, a variant-count byte at `+0xc`, and a variant-array pointer at
+  `+0x10`.
+- `ServerSpellList_ReadVariantEntry` now has two selector-specific tails behind
+  its shared `19-bit effect id + three raw uint32 values + 2-bit selector`
+  prefix. Selector `0` reads one `uint32`, one byte, three `uint32` values,
+  and two trailing `uint32` values. Selector `1` reads one `uint16`, one
+  `uint32`, one byte, three `uint32` values, and two trailing `uint32`
+  values. The field semantics remain unresolved, but the current source-side
+  spell-list placeholder no longer needs to stop at the selector.
+- `AbilityBook_ApplySingleTierEntryDelta` (`1403b9410`) consumes exactly the
+  first 12 bytes of that tier-entry structure as a compact single-entry
+  spellbook delta record. It routes zero values in the 4-bit field stored at
+  `+8` through `SpellBook_MarkSpellUnlearned` (`1403baea0`), nonzero values
+  through `SpellBook_MarkSpellLearned` (`1403badb0`) when the spell is not
+  already learned, uses `SpellBook_SetCurrentTierRank` (`1403bb200`) when the
+  byte at `+4` is nonzero, retargets cached wrapper ids, and dispatches the
+  named client event `AbilityBookChange`.
+- The adjacent `0x017B` spell surface is now accounted for separately.
+  Current-client reader `14008ee90` matches the tracked `ServerSpellUpdate`
+  model exactly: `18-bit Spell4Id`, `4-bit tier`, `3-bit spec`, and one
+  trailing activation bit. That explains the compact spell activation or LAS
+  toggle update and removes `0x017B` as a candidate explanation for `0x0818`.
+- The same state family is now tied to visible `AbilityBook` Lua surfaces.
+  `Lua_AbilityBook_UpdateSpellTier` reads the cached pending tier-budget field
+  at `+0x6ddc`, falls back to committed budget `+0x6dd8`, walks tier costs,
+  and calls `SpellBook_SendTierUpdateRequest`. `Lua_AbilityBook_ClearCachedLASUpdates`
+  clears the pending spell-tier queue at `+0x1458` and resets `+0x6ddc`.
+- `SpellBook_SendTierUpdateRequest` confirms those fields are the spell-tier
+  affordability block, not generic UI counters: it initializes `+0x6ddc` from
+  committed budget `+0x6dd8`, applies the local cost delta, and caps the result
+  at maximum budget `+0x6de0` before sending the tier update request.
+- Direct decompile of `SpellBook_SendTierUpdateRequest` and
+  `ActionSet_SendPendingActionSetChanges` now shows the shared
+  `+0x1458/+0x1460` cache is client-local pending spell-update state keyed by
+  `Spell4Id`, not a server-issued token table. The tier helper inserts or
+  updates packed `Spell4Id + requested tier` state there, and the action-set
+  helper later walks the same tree to build opcode `0x00B1`
+  `ClientRequestActionSetChanges` spell entries. This weakens any theory that
+  the leading `0x0818` `uint32` is just an echo of a client-generated request
+  token.
+- `SpellBook_UpdateTierPointBudget` (`1403b95c0`) updates the same
+  `+0x6dd8/+0x6ddc/+0x6de0` block and dispatches `AbilityBookChange`, which
+  strengthens the conclusion that the best current `0x0818` fit is a visible
+  spellbook or ability-book delta rather than `TargetInfo`.
+- `FUN_1403b77d0` still has a spellbook-facing subtype-`4` bulk-row branch.
+  That path uses the row `Spell4Id @ +0x10` to call `1403ba550`, dispatches
+  `AbilityBookChange` unless the trailing state at `+0xa8` is `0x31`, and then
+  forwards the row `+0x18` index plus an optional resolved spell object through
+  `140608c60`.
+- `140608c60` first clears the indexed callback slot and then, when the
+  supplied spell id matches an entry in `DAT_140c65898 + 0xa90`, reapplies the
+  slot with a resolved object from `FUN_1405a4b80`. This makes the subtype-`4`
+  row look like a visible ability-book slot or spell-object refresh path rather
+  than `TargetInfo`.
+- `1406089a0`, the sink underneath that path, stores or clears raw object
+  pointers by the supplied `uint32` index inside an indexed pointer array and
+  maintains sorted side lists from the same key. Because `140608c60` is only
+  called from the subtype-`4` branch, the leading `0x0818` `uint32` now looks
+  more like a slot or index candidate than a casting id.
+- The richer `140569c90 -> 140569d30` constructor chain is now a ruled-out
+  false lead for `0x0818`. `TraceFunctionCallers` and direct decompile show the
+  same helpers are also used by guild-bank tab loaders `14057cdc0` and
+  `14057d190`, so that object materializer is reusable client infrastructure,
+  not packet-specific spell-tier evidence.
+- This is the strongest current-client post-parse consumer candidate for
+  `0x0818` found so far. It still does not prove a direct
+  `0x0818 -> AbilityBook_ApplySingleTierEntryDelta` call and the leading
+  32-bit field from `140095e60` remains unexplained, but it narrows `0x0818`
+  away from `TargetInfo` and toward a single-entry ability-book or spellbook
+  delta.
+- A second independent repo-side source now aligns with the client mapping for
+  `0x0814`, `0x0816`, and `0x0817`: the historical compare snapshot under
+  `.nexusforever-runtime/compare-kirmmin-latest` defines
+  `ServerSpellThresholdClear`, `ServerSpellThresholdStart`, and
+  `ServerSpellThresholdUpdate` with payload shapes that exactly match the
+  current client-proven readers, and the old `SpellThreshold.cs` runtime sent
+  those packets from threshold finish/start/update transitions.
+- That legacy threshold snapshot is specifically useful because the payload
+  shapes line up with current client evidence: `ServerSpellThresholdClear`
+  matches the current `0x0814` `Spell4Id + bool` reader, and
+  `ServerSpellThresholdStart` / `ServerSpellThresholdUpdate` exactly match the
+  current client-proven `0x0816` / `0x0817` readers.
+- Hard client-consumer evidence now backs those semantics too. The current
+  client `FUN_1403be940` wrapper forwards the parsed `0x0816` hierarchy
+  payload (`Spell4Id`, two more 18-bit ids, and casting id) into
+  `SpellThreshold_HandleStart` (`1403be620`), which allocates active threshold
+  state, resolves stage metadata through the spell-service threshold cache, and
+  dispatches the named client event `StartSpellThreshold`.
+- The current client `SpellThreshold_HandleUpdate` (`1403bea90`) consumes the
+  parsed `0x0817` `Spell4Id + byte` payload, stores that byte into the active
+  threshold entry, dispatches `UpdateSpellThreshold`, and can emit
+  `StartSpellThreshold` again when threshold presentation begins.
+- The sibling clear path `SpellThreshold_HandleClear -> SpellThreshold_ClearActiveState`
+  (`1403bed60 -> 1403bef30`) removes active threshold state for the same
+  `Spell4Id`, which is the first direct client-consumer evidence that `0x0814`
+  belongs to the same threshold lifecycle family even though the trailing flag
+  meaning is still unresolved.
+- Threshold state is confirmed to surface into user-facing client reads:
+  `SpellWrapper_GetIconPathString` consults the active threshold cache to pick
+  alternate icon assets, and `Lua_GameSpell_GetThresholdTime` sums per-stage
+  threshold durations from the same spell-service threshold map.
+- The same legacy snapshot does not strengthen `0x0818`: it keeps `0x0818` as
+  a generic `TargetInfo` placeholder model, but no `Server0818` send sites were
+  found there, so the historical source does not rescue the current
+  `ServerSpellTargetInfo` assumption.
+- Repo-side source evidence aligns with that correction: the current
+  `ServerSpell0815` model already carries only one `Spell4Id`, matching the
+  client stub exactly, and there are no live source send sites for
+  `ServerSpellTriggerFlag`, `ServerSpell0815`, or `ServerSpellTargetInfo`.
+- No runtime or packet-model change was made in this pass. The next safe step
+  is to capture sniff witnesses for `0x0814`, `0x0815`, and `0x0818` before
+  moving any live source model bindings.
+- Verification: per-target export-only helper passes using
+  `InspectCodeAddress.java` against `14006c290`, `140080d30`, `140095e60`,
+  `140095f30`, and `140095fb0`, plus `TraceFunctionCallers.java` against
+  `140094aa0`, confirmed the corrected registration, helper reuse, and body
+  shapes.
 - `/spell inspect` now also prints `Spell4Thresholds` rows keyed by the concrete
   `Spell4.Id`, including follow-up `spell4IdToCast`, duration, tooltip/icon,
   and threshold vital costs. Current evidence keeps these rows separate from
@@ -2604,6 +2757,123 @@ Fifty-third deferred interaction-queue follow-up implemented from this pass:
   and flips multiple timed target-state fields, but the current evidence is not
   yet enough to distinguish notification, UI, and state-machine semantics
   safely.
+- Direct inspect now also bounds the scene-tick wrapper above the remaining
+  `0x022B` caller path. `14053a210` snapshots or reconstructs the local actor
+  position, caches the sampled coordinates into the scene owner block at
+  `+0x6d10/+0x6d18`, applies distance thresholds from the current replay/action
+  config at `*(param_1 + 0x6ce8) + 0x70`, and only dispatches `140565d40` after
+  `14047d830` confirms the sampled position stays clear. The helper
+  `14047d830` itself performs two collision or clearance probes through the
+  scene-world interface at `DAT_140c65898 + 0x7248` and rejects obstructed or
+  too-near samples. That is strong enough to treat the `SceneLifecycle_UpdateAndReplayQueuedStates -> 14053a210 -> 140565d40`
+  chain as a scene replay proximity or visibility gate, but still not enough to
+  rename `ServerCinematic022B` or `140565d40` semantically.
+- Direct inspect of sibling helpers `1405654a0`, `140565600`, `140566020`, and
+  `1405660e0` further narrows that boundary without naming the packet.
+  `1405654a0` resolves a context entry from the tree at
+  `DAT_140c65b70 + 0x760`, falls back to `140565600` when no child list is
+  present, and otherwise aggregates per-entity contributions via
+  `Entity_ResolveById` before returning an integer score. `140565600` gathers
+  four slot-like values through `140566ad0/140566d40`, averages selected
+  categories, and runs a `GameTable 0x2c8`-driven scaling curve plus per-entity
+  coefficient lookup before returning a final score-like float. `140566020`
+  appends a non-null pointer into the global list at `DAT_140c65b70 +
+  0x800/+0x808`, while `1405660e0` removes one from that same list. Together
+  they reinforce that this neighborhood belongs to action/config scoring and
+  downstream collection rather than a cinematic-specific semantic boundary for
+  `0x022B`.
+- Direct inspect of the next outer siblings `140565410` and `140566240` keeps
+  that boundary conservative rather than naming the packet. `140565410` only
+  inserts a missing entry keyed by `*(param_2 + 0x10)` into the same tree at
+  `DAT_140c65b70 + 0x760`, while `140566240` is a generic callback walker over
+  bucketed linked lists. Both look like supporting container-management helpers
+  around the same action/config data structures, not cinematic-specific
+  semantics for `0x022B`.
+- Caller tracing and direct inspect of those two outer helpers push the
+  boundary farther outward without improving packet semantics. `140453d90`
+  initializes a vtable-backed object, assigns a monotonic id from
+  `DAT_140c1e664`, zeroes local links/fields, and immediately registers the
+  object through `140565410`, so that side is constructor-plus-tree
+  registration plumbing. `1403cbc80` calls `140566240` over
+  `DAT_140c65b70 + 0x7a0` with callback `14055c760`, then runs follow-up update
+  helpers `1403d40e0`, `1403d4180`, `1403d4210`, and `1403d4910`, so that side
+  belongs to a broader manager tick/update path. Together they reinforce that
+  the `140565410`/`140566240` band is shared manager infrastructure rather than
+  a stable cinematic-specific naming boundary for `0x022B`.
+- Direct inspect of callback `14055c760`, initializer `14053d1f0`, and creator
+  `140561780` pushes that outer band one level farther from packet semantics.
+  `14055c760` asks the current object for a key through a vtable method,
+  resolves a matching tree entry, and calls back into the object at
+  `*(*param_1 + 0x138)` with the matched node's `+0x80` field. `14053d1f0`
+  populates a `0x390`-byte runtime object with spell-derived timing/count
+  fields, resolves source and target entities, links itself into entity-side
+  lists, and schedules callback `140546e60`. Its only code caller found so far,
+  `140561780`, performs `SpellService_LookupSpellWrapperByWrapperId`,
+  `SpellService_LookupSpellWrapperById`, and `SpellService_ResolveSpellWrapper`
+  lookups, allocates the object through `14053c500`, then routes it into lists
+  at `DAT_140c65b70 + 0x7a0/+0x7c8`. That makes this outer neighborhood look
+  like spell-wrapper and runtime-object creation/update infrastructure rather
+  than a stable cinematic-specific naming boundary for `0x022B`.
+- Direct inspect of scheduled callback `140546e60` and caller tracing for
+  creator `140561780` reinforce that spell-runtime boundary. `140546e60`
+  iterates bucketed entries beneath `param_1[0x27]`, gates each candidate
+  through `140542d90`, computes delay windows and bitmask-based offsets, resolves
+  source/target entities, and allocates `0x140` follow-up work items through
+  `140549b90`; it looks like runtime action or spell scheduling, not packet
+  shaping. Caller tracing for `140561780` found named callers
+  `SpellCast_ResolveTargetsAndValidate` and
+  `ServiceToken_SendClientSpellCastWithServiceToken`, plus additional unnamed
+  callers `140458fe0` and `1405a51a0`, which further ties the outer band to
+  spell-cast resolution and service-token flows rather than cinematic setup for
+  `0x022B`.
+- A higher-level owner pass still folds back into the same conservative
+  boundary rather than exposing a packet semantic. The strongest recovered path
+  remains `SceneLifecycle_UpdateAndReplayQueuedStates -> 14053a210 ->
+  140565d40`: `14053a210` snapshots local actor position into `+0x6d10/+0x6d18`,
+  applies replay/action thresholds from `*(param_1 + 0x6ce8) + 0x70`, and only
+  dispatches `140565d40` after `14047d830` confirms clearance. Combined with the
+  spell-cast and service-token callers above `140561780`, that keeps `0x022B`
+  on a broader scene replay plus spell-runtime gate boundary rather than giving
+  a stable rename for the packet itself.
+- A deeper owner pass above that spell-runtime band still did not produce a
+  safe packet rename. `SpellCast_SendClientSpellCastState` and
+  `SpellCast_ValidateAndDispatch` stay on the spell-cast state and dispatch
+  side, while `140549b90` is only the `0x140`-byte follow-up work-item
+  allocator fed by scheduled callback `140546e60`. That work-item path belongs
+  to runtime action scheduling and does not match the small `uint32 + bool`
+  payload shape of `0x022B`, so the best current boundary remains the combined
+  scene replay plus spell-runtime gate rather than a cinematic-specific name.
+- A client-side consumer pass also failed to uncover a dedicated packet
+  handler. The shared reader `ServerUInt32AndFlag_ReadPayload` still only
+  establishes the `uint32 + bool` shape, while the current coverage inventory
+  reports no direct handler for `0x022B`. The strongest downstream path remains
+  contextual consumption inside `SceneLifecycle_UpdateAndReplayQueuedStates ->
+  14053a210 -> 140565d40`, and the nearby `0x022A/0x022B/0x022C/0x022D`
+  references in `140565d40` stay on the `GameFormula` side rather than exposing
+  packet semantics. That further supports treating `0x022B` as a small
+  scene-replay gate shell instead of a standalone cinematic command with a safe
+  specific name.
+- Fresh inspect of `140576f90` and `1405770f0`, together with the durable
+  labels on `SpellRouteEvent_EmitOrQueue` and `SpellRouteEvent_DispatchByKind`,
+  closes another false lead below the shared reader. `140576f90` allocates an
+  `EVNT`-tagged `0x180` node through `14071f9b0` for queued route-event kind
+  `7`, while `1405770f0` allocates an `EVNT`-tagged `0x188` node through
+  `14071fad0` for queued route-event kind `8`. Both are queue builders hanging
+  off the spell-wrapper route-listener or route-event system, not dedicated
+  `0x022B` consumers or client packet handlers.
+- A fresh inspect of nearby helper `1405698c0` rules out one more false lead.
+  That function clears a `0x28`-byte buffer, copies fields from
+  `Spell4CastResult`, `Spell4Base`, and `Spell4Visual`, and derives four flag
+  bits from the visual row. It belongs to spell metadata packing rather than to
+  the scene replay or cinematic gate family, so it does not tighten the
+  `0x022B` packet semantics further.
+- Direct inspect of sibling helper `140565aa0` narrows the same family without
+  naming the packet. The function scales two float inputs using fields at
+  `param_2 + 0x6dc/+0x6e4`, gates special target types `0x14/0x17`, and lazily
+  pulls threshold coefficients from `GameTable` ids `0x4f2` and `0x2c8` before
+  producing a clamped or eased distance-like result. That keeps it on the
+  formula-driven action-config side of the boundary rather than exposing a
+  cinematic-specific semantic for `0x022B`.
 - This narrows the remaining spell-side ambiguity to the broader caller families
   `1404d9450` and `14077e2c0`, or to a deeper dedicated pass on `1403dd1c0` if
   the post-callback feedback/state side must be named.
@@ -3344,8 +3614,9 @@ Seventy-second account inventory follow-up implemented from this pass:
   32-bit count followed by 0x28-byte account item records;
   `AccountInventoryItem_ReadPayload` (`1400a9c20`) reads a 64-bit inventory id,
   32-bit `AccountItem` id, 5-bit claim state, one flag bit, and target
-  identity; `ServerAccountItemCooldownSet_ReadPayload` (`14007a040`) reads
-  opcode `0x0974` as two 32-bit fields; and
+  identity; `ServerTwoUInt32_ReadPayload` (`14007a040`, formerly the narrower
+  `ServerAccountItemCooldownSet_ReadPayload`) reads opcode `0x0974` as two
+  32-bit fields; and
   `ServerAccountItemsPending_ReadPayload` (`140080510`) /
   `PendingAccountItemGroup_ReadPayload` (`1400a9b20`) map the pending group
   list enough to keep it blocked rather than guessed.
@@ -3416,6 +3687,65 @@ Seventy-third account inventory blocked-path follow-up implemented from this pas
   Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
   -m:1 -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-account-inventory-blocked/`
   succeeds with only the existing `Spline.formation` warning.
+
+Houston account inventory table-registration follow-up mapped from this pass:
+
+- `Houston64.exe` now has durable client DB registration labels for the static
+  data tables that back the implemented account inventory/runtime account
+  currency surface: `ClientDB_RegisterAccountCurrencyType` (`1400a75c0`),
+  `ClientDB_RegisterAccountItem` (`1400a7a00`), and
+  `ClientDB_RegisterAccountItemCooldownGroup` (`1400a7e40`).
+- The labels are anchored by the same repeated Houston table-loader pattern as
+  the existing `RealmDataCenter`, `WorldSocket`, and reward-rotation labels.
+  The refreshed export places the three functions at
+  `exports\Houston64.exe\selected_decompiled.c:7`,
+  `selected_decompiled.c:105`, and `selected_decompiled.c:203`, with matching
+  strings `AccountCurrencyType`, `AccountItem`, `AccountItemCooldownGroup`,
+  `DB\AccountCurrencyType.tbl`, `DB\AccountItem.tbl`, and
+  `DB\AccountItemCooldownGroup.tbl`.
+- No NexusForever runtime change was added here. The account inventory,
+  account currency, account-item grant, and persisted cooldown boundaries were
+  already implemented in earlier passes; this pass records Houston-side table
+  evidence and leaves duration/pending-group semantics blocked where the
+  account-item notes above already name the missing native evidence.
+- Verification: `run_ghidra_analysis.ps1 -ExportOnly -Targets Houston64.exe
+  -MaxDecompiledFunctions 2400` applied 11 Houston labels with no missing or
+  duplicate rows, and the new labels appear in `functions.csv`,
+  `selected_reasons_summary.csv`, and `selected_decompiled.c`.
+
+Houston achievement/action/archive table-registration follow-up mapped from
+this pass:
+
+- `Houston64.exe` now has durable labels for the next 13 client DB registration
+  functions in the same table-loader family:
+  `ClientDB_RegisterAchievement` (`1400a8280`),
+  `ClientDB_RegisterAchievementCategory` (`1400a86c0`),
+  `ClientDB_RegisterAchievementGroup` (`1400a8b00`),
+  `ClientDB_RegisterAchievementSubGroup` (`1400a8f40`),
+  `ClientDB_RegisterAchievementChecklist` (`1400a9380`),
+  `ClientDB_RegisterAchievementText` (`1400a97c0`),
+  `ClientDB_RegisterActionBarShortcutSet` (`1400a9c00`),
+  `ClientDB_RegisterActionSlotPrereq` (`1400aa040`),
+  `ClientDB_RegisterArchiveArticle` (`1400aa480`),
+  `ClientDB_RegisterArchiveCategory` (`1400aa8c0`),
+  `ClientDB_RegisterArchiveEntry` (`1400aad00`),
+  `ClientDB_RegisterArchiveEntryUnlockRule` (`1400ab140`), and
+  `ClientDB_RegisterArchiveLink` (`1400ab580`).
+- Each label is backed by the exact display table string passed through the
+  Houston registration path plus the matching `DB\*.tbl` descriptor. The
+  refreshed selected export places the batch at
+  `exports\Houston64.exe\selected_decompiled.c:301` through
+  `selected_decompiled.c:1477`, and the table names line up with existing
+  `Source\NexusForever.GameTable\Model` entry classes.
+- No NexusForever runtime change was added. These registrations corroborate
+  static-data ownership for systems that already have GameTable models and
+  prior WildStar achievement/GalacticArchive behavior notes; implementation
+  remains driven by the more specific runtime/packet/function evidence in
+  those focused sections rather than by table registration alone.
+- Verification: `run_ghidra_analysis.ps1 -ExportOnly -Targets Houston64.exe
+  -MaxDecompiledFunctions 2400` applied 24 Houston labels with no missing or
+  duplicate rows, and all 13 new labels appear in `functions.csv`,
+  `selected_reasons_summary.csv`, and `selected_decompiled.c`.
 
 Seventy-fourth quest-log/GalacticArchive follow-up mapped from this pass:
 
@@ -4678,9 +5008,10 @@ Ninety-ninth packed-send opcode enum extension pass:
 One-hundredth account item cooldown/result delta pass:
 
 - Client/account evidence:
-  `ServerAccountItemCooldownSet_ReadPayload` at `14007a040` reads opcode
-  `0x0974` as two 32-bit fields: account item cooldown group and cooldown
-  seconds. The client Lua enum registration also exposes
+  `ServerTwoUInt32_ReadPayload` at `14007a040` reads opcode `0x0974` as two
+  32-bit fields: account item cooldown group and cooldown seconds. The generic
+  helper was previously labelled `ServerAccountItemCooldownSet_ReadPayload`,
+  and the client Lua enum registration also exposes
   `CodeEnumAccountOperation` and `CodeEnumAccountOperationResult`, and the old
   `kirmmin/latest` branch used opcode `0x0970` as `ServerAccountOperationResult`
   with 32-bit operation and result fields.
@@ -6477,13 +6808,14 @@ if (wrapper+0x18 == 3) {
 `
 
 ### Key Semantics
-- **Entity resolution is for telegraph anchoring / UI, not final damage target.**  
+- **Entity resolution is for telegraph anchoring / UI, not final damage target.**
   Type 7 (auto-attack) returns the caster entity here; server-side damage still targets Owner.TargetGuid.
 - **TargetType 6 (ItemActivation) is confirmed self-targeting**: client groups it with 0/2/7.
 - **TargetTypes 5 and 8 are confirmed single-target category** (use current target if none explicit).
 
 ### Auto-Target Fallback (bitmask 0x12a)
-When xplicit_id == 0 AND esolved_id == 0 AND TargetType is in bitmask  x12a:
+When xplicit_id == 0 AND
+esolved_id == 0 AND TargetType is in bitmask  x12a:
 -  x12a = 100101010b → bits 1, 3, 5, 8 → TargetTypes 1, 3, 5, 8 get auto-target fallback.
 - Searches nearby valid entities within ~5 yards (config entry 0x145 → lVar4+0x18, default 5.0f).
 - If found and within range: calls TargetSelection_ApplySelectionAndDispatch(player, entity_id) to select that entity.
@@ -6528,7 +6860,7 @@ SpellService_LookupSpellWrapperById is a chained hash map lookup at spell_servic
 - +0x18 = hash function (code pointer)
 - +0x20 = key equality function (code pointer)
 - Bucket chain nodes: [hash64, 64bit-next, key_uint, value_spell_wrapper_ptr]
-- Returns 
+- Returns
 ode + 0x18 (4th 8-byte element) = spell wrapper pointer, or 0 if not found
 
 SpellService_ResolveSpellWrapper wraps this:
@@ -6540,15 +6872,16 @@ SpellService_ResolveSpellWrapper wraps this:
 For **TargetType 7** spells, a per-spell override binary tree at service_obj + 0x788:
 - Balanced BST (std::map style / red-black tree variant)
 - 	ree_root = *(service_obj + 0x788) — sentinel/root node
-- oot + 0x08 = first real node (tree start)
+-
+oot + 0x08 = first real node (tree start)
 - Tree node structure:
-  - 
+  -
 ode + 0x10 = right child pointer
-  - 
+  -
 ode + 0x18 = left child pointer
-  - 
+  -
 ode + 0x20 = key: spell4 ID (uint)
-  - 
+  -
 ode + 0x28 = pointer to service spell array
 - Traversal: classic BST lower_bound on spell4 ID
 - Service spell array: rray[0] = first service entry, rray[0] + 4 = spell4 ID of service spell
@@ -7748,7 +8081,7 @@ Three standard ClientDB query thunks share the same hot-swap override pattern:
 | `Spell4StackGroup_GetById` | `14023b200` | `*DB + 0x18` (vtable[3]) | Looks up one row by uint32 ID |
 | `Spell4StackGroup_GetByIndex` | `14023b260` | `*DB + 0x20` (vtable[4]) | Looks up one row by sequential index |
 
-Hot-swap override globals (DAT_140c63838 / 140c63840 / 140c63848):  
+Hot-swap override globals (DAT_140c63838 / 140c63840 / 140c63848):
 Each thunk checks an override function pointer first — if non-null, the override is
 called instead of the DB vtable. This is the standard WildStar ClientDB mock/hot-patch
 hook used in testing. Under normal gameplay the overrides are null.
@@ -9283,4 +9616,212 @@ architecture section above.
 by treating everything after the name as the comment field, and it reports
 duplicate rows for the current program/address during label application. No
 runtime NexusForever behavior changed in this pass.
+
+PublicEvent binding-helper follow-up mapped from this pass:
+
+- Three remaining selected `Game.PublicEvent` helper functions now have durable
+  labels. `Lua_RegisterPublicEventBindings` (`140687d40`) creates the
+  `Game.PublicEvent` metatable, installs the method table rooted at
+  `PTR_DAT_140c5ca00`, and registers `PublicEventParticipantRemoveReason_*`,
+  `PublicEventRewardTier_*`, `PublicEventRewardType_*`,
+  `PublicEventType_*`, and `PublicEventStatType` constants around
+  `exports\WildStar64.exe\selected_decompiled.c:88865`.
+- `Lua_PushPublicEventObject` (`140432c80`) wraps a live public-event pointer
+  as a `Game.PublicEvent` Lua userdata and pushes nil when the supplied pointer
+  is null. Existing callers include `Lua_PushPublicEventObjectByParentId`
+  (`140688bf0`) and mapped PublicEventObjective parent/event paths.
+- `PublicEventObjective_ResolveLiveObjectiveFromLua` (`14068d500`) resolves the
+  first Lua argument as `Game.PublicEventObjective`, reads the objective id from
+  the wrapper, and calls `PublicEventService.GetObjectiveById` through
+  vtable slot `+0x30` with selector `0`.
+- No NexusForever runtime change was added. These helpers strengthen the
+  public-event Lua binding map, but they do not add new server-side mutation
+  semantics for objective progress, visibility, scoreboard, rewards, or live
+  event state.
+
+PublicEvent userdata-helper follow-up mapped from this pass:
+
+- Six adjacent selected `Game.PublicEvent`/`Game.PublicEventObjective` helpers
+  now have durable labels. `Lua_PublicEvent_UnwrapLiveEventPointer`
+  (`1404203c0`) and
+  `Lua_PublicEventObjective_UnwrapLiveObjectivePointer` (`140420440`) resolve a
+  typed Lua userdata argument and write the stored inner live-object pointer to
+  native output storage.
+- `Lua_PublicEvent_CheckedUnwrapLiveEventPointer` (`140527a10`) and
+  `Lua_PublicEventObjective_CheckedUnwrapLiveObjectivePointer` (`140527b60`)
+  validate a Lua value against the corresponding metatable before returning the
+  stored live pointer. The two functions share the same stack/metatable
+  comparison shape and differ only by `Game.PublicEvent` versus
+  `Game.PublicEventObjective`.
+- `Lua_PublicEvent_IsPublicEventUserdata` (`140687900`) and
+  `Lua_PublicEventObjective_IsPublicEventObjectiveUserdata` (`140687b80`) push
+  boolean results after comparing the first Lua value's metatable with the
+  registered public-event metatable.
+- No NexusForever runtime change was added. This pass only makes the Lua
+  userdata conversion and type-checking bridge reproducible; it still does not
+  prove server-side event or objective state mutation semantics.
+
+WildStar PublicEventUnitPropertyModifier table-registration follow-up mapped
+from this pass:
+
+- `ClientDB_RegisterPublicEventUnitPropertyModifier` (`WildStar64.exe`
+  `140229720`) now has a durable label. The function is selected by the
+  `PublicEventUnitPropertyModifier` descriptor at `140a9c500` and the
+  `DB\PublicEventUnitPropertyModifier.tbl` path at `140a9c5d0`, matching the
+  already-mapped Houston64 table registration at `1400e8700`.
+- NexusForever already models this client table as
+  `Source/NexusForever.GameTable/Model/PublicEventUnitPropertyModifierEntry.cs`
+  with `Id`, `PublicEventId`, `UnitProperty2Id`, and `Scalar` fields, so this
+  pass records table ownership only.
+- No NexusForever runtime change was added. This is mapped static table
+  registration evidence, not verified public-event objective mutation or unit
+  property application behavior.
+
+Server opcode reader cluster follow-up mapped from this pass:
+
+- `FUN_14006c290` registers the server-reader cluster around the spell/entity
+  opcodes. The inspected registration block wires `0x0816` to `140095f30`,
+  `0x0817` to `140095fb0`, `0x0818` to `140095e60`, `0x091B` to `140096120`,
+  `0x0262` to `140096fa0`, and `0x093A` to `140097710`.
+- The inspected bodies corroborate the existing NexusForever model names:
+  `ServerSpellHierarchy_ReadPayload` reads three 18-bit Spell4 ids plus a
+  32-bit casting id, `ServerSpellEventByte_ReadPayload` reads one 18-bit
+  Spell4 id plus one byte, and `ServerSpellTargetInfo_ReadPayload` reads a
+  casting id followed by the shared target-info payload helper.
+- `ServerEntityCreate_ReadPayload` is the large `0x0262` reader with a
+  0x120-byte registered object size. The inspected body reads an entity-type
+  branch selector and nested arrays for cooldown/property/spell/movement-style
+  payload sections, matching the guarded `ServerEntityCreate` model shape where
+  spell initialisation data remains blocked unless mapped.
+- `ServerCooldownList_ReadPayload` and
+  `ServerEntityPropertiesUpdate_ReadPayload` are labelled from the same
+  registration evidence plus caller traces over repeated cooldown/property
+  records. No NexusForever runtime changes were added because these labels only
+  make the native reader map reproducible.
+
+Shared 32-bit-plus-flag server reader follow-up mapped from this pass:
+
+- `ServerUInt32AndFlag_ReadPayload` (`14007c340`) now has a durable label. The
+  inspected body null-checks its payload pointer, reads one 32-bit field at
+  offset `+0`, then reads one trailing bit at offset `+4`.
+- The `FUN_14006c290` registration block wires this same 8-byte reader to
+  multiple server opcodes, including `0x0219` (`ServerCinematicPlayerControl`),
+  `0x022B` (`ServerCinematic022B`), `0x0355` (`ServerEntityDestroy`),
+  `0x0357` (`ServerDialogStart`), `0x06F5`
+  (`ServerPublicEventBombDropped`), `0x0700`
+  (`ServerPublicEventTriggerUiUpdates`), `0x0755` (`ServerUnitInUse`), and
+  `0x089A` (`ServerUnitEnteredCombat`), plus several currently unnamed enum
+  slots.
+- No NexusForever runtime change was added. The shared wire shape is mapped,
+  but the meaning of the trailing flag remains opcode-specific and should stay
+  diagnostic until each consumer has direct context or sniff evidence.
+
+Shared 18-bit server reader follow-up mapped from this pass:
+
+- `ServerUInt18_ReadPayload` (`140080d30`) replaces the narrower
+  `ServerOpcode0815_ReadSpell4Id` label. `InspectCodeAddress.java` shows this
+  code stub null-checks the payload pointer, then jumps to the shared bit
+  reader for exactly 18 bits with no trailing flag.
+- The registration block wires the stub to more than `0x0815`: current
+  witnesses include `0x0129` (`ServerUnlockMount`), `0x01AE`
+  (`ServerUnlockVanityPet`), `0x0815`, and an unnamed `0x00B0` slot. This makes
+  the field width mapped, but the field meaning remains opcode-specific.
+- No NexusForever runtime change was added. The existing source name/comment for
+  `0x0815` remains blocked by the broader spell-broadcast reconciliation notes
+  until packet witnesses can prove the opcode semantics.
+
+Shared two-uint server reader follow-up mapped from this pass:
+
+- `ServerTwoUInt32_ReadPayload` (`14007a040`) replaces the narrower
+  `ServerAccountItemCooldownSet_ReadPayload` label. The selected decompile
+  shows a null check followed by two 32-bit reads at offsets `+0` and `+4`.
+- The `FUN_14006c290` registration block reuses this 8-byte reader for many
+  server opcodes, including `0x021A`, `0x0223` through `0x0225`, `0x0813`,
+  `0x0819`, `0x08C7` (`ServerVehiclePassengerRemove`), `0x0970`, `0x0973`,
+  and `0x0974`. The old account-item cooldown interpretation remains one
+  opcode-specific consumer, not the generic helper name.
+- No NexusForever runtime change was added. The field names remain
+  opcode-specific; this pass only records the shared wire reader.
+
+PublicEventsLib registration follow-up mapped from this pass:
+
+- `Lua_RegisterPublicEventsLib` (`1407625f0`) now has a durable label. The
+  selected decompile shows the function registering the `PublicEventsLib` Lua
+  library through the shared Lua registration helper.
+- A focused `DumpNearbyData.java` pass over `140b76100` shows the table starts
+  with string pointer `140b4d988` (`GetActivePublicEventList`) followed by
+  function pointer `140762360`, then a null terminator before the next
+  contract-library callback table.
+- The selected body for `Lua_PublicEventsLib_GetActivePublicEventList`
+  (`140762360`) builds a Lua table by walking active public-event ids, resolving
+  each matching live `PublicEvent` object, checking the corresponding
+  `LiveEvent` table row, skipping rows with flag bit `0x08`, and pushing
+  `Game.PublicEvent` userdata.
+- No NexusForever runtime change was added. This maps the client Lua library
+  surface only; active public-event state production remains governed by the
+  existing public-event runtime and packet-model evidence.
+
+Spell broadcast runtime listener follow-up mapped from this pass:
+
+- `Entity_ExecuteSpellEffectHighRange` now gives the exact post-decode edges for
+  the follow-up cluster: `0x0814 -> 1403ef384 -> 1403bee40`,
+  `0x0815 -> 1403ef372 -> SpellThreshold_HandleClear`,
+  `0x0816 -> 1403ef34e -> SpellThreshold_HandleStartWrapper`,
+  `0x0817 -> 1403ef360 -> SpellThreshold_HandleUpdate`,
+  `0x0818 -> 1403ee403`, and `0x0819 -> 1403ee3af`.
+- `0x0818` now has a direct wrapper-runtime path. Case `1403ee403` resolves the
+  leading `uint32` as a spell-wrapper id through
+  `SpellService_LookupSpellWrapperByWrapperId`, then forwards the nested
+  tier-entry payload into `SpellWrapper_ApplyEntityVariantTierEntryAndBroadcast`.
+  The nested tier-entry `dword @ +0x8` is the wrapper-local entity id used to
+  create or update nodes under `spellWrapper + 0x48`, and the selector-specific
+  variant tails feed `SpellWrapperNode_ApplyVariantEntry` instead of a generic
+  spellbook or target-info consumer.
+- `0x0819` is the paired wrapper-node cleanup path. Case `1403ee3af` resolves
+  payload `[1]` as a spell-wrapper id, matches payload `[0]` against the node
+  entity id under `spellWrapper + 0x48`, and then calls
+  `SpellWrapperNode_PruneChildrenAndRefresh`.
+- Runtime listener registration now maps to `DAT_140c65b70 + 0x650` with key
+  `[type8Flag, routeKey, listenerCategory, listenerSubtype, slotOrBitIndex]`
+  and route-descriptor payload pointer at node `+0x38`. The descriptor is
+  consumed by `SpellRouteEvent_EmitOrQueue` (`140578460`), which either
+  serializes a descriptor-kind-specific route event immediately or queues it on
+  the entity when the entity is not ready. `SpellRouteEvent_DispatchByKind`
+  (`140543630`) is now the safest label for the per-kind switch on
+  `descriptor + 0x20`, while the shared initializers
+  `SpellRouteEvent_InitCommonPayload` (`14054e9f0`),
+  `SpellRouteEvent_InitEntityPayload` (`14054eb60`) and
+  `SpellRouteEvent_InitExtendedVectorPayload` (`14054ee30`) confirm that the
+  descriptor fields drive concrete outbound route-event payload shapes rather
+  than acting as packet objects themselves. Full case coverage is now recovered
+  for `0..0xc`: kinds `7`, `8`, `9`, and `0xc` all build payloads and then
+  either attach `0x40`-byte deferred nodes to the target entity or hand them to
+  the dedicated sink helpers at `140576f90`, `1405770f0`, `140577250`, and
+  `140577510`, kind `0xa` is the direct `Spell4ClientMissile` path through
+  `SpellService_LookupSpell4ClientMissileRecord` (`140237680`) and
+  `SpellRouteEvent_HandleClientMissileRecord` (`1405458e0`), and case `0xb`
+  is an explicit no-op in the current body.
+- The wrapper route key at `spellWrapper + 0x348` is now sourced from the
+  spell-service tuning tree at `DAT_140c65b70 + 0x598`, not from the listener
+  registry. `SpellService_LookupSpellInnerTuningRecord` (`1407a1680`) matches a
+  primary spell id plus one of four inner ids, and the same returned record also
+  overrides minimum range, maximum range, and cast time. Wrapper setup
+  `14053d1f0` copies record field `+0x28` into `spellWrapper + 0x348`, falling
+  back to `innerData + 0x1c` when no override route key is present. This keeps
+  the current business meaning of `+0x348` at the safer boundary: it is a
+  per-spell route channel used to query runtime listeners, not a raw spell id.
+- `spellWrapper + 0x358` is now reinforced as a wrapper-local expansion tree,
+  not the global listener registry. The route-broadcast siblings use it only
+  when descriptor flag `0x200` is set, at which point each local expansion node
+  contributes an alternate route key from node `+0x24` plus a trailing selector
+  from node `+0x3c` into `SpellRouteEvent_EmitOrQueue`.
+- Descriptor field `+0x84` is now best described as the deferred-queue value
+  for route listeners: non-zero entries are the subset materialized into the
+  auxiliary queued tree at `DAT_140c65b70 + 0x658` rather than the immediate
+  listener walk at `DAT_140c65b70 + 0x650`, and
+  `SpellWrapper_BroadcastRouteListeners` (`140540430`) now shows that queued
+  matches compute a wrapper progress scalar through
+  `SpellWrapper_ComputeRouteProgressScalarByBitIndex` (`140540b30`) before
+  storing the non-negative delta against `+0x84` into wrapper-local queued work
+  records at `spellWrapper + 0x1b8/+0x1c0`.
 
