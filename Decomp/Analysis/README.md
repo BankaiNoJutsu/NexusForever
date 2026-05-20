@@ -60,6 +60,12 @@ or invalidated entries.
 Single-target runs now default to isolated per-target Ghidra projects, which
 removes project-lock contention between targeted runs against different
 binaries. Multi-target and full-pass runs keep the shared project by default.
+The runner also holds a small per-project gate under `ghidra_projects` before
+opening Ghidra, so concurrent sessions wait instead of surfacing Ghidra's
+`Unable to lock project` failure. If an interactive Ghidra session or older
+runner already owns the project, the updated runner retries until the project is
+free; use `-ProjectLockTimeoutMinutes <minutes>` when automation should stop
+waiting after a bounded period.
 For multi-binary export refreshes, prefer `Start-DecompileBatch.ps1`; it starts
 one isolated runner per target, writes per-run summaries under `logs\runs`, and
 refreshes coverage once after all workers complete.
@@ -216,6 +222,10 @@ The Ghidra project is kept under `Decomp\Analysis\ghidra_projects` so the same
 analysis can be opened interactively in Ghidra later. Single-target Auto runs
 create per-target projects such as `NexusForeverClient64_WildStar64`, while
 shared runs keep using `NexusForeverClient64`.
+Project gate files are kept under
+`Decomp\Analysis\ghidra_projects\.project_locks`; they are local ignored files
+and are safe to leave behind because the live file handle, not the file content,
+is the lock.
 
 Logs are written under `Decomp\Analysis\logs`.
 Batch runs write per-target summaries and job output logs under
@@ -224,6 +234,8 @@ Batch runs write per-target summaries and job output logs under
 unless `-NoLatestSummary` is supplied. Individual `run_ghidra_analysis.ps1`
 workers can also use `-RunId`, `-SummaryPath`, and `-SkipCoverage` directly when
 automation needs collision-free output.
+When omitted, batch run ids include milliseconds and the PowerShell process id
+so two sessions started in the same second do not collide in `logs\runs`.
 
 `logs\LATEST_RUN_SUMMARY.json` now includes a per-target manifest summary with
 selected-function counts and cache reuse/decompile counts, so targeted passes

@@ -155,6 +155,14 @@ project. If you only have the legacy shared project on disk, export-only Auto
 mode falls back to it until the per-target project is seeded by a non-export
 run.
 
+Updated runners take a per-project gate before opening Ghidra. Concurrent
+sessions using the scripts wait on that gate, and if an interactive Ghidra
+session or older runner already has the project open, the script retries the
+headless open instead of failing on the first `Unable to lock project` message.
+Use `-ProjectLockTimeoutMinutes <minutes>` when a scheduled job should stop
+waiting after a bounded period; the default is to wait until the project becomes
+available.
+
 For multi-binary refreshes, use the batch wrapper instead of one shared
 multi-target run:
 
@@ -714,7 +722,8 @@ Before finalizing implementation:
   high-value patterns or labels instead.
 - Running parallel workers against the shared Ghidra project or shared latest
   summary. Use `Start-DecompileBatch.ps1` or give each worker its own `-RunId`
-  and `-SummaryPath`.
+  and `-SummaryPath`. The runner now waits on per-project Ghidra gates, but
+  per-run summaries are still cleaner for parallel automation.
 - Mutating spell state from unknown `DataBits` because the value "looks like"
   an id. Prove the id space and behavior first.
 - Implementing crypto, anti-tamper, or token behavior from partial structure.

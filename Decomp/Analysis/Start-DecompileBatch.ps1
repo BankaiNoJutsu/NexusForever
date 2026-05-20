@@ -11,6 +11,10 @@ param(
     [string] $DecompileMode = 'Auto',
     [ValidateSet('Auto', 'Shared', 'PerTarget')]
     [string] $ProjectLayout = 'PerTarget',
+    [ValidateRange(1, 3600)]
+    [int] $ProjectLockRetryDelaySeconds = 15,
+    [ValidateRange(0, 10080)]
+    [int] $ProjectLockTimeoutMinutes = 0,
     [ValidateRange(1, 32)]
     [int] $MaxParallel = 3,
     [string] $RunId = '',
@@ -91,7 +95,7 @@ if ($Targets.Count -eq 0) {
 }
 
 if ([string]::IsNullOrWhiteSpace($RunId)) {
-    $RunId = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $RunId = '{0}-{1}' -f (Get-Date -Format 'yyyyMMdd-HHmmss-fff'), $PID
 }
 
 $runToken = ConvertTo-PathToken -Value $RunId
@@ -127,6 +131,8 @@ function Start-DecompileTargetJob {
         MaxDecompiledFunctions  = $MaxDecompiledFunctions
         DecompileMode           = $DecompileMode
         ProjectLayout           = $ProjectLayout
+        ProjectLockRetryDelaySeconds = $ProjectLockRetryDelaySeconds
+        ProjectLockTimeoutMinutes    = $ProjectLockTimeoutMinutes
         RunId                   = $RunId
         SummaryPath             = $summaryPath
         SkipCoverage            = $true
@@ -216,6 +222,8 @@ $batchSummary = [ordered]@{
     summaryPath = $batchSummaryPath
     decompileMode = $DecompileMode
     projectLayout = $ProjectLayout
+    projectLockRetryDelaySeconds = $ProjectLockRetryDelaySeconds
+    projectLockTimeoutMinutes = $ProjectLockTimeoutMinutes
     exportOnly = -not [bool]$Analyze
     skipCoverage = [bool]$SkipCoverage
     noApplyLabels = [bool]$NoApplyLabels

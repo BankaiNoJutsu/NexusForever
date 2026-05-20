@@ -10,5 +10,6 @@ INSERT INTO `character_stats`(id,stat,value) SELECT `id`, 20, 450 FROM `characte
 INSERT INTO `character_stats`(id,stat,value) SELECT `id`, 10, `level`   FROM `character`;
 INSERT INTO `character_stats`(id,stat,value) SELECT `id`, 12, 3   FROM `character`;
 
-## FIXME ## @Rawaho the field should eventually be dropped
-##ALTER TABLE `character` DROP COLUMN `level`;
+## Legacy note: this archival update copied `character`.`level` into `character_stats`.
+## Active schema ownership later moved to EF Core migrations, so this obsolete
+## script intentionally leaves the historical `level` column untouched.

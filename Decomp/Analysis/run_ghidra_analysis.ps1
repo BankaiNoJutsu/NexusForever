@@ -11,6 +11,10 @@ param(
     [string] $DecompileMode = 'Auto',
     [ValidateSet('Auto', 'Shared', 'PerTarget')]
     [string] $ProjectLayout = 'Auto',
+    [ValidateRange(1, 3600)]
+    [int] $ProjectLockRetryDelaySeconds = 15,
+    [ValidateRange(0, 10080)]
+    [int] $ProjectLockTimeoutMinutes = 0,
     [string] $RunId = '',
     [string] $SummaryPath = '',
     [switch] $SkipCoverage,
@@ -222,6 +226,152 @@ function Get-GhidraProjectName {
     return ('{0}_{1}' -f $BaseProjectName, $targetToken)
 }
 
+function Test-ProjectLockWaitExpired {
+    param(
+        [datetime] $StartedUtc,
+        [int] $TimeoutMinutes
+    )
+
+    if ($TimeoutMinutes -le 0) {
+        return $false
+    }
+
+    return [datetime]::UtcNow -ge $StartedUtc.AddMinutes($TimeoutMinutes)
+}
+
+function Enter-GhidraProjectGate {
+    param(
+        [string] $Directory,
+        [string] $ProjectName,
+        [int] $RetryDelaySeconds,
+        [int] $TimeoutMinutes
+    )
+
+    $lockDir = Join-Path $Directory '.project_locks'
+    New-Item -ItemType Directory -Force -Path $lockDir | Out-Null
+    $lockPath = Join-Path $lockDir ('{0}.lock' -f (ConvertTo-ProjectToken -Value $ProjectName))
+    $startedUtc = [datetime]::UtcNow
+    $waited = $false
+
+    while ($true) {
+        try {
+            $stream = [System.IO.File]::Open($lockPath, [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+            $stream.SetLength(0)
+
+            $content = @(
+                'owner=run_ghidra_analysis.ps1'
+                ('project={0}' -f $ProjectName)
+                ('pid={0}' -f $PID)
+                ('acquiredUtc={0:o}' -f [datetime]::UtcNow)
+            ) -join [Environment]::NewLine
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes($content)
+            $stream.Write($bytes, 0, $bytes.Length)
+            $stream.Flush($true)
+
+            if ($waited) {
+                Write-Host ("Acquired Ghidra project gate for {0}" -f $ProjectName)
+            }
+
+            return [pscustomobject]@{
+                projectName = $ProjectName
+                lockPath    = $lockPath
+                stream      = $stream
+                waited      = $waited
+            }
+        }
+        catch [System.IO.IOException] {
+            if (Test-ProjectLockWaitExpired -StartedUtc $startedUtc -TimeoutMinutes $TimeoutMinutes) {
+                throw ("Timed out waiting for Ghidra project gate {0}. Lock file: {1}" -f $ProjectName, $lockPath)
+            }
+
+            if (-not $waited) {
+                Write-Host ("Waiting for another decompile session to release Ghidra project {0}. Lock file: {1}" -f $ProjectName, $lockPath)
+                $waited = $true
+            }
+            Start-Sleep -Seconds $RetryDelaySeconds
+        }
+        catch [System.UnauthorizedAccessException] {
+            if (Test-ProjectLockWaitExpired -StartedUtc $startedUtc -TimeoutMinutes $TimeoutMinutes) {
+                throw ("Timed out waiting for Ghidra project gate {0}. Lock file: {1}" -f $ProjectName, $lockPath)
+            }
+
+            if (-not $waited) {
+                Write-Host ("Waiting for another decompile session to release Ghidra project {0}. Lock file: {1}" -f $ProjectName, $lockPath)
+                $waited = $true
+            }
+            Start-Sleep -Seconds $RetryDelaySeconds
+        }
+    }
+}
+
+function Exit-GhidraProjectGate {
+    param(
+        [object] $Gate
+    )
+
+    if ($null -eq $Gate -or $null -eq $Gate.stream) {
+        return
+    }
+
+    $Gate.stream.Dispose()
+}
+
+function Invoke-GhidraHeadlessWithProjectRetry {
+    param(
+        [string] $AnalyzeHeadless,
+        [object[]] $Arguments,
+        [string] $LogPath,
+        [string] $ProjectName,
+        [int] $RetryDelaySeconds,
+        [int] $TimeoutMinutes
+    )
+
+    if (Test-Path -LiteralPath $LogPath -PathType Leaf) {
+        Remove-Item -LiteralPath $LogPath -Force
+    }
+
+    $startedUtc = [datetime]::UtcNow
+    $attempt = 0
+
+    while ($true) {
+        $attempt++
+        if ($attempt -gt 1) {
+            Add-Content -LiteralPath $LogPath -Encoding utf8 -Value ("`n--- Retry {0} after Ghidra project lock at {1:o} ---" -f $attempt, [datetime]::UtcNow)
+        }
+
+        $lockSignals = New-Object 'System.Collections.Generic.List[string]'
+        & $AnalyzeHeadless @Arguments 2>&1 | ForEach-Object {
+            $line = [string] $_
+            if ($line.Contains('Unable to lock project!')) {
+                $lockSignals.Add($line)
+            }
+
+            $_
+        } | Tee-Object -FilePath $LogPath -Append
+
+        $exitCode = $LASTEXITCODE
+        $projectLockFailure = $lockSignals.Count -gt 0
+        if (-not $projectLockFailure) {
+            return [pscustomobject]@{
+                exitCode           = $exitCode
+                projectLockFailure = $false
+                attempts           = $attempt
+            }
+        }
+
+        if (Test-ProjectLockWaitExpired -StartedUtc $startedUtc -TimeoutMinutes $TimeoutMinutes) {
+            return [pscustomobject]@{
+                exitCode           = $exitCode
+                projectLockFailure = $true
+                attempts           = $attempt
+            }
+        }
+
+        Write-Warning ("Ghidra project {0} is locked by another process; retrying in {1} seconds. See {2}." -f $ProjectName, $RetryDelaySeconds, $LogPath)
+        Start-Sleep -Seconds $RetryDelaySeconds
+    }
+}
+
 $setupScript = Join-Path $PSScriptRoot 'setup_decomp_tools.ps1'
 $ghidraDir = Join-Path $ToolRoot 'ghidra_12.0.4_PUBLIC'
 $javaHome = Join-Path $ToolRoot 'jdk-21.0.11+10'
@@ -346,6 +496,9 @@ try {
             status = 'pending'
             exitCode = $null
             projectLockFailure = $false
+            projectLockAttempts = 0
+            projectGateLockPath = ''
+            projectGateWaited = $false
             scriptFailure = $false
             exported = $false
             manifestExists = $false
@@ -398,19 +551,39 @@ try {
             $ghidraArgs += $ExtraPostScriptArgs
         }
 
-        & $analyzeHeadless @ghidraArgs 2>&1 | Tee-Object -FilePath $logPath
+        $projectGate = $null
+        try {
+            $projectGate = Enter-GhidraProjectGate `
+                -Directory $resolvedProjectDir `
+                -ProjectName $projectName `
+                -RetryDelaySeconds $ProjectLockRetryDelaySeconds `
+                -TimeoutMinutes $ProjectLockTimeoutMinutes
+            $targetSummary.projectGateLockPath = $projectGate.lockPath
+            $targetSummary.projectGateWaited = [bool] $projectGate.waited
 
-        $targetSummary.exitCode = $LASTEXITCODE
-        $projectLockFailure = Select-String -LiteralPath $logPath -SimpleMatch -Pattern 'Unable to lock project!' -Quiet
-        $targetSummary.projectLockFailure = [bool]$projectLockFailure
+            $ghidraResult = Invoke-GhidraHeadlessWithProjectRetry `
+                -AnalyzeHeadless $analyzeHeadless `
+                -Arguments $ghidraArgs `
+                -LogPath $logPath `
+                -ProjectName $projectName `
+                -RetryDelaySeconds $ProjectLockRetryDelaySeconds `
+                -TimeoutMinutes $ProjectLockTimeoutMinutes
+        }
+        finally {
+            Exit-GhidraProjectGate -Gate $projectGate
+        }
 
-        if ($LASTEXITCODE -ne 0) {
+        $targetSummary.exitCode = $ghidraResult.exitCode
+        $targetSummary.projectLockFailure = [bool]$ghidraResult.projectLockFailure
+        $targetSummary.projectLockAttempts = $ghidraResult.attempts
+
+        if ($ghidraResult.exitCode -ne 0) {
             $targetSummary.status = 'failed'
             Finalize-TargetSummary -TargetSummary $targetSummary -ExpectedBinaryFingerprint $binaryFingerprint -ExpectedLabelFingerprint $labelFingerprint
             $runSummaryTargets.Add([pscustomobject]$targetSummary)
 
-            if ($projectLockFailure) {
-                throw ("Ghidra project {0} is already in use. Different-target runs avoid this by using split per-target projects (-ProjectLayout PerTarget, or Auto after the per-target project exists). Same-target runs still need to wait for the current holder to finish. See {1}." -f $projectName, $logPath)
+            if ($targetSummary.projectLockFailure) {
+                throw ("Ghidra project {0} stayed locked after {1} attempt(s). Updated decompile runners wait for script-owned project gates automatically; close other Ghidra sessions or increase -ProjectLockTimeoutMinutes. See {2}." -f $projectName, $targetSummary.projectLockAttempts, $logPath)
             }
             throw "Ghidra run failed for $target. See $logPath."
         }
@@ -444,6 +617,8 @@ finally {
         summaryPath = $resolvedSummaryPath
         decompileMode = $DecompileMode
         projectLayout = $effectiveProjectLayout
+        projectLockRetryDelaySeconds = $ProjectLockRetryDelaySeconds
+        projectLockTimeoutMinutes = $ProjectLockTimeoutMinutes
         exportOnly = [bool]$ExportOnly
         skipCoverage = [bool]$SkipCoverage
         noApplyLabels = [bool]$NoApplyLabels

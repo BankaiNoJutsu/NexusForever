@@ -153,6 +153,19 @@ function Get-BoolCount {
     return @($Rows | Where-Object { [string] $_.$PropertyName -eq 'True' }).Count
 }
 
+function Get-Percent {
+    param(
+        [double] $Numerator,
+        [double] $Denominator
+    )
+
+    if ($Denominator -le 0) {
+        return 0
+    }
+
+    return [Math]::Round(($Numerator / $Denominator) * 100, 2)
+}
+
 function Test-IsDefaultGhidraFunctionName {
     param(
         [string] $Name
@@ -204,15 +217,20 @@ function Get-ExportCoverageRecord {
     $durableLabelCount = @($functions | Where-Object {
         [string] $_.external -ne 'True' -and -not (Test-IsDefaultGhidraFunctionName -Name ([string] $_.name))
     }).Count
+    $functionCount = $functions.Count
+    $selectedFunctionCount = if ($null -ne $manifestSelectedCount -and $manifestSelectedCount -gt $selectedReasons.Count) { $manifestSelectedCount } else { $selectedReasons.Count }
+    $selectedForDecompileCount = if ($null -ne $decompiledFragments -and $decompiledFragments -gt $selectionAuditSelectedForDecompile) { $decompiledFragments } else { $selectionAuditSelectedForDecompile }
+    $defaultNamedFunctionCount = @($functions | Where-Object { Test-IsDefaultGhidraFunctionName -Name ([string] $_.name) }).Count
 
     [pscustomobject]@{
         target = $target
         latestRunStatus = if ($null -eq $latestRunTarget) { '' } else { [string] $latestRunTarget.status }
         projectName = if ($null -eq $latestRunTarget) { '' } else { [string] $latestRunTarget.projectName }
         exportDir = Get-RelativeRepoPath -Path $ExportPath
-        functions = $functions.Count
+        functions = $functionCount
         durableLabels = $durableLabelCount
-        defaultNamedFunctions = @($functions | Where-Object { Test-IsDefaultGhidraFunctionName -Name ([string] $_.name) }).Count
+        namedFunctionCoveragePercent = Get-Percent -Numerator $durableLabelCount -Denominator $functionCount
+        defaultNamedFunctions = $defaultNamedFunctionCount
         thunkFunctions = @($functions | Where-Object { [string] $_.thunk -eq 'True' }).Count
         externalFunctions = @($functions | Where-Object { [string] $_.external -eq 'True' }).Count
         imports = $imports.Count
@@ -220,8 +238,10 @@ function Get-ExportCoverageRecord {
         strings = $strings.Count
         interestingStrings = $interestingStrings.Count
         stringXrefs = $stringXrefs.Count
-        selectedFunctions = if ($null -ne $manifestSelectedCount -and $manifestSelectedCount -gt $selectedReasons.Count) { $manifestSelectedCount } else { $selectedReasons.Count }
-        selectedForDecompile = if ($null -ne $decompiledFragments -and $decompiledFragments -gt $selectionAuditSelectedForDecompile) { $decompiledFragments } else { $selectionAuditSelectedForDecompile }
+        selectedFunctions = $selectedFunctionCount
+        unselectedFunctions = [Math]::Max(0, $functionCount - $selectedFunctionCount)
+        selectedForDecompile = $selectedForDecompileCount
+        fullFunctionDecompilePercent = Get-Percent -Numerator $selectedForDecompileCount -Denominator $functionCount
         selectionAuditRows = $selectedReasons.Count
         selectionAuditSelectedForDecompile = $selectionAuditSelectedForDecompile
         labelAnchoredSelections = @($selectedReasons | Where-Object { [string] $_.reasons -match '(^| \|\| )label:' }).Count
@@ -508,6 +528,12 @@ if (Test-Path -LiteralPath $resolvedOutputDir -PathType Container) {
 $exportCoverage = @($exportDirectories | ForEach-Object {
     Get-ExportCoverageRecord -ExportPath $_ -LatestRunSummary $latestRunSummary
 } | Sort-Object -Property target)
+$totalFunctions = ($exportCoverage | Measure-Object -Property functions -Sum).Sum
+$totalDurableLabels = ($exportCoverage | Measure-Object -Property durableLabels -Sum).Sum
+$totalDefaultNamedFunctions = ($exportCoverage | Measure-Object -Property defaultNamedFunctions -Sum).Sum
+$totalSelectedFunctions = ($exportCoverage | Measure-Object -Property selectedFunctions -Sum).Sum
+$totalSelectedForDecompile = ($exportCoverage | Measure-Object -Property selectedForDecompile -Sum).Sum
+$totalUnselectedFunctions = ($exportCoverage | Measure-Object -Property unselectedFunctions -Sum).Sum
 
 $opcodeEntries = Get-OpcodeEntries -Path $resolvedOpcodeFile
 $messageModels = Get-MessageModelRecords -Root $resolvedSourceDir
@@ -561,11 +587,15 @@ $summary = [ordered]@{
     }
     exportSummary = [ordered]@{
         targetCount = $exportCoverage.Count
-        totalFunctions = ($exportCoverage | Measure-Object -Property functions -Sum).Sum
-        totalDurableLabels = ($exportCoverage | Measure-Object -Property durableLabels -Sum).Sum
+        totalFunctions = $totalFunctions
+        totalDurableLabels = $totalDurableLabels
+        totalNamedFunctionCoveragePercent = Get-Percent -Numerator $totalDurableLabels -Denominator $totalFunctions
+        totalDefaultNamedFunctions = $totalDefaultNamedFunctions
         totalInterestingStrings = ($exportCoverage | Measure-Object -Property interestingStrings -Sum).Sum
-        totalSelectedFunctions = ($exportCoverage | Measure-Object -Property selectedFunctions -Sum).Sum
-        totalSelectedForDecompile = ($exportCoverage | Measure-Object -Property selectedForDecompile -Sum).Sum
+        totalSelectedFunctions = $totalSelectedFunctions
+        totalUnselectedFunctions = $totalUnselectedFunctions
+        totalSelectedForDecompile = $totalSelectedForDecompile
+        totalFullFunctionDecompilePercent = Get-Percent -Numerator $totalSelectedForDecompile -Denominator $totalFunctions
     }
     opcodeSummary = [ordered]@{
         total = $opcodeCoverage.Count
@@ -593,15 +623,42 @@ $summary = [ordered]@{
 $summary | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $jsonPath -Encoding utf8
 
 $exportTable = if ($exportCoverage.Count -gt 0) {
-    Get-MarkdownTable -Headers @('Target', 'Functions', 'Durable labels', 'Interesting strings', 'Selected', 'Decompiled') -Rows $exportCoverage -Selector {
+    Get-MarkdownTable -Headers @('Target', 'Functions', 'Named %', 'Default-name backlog', 'Selected', 'Decompiled', 'Full %') -Rows $exportCoverage -Selector {
         param($row)
         @(
             "``$($row.target)``",
             $row.functions,
-            $row.durableLabels,
-            $row.interestingStrings,
+            ('{0}%' -f $row.namedFunctionCoveragePercent),
+            $row.defaultNamedFunctions,
             $row.selectedFunctions,
-            $row.selectedForDecompile
+            $row.selectedForDecompile,
+            ('{0}%' -f $row.fullFunctionDecompilePercent)
+        )
+    }
+}
+else {
+    'No export directories were found.'
+}
+
+$fullFunctionBacklogTable = if ($exportCoverage.Count -gt 0) {
+    Get-MarkdownTable -Headers @('Scope', 'Functions', 'Named', 'Selected', 'Unselected', 'Selected %') -Rows @(
+        [pscustomobject]@{
+            Scope = 'Default targets'
+            Functions = $totalFunctions
+            Named = $totalDurableLabels
+            Selected = $totalSelectedFunctions
+            Unselected = $totalUnselectedFunctions
+            SelectedPercent = Get-Percent -Numerator $totalSelectedFunctions -Denominator $totalFunctions
+        }
+    ) -Selector {
+        param($row)
+        @(
+            $row.Scope,
+            $row.Functions,
+            $row.Named,
+            $row.Selected,
+            $row.Unselected,
+            ('{0}%' -f $row.SelectedPercent)
         )
     }
 }
@@ -666,6 +723,10 @@ $markdown = @(
     '## Export Coverage',
     '',
     $exportTable,
+    '',
+    '## Full Function Backlog',
+    '',
+    $fullFunctionBacklogTable,
     '',
     '## Opcode Coverage',
     '',

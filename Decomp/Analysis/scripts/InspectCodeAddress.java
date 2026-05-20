@@ -9,6 +9,7 @@ import ghidra.app.decompiler.DecompInterface;
 import ghidra.app.decompiler.DecompileOptions;
 import ghidra.app.decompiler.DecompileResults;
 import ghidra.app.decompiler.component.DecompilerUtils;
+import ghidra.app.cmd.disassemble.DisassembleCommand;
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
@@ -76,6 +77,16 @@ public class InspectCodeAddress extends GhidraScript {
         Instruction instruction = listing.getInstructionAt(target);
         if (instruction == null) {
             instruction = listing.getInstructionContaining(target);
+        }
+
+        if (instruction == null) {
+            DisassembleCommand command = new DisassembleCommand(target, null, true);
+            if (command.applyTo(currentProgram, monitor)) {
+                instruction = listing.getInstructionAt(target);
+                if (instruction == null) {
+                    instruction = listing.getInstructionContaining(target);
+                }
+            }
         }
 
         if (instruction == null) {

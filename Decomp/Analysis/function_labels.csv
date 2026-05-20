@@ -187,8 +187,20 @@ WildStar64.exe,1403b4a10,EntityCriteria_GetRelatedCriteriaThunk,CriteriaProxy vt
 WildStar64.exe,1403b4a20,ValidTargetsCriteria_Evaluate,Evaluates a single Spell4ValidTargets criteria row against an entity. param_1=CriteriaProxy ptr (vtable at 140b66440; struct has vtable+entity at +0x08), param_2=criteria struct (int[2+type+values]). Dispatches on param_2[2] (checkType 1-13). Values array at param_2+3 holds up to 7 int IDs. Odd check types (1/3/5/7/0xc) = must-match (return 0x59 if no match); even (2/4/6/8/0xd) = must-not-match (return 0x59 if any match). Confirmed attr semantics: vtable[+0x10]=FactionGroupId (types 1/2); vtable[+0x30]=attr2-unknown-virt-0x118 (types 3/4); vtable[+0x20]=RaceId entity+0xd8 (types 5/6); vtable[+0x28]=ClassId entity+0xdc (types 7/8); vtable[+0x38]=UnitRaceId *[entity+0xd0] (types 12/13). checkType 9=entity+0x140 DWORD list-match via vtable[+0x18] (1403b4960), NOT recursive sub-criteria. Cases 10/11=lookup-related-criteria (recursive) via vtable[+0x08] thunk. Returns 0=pass, 0x59=fail, 0x13d=conditional pass.
 WildStar64.exe,14046c580,Entity_GetFactionRelationship,Resolves faction/relationship group for entity param_1 relative to context param_2. Looks up GameTable row 0x19e via FUN_140200220. Special path when entity+0x80==0x14 (special entity type): uses +0xdc from param_2 to fetch Faction entry, checks param_1 membership via FUN_14045a950, returns faction field at +0x54. Default path: reads state struct at entity+0x18; if flags at +0x6c and +0x148 are both 0, iterates up to 4 faction-override entries at *(entity+0x18+0xc0), testing each via (*DAT_140c659a0+0x18) ValidTargets dispatch; returns first matching entry id. Called by SpellTarget_ValidateTargetRelationship.
 WildStar64.exe,1403b4ec0,Game_Spell_IsSelfSpellDelegate,Bool helper used by Game.Spell:IsSelfSpell. Reads target-mechanics wrapper at param_1+0x70. Bitmask 0x85 (10000101b) at +0x7c=TargetType: bits 0/2/7 set → TargetTypes 0/2/7 are self-spell. Additional case: TargetType 4 or 8 with +0x18==3 and +0x9c==0. IsSelfSpell=true means no targeting cursor needed (UI-only); server ResolvePrimaryTargetId returns Owner.Guid for type 0 and uses current target for type 7 (auto-attack).
+WildStar64.exe,1403b9410,AbilityBook_ApplySingleTierEntryDelta,Consumes a compact single-entry spell-tier record whose first 12 bytes match ServerSpellList_ReadTierEntry offsets +0 +4 +5 and +8. Updates learned or unlearned state current tier wrapper retargets and dispatches AbilityBookChange.
+WildStar64.exe,1403b95c0,SpellBook_UpdateTierPointBudget,Updates the committed and maximum spell-tier budget fields at entity+0x6dd8 and +0x6de0, adjusts the cached pending budget at +0x6ddc, and dispatches AbilityBookChange.
+WildStar64.exe,1403badb0,SpellBook_MarkSpellLearned,Marks the selected or all tier records for a Spell4 id as learned in the spell tree at entity+0xaa8 and rebuilds cached wrapper ids.
+WildStar64.exe,1403baea0,SpellBook_MarkSpellUnlearned,Marks the selected or all tier records for a Spell4 id as unlearned in the spell tree at entity+0xaa8 and rebuilds cached wrapper ids.
+WildStar64.exe,1403bb200,SpellBook_SetCurrentTierRank,Clamps and stores the current tier byte for a Spell4 id plus spec index in the spell tree at entity+0xaa8 then rebuilds the cached wrapper id for that tier.
 WildStar64.exe,1403bb480,ActionSet_SendPendingActionSetChanges,Sends or commits a validated action-set change request.
 WildStar64.exe,1403bb8d0,ActionSet_CheckUpdateSpellInProgress,Checks whether a spell/action-set update is already in progress.
+WildStar64.exe,1403be620,SpellThreshold_HandleStart,Creates active threshold state for a spell from the 0x0816 hierarchy payload, resolves stage metadata through the spell-service threshold map, and dispatches the named client event StartSpellThreshold.
+WildStar64.exe,1403be940,SpellThreshold_HandleStartWrapper,Consumes the parsed 0x0816 hierarchy payload, removes stale pending threshold state, and forwards Spell4Id plus the three trailing ints into SpellThreshold_HandleStart when no active threshold entry exists yet.
+WildStar64.exe,1403bea90,SpellThreshold_HandleUpdate,Consumes the 0x0817 Spell4Id-plus-byte payload, updates the active threshold entry, dispatches UpdateSpellThreshold, and conditionally re-dispatches StartSpellThreshold when threshold presentation begins.
+WildStar64.exe,1403bed60,SpellThreshold_HandleClear,Removes pending threshold-start state for the supplied Spell4 id and delegates to SpellThreshold_ClearActiveState. Strong client-consumer evidence for the 0x0814 threshold-clear path.
+WildStar64.exe,1403bef30,SpellThreshold_ClearActiveState,Marks the active threshold entry cleared and either stops an active type-7 cast or removes the active threshold presentation for the supplied Spell4 id.
+WildStar64.exe,1403bfbf0,SpellThreshold_ResolveDisplaySpellId,Uses the active threshold state and threshold-stage map to resolve the displayed Spell4 id override for threshold spells before UI spell resolution.
+WildStar64.exe,1403c0210,SpellThreshold_GetStageTimeOrFallback,Returns the active threshold-stage time value from the threshold cache for a spell, or falls back to the base spell-wrapper value when no stage override is active.
 WildStar64.exe,1403d19a0,AbilityBook_SendClientCommitAmpSpec,Sends opcode 0x01A2 ClientCommitAmpSpec with the current spec AMP list and clears the pending AMP cache.
 WildStar64.exe,1403db7f0,UnitState_UpdateCachedStateFields,Resolves the target unit for a raw unit-state record, forwards the state into FUN_14045bdc0, and refreshes the unit's cached raw state at +0x108 plus derived classification at +0x10c when the value changes.
 WildStar64.exe,1403db870,UnitState_ApplyResolvedState,Resolves the target unit for a raw unit-state update, applies the raw state value, and special-cases state 0 cleanup for the local subject/UI path.
@@ -466,7 +478,17 @@ WildStar64.exe,140686e20,Lua_Challenges_GetMapLocation,Game.Challenges.GetMapLoc
 WildStar64.exe,1406871a0,Lua_Challenges_GetMapRegions,Game.Challenges.GetMapRegions Lua method.
 WildStar64.exe,140687610,Lua_Challenges_ShouldDisplayPercentProgress,Game.Challenges.ShouldDisplayPercentProgress Lua method.
 WildStar64.exe,1406876b0,Lua_Challenges_GetDistance,Game.Challenges.GetDistance Lua method.
+WildStar64.exe,1404203c0,Lua_PublicEvent_UnwrapLiveEventPointer,Writes the stored live event pointer from a Game.PublicEvent Lua userdata into native output storage.
+WildStar64.exe,140420440,Lua_PublicEventObjective_UnwrapLiveObjectivePointer,Writes the stored live objective pointer from a Game.PublicEventObjective Lua userdata into native output storage.
+WildStar64.exe,140432c80,Lua_PushPublicEventObject,Pushes a Game.PublicEvent Lua userdata for a live event pointer; null pushes nil.
+WildStar64.exe,1407625f0,Lua_RegisterPublicEventsLib,Registers the PublicEventsLib Lua library with the GetActivePublicEventList callback table.
+WildStar64.exe,140762360,Lua_PublicEventsLib_GetActivePublicEventList,Builds PublicEventsLib.GetActivePublicEventList Lua output by iterating active public-event ids, filtering LiveEvent rows with flag bit 0x08, and pushing Game.PublicEvent userdata.
+WildStar64.exe,140527a10,Lua_PublicEvent_CheckedUnwrapLiveEventPointer,Validates a value against the Game.PublicEvent metatable and returns the stored live event pointer.
+WildStar64.exe,140527b60,Lua_PublicEventObjective_CheckedUnwrapLiveObjectivePointer,Validates a value against the Game.PublicEventObjective metatable and returns the stored live objective pointer.
+WildStar64.exe,14068d500,PublicEventObjective_ResolveLiveObjectiveFromLua,Resolves a Game.PublicEventObjective argument through PublicEventService.GetObjectiveById.
+WildStar64.exe,140687d40,Lua_RegisterPublicEventBindings,Registers Game.PublicEvent methods plus PublicEvent reward/remove/type/stat constants.
 WildStar64.exe,140687820,Lua_PublicEvent___eq,Game.PublicEvent.__eq Lua metamethod.
+WildStar64.exe,140687900,Lua_PublicEvent_IsPublicEventUserdata,Returns whether the first Lua value has the Game.PublicEvent metatable.
 WildStar64.exe,140687a40,Lua_PublicEvent___gc,Game.PublicEvent.__gc Lua metamethod.
 WildStar64.exe,140689580,Lua_PublicEvent_RequestScoreboard,Game.PublicEvent.RequestScoreboard Lua method.
 WildStar64.exe,1406896f0,Lua_PublicEvent_GetName,Game.PublicEvent.GetName Lua method.
@@ -501,6 +523,7 @@ WildStar64.exe,14068bf30,Lua_PublicEvent_IsPriorityDisplay,Game.PublicEvent.IsPr
 WildStar64.exe,14068bff0,Lua_PublicEvent_GetEndMessage,Game.PublicEvent.GetEndMessage Lua method.
 WildStar64.exe,14068c220,Lua_PublicEvent_ShouldUseCustomTracker,Game.PublicEvent.ShouldUseCustomTracker Lua method.
 WildStar64.exe,140687ac0,Lua_PublicEventObjective___eq,Game.PublicEventObjective.__eq Lua metamethod.
+WildStar64.exe,140687b80,Lua_PublicEventObjective_IsPublicEventObjectiveUserdata,Returns whether the first Lua value has the Game.PublicEventObjective metatable.
 WildStar64.exe,140687cc0,Lua_PublicEventObjective___gc,Game.PublicEventObjective.__gc Lua metamethod.
 WildStar64.exe,14068d5b0,Lua_PublicEventObjective_GetDescription,Game.PublicEventObjective.GetDescription Lua method.
 WildStar64.exe,14068d8a0,Lua_PublicEventObjective_GetShortDescription,Game.PublicEventObjective.GetShortDescription Lua method.
@@ -636,10 +659,12 @@ WildStar64.exe,140085170,NetworkBitWriter_WriteIdentity,Serialises an Identity p
 WildStar64.exe,14007a610,Storefront_RequestCatalog_WritePayload,Serialises opcode 0x082D ClientStorefrontRequestCatalog as one 14-bit catalog context field.
 WildStar64.exe,1400acf80,Storefront_PurchaseCharacter_WritePayload,Serialises the shared store purchase payload for opcode 0x082A: offer id, 5-bit selector, two 32-bit fields around a 14-bit currency id, target identity, and a trailing 32-bit field.
 WildStar64.exe,140080a20,Storefront_PurchaseAccount_WritePayload,Serialises opcode 0x0828 ClientStorefrontPurchaseAccount as the shared store purchase payload plus one 32-bit field, an identity, and a wide string.
+WildStar64.exe,140080d30,ServerUInt18_ReadPayload,Shared 4-byte server reader registered for opcodes including 0x0129 ServerUnlockMount 0x01AE ServerUnlockVanityPet and 0x0815; body reads one 18-bit field with no trailing flag.
 WildStar64.exe,1400852f0,NetworkBitReader_ReadIdentity,Reads an Identity payload as a 14-bit realm id followed by a 64-bit identity id.
 WildStar64.exe,1400a9c20,AccountInventoryItem_ReadPayload,Reads one account inventory item: 64-bit inventory id, 32-bit AccountItem id, 5-bit claim state, one flag bit, and target identity.
 WildStar64.exe,140080630,ServerAccountItems_ReadPayload,Reads opcode 0x096D as a 32-bit count followed by account inventory item records of size 0x28.
-WildStar64.exe,14007a040,ServerAccountItemCooldownSet_ReadPayload,Reads opcode 0x0974 as account item cooldown group and cooldown seconds.
+WildStar64.exe,14007a040,ServerTwoUInt32_ReadPayload,Shared 8-byte server reader registered for many opcodes including 0x021A 0x0223-0x0225 0x0813 0x0819 0x08C7 0x0970 0x0973 and 0x0974; body reads two 32-bit fields.
+WildStar64.exe,14007c340,ServerUInt32AndFlag_ReadPayload,Shared 8-byte server reader registered for multiple opcodes including 0x0219 0x022B 0x0355 0x0357 0x06F5 0x0700 0x0755 and 0x089A; body reads one 32-bit field followed by one bit.
 WildStar64.exe,140080510,ServerAccountItemsPending_ReadPayload,Reads opcode 0x0979 as a 32-bit count followed by pending account item group records of size 0x60.
 WildStar64.exe,1400a9b20,PendingAccountItemGroup_ReadPayload,Reads one pending account item group record used by opcode 0x0979, including ids, a wide string group key, claim state, and two identity payloads.
 WildStar64.exe,140080990,ClientAccountItemGiftPendingItemGroupToCharacter_WritePayload,Serialises opcode 0x03F2 as pending group wide string followed by target character identity.
@@ -735,10 +760,19 @@ WildStar64.exe,14009d560,ClientHousingPlugUpdate_WritePayload,Serialises opcode 
 WildStar64.exe,14009d0a0,Housing_WriteDecorInfoPayload,Serialises one housing DecorInfo record for decor update style payloads.
 WildStar64.exe,1400a8190,ClientWorldOpcodeRegister_MovementSpline,Registers client-sent movement control and Spline2 opcodes 0x0635 through 0x081D including ack and Spline2 payload helpers.
 WildStar64.exe,14008eaa0,ServerFlightPathUpdate_ReadPayload,Reads opcode 0x0188 as a 32-bit count followed by count raw 32-bit flight path ids.
-WildStar64.exe,140096060,ServerSpellList_ReadPayload,Reads opcode 0x0551 as a counted spell list with nested tier and state records.
+WildStar64.exe,140096000,ServerOpcode0814_ReadSpell4IdAndFlag,Registration block FUN_14006c290 wires server opcode 0x0814 and 8-byte object size to this reader; body parses one 18-bit Spell4 id plus a trailing 1-bit flag.
+WildStar64.exe,140096060,ServerSpellList_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0551 and 0x10-byte object size to this reader; body parses a counted spell list with nested tier and state records.
+WildStar64.exe,140095e60,ServerOpcode0818_ReadLeadingUInt32AndTierEntry,Registration block FUN_14006c290 wires server opcode 0x0818 and 0x20-byte object size to this reader; body reads one leading 32-bit field then calls ServerSpellList_ReadTierEntry at +0x8. Current subtype-4 spellbook evidence makes that leading field look more like an index or slot than a casting id, but the exact role remains under re-verification.
+WildStar64.exe,140095f30,ServerSpellHierarchy_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0816 ServerSpellHierarchy and 0x10-byte object size to this reader; body reads three 18-bit Spell4 ids followed by a 32-bit casting id.
+WildStar64.exe,140095fb0,ServerSpellEventByte_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0817 ServerSpellEventByte and 8-byte object size to this reader; body reads an 18-bit Spell4 id followed by one byte.
+WildStar64.exe,140096120,ServerCooldownList_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x091B ServerCooldownList and 0x10-byte object size to this reader.
+WildStar64.exe,140096fa0,ServerEntityCreate_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0262 ServerEntityCreate and 0x120-byte object size to this reader; inspected body reads entity type branch data and nested cooldown property spell and movement lists.
+WildStar64.exe,140097710,ServerEntityPropertiesUpdate_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x093A ServerEntityPropertiesUpdate and 0x10-byte object size to this reader; caller trace shows repeated property-value helper calls.
 WildStar64.exe,140094bf0,ServerSpellList_ReadSpellEntry,Reads one spell-list entry with three 32-bit ids an 18-bit base id active flag and nested lists.
 WildStar64.exe,140094aa0,ServerSpellList_ReadTierEntry,Reads one spell-list tier entry with Spell4 id tier/spec bytes flags action-set bits and variant records.
 WildStar64.exe,140094890,ServerSpellList_ReadVariantEntry,Reads one spell-list variant record with 19-bit effect id three raw 32-bit values and a 2-bit variant selector.
+WildStar64.exe,140094970,ServerSpellList_ReadVariantType0Tail,Reads selector-0 spell-list variant tail with one uint32 one byte three uint32 values and two trailing uint32 values.
+WildStar64.exe,140094a00,ServerSpellList_ReadVariantType1Tail,Reads selector-1 spell-list variant tail with one uint16 one uint32 one byte three uint32 values and two trailing uint32 values.
 WildStar64.exe,1400afb30,ClientSpline2NodeData_WritePayload,Serialises opcode 0x081A as Spline2 id 15-bit node id 2-bit mode and counted 10-uint node records.
 WildStar64.exe,1400afce0,ClientSpline2NodeData_ReadPayload,Reads opcode 0x081A as Spline2 id 15-bit node id 2-bit mode and counted 10-uint node records.
 WildStar64.exe,1400afe10,ClientSpline2NodePositionData_WritePayload,Serialises opcode 0x081B as two raw ids three raw 32-bit position values and a counted uint payload.
@@ -752,28 +786,67 @@ WildStar64.exe,1405a3000,Lua_RegisterCraftingBindings,Registers Game.Crafting Lu
 WildStar64.exe,1403ec6a0,Entity_ExecuteSpellEffectHighRange,Dispatches high-range spell effects (effectTypes 0x61-0x972) via jump table at 0x1403f1344; guards on entity+0x7928 (network connection) non-null and channel-ID match before dispatch; writes timestamp to entity+0x7b4c.
 WildStar64.exe,1403c17d0,ItemMove_ValidateAndMaybeConfirmBindOnEquip,Validates an item move request and dispatches ItemConfirmSoulboundOnEquip before sending ClientItemMove when the destination equip path would bind the source item.
 WildStar64.exe,1403f38b0,RealmFirstAchievementAnnounce_Dispatch,Builds the RealmFirstAchievementAnnounce client event from achievement id guild flag source name and achievement-name payload.
+WildStar64.exe,140229720,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers the PublicEventUnitPropertyModifier client DB table using the PublicEventUnitPropertyModifier and DB\\PublicEventUnitPropertyModifier.tbl descriptors.
 Houston64.exe,1400e8700,ClientDB_RegisterPublicEventUnitPropertyModifier,Registers PublicEventUnitPropertyModifier table.
 Houston64.exe,1400ecf40,ClientDB_RegisterRealmDataCenter,Registers RealmDataCenter table DB\\RealmDataCenter.tbl.
 Houston64.exe,14010af80,ClientDB_RegisterWorldSocket,Registers WorldSocket table DB\\WorldSocket.tbl.
+Houston64.exe,1400a75c0,ClientDB_RegisterAccountCurrencyType,Registers the AccountCurrencyType client DB table using the AccountCurrencyType and DB\\AccountCurrencyType.tbl descriptors.
+Houston64.exe,1400a7a00,ClientDB_RegisterAccountItem,Registers the AccountItem client DB table using the AccountItem and DB\\AccountItem.tbl descriptors.
+Houston64.exe,1400a7e40,ClientDB_RegisterAccountItemCooldownGroup,Registers the AccountItemCooldownGroup client DB table using the AccountItemCooldownGroup and DB\\AccountItemCooldownGroup.tbl descriptors.
+Houston64.exe,1400a8280,ClientDB_RegisterAchievement,Registers the Achievement client DB table using the Achievement and DB\\Achievement.tbl descriptors.
+Houston64.exe,1400a86c0,ClientDB_RegisterAchievementCategory,Registers the AchievementCategory client DB table using the AchievementCategory and DB\\AchievementCategory.tbl descriptors.
+Houston64.exe,1400a8b00,ClientDB_RegisterAchievementGroup,Registers the AchievementGroup client DB table using the AchievementGroup and DB\\AchievementGroup.tbl descriptors.
+Houston64.exe,1400a8f40,ClientDB_RegisterAchievementSubGroup,Registers the AchievementSubGroup client DB table using the AchievementSubGroup and DB\\AchievementSubGroup.tbl descriptors.
+Houston64.exe,1400a9380,ClientDB_RegisterAchievementChecklist,Registers the AchievementChecklist client DB table using the AchievementChecklist and DB\\AchievementChecklist.tbl descriptors.
+Houston64.exe,1400a97c0,ClientDB_RegisterAchievementText,Registers the AchievementText client DB table using the AchievementText and DB\\AchievementText.tbl descriptors.
+Houston64.exe,1400a9c00,ClientDB_RegisterActionBarShortcutSet,Registers the ActionBarShortcutSet client DB table using the ActionBarShortcutSet and DB\\ActionBarShortcutSet.tbl descriptors.
+Houston64.exe,1400aa040,ClientDB_RegisterActionSlotPrereq,Registers the ActionSlotPrereq client DB table using the ActionSlotPrereq and DB\\ActionSlotPrereq.tbl descriptors.
+Houston64.exe,1400aa480,ClientDB_RegisterArchiveArticle,Registers the ArchiveArticle client DB table using the ArchiveArticle and DB\\ArchiveArticle.tbl descriptors.
+Houston64.exe,1400aa8c0,ClientDB_RegisterArchiveCategory,Registers the ArchiveCategory client DB table using the ArchiveCategory and DB\\ArchiveCategory.tbl descriptors.
+Houston64.exe,1400aad00,ClientDB_RegisterArchiveEntry,Registers the ArchiveEntry client DB table using the ArchiveEntry and DB\\ArchiveEntry.tbl descriptors.
+Houston64.exe,1400ab140,ClientDB_RegisterArchiveEntryUnlockRule,Registers the ArchiveEntryUnlockRule client DB table using the ArchiveEntryUnlockRule and DB\\ArchiveEntryUnlockRule.tbl descriptors.
+Houston64.exe,1400ab580,ClientDB_RegisterArchiveLink,Registers the ArchiveLink client DB table using the ArchiveLink and DB\\ArchiveLink.tbl descriptors.
 Houston64.exe,1400d4c80,ClientDB_RegisterMatchTypeRewardRotationContent,Registers the MatchTypeRewardRotationContent client DB table using the MatchTypeRewardRotationContent and DB\\MatchTypeRewardRotationContent.tbl descriptors.
 Houston64.exe,1400ee8c0,ClientDB_RegisterRewardRotationContent,Registers the RewardRotationContent client DB table using the RewardRotationContent and DB\\RewardRotationContent.tbl descriptors.
 Houston64.exe,1400eed00,ClientDB_RegisterRewardRotationItem,Registers the RewardRotationItem client DB table using the RewardRotationItem and DB\\RewardRotationItem.tbl descriptors.
 Houston64.exe,1400ef140,ClientDB_RegisterRewardRotationEssence,Registers the RewardRotationEssence client DB table using the RewardRotationEssence and DB\\RewardRotationEssence.tbl descriptors.
 Houston64.exe,1400ef580,ClientDB_RegisterRewardRotationModifier,Registers the RewardRotationModifier client DB table using the RewardRotationModifier and DB\\RewardRotationModifier.tbl descriptors.
 WildStar64.exe,1406b1300,Entity_ExecuteSpellEffectLowRange,Handles spell effectTypes 0x01-0x60; dispatch at +0x207; two-level byte+int32 table; only types 4/5/6/8/27 have unique handlers; RavelSignal(0x51) and most others fall through to epilogue at 0x1406b321e; signature: rcx=entity rbx edx=effectType r13d r8d=flags r9=wide-string.
+WildStar64.exe,140236970,Spell4Base_GetAllRows,ClientDB query thunk for Spell4Base; sibling accessor cluster rooted at 140236ba0 where Spell4Base and DB\Spell4Base.tbl strings are registered.
+WildStar64.exe,1402369c0,Spell4Base_GetById,ClientDB query thunk for Spell4Base id lookup; sibling accessor cluster rooted at 140236ba0 where Spell4Base and DB\Spell4Base.tbl strings are registered.
+WildStar64.exe,140236a20,Spell4Base_GetByIndex,ClientDB query thunk for Spell4Base index lookup; sibling accessor cluster rooted at 140236ba0 where Spell4Base and DB\Spell4Base.tbl strings are registered.
+WildStar64.exe,140236db0,Spell4CastResult_GetAllRows,ClientDB query thunk for Spell4CastResult; sibling accessor cluster rooted at 140236fe0 where Spell4CastResult and DB\Spell4CastResult.tbl strings are registered.
+WildStar64.exe,140236e00,Spell4CastResult_GetById,ClientDB query thunk for Spell4CastResult id lookup; sibling accessor cluster rooted at 140236fe0 where Spell4CastResult and DB\Spell4CastResult.tbl strings are registered.
+WildStar64.exe,140236e60,Spell4CastResult_GetByIndex,ClientDB query thunk for Spell4CastResult index lookup; sibling accessor cluster rooted at 140236fe0 where Spell4CastResult and DB\Spell4CastResult.tbl strings are registered.
+WildStar64.exe,14023cf70,Spell4Visual_GetAllRows,ClientDB query thunk for Spell4Visual; sibling accessor cluster rooted at 14023d1a0 where Spell4Visual and DB\Spell4Visual.tbl strings are registered.
+WildStar64.exe,14023cfc0,Spell4Visual_GetById,ClientDB query thunk for Spell4Visual id lookup; sibling accessor cluster rooted at 14023d1a0 where Spell4Visual and DB\Spell4Visual.tbl strings are registered.
+WildStar64.exe,14023d020,Spell4Visual_GetByIndex,ClientDB query thunk for Spell4Visual index lookup; sibling accessor cluster rooted at 14023d1a0 where Spell4Visual and DB\Spell4Visual.tbl strings are registered.
 WildStar64.exe,14023b1b0,Spell4StackGroup_GetAllRows,ClientDB query thunk for Spell4StackGroup; hot-swap override at DAT_140c63838 or fallback to vtable[5](DB) (no-arg all-rows read); sibling of 14023b200 and 14023b260.
 WildStar64.exe,14023b200,Spell4StackGroup_GetById,ClientDB query thunk for Spell4StackGroup; hot-swap override at DAT_140c63840 or fallback to vtable[3](DB id) (GetById lookup); sibling of 14023b1b0 and 14023b260.
 WildStar64.exe,14023b260,Spell4StackGroup_GetByIndex,ClientDB query thunk for Spell4StackGroup; hot-swap override at DAT_140c63848 or fallback to vtable[4](DB index) (GetByIndex lookup); sibling of 14023b1b0 and 14023b200.
 WildStar64.exe,14024e5e0,ClientDB_FlushAllTables,Releases all ClientDB singleton pointers via vtable[1]() destructor and nulls each global; called during shutdown/reload; touches DAT_140c642f0 (Spell4StackGroup) along with ~40+ other DB globals.
 WildStar64.exe,14055e180,Spell4Manager_BuildRuntimeData,Large initialization function (~10KB); iterates ALL Spell4Visual rows (via &PTR_u_Spell4Visual_140a6d658) then ALL Spell4 rows (via &PTR_u_Spell4_140a6d0a8); for each Spell4 row (puVar28) looks up Spell4Base by puVar28[2]=offset0x10 (via &PTR_u_Spell4Base_140a6d118); validates cross-refs and builds runtime arrays; Spell4 struct offsets confirmed: 0x10=Spell4BaseId 0xb8=StackGroupId 0x114=AoeTargetConstraintsId 0x12c-0x134=SpellCoolDown[0..2]; Spell4Base offsets: +8=HitResultsId +0xc=TargetMechanicsId +0x10=TargetAngleId +0x14=PrerequisitesId +0x18=ValidTargetsId +0x1c/0x34=TargetGroupId.
 WildStar64.exe,1402391e0,ClientDB_RegisterSpell4HitResults,Registers the Spell4HitResults client DB table; checks DAT_140c651c8 and DAT_140c63970; allocates object with PTR_u_Spell4HitResults_140a82e30 descriptor; loads DB\Spell4HitResults.tbl.
+WildStar64.exe,140237680,SpellService_LookupSpell4ClientMissileRecord,Looks up a Spell4ClientMissile client DB row by id through the Spell4ClientMissile table descriptor.
 WildStar64.exe,14055a5f0,Entity_FindNearestTargetable,Finds nearest valid targetable entity within range; used in SpellTarget_ResolveTargetEntity for auto-target when no cursor target set (range from GameTable[0x145]+0x18 = 4.0 default).
 WildStar64.exe,14039e400,SpellCast_CancelCurrentCast,Cancels the current in-progress spell cast; called when overriding/superseding cast.
 WildStar64.exe,14047bfd0,SpellCast_IsToggleSpellActive,Checks whether a toggle spell is currently active; returns non-zero if active. Used in SendClientSpellCastState to short-circuit toggle re-cast.
 WildStar64.exe,14046afc0,SpellCooldown_StartCooldownForSpell,Starts/resets cooldown for a resolved spell wrapper. Args: entity, spellWrapper, flag.
 WildStar64.exe,1403ad690,SpellService_IsInRange,Returns non-zero if caster is within range of target for a given spell.
+WildStar64.exe,14053d1f0,SpellWrapper_InitializeStateAndBroadcastRouteListeners,Initializes wrapper runtime state from inner data, resolves cast-time and route-key overrides, and broadcasts route listeners.
+WildStar64.exe,140540430,SpellWrapper_BroadcastRouteListeners,Walks immediate and queued route-listener trees for the wrapper route key and emits or schedules descriptor payloads.
+WildStar64.exe,140540b30,SpellWrapper_ComputeRouteProgressScalarByBitIndex,Computes the wrapper route-progress scalar for one slot or bit index from spell-inner type 1 or 3 linear records or type 8 cumulative pairs; used by deferred route-listener timing windows.
+WildStar64.exe,140543630,SpellRouteEvent_DispatchByKind,Dispatches one route-event descriptor by descriptor+0x20 kind into the immediate payload builders or the special kind-0xa path.
+WildStar64.exe,1405458e0,SpellRouteEvent_HandleClientMissileRecord,Handles descriptor kind 0xa by consuming a resolved Spell4ClientMissile record, selecting source or target entities or expansion nodes, and emitting the missile-style route events.
 WildStar64.exe,14054e340,SpellInner_ResolveCastTimeMs,Resolves actual cast time in milliseconds from inner data and entity active state.
+WildStar64.exe,14054e9f0,SpellRouteEvent_InitCommonPayload,Builds the common route-event payload fields copied from descriptor metadata before kind-specific extensions are applied.
+WildStar64.exe,14054eb60,SpellRouteEvent_InitEntityPayload,Builds the common entity-scoped route-event payload from descriptor flags, source or target entities, and descriptor+0x90 override data.
+WildStar64.exe,14054ee30,SpellRouteEvent_InitExtendedVectorPayload,Extends SpellRouteEvent_InitEntityPayload with descriptor+0x40..+0x48 vector fields and one inverted flag bit for kind-0 route events.
+WildStar64.exe,140576f90,SpellRouteEvent_QueueKind7Event,Allocates an EVNT-tagged 0x180 node for route-event kind 7 via 14071f9b0 and links it into the global route-event list plus an optional entity queue; used by SpellRouteEvent_EmitOrQueue.
+WildStar64.exe,1405770f0,SpellRouteEvent_QueueKind8Event,Allocates an EVNT-tagged 0x188 node for route-event kind 8 via 14071fad0 and links it into the target route-event list plus an optional entity queue; used by SpellRouteEvent_EmitOrQueue.
+WildStar64.exe,140578460,SpellRouteEvent_EmitOrQueue,Serializes a route-event kind immediately or queues it on the target entity when the entity cannot accept it yet.
 WildStar64.exe,140195f70,CooldownNode_GetRemainingMs,Reads remaining cooldown time in milliseconds from a cooldown list node timer.
+WildStar64.exe,1407a1680,SpellService_LookupSpellInnerTuningRecord,Looks up per-spell inner tuning overrides by active spell id and inner id; returned record fields override cast time, min or max range, and wrapper route key.
 WildStar64.exe,1407a16f0,ChargeService_GetChargesForSpell,Returns pointer to charge counter for a spell ID; null if no charge system applies.
 WildStar64.exe,1405e73e0,InnateAbility_GetCount,Returns count of innate ability spells for the player entity.
 WildStar64.exe,140462a90,Entity_GetInnateResourceValue,Queries current innate resource value from entity active state.

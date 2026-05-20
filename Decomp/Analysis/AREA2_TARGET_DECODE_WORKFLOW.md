@@ -1,7 +1,11 @@
 # Area 2 Target Decode Workflow
 
 This workflow is the focused follow-on to `EVIDENCE_LOOP_PROCEDURE.md` for the
-unresolved target-helper chain and target types `0`, `6`, and `7`.
+target-helper chain and target types `0`, `6`, and `7`.
+
+Status update (2026-05-19): the helper-chain decode is no longer the primary
+decomp blocker. Use this workflow for follow-up witness validation and
+world-target routing questions, not as the main next-area roadmap item.
 
 Use it when the question is specifically about `Spell4TargetMechanics`,
 `Spell4ValidTargets`, or the client-side helper path behind
