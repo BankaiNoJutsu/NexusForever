@@ -79,6 +79,22 @@ namespace NexusForever.WorldServer.Network
 
         protected override void OnDisconnect()
         {
+            if (Player != null)
+            {
+                log.Warn(
+                    "World session disconnect: session={0}, account={1}, character={2}, playerGuid={3}, world={4}, zone={5}, position=({6:R}, {7:R}, {8:R}), heartbeatRemaining={9:R}s.",
+                    Id,
+                    Account?.Id.ToString() ?? "none",
+                    Player.CharacterId,
+                    Player.Guid,
+                    Player.Map?.Entry?.Id ?? 0u,
+                    Player.Zone?.Id ?? 0u,
+                    Player.Position.X,
+                    Player.Position.Y,
+                    Player.Position.Z,
+                    Heartbeat.SecondsUntilFlatline);
+            }
+
             base.OnDisconnect();
             Player?.LogoutManager.Finish(LogoutReason.AccountDisconnected);
 

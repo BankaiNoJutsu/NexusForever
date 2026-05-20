@@ -8,6 +8,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Packet;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
@@ -64,6 +65,32 @@ public class GameSessionHeartbeatTests
 
             Assert.Equal(1, handler.CallCount);
             Assert.True(session.Heartbeat.Flatline);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void HandlePacket_StatePacket_RefreshesHeartbeatThroughRegisteredHandler()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        MessageManager messageManager = CreateMessageManager(typeof(State), typeof(ClientStateHeartbeatHandler));
+        LegacyServiceProvider.Provider = new ServiceCollection()
+            .AddTransient<ClientStateHeartbeatHandler>()
+            .AddKeyedTransient<IReadable, State>(GameMessageOpcode.State)
+            .BuildServiceProvider();
+
+        try
+        {
+            var session = new TestWorldSession(messageManager);
+            session.Heartbeat.Update(299d);
+
+            session.HandlePacket(BuildPacket(GameMessageOpcode.State));
+            session.Heartbeat.Update(2d);
+
+            Assert.False(session.Heartbeat.Flatline);
         }
         finally
         {

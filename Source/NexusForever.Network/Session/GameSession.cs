@@ -302,11 +302,15 @@ namespace NexusForever.Network.Session
             while (CanProcessOutgoingPackets && outgoingPackets.TryDequeue(out ServerGamePacket packet))
             {
                 NexusForeverDiagnostics.RecordPacketQueueLength("world", "outgoing", outgoingPackets.Count);
-                FlushPacket(packet);
+                if (!FlushPacket(packet))
+                {
+                    outgoingPackets.Clear();
+                    break;
+                }
             }
         }
 
-        private void FlushPacket(ServerGamePacket packet)
+        private bool FlushPacket(ServerGamePacket packet)
         {
             long start = NexusForeverDiagnostics.GetTimestamp();
             using (var stream = new MemoryStream())
@@ -316,9 +320,12 @@ namespace NexusForever.Network.Session
                 writer.Write(packet.Opcode, 16);
                 writer.WriteBytes(packet.Data);
 
-                SendRaw(stream.ToArray());
+                if (!SendRaw(stream.ToArray()))
+                    return false;
             }
+
             NexusForeverDiagnostics.RecordPacketFlush("world", packet.Opcode.ToString(), packet.Data.Length, NexusForeverDiagnostics.GetElapsedMilliseconds(start));
+            return true;
         }
     }
 }

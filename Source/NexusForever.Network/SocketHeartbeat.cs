@@ -4,7 +4,11 @@ namespace NexusForever.Network
 {
     public class SocketHeartbeat : IUpdate
     {
+        private const double DefaultTimeToFlatline = 300d;
+
         public bool Flatline => timeToFlatline <= 0d;
+        public double SecondsUntilFlatline => timeToFlatline;
+        public double TimeoutSeconds => DefaultTimeToFlatline;
 
         private double timeToFlatline;
 
@@ -15,7 +19,7 @@ namespace NexusForever.Network
 
         public void OnHeartbeat()
         {
-            timeToFlatline = 300d;
+            timeToFlatline = DefaultTimeToFlatline;
         }
 
         public void Update(double lastTick)

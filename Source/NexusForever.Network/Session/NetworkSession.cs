@@ -81,7 +81,12 @@ namespace NexusForever.Network.Session
             {
                 // no defibrillator is going to save this session
                 if (Heartbeat.Flatline)
-                    log.Trace($"Client {Id} has flatlined.");
+                {
+                    log.Warn(
+                        "Client {0} heartbeat flatlined after {1:R}s without socket activity; disconnecting.",
+                        Id,
+                        Heartbeat.TimeoutSeconds);
+                }
 
                 disconnectState = DisconnectState.Processing;
                 OnDisconnect();
@@ -124,9 +129,15 @@ namespace NexusForever.Network.Session
                 int length = socket.EndReceive(ar);
                 if (length == 0)
                 {
+                    log.Debug(
+                        "Client {0} closed the socket receive stream; heartbeatRemaining={1:R}s.",
+                        Id,
+                        Heartbeat.SecondsUntilFlatline);
                     ForceDisconnect();
                     return;
                 }
+
+                Heartbeat.OnHeartbeat();
 
                 byte[] data = new byte[length + bufferOffset];
                 Buffer.BlockCopy(buffer, 0, data, 0, data.Length);
@@ -138,6 +149,17 @@ namespace NexusForever.Network.Session
                     Buffer.BlockCopy(buffer, data.Length - bufferOffset, buffer, 0, bufferOffset);
 
                 socket.BeginReceive(buffer, bufferOffset, buffer.Length - bufferOffset, SocketFlags.None, ReceiveDataCallback, null);
+            }
+            catch (SocketException e) when (e.SocketErrorCode is SocketError.ConnectionAborted or SocketError.ConnectionReset or SocketError.Shutdown or SocketError.OperationAborted)
+            {
+                log.Debug(
+                    e,
+                    "Client {0} socket receive ended with {1}; disconnectState={2}, heartbeatRemaining={3:R}s.",
+                    Id,
+                    e.SocketErrorCode,
+                    disconnectState?.ToString() ?? "None",
+                    Heartbeat.SecondsUntilFlatline);
+                ForceDisconnect();
             }
             catch (Exception e)
             {
@@ -151,16 +173,24 @@ namespace NexusForever.Network.Session
         /// <summary>
         /// Send supplied data to remote client on <see cref="Socket"/>.
         /// </summary>
-        protected void SendRaw(byte[] data)
+        protected bool SendRaw(byte[] data)
         {
             try
             {
                 socket.Send(data, 0, data.Length, SocketFlags.None);
+                return true;
+            }
+            catch (SocketException e) when (e.SocketErrorCode is SocketError.ConnectionAborted or SocketError.ConnectionReset or SocketError.Shutdown)
+            {
+                log.Debug(e, $"Client {Id} disconnected during socket send.");
+                ForceDisconnect();
+                return false;
             }
             catch (Exception e)
             {
                 log.Error(e, $"An exception occured for client {Id} during socket send!");
                 ForceDisconnect();
+                return false;
             }
         }
 
