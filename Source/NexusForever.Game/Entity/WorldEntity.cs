@@ -398,6 +398,11 @@ namespace NexusForever.Game.Entity
             ResetVitalsToMaximum();
         }
 
+        public void SetQuestChecklistIndex(byte index)
+        {
+            QuestChecklistIdx = index;
+        }
+
         private void ResetVitalsToMaximum()
         {
             Health = MaxHealth;

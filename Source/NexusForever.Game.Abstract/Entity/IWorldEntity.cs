@@ -102,6 +102,11 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         void Initialise(ICreatureInfo creatureInfo, EntityModel model);
 
+        /// <summary>
+        /// Sets the quest checklist bit index emitted in the entity create model.
+        /// </summary>
+        void SetQuestChecklistIndex(byte index);
+
         ServerEntityCreate BuildCreatePacket(bool initialCommands);
 
         /// <summary>

@@ -8,6 +8,7 @@ using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Map.Search;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.GameTable;
@@ -352,7 +353,12 @@ namespace NexusForever.Script.Main.Tutorial
                 owner.Entry.Id);
         }
 
-        private void SpawnTutorialEntity<T>(uint creatureId, Vector3 position, Vector3 rotation = default) where T : class, IWorldEntity
+        private void SpawnTutorialEntity<T>(
+            uint creatureId,
+            Vector3 position,
+            Vector3 rotation = default,
+            byte? questChecklistIdx = null,
+            EntityCreateFlag createFlags = 0) where T : class, IWorldEntity
         {
             T entity = entityFactory.CreateEntity<T>();
             if (entity == null)
@@ -366,6 +372,10 @@ namespace NexusForever.Script.Main.Tutorial
 
             entity.Initialise(creatureId);
             entity.Rotation = rotation;
+            if (questChecklistIdx.HasValue)
+                entity.SetQuestChecklistIndex(questChecklistIdx.Value);
+
+            entity.CreateFlags |= createFlags;
 
             owner.EnqueueAdd(entity, new TutorialMapPosition
             {
@@ -507,14 +517,24 @@ namespace NexusForever.Script.Main.Tutorial
             Vector3 npcPosition = ToVector3(wlNpc);
             Vector3 checklistCenter = ToVector3(wlC);
             SpawnTutorialEntity<INonPlayerEntity>(ExileEscapePodNpcId, npcPosition);
-            SpawnTutorialEntity<ISimpleCollidableEntity>(ExileEverstarGroveDepartureTerminalCreatureId, ToVector3(wlA));
-            SpawnTutorialEntity<ISimpleCollidableEntity>(ExileNorthernWildsDepartureTerminalCreatureId, ToVector3(wlB));
+            SpawnTutorialEntity<ISimpleCollidableEntity>(
+                ExileEverstarGroveDepartureTerminalCreatureId,
+                ToVector3(wlA),
+                createFlags: EntityCreateFlag.HasInteractionPrereq);
+            SpawnTutorialEntity<ISimpleCollidableEntity>(
+                ExileNorthernWildsDepartureTerminalCreatureId,
+                ToVector3(wlB),
+                createFlags: EntityCreateFlag.HasInteractionPrereq);
 
             for (int i = 0; i < ExileEscapePodChecklistCreatureIds.Length; i++)
             {
                 float angle = i * MathF.PI * 2f / ExileEscapePodChecklistCreatureIds.Length;
                 Vector3 offset = new(MathF.Cos(angle) * 5f, 0f, MathF.Sin(angle) * 5f);
-                SpawnTutorialEntity<ISimpleCollidableEntity>(ExileEscapePodChecklistCreatureIds[i], checklistCenter + offset);
+                SpawnTutorialEntity<ISimpleCollidableEntity>(
+                    ExileEscapePodChecklistCreatureIds[i],
+                    checklistCenter + offset,
+                    questChecklistIdx: (byte)i,
+                    createFlags: EntityCreateFlag.HasInteractionPrereq);
             }
 
             exileDepartureEntitiesSpawned = true;
@@ -550,14 +570,24 @@ namespace NexusForever.Script.Main.Tutorial
             Vector3 npcPosition = ToVector3(wlNpc);
             Vector3 checklistCenter = ToVector3(wlC);
             SpawnTutorialEntity<INonPlayerEntity>(DominionEscapePodNpcId, npcPosition);
-            SpawnTutorialEntity<ISimpleCollidableEntity>(DominionCrimsonIsleDepartureTerminalCreatureId, ToVector3(wlA));
-            SpawnTutorialEntity<ISimpleCollidableEntity>(DominionLevianBayDepartureTerminalCreatureId, ToVector3(wlB));
+            SpawnTutorialEntity<ISimpleCollidableEntity>(
+                DominionCrimsonIsleDepartureTerminalCreatureId,
+                ToVector3(wlA),
+                createFlags: EntityCreateFlag.HasInteractionPrereq);
+            SpawnTutorialEntity<ISimpleCollidableEntity>(
+                DominionLevianBayDepartureTerminalCreatureId,
+                ToVector3(wlB),
+                createFlags: EntityCreateFlag.HasInteractionPrereq);
 
             for (int i = 0; i < DominionEscapePodChecklistCreatureIds.Length; i++)
             {
                 float angle = i * MathF.PI * 2f / DominionEscapePodChecklistCreatureIds.Length;
                 Vector3 offset = new(MathF.Cos(angle) * 5f, 0f, MathF.Sin(angle) * 5f);
-                SpawnTutorialEntity<ISimpleCollidableEntity>(DominionEscapePodChecklistCreatureIds[i], checklistCenter + offset);
+                SpawnTutorialEntity<ISimpleCollidableEntity>(
+                    DominionEscapePodChecklistCreatureIds[i],
+                    checklistCenter + offset,
+                    questChecklistIdx: (byte)i,
+                    createFlags: EntityCreateFlag.HasInteractionPrereq);
             }
 
             dominionDepartureEntitiesSpawned = true;

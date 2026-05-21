@@ -111,6 +111,20 @@ public class EntityCreatePacketTests
         Assert.Equal(ownerId, GetOwnerId(packet.EntityModel));
     }
 
+    [Fact]
+    public void SetQuestChecklistIndex_UsesIndexInSimpleCollidableCreateModel()
+    {
+        using ServiceProvider provider = BuildProvider();
+        IEntityFactory entityFactory = provider.GetRequiredService<IEntityFactory>();
+        IWorldEntity entity = entityFactory.CreateWorldEntity(EntityType.SimpleCollidable);
+
+        entity.SetQuestChecklistIndex(7);
+
+        var packet = entity.BuildCreatePacket(false);
+        var model = Assert.IsType<SimpleCollidableEntityModel>(packet.EntityModel);
+        Assert.Equal(7, model.QuestChecklistIdx);
+    }
+
     private static ServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();

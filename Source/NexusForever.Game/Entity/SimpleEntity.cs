@@ -31,6 +31,12 @@ namespace NexusForever.Game.Entity
             QuestChecklistIdx = model.QuestChecklistIdx;
         }
 
+        public override void Initialise(ICreatureInfo creatureInfo)
+        {
+            base.Initialise(creatureInfo);
+            scriptCollection = ScriptManager.Instance.InitialiseEntityScripts<ISimpleEntity>(this);
+        }
+
         public override void Initialise(ICreatureInfo creatureInfo, EntityModel model)
         {
             base.Initialise(creatureInfo, model);
