@@ -1507,6 +1507,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
+            player.RecordStarterTutorialDepartureTerminal(activatedEntity.CreatureId);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateEntity, activatedEntity.CreatureId, 1u);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateEntity2, activatedEntity.CreatureId, 1u);
 

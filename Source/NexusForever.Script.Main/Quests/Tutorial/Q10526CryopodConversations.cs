@@ -1,8 +1,5 @@
-using System.Linq;
 using Microsoft.Extensions.Logging;
-using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
-using NexusForever.Game.Static.Quest;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 
@@ -14,54 +11,15 @@ namespace NexusForever.Script.Main.Quests.Tutorial
     /// Objectives: EnterZone 4965, TalkToTargetGroup 14368 & 14369, TalkTo 73663 & 73664.
     /// </summary>
     [ScriptFilterOwnerId(10526u)]
-    public class Q10526CryopodConversationsQuestScript : IQuestScript, IOwnedScript<IQuest>
+    public class Q10526CryopodConversationsQuestScript : FollowUpQuestScript<Q10526CryopodConversationsQuestScript>
     {
-        private const ushort NextQuestId = 10541;
-
-        private readonly ILogger<Q10526CryopodConversationsQuestScript> log;
-        private readonly IGlobalQuestManager globalQuestManager;
-        private IQuest owner;
+        protected override ushort NextQuestId => 10541;
 
         public Q10526CryopodConversationsQuestScript(
             ILogger<Q10526CryopodConversationsQuestScript> log,
             IGlobalQuestManager globalQuestManager)
+            : base(log, globalQuestManager)
         {
-            this.log = log;
-            this.globalQuestManager = globalQuestManager;
-        }
-
-        public void OnLoad(IQuest owner)
-        {
-            this.owner = owner;
-            log.LogDebug("Loaded quest {QuestId} for character {CharacterId}: faction={Faction}, state={QuestState}.",
-                owner.Id, owner.Player.CharacterId, owner.Player.Faction1, owner.State);
-        }
-
-        public void OnQuestStateChange(QuestState newState, QuestState oldState)
-        {
-            log.LogDebug("Quest {QuestId} state changed for character {CharacterId}: {OldState} -> {NewState}.",
-                owner.Id, owner.Player.CharacterId, oldState, newState);
-
-            if (newState == QuestState.Completed)
-                GrantNextQuest();
-        }
-
-        private void GrantNextQuest()
-        {
-            if (owner.Player.QuestManager.GetQuestState(NextQuestId) != null)
-                return;
-
-            IQuestInfo questInfo = globalQuestManager.GetQuestInfo(NextQuestId);
-            if (questInfo == null)
-            {
-                log.LogWarning("Next quest {NextQuestId} info missing for character {CharacterId}.",
-                    NextQuestId, owner.Player.CharacterId);
-                return;
-            }
-
-            owner.Player.QuestManager.QuestAdd(questInfo);
-            log.LogDebug("Granted follow-up quest {NextQuestId} to character {CharacterId} after completing {QuestId}.",
-                NextQuestId, owner.Player.CharacterId, owner.Id);
         }
     }
 }

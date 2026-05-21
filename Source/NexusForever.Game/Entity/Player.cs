@@ -69,6 +69,7 @@ using NexusForever.Shared.Game;
 using NexusForever.Shared.Game.Events;
 using NLog;
 using Path = NexusForever.Game.Static.PlayerPath.Path;
+using static NexusForever.Game.Static.Tutorial.StarterTutorialDefinition;
 
 namespace NexusForever.Game.Entity
 {
@@ -107,14 +108,6 @@ namespace NexusForever.Game.Entity
         private const float DefaultInteractionMaxRange = 5f;
         private const uint ChairBusyEffectId = uint.MaxValue;
         private const uint MaxTradeskillTalentTiers = 10u;
-        private const ushort ExileMovementQuestId = 10513;
-        private const ushort DominionMovementQuestId = 10521;
-        private const ushort ExileCombatQuestId = 10518;
-        private const ushort DominionCombatQuestId = 10524;
-        private const ushort ExileHoverboardQuestId = 10527;
-        private const ushort DominionHoverboardQuestId = 10532;
-        private const uint ExileCombatSimulationWorldLocationId = 51739u;
-        private const uint DominionCombatSimulationWorldLocationId = 52898u;
         private const uint TutorialHoverboardProjectorCreatureId = 73419u;
         private const uint TutorialHoverboardBarrierCreatureId = 73610u;
         private const uint TutorialHoverboardObjectiveRingCreatureId = 70939u;
@@ -135,17 +128,8 @@ namespace NexusForever.Game.Entity
         private const uint TutorialCombatFireHazardCreatureId = 75094u;
         private const uint TutorialCombatMortarHazardCreatureId = 75096u;
         private const uint TutorialHoverboardProjectorActivateSpellId = 86744u;
-        private const uint TutorialHoverboardFinishWorldLocationId = 51734u;
         private const float TutorialHoverboardFinishRecoveryPadding = 6f;
 
-        private static readonly ushort[] starterTutorialQuestIds = [ExileMovementQuestId, DominionMovementQuestId, ExileHoverboardQuestId, DominionHoverboardQuestId];
-        private static readonly ushort[] receiverlessTutorialQuestIds = [ExileMovementQuestId, DominionMovementQuestId, ExileHoverboardQuestId, DominionHoverboardQuestId, ExileCombatQuestId, DominionCombatQuestId];
-        private static readonly ushort[] followUpTutorialQuestIds = [ExileCombatQuestId, 10519, 10520, 10522, 10523, DominionCombatQuestId, 10525, 10526, 10528, 10530, 10540, 10541];
-        private static readonly ushort[] exileStarterTutorialQuestChain = [ExileMovementQuestId, ExileHoverboardQuestId, ExileCombatQuestId, 10525, 10540, 10519, 10520, 10528];
-        private static readonly ushort[] dominionStarterTutorialQuestChain = [DominionMovementQuestId, DominionHoverboardQuestId, DominionCombatQuestId, 10526, 10541, 10522, 10523, 10530];
-        private static readonly uint[] starterTutorialHoverboardProjectorObjectiveIds = [21324u, 21354u];
-        private static readonly uint[] starterTutorialHoverboardRideObjectiveIds = [21323u, 21355u];
-        private static readonly uint[] starterTutorialHoverboardFinishObjectiveIds = [21325u, 21356u];
         private static readonly uint[] tutorialManagedCreatureIds =
         [
             TutorialHoverboardProjectorCreatureId,
@@ -168,7 +152,6 @@ namespace NexusForever.Game.Entity
             TutorialCombatFireHazardCreatureId,
             TutorialCombatMortarHazardCreatureId
         ];
-        private static readonly uint[] tutorialWorldLocationIds = [51735u, 51736u, 51737u, 51703u, TutorialHoverboardFinishWorldLocationId];
         private static readonly StarterTutorialEntitySearchCheck starterTutorialEntitySearchCheck = new();
 
         private bool recoveringStarterTutorialQuestProgression;
@@ -369,6 +352,8 @@ namespace NexusForever.Game.Entity
 
         private IVendorInfo selectedVendorInfo;
         private uint? selectedVendorGuid;
+
+        public uint? StarterTutorialDepartureTerminalCreatureId { get; private set; }
 
         private bool forceSave;
         private bool saveInProgress;
@@ -734,7 +719,7 @@ namespace NexusForever.Game.Entity
                 if ((saveMask & PlayerSaveMask.Sex) != 0)
                 {
                     model.Sex = (byte)Sex;
-                    entity.Property(p => p.Sex).IsModified = true;                    
+                    entity.Property(p => p.Sex).IsModified = true;
                 }
 
                 if ((saveMask & PlayerSaveMask.Race) != 0)
@@ -1461,11 +1446,11 @@ namespace NexusForever.Game.Entity
             if (Map?.Entry?.Id != TutorialWorldId)
                 return;
 
-            log.Debug($"Tutorial entered-world recovery for player {Guid}: position ({Position.X}, {Position.Y}, {Position.Z}), starter states [{FormatQuestStates(starterTutorialQuestIds)}], follow-up states [{FormatQuestStates(followUpTutorialQuestIds)}].");
+            log.Debug($"Tutorial entered-world recovery for player {Guid}: position ({Position.X}, {Position.Y}, {Position.Z}), starter states [{FormatQuestStates(StarterQuestIds)}], follow-up states [{FormatQuestStates(FollowUpQuestIds)}].");
 
-            if (HasAnyQuestState(followUpTutorialQuestIds))
+            if (HasAnyQuestState(FollowUpQuestIds))
             {
-                log.Debug($"Skipping entered-world Rider's Reef recovery for player {Guid}: follow-up quest state already present [{FormatQuestStates(followUpTutorialQuestIds)}].");
+                log.Debug($"Skipping entered-world Rider's Reef recovery for player {Guid}: follow-up quest state already present [{FormatQuestStates(FollowUpQuestIds)}].");
                 return;
             }
 
@@ -1490,7 +1475,7 @@ namespace NexusForever.Game.Entity
                 return;
 
             bool hasRelevantActiveQuest = QuestManager.GetActiveQuests()
-                .Any(q => starterTutorialQuestIds.Contains(q.Id) || followUpTutorialQuestIds.Contains(q.Id));
+                .Any(q => StarterQuestIds.Contains(q.Id) || FollowUpQuestIds.Contains(q.Id));
             if (!hasRelevantActiveQuest)
                 return;
 
@@ -1522,17 +1507,17 @@ namespace NexusForever.Game.Entity
             if (furthestReachedIndex < 0)
             {
                 if (logNoOverlap)
-                    log.Debug($"Entered-world Rider's Reef recovery found no world-location overlap for player {Guid}: position ({Position.X}, {Position.Y}, {Position.Z}), hit radius {HitRadius}, starter states [{FormatQuestStates(starterTutorialQuestIds)}].");
+                    log.Debug($"Entered-world Rider's Reef recovery found no world-location overlap for player {Guid}: position ({Position.X}, {Position.Y}, {Position.Z}), hit radius {HitRadius}, starter states [{FormatQuestStates(StarterQuestIds)}].");
 
                 return false;
             }
 
             bool updated = false;
-            foreach (IQuest quest in QuestManager.GetActiveQuests().Where(q => starterTutorialQuestIds.Contains(q.Id)))
+            foreach (IQuest quest in QuestManager.GetActiveQuests().Where(q => StarterQuestIds.Contains(q.Id)))
             {
                 for (int index = 0; index <= furthestReachedIndex; index++)
                 {
-                    uint worldLocationId = tutorialWorldLocationIds[index];
+                    uint worldLocationId = TutorialWorldLocationIds[index];
                     foreach (IQuestObjective objective in GetTutorialObjectivesToUpdate(quest, worldLocationId))
                     {
                         log.Debug($"Entered-world Rider's Reef recovery advanced player {Guid}: quest {quest.Id}, objective {objective.ObjectiveInfo.Id}, world location {worldLocationId}, furthest index {furthestReachedIndex}.");
@@ -1550,9 +1535,9 @@ namespace NexusForever.Game.Entity
             int furthestIndex = -1;
             float horizontalPadding = HitRadius * 0.5f;
 
-            for (int index = 0; index < tutorialWorldLocationIds.Length; index++)
+            for (int index = 0; index < TutorialWorldLocationIds.Length; index++)
             {
-                WorldLocation2Entry worldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(tutorialWorldLocationIds[index]);
+                WorldLocation2Entry worldLocation = GameTableManager.Instance.WorldLocation2.GetEntry(TutorialWorldLocationIds[index]);
                 if (worldLocation != null && IsInsideStarterTutorialWorldLocation(Position, worldLocation, horizontalPadding))
                     furthestIndex = index;
             }
@@ -2020,6 +2005,15 @@ namespace NexusForever.Game.Entity
             vehicle?.PassengerRemove(this);
         }
 
+        public void RecordStarterTutorialDepartureTerminal(uint creatureId)
+        {
+            if (!DepartureTerminalCreatureIds.Contains(creatureId))
+                return;
+
+            StarterTutorialDepartureTerminalCreatureId = creatureId;
+            log.Debug($"Recorded starter tutorial departure terminal for player {Guid}: creature={creatureId}.");
+        }
+
         public void SyncStarterTutorialEntityVisibility()
         {
             if (Map?.Entry?.Id != TutorialWorldId)
@@ -2177,7 +2171,7 @@ namespace NexusForever.Game.Entity
 
         private bool HasUnlockedStarterHoverboardCourse()
         {
-            if (HasAnyQuestState(followUpTutorialQuestIds))
+            if (HasAnyQuestState(FollowUpQuestIds))
                 return true;
 
             foreach (ushort questId in new[] { ExileHoverboardQuestId, DominionHoverboardQuestId })
@@ -2190,7 +2184,7 @@ namespace NexusForever.Game.Entity
             return QuestManager.GetActiveQuests()
                 .Where(q => q.Id == ExileHoverboardQuestId || q.Id == DominionHoverboardQuestId)
                 .SelectMany(q => q)
-                .Any(o => starterTutorialHoverboardProjectorObjectiveIds.Contains(o.ObjectiveInfo.Id) && o.IsComplete());
+                .Any(o => HoverboardProjectorObjectiveIds.Contains(o.ObjectiveInfo.Id) && o.IsComplete());
         }
 
         private static bool IsStarterTutorialManagedEntity(IGridEntity entity)
@@ -2320,10 +2314,10 @@ namespace NexusForever.Game.Entity
 
             foreach (IQuest quest in QuestManager.GetActiveQuests().Where(q => q.Id == ExileHoverboardQuestId || q.Id == DominionHoverboardQuestId))
             {
-                if (!quest.Any(o => starterTutorialHoverboardProjectorObjectiveIds.Contains(o.ObjectiveInfo.Id) && o.IsComplete()))
+                if (!quest.Any(o => HoverboardProjectorObjectiveIds.Contains(o.ObjectiveInfo.Id) && o.IsComplete()))
                     continue;
 
-                IQuestObjective rideObjective = quest.FirstOrDefault(o => starterTutorialHoverboardRideObjectiveIds.Contains(o.ObjectiveInfo.Id) && !o.IsComplete());
+                IQuestObjective rideObjective = quest.FirstOrDefault(o => HoverboardRideObjectiveIds.Contains(o.ObjectiveInfo.Id) && !o.IsComplete());
                 if (rideObjective == null)
                     continue;
 
@@ -2431,7 +2425,7 @@ namespace NexusForever.Game.Entity
         {
             bool completedAny = false;
 
-            foreach (ushort questId in receiverlessTutorialQuestIds)
+            foreach (ushort questId in ReceiverlessQuestIds)
             {
                 if (QuestManager.GetQuestState(questId) != QuestState.Achieved)
                     continue;
@@ -2440,11 +2434,11 @@ namespace NexusForever.Game.Entity
                 {
                     QuestManager.QuestComplete(questId, 0, false);
                     completedAny = true;
-                    log.Debug($"Tutorial quest completion recovery for player {Guid}: quest={questId}, states [{FormatQuestStates(receiverlessTutorialQuestIds)}].");
+                    log.Debug($"Tutorial quest completion recovery for player {Guid}: quest={questId}, states [{FormatQuestStates(ReceiverlessQuestIds)}].");
                 }
                 catch (Exception exception)
                 {
-                    log.Debug(exception, $"Tutorial quest completion recovery skipped for player {Guid}: quest={questId}, states [{FormatQuestStates(receiverlessTutorialQuestIds)}].");
+                    log.Debug(exception, $"Tutorial quest completion recovery skipped for player {Guid}: quest={questId}, states [{FormatQuestStates(ReceiverlessQuestIds)}].");
                 }
             }
 
@@ -2457,10 +2451,10 @@ namespace NexusForever.Game.Entity
             switch (Faction1)
             {
                 case Faction.Exile:
-                    questChain = exileStarterTutorialQuestChain;
+                    questChain = ExileQuestChain;
                     break;
                 case Faction.Dominion:
-                    questChain = dominionStarterTutorialQuestChain;
+                    questChain = DominionQuestChain;
                     break;
                 default:
                     return false;
@@ -2502,9 +2496,9 @@ namespace NexusForever.Game.Entity
         {
             return QuestManager.GetActiveQuests()
                 .Where(q => q.Id == ExileHoverboardQuestId || q.Id == DominionHoverboardQuestId)
-                .Any(q => q.Any(o => starterTutorialHoverboardProjectorObjectiveIds.Contains(o.ObjectiveInfo.Id) && o.IsComplete())
-                    && (q.Any(o => starterTutorialHoverboardRideObjectiveIds.Contains(o.ObjectiveInfo.Id) && !o.IsComplete())
-                        || q.Any(o => starterTutorialHoverboardFinishObjectiveIds.Contains(o.ObjectiveInfo.Id) && !o.IsComplete())));
+                .Any(q => q.Any(o => HoverboardProjectorObjectiveIds.Contains(o.ObjectiveInfo.Id) && o.IsComplete())
+                    && (q.Any(o => HoverboardRideObjectiveIds.Contains(o.ObjectiveInfo.Id) && !o.IsComplete())
+                        || q.Any(o => HoverboardFinishObjectiveIds.Contains(o.ObjectiveInfo.Id) && !o.IsComplete())));
         }
 
         private string FormatStarterHoverboardQuestProgress()

@@ -56,6 +56,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             if (entity == null)
                 return;
 
+            player.RecordStarterTutorialDepartureTerminal(entity.CreatureId);
+
             bool handledStarterTutorialCombatMine = TryUpdateStarterTutorialCombatMineObjective(player, entity);
 
             if (includeActivateEntity && !handledStarterTutorialCombatMine)

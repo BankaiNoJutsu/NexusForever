@@ -216,6 +216,16 @@ namespace NexusForever.Game.Abstract.Entity
         void Dismount();
 
         /// <summary>
+        /// Last starter tutorial departure terminal activated by this <see cref="IPlayer"/>.
+        /// </summary>
+        uint? StarterTutorialDepartureTerminalCreatureId { get; }
+
+        /// <summary>
+        /// Record a starter tutorial departure terminal activation for destination selection.
+        /// </summary>
+        void RecordStarterTutorialDepartureTerminal(uint creatureId);
+
+        /// <summary>
         /// Re-evaluate tutorial-specific entity visibility for this <see cref="IPlayer"/>.
         /// </summary>
         void SyncStarterTutorialEntityVisibility();

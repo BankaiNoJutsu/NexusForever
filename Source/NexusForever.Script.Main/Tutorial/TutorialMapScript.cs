@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Cinematic.Cinematics;
 using NexusForever.Game.Abstract.Cinematic;
@@ -14,6 +14,7 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
+using static NexusForever.Game.Static.Tutorial.StarterTutorialDefinition;
 
 namespace NexusForever.Script.Main.Tutorial
 {
@@ -55,19 +56,13 @@ namespace NexusForever.Script.Main.Tutorial
             public Vector3 Position { get; set; }
         }
 
-        private const ushort ExileMovementQuestId = 10513;
-        private const ushort DominionMovementQuestId = 10521;
-        private const ushort ExileHoverboardQuestId = 10527;
-        private const ushort DominionHoverboardQuestId = 10532;
         private const uint ExileCombatFinalWorldLocationId = 51740u;
-        private const uint DominionCombatStartWorldLocationId = 52898u;
         private const uint DominionCombatMineEasyWorldLocationId = 52899u;
         private const uint DominionCombatMineMediumWorldLocationId = 52900u;
         private const uint DominionCombatMineHardWorldLocationId = 52901u;
         private const uint DominionCombatTurretWorldLocationId00 = 52902u;
         private const uint DominionCombatTurretWorldLocationId01 = 52903u;
         private const uint DominionCombatEliteWorldLocationId = 53015u;
-        private const uint ExileCombatStartWorldLocationId = 51739u;
         private const uint ExileCombatMineEasyWorldLocationId = 51662u;
         private const uint ExileCombatMineMediumWorldLocationId = 51663u;
         private const uint ExileCombatMineHardWorldLocationId = 51664u;
@@ -99,8 +94,6 @@ namespace NexusForever.Script.Main.Tutorial
         // Exile departure (zone 5998): quest 10528 NPC + escape pod consoles + checklist entities
         private const uint ExileEscapePodNpcId = 73604u;
         private const uint ExileEscapePodNpcWL = 51694u;
-        private const uint ExileEscapePodConsoleCreatureA = 73605u;
-        private const uint ExileEscapePodConsoleCreatureB = 73606u;
         private const uint ExileEscapePodConsoleAWL = 51695u;
         private const uint ExileEscapePodConsoleBWL = 51696u;
         private const uint ExileEscapePodConsoleCWL = 51697u;
@@ -109,8 +102,6 @@ namespace NexusForever.Script.Main.Tutorial
         // Dominion departure (zone 5999): quest 10530 NPC + escape pod consoles + checklist entities
         private const uint DominionEscapePodNpcId = 74778u;
         private const uint DominionEscapePodNpcWL = 52750u;
-        private const uint DominionEscapePodConsoleCreatureA = 74772u;
-        private const uint DominionEscapePodConsoleCreatureB = 74773u;
         private const uint DominionEscapePodConsoleAWL = 52747u;
         private const uint DominionEscapePodConsoleBWL = 52748u;
         private const uint DominionEscapePodConsoleCWL = 52749u;
@@ -123,9 +114,6 @@ namespace NexusForever.Script.Main.Tutorial
         // Ship interior checklist entity (quests 10520/10523, target group 14425)
         private const uint ShipInteriorChecklistCreatureId = 73500u;
 
-        private static readonly ushort[] starterTutorialQuestIds = [ExileMovementQuestId, DominionMovementQuestId, ExileHoverboardQuestId, DominionHoverboardQuestId];
-        private static readonly ushort[] followUpTutorialQuestIds = [10518, 10519, 10520, 10522, 10523, 10524, 10525, 10526, 10528, 10530, 10540, 10541];
-        private static readonly uint[] tutorialWorldLocationIds = [51735u, 51736u, 51737u, 51703u, 51734u];
         private static readonly MatchAllPlayerSearchCheck matchAllPlayers = new();
 
         private IBaseMap owner;
@@ -193,8 +181,8 @@ namespace NexusForever.Script.Main.Tutorial
                     player.Position.X,
                     player.Position.Y,
                     player.Position.Z,
-                    FormatQuestStates(player, starterTutorialQuestIds),
-                    FormatQuestStates(player, followUpTutorialQuestIds));
+                    FormatQuestStates(player, StarterQuestIds),
+                    FormatQuestStates(player, FollowUpQuestIds));
 
                 EnsureTutorialQuests(player);
             }
@@ -206,8 +194,8 @@ namespace NexusForever.Script.Main.Tutorial
                 return;
 
             initialisedPlayerGuids.Add(player.Guid);
-            bool hadTutorialState = HasAnyQuestState(player, starterTutorialQuestIds)
-                || HasAnyQuestState(player, followUpTutorialQuestIds);
+            bool hadTutorialState = HasAnyQuestState(player, StarterQuestIds)
+                || HasAnyQuestState(player, FollowUpQuestIds);
 
             log.LogDebug("Tutorial map player add for character {CharacterId} (guid {PlayerGuid}) on map {MapId}: faction {Faction}, position ({X}, {Y}, {Z}), starter states [{StarterQuestStates}], follow-up states [{FollowUpQuestStates}].",
                 player.CharacterId,
@@ -217,8 +205,8 @@ namespace NexusForever.Script.Main.Tutorial
                 player.Position.X,
                 player.Position.Y,
                 player.Position.Z,
-                FormatQuestStates(player, starterTutorialQuestIds),
-                FormatQuestStates(player, followUpTutorialQuestIds));
+                FormatQuestStates(player, StarterQuestIds),
+                FormatQuestStates(player, FollowUpQuestIds));
 
             EnsureTutorialQuests(player);
 
@@ -241,7 +229,7 @@ namespace NexusForever.Script.Main.Tutorial
             if (tutorialTriggersSpawned || owner == null)
                 return;
 
-            foreach (uint worldLocationId in tutorialWorldLocationIds)
+            foreach (uint worldLocationId in TutorialWorldLocationIds)
             {
                 IWorldLocationVolumeGridTriggerEntity trigger = entityFactory.CreateEntity<IWorldLocationVolumeGridTriggerEntity>();
                 trigger.Initialise(worldLocationId, 0u);
@@ -258,7 +246,7 @@ namespace NexusForever.Script.Main.Tutorial
 
             tutorialTriggersSpawned = true;
             log.LogDebug("Spawned Rider's Reef tutorial triggers on map {MapId}: world locations {WorldLocationIds}.",
-                owner.Entry.Id, string.Join(", ", tutorialWorldLocationIds));
+                owner.Entry.Id, string.Join(", ", TutorialWorldLocationIds));
         }
 
         private void EnsureExileCombatSimulationEntities()
@@ -266,7 +254,7 @@ namespace NexusForever.Script.Main.Tutorial
             if (exileCombatLaneSpawned || owner == null)
                 return;
 
-            WorldLocation2Entry start = gameTableManager.WorldLocation2.GetEntry(ExileCombatStartWorldLocationId);
+            WorldLocation2Entry start = gameTableManager.WorldLocation2.GetEntry(ExileCombatSimulationWorldLocationId);
             WorldLocation2Entry easyMine = gameTableManager.WorldLocation2.GetEntry(ExileCombatMineEasyWorldLocationId);
             WorldLocation2Entry mediumMine = gameTableManager.WorldLocation2.GetEntry(ExileCombatMineMediumWorldLocationId);
             WorldLocation2Entry hardMine = gameTableManager.WorldLocation2.GetEntry(ExileCombatMineHardWorldLocationId);
@@ -318,7 +306,7 @@ namespace NexusForever.Script.Main.Tutorial
             if (dominionCombatLaneSpawned || owner == null)
                 return;
 
-            WorldLocation2Entry start = gameTableManager.WorldLocation2.GetEntry(DominionCombatStartWorldLocationId);
+            WorldLocation2Entry start = gameTableManager.WorldLocation2.GetEntry(DominionCombatSimulationWorldLocationId);
             WorldLocation2Entry easyMine = gameTableManager.WorldLocation2.GetEntry(DominionCombatMineEasyWorldLocationId);
             WorldLocation2Entry mediumMine = gameTableManager.WorldLocation2.GetEntry(DominionCombatMineMediumWorldLocationId);
             WorldLocation2Entry hardMine = gameTableManager.WorldLocation2.GetEntry(DominionCombatMineHardWorldLocationId);
@@ -519,8 +507,8 @@ namespace NexusForever.Script.Main.Tutorial
             Vector3 npcPosition = ToVector3(wlNpc);
             Vector3 checklistCenter = ToVector3(wlC);
             SpawnTutorialEntity<INonPlayerEntity>(ExileEscapePodNpcId, npcPosition);
-            SpawnTutorialEntity<ISimpleCollidableEntity>(ExileEscapePodConsoleCreatureA, ToVector3(wlA));
-            SpawnTutorialEntity<ISimpleCollidableEntity>(ExileEscapePodConsoleCreatureB, ToVector3(wlB));
+            SpawnTutorialEntity<ISimpleCollidableEntity>(ExileEverstarGroveDepartureTerminalCreatureId, ToVector3(wlA));
+            SpawnTutorialEntity<ISimpleCollidableEntity>(ExileNorthernWildsDepartureTerminalCreatureId, ToVector3(wlB));
 
             for (int i = 0; i < ExileEscapePodChecklistCreatureIds.Length; i++)
             {
@@ -562,8 +550,8 @@ namespace NexusForever.Script.Main.Tutorial
             Vector3 npcPosition = ToVector3(wlNpc);
             Vector3 checklistCenter = ToVector3(wlC);
             SpawnTutorialEntity<INonPlayerEntity>(DominionEscapePodNpcId, npcPosition);
-            SpawnTutorialEntity<ISimpleCollidableEntity>(DominionEscapePodConsoleCreatureA, ToVector3(wlA));
-            SpawnTutorialEntity<ISimpleCollidableEntity>(DominionEscapePodConsoleCreatureB, ToVector3(wlB));
+            SpawnTutorialEntity<ISimpleCollidableEntity>(DominionCrimsonIsleDepartureTerminalCreatureId, ToVector3(wlA));
+            SpawnTutorialEntity<ISimpleCollidableEntity>(DominionLevianBayDepartureTerminalCreatureId, ToVector3(wlB));
 
             for (int i = 0; i < DominionEscapePodChecklistCreatureIds.Length; i++)
             {
@@ -581,12 +569,12 @@ namespace NexusForever.Script.Main.Tutorial
 
         private void EnsureTutorialQuests(IPlayer player)
         {
-            if (HasAnyQuestState(player, followUpTutorialQuestIds))
+            if (HasAnyQuestState(player, FollowUpQuestIds))
             {
                 log.LogDebug("Skipping Rider's Reef tutorial ensure for character {CharacterId} (guid {PlayerGuid}): follow-up quest state already present [{FollowUpQuestStates}].",
                     player.CharacterId,
                     player.Guid,
-                    FormatQuestStates(player, followUpTutorialQuestIds));
+                    FormatQuestStates(player, FollowUpQuestIds));
                 return;
             }
 
@@ -631,15 +619,15 @@ namespace NexusForever.Script.Main.Tutorial
                     player.Position.Y,
                     player.Position.Z,
                     player.HitRadius,
-                    FormatQuestStates(player, starterTutorialQuestIds));
+                    FormatQuestStates(player, StarterQuestIds));
                 return;
             }
 
-            foreach (IQuest quest in player.QuestManager.GetActiveQuests().Where(q => starterTutorialQuestIds.Contains(q.Id)))
+            foreach (IQuest quest in player.QuestManager.GetActiveQuests().Where(q => StarterQuestIds.Contains(q.Id)))
             {
                 for (int index = 0; index <= furthestReachedIndex; index++)
                 {
-                    uint worldLocationId = tutorialWorldLocationIds[index];
+                    uint worldLocationId = TutorialWorldLocationIds[index];
                     foreach (IQuestObjective objective in GetObjectivesToUpdate(quest, worldLocationId))
                     {
                         log.LogDebug("Tutorial area sync advanced character {CharacterId} (guid {PlayerGuid}): quest {QuestId} objective {ObjectiveId} at world location {WorldLocationId}, furthest index {FurthestIndex}, position ({X}, {Y}, {Z}).",
@@ -656,9 +644,9 @@ namespace NexusForever.Script.Main.Tutorial
             int furthestIndex = -1;
             float horizontalPadding = player.HitRadius * 0.5f;
 
-            for (int index = 0; index < tutorialWorldLocationIds.Length; index++)
+            for (int index = 0; index < TutorialWorldLocationIds.Length; index++)
             {
-                WorldLocation2Entry worldLocation = gameTableManager.WorldLocation2.GetEntry(tutorialWorldLocationIds[index]);
+                WorldLocation2Entry worldLocation = gameTableManager.WorldLocation2.GetEntry(TutorialWorldLocationIds[index]);
                 if (worldLocation != null && IsInsideWorldLocation(player.Position, worldLocation, horizontalPadding))
                     furthestIndex = index;
             }
