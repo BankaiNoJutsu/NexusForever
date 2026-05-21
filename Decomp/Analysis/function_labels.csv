@@ -38,6 +38,9 @@ WildStar64.exe,1400877a0,ClientICCommChannelJoin_WritePayload,Serialises world o
 WildStar64.exe,140088270,ClientCommitAmpSpec_AdvancePayload,Advances world opcode 0x01A2 ClientCommitAmpSpec as a 7-bit count plus count 16-bit AMP ids.
 WildStar64.exe,140088290,ClientCommitAmpSpec_WritePayload,Serialises world opcode 0x01A2 ClientCommitAmpSpec as a 7-bit count followed by count 16-bit AMP ids.
 WildStar64.exe,140088e60,Marketplace_AuctionSellOrderSubmit_WritePayload,Serialises world opcode 0x06DC ClientAuctionSellOrderSubmit as 64-bit item guid, 64-bit minimum bid, and 64-bit buyout price.
+WildStar64.exe,1400946c0,SpellDamageDescription_ReadPayload,Parses spell damage details used by ServerSpellGo target effect info and ServerSpellEffectDamage: seven 32-bit damage fields, killed bit, 4-bit combat result, 3-bit damage type, and trailing structure list.
+WildStar64.exe,1400953f0,ServerSpellGo_ReadPayload,Parses server opcode 0x07F4 as server unique id, ignore-cooldown bit, primary destination, TargetInfo list, initial positions, telegraph positions, missile list, and phase.
+WildStar64.exe,140095910,ServerSpellEffectDamage_ReadPayload,Parses server opcode 0x07F6 as server unique id, 19-bit Spell4Effect id, unit id, target id, and SpellDamageDescription.
 WildStar64.exe,140089490,ClientFlightPathPurchase_WritePayload,Serialises world opcode 0x00FF payload as a 32-bit route-count followed by that many 32-bit TaxiRoute ids.
 WildStar64.exe,140089570,ClientSpellCastWithServiceToken_WritePayload,Serialises world opcode 0x00C2 payload as an 18-bit generated cast-context token plus a 32-bit Spell4 id.
 WildStar64.exe,14008b2f0,ClientQuestComplete_WritePayload,Serialises world opcode 0x035D ClientQuestComplete as a 15-bit quest id, 15-bit reward-selection value, and 1-bit communicator flag.

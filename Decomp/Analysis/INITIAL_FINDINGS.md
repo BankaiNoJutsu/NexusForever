@@ -10093,3 +10093,145 @@ Rider's Reef retail video starter-quest evidence follow-up:
   `NexusForever.WorldServer_20260520_26228.log` shows the rebuilt
   `TutorialHoverboardBoosterEntityScript` being discovered and contains no
   startup `ERROR`, `FATAL`, or exception matches in the checked window.
+
+Rider's Reef mine and turret behavior follow-up:
+
+- This pass did not add new native labels. The implementation is based on the
+  retail video sequence in `o0ADNHDjDQ4` plus local table evidence for the
+  starter mine spells: activation spell `85452` ("Dismantle Explosive Mine")
+  emits RavelSignal and SetBusy effects, while the danger-zone spells are
+  `85430` easy, `85629` medium, and `85630` hard with durations `4000`/`3000`/
+  `2000` ms and radius telegraphs `1991`/`2440`/`2495`+`2496`.
+- Runtime follow-up implemented from this pass:
+  `TutorialCombatMineEntityScript` now attaches to combat mine creatures
+  `73463`, `73667`, and `73668`. On a valid Rider's Reef combat-quest
+  activation it marks the mine busy, broadcasts the mapped danger-zone spell
+  start from the mine position with the corresponding telegraph data, then
+  sends `ServerSpellGo`/`ServerSpellFinish` and clears the busy state after the
+  table duration. The existing `InteractionObjectiveUpdater` mine-credit path
+  remains responsible for quest progress, so the new script is visual/gameplay
+  behavior rather than a second objective mutator.
+- Turret follow-up implemented from this pass:
+  retail evidence shows the turret step as a fixed interrupt/destroy station.
+  `CombatAI` now treats Rider's Reef turret creatures `73494` and `74862` as
+  stationary tutorial combat units: they still target and auto-attack when the
+  player is in range, but they no longer run the generic chase loop that can
+  make turret actors walk or clump with other mobs.
+- Historical blocker resolved in the follow-up below:
+  at this stage the mine script did not yet synthesize damage/combat-log payloads from the
+  danger-zone `Damage` effects. The server can now show the mapped telegraph and
+  explosion timing without guessing a non-unit mine caster or over-broadening
+  spell runtime. The follow-up below closes this with mapped table values and
+  decoded damage-payload evidence.
+- Verification:
+  isolated script build
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
+  --no-restore -p:OutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build-riders-reef-mines\script-main\
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed with `0`
+  warnings and `0` errors. After stopping the old WorldServer PID `26228`,
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo`,
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo`, and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed
+  with `345/345` tests. WorldServer was relaunched as PID `24760`; ports
+  `5000` and `24000` are listening, the fresh
+  `NexusForever.WorldServer_20260520_24760.log` shows
+  `TutorialCombatMineEntityScript`, `TutorialCombatProjectorEntityScript`, and
+  `CombatAI` discovered, and no startup `ERROR`, `FATAL`, unhandled, or
+  exception matches were found.
+
+Rider's Reef mine damage evidence and implementation follow-up:
+
+- Native reader mapping now has durable labels for the damage payload path:
+  `ServerSpellGo_ReadPayload` at `WildStar64.exe:1400953f0`,
+  `ServerSpellEffectDamage_ReadPayload` at `WildStar64.exe:140095910`, and
+  `SpellDamageDescription_ReadPayload` at `WildStar64.exe:1400946c0`.
+  The decoded `ServerSpellGo` reader consumes server unique id,
+  ignore-cooldown bit, primary destination, target-info list, initial-position
+  list, telegraph-position list, missile list, and phase. The damage
+  description reader consumes seven 32-bit damage values, a killed bit, 4-bit
+  combat result, 3-bit damage type, and a trailing structure list. This matches
+  the existing NexusForever `ServerSpellGo`/`TargetInfo.EffectInfo` model.
+- Table evidence for the starter mine danger-zone spells is now sufficient to
+  implement damage without inventing a fake unit caster. `Spell4Effects.tbl`
+  maps `85430` easy to damage effect `225138`, physical damage `600`,
+  `85629` medium to damage effect `225151`, physical damage `800`, and
+  `85630` hard to damage effect `225155`, physical damage `1000`. Their
+  telegraphs map through `Spell4Telegraph.tbl`/`TelegraphDamage.tbl` to circle
+  radii `5`, `7`, and `9` respectively.
+- `TutorialCombatMineEntityScript` now applies those mapped values on
+  detonation to valid Rider's Reef combat-quest players inside the circular
+  telegraph, consumes shields before health, and includes the mapped damage
+  effect info in the emitted `ServerSpellGo` target-info payload. Damage remains
+  scoped to the tutorial mine script rather than broadening generic spell
+  runtime for non-unit simple-collidable casters.
+- Verification: `run_ghidra_analysis.ps1 -Targets WildStar64.exe
+  -MaxDecompiledFunctions 220 -ExportOnly -SkipCoverage` succeeded and applied
+  labels; `functions.csv` and `selected_decompiled.c` contain the three new
+  reader labels. Isolated Script.Main build, real Script.Main build, real
+  WorldServer build, and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed
+  with `345/345` tests. WorldServer was relaunched as PID `26696`; ports
+  `5000` and `24000` are listening, the fresh
+  `NexusForever.WorldServer_20260521_26696.log` shows
+  `TutorialCombatMineEntityScript`, `TutorialCombatProjectorEntityScript`,
+  `TutorialHoverboardBoosterEntityScript`, and `CombatAI` discovered, and no
+  `ERROR`, `FATAL`, `Exception`, or `Unhandled` matches were found in the
+  checked startup window.
+
+Rider's Reef loot and mine activation log follow-up:
+
+- The latest WorldServer log captured the uncollectable yellow "Unknown" drops
+  around the starter mobs. The server granted account-currency omnibits through
+  immediate loot, then sent a granted explosion `ServerLootNotify` for the same
+  owner unit. The client rendered those account-currency entries as nearby loot
+  objects with no Item2 name, then later sent `ClientLootItem` for client-side
+  ids that the server had never registered as tracked loot. The server correctly
+  logged those as unknown loot item requests, so the visible drops were a packet
+  presentation bug rather than missing starter creature loot.
+- `GlobalLootManager.GiveImmediateLoot` now suppresses granted explosion
+  notifies for `LootItemType.AccountCurrency`. Omnibit rewards still use the
+  direct `ServerLootGrant` delivery path, but no longer advertise fake
+  collectable ground loot that cannot be looted by `V`, `F`, or click.
+- The same log showed starter mine scripts loading and mine creatures becoming
+  visible, but no `ClientActivateUnit`/interaction packets and no mine arm or
+  detonation entries while the player tested them. The fallback simple-collidable
+  mines now set `EntityCreateFlag.HasInteractionPrereq` on load so the create
+  packet advertises them as client-interactable, matching the tutorial cinematic
+  mine actors that already carried this flag.
+- Verification: after stopping WorldServer PID `26696`, sequential
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo`,
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo`,
+  focused loot tests for `GlobalLootManagerTests`, `LootInstanceDeliveryTests`,
+  and `LootInstanceResolutionTests`, and the full
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo` all
+  passed. WorldServer was relaunched as PID `33456`; ports `5000` and `24000`
+  are listening, the fresh `NexusForever.WorldServer_20260521_33456.log` shows
+  `TutorialCombatMineEntityScript`, `TutorialCombatProjectorEntityScript`,
+  `TutorialHoverboardBoosterEntityScript`, and `CombatAI` discovered, and no
+  `ERROR`, `FATAL`, `Exception`, or `Unhandled` matches were found in the
+  checked startup window.
+- A live follow-up on the relaunched process showed the loot fix in effect: the
+  next starter kill logged direct account-currency delivery and `ServerLootGrant`
+  only, with no granted `ServerLootNotify` ground-drop packet. The same window
+  still showed repeated map tick stalls while trace logging was enabled, with
+  bursts of entity/packet logging around player add and movement updates. The
+  WorldServer NLog file and console targets now use async wrappers, the file
+  target keeps the log file open, and concurrent file writes are disabled for
+  the single-process target. This keeps trace diagnostics available while
+  removing synchronous disk/console writes from the hot world tick path.
+- Verification after the logging change: `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed with `0`
+  warnings and `0` errors. WorldServer was relaunched as PID `30164`; ports
+  `5000` and `24000` are listening, the fresh
+  `NexusForever.WorldServer_20260521_30164.log` shows startup complete and the
+  tutorial scripts discovered, and no startup `ERROR`, `FATAL`, `Exception`,
+  `Unhandled`, or map-update warning matches were found in the checked startup
+  window.
