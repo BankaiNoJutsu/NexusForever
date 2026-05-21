@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusForever.Database.Configuration.Model;
+using NexusForever.Database.EntityFramework;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Entity.Movement.Spline;
@@ -64,17 +65,13 @@ namespace NexusForever.Database.World
                     .HasName("PRIMARY");
 
                 entity.Property(e => e.CreatureId)
-                    .HasColumnName("id")
-                    .HasColumnType("int(10) unsigned");
+                    .HasUnsignedIntColumn("id");
 
                 entity.Property(e => e.Property)
-                    .HasColumnName("property")
-                    .HasColumnType("tinyint(3) unsigned")
-                    .HasConversion<EnumToNumberConverter<Property, byte>>();
+                    .HasUnsignedTinyEnumColumn("property");
 
                 entity.Property(e => e.Value)
-                    .HasColumnName("value")
-                    .HasColumnType("float");
+                    .HasFloatColumn("value");
             });
 
             modelBuilder.Entity<CreatureInfoStatModel>(entity =>
@@ -85,17 +82,13 @@ namespace NexusForever.Database.World
                     .HasName("PRIMARY");
 
                 entity.Property(e => e.CreatureId)
-                    .HasColumnName("id")
-                    .HasColumnType("int(10) unsigned");
+                    .HasUnsignedIntColumn("id");
 
                 entity.Property(e => e.Stat)
-                    .HasColumnName("stat")
-                    .HasColumnType("tinyint(3) unsigned")
-                    .HasConversion<EnumToNumberConverter<Stat, byte>>();
+                    .HasUnsignedTinyEnumColumn("stat");
 
                 entity.Property(e => e.Value)
-                    .HasColumnName("value")
-                    .HasColumnType("float");
+                    .HasFloatColumn("value");
             });
 
             modelBuilder.Entity<CreatureLootModel>(entity =>

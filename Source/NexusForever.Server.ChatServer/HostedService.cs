@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Hosting;
 using NexusForever.GameTable;
-using NexusForever.GameTable.Model;
 using NexusForever.GameTable.Text.Filter;
 
 namespace NexusForever.Server.ChatServer
@@ -24,11 +23,7 @@ namespace NexusForever.Server.ChatServer
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            var loader = new GameTableLoader()
-                .AddGameTable<WordFilterEntry>();
-
-            await _gameTableManager.Initialise(loader);
-            _textFilterManager.Initialise();
+            await _gameTableManager.InitialiseWordFilterAsync(_textFilterManager);
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
