@@ -6,7 +6,7 @@ using NexusForever.WorldServer.Network;
 
 namespace NexusForever.WorldServer.Support
 {
-    internal static class SupportSubmissionStore
+    internal sealed class FileSupportSubmissionStore : ISupportSubmissionStore
     {
         private static readonly object writeLock = new();
         private static readonly JsonSerializerOptions jsonOptions = new()
@@ -14,7 +14,14 @@ namespace NexusForever.WorldServer.Support
             WriteIndented = false
         };
 
-        public static bool TryAppend(ILogger log, IWorldSession session, string type, object payload)
+        private readonly ILogger<FileSupportSubmissionStore> log;
+
+        public FileSupportSubmissionStore(ILogger<FileSupportSubmissionStore> log)
+        {
+            this.log = log;
+        }
+
+        public bool TryAppend(IWorldSession session, string type, object payload)
         {
             try
             {

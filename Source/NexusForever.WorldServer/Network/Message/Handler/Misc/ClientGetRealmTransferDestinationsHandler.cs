@@ -16,6 +16,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
         public void HandleMessage(IWorldSession session, ClientGetRealmTransferDestinations _)
         {
             log.LogDebug("ClientGetRealmTransferDestinations: player={Player}", session.Player?.Guid);
+            session.EnqueueMessageEncrypted(new ServerTransferDestinationRealmList());
         }
     }
 }

@@ -18,10 +18,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
     public class ClientIncidentReportHandler : IMessageHandler<IWorldSession, ClientIncidentReport>
     {
         private readonly ILogger<ClientIncidentReportHandler> log;
+        private readonly ISupportSubmissionStore submissionStore;
 
-        public ClientIncidentReportHandler(ILogger<ClientIncidentReportHandler> log)
+        public ClientIncidentReportHandler(
+            ILogger<ClientIncidentReportHandler> log,
+            ISupportSubmissionStore submissionStore)
         {
-            this.log = log;
+            this.log             = log;
+            this.submissionStore = submissionStore;
         }
 
         public void HandleMessage(IWorldSession session, ClientIncidentReport incidentReport)
@@ -34,7 +38,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
                 return;
             }
 
-            bool stored = SupportSubmissionStore.TryAppend(log, session, "incident", new
+            bool stored = submissionStore.TryAppend(session, "incident", new
             {
                 incidentReport.Identity,
                 incidentReport.Reason,
@@ -54,10 +58,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
     public class ClientSupportTicketHandler : IMessageHandler<IWorldSession, ClientSupportTicket>
     {
         private readonly ILogger<ClientSupportTicketHandler> log;
+        private readonly ISupportSubmissionStore submissionStore;
 
-        public ClientSupportTicketHandler(ILogger<ClientSupportTicketHandler> log)
+        public ClientSupportTicketHandler(
+            ILogger<ClientSupportTicketHandler> log,
+            ISupportSubmissionStore submissionStore)
         {
-            this.log = log;
+            this.log             = log;
+            this.submissionStore = submissionStore;
         }
 
         public void HandleMessage(IWorldSession session, ClientSupportTicket supportTicket)
@@ -70,7 +78,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
                 return;
             }
 
-            bool stored = SupportSubmissionStore.TryAppend(log, session, "ticket", new
+            bool stored = submissionStore.TryAppend(session, "ticket", new
             {
                 supportTicket.TicketCategoryId,
                 supportTicket.TicketSubCategoryId,
@@ -105,10 +113,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
     public class ClientReportBugHandler : IMessageHandler<IWorldSession, ClientReportBug>
     {
         private readonly ILogger<ClientReportBugHandler> log;
+        private readonly ISupportSubmissionStore submissionStore;
 
-        public ClientReportBugHandler(ILogger<ClientReportBugHandler> log)
+        public ClientReportBugHandler(
+            ILogger<ClientReportBugHandler> log,
+            ISupportSubmissionStore submissionStore)
         {
-            this.log = log;
+            this.log             = log;
+            this.submissionStore = submissionStore;
         }
 
         public void HandleMessage(IWorldSession session, ClientReportBug reportBug)
@@ -120,7 +132,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
                 return;
             }
 
-            bool stored = SupportSubmissionStore.TryAppend(log, session, "bug", new
+            bool stored = submissionStore.TryAppend(session, "bug", new
             {
                 reportBug.BugCategoryId,
                 reportBug.SelectedUnitId,
@@ -241,15 +253,19 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
     public class ClientSuggestHandler : IMessageHandler<IWorldSession, ClientSuggest>
     {
         private readonly ILogger<ClientSuggestHandler> log;
+        private readonly ISupportSubmissionStore submissionStore;
 
-        public ClientSuggestHandler(ILogger<ClientSuggestHandler> log)
+        public ClientSuggestHandler(
+            ILogger<ClientSuggestHandler> log,
+            ISupportSubmissionStore submissionStore)
         {
-            this.log = log;
+            this.log             = log;
+            this.submissionStore = submissionStore;
         }
 
         public void HandleMessage(IWorldSession session, ClientSuggest suggest)
         {
-            bool stored = SupportSubmissionStore.TryAppend(log, session, "suggestion", new
+            bool stored = submissionStore.TryAppend(session, "suggestion", new
             {
                 suggest.SuggestionText
             });

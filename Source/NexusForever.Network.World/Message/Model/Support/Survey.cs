@@ -11,7 +11,7 @@ namespace NexusForever.Network.World.Message.Model.Support
         public class QuestDifficultySurvey : ISurvey
         {
             // Probably Quest Id
-            public short ObjectId { get; set; }
+            public uint ObjectId { get; set; }
 
             // Was the quest fun? Use 1 for not fun at all, 5 for really funny.
             public short Fun { get; set; }
@@ -27,7 +27,7 @@ namespace NexusForever.Network.World.Message.Model.Support
 
             public void Read(GamePacketReader reader)
             {
-                ObjectId    = reader.ReadShort(32);
+                ObjectId    = reader.ReadUInt();
                 Fun        = reader.ReadShort(8);
                 Diffuculty = reader.ReadShort(8);
                 Reward     = reader.ReadShort(8);
@@ -38,7 +38,7 @@ namespace NexusForever.Network.World.Message.Model.Support
         public class QuestTSpellSurvey : ISurvey
         {
             // Probably Quest Id
-            public short ObjectId { get; set; }
+            public uint ObjectId { get; set; }
 
             // Was the quest fun? Use 1 for not fun at all, 5 for really funny.
             public short Fun { get; set; }
@@ -54,7 +54,7 @@ namespace NexusForever.Network.World.Message.Model.Support
 
             public void Read(GamePacketReader reader)
             {
-                ObjectId    = reader.ReadShort(32);
+                ObjectId    = reader.ReadUInt();
                 Fun        = reader.ReadShort(8);
                 Diffuculty = reader.ReadShort(8);
                 WantMore   = reader.ReadShort(8);
@@ -65,7 +65,7 @@ namespace NexusForever.Network.World.Message.Model.Support
         public class QuestHoldoutSurvey : ISurvey
         {
             // Probably Quest Id
-            public short ObjectId { get; set; }
+            public uint ObjectId { get; set; }
 
             // Was the quest fun? Use 1 for not fun at all, 5 for really funny.
             public short Fun { get; set; }
@@ -81,7 +81,7 @@ namespace NexusForever.Network.World.Message.Model.Support
 
             public void Read(GamePacketReader reader)
             {
-                ObjectId    = reader.ReadShort(32);
+                ObjectId    = reader.ReadUInt();
                 Fun        = reader.ReadShort(8);
                 Diffuculty = reader.ReadShort(8);
                 WantMore   = reader.ReadShort(8);
@@ -91,7 +91,7 @@ namespace NexusForever.Network.World.Message.Model.Support
 
         public class LevelingSurvey : ISurvey
         {
-            public short Level { get; set; }
+            public uint Level { get; set; }
 
             // Was the level you just passed fun? Use 1 for not fun at all, 5 for really funny.
             public short Fun { get; set; }
@@ -107,7 +107,7 @@ namespace NexusForever.Network.World.Message.Model.Support
 
             public void Read(GamePacketReader reader)
             {
-                Level      = reader.ReadShort(32);
+                Level      = reader.ReadUInt();
                 Fun        = reader.ReadShort(8);
                 Diffuculty = reader.ReadShort(8);
                 TimeSpend  = reader.ReadShort(8);
@@ -117,7 +117,7 @@ namespace NexusForever.Network.World.Message.Model.Support
 
         public class ChallengesSurvey : ISurvey
         {
-            public short ChallengeId { get; set; }
+            public uint ChallengeId { get; set; }
 
             // Was the challenge fun? Use 1 for not fun at all, 5 for really funny.
             public short Fun { get; set; }
@@ -133,7 +133,7 @@ namespace NexusForever.Network.World.Message.Model.Support
 
             public void Read(GamePacketReader reader)
             {
-                ChallengeId  = reader.ReadShort(32);
+                ChallengeId  = reader.ReadUInt();
                 Fun          = reader.ReadShort(8);
                 TargetAmount = reader.ReadShort(8);
                 Reward       = reader.ReadShort(8);

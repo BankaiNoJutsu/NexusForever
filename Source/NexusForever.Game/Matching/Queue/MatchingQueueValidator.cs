@@ -56,8 +56,8 @@ namespace NexusForever.Game.Matching.Queue
                 if (matchingCharacter.GetMatchingCharacterQueue(matchingQueueProposal.MatchType) != null)
                     return MatchingQueueResult.InQueue;
 
-                foreach (IMatchingQueueProposal memberMatchingQueueProposal in matchingCharacter.GetMatchingCharacterQueues())
-                    if (memberMatchingQueueProposal.IsParty != matchingQueueProposal.IsParty)
+                foreach (IMatchingCharacterQueue memberMatchingCharacterQueue in matchingCharacter.GetMatchingCharacterQueues())
+                    if (memberMatchingCharacterQueue.MatchingQueueProposal.IsParty != matchingQueueProposal.IsParty)
                         return MatchingQueueResult.CannotQueueSoloAndGroup;
             }
 

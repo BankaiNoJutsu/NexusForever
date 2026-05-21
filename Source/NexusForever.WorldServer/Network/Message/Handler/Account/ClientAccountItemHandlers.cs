@@ -97,6 +97,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientAccountItemGiftPendingItemGroupToAccount giftPendingItemGroup)
         {
+            if (giftPendingItemGroup.ReservedZero != 0u)
+            {
+                log.LogDebug("Rejecting pending account item group account gift from player {PlayerGuid}: group {Group}, target account {TargetAccountId}, reservedZero {ReservedZero}, sender {SenderCharacter}.",
+                    session.Player?.Guid, giftPendingItemGroup.Group, giftPendingItemGroup.TargetAccountId, giftPendingItemGroup.ReservedZero, giftPendingItemGroup.SenderCharacter);
+
+                session.Account.InventoryManager.SendPendingItems();
+                ClientAccountItemOperationResultHelper.Send(session, AccountOperation.GiftItem, AccountOperationResult.GenericFail);
+                return;
+            }
+
             AccountOperationResult result = session.Account.InventoryManager.GiftPendingItemGroupToAccount(session.Player, giftPendingItemGroup.Group, giftPendingItemGroup.TargetAccountId, giftPendingItemGroup.SenderCharacter);
             if (result != AccountOperationResult.Ok)
             {

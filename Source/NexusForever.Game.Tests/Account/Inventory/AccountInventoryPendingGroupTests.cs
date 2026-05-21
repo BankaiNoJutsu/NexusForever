@@ -67,6 +67,45 @@ public class AccountInventoryPendingGroupTests
     }
 
     [Fact]
+    public void GiftPendingItemGroupToAccount_MovesUngiftedGroupToOnlineAccount()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var environment = CreateEnvironment(
+            CreateCharacter(accountId: 1001u, characterId: 101ul, name: "Source"),
+            CreateCharacter(accountId: 2002u, characterId: 202ul, name: "Target"));
+        LegacyServiceProvider.Provider = environment.Provider;
+
+        try
+        {
+            string group = environment.Source.Manager.AddPendingItemGroup([AccountItemId], notify: false);
+
+            AccountOperationResult result = environment.Source.Manager.GiftPendingItemGroupToAccount(
+                environment.Source.Player,
+                group,
+                environment.Target.AccountId,
+                environment.Source.Identity);
+
+            Assert.Equal(AccountOperationResult.Ok, result);
+            Assert.Empty(GetPendingGroups(environment.Source.SessionProxy));
+
+            ServerAccountItemsPending.PendingAccountItemGroup gifted = Assert.Single(GetPendingGroups(environment.Target.SessionProxy));
+            Assert.Equal(AccountItemId, gifted.AccountItemId);
+            Assert.Equal(environment.Source.Identity.Id, gifted.SenderIdentity.Id);
+            Assert.Equal(environment.Source.Identity.RealmId, gifted.SenderIdentity.RealmId);
+            Assert.Equal(0ul, gifted.TargetIdentity.Id);
+            Assert.Equal(0, gifted.TargetIdentity.RealmId);
+
+            ServerAccountOperationResult operationResult = GetLastMessage<ServerAccountOperationResult>(environment.Source.SessionProxy);
+            Assert.Equal(AccountOperation.GiftItem, operationResult.Operation);
+            Assert.Equal(AccountOperationResult.Ok, operationResult.Result);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void GiftPendingItemGroupToAccount_AlreadyGiftedGroupReturnsNoRegift()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;

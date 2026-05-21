@@ -8,10 +8,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
     public class ClientCustomerSurveySubmitHandler : IMessageHandler<IWorldSession, ClientCustomerSurveySubmit>
     {
         private readonly ILogger<ClientCustomerSurveySubmitHandler> log;
+        private readonly ISupportSubmissionStore submissionStore;
 
-        public ClientCustomerSurveySubmitHandler(ILogger<ClientCustomerSurveySubmitHandler> log)
+        public ClientCustomerSurveySubmitHandler(
+            ILogger<ClientCustomerSurveySubmitHandler> log,
+            ISupportSubmissionStore submissionStore)
         {
-            this.log = log;
+            this.log             = log;
+            this.submissionStore = submissionStore;
         }
 
         /// <summary>
@@ -20,7 +24,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
         /// </summary>
         public void HandleMessage(IWorldSession session, ClientCustomerSurveySubmit surveyResponse)
         {
-            bool stored = SupportSubmissionStore.TryAppend(log, session, "customer-survey", new
+            bool stored = submissionStore.TryAppend(session, "customer-survey", new
             {
                 surveyResponse.CustomerSurveyId,
                 surveyResponse.Comment,
