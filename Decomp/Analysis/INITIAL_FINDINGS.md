@@ -10235,3 +10235,33 @@ Rider's Reef loot and mine activation log follow-up:
   tutorial scripts discovered, and no startup `ERROR`, `FATAL`, `Exception`,
   `Unhandled`, or map-update warning matches were found in the checked startup
   window.
+
+Rider's Reef Dominion departure table-evidence follow-up:
+
+- Verification rejected the Exile-terminal fallback for Dominion Q10530. The
+  runtime binary tables under `.nexusforever-runtime\assets\tbl` contain the
+  exact Dominion departure rows: `Creature2` `74778` is Chancellor Juro
+  Takigurian with display group `36035` and faction `170`, `74772` and `74773`
+  are the Crimson Isle and Levian Bay departures terminals with display group
+  `28562`, faction `219`, and activate spells `37270`/`50279`, and
+  `74759..74766` are the Q10530 Dominion holotable checklist rows.
+- The Q10530 chain and target groups also point at those Dominion rows:
+  `Quest2` `10530` has prerequisite `10523` and objectives
+  `21347..21351`; `TargetGroup` `14387` contains `74772,74773`; and
+  `TargetGroup` `14386` expands through `14384`/`14385` to `74759..74766`.
+  `WorldLocation2` places the terminals/checklist in Dominion departure zone
+  `5999` at `52747`, `52748`, and `52749`, with Juro at `52750`.
+- Older Dominion Arkship rows exist for Q7057 (`62234`, `33803`, `51014`), but
+  those are less exact than the Q10530 NPEU part 5 rows. Runtime should keep the
+  native Dominion IDs and should not auto-grant Q10530 simply on zone entry;
+  the retail-aligned chain is still Q10523 completed -> Q10530 granted.
+- `TutorialMapScript` now keeps the native Exile and Dominion final-departure
+  IDs, spawns only the two target-group terminals for each faction, and places
+  dynamic checklist entities around the target-group center world locations
+  `51697`/`52749` instead of around the quest NPCs. The Q10528/Q10530 script
+  comments were corrected to describe two terminals.
+- Verification: a scratch `GameTable<T>` loader check against the binary `.tbl`
+  files confirmed the rows above, and
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed
+  with `0` warnings and `0` errors.

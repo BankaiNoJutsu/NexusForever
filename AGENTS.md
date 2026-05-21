@@ -151,6 +151,14 @@ For multi-binary export refreshes, prefer the parallel-safe batch wrapper:
 Run the load-test harness commands listed in
 `Tools/NexusForever.LoadTest/README.md` only against a prepared local server.
 
+## Durable Work Memory
+
+- Treat `~/vault` as durable work memory when cross-session notes are useful.
+- Prefer updating canonical notes over creating near-duplicate notes or spreading the same state across multiple files.
+- Route notes intentionally: TODOs to task notes, people details to people notes, project state to project notes, daily summaries to daily notes, and temporary thoughts to scratch notes.
+- When recording durable work, preserve decisions, blockers, owners, dates, and useful links back to repo files, issues, PRs, or evidence.
+- If nothing meaningful changed, do not churn the vault with timestamp-only or wording-only edits.
+
 ## Conventions And Constraints
 
 - Inspect relevant docs and source before editing. Prefer `rg` for repo search.
