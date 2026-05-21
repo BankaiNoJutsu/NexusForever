@@ -10265,3 +10265,110 @@ Rider's Reef Dominion departure table-evidence follow-up:
   `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
   --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed
   with `0` warnings and `0` errors.
+
+Rider's Reef final-departure checklist runtime follow-up:
+
+- No new native labels were needed. This pass follows the table evidence above:
+  Q10528/Q10530 final departure uses one target-group terminal objective plus an
+  eight-entry `ActivateTargetGroupChecklist` objective (`14380` Exile,
+  `14386` Dominion). NexusForever checklist progress is stored as bits from the
+  activated entity's `QuestChecklistIdx`, matching the existing
+  `QuestObjective.ActivateTargetGroupChecklist` implementation.
+- Dynamic Rider's Reef fallback spawns now preserve the per-actor checklist bit
+  index for the Exile checklist creatures `73677..73684` and Dominion checklist
+  creatures `74759..74766`. The fallback final-departure terminals and checklist
+  actors are also emitted with `HasInteractionPrereq`, matching the earlier
+  mine-interaction fix and preventing dynamically spawned simple-collidable
+  objectives from appearing without a usable client interaction affordance.
+- While fixing that path, dynamic creature-id initialization for simple and
+  simple-collidable entities was brought into line with DB-model initialization:
+  both now load their entity scripts. This keeps fallback tutorial mines and
+  other dynamically spawned simple actors on the same script path as imported
+  world entities.
+- This keeps terminal destination selection in the already mapped
+  `RecordStarterTutorialDepartureTerminal` path, while fixing the fallback
+  checklist actors so the final quest can advance all eight retail checklist
+  bits instead of repeatedly setting bit `0`.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed with
+  `348/348` tests, and `dotnet build
+  Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj --no-restore
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed with `0`
+  warnings and `0` errors.
+
+Client unresolved opcode diagnostic-model follow-up:
+
+- No new native labels were added. This pass closes the current client
+  enum-only queue using the already recorded opcode comments and coverage
+  inventory payload evidence: fixed raw byte payloads for `Client0x003D`,
+  `Client0x00ED`, `Client0x0142`, `Client0x0760`, `Client0x0762`, and
+  `Client0x07B6`; single scalar payloads for `Client0x00C8`, `Client0x011B`,
+  `Client0x011D`, `Client0x012D`, `Client0x0550`, `Client0x062A`,
+  `Client0x0634`, `Client0x0701`, `Client0x07E3`, and `Client0x0928`; and one
+  wide-string payload for `Client0x063E`.
+- NexusForever now has conservative receive models and diagnostic-only
+  WorldServer handlers for all 17 unresolved client opcodes. The handlers log
+  payload length or scalar value only; they intentionally do not mutate player,
+  account, housing, matching, realm, or gameplay state while the opcode
+  semantics remain unmapped.
+- This pass resolves a source/coverage mismatch where the findings history had
+  previously described a closed client opcode queue but the current source still
+  exposed 17 client enum-only rows. The remaining missing-opcode work is now on
+  the server-output side.
+- Verification: `dotnet build
+  Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo` and
+  `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` both passed with `0`
+  warnings and `0` errors. `Get-DecompCoverageSnapshot.ps1` now reports client
+  opcode coverage as `347` implemented, `0` partial, and `0` missing, with no
+  client missing-model or missing-handler queue. The existing Rider's Reef
+  entity/script surface was rechecked with `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` (`348/348` passed)
+  and `dotnet build
+  Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj --no-restore
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` (`0` warnings,
+  `0` errors).
+
+Server unresolved output opcode structural-model follow-up:
+
+- No new native labels were added. This pass closes the current server
+  enum-only queue using the opcode coverage inventory and existing opcode
+  comments as structural evidence only: fixed-size raw byte payloads for the
+  unresolved server outputs, plus the two non-byte-aligned shapes already
+  recorded by the inventory (`18`-bit scalar and `uint32` plus `bool` flag).
+- NexusForever now has conservative `IWritable` models for all 120 previously
+  missing server-output opcodes. The unresolved models validate exact payload
+  length for fixed-size packets and write only caller-supplied or zero-filled
+  structural bytes; they intentionally do not introduce gameplay, account,
+  realm, or session behavior while the retail semantics remain unmapped.
+- This closes the source/coverage surface for server output opcodes:
+  `Get-DecompCoverageSnapshot.ps1` now reports server opcode coverage as `692`
+  implemented, `0` partial, and `0` missing, with no server missing-model queue
+  and no placeholder-model queue. The `Server0xNNNN` class names remain
+  unresolved structural names and should be decoded/renamed only after
+  per-opcode client-reader evidence is mapped.
+- Verification: `dotnet build
+  Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo` and
+  `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` both passed with `0`
+  warnings and `0` errors.
+
+Missing-feature opcode workboard follow-up:
+
+- `Decomp/Analysis/MISSING_FEATURE_MATRIX.md` is now the canonical
+  system-by-system restoration matrix for the next opcode/decode passes. It
+  separates structural opcode coverage from semantic feature support, lists the
+  current high-value missing systems, and groups all `120` structural
+  `Server0xNNNN` models plus all `17` diagnostic `Client0xNNNN` receive models
+  into likely feature clusters based on neighboring named opcodes and existing
+  findings.
+- The matrix is intentionally a planning and execution workboard, not a rename
+  authority. Rows marked by opcode neighborhood still need client reader/writer
+  evidence, sniff/runtime corroboration, or table-backed proof before source
+  names or server behavior are widened.
