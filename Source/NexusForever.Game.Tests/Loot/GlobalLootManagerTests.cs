@@ -27,7 +27,7 @@ public class GlobalLootManagerTests
     }
 
     [Fact]
-    public void GiveGeneratedLoot_WithGrantedNotify_SendsExplosionNotifyWithoutIndividualLootGrant()
+    public void GiveGeneratedLoot_AccountCurrencyWithGrantedNotify_SendsDirectGrantWithoutExplosionNotify()
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var manager = new GlobalLootManager(groupStateManager);
@@ -57,16 +57,14 @@ public class GlobalLootManagerTests
         Assert.Single(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
 
         RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-        var notify = Assert.IsType<ServerLootNotify>(sessionCall.Arguments[0]);
-        Assert.True(notify.Explosion);
-        Assert.Equal(4u, notify.LootItems.Sum(item => item.Amount));
-        Assert.All(notify.LootItems, item =>
-        {
-            Assert.True(item.Granted);
-            Assert.Equal(0u, item.LootUnitId);
-            Assert.Equal(LootItemType.AccountCurrency, item.Type);
-            Assert.Equal((uint)AccountCurrencyType.Omnibit, item.ItemId);
-        });
+        var grant = Assert.IsType<ServerLootGrant>(sessionCall.Arguments[0]);
+        Assert.Equal(99u, grant.OwnerUnitId);
+        Assert.Equal(4242u, grant.LooterUnitId);
+        Assert.Equal(LootItemType.AccountCurrency, grant.LootItem.Type);
+        Assert.Equal((uint)AccountCurrencyType.Omnibit, grant.LootItem.ItemId);
+        Assert.Equal(4u, grant.LootItem.Amount);
+        Assert.False(grant.LootItem.Granted);
+        Assert.False(grant.LootItem.Explosion);
     }
 
     private static IPlayer CreatePlayer(

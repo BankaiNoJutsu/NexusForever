@@ -963,6 +963,12 @@ namespace NexusForever.Game.Loot
                 return;
 
             log.Trace($"Giving immediate loot to player {looter.CharacterId}: ownerUnit={ownerUnitId}, type={type}, staticId={staticId}, count={count}, sendGrantedNotify={sendGrantedNotify}.");
+            if (sendGrantedNotify && type == LootItemType.AccountCurrency)
+            {
+                log.Trace($"Immediate account-currency loot uses direct grant for player {looter.CharacterId}: ownerUnit={ownerUnitId}, staticId={staticId}, count={count}; skipping explosion notify because account-currency drops are not client-lootable items.");
+                sendGrantedNotify = false;
+            }
+
             if (sendGrantedNotify)
             {
                 LootInstance lootInstance = new(ownerUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Creature)
