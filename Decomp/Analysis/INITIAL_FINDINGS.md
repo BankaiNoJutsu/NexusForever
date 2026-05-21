@@ -10372,3 +10372,488 @@ Missing-feature opcode workboard follow-up:
   authority. Rows marked by opcode neighborhood still need client reader/writer
   evidence, sniff/runtime corroboration, or table-backed proof before source
   names or server behavior are widened.
+
+Fortune conservative session follow-up:
+
+- No new native labels were added. This pass implements the `F-031` Fortune
+  row from the missing-feature matrix using the existing modeled packet family
+  and recorded packet comments: zero-byte notify/start client messages,
+  one-uint card flip requests, `ServerFortuneRewards`, `ServerFortuneCards`,
+  `ServerFortuneCardUpdate`, and `ServerFortuneReset`.
+- WorldServer now keeps a conservative in-memory Fortune session per account.
+  `ClientFortuneNotifyGame` and `ClientFortuneNotifyStorefront` send empty
+  reward data plus current or reset card status; `ClientFortuneStart` creates a
+  three-card empty session; and `ClientFortuneFlipCard` marks valid cards as
+  flipped with `ServerFortuneCardUpdate`. Invalid flips or flips without a
+  started session send `ServerFortuneReset` with the existing click-empty value
+  `3`.
+- Reward account items, money/currency payouts, eligibility/cost checks,
+  storefront/game coordination, and durable retail resume state remain blocked
+  until native reward-generation or sniff evidence maps the server-side policy.
+- Verification: `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\fortune-world\`
+  passed with `0` warnings and `0` errors. The focused Fortune test slice
+  passed `5/5` tests with isolated output after a transient normal-output
+  `WorldServer.obj` file lock, and the full
+  `Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo` run passed `353/353` tests.
+
+Challenge choice compatibility follow-up:
+
+- No new native labels were added. This pass implements the non-mutating
+  compatibility boundary for the `F-033` challenge row using the existing
+  modeled `ClientChallengeChoice` packet (`ChallengeId`, `Choice`, and
+  diagnostic-only `Unused`) and `ServerChallengeResult` packet.
+- `ClientChallengeChoiceHandler` now keeps the existing diagnostic log and
+  replies with `ServerChallengeResult.GenericFail` for the requested challenge
+  id. This gives the client a deterministic result without activating,
+  abandoning, accepting shared challenges, mutating objective state, awarding
+  rewards, or clearing local challenge UI as if the request had succeeded.
+- Active challenge lifecycle, shared challenge invitations, accept/decline
+  semantics, cooldown/tier progression, `ServerChallengeUpdate` field
+  population, `Client0x00C8`, and `QuestObjectiveType.CompleteChallenge`
+  integration remain blocked until the accept/decline/update sequence is
+  decoded from stronger client-reader or runtime evidence.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter ChallengeChoiceHandlerTests -m:1 -v minimal --nologo
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\challenge-choice-tests\`
+  passed `1/1` focused test. The full
+  `Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\challenge-choice-all-tests\`
+  run passed `354/354` tests. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\challenge-choice-world\`
+  passed with `0` warnings and `0` errors after an earlier parallel run hit a
+  transient normal-`obj` compiler file lock.
+
+Galactic Archive interact-unlock follow-up:
+
+- No new native labels were added. This pass implements the creature interaction
+  hook for the `F-034` datacube/Galactic Archive row using the existing
+  `Creature2Entry.ArchiveArticleIdInteractUnlock` table field and the already
+  modeled `IGalacticArchiveManager.UnlockArticle` path.
+- `SimpleEntity.OnActivate` and `SimpleEntity.OnActivateCast` now request a
+  Galactic Archive article unlock when `ArchiveArticleIdInteractUnlock` is
+  populated. The call uses `grantRewards: false`, matching the existing
+  `ClientGalacticArchiveUnlock` trust boundary, so creature interaction can
+  reveal article state without speculatively awarding titles or broader archive
+  rewards.
+- ArchiveLink parent/child authorization, full journal/datacube progression,
+  path-mission-backed rule unlock parity, and wider Codex UX behavior remain
+  blocked until stronger client-reader, table-chain, or runtime evidence maps
+  those semantics.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter SimpleEntityArchiveUnlockTests -m:1 -v minimal --nologo
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\simple-archive-tests\`
+  passed `2/2` focused tests. `dotnet build
+  Source\NexusForever.Game\NexusForever.Game.csproj --no-restore -m:1
+  -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\simple-archive-game\`
+  passed with `0` warnings and `0` errors. The full
+  `Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\simple-archive-all-tests\`
+  run passed `356/356` tests.
+
+Support submission boundary follow-up:
+
+- No new native labels were added. This pass implements the service boundary
+  requested by the `F-028` support/report/survey row without changing packet
+  semantics or introducing a speculative moderation workflow.
+- Support report, ticket, bug, suggestion, and customer-survey handlers now
+  depend on `ISupportSubmissionStore`. The default `FileSupportSubmissionStore`
+  preserves the existing daily JSONL capture under `support-submissions`, while
+  tests and future database-backed support cases can replace the store without
+  touching packet handlers.
+- `ClientSupportTicketHandler` still validates the submitted language and sends
+  `ServerSupportTicketResult.Success` based on whether the store accepted the
+  ticket. Invalid language values short-circuit with failure and do not create
+  a support submission.
+- Durable case status/readback semantics, moderation workflow, administrative
+  tooling, and the nearby unresolved support/realm result opcodes remain
+  blocked until client reader/runtime evidence maps those flows.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter SupportTicketHandlerTests -m:1 -v minimal --nologo
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\support-ticket-tests\`
+  passed `3/3` focused tests. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\support-boundary-world\`
+  passed with `0` warnings and `0` errors. The full
+  `Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\support-boundary-all-tests\`
+  run passed `359/359` tests.
+
+Leaderboard provider boundary follow-up:
+
+- No new native labels were added. This pass implements the backing-service
+  boundary for the `F-032` leaderboard row without adding speculative ranking
+  storage or season/category semantics.
+- `ClientLeaderboardPveRequestHandler` and `ClientLeaderboardPvpRequestHandler`
+  now delegate response construction to `ILeaderboardProvider`. The registered
+  default `EmptyLeaderboardProvider` preserves the existing deterministic
+  compatibility behavior: PvE echoes leaderboard type, matching game map, and
+  prime level with no player rows; PvP echoes leaderboard type with no team
+  rows.
+- Real leaderboard aggregation, personal placement, season windows,
+  category/filter rules, and nonzero `NextUpdateTime` semantics remain blocked
+  until PvE and PvP client reader paths or runtime captures map those fields.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter LeaderboardProviderTests -m:1 -v minimal --nologo
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\leaderboard-provider-tests\`
+  passed `4/4` focused tests. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\leaderboard-provider-world\`
+  passed with `0` warnings and `0` errors. The full
+  `Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\leaderboard-provider-all-tests\`
+  run passed `363/363` tests.
+
+Option persistence follow-up:
+
+- No new native labels were added. This pass implements the durable character
+  storage step for the `F-027` options/combat-log preference row using the
+  already mapped `ClientCombatOptions`, `ClientOptions`,
+  `ClientCombatLogDisableOthers`, and `ClientCombatLogDisables` request
+  shapes.
+- `Database.Character` now maps `castingOptions`,
+  `sharedChallengeEnabled`, `disableOtherPlayersCombatLogs`, and
+  `combatLogDisableFlags` on the `character` table. `Player` loads those values
+  from `CharacterModel`, marks them dirty when option handlers update the
+  mapped preferences, and saves the four option columns with the existing
+  character save path.
+- The server-side runtime already suppresses outbound `ServerCombatLog` packets
+  through `WorldEntity.ShouldSuppressCombatLogForPlayer`; this pass makes the
+  preference source durable rather than session-only. It does not add new
+  option types, account-level option splitting, or speculative option result
+  packets.
+- Remaining bounded uncertainty: exact client-facing option initialisation or
+  readback packets, account-vs-character ownership for broader options, and the
+  nearby unresolved item/options server opcode cluster remain blocked until
+  stronger client-reader or runtime evidence maps those flows.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter OptionPersistenceTests -m:1 -v minimal --nologo
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\option-persistence-tests\`
+  passed `2/2` focused tests. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\option-persistence-world\`
+  passed with `0` warnings and `0` errors. The full
+  `Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\option-persistence-all-tests\`
+  run passed `365/365` tests.
+
+Zone completion exploration-only reward follow-up:
+
+- No new native labels were added. This pass implements a narrow `F-036`
+  reward boundary using the existing `ZoneCompletion` table model, the existing
+  `ZoneMapManager` map-complete detection, and the already wired
+  `AchievementType.MapComplete` call.
+- `ZoneCompletionRewardResolver` now resolves title rewards only for
+  exploration-only rows: episode quest, task quest, challenge, datacube, tale,
+  and journal counts must all be zero, the reward title id must fit in
+  `ushort`, and all matching rows for the map zone must collapse to one
+  distinct title id. Distinct title conflicts are treated as blocked because
+  `ZoneCompletionFactionEnum` and path/faction/category semantics are not yet
+  mapped.
+- When a zone map becomes fully explored, `ZoneMapManager` still grants
+  `AchievementType.MapComplete` and now grants only those unambiguous
+  exploration-only title rewards. Full zone-completion payout, non-title
+  rewards, faction/path-specific rows, and quest/challenge/datacube/journal
+  total integration remain blocked.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter ZoneCompletionRewardResolverTests -m:1 -v minimal --nologo
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\zone-completion-tests\`
+  passed `3/3` focused tests. `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\zone-completion-world\`
+  passed with `0` warnings and `0` errors. The full
+  `Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\zone-completion-all-tests\`
+  run passed `368/368` tests.
+
+Mail transaction boundary follow-up:
+
+- No new native labels were added. This pass implements the test gate requested
+  by the `F-013` mail row before widening live settlement behavior.
+- Focused `MailItem` transaction tests now pin the existing persistence
+  boundaries for cash collection, returned mail, and attachment deletion:
+  `PayOrTakeCash()` saves `HasPaidOrCollectedCurrency` and
+  `MailFlag.NotReturnable`; `ReturnMail()` saves the recipient, returned
+  subject, and not-returnable flag; and `AttachmentDelete()` enqueues the
+  removed attachment for the deleted-attachment save path without leaving it in
+  the active attachment list.
+- No live mail settlement behavior changed. COD sender payment, marketplace
+  settlement, delete-result state, expiration behavior, and broader atomicity
+  across inventory/currency/mail writes remain blocked until delete/return
+  result semantics and settlement flows are mapped with stronger client-reader,
+  sniff, or runtime evidence.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter MailItemTransactionTests -m:1 -v minimal --nologo
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\mail-transaction-tests\`
+  passed `3/3` focused tests. The full
+  `Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\mail-transaction-all-tests\`
+  run passed `371/371` tests.
+
+Loot roll/master request boundary follow-up:
+
+- No new native labels were added. This pass adds handler-level verification for
+  the `F-014` loot row using the already modeled `ClientLootRollAction` and
+  `ClientLootAssignMaster` request packets and the existing
+  `IGlobalLootManager` roll/master-loot runtime boundary.
+- `ClientLootRollActionHandler` is now covered for forwarding decoded
+  owner-unit id, loot-unit id, and `LootRollAction` to `RollLoot`.
+  `ClientLootAssignMasterHandler` is covered for forwarding owner-unit id,
+  loot-unit id, and the converted assignee `Identity` to `AssignMasterLoot`.
+  This pins the request-to-runtime handoff without adding new loot side
+  effects.
+- Bind-on-pickup confirmation, exact roll/master eligibility rules, parent
+  source tracking, master-loot UI parity, and auxiliary loot outputs such as
+  `Server0x08A0/08A8` remain blocked until client-reader or runtime evidence
+  maps those packets and state transitions.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter LootRequestHandlerTests -m:1 -v minimal --nologo
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\loot-request-handler-tests\`
+  passed `2/2` focused tests. The full
+  `Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\loot-request-all-tests\`
+  run passed `373/373` tests.
+
+Steam achievement diagnostic boundary follow-up:
+
+- No new native labels were added. This pass pins the `F-035` Steam achievement
+  ingest boundary using the existing `ClientSteamAchievements` model and
+  diagnostic `ClientSteamAchievementsHandler`.
+- The packet test verifies the current wire shape as `SteamGameId`, byte
+  length, and ASCII achievement payload. The handler test verifies that parsed
+  Steam achievement data is accepted without sending achievement packets or
+  mutating `ICharacterAchievementManager` progress. This keeps client-supplied
+  Steam data diagnostic-only until payload grammar and achievement-id
+  correlation are mapped.
+- Full trigger coverage, Steam achievement ingest policy, exact realm-first
+  broadcast semantics, remaining updater parity, and UI edge cases remain
+  blocked until stronger payload, table, or runtime evidence maps those flows.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter ClientSteamAchievementsTests -m:1 -v minimal --nologo
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\steam-achievement-tests\`
+  passed `2/2` focused tests. The full
+  `Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\steam-achievement-all-tests\`
+  run passed `375/375` tests.
+
+Friendship social-option boundary follow-up:
+
+- No new native labels were added. This pass pins the transient social-option
+  behavior already present in the `F-012` friendship/chat surface without
+  adding durable account settings or changing chat delivery.
+- `ClientFriendshipSetAutoResponseMessageHandler` is now covered for storing
+  parsed wide-string away and busy auto-response messages on the active player.
+  `ClientFriendshipIgnoreStrangersStateHandler` is covered for echoing the
+  client flag as `ServerFriendshipIgnoreStrangersState.Flags`: `2` when
+  ignoring stranger invites and `0` when clearing the state.
+- Persistent social options, exact auto-response delivery/readback semantics,
+  entitlement checks, ICComm persistence, throttling, leave/logout cleanup, and
+  chat auxiliary packets remain blocked until client-reader or runtime evidence
+  maps those flows.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter FriendshipSocialOptionTests -m:1 -v minimal --nologo
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\friendship-social-option-tests\`
+  passed `3/3` focused tests. The full
+  `Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\friendship-social-option-all-tests\`
+  run passed `378/378` tests.
+
+PvP duel lifecycle boundary follow-up:
+
+- No new native labels were added. This pass pins the `F-015` transient duel
+  lifecycle already implemented by `DuelManager`; no live PvP or duel runtime
+  behavior changed.
+- Focused tests now cover the mapped challenge flow: `Initiate()` sends
+  `ServerDuelChallenge`, `Accept()` sends `ServerDuelCountdown`, the manager
+  only enters active duel state after the three-second countdown, and
+  `ServerDuelStart` is emitted to both participants. Pending challenges are
+  also covered for thirty-second timeout cancellation through
+  `ServerDuelResult(DuelCancelled)`.
+- Active defeat is covered for `ServerDuelResult(Defeated)` and the current
+  achievement boundary: both participants receive `DuelParticipate`, while the
+  winner also receives `DuelWin`.
+- Observer broadcasts, leash/warning state, PvP cooldown persistence,
+  forced-map PvP, rewards/stats, and exact cancel/result parity remain blocked
+  until client-reader, sniff, or manual runtime evidence maps those flows.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter
+  FullyQualifiedName~NexusForever.Game.Tests.Pvp.DuelManagerTests -v minimal
+  --nologo` passed `3/3` focused tests.
+
+Crafting fixed-recipe boundary follow-up:
+
+- No new native labels were added. This pass pins the `F-008` fixed-recipe
+  crafting boundary already present in `ClientCraftingSimpleCraftHandler` and
+  `CraftingCraftRequestHelper`; no live crafting behavior changed.
+- Focused tests now cover a direct-output simple craft with an active
+  tradeskill, an unambiguous `TradeskillSchematic2` row, and a mapped satchel
+  material. The verified path removes the required `TradeskillMaterial` amount
+  from `ISupplySatchelManager`, creates the direct output item with
+  `ItemUpdateReason.Crafting`, grants `CraftItem` and `CraftItemChecklist`
+  achievement updates, applies mapped crafting XP, and emits
+  `ServerCraftingFinish` with `Pass = true`, the crafted schematic id, crafted
+  item id, `CraftingDiscovery.Success`, and earned XP.
+- The missing-material path is covered separately: when the required material
+  is absent, the handler emits a failed `ServerCraftingFinish` and does not
+  remove satchel material, create output, or update achievements.
+- Discovery rolls, station constraints, complex/random output parity, broader
+  material-source precision, rune item data, and `ServerTradeskillSigilResult`
+  meanings remain blocked until client-reader, table, or runtime evidence maps
+  those flows.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter
+  FullyQualifiedName~NexusForever.Game.Tests.Crafting.CraftingSimpleCraftHandlerTests
+  -v minimal --nologo` passed `2/2` focused tests.
+
+Marketplace, pending item, transport, reward-property, and matching boundary follow-up:
+
+- No new native labels were added. This pass implements narrow `F-005`,
+  `F-006`, `F-007`, `F-009`, and `F-010` boundaries from already mapped or
+  locally verified server surfaces.
+- `F-005`: focused marketplace tests now pin the current transient auction path:
+  `ClientAuctionSellOrderSubmit` removes the posted inventory item and returns
+  `ServerAuctionPostResult`; `ClientAuctionsByFilterRequest` can find the
+  posted listing by item id; `ClientAuctionBuyOrderSubmit` buyout debits buyer
+  credits, transfers the item into buyer inventory, sends `ServerAuctionWon`,
+  and returns `ServerAuctionBidResult.Ok`. Durable auction/commodity storage,
+  offline settlement, CREDD, and mail settlement remain blocked on result/update
+  packet and settlement evidence.
+- `F-006`: the gift-to-account pending-group path now rejects the mapped
+  `ReservedZero` field when nonzero before calling
+  `GiftPendingItemGroupToAccount`, refreshes pending items, and returns a
+  conservative `GiftItem/GenericFail`. Focused tests also pin the already
+  implemented online account-gift happy path. Offline delivery, coupon policy,
+  cooldown mutation, unsupported offer effects, and exact purchase-result UI
+  remain blocked by the unresolved account/store output cluster.
+- `F-007` and `F-009`: protocol tests now pin the known
+  `ServerRewardPropertySet` modifier encodings and the already mapped transport
+  packet shapes for `ClientRapidTransport`, `ClientFlightPathPurchase`,
+  `ServerFlightPathUpdate`, and `ServerVehiclePassengerSelf`. These are
+  boundary tests only; reward schedules, entry-state semantics, service-token
+  bypass, taxi route lifecycle, and passenger/vehicle semantics remain blocked.
+- `F-010`: `MatchingQueueValidator` now iterates
+  `IMatchingCharacterQueue.MatchingQueueProposal` when enforcing the solo/group
+  queue exclusivity rule. The focused test covers an existing solo queue plus an
+  incoming party queue returning `CannotQueueSoloAndGroup`; group output
+  packets, queue status timing, replacement/vote flows, and matching
+  `Client0x062A/0634` remain decode-blocked.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter
+  "FullyQualifiedName~AccountItemHandlerTests|FullyQualifiedName~AccountInventoryPendingGroupTests|FullyQualifiedName~MarketplaceAuctionHandlerTests|FullyQualifiedName~TransportPacketShapeTests|FullyQualifiedName~RewardPropertyProtocolTests|FullyQualifiedName~MatchingQueueValidatorTests"
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed `16/16`
+  focused tests.
+
+Crafting/guild/social-diagnostic/CC protocol boundary follow-up:
+
+- No new native labels were added. This pass adds test-only coverage for
+  protocol boundaries that row workers identified as safe to pin while keeping
+  their runtime behavior blocked.
+- `F-008`: `CraftingPacketShapeTests` now cover the mapped request layouts for
+  simple craft, complex craft, craft-item, auto-craft, and additive packets,
+  plus the current `ServerCraftingFinish`, `ServerCraftingCurrentCraft`, and
+  `ServerTradeskillSigilResult` output shapes. The complex-craft test writes
+  the packed `CraftStats` payload directly because native evidence currently
+  proves a 64-bit field but does not prove any broader server-side crafting
+  stat semantics.
+- `F-011`: `WarPartyBossTokenProtocolTests` now pin the
+  `ClientWarPartyBossTokensRequest` guild identity and
+  `ServerWarPartyBossTokens` identity/count/token-row encoding. Real token
+  inventory, consumption, boss summon results, recruitment state, and guild bank
+  or perk behavior remain blocked.
+- `F-002/F-012`: `ClientDiagnosticPacketShapeTests` pins `Client0x0550` as a
+  mapped uint32 diagnostic payload. Its owner is still only correlated between
+  ICComm and spell-list neighbors, so the handler remains diagnostic-only.
+- `F-018`: `CrowdControlPacketShapeTests` now pin the current stun update,
+  knockdown break, stun direction, CC state set/remove, tether-unit, and
+  spell-buff-remove packet shapes. Stack-group arbitration, stun breakout
+  cadence, tether semantics, forced movement, and facing blend behavior remain
+  blocked until stronger reader/sniff/runtime evidence maps those paths.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter
+  "FullyQualifiedName~CraftingPacketShapeTests|FullyQualifiedName~WarPartyBossTokenProtocolTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~CrowdControlPacketShapeTests"
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed `18/18`
+  focused tests.
+
+Entity/item/support/realm/Fortune protocol boundary follow-up:
+
+- No new native labels were added. This pass keeps runtime behavior inside
+  already mapped or compatibility-only surfaces while adding focused tests for
+  row-agent recommended boundaries.
+- `F-025`: `EntityCreatePacketTests` now includes a serialized
+  `ServerEntityCreate` regression covering the mapped `WorldPlacement`
+  `Type = 1` payload, default `UnknownStructureA8/C8` selectors, and final
+  minimap/display/outfit tail fields. Remaining entity-create substructures,
+  deferred action queues, CSI/current-target behavior, phase visibility, and
+  threat/entity-stat packets remain blocked.
+- `F-026`: `AccountItemHandlerTests` now pin `ClientItemGenericUnlockHandler`
+  lifecycle boundaries for missing unlock set, missing unlock entry, all
+  entries already unlocked, and partial unlock sets. The partial case consumes
+  the item once and grants only missing entries. Broader item aux packets,
+  costume/pet/generic-unlock deltas, and persistence parity remain blocked.
+- `F-028`: `Survey.cs` now reads the mapped survey context/object field as a
+  32-bit unsigned value instead of calling the 16-bit reader with a 32-bit
+  width. `CustomerSurveyProtocolTests` cover all currently supported survey
+  models and the submission-store boundary. Support case workflow, moderation
+  state, stuck cooldown/result behavior, and survey admin tooling remain
+  blocked.
+- `F-030`: `ClientGetRealmTransferDestinationsHandler` now sends an empty
+  `ServerTransferDestinationRealmList` compatibility response, and
+  `RealmTransferProtocolTests` pin empty handler response plus one-row packet
+  shape. Real realm transfer destinations/results, PTR copy state, pricing,
+  eligibility, and admin result packets remain blocked.
+- `F-031`: `FortunePacketShapeTests` now pin `ClientFortuneFlipCard`,
+  `ServerFortuneCards`, `ServerFortuneCardUpdate`, `ServerFortuneRewards`, and
+  `ServerFortuneReset` wire shapes. Reward payout, cost/eligibility,
+  storefront synchronization, and durable resume semantics remain blocked.
+- Verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  --filter
+  "FullyQualifiedName~AccountItemHandlerTests|FullyQualifiedName~EntityCreatePacketTests|FullyQualifiedName~CustomerSurveyProtocolTests|FullyQualifiedName~RealmTransferProtocolTests|FullyQualifiedName~FortunePacketShapeTests"
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed `59/59`
+  focused tests.
+- Full verification: `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed `429/429`
+  tests.
