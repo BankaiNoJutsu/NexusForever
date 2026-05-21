@@ -148,9 +148,10 @@ namespace NexusForever.Game.Entity
                 Active = activeQuests.Values
                     .Select(q => new ServerQuestInit.QuestActive
                     {
-                        QuestId    = q.Id,
-                        State      = q.State,
-                        Flags      = q.Flags,
+                        QuestId               = q.Id,
+                        State                 = q.State,
+                        QuestObjectiveId      = q.GetCurrentObjectiveId(),
+                        Flags                 = q.Flags,
                         QuestTimeElapsed      = q.Timer ?? 0u,
                         Objectives = q.Select(o => new ServerQuestInit.QuestActive.Objective
                         {

@@ -136,6 +136,8 @@ namespace NexusForever.Game.Quest
         private readonly IPlayer player;
         private readonly List<IQuestObjective> objectives = new();
 
+        private uint currentObjectiveId;
+
         private UpdateTimer questTimer;
 
         private IScriptCollection scriptCollection;
@@ -158,6 +160,7 @@ namespace NexusForever.Game.Quest
             foreach (CharacterQuestObjectiveModel objectiveModel in model.QuestObjective)
                 objectives.Add(new QuestObjective(player, info, info.Objectives[objectiveModel.Index], objectiveModel));
 
+            currentObjectiveId = GetCurrentObjectiveId();
             scriptCollection = ScriptManager.Instance.InitialiseOwnedScripts<IQuest>(this, info.Entry.Id);
         }
 
@@ -178,6 +181,7 @@ namespace NexusForever.Game.Quest
 
             saveMask = QuestSaveMask.Create;
 
+            currentObjectiveId = GetCurrentObjectiveId();
             scriptCollection = ScriptManager.Instance.InitialiseOwnedScripts<IQuest>(this, info.Entry.Id);
         }
 
@@ -197,6 +201,27 @@ namespace NexusForever.Game.Quest
                 Timer = (uint)(questTimer.Time * 1000d);
             }
 
+        }
+
+        public uint GetCurrentObjectiveId()
+        {
+            if (State != QuestState.Accepted)
+                return 0u;
+
+            IQuestObjective objective = objectives
+                .Where(o => !o.IsComplete() && !o.ObjectiveInfo.IsOptional() && CanUpdateObjective(o))
+                .OrderBy(o => o.Index)
+                .FirstOrDefault();
+
+            if (objective != null)
+                return objective.ObjectiveInfo.Id;
+
+            objective = objectives
+                .Where(o => !o.IsComplete() && CanUpdateObjective(o))
+                .OrderBy(o => o.Index)
+                .FirstOrDefault();
+
+            return objective?.ObjectiveInfo.Id ?? 0u;
         }
 
         public void Save(CharacterContext context)
@@ -351,6 +376,8 @@ namespace NexusForever.Game.Quest
             if (State == QuestState.Achieved)
                 return;
 
+            uint previousObjectiveId = currentObjectiveId;
+
             // Order in reverse Index so that sequential steps don't completed by the same action.
             foreach (IQuestObjective objective in objectives
                 .Where(o => o.ObjectiveInfo.Entry.Type == (uint)type && o.IsTarget(data))
@@ -376,6 +403,8 @@ namespace NexusForever.Game.Quest
 
             if (objectives.All(o => o.IsComplete()))
                 State = QuestState.Achieved;
+            else
+                SendQuestStateChangeIfCurrentObjectiveChanged(previousObjectiveId);
         }
 
         /// <summary>
@@ -388,6 +417,8 @@ namespace NexusForever.Game.Quest
 
             if (State == QuestState.Achieved)
                 return;
+
+            uint previousObjectiveId = currentObjectiveId;
 
             IQuestObjective objective = objectives.SingleOrDefault(o => o.ObjectiveInfo.Id == id);
             if (objective == null)
@@ -412,6 +443,8 @@ namespace NexusForever.Game.Quest
 
             if (objectives.All(o => o.IsComplete()))
                 State = QuestState.Achieved;
+            else
+                SendQuestStateChangeIfCurrentObjectiveChanged(previousObjectiveId);
         }
 
         public void SendObjectiveWorldLocationUpdates()
@@ -500,11 +533,7 @@ namespace NexusForever.Game.Quest
         /// </summary>
         private void OnStateChange(QuestState oldState)
         {
-            player.Session.EnqueueMessageEncrypted(new ServerQuestStateChange
-            {
-                QuestId    = Id,
-                QuestState = State
-            });
+            SendQuestStateChange(GetCurrentObjectiveId());
 
             SendObjectiveWorldLocationUpdates();
 
@@ -521,6 +550,36 @@ namespace NexusForever.Game.Quest
             scriptCollection?.Invoke<IQuestScript>(s => s.OnQuestStateChange(State, oldState));
 
             player.TryRecoverStarterTutorialQuestProgression();
+        }
+
+        private void SendQuestStateChangeIfCurrentObjectiveChanged(uint previousObjectiveId)
+        {
+            uint objectiveId = GetCurrentObjectiveId();
+            if (objectiveId != previousObjectiveId)
+                SendQuestStateChange(objectiveId);
+            else
+                currentObjectiveId = objectiveId;
+        }
+
+        private void SendQuestStateChange(uint objectiveId)
+        {
+            currentObjectiveId = objectiveId;
+            player.Session.EnqueueMessageEncrypted(new ServerQuestStateChange
+            {
+                QuestId          = Id,
+                QuestState       = State,
+                QuestObjectiveId = objectiveId
+            });
+
+            if (log.IsDebugEnabled && guidanceDiagnosticQuestIds.Contains(Id))
+            {
+                log.Debug(
+                    "Quest state update: player={PlayerId}, quest={QuestId}, state={QuestState}, currentObjectiveId={QuestObjectiveId}.",
+                    player.CharacterId,
+                    Id,
+                    State,
+                    objectiveId);
+            }
         }
 
         public IEnumerator<IQuestObjective> GetEnumerator()

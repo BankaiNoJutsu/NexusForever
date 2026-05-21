@@ -23,6 +23,11 @@ namespace NexusForever.Game.Abstract.Quest
         void InitialiseTimer();
 
         /// <summary>
+        /// Returns the current active questObjective table id for client quest tracker state.
+        /// </summary>
+        uint GetCurrentObjectiveId();
+
+        /// <summary>
         /// Returns if <see cref="IQuest"/> can be deleted.
         /// </summary>
         bool CanDelete();

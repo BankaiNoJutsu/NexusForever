@@ -35,6 +35,12 @@ namespace NexusForever.Script.Main.AI
             74862u  // Dominion lane Exile Turret
         ];
 
+        private static readonly HashSet<uint> starterTutorialTurretCreatureIds =
+        [
+            73494u, // Exile lane Dominion Turret
+            74862u  // Dominion lane Exile Turret
+        ];
+
         protected ICreatureEntity entity;
 
         private int autoAttackIndex;
@@ -114,6 +120,9 @@ namespace NexusForever.Script.Main.AI
                 DoAutoAttack();
                 autoAttackTimer.Reset();
             }
+
+            if (IsStarterTutorialTurretCreature())
+                return;
 
             chaseDistanceTimer.Update(lastTick);
             if (chaseDistanceTimer.HasElapsed)
@@ -584,6 +593,11 @@ namespace NexusForever.Script.Main.AI
         private bool IsStarterTutorialCombatCreature()
         {
             return starterTutorialCombatCreatureIds.Contains(entity.CreatureId);
+        }
+
+        private bool IsStarterTutorialTurretCreature()
+        {
+            return starterTutorialTurretCreatureIds.Contains(entity.CreatureId);
         }
 
         private bool ShouldLogStarterTutorialCombat(IUnitEntity unit = null)
