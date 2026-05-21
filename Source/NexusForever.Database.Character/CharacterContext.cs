@@ -101,9 +101,19 @@ namespace NexusForever.Database.Character
                     .HasColumnType("tinyint(3) unsigned")
                     .HasDefaultValue(0);
 
+                entity.Property(e => e.CastingOptions)
+                    .HasColumnName("castingOptions")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue(0);
+
                 entity.Property(e => e.Class)
                     .HasColumnName("class")
                     .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.CombatLogDisableFlags)
+                    .HasColumnName("combatLogDisableFlags")
+                    .HasColumnType("smallint(5) unsigned")
                     .HasDefaultValue(0);
 
                 entity.Property(e => e.CreateTime)
@@ -115,6 +125,11 @@ namespace NexusForever.Database.Character
                     .HasColumnName("deleteTime")
                     .HasColumnType("datetime")
                     .HasDefaultValue(null);
+
+                entity.Property(e => e.DisableOtherPlayersCombatLogs)
+                    .HasColumnName("disableOtherPlayersCombatLogs")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
 
                 entity.Property(e => e.FactionId)
                     .HasColumnName("factionId")
@@ -209,6 +224,11 @@ namespace NexusForever.Database.Character
                     .HasColumnName("sex")
                     .HasColumnType("tinyint(3) unsigned")
                     .HasDefaultValue(0);
+
+                entity.Property(e => e.SharedChallengeEnabled)
+                    .HasColumnName("sharedChallengeEnabled")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
 
                 entity.Property(e => e.TimePlayedLevel)
                     .HasColumnName("timePlayedLevel")

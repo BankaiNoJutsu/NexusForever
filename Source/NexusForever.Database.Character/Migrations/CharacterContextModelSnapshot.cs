@@ -1054,11 +1054,23 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue((byte)0)
                         .HasColumnName("activeSpec");
 
+                    b.Property<byte>("CastingOptions")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("castingOptions");
+
                     b.Property<byte>("Class")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("class");
+
+                    b.Property<ushort>("CombatLogDisableFlags")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasDefaultValue((ushort)0)
+                        .HasColumnName("combatLogDisableFlags");
 
                     b.Property<DateTime>("CreateTime")
                         .ValueGeneratedOnAdd()
@@ -1069,6 +1081,12 @@ namespace NexusForever.Database.Character.Migrations
                     b.Property<DateTime?>("DeleteTime")
                         .HasColumnType("datetime")
                         .HasColumnName("deleteTime");
+
+                    b.Property<bool>("DisableOtherPlayersCombatLogs")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("disableOtherPlayersCombatLogs");
 
                     b.Property<ushort>("FactionId")
                         .ValueGeneratedOnAdd()
@@ -1181,6 +1199,12 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)
                         .HasColumnName("sex");
+
+                    b.Property<bool>("SharedChallengeEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("sharedChallengeEnabled");
 
                     b.Property<uint>("TimePlayedLevel")
                         .ValueGeneratedOnAdd()

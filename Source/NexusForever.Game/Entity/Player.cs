@@ -98,6 +98,7 @@ namespace NexusForever.Game.Entity
             Innate      = 0x0080,
             Sex         = 0x0100,
             Race        = 0x0200,
+            Options     = 0x0400,
         }
 
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
@@ -245,10 +246,49 @@ namespace NexusForever.Game.Entity
         }
         private byte innateIndex;
 
-        public CastingOptionFlags CastingOptions { get; set; }
-        public bool SharedChallengeEnabled { get; set; }
-        public bool DisableOtherPlayersCombatLogs { get; set; }
-        public CombatLogOptions CombatLogDisableFlags { get; set; }
+        public CastingOptionFlags CastingOptions
+        {
+            get => castingOptions;
+            set
+            {
+                castingOptions = value;
+                saveMask |= PlayerSaveMask.Options;
+            }
+        }
+        private CastingOptionFlags castingOptions;
+
+        public bool SharedChallengeEnabled
+        {
+            get => sharedChallengeEnabled;
+            set
+            {
+                sharedChallengeEnabled = value;
+                saveMask |= PlayerSaveMask.Options;
+            }
+        }
+        private bool sharedChallengeEnabled;
+
+        public bool DisableOtherPlayersCombatLogs
+        {
+            get => disableOtherPlayersCombatLogs;
+            set
+            {
+                disableOtherPlayersCombatLogs = value;
+                saveMask |= PlayerSaveMask.Options;
+            }
+        }
+        private bool disableOtherPlayersCombatLogs;
+
+        public CombatLogOptions CombatLogDisableFlags
+        {
+            get => combatLogDisableFlags;
+            set
+            {
+                combatLogDisableFlags = value;
+                saveMask |= PlayerSaveMask.Options;
+            }
+        }
+        private CombatLogOptions combatLogDisableFlags;
         public AccountPresenceState PresenceState { get; set; }
         public string AwayAutoResponseMessage { get; set; }
         public string BusyAutoResponseMessage { get; set; }
@@ -416,6 +456,10 @@ namespace NexusForever.Game.Entity
             Faction2          = (Faction)model.FactionId;
             innateIndex       = model.InnateIndex;
             flags             = (CharacterFlag)model.Flags;
+            castingOptions           = (CastingOptionFlags)model.CastingOptions;
+            sharedChallengeEnabled   = model.SharedChallengeEnabled;
+            disableOtherPlayersCombatLogs = model.DisableOtherPlayersCombatLogs;
+            combatLogDisableFlags    = (CombatLogOptions)model.CombatLogDisableFlags;
 
             CreateTime        = model.CreateTime;
             TimePlayedTotal   = model.TimePlayedTotal;
@@ -726,6 +770,21 @@ namespace NexusForever.Game.Entity
                 {
                     model.Race = (byte)Race;
                     entity.Property(p => p.Race).IsModified = true;
+                }
+
+                if ((saveMask & PlayerSaveMask.Options) != 0)
+                {
+                    model.CastingOptions = (byte)CastingOptions;
+                    entity.Property(p => p.CastingOptions).IsModified = true;
+
+                    model.SharedChallengeEnabled = SharedChallengeEnabled;
+                    entity.Property(p => p.SharedChallengeEnabled).IsModified = true;
+
+                    model.DisableOtherPlayersCombatLogs = DisableOtherPlayersCombatLogs;
+                    entity.Property(p => p.DisableOtherPlayersCombatLogs).IsModified = true;
+
+                    model.CombatLogDisableFlags = (ushort)CombatLogDisableFlags;
+                    entity.Property(p => p.CombatLogDisableFlags).IsModified = true;
                 }
 
                 saveMask = PlayerSaveMask.None;
