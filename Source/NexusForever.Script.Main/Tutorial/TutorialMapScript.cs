@@ -67,6 +67,61 @@ namespace NexusForever.Script.Main.Tutorial
         private const uint DominionCombatTurretWorldLocationId00 = 52902u;
         private const uint DominionCombatTurretWorldLocationId01 = 52903u;
         private const uint DominionCombatEliteWorldLocationId = 53015u;
+        private const uint ExileCombatStartWorldLocationId = 51739u;
+        private const uint ExileCombatMineEasyWorldLocationId = 51662u;
+        private const uint ExileCombatMineMediumWorldLocationId = 51663u;
+        private const uint ExileCombatMineHardWorldLocationId = 51664u;
+        private const uint ExileCombatTurretWorldLocationId00 = 51671u;
+        private const uint ExileCombatTurretWorldLocationId01 = 52753u;
+        private const uint ExileCombatDagunCreatureId = 73464u;
+        private const uint DominionCombatDagunCreatureId = 73465u;
+        private const uint ExileCombatTurretCreatureId = 73494u;
+        private const uint DominionCombatTurretCreatureId = 74862u;
+
+        // Post-combat ship deck (zone 5968): quests 10519/10522 NPCs
+        private const uint ShipDeckNpcA = 73498u;
+        private const uint ShipDeckNpcB = 74745u;
+        private const uint ShipDeckNpcC = 74746u;
+        private const uint ShipDeckNpcAWL = 52742u;
+        private const uint ShipDeckNpcBWL = 52743u;
+        private const uint ShipDeckNpcCWL = 52744u;
+
+        // Ship interior (zone 5968): quests 10520/10523 kill target
+        private const uint ShipInteriorCreatureId = 73499u;
+        private const uint ShipInteriorCreatureWL = 51744u;
+
+        // Cryopod deck (zone 5969): quests 10525/10526 NPCs
+        private const uint CryopodNpcA = 73663u;
+        private const uint CryopodNpcB = 73664u;
+        private const uint CryopodNpcAWL = 51711u;
+        private const uint CryopodNpcBWL = 51712u;
+
+        // Exile departure (zone 5998): quest 10528 NPC + escape pod consoles + checklist entities
+        private const uint ExileEscapePodNpcId = 73604u;
+        private const uint ExileEscapePodNpcWL = 51694u;
+        private const uint ExileEscapePodConsoleCreatureA = 73605u;
+        private const uint ExileEscapePodConsoleCreatureB = 73606u;
+        private const uint ExileEscapePodConsoleAWL = 51695u;
+        private const uint ExileEscapePodConsoleBWL = 51696u;
+        private const uint ExileEscapePodConsoleCWL = 51697u;
+        private static readonly uint[] ExileEscapePodChecklistCreatureIds = [73677u, 73678u, 73679u, 73680u, 73681u, 73682u, 73683u, 73684u];
+
+        // Dominion departure (zone 5999): quest 10530 NPC + escape pod consoles + checklist entities
+        private const uint DominionEscapePodNpcId = 74778u;
+        private const uint DominionEscapePodNpcWL = 52750u;
+        private const uint DominionEscapePodConsoleCreatureA = 74772u;
+        private const uint DominionEscapePodConsoleCreatureB = 74773u;
+        private const uint DominionEscapePodConsoleAWL = 52747u;
+        private const uint DominionEscapePodConsoleBWL = 52748u;
+        private const uint DominionEscapePodConsoleCWL = 52749u;
+        private static readonly uint[] DominionEscapePodChecklistCreatureIds = [74759u, 74760u, 74761u, 74762u, 74763u, 74764u, 74765u, 74766u];
+
+        // Cryopod target-group NPCs for TalkToTargetGroup (quests 10525/10526)
+        private const uint CryopodTargetGroupNpcA = 73422u;
+        private const uint CryopodTargetGroupNpcB = 73662u;
+
+        // Ship interior checklist entity (quests 10520/10523, target group 14425)
+        private const uint ShipInteriorChecklistCreatureId = 73500u;
 
         private static readonly ushort[] starterTutorialQuestIds = [ExileMovementQuestId, DominionMovementQuestId, ExileHoverboardQuestId, DominionHoverboardQuestId];
         private static readonly ushort[] followUpTutorialQuestIds = [10518, 10519, 10520, 10522, 10523, 10524, 10525, 10526, 10528, 10530, 10540, 10541];
@@ -77,6 +132,11 @@ namespace NexusForever.Script.Main.Tutorial
         private bool tutorialTriggersSpawned;
         private bool exileCombatLaneSpawned;
         private bool dominionCombatLaneSpawned;
+        private bool shipDeckNpcsSpawned;
+        private bool shipInteriorEntitiesSpawned;
+        private bool cryopodNpcsSpawned;
+        private bool exileDepartureEntitiesSpawned;
+        private bool dominionDepartureEntitiesSpawned;
         private readonly HashSet<uint> initialisedPlayerGuids = [];
 
         #region Dependency Injection
@@ -109,6 +169,11 @@ namespace NexusForever.Script.Main.Tutorial
             EnsureTutorialTriggers();
             EnsureExileCombatSimulationEntities();
             EnsureDominionCombatSimulationEntities();
+            EnsureShipDeckNpcs();
+            EnsureShipInteriorEntities();
+            EnsureCryopodNpcs();
+            EnsureExileDepartureEntities();
+            EnsureDominionDepartureEntities();
         }
 
         public void Update(double lastTick)
@@ -201,25 +266,42 @@ namespace NexusForever.Script.Main.Tutorial
             if (exileCombatLaneSpawned || owner == null)
                 return;
 
+            WorldLocation2Entry start = gameTableManager.WorldLocation2.GetEntry(ExileCombatStartWorldLocationId);
+            WorldLocation2Entry easyMine = gameTableManager.WorldLocation2.GetEntry(ExileCombatMineEasyWorldLocationId);
+            WorldLocation2Entry mediumMine = gameTableManager.WorldLocation2.GetEntry(ExileCombatMineMediumWorldLocationId);
+            WorldLocation2Entry hardMine = gameTableManager.WorldLocation2.GetEntry(ExileCombatMineHardWorldLocationId);
+            WorldLocation2Entry turret00 = gameTableManager.WorldLocation2.GetEntry(ExileCombatTurretWorldLocationId00);
+            WorldLocation2Entry turret01 = gameTableManager.WorldLocation2.GetEntry(ExileCombatTurretWorldLocationId01);
             WorldLocation2Entry final = gameTableManager.WorldLocation2.GetEntry(ExileCombatFinalWorldLocationId);
 
-            if (final == null)
+            if (start == null || easyMine == null || mediumMine == null || hardMine == null
+                || turret00 == null || turret01 == null || final == null)
             {
-                log.LogWarning("Unable to spawn Rider's Reef Exile final combat wave on map {MapId}: world location {WorldLocationId} is missing.",
-                    owner.Entry.Id,
-                    ExileCombatFinalWorldLocationId);
+                log.LogWarning("Unable to spawn Rider's Reef Exile combat lane on map {MapId}: one or more world locations are missing.",
+                    owner.Entry.Id);
                 return;
             }
 
-            if (owner.Search(ToVector3(final), 30f, new CreatureSearchCheck(73492u)).Any()
-                || owner.Search(ToVector3(final), 30f, new CreatureSearchCheck(73567u)).Any())
+            if (owner.Search(ToVector3(start), 30f, new CreatureSearchCheck(ExileCombatDagunCreatureId)).Any())
             {
-                log.LogDebug("Skipping Rider's Reef Exile final combat wave fallback on map {MapId}: imported final-wave hostiles are already active near world location {WorldLocationId}.",
-                    owner.Entry.Id,
-                    ExileCombatFinalWorldLocationId);
+                log.LogDebug("Skipping Rider's Reef Exile combat lane fallback on map {MapId}: imported combat entities are already active.",
+                    owner.Entry.Id);
                 exileCombatLaneSpawned = true;
                 return;
             }
+
+            SpawnTutorialEntity<INonPlayerEntity>(ExileCombatDagunCreatureId, ToVector3(start) + new Vector3(-8f, 0f, -6f));
+            SpawnTutorialEntity<INonPlayerEntity>(ExileCombatDagunCreatureId, ToVector3(start) + new Vector3(12f, 0f, 4f));
+            SpawnTutorialEntity<INonPlayerEntity>(ExileCombatDagunCreatureId, ToVector3(easyMine) + new Vector3(-10f, 0f, -10f));
+            SpawnTutorialEntity<INonPlayerEntity>(ExileCombatDagunCreatureId, ToVector3(mediumMine) + new Vector3(12f, 0f, -14f));
+            SpawnTutorialEntity<INonPlayerEntity>(ExileCombatDagunCreatureId, ToVector3(hardMine) + new Vector3(-8f, 0f, -16f));
+
+            SpawnTutorialEntity<ISimpleCollidableEntity>(73463u, ToVector3(easyMine));
+            SpawnTutorialEntity<ISimpleCollidableEntity>(73667u, ToVector3(mediumMine));
+            SpawnTutorialEntity<ISimpleCollidableEntity>(73668u, ToVector3(hardMine));
+
+            SpawnTutorialEntity<INonPlayerEntity>(ExileCombatTurretCreatureId, ToVector3(turret00));
+            SpawnTutorialEntity<INonPlayerEntity>(ExileCombatTurretCreatureId, ToVector3(turret01));
 
             Vector3 finalPosition = ToVector3(final);
             SpawnTutorialEntity<INonPlayerEntity>(73492u, finalPosition + new Vector3(-9f, 0f, -6f));
@@ -227,7 +309,7 @@ namespace NexusForever.Script.Main.Tutorial
             SpawnTutorialEntity<INonPlayerEntity>(73492u, finalPosition + new Vector3(14f, 0f, -9f));
 
             exileCombatLaneSpawned = true;
-            log.LogDebug("Spawned Rider's Reef Exile final combat wave on map {MapId}: legionnaires=3.",
+            log.LogDebug("Spawned Rider's Reef Exile combat lane on map {MapId}: dagun=5, mines=3, turrets=2, legionnaires=3.",
                 owner.Entry.Id);
         }
 
@@ -251,18 +333,26 @@ namespace NexusForever.Script.Main.Tutorial
                 return;
             }
 
-            SpawnTutorialEntity<INonPlayerEntity>(73465u, ToVector3(start) + new Vector3(-8f, 0f, -6f));
-            SpawnTutorialEntity<INonPlayerEntity>(73465u, ToVector3(start) + new Vector3(12f, 0f, 4f));
-            SpawnTutorialEntity<INonPlayerEntity>(73465u, ToVector3(easyMine) + new Vector3(-10f, 0f, -10f));
-            SpawnTutorialEntity<INonPlayerEntity>(73465u, ToVector3(mediumMine) + new Vector3(12f, 0f, -14f));
-            SpawnTutorialEntity<INonPlayerEntity>(73465u, ToVector3(hardMine) + new Vector3(-8f, 0f, -16f));
+            if (owner.Search(ToVector3(start), 30f, new CreatureSearchCheck(DominionCombatDagunCreatureId)).Any())
+            {
+                log.LogDebug("Skipping Rider's Reef Dominion combat lane fallback on map {MapId}: imported combat entities are already active.",
+                    owner.Entry.Id);
+                dominionCombatLaneSpawned = true;
+                return;
+            }
+
+            SpawnTutorialEntity<INonPlayerEntity>(DominionCombatDagunCreatureId, ToVector3(start) + new Vector3(-8f, 0f, -6f));
+            SpawnTutorialEntity<INonPlayerEntity>(DominionCombatDagunCreatureId, ToVector3(start) + new Vector3(12f, 0f, 4f));
+            SpawnTutorialEntity<INonPlayerEntity>(DominionCombatDagunCreatureId, ToVector3(easyMine) + new Vector3(-10f, 0f, -10f));
+            SpawnTutorialEntity<INonPlayerEntity>(DominionCombatDagunCreatureId, ToVector3(mediumMine) + new Vector3(12f, 0f, -14f));
+            SpawnTutorialEntity<INonPlayerEntity>(DominionCombatDagunCreatureId, ToVector3(hardMine) + new Vector3(-8f, 0f, -16f));
 
             SpawnTutorialEntity<ISimpleCollidableEntity>(73463u, ToVector3(easyMine));
             SpawnTutorialEntity<ISimpleCollidableEntity>(73667u, ToVector3(mediumMine));
             SpawnTutorialEntity<ISimpleCollidableEntity>(73668u, ToVector3(hardMine));
 
-            SpawnTutorialEntity<INonPlayerEntity>(74862u, ToVector3(turret00));
-            SpawnTutorialEntity<INonPlayerEntity>(74862u, ToVector3(turret01));
+            SpawnTutorialEntity<INonPlayerEntity>(DominionCombatTurretCreatureId, ToVector3(turret00));
+            SpawnTutorialEntity<INonPlayerEntity>(DominionCombatTurretCreatureId, ToVector3(turret01));
 
             Vector3 elitePosition = ToVector3(elite);
             SpawnTutorialEntity<INonPlayerEntity>(73473u, elitePosition + new Vector3(-9f, 0f, -6f));
@@ -302,6 +392,191 @@ namespace NexusForever.Script.Main.Tutorial
         private static Vector3 ToVector3(WorldLocation2Entry worldLocation)
         {
             return new Vector3(worldLocation.Position0, worldLocation.Position1, worldLocation.Position2);
+        }
+
+        private void EnsureShipDeckNpcs()
+        {
+            if (shipDeckNpcsSpawned || owner == null)
+                return;
+
+            WorldLocation2Entry wlA = gameTableManager.WorldLocation2.GetEntry(ShipDeckNpcAWL);
+            if (wlA != null && owner.Search(ToVector3(wlA), 15f, new CreatureSearchCheck(ShipDeckNpcA)).Any())
+            {
+                log.LogDebug("Skipping Rider's Reef ship-deck NPC fallback on map {MapId}: imported NPCs already active.", owner.Entry.Id);
+                shipDeckNpcsSpawned = true;
+                return;
+            }
+            WorldLocation2Entry wlB = gameTableManager.WorldLocation2.GetEntry(ShipDeckNpcBWL);
+            WorldLocation2Entry wlC = gameTableManager.WorldLocation2.GetEntry(ShipDeckNpcCWL);
+
+            if (wlA == null || wlB == null || wlC == null)
+            {
+                log.LogWarning("Unable to spawn Rider's Reef ship-deck NPCs on map {MapId}: one or more world locations are missing.",
+                    owner.Entry.Id);
+                return;
+            }
+
+            SpawnTutorialEntity<INonPlayerEntity>(ShipDeckNpcA, ToVector3(wlA));
+            SpawnTutorialEntity<INonPlayerEntity>(ShipDeckNpcB, ToVector3(wlB));
+            SpawnTutorialEntity<INonPlayerEntity>(ShipDeckNpcC, ToVector3(wlC));
+
+            shipDeckNpcsSpawned = true;
+            log.LogDebug("Spawned Rider's Reef ship-deck NPCs on map {MapId}: NPCs {NpcA}, {NpcB}, {NpcC}.",
+                owner.Entry.Id,
+                ShipDeckNpcA,
+                ShipDeckNpcB,
+                ShipDeckNpcC);
+        }
+
+        private void EnsureShipInteriorEntities()
+        {
+            if (shipInteriorEntitiesSpawned || owner == null)
+                return;
+
+            WorldLocation2Entry creatureWl = gameTableManager.WorldLocation2.GetEntry(ShipInteriorCreatureWL);
+            if (creatureWl != null && owner.Search(ToVector3(creatureWl), 30f, new CreatureSearchCheck(ShipInteriorCreatureId)).Any())
+            {
+                log.LogDebug("Skipping Rider's Reef ship interior fallback on map {MapId}: imported entities already active.", owner.Entry.Id);
+                shipInteriorEntitiesSpawned = true;
+                return;
+            }
+            if (creatureWl == null)
+            {
+                log.LogWarning("Unable to spawn Rider's Reef ship interior entities on map {MapId}: world location {WorldLocationId} is missing.",
+                    owner.Entry.Id,
+                    ShipInteriorCreatureWL);
+                return;
+            }
+
+            SpawnTutorialEntity<INonPlayerEntity>(ShipInteriorCreatureId, ToVector3(creatureWl));
+            SpawnTutorialEntity<INonPlayerEntity>(ShipInteriorChecklistCreatureId, ToVector3(creatureWl) + new Vector3(3f, 0f, 0f));
+
+            shipInteriorEntitiesSpawned = true;
+            log.LogDebug("Spawned Rider's Reef ship interior entities on map {MapId}: creature={CreatureId}, checklist={ChecklistId}.",
+                owner.Entry.Id,
+                ShipInteriorCreatureId,
+                ShipInteriorChecklistCreatureId);
+        }
+
+        private void EnsureCryopodNpcs()
+        {
+            if (cryopodNpcsSpawned || owner == null)
+                return;
+
+            WorldLocation2Entry wlA = gameTableManager.WorldLocation2.GetEntry(CryopodNpcAWL);
+            if (wlA != null && owner.Search(ToVector3(wlA), 15f, new CreatureSearchCheck(CryopodNpcA)).Any())
+            {
+                log.LogDebug("Skipping Rider's Reef cryopod NPC fallback on map {MapId}: imported NPCs already active.", owner.Entry.Id);
+                cryopodNpcsSpawned = true;
+                return;
+            }
+            WorldLocation2Entry wlB = gameTableManager.WorldLocation2.GetEntry(CryopodNpcBWL);
+
+            if (wlA == null || wlB == null)
+            {
+                log.LogWarning("Unable to spawn Rider's Reef cryopod NPCs on map {MapId}: one or more world locations are missing.",
+                    owner.Entry.Id);
+                return;
+            }
+
+            SpawnTutorialEntity<INonPlayerEntity>(CryopodNpcA, ToVector3(wlA));
+            SpawnTutorialEntity<INonPlayerEntity>(CryopodNpcB, ToVector3(wlB));
+            SpawnTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcA, ToVector3(wlA) + new Vector3(2f, 0f, 2f));
+            SpawnTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcB, ToVector3(wlB) + new Vector3(2f, 0f, 2f));
+
+            cryopodNpcsSpawned = true;
+            log.LogDebug("Spawned Rider's Reef cryopod NPCs on map {MapId}: talkTo={NpcA},{NpcB}, targetGroup={TgNpcA},{TgNpcB}.",
+                owner.Entry.Id,
+                CryopodNpcA,
+                CryopodNpcB,
+                CryopodTargetGroupNpcA,
+                CryopodTargetGroupNpcB);
+        }
+
+        private void EnsureExileDepartureEntities()
+        {
+            if (exileDepartureEntitiesSpawned || owner == null)
+                return;
+
+            WorldLocation2Entry wlNpc = gameTableManager.WorldLocation2.GetEntry(ExileEscapePodNpcWL);
+            if (wlNpc != null && owner.Search(ToVector3(wlNpc), 15f, new CreatureSearchCheck(ExileEscapePodNpcId)).Any())
+            {
+                log.LogDebug("Skipping Rider's Reef Exile departure fallback on map {MapId}: imported entities already active.", owner.Entry.Id);
+                exileDepartureEntitiesSpawned = true;
+                return;
+            }
+            WorldLocation2Entry wlA = gameTableManager.WorldLocation2.GetEntry(ExileEscapePodConsoleAWL);
+            WorldLocation2Entry wlB = gameTableManager.WorldLocation2.GetEntry(ExileEscapePodConsoleBWL);
+            WorldLocation2Entry wlC = gameTableManager.WorldLocation2.GetEntry(ExileEscapePodConsoleCWL);
+
+            if (wlNpc == null || wlA == null || wlB == null || wlC == null)
+            {
+                log.LogWarning("Unable to spawn Rider's Reef Exile departure entities on map {MapId}: one or more world locations are missing.",
+                    owner.Entry.Id);
+                return;
+            }
+
+            Vector3 npcPosition = ToVector3(wlNpc);
+            Vector3 checklistCenter = ToVector3(wlC);
+            SpawnTutorialEntity<INonPlayerEntity>(ExileEscapePodNpcId, npcPosition);
+            SpawnTutorialEntity<ISimpleCollidableEntity>(ExileEscapePodConsoleCreatureA, ToVector3(wlA));
+            SpawnTutorialEntity<ISimpleCollidableEntity>(ExileEscapePodConsoleCreatureB, ToVector3(wlB));
+
+            for (int i = 0; i < ExileEscapePodChecklistCreatureIds.Length; i++)
+            {
+                float angle = i * MathF.PI * 2f / ExileEscapePodChecklistCreatureIds.Length;
+                Vector3 offset = new(MathF.Cos(angle) * 5f, 0f, MathF.Sin(angle) * 5f);
+                SpawnTutorialEntity<ISimpleCollidableEntity>(ExileEscapePodChecklistCreatureIds[i], checklistCenter + offset);
+            }
+
+            exileDepartureEntitiesSpawned = true;
+            log.LogDebug("Spawned Rider's Reef Exile departure entities on map {MapId}: NPC {NpcId}, consoles=2, checklist={ChecklistCount}.",
+                owner.Entry.Id,
+                ExileEscapePodNpcId,
+                ExileEscapePodChecklistCreatureIds.Length);
+        }
+
+        private void EnsureDominionDepartureEntities()
+        {
+            if (dominionDepartureEntitiesSpawned || owner == null)
+                return;
+
+            WorldLocation2Entry wlNpc = gameTableManager.WorldLocation2.GetEntry(DominionEscapePodNpcWL);
+            if (wlNpc != null && owner.Search(ToVector3(wlNpc), 15f, new CreatureSearchCheck(DominionEscapePodNpcId)).Any())
+            {
+                log.LogDebug("Skipping Rider's Reef Dominion departure fallback on map {MapId}: imported entities already active.", owner.Entry.Id);
+                dominionDepartureEntitiesSpawned = true;
+                return;
+            }
+            WorldLocation2Entry wlA = gameTableManager.WorldLocation2.GetEntry(DominionEscapePodConsoleAWL);
+            WorldLocation2Entry wlB = gameTableManager.WorldLocation2.GetEntry(DominionEscapePodConsoleBWL);
+            WorldLocation2Entry wlC = gameTableManager.WorldLocation2.GetEntry(DominionEscapePodConsoleCWL);
+
+            if (wlNpc == null || wlA == null || wlB == null || wlC == null)
+            {
+                log.LogWarning("Unable to spawn Rider's Reef Dominion departure entities on map {MapId}: one or more world locations are missing.",
+                    owner.Entry.Id);
+                return;
+            }
+
+            Vector3 npcPosition = ToVector3(wlNpc);
+            Vector3 checklistCenter = ToVector3(wlC);
+            SpawnTutorialEntity<INonPlayerEntity>(DominionEscapePodNpcId, npcPosition);
+            SpawnTutorialEntity<ISimpleCollidableEntity>(DominionEscapePodConsoleCreatureA, ToVector3(wlA));
+            SpawnTutorialEntity<ISimpleCollidableEntity>(DominionEscapePodConsoleCreatureB, ToVector3(wlB));
+
+            for (int i = 0; i < DominionEscapePodChecklistCreatureIds.Length; i++)
+            {
+                float angle = i * MathF.PI * 2f / DominionEscapePodChecklistCreatureIds.Length;
+                Vector3 offset = new(MathF.Cos(angle) * 5f, 0f, MathF.Sin(angle) * 5f);
+                SpawnTutorialEntity<ISimpleCollidableEntity>(DominionEscapePodChecklistCreatureIds[i], checklistCenter + offset);
+            }
+
+            dominionDepartureEntitiesSpawned = true;
+            log.LogDebug("Spawned Rider's Reef Dominion departure entities on map {MapId}: NPC {NpcId}, consoles=2, checklist={ChecklistCount}.",
+                owner.Entry.Id,
+                DominionEscapePodNpcId,
+                DominionEscapePodChecklistCreatureIds.Length);
         }
 
         private void EnsureTutorialQuests(IPlayer player)
