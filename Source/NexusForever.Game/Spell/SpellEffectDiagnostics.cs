@@ -16,6 +16,22 @@ namespace NexusForever.Game.Spell
     {
         private static readonly ILogger log = LogManager.GetLogger("SpellEffectDiagnostics");
 
+        private sealed class SpellDiagnosticContext
+        {
+            public uint Spell4Id { get; }
+            public uint BaseSpell4Id { get; }
+            public uint CastingId { get; }
+            public uint CasterGuid { get; }
+
+            public SpellDiagnosticContext(ISpell spell)
+            {
+                Spell4Id    = spell.Parameters.SpellInfo.Entry.Id;
+                BaseSpell4Id = spell.Parameters.SpellInfo.BaseInfo.Entry.Id;
+                CastingId   = spell.CastingId;
+                CasterGuid  = spell.Caster.Guid;
+            }
+        }
+
         public static void TraceTargetSelection(ISpell spell, IReadOnlyCollection<ISpellTargetInfo> targets, int telegraphCount)
         {
             SpellRuntimeEvidenceCollector.RecordTargetSelection(spell, targets, telegraphCount);
@@ -23,13 +39,14 @@ namespace NexusForever.Game.Spell
             if (!log.IsTraceEnabled)
                 return;
 
+            var context = new SpellDiagnosticContext(spell);
             Spell4AoeTargetConstraintsEntry aoe = spell.Parameters.SpellInfo.AoeTargetConstraints;
             log.Trace(
                 "SpellDiagnostics target-selection spell4Id={0} baseSpell4Id={1} castingId={2} caster={3} targetCount={4} telegraphCount={5} aoeTargetLimit={6} aoeSelection={7} aoeRange={8:R}-{9:R} aoeAngle={10:R} targetMechanic={11}/{12} validTargetMask={13} targets=[{14}]",
-                spell.Parameters.SpellInfo.Entry.Id,
-                spell.Parameters.SpellInfo.BaseInfo.Entry.Id,
-                spell.CastingId,
-                spell.Caster.Guid,
+                context.Spell4Id,
+                context.BaseSpell4Id,
+                context.CastingId,
+                context.CasterGuid,
                 targets.Count,
                 telegraphCount,
                 aoe?.TargetCount ?? 0u,
@@ -48,12 +65,13 @@ namespace NexusForever.Game.Spell
             if (!log.IsTraceEnabled)
                 return;
 
+            var context = new SpellDiagnosticContext(spell);
             log.Trace(
                 "SpellDiagnostics primary-target-validation spell4Id={0} baseSpell4Id={1} castingId={2} caster={3} target={4} result={5} range={6:R} effectiveRange={7:R} verticalDelta={8:R} allowedRange={9:R}-{10:R} allowedVertical={11:R} targetAngle={12:R} targetMechanic={13}/{14} validTargetMask={15}",
-                spell.Parameters.SpellInfo.Entry.Id,
-                spell.Parameters.SpellInfo.BaseInfo.Entry.Id,
-                spell.CastingId,
-                spell.Caster.Guid,
+                context.Spell4Id,
+                context.BaseSpell4Id,
+                context.CastingId,
+                context.CasterGuid,
                 targetGuid?.ToString() ?? "unknown",
                 result,
                 horizontalRange,
@@ -73,12 +91,13 @@ namespace NexusForever.Game.Spell
             if (!log.IsTraceEnabled)
                 return;
 
+            var context = new SpellDiagnosticContext(spell);
             log.Trace(
                 "SpellDiagnostics telegraph-anchor spell4Id={0} baseSpell4Id={1} castingId={2} caster={3} targetType={4} primaryTarget={5} source={6} position={7:R}/{8:R}/{9:R} hasExplicitPosition={10}",
-                spell.Parameters.SpellInfo.Entry.Id,
-                spell.Parameters.SpellInfo.BaseInfo.Entry.Id,
-                spell.CastingId,
-                spell.Caster.Guid,
+                context.Spell4Id,
+                context.BaseSpell4Id,
+                context.CastingId,
+                context.CasterGuid,
                 spell.Parameters.SpellInfo.BaseInfo.TargetMechanics?.TargetType ?? 0u,
                 primaryTargetGuid?.ToString() ?? "none",
                 source,
@@ -95,11 +114,12 @@ namespace NexusForever.Game.Spell
             if (!log.IsTraceEnabled)
                 return;
 
+            var context = new SpellDiagnosticContext(spell);
             log.Trace(
                 "SpellDiagnostics effect-dispatch spell4Id={0} baseSpell4Id={1} castingId={2} spell4EffectId={3} orderIndex={4} effectType={5} targetFlags={6} targetCount={7} hasHandler={8} knownFamily={9} delayMs={10} tickMs={11} durationMs={12} dataBits=\"{13}\" parameters=\"{14}\"",
-                spell.Parameters.SpellInfo.Entry.Id,
-                spell.Parameters.SpellInfo.BaseInfo.Entry.Id,
-                spell.CastingId,
+                context.Spell4Id,
+                context.BaseSpell4Id,
+                context.CastingId,
                 effect.Entry.Id,
                 effect.Entry.OrderIndex,
                 effect.Entry.EffectType,
@@ -119,11 +139,12 @@ namespace NexusForever.Game.Spell
             if (!log.IsTraceEnabled)
                 return;
 
+            var context = new SpellDiagnosticContext(spell);
             log.Trace(
                 "SpellDiagnostics effect-schedule spell4Id={0} baseSpell4Id={1} castingId={2} spell4EffectId={3} orderIndex={4} effectType={5} firstDelayMs={6} tickMs={7} durationMs={8} repeats={9}",
-                spell.Parameters.SpellInfo.Entry.Id,
-                spell.Parameters.SpellInfo.BaseInfo.Entry.Id,
-                spell.CastingId,
+                context.Spell4Id,
+                context.BaseSpell4Id,
+                context.CastingId,
                 effect.Entry.Id,
                 effect.Entry.OrderIndex,
                 effect.Entry.EffectType,
@@ -138,11 +159,12 @@ namespace NexusForever.Game.Spell
             if (!log.IsTraceEnabled)
                 return;
 
+            var context = new SpellDiagnosticContext(spell);
             log.Trace(
                 "SpellDiagnostics effect-lifetime spell4Id={0} baseSpell4Id={1} castingId={2} spell4EffectId={3} orderIndex={4} effectType={5} target={6} durationMs={7}",
-                spell.Parameters.SpellInfo.Entry.Id,
-                spell.Parameters.SpellInfo.BaseInfo.Entry.Id,
-                spell.CastingId,
+                context.Spell4Id,
+                context.BaseSpell4Id,
+                context.CastingId,
                 effect.Entry.Id,
                 effect.Entry.OrderIndex,
                 effect.Entry.EffectType,

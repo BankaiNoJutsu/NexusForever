@@ -139,15 +139,14 @@ public class LootInstanceDeliveryTests
 
     private static IPlayer CreatePlayer(IInventory inventory, out RecordingDispatchProxy<IGameSession> sessionProxy)
     {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
 
-        playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
-        playerProxy.SetProperty(nameof(IPlayer.Session), session);
-        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
-        playerProxy.SetProperty("Guid", 4242u);
-
-        return player;
+        return TestPlayerBuilder.Create()
+            .WithInventory(inventory)
+            .WithSession(session)
+            .WithCharacterId(42ul)
+            .WithGuid(4242u)
+            .Build();
     }
 
     private sealed class TestInventory : IInventory

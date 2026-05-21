@@ -81,7 +81,7 @@
 
 ## Verification Method
 
-Creature2.tbl lookup table is at byte offset `headerSize(96) + LookupOffset(0x28AEEE0)`.  
+Creature2.tbl lookup table is at byte offset `headerSize(96) + LookupOffset(0x28AEEE0)`.
 Each entry is a 4-byte signed int32. Value `-1` = missing, any positive value = record index.
 
 ```bash

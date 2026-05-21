@@ -21,11 +21,12 @@ public class ReputationManagerTests
     [Fact]
     public void UpdateReputation_NewHighStandingAwardsEveryReachedFactionLevel()
     {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out var achievementManagerProxy);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
-        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
-        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        IPlayer player = TestPlayerBuilder.Create()
+            .WithAchievementManager(achievementManager)
+            .WithSession(session)
+            .Build();
 
         IFactionNode factionNode = RecordingDispatchProxy<IFactionNode>.Create(out var factionNodeProxy);
         factionNodeProxy.SetProperty(nameof(IFactionNode.FactionId), Faction.Dominion);
@@ -64,11 +65,12 @@ public class ReputationManagerTests
     [Fact]
     public void UpdateReputation_LosingStandingDoesNotAwardProgressionAchievements()
     {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out var achievementManagerProxy);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
-        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
-        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        IPlayer player = TestPlayerBuilder.Create()
+            .WithAchievementManager(achievementManager)
+            .WithSession(session)
+            .Build();
 
         IFactionNode factionNode = RecordingDispatchProxy<IFactionNode>.Create(out var factionNodeProxy);
         factionNodeProxy.SetProperty(nameof(IFactionNode.FactionId), Faction.Dominion);
