@@ -101,6 +101,12 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
         {
             Vector3 position = GetRelocationPosition();
 
+            if (movementManager.Owner.Position == position)
+            {
+                lastPosition = position;
+                return;
+            }
+
             if (lastPosition == position)
                 return;
 

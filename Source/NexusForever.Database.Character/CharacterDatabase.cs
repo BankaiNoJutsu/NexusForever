@@ -128,6 +128,7 @@ namespace NexusForever.Database.Character
             {
                 using var context = new CharacterContext(config);
                 return await context.Character.Where(c => c.AccountId == accountId)
+                    .AsNoTracking()
                     .AsSplitQuery()
                     .Include(c => c.Appearance)
                     .Include(c => c.Customisation)

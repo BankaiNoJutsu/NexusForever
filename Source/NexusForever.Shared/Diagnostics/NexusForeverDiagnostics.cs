@@ -29,7 +29,8 @@ namespace NexusForever.Shared.Diagnostics
         private static readonly Histogram<long> packetQueueLength = Meter.CreateHistogram<long>("nexus.packet.queue.length");
 
         private static ProfilingOptions options = new();
-        private static long lastActiveSessions;
+        private static readonly object activeSessionsLock = new();
+        private static readonly Dictionary<string, long> lastActiveSessionsByType = new();
 
         public static bool Enabled => options.Enabled;
         public static bool IncludePacketPayloadSizes => options.IncludePacketPayloadSizes;
@@ -140,8 +141,14 @@ namespace NexusForever.Shared.Diagnostics
             if (!Enabled)
                 return;
 
-            long delta = count - lastActiveSessions;
-            lastActiveSessions = count;
+            long delta;
+            lock (activeSessionsLock)
+            {
+                lastActiveSessionsByType.TryGetValue(sessionType, out long lastActiveSessions);
+                delta = count - lastActiveSessions;
+                lastActiveSessionsByType[sessionType] = count;
+            }
+
             if (delta != 0)
                 activeSessions.Add(delta, Tag("session_type", sessionType));
         }

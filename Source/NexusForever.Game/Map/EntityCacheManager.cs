@@ -18,12 +18,13 @@ namespace NexusForever.Game.Map
         {
             log.Info("Caching map spawns...");
 
-            List<ushort> precachedBaseMaps = SharedConfiguration.Instance.Get<MapConfig>().PrecacheBaseMaps;
-            if (precachedBaseMaps == null)
+            MapConfig mapConfig = SharedConfiguration.Instance.Get<MapConfig>();
+            List<ushort> precachedMapSpawns = mapConfig.PrecacheMapSpawns ?? mapConfig.PrecacheBaseMaps;
+            if (precachedMapSpawns == null)
                 return;
 
-            foreach (ushort worldId in precachedBaseMaps)
-                LoadEntityCache(worldId);
+            foreach (ushort worldId in precachedMapSpawns)
+                GetEntityCache(worldId);
         }
 
         /// <summary>

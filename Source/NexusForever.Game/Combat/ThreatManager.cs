@@ -41,7 +41,14 @@ namespace NexusForever.Game.Combat
         /// </summary>
         public IHostileEntity GetTopHostile()
         {
-            return hostiles.Values.OrderByDescending(x => x.Threat).FirstOrDefault();
+            IHostileEntity topHostile = null;
+            foreach (IHostileEntity hostile in hostiles.Values)
+            {
+                if (topHostile == null || hostile.Threat > topHostile.Threat)
+                    topHostile = hostile;
+            }
+
+            return topHostile;
         }
 
         /// <summary>
@@ -186,15 +193,12 @@ namespace NexusForever.Game.Combat
                 hostileEntities.Add(currentTarget);
             }
 
-            foreach (IHostileEntity hostile in hostiles.Values.OrderByDescending(h => h.Threat))
+            foreach (IHostileEntity hostile in hostiles.Values)
             {
-                if (hostileEntities.Count == 5)
-                    break;
-
                 if (prioritisedHostileId.HasValue && hostile.HatedUnitId == prioritisedHostileId.Value)
                     continue;
 
-                hostileEntities.Add(hostile);
+                InsertThreatSorted(hostileEntities, hostile, prioritisedHostileId.HasValue ? 1 : 0);
             }
 
             for (int i = 0; i < hostileEntities.Count; i++)
@@ -204,6 +208,20 @@ namespace NexusForever.Game.Combat
             }
 
             return threatUpdate;
+        }
+
+        private static void InsertThreatSorted(List<IHostileEntity> hostileEntities, IHostileEntity hostile, int minimumIndex)
+        {
+            int insertIndex = hostileEntities.Count;
+            while (insertIndex > minimumIndex && hostile.Threat > hostileEntities[insertIndex - 1].Threat)
+                insertIndex--;
+
+            if (insertIndex >= 5)
+                return;
+
+            hostileEntities.Insert(insertIndex, hostile);
+            if (hostileEntities.Count > 5)
+                hostileEntities.RemoveAt(5);
         }
 
         public IEnumerator<IHostileEntity> GetEnumerator()

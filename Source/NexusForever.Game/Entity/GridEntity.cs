@@ -259,18 +259,27 @@ namespace NexusForever.Game.Entity
         private void UpdateVision()
         {
             List<IGridEntity> entities = Map.Search(Position, Map.VisionRange, new SearchCheckRange<IGridEntity>(Position, Map.VisionRange)).ToList();
+            HashSet<uint> entityGuids = [];
 
             // new entities now in vision range
-            foreach (IGridEntity entity in entities.Except(visibleEntities.Values))
+            foreach (IGridEntity entity in entities)
             {
+                entityGuids.Add(entity.Guid);
+
+                if (visibleEntities.ContainsKey(entity.Guid))
+                    continue;
+
                 AddVisible(entity);
                 if (entity != this)
                     entity.AddVisible(this);
             }
 
             // old entities now out of vision range
-            foreach (IGridEntity entity in visibleEntities.Values.Except(entities).ToList())
+            foreach (IGridEntity entity in visibleEntities.Values.ToList())
             {
+                if (entityGuids.Contains(entity.Guid))
+                    continue;
+
                 RemoveVisible(entity);
                 entity.RemoveVisible(this);
             }
@@ -282,17 +291,27 @@ namespace NexusForever.Game.Entity
         private void UpdateGridVision()
         {
             Map.GridSearch(Position, Map.VisionRange, out List<IMapGrid> intersectedGrids);
-            List<(uint X, uint Z)> visibleGridCoords = intersectedGrids
-                .Select(g => g.Coord)
-                .ToList();
+            HashSet<(uint X, uint Z)> visibleGridCoords = [];
+            foreach (IMapGrid grid in intersectedGrids)
+                visibleGridCoords.Add(grid.Coord);
 
             // new grids now in vision range
-            foreach ((uint gridX, uint gridZ) in visibleGridCoords.Except(visibleGrids))
+            foreach ((uint gridX, uint gridZ) in visibleGridCoords)
+            {
+                if (visibleGrids.Contains((gridX, gridZ)))
+                    continue;
+
                 AddVisible(gridX, gridZ);
+            }
 
             // old grids now out of vision range
-            foreach ((uint gridX, uint gridZ) in visibleGrids.Except(visibleGridCoords).ToList())
+            foreach ((uint gridX, uint gridZ) in visibleGrids.ToList())
+            {
+                if (visibleGridCoords.Contains((gridX, gridZ)))
+                    continue;
+
                 RemoveVisible(gridX, gridZ);
+            }
         }
 
         protected virtual void AddVisible(uint gridX, uint gridZ)
@@ -341,7 +360,7 @@ namespace NexusForever.Game.Entity
 
         protected virtual bool IsInRange(IGridEntity target)
         {
-            return RangeCheck.HasValue && Position.GetDistance(target.Position) < RangeCheck.Value;
+            return RangeCheck.HasValue && Vector3.DistanceSquared(Position, target.Position) < RangeCheck.Value * RangeCheck.Value;
         }
 
         protected bool HasEnteredRange(IGridEntity target)

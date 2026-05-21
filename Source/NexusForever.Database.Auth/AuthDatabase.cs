@@ -26,9 +26,12 @@ namespace NexusForever.Database.Auth
 
         public async Task Save(Action<AuthContext> action)
         {
-            using var context = new AuthContext(config);
-            action.Invoke(context);
-            await context.SaveChangesAsync();
+            await NexusForeverDiagnostics.MeasureDatabaseAsync("auth", nameof(Save), async () =>
+            {
+                await using var context = new AuthContext(config);
+                action.Invoke(context);
+                await context.SaveChangesAsync();
+            });
         }
 
         public void Migrate()
@@ -55,6 +58,7 @@ namespace NexusForever.Database.Auth
             {
                 using var context = new AuthContext(config);
                 return await context.Account
+                    .AsNoTracking()
                     .Include(a => a.AccountRole)
                     .SingleOrDefaultAsync(a => a.Email == email);
             });
@@ -69,6 +73,7 @@ namespace NexusForever.Database.Auth
             {
                 using var context = new AuthContext(config);
                 return await context.Account
+                    .AsNoTracking()
                     .Include(a => a.AccountInventory)
                     .Include(a => a.AccountSuspension)
                     .SingleOrDefaultAsync(a => a.Email == email && a.GameToken == gameToken);
@@ -84,6 +89,7 @@ namespace NexusForever.Database.Auth
             {
                 using var context = new AuthContext(config);
                 return await context.Account
+                    .AsNoTracking()
                     .Include(a => a.AccountRole)
                     .SingleOrDefaultAsync(a => a.GameToken == gameToken);
             });
@@ -98,6 +104,7 @@ namespace NexusForever.Database.Auth
             {
                 using var context = new AuthContext(config);
                 return await context.Account
+                    .AsNoTracking()
                     .AsSplitQuery()
                     .Include(a => a.AccountCostumeUnlock)
                     .Include(a => a.AccountCurrency)

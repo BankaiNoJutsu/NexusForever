@@ -55,6 +55,7 @@ internal static class Program
         Console.Error.WriteLine("  NexusForever.LoadTest seed --profile typical --users 1");
         Console.Error.WriteLine("  NexusForever.LoadTest run login-world --user loadtest0001@example.local --password loadtest --samples 30 --warmup 3");
         Console.Error.WriteLine("  NexusForever.LoadTest run login-world --profile typical --concurrent-users 50 --duration 5m");
+        Console.Error.WriteLine("  NexusForever.LoadTest run login-world --client-entered-world-delay-ms 0");
         Console.Error.WriteLine("  NexusForever.LoadTest report --input artifacts\\load-tests");
         return 1;
     }
@@ -283,6 +284,7 @@ internal static class LoginWorldCommand
             ConcurrentUsers = args.GetInt("concurrent-users", 1),
             Duration = ParseDuration(args.GetString("duration", "")),
             Ramp = args.GetString("ramp", ""),
+            ClientEnteredWorldDelayMs = args.GetInt("client-entered-world-delay-ms", 250),
             AuthConnectionString = args.GetString("auth-connection", Defaults.AuthConnectionString),
             CharacterConnectionString = args.GetString("character-connection", Defaults.CharacterConnectionString)
         };
@@ -376,9 +378,10 @@ internal static class LoginWorldCommand
                 return await auth.WaitForRealmTicket(TimeSpan.FromSeconds(10));
             });
 
+            await using var world = new GameProtocolClient(options.WorldHost, options.WorldPort, PacketCrypt.GetKeyFromAuthBuildAndMessage());
+
             await Step(sample, "world-connect-character-list", async () =>
             {
-                await using var world = new GameProtocolClient(options.WorldHost, options.WorldPort, PacketCrypt.GetKeyFromAuthBuildAndMessage());
                 await world.ConnectAsync();
                 await world.WaitForInnerOpcode(GameMessageOpcode.ServerHello, TimeSpan.FromSeconds(10));
 
@@ -388,11 +391,22 @@ internal static class LoginWorldCommand
 
                 await world.SendEncrypted(GameMessageOpcode.ClientCharacterList, _ => { });
                 await world.WaitForInnerOpcode(GameMessageOpcode.ServerCharacterList, TimeSpan.FromSeconds(15));
+            });
 
+            await Step(sample, "world-character-select", async () =>
+            {
                 await world.SendEncrypted(GameMessageOpcode.ClientCharacterSelect,
                     writer => writer.Write(accountCharacter.CharacterId));
+            });
 
-                await Task.Delay(250);
+            if (options.ClientEnteredWorldDelayMs > 0)
+            {
+                await Step(sample, "client-entered-world-delay", async () =>
+                    await Task.Delay(options.ClientEnteredWorldDelayMs));
+            }
+
+            await Step(sample, "world-entered-world", async () =>
+            {
                 await world.SendEncrypted(GameMessageOpcode.ClientEnteredWorld,
                     writer => writer.Write((ushort)accountCharacter.WorldZoneId, 15u));
                 await world.WaitForInnerOpcode(GameMessageOpcode.ServerPlayerEnteredWorld, TimeSpan.FromSeconds(15));
@@ -461,8 +475,11 @@ internal static class LoginWorldCommand
             ConnectionString = options.CharacterConnectionString
         });
 
-        AccountModel account = await auth.Account.SingleAsync(a => a.Email == user);
+        AccountModel account = await auth.Account
+            .AsNoTracking()
+            .SingleAsync(a => a.Email == user);
         CharacterModel selected = await character.Character
+            .AsNoTracking()
             .Where(c => c.AccountId == account.Id && c.DeleteTime == null)
             .OrderBy(c => c.Id)
             .FirstAsync();
@@ -509,6 +526,7 @@ internal sealed record LoginWorldOptions
     public int ConcurrentUsers { get; init; }
     public TimeSpan? Duration { get; init; }
     public string Ramp { get; init; } = "";
+    public int ClientEnteredWorldDelayMs { get; init; }
     public string AuthConnectionString { get; init; } = "";
     public string CharacterConnectionString { get; init; } = "";
 
@@ -524,7 +542,8 @@ internal sealed record LoginWorldOptions
             ["warmup"] = Warmup.ToString(CultureInfo.InvariantCulture),
             ["concurrentUsers"] = ConcurrentUsers.ToString(CultureInfo.InvariantCulture),
             ["duration"] = Duration?.ToString() ?? "",
-            ["ramp"] = Ramp
+            ["ramp"] = Ramp,
+            ["clientEnteredWorldDelayMs"] = ClientEnteredWorldDelayMs.ToString(CultureInfo.InvariantCulture)
         };
     }
 }

@@ -12,8 +12,14 @@ stable.
 dotnet run --project Tools\NexusForever.LoadTest -- seed --profile typical --users 1
 dotnet run --project Tools\NexusForever.LoadTest -- run login-world --user loadtest0001@example.local --password loadtest --samples 30 --warmup 3
 dotnet run --project Tools\NexusForever.LoadTest -- run login-world --profile typical --concurrent-users 50 --duration 5m
+dotnet run --project Tools\NexusForever.LoadTest -- run login-world --client-entered-world-delay-ms 0
 dotnet run --project Tools\NexusForever.LoadTest -- report --input artifacts\load-tests
 ```
+
+`login-world` keeps a 250 ms client-entered-world delay by default to mimic the
+client staging between character select and entering the world. Use
+`--client-entered-world-delay-ms 0` when measuring server-side latency without
+that client delay.
 
 ## Evidence Anchors
 
