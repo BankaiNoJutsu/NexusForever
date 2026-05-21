@@ -104,7 +104,16 @@ namespace NexusForever.Game.Map
             }
 
             if (zoneMap.IsComplete)
+            {
                 player.AchievementManager.CheckAchievements(player, AchievementType.MapComplete, currentZoneMap);
+                GrantExplorationOnlyZoneCompletionRewards(currentZoneMap);
+            }
+        }
+
+        private void GrantExplorationOnlyZoneCompletionRewards(uint mapZoneId)
+        {
+            foreach (ushort titleId in ZoneCompletionRewardResolver.GetExplorationOnlyTitleRewards(mapZoneId))
+                player.TitleManager.AddTitle(titleId);
         }
 
         private static ZoneMapCoordinate Points2ZoneMapCoordinate(Vector3 position)

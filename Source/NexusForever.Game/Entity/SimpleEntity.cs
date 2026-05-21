@@ -53,9 +53,18 @@ namespace NexusForever.Game.Entity
             };
         }
 
+        private void UnlockInteractArchiveArticle(IPlayer activator)
+        {
+            if (CreatureEntry.ArchiveArticleIdInteractUnlock == 0u)
+                return;
+
+            activator.GalacticArchiveManager.UnlockArticle(CreatureEntry.ArchiveArticleIdInteractUnlock, grantRewards: false);
+        }
+
         public override void OnActivate(IPlayer activator)
         {
             activator.AchievementManager.CheckAchievements(activator, AchievementType.ActivateCreature, CreatureId);
+            UnlockInteractArchiveArticle(activator);
 
             if (CreatureEntry.DatacubeId != 0u)
                 activator.DatacubeManager.AddDatacube((ushort)CreatureEntry.DatacubeId, int.MaxValue);
@@ -66,6 +75,7 @@ namespace NexusForever.Game.Entity
             uint progress = (uint)(1 << QuestChecklistIdx);
 
             activator.AchievementManager.CheckAchievements(activator, AchievementType.ActivateCreature, CreatureId);
+            UnlockInteractArchiveArticle(activator);
 
             if (CreatureEntry.DatacubeId != 0u)
             {
