@@ -3,8 +3,11 @@ using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Reputation;
+using NexusForever.Network;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
+using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Tests.Entity;
 
@@ -125,6 +128,67 @@ public class EntityCreatePacketTests
         Assert.Equal(7, model.QuestChecklistIdx);
     }
 
+    [Fact]
+    public void ServerEntityCreate_WriteSerializesMappedWorldPlacementAndTailFields()
+    {
+        var packet = new ServerEntityCreate
+        {
+            Guid = 0x10203040u,
+            Type = EntityType.Simple,
+            EntityModel = new SimpleEntityModel
+            {
+                CreatureId = 0x12345u,
+                QuestChecklistIdx = 0x56
+            },
+            CreateFlags = EntityCreateFlag.Immediate | EntityCreateFlag.NoDeathDelay,
+            Time = 0xAABBCCDDu,
+            CurrentSpellUniqueId = 0x01020304u,
+            Faction1 = (Faction)0x1111,
+            Faction2 = (Faction)0x2222,
+            UnitTagOwner = 0x33445566u,
+            GroupTagOwner = 0x1122334455667788ul,
+            WorldPlacementData = new ServerEntityCreate.WorldPlacement
+            {
+                Type = 1,
+                ActivePropId = 0x8877665544332211ul,
+                SocketId = 0x1234
+            },
+            MiniMapMarker = 0x2345,
+            DisplayInfo = 0x12345,
+            OutfitInfo = 0x3456
+        };
+
+        byte[] packetData = WritePacket(packet);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(0x10203040u, reader.ReadUInt());
+        Assert.Equal(EntityType.Simple, reader.ReadEnum<EntityType>(6u));
+        Assert.Equal(0x12345u, reader.ReadUInt(18u));
+        Assert.Equal((byte)0x56, reader.ReadByte());
+        Assert.Equal(EntityCreateFlag.Immediate | EntityCreateFlag.NoDeathDelay, reader.ReadEnum<EntityCreateFlag>(8u));
+        Assert.Equal((byte)0, reader.ReadByte(5u));
+        Assert.Equal(0xAABBCCDDu, reader.ReadUInt());
+        Assert.Equal((byte)0, reader.ReadByte(5u));
+        Assert.Equal((byte)0, reader.ReadByte());
+        Assert.Equal((byte)0, reader.ReadByte(7u));
+        Assert.Equal((short)0, reader.ReadShort(9u));
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal((Faction)0x1111, reader.ReadEnum<Faction>(14u));
+        Assert.Equal((Faction)0x2222, reader.ReadEnum<Faction>(14u));
+        Assert.Equal(0x33445566u, reader.ReadUInt());
+        Assert.Equal(0x1122334455667788ul, reader.ReadULong());
+        Assert.Equal((byte)0, reader.ReadByte(2u));
+        Assert.False(reader.ReadBit());
+        Assert.Equal((byte)1, reader.ReadByte(2u));
+        Assert.Equal(0x8877665544332211ul, reader.ReadULong());
+        Assert.Equal((ushort)0x1234, reader.ReadUShort(14u));
+        Assert.Equal((byte)0, reader.ReadByte(2u));
+        Assert.False(reader.ReadBit());
+        Assert.Equal((ushort)0x2345, reader.ReadUShort(14u));
+        Assert.Equal(0x12345u, reader.ReadUInt(17u));
+        Assert.Equal((ushort)0x3456, reader.ReadUShort(15u));
+    }
+
     private static ServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();
@@ -162,5 +226,14 @@ public class EntityCreatePacketTests
             TrapEntityModel model        => model.OwnerId,
             _                            => throw new Xunit.Sdk.XunitException($"Unexpected owner-aware model {entityModel.GetType().Name}.")
         };
+    }
+
+    private static byte[] WritePacket(ServerEntityCreate message)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new GamePacketWriter(stream);
+        message.Write(writer);
+        writer.FlushBits();
+        return stream.ToArray();
     }
 }
