@@ -3,11 +3,8 @@
 namespace NexusForever.Network.World.Message.Model
 {
     [Message(GameMessageOpcode.ClientDialogOpened)]
-    public class ClientDialogOpened : IReadable
+    [PacketSerializable(PacketSerializationMode.Read)]
+    public partial class ClientDialogOpened : IReadable
     {
-        public void Read(GamePacketReader reader)
-        {
-            // zero byte message
-        }
     }
 }

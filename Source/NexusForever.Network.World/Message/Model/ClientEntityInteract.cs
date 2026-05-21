@@ -3,15 +3,13 @@
 namespace NexusForever.Network.World.Message.Model
 {
     [Message(GameMessageOpcode.ClientEntityInteract)]
-    public class ClientEntityInteract : IReadable
+    [PacketSerializable(PacketSerializationMode.Read)]
+    public partial class ClientEntityInteract : IReadable
     {
+        [PacketField]
         public uint Guid { get; private set; }
-        public byte Event { get; private set; }
 
-        public void Read(GamePacketReader reader)
-        {
-            Guid     = reader.ReadUInt();
-            Event = reader.ReadByte(7);
-        }
+        [PacketField(7u)]
+        public byte Event { get; private set; }
     }
 }

@@ -3,11 +3,8 @@
 namespace NexusForever.Network.World.Message.Model.Pvp
 {
     [Message(GameMessageOpcode.ServerDuelLeftArea)]
-    public class ServerDuelLeftArea : IWritable
+    [PacketSerializable(PacketSerializationMode.Write)]
+    public partial class ServerDuelLeftArea : IWritable
     {
-        public void Write(GamePacketWriter writer)
-        {
-            // Zero byte message
-        }
     }
 }

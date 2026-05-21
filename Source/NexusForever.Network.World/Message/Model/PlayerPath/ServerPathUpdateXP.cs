@@ -3,13 +3,10 @@
 namespace NexusForever.Network.World.Message.Model.PlayerPath
 {
     [Message(GameMessageOpcode.ServerPathUpdateXP)]
-    public class ServerPathUpdateXP : IWritable
+    [PacketSerializable(PacketSerializationMode.Write)]
+    public partial class ServerPathUpdateXP : IWritable
     {
+        [PacketField]
         public uint TotalXP { get; set; }
-
-        public void Write(GamePacketWriter writer)
-        {
-            writer.Write(TotalXP);
-        }
     }
 }
