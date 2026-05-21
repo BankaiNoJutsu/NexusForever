@@ -8,12 +8,26 @@
 *.nfmap
 .nexusforever-runtime/
 
+# Local runtime configs generated from *.example.json
+Source/NexusForever.AuthServer/AuthServer.json
+Source/NexusForever.StsServer/StsServer.json
+Source/NexusForever.WorldServer/WorldServer.json
+Source/NexusForever.Server.ChatServer/ChatServer.json
+Source/NexusForever.Server.GroupServer/GroupServer.json
+Source/NexusForever.Server.Friendship/FriendshipServer.json
+Source/NexusForever.Server.Character/CharacterServer.json
+Source/NexusForever.API.Account/AccountAPI.json
+Source/NexusForever.API.Character/CharacterAPI.json
+Source/NexusForever.Aspire.Database.Migrations/AspireMigrations.json
+Tools/DataMapping/output_test/
+
 # User-specific files
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
 *.bat
+.vscode/settings.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
