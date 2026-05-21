@@ -7,6 +7,10 @@ using NexusForever.Script.Template.Filter;
 
 namespace NexusForever.Script.Main.Quests.CrimsonIsle
 {
+    /// <summary>
+    /// Crimson Isle: Powering Down — power down regulators, play cinematic.
+    /// Quest 5573 has branched retail follow-ups; do not force a direct grant.
+    /// </summary>
     [ScriptFilterOwnerId(5573u)]
     public class Q5573PoweringDownQuestScript : IQuestScript, IOwnedScript<IQuest>
     {
@@ -14,7 +18,6 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
         private const uint QObjCinematicComplete = 12870u;
 
         private IQuest owner;
-
         private readonly ICinematicFactory cinematicFactory;
 
         public Q5573PoweringDownQuestScript(ICinematicFactory cinematicFactory)

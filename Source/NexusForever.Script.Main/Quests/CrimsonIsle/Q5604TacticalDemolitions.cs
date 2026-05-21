@@ -7,6 +7,10 @@ using NexusForever.Script.Template.Filter;
 
 namespace NexusForever.Script.Main.Quests.CrimsonIsle
 {
+    /// <summary>
+    /// Crimson Isle: Tactical Demolitions — destroy Exile cannons, play cinematic.
+    /// Quest 5604 has multiple retail follow-ups; do not force a direct grant.
+    /// </summary>
     [ScriptFilterOwnerId(5604u)]
     public class Q5604TacticalDemolitionsQuestScript : IQuestScript, IOwnedScript<IQuest>
     {
@@ -14,7 +18,6 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
         private const uint QObjCinematicComplete = 15918u;
 
         private IQuest owner;
-
         private readonly ICinematicFactory cinematicFactory;
 
         public Q5604TacticalDemolitionsQuestScript(ICinematicFactory cinematicFactory)
