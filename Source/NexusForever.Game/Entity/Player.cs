@@ -259,6 +259,8 @@ namespace NexusForever.Game.Entity
         }
         private CastingOptionFlags castingOptions;
 
+        public uint MatchingEligibilityFlagMask { get; set; }
+
         public bool SharedChallengeEnabled
         {
             get => sharedChallengeEnabled;
@@ -1079,9 +1081,10 @@ namespace NexusForever.Game.Entity
                         Count       = e.Amount
                     })
                     .ToList(),
-                TradeskillMaterials   = SupplySatchelManager.BuildNetworkPacket(),
-                Xp                    = XpManager.TotalXp,
-                RestBonusXp           = XpManager.RestBonusXp
+                TradeskillMaterials          = SupplySatchelManager.BuildNetworkPacket(),
+                Xp                           = XpManager.TotalXp,
+                RestBonusXp                  = XpManager.RestBonusXp,
+                MatchingEligibilityFlagMask  = MatchingEligibilityFlagMask
             };
 
             foreach (ICurrency currency in CurrencyManager)

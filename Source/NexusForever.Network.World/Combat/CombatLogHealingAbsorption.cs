@@ -7,10 +7,12 @@ namespace NexusForever.Network.World.Combat
         public CombatLogType Type => CombatLogType.HealingAbsorption;
 
         public uint Amount { get; set; }
+        public CombatLogCastData CastData { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
             writer.Write(Amount);
+            CastData.Write(writer);
         }
     }
 }

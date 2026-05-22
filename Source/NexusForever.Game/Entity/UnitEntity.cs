@@ -274,6 +274,7 @@ namespace NexusForever.Game.Entity
             public uint CastingId { get; init; }
             public uint MaxAmount { get; init; }
             public uint Amount { get; set; }
+            public uint AbsorptionType { get; init; }
         }
 
         #region Dependency Injection
@@ -884,17 +885,18 @@ namespace NexusForever.Game.Entity
             return aggroImmuneStates.Remove(effectId);
         }
 
-        public void AddAbsorption(uint effectId, uint spell4Id, uint castingId, uint amount)
+        public void AddAbsorption(uint effectId, uint spell4Id, uint castingId, uint amount, uint absorptionType = 7u)
         {
             if (amount == 0u)
                 return;
 
             absorptionStates[effectId] = new AbsorptionState
             {
-                Spell4Id  = spell4Id,
-                CastingId = castingId,
-                MaxAmount = amount,
-                Amount    = amount
+                Spell4Id       = spell4Id,
+                CastingId      = castingId,
+                MaxAmount      = amount,
+                Amount         = amount,
+                AbsorptionType = absorptionType
             };
 
             OnAbsorptionUpdate();
@@ -917,6 +919,9 @@ namespace NexusForever.Game.Entity
             uint remaining = amount;
             foreach ((uint effectId, AbsorptionState absorptionState) in absorptionStates.ToArray())
             {
+                if (!IsAbsorptionApplicable(absorptionState.AbsorptionType, damageType))
+                    continue;
+
                 uint consumed = Math.Min(remaining, absorptionState.Amount);
                 absorptionState.Amount -= consumed;
                 remaining -= consumed;
@@ -930,6 +935,19 @@ namespace NexusForever.Game.Entity
 
             OnAbsorptionUpdate();
             return amount - remaining;
+        }
+
+        internal static bool IsAbsorptionApplicable(uint absorptionType, DamageType damageType)
+        {
+            uint damageMask = damageType switch
+            {
+                DamageType.Physical => 1u,
+                DamageType.Tech     => 2u,
+                DamageType.Magic    => 4u,
+                _                   => 0u
+            };
+
+            return damageMask != 0u && (absorptionType & damageMask) != 0u;
         }
 
         public void AddHealingAbsorption(uint effectId, uint spell4Id, uint castingId, uint amount)
@@ -1999,8 +2017,14 @@ namespace NexusForever.Game.Entity
             if (threat != 0u)
                 ThreatManager.UpdateThreat(attacker, (int)Math.Min(int.MaxValue, threat));
 
-            Shield -= damageDescription.ShieldAbsorbAmount;
+            uint healthBefore = Health;
+
+            if (damageDescription.ShieldAbsorbAmount != 0u)
+                Shield -= damageDescription.ShieldAbsorbAmount;
             ModifyHealth(damageDescription.AdjustedDamage, damageDescription.DamageType, attacker);
+
+            damageDescription.KilledTarget = wasAlive && !IsAlive;
+            damageDescription.OverkillAmount = CalculateHealthOverkill(healthBefore, damageDescription.AdjustedDamage, damageDescription.KilledTarget);
 
             if (damageDescription.AdjustedDamage != 0u || damageDescription.ShieldAbsorbAmount != 0u)
             {
@@ -2008,7 +2032,6 @@ namespace NexusForever.Game.Entity
                 ProbeProcEvent("receive-damage", ProcTriggerEventCandidate.ReceiveDamage, attacker, this, null, null, damageDescription, "after-apply");
             }
 
-            damageDescription.KilledTarget = wasAlive && !IsAlive;
             if (damageDescription.KilledTarget)
             {
                 if (attacker is IPlayer player && damageDescription.CombatResult == CombatResult.Critical)
@@ -2016,6 +2039,14 @@ namespace NexusForever.Game.Entity
 
                 attacker.ProbeProcEvent("target-killed", ProcTriggerEventCandidate.KillTarget, attacker, this, null, null, damageDescription, "after-apply");
             }
+        }
+
+        internal static uint CalculateHealthOverkill(uint healthBefore, uint adjustedDamage, bool killedTarget)
+        {
+            if (!killedTarget || adjustedDamage <= healthBefore)
+                return 0u;
+
+            return adjustedDamage - healthBefore;
         }
 
         /// <summary>

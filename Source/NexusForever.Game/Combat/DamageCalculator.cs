@@ -169,7 +169,8 @@ namespace NexusForever.Game.Combat
             if (absorbedHeal > 0u)
                 info.AddCombatLog(new CombatLogHealingAbsorption
                 {
-                    Amount = absorbedHeal
+                    Amount   = absorbedHeal,
+                    CastData = CreateCastData(caster, target, spell)
                 });
 
             if (log.IsEnabled(LogLevel.Trace))
@@ -269,6 +270,7 @@ namespace NexusForever.Game.Combat
                 RawDamage       = rawDamage,
                 Shield          = adjustedDamage,
                 Overkill        = overkill,
+                BPeriodic       = SpellHandler.IsPeriodicDamageLog(info.Entry),
                 DamageType      = info.Entry.DamageType,
                 EffectType      = info.Entry.EffectType,
                 CastData        = CreateCastData(attacker, victim, spell)
@@ -348,7 +350,8 @@ namespace NexusForever.Game.Combat
 
             info.AddCombatLog(new CombatLogHealingAbsorption
             {
-                Amount = amount
+                Amount   = amount,
+                CastData = CreateCastData(caster, target, spell)
             });
 
             if (log.IsEnabled(LogLevel.Trace))
@@ -465,10 +468,10 @@ namespace NexusForever.Game.Combat
                         break;
                     // client defaults to a value of 0.25f if the game table entry is missing
                     case SpellEffectParameterType.AssaultPower:
-                        intermediateValue = GetProperty(Property.AssaultRating) * forumulaEntry?.Datafloat0 ?? 0.25f;
+                        intermediateValue = ApplyPowerCoefficient(GetProperty(Property.AssaultRating), forumulaEntry?.Datafloat0);
                         break;
                     case SpellEffectParameterType.SupportPower:
-                        intermediateValue = GetProperty(Property.SupportRating) * forumulaEntry?.Datafloat01 ?? 0.25f;
+                        intermediateValue = ApplyPowerCoefficient(GetProperty(Property.SupportRating), forumulaEntry?.Datafloat01);
                         break;
                 }
 
@@ -539,6 +542,11 @@ namespace NexusForever.Game.Combat
             return value;
         }
 
+        internal static float ApplyPowerCoefficient(float rating, float? coefficient)
+        {
+            return rating * (coefficient ?? 0.25f);
+        }
+
         private uint CalculateBaseDamageVariance(uint damage)
         {
             return (uint)(damage * (Random.Shared.Next(95, 103) / 100f));
@@ -547,20 +555,44 @@ namespace NexusForever.Game.Combat
         private uint GetDamageAfterArmorMitigation(IUnitEntity victim, DamageType damageType, uint damage)
         {
             GameFormulaEntry armorFormulaEntry = gameTableManager.GameFormula.GetEntry(1234);
-            float maximumArmorMitigation = (float)(armorFormulaEntry.Dataint01 * 0.01);
-            float mitigationPct = (armorFormulaEntry.Datafloat0 / victim.Level * armorFormulaEntry.Datafloat01) * victim.GetPropertyValue(Property.Armor) / 100;
+            return ApplyArmorMitigation(
+                damage,
+                damageType,
+                victim.Level,
+                victim.GetPropertyValue(Property.Armor),
+                victim.GetPropertyValue(Property.DamageMitigationPctOffsetPhysical),
+                victim.GetPropertyValue(Property.DamageMitigationPctOffsetTech),
+                victim.GetPropertyValue(Property.DamageMitigationPctOffsetMagic),
+                armorFormulaEntry);
+        }
 
-            if (damageType == DamageType.Physical)
-                mitigationPct += victim.GetPropertyValue(Property.DamageMitigationPctOffsetMagic);
-            else if (damageType == DamageType.Tech)
-                mitigationPct += victim.GetPropertyValue(Property.DamageMitigationPctOffsetTech);
-            else if (damageType == DamageType.Magic)
-                mitigationPct += victim.GetPropertyValue(Property.DamageMitigationPctOffsetMagic);
+        internal static uint ApplyArmorMitigation(
+            uint damage,
+            DamageType damageType,
+            uint victimLevel,
+            float victimArmor,
+            float physicalOffset,
+            float techOffset,
+            float magicOffset,
+            GameFormulaEntry armorFormulaEntry)
+        {
+            if (damage == 0u || armorFormulaEntry == null || victimLevel == 0u)
+                return damage;
 
-            if (mitigationPct > 0f)
-                damage = (uint)Math.Round(damage * (1f - Math.Clamp(mitigationPct, 0f, maximumArmorMitigation)));
+            float maximumArmorMitigation = armorFormulaEntry.Dataint01 * 0.01f;
+            float mitigationPct = (armorFormulaEntry.Datafloat0 / victimLevel * armorFormulaEntry.Datafloat01) * victimArmor / 100f;
+            mitigationPct += damageType switch
+            {
+                DamageType.Physical => physicalOffset,
+                DamageType.Tech     => techOffset,
+                DamageType.Magic    => magicOffset,
+                _                   => 0f
+            };
 
-            return damage;
+            if (!float.IsFinite(mitigationPct) || mitigationPct <= 0f || maximumArmorMitigation <= 0f)
+                return damage;
+
+            return (uint)Math.Round(damage * (1f - Math.Clamp(mitigationPct, 0f, maximumArmorMitigation)));
         }
 
         private static uint ApplyDamageTakenMultiplier(IUnitEntity victim, DamageType damageType, uint damage)

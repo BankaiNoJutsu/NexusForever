@@ -69,6 +69,7 @@ namespace NexusForever.Game.Spell
                 return;
 
             target.TakeDamage(spell.Caster, info.Damage);
+            AddDamageCombatLog(spell, target, info);
         }
 
         [SpellEffectHandler(SpellEffectType.DistanceDependentDamage)]
@@ -81,6 +82,40 @@ namespace NexusForever.Game.Spell
         public static void HandleEffectDistributedDamage(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
             HandleEffectDamage(spell, target, info);
+        }
+
+        private static void AddDamageCombatLog(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            IDamageDescription damage = info.Damage;
+            if (damage == null)
+                return;
+
+            info.AddCombatLog(new CombatLogDamage
+            {
+                MitigatedDamage   = damage.AdjustedDamage,
+                RawDamage         = damage.RawDamage,
+                Shield            = damage.ShieldAbsorbAmount,
+                Absorption        = damage.AbsorbedAmount,
+                Overkill          = damage.OverkillAmount,
+                Glance            = 0u,
+                BTargetVulnerable = false,
+                BKilled           = damage.KilledTarget,
+                BPeriodic         = IsPeriodicDamageLog(info.Entry),
+                DamageType        = info.Entry.DamageType,
+                EffectType        = info.Entry.EffectType,
+                CastData          = new CombatLogCastData
+                {
+                    CasterId     = spell.Caster.Guid,
+                    TargetId     = target.Guid,
+                    SpellId      = spell.Parameters.SpellInfo.Entry.Id,
+                    CombatResult = damage.CombatResult
+                }
+            });
+        }
+
+        internal static bool IsPeriodicDamageLog(Spell4EffectsEntry entry)
+        {
+            return entry.TickTime > 0u && entry.DurationTime > 0u;
         }
 
         [SpellEffectHandler(SpellEffectType.Transference)]
@@ -200,7 +235,7 @@ namespace NexusForever.Game.Spell
             if (amount == 0u)
                 return;
 
-            target.AddAbsorption(info.EffectId, spell.Parameters.SpellInfo.Entry.Id, spell.CastingId, amount);
+            target.AddAbsorption(info.EffectId, spell.Parameters.SpellInfo.Entry.Id, spell.CastingId, amount, absorption.AbsorptionType);
             SpellEffectDiagnostics.TraceAbsorption(spell, target, absorption, amount, false);
         }
 
@@ -2126,6 +2161,22 @@ namespace NexusForever.Game.Spell
         {
         }
 
+        [SpellEffectHandler(SpellEffectType.SetMatchingEligibility)]
+        public static void HandleEffectSetMatchingEligibility(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            if (target is not IPlayer player || player.Session == null)
+                return;
+
+            uint flags = info.Entry.DataBits00;
+            if (player is Player playerEntity)
+                playerEntity.MatchingEligibilityFlagMask = flags;
+
+            player.Session.EnqueueMessageEncrypted(new ServerMatchingEligibilityChanged
+            {
+                MatchingEligibilityFlags = flags
+            });
+        }
+
         [SpellEffectHandler(SpellEffectType.Proc)]
         public static void HandleEffectProc(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
@@ -2640,13 +2691,11 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TraceClampVital(spell, target, clampVital, vital, valueBefore, GetVitalValueForDiagnostics(target, vital), true, false, null);
         }
 
-        private static Vital ResolveClampVital(SpellEffectClampVitalSemantics clampVital)
+        internal static Vital ResolveClampVital(SpellEffectClampVitalSemantics clampVital)
         {
-            if (clampVital.VitalMode != 0u && Enum.IsDefined(typeof(Vital), (int)clampVital.VitalMode))
-                return (Vital)clampVital.VitalMode;
-
-            // Mode != 0 signals an explicit non-health vital; VitalMode was not recognised so reject.
-            return clampVital.Mode != 0u ? Vital.Invalid : Vital.Health;
+            // All observed ClampVital rows are health-ceiling rows. DataBits01=2 appears
+            // as a mode marker on ratio-1 rows, not as Vital.Breath.
+            return Vital.Health;
         }
 
         private static uint GetVitalValueForDiagnostics(IUnitEntity target, Vital vital)

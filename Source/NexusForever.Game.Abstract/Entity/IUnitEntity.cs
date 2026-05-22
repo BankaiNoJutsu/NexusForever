@@ -102,7 +102,7 @@ namespace NexusForever.Game.Abstract.Entity
         void AddAggroImmune(uint effectId, uint spell4Id, uint castingId);
         bool RemoveAggroImmune(uint effectId);
 
-        void AddAbsorption(uint effectId, uint spell4Id, uint castingId, uint amount);
+        void AddAbsorption(uint effectId, uint spell4Id, uint castingId, uint amount, uint absorptionType = 7u);
         uint RemoveAbsorption(uint effectId);
         uint ConsumeAbsorption(uint amount, DamageType damageType);
 
