@@ -9,15 +9,17 @@ using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Static.Matching;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Game.Retail;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Match;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared;
 using NexusForever.Shared.Game;
 
 namespace NexusForever.Game.Matching.Match
 {
-    public class Match : IMatch
+    public partial class Match : IMatch
     {
         public Guid Guid { get; private set; }
         public MatchStatus Status { get; private set; }
@@ -146,7 +148,8 @@ namespace NexusForever.Game.Matching.Match
             if (map != null)
                 throw new InvalidOperationException();
 
-            map = contentMapInstance;
+            map               = contentMapInstance;
+            matchStartedUtc = DateTimeOffset.UtcNow;
         }
 
         /// <summary>
@@ -230,6 +233,15 @@ namespace NexusForever.Game.Matching.Match
 
             log.LogTrace($"Member {player.Identity} has exited match {Guid}.");
 
+            if (Status == MatchStatus.InProgress)
+            {
+                double completionRatio = CalculateMatchCompletionRatio();
+                MatchingDeserterManager.Instance.ApplyDeserter(
+                    player.CharacterId,
+                    MatchingMap.GameTypeEntry.MatchTypeEnum,
+                    completionRatio);
+            }
+
             // certain match types prevent re-entry after exiting
             if (ShouldLeaveMatchOnExit())
                 MatchLeave(player.Identity);
@@ -280,6 +292,11 @@ namespace NexusForever.Game.Matching.Match
 
             Status = MatchStatus.Finished;
 
+            Broadcast(new ServerMatchingMatchFinished());
+
+            foreach (IMatchTeamMember member in GetTeams().SelectMany(t => t.GetMembers()))
+                MatchingDeserterManager.Instance.ClearDeserter(member.Identity.Id);
+
             GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(656);
             closeTimer = new UpdateTimer(TimeSpan.FromMilliseconds(entry?.Dataint0 ?? 300000));
 
@@ -316,6 +333,16 @@ namespace NexusForever.Game.Matching.Match
         {
             foreach (IMatchTeam party in teams)
                 party.Broadcast(message);
+        }
+
+        private double CalculateMatchCompletionRatio()
+        {
+            uint matchTimeMs = MatchingMap.GameTypeEntry.MatchTimeMS;
+            if (matchTimeMs == 0)
+                return 0d;
+
+            double elapsedMs = Math.Max(0, (DateTimeOffset.UtcNow - matchStartedUtc).TotalMilliseconds);
+            return Math.Clamp(elapsedMs / matchTimeMs, 0d, 1d);
         }
     }
 }

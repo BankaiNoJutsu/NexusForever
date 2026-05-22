@@ -231,5 +231,11 @@ namespace NexusForever.Game.Matching
         {
             return (matchTypeFlags[matchType] & 0x01) != 0;
         }
+
+        /// <inheritdoc/>
+        public bool CanRequeueAsGroup(Static.Matching.MatchType matchType)
+        {
+            return matchTypeFlags.TryGetValue(matchType, out uint flags) && (flags & 0x02) != 0;
+        }
     }
 }

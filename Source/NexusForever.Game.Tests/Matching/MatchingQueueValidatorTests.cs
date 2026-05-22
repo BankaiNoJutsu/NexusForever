@@ -53,13 +53,17 @@ public class MatchingQueueValidatorTests
         matchingManagerProxy.SetMethodReturn(nameof(IMatchingManager.GetMatchingCharacter), matchingCharacter);
         matchManagerProxy.SetMethodReturn(nameof(IMatchManager.GetMatchCharacter), matchCharacter);
 
+        IMatchingDeserterManager matchingDeserterManager = RecordingDispatchProxy<IMatchingDeserterManager>.Create(out RecordingDispatchProxy<IMatchingDeserterManager> deserterProxy);
+        deserterProxy.SetMethodReturn(nameof(IMatchingDeserterManager.CanQueue), true);
+
         return new MatchingQueueValidator(
             playerManager,
             disableManager,
             matchingManager,
             matchingDataManager,
             matchingRoleEnforcer,
-            matchManager);
+            matchManager,
+            matchingDeserterManager);
     }
 
     private static IMatchingCharacter CreateMatchingCharacter(IMatchingQueueProposal existingProposal)

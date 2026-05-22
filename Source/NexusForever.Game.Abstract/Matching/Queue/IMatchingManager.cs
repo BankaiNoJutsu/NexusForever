@@ -39,10 +39,14 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         /// </summary>
         void JoinRandomQueue(IPlayer player, Role roles, Static.Matching.MatchType matchType);
 
+        void JoinRandomQueue(IPlayer player, Role roles, Static.Matching.MatchType matchType, MatchingQueueFlags matchingQueueFlags);
+
         /// <summary>
         /// Attempt to join a random party queue.
         /// </summary>
         void JoinRandomPartyQueue(IPlayer player, Role roles, Static.Matching.MatchType matchType);
+
+        void JoinRandomPartyQueue(IPlayer player, Role roles, Static.Matching.MatchType matchType, MatchingQueueFlags matchingQueueFlags);
 
         /// <summary>
         /// Remove <see cref="IPlayer"/> from specified <see cref="Static.Matching.MatchType"/> queue.

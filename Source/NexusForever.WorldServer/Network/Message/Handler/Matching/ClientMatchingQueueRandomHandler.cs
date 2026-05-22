@@ -20,7 +20,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 
         public void HandleMessage(IWorldSession session, ClientMatchingQueueRandom matchingQueueRandom)
         {
-            matchingManager.JoinRandomQueue(session.Player, matchingQueueRandom.Roles, matchingQueueRandom.MatchType);
+            matchingManager.JoinRandomQueue(session.Player, matchingQueueRandom.Roles, matchingQueueRandom.MatchType, matchingQueueRandom.Flags);
         }
     }
 }

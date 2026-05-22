@@ -14,6 +14,7 @@ namespace NexusForever.Game.Matching
             sc.AddGameMatchingMatch();
 
             sc.AddSingletonLegacy<IMatchingDataManager, MatchingDataManager>();
+            sc.AddSingletonLegacy<IMatchingDeserterManager, MatchingDeserterManager>();
             sc.AddSingleton<IMatchingManager, MatchingManager>();
 
             sc.AddTransientFactory<IMatchingCharacter, MatchingCharacter>();

@@ -2,9 +2,12 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Matching;
+using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Map.Search;
+using NexusForever.Game.Matching;
 using NexusForever.Game.Static.Matching;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared;
@@ -33,6 +36,10 @@ namespace NexusForever.Game.Matching.Queue
         private readonly IFactory<IMatchingQueueProposal> matchingQueueProposalFactory;
         private readonly IFactory<IMatchingRoleCheck> matchingRoleCheckFactory;
         private readonly IFactory<IMatchingCharacter> matchingCharacterFactory;
+        private readonly IGroupStateManager groupStateManager;
+        private readonly IPlayerManager playerManager;
+        private readonly IMatchManager matchManager;
+        private readonly IMatchingDeserterManager matchingDeserterManager;
 
         public MatchingManager(
             ILogger<MatchingManager> log,
@@ -41,7 +48,11 @@ namespace NexusForever.Game.Matching.Queue
             IFactory<IMatchingQueueManager> matchingQueueManagerFactory,
             IFactory<IMatchingQueueProposal> matchingQueueProposalFactory,
             IFactory<IMatchingRoleCheck> matchingRoleCheckFactory,
-            IFactory<IMatchingCharacter> matchingCharacterFactory)
+            IFactory<IMatchingCharacter> matchingCharacterFactory,
+            IGroupStateManager groupStateManager,
+            IPlayerManager playerManager,
+            IMatchManager matchManager,
+            IMatchingDeserterManager matchingDeserterManager)
         {
             this.log                          = log;
             this.matchingDataManager          = matchingDataManager;
@@ -50,6 +61,10 @@ namespace NexusForever.Game.Matching.Queue
             this.matchingQueueProposalFactory = matchingQueueProposalFactory;
             this.matchingRoleCheckFactory     = matchingRoleCheckFactory;
             this.matchingCharacterFactory     = matchingCharacterFactory;
+            this.groupStateManager            = groupStateManager;
+            this.playerManager                = playerManager;
+            this.matchManager                 = matchManager;
+            this.matchingDeserterManager      = matchingDeserterManager;
         }
 
         #endregion
@@ -225,15 +240,49 @@ namespace NexusForever.Game.Matching.Queue
 
         private void JoinPartyQueue(IPlayer player, Role roles, Static.Matching.MatchType matchType, List<IMatchingMap> matchingMaps, MatchingQueueFlags matchingQueueFlags)
         {
+            MatchingQueueResult? leaderResult = RetailPartyQueueRules.ValidateGroupLeader(player, groupStateManager);
+            if (leaderResult != null)
+            {
+                player.Session?.EnqueueMessageEncrypted(new ServerMatchingQueueResultAnnounce
+                {
+                    Result = leaderResult.Value
+                });
+                return;
+            }
+
+            if (RetailPartyQueueRules.TryCreateFinishedGroupRequeueProposal(
+                    player,
+                    roles,
+                    matchType,
+                    matchingMaps,
+                    matchingQueueFlags,
+                    groupStateManager,
+                    playerManager,
+                    matchManager,
+                    matchingDataManager,
+                    matchingQueueProposalFactory,
+                    out IMatchingQueueProposal requeueProposal))
+            {
+                requeueProposal.Broadcast(new ServerMatchingQueueResultAnnounce
+                {
+                    Result = MatchingQueueResult.Requeueing
+                });
+
+                log.LogTrace($"Group requeue proposal {requeueProposal.Guid} created for leader {player.Identity}.");
+                JoinQueue(requeueProposal);
+                return;
+            }
+
             IMatchingQueueProposal matchingQueueProposal = matchingQueueProposalFactory.Resolve();
             matchingQueueProposal.Initialise(player.Faction1, matchType, matchingMaps, matchingQueueFlags);
 
-            // blame Max for this...
-            // since we don't have party support yet, just do a sneaky grid search for players
-            List<Identity> identities = player.Map
-                .Search(player.Position, 10f, new SearchCheckRange<IPlayer>(player.Position, 10f))
-                .Select(p => p.Identity)
-                .ToList();
+            IEnumerable<IPlayer> nearbyPlayers = player.Map
+                .Search(player.Position, 10f, new SearchCheckRange<IPlayer>(player.Position, 10f));
+
+            List<Identity> identities = RetailPartyQueueRules.ResolvePartyMemberIdentities(
+                player,
+                groupStateManager,
+                nearbyPlayers);
 
             IMatchingRoleCheck matchingRoleCheck = matchingRoleCheckFactory.Resolve();
             matchingRoleCheck.Initialise(matchingQueueProposal, identities);
@@ -277,10 +326,15 @@ namespace NexusForever.Game.Matching.Queue
         /// </summary>
         public void JoinRandomQueue(IPlayer player, Role roles, Static.Matching.MatchType matchType)
         {
-            log.LogTrace($"Random queue join request, Character: {player.Identity}, Roles: {roles}, MatchType:, {matchType}.");
+            JoinRandomQueue(player, roles, matchType, MatchingQueueFlags.None);
+        }
+
+        public void JoinRandomQueue(IPlayer player, Role roles, Static.Matching.MatchType matchType, MatchingQueueFlags matchingQueueFlags)
+        {
+            log.LogTrace($"Random queue join request, Character: {player.Identity}, Roles: {roles}, MatchType:, {matchType}, Flags: {matchingQueueFlags}.");
 
             List<IMatchingMap> maps = matchingDataManager.GetMatchingMaps(matchType).ToList();
-            JoinQueue(player, roles, matchType, maps, MatchingQueueFlags.None);
+            JoinQueue(player, roles, matchType, maps, matchingQueueFlags);
         }
 
         /// <summary>
@@ -288,10 +342,15 @@ namespace NexusForever.Game.Matching.Queue
         /// </summary>
         public void JoinRandomPartyQueue(IPlayer player, Role roles, Static.Matching.MatchType matchType)
         {
-            log.LogTrace($"Random party queue join request, Character: {player.Identity}, Roles: {roles}, MatchType:, {matchType}.");
+            JoinRandomPartyQueue(player, roles, matchType, MatchingQueueFlags.None);
+        }
+
+        public void JoinRandomPartyQueue(IPlayer player, Role roles, Static.Matching.MatchType matchType, MatchingQueueFlags matchingQueueFlags)
+        {
+            log.LogTrace($"Random party queue join request, Character: {player.Identity}, Roles: {roles}, MatchType:, {matchType}, Flags: {matchingQueueFlags}.");
 
             List<IMatchingMap> maps = matchingDataManager.GetMatchingMaps(matchType).ToList();
-            JoinPartyQueue(player, roles, matchType, maps, MatchingQueueFlags.None);
+            JoinPartyQueue(player, roles, matchType, maps, matchingQueueFlags);
         }
 
         /// <summary>
@@ -325,6 +384,7 @@ namespace NexusForever.Game.Matching.Queue
         {
             IMatchingCharacter matchingCharacter = GetMatchingCharacter(player.Identity);
             matchingCharacter.SendMatchingStatus();
+            matchingDeserterManager.SyncDeserterUi(player);
         }
 
         /// <summary>

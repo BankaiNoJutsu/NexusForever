@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Matching;
 using NexusForever.Game.Abstract.Matching.Queue;
+using NexusForever.Game.Matching;
 
 namespace NexusForever.Game.Matching.Queue
 {
@@ -12,16 +14,19 @@ namespace NexusForever.Game.Matching.Queue
 
         private readonly IMatchingDataManager matchingDataManager; 
         private readonly IMatchingRoleEnforcer matchingRoleEnforcer;
+        private readonly IPlayerManager playerManager;
 
         public MatchingQueueGroupMatcher(
             ILogger<MatchingQueueGroupMatcher> log,
             IMatchingDataManager matchingDataManager,
-            IMatchingRoleEnforcer matchingRoleEnforcer)
+            IMatchingRoleEnforcer matchingRoleEnforcer,
+            IPlayerManager playerManager)
         {
             this.log                  = log;
 
             this.matchingDataManager  = matchingDataManager;
             this.matchingRoleEnforcer = matchingRoleEnforcer;
+            this.playerManager        = playerManager;
         }
 
         #endregion
@@ -61,6 +66,9 @@ namespace NexusForever.Game.Matching.Queue
                 if (matchingQueueGroupTeam.Faction != matchingQueueProposal.Faction)
                     return false;
 
+            if (!IsRealmMatchAllowed(matchingQueueGroupTeam, matchingQueueProposal))
+                return false;
+
             List<IMatchingQueueProposalMember> matchingQueueProposalMembers = matchingQueueGroupTeam
                 .GetMembers()
                 .Concat(matchingQueueProposal.GetMembers())
@@ -84,6 +92,33 @@ namespace NexusForever.Game.Matching.Queue
             {
                 IMatchingRoleEnforcerResult result = matchingRoleEnforcer.Check(matchingQueueProposalMembers);
                 if (!result.Success)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private bool IsRealmMatchAllowed(IMatchingQueueGroupTeam matchingQueueGroupTeam, IMatchingQueueProposal matchingQueueProposal)
+        {
+            if (!RetailMatchingRealmRules.RequiresSameRealm(matchingQueueProposal))
+                return true;
+
+            ushort? requiredRealm = null;
+            foreach (IMatchingQueueProposalMember member in matchingQueueProposal.GetMembers())
+            {
+                IPlayer player = playerManager.GetPlayer(member.Identity);
+                if (player == null)
+                    return false;
+
+                requiredRealm ??= player.Identity.RealmId;
+                if (player.Identity.RealmId != requiredRealm)
+                    return false;
+            }
+
+            foreach (IMatchingQueueProposalMember member in matchingQueueGroupTeam.GetMembers())
+            {
+                IPlayer player = playerManager.GetPlayer(member.Identity);
+                if (player == null || player.Identity.RealmId != requiredRealm)
                     return false;
             }
 

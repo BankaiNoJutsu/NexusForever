@@ -15,7 +15,7 @@ using NexusForever.Shared.Game;
 
 namespace NexusForever.Game.Matching.Match
 {
-    public class PvpMatch : Match, IPvpMatch
+    public partial class PvpMatch : Match, IPvpMatch
     {
         private PvpGameState state;
         private UpdateTimer stateTimer;
@@ -103,6 +103,7 @@ namespace NexusForever.Game.Matching.Match
                     SetNextPhase(MatchingMap.GameTypeEntry.PreparationTimeMS, () => { SetState(PvpGameState.InProgress); });
                     break;
                 case PvpGameState.InProgress:
+                    matchStartedUtc = DateTimeOffset.UtcNow;
                     SetNextPhase(MatchingMap.GameTypeEntry.MatchTimeMS, () => { MatchFinish(MatchWinner.Draw, MatchEndReason.TimeExpired); });
                     break;
                 case PvpGameState.Finished:

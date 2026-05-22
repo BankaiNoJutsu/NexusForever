@@ -62,5 +62,10 @@ namespace NexusForever.Game.Abstract.Matching
         /// The client uses this to determine if the "Teleport to Instance" button should be enabled.
         /// </remarks>
         bool CanReEnterMatch(Static.Matching.MatchType matchType);
+
+        /// <summary>
+        /// Match types that allow group queue join after instance finish (GF requeue).
+        /// </summary>
+        bool CanRequeueAsGroup(Static.Matching.MatchType matchType);
     }
 }
