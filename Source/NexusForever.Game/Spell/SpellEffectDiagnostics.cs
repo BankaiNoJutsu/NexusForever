@@ -373,19 +373,25 @@ namespace NexusForever.Game.Spell
                 executionDelay.DataBits09);
         }
 
-        public static void TraceRavelSignal(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info, SpellEffectRavelSignalSemantics ravelSignal)
+        public static void TraceRavelSignal(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info, SpellEffectRavelSignalSemantics ravelSignal, string skippedReason)
         {
             if (!log.IsTraceEnabled)
                 return;
 
+            RavelSignalReceiverEvidenceBoundarySnapshot boundary =
+                RavelSignalReceiverEvidenceBoundary.Describe(ravelSignal.Mode);
+
             log.Trace(
-                "SpellDiagnostics ravel-signal spell4Id={0} castingId={1} target={2} spell4EffectId={3} mode={4} signalId={5} dataBits02={6} dataBits03={7} dataBits04={8} dataBits05={9} dataBits06={10} dataBits07={11} dataBits08={12} dataBits09={13}",
+                "SpellDiagnostics ravel-signal spell4Id={0} castingId={1} target={2} spell4EffectId={3} mode={4} signalId={5} receiverRoute={6} dispatchSupported={7} skippedReason={8} dataBits02={9} dataBits03={10} dataBits04={11} dataBits05={12} dataBits06={13} dataBits07={14} dataBits08={15} dataBits09={16}",
                 spell.Parameters.SpellInfo.Entry.Id,
                 spell.CastingId,
                 target.Guid,
                 info.Entry.Id,
                 ravelSignal.Mode,
                 ravelSignal.SignalId,
+                boundary.ReceiverRoute?.ToString() ?? "none",
+                boundary.IsConservativelyDispatchSupported,
+                skippedReason,
                 ravelSignal.DataBits02,
                 ravelSignal.DataBits03,
                 ravelSignal.DataBits04,

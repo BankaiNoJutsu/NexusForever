@@ -31,6 +31,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
         public void HandleMessage(IWorldSession session, Client0x00C8 message)
         {
             ClientUnresolvedDiagnosticLog.LogValue(log, session, nameof(Client0x00C8), message.Value);
+
+            // Conservative decode attempt: treat the uint32 payload as a challenge id for share-with-target.
+            // Native owner remains unverified; only active challenges are accepted.
+            if (session.Player == null || message.Value == 0u || message.Value > ushort.MaxValue)
+                return;
+
+            ushort challengeId = (ushort)message.Value;
+            session.Player.ChallengeManager.ShareWithTarget(challengeId);
         }
     }
 

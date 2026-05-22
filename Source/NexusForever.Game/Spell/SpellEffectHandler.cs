@@ -728,21 +728,17 @@ namespace NexusForever.Game.Spell
             var map = target.Map ?? spell.Caster.Map;
             Vector3 position = target.Map != null ? target.Position : spell.Caster.Position;
 
-            if (summonTrap.CreatureId == 0u)
+            bool creatureExists = GameTableManager.Instance.Creature2.GetEntry(summonTrap.CreatureId) != null;
+            bool triggerSpellExists = summonTrap.TriggerSpell4Id == 0u
+                || GameTableManager.Instance.Spell4.GetEntry(summonTrap.TriggerSpell4Id) != null;
+            SummonTrapEvidenceBoundarySnapshot boundary = SummonTrapEvidenceBoundary.Describe(
+                summonTrap.CreatureId,
+                summonTrap.TriggerSpell4Id,
+                creatureExists,
+                triggerSpellExists);
+            if (!boundary.IsConservativelyCreateSupported)
             {
-                SpellEffectDiagnostics.TraceSummonTrap(spell, target, summonTrap, position, false, 0u, "missing-creature-id");
-                return;
-            }
-
-            if (GameTableManager.Instance.Creature2.GetEntry(summonTrap.CreatureId) == null)
-            {
-                SpellEffectDiagnostics.TraceSummonTrap(spell, target, summonTrap, position, false, 0u, "unknown-creature-id");
-                return;
-            }
-
-            if (summonTrap.TriggerSpell4Id != 0u && GameTableManager.Instance.Spell4.GetEntry(summonTrap.TriggerSpell4Id) == null)
-            {
-                SpellEffectDiagnostics.TraceSummonTrap(spell, target, summonTrap, position, false, 0u, "unknown-trigger-spell4");
+                SpellEffectDiagnostics.TraceSummonTrap(spell, target, summonTrap, position, false, 0u, boundary.BlockedReason);
                 return;
             }
 
@@ -848,8 +844,16 @@ namespace NexusForever.Game.Spell
             if (ravelSignal == null)
                 return;
 
+            RavelSignalReceiverEvidenceBoundarySnapshot boundary =
+                RavelSignalReceiverEvidenceBoundary.Describe(ravelSignal.Mode);
+            if (!boundary.IsConservativelyDispatchSupported)
+            {
+                SpellEffectDiagnostics.TraceRavelSignal(spell, target, info, ravelSignal, boundary.BlockedReason);
+                return;
+            }
+
             target.SendSignal(ravelSignal.SignalId);
-            SpellEffectDiagnostics.TraceRavelSignal(spell, target, info, ravelSignal);
+            SpellEffectDiagnostics.TraceRavelSignal(spell, target, info, ravelSignal, null);
         }
 
         [SpellEffectHandler(SpellEffectType.ModifyInterruptArmor)]
