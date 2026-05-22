@@ -8,7 +8,7 @@ namespace NexusForever.Game.Tests.Entity;
 public class RewardRotationProtocolTests
 {
     [Fact]
-    public void ServerRewardRotationScheduleArray_WriteUsesRewardKeyIdBeforeContentId()
+    public void ServerRewardRotationScheduleArray_WriteUsesContentIdBeforeRewardKeyId()
     {
         var packet = new ServerRewardRotationScheduleArray
         {
@@ -16,8 +16,8 @@ public class RewardRotationProtocolTests
             {
                 new ServerRewardRotationScheduleArray.ScheduleRow
                 {
-                    RewardKeyId = 0x89ABCDEFu,
-                    ContentId = 0x1234u,
+                    ContentId = 0x89ABCDEFu,
+                    RewardKeyId = 0x1234u,
                     Duration = 1.5f,
                     RewardType = 3,
                     Value = 0x10203040u
@@ -39,8 +39,8 @@ public class RewardRotationProtocolTests
 
     [Theory]
     [InlineData(0x4000u)]
-    [InlineData(uint.MaxValue)]
-    public void ServerRewardRotationScheduleArray_WriteRejectsContentIdsOutside14BitRange(uint contentId)
+    [InlineData(0x5000u)]
+    public void ServerRewardRotationScheduleArray_WriteRejectsRewardKeyIdsOutside14BitRange(uint rewardKeyId)
     {
         var packet = new ServerRewardRotationScheduleArray
         {
@@ -48,8 +48,8 @@ public class RewardRotationProtocolTests
             {
                 new ServerRewardRotationScheduleArray.ScheduleRow
                 {
-                    RewardKeyId = 1u,
-                    ContentId = contentId,
+                    ContentId = 1u,
+                    RewardKeyId = rewardKeyId,
                     Duration = 1f,
                     RewardType = 1,
                     Value = 2u
@@ -197,6 +197,45 @@ public class RewardRotationProtocolTests
         }
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(4)]
+    public void RewardRotationEntryStatePackets_WriteRejectInvalidRewardTypeLanes(byte rewardTypeLane)
+    {
+        IWritable[] packets =
+        [
+            new ServerRewardRotationEntryStateArray
+            {
+                Entries =
+                {
+                    new ServerRewardRotationEntryStateArray.EntryStateRow
+                    {
+                        TypeId = 1u,
+                        ContentId = 1u,
+                        RewardTypeId = 2u,
+                        State = rewardTypeLane,
+                        Value = 4u
+                    }
+                }
+            },
+            new ServerRewardRotationEntryStateUpsert
+            {
+                TypeId = 1u,
+                ContentId = 1u,
+                RewardTypeId = 2u,
+                State = rewardTypeLane,
+                Value = 4u
+            }
+        ];
+
+        foreach (IWritable packet in packets)
+        {
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => WritePacket(packet));
+
+            Assert.Contains("state/reward-type lane", exception.Message);
+        }
+    }
+
     [Fact]
     public void ServerRewardRotationEntryStateArray_WriteRejectsNullRows()
     {
@@ -206,6 +245,105 @@ public class RewardRotationProtocolTests
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => WritePacket(packet));
 
         Assert.Contains("entry 0 is null", exception.Message);
+    }
+
+    [Fact]
+    public void ServerRewardRotationContentContext_WriteMatchesDecodedFieldOrder()
+    {
+        var packet = new ServerRewardRotationContentContext
+        {
+            RewardRotationIndex = 4u,
+            UInt0 = 0x11111111u,
+            UInt1 = 0x22222222u,
+            UInt3 = 0x44444444u,
+            ContentIds = { 0x33333331u, 0x33333332u },
+            Flag = true
+        };
+
+        byte[] data = WritePacket(packet);
+
+        using var stream = new MemoryStream(data);
+        using var reader = new GamePacketReader(stream);
+        Assert.Equal(4u, reader.ReadUInt(14u));
+        Assert.Equal(0x11111111u, reader.ReadUInt());
+        Assert.Equal(0x22222222u, reader.ReadUInt());
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.Equal(0x44444444u, reader.ReadUInt());
+        Assert.Equal(0x33333331u, reader.ReadUInt());
+        Assert.Equal(0x33333332u, reader.ReadUInt());
+        Assert.True(reader.ReadBit());
+    }
+
+    [Theory]
+    [InlineData(7u)]
+    [InlineData(99u)]
+    public void ServerRewardRotationContentContext_WriteRejectsRewardRotationIndicesOutsideSupportedRange(uint rewardRotationIndex)
+    {
+        var packet = new ServerRewardRotationContentContext
+        {
+            RewardRotationIndex = rewardRotationIndex
+        };
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => WritePacket(packet));
+
+        Assert.Contains("reward rotation index", exception.Message);
+    }
+
+    [Fact]
+    public void ServerRewardRotationContentContext_WriteRejectsContentIdCountsAboveWireBudget()
+    {
+        var packet = new ServerRewardRotationContentContext
+        {
+            ContentIds = { 1u, 2u, 3u, 4u, 5u, 6u }
+        };
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => WritePacket(packet));
+
+        Assert.Contains("wire budget", exception.Message);
+    }
+
+    [Fact]
+    public void ServerRewardRotationContentContextArray_WriteMatchesCountPlusRowLayout()
+    {
+        var packet = new ServerRewardRotationContentContextArray
+        {
+            Entries =
+            {
+                new ServerRewardRotationContentContext
+                {
+                    RewardRotationIndex = 1u,
+                    ContentIds = { 10u, 11u }
+                },
+                new ServerRewardRotationContentContext
+                {
+                    RewardRotationIndex = 1u,
+                    ContentIds = { 12u, 13u, 14u }
+                }
+            }
+        };
+
+        byte[] data = WritePacket(packet);
+
+        using var stream = new MemoryStream(data);
+        using var reader = new GamePacketReader(stream);
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.Equal(1u, reader.ReadUInt(14u));
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(10u, reader.ReadUInt());
+        Assert.Equal(11u, reader.ReadUInt());
+        Assert.False(reader.ReadBit());
+        Assert.Equal(1u, reader.ReadUInt(14u));
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(3u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(12u, reader.ReadUInt());
+        Assert.Equal(13u, reader.ReadUInt());
+        Assert.Equal(14u, reader.ReadUInt());
+        Assert.False(reader.ReadBit());
     }
 
     private static byte[] WritePacket(IWritable packet)

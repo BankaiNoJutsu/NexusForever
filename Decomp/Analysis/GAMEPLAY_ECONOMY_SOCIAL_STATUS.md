@@ -11,31 +11,32 @@ Legend: **Partial** = real behavior exists but retail parity incomplete; **Block
 | ID | Status | Verification this pass | Primary blockers |
 | --- | --- | --- | --- |
 | F-004 Housing | Partial | Neighbor handlers + `residence_neighbor` EF + native `ServerHousingNeighbors` `0x0507` row sync + reserved row `+8` semantics + `ServerHousingCommunityDonateUpdate` `0x04FE` emit on donate + neighborhood list `0x0501/0506` + community plot reservation `0x051F` + community placement/privacy `0x053A/053B` emit paths + community rename result `0x078C` + interior wallpaper `0x050D` six-slot `HousingWallpaperInfo` id validation/cost debit/decor persistence + neighbor invite prompt/result/update packet coverage; packet-shape tests | Several neighborhood/community field names remain provisional; interior wallpaper ownership/unlock/refund precision remains unmapped |
-| F-005 Marketplace | Partial | `MarketplaceAuctionHandlerTests` (9); durable `marketplace_auction` + `marketplace_commodity_order` EF; `GlobalMarketplaceManager` load/save, expiration sweep, `ServerAuctionOutbid`, offline DB credit settlement, commodity cross-match with `ServerCommodityAuctionFilledPartial`, `MarketplaceMailDelivery` + mail `ContentType` + shared achievement-text localized mail (`0x3950` → `278287` for item/commodity), `MarketplaceTransactionFee` from `GameFormula` `436`/`437` with minimum fee `1090`, fixed 48h item-auction listings (`821`), commodity `FILETIME` tiers `1056` validated on post, expired auctions with bids complete offline | Apply migration `20260522114611_MarketplacePersistence` on live DB if tables missing |
-| F-006 Storefront | Partial | Storefront/account packet tests | Offline pending-group delivery; `0986/098C/098D/098F` variant semantics; durable CREDD persistence |
-| F-007 Rewards | Partial / Blocked | `ServerRewardPropertySet` protocol tests | Live schedule/entry-state; `Server0x07CD` |
+| F-005 Marketplace | Partial | `MarketplaceAuctionHandlerTests` (11) + `CREDDExchangeHandlerTests` (5); durable `marketplace_auction` + `marketplace_commodity_order` EF; `GlobalMarketplaceManager` load/save/search, expiration sweep, `ServerAuctionOutbid`, offline DB credit settlement, commodity cross-match + cancel-failure `ServerCommodityOrderResult`, commodity cancel/return mail, `MarketplaceMailDelivery` + localized mail (`0x3950` → `278287`), CREDD `0x026A` non-empty price buckets + `097A` cache rows + durable `account_credd_*` history | Apply migration `20260522114611_MarketplacePersistence` on live DB; retail `0x026A` owned-order row pointers; commodity multi-order partial-fill precision |
+| F-006 Storefront | Partial | Storefront/account/pending/CREDD/terminal/velocity/VC tests (`52` focused); daily-login claim (`078F` verified @ `1400070f0`); VC package purchase (`082E` @ `1404f1d50`, catalog `0991` rows, results `0990`/`0991`); coupon redeem (`0790` opcode still unverified); CREDD redeem (`0268`/`097B`); structured `0x026A` `0x50` header (`14042b9a0`); purchase history (`098E`); catalog updated (`0989`); character unlock sync (`0983`/`0984`); purchase-velocity gate (`0971`+`account_store_purchase_history`) | Real-money VC billing; full retail `0x026A` owned-order rows; `0986/098F` emit; `096A..096C` leading field semantics; coupon client sender proof for `0790` |
+| F-007 Rewards | Partial | Per-content schedule catalog; `account_reward_rotation_grant` migration; `AccountRewardRotationRefreshProvider` non-empty `0x07C8`; **83** reward-filtered tests | `0x07CD` apply consumer; claim-path `RecordGrant`; player level/difficulty in schedule filter |
 | F-008 Crafting | Partial | **New** `CraftingLootIdCraftHandlerTests` pins LootId craft path; existing simple/craft-item tests | Discovery/station math; `Server0x084B`/`0855`; rune/sigil semantics |
 | F-009 Transport | Partial | Rapid transport / flight-path / vehicle packet tests | Service-token bypass; taxi completion; deployable vehicle semantics; `Server0x077E` |
-| F-010 Group/matching | Partial | **New** `GroupLootRulesHandlerTests`; existing flag/matching tests | Group server cluster `0414..0718` emitters; `Client0x062A/0634`; durable raid locks; queue vote/replacement lifecycle |
+| F-010 Group/matching | Partial | `GroupLootRulesHandlerTests`; `ServerGroupInstanceDifficultyResponse` (`0x0414`) typed + fan-out on `ClientGroupSetInstanceDifficulty` | Remaining cluster `042A..0718` emitters; `Client0x062A/0634`; durable raid locks; queue vote/replacement lifecycle |
 | F-011 Guild/war party | Partial | War-party boss-token protocol tests | Guild bank/perks/holomarks; recruitment subscriptions; warplot plugs |
 | F-012 ICComm/chat | Partial | ICComm/friendship/chat tests | Persistent channels; aux chat `01B8/01C1/01C4/01EF`; `Client0x0550` |
-| F-013 Mail | Partial | Mail transaction tests | Multi-client delete parity; exact expiration; marketplace mail uses plain strings pending localized text IDs |
-| F-014 Loot | Partial | **New** loot notify/collect/vacuum delegation tests; roll/assign tests | `Server0x08A0/08A8`; bind-on-pickup confirmation semantics |
+| F-013 Mail | Partial | Delete-from-view + `ServerMailUnavailable`; UTC instant expiry + `ServerMailItemDeprecation`; marketplace `ServerMailAvailable` online notify; **18** mail tests | Save/reload delete edge cases; broader atomicity |
+| F-014 Loot | Partial | BoP two-step collect + `ServerLootBindOnPickup` `OwnerUnitId`/`LootUnitId`; `CanTryRoll`/`CanTryMasterAssign`; **34** loot tests | `ServerLootCanLoot` emit timing; parent source tracking |
 | F-015 PvP/duels | Partial | Duel lifecycle tests | Observer/leash/warning packets; PvP cooldown persistence |
 | F-027 Options | Partial | `OptionPersistenceTests` | Account-level option split; `056B..056D` readback |
-| F-028 Support | Partial | Support/survey handler tests | DB case workflow; moderation UI |
+| F-028 Support | Partial | Stuck failures via `ServerSpellCastResult` + spell4 ids; recall-house uses global residence entrance; **19** support tests | `Server0x0347..0351`; DB case workflow |
 | F-030 Realm transfer | Partial | `RealmTransferProtocolTests` | Real destinations/results; `Client0x0760/0762`; PTR copy |
-| F-031 Fortune | Partial | Fortune packet-shape tests | Reward generation/payout evidence; durable resume |
-| F-032 Leaderboards | Partial | `LeaderboardProviderTests` (empty compat) | Rank aggregation store; category rules from client readers |
-| F-033 Challenges | Partial | `ChallengeChoiceHandlerTests` (GenericFail) | Accept/decline/update sequence; `ServerChallengeUpdate` lifecycle |
+| F-031 Fortune | Partial | Fortune coin cost; card deal + flip payout via `FortuneRewardPool`; **15** fortune tests | Retail weight table; durable resume |
+| F-032 Leaderboards | Partial | `LeaderboardProvider` + in-memory store + aggregation; **10** leaderboard tests | DB scores; live ingestion hooks |
+| F-033 Challenges | Partial | `ChallengeManager` lifecycle + 18 challenge tests | Persistence; `Client0x00C8`; share-init opcode; reward tracks; objective hooks |
 
 ## Next implementation gates (priority order)
 
-1. Confirm provisional neighborhood/community field names and interior wallpaper ownership/unlock/refund semantics.
-2. Live DB migration `20260522114611_MarketplacePersistence` on environments still missing marketplace tables.
-3. Offline `pendingGroups` delivery in `AccountInventoryManager` after gift flow evidence.
-4. Challenge accept/decline client sequence → `ServerChallengeUpdate` / quest hooks.
-5. Fortune reward table / payout evidence before inventory linkage.
+1. Ghidra field proof for remaining group cluster `0x042A..0x0718` and wire emitters.
+2. Apply auth migrations: `20260522120000_AccountPendingItem`, `20260522130000_AccountCREDDExchange`, `20260522140000_AccountDailyLoginAndStoreHistory`, `20260522150000_AccountRewardRotationGrant`, character `20260522114611_MarketplacePersistence`.
+3. Challenge DB persistence + combat objective hooks + `Client0x00C8` decode.
+4. Fortune retail weight table + session DB resume.
+5. Leaderboard DB + dungeon/PvP score ingestion.
+6. Spell families F-016..F-020 (family-by-family evidence ladder).
 
 ## Tests added (2026-05-22)
 
@@ -52,4 +53,4 @@ Interior wallpaper focused gate:
 Earlier broad workstream filter before the housing-neighbor cluster covered **544 passed**.
 
 Current full game test gate:
-Last clean `dotnet test Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj` -> **625 passed**. Current full gate was not rerun while unrelated marketplace worktree changes are ignored; the latest scoped F-004 gate above passed.
+`dotnet test Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj` -> **722 passed** (2026-05-22).

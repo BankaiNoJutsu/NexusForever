@@ -4,7 +4,8 @@ using NexusForever.Network.Message;
 namespace NexusForever.Network.World.Message.Model.Loot
 {
     // Packet model retained for evidence-backed validation only.
-    // Runtime does not currently enqueue this packet; ChatFormatLoot.LootUnitId must match LootUnitId if it is wired later.
+    // Runtime does not currently enqueue this packet.
+    // Client dispatches ChannelUpdate_Loot for remote looters; ChatFormatLoot.LootUnitId must match LootUnitId if wired later.
     [Message(GameMessageOpcode.ServerLootNotification)]
     public class ServerLootNotification : IWritable
     {

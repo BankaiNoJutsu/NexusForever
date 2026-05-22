@@ -21,6 +21,13 @@ namespace NexusForever.Network.World.Message.Model
         }
     }
 
+    public abstract class ServerUnresolvedEmptyPayload : IWritable
+    {
+        public void Write(GamePacketWriter writer)
+        {
+        }
+    }
+
     public abstract class ServerUnresolvedUIntPayload : IWritable
     {
         private readonly uint bits;
@@ -36,6 +43,21 @@ namespace NexusForever.Network.World.Message.Model
         public void Write(GamePacketWriter writer)
         {
             writer.Write(Value, bits);
+        }
+    }
+
+    public abstract class ServerUnresolvedWideStringPayload : IWritable
+    {
+        public string Text { get; set; }
+
+        protected ServerUnresolvedWideStringPayload(string text = "")
+        {
+            Text = text;
+        }
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.WriteStringWide(Text);
         }
     }
 
@@ -57,12 +79,6 @@ namespace NexusForever.Network.World.Message.Model
         }
     }
 
-    [Message(GameMessageOpcode.Server0x00B0)]
-    public class Server0x00B0 : ServerUnresolvedUIntPayload
-    {
-        public Server0x00B0(uint value = 0u) : base(18u, value) { }
-    }
-
     [Message(GameMessageOpcode.Server0x00B7)]
     public class Server0x00B7 : ServerUnresolvedRawPayload
     {
@@ -70,33 +86,31 @@ namespace NexusForever.Network.World.Message.Model
     }
 
     [Message(GameMessageOpcode.Server0x00CB)]
-    public class Server0x00CB : ServerUnresolvedRawPayload
+    public class Server0x00CB : ServerUnresolvedEmptyPayload
     {
-        public Server0x00CB(byte[] payload = null) : base(0x1u, payload) { }
     }
 
     [Message(GameMessageOpcode.Server0x00CC)]
-    public class Server0x00CC : ServerUnresolvedRawPayload
+    public class Server0x00CC : ServerUnresolvedUIntPayload
     {
-        public Server0x00CC(byte[] payload = null) : base(0x4u, payload) { }
+        public Server0x00CC(uint value = 0u) : base(15u, value) { }
     }
 
     [Message(GameMessageOpcode.Server0x00CD)]
-    public class Server0x00CD : ServerUnresolvedRawPayload
+    public class Server0x00CD : ServerUnresolvedUIntPayload
     {
-        public Server0x00CD(byte[] payload = null) : base(0x4u, payload) { }
+        public Server0x00CD(uint value = 0u) : base(15u, value) { }
     }
 
     [Message(GameMessageOpcode.Server0x00CE)]
-    public class Server0x00CE : ServerUnresolvedRawPayload
+    public class Server0x00CE : ServerUnresolvedWideStringPayload
     {
-        public Server0x00CE(byte[] payload = null) : base(0x8u, payload) { }
+        public Server0x00CE(string text = "") : base(text) { }
     }
 
     [Message(GameMessageOpcode.Server0x00D1)]
-    public class Server0x00D1 : ServerUnresolvedRawPayload
+    public class Server0x00D1 : ServerUnresolvedEmptyPayload
     {
-        public Server0x00D1(byte[] payload = null) : base(0x1u, payload) { }
     }
 
     [Message(GameMessageOpcode.Server0x00DF)]
@@ -118,15 +132,25 @@ namespace NexusForever.Network.World.Message.Model
     }
 
     [Message(GameMessageOpcode.Server0x010D)]
-    public class Server0x010D : ServerUnresolvedRawPayload
+    public class Server0x010D : ServerUnresolvedEmptyPayload
     {
-        public Server0x010D(byte[] payload = null) : base(0x1u, payload) { }
     }
 
     [Message(GameMessageOpcode.Server0x0110)]
-    public class Server0x0110 : ServerUnresolvedRawPayload
+    public class Server0x0110 : IWritable
     {
-        public Server0x0110(byte[] payload = null) : base(0x10u, payload) { }
+        public uint Value0 { get; set; }
+        public uint Value1 { get; set; }
+        public uint Value2 { get; set; }
+        public uint Value3 { get; set; }
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value0);
+            writer.Write(Value1, 18u);
+            writer.Write(Value2);
+            writer.Write(Value3, 8u);
+        }
     }
 
     [Message(GameMessageOpcode.Server0x0139)]
@@ -159,24 +183,6 @@ namespace NexusForever.Network.World.Message.Model
         public Server0x0160(byte[] payload = null) : base(0x1u, payload) { }
     }
 
-    [Message(GameMessageOpcode.Server0x016B)]
-    public class Server0x016B : ServerUnresolvedRawPayload
-    {
-        public Server0x016B(byte[] payload = null) : base(0x20u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x016D)]
-    public class Server0x016D : ServerUnresolvedRawPayload
-    {
-        public Server0x016D(byte[] payload = null) : base(0x4u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x016E)]
-    public class Server0x016E : ServerUnresolvedRawPayload
-    {
-        public Server0x016E(byte[] payload = null) : base(0x4u, payload) { }
-    }
-
     [Message(GameMessageOpcode.Server0x0181)]
     public class Server0x0181 : ServerUnresolvedRawPayload
     {
@@ -205,18 +211,6 @@ namespace NexusForever.Network.World.Message.Model
     public class Server0x019A : ServerUnresolvedRawPayload
     {
         public Server0x019A(byte[] payload = null) : base(0x8u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x019C)]
-    public class Server0x019C : ServerUnresolvedRawPayload
-    {
-        public Server0x019C(byte[] payload = null) : base(0x10u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x01A4)]
-    public class Server0x01A4 : ServerUnresolvedRawPayload
-    {
-        public Server0x01A4(byte[] payload = null) : base(0x14u, payload) { }
     }
 
     [Message(GameMessageOpcode.Server0x01A6)]
@@ -303,12 +297,6 @@ namespace NexusForever.Network.World.Message.Model
         public Server0x0264(byte[] payload = null) : base(0x18u, payload) { }
     }
 
-    [Message(GameMessageOpcode.ServerCREDDExchangeInfoResults)]
-    public class ServerCREDDExchangeInfoResults : ServerUnresolvedRawPayload
-    {
-        public ServerCREDDExchangeInfoResults(byte[] payload = null) : base(0x50u, payload) { }
-    }
-
     [Message(GameMessageOpcode.Server0x0347)]
     public class Server0x0347 : ServerUnresolvedRawPayload
     {
@@ -355,12 +343,6 @@ namespace NexusForever.Network.World.Message.Model
     public class Server0x03EF : ServerUnresolvedRawPayload
     {
         public Server0x03EF(byte[] payload = null) : base(0x10u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.ServerGroupInstanceDifficultyResponse)]
-    public class ServerGroupInstanceDifficultyResponse : ServerUnresolvedRawPayload
-    {
-        public ServerGroupInstanceDifficultyResponse(byte[] payload = null) : base(0x18u, payload) { }
     }
 
     [Message(GameMessageOpcode.ServerGroupKickResult)]
@@ -471,18 +453,6 @@ namespace NexusForever.Network.World.Message.Model
         public Server0x077E(byte[] payload = null) : base(0x10u, payload) { }
     }
 
-    [Message(GameMessageOpcode.Server0x07CD)]
-    public class Server0x07CD : ServerUnresolvedRawPayload
-    {
-        public Server0x07CD(byte[] payload = null) : base(0x28u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x07D3)]
-    public class Server0x07D3 : ServerUnresolvedRawPayload
-    {
-        public Server0x07D3(byte[] payload = null) : base(0x10u, payload) { }
-    }
-
     [Message(GameMessageOpcode.Server0x07D5)]
     public class Server0x07D5 : ServerUnresolvedRawPayload
     {
@@ -511,18 +481,6 @@ namespace NexusForever.Network.World.Message.Model
     public class Server0x0889 : ServerUnresolvedRawPayload
     {
         public Server0x0889(byte[] payload = null) : base(0xCu, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x08A0)]
-    public class Server0x08A0 : ServerUnresolvedRawPayload
-    {
-        public Server0x08A0(byte[] payload = null) : base(0x48u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x08A8)]
-    public class Server0x08A8 : ServerUnresolvedRawPayload
-    {
-        public Server0x08A8(byte[] payload = null) : base(0x14u, payload) { }
     }
 
     [Message(GameMessageOpcode.Server0x08CC)]

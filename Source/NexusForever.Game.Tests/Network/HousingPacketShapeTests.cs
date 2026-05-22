@@ -100,6 +100,80 @@ public class HousingPacketShapeTests
     }
 
     [Fact]
+    public void ClientHousingCommunityDonate_ReadsDecorRows()
+    {
+        byte[] packetData = WritePacket(writer =>
+        {
+            writer.Write(1u);
+            WriteDecorInfo(writer, 0x1000u, 0x2000ul, 3u, 0x3000u);
+        });
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        var packet = new ClientHousingCommunityDonate();
+
+        packet.Read(reader);
+
+        DecorInfo decor = Assert.Single(packet.Decor);
+        Assert.Equal(0x1000u, decor.TargetResidence.RealmId);
+        Assert.Equal(0x2000ul, decor.TargetResidence.ResidenceId);
+        Assert.Equal(DecorType.InteriorWallpaper, decor.DecorType);
+        Assert.Equal(3u, decor.HookIndex);
+        Assert.Equal(0x3000u, decor.DecorInfoId);
+    }
+
+    [Fact]
+    public void ClientHousingDecorUpdate_ReadsTrailingFlagPerDecorRow()
+    {
+        byte[] packetData = WritePacket(writer =>
+        {
+            writer.Write(DecorUpdateOperation.Move, 3u);
+            writer.Write(2u);
+            WriteDecorInfo(writer, 0x1000u, 0x2000ul, 3u, 0x3000u);
+            WriteDecorInfo(writer, 0x1001u, 0x2001ul, 4u, 0x3001u);
+            writer.Write(true);
+            writer.Write(false);
+        });
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        var packet = new ClientHousingDecorUpdate();
+
+        packet.Read(reader);
+
+        Assert.Equal(DecorUpdateOperation.Move, packet.Operation);
+        Assert.Equal(2, packet.DecorUpdates.Count);
+        Assert.Equal(2, packet.TrailingFlags.Count);
+        Assert.True(packet.TrailingFlags[0]);
+        Assert.False(packet.TrailingFlags[1]);
+    }
+
+    [Fact]
+    public void ServerHousingVendorList_WriteSerializesRowsAndListType()
+    {
+        var message = new ServerHousingVendorList
+        {
+            ListType = 2
+        };
+        message.PlugItems.Add(new ServerHousingVendorList.PlugItem
+        {
+            SourceId = 0x0102030405060708ul,
+            PlugItemId = 0x11121314u,
+            Cost = 0x21222324u,
+            PlugItemFlags = 0x31323334u
+        });
+
+        byte[] packetData = WritePacket(message.Write);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+
+        Assert.Equal(1, reader.ReadInt());
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        Assert.Equal(0x11121314u, reader.ReadUInt());
+        Assert.Equal(0x21222324u, reader.ReadUInt());
+        Assert.Equal(0x31323334u, reader.ReadUInt());
+        Assert.Equal(2u, reader.ReadUInt(2u));
+    }
+
+    [Fact]
     public void ClientHousingInteriorWallpaperUpdate_ReadsNativeSixSlotPayload()
     {
         byte[] packetData = WritePacket(writer =>

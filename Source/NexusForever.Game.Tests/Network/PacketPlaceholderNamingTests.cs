@@ -609,8 +609,7 @@ public class PacketPlaceholderNamingTests
         var message = new ServerHousingResidenceKeyedUpdate
         {
             Key        = 0x0102030405060708ul,
-            Unknown0   = 0xA0B0C0D0u,
-            Reserved0  = 0x11223344u
+            Unknown0   = 0xA0B0C0D0u
         };
 
         using var stream = new MemoryStream(WritePacket(message));
@@ -618,7 +617,54 @@ public class PacketPlaceholderNamingTests
 
         Assert.Equal(0x0102030405060708ul, reader.ReadULong());
         Assert.Equal(0xA0B0C0D0u, reader.ReadUInt());
-        Assert.Equal(0x11223344u, reader.ReadUInt());
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void HousingClusterPlaceholderPackets_WriteReaderBackedShapes()
+    {
+        Assert.Empty(WritePacket(new Server0x00CB()));
+        Assert.Empty(WritePacket(new Server0x00D1()));
+        Assert.Empty(WritePacket(new Server0x010D()));
+
+        using (var stream = new MemoryStream(WritePacket(new Server0x00CC(0x1234u))))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x1234u, reader.ReadUInt(15u));
+            Assert.Equal(stream.Length, stream.Position);
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new Server0x00CD(0x2345u))))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x2345u, reader.ReadUInt(15u));
+            Assert.Equal(stream.Length, stream.Position);
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new Server0x00CE("Housing"))))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal("Housing", reader.ReadWideString());
+            Assert.Equal(stream.Length, stream.Position);
+        }
+
+        var basicsFollowup = new Server0x0110
+        {
+            Value0 = 0x01020304u,
+            Value1 = 0x23456u,
+            Value2 = 0xA0B0C0D0u,
+            Value3 = 0x7Fu
+        };
+
+        using (var stream = new MemoryStream(WritePacket(basicsFollowup)))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x01020304u, reader.ReadUInt());
+            Assert.Equal(0x23456u, reader.ReadUInt(18u));
+            Assert.Equal(0xA0B0C0D0u, reader.ReadUInt());
+            Assert.Equal(0x7Fu, reader.ReadUInt(8u));
+            Assert.Equal(stream.Length, stream.Position);
+        }
     }
 
     [Fact]
@@ -748,9 +794,11 @@ public class PacketPlaceholderNamingTests
     }
 
     [Fact]
-    public void ClientHousingPlugUpdate_ReadExposesReservedField()
+    public void ClientHousingPlugUpdate_ReadExposesReservedAndContributionRecords()
     {
-        byte[] contributionData = Enumerable.Range(0, 100).Select(static value => (byte)value).ToArray();
+        uint[] contributionData = Enumerable.Range(0, ClientHousingPlugUpdate.ContributionRecordCount * 5)
+            .Select(static value => (uint)value + 1u)
+            .ToArray();
         byte[] packetData = BuildHousingPlugUpdatePacket(
             realmId: 7,
             identityId: 1234ul,
@@ -774,7 +822,14 @@ public class PacketPlaceholderNamingTests
         Assert.Equal(HousingPlugFacing.West, message.PlugFacing);
         Assert.Equal(9u, message.Reserved);
         Assert.Equal(ClientHousingPlugUpdate.PlugUpdateOperation.Remove, message.Operation);
-        Assert.Equal(contributionData, message.ContributionData);
+        Assert.Equal(ClientHousingPlugUpdate.ContributionRecordCount, message.Contributions.Count);
+        Assert.Equal(1u, message.Contributions[0].ContributionPointRequirement);
+        Assert.Equal(2u, message.Contributions[0].Reserved0);
+        Assert.Equal(3u, message.Contributions[0].Reserved1);
+        Assert.Equal(4u, message.Contributions[0].Reserved2);
+        Assert.Equal(5u, message.Contributions[0].Reserved3);
+        Assert.Equal(21u, message.Contributions[4].ContributionPointRequirement);
+        Assert.Equal(25u, message.Contributions[4].Reserved3);
     }
 
     [Fact]
@@ -955,7 +1010,7 @@ public class PacketPlaceholderNamingTests
         HousingPlugFacing plugFacing,
         uint reserved,
         ClientHousingPlugUpdate.PlugUpdateOperation operation,
-        byte[] contributionData)
+        uint[] contributionData)
     {
         using var stream = new MemoryStream();
         using (var writer = new GamePacketWriter(stream))
@@ -972,7 +1027,8 @@ public class PacketPlaceholderNamingTests
             writer.Write(plugFacing, 32u);
             writer.Write(reserved);
             writer.Write(operation, 3u);
-            writer.WriteBytes(contributionData);
+            foreach (uint value in contributionData)
+                writer.Write(value);
             writer.FlushBits();
         }
 

@@ -4,7 +4,9 @@ namespace NexusForever.Network.World.Message.Model
 {
     // Server opcode 0x07C8.
     // Wire format: 32-bit count followed by count entry-state rows.
-    // Each row matches RewardRotation_EntryStateRow_ReadPayload at client address 1400a1ee0.
+    // Each row matches RewardRotation_EntryStateRow_ReadPayload @ 1400a1ee0:
+    // 3-bit TypeId (content-type index 0-6), ContentId, RewardTypeId (reward key id),
+    // State byte (reward-type lane 1/2/3), Value (grant-flag bitmask).
     [Message(GameMessageOpcode.ServerRewardRotationEntryStateArray)]
     public class ServerRewardRotationEntryStateArray : IWritable
     {
@@ -19,6 +21,7 @@ namespace NexusForever.Network.World.Message.Model
             public void Write(GamePacketWriter writer)
             {
                 RewardRotationWireValidation.ValidateEntryStateTypeId(TypeId, $"{nameof(ServerRewardRotationEntryStateArray)} entry row");
+                RewardRotationWireValidation.ValidateEntryStateRewardTypeLane(State, $"{nameof(ServerRewardRotationEntryStateArray)} entry row");
                 writer.Write(TypeId, 3u);
                 writer.Write(ContentId);
                 writer.Write(RewardTypeId);

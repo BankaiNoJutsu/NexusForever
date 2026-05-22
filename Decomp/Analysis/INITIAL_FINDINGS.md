@@ -6499,6 +6499,49 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   model names remain conservative/inference-backed; no reward-rotation schedule
   source, static grant, random essence grant, or entry-state mutation service was
   added.
+  A follow-up Ghidra pass on `0x07CD` now maps the remaining fixed-size reward
+  packet in the same registrar cluster: `ServerRewardRotationContentContext_ReadPayload`
+  (`14008fcb0`) is registered for opcode `0x07CD` with `R8D=0x28` and reads a
+  14-bit reward-rotation index, four 32-bit fields, a counted 32-bit content-id
+  array, and a trailing 1-bit flag. The adjacent `Server0x07D3_ReadPayload`
+  (`14008fdc0`) is a separate opcode (`0x07D3`, `R8D=0x10`) that reads a 32-bit
+  count plus `count * 0x28` rows through the same row reader. NexusForever now
+  models `0x07CD` as `ServerRewardRotationContentContext`; the middle three
+  uint32 field meanings and the consumer that applies the context row remain
+  unresolved.
+  Consumer correlation from this pass:
+  `RewardRotation_BuildContentContextIndex` (`140635b60`) rebuilds the client
+  manager hash at `manager + 0x118` from the same game-table sources
+  (`WorldZone`, `World`, `MatchTypeRewardRotationContent`, `PublicEvent`, and
+  `RewardRotationContent.ContentTypeEnum`) that NexusForever now uses in
+  `RewardRotationContentContextBuilder`. `RewardRotation_ApplyServerScheduleUpdate`
+  (`140636280`) then resolves schedule rows through
+  `RewardRotationContent.ContentTypeEnum * 0x20 + manager + 8`, matching the
+  seven throttled indices in `Reward_SendRewardUpdateRequest` (`140636ba0`).
+  Opcode registration for `0x07CD` passes a null handler pointer (`RSP+0x20 = 0`)
+  like `0x07CA`/`0x07C8`, so the apply function is reached only through the same
+  runtime dispatch table that already references `RewardRotation_ApplyServerScheduleUpdate`
+  by data (`140bf449c`). No static code xref names the `0x07CD` apply helper yet.
+  NexusForever now models `0x07D3` as `ServerRewardRotationContentContextArray`
+  (count plus `count * 0x28` rows via the same row reader) and chunks game-table
+  content ids across `0x07CD` or `0x07D3` when a refresh index exceeds the
+  five-id wire budget. `ClientRewardUpdateRequestHandler` uses
+  `GameTableRewardRotationRefreshProvider` for content-context plus schedule packets.
+  Schedule duration is now mapped from `RewardRotation_ApplyServerScheduleUpdate`
+  (`140636280`): wire `Duration` is a float day count converted to FILETIME expiry
+  (`days * 864000000000` plus fractional day remainder). NexusForever derives days
+  from `GameFormula` `821` `Dataint0` hours / 24 (48h ? `2.0f` days), correlated with
+  the auction-house duration formula. `RewardRotationScheduleBuilder` emits one
+  item/essence/modifier row per content id via deterministic global-catalog selection
+  because client tables expose no `RewardRotationContent`?reward linkage. Entry-state
+  wire semantics are now mapped (`RewardRotation_ApplyEntryStateToLoadedContent`
+  `14063a0e0`, `RewardRotation_HasEntryStateFlag` `14063aa90`): `State` is the
+  reward-type lane (1/2/3) and `Value` is a grant bitmask (`0x1` item/modifier,
+  `0x80000000` essence). NexusForever keeps `0x07C8` empty for fresh accounts
+  until account grant persistence exists; `RewardRotationEntryStateBuilder` can
+  emit grant rows when needed. `0x07CD` `UInt0`/`UInt1`/`UInt3` are populated
+  with correlated throttle defaults from `FUN_140635840` (`manager + 0x150 +
+  index * 0x14`, 1000 ms); the dedicated apply helper and `Flag` bit remain blocked.
 - Taxi unlock persistence blocker:
   Type `101` achievements (`4714`/`4715`, `Making Connections`) remain
   mapped-only. The client can receive an authoritative unlocked flight-path
@@ -9557,8 +9600,8 @@ The `Game.ICComm` handle type tracks per-channel state.
   interior wallpaper sender for opcode `0x050D`.
 - `1406acc30` is the `Game.Residence.RemoveInteriorWallpaper` binding. It
   accepts a slot index `1..6` and calls the one-slot sender at `1404b7bc0`,
-  which emits `DecorType=3`, the selected hook index, and the slot's default
-  wallpaper id as `DecorInfoId`.
+  which emits `DecorType=3`, the selected hook index, and default
+  `HousingWallpaperInfo` id `5` as `DecorInfoId`.
 
 ### Lua_GameRecruitmentGuild_GetDetailedGuildInfo
 - Resolves handle via `FUN_140056ab0(_, 1, "Game.RecruitmentGuild")`
@@ -10659,10 +10702,66 @@ Loot roll/master request boundary follow-up:
   loot-unit id, and the converted assignee `Identity` to `AssignMasterLoot`.
   This pins the request-to-runtime handoff without adding new loot side
   effects.
-- Bind-on-pickup confirmation, exact roll/master eligibility rules, parent
-  source tracking, master-loot UI parity, and auxiliary loot outputs such as
-  `Server0x08A0/08A8` remain blocked until client-reader or runtime evidence
-  maps those packets and state transitions.
+- Follow-up reader evidence maps `0x08A0` to `ServerLootItemUpdate`: the
+  WildStar64 registration at `1400795d4..140079600` uses reader `1400a4920`
+  and object size `0x48`, and `ServerLootItemUpdate_ReadPayload` reads the
+  same `LootItem` shape already used inside `ServerLootNotify`/`Grant`.
+  `0x08A8` is not loot-shaped; the registration at
+  `140075530..140075554` uses reader `140098460` and object size `0x14`, and
+  `ServerEntityVisualInfoUpdate_ReadPayload` reads unit id, 18-bit Creature2
+  id, 17-bit display info, and two trailing flags.
+- Bindcheck/BOP reader evidence maps `ServerLootBindOnPickup` (`0x011C`) to
+  `ServerTwoUInt32_ReadPayload` (`14007a040`) with object size `0x8`.
+  `Loot_PrepareAndDispatchBindcheck` (`14039cee0`) keys the local loot tree
+  from the second uint at `param_2 + 4` before dispatching `LootBindcheck`;
+  the first uint is read but remains unconsumed in this mapped path.
+- The bindcheck follow-up narrowed the confirmation path without proving a new
+  opcode. `Loot_DispatchBindcheckEvent` (`140430e00`) serializes the cached
+  loot row into an `itemDrop` payload and raises only the named
+  `LootBindcheck` event. Direct and packed send-helper traces for adjacent
+  `Client0x011B`/`Client0x011D` found no BOP-confirm send site, while the
+  mapped `0x014F ClientLootItem` request/collect senders remain the only
+  proven client loot-action outputs. Treat BOP confirmation as a live-capture
+  blocker: prove whether accepting the prompt sends another `ClientLootItem`
+  collect request before adding server-side pending-confirmation state.
+- Loot feedback consumer evidence maps `Loot_HandleLootGrant` (`1403db050`)
+  to `ServerLootGrant`: it dispatches `LootTakenBy`, removes the local loot
+  row, and runs grant/destroy follow-up visuals. `Loot_HandleLootNotification`
+  (`1403db1f0`) handles `ServerLootNotification` by ignoring local-looter
+  notifications, resolving the row by `LootUnitId`, and dispatching
+  `ChannelUpdate_Loot` for remote-looter feedback.
+- The full loot-notify consumer is now labeled as `Loot_HandleLootNotify`
+  (`1403daf90`). It calls `Loot_IngestServerLootNotify` (`1405fe2f0`), which
+  copies each 0x48-byte `LootItem` row into the client loot tree via
+  `Loot_FindOrCreateLootItemRow` (`1405ff6a0`). The copied row includes the
+  Lua-facing `bCanLoot` slot at payload `+0x4c`, so the normal
+  `ServerLootNotify`/`ServerLootItemUpdate` row paths already carry `CanLoot`
+  state without the standalone scalar opcode.
+- `ServerLootNotify.ParentUnitId` is now mapped to a client-side loot visual
+  source field rather than an arbitrary spare dword. `Loot_HandleLootNotify`
+  stores packet field `[1]` at owner entity `+0x36a8`; the only non-init reader
+  found at `14045f080` resolves that stored entity id and uses the resolved
+  entity/model radius while preparing loot visual placement. Current
+  NexusForever still mirrors `OwnerUnitId` because `LootInstance` has no
+  distinct parent/source entity for spawned loot visuals.
+- The remaining roll feedback consumers are labeled:
+  `Loot_HandleLootRollSelection` (`1403db510`) dispatches
+  `LootRollSelected`/`LootRollPassed` feedback and removes the local roll row
+  when the actor identity matches the local player, while
+  `Loot_HandleLootWinner` (`1403db610`) dispatches roll rows, all-passed,
+  assigned, or won feedback and removes the roll row through
+  `Loot_RemoveLootItemFromUiTrees` (`1405ff370`).
+- `ServerLootCanLoot` remains blocked as a standalone opcode. The direct
+  opcode scan for `0x089F` only found the packet reader registration, the
+  `0x7d90` loot-service scan found no scalar consumer, and the neighboring
+  loot-service helper cluster did not expose a single-loot-id path that flips
+  the copied `bCanLoot` field. Do not emit this opcode until a scalar consumer
+  or live capture proves its timing and side effects.
+- Bind-on-pickup confirmation policy, exact roll/master eligibility rules,
+  parent source tracking, master-loot UI parity, `ServerLootCanLoot`
+  consumer/timing, and the two compact visual-info flag meanings remain
+  blocked until client consumer or runtime evidence maps those state
+  transitions.
 - Verification: `dotnet test
   Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
   --filter LootRequestHandlerTests -m:1 -v minimal --nologo
@@ -11030,6 +11129,12 @@ Storefront `0x0987..0x0991` client-consumer semantics:
   decoded flag, 5-bit value, string, and float fields. The model is now named
   for the event, but individual field names remain conservative until the
   purchase flow or Lua consumer proves their exact meanings.
+- `Storefront_SendClientPurchaseVirtualCurrencyPackage` (`1404f1d50`) sends
+  opcode `0x082E` with one package-id byte and is registered in
+  `FUN_14006c290` (`1400781c0`). NexusForever now names
+  `ClientStorefrontPurchaseVirtualCurrencyPackage` and grants emulated NCoin/
+  Omnibit packages from a hardcoded catalog before emitting `0x0991` and
+  `0x0990`. Real-money billing remains out of scope.
 
 One-hundred-twenty-fourth storefront error/result semantics pass:
 
@@ -11093,8 +11198,12 @@ One-hundred-twenty-third CREDD info/history response semantics pass:
   for buy/sell counts, price buckets, and owned order rows, but the non-empty
   server packet row writer and exact owned-order field semantics are not yet
   complete. NexusForever therefore names `0x026A` as
-  `ServerCREDDExchangeInfoResults` while keeping its payload as the mapped
-  zeroed `0x50` compatibility snapshot.
+  `ServerCREDDExchangeInfoResults` and writes the mapped fixed `0x50` header:
+  buy/sell counts, three buy and three sell `uint64` price buckets, owned-order
+  count, trailing reserved fields. Owned-order row pointer data when count is
+  non-zero remains blocked.
+- `DailyLogin_SendClientClaimReward` (`1400070f0`) sends opcode `0x078F` with
+  a zero-byte payload when claim preconditions pass.
 - Runtime implementation:
   `ClientCREDDExchangeRequestInfo` now queues an empty
   `ServerCREDDExchangeInfoResults` snapshot before the successful
@@ -11894,9 +12003,13 @@ Protocol semantics pass (2026-05-22, PROTOCOL SEMANTICS workstream):
   Client consumer semantics for `098C/098D` remain mapped to
   `StorePurchaseOfferResult`; opcode-variant distinction and success emit sites
   stay blocked. `0986` and `098F` stay diagnostic-only.
-- Housing privacy cluster: `FUN_14008de20` maps `0x00CA` to
-  `ServerHousingResidenceKeyedUpdate` (64-bit key + two uint32 fields). Consumer
-  intent and server emit sites remain blocked. `0x00CB..0x00D1` unchanged.
+- Housing privacy/instance cluster: `FUN_14008de20` maps `0x00CA` to
+  `ServerHousingResidenceKeyedUpdate` (64-bit key + one uint32 field). The
+  `FUN_14006c290` registration pass maps `0x00CB`, `0x00D1`, and `0x010D` to
+  the shared empty reader, `0x00CC` and `0x00CD` to a 15-bit scalar reader,
+  `0x00CE` to the shared wide-string reader, and `0x0110` to a housing-basics
+  follow-up of uint32, 18-bit field, uint32, and 8-bit field. Consumer intent
+  and safe server emit sites remain blocked.
 - Spell auxiliary cluster: `FUN_140095da0` maps `0x080F` and `0x0810` to counted
   uint32-triplet lists (`ServerSpellUInt32TripletList` /
   `ServerSpellUInt32TripletListVariant`). `FUN_14007fef0` maps `0x0812` to
@@ -11955,6 +12068,52 @@ Housing community donate remap (`0x04FE`):
   `Decomp/Analysis/logs/runs/housing_04fe_dispatch/WildStar64.NexusForeverClient64_WildStar64.FindImmediateInstructions.ghidra.log`
   and
   `Decomp/Analysis/logs/runs/housing_04fe_reader/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`.
+
+Housing community donate client sender follow-up (`0x04F5`):
+
+- `0x04F5` registers in `FUN_14006c290` with write/read helper pair
+  `LAB_14009d9d0` and `FUN_14009da00`. `FUN_14009da00` serialises a uint32
+  count followed by that many full `DecorInfo` rows, matching
+  `ClientHousingCommunityDonate`.
+- The sender at `Housing_SendClientCommunityDonate`
+  (`WildStar64.exe:1404b9ca0`) builds a single-row donation packet from the
+  selected decor id, resolves the row's `HousingDecorInfo`, and refuses to send
+  when `HousingDecorInfo.Flags & 0x8` is set. `HousingDecorInfoEntry` confirms
+  `Flags` at table offset `0x10`.
+- NexusForever now mirrors the verified no-donate guard server-side: donation
+  rows are validated before any residence mutation, and a no-donate row returns
+  `HousingResult.Decor_CannotDonate` without copying or deleting decor.
+- Evidence logs:
+  `Decomp/Analysis/logs/runs/inspect_housing_donate_reader/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/inspect_housing_donate_writer_stub/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  and
+  `Decomp/Analysis/logs/runs/inspect_housing_donate_sender/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`.
+- Still blocked: exact community resource/contribution cost semantics, item
+  refund behavior, and ownership/inventory transfer rules are not proven by this
+  sender path and remain mapped-only blockers under F-004.
+
+Housing decor update payload follow-up (`0x050B`):
+
+- `FindImmediateInstructions` for `0x050B` found the dispatch registration at
+  `FUN_14006c290` and multiple decor senders near `1404b8280..1404b97b0`.
+  The registered writer `ClientHousingDecorUpdate_WritePayload`
+  (`WildStar64.exe:14009d760`) serialises a 3-bit operation, a uint32 row count,
+  that many full `DecorInfo` rows, and then one trailing bit for each row.
+- NexusForever previously consumed only one trailing bit regardless of row
+  count. `ClientHousingDecorUpdate` now preserves the native per-row trailing
+  flags diagnostically as `TrailingFlags`, with packet coverage for multi-row
+  payloads.
+- `Housing_BuildDecorUpdateRow` (`WildStar64.exe:1404b89a0`) confirms that the
+  row data is filled from cached residence decor state and selected target
+  residence identity before the `0x050B` senders submit create/move/delete
+  operations. The trailing flag semantics remain unresolved, so runtime
+  behavior does not branch on them yet.
+- Evidence logs:
+  `Decomp/Analysis/logs/runs/inspect_housing_decor_update_immediate/WildStar64.FindImmediateInstructions.ghidra.log`,
+  `Decomp/Analysis/logs/runs/inspect_housing_decor_update_reader/WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/inspect_housing_decor_update_sender_move/WildStar64.InspectCodeAddress.ghidra.log`,
+  and
+  `Decomp/Analysis/logs/runs/inspect_housing_decor_update_row_builder/WildStar64.InspectCodeAddress.ghidra.log`.
 
 Housing neighbor opcode-cluster follow-up (`0x0514`, `0x0516`, `0x0519`,
 `0x051F`):
@@ -12128,8 +12287,8 @@ Housing interior wallpaper implementation follow-up (`0x050D`):
   (`WildStar64.exe:1406acc30`). The writer emits six uint32 existing-decor
   flags, then six shared `DecorInfo` records. The purchase binding reads six
   `HousingWallpaperInfo` handles and checks slot flags
-  `0x01/0x04/0x08/0x10/0x20/0x80`; the remove binding restores one slot to the
-  slot default wallpaper id. The sender fills only changed slots, uses
+  `0x01/0x04/0x08/0x10/0x20/0x80`; the remove binding restores one slot with
+  default `HousingWallpaperInfo` id `5`. The sender fills only changed slots, uses
   `DecorType` value `3`, writes hook indices `1..6`, and carries the selected
   `HousingWallpaperInfo.Id` in `DecorInfoId`.
 - NexusForever now names `DecorType.InteriorWallpaper = 3`, reads the six
@@ -12161,6 +12320,191 @@ Housing interior wallpaper implementation follow-up (`0x050D`):
   The broader focused F-004 gate with community update, rename, visit,
   neighbor, residence, packet-shape, and placeholder tests passed `68/68`.
 
+Housing plug contribution payload follow-up:
+
+- Native evidence:
+  `ClientHousingPlugUpdate_WritePayload` (`WildStar64.exe:14009d560`) calls the
+  contribution writer five times with `0x14`-byte records after the mapped
+  identity, plot, plug, facing, reserved, and operation fields. The selected
+  cached fragments for `Housing_SendClientPlugPlaceOrRotate`
+  (`WildStar64.exe:1404b73e0`) and `Housing_SendClientPlugRepair`
+  (`WildStar64.exe:1404b7620`) zero each record and write
+  `HousingContributionInfo` offset `+8` into the first uint32 slot; the
+  remaining four uint32 slots stay zero in the observed client senders.
+- NexusForever now parses the five records as first-class
+  `ClientHousingPlugUpdate.ContributionRecord` rows:
+  `ContributionPointRequirement` plus four reserved uint32 fields. The runtime
+  still treats any non-zero contribution record as unsupported and returns the
+  existing conservative `Plug_CannotAfford` boundary for plug placement; repair
+  remains `Plug_ModifyFailed` until plug damage/upkeep/resource semantics are
+  mapped.
+- Still blocked:
+  contribution point spending, item-tier/resource contribution matching,
+  build timers, and upkeep/repair state remain non-mutating. The parsed
+  reserved contribution fields should stay diagnostic-only until a client
+  consumer or retail capture proves their meaning.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-housing-plug-contribution-broad\
+  --filter "FullyQualifiedName~HousingPacketShapeTests|FullyQualifiedName~ClientHousingCommunityUpdateHandlerTests|FullyQualifiedName~ClientHousingCommunityRenameHandlerTests|FullyQualifiedName~ClientHousingNeighborHandlerTests|FullyQualifiedName~ClientHousingVisitResidenceHandlerTests|FullyQualifiedName~ResidenceTests|FullyQualifiedName~PacketPlaceholderNamingTests"`
+  passed `70/70`.
+
+Housing early output, basics follow-up, and vendor-list remap:
+
+- `TraceFunctionCallers.java` for `ServerHousingResidenceKeyedUpdate_ReadPayload`
+  and `InspectCodeAddress.java` on `FUN_14006c290` confirmed the registration
+  rows for the remaining F-004 early-output cluster. The registration sizes are
+  client packet-object sizes, not guaranteed wire byte counts.
+- `ServerHousingResidenceKeyedUpdate_ReadPayload` (`WildStar64.exe:14008de20`)
+  reads only a uint64 field and one uint32 field. NexusForever now writes only
+  those two wire fields; the previously modeled trailing uint32 was object
+  padding/reserved space in the client registration.
+- `0x00CB`, `0x00D1`, and `0x010D` register the shared
+  `ServerEmpty_ReadPayload` and now emit no payload bits. `0x00CC` and
+  `0x00CD` register the 15-bit scalar stub at `14007c3a0`; `0x00CE` uses the
+  shared `NetworkBitReader_ReadWideString`. NexusForever models those shapes as
+  empty payloads, 15-bit scalar payloads, and a wide-string payload while
+  keeping their meanings provisional.
+- `ServerHousingBasics_ReadPayload` (`WildStar64.exe:14008e610`) confirms the
+  existing `0x010E` model as two uint64 fields plus one uint32 privacy/status
+  flags field. `ServerHousingBasicsFollowup_ReadPayload`
+  (`WildStar64.exe:14008de70`) maps `0x0110` as uint32, 18-bit scalar, uint32,
+  and 8-bit scalar; NexusForever now exposes those fields diagnostically in
+  `Server0x0110`.
+- `ServerHousingVendorList_ReadPayload` (`WildStar64.exe:14009e7f0`) reads a
+  uint32 count, count `0x18`-byte vendor rows, and a 2-bit list type. The row
+  reader (`WildStar64.exe:14008bf00`) is uint64 source id plus three uint32
+  fields: plug item id, cost, and plug item flags. This confirms the existing
+  `ServerHousingVendorList` row shape and adds focused packet coverage; exact
+  list variants and ownership/entitlement pricing behavior remain blocked.
+- Evidence logs:
+  `Decomp/Analysis/logs/WildStar64.NexusForeverClient64_WildStar64.TraceFunctionCallers.ghidra.log`,
+  `Decomp/Analysis/logs/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/inspect_14007c3a0/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/inspect_140080d20/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/inspect_14008de70/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/inspect_14008e610/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/inspect_14009e7f0/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  and
+  `Decomp/Analysis/logs/runs/inspect_14008bf00/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`.
+- Verification:
+  `dotnet build Source\NexusForever.Network\NexusForever.Network.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\network-f004-wire-shapes-seq\`
+  and
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\network-world-f004-wire-shapes\`
+  passed. Focused packet test execution is still blocked by unrelated dirty
+  `AccountTerminalHandlerTests` compile errors around
+  `RecordingDispatchProxy<IWorldSession>`/`RecordingDispatchProxy<IGameSession>`
+  and missing `VerifyInvocation`.
+
+Housing F-004 closure sweep:
+
+- Implemented from existing mapped surfaces:
+  pending neighbor invite responses now distinguish an expired invite from a
+  missing invite. `ResidenceManager.TryTakePendingNeighborInvite` consumes the
+  pending invite and reports whether it had crossed `ExpiresAt`; the response
+  handler now emits `HousingResult.Neighbor_RequestTimedOut` for the expired
+  lifecycle instead of collapsing it into `Neighbor_NoPendingInvite`.
+- `ClientHousingReturnHandler` now uses `GetOrCreateResidence()` before
+  teleporting home from another residence map. This matches the existing
+  visit/return fallback that creates the player's residence when needed and
+  avoids a null residence edge while preserving the invalid-packet guard for
+  non-residence maps and already-home maps.
+- Decor and interior wallpaper purchases now conservatively reject unsupported
+  prerequisite/unlock rows with `Decor_PrereqNotMet`. `HousingDecorInfo`
+  `PrerequisiteIdUnlock` and `HousingWallpaperInfo` `PrerequisiteIdUnlock`,
+  `PrerequisiteIdUse`, and `AccountItemIdUpsell` are treated as blocked
+  runtime prerequisites until NexusForever has a verified unlock/entitlement
+  store for housing visuals.
+- Still blocked:
+  exact roommate/neighbor invite duration and UI timeout broadcast timing;
+  eviction notifications to online removed neighbors; roommate permission
+  semantics beyond the mapped 0..2 row value; community donation resource,
+  contribution-point, item-tier, and refund behavior; full decor/plug ownership
+  inventory and entitlement checks; housing vendor list variants beyond mapped
+  plug rows; retail visit session/return state and privacy edge cases beyond
+  current public/private/neighbors/roommate checks; interior wallpaper refund
+  and inventory collection; `Server0x00CB..00D1`, `0x010D`, and `0x0110`
+  consumer intent beyond their now-mapped wire shapes; and the remaining
+  provisional neighborhood/community field names. These remain evidence-blocked
+  rather than safe to mutate.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\network-world-f004-closure\`
+  passed. `dotnet build` also passed for `NexusForever.Game.Abstract.csproj`
+  and `NexusForever.Game.Tests.csproj` with `--no-dependencies`, covering the
+  touched interface and test source. The broader focused housing test command
+  was attempted but did not compile because unrelated dirty account/storefront
+  work currently references missing or mismatched
+  `AccountPendingItem`/storefront symbols in `Source\NexusForever.Game`,
+  `Source\NexusForever.Database.Auth`, and `Source\NexusForever.WorldServer`.
+
+Housing F-004 blocked-evidence tightening and wallpaper restore follow-up:
+
+- `InspectCodeAddress.java` confirms `Housing_SendClientInteriorWallpaperUpdate`
+  (`WildStar64.exe:1404b79d0`) suppresses no-op slots: it sends `0x050D` only
+  when at least one requested `HousingWallpaperInfo.Id` differs from the current
+  client state. `Lua_GameResidence_RemoveInteriorWallpaper`
+  (`WildStar64.exe:1406acc30`) calls `Housing_SendClientInteriorWallpaperRemove`
+  (`WildStar64.exe:1404b7bc0`) for slot indices `1..6`; that sender fills one
+  changed `DecorInfo` row with `DecorType=3`, the slot hook index, existing
+  decor flag `1`, and default `HousingWallpaperInfo` id `5` as `DecorInfoId`.
+- NexusForever now treats default interior wallpaper id `5` as valid for every
+  interior slot and skips currency debit for that default restore path. Focused
+  test coverage asserts that a restore request for slot six with a costly table
+  row id `5` updates the decor id without calling `CanAfford` or
+  `CurrencySubtractAmount`.
+- `Housing_HandleNeighborInvitePrompt` (`WildStar64.exe:1404bba70`) only
+  dispatches `HousingNeighborInviteRecieved` and caches inviter identity/name
+  for the response flow; the accept/decline callbacks (`1404ba070`/`1404ba0a0`)
+  send only the mapped `0x0513` boolean. No client-side timeout duration,
+  eviction notification fanout, or permission-state mutation timing surfaced in
+  this pass.
+- `Housing_SendClientPlugPlaceOrRotate`/`Housing_SendClientPlugRepair` still
+  only expose `HousingContributionInfo.ContributionPointRequirement` in the
+  five 20-byte contribution records. The item-tier/resource ids and authoritative
+  spending/refund mutation remain blocked on server/sniff/backing-store evidence.
+- Evidence logs:
+  `Decomp/Analysis/logs/runs/inspect_housing_wallpaper_purchase_lua/WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/inspect_housing_wallpaper_send_remove/WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/inspect_housing_wallpaper_remove_send/WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/inspect_housing_wallpaper_remove_lua/WildStar64.InspectCodeAddress.ghidra.log`,
+  and
+  `Decomp/Analysis/logs/runs/inspect_housing_decor_info_writer/WildStar64.InspectCodeAddress.ghidra.log`.
+- Verification:
+  `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj
+  --no-restore --no-dependencies -v minimal --nologo
+  -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-f004-wallpaper-default\`
+  passed with `0` warnings and `0` errors, and
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\network-world-f004-wallpaper-default\`
+  passed with `0` warnings and `0` errors. The focused wallpaper test passed
+  `1/1` using
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:DefaultItemExcludes=Account\Reward\RewardRotationEntryStateBuilderTests.cs
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-f004-wallpaper-default-filtered\
+  --filter "FullyQualifiedName~ResidenceMapInstanceInteriorWallpaperTests"`;
+  this targeted exclude emitted CS2002 duplicate-source warnings but completed
+  successfully.
+  The unfiltered test project compile is currently blocked by unrelated dirty
+  `RewardRotationEntryStateBuilderTests.cs` references to a missing
+  `RewardRotationEntryStateBuilder`.
+- Still blocked:
+  exact invite timeout duration/broadcast policy, eviction/permission update
+  fanout to online neighbors, community donation contribution/resource spending,
+  decor/plug entitlement inventory, vendor ownership/list variants, retail visit
+  session and return-state persistence, non-default wallpaper refunds/inventory
+  collection, unresolved housing output consumer intent, and remaining
+  provisional neighborhood/community field names.
+
 Marketplace duration and mail template follow-up (F-005):
 
 - **Mapped**: `Marketplace_SendClientAuctionSellOrderSubmit` @ `140519a00` sends only
@@ -12171,7 +12515,7 @@ Marketplace duration and mail template follow-up (F-005):
   `DAT_140c8b000..018` for UI tier selection; this does not reach the sell-order
   packet writer.
 - **Mapped**: Item-auction expiry is server-side `GameFormula` `821`
-  (`Dataint0` hours → seconds, retail default 48h). Commodity orders carry
+  (`Dataint0` hours ? seconds, retail default 48h). Commodity orders carry
   `ListTime`/`ExpirationTime` `FILETIME` on `ClientCommoditySellOrderSubmit` and are
   normalized/validated against `1056` tiers.
 - **Verified (retail parity)**: Auction-house item listings were fixed at 48 hours;
@@ -12184,3 +12528,26 @@ Marketplace duration and mail template follow-up (F-005):
   item listing durations are not on the mapped `0x06DC` path; `1056` UI bind
   (`1406a1e80`) does not change the sell-order wire format.
 - Verification: `dotnet test ... --filter FullyQualifiedName~Marketplace` passed `9/9`.
+
+F-003 LAS auxiliary server-output cluster follow-up (mapped wire shapes):
+
+- Ghidra `FUN_14006c290` registration plus `InspectCodeAddress` on the reader bodies
+  mapped six LAS-adjacent unresolved opcodes to typed `IWritable` models in
+  `Source/NexusForever.Network.World/Message/Model/Abilities/ServerLasAuxPackets.cs`:
+  `ServerLasOpeningUInt18` (`0x00B0`, `ServerUInt18_ReadPayload` @ `140080d30`),
+  `ServerActionSetDualUInt32Lists` (`0x016B`, `FUN_14008dc30`: 4-bit + 32-bit +
+  4-bit count + paired uint32 lists),
+  `ServerActionSetUInt16` (`0x016D`, `LAB_14008ed80`: 16-bit scalar),
+  `ServerActionSetUInt32` (`0x016E`, `ServerUInt32_ReadPayload`),
+  `ServerActionSetUInt16List` (`0x019C`, `FUN_14008e1f0`: 7-bit count + ushort rows),
+  and `ServerActionSetFiveUInt32` (`0x01A4`, `FUN_1400819b0`: five uint32 fields;
+  same reader registered for `0x01AC`).
+- Removed the old `Server0xNNNN` raw/placeholder classes from
+  `ServerUnresolvedOutputPackets.cs` and renamed the enum entries in
+  `GameMessageOpcode.cs`. Field semantics and emit sites remain blocked; this pass
+  is wire-shape only.
+- Verification:
+  `dotnet build Source/NexusForever.Network.World/NexusForever.Network.World.csproj`
+  succeeded with `0` errors.
+  `dotnet test Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj
+  --filter "FullyQualifiedName~ActionSetUnresolvedPacketShapeTests"` passed `6/6`.

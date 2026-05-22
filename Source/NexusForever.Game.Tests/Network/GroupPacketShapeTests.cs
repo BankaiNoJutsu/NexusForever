@@ -1,4 +1,5 @@
 using NexusForever.Game.Static.Group;
+using NexusForever.Game.Static.Setting;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -11,7 +12,6 @@ public class GroupPacketShapeTests
     {
         return new TheoryData<IWritable, int>
         {
-            { new ServerGroupInstanceDifficultyResponse(), 0x18 },
             { new ServerGroupKickResult(), 0x0C },
             { new ServerGroupLootRuleValidationResult(), 0x18 },
             { new ServerGroupRosterUpdate(), 0x60 },
@@ -31,6 +31,28 @@ public class GroupPacketShapeTests
         byte[] packetData = WritePacket(packet);
 
         Assert.Equal(expectedLength, packetData.Length);
+    }
+
+    [Fact]
+    public void ServerGroupInstanceDifficultyResponse_WritesMappedFields()
+    {
+        var packet = new ServerGroupInstanceDifficultyResponse
+        {
+            GroupId       = 0x1122334455667788ul,
+            CharacterGuid = 0xAABBCCDDu,
+            Difficulty    = WorldDifficulty.Veteran,
+            Unknown0      = 0x01020304u
+        };
+
+        byte[] packetData = WritePacket(packet.Write);
+
+        Assert.Equal(0x18, packetData.Length);
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(0x1122334455667788ul, reader.ReadULong());
+        Assert.Equal(0xAABBCCDDu, reader.ReadUInt());
+        Assert.Equal((uint)WorldDifficulty.Veteran, reader.ReadUInt());
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
     }
 
     [Fact]

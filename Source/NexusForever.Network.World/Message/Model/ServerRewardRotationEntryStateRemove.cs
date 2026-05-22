@@ -17,6 +17,7 @@ namespace NexusForever.Network.World.Message.Model
         public void Write(GamePacketWriter writer)
         {
             RewardRotationWireValidation.ValidateEntryStateTypeId(TypeId, nameof(ServerRewardRotationEntryStateRemove));
+            RewardRotationWireValidation.ValidateEntryStateRewardTypeLane(State, nameof(ServerRewardRotationEntryStateRemove));
             writer.Write(TypeId, 3u);
             writer.Write(ContentId);
             writer.Write(RewardTypeId);

@@ -41,6 +41,8 @@ WildStar64.exe,140088e60,Marketplace_AuctionSellOrderSubmit_WritePayload,Seriali
 WildStar64.exe,1400946c0,SpellDamageDescription_ReadPayload,Parses spell damage details used by ServerSpellGo target effect info and ServerSpellEffectDamage: seven 32-bit damage fields, killed bit, 4-bit combat result, 3-bit damage type, and trailing structure list.
 WildStar64.exe,1400953f0,ServerSpellGo_ReadPayload,Parses server opcode 0x07F4 as server unique id, ignore-cooldown bit, primary destination, TargetInfo list, initial positions, telegraph positions, missile list, and phase.
 WildStar64.exe,140095910,ServerSpellEffectDamage_ReadPayload,Parses server opcode 0x07F6 as server unique id, 19-bit Spell4Effect id, unit id, target id, and SpellDamageDescription.
+WildStar64.exe,1400982d0,ServerEntityVisualUpdate_ReadPayload,Parses server opcode 0x0905 as unit id, race, sex, Creature2 id, display info, outfit, item color set, a trailing flag, and item-visual rows.
+WildStar64.exe,140098460,ServerEntityVisualInfoUpdate_ReadPayload,Parses server opcode 0x08A8 as unit id, 18-bit Creature2 id, 17-bit display info, and two trailing flags.
 WildStar64.exe,140089490,ClientFlightPathPurchase_WritePayload,Serialises world opcode 0x00FF payload as a 32-bit route-count followed by that many 32-bit TaxiRoute ids.
 WildStar64.exe,140089570,ClientSpellCastWithServiceToken_WritePayload,Serialises world opcode 0x00C2 payload as an 18-bit generated cast-context token plus a 32-bit Spell4 id.
 WildStar64.exe,14008b2f0,ClientQuestComplete_WritePayload,Serialises world opcode 0x035D ClientQuestComplete as a 15-bit quest id, 15-bit reward-selection value, and 1-bit communicator flag.
@@ -61,6 +63,9 @@ WildStar64.exe,1400a1e20,ServerRewardRotationScheduleArray_ReadPayload,Reads ser
 WildStar64.exe,1400a1ee0,RewardRotation_EntryStateRow_ReadPayload,Reads one 0x14-byte reward-rotation entry-state row as a 3-bit leading field, two 32-bit ids, an 8-bit state flag, and a trailing 32-bit value.
 WildStar64.exe,1400a2040,RewardRotation_EntryStateDelta_ReadPayload,Null-guard thunk registered as the reader for server delta opcodes 0x07C7/0x07C9/0x07CB; validates param_3 non-null then tail-calls RewardRotation_EntryStateRow_ReadPayload.
 WildStar64.exe,1400a1f80,ServerRewardRotationEntryStateArray_ReadPayload,Reads server opcode 0x07C8 as a 32-bit count plus pointer-backed 0x14-byte reward-rotation entry-state rows via RewardRotation_EntryStateRow_ReadPayload.
+WildStar64.exe,14008fcb0,ServerRewardRotationContentContext_ReadPayload,Reads server opcode 0x07CD as a 14-bit reward-rotation index four 32-bit fields a counted 32-bit content-id array and a trailing 1-bit flag inside the registered 0x28-byte payload.
+WildStar64.exe,14008fdc0,ServerRewardRotationContentContextArray_ReadPayload,Reads server opcode 0x07D3 as a 32-bit count plus pointer-backed 0x28-byte rows via ServerRewardRotationContentContext_ReadPayload.
+WildStar64.exe,1400a4920,ServerLootItemUpdate_ReadPayload,Parses server opcode 0x08A0 as one LootItem payload: loot id, type, item id, amount, CanLoot, RequiresRoll, OnlyMasterLootable, Explosion, Granted, roll time, random circuit/glyph data, item quality, and master-loot identity rows.
 WildStar64.exe,1400a53c0,ClientCraftingRuneSlotAdd_WritePayload,Serialises world opcode 0x0859 payload as a 64-bit item guid, 1-bit non-fusion flag, and 5-bit RuneType.
 WildStar64.exe,1400a5550,ClientCraftingRuneSlotClear_WritePayload,Serialises world opcode 0x085A payload as a 64-bit item guid, 32-bit rune slot index, 1-bit recover flag, and 1-bit use-group-currency flag.
 WildStar64.exe,1400a5780,ClientCraftingRuneSlotReroll_WritePayload,Serialises world opcode 0x085C payload as a 64-bit item guid, 32-bit rune slot index, and 5-bit RuneType.
@@ -75,6 +80,16 @@ WildStar64.exe,1400a7540,NetworkBitWriter_WriteBits64,Writes up to 64 bits into 
 WildStar64.exe,1400ea3e0,ClientEvent_DispatchNamedEvent,Generic named client event dispatcher used for UnitEvaded UnitEnteredCombat TargetUnitChanged GenericFloater and many UI or gameplay event names through the scene event sink.
 WildStar64.exe,140427d40,Loot_DispatchLootTakenByEvent,Builds the LootTakenBy named event payload with nLootId itemLoot and unitLooter before dispatching it through the scene event sink.
 WildStar64.exe,140427fa0,Loot_DispatchChannelUpdateLootEvent,Builds the ChannelUpdate_Loot named event payload for item currency and destroyed-item loot updates before dispatching it through the scene event sink.
+WildStar64.exe,1403daf90,Loot_HandleLootNotify,Handles ServerLootNotify by ingesting the full loot row array into the local loot service, storing the parent/source unit on the resolved owner entity, and updating entity loot visuals.
+WildStar64.exe,1403db050,Loot_HandleLootGrant,Handles ServerLootGrant by dispatching LootTakenBy for the granted loot id and looter, removing the local loot row, and applying grant/destroy follow-up visuals.
+WildStar64.exe,1403db1f0,Loot_HandleLootNotification,Handles ServerLootNotification by ignoring local-looter notifications, resolving the loot row by LootUnitId, and dispatching ChannelUpdate_Loot for remote looter feedback.
+WildStar64.exe,1403db510,Loot_HandleLootRollSelection,Handles ServerLootRoll by dispatching LootRollSelected or LootRollPassed feedback and removing the local roll row when the roll identity matches the local player.
+WildStar64.exe,1403db610,Loot_HandleLootWinner,Handles ServerLootWinner by dispatching LootRoll rows, LootRollAllPassed, LootAssigned, or LootRollWon feedback, removing the local roll row, and refreshing entity loot visuals.
+WildStar64.exe,1405fe2f0,Loot_IngestServerLootNotify,Ingests ServerLootNotify by copying each 0x48-byte LootItem row into the local loot row tree, including CanLoot at the Lua-facing payload slot, and refreshing roll or master-loot UI trees.
+WildStar64.exe,1405fefc0,Loot_RemoveGrantedLootItem,Removes a granted loot item from the local loot row tree and its owner grouping after ServerLootGrant is consumed.
+WildStar64.exe,1405ff370,Loot_RemoveLootItemFromUiTrees,Removes a loot id from roll and master-loot UI trees and schedules the corresponding UI refresh timers.
+WildStar64.exe,1405ff500,Loot_ApplySingleLootItemRow,Applies a single loot row payload into the local loot row tree using the same resolved item-drop fields as full loot notify ingestion.
+WildStar64.exe,1405ff6a0,Loot_FindOrCreateLootItemRow,Finds or allocates the local loot row payload keyed by loot id under the loot service item tree.
 WildStar64.exe,140428500,Loot_DispatchLootRollSelectedEvent,Builds the LootRollSelected named event payload with nLootId bNeed and itemLoot before dispatching it through the scene event sink.
 WildStar64.exe,140428840,Loot_DispatchLootRollPassedEvent,Builds the LootRollPassed named event payload with nLootId and itemLoot before dispatching it through the scene event sink.
 WildStar64.exe,140428ac0,Loot_DispatchLootRollEvent,Builds the LootRoll named event payload with nLootId roll state and itemLoot before dispatching it through the scene event sink.
@@ -328,6 +343,7 @@ WildStar64.exe,14065e6c0,Lua_GameLib_PurchaseFlightPath,GameLib.PurchaseFlightPa
 WildStar64.exe,1406625d0,Lua_RegisterQuestConstants,Registers Game.Quest Lua constants including Quest2RewardType ids: Item=1 Reputation=2 Money=3 TradeSkillXp=4 GrantTradeskill=5 AccountItem=6 AccountCurrency=7 GenericUnlockAccount=8 GenericUnlockCharacter=9 RotationEssence=10.
 WildStar64.exe,140665c80,Lua_GameQuest_BuildRewardTables,Builds Game.Quest reward Lua tables and queues Quest2Reward RotationEssence rows for active reward-rotation expansion.
 WildStar64.exe,140667790,QuestReward_ExpandRotationEssence,Expands Quest2Reward type 10 RotationEssence rows into AccountCurrency reward rows using active reward-rotation essence ids and multiplier.
+WildStar64.exe,140635840,RewardRotation_ManagerInit,Initializes the reward-rotation manager throttle slots at manager+0x150+index*0x14 with 1000 ms intervals and DAT_140c636a8-based last-request ticks.
 WildStar64.exe,140635b60,RewardRotation_BuildContentContextIndex,Builds the reward-rotation content lookup from WorldZone World MatchTypeRewardRotationContent and PublicEvent rows into the local manager index.
 WildStar64.exe,140636840,RewardRotation_LoadEntryStateArray,Loads a 0x14-byte reward-rotation entry-state array into the local sorted buffer and replays each entry through the content-refresh helper.
 WildStar64.exe,1406368d0,RewardRotation_UpsertEntryState,Upserts one reward-rotation entry-state row into the local sorted buffer then refreshes the affected content bucket. Inference: consumer for server opcode 0x07C7 (lowest of three entry-state delta opcodes; dispatch is runtime-only).
@@ -339,6 +355,7 @@ WildStar64.exe,140639c80,RewardRotation_BuildLuaEssenceReward,Serializes one loa
 WildStar64.exe,140639e60,RewardRotation_BuildLuaModifierReward,Serializes one loaded reward-rotation modifier/property row into the Game.MatchMakingEntry.GetRotationRewards Lua payload.
 WildStar64.exe,14063a0e0,RewardRotation_ApplyEntryStateToLoadedContent,Marks matching loaded item essence or modifier rows as granted when an entry-state row applies to the current content bucket.
 WildStar64.exe,14063a270,RewardRotation_ClearEntryStateFromLoadedContent,Clears the granted bit on matching loaded item essence or modifier rows when an entry-state row is removed from the current content bucket.
+WildStar64.exe,14063a3e0,RewardRotation_InsertContentContextNode,Inserts one reward-rotation content id into the manager hash at offset 0x118 used by RewardRotation_BuildContentContextIndex.
 WildStar64.exe,14063a490,RewardRotation_ClearContentContextIndex,Releases the per-content lookup/index buckets and their loaded item essence and modifier schedule vectors.
 WildStar64.exe,14063a590,RewardRotation_AppendScheduleEntry,Appends one 0x18 reward schedule row to an item essence or modifier vector and returns the inserted index.
 WildStar64.exe,14063a640,RewardRotation_RemoveScheduleEntry,Removes one 0x18 reward schedule row from an item essence or modifier vector by index.
@@ -664,7 +681,7 @@ WildStar64.exe,140085170,NetworkBitWriter_WriteIdentity,Serialises an Identity p
 WildStar64.exe,14007a610,Storefront_RequestCatalog_WritePayload,Serialises opcode 0x082D ClientStorefrontRequestCatalog as one 14-bit catalog context field.
 WildStar64.exe,1400acf80,Storefront_PurchaseCharacter_WritePayload,Serialises the shared store purchase payload for opcode 0x082A: offer id, 5-bit selector, two 32-bit fields around a 14-bit currency id, target identity, and a trailing 32-bit field.
 WildStar64.exe,140080a20,Storefront_PurchaseAccount_WritePayload,Serialises opcode 0x0828 ClientStorefrontPurchaseAccount as the shared store purchase payload plus one 32-bit field, an identity, and a wide string.
-WildStar64.exe,140080d30,ServerUInt18_ReadPayload,Shared 4-byte server reader registered for opcodes including 0x0129 ServerUnlockMount 0x01AE ServerUnlockVanityPet and 0x0815; body reads one 18-bit field with no trailing flag.
+WildStar64.exe,140080d30,ServerUInt18_ReadPayload,Shared 4-byte server reader registered for 0x00B0 ServerLasOpeningUInt18 0x0129 ServerUnlockMount 0x01AE ServerUnlockVanityPet and 0x0815; body reads one 18-bit field with no trailing flag.
 WildStar64.exe,1400852f0,NetworkBitReader_ReadIdentity,Reads an Identity payload as a 14-bit realm id followed by a 64-bit identity id.
 WildStar64.exe,1400a9c20,AccountInventoryItem_ReadPayload,Reads one account inventory item: 64-bit inventory id, 32-bit AccountItem id, 5-bit claim state, one flag bit, and target identity.
 WildStar64.exe,140080630,ServerAccountItems_ReadPayload,Reads opcode 0x096D as a 32-bit count followed by account inventory item records of size 0x28.
@@ -782,13 +799,13 @@ WildStar64.exe,140712490,Lua_CREDDExchangeLib_GetCREDDHistory,CREDDExchangeLib.G
 WildStar64.exe,1405194b0,CREDDExchange_SendClientOrderSubmit,Sends the CREDD exchange submit request through opcode 0x0265 or 0x026B depending on the buy/sell branch selected by UI state.
 WildStar64.exe,140519840,CREDDExchangeSubmit_ReadDirectionAndMoney,Reads the CREDD exchange submit direction and Game.Money amount and applies the buy-side credit/tax validation used before order submit.
 WildStar64.exe,1404b79d0,Housing_SendClientInteriorWallpaperUpdate,Builds changed six-slot residence wallpaper records with HousingWallpaperInfo ids and sends opcode 0x050D.
-WildStar64.exe,1404b7bc0,Housing_SendClientInteriorWallpaperRemove,Builds a one-slot opcode 0x050D interior wallpaper update using the slot default wallpaper id.
+WildStar64.exe,1404b7bc0,Housing_SendClientInteriorWallpaperRemove,Builds a one-slot opcode 0x050D interior wallpaper restore using default HousingWallpaperInfo id 5.
 WildStar64.exe,1404b73e0,Housing_SendClientPlugPlaceOrRotate,Builds opcode 0x0510 for plug placement or rotation with plot info id plug item id facing operation and contribution data.
 WildStar64.exe,1404b7540,Housing_SendClientPlugRemove,Builds opcode 0x0510 for plug removal with operation 2.
 WildStar64.exe,1404b7620,Housing_SendClientPlugRepair,Builds opcode 0x0510 for plug repair with operation 4 and HousingContributionInfo-derived costs.
 WildStar64.exe,1404bc060,Housing_ResolvePlotInfoForSelectedResidence,Resolves a HousingPlotInfo id for the selected residence property and plot index.
 WildStar64.exe,1406aca10,Lua_GameResidence_PurchaseInteriorWallpaper,Game.Residence.PurchaseInteriorWallpaper Lua method that validates six HousingWallpaperInfo selections against slot flags and routes changes through opcode 0x050D.
-WildStar64.exe,1406acc30,Lua_GameResidence_RemoveInteriorWallpaper,Game.Residence.RemoveInteriorWallpaper Lua method that restores one interior wallpaper slot by sending opcode 0x050D with the slot default wallpaper id.
+WildStar64.exe,1406acc30,Lua_GameResidence_RemoveInteriorWallpaper,Game.Residence.RemoveInteriorWallpaper Lua method that restores one interior wallpaper slot by sending opcode 0x050D with default HousingWallpaperInfo id 5.
 WildStar64.exe,1406a54f0,Lua_GameHousingPlot_RemovePlug,Game.HousingPlot RemovePlug Lua method that sends opcode 0x0510 with the target plot info id and remove operation.
 WildStar64.exe,1406a5520,Lua_GameHousingPlot_PlacePlug,Game.HousingPlot PlacePlug Lua method that sends opcode 0x0510 with requested plug item id default facing and place operation.
 WildStar64.exe,1406a5630,Lua_GameHousingPlot_RepairPlug,Game.HousingPlot RepairPlug Lua method that sends opcode 0x0510 with repair operation and contribution data.
@@ -818,6 +835,10 @@ WildStar64.exe,140096060,ServerSpellList_ReadPayload,Registration block FUN_1400
 WildStar64.exe,140095e60,ServerOpcode0818_ReadLeadingUInt32AndTierEntry,Registration block FUN_14006c290 wires server opcode 0x0818 and 0x20-byte object size to this reader; body reads one leading 32-bit field then calls ServerSpellList_ReadTierEntry at +0x8. Current subtype-4 spellbook evidence makes that leading field look more like an index or slot than a casting id, but the exact role remains under re-verification.
 WildStar64.exe,140095f30,ServerSpellHierarchy_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0816 ServerSpellHierarchy and 0x10-byte object size to this reader; body reads three 18-bit Spell4 ids followed by a 32-bit casting id.
 WildStar64.exe,140095fb0,ServerSpellEventByte_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0817 ServerSpellEventByte and 8-byte object size to this reader; body reads an 18-bit Spell4 id followed by one byte.
+WildStar64.exe,14008dc30,ServerActionSetDualUInt32Lists_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x016B and 0x20-byte object size; reads 4-bit field 32-bit field 4-bit count then two counted uint32 arrays.
+WildStar64.exe,14008ed80,ServerActionSetUInt16_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x016D; reads one 16-bit field through FUN_14006c090.
+WildStar64.exe,14008e1f0,ServerActionSetUInt16List_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x019C and 0x10-byte object size; reads 7-bit count then count ushort values.
+WildStar64.exe,1400819b0,ServerActionSetFiveUInt32_ReadPayload,Registration block FUN_14006c290 wires server opcodes 0x01A4 and 0x01AC with 0x14-byte object size; reads five consecutive 32-bit fields.
 WildStar64.exe,140096120,ServerCooldownList_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x091B ServerCooldownList and 0x10-byte object size to this reader.
 WildStar64.exe,140096fa0,ServerEntityCreate_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0262 ServerEntityCreate and 0x120-byte object size to this reader; inspected body reads entity type branch data and nested cooldown property spell and movement lists.
 WildStar64.exe,140097710,ServerEntityPropertiesUpdate_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x093A ServerEntityPropertiesUpdate and 0x10-byte object size to this reader; caller trace shows repeated property-value helper calls.
@@ -989,6 +1010,8 @@ WildStar64.exe,140005350,CREDDOperationHistory_HandleServer0978,Consumes opcode 
 WildStar64.exe,1400076e0,CREDDOperationHistory_ResizeRows,Resizes the CREDD operation-history row cache to count rows of 0x40 bytes before opcode 0x0978 rows are copied.
 WildStar64.exe,140007760,CREDDExchangeInfo_AppendOrderCacheRows,Appends 0x10-byte rows from opcode 0x097A into the account/CREDD order cache; mapped as an internal cache refresh without a client event.
 WildStar64.exe,14042b9a0,CREDDExchangeInfo_BuildLuaResults,Builds and dispatches CREDDExchangeInfoResults with buy/sell counts price buckets and owned order rows; non-empty packet field semantics remain partially unresolved.
+WildStar64.exe,1400070f0,DailyLogin_SendClientClaimReward,Sends opcode 0x078F with a zero-byte payload when daily-login reward claim preconditions pass.
+WildStar64.exe,1404f1d50,Storefront_SendClientPurchaseVirtualCurrencyPackage,Sends opcode 0x082E with one package-id byte for virtual-currency package purchase requests.
 WildStar64.exe,14042c760,CREDDOperationHistory_BuildLuaResults,Builds and dispatches CREDDOperationHistoryResults rows with eOperation bInitiator monAmount nLogAge and optional nFriendId.
 WildStar64.exe,140004540,AccountPendingItemsList_HandleServer0979,Consumes opcode 0x0979 by clearing pending-account-item caches then loading all pending group rows and dispatching AccountPendingItemsUpdate plus AccountItemUpdate.
 WildStar64.exe,140005480,CREDDRedeemResult_HandleServer097B,Consumes opcode 0x097B six-bit result and dispatches CREDDRedeemResult.
@@ -1000,7 +1023,14 @@ WildStar64.exe,140603450,Group_HandleMemberPromote_ReadPayload,Client reader for
 WildStar64.exe,140603610,Group_HandleMemberFlags_ReadPayload,Client reader for a server group-member-flags packet (860 bytes — large, likely handles multiple opcodes or a complex roster packet). Decompile to confirm opcode and field layout.
 WildStar64.exe,140603970,Group_HandleReadyCheck_ReadPayload,Client reader for a server group-ready-check packet (186 bytes). Decompile to confirm opcode and field layout.
 WildStar64.exe,140603a60,Group_HandleGroupDisband_ReadPayload,Client reader for a server group-disband or large roster packet (2116 bytes — very large, likely a dispatcher or multi-opcode handler). Decompile to confirm opcode and field layout.
-WildStar64.exe,14008de20,ServerHousingResidenceKeyedUpdate_ReadPayload,Reads opcode 0x00CA as one 64-bit field plus one uint32 and one trailing uint32 inside the 0x10-byte housing privacy cluster envelope.
+WildStar64.exe,14008de20,ServerHousingResidenceKeyedUpdate_ReadPayload,Reads opcode 0x00CA as one 64-bit field plus one uint32; the 0x10 registration size is client object size/padding, not a second uint32 wire field.
+WildStar64.exe,14007c3a0,ServerUInt15_ReadPayload,Shared scalar reader registered for opcodes 0x00CC and 0x00CD; reads one 15-bit field.
+WildStar64.exe,14008de70,ServerHousingBasicsFollowup_ReadPayload,Reads opcode 0x0110 as uint32, 18-bit field, uint32, and 8-bit field in the housing-basics cluster; field semantics unresolved.
+WildStar64.exe,14008e610,ServerHousingBasics_ReadPayload,Reads opcode 0x010E ServerHousingBasics as two uint64 fields followed by one 32-bit privacy/status flags field.
+WildStar64.exe,14009e7f0,ServerHousingVendorList_ReadPayload,Reads opcode 0x0508 as a uint32 count, count 0x18-byte housing vendor rows, then one 2-bit list type.
+WildStar64.exe,14008bf00,ServerHousingVendorListRow_ReadPayload,Reads one housing vendor row as uint64 source id plus three uint32 fields: plug item id, cost, and plug item flags.
+WildStar64.exe,14009d760,ClientHousingDecorUpdate_WritePayload,Serialises opcode 0x050B as a 3-bit operation, uint32 count, count DecorInfo rows, then count trailing 1-bit flags.
+WildStar64.exe,1404b89a0,Housing_BuildDecorUpdateRow,Fills a ClientHousingDecorUpdate DecorInfo row from cached residence decor state and selected target residence data before opcode 0x050B senders.
 WildStar64.exe,14009cbe0,ServerHousingNeighborhoodEntry_ReadPayload,Reads opcode 0x0501 and shared 0x0506 row entries as one uint64 two 14-bit fields another uint64 a wide string and three uint32 fields.
 WildStar64.exe,14009ebf0,ServerHousingNeighborhoodList_ReadPayload,Reads opcode 0x0506 as one 14-bit realm field then a uint32 count and count 0x30-byte ServerHousingNeighborhoodEntry rows.
 WildStar64.exe,1404ba4f0,Housing_HandleNeighborhoodList,Consumes opcode 0x0506 neighborhood-list rows into the housing neighborhood cache and dispatches HousingNeighborhoodRecieved.
@@ -1023,6 +1053,8 @@ WildStar64.exe,1404b6b90,Housing_SendClientCommunityPlacement,Builds ClientHousi
 WildStar64.exe,14009e8a0,ServerHousingCommunityPrivacyLevelUpdate_ReadPayload,Reads opcode 0x053B as target residence identity two uint32 fields and one trailing 3-bit field.
 WildStar64.exe,1407376f0,Lua_HousingLib_SetCommunityPrivacyLevel,Accepts Lua community privacy values 0 and 3 and sends ClientHousingCommunityPrivacyLevel opcode 0x0538 with a private flag.
 WildStar64.exe,14009e930,ServerHousingCommunityDonateUpdate_ReadPayload,Reads opcode 0x04FE as a uint32 count then two parallel uint32 arrays of that length.
+WildStar64.exe,14009da00,ClientHousingCommunityDonate_WritePayload,Serialises opcode 0x04F5 as a uint32 count followed by count DecorInfo rows.
+WildStar64.exe,1404b9ca0,Housing_SendClientCommunityDonate,Builds opcode 0x04F5 for one selected decor row after resolving HousingDecorInfo and refusing rows with Flags bit 0x8.
 WildStar64.exe,140095da0,ServerSpellUInt32TripletList_ReadPayload,Reads opcodes 0x080F and 0x0810 as a uint32 count followed by count rows of three uint32 values via FUN_140080bf0.
 WildStar64.exe,140080bf0,ServerSpellUInt32TripletListRow_ReadPayload,Reads one spell auxiliary row of three uint32 fields (12 bytes).
 WildStar64.exe,14007fef0,ServerSpellFourUInt32_ReadPayload,Reads opcodes 0x078C and 0x0812 as four consecutive uint32 fields (16 bytes); 0x078C is consumed as a housing community rename result.

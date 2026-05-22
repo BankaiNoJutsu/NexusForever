@@ -2,17 +2,17 @@
 
 namespace NexusForever.Network.World.Message.Model.Loot
 {
-    // Packet model retained for evidence-backed validation only.
-    // Runtime does not currently enqueue this opcode until bind-confirmation semantics are confirmed.
+    // Client Loot_PrepareAndDispatchBindcheck keys the local loot tree from LootUnitId at payload +4.
+    // The first uint is read on the wire but unused in the mapped bindcheck consumer; mirror OwnerUnitId for parity with ClientLootItem collect shape.
     [Message(GameMessageOpcode.ServerLootBindOnPickup)]
     public class ServerLootBindOnPickup : IWritable
     {
-        public uint Unused { get; set; }
+        public uint OwnerUnitId { get; set; }
         public uint LootUnitId { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Unused);
+            writer.Write(OwnerUnitId);
             writer.Write(LootUnitId);
         }
     }

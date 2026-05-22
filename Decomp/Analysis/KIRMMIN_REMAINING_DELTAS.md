@@ -30,17 +30,17 @@ Old branch packet order:
 
 Evidence:
 - `function_labels.csv` labels `Lua_GameLib_BuildLootRollEntry`, `Lua_GameLib_GetLootRolls`, `Lua_GameLib_GetMasterLoot`, `Lua_GameLib_AssignMasterLoot`, and client senders for `ClientLootItem`, `ClientLootRollAction`, and `ClientLootAssignMaster`.
+- `ServerLootItemUpdate_ReadPayload` (`WildStar64.exe:1400a4920`) confirms opcode `0x08A0` reads the current `LootItem` field order, including five single-bit flags before roll time, random circuit/glyph data, item quality, and master-list identities.
 - `strings.csv` has loot/UI fields `bCanLoot`, `eLootItemType`, `nTimeLeft`, `bGranted`, `bIsMaster`, `tLooters`, `tLootersOutOfRange`, `itemDrop`, and `nLootId`.
 
 Remaining work:
-- Confirm whether current `OnlyMasterLootable` is really a packet field in the `LootItem` payload, or whether `bIsMaster` is derived client-side from `MasterList`/roll state.
-- Confirm the bit order around `RequiresRoll`, `OnlyMasterLootable`, `Explosion`, and `Granted`; this is the highest-risk client-visible layout delta.
-- Confirm `ServerLootNotify.ParentUnitId`: current code sends `OwnerUnitId`; old branch called this `Unknown0`.
+- Confirm the UI semantics attached to the middle `LootItem` flags under live captures, especially whether the current `OnlyMasterLootable` field directly drives `bIsMaster` or whether `bIsMaster` is still derived from `MasterList`/roll state.
+- `ServerLootNotify.ParentUnitId` is a client-side loot visual source field: the client stores it on the owner entity and later resolves it while preparing loot visual placement/scale. Current runtime still mirrors `OwnerUnitId` because `LootInstance` does not track a distinct source/parent entity.
 - If validation fails, adjust packet order before changing group/master semantics.
 
 Suggested validation:
 - Capture a client session where loot bag, solo corpse loot, need/greed loot, and master loot all render.
-- Use `!loot capturenext` before the live action to export `artifacts\verify\loot-evidence\*.json`; the artifact records the current `LootItem` field/boolean order, the runtime `ParentUnitId` mirror, and shape-only payload references for `ServerLootNotification`, `ServerLootCanLoot`, and `ServerLootBindOnPickup` without wiring them into gameplay.
+- Use `!loot capturenext` before the live action to export `artifacts\verify\loot-evidence\*.json`; the artifact records the current `LootItem` field/boolean order, the runtime `ParentUnitId` mirror, mapped-but-unwired payload references for `ServerLootNotification` and `ServerLootBindOnPickup`, and the shape-only `ServerLootCanLoot` reference without wiring them into gameplay.
 - Use `!loot inspect [ownerUnitId]` (or target the corpse/container first) to dump the active runtime loot snapshot before comparing packet bytes.
 - If one mode breaks, inspect the first differing boolean field before touching gameplay logic.
 
@@ -96,12 +96,13 @@ Remaining work:
 ### P2: Unused loot packets
 
 Current packet models exist but are not wired:
-- `ServerLootNotification`: notifies other players when someone loots an item.
-- `ServerLootCanLoot`: updates the client-side `CanLoot` flag for a loot entry.
-- `ServerLootBindOnPickup`: triggers the bind-on-pickup confirmation.
+- `ServerLootNotification`: mapped to the remote-looter `ChannelUpdate_Loot` consumer; still not emitted until group feedback policy is validated.
+- `ServerLootCanLoot`: shape remains one `LootUnitId`; the standalone scalar consumer/timing is not mapped. Full-row `ServerLootNotify` and `ServerLootItemUpdate` paths already populate the Lua-facing `bCanLoot`/`CanLoot` slot through the local loot row payload.
+- `ServerLootBindOnPickup`: mapped as two uint32 fields; the second field is the loot id consumed by the client `LootBindcheck` path, while the first field and confirmation policy remain unmapped.
+- Adjacent diagnostic client opcodes `Client0x011B`/`Client0x011D` are not proven bind-confirm acknowledgements: direct and packed send-helper traces found no BOP-confirm send site for those opcodes.
 
 Remaining work:
-- Map these from decompile/sniff before use. They may be needed for retail-like group loot feedback, BoP prompts, and delayed can-loot updates after roll/master resolution.
+- Map standalone `ServerLootCanLoot`, the first `ServerLootBindOnPickup` uint, and bind-confirm result policy from decompile/sniff before use. For BOP, live-capture the `LootBindcheck` prompt and confirm whether acceptance sends another `0x014F ClientLootItem` collect request before adding pending-confirm state. These may be needed for retail-like group loot feedback, BoP prompts, and delayed can-loot updates after roll/master resolution.
 - Compare the live-capture template payloads from `artifacts\verify\loot-evidence` against client sniffs before wiring any of these opcodes into gameplay.
 - `ChatFormatLoot` says its `LootUnitId` must match `ServerLootNotification`, so group loot chat and notification path should be validated together.
 
@@ -161,5 +162,5 @@ Remaining work:
 
 1. Validate `LootItem` boolean/field order with a live client test or sniff.
 2. Tighten remaining group loot semantics: explicit master authority, offline roll winners, and harvest/resource loot-rule routing.
-3. Wire `ServerLootNotification`, `ServerLootCanLoot`, and `ServerLootBindOnPickup` only after field confirmation.
+3. Wire `ServerLootNotification`, `ServerLootCanLoot`, and `ServerLootBindOnPickup` only after can-loot timing, BOP confirmation policy, and group feedback emission rules are confirmed.
 4. Port low-risk quest scripts and add the missing killer-aware script hook if needed.

@@ -9,6 +9,7 @@ namespace NexusForever.Network.World.Message.Model
     {
         public DecorUpdateOperation Operation { get; private set; }
         public List<DecorInfo> DecorUpdates { get; } = new();
+        public List<bool> TrailingFlags { get; } = new();
 
         public void Read(GamePacketReader reader)
         {
@@ -22,7 +23,8 @@ namespace NexusForever.Network.World.Message.Model
                 DecorUpdates.Add(decor);
             }
 
-            reader.ReadBit();
+            for (uint i = 0u; i < count; i++)
+                TrailingFlags.Add(reader.ReadBit());
         }
     }
 }

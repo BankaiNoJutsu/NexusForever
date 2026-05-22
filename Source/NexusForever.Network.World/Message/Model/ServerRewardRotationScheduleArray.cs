@@ -4,8 +4,8 @@ namespace NexusForever.Network.World.Message.Model
 {
     // Server opcode 0x07CA.
     // Wire format: 32-bit count followed by count schedule rows.
-    // RewardRotation_ApplyServerScheduleUpdate consumes the decoded row as:
-    // 32-bit RewardKeyId, 14-bit ContentId, float Duration, 8-bit RewardType, 32-bit Value.
+    // RewardRotation_ScheduleRow_ReadPayload @ 1400a1d90 consumes each 0x14-byte row as:
+    // 32-bit ContentId, 14-bit RewardKeyId, float Duration, 8-bit RewardType, 32-bit Value.
     [Message(GameMessageOpcode.ServerRewardRotationScheduleArray)]
     public class ServerRewardRotationScheduleArray : IWritable
     {
@@ -20,8 +20,8 @@ namespace NexusForever.Network.World.Message.Model
             public void Write(GamePacketWriter writer)
             {
                 RewardRotationWireValidation.ValidateScheduleRow(this, $"{nameof(ServerRewardRotationScheduleArray)} row");
-                writer.Write(RewardKeyId);
-                writer.Write(ContentId, 14u);
+                writer.Write(ContentId);
+                writer.Write(RewardKeyId, 14u);
                 writer.Write(Duration);
                 writer.Write(RewardType);
                 writer.Write(Value);

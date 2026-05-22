@@ -188,6 +188,59 @@ public class LootPacketShapeTests
     }
 
     [Fact]
+    public void ServerLootItemUpdate_WritesMappedLootItemPayload()
+    {
+        var packet = new ServerLootItemUpdate
+        {
+            LootItem = new NetworkLootItem
+            {
+                LootUnitId         = 0x11111111u,
+                Type               = LootItemType.StaticItem,
+                ItemId             = 0x22222222u,
+                Amount             = 2u,
+                CanLoot            = true,
+                RequiresRoll       = true,
+                OnlyMasterLootable = false,
+                Explosion          = true,
+                Granted            = false,
+                RollTime           = 45u,
+                RandomCircuitData  = 0x0123456789ABCDEFul,
+                RandomGlyphData    = 0x33333333u,
+                ItemQuality2Id     = 6u,
+                MasterList =
+                [
+                    new Identity
+                    {
+                        RealmId = 23,
+                        Id      = 0x4444555566667777ul
+                    }
+                ]
+            }
+        };
+
+        byte[] data = WritePacket(packet);
+
+        using var stream = new MemoryStream(data);
+        using var reader = new GamePacketReader(stream);
+        Assert.Equal(0x11111111u, reader.ReadUInt());
+        Assert.Equal((uint)LootItemType.StaticItem, reader.ReadUInt(32u));
+        Assert.Equal(0x22222222u, reader.ReadUInt());
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.True(reader.ReadBit());
+        Assert.True(reader.ReadBit());
+        Assert.False(reader.ReadBit());
+        Assert.True(reader.ReadBit());
+        Assert.False(reader.ReadBit());
+        Assert.Equal(45u, reader.ReadUInt());
+        Assert.Equal(0x0123456789ABCDEFul, reader.ReadULong());
+        Assert.Equal(0x33333333u, reader.ReadUInt());
+        Assert.Equal(6u, reader.ReadUInt());
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal((ushort)23, reader.ReadUShort(14u));
+        Assert.Equal(0x4444555566667777ul, reader.ReadULong());
+    }
+
+    [Fact]
     public void ServerLootNotify_WritePreservesOwnerParentExplosionHeaderBeforeEntries()
     {
         var packet = new ServerLootNotify
@@ -258,8 +311,8 @@ public class LootPacketShapeTests
 
         byte[] bindOnPickupData = WritePacket(new ServerLootBindOnPickup
         {
-            Unused     = 10u,
-            LootUnitId = 20u
+            OwnerUnitId = 10u,
+            LootUnitId  = 20u
         });
         using (var stream = new MemoryStream(bindOnPickupData))
         using (var reader = new GamePacketReader(stream))

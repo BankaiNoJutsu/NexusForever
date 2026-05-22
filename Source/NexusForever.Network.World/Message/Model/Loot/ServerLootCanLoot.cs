@@ -3,7 +3,7 @@
 namespace NexusForever.Network.World.Message.Model.Loot
 {
     // Packet model retained for evidence-backed validation only.
-    // Runtime currently sends CanLoot inside ServerLootNotify instead of enqueuing this opcode.
+    // Runtime currently sends CanLoot inside full loot-row packets; standalone scalar consumer timing is still unmapped.
     [Message(GameMessageOpcode.ServerLootCanLoot)]
     public class ServerLootCanLoot : IWritable
     {
