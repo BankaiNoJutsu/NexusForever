@@ -36,7 +36,7 @@ public class ClientRewardUpdateRequestHandlerTests
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger);
+        var handler = new ClientRewardUpdateRequestHandler(logger, EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(3u));
 
@@ -63,7 +63,7 @@ public class ClientRewardUpdateRequestHandlerTests
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger);
+        var handler = new ClientRewardUpdateRequestHandler(logger, EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(RewardRotationRefreshBuilder.ContentTypeCount));
 
@@ -228,6 +228,7 @@ public class ClientRewardUpdateRequestHandlerTests
         public IAccountInventoryManager InventoryManager => null;
         public IAccountCostumeManager CostumeManager => null;
         public IRewardPropertyManager RewardPropertyManager { get; } = rewardPropertyManager;
+        public IAccountRewardRotationGrantManager RewardRotationGrantManager => null;
         public IAccountKeybindingManager KeybindingManager => null;
         public AccountTier AccountTier => default;
         public IGameSession Session => null;

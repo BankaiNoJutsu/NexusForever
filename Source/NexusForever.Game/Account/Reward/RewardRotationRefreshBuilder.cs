@@ -1,3 +1,4 @@
+using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Account.Reward
@@ -54,6 +55,7 @@ namespace NexusForever.Game.Account.Reward
         {
             return new RewardRotationRefresh(
                 rewardRotationIndex,
+                contentContext: null,
                 new ServerRewardRotationScheduleArray(),
                 new ServerRewardRotationEntryStateArray(),
                 "empty-placeholder-provider");
@@ -63,23 +65,61 @@ namespace NexusForever.Game.Account.Reward
     public sealed class RewardRotationRefresh
     {
         public uint RewardRotationIndex { get; }
+        public IReadOnlyList<ServerRewardRotationContentContext> ContentContexts { get; }
+        public ServerRewardRotationContentContext ContentContext => ContentContexts.FirstOrDefault();
         public ServerRewardRotationScheduleArray ScheduleArray { get; }
         public ServerRewardRotationEntryStateArray EntryStateArray { get; }
         public string ResponseSource { get; }
+        public int ContentContextIdCount => ContentContexts.Sum(context => context?.ContentIds.Count ?? 0);
+        public int ContentContextPacketCount => ContentContexts.Count(context => context != null && context.ContentIds.Count > 0);
         public int ScheduleEntryCount => ScheduleArray.Entries.Count;
         public int EntryStateCount => EntryStateArray.Entries.Count;
-        public bool IsPlaceholder => ScheduleEntryCount == 0 && EntryStateCount == 0;
+        public bool HasContentContext => ContentContextIdCount > 0;
+        public bool IsPlaceholder => !HasContentContext && ScheduleEntryCount == 0 && EntryStateCount == 0;
 
         public RewardRotationRefresh(
             uint rewardRotationIndex,
             ServerRewardRotationScheduleArray scheduleArray,
             ServerRewardRotationEntryStateArray entryStateArray,
             string responseSource = null)
+            : this(rewardRotationIndex, Array.Empty<ServerRewardRotationContentContext>(), scheduleArray, entryStateArray, responseSource)
+        {
+        }
+
+        public RewardRotationRefresh(
+            uint rewardRotationIndex,
+            ServerRewardRotationContentContext contentContext,
+            ServerRewardRotationScheduleArray scheduleArray,
+            ServerRewardRotationEntryStateArray entryStateArray,
+            string responseSource = null)
+            : this(
+                rewardRotationIndex,
+                contentContext == null ? null : new[] { contentContext },
+                scheduleArray,
+                entryStateArray,
+                responseSource)
+        {
+        }
+
+        public RewardRotationRefresh(
+            uint rewardRotationIndex,
+            IReadOnlyList<ServerRewardRotationContentContext> contentContexts,
+            ServerRewardRotationScheduleArray scheduleArray,
+            ServerRewardRotationEntryStateArray entryStateArray,
+            string responseSource = null)
         {
             RewardRotationIndex = rewardRotationIndex;
+            ContentContexts = contentContexts == null
+                ? Array.Empty<ServerRewardRotationContentContext>()
+                : contentContexts.Where(context => context != null).ToList();
             ScheduleArray = scheduleArray ?? throw new ArgumentNullException(nameof(scheduleArray));
             EntryStateArray = entryStateArray ?? throw new ArgumentNullException(nameof(entryStateArray));
             ResponseSource = string.IsNullOrWhiteSpace(responseSource) ? "unspecified" : responseSource;
+        }
+
+        public IEnumerable<IWritable> GetContentContextPackets()
+        {
+            return RewardRotationContentContextDelivery.CreatePackets(ContentContexts);
         }
     }
 }

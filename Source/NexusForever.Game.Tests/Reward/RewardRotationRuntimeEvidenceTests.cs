@@ -43,7 +43,9 @@ public class RewardRotationRuntimeEvidenceTests
         var session = CreateSession(rewardPropertyManager, accountId: 4404u, characterId: 404ul, playerGuid: 4040u);
         session.ArmNextRewardRotationEvidenceCapture();
 
-        var handler = new ClientRewardUpdateRequestHandler(NullLogger<ClientRewardUpdateRequestHandler>.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(
+            NullLogger<ClientRewardUpdateRequestHandler>.Instance,
+            EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(3u));
 
@@ -75,7 +77,9 @@ public class RewardRotationRuntimeEvidenceTests
         var session = CreateSession(rewardPropertyManager, accountId: 5505u, characterId: 505ul, playerGuid: 5050u);
         session.ArmNextRewardRotationEvidenceCapture();
 
-        var handler = new ClientRewardUpdateRequestHandler(NullLogger<ClientRewardUpdateRequestHandler>.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(
+            NullLogger<ClientRewardUpdateRequestHandler>.Instance,
+            EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(RewardRotationRefreshBuilder.ContentTypeCount));
 

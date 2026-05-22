@@ -58,6 +58,7 @@ public class RewardRotationRefreshBuilderTests
         {
             return new RewardRotationRefresh(
                 rewardRotationIndex,
+                contentContext: null,
                 new ServerRewardRotationScheduleArray
                 {
                     Entries =

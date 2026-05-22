@@ -8,11 +8,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
     public class ClientRewardUpdateRequestHandler : IMessageHandler<IWorldSession, ClientRewardUpdateRequest>
     {
         private readonly ILogger<ClientRewardUpdateRequestHandler> log;
+        private readonly IRewardRotationRefreshProvider refreshProvider;
 
         public ClientRewardUpdateRequestHandler(
-            ILogger<ClientRewardUpdateRequestHandler> log)
+            ILogger<ClientRewardUpdateRequestHandler> log,
+            IRewardRotationRefreshProvider refreshProvider = null)
         {
             this.log = log;
+            this.refreshProvider = refreshProvider;
         }
 
         public void HandleMessage(IWorldSession session, ClientRewardUpdateRequest rewardUpdateRequest)
@@ -22,7 +25,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
 
             session.Account.RewardPropertyManager.SendInitialPackets();
 
-            RewardRotationRefresh refresh = RewardRotationRefreshBuilder.Build(rewardUpdateRequest.RewardRotationIndex);
+            IRewardRotationRefreshProvider provider = refreshProvider
+                ?? new AccountRewardRotationRefreshProvider(session.Account);
+            RewardRotationRefresh refresh = RewardRotationRefreshBuilder.Build(rewardUpdateRequest.RewardRotationIndex, provider);
             if (refresh == null)
             {
                 RewardRotationRuntimeEvidenceCollector.RecordRequestIfArmed(
@@ -35,6 +40,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
                 return;
             }
 
+            foreach (IWritable contentContextPacket in refresh.GetContentContextPackets())
+                session.EnqueueMessageEncrypted(contentContextPacket);
+
             session.EnqueueMessageEncrypted(refresh.ScheduleArray);
             session.EnqueueMessageEncrypted(refresh.EntryStateArray);
             RewardRotationRuntimeEvidenceCollector.RecordRequestIfArmed(
@@ -42,18 +50,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
                 rewardUpdateRequest.RewardRotationIndex,
                 refresh);
 
-            log.LogDebug("Sent reward rotation response for player {PlayerGuid}: reward rotation index {RewardRotationIndex}, schedule entries {ScheduleEntryCount}, entry-state entries {EntryStateCount}, placeholder {IsPlaceholder}, source {ResponseSource}.",
-                session.Player?.Guid, refresh.RewardRotationIndex, refresh.ScheduleEntryCount, refresh.EntryStateCount, refresh.IsPlaceholder, refresh.ResponseSource);
+            log.LogDebug("Sent reward rotation response for player {PlayerGuid}: reward rotation index {RewardRotationIndex}, content-context ids {ContentContextIdCount}, schedule entries {ScheduleEntryCount}, entry-state entries {EntryStateCount}, placeholder {IsPlaceholder}, source {ResponseSource}.",
+                session.Player?.Guid, refresh.RewardRotationIndex, refresh.ContentContextIdCount, refresh.ScheduleEntryCount, refresh.EntryStateCount, refresh.IsPlaceholder, refresh.ResponseSource);
 
             if (refresh.IsPlaceholder)
             {
-                log.LogInformation("Reward rotation response for player {PlayerGuid} is an empty placeholder: reward rotation index {RewardRotationIndex}, schedule entries {ScheduleEntryCount}, entry-state entries {EntryStateCount}, source {ResponseSource}. Live schedule and entry-state semantics remain evidence-blocked.",
-                    session.Player?.Guid, refresh.RewardRotationIndex, refresh.ScheduleEntryCount, refresh.EntryStateCount, refresh.ResponseSource);
+                log.LogInformation("Reward rotation response for player {PlayerGuid} is an empty placeholder: reward rotation index {RewardRotationIndex}, content-context ids {ContentContextIdCount}, schedule entries {ScheduleEntryCount}, entry-state entries {EntryStateCount}, source {ResponseSource}. Live schedule and entry-state semantics remain evidence-blocked.",
+                    session.Player?.Guid, refresh.RewardRotationIndex, refresh.ContentContextIdCount, refresh.ScheduleEntryCount, refresh.EntryStateCount, refresh.ResponseSource);
             }
             else
             {
-                log.LogInformation("Reward rotation response for player {PlayerGuid} carried observable rows from source {ResponseSource}: reward rotation index {RewardRotationIndex}, schedule entries {ScheduleEntryCount}, entry-state entries {EntryStateCount}. Review reward evidence captures before implementing live semantics.",
-                    session.Player?.Guid, refresh.ResponseSource, refresh.RewardRotationIndex, refresh.ScheduleEntryCount, refresh.EntryStateCount);
+                log.LogInformation("Reward rotation response for player {PlayerGuid} carried observable rows from source {ResponseSource}: reward rotation index {RewardRotationIndex}, content-context ids {ContentContextIdCount}, schedule entries {ScheduleEntryCount}, entry-state entries {EntryStateCount}. Review reward evidence captures before implementing live semantics.",
+                    session.Player?.Guid, refresh.ResponseSource, refresh.RewardRotationIndex, refresh.ContentContextIdCount, refresh.ScheduleEntryCount, refresh.EntryStateCount);
             }
         }
     }

@@ -20,6 +20,29 @@ namespace NexusForever.WorldServer.Command.Handler
             context.SendMessage($"Next reward rotation refresh request for this player will export a runtime evidence artifact under {RewardRotationRuntimeEvidenceCollector.GetOutputDirectoryHint()}.");
         }
 
+        [Command(Permission.Account, "Export a reward rotation report that includes game-table-derived 0x07CD content-context ids for the supplied index.", "reportcontext", "context")]
+        public void HandleRewardReportContext(ICommandContext context,
+            [Parameter("Reward rotation index to report.", ParameterFlags.Optional)]
+            uint rewardRotationIndex = 0u)
+        {
+            if (!TryGetInvokerPlayer(context, out IPlayer player))
+                return;
+
+            string outputPath = RewardRotationRuntimeEvidenceCollector.ExportReport(
+                player,
+                rewardRotationIndex,
+                "manual-command-context",
+                "Manual reward rotation report exported with game-table-derived content-context ids; schedule and entry-state rows remain empty.",
+                new GameTableRewardRotationRefreshProvider());
+            if (string.IsNullOrWhiteSpace(outputPath))
+            {
+                context.SendError("Failed to export reward rotation report. Check server logs for details.");
+                return;
+            }
+
+            context.SendMessage($"Reward rotation context report exported to {outputPath}.");
+        }
+
         [Command(Permission.Account, "Export a reward rotation protocol/report snapshot for the supplied request index without generating speculative live rows.", "report", "shape", "inspect")]
         public void HandleRewardReport(ICommandContext context,
             [Parameter("Reward rotation index to report.", ParameterFlags.Optional)]
