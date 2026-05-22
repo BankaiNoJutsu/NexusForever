@@ -241,7 +241,10 @@ namespace NexusForever.GameTable
         public GameTable<HookAssetEntry> HookAsset { get; private set; }
         public GameTable<HookTypeEntry> HookType { get; private set; }
         public GameTable<HousingBuildEntry> HousingBuild { get; private set; }
+
+        [GameData]
         public GameTable<HousingContributionInfoEntry> HousingContributionInfo { get; private set; }
+
         public GameTable<HousingContributionTypeEntry> HousingContributionType { get; private set; }
 
         [GameData]
@@ -715,6 +718,7 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<XpPerLevelEntry> XpPerLevel { get; private set; }
 
+        [GameData]
         public GameTable<ZoneCompletionEntry> ZoneCompletion { get; private set; }
 
         [GameData("fr-FR.bin")]

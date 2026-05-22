@@ -52,13 +52,14 @@ namespace NexusForever.Game.Entity
             if (mailTimer.HasElapsed)
             {
                 bool sendAvailableMail = false;
-                foreach (IMailItem mail in pendingMail)
+                foreach (IMailItem mail in pendingMail.ToList())
                 {
                     if (!mail.IsReadyToDeliver())
                         continue;
 
-                    availableMail.Add(mail.Id, mail);
-                    sendAvailableMail = true;
+                    pendingMail.Remove(mail);
+                    if (availableMail.TryAdd(mail.Id, mail))
+                        sendAvailableMail = true;
                 }
 
                 // prevent sending multiple mail packets

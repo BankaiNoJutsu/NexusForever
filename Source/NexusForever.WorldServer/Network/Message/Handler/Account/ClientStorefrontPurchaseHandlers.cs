@@ -7,9 +7,9 @@ using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Static.Account;
+using NexusForever.Game.Static.Storefront;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Network.World.Message.Static;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Account
@@ -33,7 +33,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 log.LogWarning("Rejecting storefront character purchase from player {PlayerGuid}: non-current target {Target}.",
                     session.Player?.Guid, purchase.Target);
-                StorefrontPurchaseHelper.SendFailure(session, GenericError.Params);
+                StorefrontPurchaseHelper.SendFailure(session, StoreError.GenericFail);
                 return;
             }
 
@@ -74,7 +74,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 log.LogDebug("Rejecting storefront account purchase from player {PlayerGuid}: non-current target {Target}, account target {AccountTarget}, recipient length {RecipientLength}.",
                     session.Player?.Guid, purchase.Target, purchase.AccountTarget, purchase.RecipientName?.Length ?? 0);
-                StorefrontPurchaseHelper.SendFailure(session, GenericError.Params);
+                StorefrontPurchaseHelper.SendFailure(session, StoreError.GenericFail);
                 return;
             }
 
@@ -115,7 +115,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 log.LogDebug("Rejecting storefront account gift from player {PlayerGuid}: unknown recipient name {RecipientName}, account target {AccountTarget}.",
                     session.Player?.Guid, purchase.RecipientName, purchase.AccountTarget);
-                StorefrontPurchaseHelper.SendFailure(session, GenericError.Params);
+                StorefrontPurchaseHelper.SendFailure(session, StoreError.IneligibleGiftRecipient);
                 return false;
             }
 
@@ -124,7 +124,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 log.LogDebug("Rejecting storefront account gift from player {PlayerGuid}: recipient character {CharacterId} account {AccountId} is offline.",
                     session.Player?.Guid, character.CharacterId, character.AccountId);
-                StorefrontPurchaseHelper.SendFailure(session, GenericError.Params);
+                StorefrontPurchaseHelper.SendFailure(session, StoreError.IneligibleGiftRecipient);
                 return false;
             }
 
@@ -153,6 +153,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 log.LogWarning("Rejecting storefront {PurchaseScope} purchase for offer {OfferId}: session has no player.",
                     purchaseScope, offerId);
+                SendFailure(session, StoreError.GenericFail);
                 return;
             }
 
@@ -161,7 +162,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: unknown offer {OfferId}.",
                     purchaseScope, session.Player.Guid, offerId);
-                SendFailure(session, GenericError.ItemBadId);
+                SendFailure(session, StoreError.InvalidOffer);
                 return;
             }
 
@@ -170,7 +171,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: invalid currency {CurrencyId} for offer {OfferId}.",
                     purchaseScope, session.Player.Guid, currencyId, offerId);
-                SendFailure(session, GenericError.Params);
+                SendFailure(session, StoreError.InvalidPrice);
                 return;
             }
 
@@ -179,7 +180,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: offer {OfferId} has no price for currency {CurrencyId}.",
                     purchaseScope, session.Player.Guid, offerId, currencyId);
-                SendFailure(session, GenericError.Params);
+                SendFailure(session, StoreError.InvalidPrice);
                 return;
             }
 
@@ -187,11 +188,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: offer {OfferId} has invalid price {Price}.",
                     purchaseScope, session.Player.Guid, offerId, price.Price);
-                SendFailure(session, GenericError.Params);
+                SendFailure(session, StoreError.InvalidPrice);
                 return;
             }
 
-            if (!TryBuildAccountItemList(session, offerItem, out List<uint> accountItemIds, out GenericError error, out string reason))
+            if (!TryBuildAccountItemList(session, offerItem, out List<uint> accountItemIds, out StoreError error, out string reason))
             {
                 log.LogDebug("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: offer {OfferId} cannot be placed in account inventory ({Reason}).",
                     purchaseScope, session.Player.Guid, offerId, reason);
@@ -203,7 +204,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 log.LogDebug("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: insufficient currency {CurrencyId}, price {Price}.",
                     purchaseScope, session.Player.Guid, currencyId, chargeAmount);
-                SendFailure(session, GenericError.Params);
+                SendFailure(session, StoreError.CannotUseOffer);
                 return;
             }
 
@@ -240,9 +241,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             };
         }
 
-        public static void SendFailure(IWorldSession session, GenericError error)
+        public static void SendFailure(IWorldSession session, StoreError error)
         {
-            session.Player?.SendGenericError(error);
+            session.EnqueueMessageEncrypted(new ServerStoreError(error));
         }
 
         private static bool TryGetChargeAmount(IOfferItemPrice price, out ulong chargeAmount)
@@ -263,32 +264,32 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             IWorldSession session,
             IOfferItem offerItem,
             out List<uint> accountItemIds,
-            out GenericError error,
+            out StoreError error,
             out string reason)
         {
             accountItemIds = [];
-            error          = GenericError.Ok;
+            error          = StoreError.GenericFail;
             reason         = string.Empty;
 
             foreach (IOfferItemData itemData in offerItem.Items)
             {
                 if (itemData.Amount == 0u)
                 {
-                    error  = GenericError.ItemBadStaticData;
+                    error  = StoreError.CannotUseOffer;
                     reason = $"offer item data {itemData.ItemId} has zero amount";
                     return false;
                 }
 
                 if (!session.Account.InventoryManager.CanAddItem(itemData.ItemId))
                 {
-                    error  = GenericError.ItemBadStaticData;
+                    error  = StoreError.CannotUseOffer;
                     reason = $"account item {itemData.ItemId} does not exist";
                     return false;
                 }
 
                 if (itemData.Amount > int.MaxValue || accountItemIds.Count > int.MaxValue - (int)itemData.Amount)
                 {
-                    error  = GenericError.ItemBadStaticData;
+                    error  = StoreError.CannotUseOffer;
                     reason = $"offer account item count overflows for account item {itemData.ItemId}";
                     return false;
                 }
@@ -299,7 +300,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
             if (accountItemIds.Count == 0)
             {
-                error  = GenericError.ItemBadStaticData;
+                error  = StoreError.CannotUseOffer;
                 reason = "offer has no account item data";
                 return false;
             }

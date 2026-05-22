@@ -95,6 +95,15 @@ namespace NexusForever.Game.Account.Inventory
             };
         }
 
+        public ServerAccountItemCooldowns.Cooldown BuildListEntry()
+        {
+            return new ServerAccountItemCooldowns.Cooldown
+            {
+                AccountItemCooldownGroup = CooldownGroupId,
+                CooldownInSeconds        = GetRemainingDuration()
+            };
+        }
+
         private AccountItemCooldownModel BuildModel()
         {
             return new AccountItemCooldownModel

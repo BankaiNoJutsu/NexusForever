@@ -8,12 +8,14 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Character;
 using NexusForever.Game.Entity;
 using NexusForever.Game;
+using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Marketplace;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
+using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Marketplace;
@@ -42,16 +44,18 @@ public class MarketplaceAuctionHandlerTests
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
         LegacyServiceProvider.Provider = new ServiceCollection()
             .AddSingleton(realmContext)
-            .AddSingleton(new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager()))
+            .AddSingleton(playerManager)
             .BuildServiceProvider();
 
         try
         {
             IItemInfo itemInfo = CreateItemInfo();
             IItem item = CreateItem(itemInfo, out RecordingDispatchProxy<IItem> itemProxy);
-            IWorldSession sellerSession = CreateSession(SellerGuid, SellerCharacterId, out RecordingDispatchProxy<IInventory> sellerInventoryProxy, out _, out RecordingDispatchProxy<IWorldSession> sellerSessionProxy);
+            IWorldSession sellerSession = CreateSession(SellerGuid, SellerCharacterId, out RecordingDispatchProxy<IInventory> sellerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> sellerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> sellerSessionProxy, out IPlayer seller);
+            playerManager.AddPlayer(seller);
             sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), item);
 
             var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance);
@@ -77,7 +81,7 @@ public class MarketplaceAuctionHandlerTests
                 NullLogger<ClientAuctionsByFilterRequestHandler>.Instance,
                 CreateGameTableManager(),
                 itemManager);
-            IWorldSession searchSession = CreateSession(303u, 3003ul, out _, out _, out RecordingDispatchProxy<IWorldSession> searchSessionProxy);
+            IWorldSession searchSession = CreateSession(303u, 3003ul, out _, out _, out RecordingDispatchProxy<IWorldSession> searchSessionProxy, out _);
 
             searchHandler.HandleMessage(searchSession, CreateSearchRequest());
 
@@ -87,7 +91,7 @@ public class MarketplaceAuctionHandlerTests
             Assert.Equal(ItemId, auction.Item2Id);
             Assert.Equal(BuyoutPrice, auction.BuyoutPrice);
 
-            IWorldSession buyerSession = CreateSession(BuyerGuid, BuyerCharacterId, out RecordingDispatchProxy<IInventory> buyerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> buyerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> buyerSessionProxy);
+            IWorldSession buyerSession = CreateSession(BuyerGuid, BuyerCharacterId, out RecordingDispatchProxy<IInventory> buyerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> buyerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> buyerSessionProxy, out _);
             buyerCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
             buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 3u);
             var buyHandler = new ClientAuctionBuyOrderSubmitHandler(
@@ -100,6 +104,11 @@ public class MarketplaceAuctionHandlerTests
                 Assert.Single(buyerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
             Assert.Equal(CurrencyType.Credits, debit.Arguments[0]);
             Assert.Equal(BuyoutPrice, debit.Arguments[1]);
+
+            RecordingDispatchProxy<ICurrencyManager>.Invocation sellerCredit =
+                Assert.Single(sellerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(CurrencyType.Credits, sellerCredit.Arguments[0]);
+            Assert.Equal(BuyoutPrice, sellerCredit.Arguments[1]);
 
             RecordingDispatchProxy<IInventory>.Invocation addCall =
                 Assert.Single(buyerInventoryProxy.GetInvocations(nameof(IInventory.AddItem)));
@@ -121,6 +130,66 @@ public class MarketplaceAuctionHandlerTests
         {
             LegacyServiceProvider.Provider = previousProvider;
         }
+    }
+
+    [Fact]
+    public void CommoditySellOrderSubmit_WithQuantityAboveClientLimitThrows()
+    {
+        IItemInfo itemInfo = CreateItemInfo();
+        var handler = new ClientCommoditySellOrderSubmitHandler(
+            NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
+            CreateGameTableManager(maxCommodityOrderQuantity: 200u),
+            CreateItemManager(itemInfo));
+        IWorldSession session = CreateSession(404u, 4004ul, out _, out _, out _, out _);
+
+        ClientCommoditySellOrderSubmit request = CreateCommoditySellRequest(quantity: 201u);
+
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, request));
+    }
+
+    [Fact]
+    public void CommodityOrderCancel_RemovesTransientBuyOrderAndRefunds()
+    {
+        IItemInfo itemInfo = CreateItemInfo();
+        IItemManager itemManager = CreateItemManager(itemInfo);
+        IWorldSession session = CreateSession(505u, 5005ul, out _, out RecordingDispatchProxy<ICurrencyManager> currencyProxy, out RecordingDispatchProxy<IWorldSession> sessionProxy, out _);
+        currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+
+        var submitHandler = new ClientCommoditySellOrderSubmitHandler(
+            NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
+            CreateGameTableManager(maxCommodityOrderQuantity: 200u),
+            itemManager);
+        submitHandler.HandleMessage(session, CreateCommodityBuyRequest(quantity: 3u, pricePerUnit: 25ul));
+
+        ServerCommodityOrderResult postResult = Assert.Single(GetMessages<ServerCommodityOrderResult>(sessionProxy));
+        Assert.Equal(GenericError.Ok, postResult.Result);
+        Assert.Equal(75ul, postResult.OrderPosted.Price);
+        Assert.True(postResult.OrderPosted.IsBuyOrder);
+        Assert.NotEqual(0ul, postResult.OrderPosted.CommodityOrderId);
+
+        RecordingDispatchProxy<ICurrencyManager>.Invocation debit =
+            Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        Assert.Equal(CurrencyType.Credits, debit.Arguments[0]);
+        Assert.Equal(75ul, debit.Arguments[1]);
+
+        var cancelHandler = new ClientCommodityOrderCancelHandler(
+            NullLogger<ClientCommodityOrderCancelHandler>.Instance,
+            itemManager);
+        cancelHandler.HandleMessage(session, CreateCommodityCancelRequest(postResult.OrderPosted));
+
+        RecordingDispatchProxy<ICurrencyManager>.Invocation refund =
+            Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+        Assert.Equal(CurrencyType.Credits, refund.Arguments[0]);
+        Assert.Equal(75ul, refund.Arguments[1]);
+
+        ServerCommodityAuctionRemoved removed = Assert.Single(GetMessages<ServerCommodityAuctionRemoved>(sessionProxy));
+        Assert.Equal(AuctionEventType.Cancel, removed.Type);
+        Assert.Equal(postResult.OrderPosted.CommodityOrderId, removed.OrderRemoved.CommodityOrderId);
+        Assert.Equal(ItemId, removed.OrderRemoved.Item2Id);
+        Assert.Equal(3u, removed.OrderRemoved.Quantity);
+        Assert.Equal(25ul, removed.OrderRemoved.PricePerUnit);
+        Assert.Equal(75ul, removed.OrderRemoved.Price);
+        Assert.True(removed.OrderRemoved.IsBuyOrder);
     }
 
     private static IItemInfo CreateItemInfo()
@@ -157,28 +226,42 @@ public class MarketplaceAuctionHandlerTests
         ulong characterId,
         out RecordingDispatchProxy<IInventory> inventoryProxy,
         out RecordingDispatchProxy<ICurrencyManager> currencyProxy,
-        out RecordingDispatchProxy<IWorldSession> sessionProxy)
+        out RecordingDispatchProxy<IWorldSession> sessionProxy,
+        out IPlayer player)
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         IInventory inventory = RecordingDispatchProxy<IInventory>.Create(out inventoryProxy);
         ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out currencyProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
 
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         playerProxy.SetProperty(nameof(IPlayer.Guid), guid);
+        playerProxy.SetProperty(nameof(IPlayer.Identity), new Identity
+        {
+            RealmId = 1,
+            Id      = characterId
+        });
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), characterId);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
         playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
         playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
+        accountProxy.SetProperty(nameof(IAccount.Id), guid);
         return session;
     }
 
-    private static GameTableManager CreateGameTableManager()
+    private static GameTableManager CreateGameTableManager(uint maxCommodityOrderQuantity = 200u)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
             GameTablePath = string.Empty
         }));
 
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.GameFormula), CreateGameTable(new GameFormulaEntry
+        {
+            Id        = 0x439u,
+            Dataint02 = maxCommodityOrderQuantity
+        }));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Family), CreateGameTable<Item2FamilyEntry>());
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Category), CreateGameTable<Item2CategoryEntry>());
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Type), CreateGameTable<Item2TypeEntry>());
@@ -209,6 +292,39 @@ public class MarketplaceAuctionHandlerTests
         SetAutoProperty(request, nameof(ClientAuctionBuyOrderSubmit.Item2Id), ItemId);
         SetAutoProperty(request, nameof(ClientAuctionBuyOrderSubmit.AuctionId), auctionId);
         SetAutoProperty(request, nameof(ClientAuctionBuyOrderSubmit.AmountOffered), BuyoutPrice);
+        return request;
+    }
+
+    private static ClientCommoditySellOrderSubmit CreateCommoditySellRequest(uint quantity)
+    {
+        var request = new ClientCommoditySellOrderSubmit();
+        request.Order.Item2Id       = ItemId;
+        request.Order.Quantity      = quantity;
+        request.Order.PricePerUnit  = 10ul;
+        request.Order.Price         = 10ul * quantity;
+        request.Order.IsBuyOrder    = false;
+        request.Order.ForceImmediate = false;
+        return request;
+    }
+
+    private static ClientCommoditySellOrderSubmit CreateCommodityBuyRequest(uint quantity, ulong pricePerUnit)
+    {
+        var request = new ClientCommoditySellOrderSubmit();
+        request.Order.Item2Id        = ItemId;
+        request.Order.Quantity       = quantity;
+        request.Order.PricePerUnit   = pricePerUnit;
+        request.Order.Price          = pricePerUnit * quantity;
+        request.Order.IsBuyOrder     = true;
+        request.Order.ForceImmediate = false;
+        return request;
+    }
+
+    private static ClientCommodityOrderCancel CreateCommodityCancelRequest(CommodityOrder order)
+    {
+        var request = (ClientCommodityOrderCancel)RuntimeHelpers.GetUninitializedObject(typeof(ClientCommodityOrderCancel));
+        SetAutoProperty(request, nameof(ClientCommodityOrderCancel.CommodityOrderId), order.CommodityOrderId);
+        SetAutoProperty(request, nameof(ClientCommodityOrderCancel.Item2Id), order.Item2Id);
+        SetAutoProperty(request, nameof(ClientCommodityOrderCancel.IsBuyOrder), order.IsBuyOrder);
         return request;
     }
 

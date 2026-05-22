@@ -328,13 +328,14 @@ namespace NexusForever.Game.Account.Inventory
 
         public void SendCooldowns()
         {
-            foreach (AccountItemCooldown cooldown in cooldowns.Values.OrderBy(c => c.CooldownGroupId))
-            {
-                if (cooldown.GetRemainingDuration() == 0u)
-                    continue;
+            List<ServerAccountItemCooldowns.Cooldown> activeCooldowns = cooldowns.Values
+                .OrderBy(c => c.CooldownGroupId)
+                .Select(c => c.BuildListEntry())
+                .Where(c => c.CooldownInSeconds != 0u)
+                .ToList();
 
-                account.Session.EnqueueMessageEncrypted(cooldown.Build());
-            }
+            if (activeCooldowns.Count != 0)
+                account.Session.EnqueueMessageEncrypted(new ServerAccountItemCooldowns(activeCooldowns));
         }
 
         public IEnumerator<IAccountInventoryItem> GetEnumerator()

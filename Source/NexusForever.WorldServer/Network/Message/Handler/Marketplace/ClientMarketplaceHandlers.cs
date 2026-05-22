@@ -8,6 +8,7 @@ using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Marketplace;
 using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Marketplace;
@@ -208,19 +209,22 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
     public class ClientCommoditySellOrderSubmitHandler : IMessageHandler<IWorldSession, ClientCommoditySellOrderSubmit>
     {
         private readonly ILogger<ClientCommoditySellOrderSubmitHandler> log;
+        private readonly IGameTableManager gameTableManager;
         private readonly IItemManager itemManager;
 
         public ClientCommoditySellOrderSubmitHandler(
             ILogger<ClientCommoditySellOrderSubmitHandler> log,
+            IGameTableManager gameTableManager,
             IItemManager itemManager)
         {
-            this.log         = log;
-            this.itemManager = itemManager;
+            this.log              = log;
+            this.gameTableManager = gameTableManager;
+            this.itemManager      = itemManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientCommoditySellOrderSubmit sellOrderSubmit)
         {
-            MarketplaceRequestHelper.ValidateCommodityOrder(itemManager, sellOrderSubmit.Order);
+            MarketplaceRequestHelper.ValidateCommodityOrder(gameTableManager, itemManager, sellOrderSubmit.Order);
 
             MarketplaceRequestHelper.SendEnabledStatus(session);
 
@@ -256,9 +260,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
 
             MarketplaceRequestHelper.SendEnabledStatus(session);
 
-            bool cancelled = MarketplaceRequestHelper.CancelCommodityOrder(session, orderCancel.CommodityOrderId, orderCancel.Item2Id, orderCancel.IsBuyOrder);
+            bool cancelled = MarketplaceRequestHelper.CancelCommodityOrder(session, orderCancel.CommodityOrderId, orderCancel.Item2Id, orderCancel.IsBuyOrder, out CommodityOrder cancelledOrder);
             log.LogDebug("Processed commodity order cancel request from player {PlayerGuid}: order {CommodityOrderId}, item {Item2Id}, buy order {IsBuyOrder}, cancelled {Cancelled}.",
                 session.Player?.Guid, orderCancel.CommodityOrderId, orderCancel.Item2Id, orderCancel.IsBuyOrder, cancelled);
+
+            if (cancelled)
+            {
+                session.EnqueueMessageEncrypted(new ServerCommodityAuctionRemoved
+                {
+                    OrderRemoved = cancelledOrder,
+                    Type         = AuctionEventType.Cancel
+                });
+            }
         }
     }
 
@@ -267,6 +280,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
         private const uint MaxAuctionFilters = 7u;
         private const uint AuctionPageSize = 50u;
         private const ulong DefaultAuctionExpirationSeconds = 172800ul;
+        private const uint CommodityOrderQuantityLimitGameFormulaId = 0x439u;
+        private const uint DefaultMaxCommodityOrderQuantity = 200u;
 
         private static readonly object syncRoot = new();
         private static readonly List<MarketplaceAuction> auctions = [];
@@ -508,8 +523,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
             return GenericError.Ok;
         }
 
-        public static bool CancelCommodityOrder(IWorldSession session, ulong orderId, uint item2Id, bool isBuyOrder)
+        public static bool CancelCommodityOrder(IWorldSession session, ulong orderId, uint item2Id, bool isBuyOrder, out CommodityOrder cancelledOrder)
         {
+            cancelledOrder = new CommodityOrder
+            {
+                CommodityOrderId = orderId,
+                Item2Id          = item2Id,
+                IsBuyOrder       = isBuyOrder
+            };
+
             if (session.Player == null)
                 return false;
 
@@ -523,6 +545,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
                 if (record == null)
                     return false;
 
+                cancelledOrder = CloneOrder(record.Order);
                 commodityOrders.Remove(record);
                 if (record.Order.IsBuyOrder)
                     session.Player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, record.Order.Price);
@@ -595,10 +618,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
             return item;
         }
 
-        public static void ValidateCommodityOrder(IItemManager itemManager, CommodityOrder order)
+        public static void ValidateCommodityOrder(IGameTableManager gameTableManager, IItemManager itemManager, CommodityOrder order)
         {
             ValidateItem2(itemManager, order.Item2Id);
             if (order.Quantity == 0u || order.PricePerUnit == 0ul || order.Price == 0ul)
+                throw new InvalidPacketValueException();
+
+            GameFormulaEntry quantityLimit = gameTableManager.GameFormula.GetEntry(CommodityOrderQuantityLimitGameFormulaId);
+            uint maxQuantity = quantityLimit?.Dataint02 ?? DefaultMaxCommodityOrderQuantity;
+            if (order.Quantity > maxQuantity)
                 throw new InvalidPacketValueException();
         }
 
