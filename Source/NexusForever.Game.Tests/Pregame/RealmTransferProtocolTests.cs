@@ -1,15 +1,25 @@
+using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using NexusForever.Database;
+using NexusForever.Database.Auth.Model;
+using NexusForever.Game;
+using NexusForever.Game.Abstract.Server;
 using NexusForever.Game.Static.Pregame;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Network.Message.Handler.Character;
 using NexusForever.WorldServer.Network.Message.Handler.Misc;
 
 namespace NexusForever.Game.Tests.Pregame;
 
+[Collection(LegacyServiceProviderCollection.Name)]
 public class RealmTransferProtocolTests
 {
     [Fact]
@@ -87,6 +97,59 @@ public class RealmTransferProtocolTests
         Assert.True(reader.ReadBit());
     }
 
+    [Fact]
+    public void ClientSelectRealmHandler_IgnoresCurrentRealmSelection()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = CreateRealmProvider(1);
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+            IServerManager serverManager = CreateServerManager(CreateServer(1, isOnline: false));
+            IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out _);
+            var handler = new ClientSelectRealmHandler(serverManager, databaseManager);
+
+            handler.HandleMessage(session, CreateSelectRealm(1u));
+
+            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void ClientSelectRealmHandler_OfflineRealmSendsServerDownTransferResult()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = CreateRealmProvider(1);
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+            IServerManager serverManager = CreateServerManager(CreateServer(2, isOnline: false));
+            IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out _);
+            var handler = new ClientSelectRealmHandler(serverManager, databaseManager);
+
+            handler.HandleMessage(session, CreateSelectRealm(2u));
+
+            ServerRealmTransferResult result = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(invocation => invocation.Arguments[0])
+                .OfType<ServerRealmTransferResult>()
+                .Single();
+            Assert.Equal(CharacterModifyResult.RealmTransferFailed_ServerDown, result.Result);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     private static byte[] WritePacket(ServerTransferDestinationRealmList message)
     {
         using var stream = new MemoryStream();
@@ -94,5 +157,48 @@ public class RealmTransferProtocolTests
         message.Write(writer);
         writer.FlushBits();
         return stream.ToArray();
+    }
+
+    private static ServiceProvider CreateRealmProvider(ushort realmId)
+    {
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), realmId);
+        return new ServiceCollection()
+            .AddSingleton(realmContext)
+            .BuildServiceProvider();
+    }
+
+    private static IServerManager CreateServerManager(params IServerInfo[] servers)
+    {
+        IServerManager serverManager = RecordingDispatchProxy<IServerManager>.Create(out RecordingDispatchProxy<IServerManager> serverManagerProxy);
+        serverManagerProxy.SetProperty(nameof(IServerManager.Servers), servers.ToImmutableList());
+        serverManagerProxy.SetProperty(nameof(IServerManager.ServerMessages), ImmutableList<IServerMessageInfo>.Empty);
+        return serverManager;
+    }
+
+    private static IServerInfo CreateServer(byte realmId, bool isOnline)
+    {
+        IServerInfo server = RecordingDispatchProxy<IServerInfo>.Create(out RecordingDispatchProxy<IServerInfo> serverProxy);
+        serverProxy.SetProperty(nameof(IServerInfo.Model), new ServerModel
+        {
+            Id   = realmId,
+            Name = $"Realm {realmId}",
+            Port = 24000,
+            Type = (byte)RealmType.PVE
+        });
+        serverProxy.SetProperty(nameof(IServerInfo.IsOnline), isOnline);
+        return server;
+    }
+
+    private static ClientSelectRealm CreateSelectRealm(uint realmId)
+    {
+        var message = (ClientSelectRealm)RuntimeHelpers.GetUninitializedObject(typeof(ClientSelectRealm));
+        SetAutoProperty(message, nameof(ClientSelectRealm.RealmId), realmId);
+        return message;
+    }
+
+    private static void SetAutoProperty<T>(object instance, string propertyName, T value)
+    {
+        instance.GetType().GetProperty(propertyName)!.SetValue(instance, value);
     }
 }

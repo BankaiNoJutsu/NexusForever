@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Loot;
@@ -32,6 +33,54 @@ public class LootRequestHandlerTests
     }
 
     [Fact]
+    public void ClientLootItemHandler_NotifyRequest_ForwardsToSendLootNotify()
+    {
+        IWorldSession session = CreateSession(out IPlayer player, out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out RecordingDispatchProxy<IGlobalLootManager> lootProxy);
+        var handler = new ClientLootItemHandler(NullLogger<ClientLootItemHandler>.Instance, lootManager);
+        ClientLootItem message = BuildLootItem(ownerUnitId: player.Guid, lootUnitId: 88u, request: true);
+
+        handler.HandleMessage(session, message);
+
+        RecordingDispatchProxy<IGlobalLootManager>.Invocation invocation =
+            Assert.Single(lootProxy.GetInvocations(nameof(IGlobalLootManager.SendLootNotify)));
+        Assert.Same(player, invocation.Arguments[0]);
+        Assert.Equal(player.Guid, invocation.Arguments[1]);
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+    }
+
+    [Fact]
+    public void ClientLootItemHandler_CollectRequest_ForwardsToGiveLoot()
+    {
+        IWorldSession session = CreateSession(out IPlayer player, out _);
+        IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out RecordingDispatchProxy<IGlobalLootManager> lootProxy);
+        var handler = new ClientLootItemHandler(NullLogger<ClientLootItemHandler>.Instance, lootManager);
+        ClientLootItem message = BuildLootItem(ownerUnitId: player.Guid, lootUnitId: 88u, request: false);
+
+        handler.HandleMessage(session, message);
+
+        RecordingDispatchProxy<IGlobalLootManager>.Invocation invocation =
+            Assert.Single(lootProxy.GetInvocations(nameof(IGlobalLootManager.GiveLoot)));
+        Assert.Same(player, invocation.Arguments[0]);
+        Assert.Equal(player.Guid, invocation.Arguments[1]);
+        Assert.Equal(88u, invocation.Arguments[2]);
+    }
+
+    [Fact]
+    public void ClientLootVacuumHandler_ForwardsToGiveAllLootInRange()
+    {
+        IWorldSession session = CreateSession(out IPlayer player, out _);
+        IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out RecordingDispatchProxy<IGlobalLootManager> lootProxy);
+        var handler = new ClientLootVacuumHandler(NullLogger<ClientLootVacuumHandler>.Instance, lootManager);
+
+        handler.HandleMessage(session, new ClientLootVacuum());
+
+        RecordingDispatchProxy<IGlobalLootManager>.Invocation invocation =
+            Assert.Single(lootProxy.GetInvocations(nameof(IGlobalLootManager.GiveAllLootInRange)));
+        Assert.Same(player, invocation.Arguments[0]);
+    }
+
+    [Fact]
     public void ClientLootAssignMasterHandler_ForwardsDecodedAssigneeToLootManager()
     {
         IWorldSession session = CreateSession(out IPlayer player);
@@ -55,10 +104,25 @@ public class LootRequestHandlerTests
 
     private static IWorldSession CreateSession(out IPlayer player)
     {
-        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
-        player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        return CreateSession(out player, out _);
+    }
+
+    private static IWorldSession CreateSession(out IPlayer player, out RecordingDispatchProxy<IWorldSession> sessionProxy)
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
+        player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Guid), 77u);
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         return session;
+    }
+
+    private static ClientLootItem BuildLootItem(uint ownerUnitId, uint lootUnitId, bool request)
+    {
+        var message = new ClientLootItem();
+        SetPrivateProperty(message, nameof(ClientLootItem.OwnerUnitId), ownerUnitId);
+        SetPrivateProperty(message, nameof(ClientLootItem.LootUnitId), lootUnitId);
+        SetPrivateProperty(message, nameof(ClientLootItem.Request), request);
+        return message;
     }
 
     private static ClientLootRollAction BuildRollAction(uint ownerUnitId, uint lootUnitId, LootRollAction action)
