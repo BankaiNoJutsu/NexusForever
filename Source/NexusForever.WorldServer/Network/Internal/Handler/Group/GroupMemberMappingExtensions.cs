@@ -40,5 +40,44 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
                 Path             = member.Character.Path
             };
         }
+
+        public static ServerGroupRosterUpdate ToNetworkGroupRosterUpdate(this InternalGroupMember member, ulong groupId)
+        {
+            ServerGroupMemberStatUpdate source = member.ToNetworkGroupMemberStatUpdate(groupId);
+            return new ServerGroupRosterUpdate
+            {
+                GroupId          = source.GroupId,
+                TargetPlayer     = source.TargetPlayer,
+                Level            = source.Level,
+                EffectiveLevel   = source.EffectiveLevel,
+                Health           = source.Health,
+                HealthMax        = source.HealthMax,
+                Shield           = source.Shield,
+                ShieldMax        = source.ShieldMax,
+                Absorption       = source.Absorption,
+                AbsorptionMax    = source.AbsorptionMax,
+                Mana             = source.Mana,
+                ManaMax          = source.ManaMax,
+                HealingAbsorb    = source.HealingAbsorb,
+                HealingAbsorbMax = source.HealingAbsorbMax,
+                PhaseFlags1      = source.PhaseFlags1,
+                PhaseFlags2      = source.PhaseFlags2,
+                Path             = source.Path
+            };
+        }
+
+        public static ServerGroupMemberDetailUpdate ToNetworkGroupMemberDetailUpdate(this InternalGroupMember member, ulong groupId)
+        {
+            return new ServerGroupMemberDetailUpdate
+            {
+                GroupId        = groupId,
+                TargetPlayer   = member.Identity.ToNetworkIdentity(),
+                Level          = member.Character.Level,
+                EffectiveLevel = member.Character.EffectiveLevel,
+                Health         = member.Character.Health,
+                HealthMax      = member.Character.HealthMax,
+                Path           = member.Character.Path
+            };
+        }
     }
 }

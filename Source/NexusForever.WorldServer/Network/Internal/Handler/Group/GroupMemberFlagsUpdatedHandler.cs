@@ -24,18 +24,31 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
 
         public Task Handle(GroupMemberFlagsUpdatedMessage message)
         {
-            var groupMemberFlagsChanged = new ServerGroupMemberFlagsChanged
-            {
-                GroupId         = message.Group.Id,
-                TargetedPlayer  = message.Member.Identity.ToNetworkIdentity(),
-                ChangedFlags    = message.Member.Flags,
-                IsFromPromotion = message.FromPromotion,
-            };
-
             foreach (GroupMember item in message.Group.Members)
             {
                 IPlayer player = playerManager.GetPlayer(item.Identity.ToGameIdentity());
-                player?.Session.EnqueueMessageEncrypted(groupMemberFlagsChanged);
+                if (player == null)
+                    continue;
+
+                if (message.FromPromotion)
+                {
+                    player.Session.EnqueueMessageEncrypted(new ServerGroupMemberFlagsChanged
+                    {
+                        GroupId         = message.Group.Id,
+                        TargetedPlayer  = message.Member.Identity.ToNetworkIdentity(),
+                        ChangedFlags    = message.Member.Flags,
+                        IsFromPromotion = true,
+                    });
+                }
+                else
+                {
+                    player.Session.EnqueueMessageEncrypted(new ServerGroupMemberRoleChange
+                    {
+                        GroupId        = message.Group.Id,
+                        TargetedPlayer = message.Member.Identity.ToNetworkIdentity(),
+                        ChangedFlags   = message.Member.Flags,
+                    });
+                }
             }
 
             return Task.CompletedTask;

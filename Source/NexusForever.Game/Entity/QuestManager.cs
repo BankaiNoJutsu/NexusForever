@@ -875,8 +875,16 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void QuestShareResult(ushort questId, bool result)
         {
-            if (!pendingSharedQuests.Remove(questId))
+            if (!pendingSharedQuests.Remove(questId, out uint sharerUnitId))
                 throw new QuestException($"Player {player.CharacterId} tried to respond to quest share {questId} without a pending share!");
+
+            IPlayer sharer = player.GetVisible<IPlayer>(sharerUnitId);
+            sharer?.Session.EnqueueMessageEncrypted(new ServerQuestShareResult
+            {
+                QuestId       = questId,
+                Accepted      = result,
+                SharerUnitId  = player.Guid,
+            });
 
             if (!result)
                 return;

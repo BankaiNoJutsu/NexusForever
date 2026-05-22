@@ -139,6 +139,36 @@ public class GroupFlagHandlerTests
         Assert.Equal(aliceMessage.IsFromPromotion, bobMessage.IsFromPromotion);
     }
 
+    [Fact]
+    public async Task GroupMemberFlagsUpdated_BroadcastsRoleChangeWhenNotPromotion()
+    {
+        var playerManager = new TestPlayerManager();
+        IPlayer alice = CreatePlayer(101ul, out RecordingDispatchProxy<IGameSession> aliceSessionProxy);
+        IPlayer bob = CreatePlayer(202ul, out RecordingDispatchProxy<IGameSession> bobSessionProxy);
+        playerManager.AddPlayer(alice);
+        playerManager.AddPlayer(bob);
+        InternalGroupMember targetMember = CreateGroupMember(202ul, GroupMemberInfoFlags.Healer);
+        var handler = new GroupMemberFlagsUpdatedHandler(playerManager);
+
+        await handler.Handle(new GroupMemberFlagsUpdatedMessage
+        {
+            Group = new InternalGroup
+            {
+                Id      = 9001ul,
+                Members = [CreateGroupMember(101ul), targetMember]
+            },
+            Member        = targetMember,
+            FromPromotion = false
+        });
+
+        ServerGroupMemberRoleChange aliceMessage = AssertEncryptedMessage<ServerGroupMemberRoleChange>(aliceSessionProxy);
+        ServerGroupMemberRoleChange bobMessage   = AssertEncryptedMessage<ServerGroupMemberRoleChange>(bobSessionProxy);
+        Assert.Equal(9001ul, aliceMessage.GroupId);
+        Assert.Equal(GroupMemberInfoFlags.Healer, aliceMessage.ChangedFlags);
+        Assert.Equal(aliceMessage.GroupId, bobMessage.GroupId);
+        Assert.Equal(aliceMessage.ChangedFlags, bobMessage.ChangedFlags);
+    }
+
     private static IWorldSession CreateWorldSession(ulong characterId)
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);

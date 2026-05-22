@@ -25,6 +25,8 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
         public Task Handle(GroupMemberStatsUpdatedMessage message)
         {
             ServerGroupMemberStatUpdate groupMemberStatUpdate = message.Member.ToNetworkGroupMemberStatUpdate(message.Group.Id);
+            ServerGroupRosterUpdate rosterUpdate               = message.Member.ToNetworkGroupRosterUpdate(message.Group.Id);
+            ServerGroupMemberDetailUpdate detailUpdate         = message.Member.ToNetworkGroupMemberDetailUpdate(message.Group.Id);
 
             foreach (GroupMember member in message.Group.Members)
             {
@@ -32,7 +34,12 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
                     continue;
 
                 IPlayer player = playerManager.GetPlayer(member.Identity.ToGameIdentity());
-                player?.Session.EnqueueMessageEncrypted(groupMemberStatUpdate);
+                if (player == null)
+                    continue;
+
+                player.Session.EnqueueMessageEncrypted(groupMemberStatUpdate);
+                player.Session.EnqueueMessageEncrypted(rosterUpdate);
+                player.Session.EnqueueMessageEncrypted(detailUpdate);
             }
 
             return Task.CompletedTask;

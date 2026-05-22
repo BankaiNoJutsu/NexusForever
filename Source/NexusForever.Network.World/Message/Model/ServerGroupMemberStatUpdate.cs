@@ -7,7 +7,7 @@ namespace NexusForever.Network.World.Message.Model
     public class ServerGroupMemberStatUpdate : IWritable
     {
         public ulong GroupId { get; set; }
-        public Identity TargetPlayer { get; set; }
+        public Identity TargetPlayer { get; set; } = new();
 
         public byte Level { get; set; }
         public byte EffectiveLevel { get; set; }
@@ -67,6 +67,7 @@ namespace NexusForever.Network.World.Message.Model
             writer.Write(PhaseFlags1);
             writer.Write(PhaseFlags2);
             writer.Write(Path, 3);
+            writer.WriteBytes(new byte[25]);
         }
     }
 }

@@ -33,6 +33,12 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
             {
                 case GroupRequestType.Request:
                 {
+                    player.Session.EnqueueMessageEncrypted(new ServerGroupRequestJoinWindow
+                    {
+                        GroupId            = message.Group.Id,
+                        RequesterIdentity  = message.RequesterIdentity.ToNetworkIdentity(),
+                        TimeoutSeconds     = 60u,
+                    });
                     player.Session.EnqueueMessageEncrypted(new ServerGroupRequestJoinResponse
                     {
                         GroupId    = message.Group.Id,

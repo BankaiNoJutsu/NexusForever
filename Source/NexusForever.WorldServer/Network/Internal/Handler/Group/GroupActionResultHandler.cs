@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Static.Group;
 using NexusForever.Network.Internal.Message.Group;
 using NexusForever.Network.World.Message.Model;
 using Rebus.Handlers;
@@ -24,7 +25,30 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
         public Task Handle(GroupActionResultMessage message)
         {
             IPlayer player = playerManager.GetPlayer(message.Recipient.ToGameIdentity());
-            player?.Session.EnqueueMessageEncrypted(new ServerGroupActionResult
+            if (player == null)
+                return Task.CompletedTask;
+
+            switch (message.Result)
+            {
+                case GroupActionResult.KickSuccess:
+                case GroupActionResult.KickFailed:
+                    player.Session.EnqueueMessageEncrypted(new ServerGroupKickResult
+                    {
+                        GroupId = message.GroupId,
+                        Result  = message.Result
+                    });
+                    return Task.CompletedTask;
+                case GroupActionResult.ChangeSettingsSuccess:
+                case GroupActionResult.ChangeSettingsFailed:
+                    player.Session.EnqueueMessageEncrypted(new ServerGroupLootRuleValidationResult
+                    {
+                        GroupId = message.GroupId,
+                        Result  = message.Result
+                    });
+                    return Task.CompletedTask;
+            }
+
+            player.Session.EnqueueMessageEncrypted(new ServerGroupActionResult
             {
                 GroupId  = message.GroupId,
                 Identity = message.Target.ToNetworkIdentity(),
