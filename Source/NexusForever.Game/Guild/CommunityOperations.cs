@@ -8,6 +8,7 @@ using NexusForever.Game.Map.Lock;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Housing;
 using NexusForever.Network;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Guild;
 
 namespace NexusForever.Game.Guild
@@ -110,6 +111,7 @@ namespace NexusForever.Game.Guild
 
             member.CommunityPlotReservation = operation.Data.Int32Data;
             AnnounceGuildMemberChange(member);
+            SendCommunityPlotReservation(player, residence, player.Identity.RealmId, operation.Data.Int32Data);
 
             return new GuildResultInfo(GuildResult.Success);
         }
@@ -134,8 +136,21 @@ namespace NexusForever.Game.Guild
 
             targetMember.CommunityPlotReservation = -1;
             AnnounceGuildMemberChange(targetMember);
+            SendCommunityPlotReservation(player, child.Residence, targetMember.PlayerIdentity.RealmId, -1);
 
             return new GuildResultInfo(GuildResult.Success);
+        }
+
+        private static void SendCommunityPlotReservation(IPlayer player, IResidence residence, ushort realmId, int plotIndex)
+        {
+            var message = new ServerHousingCommunityPlotReservation
+            {
+                PlotIndex = unchecked((uint)plotIndex)
+            };
+            message.TargetResidence.RealmId     = realmId;
+            message.TargetResidence.ResidenceId = residence.Id;
+
+            player.Session.EnqueueMessageEncrypted(message);
         }
     }
 }

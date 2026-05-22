@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +9,8 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Character;
 using NexusForever.Game.Entity;
 using NexusForever.Game;
+using NexusForever.Game.Abstract.Marketplace;
+using NexusForever.Game.Marketplace;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Marketplace;
@@ -45,10 +48,11 @@ public class MarketplaceAuctionHandlerTests
         var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
         SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
-        LegacyServiceProvider.Provider = new ServiceCollection()
-            .AddSingleton(realmContext)
-            .AddSingleton(playerManager)
-            .BuildServiceProvider();
+        var services = new ServiceCollection();
+        services.AddSingleton(realmContext);
+        services.AddSingleton(playerManager);
+        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
+        LegacyServiceProvider.Provider = services.BuildServiceProvider();
 
         try
         {
@@ -108,7 +112,7 @@ public class MarketplaceAuctionHandlerTests
             RecordingDispatchProxy<ICurrencyManager>.Invocation sellerCredit =
                 Assert.Single(sellerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
             Assert.Equal(CurrencyType.Credits, sellerCredit.Arguments[0]);
-            Assert.Equal(BuyoutPrice, sellerCredit.Arguments[1]);
+            Assert.Equal(237ul, sellerCredit.Arguments[1]);
 
             RecordingDispatchProxy<IInventory>.Invocation addCall =
                 Assert.Single(buyerInventoryProxy.GetInvocations(nameof(IInventory.AddItem)));
@@ -133,8 +137,272 @@ public class MarketplaceAuctionHandlerTests
     }
 
     [Fact]
+    public void AuctionBid_OutbidNotifiesPreviousBidderAndRefundsCredits()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
+        var services = new ServiceCollection();
+        services.AddSingleton(realmContext);
+        services.AddSingleton(playerManager);
+        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
+        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+
+        try
+        {
+            IItemInfo itemInfo = CreateItemInfo();
+            IItem item = CreateItem(itemInfo, out _);
+            IWorldSession sellerSession = CreateSession(SellerGuid, SellerCharacterId, out RecordingDispatchProxy<IInventory> sellerInventoryProxy, out _, out RecordingDispatchProxy<IWorldSession> sellerSessionProxy, out IPlayer seller);
+            playerManager.AddPlayer(seller);
+            sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), item);
+
+            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance);
+            sellHandler.HandleMessage(sellerSession, CreateSellRequest());
+
+            IItemManager itemManager = CreateItemManager(itemInfo);
+            const ulong firstBidderCharacterId = 3003ul;
+            const ulong secondBidderCharacterId = BuyerCharacterId;
+            IWorldSession firstBidderSession = CreateSession(301u, firstBidderCharacterId, out _, out RecordingDispatchProxy<ICurrencyManager> firstBidderCurrencyProxy, out RecordingDispatchProxy<IWorldSession> firstBidderSessionProxy, out IPlayer firstBidder);
+            IWorldSession secondBidderSession = CreateSession(BuyerGuid, secondBidderCharacterId, out _, out RecordingDispatchProxy<ICurrencyManager> secondBidderCurrencyProxy, out _, out IPlayer secondBidder);
+            playerManager.AddPlayer(firstBidder);
+            playerManager.AddPlayer(secondBidder);
+            firstBidderCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+            secondBidderCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+
+            ServerAuctionPostResult postResult = Assert.Single(GetMessages<ServerAuctionPostResult>(sellerSessionProxy));
+            ulong auctionId = postResult.Auction.AuctionId;
+
+            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager);
+            buyHandler.HandleMessage(firstBidderSession, CreateBidRequest(auctionId, MinimumBid));
+            buyHandler.HandleMessage(secondBidderSession, CreateBidRequest(auctionId, MinimumBid + 50ul));
+
+            ServerAuctionOutbid outbid = Assert.Single(GetMessages<ServerAuctionOutbid>(firstBidderSessionProxy));
+            Assert.Equal(auctionId, outbid.Auction.AuctionId);
+            Assert.Equal(MinimumBid + 50ul, outbid.Auction.CurrentBid);
+            Assert.Equal(secondBidderCharacterId, outbid.Auction.TopBidderCharacterId);
+
+            RecordingDispatchProxy<ICurrencyManager>.Invocation refund =
+                Assert.Single(firstBidderCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(CurrencyType.Credits, refund.Arguments[0]);
+            Assert.Equal(MinimumBid, refund.Arguments[1]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void AuctionExpire_WithHighBid_CompletesSaleToTopBidder()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
+        var services = new ServiceCollection();
+        services.AddSingleton(realmContext);
+        services.AddSingleton(playerManager);
+        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
+        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+
+        try
+        {
+            IItemInfo itemInfo = CreateItemInfo();
+            IItem item = CreateItem(itemInfo, out _);
+            IWorldSession sellerSession = CreateSession(SellerGuid, SellerCharacterId, out RecordingDispatchProxy<IInventory> sellerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> sellerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> sellerSessionProxy, out IPlayer seller);
+            playerManager.AddPlayer(seller);
+            sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), item);
+
+            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance);
+            sellHandler.HandleMessage(sellerSession, CreateSellRequest());
+
+            IItemManager itemManager = CreateItemManager(itemInfo);
+            IWorldSession bidderSession = CreateSession(BuyerGuid, BuyerCharacterId, out RecordingDispatchProxy<IInventory> bidderInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> bidderCurrencyProxy, out RecordingDispatchProxy<IWorldSession> bidderSessionProxy, out IPlayer bidder);
+            playerManager.AddPlayer(bidder);
+            bidderCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+            bidderInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 2u);
+
+            ServerAuctionPostResult postResult = Assert.Single(GetMessages<ServerAuctionPostResult>(sellerSessionProxy));
+            ulong auctionId = postResult.Auction.AuctionId;
+
+            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager);
+            buyHandler.HandleMessage(bidderSession, CreateBidRequest(auctionId, MinimumBid));
+
+            ForceAuctionExpiration(GlobalMarketplaceManager.Instance);
+            GlobalMarketplaceManager.Instance.Update(2000d);
+
+            RecordingDispatchProxy<IInventory>.Invocation addCall =
+                Assert.Single(bidderInventoryProxy.GetInvocations(nameof(IInventory.AddItem)));
+            Assert.Same(item, addCall.Arguments[0]);
+
+            RecordingDispatchProxy<ICurrencyManager>.Invocation sellerCredit =
+                Assert.Single(sellerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(95ul, sellerCredit.Arguments[1]);
+
+            ServerAuctionWon won = Assert.Single(GetMessages<ServerAuctionWon>(bidderSessionProxy));
+            Assert.Equal(auctionId, won.Auction.AuctionId);
+            Assert.Empty(GetMessages<ServerAuctionExpired>(sellerSessionProxy));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void AuctionExpire_WithHighBid_OfflineWinner_StillCreditsSeller()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
+        var services = new ServiceCollection();
+        services.AddSingleton(realmContext);
+        services.AddSingleton(playerManager);
+        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
+        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+
+        try
+        {
+            IItemInfo itemInfo = CreateItemInfo();
+            IItem item = CreateItem(itemInfo, out _);
+            IWorldSession sellerSession = CreateSession(SellerGuid, SellerCharacterId, out RecordingDispatchProxy<IInventory> sellerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> sellerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> sellerSessionProxy, out IPlayer seller);
+            playerManager.AddPlayer(seller);
+            sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), item);
+
+            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance);
+            sellHandler.HandleMessage(sellerSession, CreateSellRequest());
+
+            IItemManager itemManager = CreateItemManager(itemInfo);
+            IWorldSession bidderSession = CreateSession(BuyerGuid, BuyerCharacterId, out RecordingDispatchProxy<IInventory> bidderInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> bidderCurrencyProxy, out RecordingDispatchProxy<IWorldSession> bidderSessionProxy, out IPlayer bidder);
+            playerManager.AddPlayer(bidder);
+            bidderCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+
+            ServerAuctionPostResult postResult = Assert.Single(GetMessages<ServerAuctionPostResult>(sellerSessionProxy));
+            ulong auctionId = postResult.Auction.AuctionId;
+
+            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager);
+            buyHandler.HandleMessage(bidderSession, CreateBidRequest(auctionId, MinimumBid));
+
+            playerManager.RemovePlayer(bidder);
+            ForceAuctionExpiration(GlobalMarketplaceManager.Instance);
+            GlobalMarketplaceManager.Instance.Update(2000d);
+
+            RecordingDispatchProxy<ICurrencyManager>.Invocation sellerCredit =
+                Assert.Single(sellerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(95ul, sellerCredit.Arguments[1]);
+            Assert.Empty(bidderInventoryProxy.GetInvocations(nameof(IInventory.AddItem)));
+            Assert.Empty(GetMessages<ServerAuctionWon>(bidderSessionProxy));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void AuctionBuyout_FullInventoryWithoutMailDelivery_ReturnsInventoryFull()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
+        var services = new ServiceCollection();
+        services.AddSingleton(realmContext);
+        services.AddSingleton(playerManager);
+        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
+        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+
+        try
+        {
+            IItemInfo itemInfo = CreateItemInfo();
+            IItem item = CreateItem(itemInfo, out _);
+            IWorldSession sellerSession = CreateSession(SellerGuid, SellerCharacterId, out RecordingDispatchProxy<IInventory> sellerInventoryProxy, out _, out RecordingDispatchProxy<IWorldSession> sellerSessionProxy, out IPlayer seller);
+            playerManager.AddPlayer(seller);
+            sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetItem), item);
+
+            var sellHandler = new ClientAuctionSellOrderSubmitHandler(NullLogger<ClientAuctionSellOrderSubmitHandler>.Instance);
+            sellHandler.HandleMessage(sellerSession, CreateSellRequest());
+
+            ServerAuctionPostResult postResult = Assert.Single(GetMessages<ServerAuctionPostResult>(sellerSessionProxy));
+            ulong auctionId = postResult.Auction.AuctionId;
+
+            IItemManager itemManager = CreateItemManager(itemInfo);
+            IWorldSession buyerSession = CreateSession(BuyerGuid, BuyerCharacterId, out RecordingDispatchProxy<IInventory> buyerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> buyerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> buyerSessionProxy, out _);
+            buyerCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+            buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 0u);
+
+            var buyHandler = new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, itemManager);
+            buyHandler.HandleMessage(buyerSession, CreateBuyoutRequest(auctionId));
+
+            ServerAuctionBidResult bidResult = Assert.Single(GetMessages<ServerAuctionBidResult>(buyerSessionProxy));
+            Assert.Equal(GenericError.ItemInventoryFull, bidResult.Result);
+            Assert.Equal(auctionId, bidResult.Auction.AuctionId);
+            Assert.Empty(buyerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+            Assert.Empty(buyerInventoryProxy.GetInvocations(nameof(IInventory.AddItem)));
+            Assert.Empty(GetMessages<ServerAuctionWon>(buyerSessionProxy));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CommoditySellOrderSubmit_WithInvalidDurationThrows()
+    {
+        using ServiceProviderScope marketplaceProvider = UseMarketplaceProvider();
+
+        IItemInfo itemInfo = CreateItemInfo();
+        var handler = new ClientCommoditySellOrderSubmitHandler(
+            NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
+            CreateGameTableManager(maxCommodityOrderQuantity: 200u, includeListingDurationFormula: true),
+            CreateItemManager(itemInfo));
+        IWorldSession session = CreateSession(404u, 4004ul, out _, out _, out _, out _);
+
+        ClientCommoditySellOrderSubmit request = CreateCommoditySellRequest(quantity: 1u);
+        ulong listTime = (ulong)DateTime.UtcNow.ToFileTimeUtc();
+        request.Order.ListTime = listTime;
+        request.Order.ExpirationTime = listTime + 9999ul * MarketplaceListingDuration.FileTimeTicksPerSecond;
+
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, request));
+    }
+
+    [Fact]
+    public void CommoditySellOrderSubmit_WithValidDurationTierPreservesExpiration()
+    {
+        using ServiceProviderScope marketplaceProvider = UseMarketplaceProvider();
+
+        IItemInfo itemInfo = CreateItemInfo();
+        IWorldSession session = CreateSession(505u, 5005ul, out RecordingDispatchProxy<IInventory> inventoryProxy, out _, out RecordingDispatchProxy<IWorldSession> sessionProxy, out _);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.HasItemCount), true);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.ItemDelete), true);
+
+        var handler = new ClientCommoditySellOrderSubmitHandler(
+            NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
+            CreateGameTableManager(maxCommodityOrderQuantity: 200u, includeListingDurationFormula: true),
+            CreateItemManager(itemInfo));
+
+        ClientCommoditySellOrderSubmit request = CreateCommoditySellRequest(quantity: 2u);
+        ulong listTime = (ulong)DateTime.UtcNow.ToFileTimeUtc();
+        const ulong tierSeconds = 7200ul;
+        request.Order.ListTime = listTime;
+        request.Order.ExpirationTime = listTime + tierSeconds * MarketplaceListingDuration.FileTimeTicksPerSecond;
+
+        handler.HandleMessage(session, request);
+
+        ServerCommodityOrderResult postResult = Assert.Single(GetMessages<ServerCommodityOrderResult>(sessionProxy));
+        Assert.Equal(GenericError.Ok, postResult.Result);
+        Assert.Equal(listTime, postResult.OrderPosted.ListTime);
+        Assert.Equal(request.Order.ExpirationTime, postResult.OrderPosted.ExpirationTime);
+    }
+
+    [Fact]
     public void CommoditySellOrderSubmit_WithQuantityAboveClientLimitThrows()
     {
+        using ServiceProviderScope marketplaceProvider = UseMarketplaceProvider();
+
         IItemInfo itemInfo = CreateItemInfo();
         var handler = new ClientCommoditySellOrderSubmitHandler(
             NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
@@ -150,6 +418,8 @@ public class MarketplaceAuctionHandlerTests
     [Fact]
     public void CommodityOrderCancel_RemovesTransientBuyOrderAndRefunds()
     {
+        using ServiceProviderScope marketplaceProvider = UseMarketplaceProvider();
+
         IItemInfo itemInfo = CreateItemInfo();
         IItemManager itemManager = CreateItemManager(itemInfo);
         IWorldSession session = CreateSession(505u, 5005ul, out _, out RecordingDispatchProxy<ICurrencyManager> currencyProxy, out RecordingDispatchProxy<IWorldSession> sessionProxy, out _);
@@ -243,6 +513,7 @@ public class MarketplaceAuctionHandlerTests
             Id      = characterId
         });
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), characterId);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
         playerProxy.SetProperty(nameof(IPlayer.Account), account);
         playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
         playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
@@ -250,18 +521,35 @@ public class MarketplaceAuctionHandlerTests
         return session;
     }
 
-    private static GameTableManager CreateGameTableManager(uint maxCommodityOrderQuantity = 200u)
+    private static GameTableManager CreateGameTableManager(uint maxCommodityOrderQuantity = 200u, bool includeListingDurationFormula = false)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
             GameTablePath = string.Empty
         }));
 
-        SetAutoProperty(gameTableManager, nameof(GameTableManager.GameFormula), CreateGameTable(new GameFormulaEntry
+        var formulaEntries = new List<GameFormulaEntry>
         {
-            Id        = 0x439u,
-            Dataint02 = maxCommodityOrderQuantity
-        }));
+            new()
+            {
+                Id        = 0x439u,
+                Dataint02 = maxCommodityOrderQuantity
+            }
+        };
+
+        if (includeListingDurationFormula)
+        {
+            formulaEntries.Add(new GameFormulaEntry
+            {
+                Id        = MarketplaceListingDuration.ListingDurationGameFormulaId,
+                Dataint0  = 300u,
+                Dataint01 = 1800u,
+                Dataint02 = 7200u,
+                Dataint03 = 43200u
+            });
+        }
+
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.GameFormula), CreateGameTable(formulaEntries.ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Family), CreateGameTable<Item2FamilyEntry>());
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Category), CreateGameTable<Item2CategoryEntry>());
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Item2Type), CreateGameTable<Item2TypeEntry>());
@@ -288,10 +576,15 @@ public class MarketplaceAuctionHandlerTests
 
     private static ClientAuctionBuyOrderSubmit CreateBuyoutRequest(ulong auctionId)
     {
+        return CreateBidRequest(auctionId, BuyoutPrice);
+    }
+
+    private static ClientAuctionBuyOrderSubmit CreateBidRequest(ulong auctionId, ulong amountOffered)
+    {
         var request = (ClientAuctionBuyOrderSubmit)RuntimeHelpers.GetUninitializedObject(typeof(ClientAuctionBuyOrderSubmit));
         SetAutoProperty(request, nameof(ClientAuctionBuyOrderSubmit.Item2Id), ItemId);
         SetAutoProperty(request, nameof(ClientAuctionBuyOrderSubmit.AuctionId), auctionId);
-        SetAutoProperty(request, nameof(ClientAuctionBuyOrderSubmit.AmountOffered), BuyoutPrice);
+        SetAutoProperty(request, nameof(ClientAuctionBuyOrderSubmit.AmountOffered), amountOffered);
         return request;
     }
 
@@ -380,5 +673,39 @@ public class MarketplaceAuctionHandlerTests
         FieldInfo field = instance.GetType()
             .GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
         field.SetValue(instance, value);
+    }
+
+    private static void ForceAuctionExpiration(GlobalMarketplaceManager manager)
+    {
+        Type auctionType = typeof(GlobalMarketplaceManager).GetNestedType("MarketplaceAuction", BindingFlags.NonPublic)!;
+        FieldInfo auctionsField = typeof(GlobalMarketplaceManager).GetField("auctions", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var auctions = (System.Collections.IList)auctionsField.GetValue(manager)!;
+        PropertyInfo expiresAtUtc = auctionType.GetProperty("ExpiresAtUtc", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
+
+        foreach (object record in auctions)
+            expiresAtUtc.SetValue(record, 0ul);
+    }
+
+    private static ServiceProviderScope UseMarketplaceProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
+        return new ServiceProviderScope(services.BuildServiceProvider());
+    }
+
+    private sealed class ServiceProviderScope : IDisposable
+    {
+        private readonly IServiceProvider previous;
+
+        public ServiceProviderScope(IServiceProvider provider)
+        {
+            previous               = LegacyServiceProvider.Provider;
+            LegacyServiceProvider.Provider = provider;
+        }
+
+        public void Dispose()
+        {
+            LegacyServiceProvider.Provider = previous;
+        }
     }
 }

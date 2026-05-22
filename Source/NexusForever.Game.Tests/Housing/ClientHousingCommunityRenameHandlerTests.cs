@@ -33,9 +33,11 @@ public class ClientHousingCommunityRenameHandlerTests
 
         handler.HandleMessage(session, ReadRequest("New Community Name"));
 
-        ServerHousingCommunityRename result = Assert.Single(GetEncryptedMessages(sessionProxy).OfType<ServerHousingCommunityRename>());
+        ServerHousingCommunityRenameResult result = Assert.Single(GetEncryptedMessages(sessionProxy).OfType<ServerHousingCommunityRenameResult>());
         Assert.Equal(HousingResult.InvalidPermissions, result.Result);
-        Assert.Equal(0x5566778899AABBCCul, result.TargetGuild.Id);
+        Assert.Equal(0u, result.Reserved0);
+        Assert.Equal(0u, result.Reserved1);
+        Assert.Equal(0u, result.Reserved2);
         Assert.Empty(communityProxy.GetInvocations(nameof(ICommunity.RenameGuild)));
     }
 

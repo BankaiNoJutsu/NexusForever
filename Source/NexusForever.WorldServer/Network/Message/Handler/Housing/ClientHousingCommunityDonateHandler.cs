@@ -26,6 +26,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
             if (community?.Residence == null)
                 throw new InvalidPacketValueException();
 
+            var donateUpdate = new ServerHousingCommunityDonateUpdate();
+
             foreach (DecorInfo decorInfo in housingCommunityDonate.Decor)
             {
                 IDecor decor = residence.GetDecor(decorInfo.DecorId);
@@ -35,11 +37,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                 if (decor.Type != DecorType.Crate)
                     throw new InvalidPacketValueException();
 
+                uint sourceDecorId = unchecked((uint)decor.DecorId);
+
                 // copy decor to recipient residence
-                if (community.Residence.Map != null)
-                    community.Residence.Map.DecorCopy(community.Residence, decor);
-                else
-                    community.Residence.DecorCopy(decor);
+                IDecor newDecor = community.Residence.Map != null
+                    ? community.Residence.Map.DecorCopy(community.Residence, decor)
+                    : community.Residence.DecorCopy(decor);
+
+                donateUpdate.Entries.Add(new ServerHousingCommunityDonateUpdate.Entry
+                {
+                    Value0 = sourceDecorId,
+                    Value1 = unchecked((uint)newDecor.DecorId),
+                });
 
                 // remove decor from donor residence
                 if (residence.Map != null)
@@ -52,6 +61,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                         decor.EnqueueDelete(true);
                 }
             }
+
+            if (donateUpdate.Entries.Count > 0)
+                session.EnqueueMessageEncrypted(donateUpdate);
         }
     }
 }

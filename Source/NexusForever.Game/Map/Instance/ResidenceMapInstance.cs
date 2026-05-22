@@ -28,6 +28,7 @@ namespace NexusForever.Game.Map.Instance
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
         private static readonly Vector3 ResidencePlotWorldOrigin = new(1472f, 0f, 1440f);
+        private static readonly uint[] InteriorWallpaperSlotFlags = [0x01u, 0x04u, 0x08u, 0x10u, 0x20u, 0x80u];
 
         // housing maps have unlimited vision range.
         public override float? VisionRange { get; protected set; } = null;
@@ -338,6 +339,117 @@ namespace NexusForever.Game.Map.Instance
             }
         }
 
+        public void InteriorWallpaperUpdate(IPlayer player, ClientHousingInteriorWallpaperUpdate interiorWallpaperUpdate)
+        {
+            if (interiorWallpaperUpdate.ExistingDecorFlags.Count != ClientHousingInteriorWallpaperUpdate.SlotCount
+                || interiorWallpaperUpdate.DecorUpdates.Count != ClientHousingInteriorWallpaperUpdate.SlotCount)
+                throw new InvalidPacketValueException();
+
+            var pendingUpdates = new List<(IResidence Residence, IDecor Decor, DecorInfo Update, HousingWallpaperInfoEntry Entry)>();
+            var costs = new Dictionary<CurrencyType, ulong>();
+            for (int i = 0; i < ClientHousingInteriorWallpaperUpdate.SlotCount; i++)
+            {
+                uint existingDecorFlag = interiorWallpaperUpdate.ExistingDecorFlags[i];
+                if (existingDecorFlag > 1u)
+                    throw new InvalidPacketValueException();
+
+                DecorInfo update = interiorWallpaperUpdate.DecorUpdates[i];
+                if (update.DecorInfoId == 0u && update.DecorId == 0ul)
+                    continue;
+
+                if (update.TargetResidence.RealmId != realmContext.RealmId
+                    || !residences.TryGetValue(update.TargetResidence.ResidenceId, out IResidence residence)
+                    || !residence.CanModifyResidence(player))
+                    throw new InvalidPacketValueException();
+
+                uint expectedHookIndex = (uint)i + 1u;
+                if (update.DecorInfoId == 0u
+                    || update.DecorType != DecorType.InteriorWallpaper
+                    || update.HookIndex != expectedHookIndex)
+                    throw new InvalidPacketValueException();
+
+                HousingWallpaperInfoEntry entry = gameTableManager.HousingWallpaperInfo.GetEntry(update.DecorInfoId);
+                if (entry == null)
+                    throw new InvalidPacketValueException();
+                if (!IsValidInteriorWallpaperSlot(entry, i))
+                    throw new InvalidPacketValueException();
+
+                IDecor decor = null;
+                if (update.DecorId != 0ul)
+                {
+                    if (existingDecorFlag != 1u)
+                        throw new InvalidPacketValueException();
+
+                    decor = residence.GetDecor(update.DecorId);
+                    if (decor == null)
+                        throw new InvalidPacketValueException();
+                }
+                else if (existingDecorFlag != 0u)
+                {
+                    throw new InvalidPacketValueException();
+                }
+
+                AddInteriorWallpaperCost(costs, entry);
+                pendingUpdates.Add((residence, decor, update, entry));
+            }
+
+            foreach ((CurrencyType currencyType, ulong cost) in costs)
+            {
+                if (!player.CurrencyManager.CanAfford(currencyType, cost))
+                {
+                    player.Session.EnqueueMessageEncrypted(new ServerHousingResult
+                    {
+                        RealmId     = realmContext.RealmId,
+                        ResidenceId = pendingUpdates.FirstOrDefault().Residence?.Id ?? 0ul,
+                        PlayerName  = player.Name,
+                        Result      = HousingResult.Decor_CannotAfford
+                    });
+                    return;
+                }
+            }
+
+            foreach ((CurrencyType currencyType, ulong cost) in costs)
+                player.CurrencyManager.CurrencySubtractAmount(currencyType, cost);
+
+            var residenceDecor = new ServerHousingResidenceDecor();
+            foreach ((IResidence residence, IDecor decorToUpdate, DecorInfo update, HousingWallpaperInfoEntry entry) in pendingUpdates)
+            {
+                IDecor decor = decorToUpdate;
+                if (decor == null)
+                    decor = residence.DecorCreateInteriorWallpaper(entry.Id);
+                else
+                    decor.UpdateDecorInfoId(entry.Id);
+
+                ApplyDecorPacketState(decor, update);
+                residenceDecor.DecorData.Add(decor.Build());
+            }
+
+            if (residenceDecor.DecorData.Count != 0)
+                EnqueueToAll(residenceDecor);
+        }
+
+        private static bool IsValidInteriorWallpaperSlot(HousingWallpaperInfoEntry entry, int slotIndex)
+        {
+            return entry.Id == (uint)slotIndex + 1u
+                || (entry.Flags & InteriorWallpaperSlotFlags[slotIndex]) != 0u;
+        }
+
+        private static void AddInteriorWallpaperCost(Dictionary<CurrencyType, ulong> costs, HousingWallpaperInfoEntry entry)
+        {
+            if (entry.CostCurrencyTypeId == 0u || entry.Cost == 0u)
+                return;
+
+            if (entry.CostCurrencyTypeId > int.MaxValue
+                || !Enum.IsDefined(typeof(CurrencyType), (int)entry.CostCurrencyTypeId))
+                throw new InvalidPacketValueException();
+
+            CurrencyType currencyType = (CurrencyType)entry.CostCurrencyTypeId;
+            if (costs.ContainsKey(currencyType))
+                costs[currencyType] += entry.Cost;
+            else
+                costs.Add(currencyType, entry.Cost);
+        }
+
         /// <summary>
         /// Handle plug placement, rotation, removal, or repair for a housing plot.
         /// </summary>
@@ -496,6 +608,40 @@ namespace NexusForever.Game.Map.Instance
             EnqueueToAll(residenceDecor);
         }
 
+        private void ApplyDecorPacketState(IDecor decor, DecorInfo update)
+        {
+            if (update.Scale < 0f)
+                throw new InvalidPacketValueException();
+
+            decor.Type             = update.DecorType;
+            decor.DecorData        = update.DecorData;
+            decor.HookBagIndex     = update.HookBagIndex;
+            decor.HookIndex        = update.HookIndex;
+            decor.PlotIndex        = update.PlotIndex;
+            decor.Position         = update.Position;
+            decor.Rotation         = update.Rotation;
+            decor.Scale            = update.Scale;
+            decor.ActivePropUnitId = update.ActivePropUnitId;
+            decor.DecorParentId    = update.ParentDecorId;
+
+            SetDecorColourShift(decor, update.ColourShiftId);
+        }
+
+        private void SetDecorColourShift(IDecor decor, ushort colourShiftId)
+        {
+            if (colourShiftId == decor.ColourShiftId)
+                return;
+
+            if (colourShiftId != 0u)
+            {
+                ColorShiftEntry colourEntry = gameTableManager.ColorShift.GetEntry(colourShiftId);
+                if (colourEntry == null)
+                    throw new InvalidPacketValueException();
+            }
+
+            decor.ColourShiftId = colourShiftId;
+        }
+
         private void DecorCreate(IResidence residence, IPlayer player, DecorInfo update)
         {
             HousingDecorInfoEntry entry = gameTableManager.HousingDecorInfo.GetEntry(update.DecorInfoId);
@@ -529,19 +675,14 @@ namespace NexusForever.Game.Map.Instance
                 player.AchievementManager.CheckAchievements(player, AchievementType.HousingDecorPurchase, 0u);
 
             decor.Type = update.DecorType;
+            decor.DecorData = update.DecorData;
+            decor.HookBagIndex = update.HookBagIndex;
+            decor.HookIndex = update.HookIndex;
             decor.PlotIndex = update.PlotIndex;
+            decor.ActivePropUnitId = update.ActivePropUnitId;
+            decor.DecorParentId = update.ParentDecorId;
 
-            if (update.ColourShiftId != decor.ColourShiftId)
-            {
-                if (update.ColourShiftId != 0u)
-                {
-                    ColorShiftEntry colourEntry = gameTableManager.ColorShift.GetEntry(update.ColourShiftId);
-                    if (colourEntry == null)
-                        throw new InvalidPacketValueException();
-                }
-
-                decor.ColourShiftId = update.ColourShiftId;
-            }
+            SetDecorColourShift(decor, update.ColourShiftId);
 
             if (update.DecorType != DecorType.Crate)
             {
@@ -586,17 +727,11 @@ namespace NexusForever.Game.Map.Instance
                     decor.PlotIndex = update.PlotIndex;
                 }
 
-                if (update.ColourShiftId != decor.ColourShiftId)
-                {
-                    if (update.ColourShiftId != 0u)
-                    {
-                        ColorShiftEntry colourEntry = gameTableManager.ColorShift.GetEntry(update.ColourShiftId);
-                        if (colourEntry == null)
-                            throw new InvalidPacketValueException();
-                    }
-
-                    decor.ColourShiftId = update.ColourShiftId;
-                }
+                decor.DecorData        = update.DecorData;
+                decor.HookBagIndex     = update.HookBagIndex;
+                decor.HookIndex        = update.HookIndex;
+                decor.ActivePropUnitId = update.ActivePropUnitId;
+                SetDecorColourShift(decor, update.ColourShiftId);
 
                 if (decor.Type == DecorType.Crate)
                 {
@@ -681,13 +816,14 @@ namespace NexusForever.Game.Map.Instance
         /// <remarks>
         /// Copies all data from the source <see cref="IDecor"/> with a new id.
         /// </remarks>
-        public void DecorCopy(IResidence residence, IDecor decor)
+        public IDecor DecorCopy(IResidence residence, IDecor decor)
         {
             IDecor newDecor = residence.DecorCopy(decor);
 
             var residenceDecor = new ServerHousingResidenceDecor();
             residenceDecor.DecorData.Add(newDecor.Build());
             EnqueueToAll(residenceDecor);
+            return newDecor;
         }
 
         /// <summary>

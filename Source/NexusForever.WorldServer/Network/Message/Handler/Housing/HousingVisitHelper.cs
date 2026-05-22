@@ -42,6 +42,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                     SendHousingVisitResult(session, realmId, residenceId, playerName, HousingResult.Visit_Private);
                     return;
                 case ResidencePrivacyLevel.NeighborsOnly:
+                    if (residence.HasNeighbor(session.Player.CharacterId) || residence.CanModifyResidence(session.Player))
+                        break;
+
                     SendHousingVisitResult(session, realmId, residenceId, playerName, HousingResult.InvalidPermissions);
                     return;
                 case ResidencePrivacyLevel.RoommatesOnly:

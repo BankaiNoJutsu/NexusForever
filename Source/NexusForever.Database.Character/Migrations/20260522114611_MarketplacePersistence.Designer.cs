@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusForever.Database.Character;
 
@@ -11,9 +12,11 @@ using NexusForever.Database.Character;
 namespace NexusForever.Database.Character.Migrations
 {
     [DbContext(typeof(CharacterContext))]
-    partial class CharacterContextModelSnapshot : ModelSnapshot
+    [Migration("20260522114611_MarketplacePersistence")]
+    partial class MarketplacePersistence
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2627,18 +2630,6 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("colourShiftId");
 
-                    b.Property<uint>("ActivePropUnitId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("activePropUnitId");
-
-                    b.Property<uint>("DecorData")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("decorData");
-
                     b.Property<uint>("DecorInfoId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10) unsigned")
@@ -2656,18 +2647,6 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("decorType");
-
-                    b.Property<uint>("HookBagIndex")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("hookBagIndex");
-
-                    b.Property<uint>("HookIndex")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("hookIndex");
 
                     b.Property<uint>("PlotIndex")
                         .HasColumnType("int(10) unsigned")

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusForever.Database.Character;
 
@@ -11,9 +12,11 @@ using NexusForever.Database.Character;
 namespace NexusForever.Database.Character.Migrations
 {
     [DbContext(typeof(CharacterContext))]
-    partial class CharacterContextModelSnapshot : ModelSnapshot
+    [Migration("20260522091203_ResidenceNeighbors")]
+    partial class ResidenceNeighbors
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2074,180 +2077,6 @@ namespace NexusForever.Database.Character.Migrations
                     b.ToTable("item", (string)null);
                 });
 
-            modelBuilder.Entity("NexusForever.Database.Character.Model.MarketplaceAuctionModel", b =>
-                {
-                    b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("id");
-
-                    b.Property<ulong>("BuyoutPrice")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("buyoutPrice");
-
-                    b.Property<ulong>("CircuitData")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("circuitData");
-
-                    b.Property<ulong>("CurrentBid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("currentBid");
-
-                    b.Property<ulong>("ExpirationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("expirationTime");
-
-                    b.Property<uint>("GlyphData")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("glyphData");
-
-                    b.Property<uint>("Item2Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("item2Id");
-
-                    b.Property<ulong>("ItemId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("itemId");
-
-                    b.Property<ulong>("MinimumBid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("minimumBid");
-
-                    b.Property<ulong>("OwnerCharacterId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("ownerCharacterId");
-
-                    b.Property<uint>("Quantity")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("quantity");
-
-                    b.Property<ulong>("ThresholdData")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("thresholdData");
-
-                    b.Property<ulong>("TopBidderCharacterId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("topBidderCharacterId");
-
-                    b.Property<uint>("Unknown2")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("unknown2");
-
-                    b.Property<string>("UnknownArray")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("varchar(255)")
-                        .HasDefaultValue("")
-                        .HasColumnName("unknownArray");
-
-                    b.Property<uint>("WorldRequirementItem2Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("worldRequirementItem2Id");
-
-                    b.HasKey("Id")
-                        .HasName("PRIMARY");
-
-                    b.HasIndex("ItemId");
-
-                    b.ToTable("marketplace_auction", (string)null);
-                });
-
-            modelBuilder.Entity("NexusForever.Database.Character.Model.MarketplaceCommodityOrderModel", b =>
-                {
-                    b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("id");
-
-                    b.Property<ulong>("ExpirationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("expirationTime");
-
-                    b.Property<bool>("ForceImmediate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
-                        .HasDefaultValue(false)
-                        .HasColumnName("forceImmediate");
-
-                    b.Property<bool>("IsBuyOrder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
-                        .HasDefaultValue(false)
-                        .HasColumnName("isBuyOrder");
-
-                    b.Property<uint>("Item2Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("item2Id");
-
-                    b.Property<ulong>("ListTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("listTime");
-
-                    b.Property<ulong>("OwnerCharacterId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("ownerCharacterId");
-
-                    b.Property<ulong>("Price")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("price");
-
-                    b.Property<ulong>("PricePerUnit")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint(20) unsigned")
-                        .HasDefaultValue(0ul)
-                        .HasColumnName("pricePerUnit");
-
-                    b.Property<uint>("Quantity")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("quantity");
-
-                    b.HasKey("Id")
-                        .HasName("PRIMARY");
-
-                    b.ToTable("marketplace_commodity_order", (string)null);
-                });
-
             modelBuilder.Entity("NexusForever.Database.Character.Model.PropertyBaseModel", b =>
                 {
                     b.Property<uint>("Type")
@@ -2627,18 +2456,6 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("colourShiftId");
 
-                    b.Property<uint>("ActivePropUnitId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("activePropUnitId");
-
-                    b.Property<uint>("DecorData")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("decorData");
-
                     b.Property<uint>("DecorInfoId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10) unsigned")
@@ -2656,18 +2473,6 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("decorType");
-
-                    b.Property<uint>("HookBagIndex")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("hookBagIndex");
-
-                    b.Property<uint>("HookIndex")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10) unsigned")
-                        .HasDefaultValue(0u)
-                        .HasColumnName("hookIndex");
 
                     b.Property<uint>("PlotIndex")
                         .HasColumnType("int(10) unsigned")
@@ -3317,18 +3122,6 @@ namespace NexusForever.Database.Character.Migrations
                         .HasConstraintName("FK__item_ownerId__character_id");
 
                     b.Navigation("Character");
-                });
-
-            modelBuilder.Entity("NexusForever.Database.Character.Model.MarketplaceAuctionModel", b =>
-                {
-                    b.HasOne("NexusForever.Database.Character.Model.ItemModel", "Item")
-                        .WithMany()
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK__marketplace_auction_itemId__item_id");
-
-                    b.Navigation("Item");
                 });
 
             modelBuilder.Entity("NexusForever.Database.Character.Model.ResidenceDecor", b =>

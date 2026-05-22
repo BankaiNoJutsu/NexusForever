@@ -47,6 +47,9 @@ namespace NexusForever.Database.Character
         public DbSet<PropertyBaseModel> PropertyBase { get; set; }
         public DbSet<ResidenceModel> Residence { get; set; }
         public DbSet<ResidenceDecor> ResidenceDecor { get; set; }
+        public DbSet<ResidenceNeighborModel> ResidenceNeighbor { get; set; }
+        public DbSet<MarketplaceAuctionModel> MarketplaceAuction { get; set; }
+        public DbSet<MarketplaceCommodityOrderModel> MarketplaceCommodityOrder { get; set; }
         public DbSet<ResidencePlotModel> ResidencePlot { get; set; }
 
         private readonly IConnectionString config;
@@ -2548,6 +2551,186 @@ namespace NexusForever.Database.Character
                     .HasConstraintName("FK__residence_guildOwnerId__guild_id");
             });
 
+            modelBuilder.Entity<MarketplaceAuctionModel>(entity =>
+            {
+                entity.ToTable("marketplace_auction");
+
+                entity.HasKey(e => e.Id)
+                    .HasName("PRIMARY");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.OwnerCharacterId)
+                    .HasColumnName("ownerCharacterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.ItemId)
+                    .HasColumnName("itemId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.MinimumBid)
+                    .HasColumnName("minimumBid")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.BuyoutPrice)
+                    .HasColumnName("buyoutPrice")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.CurrentBid)
+                    .HasColumnName("currentBid")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.TopBidderCharacterId)
+                    .HasColumnName("topBidderCharacterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.ExpirationTime)
+                    .HasColumnName("expirationTime")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.Item2Id)
+                    .HasColumnName("item2Id")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.Quantity)
+                    .HasColumnName("quantity")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.WorldRequirementItem2Id)
+                    .HasColumnName("worldRequirementItem2Id")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.CircuitData)
+                    .HasColumnName("circuitData")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.GlyphData)
+                    .HasColumnName("glyphData")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.ThresholdData)
+                    .HasColumnName("thresholdData")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.Unknown2)
+                    .HasColumnName("unknown2")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.UnknownArray)
+                    .HasColumnName("unknownArray")
+                    .HasColumnType("varchar(255)")
+                    .HasDefaultValue("");
+
+                entity.HasOne(d => d.Item)
+                    .WithMany()
+                    .HasForeignKey(d => d.ItemId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK__marketplace_auction_itemId__item_id");
+            });
+
+            modelBuilder.Entity<MarketplaceCommodityOrderModel>(entity =>
+            {
+                entity.ToTable("marketplace_commodity_order");
+
+                entity.HasKey(e => e.Id)
+                    .HasName("PRIMARY");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.OwnerCharacterId)
+                    .HasColumnName("ownerCharacterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.Item2Id)
+                    .HasColumnName("item2Id")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.Quantity)
+                    .HasColumnName("quantity")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.PricePerUnit)
+                    .HasColumnName("pricePerUnit")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.Price)
+                    .HasColumnName("price")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.IsBuyOrder)
+                    .HasColumnName("isBuyOrder")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.ForceImmediate)
+                    .HasColumnName("forceImmediate")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.ListTime)
+                    .HasColumnName("listTime")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.ExpirationTime)
+                    .HasColumnName("expirationTime")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+            });
+
+            modelBuilder.Entity<ResidenceNeighborModel>(entity =>
+            {
+                entity.ToTable("residence_neighbor");
+
+                entity.HasKey(e => new { e.ResidenceId, e.NeighborCharacterId })
+                    .HasName("PRIMARY");
+
+                entity.Property(e => e.ResidenceId)
+                    .HasColumnName("residenceId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.NeighborCharacterId)
+                    .HasColumnName("neighborCharacterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.PermissionLevel)
+                    .HasColumnName("permissionLevel")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue((byte)0);
+
+                entity.HasOne(d => d.Residence)
+                    .WithMany(p => p.Neighbors)
+                    .HasForeignKey(d => d.ResidenceId)
+                    .HasConstraintName("FK__residence_neighbor_residenceId__residence_id");
+            });
+
             modelBuilder.Entity<ResidenceDecor>(entity =>
             {
                 entity.ToTable("residence_decor");
@@ -2570,6 +2753,16 @@ namespace NexusForever.Database.Character
                     .HasColumnType("smallint(5) unsigned")
                     .HasDefaultValue(0);
 
+                entity.Property(e => e.ActivePropUnitId)
+                    .HasColumnName("activePropUnitId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.DecorData)
+                    .HasColumnName("decorData")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
                 entity.Property(e => e.DecorInfoId)
                     .HasColumnName("decorInfoId")
                     .HasColumnType("int(10) unsigned")
@@ -2582,6 +2775,16 @@ namespace NexusForever.Database.Character
 
                 entity.Property(e => e.DecorType)
                     .HasColumnName("decorType")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.HookBagIndex)
+                    .HasColumnName("hookBagIndex")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.HookIndex)
+                    .HasColumnName("hookIndex")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0);
 

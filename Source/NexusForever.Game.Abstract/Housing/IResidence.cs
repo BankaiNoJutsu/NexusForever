@@ -96,6 +96,31 @@ namespace NexusForever.Game.Abstract.Housing
         bool CanModifyResidence(IPlayer player);
 
         /// <summary>
+        /// Returns true if the supplied character has an accepted neighbor relationship with the residence.
+        /// </summary>
+        bool HasNeighbor(ulong characterId);
+
+        /// <summary>
+        /// Adds an accepted neighbor relationship to the residence.
+        /// </summary>
+        bool AddNeighbor(ulong characterId, byte permissionLevel = 0);
+
+        /// <summary>
+        /// Removes an accepted neighbor relationship from the residence.
+        /// </summary>
+        bool RemoveNeighbor(ulong characterId);
+
+        /// <summary>
+        /// Updates the raw client permission level for an accepted neighbor relationship.
+        /// </summary>
+        bool TrySetNeighborPermission(ulong characterId, byte permissionLevel);
+
+        /// <summary>
+        /// Returns accepted neighbor character ids and permission levels for this residence.
+        /// </summary>
+        IEnumerable<(ulong CharacterId, byte PermissionLevel)> GetNeighbors();
+
+        /// <summary>
         /// Return all <see cref="IPlot"/>'s for the <see cref="IResidence"/>.
         /// </summary>
         IEnumerable<IPlot> GetPlots();
@@ -119,6 +144,11 @@ namespace NexusForever.Game.Abstract.Housing
         /// Create a new <see cref="IDecor"/> from supplied <see cref="HousingDecorInfoEntry"/> for <see cref="IResidence"/>.
         /// </summary>
         IDecor DecorCreate(HousingDecorInfoEntry entry);
+
+        /// <summary>
+        /// Create a new interior wallpaper decor record from supplied HousingWallpaperInfo id for <see cref="IResidence"/>.
+        /// </summary>
+        IDecor DecorCreateInteriorWallpaper(uint wallpaperInfoId);
 
         /// <summary>
         /// Create a new <see cref="IDecor"/> from an existing <see cref="IDecor"/>.

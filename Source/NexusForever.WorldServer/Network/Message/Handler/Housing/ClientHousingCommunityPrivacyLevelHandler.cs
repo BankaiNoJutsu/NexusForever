@@ -1,5 +1,6 @@
 ﻿using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Housing;
@@ -14,11 +15,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
         #region Dependency Injection
 
         private readonly IGlobalResidenceManager globalResidenceManager;
+        private readonly IRealmContext realmContext;
 
         public ClientHousingCommunityPrivacyLevelHandler(
-            IGlobalResidenceManager globalResidenceManager)
+            IGlobalResidenceManager globalResidenceManager,
+            IRealmContext realmContext)
         {
             this.globalResidenceManager = globalResidenceManager;
+            this.realmContext           = realmContext;
         }
 
         #endregion
@@ -28,20 +32,40 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
             if (session.Player.Map is not IResidenceMapInstance)
                 throw new InvalidPacketValueException();
 
-            // ignore the value in the packet
             ICommunity community = session.Player.GuildManager.GetGuild<ICommunity>(GuildType.Community);
-            if (community == null)
+            if (community?.Residence == null)
                 throw new InvalidPacketValueException();
 
-            if (!community.GetMember(session.Player.CharacterId).Rank.HasPermission(GuildRankPermission.ChangeCommunityRemodelOptions))
+            if (housingCommunityPrivacyLevel.TargetResidence.RealmId != realmContext.RealmId ||
+                housingCommunityPrivacyLevel.TargetResidence.ResidenceId != community.Residence.Id)
                 throw new InvalidPacketValueException();
 
-            if (housingCommunityPrivacyLevel.PrivacyLevel == CommunityPrivacyLevel.Public)
+            IGuildMember member = community.GetMember(session.Player.CharacterId);
+            if (member == null || !member.Rank.HasPermission(GuildRankPermission.ChangeCommunityRemodelOptions))
+                throw new InvalidPacketValueException();
+
+            bool isPrivate = housingCommunityPrivacyLevel.PrivacyLevel == CommunityPrivacyLevel.Private;
+            if (!isPrivate)
+            {
+                globalResidenceManager.DeregisterCommunityVists(community.Residence.Id);
                 globalResidenceManager.RegisterCommunityVisits(community.Residence, community, session.Player.Name);
+            }
             else
                 globalResidenceManager.DeregisterCommunityVists(community.Residence.Id);
 
-            community.SetCommunityPrivate(housingCommunityPrivacyLevel.PrivacyLevel == CommunityPrivacyLevel.Private);
+            community.SetCommunityPrivate(isPrivate);
+
+            var message = new ServerHousingCommunityPrivacyLevelUpdate
+            {
+                Flags        = isPrivate ? ServerHousingCommunityPrivacyLevelUpdate.PrivateFlag : 0u,
+                PrivacyLevel = isPrivate
+                    ? ServerHousingCommunityPrivacyLevelUpdate.PrivateLuaValue
+                    : ServerHousingCommunityPrivacyLevelUpdate.PublicLuaValue
+            };
+            message.TargetResidence.RealmId     = realmContext.RealmId;
+            message.TargetResidence.ResidenceId = community.Residence.Id;
+
+            session.EnqueueMessageEncrypted(message);
         }
     }
 }

@@ -1036,7 +1036,7 @@ namespace NexusForever.Game.Entity
             BuybackManager.Instance.SendBuybackItems(this);
 
             ResidenceManager.SendHousingBasics();
-            Session.EnqueueMessageEncrypted(new ServerHousingNeighbors());
+            ResidenceManager.SendHousingNeighbors();
             Session.EnqueueMessageEncrypted(new ServerInstanceSettings
             {
                 Difficulty                     = InstanceDifficulty,

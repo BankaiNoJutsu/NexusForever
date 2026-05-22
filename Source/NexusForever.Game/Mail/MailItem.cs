@@ -47,6 +47,7 @@ namespace NexusForever.Game.Mail
         private ulong recipientId;
 
         public SenderType SenderType { get; }
+        public ContentType ContentType { get; }
         public ulong SenderId { get; }
         public uint CreatureId { get; }
 
@@ -105,6 +106,7 @@ namespace NexusForever.Game.Mail
             Id                         = model.Id;
             recipientId                = model.RecipientId;
             SenderType                 = (SenderType)model.SenderType;
+            ContentType                = ResolveContentType(SenderType);
             SenderId                   = model.SenderId;
             Subject                    = model.Subject;
             Message                    = model.Message;
@@ -133,6 +135,9 @@ namespace NexusForever.Game.Mail
             Id          = AssetManager.Instance.NextMailId;
             recipientId = parameters.RecipientCharacterId;
             SenderType  = parameters.MessageType;
+            ContentType = parameters.ContentType != ContentType.PlayerMessage
+                ? parameters.ContentType
+                : ResolveContentType(SenderType);
 
             if (SenderType == SenderType.Player || SenderType == SenderType.GM)
                 SenderId = parameters.SenderCharacterId;
@@ -333,6 +338,16 @@ namespace NexusForever.Game.Mail
             deletedAttachments.Add(mailAttachment);
         }
 
+        private static ContentType ResolveContentType(SenderType senderType)
+        {
+            return senderType switch
+            {
+                SenderType.ItemAuction     => ContentType.AuctionWon,
+                SenderType.CommodityAuction => ContentType.AuctionWon,
+                _                          => ContentType.PlayerMessage
+            };
+        }
+
         public ServerMailAvailable.Mail Build()
         {
             bool isPlayer = SenderType == SenderType.Player || SenderType == SenderType.GM;
@@ -350,6 +365,7 @@ namespace NexusForever.Game.Mail
                 CurrencySentAmount   = !IsCashOnDelivery && !HasPaidOrCollectedCurrency ? CurrencyAmount : 0,
                 CostOnDeliveryAmount = IsCashOnDelivery && !HasPaidOrCollectedCurrency ? CurrencyAmount : 0,
                 ExpiryTimeInDays     = ExpiryTime,
+                ContentType          = ContentType,
                 Flags                = Flags,
                 Sender               = new NetworkIdentity
                 {

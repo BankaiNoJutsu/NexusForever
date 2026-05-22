@@ -23,6 +23,7 @@ using NexusForever.Game.Guild;
 using NexusForever.Game.Housing;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Map;
+using NexusForever.Game.Marketplace;
 using NexusForever.Game.Quest;
 using NexusForever.Game.RBAC;
 using NexusForever.Game.Reputation;
@@ -143,6 +144,7 @@ namespace NexusForever.WorldServer.Service
 
             AssetManager.Instance.Initialise();
             ItemManager.Instance.Initialise();
+            GlobalMarketplaceManager.Instance.Initialise();
             GlobalSpellManager.Instance.Initialise();
             GlobalQuestManager.Instance.Initialise();
             GlobalLootManager.Instance.Initialise();
@@ -174,6 +176,7 @@ namespace NexusForever.WorldServer.Service
                 NexusForeverDiagnostics.MeasureTickSubsystem("loot", () => GlobalLootManager.Instance.Update(lastTick));
                 NexusForeverDiagnostics.MeasureTickSubsystem("guild", () => GlobalGuildManager.Instance.Update(lastTick));
                 NexusForeverDiagnostics.MeasureTickSubsystem("residence", () => GlobalResidenceManager.Instance.Update(lastTick)); // must be after guild update
+                NexusForeverDiagnostics.MeasureTickSubsystem("marketplace", () => GlobalMarketplaceManager.Instance.Update(lastTick));
 
                 NexusForeverDiagnostics.MeasureTickSubsystem("login-queue", () => loginQueueManager.Update(lastTick));
                 NexusForeverDiagnostics.MeasureTickSubsystem("matching", () => matchingManager.Update(lastTick));

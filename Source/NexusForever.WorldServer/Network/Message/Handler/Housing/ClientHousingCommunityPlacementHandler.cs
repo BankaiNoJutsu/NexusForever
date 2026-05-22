@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map.Instance;
@@ -18,11 +19,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
         #region Dependency Injection
 
         private readonly IGlobalResidenceManager globalResidenceManager;
+        private readonly IRealmContext realmContext;
 
         public ClientHousingCommunityPlacementHandler(
-            IGlobalResidenceManager globalResidenceManager)
+            IGlobalResidenceManager globalResidenceManager,
+            IRealmContext realmContext)
         {
             this.globalResidenceManager = globalResidenceManager;
+            this.realmContext           = realmContext;
         }
 
         #endregion
@@ -34,6 +38,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
             ICommunity community = session.Player.GuildManager.GetGuild<ICommunity>(GuildType.Community);
             if (community?.Residence == null)
+                throw new InvalidPacketValueException();
+
+            if (housingCommunityPlacement.TargetResidence.RealmId != realmContext.RealmId ||
+                housingCommunityPlacement.TargetResidence.ResidenceId != community.Residence.Id)
                 throw new InvalidPacketValueException();
 
             IResidenceEntrance entrance = globalResidenceManager.GetResidenceEntrance((PropertyInfoId)(housingCommunityPlacement.PropertyIndex + 100));
@@ -93,6 +101,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
                 community.Residence.Map.AddChild(residence, true);
             else
                 community.Residence.AddChild(residence, true);
+
+            var message = new ServerHousingCommunityPlacement
+            {
+                PlacedResidenceId = residence.Id,
+                PropertyIndex     = housingCommunityPlacement.PropertyIndex
+            };
+            message.TargetResidence.RealmId     = realmContext.RealmId;
+            message.TargetResidence.ResidenceId = community.Residence.Id;
+
+            session.EnqueueMessageEncrypted(message);
         }
     }
 }

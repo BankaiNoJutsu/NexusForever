@@ -7,6 +7,7 @@ namespace NexusForever.Game.Abstract.Mail
         ulong RecipientCharacterId { get; set; }
         ulong SenderCharacterId { get; set; }
         SenderType MessageType { get; set; }
+        ContentType ContentType { get; set; }
         string Subject { get; set; }
         string Body { get; set; }
         uint SubjectStringId { get; set; }

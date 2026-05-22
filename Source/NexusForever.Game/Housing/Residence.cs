@@ -283,6 +283,9 @@ namespace NexusForever.Game.Housing
         /// </remarks>
         private readonly Dictionary<ulong, IResidenceChild> children = new();
 
+        private readonly Dictionary<ulong, ResidenceNeighbor> neighbors = new();
+        private readonly List<ResidenceNeighbor> neighborsPendingDelete = new();
+
         private readonly Dictionary<ulong, IDecor> decors = new();
         private readonly List<IPlot> plots = new();
 
@@ -313,13 +316,26 @@ namespace NexusForever.Game.Housing
 
             foreach (ResidenceDecor decorModel in model.Decor)
             {
-                HousingDecorInfoEntry entry = GameTableManager.Instance.HousingDecorInfo.GetEntry(decorModel.DecorInfoId);
-                if (entry == null)
-                    throw new DatabaseDataException($"Decor {decorModel.Id} has invalid decor entry {decorModel.DecorInfoId}!");
+                HousingDecorInfoEntry entry = null;
+                DecorType decorType = (DecorType)decorModel.DecorType;
+                if (decorType == DecorType.InteriorWallpaper)
+                {
+                    if (GameTableManager.Instance.HousingWallpaperInfo.GetEntry(decorModel.DecorInfoId) == null)
+                        throw new DatabaseDataException($"Decor {decorModel.Id} has invalid wallpaper entry {decorModel.DecorInfoId}!");
+                }
+                else
+                {
+                    entry = GameTableManager.Instance.HousingDecorInfo.GetEntry(decorModel.DecorInfoId);
+                    if (entry == null)
+                        throw new DatabaseDataException($"Decor {decorModel.Id} has invalid decor entry {decorModel.DecorInfoId}!");
+                }
 
                 var decor = new Decor(this, decorModel, entry);
                 decors.Add(decor.DecorId, decor);
             }
+
+            foreach (ResidenceNeighborModel neighborModel in model.Neighbors)
+                neighbors.Add(neighborModel.NeighborCharacterId, new ResidenceNeighbor(neighborModel));
 
             foreach (ResidencePlotModel plotModel in model.Plot
                 .OrderBy(e => e.Index))
@@ -513,6 +529,14 @@ namespace NexusForever.Game.Housing
             foreach (IDecor decor in decorToRemove)
                 decors.Remove(decor.DecorId);
 
+            foreach (ResidenceNeighbor neighbor in neighbors.Values)
+                neighbor.Save(context, Id);
+
+            foreach (ResidenceNeighbor deletedNeighbor in neighborsPendingDelete)
+                deletedNeighbor.Save(context, Id);
+
+            neighborsPendingDelete.Clear();
+
             foreach (IPlot plot in plots)
                 plot.Save(context);
         }
@@ -649,6 +673,65 @@ namespace NexusForever.Game.Housing
             }
         }
 
+        public bool HasNeighbor(ulong characterId)
+        {
+            return neighbors.ContainsKey(characterId);
+        }
+
+        public bool AddNeighbor(ulong characterId, byte permissionLevel = 0)
+        {
+            if (neighbors.ContainsKey(characterId))
+                return false;
+
+            ResidenceNeighbor deletedNeighbor = neighborsPendingDelete
+                .SingleOrDefault(neighbor => neighbor.CharacterId == characterId);
+            if (deletedNeighbor != null)
+            {
+                neighborsPendingDelete.Remove(deletedNeighbor);
+                deletedNeighbor.UnmarkDelete();
+                deletedNeighbor.PermissionLevel = permissionLevel;
+                neighbors.Add(characterId, deletedNeighbor);
+                return true;
+            }
+
+            neighbors.Add(characterId, new ResidenceNeighbor(characterId, permissionLevel));
+            return true;
+        }
+
+        public bool RemoveNeighbor(ulong characterId)
+        {
+            if (!neighbors.Remove(characterId, out ResidenceNeighbor neighbor))
+                return false;
+
+            if (neighbor.WasPersisted)
+            {
+                neighbor.MarkDelete();
+                neighborsPendingDelete.Add(neighbor);
+            }
+
+            return true;
+        }
+
+        public bool TrySetNeighborPermission(ulong characterId, byte permissionLevel)
+        {
+            if (!neighbors.TryGetValue(characterId, out ResidenceNeighbor neighbor))
+                return false;
+
+            neighbor.PermissionLevel = permissionLevel;
+            return true;
+        }
+
+        public IEnumerable<(ulong CharacterId, byte PermissionLevel)> GetNeighbors()
+        {
+            foreach (ResidenceNeighbor neighbor in neighbors.Values)
+            {
+                if (neighbor.PendingDelete)
+                    continue;
+
+                yield return (neighbor.CharacterId, neighbor.PermissionLevel);
+            }
+        }
+
         /// <summary>
         /// Return all <see cref="IPlot"/>'s for the <see cref="IResidence"/>.
         /// </summary>
@@ -690,6 +773,13 @@ namespace NexusForever.Game.Housing
         public IDecor DecorCreate(HousingDecorInfoEntry entry)
         {
             var decor = new Decor(this, GlobalResidenceManager.Instance.NextDecorId, entry);
+            decors.Add(decor.DecorId, decor);
+            return decor;
+        }
+
+        public IDecor DecorCreateInteriorWallpaper(uint wallpaperInfoId)
+        {
+            var decor = new Decor(this, GlobalResidenceManager.Instance.NextDecorId, wallpaperInfoId, DecorType.InteriorWallpaper);
             decors.Add(decor.DecorId, decor);
             return decor;
         }

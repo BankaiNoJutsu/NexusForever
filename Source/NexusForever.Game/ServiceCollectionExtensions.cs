@@ -20,6 +20,7 @@ using NexusForever.Game.ICComm;
 using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Map;
+using NexusForever.Game.Marketplace;
 using NexusForever.Game.Matching;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Pvp;
@@ -64,6 +65,7 @@ namespace NexusForever.Game
             sc.AddGameGuild();
             sc.AddGameHousing();
             sc.AddGameMap();
+            sc.AddGameMarketplace();
             sc.AddGameMatching();
             sc.AddGamePrerequisite();
             sc.AddGameQuest();

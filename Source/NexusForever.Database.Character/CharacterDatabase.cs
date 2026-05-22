@@ -176,6 +176,7 @@ namespace NexusForever.Database.Character
             return context.Residence
                 .Include(r => r.Plot)
                 .Include(r => r.Decor)
+                .Include(r => r.Neighbors)
                 .Include(r => r.Character)
                 .Include(r => r.Guild)
                 // only load residences where the owner character or guild hasn't been deleted
@@ -199,6 +200,67 @@ namespace NexusForever.Database.Character
                 .Select(r => r.Id)
                 .DefaultIfEmpty()
                 .Max();
+        }
+
+        public ulong GetNextMarketplaceAuctionId()
+        {
+            using var context = new CharacterContext(config);
+            return context.MarketplaceAuction
+                .Select(a => a.Id)
+                .DefaultIfEmpty()
+                .Max();
+        }
+
+        public ulong GetNextMarketplaceCommodityOrderId()
+        {
+            using var context = new CharacterContext(config);
+            return context.MarketplaceCommodityOrder
+                .Select(o => o.Id)
+                .DefaultIfEmpty()
+                .Max();
+        }
+
+        public List<MarketplaceAuctionModel> GetMarketplaceAuctions()
+        {
+            using var context = new CharacterContext(config);
+            return context.MarketplaceAuction
+                .Include(a => a.Item)
+                .AsNoTracking()
+                .ToList();
+        }
+
+        public List<MarketplaceCommodityOrderModel> GetMarketplaceCommodityOrders()
+        {
+            using var context = new CharacterContext(config);
+            return context.MarketplaceCommodityOrder
+                .AsNoTracking()
+                .ToList();
+        }
+
+        /// <summary>
+        /// Credit a character's currency while offline. Online players should use <see cref="ICurrencyManager"/> instead.
+        /// </summary>
+        public void CreditCharacterCurrency(ulong characterId, byte currencyId, ulong amount)
+        {
+            if (amount == 0ul)
+                return;
+
+            using var context = new CharacterContext(config);
+            CharacterCurrencyModel currency = context.CharacterCurrency
+                .FirstOrDefault(c => c.Id == characterId && c.CurrencyId == currencyId);
+            if (currency == null)
+            {
+                context.CharacterCurrency.Add(new CharacterCurrencyModel
+                {
+                    Id         = characterId,
+                    CurrencyId = currencyId,
+                    Amount     = amount
+                });
+            }
+            else
+                currency.Amount += amount;
+
+            context.SaveChanges();
         }
 
         public List<GuildModel> GetGuilds()

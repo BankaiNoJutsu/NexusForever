@@ -34,6 +34,11 @@ namespace NexusForever.Game.Abstract.Map.Instance
         void DecorUpdate(IPlayer player, ClientHousingDecorUpdate housingDecorUpdate);
 
         /// <summary>
+        /// Handle six-slot interior wallpaper decor updates.
+        /// </summary>
+        void InteriorWallpaperUpdate(IPlayer player, ClientHousingInteriorWallpaperUpdate interiorWallpaperUpdate);
+
+        /// <summary>
         /// Handle plug placement, rotation, removal, or repair for a housing plot.
         /// </summary>
         void PlugUpdate(IPlayer player, ClientHousingPlugUpdate housingPlugUpdate);
@@ -54,7 +59,7 @@ namespace NexusForever.Game.Abstract.Map.Instance
         /// <remarks>
         /// Copies all data from the source <see cref="IDecor"/> with a new id.
         /// </remarks>
-        void DecorCopy(IResidence residence, IDecor decor);
+        IDecor DecorCopy(IResidence residence, IDecor decor);
 
         /// <summary>
         /// Rename <see cref="IResidence"/> with supplied name.
