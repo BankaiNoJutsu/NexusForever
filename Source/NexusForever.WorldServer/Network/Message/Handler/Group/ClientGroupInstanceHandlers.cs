@@ -2,6 +2,7 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Static.Entity;
@@ -100,15 +101,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Group
         private readonly ILogger<ClientGroupSetInstanceDifficultyHandler> log;
         private readonly IInternalMessagePublisher messagePublisher;
         private readonly IGroupStateManager groupStateManager;
+        private readonly IPlayerManager playerManager;
 
         public ClientGroupSetInstanceDifficultyHandler(
             ILogger<ClientGroupSetInstanceDifficultyHandler> log,
             IInternalMessagePublisher messagePublisher,
-            IGroupStateManager groupStateManager)
+            IGroupStateManager groupStateManager,
+            IPlayerManager playerManager)
         {
             this.log               = log;
             this.messagePublisher  = messagePublisher;
             this.groupStateManager = groupStateManager;
+            this.playerManager     = playerManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientGroupSetInstanceDifficulty groupSetInstanceDifficulty)
@@ -136,12 +140,26 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Group
             log.LogDebug("Player {PlayerGuid} set group {GroupId} instance difficulty to {Difficulty}.",
                 session.Player.Guid, groupSetInstanceDifficulty.GroupId, groupSetInstanceDifficulty.Difficulty);
 
-            // Note: no fan-out to other group members.
-            // ServerInstanceSettings (0x014B) is for world-entry init, not group difficulty sync.
-            // The correct sync packet is ServerGroupInstanceDifficultyResponse (0x0414; unresolved, needs Ghidra decomp).
-            // The client GroupLib handles local UI update from the GroupActionResult response.
+            BroadcastInstanceDifficulty(group, session.Player.Guid, groupSetInstanceDifficulty.Difficulty);
 
             SendResult(groupSetInstanceDifficulty.GroupId, session.Player.Identity, GroupActionResult.ChangeSettingsSuccess);
+        }
+
+        private void BroadcastInstanceDifficulty(GroupLootState group, uint setterGuid, WorldDifficulty difficulty)
+        {
+            var packet = new ServerGroupInstanceDifficultyResponse
+            {
+                GroupId        = group.GroupId,
+                CharacterGuid  = setterGuid,
+                Difficulty     = difficulty,
+                Unknown0       = 0u
+            };
+
+            foreach (GroupLootMember member in group.Members)
+            {
+                IPlayer memberPlayer = playerManager.GetPlayer(member.Identity);
+                memberPlayer?.Session.EnqueueMessageEncrypted(packet);
+            }
         }
 
         private void SendResult(ulong groupId, Identity identity, GroupActionResult result)

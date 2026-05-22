@@ -7,6 +7,8 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
+using NexusForever.GameTable.Static;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Network.World.Message.Static;
@@ -51,6 +53,7 @@ namespace NexusForever.Game.Loot
         private readonly Dictionary<ulong, GameIdentity> masterIdentities = [];
         private readonly Dictionary<ulong, GameIdentity> masterLootCandidates = [];
         private readonly Dictionary<ulong, LootRollRecord> rollRecords = [];
+        private readonly HashSet<ulong> bindPickupConfirmations = [];
         private UpdateTimer rollTimer;
         private bool rollFinalised;
 
@@ -134,6 +137,7 @@ namespace NexusForever.Game.Loot
             masterIdentities.Clear();
             masterLootCandidates.Clear();
             rollRecords.Clear();
+            bindPickupConfirmations.Clear();
         }
 
         private void SetEligibleIdentities(IEnumerable<GameIdentity> eligible)
@@ -162,9 +166,59 @@ namespace NexusForever.Game.Loot
             return eligibleIdentities.Count == 0 || eligibleIdentities.ContainsKey(characterId);
         }
 
+        public bool RequiresBindOnPickupConfirmation()
+        {
+            if (Type != LootItemType.StaticItem)
+                return false;
+
+            Item2Entry entry = ItemManager.Instance.GetItemInfo(StaticId)?.Entry;
+            return entry != null && (entry.BindFlags & ItemBindFlags.BindOnPickup) != 0;
+        }
+
+        public bool HasBindOnPickupConfirmation(ulong characterId)
+        {
+            return bindPickupConfirmations.Contains(characterId);
+        }
+
+        public bool TryPromptBindOnPickupConfirmation(IPlayer player)
+        {
+            if (player == null || Delivered || !RequiresBindOnPickupConfirmation())
+                return false;
+
+            if (bindPickupConfirmations.Contains(player.CharacterId))
+                return false;
+
+            player.Session.EnqueueMessageEncrypted(new ServerLootBindOnPickup
+            {
+                OwnerUnitId = OwnerUnitId,
+                LootUnitId  = Id
+            });
+            bindPickupConfirmations.Add(player.CharacterId);
+            log.Trace(
+                "Loot bind-on-pickup confirmation sent for player {CharacterId}, ownerUnit={OwnerUnitId}, lootUnitId={LootUnitId}, item={StaticId}.",
+                player.CharacterId,
+                OwnerUnitId,
+                Id,
+                StaticId);
+            return true;
+        }
+
+        public bool CanTryRoll(ulong characterId)
+        {
+            return !Delivered
+                && RequiresRoll
+                && !rollFinalised
+                && eligibleIdentities.ContainsKey(characterId);
+        }
+
         public bool CanMasterAssign(ulong characterId)
         {
             return !Delivered && OnlyMasterLootable && masterIdentities.ContainsKey(characterId);
+        }
+
+        public bool CanTryMasterAssign(ulong masterCharacterId, GameIdentity assignee)
+        {
+            return CanMasterAssign(masterCharacterId) && IsEligible(assignee);
         }
 
         public bool IsEligible(GameIdentity identity)
@@ -195,21 +249,15 @@ namespace NexusForever.Game.Loot
 
         public bool TryRecordRoll(IPlayer player, LootRollAction action)
         {
-            if (!RequiresRoll || Delivered || rollFinalised)
+            if (!CanTryRoll(player.CharacterId))
             {
-                log.Trace($"Loot roll rejected for player {player?.CharacterId.ToString() ?? "none"}, lootUnitId={Id}, item={StaticId}: requiresRoll={RequiresRoll}, delivered={Delivered}, rollFinalised={rollFinalised}.");
+                log.Trace($"Loot roll rejected for player {player?.CharacterId.ToString() ?? "none"}, lootUnitId={Id}, item={StaticId}: requiresRoll={RequiresRoll}, delivered={Delivered}, rollFinalised={rollFinalised}, eligible=[{string.Join(",", eligibleIdentities.Keys)}].");
                 return false;
             }
 
             if (!Enum.IsDefined(typeof(LootRollAction), action))
             {
                 log.Trace($"Loot roll rejected for player {player?.CharacterId.ToString() ?? "none"}, lootUnitId={Id}, item={StaticId}: invalid action {action}.");
-                return false;
-            }
-
-            if (!eligibleIdentities.ContainsKey(player.CharacterId))
-            {
-                log.Trace($"Loot roll rejected for player {player.CharacterId}, lootUnitId={Id}, item={StaticId}: player is not eligible; eligible=[{string.Join(",", eligibleIdentities.Keys)}].");
                 return false;
             }
 
@@ -389,6 +437,8 @@ namespace NexusForever.Game.Loot
                     }
 
                     player.Inventory.ItemCreate(InventoryLocation.Inventory, StaticId, Amount, ItemUpdateReason.Loot);
+                    if (RequiresBindOnPickupConfirmation())
+                        SoulbindDeliveredStaticItems(player);
                     break;
                 case LootItemType.VirtualItem:
                     player.QuestManager.ObjectiveUpdate(QuestObjectiveType.VirtualCollect, StaticId, Amount);
@@ -546,6 +596,20 @@ namespace NexusForever.Game.Loot
 
             masterIdentities.Clear();
             masterLootCandidates.Clear();
+            bindPickupConfirmations.Clear();
+        }
+
+        private void SoulbindDeliveredStaticItems(IPlayer player)
+        {
+            if (!RequiresBindOnPickupConfirmation())
+                return;
+
+            IBag inventoryBag = player.Inventory.SingleOrDefault(bag => bag.Location == InventoryLocation.Inventory);
+            if (inventoryBag == null)
+                return;
+
+            foreach (IItem item in inventoryBag.Where(i => i.Info?.Entry.Id == StaticId && !i.Soulbound))
+                item.MakeSoulbound();
         }
 
         private uint GetItemQualityId()

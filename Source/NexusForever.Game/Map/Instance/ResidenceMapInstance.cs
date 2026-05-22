@@ -28,6 +28,7 @@ namespace NexusForever.Game.Map.Instance
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
         private static readonly Vector3 ResidencePlotWorldOrigin = new(1472f, 0f, 1440f);
+        private const uint InteriorWallpaperDefaultDecorInfoId = 5u;
         private static readonly uint[] InteriorWallpaperSlotFlags = [0x01u, 0x04u, 0x08u, 0x10u, 0x20u, 0x80u];
 
         // housing maps have unlimited vision range.
@@ -374,6 +375,12 @@ namespace NexusForever.Game.Map.Instance
                 if (!IsValidInteriorWallpaperSlot(entry, i))
                     throw new InvalidPacketValueException();
 
+                if (HasUnsupportedWallpaperPrerequisites(entry))
+                {
+                    SendHousingResult(player, residence.Id, HousingResult.Decor_PrereqNotMet);
+                    return;
+                }
+
                 IDecor decor = null;
                 if (update.DecorId != 0ul)
                 {
@@ -397,13 +404,10 @@ namespace NexusForever.Game.Map.Instance
             {
                 if (!player.CurrencyManager.CanAfford(currencyType, cost))
                 {
-                    player.Session.EnqueueMessageEncrypted(new ServerHousingResult
-                    {
-                        RealmId     = realmContext.RealmId,
-                        ResidenceId = pendingUpdates.FirstOrDefault().Residence?.Id ?? 0ul,
-                        PlayerName  = player.Name,
-                        Result      = HousingResult.Decor_CannotAfford
-                    });
+                    SendHousingResult(
+                        player,
+                        pendingUpdates.FirstOrDefault().Residence?.Id ?? 0ul,
+                        HousingResult.Decor_CannotAfford);
                     return;
                 }
             }
@@ -430,12 +434,15 @@ namespace NexusForever.Game.Map.Instance
 
         private static bool IsValidInteriorWallpaperSlot(HousingWallpaperInfoEntry entry, int slotIndex)
         {
-            return entry.Id == (uint)slotIndex + 1u
+            return entry.Id == InteriorWallpaperDefaultDecorInfoId
                 || (entry.Flags & InteriorWallpaperSlotFlags[slotIndex]) != 0u;
         }
 
         private static void AddInteriorWallpaperCost(Dictionary<CurrencyType, ulong> costs, HousingWallpaperInfoEntry entry)
         {
+            if (entry.Id == InteriorWallpaperDefaultDecorInfoId)
+                return;
+
             if (entry.CostCurrencyTypeId == 0u || entry.Cost == 0u)
                 return;
 
@@ -578,7 +585,7 @@ namespace NexusForever.Game.Map.Instance
 
         private static bool HasContributionPayload(ClientHousingPlugUpdate housingPlugUpdate)
         {
-            return housingPlugUpdate.ContributionData?.Any(b => b != 0) == true;
+            return housingPlugUpdate.Contributions.Any(c => c.HasPayload);
         }
 
         private HousingResult PlugRemove(IPlot plot)
@@ -648,6 +655,12 @@ namespace NexusForever.Game.Map.Instance
             if (entry == null)
                 throw new InvalidPacketValueException();
 
+            if (HasUnsupportedDecorPrerequisites(entry))
+            {
+                SendHousingResult(player, residence.Id, HousingResult.Decor_PrereqNotMet);
+                return;
+            }
+
             if (entry.CostCurrencyTypeId != 0u && entry.Cost != 0u)
             {
                 if (entry.CostCurrencyTypeId > int.MaxValue
@@ -657,13 +670,7 @@ namespace NexusForever.Game.Map.Instance
                 CurrencyType currencyType = (CurrencyType)entry.CostCurrencyTypeId;
                 if (!player.CurrencyManager.CanAfford(currencyType, entry.Cost))
                 {
-                    player.Session.EnqueueMessageEncrypted(new ServerHousingResult
-                    {
-                        RealmId     = realmContext.RealmId,
-                        ResidenceId = residence.Id,
-                        PlayerName  = player.Name,
-                        Result      = HousingResult.Decor_CannotAfford
-                    });
+                    SendHousingResult(player, residence.Id, HousingResult.Decor_CannotAfford);
                     return;
                 }
 
@@ -863,6 +870,29 @@ namespace NexusForever.Game.Map.Instance
                 && globalCellX <= maxBound
                 && globalCellZ >= minBound
                 && globalCellZ <= maxBound;
+        }
+
+        private static bool HasUnsupportedDecorPrerequisites(HousingDecorInfoEntry entry)
+        {
+            return entry.PrerequisiteIdUnlock != 0u;
+        }
+
+        private static bool HasUnsupportedWallpaperPrerequisites(HousingWallpaperInfoEntry entry)
+        {
+            return entry.PrerequisiteIdUnlock != 0u
+                || entry.PrerequisiteIdUse != 0u
+                || entry.AccountItemIdUpsell != 0u;
+        }
+
+        private void SendHousingResult(IPlayer player, ulong residenceId, HousingResult result)
+        {
+            player.Session.EnqueueMessageEncrypted(new ServerHousingResult
+            {
+                RealmId     = realmContext.RealmId,
+                ResidenceId = residenceId,
+                PlayerName  = player.Name,
+                Result      = result
+            });
         }
 
         /// <summary>

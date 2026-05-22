@@ -475,5 +475,13 @@ namespace NexusForever.Game.Entity
         {
             return (Entry.BindFlags & ItemBindFlags.BindOnEquip) != 0;
         }
+
+        /// <summary>
+        /// Returns if the item should become soulbound when looted.
+        /// </summary>
+        public bool CanBindOnPickup()
+        {
+            return (Entry.BindFlags & ItemBindFlags.BindOnPickup) != 0;
+        }
     }
 }

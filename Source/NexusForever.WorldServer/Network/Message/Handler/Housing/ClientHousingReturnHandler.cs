@@ -29,8 +29,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
         public void HandleMessage(IWorldSession session, ClientHousingReturn _)
         {
             // housing return button will only be visible on other residence maps
-            IResidence residence = session.Player.ResidenceManager.Residence;
-            if (session.Player.Map is not IResidenceMapInstance
+            IResidence residence = session.Player.ResidenceManager.GetOrCreateResidence();
+            if (residence == null
+                || session.Player.Map is not IResidenceMapInstance
                 || session.Player.Map == residence?.Map)
                 throw new InvalidPacketValueException();
 

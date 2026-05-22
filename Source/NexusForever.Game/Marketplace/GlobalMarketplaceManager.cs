@@ -338,7 +338,7 @@ namespace NexusForever.Game.Marketplace
             return GenericError.Ok;
         }
 
-        public bool CancelCommodityOrder(IPlayer player, ulong orderId, uint item2Id, bool isBuyOrder, out CommodityOrder cancelledOrder)
+        public GenericError CancelCommodityOrder(IPlayer player, ulong orderId, uint item2Id, bool isBuyOrder, out CommodityOrder cancelledOrder)
         {
             cancelledOrder = new CommodityOrder
             {
@@ -348,7 +348,7 @@ namespace NexusForever.Game.Marketplace
             };
 
             if (player == null)
-                return false;
+                return GenericError.Params;
 
             lock (syncRoot)
             {
@@ -358,17 +358,32 @@ namespace NexusForever.Game.Marketplace
                     o.Order.Item2Id == item2Id &&
                     o.Order.IsBuyOrder == isBuyOrder);
                 if (record == null)
-                    return false;
+                    return GenericError.ItemBadId;
 
                 cancelledOrder = CloneOrder(record.Order);
+                if (!record.Order.IsBuyOrder
+                    && player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) == 0u
+                    && !MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
+                        player.CharacterId,
+                        record.Order.Item2Id,
+                        record.Order.Quantity))
+                {
+                    return GenericError.ItemInventoryFull;
+                }
+
                 commodityOrders.Remove(record);
                 if (record.Order.IsBuyOrder)
                     player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, record.Order.Price);
-                else
+                else if (player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u)
                     player.Inventory.ItemCreate(InventoryLocation.Inventory, record.Order.Item2Id, record.Order.Quantity, ItemUpdateReason.Auction);
+                else
+                    MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
+                        player.CharacterId,
+                        record.Order.Item2Id,
+                        record.Order.Quantity);
 
                 PersistCommodityOrderDelete(record);
-                return true;
+                return GenericError.Ok;
             }
         }
 

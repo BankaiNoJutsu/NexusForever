@@ -153,14 +153,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
         public void HandleMessage(IWorldSession session, ClientHousingNeighborInviteResponse housingNeighborInviteResponse)
         {
-            ResidenceNeighborInviteInfo pendingInvite = session.Player.ResidenceManager.GetPendingNeighborInvite();
-            if (pendingInvite == null)
+            if (!session.Player.ResidenceManager.TryTakePendingNeighborInvite(out ResidenceNeighborInviteInfo pendingInvite, out bool expired))
             {
-                HousingNeighborResultSender.Send(session, new TargetResidence(), string.Empty, HousingResult.Neighbor_NoPendingInvite);
+                HousingNeighborResultSender.Send(
+                    session,
+                    new TargetResidence(),
+                    string.Empty,
+                    expired ? HousingResult.Neighbor_RequestTimedOut : HousingResult.Neighbor_NoPendingInvite);
                 return;
             }
-
-            session.Player.ResidenceManager.ClearPendingNeighborInvite();
 
             IResidence inviterResidence = globalResidenceManager.GetResidence(pendingInvite.InviterResidenceId);
             if (inviterResidence == null)

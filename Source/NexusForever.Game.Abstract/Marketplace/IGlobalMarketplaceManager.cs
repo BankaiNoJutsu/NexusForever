@@ -22,7 +22,7 @@ namespace NexusForever.Game.Abstract.Marketplace
         GenericError BuyAuction(IPlayer player, ClientAuctionBuyOrderSubmit buyOrderSubmit, out AuctionInfo auction);
         GenericError CancelAuction(IPlayer player, ulong auctionId, uint item2Id, out AuctionInfo auction);
         GenericError PostCommodityOrder(IPlayer player, CommodityOrder order, out CommodityOrder postedOrder);
-        bool CancelCommodityOrder(IPlayer player, ulong orderId, uint item2Id, bool isBuyOrder, out CommodityOrder cancelledOrder);
+        GenericError CancelCommodityOrder(IPlayer player, ulong orderId, uint item2Id, bool isBuyOrder, out CommodityOrder cancelledOrder);
 
         void ValidateAuctionSearch(IGameTableManager gameTableManager, IItemManager itemManager, ClientAuctionsByFilterRequest request);
         void ValidateItem2(IItemManager itemManager, uint item2Id);

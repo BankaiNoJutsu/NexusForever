@@ -184,6 +184,12 @@ namespace NexusForever.Game.Loot
             if (item.Delivered || !item.CanLoot(player.CharacterId))
                 return false;
 
+            if (item.RequiresBindOnPickupConfirmation() && !item.HasBindOnPickupConfirmation(player.CharacterId))
+            {
+                item.TryPromptBindOnPickupConfirmation(player);
+                return false;
+            }
+
             if (item.WinnerCharacterId == 0ul)
                 item.SetWinner(player);
 
@@ -198,7 +204,7 @@ namespace NexusForever.Game.Loot
             if (!lootItems.TryGetValue(lootInstanceItemId, out LootInstanceItem item))
                 return false;
 
-            if (!item.TryRecordRoll(player, action))
+            if (!item.CanTryRoll(player.CharacterId) || !item.TryRecordRoll(player, action))
                 return false;
 
             BroadcastToAudience(item, item.BuildRollMessage(player, action));
@@ -217,7 +223,7 @@ namespace NexusForever.Game.Loot
             if (!lootItems.TryGetValue(lootInstanceItemId, out LootInstanceItem item))
                 return false;
 
-            if (!item.CanMasterAssign(master.CharacterId) || !item.IsEligible(assignee))
+            if (!item.CanTryMasterAssign(master.CharacterId, assignee))
                 return false;
 
             if (!looterGuids.TryGetValue(assignee.Id, out uint assigneeGuid))
@@ -245,7 +251,7 @@ namespace NexusForever.Game.Loot
             {
                 OwnerUnitId = OwnerUnitId,
                 ParentUnitIdRuntimeValue = OwnerUnitId,
-                ParentUnitIdNotes = "Current runtime mirrors OwnerUnitId because LootInstance does not yet track a distinct parent source.",
+                ParentUnitIdNotes = "Client uses ParentUnitId as the loot visual source; current runtime mirrors OwnerUnitId because LootInstance does not yet track a distinct parent source.",
                 LootEntityType = LootEntityType,
                 LooterType = LooterType,
                 Explosion = Explosion,

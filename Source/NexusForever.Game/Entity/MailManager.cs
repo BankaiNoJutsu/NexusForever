@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Linq;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Character;
@@ -38,7 +39,7 @@ namespace NexusForever.Game.Entity
             {
                 var mail = new MailItem(mailModel);
                 if (IsExpired(mail))
-                    ExpireMail(mail, false);
+                    ExpireMail(mail);
                 else if (mail.IsReadyToDeliver())
                     availableMail.Add(mail.Id, mail);
                 else
@@ -127,10 +128,18 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void EnqueueMail(IMailItem mail)
         {
+            if (mail.PendingDelete)
+                return;
+
             if (mail.IsReadyToDeliver())
-                availableMail.Add(mail.Id, mail);
-            else
+            {
+                if (availableMail.TryAdd(mail.Id, mail))
+                    SendIncomingMail(mail);
+            }
+            else if (!pendingMail.Contains(mail))
+            {
                 pendingMail.Add(mail);
+            }
         }
 
         /// <summary>
@@ -321,12 +330,9 @@ namespace NexusForever.Game.Entity
 
             if (result == GenericError.Ok)
             {
+                availableMail.Remove(mailId);
                 mailItem.EnqueueDelete(true);
-
-                player.Session.EnqueueMessageEncrypted(new ServerMailUnavailable
-                {
-                    MailId = mailItem.Id
-                });
+                NotifyMailUnavailable(mailId);
             }
 
             player.Session.EnqueueMessageEncrypted(new ServerMailResult
@@ -420,10 +426,7 @@ namespace NexusForever.Game.Entity
                 availableMail.Remove(mailItem.Id);
                 outgoingMail.Enqueue(mailItem);
 
-                player.Session.EnqueueMessageEncrypted(new ServerMailUnavailable
-                {
-                    MailId = mailId
-                });
+                NotifyMailUnavailable(mailId);
             }
 
             player.Session.EnqueueMessageEncrypted(new ServerMailResult
@@ -539,37 +542,70 @@ namespace NexusForever.Game.Entity
                     continue;
 
                 pendingMail.Remove(mail);
-                ExpireMail(mail, false);
+                ExpireMail(mail);
             }
 
+            List<ulong> deprecatedMailIds = new();
             foreach (IMailItem mail in availableMail.Values.ToList())
             {
                 if (!IsExpired(mail))
                     continue;
 
                 availableMail.Remove(mail.Id);
-                ExpireMail(mail, true);
+                ExpireMail(mail);
+                deprecatedMailIds.Add(mail.Id);
             }
+
+            if (deprecatedMailIds.Count > 0)
+                NotifyMailDeprecated(deprecatedMailIds);
         }
 
-        private void ExpireMail(IMailItem mail, bool notifyClient)
+        private void ExpireMail(IMailItem mail)
         {
             mail.EnqueueDelete(true);
             expiredMail.Add(mail);
-
-            if (!notifyClient)
-                return;
-
-            player.Session.EnqueueMessageEncrypted(new ServerMailUnavailable
-            {
-                MailId = mail.Id
-            });
         }
 
         private static bool IsExpired(IMailItem mail)
         {
-            return mail.ExpiryTime > 0f
-                && DateTime.Now.Subtract(mail.CreateTime).TotalDays >= mail.ExpiryTime;
+            if (mail.ExpiryTime <= 0f)
+                return false;
+
+            return DateTime.UtcNow >= GetExpiryUtc(mail);
+        }
+
+        private static DateTime GetExpiryUtc(IMailItem mail)
+        {
+            DateTime createUtc = mail.CreateTime.Kind == DateTimeKind.Utc
+                ? mail.CreateTime
+                : mail.CreateTime.ToUniversalTime();
+
+            return createUtc.AddDays(mail.ExpiryTime);
+        }
+
+        private void SendIncomingMail(IMailItem mail)
+        {
+            player.Session.EnqueueMessageEncrypted(new ServerMailAvailable
+            {
+                NewMail  = true,
+                MailList = { mail.Build() }
+            });
+        }
+
+        private void NotifyMailUnavailable(ulong mailId)
+        {
+            player.Session.EnqueueMessageEncrypted(new ServerMailUnavailable
+            {
+                MailId = mailId
+            });
+        }
+
+        private void NotifyMailDeprecated(IEnumerable<ulong> mailIds)
+        {
+            player.Session.EnqueueMessageEncrypted(new ServerMailItemDeprecation
+            {
+                MailIds = mailIds.ToList()
+            });
         }
 
         /// <summary>

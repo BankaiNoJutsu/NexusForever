@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Housing;
+using NexusForever.Game.Housing;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Map;
 using NexusForever.Game.Static;
@@ -10,7 +11,9 @@ using NexusForever.Game.Static.Support;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Support;
+using NexusForever.Network.World.Message.Static;
 using NexusForever.WorldServer.Support;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Support
@@ -169,8 +172,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
         {
             if (!SupportPacketValidation.IsDefined(stuck.UnstickingType))
             {
-                log.LogWarning("Ignoring stuck request from player {PlayerGuid}: invalid unstick type {UnstickType}, context token {ContextToken}.",
+                log.LogWarning("Rejecting stuck request from player {PlayerGuid}: invalid unstick type {UnstickType}, context token {ContextToken}.",
                     session.Player?.Guid, stuck.UnstickingType, stuck.ContextToken);
+                SendStuckCastResult(session, stuck.ContextToken, 0u, CastResult.SpellUnknown);
                 return;
             }
 
@@ -190,8 +194,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
 
         private void RecallToZoneExit(IWorldSession session, uint contextToken)
         {
+            uint spell4Id = SupportStuckSpell4Ids.RecallTransmat;
             if (!session.Player.CanTeleport())
+            {
+                SendStuckCastResult(session, contextToken, spell4Id, CastResult.PendingSpellCast);
                 return;
+            }
 
             uint worldLocation2Id = session.Player.Zone?.WorldLocation2IdExit ?? 0u;
             WorldLocation2Entry location = worldLocation2Id == 0u
@@ -201,6 +209,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
             {
                 log.LogWarning("Unable to process transmat stuck request for player {PlayerGuid}: zone exit world location {WorldLocation2Id} was not found, context token {ContextToken}.",
                     session.Player?.Guid, worldLocation2Id, contextToken);
+                SendStuckCastResult(session, contextToken, spell4Id, CastResult.SpellPreRequisites);
                 return;
             }
 
@@ -211,19 +220,37 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
 
         private void RecallToResidence(IWorldSession session, uint contextToken)
         {
+            uint spell4Id = SupportStuckSpell4Ids.RecallHouse;
             if (!session.Player.CanTeleport())
+            {
+                SendStuckCastResult(session, contextToken, spell4Id, CastResult.PendingSpellCast);
                 return;
+            }
 
-            IResidence residence = session.Player.ResidenceManager.Residence;
+            IResidence residence = globalResidenceManager.GetResidenceByOwner(session.Player.Name)
+                ?? globalResidenceManager.CreateResidence(session.Player);
             if (residence == null)
             {
-                log.LogWarning("Unable to process house stuck request for player {PlayerGuid}: no residence is loaded, context token {ContextToken}.",
+                log.LogWarning("Unable to process house stuck request for player {PlayerGuid}: residence could not be resolved, context token {ContextToken}.",
                     session.Player?.Guid, contextToken);
+                SendStuckCastResult(session, contextToken, spell4Id, CastResult.SpellPreRequisites);
+                return;
+            }
+
+            IResidenceEntrance entrance;
+            try
+            {
+                entrance = globalResidenceManager.GetResidenceEntrance(residence.PropertyInfoId);
+            }
+            catch (HousingException)
+            {
+                log.LogWarning("Unable to process house stuck request for player {PlayerGuid}: residence entrance was not found for property {PropertyInfoId}, context token {ContextToken}.",
+                    session.Player?.Guid, residence.PropertyInfoId, contextToken);
+                SendStuckCastResult(session, contextToken, spell4Id, CastResult.SpellPreRequisites);
                 return;
             }
 
             IMapLock mapLock = mapLockManager.GetResidenceLock(residence.Parent ?? residence);
-            IResidenceEntrance entrance = globalResidenceManager.GetResidenceEntrance(residence.PropertyInfoId);
 
             log.LogDebug("Processing house stuck request for player {PlayerGuid}: residence {ResidenceId}, context token {ContextToken}.",
                 session.Player?.Guid, residence.Id, contextToken);
@@ -241,12 +268,26 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
 
         private void FreeSuicide(IWorldSession session, uint contextToken)
         {
+            uint spell4Id = SupportStuckSpell4Ids.FreeSuicide;
             if (!session.Player.IsAlive)
+            {
+                SendStuckCastResult(session, contextToken, spell4Id, CastResult.CasterCannotBeDead);
                 return;
+            }
 
             log.LogDebug("Processing free-suicide stuck request for player {PlayerGuid}: context token {ContextToken}.",
                 session.Player?.Guid, contextToken);
             session.Player.ModifyHealth(Math.Max(session.Player.Health, 1u), DamageType.Physical, session.Player);
+        }
+
+        private static void SendStuckCastResult(IWorldSession session, uint contextToken, uint spell4Id, CastResult castResult)
+        {
+            session.EnqueueMessageEncrypted(new ServerSpellCastResult
+            {
+                Unknown0   = contextToken,
+                Spell4Id   = spell4Id,
+                CastResult = castResult
+            });
         }
     }
 

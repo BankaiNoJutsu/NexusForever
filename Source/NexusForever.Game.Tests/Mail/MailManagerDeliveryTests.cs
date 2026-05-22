@@ -124,10 +124,94 @@ public class MailManagerDeliveryTests
             Assert.Single(mailProxy.GetInvocations(nameof(IMailItem.EnqueueDelete)));
         Assert.Equal(true, deleteCall.Arguments[0]);
 
+        ServerMailItemDeprecation deprecation = GetEncryptedMessages(sessionProxy)
+            .OfType<ServerMailItemDeprecation>()
+            .Single();
+        Assert.Equal(456ul, Assert.Single(deprecation.MailIds));
+        Assert.Empty(GetEncryptedMessages(sessionProxy).OfType<ServerMailUnavailable>());
+    }
+
+    [Fact]
+    public void Update_DoesNotExpireAvailableMailBeforeExactExpiryInstant()
+    {
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 99ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+
+        var manager = new MailManager(player, new CharacterModel());
+        IMailItem mail = CreateMailNearExpiry(457ul, beforeExpiry: true);
+        GetAvailableMail(manager).Add(mail.Id, mail);
+
+        manager.Update(1000d);
+
+        Assert.Same(mail, Assert.Single(GetAvailableMail(manager).Values));
+        Assert.Empty(GetExpiredMail(manager));
+        Assert.Empty(GetEncryptedMessages(sessionProxy).OfType<ServerMailItemDeprecation>());
+    }
+
+    [Fact]
+    public void Update_ExpiresAvailableMailOnceExactExpiryInstantPasses()
+    {
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 99ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+
+        var manager = new MailManager(player, new CharacterModel());
+        IMailItem mail = CreateMailNearExpiry(458ul, beforeExpiry: false);
+        GetAvailableMail(manager).Add(mail.Id, mail);
+
+        manager.Update(1000d);
+
+        Assert.Empty(GetAvailableMail(manager));
+        Assert.Same(mail, Assert.Single(GetExpiredMail(manager)));
+        ServerMailItemDeprecation deprecation = GetEncryptedMessages(sessionProxy)
+            .OfType<ServerMailItemDeprecation>()
+            .Single();
+        Assert.Equal(458ul, Assert.Single(deprecation.MailIds));
+    }
+
+    [Fact]
+    public void EnqueueMail_SendsServerMailAvailableForReadyMail()
+    {
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 99ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+
+        var manager = new MailManager(player, new CharacterModel());
+        IMailItem mail = CreateReadyMail(459ul);
+
+        manager.EnqueueMail(mail);
+
+        Assert.Same(mail, Assert.Single(GetAvailableMail(manager).Values));
+        ServerMailAvailable available = GetEncryptedMessages(sessionProxy)
+            .OfType<ServerMailAvailable>()
+            .Single();
+        Assert.True(available.NewMail);
+        Assert.Equal(459ul, Assert.Single(available.MailList).MailId);
+    }
+
+    [Fact]
+    public void MailDelete_RemovesMailFromAvailableImmediately()
+    {
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 99ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+
+        var manager = new MailManager(player, new CharacterModel());
+        IMailItem mail = CreateReadyMail(460ul);
+        GetAvailableMail(manager).Add(mail.Id, mail);
+
+        manager.MailDelete(460ul);
+
+        Assert.Empty(GetAvailableMail(manager));
         ServerMailUnavailable unavailable = GetEncryptedMessages(sessionProxy)
             .OfType<ServerMailUnavailable>()
             .Single();
-        Assert.Equal(456ul, unavailable.MailId);
+        Assert.Equal(460ul, unavailable.MailId);
     }
 
     [Fact]
@@ -282,9 +366,25 @@ public class MailManagerDeliveryTests
     {
         IMailItem mail = RecordingDispatchProxy<IMailItem>.Create(out mailProxy);
         mailProxy.SetProperty(nameof(IMailItem.Id), id);
-        mailProxy.SetProperty(nameof(IMailItem.CreateTime), DateTime.Now.AddDays(-2d));
+        mailProxy.SetProperty(nameof(IMailItem.CreateTime), DateTime.UtcNow.AddDays(-2d));
         mailProxy.SetProperty(nameof(IMailItem.ExpiryTime), 1f);
         mailProxy.SetMethodReturn(nameof(IMailItem.IsReadyToDeliver), false);
+        return mail;
+    }
+
+    private static IMailItem CreateMailNearExpiry(ulong id, bool beforeExpiry)
+    {
+        IMailItem mail = RecordingDispatchProxy<IMailItem>.Create(out RecordingDispatchProxy<IMailItem> mailProxy);
+        mailProxy.SetProperty(nameof(IMailItem.Id), id);
+        mailProxy.SetProperty(nameof(IMailItem.CreateTime), beforeExpiry
+            ? DateTime.UtcNow.AddDays(-1d).AddMinutes(5d)
+            : DateTime.UtcNow.AddDays(-1d).AddMinutes(-5d));
+        mailProxy.SetProperty(nameof(IMailItem.ExpiryTime), 1f);
+        mailProxy.SetMethodReturn(nameof(IMailItem.IsReadyToDeliver), true);
+        mailProxy.SetMethodReturn(nameof(IMailItem.Build), new ServerMailAvailable.Mail
+        {
+            MailId = id
+        });
         return mail;
     }
 

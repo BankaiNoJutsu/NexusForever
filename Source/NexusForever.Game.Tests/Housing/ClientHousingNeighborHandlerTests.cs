@@ -110,6 +110,28 @@ public class ClientHousingNeighborHandlerTests
     }
 
     [Fact]
+    public void InviteResponseHandler_ExpiredPendingInvite_SendsRequestTimedOut()
+    {
+        ClientHousingNeighborInviteResponseHandler handler = CreateInviteResponseHandler(out _, out _);
+        IResidence inviteeResidence = CreateResidence(InviteeResidenceId, out _);
+        TestResidenceManager inviteeResidenceManager = new(inviteeResidence);
+        inviteeResidenceManager.TryQueueNeighborInvite(new ResidenceNeighborInviteInfo
+        {
+            InviterCharacterId = InviterCharacterId,
+            InviterResidenceId = InviterResidenceId,
+            InviterName        = "Inviter",
+            ExpiresAt          = DateTime.UtcNow.AddSeconds(-1d)
+        });
+        IWorldSession session = CreateWorldSession("Invitee", InviteeCharacterId, inviteeResidenceManager, out _, out _, out RecordingDispatchProxy<IWorldSession> sessionProxy);
+
+        handler.HandleMessage(session, CreateInviteResponse(true));
+
+        ServerHousingResult result = Assert.Single(GetEncryptedMessages(sessionProxy).OfType<ServerHousingResult>());
+        Assert.Equal(HousingResult.Neighbor_RequestTimedOut, result.Result);
+        Assert.Null(inviteeResidenceManager.GetPendingNeighborInvite());
+    }
+
+    [Fact]
     public void InviteResponseHandler_Accepted_AddsNeighborAndNotifiesInviter()
     {
         ClientHousingNeighborInviteResponseHandler handler = CreateInviteResponseHandler(out RecordingDispatchProxy<IPlayerManager> playerManagerProxy, out RecordingDispatchProxy<IGlobalResidenceManager> residenceManagerProxy);
@@ -384,15 +406,43 @@ public class ClientHousingNeighborHandlerTests
 
         public ResidenceNeighborInviteInfo GetPendingNeighborInvite()
         {
+            if (pendingInvite?.ExpiresAt != default && pendingInvite.ExpiresAt <= DateTime.UtcNow)
+                pendingInvite = null;
+
             return pendingInvite;
+        }
+
+        public bool TryTakePendingNeighborInvite(out ResidenceNeighborInviteInfo invite, out bool expired)
+        {
+            invite = pendingInvite;
+            expired = false;
+            pendingInvite = null;
+
+            if (invite == null)
+                return false;
+
+            expired = invite.ExpiresAt != default && invite.ExpiresAt <= DateTime.UtcNow;
+            return !expired;
         }
 
         public bool TryQueueNeighborInvite(ResidenceNeighborInviteInfo invite)
         {
+            if (invite == null)
+                throw new ArgumentNullException(nameof(invite));
+
             if (pendingInvite != null)
                 return false;
 
-            pendingInvite = invite;
+            pendingInvite = new ResidenceNeighborInviteInfo
+            {
+                InviterCharacterId = invite.InviterCharacterId,
+                InviterResidenceId = invite.InviterResidenceId,
+                InviterName        = invite.InviterName ?? string.Empty,
+                ExpiresAt          = invite.ExpiresAt == default
+                    ? DateTime.UtcNow.AddSeconds(30)
+                    : invite.ExpiresAt
+            };
+
             return true;
         }
 

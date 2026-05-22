@@ -72,6 +72,19 @@ namespace NexusForever.Game.Housing
             return pendingNeighborInvite;
         }
 
+        public bool TryTakePendingNeighborInvite(out ResidenceNeighborInviteInfo invite, out bool expired)
+        {
+            invite = pendingNeighborInvite;
+            expired = false;
+            pendingNeighborInvite = null;
+
+            if (invite == null)
+                return false;
+
+            expired = IsExpired(invite);
+            return !expired;
+        }
+
         public bool TryQueueNeighborInvite(ResidenceNeighborInviteInfo invite)
         {
             if (invite == null)
@@ -101,10 +114,15 @@ namespace NexusForever.Game.Housing
 
         private void ClearExpiredNeighborInvite()
         {
-            if (pendingNeighborInvite == null || pendingNeighborInvite.ExpiresAt > DateTime.UtcNow)
+            if (pendingNeighborInvite == null || !IsExpired(pendingNeighborInvite))
                 return;
 
             pendingNeighborInvite = null;
+        }
+
+        private static bool IsExpired(ResidenceNeighborInviteInfo invite)
+        {
+            return invite.ExpiresAt != default && invite.ExpiresAt <= DateTime.UtcNow;
         }
 
         /// <summary>

@@ -95,7 +95,7 @@ namespace NexusForever.Game.Loot
                 [
                     "LootItem boolean meaning/order still needs retail confirmation.",
                     "ServerLootNotify.ParentUnitId currently mirrors OwnerUnitId because runtime has no distinct parent source yet.",
-                    "ServerLootNotification, ServerLootCanLoot, and ServerLootBindOnPickup remain evidence-only packet models and are exported here as packet-shape references without being enqueued."
+                    "ServerLootNotification and ServerLootCanLoot remain evidence-only packet models and are exported here as packet-shape references without being enqueued. ServerLootBindOnPickup is emitted when a bind-on-pickup static item needs client confirmation before delivery."
                 ]
             };
         }
@@ -181,13 +181,13 @@ namespace NexusForever.Game.Loot
                 BindOnPickup = item.Type == NexusForever.Game.Static.Loot.LootItemType.StaticItem && item.LootUnitId != 0u
                     ? CreatePacketReference(new ServerLootBindOnPickup
                     {
-                        Unused = 0u,
-                        LootUnitId = item.LootUnitId
+                        OwnerUnitId = fallbackLooterUnitId,
+                        LootUnitId  = item.LootUnitId
                     })
                     : null,
                 BindOnPickupTemplateNotes = item.Type == NexusForever.Game.Static.Loot.LootItemType.StaticItem && item.LootUnitId != 0u
-                    ? "Shape-only reference with Unused set to 0 until bind-confirmation semantics are mapped."
-                    : "Skipped because bind-on-pickup only appears plausible for real item loot entries with a nonzero LootUnitId."
+                    ? "Template mirrors runtime bindcheck emission: OwnerUnitId plus LootUnitId before the second collect delivers the item."
+                    : "Skipped because bind-on-pickup only applies to real static item loot entries with a nonzero LootUnitId."
             };
 
             return templates;
@@ -338,7 +338,7 @@ namespace NexusForever.Game.Loot
                     ],
                     ["ServerLootBindOnPickup"] =
                     [
-                        "Unused",
+                        "OwnerUnitId",
                         "LootUnitId"
                     ]
                 };

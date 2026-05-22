@@ -148,6 +148,35 @@ public class ClientHousingVisitResidenceHandlerTests
         Assert.Equal(new Vector3(1f, 2f, 3f), position.Position);
     }
 
+    [Fact]
+    public void ReturnHandler_WithoutLoadedResidence_CreatesResidenceAndTeleportsHome()
+    {
+        IResidence residence = CreateResidence(ResidencePrivacyLevel.Public, out RecordingDispatchProxy<IResidence> residenceProxy);
+        residenceProxy.SetProperty(nameof(IResidence.Map), null);
+        IResidenceEntrance entrance = CreateEntrance(new WorldEntry { Id = 456u }, new Vector3(7f, 8f, 9f), Quaternion.Identity);
+        IResidenceMapLock mapLock = RecordingDispatchProxy<IResidenceMapLock>.Create(out _);
+
+        IWorldSession session = CreateReturnSession(
+            residence,
+            out RecordingDispatchProxy<IResidenceManager> playerResidenceManagerProxy,
+            out RecordingDispatchProxy<IPlayer> playerProxy);
+
+        ClientHousingReturnHandler handler = CreateReturnHandler(
+            out RecordingDispatchProxy<IGlobalResidenceManager> globalResidenceManagerProxy,
+            out RecordingDispatchProxy<IMapLockManager> mapLockManagerProxy);
+        globalResidenceManagerProxy.SetMethodReturn(nameof(IGlobalResidenceManager.GetResidenceEntrance), entrance);
+        mapLockManagerProxy.SetMethodReturn(nameof(IMapLockManager.GetResidenceLock), mapLock);
+
+        handler.HandleMessage(session, new ClientHousingReturn());
+
+        Assert.Single(playerResidenceManagerProxy.GetInvocations(nameof(IResidenceManager.GetOrCreateResidence)));
+        RecordingDispatchProxy<IPlayer>.Invocation teleport = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        IMapPosition position = Assert.IsAssignableFrom<IMapPosition>(teleport.Arguments[0]);
+        Assert.Same(entrance.Entry, position.Info.Entry);
+        Assert.Same(mapLock, position.Info.MapLock);
+        Assert.Equal(new Vector3(7f, 8f, 9f), position.Position);
+    }
+
     private static ClientHousingVisitResidenceHandler CreateHandler(
         out RecordingDispatchProxy<IGlobalResidenceManager> residenceManagerProxy,
         out RecordingDispatchProxy<IMapLockManager> mapLockManagerProxy)
@@ -158,6 +187,15 @@ public class ClientHousingVisitResidenceHandlerTests
             NullLogger<ClientHousingVisitResidenceHandler>.Instance,
             residenceManager,
             mapLockManager);
+    }
+
+    private static ClientHousingReturnHandler CreateReturnHandler(
+        out RecordingDispatchProxy<IGlobalResidenceManager> residenceManagerProxy,
+        out RecordingDispatchProxy<IMapLockManager> mapLockManagerProxy)
+    {
+        IGlobalResidenceManager residenceManager = RecordingDispatchProxy<IGlobalResidenceManager>.Create(out residenceManagerProxy);
+        IMapLockManager mapLockManager = RecordingDispatchProxy<IMapLockManager>.Create(out mapLockManagerProxy);
+        return new ClientHousingReturnHandler(residenceManager, mapLockManager);
     }
 
     private static IWorldSession CreateSession(
@@ -174,6 +212,24 @@ public class ClientHousingVisitResidenceHandlerTests
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         playerProxy.SetProperty(nameof(IGridEntity.Map), map);
         playerProxy.SetMethodReturn(nameof(IPlayer.CanTeleport), true);
+        return session;
+    }
+
+    private static IWorldSession CreateReturnSession(
+        IResidence residence,
+        out RecordingDispatchProxy<IResidenceManager> residenceManagerProxy,
+        out RecordingDispatchProxy<IPlayer> playerProxy)
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
+        IResidenceManager residenceManager = RecordingDispatchProxy<IResidenceManager>.Create(out residenceManagerProxy);
+        IResidenceMapInstance map = RecordingDispatchProxy<IResidenceMapInstance>.Create(out _);
+
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+        residenceManagerProxy.SetMethodReturn(nameof(IResidenceManager.GetOrCreateResidence), residence);
+        playerProxy.SetProperty(nameof(IGridEntity.Map), map);
+        playerProxy.SetProperty(nameof(IPlayer.ResidenceManager), residenceManager);
+
         return session;
     }
 

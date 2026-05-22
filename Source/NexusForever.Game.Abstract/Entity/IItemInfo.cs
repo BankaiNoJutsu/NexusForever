@@ -69,5 +69,10 @@ namespace NexusForever.Game.Abstract.Entity
         /// Returns if the item should become soulbound when equipped.
         /// </summary>
         bool CanBindOnEquip();
+
+        /// <summary>
+        /// Returns if the item should become soulbound when looted.
+        /// </summary>
+        bool CanBindOnPickup();
     }
 }

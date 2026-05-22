@@ -416,6 +416,94 @@ public class MarketplaceAuctionHandlerTests
     }
 
     [Fact]
+    public void CommodityOrderCancel_WhenOrderNotFound_ReturnsItemBadIdResult()
+    {
+        using ServiceProviderScope marketplaceProvider = UseMarketplaceProvider();
+
+        IItemInfo itemInfo = CreateItemInfo();
+        IItemManager itemManager = CreateItemManager(itemInfo);
+        IWorldSession session = CreateSession(606u, 6006ul, out _, out _, out RecordingDispatchProxy<IWorldSession> sessionProxy, out _);
+
+        var cancelHandler = new ClientCommodityOrderCancelHandler(
+            NullLogger<ClientCommodityOrderCancelHandler>.Instance,
+            itemManager);
+        cancelHandler.HandleMessage(session, CreateCommodityCancelRequest(new CommodityOrder
+        {
+            CommodityOrderId = 999ul,
+            Item2Id          = ItemId,
+            IsBuyOrder       = true
+        }));
+
+        ServerCommodityOrderResult cancelResult = Assert.Single(GetMessages<ServerCommodityOrderResult>(sessionProxy));
+        Assert.Equal(GenericError.ItemBadId, cancelResult.Result);
+        Assert.Equal(999ul, cancelResult.OrderPosted.CommodityOrderId);
+        Assert.Empty(GetMessages<ServerCommodityAuctionRemoved>(sessionProxy));
+    }
+
+    [Fact]
+    public void CommodityOrders_CrossMatch_FillsBothPartiesAndNotifiesPartialFill()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var realmContext = (RealmContext)RuntimeHelpers.GetUninitializedObject(typeof(RealmContext));
+        SetAutoProperty(realmContext, nameof(RealmContext.RealmId), (ushort)1);
+        var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, new CharacterManager());
+        var services = new ServiceCollection();
+        services.AddSingleton(realmContext);
+        services.AddSingleton(playerManager);
+        services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
+        LegacyServiceProvider.Provider = services.BuildServiceProvider();
+
+        try
+        {
+        IItemInfo itemInfo = CreateItemInfo();
+        IItemManager itemManager = CreateItemManager(itemInfo);
+        IWorldSession sellerSession = CreateSession(SellerGuid, SellerCharacterId, out RecordingDispatchProxy<IInventory> sellerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> sellerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> sellerSessionProxy, out IPlayer seller);
+        sellerInventoryProxy.SetMethodReturn(nameof(IInventory.HasItemCount), true);
+        sellerInventoryProxy.SetMethodReturn(nameof(IInventory.ItemDelete), true);
+        sellerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 2u);
+        playerManager.AddPlayer(seller);
+
+        IWorldSession buyerSession = CreateSession(BuyerGuid, BuyerCharacterId, out RecordingDispatchProxy<IInventory> buyerInventoryProxy, out RecordingDispatchProxy<ICurrencyManager> buyerCurrencyProxy, out RecordingDispatchProxy<IWorldSession> buyerSessionProxy, out IPlayer buyer);
+        buyerCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+        buyerInventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 2u);
+        playerManager.AddPlayer(buyer);
+
+        var submitHandler = new ClientCommoditySellOrderSubmitHandler(
+            NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
+            CreateGameTableManager(maxCommodityOrderQuantity: 200u),
+            itemManager);
+
+        submitHandler.HandleMessage(sellerSession, CreateCommoditySellRequest(quantity: 5u));
+        submitHandler.HandleMessage(buyerSession, CreateCommodityBuyRequest(quantity: 5u, pricePerUnit: 10ul));
+
+        RecordingDispatchProxy<ICurrencyManager>.Invocation buyerDebit =
+            Assert.Single(buyerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        Assert.Equal(50ul, buyerDebit.Arguments[1]);
+
+        RecordingDispatchProxy<IInventory>.Invocation buyerCreate =
+            Assert.Single(buyerInventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Equal(ItemId, buyerCreate.Arguments[1]);
+        Assert.Equal(5u, buyerCreate.Arguments[2]);
+
+        ServerCommodityAuctionFilledPartial buyerFill = Assert.Single(GetMessages<ServerCommodityAuctionFilledPartial>(buyerSessionProxy));
+        Assert.Equal(AuctionEventType.Fill, buyerFill.Type);
+        Assert.Equal(0u, buyerFill.OrderFilled.Quantity);
+
+        ServerCommodityAuctionFilledPartial sellerFill = Assert.Single(GetMessages<ServerCommodityAuctionFilledPartial>(sellerSessionProxy));
+        Assert.Equal(AuctionEventType.Fill, sellerFill.Type);
+        Assert.Equal(0u, sellerFill.OrderFilled.Quantity);
+
+        RecordingDispatchProxy<ICurrencyManager>.Invocation sellerCredit =
+            Assert.Single(sellerCurrencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+        Assert.Equal(47ul, sellerCredit.Arguments[1]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void CommodityOrderCancel_RemovesTransientBuyOrderAndRefunds()
     {
         using ServiceProviderScope marketplaceProvider = UseMarketplaceProvider();

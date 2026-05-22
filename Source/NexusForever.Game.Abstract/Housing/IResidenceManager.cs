@@ -33,6 +33,11 @@ namespace NexusForever.Game.Abstract.Housing
         ResidenceNeighborInviteInfo GetPendingNeighborInvite();
 
         /// <summary>
+        /// Removes and returns the current pending neighbor invite when active.
+        /// </summary>
+        bool TryTakePendingNeighborInvite(out ResidenceNeighborInviteInfo invite, out bool expired);
+
+        /// <summary>
         /// Stores a pending neighbor invite if one is not already active.
         /// </summary>
         bool TryQueueNeighborInvite(ResidenceNeighborInviteInfo invite);

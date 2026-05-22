@@ -20,6 +20,8 @@ namespace NexusForever.Game.Marketplace
         private const string ItemAuctionWonBody       = "You won an auction. The attached item is enclosed.";
         private const string CommodityFillSubject     = "Commodity Exchange";
         private const string CommodityFillBody        = "Your commodity order has been filled. Attached are the purchased items.";
+        private const string CommodityReturnSubject   = "Commodity Exchange";
+        private const string CommodityReturnBody      = "Your commodity order was cancelled. The listed items have been returned.";
 
         public static bool IsAvailable => TryGetCharacterDatabase() != null;
 
@@ -69,6 +71,26 @@ namespace NexusForever.Game.Marketplace
                 ContentType.AuctionWon,
                 CommodityFillSubject,
                 CommodityFillBody,
+                0ul,
+                item);
+        }
+
+        public static bool TrySendCommodityAuctionReturnMail(ulong recipientCharacterId, uint item2Id, uint quantity)
+        {
+            if (quantity == 0u)
+                return false;
+
+            IItemInfo info = ItemManager.Instance.GetItemInfo(item2Id);
+            if (info == null)
+                return false;
+
+            var item = new Item(recipientCharacterId, info, quantity);
+            return TrySendMail(
+                recipientCharacterId,
+                SenderType.CommodityAuction,
+                ContentType.AuctionExpired,
+                CommodityReturnSubject,
+                CommodityReturnBody,
                 0ul,
                 item);
         }
