@@ -167,6 +167,9 @@ namespace NexusForever.Game.Marketplace
 
             lock (syncRoot)
             {
+                if (CountOwnedSellAuctions(player.CharacterId) >= MarketplaceAccountLimits.GetMaxAuctionSellLots(player))
+                    return GenericError.AuctionTooManyOrders;
+
                 ulong expirationSeconds = MarketplaceAuctionDuration.GetDefaultExpirationSeconds();
                 ulong expiresAtUtc = (ulong)DateTimeOffset.UtcNow.AddSeconds(expirationSeconds).ToUnixTimeSeconds();
 
@@ -215,6 +218,14 @@ namespace NexusForever.Game.Marketplace
 
                 ulong minimumOffer = record.Auction.CurrentBid == 0ul ? record.Auction.MinimumBid : record.Auction.CurrentBid + 1ul;
                 bool isBuyout = record.Auction.BuyoutPrice != 0ul && buyOrderSubmit.AmountOffered >= record.Auction.BuyoutPrice;
+                bool alreadyTopBidder = record.Auction.TopBidderCharacterId == player.CharacterId;
+                if (!isBuyout && !alreadyTopBidder
+                    && CountActiveAuctionBids(player.CharacterId) >= MarketplaceAccountLimits.GetMaxAuctionBids(player))
+                {
+                    auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
+                    return GenericError.AuctionTooManyBids;
+                }
+
                 ulong acceptedAmount = isBuyout ? record.Auction.BuyoutPrice : buyOrderSubmit.AmountOffered;
                 if (acceptedAmount < minimumOffer)
                 {
@@ -306,6 +317,12 @@ namespace NexusForever.Game.Marketplace
 
             lock (syncRoot)
             {
+                int maxOrders = order.IsBuyOrder
+                    ? MarketplaceAccountLimits.GetMaxCommodityBuyOrders(player)
+                    : MarketplaceAccountLimits.GetMaxCommoditySellOrders(player);
+                if (CountOwnedCommodityOrders(player.CharacterId, order.IsBuyOrder) >= maxOrders)
+                    return GenericError.AuctionTooManyOrders;
+
                 if (order.IsBuyOrder)
                 {
                     if (!player.CurrencyManager.CanAfford(CurrencyType.Credits, order.Price))
@@ -836,6 +853,14 @@ namespace NexusForever.Game.Marketplace
                 return;
             }
 
+            if (currencyType == CurrencyType.Credits
+                && MarketplaceMailDelivery.TrySendMarketplaceCreditMail(
+                    characterId,
+                    amount,
+                    "Marketplace",
+                    "Credits from the marketplace are enclosed."))
+                return;
+
             TryGetCharacterDatabase()?.CreditCharacterCurrency(characterId, (byte)currencyType, amount);
         }
 
@@ -963,6 +988,25 @@ namespace NexusForever.Game.Marketplace
                 ListTime         = order.ListTime,
                 ExpirationTime   = order.ExpirationTime
             };
+        }
+
+        private int CountOwnedSellAuctions(ulong ownerCharacterId)
+        {
+            return auctions.Count(a => a.Auction.OwnerCharacterId == ownerCharacterId);
+        }
+
+        private int CountActiveAuctionBids(ulong bidderCharacterId)
+        {
+            return auctions.Count(a =>
+                a.Auction.TopBidderCharacterId == bidderCharacterId
+                && a.Auction.CurrentBid > 0ul);
+        }
+
+        private int CountOwnedCommodityOrders(ulong ownerCharacterId, bool isBuyOrder)
+        {
+            return commodityOrders.Count(o =>
+                o.OwnerCharacterId == ownerCharacterId
+                && o.Order.IsBuyOrder == isBuyOrder);
         }
 
         private static void ValidateAuctionFilter(IAuctionFilter filter)

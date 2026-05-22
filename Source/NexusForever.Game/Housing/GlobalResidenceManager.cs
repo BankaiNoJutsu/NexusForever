@@ -12,6 +12,7 @@ using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Housing;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
 using NLog;
@@ -142,6 +143,10 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IResidence CreateResidence(IPlayer player)
         {
+            HousingResult? blocked = RetailHousingRules.ValidateResidenceAccess(player);
+            if (blocked != null)
+                throw new HousingException("Player does not meet retail housing unlock requirements.");
+
             var residence = new Residence(player);
             StoreResidence(residence, player.Name);
 

@@ -1,4 +1,5 @@
 using NexusForever.Game.Abstract.Challenges;
+using NexusForever.Game.Retail;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Challenges;
 using NexusForever.Game.Static.Quest;
@@ -162,6 +163,12 @@ namespace NexusForever.Game.Challenges
                 return;
             }
 
+            if (CountActivatedChallenges() >= RetailCertainRules.MaxConcurrentActiveChallenges)
+            {
+                SendResult(challengeId, ChallengeResult.GenericFail);
+                return;
+            }
+
             if (activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState existing))
             {
                 if (existing.OnCooldown)
@@ -272,6 +279,18 @@ namespace NexusForever.Game.Challenges
             }
 
             return false;
+        }
+
+        private int CountActivatedChallenges()
+        {
+            int count = 0;
+            foreach (ChallengeRuntimeState state in activeChallenges.Values)
+            {
+                if (state.Activated)
+                    count++;
+            }
+
+            return count;
         }
 
         private bool MeetsZoneRestriction(ChallengeEntry entry)

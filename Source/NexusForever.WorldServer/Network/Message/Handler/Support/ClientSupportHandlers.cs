@@ -8,6 +8,7 @@ using NexusForever.Game.Map;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Static.Support;
+using NexusForever.Game.Support;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
@@ -201,6 +202,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
                 return;
             }
 
+            if (!TryBeginStuckAction(session, UnstickType.RecallTransmat, contextToken, spell4Id))
+                return;
+
             uint worldLocation2Id = session.Player.Zone?.WorldLocation2IdExit ?? 0u;
             WorldLocation2Entry location = worldLocation2Id == 0u
                 ? null
@@ -226,6 +230,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
                 SendStuckCastResult(session, contextToken, spell4Id, CastResult.PendingSpellCast);
                 return;
             }
+
+            if (!TryBeginStuckAction(session, UnstickType.RecallHouse, contextToken, spell4Id))
+                return;
 
             IResidence residence = globalResidenceManager.GetResidenceByOwner(session.Player.Name)
                 ?? globalResidenceManager.CreateResidence(session.Player);
@@ -275,9 +282,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
                 return;
             }
 
+            if (!TryBeginStuckAction(session, UnstickType.FreeSuicide, contextToken, spell4Id))
+                return;
+
             log.LogDebug("Processing free-suicide stuck request for player {PlayerGuid}: context token {ContextToken}.",
                 session.Player?.Guid, contextToken);
             session.Player.ModifyHealth(Math.Max(session.Player.Health, 1u), DamageType.Physical, session.Player);
+        }
+
+        private static bool TryBeginStuckAction(IWorldSession session, UnstickType unstickType, uint contextToken, uint spell4Id)
+        {
+            uint cooldownMs = RetailStuckCooldownTracker.GetRemainingCooldownMs(session.Player.CharacterId, unstickType);
+            if (cooldownMs > 0)
+            {
+                SendStuckCastResult(session, contextToken, spell4Id, CastResult.SpellCooldown);
+                return false;
+            }
+
+            RetailStuckCooldownTracker.RecordUse(session.Player.CharacterId, unstickType);
+            return true;
         }
 
         private static void SendStuckCastResult(IWorldSession session, uint contextToken, uint spell4Id, CastResult castResult)

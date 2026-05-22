@@ -7,6 +7,7 @@ using NexusForever.Game.Static.Housing;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
+using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Housing
@@ -62,6 +63,10 @@ namespace NexusForever.Game.Housing
 
         public IResidence GetOrCreateResidence()
         {
+            HousingResult? blocked = RetailHousingRules.ValidateResidenceAccess(owner);
+            if (blocked != null)
+                throw new HousingException("Player does not meet retail housing unlock requirements.");
+
             Residence ??= GlobalResidenceManager.Instance.CreateResidence(owner);
             return Residence;
         }

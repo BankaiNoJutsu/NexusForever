@@ -6,6 +6,7 @@ using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Map.Lock;
+using NexusForever.Game.Housing;
 using NexusForever.Game.Map;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
@@ -586,6 +587,24 @@ namespace NexusForever.Game.Map.Instance
         private static bool HasContributionPayload(ClientHousingPlugUpdate housingPlugUpdate)
         {
             return housingPlugUpdate.Contributions.Any(c => c.HasPayload);
+        }
+
+        public bool TryHarvestPlug(IPlayer harvester, IPlugEntity plugEntity)
+        {
+            if (plugEntity?.PlugEntry == null)
+                return false;
+
+            IResidence residence = residences.Values.FirstOrDefault(r =>
+                r.GetPlots().Any(p => p.PlugEntity?.Guid == plugEntity.Guid));
+
+            if (residence == null)
+                return false;
+
+            IPlot plot = residence.GetPlots().FirstOrDefault(p => p.PlugEntity?.Guid == plugEntity.Guid);
+            if (plot == null)
+                return false;
+
+            return RetailHousingHarvestGrant.TryHarvestPlug(harvester, residence, plot, plugEntity.PlugEntry, gameTableManager);
         }
 
         private HousingResult PlugRemove(IPlot plot)

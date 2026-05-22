@@ -281,6 +281,7 @@ public class LootBindOnPickupPolicyTests
         public void ItemDelete(uint itemId, uint count = 1, ItemUpdateReason reason = ItemUpdateReason.Loot) => throw new NotSupportedException();
         public void ItemRemove(IItem item, ItemUpdateReason reason = ItemUpdateReason.NoReason) => throw new NotSupportedException();
         public void AddItem(IItem item, InventoryLocation location, ItemUpdateReason reason = ItemUpdateReason.NoReason) => throw new NotSupportedException();
+        public void LoadItem(IItem item, InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
         public bool ItemUse(IItem item) => throw new NotSupportedException();
         public void ItemMoveToSupplySatchel(IItem item, uint amount) => throw new NotSupportedException();
 

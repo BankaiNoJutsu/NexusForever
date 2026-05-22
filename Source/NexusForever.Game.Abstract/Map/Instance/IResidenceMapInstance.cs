@@ -44,6 +44,11 @@ namespace NexusForever.Game.Abstract.Map.Instance
         void PlugUpdate(IPlayer player, ClientHousingPlugUpdate housingPlugUpdate);
 
         /// <summary>
+        /// Grant harvest yield from an activated housing plug (retail split rules).
+        /// </summary>
+        bool TryHarvestPlug(IPlayer harvester, IPlugEntity plugEntity);
+
+        /// <summary>
         /// Create and add <see cref="IDecor"/> from supplied <see cref="HousingDecorInfoEntry"/> to your crate.
         /// </summary>
         void DecorCreate(IResidence residence, HousingDecorInfoEntry entry, uint quantity);

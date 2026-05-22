@@ -1,5 +1,6 @@
 ﻿using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Guild;
+using NexusForever.Game.Retail;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Guild;
@@ -60,6 +61,33 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Guild
             }
 
             session.Player.GuildManager.RegisterGuild(guildRegister);
+            DeductCreationCost(session, guildRegister);
+        }
+
+        private void DeductCreationCost(IWorldSession session, ClientGuildRegister guildRegister)
+        {
+            switch (guildRegister.GuildType)
+            {
+                case GuildType.Guild:
+                {
+                    GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(RetailCertainRules.GuildCreateCostGameFormulaId);
+                    if (entry != null)
+                        session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, entry.Dataint0);
+                    break;
+                }
+                case GuildType.Community:
+                {
+                    GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(RetailCertainRules.CommunityCreateCostGameFormulaId);
+                    if (entry == null)
+                        break;
+
+                    if (guildRegister.AlternateCost)
+                        session.Account.CurrencyManager.CurrencySubtractAmount(AccountCurrencyType.ServiceToken, entry.Dataint01);
+                    else
+                        session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, entry.Dataint0);
+                    break;
+                }
+            }
         }
     }
 }

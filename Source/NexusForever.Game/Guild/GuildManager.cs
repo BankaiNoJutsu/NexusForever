@@ -8,6 +8,7 @@ using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Retail;
 using NexusForever.Game.Static.Guild;
 using NexusForever.GameTable.Text.Filter;
 using NexusForever.GameTable.Text.Static;
@@ -239,6 +240,16 @@ namespace NexusForever.Game.Guild
 
             if (standard != null && !standard.Validate())
                 return new GuildResultInfo(GuildResult.InvalidStandard);
+
+            if (type == GuildType.Community)
+            {
+                GuildResult? communityBlocked = RetailCommunityRules.ValidateCreate(owner);
+                if (communityBlocked != null)
+                    return new GuildResultInfo(communityBlocked.Value);
+
+                if (!RetailCommunityRules.HasPlayerResidence(owner) && owner.Level < RetailCertainRules.HousingUnlockLevel)
+                    return new GuildResultInfo(GuildResult.MustBeHomeowner);
+            }
 
             return new GuildResultInfo(GuildResult.Success);
         }

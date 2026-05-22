@@ -1,5 +1,6 @@
 ﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
+using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Entity;
@@ -27,6 +28,14 @@ namespace NexusForever.Game.Entity
         {
             PlotEntry = plotEntry;
             PlugEntry = plugEntry;
+        }
+
+        public override void OnActivateSuccess(IPlayer activator)
+        {
+            if (activator.Map is IResidenceMapInstance residenceMap)
+                residenceMap.TryHarvestPlug(activator, this);
+
+            base.OnActivateSuccess(activator);
         }
 
         protected override IEntityModel BuildEntityModel()

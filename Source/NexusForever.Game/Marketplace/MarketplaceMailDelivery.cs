@@ -75,6 +75,49 @@ namespace NexusForever.Game.Marketplace
                 item);
         }
 
+        public static bool TrySendSystemItemMail(
+            ulong recipientCharacterId,
+            uint item2Id,
+            uint quantity,
+            string subject,
+            string body)
+        {
+            if (quantity == 0u)
+                return false;
+
+            IItemInfo info = ItemManager.Instance.GetItemInfo(item2Id);
+            if (info == null)
+                return false;
+
+            var item = new Item(recipientCharacterId, info, quantity);
+            return TrySendMail(
+                recipientCharacterId,
+                SenderType.GM,
+                ContentType.PlayerMessage,
+                subject,
+                body,
+                0ul,
+                item);
+        }
+
+        public static bool TrySendMarketplaceCreditMail(
+            ulong recipientCharacterId,
+            ulong credits,
+            string subject,
+            string body)
+        {
+            if (credits == 0ul)
+                return false;
+
+            return TrySendMail(
+                recipientCharacterId,
+                SenderType.ItemAuction,
+                ContentType.AuctionWon,
+                subject,
+                body,
+                credits);
+        }
+
         public static bool TrySendCommodityAuctionReturnMail(ulong recipientCharacterId, uint item2Id, uint quantity)
         {
             if (quantity == 0u)

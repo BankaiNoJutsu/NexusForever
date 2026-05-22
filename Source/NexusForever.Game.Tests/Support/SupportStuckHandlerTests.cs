@@ -10,6 +10,7 @@ using NexusForever.Game.Housing;
 using NexusForever.Game.Static.Housing;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Static.Support;
+using NexusForever.Game.Support;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -24,6 +25,11 @@ namespace NexusForever.Game.Tests.Support;
 
 public class SupportStuckHandlerTests
 {
+    public SupportStuckHandlerTests()
+    {
+        RetailStuckCooldownTracker.ClearForTests();
+    }
+
     [Fact]
     public void FreeSuicide_WhenPlayerAliveDealsCurrentHealthDamage()
     {

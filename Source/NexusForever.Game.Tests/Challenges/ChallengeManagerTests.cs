@@ -43,6 +43,28 @@ public class ChallengeManagerTests
     }
 
     [Fact]
+    public void Activate_ThirdConcurrentChallenge_ReturnsGenericFail()
+    {
+        const ushort challengeTwoId = 1002;
+        const ushort challengeThreeId = 1003;
+        GameTableManager gameTables = CreateGameTablesWithMultipleTypes(
+            (ChallengeId, ChallengeType.General),
+            (challengeTwoId, ChallengeType.Combat),
+            (challengeThreeId, ChallengeType.Item));
+        IPlayer player = CreatePlayer(RecipientGuid, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables);
+        IChallengeManager manager = new ChallengeManager(player, gameTables);
+
+        manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+        manager.HandleChoice(challengeTwoId, ChallengeChoice.Activate);
+        manager.HandleChoice(challengeThreeId, ChallengeChoice.Activate);
+
+        ServerChallengeResult failure = GetMessages<ServerChallengeResult>(sessionProxy).Last();
+        Assert.Equal(challengeThreeId, failure.ChallengeId);
+        Assert.Equal(ChallengeResult.GenericFail, failure.Result);
+        Assert.Equal(2, GetMessages<ServerChallengeUpdate>(sessionProxy).Last().ActiveChallenges.Count(c => c.Activated));
+    }
+
+    [Fact]
     public void Activate_WhenTypeAlreadyActive_SendsTypeAlreadyActive()
     {
         GameTableManager gameTables = CreateGameTables();
@@ -164,6 +186,33 @@ public class ChallengeManagerTests
     {
         RecordingDispatchProxy<IPlayer> sharerProxy = (RecordingDispatchProxy<IPlayer>)(object)sharer;
         sharerProxy.SetMethodReturnFactory(nameof(IPlayer.GetVisible), () => recipient);
+    }
+
+    private static GameTableManager CreateGameTablesWithMultipleTypes(params (ushort Id, ChallengeType Type)[] challenges)
+    {
+        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
+        {
+            GameTablePath = string.Empty
+        }));
+
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.ChallengeTier), CreateGameTable(new ChallengeTierEntry
+        {
+            Id    = 2001,
+            Count = 5u
+        }));
+
+        var challengeEntries = challenges.Select(pair => new ChallengeEntry
+        {
+            Id                      = pair.Id,
+            ChallengeTypeEnum       = (uint)pair.Type,
+            ChallengeFlags          = CooldownTypeFlag,
+            TargetGroupIdRewardPane = 42u,
+            ChallengeTierId00       = 2001,
+            CompletionCount         = 1u
+        }).ToArray();
+
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.Challenge), CreateGameTable(challengeEntries));
+        return gameTableManager;
     }
 
     private static GameTableManager CreateGameTables(uint tierOneCount = 5, uint tierTwoCount = 0)

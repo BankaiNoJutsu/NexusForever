@@ -158,6 +158,15 @@ namespace NexusForever.Game.Entity
                 if (targetCharacter.CharacterId == player.CharacterId)
                     return GenericError.MailCannotMailSelf;
 
+                if (!player.SignatureEnabled
+                    && (player.Account.EntitlementManager?.GetEntitlement(EntitlementType.FullSocialParticipation)?.Amount ?? 0u) == 0u)
+                    return GenericError.MailCannotMailTrialAccount;
+
+                if (mailSend.CreditsSent > 0ul
+                    && !player.SignatureEnabled
+                    && (player.Account.EntitlementManager.GetEntitlement(EntitlementType.VIPTier)?.Amount ?? 0u) > 0u)
+                    return GenericError.MissingEntitlement;
+
                 if (mailSend.CashOnDeliveryAmount > 0ul && mailSend.CreditsSent > 0ul)
                     return GenericError.MailCanNotHaveCoDAndGift;
 

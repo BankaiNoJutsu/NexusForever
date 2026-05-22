@@ -4,6 +4,7 @@ using NexusForever.Database.World;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Retail;
 using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Loot;
@@ -439,6 +440,12 @@ namespace NexusForever.Game.Loot
 
             foreach (LootInstanceItem item in lootInstance.Where(i => !i.Delivered))
             {
+                if (item.ItemQualityId <= RetailCertainRules.TrashItemMaxQualityId && eligibleIdentities.Count > 1)
+                {
+                    item.ConfigureRoll(eligibleIdentities);
+                    continue;
+                }
+
                 switch (recipients.Group.GetLootRule(item.ItemQualityId))
                 {
                     case LootRule.RoundRobin:
