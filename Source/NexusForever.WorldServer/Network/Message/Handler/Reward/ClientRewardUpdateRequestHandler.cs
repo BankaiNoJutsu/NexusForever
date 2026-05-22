@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract.Account.Reward;
 using NexusForever.Game.Account.Reward;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -44,7 +45,28 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
                 session.EnqueueMessageEncrypted(contentContextPacket);
 
             session.EnqueueMessageEncrypted(refresh.ScheduleArray);
-            session.EnqueueMessageEncrypted(refresh.EntryStateArray);
+
+            if (TryProcessClaimRequest(session, rewardUpdateRequest, refresh, out ServerRewardRotationEntryStateArray.EntryStateRow claimedRow))
+            {
+                ServerRewardRotationEntryStateUpsert upsert = RewardRotationGrantClaimService.BuildUpsert(claimedRow);
+                if (upsert != null)
+                    session.EnqueueMessageEncrypted(upsert);
+
+                IAccountRewardRotationGrantManager grantManager = session.Account.RewardRotationGrantManager;
+                if (grantManager != null)
+                {
+                    ServerRewardRotationEntryStateArray entryState = grantManager.BuildEntryState(rewardUpdateRequest.RewardRotationIndex);
+                    session.EnqueueMessageEncrypted(entryState);
+                }
+                else
+                {
+                    session.EnqueueMessageEncrypted(refresh.EntryStateArray);
+                }
+            }
+            else
+            {
+                session.EnqueueMessageEncrypted(refresh.EntryStateArray);
+            }
             RewardRotationRuntimeEvidenceCollector.RecordRequestIfArmed(
                 session.Player,
                 rewardUpdateRequest.RewardRotationIndex,
@@ -63,6 +85,29 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
                 log.LogInformation("Reward rotation response for player {PlayerGuid} carried observable rows from source {ResponseSource}: reward rotation index {RewardRotationIndex}, content-context ids {ContentContextIdCount}, schedule entries {ScheduleEntryCount}, entry-state entries {EntryStateCount}. Review reward evidence captures before implementing live semantics.",
                     session.Player?.Guid, refresh.ResponseSource, refresh.RewardRotationIndex, refresh.ContentContextIdCount, refresh.ScheduleEntryCount, refresh.EntryStateCount);
             }
+        }
+
+        private static bool TryProcessClaimRequest(
+            IWorldSession session,
+            ClientRewardUpdateRequest rewardUpdateRequest,
+            RewardRotationRefresh refresh,
+            out ServerRewardRotationEntryStateArray.EntryStateRow entryStateRow)
+        {
+            entryStateRow = null;
+            if (!rewardUpdateRequest.HasClaimRequest)
+                return false;
+
+            IAccountRewardRotationGrantManager grantManager = session.Account?.RewardRotationGrantManager;
+            if (grantManager == null)
+                return false;
+
+            return RewardRotationGrantClaimService.TryRecordClaimFromScheduleRow(
+                grantManager,
+                rewardUpdateRequest.RewardRotationIndex,
+                refresh.ScheduleArray,
+                rewardUpdateRequest.ClaimContentId,
+                rewardUpdateRequest.ClaimRewardType,
+                out entryStateRow);
         }
     }
 }

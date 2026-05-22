@@ -65,6 +65,28 @@ public class StorefrontPurchaseHandlerTests
     }
 
     [Fact]
+    public void CharacterPurchaseSuccess_Emits098C()
+    {
+        IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        StorefrontPurchaseHelper.SendCharacterPurchaseSuccess(session);
+
+        ServerStorePurchaseOfferResult result = Assert.Single(GetMessages<ServerStorePurchaseOfferResult>(sessionProxy));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(PurchaseResultDisplayType.Default, result.DisplayType);
+    }
+
+    [Fact]
+    public void AccountPurchaseSuccess_Emits098D()
+    {
+        IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        StorefrontPurchaseHelper.SendAccountPurchaseSuccess(session);
+
+        ServerStorePurchaseOfferResultVariant result = Assert.Single(GetMessages<ServerStorePurchaseOfferResultVariant>(sessionProxy));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(PurchaseResultDisplayType.Default, result.DisplayType);
+    }
+
+    [Fact]
     public void AccountGiftPurchase_WithUnknownRecipient_ReturnsIneligibleGiftRecipientStoreError()
     {
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy);

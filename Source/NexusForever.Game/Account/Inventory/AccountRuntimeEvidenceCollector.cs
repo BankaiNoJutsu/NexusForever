@@ -112,14 +112,14 @@ namespace NexusForever.Game.Account.Inventory
             });
             record.Blockers =
             [
-                "Selected-client evidence currently proves only AccountOperation.RedeemCoupon and AccountOperationResult.InvalidCoupon enum values.",
-                "No authoritative client coupon request opcode or payload mapping is implemented yet.",
-                "No retail-backed coupon redemption success path, failure policy, or pending-item interaction is implemented."
+                "Native WildStar64 client sender for opcode 0x0790 is still unlabeled in durable exports.",
+                "Retail coupon catalog, entitlement checks, and pending-item interactions are not mapped.",
+                "Hardcoded emulator coupon codes are policy-only and must not be treated as retail parity."
             ];
             record.Notes =
             [
-                "This report is a shape-only scaffold for future live-client evidence collection.",
-                "When coupon request packets are mapped, call RecordCouponBlockerIfArmed before adding any runtime policy."
+                "ClientAccountRedeemCoupon (0x0790) wire shape and WorldServer handler are implemented.",
+                "Use this report to compare future live-client captures before expanding coupon policy."
             ];
         }
 

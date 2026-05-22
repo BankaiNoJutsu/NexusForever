@@ -36,7 +36,7 @@ public class CREDDExchangeHandlerTests
 
         var submitHandler = new ClientCREDDExchangeBuyOrderSubmitHandler(
             NullLogger<ClientCREDDExchangeBuyOrderSubmitHandler>.Instance);
-        submitHandler.HandleMessage(session, ReadBuyOrderSubmit(50000ul, submitFlag: true));
+        submitHandler.HandleMessage(session, ReadBuyOrderSubmit(12000ul, submitFlag: true));
 
         var infoHandler = new ClientCREDDExchangeRequestInfoHandler(
             NullLogger<ClientCREDDExchangeRequestInfoHandler>.Instance);
@@ -45,13 +45,13 @@ public class CREDDExchangeHandlerTests
         ServerCREDDExchangeInfoResults info = GetMessages<ServerCREDDExchangeInfoResults>(sessionProxy).Last();
         Assert.Equal(1u, info.BuyOrderCount);
         Assert.Equal(0u, info.SellOrderCount);
-        Assert.Equal(50000ul, info.BuyOrderPrices[0]);
+        Assert.Equal(12000ul, info.BuyOrderPrices[0]);
         Assert.Equal(1u, info.OwnedOrderCount);
 
         ServerCREDDExchangeOrderCacheRows cache = GetMessages<ServerCREDDExchangeOrderCacheRows>(sessionProxy).Last();
         ServerCREDDExchangeOrderCacheRows.Row row = Assert.Single(cache.Rows);
-        Assert.Equal(50000u, row.UInt14Value);
-        Assert.Equal(1u, row.UInt7Value);
+        Assert.Equal(12000u, row.CreditAmount);
+        Assert.Equal(1u, row.SideFlag);
     }
 
     [Fact]

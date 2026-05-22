@@ -170,9 +170,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 {
                     message.Rows.Add(new ServerCREDDExchangeOrderCacheRows.Row
                     {
-                        Value0      = order.OrderId,
-                        UInt14Value = (uint)Math.Min(order.CreditAmount, uint.MaxValue),
-                        UInt7Value  = order.IsBuyOrder ? 1u : 0u
+                        OrderId      = order.OrderId,
+                        CreditAmount = (uint)Math.Min(order.CreditAmount, (1u << 14) - 1u),
+                        SideFlag     = order.IsBuyOrder ? 1u : 0u
                     });
                 }
             }

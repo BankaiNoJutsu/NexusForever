@@ -486,9 +486,8 @@ namespace NexusForever.Game.Account.Inventory
         {
             account.Session.EnqueueMessageEncrypted(new ServerAccountItemCacheAdd
             {
-                // Client AccountItemAddToCache_HandleServer096A ignores the leading uint32.
-                Unknown0    = 0u,
-                AccountItem = item.Build()
+                UnusedLeadingField = 0u,
+                AccountItem        = item.Build()
             });
             account.Session.EnqueueMessageEncrypted(new ServerAccountItemAdd
             {
