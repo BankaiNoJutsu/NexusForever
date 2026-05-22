@@ -5,6 +5,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Achievement;
+using NexusForever.Game.Abstract.Challenges;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map;
@@ -97,6 +98,7 @@ namespace NexusForever.Game.Abstract.Entity
         IGalacticArchiveManager GalacticArchiveManager { get; }
         IMailManager MailManager { get; }
         IZoneMapManager ZoneMapManager { get; }
+        IChallengeManager ChallengeManager { get; }
         IQuestManager QuestManager { get; }
         ICharacterAchievementManager AchievementManager { get; }
         ISupplySatchelManager SupplySatchelManager { get; }

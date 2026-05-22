@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using NexusForever.Game.Static.Challenges;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Challenges;
 
@@ -16,14 +15,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, ClientChallengeChoice challengeChoice)
         {
-            log.LogDebug("ClientChallengeChoice: player={Player} challengeId={ChallengeId} choice={Choice}",
-                session.Player?.Guid, challengeChoice.ChallengeId, challengeChoice.Choice);
+            if (session.Player == null)
+                return;
 
-            session.EnqueueMessageEncrypted(new ServerChallengeResult
-            {
-                ChallengeId = challengeChoice.ChallengeId,
-                Result      = ChallengeResult.GenericFail
-            });
+            log.LogDebug("ClientChallengeChoice: player={Player} challengeId={ChallengeId} choice={Choice}",
+                session.Player.Guid, challengeChoice.ChallengeId, challengeChoice.Choice);
+
+            session.Player.ChallengeManager.HandleChoice(challengeChoice.ChallengeId, challengeChoice.Choice);
         }
     }
 }

@@ -106,13 +106,13 @@ public class LeaderboardProviderTests
         public ClientLeaderboardPveRequest PveRequest { get; private set; }
         public ClientLeaderboardPvpRequest PvpRequest { get; private set; }
 
-        public ServerLeaderboardPve BuildPve(ClientLeaderboardPveRequest request)
+        public ServerLeaderboardPve BuildPve(ClientLeaderboardPveRequest request, NexusForever.Game.Abstract.Entity.IPlayer viewer = null)
         {
             PveRequest = request;
             return pveResponse;
         }
 
-        public ServerLeaderboardPvp BuildPvp(ClientLeaderboardPvpRequest request)
+        public ServerLeaderboardPvp BuildPvp(ClientLeaderboardPvpRequest request, NexusForever.Game.Abstract.Entity.IPlayer viewer = null)
         {
             PvpRequest = request;
             return pvpResponse;

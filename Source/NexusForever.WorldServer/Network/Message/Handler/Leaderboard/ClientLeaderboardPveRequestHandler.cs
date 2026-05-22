@@ -21,10 +21,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Leaderboard
 
         public void HandleMessage(IWorldSession session, ClientLeaderboardPveRequest request)
         {
-            log.LogDebug("Returning empty PvE leaderboard for player {PlayerGuid}: type {Type}, matching game map {MatchingGameMapId}, prime level {PrimeLevel}.",
+            log.LogDebug("Returning PvE leaderboard for player {PlayerGuid}: type {Type}, matching game map {MatchingGameMapId}, prime level {PrimeLevel}.",
                 session.Player?.Guid, request.Type, request.MatchingGameMapdId, request.PrimeLevel);
 
-            session.EnqueueMessageEncrypted(leaderboardProvider.BuildPve(request));
+            session.EnqueueMessageEncrypted(leaderboardProvider.BuildPve(request, session.Player));
         }
     }
 }

@@ -1,10 +1,11 @@
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Network.World.Message.Model.Leaderboard;
 
 namespace NexusForever.WorldServer.Leaderboard
 {
     public sealed class EmptyLeaderboardProvider : ILeaderboardProvider
     {
-        public ServerLeaderboardPve BuildPve(ClientLeaderboardPveRequest request)
+        public ServerLeaderboardPve BuildPve(ClientLeaderboardPveRequest request, IPlayer viewer = null)
         {
             return new ServerLeaderboardPve
             {
@@ -14,7 +15,7 @@ namespace NexusForever.WorldServer.Leaderboard
             };
         }
 
-        public ServerLeaderboardPvp BuildPvp(ClientLeaderboardPvpRequest request)
+        public ServerLeaderboardPvp BuildPvp(ClientLeaderboardPvpRequest request, IPlayer viewer = null)
         {
             return new ServerLeaderboardPvp
             {

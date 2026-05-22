@@ -76,7 +76,10 @@ namespace NexusForever.Game.Map
             lastPosition = vector;
 
             if (zoneMaps.TryGetValue(currentZoneMap, out IZoneMap zoneMap) && zoneMap.IsComplete)
+            {
+                TryGrantZoneCompletionRewards(currentZoneMap);
                 return;
+            }
 
             ZoneMapCoordinate newZoneMapCoordinate = Points2ZoneMapCoordinate(vector);
             if (currentZoneMapCoordinate?.X == newZoneMapCoordinate.X && currentZoneMapCoordinate?.Y == newZoneMapCoordinate.Y)
@@ -106,14 +109,19 @@ namespace NexusForever.Game.Map
             if (zoneMap.IsComplete)
             {
                 player.AchievementManager.CheckAchievements(player, AchievementType.MapComplete, currentZoneMap);
-                GrantExplorationOnlyZoneCompletionRewards(currentZoneMap);
+                TryGrantZoneCompletionRewards(currentZoneMap);
             }
         }
 
-        private void GrantExplorationOnlyZoneCompletionRewards(uint mapZoneId)
+        private void TryGrantZoneCompletionRewards(uint mapZoneId)
         {
-            foreach (ushort titleId in ZoneCompletionRewardResolver.GetExplorationOnlyTitleRewards(mapZoneId))
-                player.TitleManager.AddTitle(titleId);
+            if (!ZoneCompletionRewardResolver.TryGetTitleReward(player, mapZoneId, explorationComplete: true, out ushort titleId))
+                return;
+
+            if (player.TitleManager.HasTitle(titleId))
+                return;
+
+            player.TitleManager.AddTitle(titleId);
         }
 
         private static ZoneMapCoordinate Points2ZoneMapCoordinate(Vector3 position)

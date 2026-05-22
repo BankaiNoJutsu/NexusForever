@@ -13,6 +13,7 @@ using NexusForever.Game.Cinematic;
 using NexusForever.Game.Combat;
 using NexusForever.Game.Customisation;
 using NexusForever.Game.Entity;
+using NexusForever.Game.Fortune;
 using NexusForever.Game.Group;
 using NexusForever.Game.Guild;
 using NexusForever.Game.Housing;
@@ -53,7 +54,8 @@ namespace NexusForever.Game
             sc.AddSingletonLegacy<ITradeManager, TradeManager>();
             sc.AddSingletonLegacy<IGroupStateManager, GroupStateManager>();
             sc.AddSingletonLegacy<IGlobalLootManager, GlobalLootManager>();
-            sc.AddSingletonLegacy<IPendingAccountItemGroupDelivery, AccountInventoryManager.OnlinePendingAccountItemGroupDelivery>();
+            sc.AddSingletonLegacy<IAccountPendingItemRepository, AccountPendingItemRepository>();
+            sc.AddSingletonLegacy<IPendingAccountItemGroupDelivery, RetailPendingAccountItemGroupDelivery>();
 
             sc.AddGameAchievement();
             sc.AddGameCharacter();
@@ -61,6 +63,7 @@ namespace NexusForever.Game
             sc.AddGameCombat();
             sc.AddGameCustomisation();
             sc.AddGameEntity();
+            sc.AddGameFortune();
             sc.AddGameEvent();
             sc.AddGameGuild();
             sc.AddGameHousing();

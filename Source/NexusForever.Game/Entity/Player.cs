@@ -7,6 +7,7 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Achievement;
+using NexusForever.Game.Abstract.Challenges;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Guild;
@@ -20,6 +21,7 @@ using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Abstract.Reputation;
 using NexusForever.Game.Achievement;
+using NexusForever.Game.Challenges;
 using NexusForever.Game.Character;
 using NexusForever.Game.Chat;
 using NexusForever.Game.Configuration.Model;
@@ -363,6 +365,7 @@ namespace NexusForever.Game.Entity
         public IGalacticArchiveManager GalacticArchiveManager { get; private set; }
         public IMailManager MailManager { get; private set; }
         public IZoneMapManager ZoneMapManager { get; private set; }
+        public IChallengeManager ChallengeManager { get; private set; }
         public IQuestManager QuestManager { get; private set; }
         public ICharacterAchievementManager AchievementManager { get; private set; }
         public ISupplySatchelManager SupplySatchelManager { get; private set; }
@@ -513,6 +516,7 @@ namespace NexusForever.Game.Entity
             GalacticArchiveManager  = new GalacticArchiveManager(this, model);
             MailManager             = new MailManager(this, model);
             ZoneMapManager          = new ZoneMapManager(this, model);
+            ChallengeManager        = new ChallengeManager(this);
             QuestManager            = new QuestManager(this, model);
             AchievementManager      = new CharacterAchievementManager(this, model);
             SupplySatchelManager    = new SupplySatchelManager(this, model);
@@ -560,6 +564,7 @@ namespace NexusForever.Game.Entity
             CostumeManager.Update(lastTick);
             Inventory.Update(lastTick);
             QuestManager.Update(lastTick);
+            ChallengeManager.Update(lastTick);
             ResurrectionManager.Update(lastTick);
             UpdatePendingGhostSpawn(lastTick);
 
@@ -1103,8 +1108,10 @@ namespace NexusForever.Game.Entity
             GalacticArchiveManager.SendInitialPackets();
             MailManager.SendInitialPackets();
             ZoneMapManager.SendInitialPackets();
+            ChallengeManager.SendInitialPackets();
             Account.CurrencyManager.SendInitialPackets();
             Account.InventoryManager.SendInitialPackets();
+            Account.GenericUnlockManager.SendCharacterUnlockSync();
             SendTradeskillInitialPackets();
             QuestManager.SendInitialPackets();
             AchievementManager.SendInitialPackets(null);

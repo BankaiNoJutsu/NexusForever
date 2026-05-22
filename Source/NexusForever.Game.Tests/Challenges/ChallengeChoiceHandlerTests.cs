@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using NexusForever.Game.Abstract.Challenges;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Challenges;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network.Session;
@@ -11,26 +13,29 @@ namespace NexusForever.Game.Tests.Challenges;
 public class ChallengeChoiceHandlerTests
 {
     [Fact]
-    public void HandleMessage_SendsGenericFailureWithoutMutatingChallengeState()
+    public void HandleMessage_DelegatesChoiceToChallengeManager()
     {
-        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out var sessionProxy);
+        IChallengeManager challengeManager = RecordingDispatchProxy<IChallengeManager>.Create(out RecordingDispatchProxy<IChallengeManager> challengeProxy);
+        IPlayer player = CreatePlayer(challengeManager);
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+
         var handler = new ClientChallengeChoiceHandler(NullLogger<ClientChallengeChoiceHandler>.Instance);
         ClientChallengeChoice choice = CreateChoice(1234, ChallengeChoice.AcceptShared, 0u);
 
         handler.HandleMessage(session, choice);
 
-        ServerChallengeResult result = GetEncryptedMessages(sessionProxy)
-            .OfType<ServerChallengeResult>()
-            .Single();
-        Assert.Equal(1234, result.ChallengeId);
-        Assert.Equal(ChallengeResult.GenericFail, result.Result);
-        Assert.Equal(0, result.Data);
+        RecordingDispatchProxy<IChallengeManager>.Invocation invocation = Assert.Single(
+            challengeProxy.GetInvocations(nameof(IChallengeManager.HandleChoice)));
+        Assert.Equal((ushort)1234, invocation.Arguments[0]);
+        Assert.Equal(ChallengeChoice.AcceptShared, invocation.Arguments[1]);
     }
 
-    private static IEnumerable<object> GetEncryptedMessages(RecordingDispatchProxy<IWorldSession> sessionProxy)
+    private static IPlayer CreatePlayer(IChallengeManager challengeManager)
     {
-        return sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-            .Select(invocation => invocation.Arguments[0]);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.ChallengeManager), challengeManager);
+        return player;
     }
 
     private static ClientChallengeChoice CreateChoice(ushort challengeId, ChallengeChoice choice, uint unused)
