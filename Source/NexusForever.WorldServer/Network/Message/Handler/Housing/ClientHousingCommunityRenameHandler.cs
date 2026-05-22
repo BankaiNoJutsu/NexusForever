@@ -88,7 +88,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
             session.EnqueueMessageEncrypted(new ServerHousingCommunityRename
             {
-                Result      = HousingResult.Success,
+                Result      = result,
                 TargetGuild = community.Identity.ToNetworkIdentity()
             });
         }

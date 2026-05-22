@@ -126,12 +126,32 @@ namespace NexusForever.Game.Map.Lock
         }
 
         /// <summary>
+        /// Return <see cref="IMapLockCollection"/> for supplied group id, or null if none exists.
+        /// </summary>
+        public IMapLockCollection TryGetGroupLockCollection(ulong groupId)
+        {
+            return groupLocks.TryGetValue(groupId, out IMapLockCollection mapLockCollection)
+                ? mapLockCollection
+                : null;
+        }
+
+        /// <summary>
         /// Return <see cref="IMapLock"/> for supplied match guid and world id.
         /// </summary>
         public IMapLock GetMatchLock(Guid guid, uint worldId)
         {
             return matchLocks.TryGetValue(guid, out IMapLockCollection mapLockCollection)
                 ? mapLockCollection.GetMapLock<IMapLock>(worldId)
+                : null;
+        }
+
+        /// <summary>
+        /// Return <see cref="IMapLockCollection"/> for supplied character id, or null if none exists.
+        /// </summary>
+        public IMapLockCollection TryGetSoloLockCollection(Identity identity)
+        {
+            return soloLocks.TryGetValue(identity, out IMapLockCollection mapLockCollection)
+                ? mapLockCollection
                 : null;
         }
 

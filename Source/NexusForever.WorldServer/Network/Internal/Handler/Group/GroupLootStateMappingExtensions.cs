@@ -15,6 +15,7 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
                 NormalRule       = group.NormalRule,
                 ThresholdRule    = group.ThresholdRule,
                 ThresholdQuality = group.ThresholdQuality,
+                HarvestRule      = group.HarvestRule,
                 Leader           = group.Leader.ToGameIdentity(),
                 Members          = group.Members
                     .Select(m => new GroupLootMember

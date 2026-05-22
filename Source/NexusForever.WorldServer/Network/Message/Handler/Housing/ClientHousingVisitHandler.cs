@@ -35,10 +35,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
         public void HandleMessage(IWorldSession session, ClientHousingVisit housingVisit)
         {
-            if (session.Player.Map is not IResidenceMapInstance)
-                throw new InvalidPacketValueException();
-
-            if (!session.Player.CanTeleport())
+            if (!HousingVisitHelper.CanProcessVisit(session))
                 return;
 
             IResidence residence;
@@ -55,60 +52,23 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
             }
             else
             {
-                SendHousingVisitResult(session, housingVisit, HousingResult.Visit_Failed);
+                HousingVisitHelper.SendHousingVisitResult(
+                    session,
+                    housingVisit.TargetResidence.RealmId,
+                    housingVisit.TargetResidence.ResidenceId,
+                    housingVisit.TargetResidenceName ?? housingVisit.TargetCommunityName,
+                    HousingResult.Visit_Failed);
                 return;
             }
 
-            if (residence == null)
-            {
-                SendHousingVisitResult(session, housingVisit, HousingResult.Visit_Failed);
-                return;
-            }
-
-            switch (residence.PrivacyLevel)
-            {
-                case ResidencePrivacyLevel.Private:
-                {
-                    SendHousingVisitResult(session, housingVisit, HousingResult.Visit_Private);
-                    return;
-                }
-                case ResidencePrivacyLevel.NeighborsOnly:
-                    SendHousingVisitResult(session, housingVisit, HousingResult.InvalidPermissions);
-                    return;
-                case ResidencePrivacyLevel.RoommatesOnly:
-                    if (!residence.CanModifyResidence(session.Player))
-                    {
-                        SendHousingVisitResult(session, housingVisit, HousingResult.InvalidPermissions);
-                        return;
-                    }
-                    break;
-            }
-
-            IMapLock mapLock = mapLockManager.GetResidenceLock(residence.Parent ?? residence);
-
-            // teleport player to correct residence instance
-            IResidenceEntrance entrance = globalResidenceManager.GetResidenceEntrance(residence.PropertyInfoId);
-            session.Player.Rotation = entrance.Rotation.ToEuler();
-            session.Player.TeleportTo(new MapPosition
-            {
-                Info = new MapInfo
-                {
-                    Entry   = entrance.Entry,
-                    MapLock = mapLock
-                },
-                Position = entrance.Position
-            });
-        }
-
-        private static void SendHousingVisitResult(IWorldSession session, ClientHousingVisit housingVisit, HousingResult result)
-        {
-            session.EnqueueMessageEncrypted(new ServerHousingResult
-            {
-                RealmId     = housingVisit.TargetResidence.RealmId,
-                ResidenceId = housingVisit.TargetResidence.ResidenceId,
-                PlayerName  = housingVisit.TargetResidenceName ?? housingVisit.TargetCommunityName ?? string.Empty,
-                Result      = result
-            });
+            HousingVisitHelper.VisitResidence(
+                session,
+                residence,
+                housingVisit.TargetResidence.RealmId,
+                housingVisit.TargetResidence.ResidenceId,
+                housingVisit.TargetResidenceName ?? housingVisit.TargetCommunityName,
+                globalResidenceManager,
+                mapLockManager);
         }
     }
 }

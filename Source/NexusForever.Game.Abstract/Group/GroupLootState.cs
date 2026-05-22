@@ -8,6 +8,7 @@ namespace NexusForever.Game.Abstract.Group
         public LootRule NormalRule { get; init; }
         public LootRule ThresholdRule { get; init; }
         public LootThreshold ThresholdQuality { get; init; }
+        public HarvestLootRule HarvestRule { get; init; }
         public required Identity Leader { get; init; }
         public IReadOnlyList<GroupLootMember> Members { get; init; } = [];
 
@@ -34,6 +35,7 @@ namespace NexusForever.Game.Abstract.Group
                 NormalRule       = NormalRule,
                 ThresholdRule    = ThresholdRule,
                 ThresholdQuality = ThresholdQuality,
+                HarvestRule      = HarvestRule,
                 Leader           = Leader,
                 Members          = Members.Where(m => m.Identity != identity).ToList()
             };
