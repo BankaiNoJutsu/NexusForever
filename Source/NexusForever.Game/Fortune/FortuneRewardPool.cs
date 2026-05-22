@@ -10,6 +10,7 @@ namespace NexusForever.Game.Fortune
     /// <summary>
     /// Builds a conservative fortune reward pool from <see cref="AccountItemEntry"/> rows until a
     /// dedicated client fortune table is mapped.
+    /// BLOCKED: retail Madame Fay weight table is not mapped; selection uses uniform random over candidates.
     /// </summary>
     public sealed class FortuneRewardPool : IFortuneRewardPool
     {

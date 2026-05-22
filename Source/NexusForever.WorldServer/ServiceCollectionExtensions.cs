@@ -14,8 +14,10 @@ namespace NexusForever.WorldServer
             sc.AddSingletonLegacy<ICommandManager, CommandManager>();
             sc.AddSingletonLegacy<ILoginQueueManager, LoginQueueManager>();
             sc.AddSingleton<IFortuneSessionManager, FortuneSessionManager>();
-            sc.AddSingleton<ILeaderboardStore, InMemoryLeaderboardStore>();
+            sc.AddSingleton<DatabaseLeaderboardStore>();
+            sc.AddSingleton<ILeaderboardStore>(sp => sp.GetRequiredService<DatabaseLeaderboardStore>());
             sc.AddSingleton<ILeaderboardProvider, LeaderboardProvider>();
+            sc.AddSingleton<ILeaderboardScoreIngestion, LeaderboardScoreIngestion>();
             sc.AddSingleton<ISupportSubmissionStore, FileSupportSubmissionStore>();
         }
     }

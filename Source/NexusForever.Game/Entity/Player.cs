@@ -518,7 +518,7 @@ namespace NexusForever.Game.Entity
             GalacticArchiveManager  = new GalacticArchiveManager(this, model);
             MailManager             = new MailManager(this, model);
             ZoneMapManager          = new ZoneMapManager(this, model);
-            ChallengeManager        = new ChallengeManager(this);
+            ChallengeManager        = new ChallengeManager(this, model);
             QuestManager            = new QuestManager(this, model);
             AchievementManager      = new CharacterAchievementManager(this, model);
             SupplySatchelManager    = new SupplySatchelManager(this, model);
@@ -828,6 +828,8 @@ namespace NexusForever.Game.Entity
             ZoneMapManager.Save(context);
             QuestManager.Save(context);
             AchievementManager.Save(context);
+            if (ChallengeManager is ChallengeManager challengeManager)
+                challengeManager.Save(context);
             SupplySatchelManager.Save(context);
             SaveTradeskills(context);
             SaveSchematics(context);

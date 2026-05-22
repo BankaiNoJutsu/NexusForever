@@ -157,6 +157,7 @@ namespace NexusForever.Database.Character
                     .Include(c => c.ActionSetAmp)
                     .Include(c => c.Datacube)
                     .Include(c => c.GalacticArchive)
+                    .Include(c => c.Challenge)
                     .Include(c => c.Mail)
                         .ThenInclude(c => c.Attachment)
                             .ThenInclude(c => c.Item)
@@ -227,6 +228,42 @@ namespace NexusForever.Database.Character
                 .Select(o => o.Id)
                 .DefaultIfEmpty()
                 .Max();
+        }
+
+        public ulong GetNextLeaderboardPveScoreId()
+        {
+            using var context = new CharacterContext(config);
+            return context.LeaderboardPveScore
+                .Select(s => s.Id)
+                .DefaultIfEmpty()
+                .Max();
+        }
+
+        public ulong GetNextLeaderboardPvpScoreId()
+        {
+            using var context = new CharacterContext(config);
+            return context.LeaderboardPvpScore
+                .Select(s => s.Id)
+                .DefaultIfEmpty()
+                .Max();
+        }
+
+        public List<LeaderboardPveScoreModel> GetLeaderboardPveScores(ushort realmId)
+        {
+            using var context = new CharacterContext(config);
+            return context.LeaderboardPveScore
+                .Where(s => s.RealmId == realmId)
+                .AsNoTracking()
+                .ToList();
+        }
+
+        public List<LeaderboardPvpScoreModel> GetLeaderboardPvpScores(ushort realmId)
+        {
+            using var context = new CharacterContext(config);
+            return context.LeaderboardPvpScore
+                .Where(s => s.RealmId == realmId)
+                .AsNoTracking()
+                .ToList();
         }
 
         public List<MarketplaceAuctionModel> GetMarketplaceAuctions()

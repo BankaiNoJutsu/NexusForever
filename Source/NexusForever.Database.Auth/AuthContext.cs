@@ -19,6 +19,7 @@ namespace NexusForever.Database.Auth
         public DbSet<AccountDailyLoginModel> AccountDailyLogin { get; set; }
         public DbSet<AccountRewardRotationGrantModel> AccountRewardRotationGrant { get; set; }
         public DbSet<AccountStorePurchaseHistoryModel> AccountStorePurchaseHistory { get; set; }
+        public DbSet<AccountFortuneSessionModel> AccountFortuneSession { get; set; }
         public DbSet<AccountItemCooldownModel> AccountItemCooldown { get; set; }
         public DbSet<AccountKeybindingModel> AccountKeybinding { get; set; }
         public DbSet<AccountPermissionModel> AccountPermission { get; set; }
@@ -464,6 +465,84 @@ namespace NexusForever.Database.Auth
                     .HasColumnName("creditAmount")
                     .HasColumnType("bigint(20) unsigned")
                     .HasDefaultValue(0ul);
+            });
+
+            modelBuilder.Entity<AccountFortuneSessionModel>(entity =>
+            {
+                entity.HasKey(e => e.Id)
+                    .HasName("PRIMARY");
+
+                entity.ToTable("account_fortune_session");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(10) unsigned")
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.Card0AccountItemId)
+                    .HasColumnName("card0AccountItemId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.Card1AccountItemId)
+                    .HasColumnName("card1AccountItemId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.Card2AccountItemId)
+                    .HasColumnName("card2AccountItemId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.Card0Rarity)
+                    .HasColumnName("card0Rarity")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue((byte)0);
+
+                entity.Property(e => e.Card1Rarity)
+                    .HasColumnName("card1Rarity")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue((byte)0);
+
+                entity.Property(e => e.Card2Rarity)
+                    .HasColumnName("card2Rarity")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue((byte)0);
+
+                entity.Property(e => e.Card0Flipped)
+                    .HasColumnName("card0Flipped")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.Card1Flipped)
+                    .HasColumnName("card1Flipped")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.Card2Flipped)
+                    .HasColumnName("card2Flipped")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.Card0Granted)
+                    .HasColumnName("card0Granted")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.Card1Granted)
+                    .HasColumnName("card1Granted")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.Card2Granted)
+                    .HasColumnName("card2Granted")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.HasOne(d => d.Account)
+                    .WithOne(p => p.AccountFortuneSession)
+                    .HasForeignKey<AccountFortuneSessionModel>(d => d.Id)
+                    .HasConstraintName("FK__account_fortune_session_id__account_id");
             });
 
             modelBuilder.Entity<AccountDailyLoginModel>(entity =>

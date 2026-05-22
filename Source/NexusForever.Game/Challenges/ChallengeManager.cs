@@ -1,3 +1,5 @@
+using NexusForever.Database.Character;
+using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Challenges;
 using NexusForever.Game.Retail;
 using NexusForever.Game.Abstract.Entity;
@@ -20,19 +22,109 @@ namespace NexusForever.Game.Challenges
         private const uint CooldownTypeFlag = 0x10u;
 
         private readonly IPlayer player;
+        private readonly ulong characterId;
         private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<ushort, ChallengeRuntimeState> activeChallenges = new();
         private readonly Dictionary<ushort, PendingChallengeShare> pendingShares = new();
+        private readonly Dictionary<ushort, bool> dirtyChallenges = new();
 
-        public ChallengeManager(IPlayer owner)
-            : this(owner, GameTableManager.Instance)
+        public ChallengeManager(IPlayer owner, CharacterModel model)
+            : this(owner, model, GameTableManager.Instance)
         {
         }
 
         internal ChallengeManager(IPlayer owner, IGameTableManager gameTableManager)
+            : this(owner, null, gameTableManager)
         {
-            player             = owner;
+        }
+
+        internal ChallengeManager(IPlayer owner, CharacterModel model, IGameTableManager gameTableManager)
+        {
+            player              = owner;
+            characterId         = owner.CharacterId;
             this.gameTableManager = gameTableManager;
+
+            if (model?.Challenge == null)
+                return;
+
+            foreach (CharacterChallengeModel challengeModel in model.Challenge)
+            {
+                if (gameTableManager.Challenge.GetEntry(challengeModel.ChallengeId) == null)
+                    continue;
+
+                ushort id = challengeModel.ChallengeId;
+                activeChallenges[id] = new ChallengeRuntimeState
+                {
+                    ChallengeId         = challengeModel.ChallengeId,
+                    Activated           = challengeModel.Activated,
+                    OnCooldown          = challengeModel.OnCooldown,
+                    LeftArea            = challengeModel.LeftArea,
+                    CurrentCount        = challengeModel.CurrentCount,
+                    CurrentTier         = challengeModel.CurrentTier,
+                    LastRewardTier      = challengeModel.LastRewardTier,
+                    CompletionCount     = challengeModel.CompletionCount,
+                    ActiveTimer         = challengeModel.ActiveTimerSeconds,
+                    CooldownTimer       = challengeModel.CooldownTimerSeconds,
+                    AreaFailTimer       = challengeModel.AreaFailTimerSeconds
+                };
+            }
+        }
+
+        public void Save(CharacterContext context)
+        {
+            foreach ((ushort challengeId, ChallengeRuntimeState state) in activeChallenges)
+            {
+                if (!dirtyChallenges.ContainsKey(challengeId))
+                    continue;
+
+                CharacterChallengeModel model = BuildModel(state);
+                CharacterChallengeModel existing = context.CharacterChallenge
+                    .SingleOrDefault(c => c.Id == model.Id && c.ChallengeId == model.ChallengeId);
+
+                if (existing == null)
+                {
+                    context.CharacterChallenge.Add(model);
+                }
+                else
+                {
+                    existing.Activated            = model.Activated;
+                    existing.OnCooldown           = model.OnCooldown;
+                    existing.LeftArea             = model.LeftArea;
+                    existing.CurrentCount         = model.CurrentCount;
+                    existing.CurrentTier          = model.CurrentTier;
+                    existing.LastRewardTier       = model.LastRewardTier;
+                    existing.CompletionCount      = model.CompletionCount;
+                    existing.ActiveTimerSeconds   = model.ActiveTimerSeconds;
+                    existing.CooldownTimerSeconds = model.CooldownTimerSeconds;
+                    existing.AreaFailTimerSeconds = model.AreaFailTimerSeconds;
+                }
+
+                dirtyChallenges.Remove(challengeId);
+            }
+        }
+
+        private CharacterChallengeModel BuildModel(ChallengeRuntimeState state)
+        {
+            return new CharacterChallengeModel
+            {
+                Id                   = characterId,
+                ChallengeId          = (ushort)state.ChallengeId,
+                Activated            = state.Activated,
+                OnCooldown           = state.OnCooldown,
+                LeftArea             = state.LeftArea,
+                CurrentCount         = state.CurrentCount,
+                CurrentTier          = state.CurrentTier,
+                LastRewardTier       = state.LastRewardTier,
+                CompletionCount      = state.CompletionCount,
+                ActiveTimerSeconds   = state.ActiveTimer,
+                CooldownTimerSeconds = state.CooldownTimer,
+                AreaFailTimerSeconds = state.AreaFailTimer
+            };
+        }
+
+        private void MarkDirty(ushort challengeId)
+        {
+            dirtyChallenges[challengeId] = true;
         }
 
         public void SendInitialPackets()
@@ -196,6 +288,7 @@ namespace NexusForever.Game.Challenges
             state.LeftArea       = false;
             state.ActiveTimer  = DefaultActiveSeconds;
             state.AreaFailTimer = 0d;
+            MarkDirty(challengeId);
 
             SendResult(challengeId, ChallengeResult.Activate);
             SendChallengeUpdate();
@@ -210,6 +303,7 @@ namespace NexusForever.Game.Challenges
             }
 
             Deactivate(state);
+            MarkDirty(challengeId);
             SendResult(challengeId, ChallengeResult.AbandonRemove);
             SendChallengeUpdate();
         }
@@ -245,6 +339,7 @@ namespace NexusForever.Game.Challenges
                 state.CooldownTimer  = DefaultCooldownSeconds;
             }
 
+            MarkDirty((ushort)state.ChallengeId);
             SendResult((ushort)state.ChallengeId, ChallengeResult.TimerExpired);
             SendChallengeUpdate();
         }
@@ -254,6 +349,7 @@ namespace NexusForever.Game.Challenges
             state.LeftArea      = false;
             state.AreaFailTimer = 0d;
             Deactivate(state);
+            MarkDirty((ushort)state.ChallengeId);
             SendResult((ushort)state.ChallengeId, ChallengeResult.LeftArea);
             SendChallengeUpdate();
         }
@@ -317,9 +413,28 @@ namespace NexusForever.Game.Challenges
                     ChallengeId = challengeId
                 };
                 activeChallenges.Add(id, state);
+                MarkDirty(id);
             }
 
             return state;
+        }
+
+        internal void TryAdvanceCombatKill(uint creatureId)
+        {
+            foreach ((ushort challengeId, ChallengeRuntimeState state) in activeChallenges)
+            {
+                if (!state.Activated)
+                    continue;
+
+                ChallengeEntry entry = gameTableManager.Challenge.GetEntry(challengeId);
+                if (entry == null || entry.ChallengeTypeEnum != (uint)ChallengeType.Combat)
+                    continue;
+
+                if (entry.Target == 0u || entry.Target != creatureId)
+                    continue;
+
+                TryAdvanceProgress(challengeId);
+            }
         }
 
         internal bool TryAdvanceProgress(ushort challengeId, uint progress = 1u)
@@ -337,6 +452,7 @@ namespace NexusForever.Game.Challenges
                 return false;
 
             state.CurrentCount = Math.Min(state.CurrentCount + progress, goalCount);
+            MarkDirty(challengeId);
             SendChallengeUpdate();
 
             if (state.CurrentCount < goalCount)
@@ -354,6 +470,7 @@ namespace NexusForever.Game.Challenges
 
             state.CurrentTier++;
             state.CurrentCount = 0u;
+            MarkDirty(challengeId);
             SendChallengeUpdate();
             return true;
         }
@@ -366,6 +483,7 @@ namespace NexusForever.Game.Challenges
                 state.CooldownTimer = DefaultCooldownSeconds;
 
             state.CompletionCount++;
+            MarkDirty((ushort)state.ChallengeId);
             SendResult((ushort)state.ChallengeId, ChallengeResult.Completed, (int)state.LastRewardTier);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.CompleteChallenge, 0u, 1u);
             SendChallengeUpdate();
@@ -463,7 +581,7 @@ namespace NexusForever.Game.Challenges
 
         /// <summary>
         /// Counts challenges with at least one recorded completion in the supplied world-zone set.
-        /// Completion is session-local until challenge persistence exists.
+        /// Completion counts persisted rows with completionCount &gt; 0.
         /// </summary>
         internal uint GetCompletedCountForWorldZones(IReadOnlySet<uint> worldZoneIds)
         {

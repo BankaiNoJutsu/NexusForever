@@ -20,6 +20,7 @@ namespace NexusForever.Database.Character
         public DbSet<CharacterDatacubeModel> CharacterDatacube { get; set; }
         public DbSet<CharacterEntitlementModel> CharacterEntitlement { get; set; }
         public DbSet<CharacterGalacticArchiveModel> CharacterGalacticArchive { get; set; }
+        public DbSet<CharacterChallengeModel> CharacterChallenge { get; set; }
         public DbSet<CharacterKeybindingModel> CharacterKeybinding { get; set; }
         public DbSet<CharacterMailModel> CharacterMail { get; set; }
         public DbSet<CharacterMailAttachmentModel> CharacterMailAttachment { get; set; }
@@ -52,6 +53,8 @@ namespace NexusForever.Database.Character
         public DbSet<MarketplaceCommodityOrderModel> MarketplaceCommodityOrder { get; set; }
         public DbSet<ResidencePlotModel> ResidencePlot { get; set; }
         public DbSet<RealmBankItemModel> RealmBankItem { get; set; }
+        public DbSet<LeaderboardPveScoreModel> LeaderboardPveScore { get; set; }
+        public DbSet<LeaderboardPvpScoreModel> LeaderboardPvpScore { get; set; }
 
         private readonly IConnectionString config;
 
@@ -1057,6 +1060,79 @@ namespace NexusForever.Database.Character
                     .WithMany(p => p.GalacticArchive)
                     .HasForeignKey(d => d.Id)
                     .HasConstraintName("FK__character_galactic_archive_id__character_id");
+            });
+
+            modelBuilder.Entity<CharacterChallengeModel>(entity =>
+            {
+                entity.ToTable("character_challenge");
+
+                entity.HasKey(e => new { e.Id, e.ChallengeId })
+                    .HasName("PRIMARY");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.ChallengeId)
+                    .HasColumnName("challengeId")
+                    .HasColumnType("smallint(5) unsigned")
+                    .HasDefaultValue((ushort)0);
+
+                entity.Property(e => e.Activated)
+                    .HasColumnName("activated")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.OnCooldown)
+                    .HasColumnName("onCooldown")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.LeftArea)
+                    .HasColumnName("leftArea")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.CurrentCount)
+                    .HasColumnName("currentCount")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.CurrentTier)
+                    .HasColumnName("currentTier")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.LastRewardTier)
+                    .HasColumnName("lastRewardTier")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.CompletionCount)
+                    .HasColumnName("completionCount")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.ActiveTimerSeconds)
+                    .HasColumnName("activeTimerSeconds")
+                    .HasColumnType("double")
+                    .HasDefaultValue(0d);
+
+                entity.Property(e => e.CooldownTimerSeconds)
+                    .HasColumnName("cooldownTimerSeconds")
+                    .HasColumnType("double")
+                    .HasDefaultValue(0d);
+
+                entity.Property(e => e.AreaFailTimerSeconds)
+                    .HasColumnName("areaFailTimerSeconds")
+                    .HasColumnType("double")
+                    .HasDefaultValue(0d);
+
+                entity.HasOne(d => d.Character)
+                    .WithMany(p => p.Challenge)
+                    .HasForeignKey(d => d.Id)
+                    .HasConstraintName("FK__character_challenge_id__character_id");
             });
 
             modelBuilder.Entity<CharacterKeybindingModel>(entity =>
@@ -2883,6 +2959,137 @@ namespace NexusForever.Database.Character
                     .WithMany(p => p.Plot)
                     .HasForeignKey(d => d.Id)
                     .HasConstraintName("FK__residence_plot_id__residence_id");
+            });
+
+            modelBuilder.Entity<LeaderboardPveScoreModel>(entity =>
+            {
+                entity.ToTable("leaderboard_pve_score");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.CharacterId)
+                    .HasColumnName("characterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.RealmId)
+                    .HasColumnName("realmId")
+                    .HasColumnType("smallint(5) unsigned")
+                    .HasDefaultValue((ushort)0);
+
+                entity.Property(e => e.Type)
+                    .HasColumnName("type")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue((byte)0);
+
+                entity.Property(e => e.MatchingGameMapId)
+                    .HasColumnName("matchingGameMapId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.PrimeLevel)
+                    .HasColumnName("primeLevel")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.CompletionTime)
+                    .HasColumnName("completionTime")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.RewardedTier)
+                    .HasColumnName("rewardedTier")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.PlayerName)
+                    .HasColumnName("playerName")
+                    .HasColumnType("varchar(64)")
+                    .HasDefaultValue("")
+                    .HasCharSet("utf8mb4");
+
+                entity.Property(e => e.PlayerClass)
+                    .HasColumnName("playerClass")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue((byte)0);
+
+                entity.Property(e => e.GuildId)
+                    .HasColumnName("guildId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.TeamMembersJson)
+                    .HasColumnName("teamMembersJson")
+                    .HasColumnType("varchar(512)")
+                    .HasCharSet("utf8mb4");
+
+                entity.Property(e => e.RecordedUtc)
+                    .HasColumnName("recordedUtc")
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("current_timestamp()");
+            });
+
+            modelBuilder.Entity<LeaderboardPvpScoreModel>(entity =>
+            {
+                entity.ToTable("leaderboard_pvp_score");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.CharacterId)
+                    .HasColumnName("characterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.RealmId)
+                    .HasColumnName("realmId")
+                    .HasColumnType("smallint(5) unsigned")
+                    .HasDefaultValue((ushort)0);
+
+                entity.Property(e => e.Type)
+                    .HasColumnName("type")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue((byte)0);
+
+                entity.Property(e => e.Rating)
+                    .HasColumnName("rating")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.PlayerName)
+                    .HasColumnName("playerName")
+                    .HasColumnType("varchar(64)")
+                    .HasDefaultValue("")
+                    .HasCharSet("utf8mb4");
+
+                entity.Property(e => e.PlayerClass)
+                    .HasColumnName("playerClass")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue((byte)0);
+
+                entity.Property(e => e.GuildId)
+                    .HasColumnName("guildId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.TeamMembersJson)
+                    .HasColumnName("teamMembersJson")
+                    .HasColumnType("varchar(512)")
+                    .HasCharSet("utf8mb4");
+
+                entity.Property(e => e.RecordedUtc)
+                    .HasColumnName("recordedUtc")
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("current_timestamp()");
             });
 
             modelBuilder.Entity<RealmBankItemModel>(entity =>

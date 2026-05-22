@@ -113,6 +113,7 @@ namespace NexusForever.Database.Auth
                     .Include(a => a.AccountPendingItem)
                     .Include(a => a.AccountDailyLogin)
                     .Include(a => a.AccountRewardRotationGrant)
+                    .Include(a => a.AccountFortuneSession)
                     .Include(a => a.AccountItemCooldown)
                     .Include(a => a.AccountKeybinding)
                     .Include(a => a.AccountEntitlement)
@@ -386,6 +387,52 @@ namespace NexusForever.Database.Auth
             return context.AccountStorePurchaseHistory
                 .AsNoTracking()
                 .Count(h => h.AccountId == accountId && h.PurchasedUtc >= sinceUtc);
+        }
+
+        public AccountFortuneSessionModel GetFortuneSession(uint accountId)
+        {
+            using var context = new AuthContext(config);
+            return context.AccountFortuneSession
+                .AsNoTracking()
+                .SingleOrDefault(s => s.Id == accountId);
+        }
+
+        public void UpsertFortuneSession(AccountFortuneSessionModel model)
+        {
+            using var context = new AuthContext(config);
+            AccountFortuneSessionModel existing = context.AccountFortuneSession.SingleOrDefault(s => s.Id == model.Id);
+            if (existing == null)
+            {
+                context.AccountFortuneSession.Add(model);
+            }
+            else
+            {
+                existing.Card0AccountItemId = model.Card0AccountItemId;
+                existing.Card1AccountItemId = model.Card1AccountItemId;
+                existing.Card2AccountItemId = model.Card2AccountItemId;
+                existing.Card0Rarity        = model.Card0Rarity;
+                existing.Card1Rarity        = model.Card1Rarity;
+                existing.Card2Rarity        = model.Card2Rarity;
+                existing.Card0Flipped       = model.Card0Flipped;
+                existing.Card1Flipped       = model.Card1Flipped;
+                existing.Card2Flipped       = model.Card2Flipped;
+                existing.Card0Granted       = model.Card0Granted;
+                existing.Card1Granted       = model.Card1Granted;
+                existing.Card2Granted       = model.Card2Granted;
+            }
+
+            context.SaveChanges();
+        }
+
+        public void DeleteFortuneSession(uint accountId)
+        {
+            using var context = new AuthContext(config);
+            AccountFortuneSessionModel existing = context.AccountFortuneSession.SingleOrDefault(s => s.Id == accountId);
+            if (existing == null)
+                return;
+
+            context.AccountFortuneSession.Remove(existing);
+            context.SaveChanges();
         }
     }
 }

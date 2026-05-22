@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Combat;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Challenges;
 using NexusForever.Game.Combat;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Loot;
@@ -2240,6 +2241,7 @@ namespace NexusForever.Game.Entity
         {
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillCreature, CreatureId, 1u);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillCreature2, CreatureId, 1u);
+            ChallengeCombatHooks.OnCreatureKilled(player, CreatureId);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroup, CreatureId, 1u);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillTargetGroups, CreatureId, 1u);
             player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureEntry, CreatureId);

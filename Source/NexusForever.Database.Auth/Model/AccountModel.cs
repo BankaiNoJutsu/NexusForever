@@ -22,6 +22,7 @@ namespace NexusForever.Database.Auth.Model
         public ICollection<AccountPendingItemModel> AccountPendingItem { get; set; } = [];
         public AccountDailyLoginModel AccountDailyLogin { get; set; }
         public ICollection<AccountRewardRotationGrantModel> AccountRewardRotationGrant { get; set; } = [];
+        public AccountFortuneSessionModel AccountFortuneSession { get; set; }
         public ICollection<AccountStorePurchaseHistoryModel> AccountStorePurchaseHistory { get; set; } = [];
         public ICollection<AccountItemCooldownModel> AccountItemCooldown { get; set; } = [];
         public ICollection<AccountKeybindingModel> AccountKeybinding { get; set; } = [];

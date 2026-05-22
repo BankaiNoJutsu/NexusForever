@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using NexusForever.Database;
+using NexusForever.Database.Auth;
+using NexusForever.Database.Auth.Model;
 using NexusForever.Game;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
@@ -22,13 +25,23 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
 
         private readonly IFortuneRewardPool fortuneRewardPool;
         private readonly IRealmContext realmContext;
+        private readonly IDatabaseManager databaseManager;
         private readonly Dictionary<uint, FortuneSession> sessions = [];
         private readonly object sync = new();
 
         public FortuneSessionManager(IFortuneRewardPool fortuneRewardPool, IRealmContext realmContext)
+            : this(fortuneRewardPool, realmContext, null)
+        {
+        }
+
+        public FortuneSessionManager(
+            IFortuneRewardPool fortuneRewardPool,
+            IRealmContext realmContext,
+            IDatabaseManager databaseManager)
         {
             this.fortuneRewardPool = fortuneRewardPool;
             this.realmContext       = realmContext;
+            this.databaseManager    = databaseManager;
         }
 
         public void SendStatus(IWorldSession session)
@@ -64,6 +77,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             lock (sync)
                 sessions[account.Id] = fortuneSession;
 
+            PersistSession(account.Id, fortuneSession);
             session.EnqueueMessageEncrypted(BuildCards(fortuneSession));
         }
 
@@ -80,8 +94,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             {
                 if (!sessions.TryGetValue(account.Id, out fortuneSession))
                 {
-                    SendReset(session);
-                    return;
+                    fortuneSession = LoadSession(account.Id);
+                    if (fortuneSession == null)
+                    {
+                        SendReset(session);
+                        return;
+                    }
+
+                    sessions[account.Id] = fortuneSession;
                 }
 
                 FortuneCardState card = fortuneSession.Cards[flipCard.SelectedCardIndex];
@@ -94,6 +114,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 card.Flipped = true;
                 GrantCardReward(account, session.Player, card);
             }
+
+            PersistSession(account.Id, fortuneSession);
 
             session.EnqueueMessageEncrypted(new ServerFortuneCardUpdate
             {
@@ -108,7 +130,70 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 return null;
 
             lock (sync)
-                return sessions.GetValueOrDefault(accountId);
+            {
+                if (sessions.TryGetValue(accountId, out FortuneSession fortuneSession))
+                    return fortuneSession;
+
+                fortuneSession = LoadSession(accountId);
+                if (fortuneSession != null)
+                    sessions[accountId] = fortuneSession;
+
+                return fortuneSession;
+            }
+        }
+
+        private FortuneSession LoadSession(uint accountId)
+        {
+            if (databaseManager == null)
+                return null;
+
+            AccountFortuneSessionModel model = databaseManager.GetDatabase<AuthDatabase>().GetFortuneSession(accountId);
+            if (model == null || !HasActiveCards(model))
+                return null;
+
+            var cards = new[]
+            {
+                new FortuneCardState(model.Card0AccountItemId, (RewardRarity)model.Card0Rarity, model.Card0Flipped, model.Card0Granted),
+                new FortuneCardState(model.Card1AccountItemId, (RewardRarity)model.Card1Rarity, model.Card1Flipped, model.Card1Granted),
+                new FortuneCardState(model.Card2AccountItemId, (RewardRarity)model.Card2Rarity, model.Card2Flipped, model.Card2Granted)
+            };
+
+            if (cards.All(card => card.AccountItemId == 0u))
+                return null;
+
+            return new FortuneSession(cards);
+        }
+
+        private static bool HasActiveCards(AccountFortuneSessionModel model)
+        {
+            return model.Card0AccountItemId != 0u
+                || model.Card1AccountItemId != 0u
+                || model.Card2AccountItemId != 0u;
+        }
+
+        private void PersistSession(uint accountId, FortuneSession fortuneSession)
+        {
+            if (databaseManager == null || fortuneSession == null)
+                return;
+
+            var model = new AccountFortuneSessionModel
+            {
+                Id                 = accountId,
+                Card0AccountItemId = fortuneSession.Cards[0].AccountItemId,
+                Card1AccountItemId = fortuneSession.Cards[1].AccountItemId,
+                Card2AccountItemId = fortuneSession.Cards[2].AccountItemId,
+                Card0Rarity        = (byte)fortuneSession.Cards[0].Rarity,
+                Card1Rarity        = (byte)fortuneSession.Cards[1].Rarity,
+                Card2Rarity        = (byte)fortuneSession.Cards[2].Rarity,
+                Card0Flipped       = fortuneSession.Cards[0].Flipped,
+                Card1Flipped       = fortuneSession.Cards[1].Flipped,
+                Card2Flipped       = fortuneSession.Cards[2].Flipped,
+                Card0Granted       = fortuneSession.Cards[0].Granted,
+                Card1Granted       = fortuneSession.Cards[1].Granted,
+                Card2Granted       = fortuneSession.Cards[2].Granted
+            };
+
+            databaseManager.GetDatabase<AuthDatabase>().UpsertFortuneSession(model);
         }
 
         private ServerFortuneRewards BuildRewards()
@@ -201,6 +286,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                     .Select(reward => new FortuneCardState(reward.AccountItemId, reward.Rarity))
                     .ToArray();
             }
+
+            public FortuneSession(FortuneCardState[] cards)
+            {
+                Cards = cards;
+            }
         }
 
         private sealed class FortuneCardState
@@ -210,10 +300,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             public bool Flipped { get; set; }
             public bool Granted { get; set; }
 
-            public FortuneCardState(uint accountItemId, RewardRarity rarity)
+            public FortuneCardState(uint accountItemId, RewardRarity rarity, bool flipped = false, bool granted = false)
             {
                 AccountItemId = accountItemId;
                 Rarity        = rarity;
+                Flipped       = flipped;
+                Granted       = granted;
             }
         }
     }
