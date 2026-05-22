@@ -353,6 +353,7 @@ WildStar64.exe,140709370,Lua_GameLib_GetRewardRotations,GameLib.GetRewardRotatio
 WildStar64.exe,140552550,QuestPrerequisite_CanAccept,Evaluates client quest accept prerequisites and returns failure reason ids for faction/race/class/level/item/prereq/faction-level checks.
 WildStar64.exe,140552eb0,QuestPrerequisite_CheckFactionLevel,Checks Quest2 FactionIdPreq/FactionLevelPreq/FactionLevelCompPreq triples; comp clear requires current level >= required and comp set requires current level <= required.
 WildStar64.exe,1406a0570,Marketplace_SendClientCommoditySellOrderSubmit,Sends opcode 0x06DA ClientCommoditySellOrderSubmit with the 0x38-byte commodity order payload staged from marketplace UI state.
+WildStar64.exe,1406a04f0,Marketplace_ValidateCommodityOrderBeforeSubmit,Preflight validation helper called immediately before sending opcode 0x06DA ClientCommoditySellOrderSubmit.
 WildStar64.exe,1406a0740,Marketplace_SendClientAuctionBuyOrderSubmit,Sends opcode 0x055E ClientAuctionBuyOrderSubmit with Item2 id, auction id, and offered amount from the selected item auction.
 WildStar64.exe,1406a1270,Marketplace_SendClientCommodityOrderCancel,Sends opcode 0x0093 ClientCommodityOrderCancel with commodity order id, Item2 id, and buy-order flag from the selected commodity order.
 WildStar64.exe,1406a20c0,Marketplace_SendClientAuctionCancel,Sends opcode 0x0094 ClientAuctionCancel with auction Item2 id and auction id from the selected item auction.
@@ -666,6 +667,47 @@ WildStar64.exe,140080d30,ServerUInt18_ReadPayload,Shared 4-byte server reader re
 WildStar64.exe,1400852f0,NetworkBitReader_ReadIdentity,Reads an Identity payload as a 14-bit realm id followed by a 64-bit identity id.
 WildStar64.exe,1400a9c20,AccountInventoryItem_ReadPayload,Reads one account inventory item: 64-bit inventory id, 32-bit AccountItem id, 5-bit claim state, one flag bit, and target identity.
 WildStar64.exe,140080630,ServerAccountItems_ReadPayload,Reads opcode 0x096D as a 32-bit count followed by account inventory item records of size 0x28.
+WildStar64.exe,140080710,ServerUInt32PairArray_ReadPayload,Reads a 32-bit count followed by count uint32 pairs; registered for account entitlement and account item cooldown-list opcodes 0x0968 and 0x0969.
+WildStar64.exe,140080810,ServerDailyLoginUpdate_ReadPayload,Reads opcode 0x096E as daily-login state: five uint32 values then one float day duration and one 3-bit premium-key status.
+WildStar64.exe,1400808d0,ServerAccountPrivilegeRestrictionUpdate_ReadPayload,Reads opcode 0x0971 as a 3-bit restriction index followed by a float day duration; consumer dispatches AccountPrivilegeRestrictionUpdate.
+WildStar64.exe,14007ab50,ServerUInt32_ReadPayload,Reads a single 32-bit field; reused by account/store opcodes including 0x0980.
+WildStar64.exe,14007d8e0,ServerEmpty_ReadPayload,Reads no fields and succeeds for an empty server-output payload; reused by account/store opcodes including 0x0977 and 0x0989.
+WildStar64.exe,14007e8f0,ServerFlagUInt5_ReadPayload,Reads one flag followed by one 5-bit field; reused by store opcodes 0x098C 0x098D and 0x0990.
+WildStar64.exe,14007e950,ServerUInt5_ReadPayload,Reads one 5-bit field; registered for store opcode 0x098A StoreError.
+WildStar64.exe,14007fde0,ServerAccountPendingItemDelete_ReadPayload,Reads opcode 0x097E as one pending account item id followed by one flag; consumer removes the pending item and dispatches pending/item updates.
+WildStar64.exe,1400804e0,ServerUInt6_ReadPayload,Reads one 6-bit field; registered for opcode 0x097B CREDDRedeemResult.
+WildStar64.exe,140080500,ServerAccountPendingItemAdd_ReadPayload,Thunk to PendingAccountItemGroup_ReadPayload for a single pending account item group row; consumer appends it and dispatches pending/item updates.
+WildStar64.exe,1400805d0,ServerAccountPendingItemGroupDelete_ReadPayload,Reads opcode 0x097D as one pending group string followed by one flag; consumer removes the group and dispatches pending/item updates.
+WildStar64.exe,1400806f0,ServerUInt64_ReadPayload,Reads one uint64 field; reused by account item delete and account/store opcode 0x0986.
+WildStar64.exe,140098280,ServerAccountItemCacheRemove_ReadPayload,Reads opcode 0x096C as one uint32 followed by one account inventory item id; consumer removes that item from the account item cache while the leading uint32 remains unresolved.
+WildStar64.exe,1400a00b0,ServerCREDDOperationHistory_Row_ReadPayload,Reads one row for opcode 0x0978 CREDD operation history: operation uint32 initiator flag uint32 two identities then two uint64 fields.
+WildStar64.exe,1400a0160,ServerCREDDOperationHistory_ReadPayload,Reads opcode 0x0978 as a 32-bit count followed by CREDD operation history rows; consumer dispatches CREDDOperationHistoryResults.
+WildStar64.exe,1400a0210,ServerCREDDExchangeOrderCacheRows_ReadPayload,Reads opcode 0x097A as a 32-bit count followed by rows of uint64 14-bit field and 7-bit field; consumer refreshes an internal CREDD exchange order cache with no mapped client event.
+WildStar64.exe,1400a0300,ServerAccountItemCacheAdd_ReadPayload,Reads opcode 0x096A as one uint32 followed by AccountInventoryItem; consumer adds the item to the account item cache but does not use the leading uint32 field.
+WildStar64.exe,1400a0350,ServerAccountItemCacheListAppend_ReadPayload,Reads opcode 0x096B as one uint32 then a count followed by AccountInventoryItem rows; consumer appends missing account item cache rows but does not use the leading uint32 field.
+WildStar64.exe,1400a1170,ServerStoreCategory_Row_ReadPayload,Reads one store category row: two wide strings three uint32 fields and one flag.
+WildStar64.exe,1400a12d0,ServerStoreCategories_ReadPayload,Reads store categories: category rows then a 3-bit real-currency field and currency package result rows.
+WildStar64.exe,1400a1230,Server0x098F_ReadPayload,Reads opcode 0x098F and store currency package rows as uint32 wide string uint32 float uint32; the store dispatcher has no 0x098F event consumer in the mapped switch.
+WildStar64.exe,1400a0fa0,ServerStoreOffers_OfferGroup_ReadPayload,Reads one store offer group including offers and category id/index arrays.
+WildStar64.exe,1400a0dc0,ServerStoreOffers_Offer_ReadPayload,Reads one store offer row including id strings prices flags timing currency rows and item rows.
+WildStar64.exe,1400a0d20,ServerStoreOffers_OfferCurrency_ReadPayload,Reads one store offer currency row: 5-bit currency float 2-bit discount type float and two uint64 time fields.
+WildStar64.exe,1400a0c90,ServerStoreOffers_OfferItem_ReadPayload,Reads one store offer item row: type-specific payload followed by a trailing uint32 amount.
+WildStar64.exe,1400a1400,ServerStoreOffers_ReadPayload,Reads store offers as a 32-bit count followed by offer group rows.
+WildStar64.exe,1400a14c0,Server0x098E_Row_ReadPayload,Reads one opcode 0x098E row: two uint64 fields 5-bit field 3-bit field float wide string flag uint64 and uint32; semantics unresolved.
+WildStar64.exe,1400a15b0,ServerStorePurchaseHistoryReady_ReadPayload,Reads opcode 0x098E as purchase-history rows consumed by Storefront_HandleStorePurchaseHistoryReady.
+WildStar64.exe,1400a1670,ServerStorePurchaseVirtualCurrencyPackageResult_ReadPayload,Reads opcode 0x0991 virtual-currency package result fields consumed by Storefront_HandleStorePurchaseVirtualCurrencyPackageResult.
+WildStar64.exe,14044b630,Storefront_HandleServer0987To0991,Dispatches decoded store opcodes 0x0987 through 0x0991 into catalog/update/error/purchase-result client state handlers.
+WildStar64.exe,14044c170,Storefront_ApplyServerStoreCategories,Applies ServerStoreCategories rows to the client store catalog cache.
+WildStar64.exe,14044b750,Storefront_ApplyServerStoreOffers,Applies ServerStoreOffers rows to the client store offer cache.
+WildStar64.exe,14044cf40,Storefront_HandleStoreCatalogUpdated,Handles opcode 0x0989 by marking the store catalog dirty and dispatching StoreCatalogUpdated.
+WildStar64.exe,14044cea0,Storefront_HandleStoreError,Handles opcode 0x098A by dispatching StoreError with the 5-bit error value.
+WildStar64.exe,14044c780,Storefront_HandleStorePurchaseOfferResult,Handles opcodes 0x098C and 0x098D by dispatching StorePurchaseOfferResult with a success flag and 5-bit purchase result display type; variant semantics remain unresolved.
+WildStar64.exe,14044c540,Storefront_HandleStorePurchaseHistoryReady,Handles opcode 0x098E by replacing purchase-history rows and dispatching StorePurchaseHistoryReady.
+WildStar64.exe,14044cdf0,Storefront_HandleStoreCompleteOrderVirtualCurrencyPackageResult,Handles opcode 0x0990 by dispatching StoreCompleteOrderVirtualCurrencyPackageResult with the flag and 5-bit result value.
+WildStar64.exe,14044c840,Storefront_HandleStorePurchaseVirtualCurrencyPackageResult,Handles opcode 0x0991 by updating virtual-currency package result strings/floats and dispatching StorePurchaseVirtualCurrencyPackageResult.
+WildStar64.exe,140450720,Storefront_SendClientPurchaseCharacterOffer,Sends opcode 0x082A from the normal StorefrontLib purchase route after building the character-target purchase payload.
+WildStar64.exe,1404507e0,Storefront_SendClientPurchaseAccountOffer,Sends opcode 0x0828 from the StorefrontLib recipient or account purchase route after building the account-target purchase payload.
+WildStar64.exe,1404f2860,Lua_RegisterGameEnumTables,Registers Lua enum tables including CodeEnumStoreError and CodeEnumPurchaseResultDisplayType.
 WildStar64.exe,14007a040,ServerTwoUInt32_ReadPayload,Shared 8-byte server reader registered for many opcodes including 0x021A 0x0223-0x0225 0x0813 0x0819 0x08C7 0x0970 0x0973 and 0x0974; body reads two 32-bit fields.
 WildStar64.exe,14007c340,ServerUInt32AndFlag_ReadPayload,Shared 8-byte server reader registered for multiple opcodes including 0x0219 0x022B 0x0355 0x0357 0x06F5 0x0700 0x0755 and 0x089A; body reads one 32-bit field followed by one bit.
 WildStar64.exe,140080510,ServerAccountItemsPending_ReadPayload,Reads opcode 0x0979 as a 32-bit count followed by pending account item group records of size 0x60.
@@ -814,6 +856,7 @@ Houston64.exe,1400ee8c0,ClientDB_RegisterRewardRotationContent,Registers the Rew
 Houston64.exe,1400eed00,ClientDB_RegisterRewardRotationItem,Registers the RewardRotationItem client DB table using the RewardRotationItem and DB\\RewardRotationItem.tbl descriptors.
 Houston64.exe,1400ef140,ClientDB_RegisterRewardRotationEssence,Registers the RewardRotationEssence client DB table using the RewardRotationEssence and DB\\RewardRotationEssence.tbl descriptors.
 Houston64.exe,1400ef580,ClientDB_RegisterRewardRotationModifier,Registers the RewardRotationModifier client DB table using the RewardRotationModifier and DB\\RewardRotationModifier.tbl descriptors.
+Houston64.exe,1400c3c80,ClientDB_RegisterHousingContributionInfo,Registers the HousingContributionInfo client DB table using the HousingContributionInfo and DB\\HousingContributionInfo.tbl descriptors.
 WildStar64.exe,1406b1300,Entity_ExecuteSpellEffectLowRange,Handles spell effectTypes 0x01-0x60; dispatch at +0x207; two-level byte+int32 table; only types 4/5/6/8/27 have unique handlers; RavelSignal(0x51) and most others fall through to epilogue at 0x1406b321e; signature: rcx=entity rbx edx=effectType r13d r8d=flags r9=wide-string.
 WildStar64.exe,140236970,Spell4Base_GetAllRows,ClientDB query thunk for Spell4Base; sibling accessor cluster rooted at 140236ba0 where Spell4Base and DB\Spell4Base.tbl strings are registered.
 WildStar64.exe,1402369c0,Spell4Base_GetById,ClientDB query thunk for Spell4Base id lookup; sibling accessor cluster rooted at 140236ba0 where Spell4Base and DB\Spell4Base.tbl strings are registered.
@@ -891,6 +934,7 @@ WildStar64.exe,1405e9400,SpellWrapper_ResolveLiveInstance,Resolves a live spell 
 WildStar64.exe,14023dc80,SpellService_GetSpellCooldownEntry,Looks up the SpellCoolDown table entry referenced by spellData+0x28; Lua_GameSpell_GetGCDTime uses entry+0x04 as the base GCD duration.
 WildStar64.exe,1404b7220,Housing_GetCurrentNeighborSelection,Returns the currently selected neighbor object; null if no selection.
 WildStar64.exe,1405df7c0,Friendship_IsConnected,Returns non-zero if the friendship/housing service connection is ready.
+WildStar64.exe,140737da0,Lua_RegisterHousingLib,Registers Game.Housing HousingLib and housing constants including HousingResult_Neighbor_Success value 2.
 WildStar64.exe,140432f20,Lua_PushGalacticArchiveArticleObject,Pushes a GalacticArchiveArticle Lua userdata from an article state object.
 WildStar64.exe,14020fd40,LiveEvent_LookupById,Looks up a live event object by 32-bit live event ID.
 WildStar64.exe,1406b91f0,Lua_PushLiveEventObject,Pushes a LiveEvent Lua userdata onto the stack from a live event object.
@@ -919,3 +963,32 @@ WildStar64.exe,140564fb0,SpellService_GetThresholdTimeEntry,Returns threshold ti
 WildStar64.exe,14034bdd0,WorldZone_GetNameString,Returns the display name string for a world zone ID.
 WildStar64.exe,1405a4d90,SpellService_GetTokenCostValue,Iterates Spell4ServiceTokenCost rows and returns the token cost value for the supplied Spell4 id; the first argument is unused in the observed decompile.
 WildStar64.exe,140501210,Lua_PushSpellTokenCostResult,Pushes a spell token cost result object onto the Lua stack.
+WildStar64.exe,140003fb0,AccountInventory_HandleServer0966To0980,Dispatches account inventory/store-adjacent server opcodes 0x0966 through 0x0980 to account currency entitlement item cooldown daily-login CREDD and pending-item consumers.
+WildStar64.exe,1400051c0,AccountItemCooldownList_HandleServer0969,Consumes opcode 0x0969 uint32 pairs as account item cooldown group and remaining seconds; stores expiry timestamps in the account cooldown cache.
+WildStar64.exe,140004e30,AccountItemAddToCache_HandleServer096A,Consumes opcode 0x096A by adding the embedded AccountInventoryItem to the account item cache and dispatching AccountItemUpdate; the leading uint32 field is not used by the observed handler.
+WildStar64.exe,140004f60,AccountItemListAppend_HandleServer096B,Consumes opcode 0x096B by appending missing AccountInventoryItem rows to the account item cache; the leading uint32 field is not used by the observed handler.
+WildStar64.exe,140005040,AccountItemRemoveFromCache_HandleServer096C,Consumes opcode 0x096C by removing the account inventory item id carried in the uint64 field from the account item cache; the leading uint32 field is not used by the observed handler.
+WildStar64.exe,140005540,DailyLoginUpdate_HandleServer096E,Consumes opcode 0x096E daily-login state fields updates login day counters next-key expiry premium-key status and dispatches DailyLoginUpdate.
+WildStar64.exe,140003c90,DailyLogin_BuildLuaUpdateTable,Builds the DailyLoginUpdate Lua table fields nLoginDaysTotal nRewardsAvailable itemKey ePremiumKeyStatus and fSecondsUntilNextKey.
+WildStar64.exe,140003d80,DailyLogin_AddRewardAndPremiumKeyFields,Adds daily-login reward itemKey premium-key status and seconds-until-next-key fields to the Lua update table.
+WildStar64.exe,140006fc0,DailyLogin_DispatchUpdate,Dispatches DailyLoginUpdate after rebuilding the daily-login Lua table for UI consumers.
+WildStar64.exe,140006890,DailyLogin_DayTimerCallback,Increments daily-login day counters and reschedules the 86400000ms update callback.
+WildStar64.exe,140007180,AccountPrivilegeRestrictionUpdate_HandleServer0971,Consumes opcode 0x0971 restriction index and day duration then dispatches AccountPrivilegeRestrictionUpdate with seconds and active flag.
+WildStar64.exe,140007220,AccountPrivilegeRestriction_IsActive,Returns whether a stored account privilege restriction expiry timestamp is still in the future.
+WildStar64.exe,140004470,AccountPendingItemAdd_HandleServer0976,Consumes opcode 0x0976 single pending-account-item group row appends it to pending caches and dispatches AccountPendingItemsUpdate plus AccountItemUpdate.
+WildStar64.exe,140005a90,AccountPendingItemsClear_HandleServer0977,Consumes opcode 0x0977 empty payload by clearing grouped and ungrouped pending-account-item caches.
+WildStar64.exe,140005350,CREDDOperationHistory_HandleServer0978,Consumes opcode 0x0978 CREDD operation-history rows and dispatches CREDDOperationHistoryResults when no CREDD order is pending.
+WildStar64.exe,1400076e0,CREDDOperationHistory_ResizeRows,Resizes the CREDD operation-history row cache to count rows of 0x40 bytes before opcode 0x0978 rows are copied.
+WildStar64.exe,140007760,CREDDExchangeInfo_AppendOrderCacheRows,Appends 0x10-byte rows from opcode 0x097A into the account/CREDD order cache; mapped as an internal cache refresh without a client event.
+WildStar64.exe,14042b9a0,CREDDExchangeInfo_BuildLuaResults,Builds and dispatches CREDDExchangeInfoResults with buy/sell counts price buckets and owned order rows; non-empty packet field semantics remain partially unresolved.
+WildStar64.exe,14042c760,CREDDOperationHistory_BuildLuaResults,Builds and dispatches CREDDOperationHistoryResults rows with eOperation bInitiator monAmount nLogAge and optional nFriendId.
+WildStar64.exe,140004540,AccountPendingItemsList_HandleServer0979,Consumes opcode 0x0979 by clearing pending-account-item caches then loading all pending group rows and dispatching AccountPendingItemsUpdate plus AccountItemUpdate.
+WildStar64.exe,140005480,CREDDRedeemResult_HandleServer097B,Consumes opcode 0x097B six-bit result and dispatches CREDDRedeemResult.
+WildStar64.exe,1400047c0,AccountPendingItemGroupDelete_HandleServer097D,Consumes opcode 0x097D group string to remove a pending-account-item group and dispatch pending/item update events; trailing flag is not used by the observed handler.
+WildStar64.exe,140004650,AccountPendingItemDelete_HandleServer097E,Consumes opcode 0x097E pending item id to remove one ungrouped pending-account item and dispatch pending/item update events; trailing flag is not used by the observed handler.
+WildStar64.exe,1406031d0,Group_HandleMemberAdd_ReadPayload,Client reader for a server group-member-add packet (likely 0x0436 0x60-byte roster update or similar). Decompile to confirm opcode and field layout.
+WildStar64.exe,140603380,Group_HandleMemberRemove_ReadPayload,Client reader for a server group-member-removal packet (likely 0x042A kick result or 0x0438 role change). Decompile to confirm opcode and field layout.
+WildStar64.exe,140603450,Group_HandleMemberPromote_ReadPayload,Client reader for a server group-promote packet (likely 0x0441 ready-check status or similar). Decompile to confirm opcode and field layout.
+WildStar64.exe,140603610,Group_HandleMemberFlags_ReadPayload,Client reader for a server group-member-flags packet (860 bytes — large, likely handles multiple opcodes or a complex roster packet). Decompile to confirm opcode and field layout.
+WildStar64.exe,140603970,Group_HandleReadyCheck_ReadPayload,Client reader for a server group-ready-check packet (186 bytes). Decompile to confirm opcode and field layout.
+WildStar64.exe,140603a60,Group_HandleGroupDisband_ReadPayload,Client reader for a server group-disband or large roster packet (2116 bytes — very large, likely a dispatcher or multi-opcode handler). Decompile to confirm opcode and field layout.

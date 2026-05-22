@@ -9,8 +9,8 @@ namespace NexusForever.Network.World.Message.Model.Instance
         {
             public ulong SavedInstanceId { get; set; }
             public ushort WorldId { get; set; }
-            public ulong DateExpireUTC { get; set; } // Full date the lock resets
-            public float DaysUntilExpire { get; set; } // Relative time from now the lock resests
+            public ulong DateExpireUTC { get; set; } // Full date the lock resets.
+            public float DaysUntilExpire { get; set; } // Relative time from now the lock resets.
             public uint PrimeLevel { get; set; }
 
             public void Write(GamePacketWriter writer)
@@ -23,7 +23,7 @@ namespace NexusForever.Network.World.Message.Model.Instance
             }
         }
 
-        List<RaidInfo> Raids { get; set; } = [];
+        public List<RaidInfo> Raids { get; set; } = [];
 
         public void Write(GamePacketWriter writer)
         {

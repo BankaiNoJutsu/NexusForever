@@ -21,6 +21,123 @@ namespace NexusForever.Game.Tests.Loot;
 public class LootPacketShapeTests
 {
     [Fact]
+    public void ClientLootRollAction_ReadsOwnerLootAndTwoBitAction()
+    {
+        byte[] data = WritePacket(writer =>
+        {
+            writer.Write(0x11111111u);
+            writer.Write(0x22222222u);
+            writer.Write(LootRollAction.Greed, 2u);
+        });
+
+        using var stream = new MemoryStream(data);
+        using var reader = new GamePacketReader(stream);
+        var packet = new ClientLootRollAction();
+
+        packet.Read(reader);
+
+        Assert.Equal(0x11111111u, packet.OwnerUnitId);
+        Assert.Equal(0x22222222u, packet.LootUnitId);
+        Assert.Equal(LootRollAction.Greed, packet.Action);
+    }
+
+    [Fact]
+    public void ClientLootAssignMaster_ReadsOwnerLootAndAssigneeIdentity()
+    {
+        byte[] data = WritePacket(writer =>
+        {
+            writer.Write(0x33333333u);
+            writer.Write(0x44444444u);
+            writer.Write((ushort)17, 14u);
+            writer.Write(0x1122334455667788ul);
+        });
+
+        using var stream = new MemoryStream(data);
+        using var reader = new GamePacketReader(stream);
+        var packet = new ClientLootAssignMaster();
+
+        packet.Read(reader);
+
+        Assert.Equal(0x33333333u, packet.OwnerUnitId);
+        Assert.Equal(0x44444444u, packet.LootUnitId);
+        Assert.Equal((ushort)17, packet.Assignee.RealmId);
+        Assert.Equal(0x1122334455667788ul, packet.Assignee.Id);
+    }
+
+    [Fact]
+    public void LootRollResultPackets_WriteMappedRollLayouts()
+    {
+        byte[] rollData = WritePacket(new ServerLootRoll
+        {
+            LootUnitId = 0x01020304u,
+            Roller = new Identity
+            {
+                RealmId = 12,
+                Id      = 0x1111222233334444ul
+            },
+            ItemId = 0x12345u,
+            Action = LootRollAction.Need
+        });
+        using (var stream = new MemoryStream(rollData))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x01020304u, reader.ReadUInt());
+            Assert.Equal((ushort)12, reader.ReadUShort(14u));
+            Assert.Equal(0x1111222233334444ul, reader.ReadULong());
+            Assert.Equal(0x12345u, reader.ReadUInt(18u));
+            Assert.Equal((uint)LootRollAction.Need, reader.ReadUInt(32u));
+        }
+
+        byte[] winnerData = WritePacket(new ServerLootWinner
+        {
+            LootUnitId = 0x05060708u,
+            WinningRoll = new ServerLootWinner.LootRoll
+            {
+                Identity = new Identity
+                {
+                    RealmId = 13,
+                    Id      = 0x2222333344445555ul
+                },
+                Value = 101u
+            },
+            ItemId = 0x23456u,
+            OtherRolls =
+            [
+                new ServerLootWinner.LootRoll
+                {
+                    Identity = new Identity
+                    {
+                        RealmId = 14,
+                        Id      = 0x3333444455556666ul
+                    },
+                    Value = 44u
+                }
+            ]
+        });
+        using (var stream = new MemoryStream(winnerData))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x05060708u, reader.ReadUInt());
+            Assert.Equal((ushort)13, reader.ReadUShort(14u));
+            Assert.Equal(0x2222333344445555ul, reader.ReadULong());
+            Assert.Equal(101u, reader.ReadUInt());
+            Assert.Equal(0x23456u, reader.ReadUInt(18u));
+            Assert.Equal(1u, reader.ReadUInt());
+            Assert.Equal((ushort)14, reader.ReadUShort(14u));
+            Assert.Equal(0x3333444455556666ul, reader.ReadULong());
+            Assert.Equal(44u, reader.ReadUInt());
+        }
+
+        byte[] removeData = WritePacket(new ServerLootRemove
+        {
+            OwnerUnitId = 0x12345678u
+        });
+        using (var stream = new MemoryStream(removeData))
+        using (var reader = new GamePacketReader(stream))
+            Assert.Equal(0x12345678u, reader.ReadUInt());
+    }
+
+    [Fact]
     public void LootItem_WritePreservesCurrentBooleanOrderAndTrailingFields()
     {
         var packet = new NetworkLootItem
@@ -226,9 +343,14 @@ public class LootPacketShapeTests
 
     private static byte[] WritePacket(NexusForever.Network.Message.IWritable packet)
     {
+        return WritePacket(packet.Write);
+    }
+
+    private static byte[] WritePacket(Action<GamePacketWriter> write)
+    {
         using var stream = new MemoryStream();
         using var writer = new GamePacketWriter(stream);
-        packet.Write(writer);
+        write(writer);
         writer.FlushBits();
         return stream.ToArray();
     }

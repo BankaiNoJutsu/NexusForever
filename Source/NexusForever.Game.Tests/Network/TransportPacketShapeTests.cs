@@ -74,6 +74,26 @@ public class TransportPacketShapeTests
     }
 
     [Fact]
+    public void ClientVehicleEmbark_ReadsVehicleAndTwoContextFields()
+    {
+        byte[] packetData = WritePacket(writer =>
+        {
+            writer.Write(0x11111111u);
+            writer.Write(3u);
+            writer.Write(0u);
+        });
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        var packet = new ClientVehicleEmbark();
+
+        packet.Read(reader);
+
+        Assert.Equal(0x11111111u, packet.VehicleUnitId);
+        Assert.Equal(3u, packet.Unknown1);
+        Assert.Equal(0u, packet.Unknown2);
+    }
+
+    [Fact]
     public void ServerVehiclePassengerSelf_WritesSeatBits()
     {
         var packet = new ServerVehiclePassengerSelf

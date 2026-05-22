@@ -48,7 +48,6 @@ namespace NexusForever.Network.World.Message.Model
                         {
                             case 0:
                                 writer.Write(AccountItemId, 15u);
-                                writer.Write(Amount);
                                 break;
                             case 1:
                                 writer.Write(Type1AccountItemId);
@@ -58,6 +57,8 @@ namespace NexusForever.Network.World.Message.Model
                                 writer.Write(Type2AccountItemId);
                                 break;
                         }
+
+                        writer.Write(Amount);
                     }
                 }
 

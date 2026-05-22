@@ -10857,3 +10857,698 @@ Entity/item/support/realm/Fortune protocol boundary follow-up:
   Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
   -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed `429/429`
   tests.
+
+Account/store `Server0x0969` structural follow-up:
+
+- `FUN_14006c290` registers account/store opcode `0x0969` with reader
+  `140080710` and a `0x10` object size. `InspectCodeAddress.java` against
+  `140080710` maps the reader as a 32-bit count followed by `count` rows of two
+  32-bit fields. The same reader is also registered for the already named
+  `ServerAccountEntitlements` opcode `0x0968`.
+- `140080710` is now labelled `ServerUInt32PairArray_ReadPayload`. NexusForever
+  originally kept the packet name as `Server0x0969` while the row semantics were
+  unknown. A later account-consumer pass proves the rows are account item
+  cooldown group and remaining-second pairs, and the model is now named
+  `ServerAccountItemCooldowns`.
+- Follow-up inspection of adjacent readers maps `140080810` as opcode `0x096E`
+  with five 32-bit fields, one float, and a trailing 3-bit value, and
+  `1400808d0` as opcode `0x0971` with one 3-bit value followed by one float.
+  The later consumer pass maps these as `ServerDailyLoginUpdate` and
+  `ServerAccountPrivilegeRestrictionUpdate`.
+- Offline pending-group delivery, coupon policy, cooldown mutation, exact
+  purchase-result UI, and the remaining `096A..0991` account/store opcodes stay
+  blocked until their readers and client-facing state changes are mapped.
+
+Account/store terminal cluster structural decode follow-up:
+
+- The rest of the `F-006` terminal cluster now has field-level reader evidence
+  applied as durable labels and re-exported in
+  `Decomp/Analysis/exports/WildStar64.exe/selected_decompiled.c`.
+  `096A` is `uint32 + AccountInventoryItem`; `096B` is
+  `uint32 + count + AccountInventoryItem rows`; `096C` is
+  `uint32 + account inventory item id`; `0976` is one
+  `PendingAccountItemGroup` row; `0977` and `0989` are empty;
+  `0978` is a count plus rows of `uint32`, flag, `uint32`, two identities, and
+  two `uint64` values; `097A` is a count plus rows of `uint64`, 14-bit value,
+  and 7-bit value; `097B` is a 6-bit value; `097D` is wide string plus flag;
+  `097E` is `uint64` plus flag; `0980` is `uint32`; `0986` is `uint64`;
+  `098A` is a 5-bit value; `098C`, `098D`, and `0990` are flag plus 5-bit
+  value; `098E` is a count plus store-shaped rows; `098F` matches the store
+  currency-package row shape; and `0991` is flag, 5-bit value, eight wide
+  strings, three floats, and one trailing wide string.
+- `ServerStoreOffers_OfferItem_ReadPayload` proves the item row always carries a
+  trailing `uint32` after the type-specific body. NexusForever now writes that
+  trailing `Amount` for type `1` and type `2` offer item variants as well as
+  type `0`.
+- Focused coverage: `PacketPlaceholderNamingTests` now pins all newly decoded
+  account/store shapes plus the `ServerStoreOffers.OfferItemData` trailing
+  amount behavior. Verification used
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~PacketPlaceholderNamingTests" -m:1
+  -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\account-store-packet-tests\`
+  and passed `27/27` tests.
+- Packets without mapped consumer semantics remain `Server0xNNNN` models with
+  generic field names on purpose. Under the semantic completion bar, `F-006` is
+  still blocked until each unresolved opcode has a native emit site, client
+  UI/event consumer, packet name, state mutation, and live or fixture
+  verification. Do not use these shapes to implement offline pending-group
+  delivery, coupon policy, additional cooldown policy, purchase-result UI, or
+  unsupported offer item effects until that semantic evidence exists.
+
+Account/store `0x0969..0x0980` client-consumer semantics:
+
+- `AccountInventory_HandleServer0966To0980` (`140003fb0`) routes the
+  account-side cluster after payload readers run. The mapped consumer path now
+  resolves several packets that were previously structural-only.
+- `0x0969` is the initial account item cooldown list. The handler
+  `AccountItemCooldownList_HandleServer0969` (`1400051c0`) consumes each
+  uint32 pair as cooldown group id and remaining seconds, then stores an expiry
+  timestamp in the same cache updated by `ServerAccountItemCooldownSet`
+  (`0x0974`). NexusForever now names the packet
+  `ServerAccountItemCooldowns` and sends the retail count-plus-pair list during
+  initial cooldown sync while preserving `ServerAccountItemCooldownSet` for live
+  single-cooldown mutations.
+- `0x096E` is `ServerDailyLoginUpdate`. The consumer writes daily-login state,
+  schedules a timer using the fifth uint32 delay, converts the float field into
+  a FILETIME expiry in days, stores the 3-bit premium-key status, and dispatches
+  `DailyLoginUpdate`. The Lua table builder exposes `nLoginDaysTotal`,
+  `nRewardsAvailable`, `itemKey`, `ePremiumKeyStatus`, and
+  `fSecondsUntilNextKey`.
+- `0x0971` is `ServerAccountPrivilegeRestrictionUpdate`. The consumer stores a
+  restriction expiry for indices `0..3`, converts the float day duration to
+  seconds for the event, and dispatches `AccountPrivilegeRestrictionUpdate` with
+  the active flag from `AccountPrivilegeRestriction_IsActive`.
+- `0x0976`, `0x0977`, `0x097D`, and `0x097E` mutate the pending-account-item
+  caches. `0x0976` appends one pending group row; `0x0977` clears grouped and
+  ungrouped pending caches; `0x097D` removes a group by string key; and `0x097E`
+  removes one ungrouped pending item by id. The add/delete paths dispatch
+  `AccountPendingItemsUpdate` and `AccountItemUpdate`; the trailing flag fields
+  on `097D/097E` are not consumed by the observed handlers.
+- `0x0978` is `ServerCREDDOperationHistory`: when no CREDD order is pending,
+  the consumer converts the decoded rows into `Game.Money` history objects and
+  dispatches `CREDDOperationHistoryResults`.
+- `0x097B` is `ServerCREDDRedeemResult`: the six-bit value is dispatched through
+  `CREDDRedeemResult`.
+- `0x0980` is `ServerWalletUpdate`: the consumer updates the account wallet
+  value and dispatches `WalletUpdate` only when the value changed.
+- `0x096A`, `0x096B`, and `0x096C` are account item cache add/list/remove
+  messages. NexusForever now names these packets
+  `ServerAccountItemCacheAdd`, `ServerAccountItemCacheListAppend`, and
+  `ServerAccountItemCacheRemove`; the leading uint32 field remains `Unknown0`
+  because the observed handlers do not consume it. `0x097A` is now named
+  `ServerCREDDExchangeOrderCacheRows` for its internal CREDD exchange order
+  cache refresh; its row field semantics remain blocked.
+- Verification: focused packet, cooldown, and CREDD history tests now pass with
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter
+  "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~AccountItemCooldownTests|FullyQualifiedName~CREDDExchangeHandlerTests"
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-account-store\`
+  (`37/37`).
+
+Storefront `0x0987..0x0991` client-consumer semantics:
+
+- `Storefront_HandleServer0987To0991` (`14044b630`) dispatches store result
+  opcodes after their payload readers run. This provides semantic evidence for
+  several previously generic store packets, but it is still client-consumer
+  evidence, not server emit-site proof.
+- `0x0989` is an empty `StoreCatalogUpdated` notification. The handler marks
+  the store catalog dirty and dispatches `StoreCatalogUpdated`.
+- `0x098A` is `StoreError`: a single 5-bit error value is dispatched through
+  the client event `StoreError`.
+- `CodeEnumStoreError` is registered by `Lua_RegisterGameEnumTables`
+  (`1404f2860`) with the 22 mapped values `CatalogUnavailable`,
+  `StoreDisabled`, `InvalidOffer`, `InvalidPrice`, `GenericFail`,
+  `PurchasePending`, `PgWs_CartFraudFailure`, `PgWs_CartPaymentFailure`,
+  `PgWs_InvalidCCExpirationDate`, `PgWs_InvalidCreditCardNumber`,
+  `PgWs_CreditCardExpired`, `PgWs_CreditCardDeclined`,
+  `PgWs_CreditFloorExceeded`, `PgWs_InventoryStatusFailure`,
+  `PgWs_PaymentPostAuthFailure`, `PgWs_SubmitCartFailed`,
+  `PurchaseVelocityLimit`, `MissingItemEntitlement`,
+  `IneligibleGiftRecipient`, `CannotUseOffer`, `MissingEntitlement`, and
+  `CannotGiftOffer`.
+- `0x098C` and `0x098D` both dispatch `StorePurchaseOfferResult` with a success
+  flag and a 5-bit value now correlated with
+  `CodeEnumPurchaseResultDisplayType`: `Default`, `VIPSubscription`, and
+  `NothingToClaim`. Their opcode variant distinction is still unresolved, so
+  the NexusForever models stay `Server0x098C` and `Server0x098D` for now.
+- `0x098E` replaces the client's purchase-history row cache and dispatches
+  `StorePurchaseHistoryReady`.
+- `0x098F` is registered with the same `uint32 + wide string + uint32 + float +
+  uint32` shape used by store currency packages, but the mapped store consumer
+  switch falls through without dispatching a client event for `0x098F`.
+- `0x0990` dispatches `StoreCompleteOrderVirtualCurrencyPackageResult` with the
+  flag and 5-bit result value.
+- `0x0991` dispatches `StorePurchaseVirtualCurrencyPackageResult` with the
+  decoded flag, 5-bit value, string, and float fields. The model is now named
+  for the event, but individual field names remain conservative until the
+  purchase flow or Lua consumer proves their exact meanings.
+
+One-hundred-twenty-fourth storefront error/result semantics pass:
+
+- `Storefront_SendClientPurchaseCharacterOffer` (`140450720`) sends opcode
+  `0x082A` from the normal StorefrontLib purchase route.
+  `Storefront_SendClientPurchaseAccountOffer` (`1404507e0`) sends opcode
+  `0x0828` from the recipient/account purchase route. These senders confirm
+  that NexusForever's character and account purchase handlers own the mapped
+  `StoreError` response surface.
+- NexusForever now exposes the retail `StoreError` and
+  `PurchaseResultDisplayType` enum values in `Game.Static.Storefront`.
+  `ServerStoreError` has a semantic `Error` property, while `Server0x098C` and
+  `Server0x098D` expose the shared `IsSuccess` and `DisplayType` aliases
+  without renaming the unresolved opcode variants.
+- Storefront purchase rejection paths now emit `ServerStoreError` (`0x098A`)
+  instead of unrelated generic-error packets. The current mappings are
+  conservative: unknown offers return `InvalidOffer`; invalid or missing price
+  data returns `InvalidPrice`; recipient lookup failures return
+  `IneligibleGiftRecipient`; unsupported offer/account-item placement and
+  insufficient account currency return `CannotUseOffer`; and target/session
+  guard failures return `GenericFail`.
+- Blocker: no opcode-specific sender or UI branch has been found that separates
+  `0x098C` from `0x098D`, and success-result emission still lacks server
+  evidence. Purchase success paths therefore continue to deliver account items
+  without inventing a synthetic `StorePurchaseOfferResult` packet.
+- Immediate scans for the store purchase-result variants keep the blocker in
+  place: `0x098D` and `0x098F` each appear only in the `FUN_14006c290`
+  registration table, while `0x098C` has one opcode-registration hit and other
+  unrelated structure-offset hits. `Storefront_HandleServer0987To0991`
+  dispatches `0x098C` and `0x098D` through the same
+  `StorePurchaseOfferResult` path, and falls through for `0x098F`; no separate
+  UI branch or variant-specific state transition has been proven.
+- `0x0986` follow-up: `FindImmediateInstructions.java` for immediate `0x986`
+  finds only the world opcode registration in `FUN_14006c290`
+  (`140078152`), where it is registered as an 8-byte server payload using
+  `ServerUInt64_ReadPayload`. `Storefront_HandleServer0987To0991`
+  (`14044b630`) explicitly gates the store result dispatcher to
+  `0x0987..0x0991`, so `0x0986` has no mapped store event consumer yet and
+  remains blocked as a raw `uint64` packet.
+
+One-hundred-twenty-third CREDD info/history response semantics pass:
+
+- `CREDDOperationHistory_BuildLuaResults` (`14042c760`) builds the client
+  `CREDDOperationHistoryResults` Lua event from the `0x0978` row cache. The row
+  fields are now semantically bounded as `eOperation`, `bInitiator`,
+  `monAmount`, `nLogAge`, and optional `nFriendId`. The client converts the
+  packet age value through a minutes-to-time calculation before presenting
+  `nLogAge`, so NexusForever exposes the decoded field as `LogAgeMinutes`
+  rather than a final UI duration.
+- `CREDDOperationHistory_ResizeRows` (`1400076e0`) resizes the operation-history
+  cache to `count * 0x40`, matching the mapped `ServerCREDDOperationHistory`
+  row reader. `ServerCREDDExchangeOrderCacheRows_ReadPayload` (`1400a0210`)
+  reads compact `0x10`-byte rows from `0x097A`, and
+  `CREDDExchangeInfo_AppendOrderCacheRows` (`140007760`) appends them into an
+  account/CREDD cache. No mapped client event dispatch has been proven for
+  `0x097A`, so it remains an internal cache refresh with blocked row field
+  semantics.
+- `CREDDExchangeInfo_BuildLuaResults` (`14042b9a0`) dispatches
+  `CREDDExchangeInfoResults` and is tied to the client string reference at
+  `140afc518`. The function builds empty-safe result tables and has evidence
+  for buy/sell counts, price buckets, and owned order rows, but the non-empty
+  server packet row writer and exact owned-order field semantics are not yet
+  complete. NexusForever therefore names `0x026A` as
+  `ServerCREDDExchangeInfoResults` while keeping its payload as the mapped
+  zeroed `0x50` compatibility snapshot.
+- Runtime implementation:
+  `ClientCREDDExchangeRequestInfo` now queues an empty
+  `ServerCREDDExchangeInfoResults` snapshot before the successful
+  `GetCREDDExchangeInfo` operation result. `ClientCREDDExchangeRequestHistory`
+  now queues a `ServerCREDDOperationHistory` list before the same operation
+  result. The list is empty without transient runtime activity, and includes
+  mapped `eOperation`, `bInitiator`, `monAmount`, `nLogAge`, identity,
+  counterparty, and optional friend-character id rows for transient CREDD
+  submit, match-complete, and cancel events. This resolves non-empty history
+  rows for the in-memory runtime boundary only; persistent CREDD orders,
+  non-empty exchange-info price/owned-order rows, and offline settlement remain
+  blocked until the non-empty packet semantics and storage model are resolved.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter
+  "FullyQualifiedName~CREDDExchangeHandlerTests|FullyQualifiedName~PacketPlaceholderNamingTests"
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\credd-handler-tests\`
+  passed (`30/30`).
+
+Housing visit-residence identity follow-up:
+
+- `Housing_SendClientVisitResidenceIdentity` (`1405b2390`) is already labelled
+  as the client path that sends opcode `0x052F` with a `TargetResidence`
+  identity. NexusForever now routes `ClientHousingVisitResidence` through the
+  same residence lookup, privacy gate, map-lock lookup, entrance rotation, and
+  teleport behavior used by the broader `ClientHousingVisit` request.
+- Focused tests cover non-residence-map rejection, unknown residence
+  `Visit_Failed`, private residence `Visit_Private`, public residence teleport,
+  and the packet's 14-bit realm plus 64-bit residence-id shape.
+- Neighbor permissions, roommate persistence, community donation/placement,
+  decor/plugin prerequisite parity, and the unresolved housing server-output
+  cluster remain blocked until their client readers and server state
+  transitions are mapped.
+
+Housing community rename result correction:
+
+- `ClientHousingCommunityRenameHandler` already computes retail-facing
+  `HousingResult` values for leader permission, text validation, cost-table,
+  and currency checks before mutating community state. The response packet was
+  incorrectly hard-coded to `Success`; NexusForever now sends the computed
+  result in `ServerHousingCommunityRename` so failed validation is visible to
+  the client.
+- Focused coverage pins the non-leader path returning
+  `HousingResult.InvalidPermissions` without calling `RenameGuild`. Broader
+  community rename costs, result strings, and success-side persistence are
+  still bounded by the existing community handler and remain candidates for
+  live smoke once community creation/placement is exercised.
+
+Housing result enum semantic follow-up:
+
+- `Lua_RegisterHousingLib` (`WildStar64.exe` `140737da0`) registers the
+  `Game.Housing`/`HousingLib` Lua surface and the housing constant tables. Its
+  `HousingResult_*` strings include the retail
+  `HousingResult_Neighbor_Success` constant occupying the previously unnamed
+  value `2`; NexusForever now exposes `HousingResult.Neighbor_Success` and
+  focused packet coverage pins `ServerHousingResult` writing that value as the
+  7-bit result field.
+- `Houston64.exe` remains useful as a separate housing/client-tool context, but
+  the current Houston export has no `HousingResult_*` enum strings. Treat
+  WildStar64 as the authoritative runtime source for housing result semantics
+  unless a future Houston-specific housing tool behavior is being mapped.
+
+Housing contribution table default-load follow-up:
+
+- `ClientHousingVendorListHandler` already derives plug vendor costs from
+  `GameTableManager.HousingContributionInfo`, and WildStar64's
+  `Housing_SendClientPlugRepair` evidence ties plug repair costs to
+  `HousingContributionInfo` ids. Houston64, as a separate housing/client-tool
+  context, now has the durable
+  `ClientDB_RegisterHousingContributionInfo` label at `1400c3c80`; the selected
+  decompile shows the `HousingContributionInfo` descriptor and
+  `DB\HousingContributionInfo.tbl` registration.
+- `GameTableManager.HousingContributionInfo` now carries `[GameData]`, so the
+  default runtime table initialisation loads it before housing vendor-list cost
+  generation. Focused contract coverage includes the default
+  `HousingContributionInfo.tbl` filename.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter
+  "FullyQualifiedName~GameTableManagerGameDataContractTests" -m:1 -v minimal
+  --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\housing-table-tests\`
+  passed (`9/9`). `run_ghidra_analysis.ps1 -ExportOnly -Targets
+  Houston64.exe -MaxDecompiledFunctions 990` applied the Houston label, and
+  `Test-DecompileManifest.ps1 -FailOnMismatch` passed for Houston64.
+
+Marketplace online seller settlement coverage follow-up:
+
+- No runtime behavior changed. The transient auction order book already pays an
+  online seller through `PlayerManager.Instance.GetPlayer(ownerCharacterId)` on
+  buyout before transferring the item to the buyer. Focused marketplace
+  coverage now registers the seller in the test `PlayerManager` and verifies the
+  seller receives the accepted buyout credit amount while the buyer is debited
+  and receives the item.
+- Offline seller settlement, bidder/seller mail delivery, durable auction
+  storage, commodity matching precision, and non-empty CREDD exchange
+  persistence/history remain blocked on the existing marketplace/mail evidence
+  gaps.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests"
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\marketplace-tests\`
+  passed (`1/1`).
+
+Crafting fixed-recipe count/catalyst boundary follow-up:
+
+- No new native labels were added. The existing mapped `ClientCraftingCraftItem`
+  writer (`1400a5a70`) sends the auto-craft prefix plus an 18-bit catalyst item
+  id. Focused tests now pin the current fixed-recipe handler boundary for
+  `SchematicCount > 1`: material and catalyst debits scale by count, output
+  creation scales by count, achievements receive the crafted count, and earned
+  crafting XP is forwarded in `ServerCraftingFinish`.
+- Discovery rolls, station constraints, coordinate hot/cold math, complex or
+  random output parity, durable rune item state, and sigil result meanings
+  remain blocked on the previously recorded client-reader/table/runtime
+  evidence gaps.
+
+Challenge diagnostic `Client0x00C8` boundary follow-up:
+
+- No runtime challenge behavior changed. `Client0x00C8` remains
+  diagnostic-only, but its known 32-bit packet shape is now covered by a
+  focused regression next to `Client0x0550`.
+- Active challenge lifecycle, shared challenge accept/decline sequencing,
+  `ServerChallengeUpdate` population, reward tiers, quest-objective mutation,
+  and the exact `Client0x00C8` owner remain blocked until the challenge UI
+  reader/sender flow is decoded.
+
+Client diagnostic packet-shape completion follow-up:
+
+- No runtime behavior changed. The full `F-002` diagnostic receive set now has
+  focused packet-shape coverage for each conservative model:
+  `Client0x003D`, `00C8`, `00ED`, `011B`, `011D`, `012D`, `0142`, `0550`,
+  `062A`, `0634`, `063E`, `0701`, `0760`, `0762`, `07B6`, `07E3`, and `0928`.
+- The tests pin the current decoded boundary only: fixed opaque payload lengths,
+  scalar widths, and the one wide-string diagnostic payload. All handlers remain
+  non-mutating because the client writer/sender owners and server response
+  semantics are still unmapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~ClientDiagnosticPacketShapeTests"
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed (`17/17`).
+
+Mail pending-delivery promotion follow-up:
+
+- No new native labels were added. This is a source-level correctness fix inside
+  the existing mail delivery boundary: `MailManager.Update` now removes a ready
+  delayed mail item from `pendingMail` when it promotes it into `availableMail`.
+  Before this pass, the same pending item stayed in the pending list and could
+  be added again on a later update tick.
+- Focused coverage now verifies that a ready pending mail item is promoted once,
+  emits one `ServerMailAvailable` packet, and leaves the pending list empty
+  across a second update tick.
+- Marketplace settlement, exact delete/return/result parity, expiration
+  semantics, and broader attachment/cash atomicity remain evidence-blocked.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter
+  "FullyQualifiedName~MailManagerDeliveryTests|FullyQualifiedName~MailItemTransactionTests"
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed (`4/4`).
+
+Mail COD sender settlement follow-up:
+
+- No new native labels were added. This is a source-level verification pass for
+  an existing `F-013` mail behavior: `MailManager.MailPayCod` subtracts the COD
+  amount from the recipient, marks the COD mail paid/not-returnable, queues an
+  instant outgoing player mail back to the original sender, and returns
+  `ServerMailResult` with `PayCashOnDelivery`/`Ok`.
+- Focused coverage now verifies the settlement mail recipient/sender inversion,
+  subject prefix, credit amount, instant delivery speed, non-COD cash payload,
+  buyer debit, original mail state mutation, and result packet.
+- Focused coverage also verifies the existing expiration sweep: available
+  expired mail is removed, enqueued for delete, moved into the expired-save
+  list, and announced with `ServerMailUnavailable`; pending expired mail is
+  removed and enqueued for delete without a client unavailable notification.
+- Marketplace/offline settlement, exact delete/return/result parity, exact
+  expiration timing/result semantics, and broader attachment/cash atomicity
+  remain evidence-blocked.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-mail\
+  --filter "FullyQualifiedName~MailManagerDeliveryTests|FullyQualifiedName~MailItemTransactionTests"`
+  passed (`7/7`).
+
+Group harvest loot-rule state follow-up:
+
+- No new native labels were added. Existing client evidence maps four loot-rule
+  fields in `ClientGroupLootRulesChange` and `ServerGroupLootRulesChange`, and
+  the group server already carries `HarvestRule` through its internal group
+  messages. NexusForever now preserves that `HarvestRule` when converting
+  internal groups into runtime `GroupLootState`, when ordering group state in
+  `GroupStateManager.UpdateGroup`, and when removing a member from a cached
+  group state.
+- This does not implement harvesting distribution or eligibility behavior; it
+  only stops dropping the already-published rule at the runtime state boundary.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~GroupStateManagerTests"
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed (`3/3`).
+
+Raid info runtime lock compatibility follow-up:
+
+- `ClientRaidInfoRequest` is now explicitly covered for both empty state and
+  active solo runtime instance locks. The handler looks up the player's solo
+  `IMapLockCollection`, skips residence locks (`WorldId == 0`), and reports
+  each active instance as a conservative `ServerRaidInfoResponse` row using the
+  lock GUID's low 64 bits as the saved-instance id, the lock world id, a
+  seven-day compatibility expiry, and prime level `0`.
+- Real raid lock persistence, reset timing, prime-level rows, group/raid
+  save-state integration, and the exact saved-instance id source remain blocked
+  until instance save/restore semantics and the raid-info UI reader are mapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter
+  "FullyQualifiedName~ClientRaidInfoRequestHandlerTests|FullyQualifiedName~ClientMatchingQueueLeaveAsGroupHandlerTests|FullyQualifiedName~GroupStateManagerTests"
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\raid-matching-tests\`
+  passed (`7/7`).
+
+Matching leave-as-group queue boundary follow-up:
+
+- No new native labels were added. The `ClientMatchingQueueLeaveAsGroup`
+  handler now uses the existing `IGroupStateManager` snapshot to fan out the
+  same `LeaveQueue` request to online group members after removing the requester
+  from the selected match-type queue.
+- Focused coverage pins both boundaries: grouped requests leave the queue for
+  the requester and one online group member; non-grouped requests leave only the
+  requester. This is still a queue-lifecycle compatibility behavior, not full
+  retail matching parity.
+- Role checks, queue status timing, replacement/vote flows, and the unresolved
+  matching diagnostic receive opcodes remain blocked on the existing client
+  reader/sender evidence gaps.
+- Verification is included in the raid-info command above.
+
+Matching role enforcer coverage follow-up:
+
+- No runtime behavior changed. Focused coverage now pins the existing
+  `MatchingRoleEnforcer` composition reducer: a flexible tank/DPS member is
+  reduced to tank when the party already has one healer and three DPS, four
+  single-role DPS members are rejected, and members with `Role.None` keep the
+  proposal unsuccessful.
+- This covers only the local queue proposal role reducer. Queue status timing,
+  replacement/vote flows, exact role-selection lifecycle and client signaling,
+  group member role-change packets, and saved-instance/raid integration remain
+  blocked on the existing client reader/sender evidence gaps.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-matching-role\
+  --filter "FullyQualifiedName~MatchingRoleEnforcerTests"` passed (`3/3`).
+
+Group flag bridge follow-up:
+
+- No group-server behavior changed. Focused coverage now pins the world-facing
+  bridge for `ClientGroupFlagsChanged` and `ClientGroupSetRole`: the handlers
+  publish the source character identity, target identity where present, group
+  id, and requested group/member flags to the internal group boundary.
+- The corresponding world internal handlers now have coverage for broadcasting
+  `ServerGroupFlagsChanged` and `ServerGroupMemberFlagsChanged` to online group
+  members while skipping members that are absent from the local player manager.
+- Full member-flag effects, raw roster/detail/role-change packet payloads,
+  queue status timing, replacement/vote flows, cross-realm data, and group
+  position updates remain blocked on reader/sender and group-server state
+  evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-group-flags\
+  --filter "FullyQualifiedName~GroupFlagHandlerTests"` passed (`4/4`).
+
+ZoneCompletion default-load follow-up:
+
+- No new native labels were added. `ZoneCompletionRewardResolver` already uses
+  `GameTableManager.Instance.ZoneCompletion` for the conservative
+  exploration-only title reward path, and the native client data includes
+  `DB\ZoneCompletion.tbl`. `GameTableManager.ZoneCompletion` now carries
+  `[GameData]`, so default `GameTableManager.Initialise()` loads the table
+  instead of leaving the resolver inert outside tests.
+- Focused contract coverage now includes `ZoneCompletion.tbl` beside other
+  runtime-required tables, and existing resolver tests still pass.
+- Non-title rewards, faction/path/category-specific completion rows, and
+  quest/challenge/datacube/journal objective-total sources remain blocked until
+  those row semantics are decoded.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter
+  "FullyQualifiedName~GameTableManagerGameDataContractTests|FullyQualifiedName~ZoneCompletionRewardResolverTests"
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed (`11/11`).
+
+Transport, group, and loot packet-boundary follow-up:
+
+- No runtime transport, group, or loot behavior was widened. Focused packet
+  tests now cover the mapped `ClientVehicleEmbark` three-`uint32` payload,
+  `ClientGroupLootRulesChange` / `ServerGroupLootRulesChange` four-rule
+  layouts, `ClientLootRollAction`, `ClientLootAssignMaster`, and the current
+  `ServerLootRoll`, `ServerLootWinner`, and `ServerLootRemove` layouts.
+- The tests intentionally keep unresolved fields such as vehicle embark context
+  values and `ServerGroupLootRulesChange.UnknownDWord` conservative. Vehicle
+  boarding, seat/passenger modes, harvesting distribution, exact roll/master
+  eligibility, bind-on-pickup confirmation, and unresolved loot auxiliary
+  packets remain blocked on reader/sender and runtime evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter
+  "FullyQualifiedName~TransportPacketShapeTests|FullyQualifiedName~GroupPacketShapeTests|FullyQualifiedName~LootPacketShapeTests"
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed (`15/15`).
+
+SimpleEntity archive/datacube activation coverage follow-up:
+
+- No runtime behavior changed. Focused tests now cover both `OnActivate` and
+  `OnActivateCast` for `ArchiveArticleIdInteractUnlock` with
+  `grantRewards: false`, plus SimpleEntity datacube and journal activation
+  calls through `IDatacubeManager`.
+- This pins the existing activation boundary only. Full journal/datacube
+  progression semantics, archive-link parent/child authorization, path-mission
+  rule parity, and broader content hookups remain blocked until their row and
+  trigger semantics are mapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~SimpleEntityArchiveUnlockTests"
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed (`6/6`).
+
+Guild recruitment and realm-first packet-boundary follow-up:
+
+- No guild recruitment or achievement behavior was widened. Focused tests now
+  pin `ClientRecruitmentGuildGetDetailedGuildInfo` as a 14-bit realm plus
+  64-bit guild identity request, and `ServerRealmFirstAchievement` as a 15-bit
+  achievement id, guild/player flag, and wide name payload.
+- Recruitment output readers/subscriptions and persistent recruitment state
+  remain blocked. Steam achievement payload grammar, achievement-id
+  correlation, exact realm-first UI semantics, and remaining achievement
+  trigger parity also remain blocked.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter
+  "FullyQualifiedName~GuildPacketShapeTests|FullyQualifiedName~RealmFirstAchievementPacketTests|FullyQualifiedName~ClientSteamAchievementsTests"
+  -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed (`4/4`).
+
+Marketplace commodity submit preflight follow-up:
+
+- Added WildStar64 label `Marketplace_ValidateCommodityOrderBeforeSubmit`
+  (`1406a04f0`) for the helper called immediately before
+  `0x06DA ClientCommoditySellOrderSubmit`. The decompile shows the client
+  accepts only new orders (`orderId == 0`), requires non-zero quantity and
+  price, and caps quantity by `GameFormula` id `0x439` field `Dataint02`,
+  falling back to `200` when the formula row is unavailable.
+- `ClientCommoditySellOrderSubmitHandler` now applies that mapped preflight
+  boundary server-side through `MarketplaceRequestHelper.ValidateCommodityOrder`.
+  Item existence, non-zero quantity/price, and the `GameFormula` quantity cap
+  are checked before the transient commodity order book is mutated.
+- This does not implement durable commodity matching, partial fills, price
+  precision, offline settlement, or mail settlement; those remain blocked on
+  marketplace response readers and runtime settlement evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests"
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\marketplace-tests\`
+  passed (`2/2`).
+
+Marketplace commodity cancel success follow-up:
+
+- No new native labels were added. This pass stays inside the already modeled
+  commodity-cancel boundary: successful `ClientCommodityOrderCancel` now emits
+  `ServerCommodityAuctionRemoved` with `AuctionEventType.Cancel` after the
+  transient order is removed and its buy-order credits or sell-order item stack
+  are refunded to the owner.
+- Focused coverage now posts a transient commodity buy order, verifies the
+  buyer credit debit, cancels it, verifies the credit refund, and checks the
+  removed-order event carries the cancelled order id, item id, quantity,
+  price fields, buy/sell flag, and cancel event type.
+- Cancel failure/result precision, durable marketplace storage, commodity
+  matching/partial fills, offline settlement, and marketplace mail settlement
+  remain blocked on response-reader and runtime settlement evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-marketplace\
+  --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests"`
+  passed (`3/3`).
+
+ICComm transient offline cleanup follow-up:
+
+- No new native labels were added. This is a source-level coverage pass for the
+  existing transient `ICCommManager.Update` cleanup: players whose `InWorld`
+  flag is false are removed from joined ICComm channels, and an empty transient
+  channel is removed from the channel indexes.
+- Focused coverage now verifies that an offline member can no longer send to
+  the old channel and that a lone offline member causes the emptied channel to
+  be discarded before the same channel name is joined again.
+- Exact leave/logout client signaling, persistent channel membership,
+  entitlement checks, throttling, and directed-vs-ordered packet precision
+  remain blocked on stronger native/client behavior evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-iccomm\
+  --filter "FullyQualifiedName~ICCommManagerTests"` passed (`2/2`).
+
+ICComm transient delivery follow-up:
+
+- No runtime behavior changed. Focused coverage now pins the current transient
+  `ICCommManager.SendMessage` delivery boundary: successful sends enqueue a
+  `ServerICCommMessageResult` plus `ServerICCommOrderedMessage` to the sender
+  and `ServerICCommDirectedMessage` to eligible online recipients.
+- Named-recipient sends are case-insensitive and deliver only to the matching
+  online channel member. Missing named recipients return `NotInChannel` without
+  sender echo/result packets.
+- Retail delivery precision, exact leave/logout client signaling, entitlement
+  checks, persistent channels, throttling, and auxiliary chat/ICComm outputs
+  remain blocked on stronger client behavior evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-iccomm-delivery\
+  --filter "FullyQualifiedName~ICCommManagerTests"` passed (`5/5`).
+
+Mail delete/return manager follow-up:
+
+- No runtime behavior changed. Focused manager coverage now pins successful
+  `MailDelete` as an `IMailItem.EnqueueDelete(true)` call plus
+  `ServerMailUnavailable` and `ServerMailResult(Delete, Ok)`, and missing-mail
+  delete as `ServerMailResult(Delete, MailDoesNotExist)` with no unavailable
+  notification.
+- Return-mail coverage now pins the existing successful path as removing the
+  mail from available mail, queueing the same item into outgoing mail, calling
+  `IMailItem.ReturnMail`, sending `ServerMailUnavailable`, and reporting
+  `ServerMailResult(Send, Ok)`. Not-returnable mail stays available, does not
+  queue outgoing mail, and reports `MailCannotReturn`.
+- Marketplace/offline settlement, save/reload delete-state parity,
+  multi-client mailbox views, exact expiration timing/results, and broader
+  attachment/cash atomicity remain blocked on stronger runtime/client evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-mail-delete-return\
+  --filter "FullyQualifiedName~MailManagerDeliveryTests|FullyQualifiedName~MailItemTransactionTests"`
+  passed (`11/11`).
+
+Fortune account-scoped session follow-up:
+
+- No runtime behavior changed. Focused coverage now pins that the conservative
+  `FortuneSessionManager` stores card state by account id: a flipped card for
+  one account does not affect another account's status response.
+- Starting a new fortune session for the same account replaces the prior
+  in-memory state and returns unflipped update cards.
+- Reward payout, eligibility/cost, real reward selection, storefront/game
+  synchronisation, and durable retail resume behavior remain blocked on
+  stronger fortune UI and account-inventory evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-fortune-session\
+  --filter "FullyQualifiedName~FortuneSessionManagerTests"` passed (`7/7`).
+
+Opcode model cleanup and coverage refresh follow-up:
+
+- `ServerUnresolvedOutputPackets.cs` was reconciled after a partial checkout
+  drift: the named `ServerCREDDExchangeInfoResults`, provisional group/raid
+  raw payloads, and mapped account/store packet classes again own their
+  corresponding `GameMessageOpcode` enum names. The old `Server0x026A`,
+  `Server0x0414/042A/0431/0436/0438/0441/045A/0461/0468/0718`, and mapped
+  account/store `Server0x0969/096E/0971/0976/0977/0978/097B/097D/097E/0980/
+  0989/098A/098E/0990/0991` enum-reference forms no longer appear in source.
+- Removed the stale duplicate `ClientRealmSelect = 0x07DF` enum alias. The
+  authoritative packet model and handler remain `ClientSelectRealm` for opcode
+  `0x07DF`.
+- A production opcode audit now reports `1041` enum members, `1041`
+  production `[Message]` models, no dangling message references, no duplicate
+  message mappings, no enum members without models, and no duplicate numeric
+  opcode values. The refreshed coverage snapshot reports client `346/346`,
+  server `692/692`, and core `3/3`, with no missing models or handlers.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\network-world\`
+  passed, and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-current\`
+  passed (`508/508`).

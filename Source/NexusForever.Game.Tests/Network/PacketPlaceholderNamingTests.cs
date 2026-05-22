@@ -3,8 +3,10 @@ using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Cinematic;
 using NexusForever.Network.World.Message.Model.Shared;
+using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Cinematic;
 using NexusForever.Game.Static.Housing;
+using NexusForever.Game.Static.Storefront;
 
 namespace NexusForever.Game.Tests.Network;
 
@@ -172,6 +174,436 @@ public class PacketPlaceholderNamingTests
     }
 
     [Fact]
+    public void ServerAccountItemCooldowns_WriteSerializesDecodedCooldownList()
+    {
+        var message = new ServerAccountItemCooldowns(
+        [
+            new ServerAccountItemCooldowns.Cooldown
+            {
+                AccountItemCooldownGroup = 0x10203040u,
+                CooldownInSeconds        = 0x50607080u
+            },
+            new ServerAccountItemCooldowns.Cooldown
+            {
+                AccountItemCooldownGroup = 0x90A0B0C0u,
+                CooldownInSeconds        = 0xD0E0F000u
+            }
+        ]);
+
+        byte[] packetData = WritePacket(message);
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.Equal(0x10203040u, reader.ReadUInt());
+        Assert.Equal(0x50607080u, reader.ReadUInt());
+        Assert.Equal(0x90A0B0C0u, reader.ReadUInt());
+        Assert.Equal(0xD0E0F000u, reader.ReadUInt());
+    }
+
+    [Fact]
+    public void ServerDailyLoginUpdate_WriteSerializesDecodedPayload()
+    {
+        var message = new ServerDailyLoginUpdate
+        {
+            Value0 = 0x01020304u,
+            Value1 = 0x05060708u,
+            Value2 = 0x11121314u,
+            Value3 = 0x15161718u,
+            Value4 = 0x21222324u,
+            FloatValue = 12.5f,
+            UInt3Value = 5u
+        };
+
+        byte[] packetData = WritePacket(message);
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal(0x05060708u, reader.ReadUInt());
+        Assert.Equal(0x11121314u, reader.ReadUInt());
+        Assert.Equal(0x15161718u, reader.ReadUInt());
+        Assert.Equal(0x21222324u, reader.ReadUInt());
+        Assert.Equal(12.5f, reader.ReadSingle());
+        Assert.Equal(5u, reader.ReadUInt(3u));
+    }
+
+    [Fact]
+    public void ServerAccountPrivilegeRestrictionUpdate_WriteSerializesDecodedPayload()
+    {
+        var message = new ServerAccountPrivilegeRestrictionUpdate
+        {
+            UInt3Value = 6u,
+            FloatValue = 0.75f
+        };
+
+        byte[] packetData = WritePacket(message);
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(6u, reader.ReadUInt(3u));
+        Assert.Equal(0.75f, reader.ReadSingle());
+    }
+
+    [Fact]
+    public void ServerAccountItemCacheAdd_WriteSerializesDecodedAccountItemPayload()
+    {
+        var message = new ServerAccountItemCacheAdd
+        {
+            Unknown0 = 0x11223344u,
+            AccountItem = new AccountInventoryItem
+            {
+                Id         = 0x0102030405060708ul,
+                ItemId     = 77u,
+                ClaimState = AccountItemClaimState.CanClaim,
+                Unknown1   = true,
+                TargetPlayerIdentity = new Identity
+                {
+                    RealmId = 12,
+                    Id      = 0x1112131415161718ul
+                }
+            }
+        };
+
+        byte[] packetData = WritePacket(message);
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x11223344u, reader.ReadUInt());
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        Assert.Equal(77u, reader.ReadUInt());
+        Assert.Equal((uint)AccountItemClaimState.CanClaim, reader.ReadUInt(5u));
+        Assert.True(reader.ReadBit());
+        Assert.Equal(12u, reader.ReadUInt(14u));
+        Assert.Equal(0x1112131415161718ul, reader.ReadULong());
+    }
+
+    [Fact]
+    public void ServerAccountItemCacheListAppend_WriteSerializesDecodedAccountItemListPayload()
+    {
+        var message = new ServerAccountItemCacheListAppend
+        {
+            Unknown0 = 0x55667788u
+        };
+        message.AccountItems.Add(new AccountInventoryItem
+        {
+            Id         = 0x0102030405060708ul,
+            ItemId     = 123u,
+            ClaimState = AccountItemClaimState.AccountMaxed,
+            Unknown1   = true,
+            TargetPlayerIdentity = new Identity
+            {
+                RealmId = 9,
+                Id      = 0x1112131415161718ul
+            }
+        });
+
+        byte[] packetData = WritePacket(message);
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x55667788u, reader.ReadUInt());
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        Assert.Equal(123u, reader.ReadUInt());
+        Assert.Equal((uint)AccountItemClaimState.AccountMaxed, reader.ReadUInt(5u));
+        Assert.True(reader.ReadBit());
+        Assert.Equal(9u, reader.ReadUInt(14u));
+        Assert.Equal(0x1112131415161718ul, reader.ReadULong());
+    }
+
+    [Fact]
+    public void ServerAccountItemCacheRemove_WriteSerializesDecodedUInt32AndAccountInventoryItemId()
+    {
+        var message = new ServerAccountItemCacheRemove
+        {
+            Unknown0 = 0x10203040u,
+            AccountInventoryItemId = 0x0102030405060708ul
+        };
+
+        byte[] packetData = WritePacket(message);
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x10203040u, reader.ReadUInt());
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+    }
+
+    [Fact]
+    public void ServerAccountPendingItemAdd_WriteSerializesDecodedPendingAccountItemGroupPayload()
+    {
+        var message = new ServerAccountPendingItemAdd
+        {
+            PendingGroup = new ServerAccountItemsPending.PendingAccountItemGroup
+            {
+                Id            = 0x0102030405060708ul,
+                AccountItemId = 321u,
+                Unknown2      = 0x1112131415161718ul,
+                Group         = "gift-group",
+                Unknown4      = 0x55667788u,
+                SenderIdentity = new Identity
+                {
+                    RealmId = 14,
+                    Id      = 0x2122232425262728ul
+                },
+                Unknown7   = 0x3132333435363738ul,
+                ClaimState = AccountItemClaimState.AccountMaxedWithPending,
+                Unknown9   = 0x4142434445464748ul,
+                TargetIdentity = new Identity
+                {
+                    RealmId = 15,
+                    Id      = 0x5152535455565758ul
+                }
+            }
+        };
+
+        byte[] packetData = WritePacket(message);
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        Assert.Equal(321u, reader.ReadUInt());
+        Assert.Equal(0x1112131415161718ul, reader.ReadULong());
+        Assert.Equal("gift-group", reader.ReadWideString());
+        Assert.Equal(0x55667788u, reader.ReadUInt());
+        Assert.Equal(14u, reader.ReadUInt(14u));
+        Assert.Equal(0x2122232425262728ul, reader.ReadULong());
+        Assert.Equal(0x3132333435363738ul, reader.ReadULong());
+        Assert.Equal((uint)AccountItemClaimState.AccountMaxedWithPending, reader.ReadUInt(5u));
+        Assert.Equal(0x4142434445464748ul, reader.ReadULong());
+        Assert.Equal(15u, reader.ReadUInt(14u));
+        Assert.Equal(0x5152535455565758ul, reader.ReadULong());
+    }
+
+    [Fact]
+    public void ServerCREDDOperationHistory_WriteSerializesDecodedRows()
+    {
+        var message = new ServerCREDDOperationHistory();
+        message.Rows.Add(new ServerUnresolvedAccountIdentityRowListPayload.Row
+        {
+            Operation     = 0x10203040u,
+            IsInitiator   = true,
+            LogAgeMinutes = 0x50607080u,
+            Identity0 = new Identity
+            {
+                RealmId = 17,
+                Id      = 0x0102030405060708ul
+            },
+            Identity1 = new Identity
+            {
+                RealmId = 18,
+                Id      = 0x1112131415161718ul
+            },
+            FriendCharacterId = 0x2122232425262728ul,
+            MoneyAmount       = 0x3132333435363738ul
+        });
+
+        byte[] packetData = WritePacket(message);
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(0x10203040u, reader.ReadUInt());
+        Assert.True(reader.ReadBit());
+        Assert.Equal(0x50607080u, reader.ReadUInt());
+        Assert.Equal(17u, reader.ReadUInt(14u));
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        Assert.Equal(18u, reader.ReadUInt(14u));
+        Assert.Equal(0x1112131415161718ul, reader.ReadULong());
+        Assert.Equal(0x2122232425262728ul, reader.ReadULong());
+        Assert.Equal(0x3132333435363738ul, reader.ReadULong());
+    }
+
+    [Fact]
+    public void ServerCREDDExchangeOrderCacheRows_WriteSerializesDecodedULongUInt14UInt7Rows()
+    {
+        var message = new ServerCREDDExchangeOrderCacheRows();
+        message.Rows.Add(new ServerUnresolvedULongUInt14UInt7ListPayload.Row
+        {
+            Value0      = 0x0102030405060708ul,
+            UInt14Value = 0x1234u,
+            UInt7Value  = 0x55u
+        });
+
+        byte[] packetData = WritePacket(message);
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        Assert.Equal(0x1234u, reader.ReadUInt(14u));
+        Assert.Equal(0x55u, reader.ReadUInt(7u));
+    }
+
+    [Fact]
+    public void ServerAccountStoreSmallShapes_WriteDecodedFields()
+    {
+        Assert.Empty(WritePacket(new ServerAccountPendingItemsClear()));
+        Assert.Empty(WritePacket(new ServerStoreCatalogUpdated()));
+
+        using (var stream = new MemoryStream(WritePacket(new ServerCREDDRedeemResult(0x2Au))))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x2Au, reader.ReadUInt(6u));
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new ServerAccountPendingItemGroupDelete { Value = "pending", Flag = true })))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal("pending", reader.ReadWideString());
+            Assert.True(reader.ReadBit());
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new ServerAccountPendingItemDelete { Value = 0x0102030405060708ul, Flag = true })))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+            Assert.True(reader.ReadBit());
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new Server0x098C { IsSuccess = true, DisplayType = PurchaseResultDisplayType.NothingToClaim })))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.True(reader.ReadBit());
+            Assert.Equal((uint)PurchaseResultDisplayType.NothingToClaim, reader.ReadUInt(5u));
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new ServerWalletUpdate(0xA0B0C0D0u))))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0xA0B0C0D0u, reader.ReadUInt());
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new Server0x0986(0x0102030405060708ul))))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new ServerStoreError(StoreError.IneligibleGiftRecipient))))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal((uint)StoreError.IneligibleGiftRecipient, reader.ReadUInt(5u));
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new Server0x098D { IsSuccess = true, DisplayType = PurchaseResultDisplayType.VIPSubscription })))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.True(reader.ReadBit());
+            Assert.Equal((uint)PurchaseResultDisplayType.VIPSubscription, reader.ReadUInt(5u));
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new ServerStoreCompleteOrderVirtualCurrencyPackageResult { Flag = true, Value = 0x1Cu })))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.True(reader.ReadBit());
+            Assert.Equal(0x1Cu, reader.ReadUInt(5u));
+        }
+    }
+
+    [Fact]
+    public void ServerStoreAuxiliaryShapes_WriteDecodedFields()
+    {
+        var orderRows = new ServerStorePurchaseHistoryReady();
+        orderRows.Rows.Add(new ServerUnresolvedStoreRowListPayload.Row
+        {
+            Value0      = 0x0102030405060708ul,
+            Value1      = 0x1112131415161718ul,
+            UInt5Value  = 0x1Bu,
+            UInt3Value  = 0x5u,
+            FloatValue  = 12.5f,
+            StringValue = "order-row",
+            Flag        = true,
+            Value7      = 0x2122232425262728ul,
+            Value8      = 0xA0B0C0D0u
+        });
+
+        using (var stream = new MemoryStream(WritePacket(orderRows)))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(1u, reader.ReadUInt());
+            Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+            Assert.Equal(0x1112131415161718ul, reader.ReadULong());
+            Assert.Equal(0x1Bu, reader.ReadUInt(5u));
+            Assert.Equal(0x5u, reader.ReadUInt(3u));
+            Assert.Equal(12.5f, reader.ReadSingle());
+            Assert.Equal("order-row", reader.ReadWideString());
+            Assert.True(reader.ReadBit());
+            Assert.Equal(0x2122232425262728ul, reader.ReadULong());
+            Assert.Equal(0xA0B0C0D0u, reader.ReadUInt());
+        }
+
+        var currencyPackage = new Server0x098F
+        {
+            Value0      = 0x10203040u,
+            StringValue = "currency",
+            Value2      = 0x50607080u,
+            FloatValue  = 7.25f,
+            Value4      = 0x90A0B0C0u
+        };
+
+        using var resultStream = new MemoryStream(WritePacket(currencyPackage));
+        using var resultReader = new GamePacketReader(resultStream);
+
+        Assert.Equal(0x10203040u, resultReader.ReadUInt());
+        Assert.Equal("currency", resultReader.ReadWideString());
+        Assert.Equal(0x50607080u, resultReader.ReadUInt());
+        Assert.Equal(7.25f, resultReader.ReadSingle());
+        Assert.Equal(0x90A0B0C0u, resultReader.ReadUInt());
+    }
+
+    [Fact]
+    public void ServerStorePurchaseVirtualCurrencyPackageResult_WriteSerializesDecodedShape()
+    {
+        var message = new ServerStorePurchaseVirtualCurrencyPackageResult
+        {
+            Flag       = true,
+            UInt5Value = 17u,
+            String0    = "s0",
+            String1    = "s1",
+            String2    = "s2",
+            String3    = "s3",
+            String4    = "s4",
+            String5    = "s5",
+            String6    = "s6",
+            String7    = "s7",
+            Float0     = 1.25f,
+            Float1     = 2.5f,
+            Float2     = 3.75f,
+            String8    = "s8"
+        };
+
+        byte[] packetData = WritePacket(message);
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.True(reader.ReadBit());
+        Assert.Equal(17u, reader.ReadUInt(5u));
+        Assert.Equal("s0", reader.ReadWideString());
+        Assert.Equal("s1", reader.ReadWideString());
+        Assert.Equal("s2", reader.ReadWideString());
+        Assert.Equal("s3", reader.ReadWideString());
+        Assert.Equal("s4", reader.ReadWideString());
+        Assert.Equal("s5", reader.ReadWideString());
+        Assert.Equal("s6", reader.ReadWideString());
+        Assert.Equal("s7", reader.ReadWideString());
+        Assert.Equal(1.25f, reader.ReadSingle());
+        Assert.Equal(2.5f, reader.ReadSingle());
+        Assert.Equal(3.75f, reader.ReadSingle());
+        Assert.Equal("s8", reader.ReadWideString());
+    }
+
+    [Fact]
     public void ServerMatchingManagerFlag_WriteSerializesFlag()
     {
         var message = new ServerMatchingManagerFlag
@@ -285,7 +717,8 @@ public class PacketPlaceholderNamingTests
         {
             Type               = 1u,
             Type1AccountItemId = 123u,
-            Type1Amount        = 4u
+            Type1Amount        = 4u,
+            Amount             = 99u
         };
 
         byte[] type1Packet = WritePacket(type1);
@@ -296,12 +729,14 @@ public class PacketPlaceholderNamingTests
             Assert.Equal(1u, reader.ReadUInt());
             Assert.Equal(123u, reader.ReadUInt());
             Assert.Equal(4u, reader.ReadUInt());
+            Assert.Equal(99u, reader.ReadUInt());
         }
 
         var type2 = new ServerStoreOffers.OfferGroup.Offer.OfferItemData
         {
             Type               = 2u,
-            Type2AccountItemId = 987u
+            Type2AccountItemId = 987u,
+            Amount             = 55u
         };
 
         byte[] type2Packet = WritePacket(type2);
@@ -311,6 +746,7 @@ public class PacketPlaceholderNamingTests
 
         Assert.Equal(2u, type2Reader.ReadUInt());
         Assert.Equal(987u, type2Reader.ReadUInt());
+        Assert.Equal(55u, type2Reader.ReadUInt());
     }
 
     private static byte[] BuildPackedWorldPacket(byte envelopeType, byte[] payload)

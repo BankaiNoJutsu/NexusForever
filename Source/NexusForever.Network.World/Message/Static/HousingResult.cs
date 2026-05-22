@@ -4,6 +4,7 @@
     {
         Success                     = 0, // Not used, and complains if sent to the client
         Failed                      = 1,
+        Neighbor_Success            = 2,
         Neighbor_PlayerNotFound     = 3,
         Neighbor_PlayerNotOnline    = 4,
         Neighbor_PlayerNotAHomeowner = 5,

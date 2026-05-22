@@ -4,21 +4,21 @@
 
 | Target | Functions | Named % | Default-name backlog | Selected | Decompiled | Full % |
 | --- | --- | --- | --- | --- | --- | --- |
-| `Houston64.exe` | 25129 | 29.96% | 17600 | 1597 | 1597 | 6.36% |
+| `Houston64.exe` | 25129 | 29.97% | 17599 | 1597 | 990 | 3.94% |
 | `StsConnLib64.MT.dll` | 4522 | 8.2% | 4151 | 863 | 863 | 19.08% |
-| `WildStar64.exe` | 24993 | 4.9% | 23768 | 2406 | 220 | 0.88% |
+| `WildStar64.exe` | 24999 | 5.13% | 23717 | 2453 | 200 | 0.8% |
 
 ## Full Function Backlog
 
 | Scope | Functions | Named | Selected | Unselected | Selected % |
 | --- | --- | --- | --- | --- | --- |
-| Default targets | 54644 | 9125 | 4866 | 49778 | 8.9% |
+| Default targets | 54650 | 9183 | 4913 | 49737 | 8.99% |
 
 ## Opcode Coverage
 
 | Direction | Total | Implemented | Partial | Missing |
 | --- | --- | --- | --- | --- |
-| Client | 347 | 347 | 0 | 0 |
+| Client | 346 | 346 | 0 | 0 |
 | Server | 692 | 692 | 0 | 0 |
 | Core | 3 | 3 | 0 | 0 |
 
