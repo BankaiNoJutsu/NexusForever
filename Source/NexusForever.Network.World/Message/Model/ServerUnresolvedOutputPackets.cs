@@ -79,6 +79,20 @@ namespace NexusForever.Network.World.Message.Model
         }
     }
 
+    public class ServerUnresolvedUInt32Triple : IWritable
+    {
+        public uint Value0 { get; set; }
+        public uint Value1 { get; set; }
+        public uint Value2 { get; set; }
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value0);
+            writer.Write(Value1);
+            writer.Write(Value2);
+        }
+    }
+
     [Message(GameMessageOpcode.Server0x00B7)]
     public class Server0x00B7 : ServerUnresolvedRawPayload
     {
@@ -267,34 +281,100 @@ namespace NexusForever.Network.World.Message.Model
         public Server0x01EF(byte[] payload = null) : base(0x10u, payload) { }
     }
 
-    [Message(GameMessageOpcode.Server0x025F)]
-    public class Server0x025F : ServerUnresolvedRawPayload
+    public class Server0x025FRow : IWritable
     {
-        public Server0x025F(byte[] payload = null) : base(0x2Cu, payload) { }
+        public ushort Value0 { get; set; }
+        public uint Value1 { get; set; }
+        public ServerUnresolvedUInt32Triple Value2 { get; set; } = new();
+        public uint Value5 { get; set; }
+        public ServerUnresolvedUInt32Triple Value6 { get; set; } = new();
+        public uint Value9 { get; set; }
+        public uint Value10 { get; set; }
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value0, 16u);
+            writer.Write(Value1);
+            Value2.Write(writer);
+            writer.Write(Value5);
+            Value6.Write(writer);
+            writer.Write(Value9);
+            writer.Write(Value10);
+        }
     }
 
     [Message(GameMessageOpcode.Server0x0260)]
-    public class Server0x0260 : ServerUnresolvedRawPayload
+    public class Server0x0260 : IWritable
     {
-        public Server0x0260(byte[] payload = null) : base(0x10u, payload) { }
+        public List<Server0x025FRow> Rows { get; } = new();
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write((uint)Rows.Count);
+            Rows.ForEach(row => row.Write(writer));
+        }
+    }
+
+    [Message(GameMessageOpcode.Server0x025F)]
+    public class Server0x025F : Server0x025FRow
+    {
+    }
+
+    public class Server0x0263Row : IWritable
+    {
+        public uint Value0 { get; set; }
+        public uint Value1 { get; set; }
+        public uint Value2 { get; set; }
+        public uint Value3 { get; set; }
+        public uint Value4 { get; set; }
+        public uint Value5 { get; set; }
+        public ServerUnresolvedUInt32Triple Value6 { get; set; } = new();
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value0);
+            writer.Write(Value1);
+            writer.Write(Value2, 17u);
+            writer.Write(Value3, 17u);
+            writer.Write(Value4, 17u);
+            writer.Write(Value5);
+            Value6.Write(writer);
+        }
     }
 
     [Message(GameMessageOpcode.Server0x0261)]
-    public class Server0x0261 : ServerUnresolvedRawPayload
+    public class Server0x0261 : IWritable
     {
-        public Server0x0261(byte[] payload = null) : base(0x10u, payload) { }
+        public List<Server0x0263Row> Rows { get; } = new();
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write((uint)Rows.Count);
+            Rows.ForEach(row => row.Write(writer));
+        }
     }
 
     [Message(GameMessageOpcode.Server0x0263)]
-    public class Server0x0263 : ServerUnresolvedRawPayload
+    public class Server0x0263 : Server0x0263Row
     {
-        public Server0x0263(byte[] payload = null) : base(0x24u, payload) { }
     }
 
     [Message(GameMessageOpcode.Server0x0264)]
-    public class Server0x0264 : ServerUnresolvedRawPayload
+    public class Server0x0264 : IWritable
     {
-        public Server0x0264(byte[] payload = null) : base(0x18u, payload) { }
+        public uint Value0 { get; set; }
+        public ushort Value1 { get; set; }
+        public uint Value2 { get; set; }
+        public List<uint> Values { get; } = new();
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value0);
+            writer.Write(Value1, 16u);
+            writer.Write(Value2);
+            writer.Write((uint)Values.Count);
+            Values.ForEach(value => writer.Write(value));
+        }
     }
 
     [Message(GameMessageOpcode.Server0x0347)]
@@ -478,39 +558,95 @@ namespace NexusForever.Network.World.Message.Model
     }
 
     [Message(GameMessageOpcode.Server0x0889)]
-    public class Server0x0889 : ServerUnresolvedRawPayload
+    public class Server0x0889 : IWritable
     {
-        public Server0x0889(byte[] payload = null) : base(0xCu, payload) { }
+        public uint Value0 { get; set; }
+        public uint Value1 { get; set; }
+        public uint Value2 { get; set; }
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value0);
+            writer.Write(Value1);
+            writer.Write(Value2);
+        }
     }
 
     [Message(GameMessageOpcode.Server0x08CC)]
-    public class Server0x08CC : ServerUnresolvedRawPayload
+    public class Server0x08CC : IWritable
     {
-        public Server0x08CC(byte[] payload = null) : base(0x10u, payload) { }
+        public uint Value { get; set; }
+        public string Text { get; set; } = "";
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value);
+            writer.WriteStringWide(Text);
+        }
     }
 
     [Message(GameMessageOpcode.Server0x08F4)]
-    public class Server0x08F4 : ServerUnresolvedRawPayload
+    public class Server0x08F4 : IWritable
     {
-        public Server0x08F4(byte[] payload = null) : base(0xCu, payload) { }
+        public uint Value0 { get; set; }
+        public uint Value1 { get; set; }
+        public uint Value2 { get; set; }
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value0);
+            writer.Write(Value1, 5u);
+            writer.Write(Value2);
+        }
     }
 
     [Message(GameMessageOpcode.Server0x0939)]
-    public class Server0x0939 : ServerUnresolvedRawPayload
+    public class Server0x0939 : IWritable
     {
-        public Server0x0939(byte[] payload = null) : base(0x18u, payload) { }
+        public uint Value0 { get; set; }
+        public uint Value1 { get; set; }
+        public uint Value2 { get; set; }
+        public string Text { get; set; } = "";
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value0);
+            writer.Write(Value1, 14u);
+            writer.Write(Value2, 18u);
+            writer.WriteStringWide(Text);
+        }
     }
 
     [Message(GameMessageOpcode.Server0x093D)]
-    public class Server0x093D : ServerUnresolvedRawPayload
+    public class Server0x093D : IWritable
     {
-        public Server0x093D(byte[] payload = null) : base(0x10u, payload) { }
+        public uint Value0 { get; set; }
+        public uint Value1 { get; set; }
+        public uint Value2 { get; set; }
+        public uint Value3 { get; set; }
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value0);
+            writer.Write(Value1, 5u);
+            writer.Write(Value2);
+            writer.Write(Value3);
+        }
     }
 
     [Message(GameMessageOpcode.Server0x093E)]
-    public class Server0x093E : ServerUnresolvedRawPayload
+    public class Server0x093E : IWritable
     {
-        public Server0x093E(byte[] payload = null) : base(0x10u, payload) { }
+        public uint Value0 { get; set; }
+        public uint Value1 { get; set; }
+        public ulong Value2 { get; set; }
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value0);
+            writer.Write(Value1);
+            writer.Write(Value2);
+        }
     }
 
     [Message(GameMessageOpcode.ServerAccountItemCooldowns)]

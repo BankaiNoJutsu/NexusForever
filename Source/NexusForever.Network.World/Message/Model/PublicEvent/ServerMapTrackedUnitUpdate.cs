@@ -8,7 +8,7 @@ namespace NexusForever.Network.World.Message.Model.PublicEvent
     {
         public uint TrackedUnitId { get; set; }
         public Vector3 Position { get; set; }
-        public uint PublicEventObjectiveId { get; set; }
+        public uint TrackingSlotId { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
@@ -16,7 +16,7 @@ namespace NexusForever.Network.World.Message.Model.PublicEvent
             writer.Write(Position.X);
             writer.Write(Position.Y);
             writer.Write(Position.Z);
-            writer.Write(PublicEventObjectiveId, 14u);
+            writer.Write(TrackingSlotId, 15u);
         }
     }
 }

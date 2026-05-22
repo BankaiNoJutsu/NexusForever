@@ -1,8 +1,12 @@
 # Retail Feature Evidence (Online Sources)
 
-Updated: 2026-05-22 (pass 5)
+Updated: 2026-05-22 (pass 7)
 
 Companion to `MISSING_FEATURE_MATRIX.md`. This document records **how blocked or partial NexusForever systems reportedly worked on live WildStar**, gathered from public wikis, Carbine-era articles, **archived patch notes**, **player blogs/forums**, **non-English guides (DE/FR)**, **addon READMEs**, and **UI screenshots**.
+
+**Pass 6 goal:** pin the **Certain retail state of the last client (build 16042 / 1.7.8)** and separate **normal F2P-era mechanics** from **Sept 2018 sunset buffs** that were not the long-run rules.
+
+**Pass 7 goal:** crosswalk terminal-baseline claims to **Carbine client Lua (S7)** and **NexusForever retail constants (S10)**; flag emulator gaps.
 
 It does **not** replace client decompile, packet captures, or game-table proof. Use it to form hypotheses and prioritize decode work.
 
@@ -15,8 +19,10 @@ It does **not** replace client decompile, packet captures, or game-table proof. 
 | **3** | Slash-command archive, Notes from Nexus Drop 6 calendar, Taugrim arena leaderboards, Bio Break + FR housing, Protogames expedition medals, vgolds AH mail flow, OwnedCore guides, Steam/NCsoft Homecoming, discovery-map community sites |
 | **4** | **Carbine official addon Lua** ([Zod-/Wildstar-Carbine-Addons](https://github.com/Zod-/Wildstar-Carbine-Addons)) for Mail COD / Leaderboards / Challenge share UI; Steam **1.7.1** patch notes (PvE leaderboards, realm bank); Wildstar Life **1.0.9 Strain** full notes (warplot queue); July 2014 PvP deserter fixes |
 | **5** | Winter beta pastebin **full text** ([raw](https://pastebin.com/raw/Nfy3hr3f)); more **S7** files (`Stuck.lua`, `HousingRemodel.lua`, `MatchMaker.lua`); wiki **Sabotage** warplot surrender label; guest-pass KB link (archived fetch blocked) |
+| **6** | **Terminal client baseline** — build **16042 (1.7.8)**; F2P/Signature wiki; **Homecoming** communities wiki + patch 09/06/2017; last wiki patch **12/06/2017** (1.7.4.15948); **Signing Off** Steam post (26 Sep 2018); shutdown 28 Nov 2018 |
+| **7** | **S7** `MarketplaceListings.lua`, `RealmBankViewer.lua`; **S10** `RetailCertainRules.cs`, `MarketplaceAccountLimits.cs`, `MarketplaceAccountLimitsTests`, `ClientGuildRegisterHandler` (formula **1159**), `MatchingDeserterManager`, `RetailWarplotQueueRules` |
 
-Pass 5 promoted **group-finder requeue/votekick**, **challenge medal win-chance**, **neighbor harvest split UI**, and **stuck recall options** from pastebin + additional Carbine Lua. **ICComm** and full **guest-pass restriction list** remain thin publicly; mail **expiry display** now documented from client UI.
+Pass 7 added the **emulator ↔ retail crosswalk** and confirmed several 16042 rules already exist in source/tests; documented partial wiring (deserter cross-queue, votekick cooldowns).
 
 ## Evidence categories
 
@@ -34,8 +40,137 @@ Pass 5 promoted **group-finder requeue/votekick**, **challenge medal win-chance*
 - **S4** — Archived patch notes: [Wildstar Life patch notes](http://wildstar.mmorpg-life.com/patch-notes/), [Pastebin winter beta notes](https://pastebin.com/Nfy3hr3f), Fandom patch pages.
 - **S5** — Non-English retail-era articles (e.g. [Mein-MMO DE](https://mein-mmo.de/)).
 - **S6** — Addon CurseForge galleries/READMEs showing client UI labels (e.g. [AutoLoot v1.2 screenshot](https://media.forgecdn.net/attachments/198/64/autoloot-v1_2.png)).
-- **S7** — Carbine-shipped client UI Lua mirrored on GitHub ([Zod-/Wildstar-Carbine-Addons](https://github.com/Zod-/Wildstar-Carbine-Addons)): `Live/Mail/Mail.lua`, `Live/Leaderboards/Leaderboards.lua`, `Live/Challenges/ChallengeLog.lua`, `Live/Stuck/Stuck.lua`, `Live/Housing/HousingRemodel.lua`, `Live/MatchMaker/MatchMaker.lua` (NCsoft copyright).
+- **S7** — Carbine-shipped client UI Lua mirrored on GitHub ([Zod-/Wildstar-Carbine-Addons](https://github.com/Zod-/Wildstar-Carbine-Addons)): Mail, Leaderboards, Challenges, Stuck, HousingRemodel, MatchMaker, **MarketplaceListings**, **RealmBankViewer**, MarketplaceAuction/Commodity/CREDD (NCsoft copyright).
 - **S8** — Primary-source beta documents: [Pastebin winter beta (raw)](https://pastebin.com/raw/Nfy3hr3f) (Group Finder, Housing, Challenges sections).
+- **S9** — Terminal-era official posts: [Steam Signing Off (26 Sep 2018)](https://steamcommunity.com/app/376570/allnews/); [Internet Archive client 16042](https://archive.org/details/wildstar_client); wiki patch pages through **Patch 12/06/2017**.
+- **S10** — NexusForever retail alignment code cited in this doc: `Source/NexusForever.Game/Retail/RetailCertainRules.cs`, `Source/NexusForever.Game/Marketplace/MarketplaceAccountLimits.cs`, related handlers/tests (build **16042** F2P era, excludes sunset buffs per file comments).
+
+---
+
+## Emulator ↔ retail crosswalk (pass 7)
+
+Maps **terminal-baseline (16042)** claims to **client Lua** and **emulator code**. Status meanings:
+
+| Status | Meaning |
+| --- | --- |
+| **Aligned** | Constants/tests/handlers match S7/S9; safe default for emulator |
+| **Table-driven** | Retail values come from client `.tbl` at runtime (wiki numbers are corroboration only) |
+| **Partial** | Evidence + constants exist; queue/enforcement not fully wired |
+| **Gap** | Documented retail rule not yet enforced in emulator |
+
+| Retail claim (16042 normal) | S7 / S9 | Emulator (S10) | Status |
+| --- | --- | --- | --- |
+| AH/CX **3** slots Free, **30** Signature | `MarketplaceListings.lua` uses `CodeEnumRewardProperty.AuctionBids`, `AuctionListings`, `CommodityOrders` + entitlements `ExtraAuctions`, `LoyaltyExtraAuctions` | `MarketplaceAccountLimits` (3/30) + `MarketplaceAccountLimitsTests`; `GlobalMarketplaceManager` enforces sell cap | **Aligned** |
+| Store +50 AH/CX entitlement SKUs | Same Lua listens to `AccountEntitlementUpdate` | `ExtraAuctions` / `ExtraCommodityOrders` +50 per stack in `MarketplaceAccountLimits` | **Aligned** |
+| Cosmic +10 AH/CX | `LoyaltyExtraAuctions`, `LoyaltyExtraCommodityOrders` in Lua | `LoyaltyExtra*SlotsPerStack = 10` | **Aligned** |
+| Community create **50p** or **600 Service Tokens** | Wiki + Communities page | `ClientGuildRegisterHandler` → `GameFormula.GetEntry(1159)` (`Dataint0` credits, `Dataint01` service tokens); `RetailCertainRules.CommunityCreateCostGameFormulaId = 1159` | **Table-driven** (verify against extracted `GameFormula.tbl` from 16042) |
+| Guild create credit cost | Client `GuildLib` formula **764** | `ClientGuildRegisterHandler` entry **764**; `RetailCertainRules.GuildCreateCostGameFormulaId` | **Table-driven** |
+| PvE deserter **15m** (scaled), PvP **10m** | S8 beta; Strain patch | `MatchingDeserterManager.ApplyDeserter` uses `RetailCertainRules` 900s / 600s base | **Partial** — `CanQueue` cross-activity rule not referenced from queue validator yet |
+| Warplot queue **10 online** | Strain 1.0.9 | `RetailWarplotQueueRules` checks `WarplotOnlineMembersRequiredToQueue` | **Partial** — queued-member count (**10 in queue**) not validated in same helper |
+| Votekick **10m / 2m** offline | S8 beta | `RetailCertainRules.VoteKickCooldown*` constants only | **Gap** — `ClientMatchingMatchCastVoteKickHandler` logs only |
+| Warplot surrender **10m**, **60%** | Sabotage + warplot beta | `RetailCertainRules.WarplotSurrender*` constants only | **Gap** — no surrender vote handler cited |
+| **Realm bank** per realm | Steam 1.7.1 | `RealmBankViewer.lua`: `SharedRealmBankUnlock` (74), `SharedRealmBankSlots` (75); `ClientEntityInteraction` case **67** `ShowRealmBank` | **Partial** — UI/entitlements modeled; storage logic not cross-walked here |
+| **2** concurrent challenges | Wiki + MOP essay | `ChallengeManager` `MaxConcurrentActiveChallenges = 2`; `RetailCertainRules` duplicate | **Aligned** (duplicate const; could share `RetailCertainRules`) |
+| Mail **COD**, expiry, VIP cash gate | `Mail.lua` | Mail manager COD path (pass 4) | **Aligned** (per prior passes) |
+| Housing harvest split | `HousingRemodel.lua` | Residence APIs in `Residence` / housing handlers | **Partial** — verify `SetNeighborHarvestSplit` server mirror |
+| Signature = `Permission.Signature` | F2P wiki | `Player.SignatureEnabled` → RBAC | **Aligned** |
+| Sunset universal Signature / Omnibit store | S9 Signing Off | Not in `RetailCertainRules` (explicitly excluded) | **By design** — do not enable for default emulator |
+
+### Carbine marketplace / bank UI (pass 7)
+
+| File | Retail behavior evidenced |
+| --- | --- |
+| [Live/MarketplaceListings/MarketplaceListings.lua](https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/MarketplaceListings/MarketplaceListings.lua) | Listing caps from `GetPlayerRewardProperty(AuctionBids/AuctionListings/CommodityOrders)` vs tier-0 base; CREDD header has **no limit**; entitlement hooks for Extra + Loyalty auction/CX slots |
+| [Live/RealmBankViewer/RealmBankViewer.lua](https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/RealmBankViewer/RealmBankViewer.lua) | **Shared realm bank** gated by `SharedRealmBankUnlock`; extra slots via `SharedRealmBankSlots` + store link `UnlockRealmBank` / `RealmBankSlots` |
+| [Live/MarketplaceCREDD](https://github.com/Zod-/Wildstar-Carbine-Addons/tree/master/Live/MarketplaceCREDD) | CREDD exchange UI (Signature time commodity) — pairs with F2P wiki |
+
+Repo mirrors client enums in `Source/NexusForever.Game.Static/Entity/RewardPropertyType.cs` (`AuctionBids = 16`, `AuctionListings = 17`, `CommodityOrders = 15`) and `EntitlementType.cs` (`ExtraAuctions = 23`, `LoyaltyExtraAuctions = 43`, `SharedRealmBankUnlock = 74`).
+
+---
+
+## Retail terminal baseline (emulator target)
+
+Use this section when implementing NexusForever against **build 16042** (README baseline). It describes **normal live rules on the final client**, not the **two-month sunset carnival** unless you intentionally model shutdown week.
+
+### Client and timeline
+
+| Milestone | Date / ID | Notes |
+| --- | --- | --- |
+| **Emulator client** | **Build 16042** (~**1.7.8**) | Last non-Steam client widely archived pre-shutdown; matches NexusForever README. **S9** [Archive.org mirror](https://archive.org/details/wildstar_client) labels **16042 (1.7.8)**. |
+| **Last wiki-numbered patch** | **6 Dec 2017** — [Patch 12/06/2017](https://wildstar.fandom.com/wiki/Patch_12/06/2017) “Primetime” | Build **1.7.4.15948**, API **16**. Mostly fixes/events; not a new drop. |
+| **Last major content drop** | **6 Sep 2017** — [Homecoming](https://wildstar.fandom.com/wiki/Patch_09/06/2017) | **Communities**, Residential Renovation, more Prime content, `/com` chat. |
+| **F2P relaunch** | **29 Sep 2015** — [WildStar: Reloaded](https://www.prnewswire.com/news-releases/carbine-studios-wildstar-free-to-play-launches-today-300150262.html) | AH/CX returned after brief pre-launch shutdown; **Signature** replaces subscription. **S1** [Free-to-Play](https://wildstar.fandom.com/wiki/Free-to-Play). |
+| **Sunset announcement + final update** | **26 Sep 2018** | Real-money purchases disabled; **Signing Off** buffs (see below). **S9** Steam announcement. |
+| **Service shutdown** | **28 Nov 2018** (~5pm EST) | Servers offline; no further client builds documented publicly. **S2** [Wikipedia](https://en.wikipedia.org/wiki/WildStar). |
+
+**Version note:** Wiki patch tables stop at **1.7.4.15948** while archived clients read **1.7.8 / 16042**. Treat **16042** as the authoritative **wire/client** target; treat **1.7.4–1.7.8** as one continuous **API 15–16** retail era for gameplay rules.
+
+### Normal retail rules on 16042 (Certain — implement these)
+
+These systems were live on the final client **before** sunset buffs and stayed structurally the same; passes 1–5 evidence still applies.
+
+| Area | Final-client behavior (headline) | Primary sources |
+| --- | --- | --- |
+| **Account model** | **Free** accounts: full level/path/content access; **Signature** optional (CREDD or cash); **Cosmic Rewards** unlock social/AH extras. | **S1** F2P wiki; **S1** [Cosmic Reward](https://wildstar.fandom.com/wiki/Cosmic_Reward) |
+| **Marketplace** | **Auction House** + **Commodity Exchange** active; wins/refunds via **mail**; **Free** = **3** buy + **3** sell slots each; **Signature** = **30** + **30** (Cosmic tiers add +10). | **S1** F2P wiki; **S7** MarketplaceListings; **S10** `MarketplaceAccountLimits` + tests |
+| **CREDD** | Tradeable **Signature time** on CX (post-F2P “Signature” naming); not subscription-only. | **S1** CREDD archive; **S5** Mein-MMO |
+| **Housing** | Per-character plot at **14**; neighbors/roommates; **Communities** (5 plots + shared decorate); harvest **%** split UI; Residential Renovation monthly. | **S1** Housing + [Communities](https://wildstar.fandom.com/wiki/Communities); **S7** HousingRemodel; **S8** beta |
+| **Group / queue** | Group Finder; **requeue**; **votekick** timing; **15m** deserter (scaled); cross-activity queue; loot **Need/Greed/Master/RoundRobin**. | **S8** beta; **S7** MatchMaker; patch 1.0.9 |
+| **Warplots** | 40v40; queue **10 online + 10 in queue**; **surrender** after 10m / 60% vote. | Strain patch; Sabotage + warplot beta doc |
+| **Prime / endgame** | **Prime** dungeons/expeditions/raids; **PvE leaderboards**; **realm bank** (per-realm account storage). | Steam **1.7.1**; **S7** Leaderboards + RealmBankViewer; **S10** entitlements 74/75 |
+| **Mail** | Attachments, tiers, **COD**, expiry display, VIP cash-attachment gate. | **S7** Mail.lua; **S1** Mail wiki |
+| **Challenges** | Timed challenges, share accept/reject, medal tier → **reward win chance**. | **S7** ChallengeLog; **S8** beta |
+| **Store currencies** | **Omnibits** (gameplay), **Protobucks** (real-money store), **Service Tokens**, **Fortune Coins**. | **S1** Currency wiki |
+| **Stuck** | `/stuck` UI → recall bind / house / death. | **S7** Stuck.lua; slash archive |
+
+### Sunset-only overrides (26 Sep – 28 Nov 2018)
+
+**Do not treat these as default emulator economy** unless modeling the literal shutdown window. All are **Certain** from **S9** [Signing Off Steam post](https://steamcommunity.com/app/376570/allnews/).
+
+| Sunset tweak | Effect |
+| --- | --- |
+| Universal **Signature** | Every account granted Signature (overrides Free vs Signature AH limits). |
+| **Protobucks → Omnibits** 1:1 | Real-money store currency converted; all store SKUs buyable with Omnibits. |
+| **Omnibit** drops/cap raised | Faster cosmetic/convenience purchasing. |
+| **Store catalog unlocked** | All seasonal/rotating costumes/mounts + Signature Station items on main store. |
+| **Prime gear ilevel** buff | Higher base ilevel from Prime instances/raids. |
+| **Primal Essence** rate up | Progression acceleration. |
+| **Select reputations** maxed | Vendor inventory unlocked without grind. |
+| **Always-on XP/Glory/Prestige/PvP/Essence** buffs | Sept 26 – shutdown (event flags, not base rules). |
+| **Real-money purchases disabled** | July 1+ purchases refunded; Steam purchases stopped. |
+
+### Communities at final client (Certain detail)
+
+From **S1** [Communities](https://wildstar.fandom.com/wiki/Communities) + **S1** [Patch 09/06/2017](https://wildstar.fandom.com/wiki/Patch_09/06/2017):
+
+- **Create** community: housing unlocked; **Signature** *or* Cosmic **Full Social Access**; **50 platinum** or **600 Service Tokens**; Protostar Community Director in capitals.
+- **Skyplot:** up to **20** members, **5** resident plots + shared common area; `/com` channel; ranks/permissions like a small guild.
+- **Decor limits:** community crate **5000**; up to **4000** decor in shared area; per-plot limits stack (wiki cites very high combined totals).
+- **Chat/API:** Apollo **API 16**; commands `/cominvite`, `/comkick`, `/commaster`, etc.
+
+At **sunset**, universal Signature made the Signature gate moot for new communities; emulator should still enforce **Signature OR Full Social Access** for normal retail.
+
+### AH / CX limits at final client (Certain)
+
+| Account type | Auction House | Commodity Exchange |
+| --- | --- | --- |
+| **Free** | 3 active buy bids, 3 sell lots | 3 buy orders, 3 sell orders |
+| **Signature** | 30 / 30 | 30 / 30 |
+| **Cosmic tier bonuses** | +10 auctions/bids (and +10 CX orders per tier perks) | per **S1** Cosmic Reward wiki |
+
+Box purchasers before **29 Sep 2015** retained **12** character slots, **6** costume slots, **5** bank slots, **2000** decor cap (grandfathered).
+
+### What changed vs launch (not sunset) — still true on 16042
+
+| Launch (2014 sub) | Final client (16042) |
+| --- | --- |
+| Subscription required | **F2P** + optional **Signature** |
+| CREDD = sub time | CREDD = **Signature** time on CX |
+| Shiphands | **Expeditions** + Prime + veteran medals |
+| Neighbors only | **Communities** + neighbors + roommates |
+| No PvE leaderboards | **Prime PvE leaderboards** (1.7.1+) |
+| No realm bank | **Shared realm bank** (1.7.1+) |
+| 2013 “housing per account” press | **Per-character** housing at 14 (wiki + beta) |
 
 ---
 
@@ -46,15 +181,15 @@ Pass 5 promoted **group-finder requeue/votekick**, **challenge medal win-chance*
 | F-001 | STS / token crypto | Subscription-era account required login | Handshake field order, optional routes | Full crypto envelope semantics |
 | F-002 | Client diagnostic opcodes | Client sent fixed-size unknown requests | Per-opcode UI owner | Any server reply behavior |
 | F-003 | Unresolved server opcodes | Server emitted many auxiliary packets | Cluster grouping by enum neighbors | Per-opcode gameplay meaning |
-| F-004 | Housing | Plugs, visitors, neighbors; **NeighborHarvestSplit** in property settings; level-14 **per character** (wiki+beta) | 2013 press “per account” vs retail quest model | Many `Server0x00CA` field names |
-| F-005 | Marketplace / CREDD | Split AH + CX; CREDD tradeable; auction wins via mail; ItemAuctionWon (1.0.9) | CX buy-order interest; fee % after F2P | Order-matching / offline settlement |
-| F-006 | Store / account inventory | Omnibits, Service Tokens, pending claim limits | Coupon sender, CREDD row pointers | Leading fields on `096A..096C` |
+| F-004 | Housing | Plugs, neighbors, **Communities** (5 plots), harvest split; level-14 **per character** | 2013 press “per account” | Many `Server0x00CA` field names |
+| F-005 | Marketplace / CREDD | AH+CX live on 16042; **3/3 Free**, **30/30 Signature**; CREDD→Signature; mail settlement | Fee %; CX interest mechanics | Order-matching / offline settlement |
+| F-006 | Store / account inventory | Omnibits, Protobucks, Service Tokens; Cosmic Rewards; **sunset** = all-Omnibit store | Coupon sender; sunset universal Signature | Leading fields on `096A..096C` |
 | F-007 | Reward rotation | **180-day** daily login (Drop 6); 9+1 reward rhythm; unclaimed until login | Opcode-named “rotation” vs login calendar | `0x07CD` apply / `Flag` consumer |
 | F-008 | Crafting | Tech tree, schematics, circuit/coordinate crafting | Discovery rolls, sigil meanings | `Server0x084B` result semantics |
 | F-009 | Transport | Taxi, transmat recall, mounts, service tokens | Flight-path purchase rules | Vehicle seat / deployable modes |
 | F-010 | Group / queue / raid | Attunement; loot rules; deserter (cross-activity queue rules); **requeue** when instance finished; votekick rules | Fake-tank LFG anecdotes | Most `Server0x0414+` field effects |
 | F-011 | Guild / war party | Warplots: 40v40; **10 online + 10 queued** to match; boss tokens | Guild bank, holomark perks | Recruitment subscription timing |
-| F-012 | ICComm / chat | Circles, guild/zone/party channels; client Need/Greed loot UI exists | ICComm = Global/Group/Guild channels (decomp) | Entitlement / throttle / persistence |
+| F-012 | ICComm / chat | Circles, guild/zone/party/**/com** community channels | ICComm = Global/Group/Guild (decomp) | Entitlement / throttle / persistence |
 | F-013 | Mail | COD; tiered fees; inbox **expiry countdown** (days); guest `Mail_GuestAccount` error; VIP attachment gate | Hybrid/Signature trading unlock | Delete-state parity across reload |
 | F-014 | Loot | **FreeForAll, RoundRobin, NeedBeforeGreed, Master** (patch + enum); trash rolls to group | BOP confirm; `ServerLootCanLoot` timing | Master-loot assign packet parity |
 | F-015 | PvP / duels | Duels `/duel`; PvE/PvP rulesets; arena seasons | Duel leash, observer packets | PvP rating formula parity |
@@ -125,6 +260,16 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 | **Shared challenge** accept/reject notice | **Certain** | **S7** `ChallengeLog.lua` (`ChallengeShared`, `AcceptSharedChallenge`) |
 | PvP deserter persists through **death** | **Certain** | **S4** [July 15 2014 patch](http://wildstar.mmorpg-life.com/patch-notes/wildstar-patch-notes-july-15th/) |
 | `ItemAuctionWon` fires for bidder **and** owner | **Certain** | **S4** Strain 1.0.9 notes (addon marketplace section) |
+| **Terminal client** build **16042 (1.7.8)** | **Certain** | **S9** [Archive.org client](https://archive.org/details/wildstar_client); NexusForever README |
+| **F2P** relaunch; AH/CX **3/3** Free, **30/30** Signature | **Certain** | **S1** [Free-to-Play](https://wildstar.fandom.com/wiki/Free-to-Play) |
+| **Communities** (5 plots, 20 members, Signature or Cosmic social) | **Certain** | **S1** [Communities](https://wildstar.fandom.com/wiki/Communities); patch 09/06/2017 |
+| **Realm bank** (account-wide per realm) | **Certain** | Steam/MOP 1.7.1 (May 2017); present on 16042 |
+| **Sunset** universal Signature + Omnibit store (Sep 2018) | **Certain** (sunset-only) | **S9** [Steam Signing Off](https://steamcommunity.com/app/376570/allnews/) |
+| Service shutdown **28 Nov 2018** | **Certain** | **S9** Steam; Wikipedia |
+| AH/CX limits enforced server-side (3/30) | **Certain** | **S7** MarketplaceListings + **S10** `MarketplaceAccountLimitsTests` |
+| Community create cost formula **1159** | **Certain** (table-driven) | **S10** `ClientGuildRegisterHandler`; **S1** wiki 50p/600 tokens |
+| Realm bank entitlement **74/75** | **Certain** | **S7** RealmBankViewer.lua; **S10** `EntitlementType` |
+| Cross-activity deserter queue (beta) | **Certain** (retail) / **Partial** (emu) | **S8** beta; **S10** `MatchingDeserterManager.CanQueue` not wired to validator |
 
 ### Screenshot / UI evidence
 
@@ -143,6 +288,8 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 | [Live/Stuck/Stuck.lua](https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/Stuck/Stuck.lua) | Stuck window offers **RecallBind**, **RecallHouse**, **RecallDeath** via `GameLib.SupportStuck()` with per-action cooldown labels |
 | [Live/Housing/HousingRemodel.lua](https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/Housing/HousingRemodel.lua) | Property settings: **NeighborHarvestSplit** + separate **NeighborGardenSplit** dropdowns (`HarvestSharingDropdown`) |
 | [Live/MatchMaker/MatchMaker.lua](https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/MatchMaker/MatchMaker.lua) | `GroupJoin` re-enabled when instance **finished**; `MatchingFailure_InvalidRequeueType` when match type disallows requeue |
+| [Live/MarketplaceListings/MarketplaceListings.lua](https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/MarketplaceListings/MarketplaceListings.lua) | AH/CX slot caps via `RewardProperty`; Extra/Loyalty entitlements |
+| [Live/RealmBankViewer/RealmBankViewer.lua](https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/RealmBankViewer/RealmBankViewer.lua) | Shared **realm bank** unlock/slot entitlements + storefront links |
 
 ### Winter beta primary source (pass 5)
 
@@ -227,6 +374,8 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 - **Buff board**: once per day pick dungeon XP, quest/monster XP, or PvP buff; **23 hours**; **lost when you die** (Gamepressure). **S2** [Gamepressure housing](https://www.gamepressure.com/wildstar/6-housing/z3626e); **S3** [MMOThis first house](https://www.mmothis.com/2014/06/05/how-to-build-your-first-wildstar-house/) (24h pick-one-of-three wording)
 - Only **one** non-garden **harvesting FABkit** per plot (Steam Housing 101). **S3** Steam
 - **Homecoming (2017)**: five plots + shared decorate space on one island; Residential Renovation monthly event. **S1** wiki; **S2** [Massively OP Homecoming](https://massivelyop.com/2017/09/06/wildstar-doubles-down-on-housing-with-todays-homecoming-update/); **S1** Steam news
+- **Communities** (final client): create at Protostar Community Director — **50 platinum** or **600 Service Tokens**; requires **Signature** or Cosmic **Full Social Access**; up to **20** members, **5** skyplot slots, shared crate/decor permissions, `/com` channel. **S1** [Communities](https://wildstar.fandom.com/wiki/Communities); **S1** [Patch 09/06/2017](https://wildstar.fandom.com/wiki/Patch_09/06/2017)
+- **Residential Renovation** runs **one week per month** with rotating décor reward sets (still advertised on Steam through 2018). **S1** patch 09/06/2017; **S9** Steam Oct 2017 post
 
 ### Need confirmation
 
@@ -264,6 +413,10 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 - **Equipment vs material** auctions split; **Sell Now** on CX pays gold **through mail**; listings incur **commission** (post–UI 2.0 guide). **S3** [vgolds AH intro](https://www.vgolds.com/news/detail/30977-news.html)
 - Retail CREDD priced **$19.99** vs **$15.99** direct subscription (designer interview). **S2** [Game Developer CREDD explainer](https://www.gamedeveloper.com/business/wildstar-s-credd-system-explained)
 - **Supernova** addon: AH/CX watch list and outbid tracking (community). **S3** Gaming By The Numbers
+- **F2P (29 Sep 2015 onward):** AH and CX **reopened** after brief pre-F2P shutdown; listings returned by mail when offline. **S2** [Massively OP AH shutdown](https://massivelyop.com/2015/09/21/wildstar-shuts-down-the-auction-house-before-the-free-to-play-switch/)
+- **Account limits on final client:** **Free** = **3** AH buy bids + **3** sell lots, **3** CX buy + **3** sell orders; **Signature** = **30** each (Cosmic tiers add +10 per perk). **S1** [Free-to-Play](https://wildstar.fandom.com/wiki/Free-to-Play)
+- **CREDD** redeems **Signature** time (not legacy sub-only model). **S1** CREDD archive + F2P wiki
+- Server enforces **3 / 30** AH+CX slot caps per `MarketplaceAccountLimits` (Signature via RBAC); fourth free listing returns `GenericError.AuctionTooManyOrders` in tests. **S10** `MarketplaceAccountLimitsTests`
 
 ### Need confirmation
 
@@ -291,6 +444,8 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 - **Protobucks** — real-money store currency. **S1** [Currency](https://wildstar.fandom.com/wiki/Currency)
 - **Cosmic Rewards** — account tier from shop/sub spend. **S1** [Cosmic Reward](https://wildstar.fandom.com/wiki/Cosmic_Reward)
 - Account items could not be double-claimed if already in inventory/bank. **S2** [Notes from Nexus – Beta Patch 1](http://wildstar.bigdamnheroes.org/?p=1685)
+- **Final client currencies:** gameplay **Omnibits**; real-money **Protobucks** (disabled for new purchases **26 Sep 2018**); **Service Tokens** for wake/holo/runes and community creation alt cost. **S1** Currency wiki; **S9** Signing Off
+- **Sunset (Sep 2018):** Protobucks converted **1:1** to Omnibits; **all** store items (including seasonal rotators and Signature Station SKUs) purchasable with Omnibits; **everyone** granted Signature. **S9** Steam Signing Off — **sunset-only**, not normal 16042 defaults
 
 ### Need confirmation
 
@@ -389,6 +544,7 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 - **Votekick**: group must wait **10 minutes** before initiating; **2 minutes** if target has not entered instance or is **offline**. **S8** winter beta
 - **Cross-activity deserter**: player with **dungeon** deserter may still queue **PvP**; **BG/Open Arena** deserter may still queue **PvE or Rated Arena**. **S8** winter beta
 - Dungeons: **My Realm Only** opt-in; must leave queue to toggle cross-realm. **S8** winter beta
+- **Cross-activity deserter** (dungeon penalty still allows PvP queue, etc.) per **S8**; emulator applies PvE/PvP base durations via `MatchingDeserterManager` + `RetailCertainRules` but **does not yet** hook `CanQueue` into `MatchingQueueValidator` (pass 7 **Partial**).
 
 ### Need confirmation
 - LFG **fake tank** / long queue anecdotes (Harbinger Zero, Why I Game). **S3** player blogs
@@ -437,13 +593,14 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 - ChatLog RP filter `{*}` marker for RP vs OOC (not ICComm). **S3** [Killroy addon](https://github.com/baslack/Killroy)
 - Retail client exposes **Need/Greed loot roll UI** (AutoLoot hooks built-in frames; see **S6** screenshot in deep-pass table).
 - **Circles** (Zirkel): up to **5** circles × **100** members each; joinable from level **1** (DE starter guide). **S5** [ingame.de](https://www.ingame.de/news/wildstar-guide-zirkeln-pvp-schlachtfeldern-crafting-runen-mehr-12795314.html)
+- **Community chat** `/com` plus `/cominvite`, `/comkick`, `/commaster`, `/comdisband`, etc. (Homecoming, API 16). **S1** [Patch 09/06/2017](https://wildstar.fandom.com/wiki/Patch_09/06/2017)
+- **Cosmic Tier 1** “Full Social Access” unlocks guild/**community**/circle/warplot leadership without Signature (alternative to Signature for community create). **S1** [Cosmic Reward](https://wildstar.fandom.com/wiki/Cosmic_Reward); **S1** [Communities](https://wildstar.fandom.com/wiki/Communities)
 
 ### Need confirmation
 
 - Emulator **ICComm** opcodes (`0x0546+`) map **Global / Group / Guild** channel types — likely parallel to scoped instance comm, not documented under “ICComm” on wikis. **S3** `INITIAL_FINDINGS.md`, `ICCommChannelType.cs`
 - No public guide or **Carbine addon repo** uses the string **“ICComm”**; client uses `ClientICComm*` opcodes and `CommDisplay` addon for chat UI — treat **ICComm** as decomp/native channel API label (pass 4 reconfirmed).
 - Beta slash list documents **`wp*`** war-party commands alongside `p*` party and `g*` guild. **S3** [OwnedCore slash list](https://www.ownedcore.com/forums/mmo/wildstar/wildstar-general/418502-slash-command-list.html)
-- **Cosmic Tier 1** “Full Social Access” for guild/community/circle/warplot leadership. **S1** [Cosmic Reward](https://wildstar.fandom.com/wiki/Cosmic_Reward)
 - Friendship block/ignore at account level (emulator partial). **S3** repo
 
 ### Not sure
@@ -802,6 +959,7 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 ### Need confirmation
 
 - Post-shutdown **WildStar Logs** rankings are **combat log parses**, not identical to retail in-game `LeaderboardLib` boards. **S3** [wildstarlogs.com](https://www.wildstarlogs.com/help/ranks)
+- **Realm bank** shared across characters on the same realm (introduced 1.7.1; still on build 16042). **S2** Massively OP 1.7.1; Steam news
 
 ### Not sure
 
@@ -898,13 +1056,17 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 | Housing expeditions (1–5 players, scalable) | **Certain** | FAB kits on housing plugs. **S1** [Housing](https://wildstar.fandom.com/wiki/Housing) |
 | Warplots (40v40 PvP) | **Certain** | See F-011. **S2** GamersNexus, GameZone |
 
-### Subscription → F2P timeline
+### Subscription → F2P → shutdown timeline
 
 | Topic | Category | Notes |
 | --- | --- | --- |
 | Box + sub launch model | **Certain** | **S2** [Ten Ton Hammer subscription](https://www.tentonhammer.com/articles/wildstar-subscription-model-revealed) |
-| F2P Sept 2015 | **Certain** | **S1** [Free-to-Play](https://wildstar.fandom.com/wiki/Free-to-Play) |
-| CREDD → Signature after F2P | **Certain** | **S1** [CREDD archive](https://wildstaronline-archive.fandom.com/wiki/C.R.E.D.D.) |
+| F2P **29 Sep 2015** (Reloaded) | **Certain** | **S1** [Free-to-Play](https://wildstar.fandom.com/wiki/Free-to-Play); PR Newswire launch |
+| CREDD → **Signature** after F2P | **Certain** | **S1** CREDD archive |
+| **Client 16042 / 1.7.8** final downloadable | **Certain** | **S9** Archive.org; emulator README |
+| Signing Off **26 Sep 2018** (sunset buffs) | **Certain** (sunset-only) | **S9** Steam announcement |
+| Shutdown **28 Nov 2018** | **Certain** | **S9** Steam; Wikipedia |
+| **Communities** + Prime + realm bank on 16042 | **Certain** | Homecoming Sep 2017 + 1.7.1 May 2017 |
 
 ### Group loot and marketplace (deep pass)
 
@@ -928,11 +1090,19 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 | Shared challenge accept UI | **Certain** | **S7** ChallengeLog.lua |
 | Expeditions (ex-shiphands) medals | **Certain** | Wiki + Protogames patch article |
 | Shared **realm bank** (1.7.1) | **Certain** | Steam 1.7.1 (account-wide per realm) |
+| **F2P AH/CX slot limits** (3 vs 30) | **Certain** | F2P wiki; terminal baseline |
+| **Communities** on final client | **Certain** | Communities wiki; Homecoming patch |
+| **Client 16042** emulator target | **Certain** | Archive.org; README |
+| **Sunset buffs** (Sep 2018) | **Certain** (exclude by default) | Steam Signing Off |
+| **S10** AH 3/30 + formula 1159 | **Aligned** | `MarketplaceAccountLimitsTests`; `ClientGuildRegisterHandler` |
+| Deserter / votekick enforcement | **Partial** / **Gap** | Pass 7 crosswalk table |
 
 ---
 
 ## Recommended confirmation workflow
 
+0. For emulator scope, start with **Retail terminal baseline** — default to **16042 / F2P-era rules**, not **Sep 2018 sunset** buffs.
+0b. Check **Emulator ↔ retail crosswalk** for **Aligned** vs **Gap** before changing marketplace/matching/housing behavior.
 1. Treat everything in **Certain** as UX copy and player-facing help text only until opcode/table proof exists.
 2. For **Need confirmation**, pick one claim and bind it to a client reader label or game-table row.
 3. For **Not sure**, require sniff or live client capture before changing server state.
@@ -992,11 +1162,25 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 | Strain 1.0.9 full patch | http://wildstar.mmorpg-life.com/patch-notes/wildstar-patch-notes-1-0-9-strain/ |
 | Steam 1.7.1 (PvE LB + realm bank) | https://store.steampowered.com/news/posts/?appids=376570&enddate=1494867315 |
 | July 15 2014 patch (deserter) | http://wildstar.mmorpg-life.com/patch-notes/wildstar-patch-notes-july-15th/ |
+| F2P / Signature limits | https://wildstar.fandom.com/wiki/Free-to-Play |
+| Communities (Homecoming) | https://wildstar.fandom.com/wiki/Communities |
+| Patch 09/06/2017 Homecoming | https://wildstar.fandom.com/wiki/Patch_09/06/2017 |
+| Patch 12/06/2017 Primetime | https://wildstar.fandom.com/wiki/Patch_12/06/2017 |
+| Cosmic Rewards | https://wildstar.fandom.com/wiki/Cosmic_Reward |
+| Client 16042 archive | https://archive.org/details/wildstar_client |
+| Steam Signing Off (sunset) | https://steamcommunity.com/app/376570/allnews/ |
+| F2P launch PR | https://www.prnewswire.com/news-releases/carbine-studios-wildstar-free-to-play-launches-today-300150262.html |
+| Carbine MarketplaceListings.lua | https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/MarketplaceListings/MarketplaceListings.lua |
+| Carbine RealmBankViewer.lua | https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/RealmBankViewer/RealmBankViewer.lua |
+| Emulator RetailCertainRules | Source/NexusForever.Game/Retail/RetailCertainRules.cs |
+| Emulator MarketplaceAccountLimits | Source/NexusForever.Game/Marketplace/MarketplaceAccountLimits.cs |
 
 ---
 
 ## Changelog
 
+- **2026-05-22 (pass 7)** — S10 emulator crosswalk; S7 MarketplaceListings + RealmBankViewer; aligned AH 3/30 + tests + formula 1159; flagged deserter cross-queue / votekick / warplot queue gaps.
+- **2026-05-22 (pass 6)** — **Retail terminal baseline** for build **16042 (1.7.8)**; F2P AH/CX slot limits; Communities final rules; sunset-only Sep 2018 table; shutdown timeline; S9 tier.
 - **2026-05-22 (pass 5)** — Full winter beta pastebin (S8); Carbine `Stuck.lua`, `HousingRemodel.lua`, `MatchMaker.lua`; promoted requeue/votekick/cross-activity deserter, challenge medal win-chance, harvest % split, stuck recall branches, mail expiry UI, warplot surrender; guest-pass KB cited (fetch blocked).
 - **2026-05-22 (pass 4)** — Carbine official UI Lua (Mail COD, Leaderboards PvE/PvP, Challenge share); Steam 1.7.1 PvE leaderboards + realm bank; Strain warplot queue 10/10; July 2014 deserter-through-death; promoted F-013 COD, F-032 PvE boards, F-033 shared challenge UI, F-011 warplot queue.
 - **2026-05-22 (pass 3)** — Slash-command `/stuck`, Taugrim arena leaderboards, Notes from Nexus 180-day login detail, FR/DE housing, Protogames expeditions, vgolds mail settlement, Bio Break stuck usage, lore/discovery databases; promoted F-028 `/stuck` and F-032 PvP leaderboards.

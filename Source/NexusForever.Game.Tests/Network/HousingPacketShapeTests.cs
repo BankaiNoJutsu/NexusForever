@@ -518,6 +518,23 @@ public class HousingPacketShapeTests
         Assert.Equal(2u, reader.ReadUInt());
     }
 
+    [Fact]
+    public void ServerHousingHarvestItemsSentToOwner_WritesItemIdsThenCounts()
+    {
+        var packet = new ServerHousingHarvestItemsSentToOwner();
+        packet.Items.Add(new ServerHousingHarvestItemsSentToOwner.HarvestItemRow { Item2Id = 100u, Count = 3u });
+        packet.Items.Add(new ServerHousingHarvestItemsSentToOwner.HarvestItemRow { Item2Id = 200u, Count = 1u });
+
+        byte[] packetData = WritePacket(packet.Write);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.Equal(100u, reader.ReadUInt());
+        Assert.Equal(200u, reader.ReadUInt());
+        Assert.Equal(3u, reader.ReadUInt());
+        Assert.Equal(1u, reader.ReadUInt());
+    }
+
     private static ServerHousingNeighborhoodEntry CreateNeighborhoodEntry()
     {
         return new ServerHousingNeighborhoodEntry

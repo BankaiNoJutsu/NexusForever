@@ -11966,14 +11966,16 @@ Opcode model cleanup and coverage refresh follow-up:
 
 Spell runtime, entities, content, progression workstream (`F-016`..`F-036`, 2026-05-22):
 
-- No new native labels were added in this pass. Status below uses the evidence ladder from
+- F-017 now has durable combat-log helper labels for damage/heal/shield/absorb events,
+  and runtime widening is limited to semantics backed by table/export evidence or focused
+  packet-shape tests. Status below uses the evidence ladder from
   `Decomp/Analysis/CONTINUATION_GUIDE.md`: **Partial** = conservative runtime with focused tests;
   **Mapped-only** = packet/table/script surface pinned without safe retail mutation.
 
 | Row | Status | Key surface | Tests / smoke | Blockers |
 | --- | --- | --- | --- | --- |
 | F-016 Procs | Partial | `ProcDispatchEvidenceBoundary`, holder-side dispatch for events `1/6/10/12/16/17/18/19/20`, routes `1/2/9` holder and `4/12` counterpart, `ProcRuntimeEvidenceCollector` + `!spell procreport` | `ProcDispatchEvidenceBoundaryTests`, `ProcTargetDataCandidateTests`, `ProcTriggerEventCandidateTests`, `ProcRuntimeEvidenceCollectorTests` | Unsupported trigger events; `targetData` tails `14/18/20/33/34/36`; exact chance/cooldown ordering; recursion beyond same-chain block; `ServerSpellUInt32TripletList`, `ServerSpellUInt32TripletListVariant`, and `ServerSpellFourUInt32` row/field semantics |
-| F-017 Damage/heal/shields/vitals | Partial | Family-first handlers in `SpellEffectHandler` / `SpellEffectInterpreter`; diagnostics for damage, heal, shields, absorption, vital/sap/clamp families per `Spell Effect Evidence Matrix.md` | Spell proc/boundary tests only; no dedicated formula fixture suite in xUnit | Retail formula/rounding; distance/distribution splitting; HoT cadence; shield/absorb packet parity; SapVital/ClampVital edge modes; fixture captures before widening |
+| F-017 Damage/heal/shields/vitals | Partial | Family-first handlers in `SpellEffectHandler` / `SpellEffectInterpreter`; diagnostics for damage, heal, shields, absorption, vital/sap/clamp families per `Spell Effect Evidence Matrix.md`; damage formula path now applies AP/SP missing-formula fallback and damage-type-specific armor offsets; absorption uses `DataBits04` school masks; observed `ClampVital` rows are health clamps; damage/healing-absorption combat logs carry mapped context; health damage derives killed/overkill result state and bounded tick damage logs set `bPeriodic` | `DamageCalculatorRetailParityTests`, `AbsorptionSemanticsTests`, `ClampVitalSemanticsTests`, `CombatLogPacketShapeTests`, `UnitEntityDamageResultTests`, plus spell proc/boundary tests | Remaining retail formula/rounding, weapon/DPS, and item-budget semantics; distance/distribution splitting; HoT tick-only/dynamic targeting; `ServerSpellEffectDamage` emit policy; shield/absorb packet parity; exact SapVital modes; unsupported alias vitals; non-health ClampVital modes; fixture captures before widening |
 | F-018 CC/stacks/movement | Partial | `CCStateSet`/`CCStateBreak`, timed removal, cast/movement coupling; packet models | `CrowdControlPacketShapeTests` | `Spell4StackGroup` arbitration; DR/stun breakout; tether/additional-data; forced-move/facing physics parity |
 | F-019 Summons/traps/vehicles | Partial | `SummonCreature`, `SummonTrap`, `SummonVehicle`, `NpcExecutionDelay` conservative create/hold paths | Covered indirectly via quest/public-event/entity tests; no dedicated summon-trigger xUnit | Ownership/AI controller; trap trigger spells; formation/service payloads; turret/deployable seat modes |
 | F-020 RavelSignal | Partial | `HandleEffectRavelSignal*` decodes mode/signal/payload and calls `IWorldEntity.SendSignal` ? `IWorldEntityScript.OnSignal` | `ravel-signal` diagnostics + `/spell inspect4`; no script-graph xUnit | Receiver graph, signal modes, payload-driven script state; `SpellRouteEvent_*` decode |
@@ -12551,3 +12553,295 @@ F-003 LAS auxiliary server-output cluster follow-up (mapped wire shapes):
   succeeded with `0` errors.
   `dotnet test Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj
   --filter "FullyQualifiedName~ActionSetUnresolvedPacketShapeTests"` passed `6/6`.
+
+F-017 damage/heal/shield/vital formula parity follow-up:
+
+- Fixed the damage-family AP/SP missing-formula fallback so the client-observed
+  `0.25f` value is used as a coefficient against `AssaultRating` or `SupportRating`,
+  not as a replacement for the whole intermediate value.
+- Fixed armor mitigation to apply the matching `DamageMitigationPctOffsetPhysical`,
+  `DamageMitigationPctOffsetTech`, or `DamageMitigationPctOffsetMagic` property by
+  damage type. Physical damage previously used the magic offset.
+- Added focused `DamageCalculatorRetailParityTests` for the AP/SP fallback, typed
+  mitigation offsets, mitigation clamp behavior, non-damage typed offsets, and
+  missing armor formula handling.
+- A read-only export inspection confirmed existing client anchors for
+  `SpellDamageDescription_ReadPayload`, `ServerSpellEffectDamage_ReadPayload`, and
+  `CombatLog_DispatchVitalModifierEvent`, plus unlabeled helper addresses that emit
+  `CombatLogHeal`, `CombatLogDamage`, `CombatLogDamageShields`,
+  `CombatLogAbsorption`, and `CombatLogHealingAbsorption`. These support packet/log
+  mapping, but do not resolve distance/distribution splitting, HoT cadence,
+  SapVital/ClampVital mode tables, shield/absorb packet timing, alias vitals, or
+  broader side-effect parity.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~DamageCalculatorRetailParityTests"` passed `8/8`;
+  the full `NexusForever.Game.Tests` project passed `760/760` with the same
+  build settings.
+
+F-017 absorption school-mask follow-up:
+
+- Local client table evidence over `Spell4Effects.tbl.sql` shows 581 `Absorption`
+  rows with `DataBits04` limited to `1`, `2`, `4`, `6`, and `7`. The distribution
+  is `7:461`, `4:49`, `1:43`, `6:24`, and `2:4`, which matches a compact
+  physical/tech/magic bitmask rather than the `DamageType` enum's ordinal values.
+- Runtime absorption pools now preserve the decoded mask from `DataBits04` and
+  consume only matching physical (`1`), tech (`2`), or magic (`4`) damage before
+  normal shields. Non-school damage remains conservative and does not consume
+  these school-masked pools until a fixture proves otherwise.
+- Added client labels for `CombatLog_DispatchAbsorptionEvent`,
+  `CombatLog_DispatchHealingAbsorptionEvent`, `CombatLog_DispatchDamageEvent`,
+  `CombatLog_DispatchDamageShieldsEvent`, and `CombatLog_DispatchHealEvent`.
+  `run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe
+  -MaxDecompiledFunctions 900` completed successfully, and
+  `Test-DecompileManifest.ps1 -Targets WildStar64.exe -FailOnMismatch` passed.
+- Added `AbsorptionSemanticsTests` covering all observed masks and non-school
+  damage. Focused verification with `AbsorptionSemanticsTests` plus
+  `DamageCalculatorRetailParityTests` passed `27/27`.
+- Remaining F-017 blockers are unchanged for distance/distribution splitting,
+  HoT cadence, SapVital/ClampVital mode tables, alias vitals, shield/absorb packet
+  parity, absorption stacking/refresh order, and broader retail rounding or
+  weapon/item-budget formula details.
+
+F-017 ClampVital health-ceiling mode follow-up:
+
+- Local `Spell4Effects` evidence has 23 `ClampVital` rows across 23 spells. The
+  ratio field remains `DataBits02` as a float-bitcast value, and the observed set
+  is compact: `1.0`, `0.1`, `0.05`, `0.02`, `0.01`, `0.001`, plus the CQ Treasure
+  staircase `0.9..0.2`.
+- `DataBits00` clusters as `0/1`, `DataBits01` as `0/2`, and `DataBits04=1`
+  appears on several reduction rows. The previous resolver treated
+  `DataBits00=1` with `DataBits01=0` as invalid and treated `DataBits01=2` as
+  `Vital.Breath`; this blocked the clearest health clamps such as Dead Realm
+  `Spell4Id=75525`, Starmap `84383`, Black Hole `85458`, and Food Sickness
+  `86766`.
+- Runtime now treats all observed `ClampVital` rows as health-ceiling clamps and
+  keeps non-health clamp behavior blocked. Added `ClampVitalSemanticsTests` to
+  cover the observed mode combinations.
+- Focused verification with `ClampVitalSemanticsTests`,
+  `AbsorptionSemanticsTests`, and `DamageCalculatorRetailParityTests` passed
+  `31/31`.
+
+F-017 combat-log packet parity follow-up:
+
+- The 900-function WildStar64 export confirms selected decompiled coverage for
+  `CombatLog_DispatchDamageEvent`, `CombatLog_DispatchDamageShieldsEvent`,
+  `CombatLog_DispatchHealEvent`, `CombatLog_DispatchAbsorptionEvent`, and
+  `CombatLog_DispatchHealingAbsorptionEvent`. `functions.csv`,
+  `selected_reasons_summary.csv`, and `selected_decompiled.c` all include those
+  labels after the refreshed export.
+- Normal damage effects now emit `CombatLogDamage` after `TakeDamage` updates
+  kill state, using the existing damage description values for final health
+  damage, raw damage, shield absorb, absorption, overkill, combat result, damage
+  type, and effect type. Distance-dependent and distributed damage inherit the
+  same conservative log path while their falloff/splitting semantics remain
+  blocked.
+- `CombatLogHealingAbsorption` now serializes the same cast context shape as
+  absorption before/alongside `nAmount`, matching the client dispatcher's shared
+  context helper. Both application logs and consumed-heal logs carry cast
+  context.
+- Added `CombatLogPacketShapeTests` for `CombatLogDamage`,
+  `CombatLogHealingAbsorption`, `ServerSpellEffectDamage`, and embedded
+  `ServerSpellGo` target damage descriptions.
+- Focused verification with `CombatLogPacketShapeTests`,
+  `ClampVitalSemanticsTests`, `AbsorptionSemanticsTests`, and
+  `DamageCalculatorRetailParityTests` passed `35/35`.
+- Still blocked: exact `ServerSpellEffectDamage` emit policy, raw combat-log read
+  packet mapping, shield-heal interaction with healing absorption, shield-damage
+  value semantics, HoT tick-only rows, dynamic target re-selection, and
+  distance/distributed damage math.
+
+F-017 damage result-state follow-up:
+
+- `UnitEntity.TakeDamage` now derives final health-damage result state before
+  after-apply proc probes: `KilledTarget` is set from the post-apply alive state
+  and `OverkillAmount` is calculated from pre-hit health only when the hit
+  killed the target. Delay-death consumption therefore remains non-killing and
+  reports no overkill.
+- Damage and shield-damage combat logs now set `bPeriodic` for bounded
+  `TickTime`+`DurationTime` rows only, matching the already conservative spell
+  scheduler boundary while leaving tick-only and duration-only rows unchanged.
+- SapVital/alias-vital semantics were rechecked against the current decompile
+  notes: the shared vital path already supports direct resources plus mapped
+  class-resource aliases (`KineticCell`/`MedicCore`/`Volatility`,
+  `StalkerA/B/C`, `SpellSurge`) and `Resource7`/dash. Remaining SapVital mode
+  names and unsupported alias vitals stay blocked because the export still has
+  enum/log-surface evidence but no direct gameplay consumer for those fields.
+- Added `UnitEntityDamageResultTests` and extended
+  `CombatLogPacketShapeTests`; focused verification for those tests passed
+  `12/12`.
+
+F-017 remaining-semantics mapped-only pass:
+
+- Spawned focused read-only investigations for `ServerSpellEffectDamage` emit
+  policy, shield/absorb/healing-absorption packet parity, and
+  distance/distribution/formula semantics. All three stayed mapped-only:
+  current evidence proves packet/log shapes and table presence, not a safe
+  runtime widening rule.
+- `ServerSpellEffectDamage` remains modeled and tested but not emitted by the
+  generic spell runtime. The native reader labels prove the packet fields, while
+  `SPELL_BROADCAST_ROADMAP.md` still requires correlated fixture evidence before
+  enabling any send policy.
+- Shield/heal/absorb combat-log packet shapes are pinned, but shield-heal versus
+  healing-absorption consumption remains blocked; no current export evidence
+  proves that anti-heal pools affect `HealShields`.
+- Distance-dependent and distributed damage remain on the shared conservative
+  damage path. Existing table anchors for `DistanceDamageModifier`, weapon power,
+  and item budget do not yet map the runtime consumer, normalization point,
+  target-count split order, or rounding position.
+- Expanded `CombatLogPacketShapeTests` to include `CombatLogAbsorption`,
+  `CombatLogDamageShield`, and `CombatLogHeal` payloads in addition to the
+  existing damage, healing-absorption, standalone spell damage, and embedded
+  SpellGo damage-description coverage.
+
+F-025 entity auxiliary reader follow-up (mapped wire shapes):
+
+- Ghidra `FUN_14006c290` registration plus focused `InspectCodeAddresses.java`
+  passes mapped the remaining F-025-adjacent create/stat auxiliary server readers
+  without changing runtime mutation:
+  `Server0x025F_ReadPayload` @ `140095c20`, `Server0x0260_ReadPayload` @
+  `140095ce0`, `Server0x0261_ReadPayload` @ `140095a80`,
+  `Server0x0263_ReadPayload` @ `1400959c0`, and `Server0x0264_ReadPayload` @
+  `140095b40`. The row shapes are now represented in
+  `ServerUnresolvedOutputPackets.cs` as neutral field models rather than fixed raw
+  byte buffers. `0x0260` is a counted list of `0x025F` rows; `0x0261` is a
+  counted list of `0x0263` rows.
+- The unit-combat/entity-stat auxiliary cluster is now field-shape mapped at the
+  reader level: `0x0889` shares the three-uint32 reader used by
+  `ServerEntityThreatUpdate`; `Server0x08F4_ReadPayload` @ `140097620` reads
+  uint32 + 5-bit value + uint32; `ServerUInt32WideString_ReadPayload` @
+  `1400980f0` covers `0x08CC`; `Server0x0939_ReadPayload` @ `140097ee0` reads
+  uint32 + 14-bit value + 18-bit value + wide string; `Server0x093D_ReadPayload`
+  @ `140097690` reads uint32 + 5-bit value + two uint32 fields; and
+  `Server0x093E_ReadPayload` @ `140097f70` reads two uint32 fields plus uint64.
+  These shapes have packet tests, but names and emit policy remain blocked.
+- `ServerEntityThreatListUpdate_ReadPayload` @ `140098080` now has a durable label
+  matching the existing server model: source unit id, five threat unit ids, and
+  five threat values. `ServerMapTrackedUnitUpdate` (`0x0849`) was rechecked
+  against `FUN_1400a6c10`: tracked unit id, three 32-bit position components, and
+  a 15-bit trailing value. A later consumer pass resolves that value as a
+  `TrackingSlotId`, not a direct public-event objective id.
+- Still blocked:
+  semantic names and server send conditions for `025F/0260/0261/0263/0264`,
+  `0889/08CC/08F4/0939/093D/093E`, `0x08A8` flag meanings, phase visibility mask
+  sources, map-tracked-unit producer timing/objective binding, and deeper
+  deferred-action/current-object/current-target CSI state. No runtime state
+  mutation was added from adjacency alone.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~EntityAuxiliaryPacketShapeTests|FullyQualifiedName~EntityCreatePacketTests|FullyQualifiedName~EntityVisualPacketShapeTests"`
+  passed `56/56`; the full `NexusForever.Game.Tests` project passed `793/793`
+  with the same build settings.
+
+F-025 interaction/CSI semantics follow-up (implemented boundary, blocked producers):
+
+- **Implemented**: `InteractionObjectiveUpdater` now has focused tests for the
+  SucceedCSI crediting boundary that was previously only implicit in handler
+  paths. Successful direct interaction, direct activate, and activate-cast flows
+  credit `QuestObjectiveType.SucceedCSI` with the target `CreatureId`. Direct
+  activate also credits `ActivateEntity`; activate-cast deliberately omits that
+  credit while still granting SucceedCSI. Null entity inputs remain non-mutating.
+- **Mapped**: `MapTrackedUnitUpdate_ApplyAndDispatch` @ `1403f4170` applies the
+  decoded server update into client tracked-unit state and then calls
+  `ClientEvent_MapTrackedUnitUpdate_Dispatch` @ `140430f80`, which builds the
+  Lua-facing `MapTrackedUnitUpdate` event from a tracked-unit id and a table of
+  three position components. `MapTrackedUnitDisable_ApplyAndDispatch` @
+  `1403f4200` removes cached tracked-unit state and dispatches
+  `MapTrackedUnitDisable` for a tracked-unit id.
+- **Mapped**: `Lua_PublicEvent_GetTrackedUnits` @ `14068adb0` and
+  `Lua_PublicEventObjective_GetTrackedUnits` @ `140690500` enumerate
+  client-maintained tracked unit collections into `Game.Unit` Lua userdata, and
+  `ClientDB_RegisterTrackingSlot` @ `1402426a0` registers
+  `DB\TrackingSlot.tbl`. These correlate the public-event marker surface but do
+  not prove the server producer timing or objective binding.
+- **Blocked**: caller tracing for `140430f80` and `1403f4200` found data and
+  callback-style references, not the authoritative server emit source. Do not
+  auto-emit `ServerMapTrackedUnitUpdate` or `ServerMapTrackedUnitDisable` from
+  objective progress/table adjacency until sniff evidence or a native consumer
+  path maps send conditions and marker lifetime.
+- **Blocked**: the opaque F-025 auxiliary opcodes
+  `025F/0260/0261/0263/0264`, `08CC/08F4/0939/093D/093E`, exact `0x08A8` flag
+  meanings, deeper deferred-action/current-object/current-target CSI state, CSI
+  minigame/phase visibility, and full realm-bank move/sync packet parity remain
+  non-mutating.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~InteractionObjectiveUpdaterTests|FullyQualifiedName~EntityAuxiliaryPacketShapeTests|FullyQualifiedName~EntityCreatePacketTests|FullyQualifiedName~EntityVisualPacketShapeTests"`
+  passed `60/60`. A full `NexusForever.Game.Tests` run compiled and ran but
+  failed two unrelated untracked matching deserter spell tests:
+  `RetailMatchingDeserterSpellsTests.GetPveDeserterSpell4Id_ScalesWithCompletion`
+  at completion ratios `0.9` and `0`.
+
+F-025 realm-bank and phase-visibility follow-up (implemented guard slice):
+
+- **Implemented**: realm-bank moves stay on the already-mapped generic
+  `ClientItemMove` item-location path. `Inventory.CanMoveItem` now rejects
+  realm-bank source/destination moves unless the account has
+  `SharedRealmBankUnlock`, enforces the entitlement capacity
+  `16 + 8 * SharedRealmBankSlots`, and expands the local realm-bank bag when the
+  entitlement capacity exceeds the default bag size.
+- **Implemented**: realm-bank storage persistence now follows the item's final
+  storage owner instead of leaving duplicate or stale rows. Items saved in
+  `InventoryLocation.RealmBank` upsert `realm_bank_item` and remove any matching
+  character `item` row; items moved out of realm bank upsert `item` and remove
+  the matching `realm_bank_item` row. Realm-bank stack-count updates, same-bank
+  moves/swaps, and cross-boundary swaps now call the same persistence boundary.
+- **Mapped-only / blocked**: native evidence around `ItemMove_ValidateAndMaybeConfirmBindOnEquip`
+  @ `1403c17d0`, interaction case `0x43` (`ShowRealmBank`), entitlement enum
+  registration @ `1404e7f60`, and UI drag/drop paths supports generic item moves
+  and entitlement gating, but does not prove a realm-bank-specific move opcode,
+  exact numeric item-location enum value, or retail open/close/snapshot marker
+  packet.
+- **Mapped-only / blocked**: phase visibility remains packet-shape/default-mask
+  evidence only. `ServerPhaseVisibilityWorldLocation` uses the shared
+  `ServerTwoUInt32_ReadPayload` shape, and native Lua public-event map-region
+  readers filter `WorldLocation2` rows by the local phase-mask fields, but no
+  mapped native path ties those masks to `ServerEntityCreate`/destroy streaming.
+  Do not add generic phase-aware `CanSeeEntity` gating until mask source,
+  direction, and resync timing are proven.
+- **Mapped-only / blocked**: the deeper CSI/deferred-action labels remain
+  client-local availability and retry machinery. No additional server-owned CSI
+  state was added beyond the SucceedCSI objective-credit boundary above.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~RealmBankInventoryTests|FullyQualifiedName~InteractionObjectiveUpdaterTests|FullyQualifiedName~EntityAuxiliaryPacketShapeTests|FullyQualifiedName~EntityCreatePacketTests|FullyQualifiedName~EntityVisualPacketShapeTests"`
+  passed `66/66`.
+
+F-025 remaining semantic unblock pass (mapped-only plus packet refinements):
+
+- **Mapped / implemented packet semantic rename**: `MapTrackedUnitUpdate_ApplyAndDispatch`
+  @ `1403f4170` applies `ServerMapTrackedUnitUpdate` by caching the tracked-unit
+  id, three position components, and payload `+0x10` into the client tracked-unit
+  state before dispatching `MapTrackedUnitUpdate`. `Lua_GameLib_GetMapTrackedUnitData`
+  @ `140511c80` takes that id, resolves a `TrackingSlot` row, and returns its
+  `label` and `iconPath`. The server packet model now names the 15-bit field
+  `TrackingSlotId`; objective binding is therefore `tracked unit id ->
+  TrackingSlotId -> TrackingSlot.PublicEventObjectiveId`.
+- **Mapped / blocked producer**: `MapTrackedUnitDisable_ApplyAndDispatch` @
+  `1403f4200` removes the cached tracked-unit state and dispatches
+  `MapTrackedUnitDisable`. Runtime emission is still blocked because no
+  native/sniff evidence proves server `TrackedUnitId` allocation, update cadence,
+  disable timing, or the rule for selecting a `TrackingSlotId` from public-event
+  objective state.
+- **Mapped-only / blocked visual-info producer**: `ServerEntityVisualInfoUpdate`
+  (`0x08A8`) still parses unit id, 18-bit Creature2 id, 17-bit display info, and
+  two one-bit flags. The flags now have full packet boundary coverage, but direct
+  caller tracing found registration/reader evidence only. NexusForever continues
+  to emit the existing full `ServerEntityVisualUpdate` path until consumer
+  side effects and retail send cadence are proven.
+- **Mapped-only / blocked realm-bank residuals**: `InteractionState_DispatchUiOpenClose`
+  @ `1403a71f0` covers state `0x43` `ShowRealmBank`/`HideRealmBank`, while
+  `ItemDragDrop_HandleGenericMovePaths` @ `1406d50f0` routes inventory drag/drop
+  and split-stack paths through the generic item-move validator. The generic move
+  and entitlement guard implementation remains the safe runtime boundary. Exact
+  `InventoryLocation.RealmBank` numeric proof, converter mapping, and retail
+  open/close/snapshot packet behavior remain blocked.
+- **Mapped-only / blocked opaque auxiliary opcodes**: fresh direct caller checks
+  for `025F/0260/0261/0263/0264` and `08CC/08F4/0939/093D/093E` found only
+  registrations, list wrappers, shared readers, or generic opcode lookups. Keep
+  their neutral decoded packet models and do not emit them until semantic
+  producers/consumers or sniff evidence are available.

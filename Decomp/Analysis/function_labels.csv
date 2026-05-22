@@ -41,6 +41,17 @@ WildStar64.exe,140088e60,Marketplace_AuctionSellOrderSubmit_WritePayload,Seriali
 WildStar64.exe,1400946c0,SpellDamageDescription_ReadPayload,Parses spell damage details used by ServerSpellGo target effect info and ServerSpellEffectDamage: seven 32-bit damage fields, killed bit, 4-bit combat result, 3-bit damage type, and trailing structure list.
 WildStar64.exe,1400953f0,ServerSpellGo_ReadPayload,Parses server opcode 0x07F4 as server unique id, ignore-cooldown bit, primary destination, TargetInfo list, initial positions, telegraph positions, missile list, and phase.
 WildStar64.exe,140095910,ServerSpellEffectDamage_ReadPayload,Parses server opcode 0x07F6 as server unique id, 19-bit Spell4Effect id, unit id, target id, and SpellDamageDescription.
+WildStar64.exe,1400959c0,Server0x0263_ReadPayload,Parses server opcode 0x0263 as two uint32 fields, three 17-bit values, one uint32 field, and a trailing three-uint32 tuple; semantics unresolved.
+WildStar64.exe,140095a80,Server0x0261_ReadPayload,Parses server opcode 0x0261 as a counted list of Server0x0263 rows; semantics unresolved.
+WildStar64.exe,140095b40,Server0x0264_ReadPayload,Parses server opcode 0x0264 as uint32, 16-bit value, uint32, and a counted uint32 list; semantics unresolved.
+WildStar64.exe,140095c20,Server0x025F_ReadPayload,Parses server opcode 0x025F as a 16-bit value, uint32, three-uint32 tuple, uint32, three-uint32 tuple, and two trailing uint32 fields; semantics unresolved.
+WildStar64.exe,140095ce0,Server0x0260_ReadPayload,Parses server opcode 0x0260 as a counted list of Server0x025F rows; semantics unresolved.
+WildStar64.exe,140097620,Server0x08F4_ReadPayload,Parses server opcode 0x08F4 as uint32, 5-bit value, and uint32; semantics unresolved.
+WildStar64.exe,140097690,Server0x093D_ReadPayload,Parses server opcode 0x093D as uint32, 5-bit value, uint32, and uint32; semantics unresolved.
+WildStar64.exe,140097ee0,Server0x0939_ReadPayload,Parses server opcode 0x0939 as uint32, 14-bit value, 18-bit value, and wide string; semantics unresolved.
+WildStar64.exe,140097f70,Server0x093E_ReadPayload,Parses server opcode 0x093E as two uint32 fields and one uint64 field; semantics unresolved.
+WildStar64.exe,140098080,ServerEntityThreatListUpdate_ReadPayload,Parses server opcode 0x0909 as source unit id, five threat unit ids, and five threat values.
+WildStar64.exe,1400980f0,ServerUInt32WideString_ReadPayload,Parses a uint32 followed by a wide string; used by server opcode 0x08CC and other unresolved UI/result packets.
 WildStar64.exe,1400982d0,ServerEntityVisualUpdate_ReadPayload,Parses server opcode 0x0905 as unit id, race, sex, Creature2 id, display info, outfit, item color set, a trailing flag, and item-visual rows.
 WildStar64.exe,140098460,ServerEntityVisualInfoUpdate_ReadPayload,Parses server opcode 0x08A8 as unit id, 18-bit Creature2 id, 17-bit display info, and two trailing flags.
 WildStar64.exe,140089490,ClientFlightPathPurchase_WritePayload,Serialises world opcode 0x00FF payload as a 32-bit route-count followed by that many 32-bit TaxiRoute ids.
@@ -74,6 +85,7 @@ WildStar64.exe,1400a5a70,ClientCraftingCraftItem_WritePayload,Serialises world o
 WildStar64.exe,1400a5b50,ClientCraftingSimpleCraft_WritePayload,Serialises three raw 32-bit fields; used by world opcode 0x0850 ClientCraftingSimpleCraft and opcode 0x084E ClientTradeskillPickTalent.
 WildStar64.exe,1400a5d70,ClientCraftingComplexCraft_WritePayload,Serialises world opcode 0x084F payload as the simple-craft prefix, packed CraftStats, 18-bit power-core item id, AP/SP split delta, and a 3-bit charge-count array.
 WildStar64.exe,1400a5f20,ClientCraftingAdditive_WritePayload,Serialises world opcode 0x084A payload as a 32-bit crafting station unit id plus 18-bit additive and catalyst Item2 ids.
+WildStar64.exe,1400a6c10,ServerMapTrackedUnitUpdate_ReadPayload,Parses server opcode 0x0849 as tracked unit id, three 32-bit position components, and a 15-bit TrackingSlot id.
 WildStar64.exe,1400a73c0,NetworkBitWriter_Write4BitValue,Writes a 4-bit integer value into the packet bitstream.
 WildStar64.exe,1400a74e0,NetworkBitWriter_Write5BitValue,Writes a 5-bit integer value into the packet bitstream.
 WildStar64.exe,1400a7540,NetworkBitWriter_WriteBits64,Writes up to 64 bits into the packet bitstream.
@@ -187,9 +199,11 @@ WildStar64.exe,1403a6b50,Trade_SendClientP2PTradingAddItem,Sends opcode 0x018D C
 WildStar64.exe,1403a6c50,Trade_SendClientP2PTradingRemoveItem,Sends opcode 0x0194 ClientP2PTradingRemoveItem with the 64-bit item guid from the local trade item entry.
 WildStar64.exe,1403a6ce0,Trade_SendClientP2PTradingSetMoney,Sends opcode 0x0197 ClientP2PTradingSetMoney with a 64-bit credit offer after local affordability and current-offer checks.
 WildStar64.exe,1403a6e00,Trade_SendClientP2PTradingCommit,Sends zero-payload opcode 0x0190 ClientP2PTradingCommit when an active local trade exists.
+WildStar64.exe,1403a71f0,InteractionState_DispatchUiOpenClose,Handles interaction UI state transitions including ShowRealmBank/HideRealmBank for state 0x43; item movement semantics remain on generic ClientItemMove.
 WildStar64.exe,1403acd90,SpellService_ResolveSpellWrapper,Resolves the shared spell wrapper/service object. param_1=service_obj, param_2=spell4_id, param_3=entity_ptr. If param_3 matches local player (+0x78) or current target (+0x6490), calls Entity_LookupSpellWrapperInBST for context-aware lookup from entity+0x7d18 BST; else falls back to SpellService_LookupSpellWrapperById hash map at service_obj+0x540. Returns 0 if not found.
 WildStar64.exe,140214fe0,ClientDB_RegisterMatchingGameMap,Registers the MatchingGameMap client DB table using the MatchingGameMap and DB\\MatchingGameMap.tbl descriptors.
 WildStar64.exe,140215240,MatchingGameMap_LookupById,Resolves a MatchingGameMap record by id through the registered MatchingGameMap callback or the DAT_140c641f0 fallback dispatcher.
+WildStar64.exe,1402426a0,ClientDB_RegisterTrackingSlot,Registers/loads the TrackingSlot client DB table from DB\\TrackingSlot.tbl; runtime marker binding remains blocked.
 WildStar64.exe,1403a11c0,ActionSet_CheckPvPRestriction,Checks whether the current PvP state permits action-set changes.
 WildStar64.exe,1403b44b0,SpellTarget_ValidateTargetRelationship,Validates relationship and dead state for a spell target. param_2=expected_faction_group, param_3=target_mask (0=no check), param_4=target_entity, param_5=has_faction_check flag, param_6=caster_context. Entity_GetFactionRelationship reads entity relationship. Dead flag at entity+0x24 bit 0; returns 0x59 (dead-target error) when target is dead and param_3==0. Falls through to SpellTarget_LogValidationMask/ValidTargetsCriteria_Evaluate for further validation when target_mask non-zero.
 WildStar64.exe,140240b40,Spell4ValidTargets_GetCriteriaById,Looks up a Spell4ValidTargets criteria struct by uint32 criteria ID. Called by the EntityCriteria_GetRelatedCriteriaThunk forwarding thunk (1403b4a10) and likely by other criteria-lookup callers. Returns a pointer to the criteria struct (int array starting with the criteria entry ID) or null if not found.
@@ -228,6 +242,8 @@ WildStar64.exe,1403dd1c0,Interaction_HandlePostActionTargetFeedback,Handles the 
 WildStar64.exe,1403e8000,SceneLifecycle_EnsureInitialisationStages,Staged lifecycle gate that validates prerequisite subsystems, seeds initial scene state, and emits ClientEnteredWorld opcode 0x00F2 before the broader update loop can complete.
 WildStar64.exe,1403e85d0,SceneLifecycle_UpdateAndReplayQueuedStates,Large virtual scene lifecycle update path that snapshots timing and transform state, flushes queued replay records via FUN_1405cc090, iterates active lifecycle lists, and advances broader scene maintenance each tick.
 WildStar64.exe,1403ebe80,Interaction_CheckEffectiveRange,Resolves the effective interaction family and lower or upper distance bounds for the supplied target, writes those bounds back when requested, and delegates the final adjusted 3D range check.
+WildStar64.exe,1403f4170,MapTrackedUnitUpdate_ApplyAndDispatch,Applies ServerMapTrackedUnitUpdate by caching tracked-unit position plus TrackingSlot id before dispatching MapTrackedUnitUpdate; producer timing remains blocked.
+WildStar64.exe,1403f4200,MapTrackedUnitDisable_ApplyAndDispatch,Applies ServerMapTrackedUnitDisable by removing cached tracked-unit state before dispatching MapTrackedUnitDisable; producer timing remains blocked.
 WildStar64.exe,1403f4900,Network_SendOpcodePayloadHelper,Generic opcode+payload send helper that dispatches through DAT_140c65808 virtual send callbacks.
 WildStar64.exe,14042e120,UnitEvent_HandleEnteredCombat,Dispatches UnitEnteredCombat and conditional EnteredCombat events for the local player or current target.
 WildStar64.exe,14042e1b0,UnitEvent_DispatchTargetUnitChanged,Dispatches TargetUnitChanged with the local player's current target id.
@@ -238,6 +254,7 @@ WildStar64.exe,14042e3b0,QuestLog_DispatchShowQuestLogEvent,Dispatches the ShowQ
 WildStar64.exe,14042e410,QuestLog_DispatchHideQuestLogEvent,Dispatches the HideQuestLog named event through the shared client event sink.
 WildStar64.exe,1404165e0,Lua_GameItemData_GetVirtualItems,Game.ItemData.GetVirtualItems Lua method that returns quest/path/challenge/public-event virtual item entries with owner metadata.
 WildStar64.exe,140426240,QuestRuntime_DispatchObjectiveUpdatedEvent,Dispatches the named QuestObjectiveUpdated client event from a quest-objective runtime node and completion-state flag.
+WildStar64.exe,140430f80,ClientEvent_MapTrackedUnitUpdate_Dispatch,Builds the MapTrackedUnitUpdate client event payload from tracked-unit id and position table; producer timing remains blocked.
 WildStar64.exe,140431a00,GalacticArchive_HandleLinkClick,Handles Link payloads with Archive:, Location:, or Schematic: prefixes, resolving the target and dispatching GalacticArchiveLinkClick or the linked location/work-order helper path.
 WildStar64.exe,14043bf30,Communicator_HandleQuestOrSpamMessage,Processes communicator message payloads, routing spam to Communicator_ShowSpamMsg and gated quest traffic to Communicator_ShowQuestMsg plus the follow-up local timer state.
 WildStar64.exe,140499a20,GalacticArchive_ApplyUnlockMaskAndDispatchEvents,Updates the local Galactic Archive unlock mask, dispatching GalacticArchiveRefresh plus GalacticArchiveArticleAdded and GalacticArchiveEntryAdded for newly unlocked bits.
@@ -248,6 +265,7 @@ WildStar64.exe,1404ada70,RapidTransport_IsNodeUsableForPlayer,Checks rapid-trans
 WildStar64.exe,1404d9450,CSIKey_HandlePress,Handles the context-sensitive interaction key by gating on local busy state, dispatching the named CSIKeyPressed event when the active object consumes the press, routing stored CSI action kinds through a local switch table, and falling back to Interaction_AttemptTargetAction for the stored target path.
 WildStar64.exe,1404e7f60,Lua_RegisterAccountEntitlementEnums,Registers account currency/operation and entitlement Lua enums.
 WildStar64.exe,14050e830,Lua_BuildResurrectionInfoTable,Builds the resurrection Lua info table including wake-here flags and service-token cost.
+WildStar64.exe,140511c80,Lua_GameLib_GetMapTrackedUnitData,GameLib.GetMapTrackedUnitData looks up a TrackingSlot id and returns label and iconPath UI data.
 WildStar64.exe,140519a00,Marketplace_SendClientAuctionSellOrderSubmit,Sends opcode 0x06DC ClientAuctionSellOrderSubmit with item guid, minimum bid, and buyout price from the auction posting UI state.
 WildStar64.exe,14051ba60,Crafting_SendClientCraftingAbandon,Sends world opcode 0x084D ClientCraftingAbandon from the crafting UI path after checking active crafting state.
 WildStar64.exe,14051dc00,RuneCrafting_SendClientRuneSlotReroll,Sends world opcode 0x085C ClientCraftingRuneSlotReroll with item guid, rune slot index, and RuneType.
@@ -656,8 +674,13 @@ WildStar64.exe,14077e580,CSIAction_HandleCurrentTargetApproach,Handles the curre
 WildStar64.exe,14077e770,CSIAction_UpdateCurrentTargetServiceAvailability,Refreshes the current-target CSI action availability block for the service-target branch by resetting its local state fields and disabling the action unless the active target is a valid type-0x14 target that passes the narrow relation gate.
 WildStar64.exe,14060b0c0,CombatLog_WriteCasterContext,Combat-log serializer helper that conditionally emits unitCaster and derived unitCasterOwner context.
 WildStar64.exe,14060b380,Maybe_CombatLog_WriteCCStateContext,Called between Lua table creation and state-field insertion in CombatLog_DispatchCCStateEvent. Likely writes unitTarget and interrupt-armor context fields. Different from CombatLog_WriteCasterContext (14060b0c0) which only writes caster/owner. Contains interruptarmor string. Not yet in 800-function export; needs labeling to select for next export pass.
+WildStar64.exe,14060b510,CombatLog_DispatchAbsorptionEvent,Builds the CombatLogAbsorption named-event payload before dispatching it through the scene event sink.
+WildStar64.exe,14060b630,CombatLog_DispatchHealingAbsorptionEvent,Builds the CombatLogHealingAbsorption named-event payload before dispatching it through the scene event sink.
 WildStar64.exe,14060b750,CombatLog_DispatchCCStateEvent,Builds the CombatLogCCState named-event payload with caster context state fields and client-local display flags before dispatching it through the scene event sink.
 WildStar64.exe,14060bbc0,CombatLog_DispatchCCStateBreakEvent,Builds the CombatLogCCStateBreak named-event payload with caster context eState and derived strState before dispatching it through the scene event sink.
+WildStar64.exe,14060bd50,CombatLog_DispatchDamageEvent,Builds the CombatLogDamage named-event payload before dispatching it through the scene event sink.
+WildStar64.exe,14060c2b0,CombatLog_DispatchDamageShieldsEvent,Builds the CombatLogDamageShields named-event payload before dispatching it through the scene event sink.
+WildStar64.exe,14060dd20,CombatLog_DispatchHealEvent,Builds the CombatLogHeal named-event payload before dispatching it through the scene event sink.
 WildStar64.exe,14060e210,CombatLog_DispatchModifyInterruptArmorEvent,Builds the CombatLogModifyInterruptArmor named-event payload including nAmount before dispatching it through the scene event sink.
 WildStar64.exe,14060f170,CombatLog_DispatchVitalModifierEvent,Builds the CombatLogVitalModifier named-event payload including nAmount and bShowCombatLog, then dispatches it through the scene event sink.
 WildStar64.exe,14093ec20,Communicator_RegisterSocietyChatChannels,Registers the chat.society00..19 communicator resource/channel entries during client setup; not the runtime Communicator_ShowQuestMsg path.
@@ -753,6 +776,7 @@ WildStar64.exe,140744610,Lua_GroupLib_GotoGroupInstance,GroupLib.GotoGroupInstan
 WildStar64.exe,1404b9db0,HousingEvent_SendClientNeighborInvite,Registered housing event callback that sends opcode 0x0512 with either a target name or current residence identity.
 WildStar64.exe,1404b9f10,HousingEvent_SendClientNeighborEvict,Registered housing event callback that sends opcode 0x0515 with either a target name or current residence identity.
 WildStar64.exe,1404bbb80,Harvest_DispatchItemsSentToOwnerEvent,Builds item/count Lua tables from a server harvest-item payload and dispatches the HarvestItemsSentToOwner client event.
+WildStar64.exe,1404bbf00,Housing_HandleHarvestItemsSentToOwner,Inferred consumer adjacent to harvest dispatch; opcode 0x0509 correlated for ServerHousingHarvestItemsSentToOwner wire shape (count item2Ids[] counts[]).
 WildStar64.exe,1404ba070,HousingEvent_SendClientNeighborInviteAccept,Registered housing event callback that sends opcode 0x0513 with invite response value 1.
 WildStar64.exe,1404ba0a0,HousingEvent_SendClientNeighborInviteDecline,Registered housing event callback that sends opcode 0x0513 with invite response value 0.
 WildStar64.exe,1404ba0d0,HousingEvent_SendClientNeighborSetPermission,Registered housing event callback that sends opcode 0x0518 with target identity and permission value.
@@ -768,6 +792,8 @@ WildStar64.exe,140736080,Lua_HousingLib_NeighborInviteDecline,HousingLib.Neighbo
 WildStar64.exe,1407360b0,Lua_HousingLib_NeighborSetPermission,HousingLib.NeighborSetPermission Lua method that sends opcode 0x0518 with selected neighbor identity and a 0..2 permission value.
 WildStar64.exe,1405b2390,Housing_SendClientVisitResidenceIdentity,Sends opcode 0x052F with a residence identity from the selected housing entry before dispatching the local visit result event.
 WildStar64.exe,1406d34c0,ItemAction_HandleInventoryItemClick,Handles inventory item click/context actions and sends opcode 0x00B6 with item guid plus a selector bit for selected branches.
+WildStar64.exe,1406d50f0,ItemDragDrop_HandleGenericMovePaths,Routes inventory drag/drop and split-stack paths through the generic item move validator; guild-bank and warparty-bank branches remain separate.
+WildStar64.exe,1406d5a40,ItemDragDrop_ReadSharedRealmBankUiMode,Reads the IsSharedRealmBank UI flag and selects the shared-realm-bank presentation mode; does not prove the wire item-location enum.
 WildStar64.exe,1404ab040,ResourceConversion_SendClientConvertResource,Builds and sends opcode 0x00D7 ClientConvertResource after validating the selected conversion record and three caller-supplied resource fields.
 WildStar64.exe,14065eec0,Lua_GameLib_ConvertResource,GameLib.ConvertResource Lua method that resolves the active resource conversion target and routes the selected conversion fields into ClientConvertResource.
 WildStar64.exe,14039eff0,DashCast_SendClientDashCast,Handles DashCastSuccess client-side state updates and sends opcode 0x00DE with the resolved dash direction or state value.
