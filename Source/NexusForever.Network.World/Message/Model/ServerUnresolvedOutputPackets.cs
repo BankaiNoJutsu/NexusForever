@@ -425,54 +425,6 @@ namespace NexusForever.Network.World.Message.Model
         public Server0x03EF(byte[] payload = null) : base(0x10u, payload) { }
     }
 
-    [Message(GameMessageOpcode.ServerGroupKickResult)]
-    public class ServerGroupKickResult : ServerUnresolvedRawPayload
-    {
-        public ServerGroupKickResult(byte[] payload = null) : base(0xCu, payload) { }
-    }
-
-    [Message(GameMessageOpcode.ServerGroupLootRuleValidationResult)]
-    public class ServerGroupLootRuleValidationResult : ServerUnresolvedRawPayload
-    {
-        public ServerGroupLootRuleValidationResult(byte[] payload = null) : base(0x18u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.ServerGroupRosterUpdate)]
-    public class ServerGroupRosterUpdate : ServerUnresolvedRawPayload
-    {
-        public ServerGroupRosterUpdate(byte[] payload = null) : base(0x60u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.ServerGroupMemberRoleChange)]
-    public class ServerGroupMemberRoleChange : ServerUnresolvedRawPayload
-    {
-        public ServerGroupMemberRoleChange(byte[] payload = null) : base(0x28u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.ServerGroupReadyCheckStatusUpdate)]
-    public class ServerGroupReadyCheckStatusUpdate : ServerUnresolvedRawPayload
-    {
-        public ServerGroupReadyCheckStatusUpdate(byte[] payload = null) : base(0x38u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.ServerGroupRequestJoinWindow)]
-    public class ServerGroupRequestJoinWindow : ServerUnresolvedRawPayload
-    {
-        public ServerGroupRequestJoinWindow(byte[] payload = null) : base(0x20u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.ServerQuestShareResult)]
-    public class ServerQuestShareResult : ServerUnresolvedRawPayload
-    {
-        public ServerQuestShareResult(byte[] payload = null) : base(0x10u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.ServerGroupMemberDetailUpdate)]
-    public class ServerGroupMemberDetailUpdate : ServerUnresolvedRawPayload
-    {
-        public ServerGroupMemberDetailUpdate(byte[] payload = null) : base(0x28u, payload) { }
-    }
-
     [Message(GameMessageOpcode.Server0x0567)]
     public class Server0x0567 : ServerUnresolvedRawPayload
     {
@@ -513,12 +465,6 @@ namespace NexusForever.Network.World.Message.Model
     public class Server0x06F7 : ServerUnresolvedRawPayload
     {
         public Server0x06F7(byte[] payload = null) : base(0x8u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.ServerRaidQueueStatus)]
-    public class ServerRaidQueueStatus : ServerUnresolvedRawPayload
-    {
-        public ServerRaidQueueStatus(byte[] payload = null) : base(0x20u, payload) { }
     }
 
     [Message(GameMessageOpcode.Server0x074A)]
@@ -680,12 +626,16 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ServerAccountItemCacheAdd)]
     public class ServerAccountItemCacheAdd : IWritable
     {
-        public uint Unknown0 { get; set; }
+        /// <summary>
+        /// Leading uint32 from <c>ServerAccountItemCacheAdd_ReadPayload</c> (<c>1400a0300</c>).
+        /// Not consumed by <c>AccountItemAddToCache_HandleServer096A</c> (<c>140004e30</c>); emit zero until a producer is mapped.
+        /// </summary>
+        public uint UnusedLeadingField { get; set; }
         public AccountInventoryItem AccountItem { get; set; } = new();
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Unknown0);
+            writer.Write(UnusedLeadingField);
             AccountItem.Write(writer);
         }
     }
@@ -693,12 +643,16 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ServerAccountItemCacheListAppend)]
     public class ServerAccountItemCacheListAppend : IWritable
     {
-        public uint Unknown0 { get; set; }
+        /// <summary>
+        /// Leading uint32 from <c>ServerAccountItemCacheListAppend_ReadPayload</c> (<c>1400a0350</c>).
+        /// Not consumed by <c>AccountItemListAppend_HandleServer096B</c> (<c>140004f60</c>); emit zero until a producer is mapped.
+        /// </summary>
+        public uint UnusedLeadingField { get; set; }
         public List<AccountInventoryItem> AccountItems { get; } = new();
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Unknown0);
+            writer.Write(UnusedLeadingField);
             writer.Write(AccountItems.Count);
             AccountItems.ForEach(i => i.Write(writer));
         }
@@ -707,12 +661,16 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ServerAccountItemCacheRemove)]
     public class ServerAccountItemCacheRemove : IWritable
     {
-        public uint Unknown0 { get; set; }
+        /// <summary>
+        /// Leading uint32 from <c>ServerAccountItemCacheRemove_ReadPayload</c> (<c>140098280</c>).
+        /// Not consumed by <c>AccountItemRemoveFromCache_HandleServer096C</c> (<c>140005040</c>); emit zero until a producer is mapped.
+        /// </summary>
+        public uint UnusedLeadingField { get; set; }
         public ulong AccountInventoryItemId { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Unknown0);
+            writer.Write(UnusedLeadingField);
             writer.Write(AccountInventoryItemId);
         }
     }
@@ -811,8 +769,37 @@ namespace NexusForever.Network.World.Message.Model
     }
 
     [Message(GameMessageOpcode.ServerCREDDExchangeOrderCacheRows)]
-    public class ServerCREDDExchangeOrderCacheRows : ServerUnresolvedULongUInt14UInt7ListPayload
+    public class ServerCREDDExchangeOrderCacheRows : IWritable
     {
+        /// <summary>
+        /// One compact row from <c>ServerCREDDExchangeOrderCacheRows_ReadPayload</c> (<c>1400a0210</c>).
+        /// </summary>
+        public class Row : IWritable
+        {
+            /// <summary>uint64 field; matches cancel-order id and <c>CREDDExchangeInfo_AppendOrderCacheRows</c> cache keys.</summary>
+            public ulong OrderId { get; set; }
+
+            /// <summary>14-bit field; runtime maps to order credit amount (truncated to 14 bits).</summary>
+            public uint CreditAmount { get; set; }
+
+            /// <summary>7-bit field; runtime uses 0 for sell orders and 1 for buy orders. Native row semantics remain unlabeled.</summary>
+            public uint SideFlag { get; set; }
+
+            public void Write(GamePacketWriter writer)
+            {
+                writer.Write(OrderId);
+                writer.Write(CreditAmount, 14u);
+                writer.Write(SideFlag, 7u);
+            }
+        }
+
+        public List<Row> Rows { get; } = new();
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Rows.Count);
+            Rows.ForEach(r => r.Write(writer));
+        }
     }
 
     public abstract class ServerUnresolvedULongUInt14UInt7ListPayload : IWritable

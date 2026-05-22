@@ -7,7 +7,7 @@ namespace NexusForever.Game.Static.Account
         ReturnPending            = 0x0002,
         TakeItem                 = 0x0003,
         GiftItem                 = 0x0004,
-        // The selected-client evidence only proves this enum value; the coupon request opcode/payload is still unmapped.
+        // Coupon request uses ClientAccountRedeemCoupon (0x0790, wide string). Native client sender label is still unmapped.
         RedeemCoupon             = 0x0005,
         GetCREDDExchangeInfo     = 0x0006,
         SellCREDD                = 0x0007,

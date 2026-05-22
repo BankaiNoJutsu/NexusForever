@@ -4,8 +4,10 @@ using NexusForever.Network.Message;
 namespace NexusForever.Network.World.Message.Model
 {
     /// <summary>
-    /// Store purchase-offer result for opcode 0x098C. The client dispatches
-    /// <c>StorePurchaseOfferResult</c>; opcode 0x098D shares the reader and event path.
+    /// Character-route store purchase-offer result (opcode 0x098C). The client dispatches
+    /// <c>StorePurchaseOfferResult</c> via <c>Storefront_HandleStorePurchaseOfferResult</c>
+    /// (<c>14044c780</c>). Paired with account-route <see cref="ServerStorePurchaseOfferResultVariant"/>
+    /// (client sender <c>0x0828</c> vs <c>0x082A</c>).
     /// </summary>
     [Message(GameMessageOpcode.ServerStorePurchaseOfferResult)]
     public class ServerStorePurchaseOfferResult : IWritable

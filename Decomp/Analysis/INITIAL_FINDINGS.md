@@ -145,6 +145,42 @@ Sixth follow-up implemented from this pass:
   crypto/token-login handshake and more evidence is needed before implementing
   that safely.
 
+Seventh follow-up (F-001 token crypto pass, 2026-05-22):
+
+- Refreshed `StsConnLib64.MT.dll` export-only run
+  (`run_ghidra_analysis.ps1 -ExportOnly -Targets StsConnLib64.MT.dll
+  -MaxDecompiledFunctions 400`).
+- **Password/SRP path (implemented in NexusForever)** remains:
+  `/Sts/Connect` -> `/Auth/LoginStart` (txn `0x16`) -> server `Reply/KeyData`
+  (base64 SRP `s` + `B`) -> `/Auth/KeyData` (txn `0x15`, client `A` + `M1` in
+  base64 `KeyData`) -> server `Reply/KeyData` (`M2`) -> STS Arc4 enabled ->
+  `/Auth/LoginFinish` (txn `0x17`) and later token/account routes.
+- **External/token RSA path (mapped, blocked)** is a separate handshake:
+  - `StsConn_SendLoginTokenStart` (`180003d70`, txn `0x61` / `LoginTokenStart`)
+    sends binary `ClientRand` in `Request`.
+  - Server must answer (handler not fully decompiled) with binary
+    `ServerRand`, `ServerPublicKey`, and `ServerSignature` in `Reply`; only
+    `StsConn_SendTokenKeyData` reads those names.
+  - `StsConn_ValidateTokenServerKeyMaterial` (`180012de0`) gates progress;
+    failure sets conn error `4` (same pattern as missing XML).
+  - `StsCrypt_CreateRsaClient` (`180037cb0`, `Services/Crypt/CptRsa.cpp`) plus
+    vtable calls derive `PremasterSecret` from server key material and staged
+    client state (`param_1+0xc0`, `param_1+0xa8`, `param_1+0xcc`).
+  - `StsConn_SendTokenKeyData` (`18000a730`, txn `0x3b` / `TokenKeyData`) sends
+    binary `PremasterSecret`, binary `AuthnToken`, optional `AuthProviderCode`,
+    and `AppId` in `Request` (`selected_decompiled.c` ~758-815).
+- **Prerequisite token acquisition (mapped, not implemented):**
+  `StsConn_SendRequestToken` (`180004c40`, txn `0x20`) sends `UserId` + `AppId`;
+  `StsConn_SendAssociateMyExternalAccount` sends `AuthnToken` upstream;
+  `StsConn_OnAuthnTokenResponse` reads reply `AuthnToken` only.
+- **Not verified / security blockers:** RSA key format and length, signature
+  algorithm and trust anchor, exact premaster derivation, `TokenKeyData` server
+  reply fields and post-handshake session/crypto transition, and any
+  `LoginToken` (`0x36`) follow-on. No retail STS startup capture in-repo.
+  **Do not implement** `/Auth/LoginTokenStart` or `/Auth/TokenKeyData` until
+  Verified with captures plus decompile of `FUN_180012de0` and
+  `CTokenKeyDataTxnNotify`.
+
 ### World network send path
 
 `WildStar64.exe` includes `Network_SendMessageById`, selected at
@@ -11974,11 +12010,11 @@ Spell runtime, entities, content, progression workstream (`F-016`..`F-036`, 2026
 
 | Row | Status | Key surface | Tests / smoke | Blockers |
 | --- | --- | --- | --- | --- |
-| F-016 Procs | Partial | `ProcDispatchEvidenceBoundary`, holder-side dispatch for events `1/6/10/12/16/17/18/19/20`, routes `1/2/9` holder and `4/12` counterpart, `ProcRuntimeEvidenceCollector` + `!spell procreport` | `ProcDispatchEvidenceBoundaryTests`, `ProcTargetDataCandidateTests`, `ProcTriggerEventCandidateTests`, `ProcRuntimeEvidenceCollectorTests` | Unsupported trigger events; `targetData` tails `14/18/20/33/34/36`; exact chance/cooldown ordering; recursion beyond same-chain block; `ServerSpellUInt32TripletList`, `ServerSpellUInt32TripletListVariant`, and `ServerSpellFourUInt32` row/field semantics |
-| F-017 Damage/heal/shields/vitals | Partial | Family-first handlers in `SpellEffectHandler` / `SpellEffectInterpreter`; diagnostics for damage, heal, shields, absorption, vital/sap/clamp families per `Spell Effect Evidence Matrix.md`; damage formula path now applies AP/SP missing-formula fallback and damage-type-specific armor offsets; absorption uses `DataBits04` school masks; observed `ClampVital` rows are health clamps; damage/healing-absorption combat logs carry mapped context; health damage derives killed/overkill result state and bounded tick damage logs set `bPeriodic` | `DamageCalculatorRetailParityTests`, `AbsorptionSemanticsTests`, `ClampVitalSemanticsTests`, `CombatLogPacketShapeTests`, `UnitEntityDamageResultTests`, plus spell proc/boundary tests | Remaining retail formula/rounding, weapon/DPS, and item-budget semantics; distance/distribution splitting; HoT tick-only/dynamic targeting; `ServerSpellEffectDamage` emit policy; shield/absorb packet parity; exact SapVital modes; unsupported alias vitals; non-health ClampVital modes; fixture captures before widening |
-| F-018 CC/stacks/movement | Partial | `CCStateSet`/`CCStateBreak`, timed removal, cast/movement coupling; packet models | `CrowdControlPacketShapeTests` | `Spell4StackGroup` arbitration; DR/stun breakout; tether/additional-data; forced-move/facing physics parity |
-| F-019 Summons/traps/vehicles | Partial | `SummonCreature`, `SummonTrap`, `SummonVehicle`, `NpcExecutionDelay` conservative create/hold paths | Covered indirectly via quest/public-event/entity tests; no dedicated summon-trigger xUnit | Ownership/AI controller; trap trigger spells; formation/service payloads; turret/deployable seat modes |
-| F-020 RavelSignal | Partial | `HandleEffectRavelSignal*` decodes mode/signal/payload and calls `IWorldEntity.SendSignal` ? `IWorldEntityScript.OnSignal` | `ravel-signal` diagnostics + `/spell inspect4`; no script-graph xUnit | Receiver graph, signal modes, payload-driven script state; `SpellRouteEvent_*` decode |
+| F-016 Procs | Partial | `ProcDispatchEvidenceBoundary`, holder-side dispatch for events `1/6/10/12/16/17/18/19/20`, routes `1/2/9` holder and `4/12` counterpart, `ProcRuntimeEvidenceCollector` + `!spell procreport`; witness `Spell4=4046` pinned in `ProcFixtureWitnessTests` | `ProcDispatchEvidenceBoundaryTests`, `ProcTargetDataCandidateTests`, `ProcTriggerEventCandidateTests`, `ProcRuntimeEvidenceCollectorTests`, `ProcFixtureWitnessTests` | Unsupported trigger events; `targetData` tails `14/18/20/33/34/36`; exact chance/cooldown ordering; recursion beyond same-chain block; `ServerSpellUInt32TripletList`, `ServerSpellUInt32TripletListVariant`, and `ServerSpellFourUInt32` row/field semantics |
+| F-017 Damage/heal/shields/vitals | Partial | Family-first handlers in `SpellEffectHandler` / `SpellEffectInterpreter`; diagnostics for damage, heal, shields, absorption, vital/sap/clamp families per `Spell Effect Evidence Matrix.md`; damage formula path now applies AP/SP missing-formula fallback and damage-type-specific armor offsets; absorption uses `DataBits04` school masks; observed `ClampVital` rows are health clamps; damage/healing-absorption combat logs carry mapped context; health damage derives killed/overkill result state and bounded tick damage logs set `bPeriodic`; witness `Spell4=82315` pinned in `DamageShieldFixtureWitnessTests` | `DamageCalculatorRetailParityTests`, `AbsorptionSemanticsTests`, `ClampVitalSemanticsTests`, `CombatLogPacketShapeTests`, `UnitEntityDamageResultTests`, `DamageShieldFixtureWitnessTests`, plus spell proc/boundary tests | Remaining retail formula/rounding, weapon/DPS, and item-budget semantics; distance/distribution splitting; HoT tick-only/dynamic targeting; `ServerSpellEffectDamage` emit policy; shield/absorb packet parity; exact SapVital modes; unsupported alias vitals; non-health ClampVital modes; fixture captures before widening |
+| F-018 CC/stacks/movement | Partial | `CCStateSet`/`CCStateBreak`, timed removal, cast/movement coupling; packet models; witness `Spell4=57355` maps `DataBits00=20` to `CCState.Tether` in `CCStateSetFixtureWitnessTests` | `CrowdControlPacketShapeTests`, `CCStateSetFixtureWitnessTests` | `Spell4StackGroup` arbitration; DR/stun breakout; tether/additional-data; forced-move/facing physics parity |
+| F-019 Summons/traps/vehicles | Partial | `SummonCreature`, `SummonTrap`, `SummonVehicle`, `NpcExecutionDelay` conservative create/hold paths; `SummonTrapEvidenceBoundary` centralizes create gating for witness `Spell4=34094` | `SummonTrapEvidenceBoundaryTests`; summon families still covered indirectly elsewhere | Ownership/AI controller; trap trigger spells; formation/service payloads; turret/deployable seat modes |
+| F-020 RavelSignal | Partial | `RavelSignalReceiverEvidenceBoundary` maps mode `1` to `EntityScriptOnSignal` (witness `Spell4=76797`, signal `27096`); other modes stay diagnostics-only; `HandleEffectRavelSignalCore` gates `SendSignal` through the boundary | `RavelSignalReceiverEvidenceBoundaryTests` | Additional mode receivers, payload-driven script state, `SpellRouteEvent_*` producer timing |
 | F-021 LAS/action-set/AMP | Partial | `ClientRequestActionSetChangesHandler`, LAS tier/AMP persistence (`ActionSetAmp.Save`), `LimitedActionSetResult.UpdateSpellInProgress` enum | `ActionSetAmpTests`, new `ActionSetPacketShapeTests` | `Server0x00B0`, `016B/016D/016E/019C/01A4` async spell-update cluster; authoritative attribute refund; bonus AMP unlock persistence |
 | F-022 Quests/path/public events | Partial | `QuestManager`, `PublicEvent` scripts/objectives, path manager surfaces | `QuestTests`, `QuestObjectiveTests`, `PublicEventFlowTests`, `PublicEventObjectiveTests`, `PathManagerTests` | Path mission edge types; PE votes/scoreboards; `Server0x0139/06F7`; quest-share precision |
 | F-023 NPE / Rider's Reef | Mapped-only | Tutorial scripts under `Script.Main/Tutorial`; recent reef/departure fixes per matrix | Manual client smoke required (`I:\WildStar`); login-world smoke reported working | Quest acceptance/kill loops, rewards, respawn, CSI, hoverboard/projector, final terminal - no automated pass in CI |
@@ -12017,8 +12053,10 @@ Protocol semantics pass (2026-05-22, PROTOCOL SEMANTICS workstream):
   `ServerSpellUInt32TripletListVariant`). `FUN_14007fef0` maps `0x0812` to
   `ServerSpellFourUInt32`. Row/field gameplay semantics and runtime emit paths
   remain blocked.
-- F-001 STS token crypto: unchanged blocked. No safe server mutation for
-  `StsConn_SendTokenKeyData` / optional auth envelope fields in this pass.
+- F-001 STS token crypto: mapped handshake documented (LoginTokenStart ->
+  server key material -> TokenKeyData); implementation remains blocked pending
+  RSA/signature verification evidence and STS captures. See seventh follow-up
+  under STS auth above.
 - F-002 client diagnostics: all `17` `Client0xNNNN` handlers remain
   non-mutating; native writer functions for `003D`, `00C8`, `00ED`, etc. were
   not recovered in this pass.
@@ -12845,3 +12883,98 @@ F-025 remaining semantic unblock pass (mapped-only plus packet refinements):
   registrations, list wrappers, shared readers, or generic opcode lookups. Keep
   their neutral decoded packet models and do not emit them until semantic
   producers/consumers or sniff evidence are available.
+
+F-006 account/storefront terminal cluster `0969..0991` unblock pass:
+
+- **`0x0986` / `0x098F` (blocked, no live emit)**: `FindImmediateInstructions` for `0x986`
+  still finds only `FUN_14006c290` registration with `ServerUInt64_ReadPayload`.
+  `Storefront_HandleServer0987To0991` (`14044b630`) excludes `0x0986`; `0x098F`
+  falls through with no client event. NexusForever keeps diagnostic models only and
+  does not enqueue either opcode in runtime paths.
+- **`0x096A..0x096C` leading uint32 (verified unused)**: handlers
+  `AccountItemAddToCache_HandleServer096A` (`140004e30`),
+  `AccountItemListAppend_HandleServer096B` (`140004f60`), and
+  `AccountItemRemoveFromCache_HandleServer096C` (`140005040`) do not read the
+  leading field. Server emits use `UnusedLeadingField = 0`; producer semantics
+  for non-zero values remain unmapped.
+- **`0x097A` CREDD order-cache rows (partially verified)**: reader
+  `ServerCREDDExchangeOrderCacheRows_ReadPayload` (`1400a0210`) and appender
+  `CREDDExchangeInfo_AppendOrderCacheRows` (`140007760`) prove compact `0x10`
+  rows. Runtime maps `OrderId` (uint64), `CreditAmount` (14-bit), and `SideFlag`
+  (7-bit buy/sell) for transient/durable order book refresh; no client event.
+- **`0x026A` owned-order rows (blocked)**: `CREDDExchangeInfo_BuildLuaResults`
+  (`14042b9a0`) proves the fixed `0x50` header (counts, three buy/sell price
+  buckets, owned-order count). Non-zero owned-order pointer tail bytes remain
+  blocked; emulator emits header-only snapshots plus populated buckets from the
+  in-memory/DB order book without inventing tail rows.
+- **`0x0790` coupon request (wire verified, sender blocked)**: model
+  `ClientAccountRedeemCoupon` (wide string) and handler path are implemented with
+  hardcoded emulator codes. No durable native sender label for opcode `0x0790`
+  was found in exports; enum-only `RedeemCoupon` / `InvalidCoupon` evidence
+  remains the policy boundary for retail catalog expansion.
+- **`0x098C` / `0x098D` variant (verified routing)**: paired client senders
+  `Storefront_SendClientPurchaseCharacterOffer` (`140450720`, `0x082A`) and
+  `Storefront_SendClientPurchaseAccountOffer` (`1404507e0`, `0x0828`) prove the
+  opcode split even though `Storefront_HandleStorePurchaseOfferResult`
+  (`14044c780`) dispatches the same `StorePurchaseOfferResult` event for both.
+  WorldServer now emits `ServerStorePurchaseOfferResult` / `ServerStorePurchaseOfferResultVariant`
+  on successful storefront purchases.
+- Migrations `20260522120000_AccountPendingItem`, `20260522130000_AccountCREDDExchange`,
+  and `20260522140000_AccountDailyLoginAndStoreHistory` are present for pending
+  items, CREDD orders/history, daily login, and store purchase history.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter
+  "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~AccountItemCooldownTests|FullyQualifiedName~CREDDExchangeHandlerTests|FullyQualifiedName~StorefrontPurchaseHandlerTests|FullyQualifiedName~AccountInventoryPendingGroupTests|FullyQualifiedName~AccountItemHandlerTests|FullyQualifiedName~AccountRuntimeEvidenceTests|FullyQualifiedName~AccountTerminalHandlerTests|FullyQualifiedName~VirtualCurrencyPackageHandlerTests|FullyQualifiedName~StorePurchaseVelocityLimiterTests"
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false`
+  (focused F-006 cluster).
+
+F-016..F-020 spell-runtime family evidence ladder (2026-05-22):
+
+- **F-016 Procs / Implemented boundary**: fixture `Spell4=4046` (Brutal Damage Proc)
+  confirms event `12`, trigger `4047`, chance `0.15`, target data `4`.
+  `ProcFixtureWitnessTests` pins the conservative dispatch boundary; next fixture
+  `Spell4=35054` (heal-other capture path).
+- **F-017 Damage/heal/shields / Mapped**: fixture `Spell4=82315` (Supercharged Shield
+  Damage) decodes `DamageShields` coefficient `1.0`; distance/distribution and
+  `ServerSpellEffectDamage` emit policy remain blocked. Next fixture `Spell4=32346`
+  (HealShields).
+- **F-018 CC/stacks / Mapped**: fixture `Spell4=57355` (Hivemind Trap) maps
+  `CCStateSet.DataBits00=20` to `CCState.Tether`; stack-group arbitration remains
+  blocked. Next fixture `Spell4=48757` (Stun).
+- **F-019 Summons/traps / Implemented boundary**: fixture `Spell4=34094` (Stalker
+  Proximity Mine) is gated by `SummonTrapEvidenceBoundary`; trap trigger firing
+  remains blocked. Next fixture `Spell4=38860` (Tether Mine).
+- **F-020 RavelSignal / Implemented boundary**: query `46` plus fixture `Spell4=76797`
+  map mode `1` to `EntityScriptOnSignal` (signal `27096` matches paired `SetBusy`
+  context); modes `2..5` stay diagnostics-only before any wider script side effects.
+  Next fixture `Spell4=36188` (Tugga Context Busy signal spell).
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false --filter Spell`
+
+F-010 group/raid/queue cluster opcode mapping (2026-05-22):
+
+- Ghidra evidence: `Group_CopyMemberStatBlockFromPayload` @ `140607490` copies the
+  member stat block used by roster/detail refresh handlers; `Group_HandleMemberAdd`
+  @ `1406031d0`, `Group_HandleMemberRemove` @ `140603380`, and
+  `Group_HandleReadyCheck` @ `140603970` consume group id plus member key fields.
+  `Group_HandleMemberPromote` @ `140603450` dispatches `Group_MemberPromoted` (not
+  ready-check status). Opcode-to-handler table at `140e22b18` is a data reference
+  only; per-opcode proof remains size/field correlation plus existing NexusForever
+  emitters.
+- Typed server models now replace `ServerUnresolvedRawPayload` for
+  `0x042A/0431/0436/0438/0441/045A/0461/0468/0718`. Mapped fields are pinned by
+  `GroupPacketShapeTests`; trailing zero padding preserves retail payload lengths
+  where mapped fields are shorter than the documented fixed sizes.
+- Runtime emitters: kick and loot-rule validation results route through
+  `GroupActionResultHandler`; role changes emit `ServerGroupMemberRoleChange`;
+  join requests emit `ServerGroupRequestJoinWindow`; stat refresh also emits
+  roster/detail packets; quest share responses emit `ServerQuestShareResult`.
+- `Client0x062A/0634` remain single-`uint32` diagnostic models; native sender
+  semantics are still blocked.
+- `ServerRaidQueueStatus` is mapped structurally but has no live queue emitter yet.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter FullyQualifiedName~Group` passed (`92/92`).

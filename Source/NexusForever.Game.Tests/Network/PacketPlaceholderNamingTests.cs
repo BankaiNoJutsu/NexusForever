@@ -253,7 +253,7 @@ public class PacketPlaceholderNamingTests
     {
         var message = new ServerAccountItemCacheAdd
         {
-            Unknown0 = 0x11223344u,
+            UnusedLeadingField = 0x11223344u,
             AccountItem = new AccountInventoryItem
             {
                 Id         = 0x0102030405060708ul,
@@ -287,7 +287,7 @@ public class PacketPlaceholderNamingTests
     {
         var message = new ServerAccountItemCacheListAppend
         {
-            Unknown0 = 0x55667788u
+            UnusedLeadingField = 0x55667788u
         };
         message.AccountItems.Add(new AccountInventoryItem
         {
@@ -322,7 +322,7 @@ public class PacketPlaceholderNamingTests
     {
         var message = new ServerAccountItemCacheRemove
         {
-            Unknown0 = 0x10203040u,
+            UnusedLeadingField = 0x10203040u,
             AccountInventoryItemId = 0x0102030405060708ul
         };
 
@@ -426,11 +426,11 @@ public class PacketPlaceholderNamingTests
     public void ServerCREDDExchangeOrderCacheRows_WriteSerializesDecodedULongUInt14UInt7Rows()
     {
         var message = new ServerCREDDExchangeOrderCacheRows();
-        message.Rows.Add(new ServerUnresolvedULongUInt14UInt7ListPayload.Row
+        message.Rows.Add(new ServerCREDDExchangeOrderCacheRows.Row
         {
-            Value0      = 0x0102030405060708ul,
-            UInt14Value = 0x1234u,
-            UInt7Value  = 0x55u
+            OrderId      = 0x0102030405060708ul,
+            CreditAmount = 0x1234u,
+            SideFlag     = 0x55u
         });
 
         byte[] packetData = WritePacket(message);

@@ -16,7 +16,12 @@ StsConnLib64.MT.dll,180007560,StsConn_ParseExternalAccount,Parses ExternalAccoun
 StsConnLib64.MT.dll,180008230,StsConn_OnAuthnTokenResponse,Parses AuthnToken reply field.
 StsConnLib64.MT.dll,180008c40,StsConn_ParseUserAccountFields,Parses UserId/UserCenter/UserName/LoginName/UserStatus/Created fields.
 StsConnLib64.MT.dll,18000a150,StsConn_ParseRoles,Parses repeated RoleId elements under a Roles node.
+StsConnLib64.MT.dll,180003d70,StsConn_SendLoginTokenStart,Builds /Auth/LoginTokenStart request with binary ClientRand.
+StsConnLib64.MT.dll,180004c40,StsConn_SendRequestToken,Builds /Auth/RequestToken request with UserId and AppId.
+StsConnLib64.MT.dll,18000a350,StsConn_OnKeyDataResponse,Parses SRP /Auth/KeyData reply KeyData and sends client KeyData or completes exchange.
 StsConnLib64.MT.dll,18000a730,StsConn_SendTokenKeyData,Builds /Auth/TokenKeyData request fields after server key material is parsed.
+StsConnLib64.MT.dll,180012de0,StsConn_ValidateTokenServerKeyMaterial,Validates ServerRand/ServerPublicKey/ServerSignature before TokenKeyData.
+StsConnLib64.MT.dll,180037cb0,StsCrypt_CreateRsaClient,Allocates CptRsa client used to derive PremasterSecret for TokenKeyData.
 StsConnLib64.MT.dll,18000b540,StsConn_OnConsumeGameTokenResponse,Parses ConsumeGameToken reply account fields.
 StsConnLib64.MT.dll,18000d130,StsConn_ParseAliases,Parses repeated Alias elements under an Aliases node.
 StsConnLib64.MT.dll,18000d560,StsConn_OnLoginFinishResponse,Parses LoginFinish reply AuthType and account fields.
@@ -1043,11 +1048,12 @@ WildStar64.exe,140004540,AccountPendingItemsList_HandleServer0979,Consumes opcod
 WildStar64.exe,140005480,CREDDRedeemResult_HandleServer097B,Consumes opcode 0x097B six-bit result and dispatches CREDDRedeemResult.
 WildStar64.exe,1400047c0,AccountPendingItemGroupDelete_HandleServer097D,Consumes opcode 0x097D group string to remove a pending-account-item group and dispatch pending/item update events; trailing flag is not used by the observed handler.
 WildStar64.exe,140004650,AccountPendingItemDelete_HandleServer097E,Consumes opcode 0x097E pending item id to remove one ungrouped pending-account item and dispatch pending/item update events; trailing flag is not used by the observed handler.
-WildStar64.exe,1406031d0,Group_HandleMemberAdd_ReadPayload,Client reader for a server group-member-add packet (likely 0x0436 0x60-byte roster update or similar). Decompile to confirm opcode and field layout.
-WildStar64.exe,140603380,Group_HandleMemberRemove_ReadPayload,Client reader for a server group-member-removal packet (likely 0x042A kick result or 0x0438 role change). Decompile to confirm opcode and field layout.
-WildStar64.exe,140603450,Group_HandleMemberPromote_ReadPayload,Client reader for a server group-promote packet (likely 0x0441 ready-check status or similar). Decompile to confirm opcode and field layout.
+WildStar64.exe,1406031d0,Group_HandleMemberAdd_ReadPayload,Client reader for server group roster/stat refresh; payload body matches ServerGroupMemberStatUpdate via FUN_140607490 @ 140607490 (opcode 0x0436 ServerGroupRosterUpdate, 0x60 bytes).
+WildStar64.exe,140603380,Group_HandleMemberRemove_ReadPayload,Client reader for group member removal/roster refresh; applies FUN_140607490 @ 140607490 to parsed member payload before local group updates.
+WildStar64.exe,140603450,Group_HandleMemberPromote_ReadPayload,Client reader for group leader promotion; dispatches Group_MemberPromoted with member index fields from parsed payload (not 0x0441 ready-check).
+WildStar64.exe,140607490,Group_CopyMemberStatBlockFromPayload,Copies the 0x60-byte member stat block from a server packet into the local group-member runtime object; shared by roster/detail refresh handlers.
 WildStar64.exe,140603610,Group_HandleMemberFlags_ReadPayload,Client reader for a server group-member-flags packet (860 bytes — large, likely handles multiple opcodes or a complex roster packet). Decompile to confirm opcode and field layout.
-WildStar64.exe,140603970,Group_HandleReadyCheck_ReadPayload,Client reader for a server group-ready-check packet (186 bytes). Decompile to confirm opcode and field layout.
+WildStar64.exe,140603970,Group_HandleReadyCheck_ReadPayload,Client reader for server ready-check status (opcode 0x0441 ServerGroupReadyCheckStatusUpdate); reads group id plus member key fields and dispatches Group_ReadyCheck.
 WildStar64.exe,140603a60,Group_HandleGroupDisband_ReadPayload,Client reader for a server group-disband or large roster packet (2116 bytes — very large, likely a dispatcher or multi-opcode handler). Decompile to confirm opcode and field layout.
 WildStar64.exe,14008de20,ServerHousingResidenceKeyedUpdate_ReadPayload,Reads opcode 0x00CA as one 64-bit field plus one uint32; the 0x10 registration size is client object size/padding, not a second uint32 wire field.
 WildStar64.exe,14007c3a0,ServerUInt15_ReadPayload,Shared scalar reader registered for opcodes 0x00CC and 0x00CD; reads one 15-bit field.
