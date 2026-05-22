@@ -6,6 +6,7 @@ internal class RecordingDispatchProxy<T> : DispatchProxy where T : class
 {
     private readonly Dictionary<string, object> propertyValues = [];
     private readonly Dictionary<string, object> methodReturnValues = [];
+    private readonly Dictionary<string, Func<object>> methodReturnFactories = [];
 
     public List<Invocation> Invocations { get; } = [];
 
@@ -33,6 +34,11 @@ internal class RecordingDispatchProxy<T> : DispatchProxy where T : class
         methodReturnValues[name] = value;
     }
 
+    public void SetMethodReturnFactory(string name, Func<object> factory)
+    {
+        methodReturnFactories[name] = factory;
+    }
+
     protected override object Invoke(MethodInfo targetMethod, object[] args)
     {
         object[] invocationArgs = args?.ToArray() ?? [];
@@ -53,6 +59,9 @@ internal class RecordingDispatchProxy<T> : DispatchProxy where T : class
 
         if (targetMethod.ReturnType == typeof(void))
             return null;
+
+        if (methodReturnFactories.TryGetValue(targetMethod.Name, out Func<object> factory))
+            return factory();
 
         if (methodReturnValues.TryGetValue(targetMethod.Name, out object returnValue))
             return returnValue;

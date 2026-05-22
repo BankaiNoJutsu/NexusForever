@@ -62,6 +62,41 @@ public class FortuneSessionManagerTests
     }
 
     [Fact]
+    public void SendStatus_UsesAccountScopedSessionState()
+    {
+        var manager = new FortuneSessionManager();
+        IWorldSession firstSession = CreateSession(42u, out var firstSessionProxy);
+        IWorldSession secondSession = CreateSession(77u, out var secondSessionProxy);
+
+        manager.Start(firstSession);
+        manager.FlipCard(firstSession, CreateFlipCard(0u));
+        manager.SendStatus(secondSession);
+
+        ServerFortuneCardUpdate firstUpdate = GetEncryptedMessages(firstSessionProxy).OfType<ServerFortuneCardUpdate>().Single();
+        Assert.Equal([true, false, false], firstUpdate.CardFlipped);
+        ServerFortuneCards secondCards = GetEncryptedMessages(secondSessionProxy).OfType<ServerFortuneCards>().Single();
+        Assert.Equal(FortuneOperation.Reset, secondCards.Operation);
+        Assert.All(secondCards.CardFlipped, Assert.False);
+    }
+
+    [Fact]
+    public void Start_ReplacesExistingSessionForAccount()
+    {
+        var manager = new FortuneSessionManager();
+        IWorldSession session = CreateSession(42u, out var sessionProxy);
+
+        manager.Start(session);
+        manager.FlipCard(session, CreateFlipCard(0u));
+        manager.Start(session);
+
+        ServerFortuneCards restartedCards = GetEncryptedMessages(sessionProxy)
+            .OfType<ServerFortuneCards>()
+            .Last();
+        Assert.Equal(FortuneOperation.Update, restartedCards.Operation);
+        Assert.All(restartedCards.CardFlipped, Assert.False);
+    }
+
+    [Fact]
     public void FlipCard_WithoutStartedSessionSendsResetClick()
     {
         var manager = new FortuneSessionManager();
