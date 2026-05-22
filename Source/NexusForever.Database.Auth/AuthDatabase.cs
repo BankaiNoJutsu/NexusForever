@@ -110,6 +110,9 @@ namespace NexusForever.Database.Auth
                     .Include(a => a.AccountCurrency)
                     .Include(a => a.AccountGenericUnlock)
                     .Include(a => a.AccountInventory)
+                    .Include(a => a.AccountPendingItem)
+                    .Include(a => a.AccountDailyLogin)
+                    .Include(a => a.AccountRewardRotationGrant)
                     .Include(a => a.AccountItemCooldown)
                     .Include(a => a.AccountKeybinding)
                     .Include(a => a.AccountEntitlement)
@@ -310,6 +313,79 @@ namespace NexusForever.Database.Auth
             });
 
             context.SaveChanges();
+        }
+
+        public List<AccountCREDDOrderModel> GetCREDDOrders()
+        {
+            using var context = new AuthContext(config);
+            return context.AccountCREDDOrder.AsNoTracking().ToList();
+        }
+
+        public List<AccountCREDDHistoryModel> GetCREDDHistory(uint accountId, int maxRows)
+        {
+            using var context = new AuthContext(config);
+            return context.AccountCREDDHistory
+                .AsNoTracking()
+                .Where(h => h.AccountId == accountId)
+                .OrderByDescending(h => h.CreatedUtc)
+                .Take(maxRows)
+                .ToList();
+        }
+
+        public void UpsertCREDDOrder(AccountCREDDOrderModel model)
+        {
+            using var context = new AuthContext(config);
+            context.AccountCREDDOrder.Add(model);
+            context.SaveChanges();
+        }
+
+        public void RemoveCREDDOrder(ulong orderId)
+        {
+            using var context = new AuthContext(config);
+            AccountCREDDOrderModel model = context.AccountCREDDOrder.SingleOrDefault(o => o.OrderId == orderId);
+            if (model == null)
+                return;
+
+            context.AccountCREDDOrder.Remove(model);
+            context.SaveChanges();
+        }
+
+        public void AddCREDDHistory(AccountCREDDHistoryModel model)
+        {
+            using var context = new AuthContext(config);
+            context.AccountCREDDHistory.Add(model);
+            context.SaveChanges();
+        }
+
+        public void AddStorePurchaseHistory(AccountStorePurchaseHistoryModel model)
+        {
+            using var context = new AuthContext(config);
+            ulong nextId = context.AccountStorePurchaseHistory
+                .Where(h => h.AccountId == model.AccountId)
+                .Select(h => (ulong?)h.Id)
+                .Max() ?? 0ul;
+            model.Id = nextId + 1ul;
+            context.AccountStorePurchaseHistory.Add(model);
+            context.SaveChanges();
+        }
+
+        public List<AccountStorePurchaseHistoryModel> GetStorePurchaseHistory(uint accountId, int maxRows)
+        {
+            using var context = new AuthContext(config);
+            return context.AccountStorePurchaseHistory
+                .AsNoTracking()
+                .Where(h => h.AccountId == accountId)
+                .OrderByDescending(h => h.PurchasedUtc)
+                .Take(maxRows)
+                .ToList();
+        }
+
+        public int CountStorePurchasesSince(uint accountId, DateTime sinceUtc)
+        {
+            using var context = new AuthContext(config);
+            return context.AccountStorePurchaseHistory
+                .AsNoTracking()
+                .Count(h => h.AccountId == accountId && h.PurchasedUtc >= sinceUtc);
         }
     }
 }

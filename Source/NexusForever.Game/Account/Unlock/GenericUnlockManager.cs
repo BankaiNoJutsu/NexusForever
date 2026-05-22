@@ -118,6 +118,19 @@ namespace NexusForever.Game.Account.Unlock
             });
         }
 
+        public void SendCharacterUnlockSync()
+        {
+            List<uint> entryIds = unlocks.Keys.OrderBy(id => id).Select(id => (uint)id).ToList();
+            account.Session.EnqueueMessageEncrypted(new ServerGenericUnlockCharacterRefresh
+            {
+                GenericUnlockEntryIds = entryIds
+            });
+            account.Session.EnqueueMessageEncrypted(new ServerGenericUnlockCharacterList
+            {
+                GenericUnlockEntryIds = entryIds
+            });
+        }
+
         public IEnumerator<IGenericUnlock> GetEnumerator()
         {
             return unlocks.Values.GetEnumerator();

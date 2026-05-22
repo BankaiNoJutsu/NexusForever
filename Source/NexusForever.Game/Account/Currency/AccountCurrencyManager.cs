@@ -121,6 +121,7 @@ namespace NexusForever.Game.Account.Currency
                 AccountCurrency = accountCurrency.Build(),
                 Reason = reason
             });
+            account.Session.EnqueueMessageEncrypted(new ServerWalletUpdate((uint)accountCurrency.CurrencyId));
         }
     }
 }

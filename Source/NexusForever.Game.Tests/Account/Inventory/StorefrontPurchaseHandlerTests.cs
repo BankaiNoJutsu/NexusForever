@@ -1,8 +1,11 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Storefront;
+using NexusForever.Game.Account.Inventory;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Storefront;
 using NexusForever.Game.Tests.TestSupport;
@@ -72,7 +75,8 @@ public class StorefrontPurchaseHandlerTests
             NullLogger<ClientStorefrontPurchaseAccountHandler>.Instance,
             storefrontManager,
             characterManager,
-            playerManager);
+            playerManager,
+            new InMemoryAccountPendingItemRepository());
 
         ClientStorefrontPurchaseAccount purchase = ReadAccountPurchase(
             offerId: 1234u,
@@ -90,8 +94,11 @@ public class StorefrontPurchaseHandlerTests
     private static IWorldSession CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy)
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
 
+        accountProxy.SetProperty(nameof(IAccount.Id), 5001u);
+        sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         playerProxy.SetProperty(nameof(IPlayer.Guid), 321u);
         playerProxy.SetProperty(nameof(IPlayer.Identity), new Identity

@@ -3,6 +3,7 @@ using NexusForever.Database;
 using NexusForever.Database.World;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Storefront;
+using NexusForever.Game.Account.Inventory;
 using NexusForever.Game.Static.Storefront;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
@@ -100,6 +101,7 @@ namespace NexusForever.Game.Storefront
         /// </summary>
         public void HandleCatalogRequest(IGameSession session)
         {
+            session.EnqueueMessageEncrypted(new ServerStoreCatalogUpdated());
             SendStoreCategories(session);
             SendStoreOffers(session);
             SendStoreFinalise(session);
@@ -109,8 +111,9 @@ namespace NexusForever.Game.Storefront
         {
             session.EnqueueMessageEncrypted(new ServerStoreCategories
             {
-                StoreCategories = serverStoreCategoryCache.ToList(),
-                RealCurrency    = RealCurrency.Usd
+                StoreCategories  = serverStoreCategoryCache.ToList(),
+                RealCurrency     = RealCurrency.Usd,
+                CurrencyPackages = VirtualCurrencyPackageCatalog.BuildCatalogRows().ToList()
             });
         }
 

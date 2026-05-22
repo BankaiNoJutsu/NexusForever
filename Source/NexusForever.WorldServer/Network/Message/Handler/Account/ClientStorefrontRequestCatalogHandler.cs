@@ -1,6 +1,7 @@
-﻿using NexusForever.Game.Abstract.Storefront;
-using NexusForever.Network.Message;
+﻿using NexusForever.Game.Account.Inventory;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Game.Abstract.Storefront;
+using NexusForever.Network.Message;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Account
 {
@@ -44,6 +45,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             // 0x098B - Store catalogue offer grouips + offers
             // 0x0987 - Store catalogue finalised message
             session.Account.InventoryManager.SendInitialPackets();
+            session.Account.InventoryManager.SendDailyLoginUpdate();
+            StorePurchaseHistoryManager.SendPurchaseHistory(session.Account);
             globalStorefrontManager.HandleCatalogRequest(session);
         }
     }

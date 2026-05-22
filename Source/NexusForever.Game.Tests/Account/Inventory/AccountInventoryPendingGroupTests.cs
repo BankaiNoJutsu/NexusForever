@@ -1,11 +1,13 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Account.Inventory;
 using NexusForever.Game.Character;
 using NexusForever.Game.Entity;
@@ -213,7 +215,7 @@ public class AccountInventoryPendingGroupTests
     }
 
     [Fact]
-    public void GiftPendingItemGroupToCharacter_OfflineTargetReturnsNoConnectionAndPreservesGroup()
+    public void GiftPendingItemGroupToCharacter_OfflineTargetPersistsGroupAndClearsSource()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var environment = CreateEnvironmentWithOnlineAccounts([1001u],
@@ -230,16 +232,18 @@ public class AccountInventoryPendingGroupTests
                 group,
                 environment.Target.Identity);
 
-            Assert.Equal(AccountOperationResult.NoConnection, result);
-
-            ServerAccountItemsPending.PendingAccountItemGroup preserved = Assert.Single(GetPendingGroups(environment.Source.SessionProxy));
-            Assert.Equal(group, preserved.Group);
-            Assert.Equal(AccountItemId, preserved.AccountItemId);
+            Assert.Equal(AccountOperationResult.Ok, result);
+            Assert.Empty(GetPendingGroups(environment.Source.SessionProxy));
             Assert.Empty(GetPendingGroups(environment.Target.SessionProxy));
+
+            InMemoryAccountPendingItemRepository.StoredPendingItem stored = Assert.Single(
+                InMemoryAccountPendingItemRepository.GetPendingItems(environment.Target.AccountId));
+            Assert.Equal(AccountItemId, stored.AccountItemId);
+            Assert.Equal(environment.Source.AccountId, stored.SenderAccountId);
 
             ServerAccountOperationResult operationResult = GetLastMessage<ServerAccountOperationResult>(environment.Source.SessionProxy);
             Assert.Equal(AccountOperation.GiftItem, operationResult.Operation);
-            Assert.Equal(AccountOperationResult.NoConnection, operationResult.Result);
+            Assert.Equal(AccountOperationResult.Ok, operationResult.Result);
         }
         finally
         {
@@ -248,7 +252,7 @@ public class AccountInventoryPendingGroupTests
     }
 
     [Fact]
-    public void ReturnPendingItemGroup_OfflineRecordedSenderReturnsNoConnectionAndPreservesGroup()
+    public void ReturnPendingItemGroup_OfflineRecordedSenderPersistsReturnAndClearsRecipientGroup()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         var environment = CreateEnvironmentWithOnlineAccounts([2002u],
@@ -267,16 +271,18 @@ public class AccountInventoryPendingGroupTests
 
             AccountOperationResult result = environment.Target.Manager.ReturnPendingItemGroup(environment.Target.Player, group);
 
-            Assert.Equal(AccountOperationResult.NoConnection, result);
-
-            ServerAccountItemsPending.PendingAccountItemGroup preserved = Assert.Single(GetPendingGroups(environment.Target.SessionProxy));
-            Assert.Equal(group, preserved.Group);
-            Assert.Equal(environment.Source.Identity.Id, preserved.SenderIdentity.Id);
+            Assert.Equal(AccountOperationResult.Ok, result);
+            Assert.Empty(GetPendingGroups(environment.Target.SessionProxy));
             Assert.Empty(GetPendingGroups(environment.Source.SessionProxy));
+
+            InMemoryAccountPendingItemRepository.StoredPendingItem returned = Assert.Single(
+                InMemoryAccountPendingItemRepository.GetPendingItems(environment.Source.AccountId));
+            Assert.Equal(AccountItemId, returned.AccountItemId);
+            Assert.Equal(environment.Source.AccountId, returned.SenderAccountId);
 
             ServerAccountOperationResult operationResult = GetLastMessage<ServerAccountOperationResult>(environment.Target.SessionProxy);
             Assert.Equal(AccountOperation.ReturnPending, operationResult.Operation);
-            Assert.Equal(AccountOperationResult.NoConnection, operationResult.Result);
+            Assert.Equal(AccountOperationResult.Ok, operationResult.Result);
         }
         finally
         {
@@ -307,11 +313,20 @@ public class AccountInventoryPendingGroupTests
         SeedCharacterManager(characterManager, characters);
 
         var playerManager = new PlayerManager(NullLogger<PlayerManager>.Instance, characterManager);
+        InMemoryAccountPendingItemRepository.Clear(characters[0].AccountId);
+        if (characters.Length > 1)
+            InMemoryAccountPendingItemRepository.Clear(characters[1].AccountId);
+        if (characters.Length > 2)
+            InMemoryAccountPendingItemRepository.Clear(characters[2].AccountId);
+
         var provider = new ServiceCollection()
             .AddSingleton(gameTableManager)
             .AddSingleton(realmContext)
             .AddSingleton(characterManager)
             .AddSingleton(playerManager)
+            .AddSingleton<IAccountPendingItemRepository, InMemoryAccountPendingItemRepository>()
+            .AddSingleton<IPendingAccountItemGroupDelivery, RetailPendingAccountItemGroupDelivery>()
+            .AddSingleton(typeof(ILogger<>), typeof(NullLogger<>))
             .BuildServiceProvider();
 
         LegacyServiceProvider.Provider = provider;
@@ -375,11 +390,27 @@ public class AccountInventoryPendingGroupTests
 
     private static IReadOnlyList<ServerAccountItemsPending.PendingAccountItemGroup> GetPendingGroups(RecordingDispatchProxy<IGameSession> sessionProxy)
     {
-        return sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-            .Select(invocation => invocation.Arguments[0])
-            .OfType<ServerAccountItemsPending>()
-            .LastOrDefault()
-            ?.PendingGroups ?? [];
+        List<ServerAccountItemsPending.PendingAccountItemGroup> pendingGroups = [];
+
+        foreach (object message in sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0]))
+        {
+            switch (message)
+            {
+                case ServerAccountItemsPending pendingList:
+                    pendingGroups.Clear();
+                    pendingGroups.AddRange(pendingList.PendingGroups);
+                    break;
+                case ServerAccountPendingItemAdd pendingAdd:
+                    pendingGroups.Add(pendingAdd.PendingGroup);
+                    break;
+                case ServerAccountPendingItemGroupDelete pendingDelete when pendingDelete.Flag:
+                    pendingGroups.RemoveAll(p => string.Equals(p.Group, pendingDelete.Value, StringComparison.OrdinalIgnoreCase));
+                    break;
+            }
+        }
+
+        return pendingGroups;
     }
 
     private static TMessage GetLastMessage<TMessage>(RecordingDispatchProxy<IGameSession> sessionProxy) where TMessage : class

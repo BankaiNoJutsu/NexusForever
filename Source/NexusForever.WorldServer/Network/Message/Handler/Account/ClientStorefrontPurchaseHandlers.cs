@@ -8,6 +8,8 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Storefront;
+using NexusForever.Game.Account.Inventory;
+using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
@@ -44,6 +46,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                     NetworkIdentity targetPlayerIdentity = StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session);
                     foreach (uint accountItemId in accountItemIds)
                         session.Account.InventoryManager.AddItem(accountItemId, targetPlayerIdentity);
+
+                    StorefrontPurchaseHelper.SendCharacterPurchaseSuccess(session);
                 },
                 "character");
         }
@@ -55,17 +59,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
         private readonly IGlobalStorefrontManager globalStorefrontManager;
         private readonly ICharacterManager characterManager;
         private readonly IPlayerManager playerManager;
+        private readonly IAccountPendingItemRepository pendingItemRepository;
 
         public ClientStorefrontPurchaseAccountHandler(
             ILogger<ClientStorefrontPurchaseAccountHandler> log,
             IGlobalStorefrontManager globalStorefrontManager,
             ICharacterManager characterManager,
-            IPlayerManager playerManager)
+            IPlayerManager playerManager,
+            IAccountPendingItemRepository pendingItemRepository)
         {
             this.log                     = log;
             this.globalStorefrontManager = globalStorefrontManager;
             this.characterManager        = characterManager;
             this.playerManager           = playerManager;
+            this.pendingItemRepository   = pendingItemRepository;
         }
 
         public void HandleMessage(IWorldSession session, ClientStorefrontPurchaseAccount purchase)
@@ -82,12 +89,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             bool hasAccountTarget = purchase.AccountTarget.Id != 0ul && !StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.AccountTarget);
             if (hasRecipientName || hasAccountTarget)
             {
-                if (!TryResolveGiftRecipient(session, purchase, out IPlayer recipient, out NetworkIdentity recipientIdentity))
+                if (!TryResolveGiftRecipient(session, purchase, out uint recipientAccountId, out IPlayer recipient, out NetworkIdentity recipientIdentity))
                     return;
 
                 StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
                     purchase.OfferId, purchase.CurrencyId,
-                    accountItemIds => recipient.Account.InventoryManager.AddPendingItemGroup(accountItemIds, StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session), recipientIdentity, senderAccountId: session.Account.Id),
+                    accountItemIds =>
+                    {
+                        DeliverStorefrontGift(session, recipientAccountId, recipient, recipientIdentity, accountItemIds);
+                        StorefrontPurchaseHelper.SendAccountPurchaseSuccess(session);
+                    },
                     "account gift");
                 return;
             }
@@ -98,14 +109,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 {
                     foreach (uint accountItemId in accountItemIds)
                         session.Account.InventoryManager.AddItem(accountItemId);
+
+                    StorefrontPurchaseHelper.SendAccountPurchaseSuccess(session);
                 },
                 "account");
         }
 
-        private bool TryResolveGiftRecipient(IWorldSession session, ClientStorefrontPurchaseAccount purchase, out IPlayer recipient, out NetworkIdentity recipientIdentity)
+        private bool TryResolveGiftRecipient(IWorldSession session, ClientStorefrontPurchaseAccount purchase, out uint recipientAccountId, out IPlayer recipient, out NetworkIdentity recipientIdentity)
         {
-            recipient         = null;
-            recipientIdentity = null;
+            recipientAccountId = 0u;
+            recipient          = null;
+            recipientIdentity  = null;
 
             ICharacter character = !string.IsNullOrWhiteSpace(purchase.RecipientName)
                 ? characterManager.GetCharacter(purchase.RecipientName)
@@ -119,22 +133,39 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 return false;
             }
 
-            recipient = playerManager.GetPlayerByAccountId(character.AccountId);
-            if (recipient == null)
-            {
-                log.LogDebug("Rejecting storefront account gift from player {PlayerGuid}: recipient character {CharacterId} account {AccountId} is offline.",
-                    session.Player?.Guid, character.CharacterId, character.AccountId);
-                StorefrontPurchaseHelper.SendFailure(session, StoreError.IneligibleGiftRecipient);
-                return false;
-            }
-
-            recipientIdentity = new NetworkIdentity
+            recipientAccountId = character.AccountId;
+            recipient          = playerManager.GetPlayerByAccountId(character.AccountId);
+            recipientIdentity  = new NetworkIdentity
             {
                 RealmId = RealmContext.Instance.RealmId,
                 Id      = character.CharacterId
             };
 
             return true;
+        }
+
+        private void DeliverStorefrontGift(IWorldSession session, uint recipientAccountId, IPlayer recipient, NetworkIdentity recipientIdentity, IReadOnlyList<uint> accountItemIds)
+        {
+            if (recipient != null)
+            {
+                recipient.Account.InventoryManager.AddPendingItemGroup(
+                    accountItemIds,
+                    StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session),
+                    recipientIdentity,
+                    senderAccountId: session.Account.Id);
+                return;
+            }
+
+            pendingItemRepository.AppendPendingGroup(recipientAccountId, new AccountPendingItemInsert
+            {
+                AccountItemIds  = accountItemIds,
+                SenderAccountId = session.Account.Id,
+                SenderIdentity  = StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session),
+                TargetIdentity  = recipientIdentity
+            });
+
+            log.LogDebug("Queued storefront gift from player {PlayerGuid} to offline account {RecipientAccountId}.",
+                session.Player?.Guid, recipientAccountId);
         }
     }
 
@@ -154,6 +185,22 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 log.LogWarning("Rejecting storefront {PurchaseScope} purchase for offer {OfferId}: session has no player.",
                     purchaseScope, offerId);
                 SendFailure(session, StoreError.GenericFail);
+                return;
+            }
+
+            if (session.Account == null)
+            {
+                log.LogWarning("Rejecting storefront {PurchaseScope} purchase for offer {OfferId}: session has no account.",
+                    purchaseScope, offerId);
+                SendFailure(session, StoreError.GenericFail);
+                return;
+            }
+
+            if (!StorePurchaseVelocityLimiter.IsWithinVelocityLimit(session.Account.Id))
+            {
+                log.LogDebug("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: purchase velocity limit reached for account {AccountId}.",
+                    purchaseScope, session.Player.Guid, session.Account.Id);
+                SendFailure(session, StoreError.PurchaseVelocityLimit);
                 return;
             }
 
@@ -213,6 +260,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
             deliverItems(accountItemIds);
 
+            StorePurchaseHistoryManager.RecordPurchase(session.Account.Id, offerId, currencyId, chargeAmount);
+
             log.LogDebug("Completed storefront {PurchaseScope} purchase for player {PlayerGuid}: offer {OfferId}, currency {CurrencyId}, price {Price}, account items {AccountItemCount}.",
                 purchaseScope, session.Player.Guid, offerId, currencyId, chargeAmount, accountItemIds.Count);
         }
@@ -243,7 +292,31 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public static void SendFailure(IWorldSession session, StoreError error)
         {
+            if (error == StoreError.PurchaseVelocityLimit)
+                AccountPrivilegeRestrictionManager.SendStorePurchaseVelocityRestriction(session.Account);
+
             session.EnqueueMessageEncrypted(new ServerStoreError(error));
+        }
+
+        /// <summary>
+        /// Character purchases use opcode 0x098C; account purchases use 0x098D per paired client senders 0x082A/0x0828.
+        /// </summary>
+        public static void SendCharacterPurchaseSuccess(IWorldSession session)
+        {
+            session.EnqueueMessageEncrypted(new ServerStorePurchaseOfferResult
+            {
+                IsSuccess   = true,
+                DisplayType = PurchaseResultDisplayType.Default
+            });
+        }
+
+        public static void SendAccountPurchaseSuccess(IWorldSession session)
+        {
+            session.EnqueueMessageEncrypted(new ServerStorePurchaseOfferResultVariant
+            {
+                IsSuccess   = true,
+                DisplayType = PurchaseResultDisplayType.Default
+            });
         }
 
         private static bool TryGetChargeAmount(IOfferItemPrice price, out ulong chargeAmount)

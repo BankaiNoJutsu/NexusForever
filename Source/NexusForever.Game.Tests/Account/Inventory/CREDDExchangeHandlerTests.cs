@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Account.Currency;
 using NexusForever.Game.Abstract.Account.Entitlement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Account;
@@ -20,6 +21,38 @@ public class CREDDExchangeHandlerTests
 {
     private const uint HistoryAccountId = 772201u;
     private const ulong HistoryCharacterId = 882201ul;
+    private const uint InfoAccountId = 772202u;
+    private const ulong InfoCharacterId = 882202ul;
+
+    [Fact]
+    public void RequestInfo_ReturnsNonEmptyPriceBucketsWhenOrdersExist()
+    {
+        IWorldSession session = CreateSession(
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            accountId: InfoAccountId,
+            characterId: InfoCharacterId,
+            out RecordingDispatchProxy<ICurrencyManager> currencyProxy);
+        currencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+
+        var submitHandler = new ClientCREDDExchangeBuyOrderSubmitHandler(
+            NullLogger<ClientCREDDExchangeBuyOrderSubmitHandler>.Instance);
+        submitHandler.HandleMessage(session, ReadBuyOrderSubmit(50000ul, submitFlag: true));
+
+        var infoHandler = new ClientCREDDExchangeRequestInfoHandler(
+            NullLogger<ClientCREDDExchangeRequestInfoHandler>.Instance);
+        infoHandler.HandleMessage(session, new ClientCREDDExchangeRequestInfo());
+
+        ServerCREDDExchangeInfoResults info = GetMessages<ServerCREDDExchangeInfoResults>(sessionProxy).Last();
+        Assert.Equal(1u, info.BuyOrderCount);
+        Assert.Equal(0u, info.SellOrderCount);
+        Assert.Equal(50000ul, info.BuyOrderPrices[0]);
+        Assert.Equal(1u, info.OwnedOrderCount);
+
+        ServerCREDDExchangeOrderCacheRows cache = GetMessages<ServerCREDDExchangeOrderCacheRows>(sessionProxy).Last();
+        ServerCREDDExchangeOrderCacheRows.Row row = Assert.Single(cache.Rows);
+        Assert.Equal(50000u, row.UInt14Value);
+        Assert.Equal(1u, row.UInt7Value);
+    }
 
     [Fact]
     public void RequestInfo_ReturnsEmptyInfoSnapshotAndOperationResult()
@@ -30,7 +63,10 @@ public class CREDDExchangeHandlerTests
 
         handler.HandleMessage(session, new ClientCREDDExchangeRequestInfo());
 
-        Assert.Single(GetMessages<ServerCREDDExchangeInfoResults>(sessionProxy));
+        ServerCREDDExchangeInfoResults info = Assert.Single(GetMessages<ServerCREDDExchangeInfoResults>(sessionProxy));
+        using var infoStream = new MemoryStream(WritePacket(info));
+        Assert.Equal((int)ServerCREDDExchangeInfoResults.PayloadLength, infoStream.Length);
+        Assert.Single(GetMessages<ServerCREDDExchangeOrderCacheRows>(sessionProxy));
 
         ServerAccountOperationResult result = Assert.Single(GetMessages<ServerAccountOperationResult>(sessionProxy));
         Assert.Equal(AccountOperation.GetCREDDExchangeInfo, result.Operation);
@@ -99,11 +135,14 @@ public class CREDDExchangeHandlerTests
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out currencyProxy);
         IAccountEntitlementManager entitlementManager = RecordingDispatchProxy<IAccountEntitlementManager>.Create(out _);
+        IAccountCurrencyManager accountCurrencyManager = RecordingDispatchProxy<IAccountCurrencyManager>.Create(out RecordingDispatchProxy<IAccountCurrencyManager> accountCurrencyProxy);
 
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
         accountProxy.SetProperty(nameof(IAccount.Id), accountId);
         accountProxy.SetProperty(nameof(IAccount.EntitlementManager), entitlementManager);
+        accountProxy.SetProperty(nameof(IAccount.CurrencyManager), accountCurrencyManager);
+        accountCurrencyProxy.SetMethodReturn(nameof(IAccountCurrencyManager.CanAfford), true);
         playerProxy.SetProperty(nameof(IPlayer.Guid), 123u);
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), characterId);
         playerProxy.SetProperty(nameof(IPlayer.Identity), new Identity
@@ -143,5 +182,14 @@ public class CREDDExchangeHandlerTests
             .Select(i => i.Arguments[0])
             .OfType<T>()
             .ToList();
+    }
+
+    private static byte[] WritePacket<T>(T message) where T : IWritable
+    {
+        using var stream = new MemoryStream();
+        using var writer = new GamePacketWriter(stream);
+        message.Write(writer);
+        writer.FlushBits();
+        return stream.ToArray();
     }
 }

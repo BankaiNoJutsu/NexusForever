@@ -35,6 +35,7 @@ namespace NexusForever.Game.Account
         public IAccountInventoryManager InventoryManager { get; private set; }
         public IAccountCostumeManager CostumeManager { get; private set; }
         public IRewardPropertyManager RewardPropertyManager { get; private set; }
+        public IAccountRewardRotationGrantManager RewardRotationGrantManager { get; private set; }
         public IAccountKeybindingManager KeybindingManager { get; private set; } 
 
         public AccountTier AccountTier => RbacManager.HasPermission(Permission.Signature) ? AccountTier.Signature : AccountTier.Basic;
@@ -59,8 +60,9 @@ namespace NexusForever.Game.Account
             EntitlementManager    = new AccountEntitlementManager(this, model);
             InventoryManager      = new AccountInventoryManager(this, model);
             CostumeManager        = new AccountCostumeManager(this, model);
-            RewardPropertyManager = new RewardPropertyManager(this);
-            KeybindingManager     = new AccountKeybindingManager(model);
+            RewardPropertyManager        = new RewardPropertyManager(this);
+            RewardRotationGrantManager   = new AccountRewardRotationGrantManager(this, model);
+            KeybindingManager              = new AccountKeybindingManager(model);
         }
 
         public void Save(AuthContext context)
@@ -71,6 +73,7 @@ namespace NexusForever.Game.Account
             EntitlementManager.Save(context);
             InventoryManager.Save(context);
             CostumeManager.Save(context);
+            ((AccountRewardRotationGrantManager)RewardRotationGrantManager).Save(context);
             KeybindingManager.Save(context);
         }
     }

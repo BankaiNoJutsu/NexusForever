@@ -25,6 +25,7 @@ namespace NexusForever.Game.Abstract.Account
         IAccountInventoryManager InventoryManager { get; }
         IAccountCostumeManager CostumeManager { get; }
         IRewardPropertyManager RewardPropertyManager { get; }
+        IAccountRewardRotationGrantManager RewardRotationGrantManager { get; }
         IAccountKeybindingManager KeybindingManager { get; }
 
         AccountTier AccountTier { get; }

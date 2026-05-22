@@ -30,10 +30,14 @@ namespace NexusForever.Game.Account.Inventory
         private readonly Dictionary<string, List<PendingAccountItem>> pendingGroups = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<uint, AccountItemCooldown> cooldowns = new();
         private readonly List<IAccountInventoryItem> deletedItems = [];
+        private readonly HashSet<string> deletedPendingGroups = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<ulong> deletedPendingItemIds = [];
+        private bool pendingItemsDirty;
 
         private readonly IAccount account;
         private readonly ILogger<AccountInventoryManager> log;
         private readonly IPendingAccountItemGroupDelivery pendingAccountItemGroupDelivery;
+        private readonly DailyLoginRewardManager dailyLoginRewardManager;
         private ulong nextInventoryId = 1ul;
         private ulong nextPendingItemId = 1ul;
 
@@ -51,9 +55,10 @@ namespace NexusForever.Game.Account.Inventory
             log = serviceProvider?.GetService<ILogger<AccountInventoryManager>>()
                 ?? NullLogger<AccountInventoryManager>.Instance;
             pendingAccountItemGroupDelivery = serviceProvider?.GetService<IPendingAccountItemGroupDelivery>()
-                ?? new OnlinePendingAccountItemGroupDelivery(
-                    serviceProvider?.GetService<ILogger<OnlinePendingAccountItemGroupDelivery>>()
-                    ?? NullLogger<OnlinePendingAccountItemGroupDelivery>.Instance);
+                ?? new RetailPendingAccountItemGroupDelivery(
+                    serviceProvider?.GetService<IAccountPendingItemRepository>() ?? new AccountPendingItemRepository(),
+                    serviceProvider?.GetService<ILogger<RetailPendingAccountItemGroupDelivery>>()
+                    ?? NullLogger<RetailPendingAccountItemGroupDelivery>.Instance);
 
             foreach (AccountInventoryModel itemModel in model.AccountInventory)
             {
@@ -67,6 +72,39 @@ namespace NexusForever.Game.Account.Inventory
 
             foreach (AccountItemCooldownGroupEntry cooldownEntry in GameTableManager.Instance.AccountItemCooldownGroup.Entries)
                 cooldowns.TryAdd(cooldownEntry.Id, new AccountItemCooldown(account.Id, cooldownEntry.Id));
+
+            dailyLoginRewardManager = new DailyLoginRewardManager(account, model);
+
+            foreach (AccountPendingItemModel pendingModel in model.AccountPendingItem)
+            {
+                if (!pendingGroups.TryGetValue(pendingModel.GroupName, out List<PendingAccountItem> groupItems))
+                {
+                    groupItems = [];
+                    pendingGroups.Add(pendingModel.GroupName, groupItems);
+                }
+
+                groupItems.Add(new PendingAccountItem
+                {
+                    Id              = pendingModel.PendingItemId,
+                    AccountItemId   = pendingModel.AccountItemId,
+                    Group           = pendingModel.GroupName,
+                    SenderAccountId = pendingModel.SenderAccountId,
+                    SenderIdentity  = new NetworkIdentity
+                    {
+                        RealmId = pendingModel.SenderRealmId,
+                        Id      = pendingModel.SenderCharacterId
+                    },
+                    TargetIdentity  = new NetworkIdentity
+                    {
+                        RealmId = pendingModel.TargetRealmId,
+                        Id      = pendingModel.TargetCharacterId
+                    },
+                    ClaimState      = (AccountItemClaimState)pendingModel.ClaimState,
+                    Unknown1        = pendingModel.Unknown1
+                });
+
+                nextPendingItemId = Math.Max(nextPendingItemId, pendingModel.PendingItemId + 1ul);
+            }
         }
 
         public void Save(AuthContext context)
@@ -80,6 +118,42 @@ namespace NexusForever.Game.Account.Inventory
 
             foreach (AccountItemCooldown cooldown in cooldowns.Values)
                 cooldown.Save(context);
+
+            if (!pendingItemsDirty && deletedPendingGroups.Count == 0 && deletedPendingItemIds.Count == 0)
+                return;
+
+            List<AccountPendingItemModel> existing = context.AccountPendingItem
+                .Where(p => p.Id == account.Id)
+                .ToList();
+            if (existing.Count != 0)
+                context.AccountPendingItem.RemoveRange(existing);
+
+            foreach (List<PendingAccountItem> group in pendingGroups.Values)
+            {
+                foreach (PendingAccountItem pendingItem in group)
+                {
+                    context.AccountPendingItem.Add(new AccountPendingItemModel
+                    {
+                        Id                = account.Id,
+                        PendingItemId     = pendingItem.Id,
+                        GroupName         = pendingItem.Group,
+                        AccountItemId     = pendingItem.AccountItemId,
+                        SenderAccountId   = pendingItem.SenderAccountId,
+                        SenderRealmId     = pendingItem.SenderIdentity?.RealmId ?? 0,
+                        SenderCharacterId = pendingItem.SenderIdentity?.Id ?? 0ul,
+                        TargetRealmId     = pendingItem.TargetIdentity?.RealmId ?? 0,
+                        TargetCharacterId = pendingItem.TargetIdentity?.Id ?? 0ul,
+                        ClaimState        = (byte)pendingItem.ClaimState,
+                        Unknown1          = pendingItem.Unknown1
+                    });
+                }
+            }
+
+            pendingItemsDirty      = false;
+            deletedPendingGroups.Clear();
+            deletedPendingItemIds.Clear();
+
+            dailyLoginRewardManager?.Save(context);
         }
 
         public IAccountInventoryItem GetItem(ulong id)
@@ -136,8 +210,10 @@ namespace NexusForever.Game.Account.Inventory
                 })
                 .ToList());
 
+            pendingItemsDirty = true;
+
             if (notify)
-                SendPendingItems();
+                SendPendingGroupAdded(groupName);
 
             return groupName;
         }
@@ -222,8 +298,7 @@ namespace NexusForever.Game.Account.Inventory
             foreach (PendingAccountItem pendingItem in pendingItems)
                 AddItem(pendingItem.AccountItemId, pendingItem.TargetIdentity, pendingItem.ClaimState, pendingItem.Unknown1);
 
-            pendingGroups.Remove(group);
-            SendPendingItems();
+            RemovePendingGroup(group, notify: true);
 
             return SendAccountOperationResult(AccountOperation.ClaimPending, AccountOperationResult.Ok);
         }
@@ -300,6 +375,17 @@ namespace NexusForever.Game.Account.Inventory
             SendInventory();
             SendPendingItems();
             SendCooldowns();
+            SendDailyLoginUpdate();
+        }
+
+        public void SendDailyLoginUpdate()
+        {
+            dailyLoginRewardManager?.SendDailyLoginUpdate();
+        }
+
+        public AccountOperationResult ClaimDailyLoginReward()
+        {
+            return dailyLoginRewardManager?.TryClaimReward() ?? AccountOperationResult.GenericFail;
         }
 
         public void SendInventory()
@@ -323,6 +409,38 @@ namespace NexusForever.Game.Account.Inventory
                     .ThenBy(i => i.Id)
                     .Select(i => i.Build())
                     .ToList()
+            });
+        }
+
+        private void SendPendingGroupAdded(string groupName)
+        {
+            if (!TryGetPendingGroup(groupName, out List<PendingAccountItem> pendingItems))
+                return;
+
+            foreach (PendingAccountItem pendingItem in pendingItems)
+            {
+                account.Session.EnqueueMessageEncrypted(new ServerAccountPendingItemAdd
+                {
+                    PendingGroup = pendingItem.Build()
+                });
+            }
+        }
+
+        private void RemovePendingGroup(string groupName, bool notify)
+        {
+            if (!pendingGroups.Remove(groupName, out List<PendingAccountItem> pendingItems))
+                return;
+
+            pendingItemsDirty = true;
+            deletedPendingGroups.Add(groupName);
+
+            if (!notify)
+                return;
+
+            account.Session.EnqueueMessageEncrypted(new ServerAccountPendingItemGroupDelete
+            {
+                Value = groupName,
+                Flag  = true
             });
         }
 
@@ -366,6 +484,12 @@ namespace NexusForever.Game.Account.Inventory
 
         private void SendItemAdd(IAccountInventoryItem item)
         {
+            account.Session.EnqueueMessageEncrypted(new ServerAccountItemCacheAdd
+            {
+                // Client AccountItemAddToCache_HandleServer096A ignores the leading uint32.
+                Unknown0    = 0u,
+                AccountItem = item.Build()
+            });
             account.Session.EnqueueMessageEncrypted(new ServerAccountItemAdd
             {
                 AccountItem = item.Build()
@@ -419,7 +543,6 @@ namespace NexusForever.Game.Account.Inventory
 
         private AccountOperationResult TransferPendingItemGroup(IPlayer player, string group, List<PendingAccountItem> pendingItems, uint targetAccountId, NetworkIdentity targetIdentity, AccountOperation operation, PendingAccountItemGroupTransferKind transferKind)
         {
-            // Keep offline persistence, TTL, mail fallback, and other policy in the delivery seam until retail evidence exists.
             var request = new PendingAccountItemGroupDeliveryRequest
             {
                 SourceGroup     = group,
@@ -444,8 +567,7 @@ namespace NexusForever.Game.Account.Inventory
                 return SendPendingOperationResult(operation, deliveryResult);
             }
 
-            pendingGroups.Remove(group);
-            SendPendingItems();
+            RemovePendingGroup(group, notify: true);
 
             return SendAccountOperationResult(operation, AccountOperationResult.Ok);
         }
@@ -770,38 +892,6 @@ namespace NexusForever.Game.Account.Inventory
             public void Apply(IAccount account, IPlayer player)
             {
                 account.GenericUnlockManager.Unlock(GenericUnlockEntryId);
-            }
-        }
-
-        public sealed class OnlinePendingAccountItemGroupDelivery : IPendingAccountItemGroupDelivery
-        {
-            private readonly ILogger<OnlinePendingAccountItemGroupDelivery> log;
-
-            public OnlinePendingAccountItemGroupDelivery(ILogger<OnlinePendingAccountItemGroupDelivery> log)
-            {
-                this.log = log;
-            }
-
-            public AccountOperationResult Deliver(PendingAccountItemGroupDeliveryRequest request)
-            {
-                ArgumentNullException.ThrowIfNull(request);
-                ArgumentNullException.ThrowIfNull(request.AccountItemIds);
-
-                IPlayer targetPlayer = PlayerManager.Instance.GetPlayerByAccountId(request.TargetAccountId);
-                if (targetPlayer == null)
-                {
-                    log.LogDebug("Pending account item group {Group} transfer {TransferKind} for operation {Operation} could not be delivered from account {SourceAccountId} to account {TargetAccountId} (target realm {TargetRealmId}, target character {TargetCharacterId}): recipient is offline. Offline persistence, TTL, mail fallback, and coupon behavior remain evidence-blocked, so the source group is preserved and result {Result} is returned.",
-                        request.SourceGroup, request.TransferKind, request.Operation, request.SourceAccountId, request.TargetAccountId, request.TargetIdentity.RealmId, request.TargetIdentity.Id, AccountOperationResult.NoConnection);
-                    return AccountOperationResult.NoConnection;
-                }
-
-                targetPlayer.Account.InventoryManager.AddPendingItemGroup(
-                    request.AccountItemIds,
-                    request.SenderIdentity,
-                    request.TargetIdentity,
-                    senderAccountId: request.SourceAccountId);
-
-                return AccountOperationResult.Ok;
             }
         }
 

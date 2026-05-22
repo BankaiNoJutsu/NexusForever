@@ -33,5 +33,7 @@ namespace NexusForever.Game.Abstract.Account.Unlock
         /// Send all <see cref="GenericUnlock"/> entries to client.
         /// </summary>
         void SendUnlockList();
+
+        void SendCharacterUnlockSync();
     }
 }

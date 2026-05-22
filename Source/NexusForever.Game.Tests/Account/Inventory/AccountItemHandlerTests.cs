@@ -331,6 +331,10 @@ public class AccountItemHandlerTests
         {
         }
 
+        public void SendCharacterUnlockSync()
+        {
+        }
+
         public void Save(AuthContext context)
         {
         }

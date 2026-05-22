@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Account.Inventory;
@@ -61,30 +62,15 @@ public class AccountRuntimeEvidenceTests
                 group,
                 environment.Target.Identity);
 
-            Assert.Equal(AccountOperationResult.NoConnection, result);
+            Assert.Equal(AccountOperationResult.Ok, result);
 
-            string artifactPath = Assert.Single(Directory.GetFiles(output.DirectoryPath, "*.json"));
-            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(artifactPath));
-            JsonElement root = document.RootElement;
-
-            Assert.Equal("blocked-offline-transfer", root.GetProperty("Status").GetString());
-            Assert.Equal("GiftItem", root.GetProperty("Operation").GetString());
-            Assert.Equal("NoConnection", root.GetProperty("Result").GetString());
-
-            JsonElement pendingTransfer = root.GetProperty("PendingGroupTransfer");
-            Assert.Equal("GiftToCharacter", pendingTransfer.GetProperty("TransferKind").GetString());
-            Assert.Equal(group, pendingTransfer.GetProperty("SourceGroup").GetString());
-            Assert.Equal(1001u, pendingTransfer.GetProperty("SourceAccountId").GetUInt32());
-            Assert.Equal(2002u, pendingTransfer.GetProperty("TargetAccountId").GetUInt32());
-            Assert.Equal(AccountItemId, Assert.Single(pendingTransfer.GetProperty("AccountItemIds").EnumerateArray().Select(element => element.GetUInt32())));
-
-            JsonElement resultPacketTemplate = root.GetProperty("ResultPacketTemplate");
-            Assert.Equal("ServerAccountOperationResult", resultPacketTemplate.GetProperty("PacketName").GetString());
-            Assert.Equal("0x0970", resultPacketTemplate.GetProperty("OpcodeHex").GetString());
-
-            string blockers = string.Join(" ", root.GetProperty("Blockers").EnumerateArray().Select(element => element.GetString()));
-            Assert.Contains("offline", blockers, StringComparison.OrdinalIgnoreCase);
-            Assert.Contains("coupon", blockers, StringComparison.OrdinalIgnoreCase);
+            InMemoryAccountPendingItemRepository.StoredPendingItem stored = Assert.Single(
+                InMemoryAccountPendingItemRepository.GetPendingItems(environment.Target.AccountId));
+            Assert.Equal(group, stored.GroupName);
+            Assert.Equal(AccountItemId, stored.AccountItemId);
+            Assert.Equal(1001u, stored.SenderAccountId);
+            if (Directory.Exists(output.DirectoryPath))
+                Assert.Empty(Directory.GetFiles(output.DirectoryPath, "*.json"));
         }
         finally
         {
@@ -165,11 +151,18 @@ public class AccountRuntimeEvidenceTests
         SeedCharacterManager(characterManager, characters);
 
         var playerManager = new PlayerManager(Microsoft.Extensions.Logging.Abstractions.NullLogger<PlayerManager>.Instance, characterManager);
+        InMemoryAccountPendingItemRepository.Clear(characters[0].AccountId);
+        if (characters.Length > 1)
+            InMemoryAccountPendingItemRepository.Clear(characters[1].AccountId);
+
         IServiceProvider provider = new ServiceCollection()
             .AddSingleton(gameTableManager)
             .AddSingleton(realmContext)
             .AddSingleton(characterManager)
             .AddSingleton(playerManager)
+            .AddSingleton<IAccountPendingItemRepository, InMemoryAccountPendingItemRepository>()
+            .AddSingleton<IPendingAccountItemGroupDelivery, RetailPendingAccountItemGroupDelivery>()
+            .AddSingleton(typeof(Microsoft.Extensions.Logging.ILogger<>), typeof(Microsoft.Extensions.Logging.Abstractions.NullLogger<>))
             .BuildServiceProvider();
 
         LegacyServiceProvider.Provider = provider;

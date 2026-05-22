@@ -22,5 +22,7 @@ namespace NexusForever.Game.Abstract.Account.Inventory
         void SendInventory();
         void SendPendingItems();
         void SendCooldowns();
+        void SendDailyLoginUpdate();
+        AccountOperationResult ClaimDailyLoginReward();
     }
 }

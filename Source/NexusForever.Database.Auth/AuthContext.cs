@@ -13,6 +13,12 @@ namespace NexusForever.Database.Auth
         public DbSet<AccountExternalReferenceModel> AccountExternalReference { get; set; }
         public DbSet<AccountGenericUnlockModel> AccountGenericUnlock { get; set; }
         public DbSet<AccountInventoryModel> AccountInventory { get; set; }
+        public DbSet<AccountPendingItemModel> AccountPendingItem { get; set; }
+        public DbSet<AccountCREDDOrderModel> AccountCREDDOrder { get; set; }
+        public DbSet<AccountCREDDHistoryModel> AccountCREDDHistory { get; set; }
+        public DbSet<AccountDailyLoginModel> AccountDailyLogin { get; set; }
+        public DbSet<AccountRewardRotationGrantModel> AccountRewardRotationGrant { get; set; }
+        public DbSet<AccountStorePurchaseHistoryModel> AccountStorePurchaseHistory { get; set; }
         public DbSet<AccountItemCooldownModel> AccountItemCooldown { get; set; }
         public DbSet<AccountKeybindingModel> AccountKeybinding { get; set; }
         public DbSet<AccountPermissionModel> AccountPermission { get; set; }
@@ -288,6 +294,318 @@ namespace NexusForever.Database.Auth
                     .WithMany(p => p.AccountInventory)
                     .HasForeignKey(d => d.Id)
                     .HasConstraintName("FK__account_inventory_id__account_id");
+            });
+
+            modelBuilder.Entity<AccountPendingItemModel>(entity =>
+            {
+                entity.HasKey(e => new { e.Id, e.PendingItemId })
+                    .HasName("PRIMARY");
+
+                entity.ToTable("account_pending_item");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.PendingItemId)
+                    .HasColumnName("pendingItemId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.GroupName)
+                    .IsRequired()
+                    .HasColumnName("groupName")
+                    .HasColumnType("varchar(128)")
+                    .HasDefaultValue("");
+
+                entity.Property(e => e.AccountItemId)
+                    .HasColumnName("accountItemId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.SenderAccountId)
+                    .HasColumnName("senderAccountId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.SenderRealmId)
+                    .HasColumnName("senderRealmId")
+                    .HasColumnType("smallint(5) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.SenderCharacterId)
+                    .HasColumnName("senderCharacterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TargetRealmId)
+                    .HasColumnName("targetRealmId")
+                    .HasColumnType("smallint(5) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.TargetCharacterId)
+                    .HasColumnName("targetCharacterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.ClaimState)
+                    .HasColumnName("claimState")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.Unknown1)
+                    .HasColumnName("unknown1")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.CreateTime)
+                    .HasColumnName("createTime")
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("current_timestamp()");
+
+                entity.HasOne(d => d.Account)
+                    .WithMany(p => p.AccountPendingItem)
+                    .HasForeignKey(d => d.Id)
+                    .HasConstraintName("FK__account_pending_item_id__account_id");
+            });
+
+            modelBuilder.Entity<AccountCREDDOrderModel>(entity =>
+            {
+                entity.HasKey(e => e.OrderId)
+                    .HasName("PRIMARY");
+
+                entity.ToTable("account_credd_order");
+
+                entity.Property(e => e.OrderId)
+                    .HasColumnName("orderId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.AccountId)
+                    .HasColumnName("accountId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.CharacterId)
+                    .HasColumnName("characterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.RealmId)
+                    .HasColumnName("realmId")
+                    .HasColumnType("smallint(5) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.CreditAmount)
+                    .HasColumnName("creditAmount")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.IsBuyOrder)
+                    .HasColumnName("isBuyOrder")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+            });
+
+            modelBuilder.Entity<AccountCREDDHistoryModel>(entity =>
+            {
+                entity.HasKey(e => e.Id)
+                    .HasName("PRIMARY");
+
+                entity.ToTable("account_credd_history");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.AccountId)
+                    .HasColumnName("accountId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.CreatedUtc)
+                    .HasColumnName("createdUtc")
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("current_timestamp()");
+
+                entity.Property(e => e.Operation)
+                    .HasColumnName("operation")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.IsInitiator)
+                    .HasColumnName("isInitiator")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.IdentityRealmId)
+                    .HasColumnName("identityRealmId")
+                    .HasColumnType("smallint(5) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.IdentityCharacterId)
+                    .HasColumnName("identityCharacterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.CounterpartyRealmId)
+                    .HasColumnName("counterpartyRealmId")
+                    .HasColumnType("smallint(5) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.CounterpartyCharacterId)
+                    .HasColumnName("counterpartyCharacterId")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.CreditAmount)
+                    .HasColumnName("creditAmount")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+            });
+
+            modelBuilder.Entity<AccountDailyLoginModel>(entity =>
+            {
+                entity.HasKey(e => e.Id)
+                    .HasName("PRIMARY");
+
+                entity.ToTable("account_daily_login");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(10) unsigned")
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.LoginDaysTotal)
+                    .HasColumnName("loginDaysTotal")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.RewardsAvailable)
+                    .HasColumnName("rewardsAvailable")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.LastRewardItemKey)
+                    .HasColumnName("lastRewardItemKey")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.PremiumKeyStatus)
+                    .HasColumnName("premiumKeyStatus")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.SecondsUntilNextKey)
+                    .HasColumnName("secondsUntilNextKey")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.LastClaimUtc)
+                    .HasColumnName("lastClaimUtc")
+                    .HasColumnType("datetime");
+
+                entity.Property(e => e.LastDayIncrementUtc)
+                    .HasColumnName("lastDayIncrementUtc")
+                    .HasColumnType("datetime");
+
+                entity.HasOne(d => d.Account)
+                    .WithOne(p => p.AccountDailyLogin)
+                    .HasForeignKey<AccountDailyLoginModel>(d => d.Id)
+                    .HasConstraintName("FK__account_daily_login_id__account_id");
+            });
+
+            modelBuilder.Entity<AccountRewardRotationGrantModel>(entity =>
+            {
+                entity.HasKey(e => new { e.AccountId, e.RewardRotationIndex, e.ContentId, e.RewardKeyId, e.RewardType })
+                    .HasName("PRIMARY");
+
+                entity.ToTable("account_reward_rotation_grant");
+
+                entity.Property(e => e.AccountId)
+                    .HasColumnName("accountId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.RewardRotationIndex)
+                    .HasColumnName("rewardRotationIndex")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.ContentId)
+                    .HasColumnName("contentId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.RewardKeyId)
+                    .HasColumnName("rewardKeyId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.RewardType)
+                    .HasColumnName("rewardType")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue((byte)0);
+
+                entity.Property(e => e.GrantFlags)
+                    .HasColumnName("grantFlags")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.GrantedUtc)
+                    .HasColumnName("grantedUtc")
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("current_timestamp()");
+
+                entity.HasOne(d => d.Account)
+                    .WithMany(p => p.AccountRewardRotationGrant)
+                    .HasForeignKey(d => d.AccountId)
+                    .HasConstraintName("FK__account_reward_rotation_grant_accountId__account_id");
+            });
+
+            modelBuilder.Entity<AccountStorePurchaseHistoryModel>(entity =>
+            {
+                entity.HasKey(e => e.Id)
+                    .HasName("PRIMARY");
+
+                entity.ToTable("account_store_purchase_history");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.AccountId)
+                    .HasColumnName("accountId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.OfferId)
+                    .HasColumnName("offerId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.CurrencyId)
+                    .HasColumnName("currencyId")
+                    .HasColumnType("smallint(5) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.Price)
+                    .HasColumnName("price")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.PurchasedUtc)
+                    .HasColumnName("purchasedUtc")
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("current_timestamp()");
+
+                entity.HasOne(d => d.Account)
+                    .WithMany(p => p.AccountStorePurchaseHistory)
+                    .HasForeignKey(d => d.AccountId)
+                    .HasConstraintName("FK__account_store_purchase_history_accountId__account_id");
             });
 
             modelBuilder.Entity<AccountItemCooldownModel>(entity =>
