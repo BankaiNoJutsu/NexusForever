@@ -51,6 +51,7 @@ namespace NexusForever.Database.Character
         public DbSet<MarketplaceAuctionModel> MarketplaceAuction { get; set; }
         public DbSet<MarketplaceCommodityOrderModel> MarketplaceCommodityOrder { get; set; }
         public DbSet<ResidencePlotModel> ResidencePlot { get; set; }
+        public DbSet<RealmBankItemModel> RealmBankItem { get; set; }
 
         private readonly IConnectionString config;
 
@@ -2882,6 +2883,63 @@ namespace NexusForever.Database.Character
                     .WithMany(p => p.Plot)
                     .HasForeignKey(d => d.Id)
                     .HasConstraintName("FK__residence_plot_id__residence_id");
+            });
+
+            modelBuilder.Entity<RealmBankItemModel>(entity =>
+            {
+                entity.ToTable("realm_bank_item");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.AccountId)
+                    .HasColumnName("accountId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.RealmId)
+                    .HasColumnName("realmId")
+                    .HasColumnType("smallint(5) unsigned")
+                    .HasDefaultValue((ushort)0);
+
+                entity.Property(e => e.ItemId)
+                    .HasColumnName("itemId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.BagIndex)
+                    .HasColumnName("bagIndex")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.StackCount)
+                    .HasColumnName("stackCount")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.Charges)
+                    .HasColumnName("charges")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.Durability)
+                    .HasColumnName("durability")
+                    .HasColumnType("float")
+                    .HasDefaultValue(0f);
+
+                entity.Property(e => e.ExpirationTimeLeft)
+                    .HasColumnName("expirationTimeLeft")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.Soulbound)
+                    .HasColumnName("soulbound")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
             });
         }
     }

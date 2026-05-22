@@ -12,6 +12,9 @@
         [InventoryLocation(32u)]
         PlayerBank  = 2,
 
+        [InventoryLocation(64u)]
+        RealmBank   = 3,
+
         [InventoryLocation(512u)]
         Ability   = 4,
 

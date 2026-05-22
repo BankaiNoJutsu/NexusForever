@@ -125,6 +125,11 @@ namespace NexusForever.Game.Abstract.Entity
         void AddItem(IItem item, InventoryLocation location, ItemUpdateReason reason = ItemUpdateReason.NoReason);
 
         /// <summary>
+        /// Place <see cref="IItem"/> at a bag index without emitting inventory sync packets.
+        /// </summary>
+        void LoadItem(IItem item, InventoryLocation location, uint bagIndex);
+
+        /// <summary>
         /// Apply stack updates and deletion to <see cref="IItem"/> on use
         /// </summary>
         bool ItemUse(IItem item);

@@ -104,6 +104,15 @@ namespace NexusForever.Database.Character
                 .Max();
         }
 
+        public List<RealmBankItemModel> GetRealmBankItems(uint accountId, ushort realmId)
+        {
+            using var context = new CharacterContext(config);
+            return context.RealmBankItem
+                .Where(i => i.AccountId == accountId && i.RealmId == realmId)
+                .OrderBy(i => i.BagIndex)
+                .ToList();
+        }
+
         public ulong GetNextResidenceId()
         {
             using var context = new CharacterContext(config);

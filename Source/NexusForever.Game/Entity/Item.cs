@@ -243,6 +243,12 @@ namespace NexusForever.Game.Entity
             if (saveMask == ItemSaveMask.None)
                 return;
 
+            if (Location == InventoryLocation.RealmBank)
+            {
+                saveMask = ItemSaveMask.None;
+                return;
+            }
+
             if ((saveMask & ItemSaveMask.Create) != 0)
             {
                 // item doesn't exist in database, all information must be saved

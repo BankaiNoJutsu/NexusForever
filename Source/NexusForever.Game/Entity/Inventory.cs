@@ -3,6 +3,7 @@ using System.Diagnostics;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.RealmBank;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable.Model;
@@ -338,6 +339,10 @@ namespace NexusForever.Game.Entity
             if (dstBag == null)
                 return GenericError.ItemNotValidForSlot;
 
+            GenericError? realmBankError = EnsureRealmBankAccessForMove(item, location, bagIndex);
+            if (realmBankError.HasValue)
+                return realmBankError;
+
             if (bagIndex >= dstBag.Slots)
                 return GenericError.ItemNotValidForSlot;
 
@@ -443,6 +448,7 @@ namespace NexusForever.Game.Entity
                     }
 
                     BindOnEquip(item);
+                    PersistRealmBankStorage(item);
 
                     player.Session.EnqueueMessageEncrypted(new ServerItemMove
                     {
@@ -504,6 +510,8 @@ namespace NexusForever.Game.Entity
 
                     BindOnEquip(item);
                     BindOnEquip(dstItem);
+                    PersistRealmBankStorage(item);
+                    PersistRealmBankStorage(dstItem);
 
                     player.Session.EnqueueMessageEncrypted(new ServerItemSwap
                     {
@@ -551,6 +559,10 @@ namespace NexusForever.Game.Entity
 
             IBag dstBag = GetBag(newItemLocation.Location);
             if (dstBag == null)
+                throw new InvalidPacketValueException();
+
+            GenericError? realmBankError = EnsureRealmBankAccessForMove(item, newItemLocation.Location, newItemLocation.BagIndex);
+            if (realmBankError.HasValue)
                 throw new InvalidPacketValueException();
 
             IItem dstItem = dstBag.GetItem(newItemLocation.BagIndex);
@@ -638,11 +650,17 @@ namespace NexusForever.Game.Entity
                 return null;
             }
 
+            InventoryLocation deletedLocation = item.Location;
             RemoveItem(item);
             if (!item.PendingCreate)
             {
-                item.EnqueueDelete(true);
-                deletedItems.Add(item);
+                if (deletedLocation == InventoryLocation.RealmBank)
+                    RealmBankManager.Instance.DeleteItem(item.Guid);
+                else
+                {
+                    item.EnqueueDelete(true);
+                    deletedItems.Add(item);
+                }
             }
 
             player.Session.EnqueueMessageEncrypted(new ServerItemDelete
@@ -729,6 +747,12 @@ namespace NexusForever.Game.Entity
             }
         }
 
+        /// <inheritdoc />
+        public void LoadItem(IItem item, InventoryLocation location, uint bagIndex)
+        {
+            AddItem(item, location, bagIndex);
+        }
+
         /// <summary>
         /// Add <see cref="IItem"/> to the supplied <see cref="InventoryLocation"/> and bag index.
         /// </summary>
@@ -756,6 +780,9 @@ namespace NexusForever.Game.Entity
                 InventoryResize(InventoryLocation.Inventory, (int)item.Info.Entry.MaxStackCount);
             if (IsEquippableBankBagSlot(item.Location, item.BagIndex))
                 InventoryResize(InventoryLocation.PlayerBank, (int)item.Info.Entry.MaxStackCount);
+
+            if (location == InventoryLocation.RealmBank && player != null)
+                RealmBankManager.Instance.SaveItem(item, player);
         }
 
         private static void BindOnEquip(IItem item)
@@ -913,6 +940,39 @@ namespace NexusForever.Game.Entity
             return null;
         }
 
+        private GenericError? EnsureRealmBankAccessForMove(IItem item, InventoryLocation location, uint bagIndex)
+        {
+            if (item.Location != InventoryLocation.RealmBank && location != InventoryLocation.RealmBank)
+                return null;
+
+            if (player == null || !RealmBankManager.Instance.HasUnlock(player))
+                return GenericError.ItemNotValidForSlot;
+
+            uint capacity = RealmBankManager.Instance.GetSlotCapacity(player);
+            IBag realmBank = GetBag(InventoryLocation.RealmBank);
+            if (realmBank == null)
+                return GenericError.ItemNotValidForSlot;
+
+            if (realmBank.Slots < capacity)
+                realmBank.Resize((int)(capacity - realmBank.Slots));
+
+            if (location == InventoryLocation.RealmBank && bagIndex >= capacity)
+                return GenericError.ItemNotValidForSlot;
+
+            return null;
+        }
+
+        private void PersistRealmBankStorage(IItem item)
+        {
+            if (item == null || item.Location == InventoryLocation.None || player == null)
+                return;
+
+            if (item.Location == InventoryLocation.RealmBank)
+                RealmBankManager.Instance.SaveItem(item, player);
+            else if (item.PreviousLocation == InventoryLocation.RealmBank)
+                RealmBankManager.Instance.SaveCharacterItem(item, player);
+        }
+
         private bool CanApplyBagCapacityChange(InventoryLocation location, int capacityChange, uint? reservedBagIndex = null)
         {
             if (capacityChange >= 0)
@@ -1031,6 +1091,9 @@ namespace NexusForever.Game.Entity
                 StackCount = stackCount,
                 Reason     = reason
             });
+
+            if (item.Location == InventoryLocation.RealmBank && player != null)
+                RealmBankManager.Instance.SaveItem(item, player);
         }
 
         /// <summary>

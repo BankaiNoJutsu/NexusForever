@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.RealmBank;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -79,6 +80,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                         throw new InvalidPacketValueException();
 
                     return true;
+                case 67: // "ShowRealmBank"
+                    if (entity == null)
+                        throw new InvalidPacketValueException();
+
+                    RealmBankManager.Instance.OpenRealmBank(session.Player);
+                    return true;
                 case 8: // "HousingGuildNeighborhoodBrokerOpen"
                 case 40:
                 case 41: // "ResourceConversionOpen"
@@ -90,7 +97,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 case 48: // "InvokeTaxiWindow"
                 case 65: // "MannequinWindowOpen"
                 case 66: // "ShowBank"
-                case 67: // "ShowRealmBank"
                 case 69: // "ShowDye"
                 case 70: // "GuildRegistrarOpen"
                 case 71: // "WarPartyRegistrarOpen"
