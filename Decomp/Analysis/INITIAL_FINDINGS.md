@@ -667,7 +667,7 @@ Eleventh rapid-transport pricing follow-up implemented from this pass:
   helpers, which still blocks safe server-side payment or spell-selection
   changes for rapid transport.
 
-Twelfth rapid-transport UI→send-chain follow-up implemented from this pass:
+Twelfth rapid-transport UI?send-chain follow-up implemented from this pass:
 
 - Re-verified the Lua anchor chain for the rapid-transport map UI:
   `Map_GetRapidTransportDestinationsForWorld` (`140707640`) dispatches to
@@ -1764,8 +1764,8 @@ Twenty-ninth spell-cast/audio selection follow-up implemented from this pass:
   the current audio context, validates it through `FUN_14088c3e0(...)` and
   `FUN_14088fb00(...)`, and returns the initialized object on success. That is
   sufficient for the generic label `AudioRuntime_AcquireOrCreate`.
-- Direct decompile finally moves `140899fd0` past the earlier “common audio
-  worker” boundary. The function takes the resolved entry id from the selector
+- Direct decompile finally moves `140899fd0` past the earlier "common audio
+  worker" boundary. The function takes the resolved entry id from the selector
   chain, compares it against the current active runtime selection, builds
   primary and optional secondary runtime objects, computes their timing and
   transition windows, dispatches them through `FUN_14089ae40(...)`, updates the
@@ -1951,7 +1951,7 @@ pass:
   `InspectCodeAddress 1408904a0`, `InspectCodeAddress 14088d620`). That is
   strong enough for the generic label `AudioRuntime_ExtractReadyNodes`.
 - This tightens both continuation fronts. On the spell side, the next remaining
-  work near `14039bf20` is no longer “find the next sender” but to decide
+  work near `14039bf20` is no longer "find the next sender" but to decide
   whether nearby smaller helpers are quest-interaction leaves or broader cast
   queue/state logic. On the audio side, the runtime-link step now has a named
   ready-node extraction subphase, so `140899180` remains the next larger inward
@@ -5083,15 +5083,17 @@ One-hundred-first direct-send opcode enum extension pass:
   Lua/UI wrappers, including `Lua_GameLib_ConvertResource`,
   `DashCast_SendClientDashCast`, repair-vendor senders,
   `CREDDExchange_SendClientOrderSubmit`, `Lua_CREDDExchangeLib_GetCREDDHistory`,
-  `Lua_GameResidence_RemoveInteriorWallpaper`,
+  `Lua_GameResidence_PurchaseInteriorWallpaper`,
   `GenericMap_SendClientNodeRequestOrChoose`, and
   `Spline2_SendClientStaleSplineRequests`.
 - Evidence notes:
   CREDD exchange table evidence maps `RequestExchangeInfo`, `CancelOrder`, and
   `GetCREDDHistory`; the submit path selects buy/sell opcodes from UI state.
-  `Residence.RemoveInteriorWallpaper` collects six interior wallpaper plug-item
-  slots before sending `0x050D`. `GenericMapNodeChoose` sends `0x07CF` only when
-  node data is missing, otherwise it raises the local `GenericFloater`.
+  `Residence.PurchaseInteriorWallpaper` validates six `HousingWallpaperInfo`
+  selections against slot flags before sending changed slots through `0x050D`;
+  `Residence.RemoveInteriorWallpaper` restores a single slot to that slot's
+  default wallpaper id. `GenericMapNodeChoose` sends `0x07CF` only when node
+  data is missing, otherwise it raises the local `GenericFloater`.
   `0x081D` is tied to the Spline2/Spline2Node runtime cache and is kept as a
   conservative stale Spline2 id request.
 - Remaining implementation boundary:
@@ -5291,11 +5293,9 @@ One-hundred-sixth housing neighbor receive-model pass:
   and reject invalid permission values above `2`, but do not mutate residence
   neighbor state.
 - Still blocked:
-  real neighbor invite persistence, pending-invite response handling, eviction,
-  and roommate/neighbor permission updates remain blocked until the server-side
-  housing relationship model is verified. `ClientHousingInteriorWallpaperUpdate`
-  remains enum-only because its six-slot interior wallpaper/remodel payload is
-  wider than this pass and needs a dedicated decode.
+  the server-side housing relationship model and interior wallpaper packet
+  decode were completed in later passes; remaining blockers are the broader
+  timing, inventory-debit, and visit-state semantics tracked by F-004.
 - Coverage and verification:
   `Get-DecompCoverageSnapshot.ps1` now reports client opcode coverage as
   `248` implemented, `71` partial, and `7` missing. The four housing neighbor
@@ -5438,15 +5438,24 @@ One-hundred-ninth remaining client missing-model pass:
 - NexusForever implementation:
   Network.World now has receive models for all four remaining client enum-only
   opcodes, and the current CREDD / wallpaper shapes already match the recovered
-  writer evidence. WorldServer handles them as conservative diagnostics: CREDD
-  buy/sell return `ServerAccountOperationResult` with
-  `CREDDExchangeNotLoaded`, movement fall-land is logged only, and housing
-  interior wallpaper updates are logged without mutating residence state.
+  writer evidence. WorldServer handles CREDD buy/sell with
+  `ServerAccountOperationResult` and `CREDDExchangeNotLoaded`, movement
+  fall-land remains logged only, and housing interior wallpaper updates now
+  route through the residence map instead of diagnostic-only logging.
+  `DecorType` value `3` is mapped as `InteriorWallpaper`; residence decor now
+  persists the native `DecorData`, `HookBagIndex`, `HookIndex`, and
+  `ActivePropUnitId` fields needed to round-trip the shared `DecorInfo` record.
+  `ClientHousingInteriorWallpaperUpdate` treats the first six uint32 values as
+  existing-decor flags, then applies each non-empty slot as an
+  `InteriorWallpaper` decor record with hook indices `1..6`, creating or
+  updating residence decor rows and echoing changed records through
+  `ServerHousingResidenceDecor`.
 - Still blocked:
   CREDD exchange persistence/matching, authoritative landing-state movement
-  handling, and residence interior wallpaper mutation remain blocked on
-  server-side runtime semantics. This pass closes packet recognition and keeps
-  state mutation out of scope.
+  handling, and exact interior wallpaper ownership/unlock/refund semantics
+  remain blocked on server-side runtime evidence. The residence visual/decor
+  mutation and mapped `HousingWallpaperInfo` currency debit path are now
+  implemented from the mapped `0x050D` payload.
 - Coverage and verification:
   WildStar64 export-only Auto applies `599` source-controlled labels with `0`
   missing labels, and all five new labels appear in both `functions.csv` and
@@ -5462,6 +5471,17 @@ One-hundred-ninth remaining client missing-model pass:
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\missing-client-models-world\`
   succeeds with existing package-version warnings plus the existing
   `Spline.formation` warning.
+  A later interior-wallpaper implementation gate passed:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\network-world-housing-interior-wallpaper\`
+  and `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\world-server-housing-interior-wallpaper\`
+  both succeeded with `0` warnings and `0` errors. Focused housing tests
+  passed `59/59` for `HousingPacketShapeTests`,
+  `ClientHousingNeighborHandlerTests`, `ResidenceTests`, and
+  `PacketPlaceholderNamingTests`.
 
 One-hundred-tenth AMP commit handler pass:
 
@@ -5738,7 +5758,7 @@ One-hundred-seventeenth mass handler coverage pass:
   Start), Misc (ChallengeChoice, GetRealmTransferDestinations), Guild (BankTransaction
   x2, BankTabOpen, BankMoneyTransaction, PerkActivate, BankTabRename, StandardModify,
   SetStandard), Housing (VisitResidence), Item (ItemContextAction), GalacticArchive
-  (Unlock, Viewed). Fixed `ClientHousingRenamePropertyHandler` — added missing
+  (Unlock, Viewed). Fixed `ClientHousingRenamePropertyHandler` - added missing
   `IMessageHandler<>` interface declaration.
 - Wave 2 handlers (25 new):
   Instance (LeavePendingRemoval, RaidInfoRequest), Info (RealmInfoRequest),
@@ -5750,15 +5770,15 @@ One-hundred-seventeenth mass handler coverage pass:
   PublicEventRequestScoreboard, CinematicCameraSubjectPosVel,
   CinematicCameraSubjectSpline, CinematicCameraSubjectUnit, CinematicWhiteOutFinished),
   Guild (RecruitmentGuildGetDetailedGuildInfo, RecruitmentGuildSubscribe),
-  Character (CharacterRename). Fixed `ClientMatchingQueueRandomParty` model —
+  Character (CharacterRename). Fixed `ClientMatchingQueueRandomParty` model -
   added missing `: IReadable` to the class declaration.
 - Wave 3 handlers (8 new):
   Fortune (NotifyGame), Instance (ResetInstances), Misc (Spline2Request,
   SteamAchievements), Spell (CastGuildBossToken), Guild (WarPartyBossTokensRequest),
-  Leaderboard (PvpRequest, PveRequest — new handler folder created).
+  Leaderboard (PvpRequest, PveRequest - new handler folder created).
 - Ghidra probe results:
-  `DumpNearbyData 1406febc0` — all slots show `<no defined data>` (dead end).
-  `TraceStringReferences "AMPSave"` — 0 cross-references (dead end).
+  `DumpNearbyData 1406febc0` - all slots show `<no defined data>` (dead end).
+  `TraceStringReferences "AMPSave"` - 0 cross-references (dead end).
   0x00FB payload confirmed as single float from movement struct offset `+0x12`
   (matches `ClientMovementFallDamage.FallStateValue`).
   0x00FC payload confirmed as position struct from offsets `+0x40..+0x48`
@@ -6466,7 +6486,7 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   schedule-array load opcode (`0x07CA`), the entry-state-array load opcode
   (`0x07C8`), and the three single-row entry-state delta opcodes
   (`0x07CB`/`0x07C9`/`0x07C7`) are now known. The remaining open question is the
-  exact semantic split between those three delta opcodes — which one feeds
+  exact semantic split between those three delta opcodes - which one feeds
   `RewardRotation_UpsertEntryState`, `RewardRotation_UpdateEntryState`, or
   `RewardRotation_RemoveEntryState`. No static or random essence grant was
   added.
@@ -6652,7 +6672,7 @@ undefined8 Game_Spell_IsSelfSpellDelegate(longlong param_1) {
 }
 ```
 
-**Bitmask `0x85U = 10000101b`:** bits 0, 2, 7 set →
+**Bitmask `0x85U = 10000101b`:** bits 0, 2, 7 set ?
 TargetTypes 0, 2, and 7 are all "self-spell" per the client UI.
 
 **Additional self-spell case:** TargetType 4 (or 8) with
@@ -6681,10 +6701,10 @@ current combat target without a manual aim (auto-attack behavior).  The server
 
 **Evidence witnesses (from `Spell4TargetMechanics` + spell4 joins):**
 
-- TargetType 0, mechanic 1: spell4=305 ("Q388 anti-tank mine explosion") — self-centered explosion.
-- TargetType 7, mechanic 25: spell4=339 (auto-attack) — fires at current enemy target.
-- TargetType 7, mechanic 18: spell4=26813 (client test AE) — AE shape.
-- TargetType 6, mechanic 17: spell4=11820 ("[TEST] Recharge Item Batteries Full") — item-activation. Later `SpellTarget_ResolveTargetEntity` evidence supersedes the earlier blocker and confirms caster/self resolution.
+- TargetType 0, mechanic 1: spell4=305 ("Q388 anti-tank mine explosion") - self-centered explosion.
+- TargetType 7, mechanic 25: spell4=339 (auto-attack) - fires at current enemy target.
+- TargetType 7, mechanic 18: spell4=26813 (client test AE) - AE shape.
+- TargetType 6, mechanic 17: spell4=11820 ("[TEST] Recharge Item Batteries Full") - item-activation. Later `SpellTarget_ResolveTargetEntity` evidence supersedes the earlier blocker and confirms caster/self resolution.
 
 **Server implementation applied** (`CharacterSpell.ResolvePrimaryTargetId`):
 - Added constants `TargetTypeNoExplicitTarget = 0u` and `TargetTypeServiceLookup = 7u`.
@@ -6744,7 +6764,7 @@ target-preparation helper that resolves target entity IDs and runs range/validit
 Adding it to the Ghidra selection is the next step for decoding non-dead valid-target
 masks, facing-angle gates, and range-check subtleties.
 
-### `UnitState_*` packet structure decode (`1403db7f0`–`1403db920`)
+### `UnitState_*` packet structure decode (`1403db7f0`-`1403db920`)
 
 Three labelled functions near `0x1403db7f0` decode the server `UnitState` packet
 structure and entity state fields:
@@ -6777,7 +6797,7 @@ if (entity.mounted && param_2[3] != 0) trigger_dismount();
 ```
 
 **`UnitState_MaybeDispatchUnitEvaded` (`1403db920`):**
-- State value **4** = `"UnitEvaded"` → fires client event `"UnitEvaded"` with entity GUID.
+- State value **4** = `"UnitEvaded"` ? fires client event `"UnitEvaded"` with entity GUID.
 - This is the client-side cosmetic evade-float-text trigger.
 
 ---
@@ -6826,8 +6846,8 @@ if (wrapper+0x18 == 3) {
 ### Auto-Target Fallback (bitmask 0x12a)
 When xplicit_id == 0 AND
 esolved_id == 0 AND TargetType is in bitmask x12a:
-- x12a = 100101010b → bits 1, 3, 5, 8 → TargetTypes 1, 3, 5, 8 get auto-target fallback.
-- Searches nearby valid entities within ~5 yards (config entry 0x145 → lVar4+0x18, default 5.0f).
+- x12a = 100101010b ? bits 1, 3, 5, 8 ? TargetTypes 1, 3, 5, 8 get auto-target fallback.
+- Searches nearby valid entities within ~5 yards (config entry 0x145 ? lVar4+0x18, default 5.0f).
 - If found and within range: calls TargetSelection_ApplySelectionAndDispatch(player, entity_id) to select that entity.
 
 ### Entity Field Offsets (confirmed)
@@ -6842,7 +6862,7 @@ esolved_id == 0 AND TargetType is in bitmask x12a:
 
 ### Special Override Path (flags param_1+0x7ba0 bit 0)
 When player+0x7ba0 & 1 AND wrapper+0x10c bit 26 AND wrapper+0x10c bit 28:
-- Reads secondary entity ID from player+0x6490 → +0x108.
+- Reads secondary entity ID from player+0x6490 ? +0x108.
 - Performs relationship check via FUN_14045a950 and bounding check via FUN_140466b90.
 - Result: overridden entity replaces normal entity target.
 
@@ -6881,7 +6901,7 @@ SpellService_ResolveSpellWrapper wraps this:
 
 For **TargetType 7** spells, a per-spell override binary tree at service_obj + 0x788:
 - Balanced BST (std::map style / red-black tree variant)
-- 	ree_root = *(service_obj + 0x788) — sentinel/root node
+- 	ree_root = *(service_obj + 0x788) - sentinel/root node
 -
 oot + 0x08 = first real node (tree start)
 - Tree node structure:
@@ -6911,8 +6931,8 @@ Note: The server reads IsFreeformTarget and IsMovingInterrupted from Spell4BaseE
 ### IsSelfSpell bitmask confirmation
 
 Game_Spell_IsSelfSpellDelegate checks spell_wrapper + 0x70 + 0x7c (TargetType) against bitmask x85:
-- x85 = 10000101b → TargetTypes **0** (NoExplicitTarget), **2** (SelfAoe), **7** (ServiceLookup) → IsSelfSpell = true
-- Additional rule: shape-type +0x18 == 3 AND +0x9c == 0 AND TargetType ∈ {4, 8} → also self
+- x85 = 10000101b ? TargetTypes **0** (NoExplicitTarget), **2** (SelfAoe), **7** (ServiceLookup) ? IsSelfSpell = true
+- Additional rule: shape-type +0x18 == 3 AND +0x9c == 0 AND TargetType ? {4, 8} ? also self
 - IsSelfSpell = true means the UI auto-casts without a targeting cursor; no change to server ResolvePrimaryTargetId
 
 ### Service tree lookup in IsSelfSpell / IsFreeformTarget
@@ -7043,7 +7063,7 @@ undefined8 SpellTarget_ValidateTargetRelationship(
 {
     if (has_faction_check != 0) {
         int relation = FUN_14046c580(target_entity, caster_ctx);  // GetRelation
-        if (relation == expected_faction) return 0;  // same group — OK
+        if (relation == expected_faction) return 0;  // same group - OK
         if ((*(byte *)(target_entity + 0x24) & 1) != 0) {  // target is dead
             if (target_mask == 0) return 0x59;  // error: dead target
             goto validate_mask;
@@ -7084,7 +7104,7 @@ The channel data struct at `spell_wrapper + 0x50` (decoded from GetChannelData):
 | `+0x04` | uint | `fMaxTime` in milliseconds (returned as `/ 1000.0` seconds) |
 
 The Lua method returns both values as seconds. The server uses
-`Spell4Entry.CastTime / 1000d` for execute timing — this is the game-table
+`Spell4Entry.CastTime / 1000d` for execute timing - this is the game-table
 equivalent of `fMaxTime` from the runtime wrapper. No server change needed.
 
 ---
@@ -7177,7 +7197,7 @@ ulonglong SpellTarget_ValidateWrapperAndTargets(
 }
 `
 
-### Spell Wrapper Inner Struct (spell_wrapper + 0x70) — New Fields
+### Spell Wrapper Inner Struct (spell_wrapper + 0x70) - New Fields
 
 | Offset | Type | Name | Notes |
 |--------|------|------|-------|
@@ -7202,9 +7222,9 @@ fields are read as `(int)puVar28[N]` = low 32 bits at byte offset `N*8`.
 
 | Byte offset | Ghidra accessor | Field name | Notes |
 |------------|-----------------|------------|-------|
-| `+0x10` | `(int)puVar28[2]` | `Spell4BaseId` | FK → Spell4Base table |
-| `+0xb8` | `(int)puVar28[0x2d]` | `StackGroupId` | FK → Spell4StackGroup table; 0 = no stack group |
-| `+0x114` | `*(int*)(puVar28+0x114)` | `AoeTargetConstraintsId` | FK → Spell4AoeTargetConstraints; 0 = none |
+| `+0x10` | `(int)puVar28[2]` | `Spell4BaseId` | FK ? Spell4Base table |
+| `+0xb8` | `(int)puVar28[0x2d]` | `StackGroupId` | FK ? Spell4StackGroup table; 0 = no stack group |
+| `+0x114` | `*(int*)(puVar28+0x114)` | `AoeTargetConstraintsId` | FK ? Spell4AoeTargetConstraints; 0 = none |
 | `+0x12c` | `*(int*)(puVar28+0x12c)` | `SpellCoolDownId[0]` | First cooldown slot |
 | `+0x130` | `*(int*)(puVar28+0x130)` | `SpellCoolDownId[1]` | Second cooldown slot |
 | `+0x134` | `*(int*)(puVar28+0x134)` | `SpellCoolDownId[2]` | Third cooldown slot |
@@ -7216,18 +7236,18 @@ Ghidra types `lVar26` as `longlong` pointing to a Spell4Base row (GetById via
 
 | Byte offset | Ghidra accessor | Field name | Notes |
 |------------|-----------------|------------|-------|
-| `+0x08` | `*(int*)(lVar26+8)` | `HitResultsId` | FK → Spell4HitResults |
-| `+0x0c` | `*(int*)(lVar26+0xc)` | `TargetMechanicsId` | FK → Spell4TargetMechanics |
-| `+0x10` | `*(int*)(lVar26+0x10)` | `TargetAngleId` | FK → Spell4TargetAngle |
-| `+0x14` | `*(int*)(lVar26+0x14)` | `PrerequisitesId` | FK → Spell4Prerequisites; 0 = none |
-| `+0x18` | `*(int*)(lVar26+0x18)` | `ValidTargetsId` | FK → Spell4ValidTargets |
-| `+0x1c` | `*(int*)(lVar26+0x1c)` | `TargetGroupId` | FK → TargetGroup (primary); 0 = none |
-| `+0x34` | `*(int*)(lVar26+0x34)` | `TargetGroupId2` | FK → TargetGroup (secondary/alternate); 0 = none |
+| `+0x08` | `*(int*)(lVar26+8)` | `HitResultsId` | FK ? Spell4HitResults |
+| `+0x0c` | `*(int*)(lVar26+0xc)` | `TargetMechanicsId` | FK ? Spell4TargetMechanics |
+| `+0x10` | `*(int*)(lVar26+0x10)` | `TargetAngleId` | FK ? Spell4TargetAngle |
+| `+0x14` | `*(int*)(lVar26+0x14)` | `PrerequisitesId` | FK ? Spell4Prerequisites; 0 = none |
+| `+0x18` | `*(int*)(lVar26+0x18)` | `ValidTargetsId` | FK ? Spell4ValidTargets |
+| `+0x1c` | `*(int*)(lVar26+0x1c)` | `TargetGroupId` | FK ? TargetGroup (primary); 0 = none |
+| `+0x34` | `*(int*)(lVar26+0x34)` | `TargetGroupId2` | FK ? TargetGroup (secondary/alternate); 0 = none |
 | `+0x50` | `*(int*)(lVar26+0x50)` | `TargetCategory` | Controls which runtime collection spell goes into; values 1 and 3 have distinct handling |
 
 ### Universal ClientDB Hot-Swap Function Pointers (Confirmed from 14055e180)
 
-These three globals are confirmed as universal DB hot-swap pointers used by ALL ClientDB tables —
+These three globals are confirmed as universal DB hot-swap pointers used by ALL ClientDB tables -
 NOT specific to Spell4StackGroup as previously labeled. The DB-specific pointer is passed
 as the first argument.
 
@@ -7238,7 +7258,7 @@ as the first argument.
 | `DAT_140c63848` | `ClientDB_GetByIndex(db_ptr, index, hotswap_ctx)` | `(*DAT_140c63848)(&PTR_u_Spell4_140a6d0a8, i, DAT_140c63858)` |
 | `DAT_140c63858` | hot-swap context (3rd arg to GetById/GetByIndex) | passed through |
 
-### ClientDB Descriptor (PTR_u_*) Addresses — Newly Confirmed
+### ClientDB Descriptor (PTR_u_*) Addresses - Newly Confirmed
 
 The function accesses the following DB descriptor pointer addresses (PTR_u_* labels
 assigned by Ghidra from nearby strings):
@@ -7261,7 +7281,7 @@ assigned by Ghidra from nearby strings):
 
 ---
 
-## ValidTargetsCriteria_Evaluate — Full Criteria Type Decode
+## ValidTargetsCriteria_Evaluate - Full Criteria Type Decode
 
 Decoded from `ValidTargetsCriteria_Evaluate @ 1403b4a20`.
 
@@ -7273,10 +7293,10 @@ Decoded from `ValidTargetsCriteria_Evaluate @ 1403b4a20`.
 |------------|------------|------|-------|
 | `row[0]` | +0x00 | `id` | Row ID |
 | `row[1]` | +0x04 | `(unknown)` | Not directly used in this function |
-| `row[2]` | +0x08 | `criteriaType` | Switch discriminator (1–13 confirmed) |
+| `row[2]` | +0x08 | `criteriaType` | Switch discriminator (1-13 confirmed) |
 | `row[3..9]` | +0x0c..+0x24 | `values[0..6]` | 7 int32 value slots for the type |
 
-### Criteria Type → Semantic
+### Criteria Type ? Semantic
 
 | Type | Odd/Even | CriteriaProxy vtable slot | Semantic |
 |------|----------|--------------------------|----------|
@@ -7303,9 +7323,9 @@ Return codes:
 
 | Vtable byte offset | Cases | Role | Confirmed label |
 |-------------------|-------|------|----------------|
-| `+0x08` | 10, 11 | `GetSubCriteria()` → sub-criteria row for recursive eval | `EntityCriteria_GetRelatedCriteriaThunk @ 1403b4a10` |
+| `+0x08` | 10, 11 | `GetSubCriteria()` ? sub-criteria row for recursive eval | `EntityCriteria_GetRelatedCriteriaThunk @ 1403b4a10` |
 | `+0x10` | 1, 2 | getter: FactionGroupId | `EntityCriteria_GetFactionGroupId @ 1403b4940` (entity+0x18) |
-| `+0x18` | 9 | `MultiCheck(values, count)` → array-based eval (CheckType9) | `EntityCriteria_GetField0x140_ListMatch @ 1403b4960` (entity+0x140) |
+| `+0x18` | 9 | `MultiCheck(values, count)` ? array-based eval (CheckType9) | `EntityCriteria_GetField0x140_ListMatch @ 1403b4960` (entity+0x140) |
 | `+0x20` | 5, 6 | getter: RaceId | `EntityCriteria_GetRaceId @ 1403b49a0` (entity+0xd8) |
 | `+0x28` | 7, 8 | getter: ClassId | `EntityCriteria_GetClassId @ 1403b49b0` (entity+0xdc) |
 | `+0x30` | 3, 4 | getter: Attr2_Unk118 | `EntityCriteria_GetAttr2_Unk118 @ 1403b49c0` (entity+0x118) |
@@ -7313,7 +7333,7 @@ Return codes:
 
 ---
 
-## Entity Struct — Faction/Targeting Fields
+## Entity Struct - Faction/Targeting Fields
 
 Decoded from `Entity_GetFactionRelationship @ 14046c580`.
 
@@ -7321,8 +7341,8 @@ Decoded from `Entity_GetFactionRelationship @ 14046c580`.
 |------------|------|------|-------|
 | `+0x18` | pointer | `factionData` | Sub-struct pointer; faction rules live here |
 | `+0x80` | int32 | `entityType` | 0x14 = special NPC type with override faction path |
-| `*(factionData + 0x6c)` | int32 | `factionLockFlag` | Non-zero → suppress normal faction lookup |
-| `*(factionData + 0x148)` | int32 | `factionLockFlag2` | Non-zero → suppress normal faction lookup |
+| `*(factionData + 0x6c)` | int32 | `factionLockFlag` | Non-zero ? suppress normal faction lookup |
+| `*(factionData + 0x148)` | int32 | `factionLockFlag2` | Non-zero ? suppress normal faction lookup |
 | `*(factionData + 0xc0)` | pointer | `factionRelTable` | Pointer to 4-entry int32 array of faction relationship IDs |
 
 The function iterates the 4-entry `factionRelTable`, calling a ValidTargets check for each. The
@@ -7379,7 +7399,7 @@ ValidTargets lookup. This is not yet decoded; likely SpellService_CheckValidTarg
 | 281 | 0x119 | Secondary target fails ValidTargets check |
 | 317 | 0x13d | Pre-condition pass-through (conditional state) |
 
-### PropertyFlags Bit 1 — AoE ValidTargets Override
+### PropertyFlags Bit 1 - AoE ValidTargets Override
 
 When spell_wrapper + 0x40 (AoE data pointer) is non-null **and**
 spell_wrapper + 0x70 + 0x108 bit 1 (0x02) is set, the primary ValidTargets
@@ -7387,18 +7407,18 @@ check always passes. This is consistent with AoE spells that hit all entities
 in radius regardless of normal ValidTargets restrictions.
 
 Current SpellPropertyFlags in the server does not include bit 0x02. This bit
-is a note for future investigation — it may be relevant for spells that should
+is a note for future investigation - it may be relevant for spells that should
 bypass target restrictions when in AoE mode.
 
 ### Server Implementation Status
 
 | Concern | Status |
 |---------|--------|
-| ValidTargets primary check | Server CheckPrimaryTargetValidMask uses Spell4ValidTargets.TargetBitmask — functionally equivalent to client alid_primary_id |
+| ValidTargets primary check | Server CheckPrimaryTargetValidMask uses Spell4ValidTargets.TargetBitmask - functionally equivalent to client alid_primary_id |
 | ValidTargets secondary check | Server has no secondary ValidTargets path currently; secondary target used for e.g. buff transfers |
 | PropertyFlags bit 1 AoE bypass | Not in server; noted for future when AoE spells show unexpected target rejection |
 | Error codes 0x97/0x119 | Client-side only; server has its own CastResult enum |
-| No server changes needed this pass | ✓ |
+| No server changes needed this pass | ? |
 
 ---
 
@@ -7408,7 +7428,7 @@ Decoded from `Lua_GameSpell_GetId @ 1405e95f0`, `GetBaseSpellId @ 1405e96a0`,
 `GetTier @ 1405e9840`, `GetChannelData`, `SpellTarget_ValidateWrapperAndTargets`,
 `SpellCast_ValidateAndDispatch`.
 
-`SpellService_ResolveSpellWrapper(spellServiceGlobal, spellId, entityContext)` → `lVar`.
+`SpellService_ResolveSpellWrapper(spellServiceGlobal, spellId, entityContext)` ? `lVar`.
 
 ### SpellWrapper Top-level Fields
 
@@ -7434,8 +7454,8 @@ Decoded from `Lua_GameSpell_GetId @ 1405e95f0`, `GetBaseSpellId @ 1405e96a0`,
 | `+0xf4` | int32 | `damageSchool` | `GetSchool`; damage school enum |
 | `+0xf8` | int32 | `primaryEffectType` | Primary spell effect type number (e.g., 0xe, 0x24) |
 | `+0xfc` | int32 | `spellSlotType` | ActionSet slot type: 5 = ability (slots 0-7), non-5 = passive/AMP |
-| `+0x108` | uint32 | `propertyFlags` | Bit field — see PropertyFlags table below |
-| `+0x10c` | uint32 | `beneficialFlags` | Bit field — see BeneficialFlags table below |
+| `+0x108` | uint32 | `propertyFlags` | Bit field - see PropertyFlags table below |
+| `+0x10c` | uint32 | `beneficialFlags` | Bit field - see BeneficialFlags table below |
 | `+0x128` | int32 | `validationBypassFlag` | Non-zero: skip relationship check for primary target |
 | `+0x154` | uint32 | `spellFlagsWord` | Bit 0x400: override/substitute enabled; Bit 0x200: item use mode |
 | `+0x168` | int32 | `validTargetsPrimaryId` | ValidTargets ID for caster check (0 = none) |
@@ -7480,20 +7500,20 @@ Decoded from `Lua_GameSpell_GetId @ 1405e95f0`, `GetBaseSpellId @ 1405e96a0`,
 | 3 | Cursor/selected target | `entity + 0x108` | No |
 | 4 | Item targeting | `entity + 0x6ce8..0x6d00` (item-use spell context) | No |
 | 5 | Cursor/selected target | `entity + 0x108` | No |
-| 6 | Self-target | `entity + 0x8` | No (0x85 bit 6 unset — self-ID but not "self spell") |
+| 6 | Self-target | `entity + 0x8` | No (0x85 bit 6 unset - self-ID but not "self spell") |
 | 7 | Self-target | `entity + 0x8` | Yes (0x85 bit 7) |
 | 8 | Cursor/selected target | `entity + 0x108` | No |
 | other | No target | 0 | No |
 | `inner+0x18 == 3` | No target override | 0 (overrides targetingType) | No |
 
-`IsSelfSpell` bitmask: `0x85 = 0b10000101` → bits 0, 2, 7 set = types {0, 2, 7} are "self" type.
+`IsSelfSpell` bitmask: `0x85 = 0b10000101` ? bits 0, 2, 7 set = types {0, 2, 7} are "self" type.
 `Game_Spell_IsSelfSpellDelegate @ ?`: reads `inner + 0x7c`, uses bitmask 0x85; also checks `inner+0x9c`.
 
 Cursor-target bitmask: `0x12a = 0b100101010` (bits 1,3,5,8 set) = types that auto-select nearest when no cursor target set (within 4.0 units, uses hitbox radii).
 
 ---
 
-## Entity Struct — Spell Cast / Action Slots
+## Entity Struct - Spell Cast / Action Slots
 
 Decoded from `SpellCast_ValidateAndDispatch`, `SpellCast_SendClientSpellCastState`,
 `SpellCast_SendClientCastSpellOrPosition`, `SpellCast_ResolveTargetsAndValidate`,
@@ -7531,7 +7551,7 @@ Decoded from `SpellCast_ValidateAndDispatch`, `SpellCast_SendClientSpellCastStat
 | `+0x7340` | pointer | `luaEventContext` | Used to dispatch named Lua events (SpellCastFailed etc.) |
 | `+0x7b4c` | int32 | `effectDispatchStatus` | Written during spell effect dispatch |
 | `+0x7ba0` | byte | `groundTargetFlags` | Bit 0: in ground-targeted mode |
-| `+0x7d18` | BST root | `spellWrapperBST` | BST of SpellId → SpellWrapper; `Entity_LookupSpellWrapperInBST` |
+| `+0x7d18` | BST root | `spellWrapperBST` | BST of SpellId ? SpellWrapper; `Entity_LookupSpellWrapperInBST` |
 
 ### Entity CastContext Sub-struct (at `*(entity + 0x6490)`)
 
@@ -7591,7 +7611,7 @@ BST sorted by SpellId. Each node:
 
 When `targetingType` is cursor-based (types 1,3,5,8) AND `param_5 == 0` (no cursor target) AND `param_4 == 0`:
 1. Load `GameTable[0x145]` field `+0x18` = float range threshold (default 4.0)
-2. Call `FUN_14055a5f0` = `FindNearestTargetable(entity, 1, 1, ...)` → returns entityId
+2. Call `FUN_14055a5f0` = `FindNearestTargetable(entity, 1, 1, ...)` ? returns entityId
 3. If entity found AND distance < (range + both hitbox radii): `TargetSelection_ApplySelectionAndDispatch(entity, nearbyId)`
 4. Use the nearby entity as the target
 
@@ -7632,8 +7652,8 @@ struct ValidTargetsCriteria {
 | 7 | +0x28 | Must match one of values[] |
 | 8 | +0x28 | Must NOT match any of values[] |
 | 9 | +0x18 | Recursive sub-criteria (passes values[] as sub-array of 7) |
-| 10 | +0x08 → recurse | At least one related-entity passes recursive check |
-| 11 | +0x08 → recurse | All related-entities fail recursive check |
+| 10 | +0x08 ? recurse | At least one related-entity passes recursive check |
+| 11 | +0x08 ? recurse | All related-entities fail recursive check |
 | 12 (0xc) | +0x38 | Must match one of values[] |
 | 13 (0xd) | +0x38 | Must NOT match any of values[] |
 
@@ -7690,7 +7710,7 @@ target checks. The client has a richer multi-criteria system with 13 check types
 and per-row value arrays. The server's ValidTargetObjectMask=0x02 and
 ValidTargetDeadMask=0x08 are a simplified projection of this system.
 
-**No server changes required** — the server's bitfield approach is functionally
+**No server changes required** - the server's bitfield approach is functionally
 correct for currently implemented spells.
 
 ---
@@ -7761,14 +7781,14 @@ void SpellTarget_LogValidationMask(undefined8 param_1, undefined4 param_2) {
 }
 `
 
-Thin oid wrapper — passes param_2 (target_mask uint) to FUN_140240b40.
+Thin oid wrapper - passes param_2 (target_mask uint) to FUN_140240b40.
 Has no return value and cannot affect validation results. Likely a diagnostics
 or client-side logging call invoked via vtable when target validation fails.
 FUN_140240b40 not yet decoded; low priority (tracing code).
 
 ---
 
-### SpellService_LookupSpellWrapperById (1407a0fd0) — Already Documented
+### SpellService_LookupSpellWrapperById (1407a0fd0) - Already Documented
 
 Confirmed from this session: the function was already labeled in the Ghidra
 project from a prior session and is present in unction_labels.csv. It
@@ -7788,7 +7808,7 @@ and returns the stored spell wrapper pointer. All callers now use the proper nam
 
 ---
 
-### ValidTargetsCriteria_Evaluate — CriteriaProxy Vtable Full Decode
+### ValidTargetsCriteria_Evaluate - CriteriaProxy Vtable Full Decode
 
 **Vtable at data address `140b66440` (concrete CriteriaProxy implementation).**
 
@@ -7807,29 +7827,29 @@ struct CriteriaProxy {
 | Data Addr  | Vtable Slot | Function Addr | Label / Semantic |
 |------------|-------------|---------------|-----------------|
 | 140b66440  | [+0x00]     | 1403b4910     | `CriteriaProxy_VTable0` (destructor/RTTI, 24 refs, role unconfirmed) |
-| 140b66448  | [+0x08]     | 1403b4a10     | `EntityCriteria_GetRelatedCriteriaThunk` — `MOV ECX,EDX; JMP Spell4ValidTargets_GetCriteriaById` |
-| 140b66450  | [+0x10]     | 1403b4940     | `EntityCriteria_GetFactionGroupId` — `[entity+0x18]+0x00` |
-| 140b66458  | [+0x18]     | 1403b4960     | `EntityCriteria_GetCreature2Id_ListMatch` — reads entity+0x140 (Creature2Id) DWORD, list-match (checkType 9) |
-| 140b66460  | [+0x20]     | 1403b49a0     | `EntityCriteria_GetRaceId` — `entity+0xd8` |
-| 140b66468  | [+0x28]     | 1403b49b0     | `EntityCriteria_GetClassId` — `entity+0xdc` |
-| 140b66470  | [+0x30]     | 1403b49c0     | `EntityCriteria_GetFaction2Id` — `[entity+0x118]->vtable[+0x18]()` returns Faction2Id; entity+0x118 = Faction2 component |
-| 140b66478  | [+0x38]     | 1403b49e0     | `EntityCriteria_GetUnitRaceId` — `*[entity+0xd0]` |
-| 140b66480  | [+0x40]     | 1403b4a00     | `EntityCriteria_GetField0x140` — `entity+0x140` (role unconfirmed) |
+| 140b66448  | [+0x08]     | 1403b4a10     | `EntityCriteria_GetRelatedCriteriaThunk` - `MOV ECX,EDX; JMP Spell4ValidTargets_GetCriteriaById` |
+| 140b66450  | [+0x10]     | 1403b4940     | `EntityCriteria_GetFactionGroupId` - `[entity+0x18]+0x00` |
+| 140b66458  | [+0x18]     | 1403b4960     | `EntityCriteria_GetCreature2Id_ListMatch` - reads entity+0x140 (Creature2Id) DWORD, list-match (checkType 9) |
+| 140b66460  | [+0x20]     | 1403b49a0     | `EntityCriteria_GetRaceId` - `entity+0xd8` |
+| 140b66468  | [+0x28]     | 1403b49b0     | `EntityCriteria_GetClassId` - `entity+0xdc` |
+| 140b66470  | [+0x30]     | 1403b49c0     | `EntityCriteria_GetFaction2Id` - `[entity+0x118]->vtable[+0x18]()` returns Faction2Id; entity+0x118 = Faction2 component |
+| 140b66478  | [+0x38]     | 1403b49e0     | `EntityCriteria_GetUnitRaceId` - `*[entity+0xd0]` |
+| 140b66480  | [+0x40]     | 1403b4a00     | `EntityCriteria_GetField0x140` - `entity+0x140` (role unconfirmed) |
 
-**`ValidTargetsCriteria_Evaluate` checkType → confirmed semantic:**
+**`ValidTargetsCriteria_Evaluate` checkType ? confirmed semantic:**
 
 | checkType | Vtable Slot | Function | Semantic | Confirmation Source |
 |-----------|-------------|----------|----------|---------------------|
 | 1 (must-match)   | [+0x10] | 1403b4940 | **FactionGroupId** = `[entity+0x18+0x00]` | Entity_GetFactionRelationship; entity+0x18 = faction-state struct |
 | 2 (must-not)     | [+0x10] | 1403b4940 | **FactionGroupId** (inverse) | same |
-| 3 (must-match)   | [+0x30] | 1403b49c0 | **Faction2Id** = `[entity+0x118]->vtable[+0x18]()` | TargetGroup type=3/4 data value range cross-reference (all values 166–1112 are valid Faction2 IDs; min Faction2 ID = 164) |
+| 3 (must-match)   | [+0x30] | 1403b49c0 | **Faction2Id** = `[entity+0x118]->vtable[+0x18]()` | TargetGroup type=3/4 data value range cross-reference (all values 166-1112 are valid Faction2 IDs; min Faction2 ID = 164) |
 | 4 (must-not)     | [+0x30] | 1403b49c0 | **Faction2Id** (inverse) | same |
 | 5 (must-match)   | [+0x20] | 1403b49a0 | **RaceId** = `entity+0xd8` | Lua_GameUnit_GetRaceId @ 14064a080 |
 | 6 (must-not)     | [+0x20] | 1403b49a0 | **RaceId** (inverse) | same |
 | 7 (must-match)   | [+0x28] | 1403b49b0 | **ClassId** = `entity+0xdc` | Lua_GameUnit_GetClassId @ 14064a1a0 |
 | 8 (must-not)     | [+0x28] | 1403b49b0 | **ClassId** (inverse) | same |
-| 9                | [+0x18] | 1403b4960 | **Creature2Id list-match** (entity+0x140 vs up to 7 Creature2 IDs) — confirmed via TargetGroup type=9 data cross-reference | TargetGroup type=9 data values (2202, 2441, 3086, 4859–4861, etc.) all verified as valid Creature2 IDs |
-| 10               | [+0x08] | 1403b4a10 | **Related-criteria lookup** (must-match, recursive) | thunk → Spell4ValidTargets_GetCriteriaById |
+| 9                | [+0x18] | 1403b4960 | **Creature2Id list-match** (entity+0x140 vs up to 7 Creature2 IDs) - confirmed via TargetGroup type=9 data cross-reference | TargetGroup type=9 data values (2202, 2441, 3086, 4859-4861, etc.) all verified as valid Creature2 IDs |
+| 10               | [+0x08] | 1403b4a10 | **Related-criteria lookup** (must-match, recursive) | thunk ? Spell4ValidTargets_GetCriteriaById |
 | 11               | [+0x08] | 1403b4a10 | **Related-criteria lookup** (must-not, recursive) | same |
 | 12 (0xc, must-match) | [+0x38] | 1403b49e0 | **UnitRaceId** = `*[entity+0xd0]` | Lua_GameUnit_GetUnitRaceId @ 14064a100 |
 | 13 (0xd, must-not)  | [+0x38] | 1403b49e0 | **UnitRaceId** (inverse) | same |
@@ -7855,13 +7875,13 @@ struct CriteriaProxy {
 | +0xd0  | ptr    | UnitRace component (first int = UnitRaceId) | EntityCriteria_GetUnitRaceId + Lua_GameUnit_GetUnitRaceId |
 | +0xd8  | int32  | RaceId | EntityCriteria_GetRaceId + Lua_GameUnit_GetRaceId |
 | +0xdc  | int32  | ClassId | EntityCriteria_GetClassId + Lua_GameUnit_GetClassId |
-| +0x118 | ptr    | Faction2 component; `vtable[+0x18]()` returns Faction2Id (int32). Returns 0 if null. checkType 3/4 filter. Evidence: all TargetGroup type=3/4 data values (166–1112) fall within the Faction2 table ID range (min=164). In NexusForever: IWorldEntity.Faction1/Faction2 are `Faction` enum values whose integers are Faction2 IDs (Dominion=166, Exile=167). | EntityCriteria_GetFaction2Id confirmed + TargetGroup cross-reference |
-| +0x140 | int32  | Creature2Id (entity's template/prototype creature ID). checkType 9 list-match via vtable[+0x18] (1403b4960), simple getter via vtable[+0x40] (1403b4a00). Evidence: all TargetGroup type=9 data values (2202, 2441, 3086, 4859–4861, etc.) verified as valid Creature2 IDs. Players return 0. In NexusForever: IWorldEntity.CreatureId. | EntityCriteria_GetCreature2Id + TargetGroup cross-reference |
+| +0x118 | ptr    | Faction2 component; `vtable[+0x18]()` returns Faction2Id (int32). Returns 0 if null. checkType 3/4 filter. Evidence: all TargetGroup type=3/4 data values (166-1112) fall within the Faction2 table ID range (min=164). In NexusForever: IWorldEntity.Faction1/Faction2 are `Faction` enum values whose integers are Faction2 IDs (Dominion=166, Exile=167). | EntityCriteria_GetFaction2Id confirmed + TargetGroup cross-reference |
+| +0x140 | int32  | Creature2Id (entity's template/prototype creature ID). checkType 9 list-match via vtable[+0x18] (1403b4960), simple getter via vtable[+0x40] (1403b4a00). Evidence: all TargetGroup type=9 data values (2202, 2441, 3086, 4859-4861, etc.) verified as valid Creature2 IDs. Players return 0. In NexusForever: IWorldEntity.CreatureId. | EntityCriteria_GetCreature2Id + TargetGroup cross-reference |
 
 **Remaining unknowns:**
 - `1403b4910` vtable slot 0 role (destructor/RTTI, 24 refs; role unconfirmed)
 
-**Server implication — no code change needed.**
+**Server implication - no code change needed.**
 The server's `Spell4ValidTargets.TargetBitmask` (a simplified bitfield projection of the client's
 criteria rows) correctly covers the known criteria semantics. The new confirmed mappings
 (FactionGroupId, RaceId, ClassId, UnitRaceId) validate that the server's coarse bitmask approach
@@ -7873,7 +7893,7 @@ is sufficient and the criteria system does not require server-side criteria row 
 
 | Old FUN_ Reference | Proper Name | Notes |
 |--------------------|------------|-------|
-| FUN_140240b40 | Spell4ValidTargets_GetCriteriaById | Criteria ID→struct lookup; forwarding target of 1403b4a10 |
+| FUN_140240b40 | Spell4ValidTargets_GetCriteriaById | Criteria ID?struct lookup; forwarding target of 1403b4a10 |
 | FUN_1403b4940 | EntityCriteria_GetFactionGroupId | vtable[+0x10]; entity+0x18+0x00 |
 | FUN_1403b4960 | EntityCriteria_GetCreature2Id_ListMatch | vtable[+0x18]; reads entity+0x140 (Creature2Id) DWORD, list-match; checkType 9 (NOT recursive sub-criteria) |
 | FUN_1403b49a0 | EntityCriteria_GetRaceId | vtable[+0x20]; entity+0xd8 |
@@ -7902,9 +7922,9 @@ is now safely implementable.
 - `ValidTargetsCriteria_Evaluate` and the CriteriaProxy vtable are now fully decoded:
   faction-group, Faction2, race, class, unit-race, Creature2Id, nested criteria, and
   related-criteria checks are all identified. `entity+0x118` is the Faction2 component
-  (vtable[+0x18]() returns Faction2Id; confirmed by TargetGroup type=3/4 data correlation —
+  (vtable[+0x18]() returns Faction2Id; confirmed by TargetGroup type=3/4 data correlation -
   all values fall within Faction2 ID range, min=164). `entity+0x140` is the Creature2Id
-  (confirmed by TargetGroup type=9 data correlation — values 2202, 2441, 3086, etc. are
+  (confirmed by TargetGroup type=9 data correlation - values 2202, 2441, 3086, etc. are
   valid Creature2 IDs; in NexusForever: `IWorldEntity.CreatureId`). Full server-side criteria
   evaluation remains unnecessary: `Spell4ValidTargetsEntry` currently exposes only `Id` and
   `TargetBitmask`, and the existing `TargetBitmask` projection is the verified server path.
@@ -7930,8 +7950,8 @@ is now safely implementable.
 `SpellEffectType.RavelSignal = 0x51 = 81`. The WildStar client has two
 spell-effect dispatch tables split at `DespawnUnit = 0x61 = 97`:
 
-**High-range dispatch** (effectTypes `0x61`–`0x972`): `Entity_ExecuteSpellEffectHighRange`
-at `0x1403ec6a0`, dispatch index = `effectType − 0x61`, jump table at `0x1403f1344`
+**High-range dispatch** (effectTypes `0x61`-`0x972`): `Entity_ExecuteSpellEffectHighRange`
+at `0x1403ec6a0`, dispatch index = `effectType ? 0x61`, jump table at `0x1403f1344`
 (raw int32 RVA offsets relative to `0x140000000` image base, readable directly from
 the PE `.text` section at file offset `0x3F0744`).
 
@@ -7940,7 +7960,7 @@ Jump table statistics: 2322 total entries, **645 non-default**, default handler
 connection live) and `param_2 == entity+0x7928+0x98` (channel ID match) before dispatch;
 stores a tick at `entity+0x7b4c`.
 
-First non-default entries (effectType → handler):
+First non-default entries (effectType ? handler):
 
 | effectType | Name (SpellEffectType.cs) | Handler |
 |---|---|---|
@@ -7959,13 +7979,13 @@ function entries. Keep them in this finding/tracker context rather than in
 `function_labels.csv`; the durable function label belongs on the containing
 entry point at `0x1403ec6a0`.
 
-**Low-range dispatch** (effectTypes `0x01`–`0x60`): Function at `0x1406b1300`,
-dispatch index = `effectType − 1`, two-level table:
+**Low-range dispatch** (effectTypes `0x01`-`0x60`): Function at `0x1406b1300`,
+dispatch index = `effectType ? 1`, two-level table:
 ```asm
-1406b1503: lea  eax, [r13 − 1]      ; effectType − 1 = index
+1406b1503: lea  eax, [r13 ? 1]      ; effectType ? 1 = index
 1406b1507: cmp  eax, 0x5f           ; bounds check (max index 95)
-1406b150a: ja   0x1406b321e         ; out of range → epilogue
-1406b1510: lea  rdx, [rip − 0x6b1517]  ; rdx = 0x140000000
+1406b150a: ja   0x1406b321e         ; out of range ? epilogue
+1406b1510: lea  rdx, [rip ? 0x6b1517]  ; rdx = 0x140000000
 1406b1517: movzx eax, byte ptr [rdx + rax + 0x6b338c]  ; byte compression table
 1406b151f: mov  ecx, dword ptr [rdx + rax*4 + 0x6b3364] ; int32 offset table
 1406b1526: add  rcx, rdx
@@ -7973,26 +7993,26 @@ dispatch index = `effectType − 1`, two-level table:
 ```
 
 RavelSignal (effectType `0x51`, index `0x50`) maps to the low-range dispatch
-epilogue at `0x1406b321e` — the same default path as `SpellForceRemove`,
+epilogue at `0x1406b321e` - the same default path as `SpellForceRemove`,
 `Stealth`, and most other types in that range. Only effectTypes 4, 5, 6, 8,
 and 27 have dedicated handlers in the low-range table; all others, including
 RavelSignal, fall through to the shared epilogue. This means the client routes
 RavelSignal entirely through the Ravel/Lua scripting runtime rather than a
 dedicated C++ spell-effect handler. (The actual CRavel component offset is not
-yet mapped — see **Remaining unknowns** below.)
+yet mapped - see **Remaining unknowns** below.)
 
 **Server implementation** (verified with `dotnet build`; 200/200 tests pass):
-- `IWorldEntityScript.OnSignal(uint signalId)` — new script callback (default
+- `IWorldEntityScript.OnSignal(uint signalId)` - new script callback (default
   no-op); implementing this in a C# entity script fires when any
   `RavelSignal` effect targets that entity.
-- `IWorldEntity.SendSignal(uint signalId)` / `WorldEntity.SendSignal` — invokes
+- `IWorldEntity.SendSignal(uint signalId)` / `WorldEntity.SendSignal` - invokes
   `IWorldEntityScript.OnSignal` via the entity's script collection.
 - `HandleEffectRavelSignalCore` now calls `target.SendSignal(ravelSignal.SignalId)`.
-- `SpellEffectDiagnostics.TraceRavelSignal` — `skippedReason` parameter removed
+- `SpellEffectDiagnostics.TraceRavelSignal` - `skippedReason` parameter removed
   since dispatch is now live.
 
 **Remaining unknowns:**
-- `RavelSignalSemantics.Mode` (DataBits00): values 1–5 dominant in the 5,262
+- `RavelSignalSemantics.Mode` (DataBits00): values 1-5 dominant in the 5,262
   game-table rows. Mode is structurally decoded but not semantically confirmed.
   The target entity is already resolved by the spell targeting system before the
   effect handler runs, so Mode may select a sub-receiver within the CRavel
@@ -8000,7 +8020,7 @@ yet mapped — see **Remaining unknowns** below.)
   C++-level dispatch. Current implementation ignores Mode and always calls
   `OnSignal` on the resolved target; refine when mode semantics are confirmed.
 - CRavel class layout: the actual entity offset for the CRavel component is
-  **unknown** — `entity+0x7928` was previously misidentified as CRavel but is
+  **unknown** - `entity+0x7928` was previously misidentified as CRavel but is
   the network connection handle (see `entity+0x7928` row in the field offset
   table below). The CRavel component offset remains unrecovered.
 
@@ -8013,24 +8033,24 @@ yet mapped — see **Remaining unknowns** below.)
 correlation of TargetGroup `type`/`data0..data6` values against known game tables.
 
 **`Spell4ValidTargets_GetCriteriaById` source confirmed:**
-`PTR_u_TargetGroup_140a6d930` → loads from `DB\TargetGroup.tbl`. The returned row
+`PTR_u_TargetGroup_140a6d930` ? loads from `DB\TargetGroup.tbl`. The returned row
 pointer is the `int*` criteria struct passed to `ValidTargetsCriteria_Evaluate`.
 TargetGroup schema: `(ID, localizedTextIdDisplayString, type, data0..data6)`.
-`type` = checkType (1–13); `data0..data6` = up to 7 value IDs to match against.
+`type` = checkType (1-13); `data0..data6` = up to 7 value IDs to match against.
 
-**entity+0x118 = Faction2 component → Faction2Id:**
+**entity+0x118 = Faction2 component ? Faction2Id:**
 - `EntityCriteria_GetFaction2Id` (`1403b49c0`) reads `[entity+0x118]` as a
-  component pointer → calls `vtable[+0x18]()` → returns Faction2Id (int32).
+  component pointer ? calls `vtable[+0x18]()` ? returns Faction2Id (int32).
   Returns 0 if the component pointer is null.
 - checkType 3 (must-match) and 4 (must-not-match) compare the entity's Faction2Id
   against `data0..data6` values from the TargetGroup row.
 - **Evidence:** All TargetGroup type=3/4 data values fall within Faction2 table ID
   range (min ID = 164): 166, 167, 170, 171, 189, 190, 192, 193, 218, 219, 248,
   249, 274, 278, 284, 307, 312, 340, 390, 430, 463, 473, 478, 498, 510, 518, 521,
-  523, 631, 651, 652, 682, 776, 1112 — all verified as valid Faction2 IDs.
+  523, 631, 651, 652, 682, 776, 1112 - all verified as valid Faction2 IDs.
 - **Distinction from checkType 1/2:** checkType 1/2 use FactionGroupId (`entity+0x18`
-  faction-state struct, first dword) — coarser Exile/Dominion/Neutral grouping.
-  checkType 3/4 use Faction2Id — a finer-grained specific faction affiliation from
+  faction-state struct, first dword) - coarser Exile/Dominion/Neutral grouping.
+  checkType 3/4 use Faction2Id - a finer-grained specific faction affiliation from
   the `Faction2` hierarchy table.
 - **NexusForever mapping:** `IWorldEntity.Faction1` and `Faction2` are `Faction`
   enum values whose underlying uint integers ARE Faction2 IDs (Faction.Dominion=166,
@@ -8044,8 +8064,8 @@ TargetGroup schema: `(ID, localizedTextIdDisplayString, type, data0..data6)`.
 - checkType 9 performs a list-match: entity's Creature2Id vs. data0..data6 (up to
   7 Creature2 IDs from the TargetGroup row).
 - **Evidence:** All TargetGroup type=9 data values verified as valid Creature2 IDs:
-  2202, 2203, 2277–2282, 2352–2353, 2365, 2385, 2410–2411, 2441, 3086, 3830,
-  3944–3945, 4298, 4859, 4860, 4861, 6292, 6879, 6880, 6881, 6882.
+  2202, 2203, 2277-2282, 2352-2353, 2365, 2385, 2410-2411, 2441, 3086, 3830,
+  3944-3945, 4298, 4859, 4860, 4861, 6292, 6879, 6880, 6881, 6882.
   Creature2 ID 2441 = `[PH] Moonfrenzy Tunnel - Dynamic Event - Object`.
 - Players return 0 for this field (no template creature ID for player characters).
 - **NexusForever mapping:** `IWorldEntity.CreatureId` (uint) is the Creature2
@@ -8073,7 +8093,7 @@ TargetGroup schema: `(ID, localizedTextIdDisplayString, type, data0..data6)`.
 **Server implication:** No server code changes needed. All 13 checkType semantics are
 now fully decoded. The existing `TargetBitmask` simplified projection remains the
 verified server path. `entity+0x118` maps to `IWorldEntity.Faction1`/`Faction2` and
-`entity+0x140` maps to `IWorldEntity.CreatureId` — both already exist on server entities.
+`entity+0x140` maps to `IWorldEntity.CreatureId` - both already exist on server entities.
 
 ---
 
@@ -8087,12 +8107,12 @@ Three standard ClientDB query thunks share the same hot-swap override pattern:
 
 | Function | Address | Vtable slot | Semantics |
 |---|---|---|---|
-| `Spell4StackGroup_GetAllRows` | `14023b1b0` | `*DB + 0x28` (vtable[5]) | Returns all rows / row count — no ID parameter |
+| `Spell4StackGroup_GetAllRows` | `14023b1b0` | `*DB + 0x28` (vtable[5]) | Returns all rows / row count - no ID parameter |
 | `Spell4StackGroup_GetById` | `14023b200` | `*DB + 0x18` (vtable[3]) | Looks up one row by uint32 ID |
 | `Spell4StackGroup_GetByIndex` | `14023b260` | `*DB + 0x20` (vtable[4]) | Looks up one row by sequential index |
 
 Hot-swap override globals (DAT_140c63838 / 140c63840 / 140c63848):
-Each thunk checks an override function pointer first — if non-null, the override is
+Each thunk checks an override function pointer first - if non-null, the override is
 called instead of the DB vtable. This is the standard WildStar ClientDB mock/hot-patch
 hook used in testing. Under normal gameplay the overrides are null.
 
@@ -8111,9 +8131,9 @@ Decoded from `SpellCast_SendClientToggleCastOn`, `SpellCast_SendClientToggleCast
 
 | Opcode (hex) | Direction | Name | Payload |
 |-------------|-----------|------|---------|
-| `0x17e` | Client→Server | ToggleCast | `{1}` = on, `{0}` = off; preceded by validation |
-| `0x801` | Client→Server | SpellStopCast | `{entityId, reasonCode, 0}`; `reasonCode < 0x14c` has string mapping |
-| `0x802` | Client→Server | CancelEffect | `{effectSequenceId, ...}` sent when cancelling effect type 0xe or 0x24 |
+| `0x17e` | Client?Server | ToggleCast | `{1}` = on, `{0}` = off; preceded by validation |
+| `0x801` | Client?Server | SpellStopCast | `{entityId, reasonCode, 0}`; `reasonCode < 0x14c` has string mapping |
+| `0x802` | Client?Server | CancelEffect | `{effectSequenceId, ...}` sent when cancelling effect type 0xe or 0x24 |
 
 ### Toggle Cast State
 - `entity + 0x6820` = current toggle cast state: 0 = off, 1 = on
@@ -8145,13 +8165,13 @@ The Spell4Prerequisites row has 3 faction level check slots at row offsets:
 | `+0xb0+0x0c` | minLevel[0] | Required faction level |
 | `+0xb0+0x18` | direction[0] | 0 = must be >= minLevel; non-zero = must be < minLevel |
 
-Iterates prerequisite row offsets 0xb0..0xbc (3 slots × 4 bytes apart).
+Iterates prerequisite row offsets 0xb0..0xbc (3 slots x 4 bytes apart).
 `(*factionObj + 0x28)(factionObj)` = vtable GetFactionLevel.
 
 
 ---
 
-## SpellWrapper InnerData — Additional Fields
+## SpellWrapper InnerData - Additional Fields
 
 Decoded from `ActionSet_ValidateRequestedChanges`, `ServiceToken_HandleCastResult`.
 
@@ -8165,7 +8185,7 @@ Additional `inner` struct (at `*(wrapper + 0x70)`) fields:
 
 Note: `+0x108` was previously documented as a byte with only bit 0x02; it is a full uint32.
 
-## Entity Struct — Additional Fields
+## Entity Struct - Additional Fields
 
 From `ActionSet_SendPendingActionSetChanges`, `CSIAction_HandleCurrentTargetApproach`,
 `TargetThreatList_RebuildAndDispatch`, `ActionSet_ValidateRequestedChanges`.
@@ -8176,7 +8196,7 @@ From `ActionSet_SendPendingActionSetChanges`, `CSIAction_HandleCurrentTargetAppr
 | `+0x250` | int32 | `movementBlockFlag1` | Non-zero = entity blocked/obstacle (can't approach) |
 | `+0x254` | int32 | `movementBlockFlag2` | Non-zero = entity blocked/obstacle (can't approach) |
 | `+0x2ac` | int32 | `inCombatFlag` | Non-zero = in combat (blocks ActionSet changes) |
-| `+0xaa8` | BST root | `actionSlotBST` | BST of SpellId → action slot data (same structure as +0x7d18) |
+| `+0xaa8` | BST root | `actionSlotBST` | BST of SpellId ? action slot data (same structure as +0x7d18) |
 | `+0x1460` | linked list | `actionSetChangeQueue` | Pending action set change entries |
 | `+0x1468` | int64 | `actionSetChangeCount` | Count of pending changes in queue |
 | `+0x66e4` | uint32 | `spellCastTimestamp` | Timestamp written when cast begins; `SpellCast_CancelCurrentCast` guards against cancels within 3000 ms of this value |
@@ -8208,14 +8228,14 @@ From `DeferredActionQueue_ArmTargetApproach`.
 From `ActionSet_ValidateRequestedChanges`:
 - Valid action set index range: 1..22 (param_3 - 1 in range 0..21)
 - Must NOT be in combat (entity+0x2ac == 0)
-- Exact 12 spells per action set (0x30 bytes = 12 × int32)
+- Exact 12 spells per action set (0x30 bytes = 12 x int32)
 - Slots 0..7: spell `inner+0xfc` MUST equal 5 (ability type)
 - Slots 8..11: spell `inner+0xfc` MUST NOT equal 5 (passive/AMP type)
 
 
 ---
 
-## SpellWrapper InnerData — Innate Cost / GCD / RequiredLevel Fields
+## SpellWrapper InnerData - Innate Cost / GCD / RequiredLevel Fields
 
 From `Lua_GameSpell_GetCasterInnateCosts`, `Lua_GameSpell_GetGCDTime`, `Lua_GameSpell_GetRequiredLevel`.
 
@@ -8228,9 +8248,9 @@ From `Lua_GameSpell_GetCasterInnateCosts`, `Lua_GameSpell_GetGCDTime`, `Lua_Game
 | `+0xb4` | int32 | `innateCostAmount2` | Amount of type2 resource consumed on cast |
 | `+0x190` | uint64 | `innateActivationThreshold` | Minimum innate value required to activate via AbilityBook |
 
-GCD time lookup chain: `inner+0x28 → Spell4GcdData row → base GCD ms → FUN_14046a760(entity+0x78, gcdGroupId, basems) = effective GCD remaining`.
+GCD time lookup chain: `inner+0x28 ? Spell4GcdData row ? base GCD ms ? FUN_14046a760(entity+0x78, gcdGroupId, basems) = effective GCD remaining`.
 
-## SpellWrapper Top-Level — Additional Fields
+## SpellWrapper Top-Level - Additional Fields
 
 From `Lua_GameSpell_GetCooldownTime`, `Lua_GameSpell_GetCasterInnateRequirements`.
 
@@ -8248,7 +8268,7 @@ From `Lua_GameSpell_GetCasterInnateRequirements`:
 | `+0x10` | int32 | `innateReqValue1` | First innate requirement value (> 0 = active) |
 | `+0x14` | int32 | `innateReqValue2` | Second innate requirement value (> 0 = active) |
 
-## Entity Struct — Additional Fields
+## Entity Struct - Additional Fields
 
 From `SpellCast_SendClient0x009dVariant`, `Lua_AbilityBook_ActivateSpell`, `SpellTarget_ValidateTargetRelationship`.
 
@@ -8270,25 +8290,25 @@ From `SpellCast_SendClient0x009dVariant`, `Lua_AbilityBook_ActivateSpell`, `Spel
 | `+0xa04` | float | `cooldownReductionMult` | Cooldown reduction multiplier (e.g., 1.0 = no reduction) |
 | `+0x1608` | linked list | `activeCooldownList` | Active cooldown tracking list; entries: `+0x04`=type, `+0x08`=spellId, `+0x0c`=groupId, `+0x20`=timerPtr, `+0x88`=next |
 
-## SpellService (DAT_140c65b70) — Additional Fields
+## SpellService (DAT_140c65b70) - Additional Fields
 
 | Byte offset | Type | Name | Notes |
 |------------|------|------|-------|
 | `+0x58` | array | `classSpellLevelTable` | Array of ClassEntry (0x10 bytes each), indexed by classId 0..22; `[0]`=pairArrayPtr, `[8]`=count |
-| `+0x788` | BST | `spellChainBST` | SpellId → chain/variant data; used when `castMethod == 7` (freeform/chain spells) |
+| `+0x788` | BST | `spellChainBST` | SpellId ? chain/variant data; used when `castMethod == 7` (freeform/chain spells) |
 
-## Network Opcodes — Additional
+## Network Opcodes - Additional
 
 | Opcode | Direction | Name | Payload |
 |--------|-----------|------|---------|
-| `0x9d` | Client→Server | SpellCastVariant | `{spellId:uint32, targetValidation:uint32, entityId:uint32, posX:float, posY:float, posZ:float}` |
-| `0x17a` | Client→Server | ActivateSpell | `{hasTarget:byte, spellBaseId:uint32}` |
+| `0x9d` | Client?Server | SpellCastVariant | `{spellId:uint32, targetValidation:uint32, entityId:uint32, posX:float, posY:float, posZ:float}` |
+| `0x17a` | Client?Server | ActivateSpell | `{hasTarget:byte, spellBaseId:uint32}` |
 
-## SpellCast Return Codes — Additional
+## SpellCast Return Codes - Additional
 
 | Return Code | Name | Condition |
 |------------|------|-----------|
-| `0x0d` (13) | SpellNotAvailable | `FUN_1403a1630(entity, baseSpellId, 1) == 0` — spell unlock check failed |
+| `0x0d` (13) | SpellNotAvailable | `FUN_1403a1630(entity, baseSpellId, 1) == 0` - spell unlock check failed |
 | `0x59` (89) | InvalidTargetRelationship | Faction relationship mismatch in SpellTarget_ValidateTargetRelationship |
 
 ## ServerSpellList Packet Format
@@ -8308,11 +8328,11 @@ SpellEntry (0x40 bytes) {
     +0x0c: uint16 [18 bits]                 // field4
     +0x10: byte   [1 bit]                   // isNew flag
     +0x14: uint32 [32 bits]                 // tierCount
-    +0x18: ptr    → TierEntry[tierCount]    // 0x18 bytes each
+    +0x18: ptr    ? TierEntry[tierCount]    // 0x18 bytes each
     +0x20: byte   [8 bits]                  // variantGroupCount
-    +0x28: ptr    → unknown[count]          // 0x1c bytes each
+    +0x28: ptr    ? unknown[count]          // 0x1c bytes each
     +0x30: byte   [8 bits]                  // cooldownGroupCount
-    +0x38: ptr    → CooldownGroup[count]    // 0x20 bytes each
+    +0x38: ptr    ? CooldownGroup[count]    // 0x20 bytes each
 }
 
 TierEntry (0x18 bytes) {
@@ -8322,7 +8342,7 @@ TierEntry (0x18 bytes) {
     +0x06: uint16 [16 bits]                 // field3
     +0x08: nibble [4 bits]                  // field4
     +0x0c: byte   [8 bits]                  // variantCount
-    +0x10: ptr    → VariantEntry[count]     // 0x50 bytes each
+    +0x10: ptr    ? VariantEntry[count]     // 0x50 bytes each
 }
 
 VariantEntry (0x50 bytes) {
@@ -8338,7 +8358,7 @@ VariantEntry (0x50 bytes) {
 
 ---
 
-## SpellWrapper Top-Level — Effect Array and Additional Fields
+## SpellWrapper Top-Level - Effect Array and Additional Fields
 
 From `Lua_GameSpell_GetProxyChannelData`.
 
@@ -8358,7 +8378,7 @@ From `Lua_GameSpell_GetProxyChannelData`.
 
 `inner + 0xf8` confirmed by `Lua_GameSpell_GetClass`: this field is the spell **activation class** (an internal category enum, not character class). Values 0xe and 0x24 are treated as cancellable by `SpellEffect_SendClientCancelEffect`. Renamed from `primaryEffectType` to `spellActivationClass`.
 
-## Entity Struct — Additional Fields
+## Entity Struct - Additional Fields
 
 From `ActivateUnit_SendClientActivateUnitCast`, `DashCast_SendClientDashCast`, `Interaction_AttemptTargetAction`.
 
@@ -8379,7 +8399,7 @@ From `ActivateUnit_SendClientActivateUnitCast`, `DashCast_SendClientDashCast`, `
 | `+0x7198` | ptr | `someMovementObj` | Sub-object; vtable+0x50 = some movement lock flag |
 | `+0x7330` | ptr | `specialMovementState` | Passed to FUN_14055a260 (special movement state check) |
 
-## Entity+0x1908 — Interaction Script Object
+## Entity+0x1908 - Interaction Script Object
 
 | Sub-offset | Type | Name | Notes |
 |------------|------|------|-------|
@@ -8390,7 +8410,7 @@ From `ActivateUnit_SendClientActivateUnitCast`, `DashCast_SendClientDashCast`, `
 | `[4]` (`+0x10`) | float | `interactionRange` | Default 5.0 if 0 |
 | `[0x10]` (`+0x40`) | ptr | `activationHandlerFn` | Function ptr for activation callback |
 
-## CastContext Sub-Struct — Additional Fields
+## CastContext Sub-Struct - Additional Fields
 
 From `DashCast_SendClientDashCast`, `ActionSet_CheckUpdateSpellInProgress`.
 
@@ -8402,17 +8422,17 @@ From `DashCast_SendClientDashCast`, `ActionSet_CheckUpdateSpellInProgress`.
 | `+0x1088` | int32 | `dashBlockFlag` | Non-zero = block dash cast |
 | `+0x15c0` | linked list | `spellStateList` | Update-in-progress state chain; each entry has vtable+0x08 = GetStateId, entry+0x10 = next |
 
-## Network Opcodes — Additional
+## Network Opcodes - Additional
 
 | Opcode | Direction | Name | Payload |
 |--------|-----------|------|---------|
-| `0x94f` | Client→Server | GuildBossTokenCast | `{entryData, localSpellId, ..., timestamp}` |
-| `0x97` | Client→Server | ActivateUnitCast | `{casterEntityId, targetEntityId, ...}` |
-| `0xb3` | Client→Server | SelectTargetEntity | `{entityId:uint32}` |
-| `0x35b` | Client→Server | QuestAccept | `{paramData, questId}` |
-| `0x365` | Client→Server | QuestComplete | `{questId:uint32}` |
+| `0x94f` | Client?Server | GuildBossTokenCast | `{entryData, localSpellId, ..., timestamp}` |
+| `0x97` | Client?Server | ActivateUnitCast | `{casterEntityId, targetEntityId, ...}` |
+| `0xb3` | Client?Server | SelectTargetEntity | `{entityId:uint32}` |
+| `0x35b` | Client?Server | QuestAccept | `{paramData, questId}` |
+| `0x365` | Client?Server | QuestComplete | `{questId:uint32}` |
 
-## SpellService — Additional Globals
+## SpellService - Additional Globals
 
 | Address | Name | Notes |
 |---------|------|-------|
@@ -8424,7 +8444,7 @@ From `DashCast_SendClientDashCast`, `ActionSet_CheckUpdateSpellInProgress`.
 | `DAT_140c7de18` | GuildBossTokenEntryList | Ptr to list; `DAT_140c7de20` = count |
 | `DAT_140c635f0` | GameTimeGlobal | `+0x1680` = current game tick or timestamp |
 
-## Return Codes — Additional
+## Return Codes - Additional
 
 | Code | Name | Function |
 |------|------|----------|
@@ -8434,16 +8454,16 @@ From `DashCast_SendClientDashCast`, `ActionSet_CheckUpdateSpellInProgress`.
 | 0x106 (262) | ActivationRateLimited | Within 1000ms of last activation (entity+0x7190) |
 | 0x13d (317) | CastQueued | SpellCast deferred/queued (not failed) |
 
-## SpellService Functions — Additional Label
+## SpellService Functions - Additional Label
 
 | Address | Name | Signature |
 |---------|------|-----------|
-| `1403ad690` | `SpellService_IsInRange` | `(castContext, targetEntity, minRange, maxRange, 0) → bool` |
+| `1403ad690` | `SpellService_IsInRange` | `(castContext, targetEntity, minRange, maxRange, 0) ? bool` |
 
 
 ---
 
-## Entity Struct — Additional Fields (Batch 3)
+## Entity Struct - Additional Fields (Batch 3)
 
 From `SpellCast_ValidateAndDispatch`, `SpellCast_ResolveTargetsAndValidate`, `SpellCast_SendClientToggleCastOn/Off`, `AbilityBook_SendClientCommitAmpSpec`.
 
@@ -8460,14 +8480,14 @@ From `SpellCast_ValidateAndDispatch`, `SpellCast_ResolveTargetsAndValidate`, `Sp
 | `+0x6d00` | uint64 | `substituteCastSlot` | Slot/count; high byte = 9 |
 | `+0x6e70` | ptr | `ampSpecDataPtr0` | AMP spec array (uint16 entries) for action set 0 |
 | `+0x6e78` | uint64 | `ampSpecCount0` | Count of AMP entries for action set 0 |
-| `+0x6e80..6ea8` | — | `ampSpec1..3` | Repeat pattern for action sets 1-3: `+0x6e80/0x6e88`, `+0x6e90/0x6e98`, `+0x6ea0/0x6ea8` |
+| `+0x6e80..6ea8` | - | `ampSpec1..3` | Repeat pattern for action sets 1-3: `+0x6e80/0x6e88`, `+0x6e90/0x6e98`, `+0x6ea0/0x6ea8` |
 | `+0x6eb0` | ptr | `stagedAmpSpecPtr` | Staged/pending AMP node entries ptr |
 | `+0x6eb8` | uint64 | `stagedAmpSpecCount` | Number of staged AMP entries (if non-zero, pending commit) |
 | `+0x7040` | ptr | `specialResolvePath` | Non-null triggers FUN_14057a2c0 in target resolve |
 | `+0x7258` | ptr | `vehicleOrMountStateObj` | `+0x14` = state type (3 or 8 = locked for toggle cast) |
 | `+0x7ba0` | uint32 | `castingOptionFlags` | Bit 0 = self-cast mode; bit 1 = "self-cast mode" toggle (from Options_SendClientOptionsCasting) |
 
-## Entity+0x78 Active State Sub-Struct — Additional Fields
+## Entity+0x78 Active State Sub-Struct - Additional Fields
 
 | Sub-offset | Type | Name | Notes |
 |------------|------|------|-------|
@@ -8475,7 +8495,7 @@ From `SpellCast_ValidateAndDispatch`, `SpellCast_ResolveTargetsAndValidate`, `Sp
 | `+0x1600` | uint32 | `activeToggleSpellId` | ID of the currently active toggle spell (non-zero if toggled on) |
 | `+0x2ac` | int32 | `castUpdateInProgress` | Non-zero = cast or action-set update is in progress; blocks further casts |
 
-## CastContext — Additional Fields
+## CastContext - Additional Fields
 
 | Byte offset | Type | Name | Notes |
 |------------|------|------|-------|
@@ -8509,28 +8529,28 @@ From `Lua_GameLib_GetClassInnateAbilitySpells`, `Lua_GameLib_GetCurrentClassInna
 | `+0x08` | uint32[n] | `innateSpellIds` | Array of innate spell IDs; each 4 bytes |
 | `+0x30` | int32 | `selectedInnateIndex` | Current selected innate spell index (0-based) |
 
-## SpellWrapper Inner — Field Rename
+## SpellWrapper Inner - Field Rename
 
 `inner + 0xf8` was `primaryEffectType`; corrected name: `spellActivationClass` (returned by `Lua_GameSpell_GetClass`; values 0xe and 0x24 treated as cancellable by `SpellEffect_SendClientCancelEffect`).
 
-## SpellService — Additional Fields
+## SpellService - Additional Fields
 
 | Offset | Type | Name | Notes |
 |--------|------|------|-------|
 | `+0x540` | hash_map | `spellWrapperByIdMap` | Hash map of Spell4 id -> spell wrapper; used by `SpellService_LookupSpellWrapperById` |
 
-## Network Opcodes — Additional (Batch 3)
+## Network Opcodes - Additional (Batch 3)
 
 | Opcode | Direction | Name | Payload |
 |--------|-----------|------|---------|
-| `0xc2` (194) | Client→Server | ServiceTokenSpellCast | `{spell4BaseId:uint32, serviceTokenId:uint32}` |
-| `0x12b` (299) | Client→Server | CastingOptionsUpdate | `{reserved:uint32, optionFlags:uint32}` where bit 1 = selfcast |
-| `0x17e` (382) | Client→Server | ToggleCast | `{enabled:byte}` — 1 = on, 0 = off |
-| `0x18f` (399) | Server→Client | SpellContextNotify | `{0:byte}` — sent when cast context changes |
-| `0x1a2` (418) | Client→Server | CommitAmpSpec | `{count:byte, ampNodeIds[count]:uint16}` |
-| `0x801` (2049) | Client→Server | SpellStopCast | `{reason:uint32, reasonAux:uint32, 0:uint32}` |
+| `0xc2` (194) | Client?Server | ServiceTokenSpellCast | `{spell4BaseId:uint32, serviceTokenId:uint32}` |
+| `0x12b` (299) | Client?Server | CastingOptionsUpdate | `{reserved:uint32, optionFlags:uint32}` where bit 1 = selfcast |
+| `0x17e` (382) | Client?Server | ToggleCast | `{enabled:byte}` - 1 = on, 0 = off |
+| `0x18f` (399) | Server?Client | SpellContextNotify | `{0:byte}` - sent when cast context changes |
+| `0x1a2` (418) | Client?Server | CommitAmpSpec | `{count:byte, ampNodeIds[count]:uint16}` |
+| `0x801` (2049) | Client?Server | SpellStopCast | `{reason:uint32, reasonAux:uint32, 0:uint32}` |
 
-## Return Codes — ActionSet Specific
+## Return Codes - ActionSet Specific
 
 | Code | Name | Context |
 |------|------|---------|
@@ -8542,7 +8562,7 @@ From `Lua_GameLib_GetClassInnateAbilitySpells`, `Lua_GameLib_GetCurrentClassInna
 | 0x14b | ServiceTokenInvalid | Service token expired or invalid timestamp |
 | 0x80004005 | FeatureDisabled | Deferred action feature flag is disabled |
 
-## DeferredActionQueue — Confirmed Full Layout (entity+0x70b0)
+## DeferredActionQueue - Confirmed Full Layout (entity+0x70b0)
 
 | Sub-offset | Type | Name | Notes |
 |------------|------|------|-------|
@@ -8583,7 +8603,7 @@ For the action slot BST (`entity+0xaa8`):
 - Slot data at `*(node+0x28)`: `[1]` = count of action set entries; `*(slot + setIndex*8)` = per-set action entry
 - Action entry: `+0x04` = spellId, `+0x08` = enabled flag (non-zero = slot unlocked)
 
-## Labeled Functions — Additional
+## Labeled Functions - Additional
 
 | Address | Name |
 |---------|------|
@@ -8592,7 +8612,7 @@ For the action slot BST (`entity+0xaa8`):
 
 ---
 
-## Entity Struct — Additional Fields (Batch 4)
+## Entity Struct - Additional Fields (Batch 4)
 
 From `Lua_GameLib_*` and `SpellCast_SendClientToggleCastOn`, `Lua_GameLib_TogglePvpFlags`, `Lua_GameLib_GetRestXp`, etc.
 
@@ -8606,7 +8626,7 @@ From `Lua_GameLib_*` and `SpellCast_SendClientToggleCastOn`, `Lua_GameLib_Toggle
 | `+0x6ee4` | int32 | `duelStateFlag` | 1 = pending duel request (can accept/decline) |
 | `+0x7258` | ptr | `worldContextObjPtr` | World/zone context sub-object; `+0x14` = contextType (3 or 8 = action locked); `+0x54` = heroismMenaceLevel |
 
-## Entity+0x78 Active State Sub-Struct — Additional Fields (Batch 2)
+## Entity+0x78 Active State Sub-Struct - Additional Fields (Batch 2)
 
 From `Lua_GameLib_SpendAttributePoints`, `Lua_GameLib_TogglePvpFlags`.
 
@@ -8615,15 +8635,15 @@ From `Lua_GameLib_SpendAttributePoints`, `Lua_GameLib_TogglePvpFlags`.
 | `+0x250` | int32 | `attributePointSpendBlocker` | Non-zero = cannot spend attribute points |
 | `+0x15a8` | uint32 | `characterStateFlags` | Bit 1 (0x2) = actions blocked (dead/incapacitated) |
 
-## Network Opcodes — Additional (Batch 4)
+## Network Opcodes - Additional (Batch 4)
 
 | Opcode | Direction | Name | Payload |
 |--------|-----------|------|---------|
-| `0xe8` (232) | Client→Server | DuelAccept | `{0:byte}` |
-| `0xe9` (233) | Client→Server | DuelDecline | `{0:byte}` |
-| `0xec` (236) | Client→Server | DuelInitiate | `{0:byte}` |
-| `0x173` (371) | Client→Server | TogglePvpFlags | `{enabled:uint32}` |
-| `0x17c` (380) | Client→Server | SpendAttributePoints | `{attrDeltas[n]:uint32}` variadic |
+| `0xe8` (232) | Client?Server | DuelAccept | `{0:byte}` |
+| `0xe9` (233) | Client?Server | DuelDecline | `{0:byte}` |
+| `0xec` (236) | Client?Server | DuelInitiate | `{0:byte}` |
+| `0x173` (371) | Client?Server | TogglePvpFlags | `{enabled:uint32}` |
+| `0x17c` (380) | Client?Server | SpendAttributePoints | `{attrDeltas[n]:uint32}` variadic |
 
 ## Innate Ability System
 
@@ -8652,7 +8672,7 @@ From `Lua_GameLib_SpendAttributePoints`, `Lua_GameLib_TogglePvpFlags`.
 
 ---
 
-## SpellWrapper InnerData Layout — Expanded (Batch 2)
+## SpellWrapper InnerData Layout - Expanded (Batch 2)
 
 From `Lua_GameSpell_*` function analysis.
 
@@ -8680,16 +8700,16 @@ All offsets relative to `inner = *(longlong *)(wrapper + 0x70)`.
 | `+0x108` | uint32 | `flagBits2` | Bit 1=AoE bypass; Bit 6=movingInterrupted; Bit 29=hasServiceTokenCost |
 | `+0x10c` | uint32 | `flagBits3` | Bit 26=IsBeneficial; Bit 28=IsGroundTargeted |
 | `+0x154` | uint32 | `miscFlags` | Bit 9=substituteCheck2; Bit 10=substituteCheck1 |
-| `+0x168` | ptr | `casterCriteriaPtr` | Caster fails → return 0x97 |
-| `+0x16c` | ptr | `secondaryCriteriaPtr` | Secondary fails → return 0x119 |
+| `+0x168` | ptr | `casterCriteriaPtr` | Caster fails ? return 0x97 |
+| `+0x16c` | ptr | `secondaryCriteriaPtr` | Secondary fails ? return 0x119 |
 | `+0x180` | uint32 | `substituteSpellRef` | Substitute spell lookup reference |
 | `+0x184` | uint32 | `thresholdTime` | Threshold cast time (uint32 ms) |
-| `+0x198` | uint32 | `prerequisiteId` | Prerequisite ID (0=none); fail → return 0x11 |
-| `+0x1b0` | ptr | `questInteractionPtr` | Non-null → quest accept/retry flow |
-| `+0x1d0` | ptr | `tradeskillVendorPtr` | Non-null → tradeskill vendor flow |
+| `+0x198` | uint32 | `prerequisiteId` | Prerequisite ID (0=none); fail ? return 0x11 |
+| `+0x1b0` | ptr | `questInteractionPtr` | Non-null ? quest accept/retry flow |
+| `+0x1d0` | ptr | `tradeskillVendorPtr` | Non-null ? tradeskill vendor flow |
 | `+0x1d8` | ptr | `tradeskillVendorPtr2` | Second tradeskill vendor check |
 
-## SpellWrapper Object Layout — Full (Consolidated)
+## SpellWrapper Object Layout - Full (Consolidated)
 
 | Wrapper offset | Type | Name | Notes |
 |---------------|------|------|-------|
@@ -8715,7 +8735,7 @@ All offsets relative to `inner = *(longlong *)(wrapper + 0x70)`.
 | `+0x540` | hashmap | `spellWrapperByIdMap` |
 | `+0x788` | BST | `selfSpellDelegateBST` |
 
-## Entity+0x78 Active State Fields — Cooldown Tracking
+## Entity+0x78 Active State Fields - Cooldown Tracking
 
 | Sub-offset | Type | Name | Notes |
 |------------|------|------|-------|
@@ -8756,11 +8776,11 @@ Each cooldown node (linked list via `node + 0x88`):
 
 ---
 
-## SpellWrapper InnerData — Additional Flag Bits
+## SpellWrapper InnerData - Additional Flag Bits
 
 From `Lua_GameSpell_IsFreeformTarget`, `ShouldHideCooldownInTooltip`, `GetRequiredWorldZone`.
 
-**inner + 0x108 (flagBits2) — Updated:**
+**inner + 0x108 (flagBits2) - Updated:**
 | Bit | Mask | Name |
 |-----|------|------|
 | 1 | 0x000002 | AoE bypass |
@@ -8768,7 +8788,7 @@ From `Lua_GameSpell_IsFreeformTarget`, `ShouldHideCooldownInTooltip`, `GetRequir
 | 22 | 0x400000 | isFreeformTarget (ground-target / free-position) |
 | 29 | 0x20000000 | hasServiceTokenCost |
 
-**inner + 0x10c (flagBits3) — Updated:**
+**inner + 0x10c (flagBits3) - Updated:**
 | Bit | Mask | Name |
 |-----|------|------|
 | 9 | 0x200 | hideCooldownInTooltip |
@@ -8799,7 +8819,7 @@ Each tradeskill entry ptr: `entry + 0x08` = tradeskillId (int32)
 
 ---
 
-## AbilityBook — Spell Activation and Tier System
+## AbilityBook - Spell Activation and Tier System
 
 From `Lua_AbilityBook_ActivateSpell`, `Lua_AbilityBook_UpdateSpellTier`.
 
@@ -8814,11 +8834,11 @@ From `Lua_AbilityBook_ActivateSpell`, `Lua_AbilityBook_UpdateSpellTier`.
 
 ### SpellInnerData
 
-- `inner + 0x190` (offset 400) = `abilityActivationCost` (uint32) — must be ≤ entity+0x15f8
+- `inner + 0x190` (offset 400) = `abilityActivationCost` (uint32) - must be ? entity+0x15f8
 
 ### ActionSet Slot Data
 
-- `FUN_1403c1ea0(entity, slotIndex, actionSetByte)` = `ActionSet_GetSlotData` — returns slot data ptr
+- `FUN_1403c1ea0(entity, slotIndex, actionSetByte)` = `ActionSet_GetSlotData` - returns slot data ptr
 - Slot data `+0x118` = `slotSpellId` (uint32)
 
 ### Key Function Labels (AbilityBook)
@@ -8833,15 +8853,15 @@ From `Lua_AbilityBook_ActivateSpell`, `Lua_AbilityBook_UpdateSpellTier`.
 | `1403bb340` | `SpellBook_SendTierUpdateRequest` |
 | `1403c1ea0` | `ActionSet_GetSlotData` |
 
-## ActionSetLib — Slot Unlock System
+## ActionSetLib - Slot Unlock System
 
 From `Lua_ActionSetLib_IsSlotUnlocked`.
 
-- `DAT_140c659c0` = `ActionSetSlotUnlockService` — slot unlock criteria table
+- `DAT_140c659c0` = `ActionSetSlotUnlockService` - slot unlock criteria table
   - `+0x08` = ptr to array of criteriaIds (int32 per slot)
   - `+0x10` = count (max slot index in table)
-  - CriteriaId == 0 → slot always unlocked (return 1)
-  - CriteriaId != 0 → checked via criteria vtable at DAT_140c659a0
+  - CriteriaId == 0 ? slot always unlocked (return 1)
+  - CriteriaId != 0 ? checked via criteria vtable at DAT_140c659a0
 
 Return value semantics:
 - 1 = unlocked (no criteria or criteria passed)
@@ -8849,32 +8869,32 @@ Return value semantics:
 - 0x17 (23) = no active entity state
 - 0x18 (24) = slot index out of criteria table range
 
-## Network Opcodes — Additional (Batch 4 cont.)
+## Network Opcodes - Additional (Batch 4 cont.)
 
 | Opcode | Direction | Name | Payload |
 |--------|-----------|------|---------|
-| `0x17a` (378) | Client→Server | ActivateSpell | `{spellId:uint32, isShiftHeld:byte}` |
+| `0x17a` (378) | Client?Server | ActivateSpell | `{spellId:uint32, isShiftHeld:byte}` |
 
 
 ---
 
-## Network Opcodes — Additional (Batch 5)
+## Network Opcodes - Additional (Batch 5)
 
 | Opcode | Direction | Name | Payload |
 |--------|-----------|------|---------|
-| `0xb5` (181) | Client→Server | AssignMasterLoot | `{lootId:uint32, rollId:uint32, targetEntityGuid:uint128}` |
-| `0x14c` (332) | Client→Server | RepairAllItems | `{vendorEntityGuid:uint64, 0:uint64, 0:uint64}` |
-| `0x150` (336) | Client→Server | ResetAttributePoints | `{0:byte}` |
-| `0x153` (339) | Client→Server | ResetSingleInstance | `{instanceId:uint32}` |
-| `0x15d` (349) | Client→Server | LootRoll | `{rollId:uint32, lootId:uint32, rollType:uint32}` (rollType: 0=greed,1=need,2=pass) |
-| `0x163` (355) | Client→Server | SetInstanceSettings | `{instanceId:uint32, difficultyId:uint32, levelScaling:uint64}` |
-| `0x167` (359) | Client→Server | IsRepairVendorQuery | `{0:byte}` |
-| `0x170` (368) | Client→Server | SetCharacterFlags | `{flags:uint32}` |
-| `0x173` (371) | Client→Server | TogglePvpFlags | `{enabled:uint32}` |
-| `0xd2` (210) | Client→Server | ConfirmInstanceSettings | `{instanceId:uint32}` |
-| `0x830` (2096) | Client→Server | ReportBug | `{bugTypeId:ushort, itemId:uint32, zoneId:uint32, descriptionPtr:string}` |
+| `0xb5` (181) | Client?Server | AssignMasterLoot | `{lootId:uint32, rollId:uint32, targetEntityGuid:uint128}` |
+| `0x14c` (332) | Client?Server | RepairAllItems | `{vendorEntityGuid:uint64, 0:uint64, 0:uint64}` |
+| `0x150` (336) | Client?Server | ResetAttributePoints | `{0:byte}` |
+| `0x153` (339) | Client?Server | ResetSingleInstance | `{instanceId:uint32}` |
+| `0x15d` (349) | Client?Server | LootRoll | `{rollId:uint32, lootId:uint32, rollType:uint32}` (rollType: 0=greed,1=need,2=pass) |
+| `0x163` (355) | Client?Server | SetInstanceSettings | `{instanceId:uint32, difficultyId:uint32, levelScaling:uint64}` |
+| `0x167` (359) | Client?Server | IsRepairVendorQuery | `{0:byte}` |
+| `0x170` (368) | Client?Server | SetCharacterFlags | `{flags:uint32}` |
+| `0x173` (371) | Client?Server | TogglePvpFlags | `{enabled:uint32}` |
+| `0xd2` (210) | Client?Server | ConfirmInstanceSettings | `{instanceId:uint32}` |
+| `0x830` (2096) | Client?Server | ReportBug | `{bugTypeId:ushort, itemId:uint32, zoneId:uint32, descriptionPtr:string}` |
 
-## Entity Fields — Instance and Loot System
+## Entity Fields - Instance and Loot System
 
 | Offset | Type | Name | Notes |
 |--------|------|------|-------|
@@ -8905,13 +8925,13 @@ Confirmed from `Lua_GameLib_GetClassInnateAbilitySpells` and `GetCurrentClassInn
 ## Entity Vendor Interaction Check
 
 ```
-entity.interactType (entity + 0x6644) == 0x31 → vendor/repair NPC
-FUN_1403d90d0(entity, entity.interactTargetEntityId) → resolve interacted entity
-interactedEntity + 0x36d8 → is repair vendor flag (non-zero = repairs available)
-entity + 0x15f8 → current currency/resource available for repair
+entity.interactType (entity + 0x6644) == 0x31 ? vendor/repair NPC
+FUN_1403d90d0(entity, entity.interactTargetEntityId) ? resolve interacted entity
+interactedEntity + 0x36d8 ? is repair vendor flag (non-zero = repairs available)
+entity + 0x15f8 ? current currency/resource available for repair
 ```
 
-## Global Pointers — Additional
+## Global Pointers - Additional
 
 | Global | Name | Notes |
 |--------|------|-------|
@@ -8928,8 +8948,8 @@ entity + 0x15f8 → current currency/resource available for repair
 
 All Challenges functions resolve via:
 ```
-FUN_140056ab0(param_1, 1, "Game.Challenges") → handle
-*(longlong *)(handle + 8) + 8 → challengeDataPtr
+FUN_140056ab0(param_1, 1, "Game.Challenges") ? handle
+*(longlong *)(handle + 8) + 8 ? challengeDataPtr
 ```
 
 **Challenge static data (`challengeDataPtr`):**
@@ -8971,7 +8991,7 @@ FUN_140056ab0(param_1, 1, "Game.Challenges") → handle
 ```
 if (runtimeState + 0x30) != 0: timerMode = 2 (active count-up)
 elif (runtimeState + 0x34) != 0: timerMode = 4 (cooldown count-down)
-FUN_14048dd20(runtimeState, challengeId, timerMode) → remaining float
+FUN_14048dd20(runtimeState, challengeId, timerMode) ? remaining float
 ```
 
 **All-tier info** (`GetAllTierCounts`):
@@ -9000,10 +9020,10 @@ FUN_14048dd20(runtimeState, challengeId, timerMode) → remaining float
 
 Resolution pattern:
 ```
-FUN_140056ab0(param_1, 1, "Game.PublicEvent") → handle
-*(longlong **)(*(longlong *)(handle + 8) + 8) → publicEventObjPtr (has vtable)
-(*vtbl + 0x20)(obj) → getEventId() → uint32
-FUN_140498a40(PublicEventService, eventId, 0) → liveEventObj (has vtable)
+FUN_140056ab0(param_1, 1, "Game.PublicEvent") ? handle
+*(longlong **)(*(longlong *)(handle + 8) + 8) ? publicEventObjPtr (has vtable)
+(*vtbl + 0x20)(obj) ? getEventId() ? uint32
+FUN_140498a40(PublicEventService, eventId, 0) ? liveEventObj (has vtable)
 ```
 
 **PublicEvent vtable slot map:**
@@ -9026,15 +9046,15 @@ FUN_140498a40(PublicEventService, eventId, 0) → liveEventObj (has vtable)
 
 Resolution pattern:
 ```
-FUN_140056ab0(param_1, 1, "Game.PublicEventObjective") → handle
-*(longlong *)(*(longlong *)(handle + 8) + 8) → objHandleData
-*(uint **)(objHandleData + 8) → objectiveData ptr
+FUN_140056ab0(param_1, 1, "Game.PublicEventObjective") ? handle
+*(longlong *)(*(longlong *)(handle + 8) + 8) ? objHandleData
+*(uint **)(objHandleData + 8) ? objectiveData ptr
   objectiveData[0] = objectiveId (uint32)
   objectiveData + 0x04 = eventId (uint32)
   objectiveData + 0x14 = homeTeamIndex (int32)
   objectiveData + 0x18 = descriptionStringId
   objectiveData + 0x1c = altDescriptionStringId
-(*DAT_140c65980 + 0x30)(service, objectiveId, 0) → publicEventObjectiveObj (vtable)
+(*DAT_140c65980 + 0x30)(service, objectiveId, 0) ? publicEventObjectiveObj (vtable)
 ```
 
 **PublicEventObjective vtable slot map:**
@@ -9056,7 +9076,7 @@ FUN_140056ab0(param_1, 1, "Game.PublicEventObjective") → handle
 | `+0x1e8` | `IsHidden()` | bool | `IsHidden` |
 
 **Objective types (from GetCount branching):**
-- `0x17` = contested area (count = progressFloat × 100)
+- `0x17` = contested area (count = progressFloat x 100)
 - `0x18`, `0x1b`, `0x1e`, `0x19`, `0x20` = various count-type objectives
 
 
@@ -9068,7 +9088,7 @@ FUN_140056ab0(param_1, 1, "Game.PublicEventObjective") → handle
 
 All PathMission functions use:
 ```
-FUN_14067b760() → PathMission_ResolveCurrent() → pathMissionRuntimeObj (vtable)
+FUN_14067b760() ? PathMission_ResolveCurrent() ? pathMissionRuntimeObj (vtable)
 ```
 
 **PathMission vtable slots:**
@@ -9101,12 +9121,12 @@ FUN_14067b760() → PathMission_ResolveCurrent() → pathMissionRuntimeObj (vtab
 | Value | Path | Sub-type | Lookup function |
 |-------|------|----------|-----------------|
 | `0` | Soldier | Holdout | `FUN_140617410(dataPtr, subDataId)` |
-| `2` | Scientist | General | `FUN_14021fc40(subDataId)` → scientist table entry |
+| `2` | Scientist | General | `FUN_14021fc40(subDataId)` ? scientist table entry |
 | `4-6` | Settler | Varies | Settler-specific lookups |
 | `0xe` | Scientist | Datacube | `FUN_14021fc40(subDataId)` |
 | `0x16` | Scientist | Experimentation | `Service_LookupEntityById(ScientistExperimentationService, subDataId)` |
 | `0x19` | Settler | Mayor | `DAT_140c65970` (SettlerPathService), `FUN_140222b00(subDataId)` |
-| `0x1b` | Explorer | Node | `FUN_140721ef0(type, subDataId)` → explorerData `+0x18` = nodeCount |
+| `0x1b` | Explorer | Node | `FUN_140721ef0(type, subDataId)` ? explorerData `+0x18` = nodeCount |
 
 ### Named PathMission Functions
 
@@ -9137,7 +9157,7 @@ Default fallback = 50 (`0x32`).
 
 ---
 
-## Network Opcodes — Batch 6 (GroupLib / CREDDExchange / Housing / Friendship)
+## Network Opcodes - Batch 6 (GroupLib / CREDDExchange / Housing / Friendship)
 
 | Opcode | Name | Payload Layout |
 |--------|------|----------------|
@@ -9162,7 +9182,7 @@ Default fallback = 50 (`0x32`).
 - `groupContext + 0x48` = groupInstanceId (uint64)
 
 ### Named Functions
-- `FUN_140601fb0(entity+0x6c10)` = `IsGroupLeader` — returns non-zero if local player is leader
+- `FUN_140601fb0(entity+0x6c10)` = `IsGroupLeader` - returns non-zero if local player is leader
 
 ---
 
@@ -9175,7 +9195,7 @@ Default fallback = 50 (`0x32`).
 - `DAT_140c635f0 + 0x15d0` = accountItemList
   - `accountItemList + 0x70` = count
   - `accountItemList + 0x68` = arrayPtr (stride 0x40 per AccountItem entry)
-- Named call: `AccountItem_SendClientAccountItemTake(luaState, itemEntry)` — takes item from account
+- Named call: `AccountItem_SendClientAccountItemTake(luaState, itemEntry)` - takes item from account
 
 ---
 
@@ -9195,17 +9215,17 @@ Default fallback = 50 (`0x32`).
 ### Architecture Overview
 - `DAT_140c65898 + 0x78` = globalEntityPtr guard (must be non-null)
 - `DAT_140c65990` = GalacticArchiveService (used for all article/entry lookups)
-- `FUN_14048d310(servicePtr, id)` = **generic BST/service lookup by ID** — called as:
+- `FUN_14048d310(servicePtr, id)` = **generic BST/service lookup by ID** - called as:
   - `GalacticArchiveService_GetArticleById(DAT_140c65990, articleId)`
   - `ScientistExperimentation_LookupById(DAT_140c65950, subDataId)` (same function, different service)
   - This is a generic helper; prior label `ScientistExperimentation_LookupById` was incorrect
 
 ### GalacticArchiveEntry Handle Resolution
 ```
-FUN_140056ab0(luaState, 1, "Game.GalacticArchiveEntry") → handle
+FUN_140056ab0(luaState, 1, "Game.GalacticArchiveEntry") ? handle
 *(handle + 8) = handleInnerData
 *(*(handle+8) + 8) = dataPtr
-GalacticArchiveEntry_ResolveStateObject(dataPtr, *dataPtr) → stateObj
+GalacticArchiveEntry_ResolveStateObject(dataPtr, *dataPtr) ? stateObj
 ```
 
 ### GalacticArchiveEntry handleInnerData Vtable
@@ -9215,16 +9235,16 @@ GalacticArchiveEntry_ResolveStateObject(dataPtr, *dataPtr) → stateObj
 
 ### GalacticArchiveEntry stateObj Vtable
 - `+0x18` = GetArticle (returns articleObj; push via `FUN_140432f20`)
-- `+0x58` = GetIntegerField(fieldId) — returns integer IDs for:
+- `+0x58` = GetIntegerField(fieldId) - returns integer IDs for:
   - `headerStyle`, `bodyStyle`, `headerCreature`, `iconId` etc. (client-defined field enum)
 
 ### GalacticArchiveEntry Named Functions
 - `GalacticArchiveEntry_ResolveStateObject(dataPtr, *dataPtr)` = resolve state object from data ptr
-- `GalacticArchiveEntry_CalculateProgress(stateObj, entryId)` = returns float progress (0.0–1.0)
+- `GalacticArchiveEntry_CalculateProgress(stateObj, entryId)` = returns float progress (0.0-1.0)
 
 ### GalacticArchiveArticle Handle Resolution
 ```
-FUN_140056ab0(luaState, 1, "Game.GalacticArchiveArticle") → handle
+FUN_140056ab0(luaState, 1, "Game.GalacticArchiveArticle") ? handle
 *(handle + 8) = handleInnerData
 *(*(handle+8) + 8) = staticDataPtr
 ```
@@ -9255,11 +9275,11 @@ FUN_140056ab0(luaState, 1, "Game.GalacticArchiveArticle") → handle
 
 ### Handle Resolution Pattern
 ```
-FUN_140056ab0(luaState, 1, "Game.PublicEventObjective") → handle
+FUN_140056ab0(luaState, 1, "Game.PublicEventObjective") ? handle
 *(handle + 8) = handleInnerData
 *(*(handle+8) + 8) = objData
 *(objData + 8) = objectiveId (uint32)
-(*DAT_140c65980 + 0x30)(DAT_140c65980, objectiveId, 0) → objLivePtr
+(*DAT_140c65980 + 0x30)(DAT_140c65980, objectiveId, 0) ? objLivePtr
 ```
 - `DAT_140c65980` = PublicEventService (confirmed; `+0x30` in service vtable = GetObjectiveById)
 - Note: `+0x30` in *service* vtable vs `+0x28` in *event* vtable (GetObjectiveByIndex)
@@ -9270,16 +9290,16 @@ FUN_140056ab0(luaState, 1, "Game.PublicEventObjective") → handle
 - `+0x68` = IsActive (returns non-zero if objective is active/live; guards most reads)
 - `+0x140` = GetDisplayData (returns object; `*(result+8)+0x58` = displayOrder)
 - `+0x148` = GetProgressFloat (used in ShowPercent when not IsPercent mode)
-- `+0x150` = GetObjectiveType (int) — known types: `0x17`=contested, `0x18`=countA, `0x19`=countB, `0x1f`=showRequired
+- `+0x150` = GetObjectiveType (int) - known types: `0x17`=contested, `0x18`=countA, `0x19`=countB, `0x1f`=showRequired
 - `+0x170` = GetTeamIndex (no IsActive guard; valid even if not fully active)
-- `+0x1d8` = IsPercentMode (bool — if true, show as %; otherwise show raw count progress)
+- `+0x1d8` = IsPercentMode (bool - if true, show as %; otherwise show raw count progress)
 - `+0x1e0` = ShouldShowHealthBar (bool)
 - `+0x1e8` = IsHidden (bool)
 - `+0x1f0` = GetCategory (int)
 
 ### PublicEventObjective ShouldShowRequiredCount Logic
-- Types `0x18`, `0x19`, `0x1f` → show required count (default true)
-- Other types → check staticData via `+0x30` for an additional flag
+- Types `0x18`, `0x19`, `0x1f` ? show required count (default true)
+- Other types ? check staticData via `+0x30` for an additional flag
 
 ### PublicEventObjective GetEvent / GetParentObjective
 Both functions:
@@ -9289,14 +9309,14 @@ Both functions:
 
 ---
 
-## PublicEvent System — Complete (34 functions)
+## PublicEvent System - Complete (34 functions)
 
 ### Standard Resolution Chain
 ```
-entity+0x78 (guard) → FUN_140056ab0(_, 1, "Game.PublicEvent") → handle
+entity+0x78 (guard) ? FUN_140056ab0(_, 1, "Game.PublicEvent") ? handle
 *(handle+8) = handleInnerData
-(*handleInnerData_vtable+0x20)(handleInnerData) = GetId → eventId
-FUN_140498a40(DAT_140c65980, eventId, 0) → liveObj
+(*handleInnerData_vtable+0x20)(handleInnerData) = GetId ? eventId
+FUN_140498a40(DAT_140c65980, eventId, 0) ? liveObj
 (*liveObj_vtable+0x68)(liveObj) = IsActive
 ```
 
@@ -9304,16 +9324,16 @@ FUN_140498a40(DAT_140c65980, eventId, 0) → liveObj
 - `+0x18` = GetStaticData
 - `+0x20` = GetId (returns eventId uint32)
 
-### liveObj Vtable — Complete Map
-- `+0x18` = GetEventData → eventDataWrapper; `*(eventDataWrapper+8)+0x28` = flagBits uint32
-- `+0x20` = GetStaticData → `+0x1c` = parentEventId; `+0x24` = liveEventId
+### liveObj Vtable - Complete Map
+- `+0x18` = GetEventData ? eventDataWrapper; `*(eventDataWrapper+8)+0x28` = flagBits uint32
+- `+0x20` = GetStaticData ? `+0x1c` = parentEventId; `+0x24` = liveEventId
 - `+0x28` = GetEventType (int)
 - `+0x38` = GetTotalTime (ms, int32)
 - `+0x68` = IsActive (bool guard)
 - `+0x78` = GetElapsedTime (ms, int32)
-- `+0x90` = GetObjectiveByIndex(idx) → objectiveLivePtr
+- `+0x90` = GetObjectiveByIndex(idx) ? objectiveLivePtr
 - `+0x98` = HasLiveStats (bool)
-- `+0xa0` = GetRewardThreshold(thresholdIdx) → thresholdObj
+- `+0xa0` = GetRewardThreshold(thresholdIdx) ? thresholdObj
 - `+0xa8` = GetRewardType (int)
 - `+0x170` = GetJoinedTeam
 - `+0x178` = GetTeamCount
@@ -9327,7 +9347,7 @@ FUN_140498a40(DAT_140c65980, eventId, 0) → liveObj
 
 ### liveObj Stats Layout
 - `liveObj + 0xec` = statsArray (inline, max 0xce = 206 entries)
-- `FUN_1405f8a80(liveObj+0xec, statId)` = `PublicEventStats_LookupByStatId` — returns stat value
+- `FUN_1405f8a80(liveObj+0xec, statId)` = `PublicEventStats_LookupByStatId` - returns stat value
 
 ### Parent/Child Event Relationships
 - `liveObj->GetStaticData()+0x1c` = parentEventId (0 if none)
@@ -9351,7 +9371,7 @@ FUN_140498a40(DAT_140c65980, eventId, 0) → liveObj
 
 ### GetRewardThreshold
 - Takes 2nd Lua arg as threshold index
-- Calls `liveObj_vtable+0xa0(liveObj, thresholdIndex)` → thresholdObj
+- Calls `liveObj_vtable+0xa0(liveObj, thresholdIndex)` ? thresholdObj
 
 ### Named Functions (PublicEvent)
 - `FUN_140498a40(DAT_140c65980, eventId, 0)` = `PublicEventService_GetLiveEventById`
@@ -9367,13 +9387,13 @@ FUN_140498a40(DAT_140c65980, eventId, 0) → liveObj
 ### Housing Neighbor Opcodes (see Batch 6 above)
 
 ### Entity / Neighbor Data
-- `FUN_1404b7220()` = `Housing_GetCurrentNeighborSelection` — returns null if no selection
+- `FUN_1404b7220()` = `Housing_GetCurrentNeighborSelection` - returns null if no selection
 - neighborObj: `+0xb8` = neighborId_lo (u64), `+0xc0` = neighborId_hi (u64)
 - `entity + 0x6838` = friendship/housing subsystem ptr (auto-response messages, neighbor list)
 - `FUN_1405df7c0(entity+0x6838)` = check if friendship service is connected/ready
 
 ### GameHousingPlot Functions
-- `FUN_140056ab0(_, 1, "Game.HousingPlot")` → plotHandle; `*(plotHandle+8)` = plotId (uint32)
+- `FUN_140056ab0(_, 1, "Game.HousingPlot")` ? plotHandle; `*(plotHandle+8)` = plotId (uint32)
 - Named calls: `Housing_SendClientPlugRemove(luaState, plotId)`, `Housing_SendClientPlugRepair(luaState, plotId)`
 - `SetPlugRotation` uses: `FUN_1400f26a0(windowCtx+0x180, 2)` = get float arg from Lua
 
@@ -9419,16 +9439,16 @@ FUN_140498a40(DAT_140c65980, eventId, 0) → liveObj
 
 ### Handle Resolution
 ```
-FUN_140056ab0(luaState, 1, "Game.Spell") → handle
+FUN_140056ab0(luaState, 1, "Game.Spell") ? handle
 *(handle+8) = handleInnerData
-*(*(handle+8)+8) = spellId (uint32) — first field of innerData
-SpellService_ResolveSpellWrapper(DAT_140c65b70, spellId, entity) → spellWrapper
+*(*(handle+8)+8) = spellId (uint32) - first field of innerData
+SpellService_ResolveSpellWrapper(DAT_140c65b70, spellId, entity) ? spellWrapper
 ```
 - `SpellService_ResolveSpellWrapper` is already named in the codebase
 - `FUN_1405e9400(luaState, 1)` = alternate resolver used by cooldown/GCD functions (live instance)
 
 ### SpellWrapper Layout (via `lVar4 = spellWrapper`)
-- `lVar4 + 0x70` = ptr to Spell4 static data (spellDataPtr — points to full Spell4 struct)
+- `lVar4 + 0x70` = ptr to Spell4 static data (spellDataPtr - points to full Spell4 struct)
 
 ### Spell4 Static Data Fields (via `*(longlong *)(spellWrapper + 0x70)`)
 | Offset | Type | Field | Source function |
@@ -9449,27 +9469,27 @@ SpellService_ResolveSpellWrapper(DAT_140c65b70, spellId, entity) → spellWrappe
 
 ### SpellService Level Tier Table
 - `DAT_140c65b70 + 0x58 + playerLevel * 0x10` = per-level data entry
-- `entity+0x78 → +0xdc` = playerLevel (int; 0–0x16 = levels 1–23 check in GetRequiredLevel/GetPrice)
+- `entity+0x78 ? +0xdc` = playerLevel (int; 0-0x16 = levels 1-23 check in GetRequiredLevel/GetPrice)
 
 ### Additional Named Functions (GameSpell)
-- `FUN_140564fb0(_, spellId)` = `SpellService_GetThresholdTimeEntry` — returns threshold data for a spell
-- `FUN_14034bdd0(worldZoneId)` = `WorldZone_GetNameString` — returns zone name string
-- `FUN_1405a4d90(_, spellId)` = `SpellService_GetTokenCostValue` — returns service token cost from `Spell4ServiceTokenCost`
-- `FUN_140501210(luaState, tokenCostResult)` = `Lua_PushSpellTokenCostResult` — push token cost onto stack
+- `FUN_140564fb0(_, spellId)` = `SpellService_GetThresholdTimeEntry` - returns threshold data for a spell
+- `FUN_14034bdd0(worldZoneId)` = `WorldZone_GetNameString` - returns zone name string
+- `FUN_1405a4d90(_, spellId)` = `SpellService_GetTokenCostValue` - returns service token cost from `Spell4ServiceTokenCost`
+- `FUN_140501210(luaState, tokenCostResult)` = `Lua_PushSpellTokenCostResult` - push token cost onto stack
 
 ### SpellService Range Functions
-- `FUN_1403ad8f0(DAT_140c65b70, spellId, entity)` = `SpellService_GetMaximumRange` → float
-- `FUN_1403ad860(DAT_140c65b70, spellId, entity)` = `SpellService_GetMinimumRange` → float
+- `FUN_1403ad8f0(DAT_140c65b70, spellId, entity)` = `SpellService_GetMaximumRange` ? float
+- `FUN_1403ad860(DAT_140c65b70, spellId, entity)` = `SpellService_GetMinimumRange` ? float
 
 ### Cooldown Layout (from live spell instance `lVar5 = FUN_1405e9400(...)`)
 - `*(uint **)(lVar5 + 0x38)` = ptr to cooldown data; `*ptr` = base cooldown ms (uint32)
 - `FUN_1404823c0(lVar5)` = `SpellWrapper_HasPlayerAbilityClass`; checks spellData+0x198 class/category values 1, 2, or 7 before player cooldown scaling
-- `entity+0x78 → +0xa04` = cooldown reduction float multiplier (applied if above check passes)
+- `entity+0x78 ? +0xa04` = cooldown reduction float multiplier (applied if above check passes)
 - `FUN_14046a890(entity, liveSpellInst, effectiveCooldownMs)` = compute final effective cooldown ms
-- Result conversion: `(float)ms * 0.001` → seconds
+- Result conversion: `(float)ms * 0.001` ? seconds
 
 ### Active Cooldowns (GetCooldownRemaining)
-- `entity+0x78 → +0x1608` = active cooldown linked list head
+- `entity+0x78 ? +0x1608` = active cooldown linked list head
 - Node fields: `+0x04` = cooldown type (type-1 < 2 to match); `+0x20` = cooldown data ptr; `+0x88` = next node ptr
 - **CooldownNode inner timer** (pointed to by active list node `+0x20`):
   - `timer+0x04` = expiry tick (uint32); remaining ms = `timer[+0x04] - *(DAT_140c63728+0xe8)`
@@ -9478,8 +9498,8 @@ SpellService_ResolveSpellWrapper(DAT_140c65b70, spellId, entity) → spellWrappe
 - GCD time: `FUN_14023dc80(*(spellDataPtr+0x28))` = look up GCD group; `FUN_14046a760(...)` = get GCD ms
 
 ### GetIcon
-- `FUN_1405645b0(spellWrapper)` = `SpellWrapper_GetIconPathString` → returns string/object
-- Then `FUN_14018f0e0(local_28, iconString)` → char* at `*(result+8)`
+- `FUN_1405645b0(spellWrapper)` = `SpellWrapper_GetIconPathString` ? returns string/object
+- Then `FUN_14018f0e0(local_28, iconString)` ? char* at `*(result+8)`
 
 ---
 
@@ -9498,7 +9518,7 @@ FUN_1400f26a0(windowCtx + 0x180, argIndex) = get Lua arg from window context
 
 ### AbilityBook Named Function Patterns
 - `GetAbilitiesList` / `GetAbilityInfo`: use window context + `FUN_1400f26a0` for args
-- `ActivateSpell`: guards on `entity+0x6490 → +0x2ac == 0`
+- `ActivateSpell`: guards on `entity+0x6490 ? +0x2ac == 0`
 - `UpdateSpellTier`: same guard + `ActionSet_CheckUpdateSpellInProgress()` additional check
 - `ClearCachedLASUpdates`: clears `entity+0x1458`; resets `entity+0x6ddc = 0xffffffff`
 
@@ -9508,13 +9528,13 @@ FUN_1400f26a0(windowCtx + 0x180, argIndex) = get Lua arg from window context
 
 ### Lua_ICComm Pattern
 Both `SetReceivedMessageFunction` and `SetSendMessageResultFunction` follow identical logic:
-1. `FUN_140056ab0(luaState, 1, "Game.ICComm")` — resolves ICComm channel handle (result unused beyond type check)
-2. `FUN_140056bb0(luaState, 2)` — get 2nd arg (the callback function)
+1. `FUN_140056ab0(luaState, 1, "Game.ICComm")` - resolves ICComm channel handle (result unused beyond type check)
+2. `FUN_140056bb0(luaState, 2)` - get 2nd arg (the callback function)
 3. Check if 2nd arg is a function (`*(param_1+0x18)+0x28` type tag == 5)
 4. If valid, copy function reference onto Lua stack and return it
 
 ### ICComm Note
-These functions only validate and pass the callback — actual callback registration is internal.
+These functions only validate and pass the callback - actual callback registration is internal.
 The `Game.ICComm` handle type tracks per-channel state.
 
 ---
@@ -9522,21 +9542,27 @@ The `Game.ICComm` handle type tracks per-channel state.
 ## Crafting System
 
 ### Lua_Crafting Functions (2 named)
-- `GetSchematicInfo` and `AddCoordinateDiscoveryInfo` — internal crafting helpers
+- `GetSchematicInfo` and `AddCoordinateDiscoveryInfo` - internal crafting helpers
 - Both use the standard window context pattern (`DAT_140c63650+0x2f8`)
 
 ---
 
 ## GameResidence / GameRecruitmentGuild / GameItemData
 
-### Lua_GameResidence_RemoveInteriorWallpaper
-- Resolves handle via `FUN_140056ab0(_, 1, "Game.Residence")`
-- Uses window context lookup pattern (`DAT_140c63650+0x2f8/+0x300`)
-- Sends housing network payload (pattern same as other Housing opcodes)
+### Lua_GameResidence_PurchaseInteriorWallpaper / RemoveInteriorWallpaper
+- `1406aca10` is the `Game.Residence.PurchaseInteriorWallpaper` binding. It
+  reads six Lua wallpaper handles, validates each selected
+  `HousingWallpaperInfo` id against the corresponding slot flag
+  (`0x01/0x04/0x08/0x10/0x20/0x80`), and routes changed slots through the
+  interior wallpaper sender for opcode `0x050D`.
+- `1406acc30` is the `Game.Residence.RemoveInteriorWallpaper` binding. It
+  accepts a slot index `1..6` and calls the one-slot sender at `1404b7bc0`,
+  which emits `DecorType=3`, the selected hook index, and the slot's default
+  wallpaper id as `DecorInfoId`.
 
 ### Lua_GameRecruitmentGuild_GetDetailedGuildInfo
 - Resolves handle via `FUN_140056ab0(_, 1, "Game.RecruitmentGuild")`
-- Calls `RecruitmentGuild_SendClientGetDetailedGuildInfo()` — named
+- Calls `RecruitmentGuild_SendClientGetDetailedGuildInfo()` - named
 - Returns bool (non-zero = request sent successfully)
 
 ### Lua_GameItemData_GetVirtualItems
@@ -9544,12 +9570,12 @@ The `Game.ICComm` handle type tracks per-channel state.
 
 ---
 
-## New Function Labels (Batch 6 — this session)
+## New Function Labels (Batch 6 - this session)
 
 | Address | Proposed Label | Context |
 |---------|---------------|---------|
-| `1403ad860` | `SpellService_GetMinimumRange` | GetMinimumRange → (service, spellId, entity) |
-| `1403ad8f0` | `SpellService_GetMaximumRange` | GetMaximumRange → (service, spellId, entity) |
+| `1403ad860` | `SpellService_GetMinimumRange` | GetMinimumRange ? (service, spellId, entity) |
+| `1403ad8f0` | `SpellService_GetMaximumRange` | GetMaximumRange ? (service, spellId, entity) |
 | `1404823c0` | `SpellWrapper_HasPlayerAbilityClass` | GetCooldownTime / AbilityBook gates |
 | `14046a760` | `SpellService_GetGCDMilliseconds` | GetGCDTime |
 | `14046a890` | `SpellService_GetEffectiveCooldownMs` | GetCooldownTime |
@@ -9573,7 +9599,7 @@ The `Game.ICComm` handle type tracks per-channel state.
 | `140220d40` | `ScientistFieldStudy_LookupById` | PathMission.Scientist |
 | `140221180` | `ScientistSpecimenSurvey_LookupById` | PathMission.Scientist |
 | `140222f40` | `SettlerSheriff_LookupById` | PathMission.Settler |
-| `140223380` | `SettlerMission_LookupById` | PathMission.Settler types 4–6 |
+| `140223380` | `SettlerMission_LookupById` | PathMission.Settler types 4-6 |
 | `1406195b0` | `ScientistExperimentation_Refresh` | PathMission.RefreshExperimentation |
 | `14077d240` | `ExplorerClue_ShowHintArrow` | PathMission.ShowExplorerClueHintArrow |
 | `14056b7b0` | `PowerMap_GetProgressFloat` | PathMission.PowerMap progress |
@@ -11108,10 +11134,11 @@ Housing community rename result correction:
 
 - `ClientHousingCommunityRenameHandler` already computes retail-facing
   `HousingResult` values for leader permission, text validation, cost-table,
-  and currency checks before mutating community state. The response packet was
-  incorrectly hard-coded to `Success`; NexusForever now sends the computed
-  result in `ServerHousingCommunityRename` so failed validation is visible to
-  the client.
+  and currency checks before mutating community state. The first compatibility
+  response fix stopped hard-coding `Success`; the later WildStar64 opcode pass
+  maps the post-rename result event as `ServerHousingCommunityRenameResult`
+  (`0x078C`) and sends the computed result there so failed validation is visible
+  to the client.
 - Focused coverage pins the non-leader path returning
   `HousingResult.InvalidPermissions` without calling `RenameGuild`. Broader
   community rename costs, result strings, and success-side persistence are
@@ -11526,6 +11553,281 @@ Fortune account-scoped session follow-up:
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-fortune-session\
   --filter "FullyQualifiedName~FortuneSessionManagerTests"` passed (`7/7`).
 
+Support report capture follow-up:
+
+- No runtime behavior changed. Focused coverage now pins the current support
+  capture boundary for incident reports, bug reports, and suggestions.
+  Incident reports validate `ReportPlayerReason` and `ReportPlayerSource`
+  before writing the `incident` submission payload; bug reports validate
+  `BugCategory` before writing the `bug` payload; suggestions always write the
+  `suggestion` payload.
+- These paths intentionally do not enqueue client result packets today. Only
+  support-ticket success/failure has a deterministic `ServerSupportTicketResult`
+  boundary.
+- Moderation workflow, durable database-backed case lifecycle, user-facing
+  support-case result/readback semantics, stuck-result client signaling, and
+  report/survey administrative tooling remain blocked on stronger client/server
+  evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-support-capture\
+  --filter "FullyQualifiedName~SupportTicketHandlerTests|FullyQualifiedName~CustomerSurveyProtocolTests"`
+  passed (`15/15`).
+
+Support stuck branch coverage follow-up:
+
+- No runtime behavior changed. Focused coverage now pins the conservative
+  `ClientStuckHandler` branch behavior for the currently implemented
+  `/stuck` paths.
+- Invalid `UnstickType` values do not mutate the player. `FreeSuicide` only
+  calls `ModifyHealth` for living players, uses `DamageType.Physical`, targets
+  the player as the source, and clamps zero current health to one damage.
+  `RecallTransmat` respects `IPlayer.CanTeleport()` before attempting a
+  teleport.
+- Client-facing stuck result signaling, exact recall-house/transmat destination
+  parity, spell-cast side effects, and cooldown/result UI behavior remain
+  blocked on stronger client/server evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-support-stuck\
+  --filter "FullyQualifiedName~SupportTicketHandlerTests|FullyQualifiedName~SupportStuckHandlerTests|FullyQualifiedName~CustomerSurveyProtocolTests"`
+  passed (`20/20`).
+
+Crafting LootId output coverage follow-up:
+
+- No runtime behavior changed. The existing fixed-recipe crafting LootId output
+  path now has focused coverage: a schematic with `LootId` and no direct item
+  output calls `IGlobalLootManager.TryGenerateLoot`, validates generated loot
+  delivery, debits satchel material, gives generated loot to the crafter with
+  granted-item notification enabled, and reports the first static generated
+  item id in `ServerCraftingFinish`.
+- The test helper had a compile-only generic constraint drift; `CreateGameTable<T>`
+  now matches `GameTable<T>`'s `where T : class, new()` constraint.
+- Discovery rolls, station constraints, broader random-output parity, material
+  source precision, rune item data, and sigil result meanings remain blocked on
+  stronger crafting reader/table evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-crafting-lootid\
+  --filter "FullyQualifiedName~CraftingLootIdCraftHandlerTests|FullyQualifiedName~CraftingSimpleCraftHandlerTests"`
+  passed (`4/4`).
+
+Option handler coverage follow-up:
+
+- No runtime behavior changed. Focused coverage now pins the mapped option
+  handlers: `ClientCombatOptions` updates casting, disable-other-player-log,
+  and combat-log disable preferences; `ClientOptions` updates casting and
+  shared-challenge preferences; `ClientCombatLogDisableOthers` and
+  `ClientCombatLogDisables` update their dedicated combat-log preferences.
+- Validation coverage now rejects unknown casting bits, unknown combat-log bits,
+  invalid shared-challenge values, and invalid option types before mutating the
+  player proxy.
+- Additional option types, account-vs-character option split, exact
+  client-facing initialisation/readback, and nearby item/options server opcodes
+  remain blocked on result/readback packet evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-options\
+  --filter "FullyQualifiedName~OptionHandlerTests|FullyQualifiedName~OptionPersistenceTests"`
+  passed (`13/13`).
+
+Realm select compatibility follow-up:
+
+- No runtime behavior changed. Focused coverage now pins the conservative
+  `ClientSelectRealmHandler` behavior at the current compatibility boundary:
+  selecting the already-connected realm is ignored, and selecting an offline
+  target realm sends `ServerRealmTransferResult` with
+  `RealmTransferFailed_ServerDown`.
+- These tests keep the handler non-mutating for unsupported online transfer
+  flows. Real realm-transfer destinations/results, session-key handoff, PTR
+  copy state, new realm notices, optional realm messages, and character admin
+  result packets remain blocked on stronger client reader and server handoff
+  evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-pregame-realm\
+  --filter "FullyQualifiedName~RealmTransferProtocolTests"` passed (`4/4`).
+
+Leaderboard packet-row coverage follow-up:
+
+- No runtime behavior changed. Focused packet-shape coverage now pins non-empty
+  `ServerLeaderboardPve` and `ServerLeaderboardPvp` response rows, including
+  row rank/last-rank values, PVE scope fields, PVP rating, row names, and nested
+  team-member name/class entries.
+- The default `EmptyLeaderboardProvider` remains a deterministic compatibility
+  provider. Real ranking rows, personal placement, aggregation, cache/season
+  behavior, and category/filter semantics remain blocked until the client UI
+  readers and a score source-of-truth are mapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-leaderboard\
+  --filter "FullyQualifiedName~Leaderboard"` passed (`6/6`).
+
+Challenge packet-boundary coverage follow-up:
+
+- No runtime behavior changed. Focused coverage now pins the mapped challenge
+  protocol boundary: `ClientChallengeChoice` reads a 14-bit challenge id, 5-bit
+  choice, and trailing uint32; `ServerChallengeResult`, `ServerChallengeShared`,
+  `ServerChallengeShareTimeout`, and non-empty `ServerChallengeUpdate` active
+  rows preserve the documented field order and bit widths.
+- `ClientChallengeChoiceHandler` remains intentionally non-mutating and returns
+  `ChallengeResult.GenericFail` for compatibility. Active lifecycle, shared
+  accept/decline state, update cadence, reward tiers, and quest/objective
+  integration remain blocked until the retail accept/update/result sequence is
+  mapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-challenges\
+  --filter "FullyQualifiedName~Challenge"` passed (`9/9`).
+
+Guild recruitment packet-boundary coverage follow-up:
+
+- No runtime behavior changed. Focused coverage now pins the currently modeled
+  guild recruitment wire boundary: detailed guild info request identity,
+  recruitment details, guild list rows with recruiters, guild update rows
+  without recruiter lists, 12-role demand payloads, and recruiter name/online
+  flag ordering. Existing war-party boss-token request/response coverage still
+  pins the empty/result-compatible token payload shape.
+- Recruitment subscription/update timing, bank transactions, perks, holomarks,
+  standards, real war-party boss-token inventory/results, and warplot plug state
+  remain blocked until the recruitment/warparty readers and persistent state
+  transitions are mapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-guild-protocol\
+  --filter "FullyQualifiedName~GuildPacketShapeTests|FullyQualifiedName~WarPartyBossTokenProtocolTests"`
+  passed (`7/7`).
+
+Transport vehicle passenger packet-boundary follow-up:
+
+- No runtime behavior changed. Focused transport coverage now pins the vehicle
+  passenger output family alongside the existing rapid-transport,
+  flight-path, and vehicle-embark packet shapes: `ServerVehiclePassengerSelf`,
+  `ServerVehiclePassengerAdd`, `ServerVehiclePassengerRemove`, and shared
+  `VehiclePassenger` rows preserve vehicle/passenger ids plus the 2-bit seat
+  type and 3-bit seat position layout.
+- Service-token bypass, taxi route state, taxi embark/completion, charge and
+  teleport rules, passenger seat-mode effects, deployable vehicle semantics,
+  and nearby unresolved `Server0x077E` remain blocked on reader/table evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-transport\
+  --filter "FullyQualifiedName~TransportPacketShapeTests"` passed (`9/9`).
+
+PvP and duel packet-boundary follow-up:
+
+- No runtime behavior changed. Focused PVP coverage now pins the currently
+  modeled duel/PVP wire boundary: duel challenge/countdown/start unit pairs,
+  5-bit duel failure reasons, 3-bit duel finish reasons, cooldown update
+  milliseconds, 3-bit unit PVP state flags, zero-byte warning/left-area/clear
+  packets, and the client PVP/ignore-duel one-bit toggles.
+- Observer broadcasts, duel leash/warning lifecycle, persistent PVP cooldown,
+  forced-map PVP, reward/stat settlement, and exact cancel/result semantics
+  remain blocked until the duel warning/result readers and runtime evidence are
+  mapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-pvp\
+  --filter "FullyQualifiedName~Pvp|FullyQualifiedName~Duel"` passed (`12/12`).
+
+Account unlock and costume packet-boundary follow-up:
+
+- No runtime behavior changed for unlock delivery. Focused coverage now pins
+  `ClientItemGenericUnlock` item-location parsing, single generic unlock
+  grants, account/character generic unlock list and refresh arrays, 3-bit
+  generic unlock results, costume item unlock/forget request payloads, and
+  single/multiple costume unlock result payloads.
+- Generic unlock persistence, account-vs-character delta timing, item
+  eligibility, supply satchel precision, pet flair lifecycle, and broader
+  costume forget/unlock parity remain blocked on item/unlock reader and state
+  transition evidence.
+- While verifying this slice, two shared compile blockers from adjacent housing
+  work were cleared: the untracked `ResidenceNeighborInviteInfo` source now
+  builds through `NexusForever.Game.Abstract`, and `HousingPacketShapeTests`
+  now uses the existing `GamePacketReader.ReadInt()` API for counted neighbor
+  rows.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-unlocks-fresh4\
+  --filter "FullyQualifiedName~AccountUnlockPacketShapeTests|FullyQualifiedName~AccountItemHandlerTests"`
+  passed (`12/12`).
+
+Action-set and AMP packet-boundary follow-up:
+
+- No runtime behavior changed. Focused coverage now pins client
+  `ClientRequestActionSetChanges`, `ClientNonSpellActionSetChanges`, and
+  `ClientCommitAmpSpec` request parsing plus `ServerActionSet`,
+  `ServerAmpRespecResult`, `ServerSpecChanged`, and
+  `ServerActionSetClearCache` payload order and bit widths.
+- `UpdateSpellInProgress`, the async spell update transaction, authoritative
+  attribute allocation/refund, bonus ability/AMP unlock persistence, and
+  action-bar lock state remain blocked on the unresolved
+  `Server0x00B0/016B/016D/016E/019C/01A4` cluster and native transaction
+  evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-actionset\
+  --filter "FullyQualifiedName~ActionSetPacketShapeTests|FullyQualifiedName~ActionSetAmpTests"`
+  passed (`7/7`).
+
+Datacube and Galactic Archive packet-boundary follow-up:
+
+- No runtime behavior changed. Focused coverage now pins datacube/journal
+  update packets (`ServerDatacubeUpdateList`, `ServerDatacubeUpdate`,
+  `ServerDatacubeVolumeUpdate`) plus galactic archive unlock/view client
+  requests, archive update flags, and zero-byte archive refresh.
+- Broader content hookups, archive-link parent/child authorization, full
+  journal/datacube progression semantics, path-mission rule parity, and wider
+  Codex UX behavior remain blocked on content-flow and reader evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-archive\
+  --filter "FullyQualifiedName~ArchivePacketShapeTests|FullyQualifiedName~GalacticArchiveUnlockRuleTests|FullyQualifiedName~SimpleEntityArchiveUnlockTests"`
+  passed (`14/14`).
+
+Zone-map packet-boundary follow-up:
+
+- No runtime behavior changed. Focused coverage now pins `ServerZoneMap`
+  output for map id, byte count, and raw bit-buffer ordering, plus
+  `ServerMapUpdateHexGroup` output for the 14-bit hex-group id, 21-bit tooltip
+  localized text id, color, and visible flag.
+- Full zone-completion semantics, non-title rewards, faction/path-specific
+  rows, and quest/challenge/datacube/journal objective totals remain blocked on
+  completion row category/faction semantics and UI reader evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-zonemap\
+  --filter "FullyQualifiedName~ZoneMapPacketShapeTests|FullyQualifiedName~ZoneCompletionRewardResolverTests"`
+  passed (`5/5`).
+
+Achievement packet-boundary follow-up:
+
+- No runtime behavior changed. Focused coverage now pins `ServerAchievementInit`
+  counted rows, `ServerAchievementUpdate` deleted flag plus rows, and the
+  existing `ServerRealmFirstAchievement` achievement id/guild/name layout.
+- Full trigger coverage, Steam achievement payload grammar and achievement-id
+  correlation, exact realm-first broadcast semantics, remaining updater parity,
+  and achievement UI edge cases remain blocked on reader/runtime evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-achievements\
+  --filter "FullyQualifiedName~Achievement"` passed (`15/15`).
+
 Opcode model cleanup and coverage refresh follow-up:
 
 - `ServerUnresolvedOutputPackets.cs` was reconciled after a partial checkout
@@ -11552,3 +11854,333 @@ Opcode model cleanup and coverage refresh follow-up:
   --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-current\`
   passed (`508/508`).
+
+Spell runtime, entities, content, progression workstream (`F-016`..`F-036`, 2026-05-22):
+
+- No new native labels were added in this pass. Status below uses the evidence ladder from
+  `Decomp/Analysis/CONTINUATION_GUIDE.md`: **Partial** = conservative runtime with focused tests;
+  **Mapped-only** = packet/table/script surface pinned without safe retail mutation.
+
+| Row | Status | Key surface | Tests / smoke | Blockers |
+| --- | --- | --- | --- | --- |
+| F-016 Procs | Partial | `ProcDispatchEvidenceBoundary`, holder-side dispatch for events `1/6/10/12/16/17/18/19/20`, routes `1/2/9` holder and `4/12` counterpart, `ProcRuntimeEvidenceCollector` + `!spell procreport` | `ProcDispatchEvidenceBoundaryTests`, `ProcTargetDataCandidateTests`, `ProcTriggerEventCandidateTests`, `ProcRuntimeEvidenceCollectorTests` | Unsupported trigger events; `targetData` tails `14/18/20/33/34/36`; exact chance/cooldown ordering; recursion beyond same-chain block; `ServerSpellUInt32TripletList`, `ServerSpellUInt32TripletListVariant`, and `ServerSpellFourUInt32` row/field semantics |
+| F-017 Damage/heal/shields/vitals | Partial | Family-first handlers in `SpellEffectHandler` / `SpellEffectInterpreter`; diagnostics for damage, heal, shields, absorption, vital/sap/clamp families per `Spell Effect Evidence Matrix.md` | Spell proc/boundary tests only; no dedicated formula fixture suite in xUnit | Retail formula/rounding; distance/distribution splitting; HoT cadence; shield/absorb packet parity; SapVital/ClampVital edge modes; fixture captures before widening |
+| F-018 CC/stacks/movement | Partial | `CCStateSet`/`CCStateBreak`, timed removal, cast/movement coupling; packet models | `CrowdControlPacketShapeTests` | `Spell4StackGroup` arbitration; DR/stun breakout; tether/additional-data; forced-move/facing physics parity |
+| F-019 Summons/traps/vehicles | Partial | `SummonCreature`, `SummonTrap`, `SummonVehicle`, `NpcExecutionDelay` conservative create/hold paths | Covered indirectly via quest/public-event/entity tests; no dedicated summon-trigger xUnit | Ownership/AI controller; trap trigger spells; formation/service payloads; turret/deployable seat modes |
+| F-020 RavelSignal | Partial | `HandleEffectRavelSignal*` decodes mode/signal/payload and calls `IWorldEntity.SendSignal` ? `IWorldEntityScript.OnSignal` | `ravel-signal` diagnostics + `/spell inspect4`; no script-graph xUnit | Receiver graph, signal modes, payload-driven script state; `SpellRouteEvent_*` decode |
+| F-021 LAS/action-set/AMP | Partial | `ClientRequestActionSetChangesHandler`, LAS tier/AMP persistence (`ActionSetAmp.Save`), `LimitedActionSetResult.UpdateSpellInProgress` enum | `ActionSetAmpTests`, new `ActionSetPacketShapeTests` | `Server0x00B0`, `016B/016D/016E/019C/01A4` async spell-update cluster; authoritative attribute refund; bonus AMP unlock persistence |
+| F-022 Quests/path/public events | Partial | `QuestManager`, `PublicEvent` scripts/objectives, path manager surfaces | `QuestTests`, `QuestObjectiveTests`, `PublicEventFlowTests`, `PublicEventObjectiveTests`, `PathManagerTests` | Path mission edge types; PE votes/scoreboards; `Server0x0139/06F7`; quest-share precision |
+| F-023 NPE / Rider's Reef | Mapped-only | Tutorial scripts under `Script.Main/Tutorial`; recent reef/departure fixes per matrix | Manual client smoke required (`I:\WildStar`); login-world smoke reported working | Quest acceptance/kill loops, rewards, respawn, CSI, hoverboard/projector, final terminal - no automated pass in CI |
+| F-024 World 3404 | Partial | `Script.Instance/Expedition/EvilFromTheEther`, staged map/import | `EvilFromTheEtherEventScriptTests`, `EvilFromTheEtherTriggerScriptTests` | Manual expedition smoke; PE `781`; doors/interactables/teleports/phases; unsupported spell blockers in live play |
+| F-025 Entity create/update/phasing/CSI | Partial | `ServerEntityCreate` world-placement path, busy/interaction gates | `EntityCreatePacketTests` | Remaining create/update substructures `025F..0264`; deferred action queues; CSI/current-target; phase visibility; `0889/08CC/08F4/0939/093D/093E` |
+| F-026 Items/unlocks/costumes/pets | Partial | Inventory, generic unlock handler, costume/pet/title managers (parts) | `AccountItemHandlerTests` (generic unlock lifecycle) | Item swap/error aux `00B7/0183/019A/037F/0567`; satchel precision; costume forget; unlock list deltas |
+| F-029 Client DB / DataMapping | Partial | `GameTableManager` default init includes `ZoneCompletion.tbl` and archive tables; DataMapping tooling | `GameTableManagerGameDataContractTests` | Case-by-case staging promotion; EF placeholder renames; migration proof per table |
+| F-034 Datacubes/archive | Partial | `DatacubeManager`, `GalacticArchiveManager`, login init packets; `ArchiveArticleIdInteractUnlock` on `SimpleEntity` | `SimpleEntityArchiveUnlockTests`, `GalacticArchiveUnlockRuleTests`, `PlayerTradeskillArchiveTests` | Archive-link parent/child auth; full journal/datacube progression; path-mission rule parity |
+| F-035 Achievements / realm-firsts | Partial | Character/guild/global managers, init/update packets, many updaters | `AchievementProgressTests`, `GuildAchievementManagerTests`, `RealmFirstAchievementPacketTests`, `ClientSteamAchievementsTests` (diagnostic-only ingest) | Full trigger coverage; Steam payload grammar ? achievement-id map; exact realm-first broadcast semantics |
+| F-036 Zone maps / completion | Partial | Hex discovery, `ServerZoneMap`, `ZoneCompletion.tbl` loaded; exploration-only title rewards via `ZoneCompletionRewardResolver` | `ZoneCompletionRewardResolverTests` | Non-title rewards; faction/path-specific rows; quest/challenge/datacube/journal totals integration |
+
+- Verification (workstream-filtered): `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\workstream-rows-tests\`
+  passed `185/185` for proc/spell/CC/quest/public-event/entity/item/zone/achievement/archive/game-table filters.
+- Spell broadcast follow-up (`0x07F5..0x0819`) remains mapped structurally per `Decomp/Analysis/SPELL_BROADCAST_ROADMAP.md`;
+  threshold packets `0814/0816/0817` and conflicted `0818` are not enabled on live send paths.
+
+Protocol semantics pass (2026-05-22, PROTOCOL SEMANTICS workstream):
+
+- Store terminal cluster: renamed `0x098C` to `ServerStorePurchaseOfferResult`,
+  `0x098D` to `ServerStorePurchaseOfferResultVariant`, `0x098F` to
+  `ServerStoreCurrencyPackageRow`, and `0x0986` to `ServerAccountUInt64Payload`.
+  Client consumer semantics for `098C/098D` remain mapped to
+  `StorePurchaseOfferResult`; opcode-variant distinction and success emit sites
+  stay blocked. `0986` and `098F` stay diagnostic-only.
+- Housing privacy cluster: `FUN_14008de20` maps `0x00CA` to
+  `ServerHousingResidenceKeyedUpdate` (64-bit key + two uint32 fields). Consumer
+  intent and server emit sites remain blocked. `0x00CB..0x00D1` unchanged.
+- Spell auxiliary cluster: `FUN_140095da0` maps `0x080F` and `0x0810` to counted
+  uint32-triplet lists (`ServerSpellUInt32TripletList` /
+  `ServerSpellUInt32TripletListVariant`). `FUN_14007fef0` maps `0x0812` to
+  `ServerSpellFourUInt32`. Row/field gameplay semantics and runtime emit paths
+  remain blocked.
+- F-001 STS token crypto: unchanged blocked. No safe server mutation for
+  `StsConn_SendTokenKeyData` / optional auth envelope fields in this pass.
+- F-002 client diagnostics: all `17` `Client0xNNNN` handlers remain
+  non-mutating; native writer functions for `003D`, `00C8`, `00ED`, etc. were
+  not recovered in this pass.
+- Remaining `Server0xNNNN` count after the housing-neighborhood cluster pass:
+  `73` server placeholders remain (`90` at the protocol baseline; nine more
+  housing opcodes were remapped after the `0x0507`/`0x04FE` follow-ups).
+
+Housing neighbor list packet follow-up:
+
+- `FindImmediateInstructions` for `0x0507` found the world opcode registration
+  in `FUN_14006c290` at `140077761`; the registration uses reader
+  `FUN_14009ecc0` and a `0x10`-byte packet object.
+- `ServerHousingNeighbors_ReadPayload` (`WildStar64.exe:14009ecc0`) reads a
+  32-bit row count, allocates `count * 0x28` bytes, then parses each row through
+  `ServerHousingNeighbors_Row_ReadPayload` (`WildStar64.exe:14009cf10`).
+- `ServerHousingNeighbors_Row_ReadPayload` reads two consecutive uint64 fields,
+  then `NetworkBitReader_ReadIdentity`, then one uint32 field. The follow-up
+  cache/UI pass maps row `+0` as the neighbor character id retained on the
+  cached neighbor entry, row `+8` as a reserved value that is not copied into the
+  native neighbor cache or exposed through `GetNeighborList`, the identity as
+  the target residence key used by evict/permission/invite-result flows, and the
+  uint32 as the raw permission value. NexusForever now writes the character id,
+  zero reserved slot, target residence identity, and permission; the previous
+  wide-string row shape and duplicate residence-id slot were wrong for the
+  native reader and consumer path.
+- Evidence logs:
+  `Decomp/Analysis/logs/runs/housing_neighbors_0507_immediate/WildStar64.NexusForeverClient64_WildStar64.FindImmediateInstructions.ghidra.log`,
+  `Decomp/Analysis/logs/runs/housing_neighbors_0507_reader/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/housing_neighbors_read_payload/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/housing_neighbors_row_read/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/housing_neighbors_cache_constructor_probe/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/housing_neighbors_table_builder_probe/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/housing_neighbors_update_consumer_probe/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/housing_neighbors_selection_probe/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  `Decomp/Analysis/logs/runs/housing_neighbors_evict_lua_probe/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`,
+  and
+  `Decomp/Analysis/logs/runs/housing_neighbors_permission_lua_probe/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`.
+
+Housing community donate remap (`0x04FE`):
+
+- `FindImmediateInstructions` for `0x04FE` found dispatch registration in
+  `FUN_14006c290` at `14007762f` with reader `FUN_14009e930` (`0x18`-byte packet
+  object).
+- `FUN_14009e930` reads a uint32 count, then two parallel uint32 arrays of that
+  length. NexusForever models this as `ServerHousingCommunityDonateUpdate` and
+  emits source/target decor id pairs (low 32 bits) after
+  `ClientHousingCommunityDonate` copies crate decor into the community residence.
+- Evidence logs:
+  `Decomp/Analysis/logs/runs/housing_04fe_dispatch/WildStar64.NexusForeverClient64_WildStar64.FindImmediateInstructions.ghidra.log`
+  and
+  `Decomp/Analysis/logs/runs/housing_04fe_reader/WildStar64.NexusForeverClient64_WildStar64.InspectCodeAddress.ghidra.log`.
+
+Housing neighbor opcode-cluster follow-up (`0x0514`, `0x0516`, `0x0519`,
+`0x051F`):
+
+- `0x0514` dispatch registration in `FUN_14006c290` uses
+  `ServerHousingNeighborInvitePrompt_ReadPayload` (`WildStar64.exe:140091ef0`),
+  a `0x18`-byte packet object, target residence identity, and one wide string.
+  NexusForever now emits this native prompt to the invited player instead of
+  overloading generic `ServerHousingResult` for the pending invite UI.
+- `0x0516` dispatch registration uses
+  `ServerHousingNeighborInviteResult_ReadPayload`
+  (`WildStar64.exe:14009edd0`),
+  a `0x30`-byte packet object, the shared `ServerHousingNeighbors` row reader,
+  and one trailing 7-bit field. NexusForever models the packet as
+  `ServerHousingNeighborInviteResult` and writes the trailing field as
+  `HousingResult`. `Housing_HandleNeighborInviteResult`
+  (`WildStar64.exe:1404bb380`) special-cases
+  `HousingNeighborInviteAccepted` for `HousingResult_Neighbor_RequestAccepted`
+  and `HousingNeighborInviteDeclined` for the declined invite results before
+  falling back to the generic `HousingResult` event.
+- `0x0519` dispatch registration uses
+  `ServerHousingNeighborUpdate_ReadPayload` (`WildStar64.exe:14009ed80`),
+  the shared neighbor row reader, and one trailing 3-bit field. NexusForever
+  models this as `ServerHousingNeighborUpdate` for add, permission-change,
+  remove, and refresh-style neighbor row deltas. `Housing_HandleNeighborUpdate`
+  (`WildStar64.exe:1404bb790`) branches on action values `0..3` to add,
+  mutate, remove, or refresh cached neighbor entries.
+- `0x051F` dispatch registration uses
+  `ServerHousingCommunityPlotReservation_ReadPayload`
+  (`WildStar64.exe:140086e70`), target residence identity, and one uint32. The
+  HousingLib community plot helpers prove the uint32 is the reserved plot
+  index: `ReserveCommunityPlot` (`WildStar64.exe:140737350`) sends guild
+  operation `0x29` through the shared `ClientGuildOperation` opcode `0x04B1`,
+  `RemoveCommunityPlotReservation` (`WildStar64.exe:140737400`) sends operation
+  `0x2A`, and `GetReservedCommunityPlotIndex`
+  (`WildStar64.exe:140737470`) returns the cached `nPlotIndex` when present
+  with `0xffffffff` as the no-reservation sentinel. NexusForever now models
+  `0x051F` as `ServerHousingCommunityPlotReservation` and emits it after
+  successful community plot reservation or reservation-removal operations.
+- Labels now appear in
+  `Decomp/Analysis/exports/WildStar64.exe/functions.csv`,
+  `selected_reasons_summary.csv`, and `selected_decompiled.c`.
+- Verification:
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\world-server-housing-neighbor-cluster\`
+  passed, and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-housing-neighbor-cluster\
+  --filter "FullyQualifiedName~HousingPacketShapeTests|FullyQualifiedName~ClientHousingNeighborHandlerTests|FullyQualifiedName~ResidenceTests|FullyQualifiedName~PacketPlaceholderNamingTests"`
+  passed `49/49`.
+
+Housing neighborhood/community placement cluster follow-up (`0x0501`, `0x0506`,
+`0x053A`, `0x053B`):
+
+- `0x0501` dispatch registration in `FUN_14006c290` points at the shared
+  `ServerHousingNeighborhoodEntry_ReadPayload` row reader
+  (`WildStar64.exe:14009cbe0`) with a `0x30`-byte packet object. The row reads
+  one uint64, two 14-bit fields, one uint64, one wide string, and three uint32
+  fields.
+- `0x0506` dispatch registration uses
+  `ServerHousingNeighborhoodList_ReadPayload` (`WildStar64.exe:14009ebf0`), a
+  `0x10`-byte packet object, one 14-bit realm field, a uint32 row count, and
+  count `0x30`-byte `ServerHousingNeighborhoodEntry` rows. The client consumer
+  `Housing_HandleNeighborhoodList` (`WildStar64.exe:1404ba4f0`) clears and
+  repopulates the cached neighborhood list before dispatching
+  `HousingNeighborhoodRecieved`.
+- `0x053A` dispatch registration uses
+  `ServerHousingCommunityPlacement_ReadPayload` (`WildStar64.exe:140092660`)
+  and reads target residence identity, one uint64, and one uint32. The
+  `HousingLib.RequestCommunityPlacement` path
+  (`Lua_HousingLib_RequestCommunityPlacement`, `WildStar64.exe:140736950`)
+  calls `Housing_SendClientCommunityPlacement` (`WildStar64.exe:1404b6b90`),
+  which sends client opcode `0x052B` with the target community residence and
+  requested property index. Correlating that request with the placed-residences
+  list consumer (`HousingCommunityPlacedResidencesListRecieved`, rows exposing
+  `nPropertyIndex`) maps server `0x053A` as the delta carrying target community
+  residence, placed residence id, and property index. NexusForever now validates
+  the target community identity and emits `ServerHousingCommunityPlacement`
+  after a successful placement move.
+- `0x053B` dispatch registration uses
+  `ServerHousingCommunityPrivacyLevelUpdate_ReadPayload`
+  (`WildStar64.exe:14009e8a0`) and reads target residence identity, two uint32
+  fields, and one trailing 3-bit value. `Lua_HousingLib_SetCommunityPrivacyLevel`
+  (`WildStar64.exe:1407376f0`) accepts Lua values `0` and `3`, sends client
+  opcode `0x0538` with a one-bit private flag, and the adjacent
+  `GetCommunityPrivacyLevel` code reads the type-7 community cache row flag
+  bit `0x10`, returning Lua value `3` when private and `0` otherwise.
+  NexusForever now validates the target community identity and emits
+  `ServerHousingCommunityPrivacyLevelUpdate` with entry type `7`, private flag
+  `0x10` when private, and the native Lua privacy value `0`/`3`.
+- Labels now appear in
+  `Decomp/Analysis/exports/WildStar64.exe/functions.csv`,
+  `selected_reasons_summary.csv`, and `selected_decompiled.c` from run
+  `housing_community_placement_privacy_labels`.
+- Verification:
+  `dotnet build Source\NexusForever.Network\NexusForever.Network.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\network-housing-plot-reservation\`
+  and
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\network-world-housing-plot-reservation\`
+  passed. The follow-up scoped gates
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\world-server-housing-placement-privacy\`
+  and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-housing-full-focused\
+  --filter "FullyQualifiedName~HousingPacketShapeTests|FullyQualifiedName~ClientHousingCommunityUpdateHandlerTests|FullyQualifiedName~ClientHousingCommunityRenameHandlerTests|FullyQualifiedName~ClientHousingNeighborHandlerTests|FullyQualifiedName~ClientHousingVisitResidenceHandlerTests|FullyQualifiedName~ResidenceTests|FullyQualifiedName~PacketPlaceholderNamingTests"`
+  passed `63/63`.
+
+Housing community rename result opcode follow-up (`0x078C`):
+
+- `0x078C` dispatch registration in `FUN_14006c290`
+  (`WildStar64.exe:14006dba5`) points at the shared four-uint32 reader
+  currently labelled `ServerSpellFourUInt32_ReadPayload`
+  (`WildStar64.exe:14007fef0`). The reader writes four consecutive uint32
+  fields into the packet object.
+- The `CommunityRenameResult` event string at `WildStar64.exe:140afca10`
+  traces to `Housing_HandleCommunityRenameResult`
+  (`WildStar64.exe:1404bbfc0`). That consumer switches on the first uint32 at
+  packet offset `0x10` and dispatches housing result cases for success, failed,
+  invalid permissions, invalid residence name, insufficient funds, plus one
+  still-unnamed enum value `0x38`.
+- A targeted `DumpNearbyData` probe around the event descriptor passed to
+  `ClientEvent_DispatchNamedEvent` shows `WildStar64.exe:1409ec1fc` is a
+  single `i` descriptor. Retail build 16042 therefore exposes only the first
+  uint32 result to the `CommunityRenameResult` UI event; the trailing three
+  packet uint32 fields are read from the wire but unused by this event path.
+- NexusForever now models `0x078C` as
+  `ServerHousingCommunityRenameResult`, writes `HousingResult` as the first
+  uint32, and keeps the remaining three uint32 fields as reserved zeroes in the
+  current server emitter.
+- Existing `ServerHousingCommunityRename` (`0x024D`) is intentionally left
+  distinct: its native reader (`WildStar64.exe:14009f030`) reads target
+  residence identity plus a 7-bit result-like field, while `0x078C` is the
+  four-uint32 `CommunityRenameResult` event payload.
+- Labels now appear in
+  `Decomp/Analysis/exports/WildStar64.exe/functions.csv`,
+  `selected_reasons_summary.csv`, and `selected_decompiled.c` from run
+  `housing_community_rename_result_labels`.
+- Verification:
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\world-server-housing-rename-result\`
+  passed, and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-housing-rename-result\
+  --filter "FullyQualifiedName~HousingPacketShapeTests|FullyQualifiedName~ClientHousingCommunityRenameHandlerTests|FullyQualifiedName~PacketPlaceholderNamingTests"`
+  passed `47/47`; the combined housing focused gate passed `55/55`, and full
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-full-housing-rename-result\`
+  passed `625/625`.
+
+Housing interior wallpaper implementation follow-up (`0x050D`):
+
+- Existing labels now map `ClientHousingInteriorWallpaperUpdate_WritePayload`
+  (`WildStar64.exe:14009ddd0`), `Housing_SendClientInteriorWallpaperUpdate`
+  (`WildStar64.exe:1404b79d0`),
+  `Housing_SendClientInteriorWallpaperRemove`
+  (`WildStar64.exe:1404b7bc0`),
+  `Lua_GameResidence_PurchaseInteriorWallpaper`
+  (`WildStar64.exe:1406aca10`), and
+  `Lua_GameResidence_RemoveInteriorWallpaper`
+  (`WildStar64.exe:1406acc30`). The writer emits six uint32 existing-decor
+  flags, then six shared `DecorInfo` records. The purchase binding reads six
+  `HousingWallpaperInfo` handles and checks slot flags
+  `0x01/0x04/0x08/0x10/0x20/0x80`; the remove binding restores one slot to the
+  slot default wallpaper id. The sender fills only changed slots, uses
+  `DecorType` value `3`, writes hook indices `1..6`, and carries the selected
+  `HousingWallpaperInfo.Id` in `DecorInfoId`.
+- NexusForever now names `DecorType.InteriorWallpaper = 3`, reads the six
+  uint32 values as `ExistingDecorFlags`, validates changed slot hook indices
+  and existing-decor flag consistency, resolves `DecorInfoId` through
+  `HousingWallpaperInfo`, validates the slot flag/default id, aggregates and
+  debits `Cost`/`CostCurrencyTypeId`, creates or updates the matching residence
+  decor record with the raw wallpaper id, persists the native `DecorData`,
+  `HookBagIndex`, `HookIndex`, and `ActivePropUnitId` fields on
+  `residence_decor`, and broadcasts the changed rows through
+  `ServerHousingResidenceDecor`.
+- The DB migration `20260522153000_ResidenceDecorState` adds the native decor
+  state columns needed for reconnect/load parity. Broader wallpaper ownership,
+  unlock/prerequisite, refund, and inventory-collection semantics remain blocked
+  until the corresponding server-side evidence is mapped.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\network-world-housing-interior-wallpaper\`
+  and `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\world-server-housing-interior-wallpaper\`
+  passed with `0` warnings and `0` errors.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-housing-interior-wallpaper\
+  --filter "FullyQualifiedName~HousingPacketShapeTests|FullyQualifiedName~ClientHousingNeighborHandlerTests|FullyQualifiedName~ResidenceTests|FullyQualifiedName~PacketPlaceholderNamingTests"`
+  passed `59/59`.
+  The broader focused F-004 gate with community update, rename, visit,
+  neighbor, residence, packet-shape, and placeholder tests passed `68/68`.
+
+Marketplace duration and mail template follow-up (F-005):
+
+- **Mapped**: `Marketplace_SendClientAuctionSellOrderSubmit` @ `140519a00` sends only
+  item guid (`param_1+0x40`), minimum bid (`+0x10`), and buyout (`+0x28`) on opcode
+  `0x06DC`; no listing duration is transmitted.
+- **Mapped**: `Marketplace_ItemAuctionDurationUiBind` @ `1406a1e80` loads
+  `Game.ItemAuction` and reads `GameFormula` `0x420` (`1056`) tier seconds into
+  `DAT_140c8b000..018` for UI tier selection; this does not reach the sell-order
+  packet writer.
+- **Mapped**: Item-auction expiry is server-side `GameFormula` `821`
+  (`Dataint0` hours → seconds, retail default 48h). Commodity orders carry
+  `ListTime`/`ExpirationTime` `FILETIME` on `ClientCommoditySellOrderSubmit` and are
+  normalized/validated against `1056` tiers.
+- **Verified (retail parity)**: Auction-house item listings were fixed at 48 hours;
+  players could not pick shorter or longer durations. That matches `0x06DC` carrying
+  no duration field and NexusForever applying `821` only.
+- **Mapped**: Mail templates for both `Game.ItemAuction` (`FUN_140433750`) and
+  `Game.CommodityOrder` (`FUN_140433640`) use achievement-text id `0x3950`; won vs
+  expired differentiation is via mail `ContentType`, not separate localized ids.
+- **Rejected for item-auction post**: `GameFormula` `1080`/`1082` and player-selectable
+  item listing durations are not on the mapped `0x06DC` path; `1056` UI bind
+  (`1406a1e80`) does not change the sell-order wire format.
+- Verification: `dotnet test ... --filter FullyQualifiedName~Marketplace` passed `9/9`.

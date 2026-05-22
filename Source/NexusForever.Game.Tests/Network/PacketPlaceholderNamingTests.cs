@@ -470,7 +470,7 @@ public class PacketPlaceholderNamingTests
             Assert.True(reader.ReadBit());
         }
 
-        using (var stream = new MemoryStream(WritePacket(new Server0x098C { IsSuccess = true, DisplayType = PurchaseResultDisplayType.NothingToClaim })))
+        using (var stream = new MemoryStream(WritePacket(new ServerStorePurchaseOfferResult { IsSuccess = true, DisplayType = PurchaseResultDisplayType.NothingToClaim })))
         using (var reader = new GamePacketReader(stream))
         {
             Assert.True(reader.ReadBit());
@@ -483,7 +483,7 @@ public class PacketPlaceholderNamingTests
             Assert.Equal(0xA0B0C0D0u, reader.ReadUInt());
         }
 
-        using (var stream = new MemoryStream(WritePacket(new Server0x0986(0x0102030405060708ul))))
+        using (var stream = new MemoryStream(WritePacket(new ServerAccountUInt64Payload(0x0102030405060708ul))))
         using (var reader = new GamePacketReader(stream))
         {
             Assert.Equal(0x0102030405060708ul, reader.ReadULong());
@@ -495,7 +495,7 @@ public class PacketPlaceholderNamingTests
             Assert.Equal((uint)StoreError.IneligibleGiftRecipient, reader.ReadUInt(5u));
         }
 
-        using (var stream = new MemoryStream(WritePacket(new Server0x098D { IsSuccess = true, DisplayType = PurchaseResultDisplayType.VIPSubscription })))
+        using (var stream = new MemoryStream(WritePacket(new ServerStorePurchaseOfferResultVariant { IsSuccess = true, DisplayType = PurchaseResultDisplayType.VIPSubscription })))
         using (var reader = new GamePacketReader(stream))
         {
             Assert.True(reader.ReadBit());
@@ -542,7 +542,7 @@ public class PacketPlaceholderNamingTests
             Assert.Equal(0xA0B0C0D0u, reader.ReadUInt());
         }
 
-        var currencyPackage = new Server0x098F
+        var currencyPackage = new ServerStoreCurrencyPackageRow
         {
             Value0      = 0x10203040u,
             StringValue = "currency",
@@ -601,6 +601,73 @@ public class PacketPlaceholderNamingTests
         Assert.Equal(2.5f, reader.ReadSingle());
         Assert.Equal(3.75f, reader.ReadSingle());
         Assert.Equal("s8", reader.ReadWideString());
+    }
+
+    [Fact]
+    public void ServerHousingResidenceKeyedUpdate_WriteSerializesMappedFields()
+    {
+        var message = new ServerHousingResidenceKeyedUpdate
+        {
+            Key        = 0x0102030405060708ul,
+            Unknown0   = 0xA0B0C0D0u,
+            Reserved0  = 0x11223344u
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        Assert.Equal(0xA0B0C0D0u, reader.ReadUInt());
+        Assert.Equal(0x11223344u, reader.ReadUInt());
+    }
+
+    [Fact]
+    public void ServerSpellUInt32TripletList_WriteSerializesCountedRows()
+    {
+        var message = new ServerSpellUInt32TripletList();
+        message.Rows.Add(new ServerSpellUInt32TripletListRow
+        {
+            Value0 = 1u,
+            Value1 = 2u,
+            Value2 = 3u
+        });
+        message.Rows.Add(new ServerSpellUInt32TripletListRow
+        {
+            Value0 = 4u,
+            Value1 = 5u,
+            Value2 = 6u
+        });
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.Equal(3u, reader.ReadUInt());
+        Assert.Equal(4u, reader.ReadUInt());
+        Assert.Equal(5u, reader.ReadUInt());
+        Assert.Equal(6u, reader.ReadUInt());
+    }
+
+    [Fact]
+    public void ServerSpellFourUInt32_WriteSerializesMappedFields()
+    {
+        var message = new ServerSpellFourUInt32
+        {
+            Value0 = 0x10203040u,
+            Value1 = 0x50607080u,
+            Value2 = 0x90A0B0C0u,
+            Value3 = 0xD0E0F001u
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x10203040u, reader.ReadUInt());
+        Assert.Equal(0x50607080u, reader.ReadUInt());
+        Assert.Equal(0x90A0B0C0u, reader.ReadUInt());
+        Assert.Equal(0xD0E0F001u, reader.ReadUInt());
     }
 
     [Fact]

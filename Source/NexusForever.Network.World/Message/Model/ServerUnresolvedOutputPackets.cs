@@ -69,12 +69,6 @@ namespace NexusForever.Network.World.Message.Model
         public Server0x00B7(byte[] payload = null) : base(0x1u, payload) { }
     }
 
-    [Message(GameMessageOpcode.Server0x00CA)]
-    public class Server0x00CA : ServerUnresolvedRawPayload
-    {
-        public Server0x00CA(byte[] payload = null) : base(0x10u, payload) { }
-    }
-
     [Message(GameMessageOpcode.Server0x00CB)]
     public class Server0x00CB : ServerUnresolvedRawPayload
     {
@@ -417,60 +411,6 @@ namespace NexusForever.Network.World.Message.Model
         public ServerGroupMemberDetailUpdate(byte[] payload = null) : base(0x28u, payload) { }
     }
 
-    [Message(GameMessageOpcode.Server0x04FE)]
-    public class Server0x04FE : ServerUnresolvedRawPayload
-    {
-        public Server0x04FE(byte[] payload = null) : base(0x18u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x0501)]
-    public class Server0x0501 : ServerUnresolvedRawPayload
-    {
-        public Server0x0501(byte[] payload = null) : base(0x30u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x0506)]
-    public class Server0x0506 : ServerUnresolvedRawPayload
-    {
-        public Server0x0506(byte[] payload = null) : base(0x10u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x0514)]
-    public class Server0x0514 : ServerUnresolvedRawPayload
-    {
-        public Server0x0514(byte[] payload = null) : base(0x18u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x0516)]
-    public class Server0x0516 : ServerUnresolvedRawPayload
-    {
-        public Server0x0516(byte[] payload = null) : base(0x30u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x0519)]
-    public class Server0x0519 : ServerUnresolvedRawPayload
-    {
-        public Server0x0519(byte[] payload = null) : base(0x30u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x051F)]
-    public class Server0x051F : ServerUnresolvedRawPayload
-    {
-        public Server0x051F(byte[] payload = null) : base(0x18u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x053A)]
-    public class Server0x053A : ServerUnresolvedRawPayload
-    {
-        public Server0x053A(byte[] payload = null) : base(0x20u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x053B)]
-    public class Server0x053B : ServerUnresolvedRawPayload
-    {
-        public Server0x053B(byte[] payload = null) : base(0x20u, payload) { }
-    }
-
     [Message(GameMessageOpcode.Server0x0567)]
     public class Server0x0567 : ServerUnresolvedRawPayload
     {
@@ -531,12 +471,6 @@ namespace NexusForever.Network.World.Message.Model
         public Server0x077E(byte[] payload = null) : base(0x10u, payload) { }
     }
 
-    [Message(GameMessageOpcode.Server0x078C)]
-    public class Server0x078C : ServerUnresolvedRawPayload
-    {
-        public Server0x078C(byte[] payload = null) : base(0x10u, payload) { }
-    }
-
     [Message(GameMessageOpcode.Server0x07CD)]
     public class Server0x07CD : ServerUnresolvedRawPayload
     {
@@ -553,24 +487,6 @@ namespace NexusForever.Network.World.Message.Model
     public class Server0x07D5 : ServerUnresolvedRawPayload
     {
         public Server0x07D5(byte[] payload = null) : base(0x14u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x080F)]
-    public class Server0x080F : ServerUnresolvedRawPayload
-    {
-        public Server0x080F(byte[] payload = null) : base(0x10u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x0810)]
-    public class Server0x0810 : ServerUnresolvedRawPayload
-    {
-        public Server0x0810(byte[] payload = null) : base(0x10u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x0812)]
-    public class Server0x0812 : ServerUnresolvedRawPayload
-    {
-        public Server0x0812(byte[] payload = null) : base(0x10u, payload) { }
     }
 
     [Message(GameMessageOpcode.Server0x0846)]
@@ -868,22 +784,6 @@ namespace NexusForever.Network.World.Message.Model
         public ServerWalletUpdate(uint value = 0u) : base(32u, value) { }
     }
 
-    [Message(GameMessageOpcode.Server0x0986)]
-    public class Server0x0986 : IWritable
-    {
-        public ulong Value { get; set; }
-
-        public Server0x0986(ulong value = 0ul)
-        {
-            Value = value;
-        }
-
-        public void Write(GamePacketWriter writer)
-        {
-            writer.Write(Value);
-        }
-    }
-
     [Message(GameMessageOpcode.ServerStoreCatalogUpdated)]
     public class ServerStoreCatalogUpdated : IWritable
     {
@@ -905,32 +805,6 @@ namespace NexusForever.Network.World.Message.Model
         public void Write(GamePacketWriter writer)
         {
             writer.Write(Error, 5u);
-        }
-    }
-
-    [Message(GameMessageOpcode.Server0x098C)]
-    public class Server0x098C : IWritable
-    {
-        public bool IsSuccess { get; set; }
-        public PurchaseResultDisplayType DisplayType { get; set; }
-
-        public void Write(GamePacketWriter writer)
-        {
-            writer.Write(IsSuccess);
-            writer.Write(DisplayType, 5u);
-        }
-    }
-
-    [Message(GameMessageOpcode.Server0x098D)]
-    public class Server0x098D : IWritable
-    {
-        public bool IsSuccess { get; set; }
-        public PurchaseResultDisplayType DisplayType { get; set; }
-
-        public void Write(GamePacketWriter writer)
-        {
-            writer.Write(IsSuccess);
-            writer.Write(DisplayType, 5u);
         }
     }
 
@@ -974,25 +848,6 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ServerStorePurchaseHistoryReady)]
     public class ServerStorePurchaseHistoryReady : ServerUnresolvedStoreRowListPayload
     {
-    }
-
-    [Message(GameMessageOpcode.Server0x098F)]
-    public class Server0x098F : IWritable
-    {
-        public uint Value0 { get; set; }
-        public string StringValue { get; set; } = string.Empty;
-        public uint Value2 { get; set; }
-        public float FloatValue { get; set; }
-        public uint Value4 { get; set; }
-
-        public void Write(GamePacketWriter writer)
-        {
-            writer.Write(Value0);
-            writer.WriteStringWide(StringValue);
-            writer.Write(Value2);
-            writer.Write(FloatValue);
-            writer.Write(Value4);
-        }
     }
 
     [Message(GameMessageOpcode.ServerStoreCompleteOrderVirtualCurrencyPackageResult)]

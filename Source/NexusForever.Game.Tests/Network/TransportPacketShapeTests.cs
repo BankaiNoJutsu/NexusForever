@@ -2,6 +2,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Game.Tests.Network;
 
@@ -111,6 +112,60 @@ public class TransportPacketShapeTests
         Assert.Equal(0x22222222u, reader.ReadUInt());
         Assert.Equal(VehicleSeatType.Gunner, reader.ReadEnum<VehicleSeatType>(2u));
         Assert.Equal((byte)5, reader.ReadByte(3u));
+    }
+
+    [Fact]
+    public void ServerVehiclePassengerAdd_WritesVehicleSeatAndPassengerUnit()
+    {
+        var packet = new ServerVehiclePassengerAdd
+        {
+            Self = 0x33333333u,
+            SeatType = VehicleSeatType.Passenger,
+            SeatPosition = 4,
+            UnitId = 0x44444444u
+        };
+
+        byte[] packetData = WritePacket(packet);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(0x33333333u, reader.ReadUInt());
+        Assert.Equal(VehicleSeatType.Passenger, reader.ReadEnum<VehicleSeatType>(2u));
+        Assert.Equal((byte)4, reader.ReadByte(3u));
+        Assert.Equal(0x44444444u, reader.ReadUInt());
+    }
+
+    [Fact]
+    public void ServerVehiclePassengerRemove_WritesVehicleAndPassengerUnits()
+    {
+        var packet = new ServerVehiclePassengerRemove
+        {
+            Self      = 0x55555555u,
+            Passenger = 0x66666666u
+        };
+
+        byte[] packetData = WritePacket(packet);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(0x55555555u, reader.ReadUInt());
+        Assert.Equal(0x66666666u, reader.ReadUInt());
+    }
+
+    [Fact]
+    public void VehiclePassenger_WritesSeatAndPassengerUnit()
+    {
+        var passenger = new VehiclePassenger
+        {
+            SeatType = VehicleSeatType.Pilot,
+            SeatPosition = 1,
+            UnitId = 0x77777777u
+        };
+
+        byte[] packetData = WritePacket(passenger);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(VehicleSeatType.Pilot, reader.ReadEnum<VehicleSeatType>(2u));
+        Assert.Equal((byte)1, reader.ReadByte(3u));
+        Assert.Equal(0x77777777u, reader.ReadUInt());
     }
 
     private static byte[] WritePacket(IWritable packet)

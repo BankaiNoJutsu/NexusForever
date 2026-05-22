@@ -357,6 +357,7 @@ WildStar64.exe,1406a04f0,Marketplace_ValidateCommodityOrderBeforeSubmit,Prefligh
 WildStar64.exe,1406a0740,Marketplace_SendClientAuctionBuyOrderSubmit,Sends opcode 0x055E ClientAuctionBuyOrderSubmit with Item2 id, auction id, and offered amount from the selected item auction.
 WildStar64.exe,1406a1270,Marketplace_SendClientCommodityOrderCancel,Sends opcode 0x0093 ClientCommodityOrderCancel with commodity order id, Item2 id, and buy-order flag from the selected commodity order.
 WildStar64.exe,1406a20c0,Marketplace_SendClientAuctionCancel,Sends opcode 0x0094 ClientAuctionCancel with auction Item2 id and auction id from the selected item auction.
+WildStar64.exe,1406a1e80,Marketplace_ItemAuctionDurationUiBind,Binds Game.ItemAuction UI helper reading GameFormula 0x420 (1056) tier constants; retail item auctions were fixed 48h and 0x06DC carries no duration field.
 WildStar64.exe,1406a3ba0,Lua_GameContract_Complete,Game.Contract Lua method that validates the selected contract and sends opcode 0x035D ClientQuestComplete with an optional reward selection and communicator bit cleared.
 WildStar64.exe,1406a4ab0,Lua_ICComm_SetReceivedMessageFunction,ICComm callback registration method for SetReceivedMessageFunction.
 WildStar64.exe,1406a4b60,Lua_ICComm_SetSendMessageResultFunction,ICComm callback registration method for SetSendMessageResultFunction.
@@ -738,6 +739,11 @@ WildStar64.exe,1404bbb80,Harvest_DispatchItemsSentToOwnerEvent,Builds item/count
 WildStar64.exe,1404ba070,HousingEvent_SendClientNeighborInviteAccept,Registered housing event callback that sends opcode 0x0513 with invite response value 1.
 WildStar64.exe,1404ba0a0,HousingEvent_SendClientNeighborInviteDecline,Registered housing event callback that sends opcode 0x0513 with invite response value 0.
 WildStar64.exe,1404ba0d0,HousingEvent_SendClientNeighborSetPermission,Registered housing event callback that sends opcode 0x0518 with target identity and permission value.
+WildStar64.exe,1404b4d50,Housing_CachedNeighborEntry_ConstructFromRow,Builds a cached housing neighbor entry from the native row by storing row +0 as the neighbor character id assigning a client-local nId copying target residence identity and permission while leaving row +8 unused.
+WildStar64.exe,1404b4e40,Housing_BuildNeighborLuaTable,Builds the HousingLib neighbor Lua row from cached detail fields client-local nId and permission; selected-neighbor actions use the cached target residence identity and the native row +8 value is not exposed.
+WildStar64.exe,1404bb380,Housing_HandleNeighborInviteResult,Consumes the 0x0516 neighbor invite-result payload and dispatches HousingNeighborInviteAccepted or HousingNeighborInviteDeclined for the mapped HousingResult values before falling back to the generic HousingResult event.
+WildStar64.exe,1404bb790,Housing_HandleNeighborUpdate,Consumes the 0x0519 neighbor-update payload and applies add permission-change remove and refresh actions to the cached neighbor collection before dispatching HousingNeighborUpdate or HousingNeighborsLoaded.
+WildStar64.exe,1404bba70,Housing_HandleNeighborInvitePrompt,Consumes the 0x0514 neighbor-invite prompt payload and dispatches HousingNeighborInviteRecieved while caching the inviter identity and name for the response flow.
 WildStar64.exe,140735eb0,Lua_HousingLib_NeighborInviteByName,HousingLib.NeighborInviteByName Lua method that sends opcode 0x0512 with neighbor invite target data.
 WildStar64.exe,140735fb0,Lua_HousingLib_NeighborEvict,HousingLib.NeighborEvict Lua method that sends opcode 0x0515 with the selected neighbor residence identity.
 WildStar64.exe,140736050,Lua_HousingLib_NeighborInviteAccept,HousingLib.NeighborInviteAccept Lua method that sends opcode 0x0513 with invite response value 1.
@@ -775,12 +781,14 @@ WildStar64.exe,140712400,Lua_CREDDExchangeLib_CancelOrder,CREDDExchangeLib.Cance
 WildStar64.exe,140712490,Lua_CREDDExchangeLib_GetCREDDHistory,CREDDExchangeLib.GetCREDDHistory Lua method that sends opcode 0x03E7 with an empty payload.
 WildStar64.exe,1405194b0,CREDDExchange_SendClientOrderSubmit,Sends the CREDD exchange submit request through opcode 0x0265 or 0x026B depending on the buy/sell branch selected by UI state.
 WildStar64.exe,140519840,CREDDExchangeSubmit_ReadDirectionAndMoney,Reads the CREDD exchange submit direction and Game.Money amount and applies the buy-side credit/tax validation used before order submit.
-WildStar64.exe,1404b79d0,Housing_SendClientInteriorWallpaperUpdate,Builds changed six-slot residence plug item records and sends opcode 0x050D for interior wallpaper updates.
+WildStar64.exe,1404b79d0,Housing_SendClientInteriorWallpaperUpdate,Builds changed six-slot residence wallpaper records with HousingWallpaperInfo ids and sends opcode 0x050D.
+WildStar64.exe,1404b7bc0,Housing_SendClientInteriorWallpaperRemove,Builds a one-slot opcode 0x050D interior wallpaper update using the slot default wallpaper id.
 WildStar64.exe,1404b73e0,Housing_SendClientPlugPlaceOrRotate,Builds opcode 0x0510 for plug placement or rotation with plot info id plug item id facing operation and contribution data.
 WildStar64.exe,1404b7540,Housing_SendClientPlugRemove,Builds opcode 0x0510 for plug removal with operation 2.
 WildStar64.exe,1404b7620,Housing_SendClientPlugRepair,Builds opcode 0x0510 for plug repair with operation 4 and HousingContributionInfo-derived costs.
 WildStar64.exe,1404bc060,Housing_ResolvePlotInfoForSelectedResidence,Resolves a HousingPlotInfo id for the selected residence property and plot index.
-WildStar64.exe,1406aca10,Lua_GameResidence_RemoveInteriorWallpaper,Game.Residence.RemoveInteriorWallpaper Lua method that collects the six interior wallpaper plug item slots and routes them through opcode 0x050D.
+WildStar64.exe,1406aca10,Lua_GameResidence_PurchaseInteriorWallpaper,Game.Residence.PurchaseInteriorWallpaper Lua method that validates six HousingWallpaperInfo selections against slot flags and routes changes through opcode 0x050D.
+WildStar64.exe,1406acc30,Lua_GameResidence_RemoveInteriorWallpaper,Game.Residence.RemoveInteriorWallpaper Lua method that restores one interior wallpaper slot by sending opcode 0x050D with the slot default wallpaper id.
 WildStar64.exe,1406a54f0,Lua_GameHousingPlot_RemovePlug,Game.HousingPlot RemovePlug Lua method that sends opcode 0x0510 with the target plot info id and remove operation.
 WildStar64.exe,1406a5520,Lua_GameHousingPlot_PlacePlug,Game.HousingPlot PlacePlug Lua method that sends opcode 0x0510 with requested plug item id default facing and place operation.
 WildStar64.exe,1406a5630,Lua_GameHousingPlot_RepairPlug,Game.HousingPlot RepairPlug Lua method that sends opcode 0x0510 with repair operation and contribution data.
@@ -992,3 +1000,30 @@ WildStar64.exe,140603450,Group_HandleMemberPromote_ReadPayload,Client reader for
 WildStar64.exe,140603610,Group_HandleMemberFlags_ReadPayload,Client reader for a server group-member-flags packet (860 bytes — large, likely handles multiple opcodes or a complex roster packet). Decompile to confirm opcode and field layout.
 WildStar64.exe,140603970,Group_HandleReadyCheck_ReadPayload,Client reader for a server group-ready-check packet (186 bytes). Decompile to confirm opcode and field layout.
 WildStar64.exe,140603a60,Group_HandleGroupDisband_ReadPayload,Client reader for a server group-disband or large roster packet (2116 bytes — very large, likely a dispatcher or multi-opcode handler). Decompile to confirm opcode and field layout.
+WildStar64.exe,14008de20,ServerHousingResidenceKeyedUpdate_ReadPayload,Reads opcode 0x00CA as one 64-bit field plus one uint32 and one trailing uint32 inside the 0x10-byte housing privacy cluster envelope.
+WildStar64.exe,14009cbe0,ServerHousingNeighborhoodEntry_ReadPayload,Reads opcode 0x0501 and shared 0x0506 row entries as one uint64 two 14-bit fields another uint64 a wide string and three uint32 fields.
+WildStar64.exe,14009ebf0,ServerHousingNeighborhoodList_ReadPayload,Reads opcode 0x0506 as one 14-bit realm field then a uint32 count and count 0x30-byte ServerHousingNeighborhoodEntry rows.
+WildStar64.exe,1404ba4f0,Housing_HandleNeighborhoodList,Consumes opcode 0x0506 neighborhood-list rows into the housing neighborhood cache and dispatches HousingNeighborhoodRecieved.
+WildStar64.exe,14009ecc0,ServerHousingNeighbors_ReadPayload,Reads opcode 0x0507 as a uint32 count then allocates 0x28-byte rows parsed by ServerHousingNeighbors_Row_ReadPayload.
+WildStar64.exe,14009cf10,ServerHousingNeighbors_Row_ReadPayload,Reads one 0x0507 housing-neighbor row as two uint64 fields then an Identity and one uint32 permission/status field.
+WildStar64.exe,140091ef0,ServerHousingNeighborInvitePrompt_ReadPayload,Reads opcode 0x0514 as target residence identity followed by one wide string.
+WildStar64.exe,14009edd0,ServerHousingNeighborInviteResult_ReadPayload,Reads opcode 0x0516 as a ServerHousingNeighbors row followed by one 7-bit HousingResult field.
+WildStar64.exe,14009ed80,ServerHousingNeighborUpdate_ReadPayload,Reads opcode 0x0519 as a ServerHousingNeighbors row followed by one 3-bit neighbor-update action field.
+WildStar64.exe,1404bc210,Housing_UpdateNeighborEntryFromDetails,Updates an existing cached neighbor entry from the current detail structure and dispatches HousingNeighborUpdate when the entry is active.
+WildStar64.exe,140086e70,ServerHousingCommunityPlotReservation_ReadPayload,Reads opcode 0x051F as target residence identity followed by a uint32 community plot reservation index; 0xffffffff is the native no-reservation sentinel observed by HousingLib.GetReservedCommunityPlotIndex.
+WildStar64.exe,140737350,Lua_HousingLib_ReserveCommunityPlot,Parses HousingLib.ReserveCommunityPlot numeric plot index and sends the community plot reservation guild operation.
+WildStar64.exe,140737400,Lua_HousingLib_RemoveCommunityPlotReservation,Parses HousingLib.RemoveCommunityPlotReservation target name and sends the reservation-removal guild operation.
+WildStar64.exe,140737470,Lua_HousingLib_GetReservedCommunityPlotIndex,Reads the cached community residence row for the current residence identity and returns nPlotIndex plus bHasReservation when the stored plot index is not 0xffffffff.
+WildStar64.exe,14057fe90,Housing_SendClientCommunityPlotReservation,Builds ClientGuildOperation opcode 0x04B1 operation 0x29 with the target community identity and requested plot index.
+WildStar64.exe,14057ff10,Housing_SendClientCommunityPlotReservationRemoval,Builds ClientGuildOperation opcode 0x04B1 operation 0x2A with the target community identity and reservation-removal name.
+WildStar64.exe,14057ff90,Housing_FindCommunityResidenceEntryByIdentity,Searches the type-7 housing/community cache by target residence identity and returns the matching row used by GetReservedCommunityPlotIndex.
+WildStar64.exe,140092660,ServerHousingCommunityPlacement_ReadPayload,Reads opcode 0x053A as target residence identity then one uint64 and one uint32 property-index-style field.
+WildStar64.exe,140736950,Lua_HousingLib_RequestCommunityPlacement,Handles HousingLib.RequestCommunityPlacement by resolving the selected community plot and sending ClientHousingCommunityPlacement.
+WildStar64.exe,1404b6b90,Housing_SendClientCommunityPlacement,Builds ClientHousingCommunityPlacement opcode 0x052B with target community residence identity and requested property index.
+WildStar64.exe,14009e8a0,ServerHousingCommunityPrivacyLevelUpdate_ReadPayload,Reads opcode 0x053B as target residence identity two uint32 fields and one trailing 3-bit field.
+WildStar64.exe,1407376f0,Lua_HousingLib_SetCommunityPrivacyLevel,Accepts Lua community privacy values 0 and 3 and sends ClientHousingCommunityPrivacyLevel opcode 0x0538 with a private flag.
+WildStar64.exe,14009e930,ServerHousingCommunityDonateUpdate_ReadPayload,Reads opcode 0x04FE as a uint32 count then two parallel uint32 arrays of that length.
+WildStar64.exe,140095da0,ServerSpellUInt32TripletList_ReadPayload,Reads opcodes 0x080F and 0x0810 as a uint32 count followed by count rows of three uint32 values via FUN_140080bf0.
+WildStar64.exe,140080bf0,ServerSpellUInt32TripletListRow_ReadPayload,Reads one spell auxiliary row of three uint32 fields (12 bytes).
+WildStar64.exe,14007fef0,ServerSpellFourUInt32_ReadPayload,Reads opcodes 0x078C and 0x0812 as four consecutive uint32 fields (16 bytes); 0x078C is consumed as a housing community rename result.
+WildStar64.exe,1404bbfc0,Housing_HandleCommunityRenameResult,Consumes opcode 0x078C by switching on the first uint32 as HousingResult and dispatching CommunityRenameResult for mapped result values.
