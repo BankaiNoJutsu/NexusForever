@@ -16,39 +16,23 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
     /// Quest 3487 (Shellshock!) -> grants 3963 (More Important Than Revenge) on completion.
     /// </summary>
     [ScriptFilterOwnerId(3487u)]
-    public class Q3487ShellshockQuestScript : IQuestScript, IOwnedScript<IQuest>
+    public class Q3487ShellshockQuestScript : FollowUpQuestScript<Q3487ShellshockQuestScript>
     {
-        private const ushort NextQuestId = 3963;
-        private readonly ILogger<Q3487ShellshockQuestScript> log;
-        private readonly IGlobalQuestManager globalQuestManager;
-        private IQuest owner;
+        protected override ushort NextQuestId => 3963;
 
-        public Q3487ShellshockQuestScript(ILogger<Q3487ShellshockQuestScript> log, IGlobalQuestManager globalQuestManager)
+        public Q3487ShellshockQuestScript(
+            ILogger<Q3487ShellshockQuestScript> log,
+            IGlobalQuestManager globalQuestManager)
+            : base(log, globalQuestManager)
         {
-            this.log = log; this.globalQuestManager = globalQuestManager;
-        }
-
-        public void OnLoad(IQuest owner) { this.owner = owner; }
-
-        public void OnQuestStateChange(QuestState newState, QuestState oldState)
-        {
-            if (newState == QuestState.Completed)
-                GrantNext();
-        }
-
-        private void GrantNext()
-        {
-            if (owner.Player.QuestManager.GetQuestState(NextQuestId) != null) return;
-            IQuestInfo info = globalQuestManager.GetQuestInfo(NextQuestId);
-            if (info == null) { log.LogWarning("Next quest {NextId} info missing.", NextQuestId); return; }
-            owner.Player.QuestManager.QuestAdd(info);
-            log.LogDebug("Granted follow-up quest {NextId} after {QuestId}.", NextQuestId, owner.Id);
         }
     }
 
     [ScriptFilterCreatureId(11251u)]
     public class Q3487DominionCannonEntityScript : IWorldEntityScript, IOwnedScript<ICreatureEntity>
     {
+        private const ushort QuestShellshock = 3487;
+
         private ICreatureEntity owner;
 
         public void OnLoad(ICreatureEntity owner)
@@ -58,6 +42,10 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         public void OnActivateSuccess(IPlayer activator)
         {
+            // Only credit objective for players on Q3487 (Shellshock).
+            if (activator.QuestManager.GetQuestState(QuestShellshock) != QuestState.Accepted)
+                return;
+
             activator.QuestManager.ObjectiveUpdate(QuestObjectiveType.ScriptedTargetGroupChecklist, owner.CreatureId, owner.QuestChecklistIdx);
         }
     }
@@ -86,7 +74,8 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         public void OnKilled(IUnitEntity killer)
         {
-            if (killer is IPlayer player)
+            if (killer is IPlayer player
+                && !player.AchievementManager.HasCompletedAchievement(AchievementWarbot))
                 player.AchievementManager.GrantAchievement(AchievementWarbot);
         }
     }

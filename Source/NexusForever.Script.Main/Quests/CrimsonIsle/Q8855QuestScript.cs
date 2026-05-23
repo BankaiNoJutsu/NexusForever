@@ -7,8 +7,8 @@ using NexusForever.Script.Template.Filter;
 namespace NexusForever.Script.Main.Quests.CrimsonIsle
 {
     /// <summary>
-    /// Crimson Isle: Stasis Interrupted — approach Dominion soldiers.
-    /// Quest 8855 has no direct Quest2 follow-up in build 16042.
+    /// Crimson Isle: Stasis Interrupted; approach Dominion soldiers.
+    /// Quest 8855: granted by Q5593 (external). Parallel branch to Q5573.
     /// The entity script (Q8855DominionSoldiersEntityScript) handles enter-range interaction.
     /// </summary>
     [ScriptFilterOwnerId(8855u)]

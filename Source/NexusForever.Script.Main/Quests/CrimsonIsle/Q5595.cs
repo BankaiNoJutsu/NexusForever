@@ -8,23 +8,19 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
 {
     /// <summary>
     /// Crimson Isle: activate entities and kill creatures.
-    /// Quest 5595 has multiple retail follow-ups; do not force a direct grant.
+    /// Quest 5595 grants 5575 on completion.
+    /// Retail chain: 5595 (root) -> 5575 -> [merge gate 5596] -> 5597 -> 5604 -> 5580 -> [merge gate 5594].
     /// </summary>
     [ScriptFilterOwnerId(5595u)]
-    public class Q5595QuestScript : IQuestScript, IOwnedScript<IQuest>
+    public class Q5595QuestScript : FollowUpQuestScript<Q5595QuestScript>
     {
-        private readonly ILogger<Q5595QuestScript> log;
-        private IQuest owner;
+        protected override ushort NextQuestId => 5575;
 
-        public Q5595QuestScript(ILogger<Q5595QuestScript> log)
+        public Q5595QuestScript(
+            ILogger<Q5595QuestScript> log,
+            IGlobalQuestManager globalQuestManager)
+            : base(log, globalQuestManager)
         {
-            this.log = log;
-        }
-
-        public void OnLoad(IQuest owner) { this.owner = owner; }
-        public void OnQuestStateChange(QuestState newState, QuestState oldState)
-        {
-            log.LogDebug("Quest {QuestId} state: {OldState} -> {NewState}.", owner.Id, oldState, newState);
         }
     }
 }

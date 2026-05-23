@@ -12,33 +12,15 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
     /// Quest 3667 (The Tower) -> grants 3486 (Empowered Tower) on completion.
     /// </summary>
     [ScriptFilterOwnerId(3667u)]
-    public class Q3667TheTowerQuestScript : IQuestScript, IOwnedScript<IQuest>
+    public class Q3667TheTowerQuestScript : FollowUpQuestScript<Q3667TheTowerQuestScript>
     {
-        private const ushort NextQuestId = 3486;
-        private readonly ILogger<Q3667TheTowerQuestScript> log;
-        private readonly IGlobalQuestManager globalQuestManager;
-        private IQuest owner;
+        protected override ushort NextQuestId => 3486;
 
-        public Q3667TheTowerQuestScript(ILogger<Q3667TheTowerQuestScript> log, IGlobalQuestManager globalQuestManager)
+        public Q3667TheTowerQuestScript(
+            ILogger<Q3667TheTowerQuestScript> log,
+            IGlobalQuestManager globalQuestManager)
+            : base(log, globalQuestManager)
         {
-            this.log = log; this.globalQuestManager = globalQuestManager;
-        }
-
-        public void OnLoad(IQuest owner) { this.owner = owner; }
-
-        public void OnQuestStateChange(QuestState newState, QuestState oldState)
-        {
-            if (newState == QuestState.Completed)
-                GrantNext();
-        }
-
-        private void GrantNext()
-        {
-            if (owner.Player.QuestManager.GetQuestState(NextQuestId) != null) return;
-            IQuestInfo info = globalQuestManager.GetQuestInfo(NextQuestId);
-            if (info == null) { log.LogWarning("Next quest {NextId} info missing.", NextQuestId); return; }
-            owner.Player.QuestManager.QuestAdd(info);
-            log.LogDebug("Granted follow-up quest {NextId} after {QuestId}.", NextQuestId, owner.Id);
         }
     }
 
@@ -46,6 +28,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
     public class Q3667ControlPanelEntityScript : IWorldEntityScript, IOwnedScript<ICreatureEntity>
     {
         private const ushort QuestTheTower  = 3667;
+        // Objective 4770 verified against Quest2.tbl: ActivateEntity type, single-shot.
         private const uint QObjTerminal     = 4770u;
 
         private ICreatureEntity owner;

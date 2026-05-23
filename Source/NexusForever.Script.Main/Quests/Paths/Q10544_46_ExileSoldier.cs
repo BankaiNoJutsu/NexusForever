@@ -6,25 +6,21 @@ using NexusForever.Script.Template.Filter;
 
 namespace NexusForever.Script.Main.Quests.Paths
 {
-    /// <summary>Exile Soldier: kill intro quest. Quest 10544.</summary>
+    /// <summary>Exile Soldier: kill intro quest. Quest 10544 -> 10545.</summary>
     [ScriptFilterOwnerId(10544u)]
-    public class Q10544SoldierKillQuestScript : IQuestScript, IOwnedScript<IQuest>
+    public class Q10544SoldierKillQuestScript : FollowUpQuestScript<Q10544SoldierKillQuestScript>
     {
-        private readonly ILogger<Q10544SoldierKillQuestScript> log; private IQuest owner;
-        public Q10544SoldierKillQuestScript(ILogger<Q10544SoldierKillQuestScript> log) => this.log = log;
-        public void OnLoad(IQuest o) { owner = o; log.LogDebug("Path {QuestId} loaded.", o.Id); }
-        public void OnQuestStateChange(QuestState n, QuestState old) => log.LogDebug("Path {QuestId}: {Old} -> {New}.", owner.Id, old, n);
+        protected override ushort NextQuestId => 10545;
+        public Q10544SoldierKillQuestScript(ILogger<Q10544SoldierKillQuestScript> log, IGlobalQuestManager m) : base(log, m) { }
     }
-    /// <summary>Exile Soldier: spell success + activate quest. Quest 10545.</summary>
+    /// <summary>Exile Soldier: spell+activate quest. Quest 10545 -> 10546.</summary>
     [ScriptFilterOwnerId(10545u)]
-    public class Q10545SoldierSpellQuestScript : IQuestScript, IOwnedScript<IQuest>
+    public class Q10545SoldierSpellQuestScript : FollowUpQuestScript<Q10545SoldierSpellQuestScript>
     {
-        private readonly ILogger<Q10545SoldierSpellQuestScript> log; private IQuest owner;
-        public Q10545SoldierSpellQuestScript(ILogger<Q10545SoldierSpellQuestScript> log) => this.log = log;
-        public void OnLoad(IQuest o) { owner = o; log.LogDebug("Path {QuestId} loaded.", o.Id); }
-        public void OnQuestStateChange(QuestState n, QuestState old) => log.LogDebug("Path {QuestId}: {Old} -> {New}.", owner.Id, old, n);
+        protected override ushort NextQuestId => 10546;
+        public Q10545SoldierSpellQuestScript(ILogger<Q10545SoldierSpellQuestScript> log, IGlobalQuestManager m) : base(log, m) { }
     }
-    /// <summary>Exile Soldier: mass activate quest. Quest 10546.</summary>
+    /// <summary>Exile Soldier: mass activate quest. Quest 10546 (terminal).</summary>
     [ScriptFilterOwnerId(10546u)]
     public class Q10546SoldierActivateQuestScript : IQuestScript, IOwnedScript<IQuest>
     {

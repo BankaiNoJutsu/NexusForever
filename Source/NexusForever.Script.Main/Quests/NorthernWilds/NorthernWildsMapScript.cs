@@ -19,13 +19,13 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
     [ScriptFilterOwnerId(426)]
     public class NorthernWildsMapScript : IMapScript, IOwnedScript<IBaseMap>
     {
-        private sealed class TutorialMapInfo : IMapInfo
+        private sealed class NorthernWildsMapInfo : IMapInfo
         {
             public required GameTable.Model.WorldEntry Entry { get; init; }
             public IMapLock MapLock { get; init; }
         }
 
-        private sealed class TutorialMapPosition : IMapPosition
+        private sealed class NorthernWildsMapPosition : IMapPosition
         {
             public required IMapInfo Info { get; init; }
             public Vector3 Position { get; set; }
@@ -54,6 +54,12 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         private const uint Q3480SettlerNpcId = 11070u;
         private const uint Q3480SettlerNpcAreaWL = 12155u;
+
+        private const uint Q3487CannonId = 11251u;
+        private const uint Q3487CannonWL = 9196u;
+
+        private const uint Q3487UltrabotId = 12526u;
+        private const uint Q3487UltrabotWL = 9200u;
 
         private readonly IEntityFactory entityFactory;
         private readonly IGameTableManager gameTableManager;
@@ -91,6 +97,8 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             SpawnEntityIfMissing(Q3486LoftiteCrystalId, Q3486LoftiteCrystalWL, "Q3486 Loftite Crystal");
             SpawnEntityIfMissing(Q3667ControlPanelId, Q3667ControlPanelWL, "Q3667 Control Panel");
             SpawnEntityIfMissing(Q3480SettlerNpcId, Q3480SettlerNpcAreaWL, "Q3480 Settler NPC");
+            SpawnEntityIfMissing(Q3487CannonId, Q3487CannonWL, "Q3487 Dominion Cannon");
+            SpawnEntityIfMissing(Q3487UltrabotId, Q3487UltrabotWL, "Q3487 Ultrabot");
 
             entitiesSpawned = true;
             log.LogDebug("Northern Wilds quest entities initialised on map {MapId}.", owner.Entry.Id);
@@ -117,9 +125,9 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             entity.Initialise(creatureId);
             entity.Rotation = Vector3.Zero;
 
-            owner.EnqueueAdd(entity, new TutorialMapPosition
+            owner.EnqueueAdd(entity, new NorthernWildsMapPosition
             {
-                Info = new TutorialMapInfo { Entry = owner.Entry },
+                Info = new NorthernWildsMapInfo { Entry = owner.Entry },
                 Position = position
             });
 

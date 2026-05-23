@@ -8,8 +8,10 @@ using NexusForever.Script.Template.Filter;
 namespace NexusForever.Script.Main.Quests.CrimsonIsle
 {
     /// <summary>
-    /// Crimson Isle: Powering Down — power down regulators, play cinematic.
-    /// Quest 5573 has branched retail follow-ups; do not force a direct grant.
+    /// Crimson Isle: Powering Down; power down regulators and play cinematic.
+    /// Quest 5573: granted by Q5593 (external). Feeds into merge gate Q5596 with Q5575.
+    /// Retail chain: 5595 (root) -> 5575
+    ///            5593 (root) -> 5573 -> [merge 5596] -> 5597 -> 5604 -> 5580 -> [merge 5594].
     /// </summary>
     [ScriptFilterOwnerId(5573u)]
     public class Q5573PoweringDownQuestScript : IQuestScript, IOwnedScript<IQuest>
