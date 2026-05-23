@@ -174,7 +174,7 @@ Categories: **Bug** / **Optimization** / **Refactor** / **Test**
 | 35 | Consolidate counted triplet lists (realm 0x05A1 / spell 0x080F). | Refactor |
 | 36 | `ServerUInt32WideStringPayload` vs `Server0x08CC` duplication. | Refactor |
 | 37 | `RowCount` property on survey list unused and confusing vs wire. | Refactor |
-| 38 | Opcode/docs naming drift (crafting comment `Server0x084B` vs `ServerCraftingAuxSixUInt32`). | Refactor |
+| 38 | Crafting aux opcode emit semantics remain unmapped after packet-shape correction. | Evidence |
 
 **Verified OK:** crafting aux scalars (0x084B, 0x0855); fixed-size support bit layouts; no duplicate `[Message]` for scoped opcodes.
 
@@ -294,7 +294,7 @@ Second pass: full WorldServer loot handler traces, marketplace handler + economy
 | D-N1 | `Decomp/Analysis/exports` **empty** - no Ghidra snippets for `1400a4260` in checkout. |
 | D-N2 | No WorldServer emitters for 0x0347-0x0351, 0x05A1, 0x084B, 0x0855 - intentional modeled-only (F-003). |
 | D-N3 | `Server0x08CC` still duplicates 0x0347 wire (`1400980f0`) in `ServerUnresolvedOutputPackets.cs`. |
-| D-N4 | Stale doc names: `MISSING_FEATURE_MATRIX.md` / `RETAIL_FEATURE_EVIDENCE.md` still reference `Server0x084B` / `Server0x05A1`. |
+| D-N4 | Stale doc names: `RETAIL_FEATURE_EVIDENCE.md` still references `Server0x05A1`. |
 | D-N5 | Registration-size labels (e.g. 0x0347 `0x10`, survey row `0x30`) are often **client object sizes**, not fixed wire length. |
 
 ---

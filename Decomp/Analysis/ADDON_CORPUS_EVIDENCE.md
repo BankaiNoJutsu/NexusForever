@@ -56,8 +56,8 @@ This document records **player-addon evidence** from the local CurseForge-era zi
 | `MatchingPenaltyUpdated` | 1 (BCF) | `ServerMatchingPenaltyUpdated` (0x05D9) via `MatchingDeserterManager` |
 | `MatchVoteKickBegin` / `MatchVoteKickEnd` | 2 | `ServerMatchingMatchVoteKickBegin` / Failed / Cancelled / Succeeded |
 | `MatchVoteSurrenderBegin` / `End` | 2 | `ServerMatchingMatchVoteSurrenderBegin` / Failed; warplot forfeit in `PvpMatch.Surrender` |
-| `MatchLookingForReplacements` | 2 | Client-local after `0x05D5`; **replacement backfill still blocked** |
-| `MatchStoppedLookingForReplacements` | 2 | Client after `0x0602`; handler validates only |
+| `MatchLookingForReplacements` | 2 | Client-local after `0x05D5`; public AddOn Studio API events list the same event; partial backfill implemented with stale-match guard |
+| `MatchStoppedLookingForReplacements` | 2 | Client after `0x0602`; handler closes the active replacement queue |
 
 ### Loot
 
@@ -84,11 +84,24 @@ Trash Need/Greed at quality ≤1 aligns with `RetailCertainRules.TrashItemMaxQua
 | --- | --- |
 | **HousingTour_v4** | `HousingLib.RequestRandomResidenceList`, `GetNeighborList`, `VisitNeighborResidence`, `RequestTakeMeHome` |
 | **HousingRepair***, **HousingToolboxPro** | Decor/repair UI; pairs with `ServerHousingHarvestItemsSentToOwner` work |
+| **NeighborNotes_256** | Uses `ICCommLib.JoinChannel("NeighborShare")` for peer-to-peer residence search/share data; this is addon chat data, not direct proof for `0x0501`/`0x0506` neighborhood packets |
 
 ### Challenges / leaderboards
 
 - `ChallengeActivate` (22 addons), `ChallengeCompleted` (15) — UI trackers; emulator `ChallengeManager` max 2 concurrent.
 - No addon references `Leaderboard` wire names; use Carbine `Leaderboards` addon (S7) for UI.
+
+### Map tracked units / threat / crafting triage
+
+Follow-up scan against the original zip corpus confirmed the proposed addon
+strings, but only one item changes implementation confidence:
+
+| Area | Addon evidence | Emulator / decomp correlation | Verdict |
+| --- | --- | --- | --- |
+| Map tracked unit | `GuardZoneMap_2.0`, `LUI_ZoneMap`, and `RavenMap_version1.3.1` register `MapTrackedUnitUpdate` / `MapTrackedUnitDisable` and call `GetMapTrackedUnitData(id)` for `label` / `iconPath`. | This matches `ServerMapTrackedUnitUpdate` (`0x0849`) and `ServerMapTrackedUnitDisable` (`0x0848`), **not** `0x0264`; `0x0264` is `ServerEntityCreateAuxScalarList`. Native consumers are mapped, but producer timing, tracked-unit id allocation, disable lifetime, and `TrackingSlotId` selection remain unknown. | **Observed / mapped consumer, blocked producer.** Do not auto-emit from quest objectives yet. |
+| Threat list | `Threat-2.1.1`, `FrostMod_ThreatBall`, `BijiPlates`, and other frames register `TargetThreatListUpdated`; threat addons consume alternating unit/value arguments. | `ServerEntityThreatListUpdate` (`0x0909`) is mapped as source unit + five unit ids + five values; `ThreatManager.BuildServerThreatListUpdate()` already sends the owner's current target first when present, and broadcasts on add/change/remove. | **Already implemented.** No new work from addon evidence. |
+| Crafting discovery hot/cold | `Athena-2.5.5a` references `CraftingLib.CodeEnumCraftingDiscoveryHotCold.{Cold,Warm,Hot,Success}` and colors/strings for those states. | Native `ServerCraftingFinish` (`0x0853`) consumer proves non-`Success` values fire the UI event, but the server-side discovery coordinate math and discovery-unlock mutation remain unmapped. Fixed-recipe craft success intentionally emits `Success`. | **Mapped display enum, blocked mechanic.** Do not randomize Cold/Warm/Hot. |
+| Crafting API / stations | Multiple crafting addons use `GetKnownTradeskills`, `GetTradeskillInfo`, `GetSchematicInfo`, and `AddAdditive`. | These APIs expose client UI metadata; native sender helpers prove the station-unit-id source but not every authoritative rule. | **Partial evidence only.** Non-zero station ids are validated conservatively; exact zero-station policy and service-key semantics stay blocked pending native/sniff proof. |
 
 ## Emulator gaps closed or updated from this pass
 
@@ -99,12 +112,12 @@ Trash Need/Greed at quality ≤1 aligns with `RetailCertainRules.TrashItemMaxQua
 | Penalty UI | BCF: `MatchingPenaltyUpdated` | **Already wired**: `ServerMatchingPenaltyUpdated` |
 | Vote kick cooldown | EMM vote events | **Implemented**: `Match.Retail.TryInitiateVoteKick` + retail constants |
 | Warplot surrender | EMM `MatchMaker_SurrenderMatch` | **Implemented**: `PvpMatch.Surrender` |
-| Replacement LFR | EMM `FindReplacements` / `IsLookingForReplacements` | **Still blocked**: client sends `0x05D5`/`0x0602`; server has no attach-to-existing-match queue |
+| Replacement LFR | EMM `FindReplacements` / `IsLookingForReplacements` | **Partial**: `0x05D5`/`0x0602` open/close in-progress anchor queue; accepted replacements merge via `Match.AddReplacementMembers`; stale groups close without creating a fresh match |
 | Group stat block tail | Raid frame addons use runtime stats, not wire names | See `GROUP_MEMBER_STAT_BLOCK.md` |
 
 ## Still blocked (do not guess)
 
-1. **Replacement queue fill** — client role mask mapped (`0x05D5`); no retail sequence for merging a new proposal into an in-progress match.
+1. **Replacement queue polish** - anchor queue + merge path implemented; needs live smoke for accept/teleport and multi-slot role fills.
 2. **`StatBlockPrefix17` / `GroupMemberStatSlot`** — no addon exposes wire layout; decomp copier only.
 3. **`ServerRaidQueueStatus` non-zero fields** — no addon reads queue IDs from that packet.
 4. **Realm bank storage** — only `Altometer` mentions `RealmBank` strings; entitlements exist, persistence unverified.
@@ -112,7 +125,7 @@ Trash Need/Greed at quality ≤1 aligns with `RetailCertainRules.TrashItemMaxQua
 ## Suggested next captures
 
 1. Sniff `0x0628` after queue join with EasyMatchMaker enabled (confirm Apollo fires).
-2. Sniff `0x05D5` → client `MatchLookingForReplacements` without server backfill (documents client-only LFR).
+2. Sniff `0x05D5` through accepted replacement teleport to validate the partial server backfill path.
 3. Live group roster with BuffedRaid + NF `ServerGroupMemberStatUpdate` to validate packed floats.
 
 ## Related repo files

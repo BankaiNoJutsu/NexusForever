@@ -185,7 +185,7 @@ Box purchasers before **29 Sep 2015** retained **12** character slots, **6** cos
 | F-005 | Marketplace / CREDD | AH+CX live on 16042; **3/3 Free**, **30/30 Signature**; CREDD→Signature; mail settlement | Fee %; CX interest mechanics | Order-matching / offline settlement |
 | F-006 | Store / account inventory | Omnibits, Protobucks, Service Tokens; Cosmic Rewards; **sunset** = all-Omnibit store | Coupon sender; sunset universal Signature | Leading fields on `096A..096C` |
 | F-007 | Reward rotation | **180-day** daily login (Drop 6); 9+1 reward rhythm; unclaimed until login | Opcode-named “rotation” vs login calendar | `0x07CD` apply / `Flag` consumer |
-| F-008 | Crafting | Tech tree, schematics, circuit/coordinate crafting | Discovery rolls, sigil meanings | `Server0x084B` result semantics |
+| F-008 | Crafting | Tech tree, schematics, circuit/coordinate crafting | Discovery rolls, sigil meanings | `ServerCraftingAuxFourUInt32FloatUInt32` / `ServerCraftingAuxUInt32AndTwoFloats` emit semantics |
 | F-009 | Transport | Taxi, transmat recall, mounts, service tokens | Flight-path purchase rules | Vehicle seat / deployable modes |
 | F-010 | Group / queue / raid | Attunement; loot rules; deserter (cross-activity queue rules); **requeue** when instance finished; votekick rules | Fake-tank LFG anecdotes | Most `Server0x0414+` field effects |
 | F-011 | Guild / war party | Warplots: 40v40; **10 online + 10 queued** to match; boss tokens | Guild bank, holomark perks | Recruitment subscription timing |

@@ -5,6 +5,8 @@ Used by: `Group_HandleMemberAdd_ReadPayload` @ `1406031d0` (opcode `0x0436` / `S
 
 NexusForever models: `ServerGroupMemberStatUpdate`, `ServerGroupRosterUpdate`, `ServerGroupMemberDetailUpdate` (prefix only).
 
+**2026-05-23:** WorldServer `GroupMemberMappingExtensions` now maps `InterruptArmor`/`InterruptArmorMax` from group-server `GroupCharacter.InterruptArmour*` and `GroupMemberId` from `GroupIndex`. Raid-frame addons use client unit stats; this fixes NF-emitted `0x0466` gaps for IA bars when group-server stats are authoritative.
+
 ## Parsed stat-block offsets (`param_2` in `140607490`)
 
 | Offset | Wire (NF) | Client runtime (`param_1`) | Notes |

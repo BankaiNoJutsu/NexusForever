@@ -13119,7 +13119,7 @@ F-003 crafting/support/realm auxiliary opcode decode (2026-05-22, second unblock
   (including `0x0349`, `0x034A`, `0x034B`, `0x034F`, `0x0350` newly added to
   `GameMessageOpcode`).
 - Typed `IWritable` models now replace `ServerUnresolvedRawPayload` placeholders:
-  `ServerCraftingAuxSixUInt32`, `ServerCraftingAuxThreeUInt32`, `ServerRealmAuxUInt32TripletList`,
+  `ServerCraftingAuxFourUInt32FloatUInt32`, `ServerCraftingAuxUInt32AndTwoFloats`, `ServerRealmAuxUInt32TripletList`,
   and `ServerSupport*` models under `Message/Model/Support/`.
 - Shared readers reused: `ServerUInt32WideString_ReadPayload` (`1400980f0`) for `0x0347`,
   `ServerUInt32_ReadPayload` (`14007ab50`) for `0x034A`/`0x0350`,
@@ -13320,8 +13320,8 @@ Matching safe-unblock follow-up (2026-05-23):
   from the authoritative `MatchingCharacter.RemoveMatchingQueueProposal` path
   before the refreshed `ServerMatchingQueueStatus`.
 - **Still blocked by evidence:** `Client0x062A` / `Client0x0634` semantics; live
-  non-zero `ServerRaidQueueStatus`; replacement candidate accept/fill into an
-  existing match/team/role slot; standalone average-wait / manager-flag /
+  non-zero `ServerRaidQueueStatus`; replacement candidate live smoke and
+  multi-slot sequencing; standalone average-wait / manager-flag /
   eligibility / group-is-queued / queued-player-list emit policy; PvP
   rating/reward formulas; random selector parity beyond current table-backed
   compatibility behavior.
@@ -13329,11 +13329,10 @@ Matching safe-unblock follow-up (2026-05-23):
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
   --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   --filter "FullyQualifiedName~Matching|FullyQualifiedName~ClientRaidInfoRequestHandlerTests"`
-  passed `34/34`.
+  passed `50/50`.
 - Full verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
-  -v minimal --nologo` passed `909/909` after one unrelated heartbeat test
-  passed on rerun; `dotnet build Source\NexusForever.sln -v minimal --nologo`
+  -v minimal --nologo` passed `928/928`; `dotnet build Source\NexusForever.sln -v minimal --nologo`
   succeeded with `0` warnings and `0` errors.
 
 Matching evidence refresh (2026-05-23):
@@ -13371,3 +13370,72 @@ Matching evidence refresh (2026-05-23):
   --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   --filter "FullyQualifiedName~Matching|FullyQualifiedName~ClientRaidInfoRequestHandlerTests|FullyQualifiedName~GroupPacketShapeTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests"`
   passed `76/76`.
+
+Matching stale replacement guard follow-up (2026-05-23):
+
+- Online cross-check: AddOn Studio's WildStar API events page lists
+  `MatchLookingForReplacements` and `MatchStoppedLookingForReplacements`, matching
+  the local addon corpus and the native `0x05D5` / `0x0602` sender labels. This
+  supports the UI/event boundary only; it does not prove multi-slot fill timing.
+- Implemented the safe stale-state guard for the partial replacement path:
+  in-progress replacement proposals now require a registered active
+  `MatchStatus.InProgress` match before calling `Match.AddReplacementMembers`.
+  If the original match has already finalised or registry state is stale, the
+  replacement queue is closed with `MatchingQueueResult.UnableToQueue` and no
+  fresh match is created from the replacement group.
+- `MatchManager.UpdateMatches` now closes any open replacement queue when a match
+  reaches `Finalised`, keeping the replacement registry and queue list aligned.
+- Added `MatchManagerReplacementTests` to pin the stale-match no-new-match guard.
+  Multi-replacement sequencing and live accept/teleport smoke remain blocked.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~Matching|FullyQualifiedName~ClientRaidInfoRequestHandlerTests|FullyQualifiedName~GroupPacketShapeTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests"`
+  passed `84/84`.
+
+Crafting station evidence follow-up (2026-05-23):
+
+- Focused Ghidra inspections mapped two helper functions behind the crafting
+  station id field:
+  `Crafting_GetStationServiceKeyForSchematic` @ `1405926a0` maps a
+  `TradeskillSchematic2` row to station service key `0x4F` when
+  `TradeSkillId == 22` (runecrafting), `0x57` when `Flags & 0x04` and
+  `Tier == 0`, and `0x2C` otherwise. `Crafting_FindStationUnitForServiceKey`
+  @ `1403a0d20` lower-bounds the current context tree at `+0x66c8` by that
+  service key and returns node `+0x24` as a unit id, or `0` when the key is
+  absent.
+- Re-inspection of `Crafting_SendClientComplexOrSimpleCraft` @ `140399780`
+  confirms the simple/complex craft sender fills `CraftingStationUnitId` from
+  that helper but still sends the packet if no service-key unit is found.
+  Re-inspection of `Crafting_SendClientCraftingAdditive` @ `14059b7c0`
+  confirms additive selection requires a non-zero station unit before sending
+  opcode `0x084A`.
+- Source now implements the safe server-side boundary from this evidence:
+  non-zero craft station ids must resolve on the player's current map to an
+  `IWorldEntity` whose `Creature2.TradeSkillIdStation` is non-zero and, when
+  the schematic has a `TradeSkillId`, matches that schematic trade skill. The
+  additive request path rejects zero, unknown, or non-station unit ids before
+  recording transient additives.
+- The exact client service-key meanings for `0x2C`/`0x4F`/`0x57`, and whether
+  zero station ids should be rejected for every fixed-recipe craft path, remain
+  blocked. The implementation preserves the observed simple/complex sender
+  behavior by accepting zero station ids and only enforcing forged non-zero ids.
+
+Crafting auxiliary packet shape correction (2026-05-23):
+
+- Follow-up inspection of `ServerCraftingAuxFourUInt32FloatUInt32_ReadPayload`
+  (`1400a3af0`) and shared `ServerUInt32AndTwoFloats_ReadPayload` (`140081df0`)
+  corrected the wire shapes for the modeled-only crafting-adjacent server
+  opcodes. `0x084B` reads four uint32 values, one float, then one uint32
+  (`+0x00/+0x04/+0x08/+0x0c` through `FUN_14006c090`, `+0x10` through
+  `FUN_14006c1c0`, `+0x14` through `FUN_14006c090`). `0x0855` reads one uint32
+  then two floats and reuses the same reader as `0x0221`
+  `ServerCinematicCameraRotation`.
+- NexusForever packet models and packet-shape tests now match the native reader
+  types. Runtime emission remains blocked: no producer/consumer semantics were
+  found for either crafting-adjacent opcode, so these packets stay modeled-only.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~CraftingAdditiveHandlerTests|FullyQualifiedName~CraftingSimpleCraftHandlerTests|FullyQualifiedName~CraftingLootIdCraftHandlerTests|FullyQualifiedName~CraftingPacketShapeTests"`
+  passed `16/16`.
