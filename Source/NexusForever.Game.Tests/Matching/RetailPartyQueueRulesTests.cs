@@ -64,7 +64,7 @@ public class RetailPartyQueueRulesTests
         IPlayer memberPlayer = CreatePlayer(member, Class.Medic);
 
         IPlayerManager playerManager = new StubPlayerManager(leaderPlayer, memberPlayer);
-        IMatchManager matchManager = new StubFinishedMatchManager(leader, member);
+        IMatchCharacterStore matchCharacterStore = new StubFinishedMatchCharacterStore(leader, member);
 
         RecordingDispatchProxy<IMatchingQueueProposal> proposalProxy = null;
         IFactory<IMatchingQueueProposal> proposalFactory = new StubFactory<IMatchingQueueProposal>(() =>
@@ -79,7 +79,7 @@ public class RetailPartyQueueRulesTests
             MatchingQueueFlags.None,
             groupState,
             playerManager,
-            matchManager,
+            matchCharacterStore,
             dataManager,
             proposalFactory,
             out IMatchingQueueProposal proposal);
@@ -135,7 +135,7 @@ public class RetailPartyQueueRulesTests
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
-    sealed class StubFinishedMatchManager(params Identity[] identities) : IMatchManager
+    sealed class StubFinishedMatchCharacterStore(params Identity[] identities) : IMatchCharacterStore
     {
         readonly Dictionary<Identity, IMatchCharacter> characters = identities.ToDictionary(
             id => id,
@@ -148,17 +148,7 @@ public class RetailPartyQueueRulesTests
                 return matchCharacter;
             });
 
-        public void Update(double lastTick) { }
-
-        public void OnLogin(IPlayer player) { }
-
-        public void OnLogout(IPlayer player) { }
-
-        public void CreateMatchProposal(IMatchingQueueGroup matchingQueueGroup, IMatchingMapSelectorResult matchingMapSelectorResult) { }
-
         public IMatchCharacter GetMatchCharacter(Identity identity) => characters[identity];
-
-        public IMatch GetMatch(Guid guid) => throw new NotImplementedException();
     }
 
     sealed class StubFactory<T>(Func<T> create) : IFactory<T> where T : class

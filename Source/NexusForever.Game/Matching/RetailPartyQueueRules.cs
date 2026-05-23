@@ -61,7 +61,7 @@ namespace NexusForever.Game.Matching
             MatchingQueueFlags matchingQueueFlags,
             IGroupStateManager groupStateManager,
             IPlayerManager playerManager,
-            IMatchManager matchManager,
+            IMatchCharacterStore matchCharacterStore,
             IMatchingDataManager matchingDataManager,
             IFactory<IMatchingQueueProposal> matchingQueueProposalFactory,
             out IMatchingQueueProposal matchingQueueProposal)
@@ -84,7 +84,7 @@ namespace NexusForever.Game.Matching
                 if (memberPlayer == null)
                     return false;
 
-                IMatchCharacter matchCharacter = matchManager.GetMatchCharacter(groupMember.Identity);
+                IMatchCharacter matchCharacter = matchCharacterStore.GetMatchCharacter(groupMember.Identity);
                 if (matchCharacter.Match == null || matchCharacter.Match.Status != MatchStatus.Finished)
                     return false;
 

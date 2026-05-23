@@ -86,7 +86,7 @@ public class MatchingCharacterStatusTests
         out RecordingDispatchProxy<IMatchingManager> matchingManagerProxy)
     {
         IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(out RecordingDispatchProxy<IPlayerManager> playerManagerProxy);
-        IMatchManager matchManager = RecordingDispatchProxy<IMatchManager>.Create(out RecordingDispatchProxy<IMatchManager> matchManagerProxy);
+        IMatchCharacterStore matchCharacterStore = RecordingDispatchProxy<IMatchCharacterStore>.Create(out RecordingDispatchProxy<IMatchCharacterStore> matchCharacterStoreProxy);
         IMatchingManager matchingManager = RecordingDispatchProxy<IMatchingManager>.Create(out matchingManagerProxy);
 
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
@@ -96,12 +96,12 @@ public class MatchingCharacterStatusTests
         playerManagerProxy.SetMethodReturn(nameof(IPlayerManager.GetPlayer), player);
 
         IMatchCharacter matchCharacter = RecordingDispatchProxy<IMatchCharacter>.Create(out _);
-        matchManagerProxy.SetMethodReturn(nameof(IMatchManager.GetMatchCharacter), matchCharacter);
+        matchCharacterStoreProxy.SetMethodReturn(nameof(IMatchCharacterStore.GetMatchCharacter), matchCharacter);
 
         var character = new MatchingCharacter(
             NullLogger<MatchingCharacter>.Instance,
             playerManager,
-            matchManager,
+            matchCharacterStore,
             matchingManager);
         character.Initialise(identity);
         return character;

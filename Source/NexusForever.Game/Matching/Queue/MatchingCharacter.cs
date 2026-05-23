@@ -19,18 +19,18 @@ namespace NexusForever.Game.Matching.Queue
 
         private readonly ILogger<MatchingCharacter> log;
         private readonly IPlayerManager playerManager;
-        private readonly IMatchManager matchManager;
+        private readonly IMatchCharacterStore matchCharacterStore;
         private readonly IMatchingManager matchingManager;
 
         public MatchingCharacter(
             ILogger<MatchingCharacter> log,
             IPlayerManager playerManager,
-            IMatchManager matchManager,
+            IMatchCharacterStore matchCharacterStore,
             IMatchingManager matchingManager)
         {
             this.log             = log;
             this.playerManager   = playerManager;
-            this.matchManager    = matchManager;
+            this.matchCharacterStore = matchCharacterStore;
             this.matchingManager = matchingManager;
         }
 
@@ -112,7 +112,7 @@ namespace NexusForever.Game.Matching.Queue
         /// </summary>
         public void SendMatchingStatus()
         {
-            Static.Matching.MatchType currentMatchType = matchManager.GetMatchCharacter(Identity).Match?.MatchingMap.GameTypeEntry.MatchTypeEnum
+            Static.Matching.MatchType currentMatchType = matchCharacterStore.GetMatchCharacter(Identity).Match?.MatchingMap.GameTypeEntry.MatchTypeEnum
                 ?? Static.Matching.MatchType.None;
 
             var matchingQueueLeave = new ServerMatchingQueueStatus()

@@ -14,31 +14,29 @@ namespace NexusForever.Game.Matching.Match
         private readonly HashSet<IMatchProposal> matchProposals = [];
         private readonly Dictionary<Guid, IMatch> matches = [];
 
-        private readonly Dictionary<Identity, IMatchCharacter> characters = [];
-
         #region Dependency Injection
 
         private readonly ILogger<MatchManager> log;
 
-        private readonly IFactory<IMatchCharacter> matchCharacterFactory;
         private readonly IFactory<IMatchProposal> matchProposalFactory;
         private readonly IMatchFactory matchFactory;
+        private readonly IMatchCharacterStore matchCharacterStore;
         private readonly IMatchingManager matchingManager;
         private readonly IMatchingQueueTimeManager matchingQueueTimeManager;
 
         public MatchManager(
             ILogger<MatchManager> log,
-            IFactory<IMatchCharacter> matchCharacterFactory,
             IFactory<IMatchProposal> matchProposalFactory,
             IMatchFactory matchFactory,
+            IMatchCharacterStore matchCharacterStore,
             IMatchingManager matchingManager,
             IMatchingQueueTimeManager matchingQueueTimeManager)
         {
             this.log = log;
 
-            this.matchCharacterFactory = matchCharacterFactory;
             this.matchProposalFactory = matchProposalFactory;
             this.matchFactory = matchFactory;
+            this.matchCharacterStore = matchCharacterStore;
             this.matchingManager = matchingManager;
             this.matchingQueueTimeManager = matchingQueueTimeManager;
         }
@@ -219,14 +217,7 @@ namespace NexusForever.Game.Matching.Match
         /// </remarks>
         public IMatchCharacter GetMatchCharacter(Identity identity)
         {
-            if (!characters.TryGetValue(identity, out IMatchCharacter characterInfo))
-            {
-                characterInfo = matchCharacterFactory.Resolve();
-                characterInfo.Initialise(identity);
-                characters.Add(identity, characterInfo);
-            }
-
-            return characterInfo;
+            return matchCharacterStore.GetMatchCharacter(identity);
         }
 
         public IMatch GetMatch(Guid guid)

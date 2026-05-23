@@ -17,7 +17,7 @@ namespace NexusForever.Game.Matching.Queue
         private readonly IMatchingManager matchingManager;
         private readonly IMatchingDataManager matchingDataManager;
         private readonly IMatchingRoleEnforcer matchingRoleEnforcer;
-        private readonly IMatchManager matchManager;
+        private readonly IMatchCharacterStore matchCharacterStore;
         private readonly IMatchingDeserterManager matchingDeserterManager;
 
         public MatchingQueueValidator(
@@ -26,7 +26,7 @@ namespace NexusForever.Game.Matching.Queue
             IMatchingManager matchingManager,
             IMatchingDataManager matchingDataManager,
             IMatchingRoleEnforcer matchingRoleEnforcer,
-            IMatchManager matchManager,
+            IMatchCharacterStore matchCharacterStore,
             IMatchingDeserterManager matchingDeserterManager)
         {
             this.playerManager             = playerManager;
@@ -34,7 +34,7 @@ namespace NexusForever.Game.Matching.Queue
             this.matchingManager           = matchingManager;
             this.matchingDataManager       = matchingDataManager;
             this.matchingRoleEnforcer      = matchingRoleEnforcer;
-            this.matchManager              = matchManager;
+            this.matchCharacterStore       = matchCharacterStore;
             this.matchingDeserterManager   = matchingDeserterManager;
         }
 
@@ -51,7 +51,7 @@ namespace NexusForever.Game.Matching.Queue
 
             foreach (IMatchingQueueProposalMember matachingQueueProposalMember in members)
             {
-                IMatchCharacter matchCharacter = matchManager.GetMatchCharacter(matachingQueueProposalMember.Identity);
+                IMatchCharacter matchCharacter = matchCharacterStore.GetMatchCharacter(matachingQueueProposalMember.Identity);
                 if (matchCharacter.Match != null)
                 {
                     if (matchCharacter.Match.Status == MatchStatus.InProgress)
@@ -92,7 +92,7 @@ namespace NexusForever.Game.Matching.Queue
                 return warplotResult;
 
             if (matchingQueueProposal.IsParty
-                && members.Any(m => matchManager.GetMatchCharacter(m.Identity).Match?.Status == MatchStatus.Finished)
+                && members.Any(m => matchCharacterStore.GetMatchCharacter(m.Identity).Match?.Status == MatchStatus.Finished)
                 && !matchingDataManager.CanRequeueAsGroup(matchingQueueProposal.MatchType))
                 return MatchingQueueResult.InvalidRequeueType;
 

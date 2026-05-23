@@ -38,7 +38,7 @@ namespace NexusForever.Game.Matching.Queue
         private readonly IFactory<IMatchingCharacter> matchingCharacterFactory;
         private readonly IGroupStateManager groupStateManager;
         private readonly IPlayerManager playerManager;
-        private readonly IMatchManager matchManager;
+        private readonly IMatchCharacterStore matchCharacterStore;
         private readonly IMatchingDeserterManager matchingDeserterManager;
         public MatchingManager(
             ILogger<MatchingManager> log,
@@ -50,7 +50,7 @@ namespace NexusForever.Game.Matching.Queue
             IFactory<IMatchingCharacter> matchingCharacterFactory,
             IGroupStateManager groupStateManager,
             IPlayerManager playerManager,
-            IMatchManager matchManager,
+            IMatchCharacterStore matchCharacterStore,
             IMatchingDeserterManager matchingDeserterManager)
         {
             this.log                          = log;
@@ -62,7 +62,7 @@ namespace NexusForever.Game.Matching.Queue
             this.matchingCharacterFactory     = matchingCharacterFactory;
             this.groupStateManager            = groupStateManager;
             this.playerManager                = playerManager;
-            this.matchManager                 = matchManager;
+            this.matchCharacterStore          = matchCharacterStore;
             this.matchingDeserterManager      = matchingDeserterManager;
         }
 
@@ -268,7 +268,7 @@ namespace NexusForever.Game.Matching.Queue
                     matchingQueueFlags,
                     groupStateManager,
                     playerManager,
-                    matchManager,
+                        matchCharacterStore,
                     matchingDataManager,
                     matchingQueueProposalFactory,
                     out IMatchingQueueProposal requeueProposal))

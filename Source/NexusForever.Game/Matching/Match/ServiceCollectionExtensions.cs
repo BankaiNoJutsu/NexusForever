@@ -8,6 +8,7 @@ namespace NexusForever.Game.Matching.Match
     {
         public static void AddGameMatchingMatch(this IServiceCollection sc)
         {
+            sc.AddSingleton<IMatchCharacterStore, MatchCharacterStore>();
             sc.AddSingleton<IMatchManager, MatchManager>();
 
             sc.AddTransientFactory<IMatchProposal, MatchProposal>();

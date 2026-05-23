@@ -47,11 +47,11 @@ public class MatchingQueueValidatorTests
         IMatchingManager matchingManager = RecordingDispatchProxy<IMatchingManager>.Create(out RecordingDispatchProxy<IMatchingManager> matchingManagerProxy);
         IMatchingDataManager matchingDataManager = RecordingDispatchProxy<IMatchingDataManager>.Create(out _);
         IMatchingRoleEnforcer matchingRoleEnforcer = RecordingDispatchProxy<IMatchingRoleEnforcer>.Create(out _);
-        IMatchManager matchManager = RecordingDispatchProxy<IMatchManager>.Create(out RecordingDispatchProxy<IMatchManager> matchManagerProxy);
+        IMatchCharacterStore matchCharacterStore = RecordingDispatchProxy<IMatchCharacterStore>.Create(out RecordingDispatchProxy<IMatchCharacterStore> matchCharacterStoreProxy);
         IMatchCharacter matchCharacter = RecordingDispatchProxy<IMatchCharacter>.Create(out _);
 
         matchingManagerProxy.SetMethodReturn(nameof(IMatchingManager.GetMatchingCharacter), matchingCharacter);
-        matchManagerProxy.SetMethodReturn(nameof(IMatchManager.GetMatchCharacter), matchCharacter);
+        matchCharacterStoreProxy.SetMethodReturn(nameof(IMatchCharacterStore.GetMatchCharacter), matchCharacter);
 
         IMatchingDeserterManager matchingDeserterManager = RecordingDispatchProxy<IMatchingDeserterManager>.Create(out RecordingDispatchProxy<IMatchingDeserterManager> deserterProxy);
         deserterProxy.SetMethodReturn(nameof(IMatchingDeserterManager.CanQueue), true);
@@ -62,7 +62,7 @@ public class MatchingQueueValidatorTests
             matchingManager,
             matchingDataManager,
             matchingRoleEnforcer,
-            matchManager,
+                matchCharacterStore,
             matchingDeserterManager);
     }
 
