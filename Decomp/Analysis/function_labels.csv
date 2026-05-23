@@ -890,10 +890,12 @@ WildStar64.exe,1400afe10,ClientSpline2NodePositionData_WritePayload,Serialises o
 WildStar64.exe,1400affc0,ClientSpline2NodePositionData_ReadPayload,Reads opcode 0x081B as two raw ids three raw 32-bit position values and a counted uint payload.
 WildStar64.exe,1400979e0,ServerVehiclePassengerSelf_ReadPayload,Reads opcode 0x089B as self vehicle 2-bit seat type and 3-bit seat position.
 WildStar64.exe,1400a4560,ServerCraftingFinish_ReadPayload,Reads opcode 0x0853 as pass schematic item unused hot/cold direction earned XP and returned material ids.
+WildStar64.exe,1400a46b0,ServerCraftingCurrentCraft_ReadPayload,Reads opcode 0x0854 as schematic id CraftStats glyph data schematic/additive counts unused uint five modifier ids crafted Item2 id discovery coordinates vector multipliers and radius multiplier.
 WildStar64.exe,1405e6690,Crafting_HandleServerCraftingFinish,Handles decoded ServerCraftingFinish and dispatches CraftingDiscoveryHotCold only when a successful craft reports hot/cold other than Success.
+WildStar64.exe,1405e6830,Crafting_HandleServerCraftingCurrentCraft,Stores decoded ServerCraftingCurrentCraft fields in the crafting context and dispatches CraftingUpdateCurrent.
 WildStar64.exe,140599010,Lua_Crafting_GetSchematicInfo,Builds the Lua schematic info table for a TradeskillSchematic2 row including output material known flags and coordinate crafting details.
 WildStar64.exe,14059e9a0,Lua_Crafting_AddCoordinateDiscoveryInfo,Adds coordinate-crafting discovery fields such as radius vector angle min/max distance and undiscovered flags to schematic Lua info.
-WildStar64.exe,1405a3000,Lua_RegisterCraftingBindings,Registers Game.Crafting Lua bindings including CodeEnumCraftingDiscoveryHotCold Cold Warm Hot and Success values.
+WildStar64.exe,1405a3000,Lua_RegisterCraftingBindings,Registers Game.Crafting Lua bindings including CodeEnumCraftingDiscoveryHotCold values and CodeEnumTradeskillResult values Success through RuneSlotLimit.
 WildStar64.exe,1403ec6a0,Entity_ExecuteSpellEffectHighRange,Dispatches high-range spell effects (effectTypes 0x61-0x972) via jump table at 0x1403f1344; guards on entity+0x7928 (network connection) non-null and channel-ID match before dispatch; writes timestamp to entity+0x7b4c.
 WildStar64.exe,1403c17d0,ItemMove_ValidateAndMaybeConfirmBindOnEquip,Validates an item move request and dispatches ItemConfirmSoulboundOnEquip before sending ClientItemMove when the destination equip path would bind the source item.
 WildStar64.exe,1403f38b0,RealmFirstAchievementAnnounce_Dispatch,Builds the RealmFirstAchievementAnnounce client event from achievement id guild flag source name and achievement-name payload.
@@ -1647,11 +1649,22 @@ WildStar64.exe,140068fd0,FUN_140068fd0,Consumer dispatch candidate — may route
 WildStar64.exe,14007f720,FUN_14007f720,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140082420,FUN_140082420,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140083d30,FUN_140083d30,Consumer dispatch candidate — may route server→client packets.
-WildStar64.exe,14008c0d0,FUN_14008c0d0,Consumer dispatch candidate — may route server→client packets.
-WildStar64.exe,14008cee0,FUN_14008cee0,Consumer dispatch candidate — may route server→client packets.
+WildStar64.exe,14008c0d0,SharedItem_ReadPayload,Reads the shared server item payload used by item-add and player-create packets including random glyph data microchip/glyph arrays and effective item level.
+WildStar64.exe,14008cee0,ServerPlayerCreate_ReadPayload,Reads server opcode 0x025E player-create payload including counted shared item rows.
 WildStar64.exe,140090840,FUN_140090840,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,1400962d0,FUN_1400962d0,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140096fa0,ServerEntityCreate_ReadPayload,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,14009ccc0,FUN_14009ccc0,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,14076aa30,MatchingReplacement_SendStartLookingForReplacements,Builds a role bitmask from selected role values 0..2 and sends client opcode 0x05D5 with a 32-bit payload.
 WildStar64.exe,14076abb0,MatchingReplacement_SendStopLookingForReplacements,Sends client opcode 0x0602 with the no-op one-byte registered empty payload when the current match UI state is valid.
+WildStar64.exe,1400eff50,Lua_RegisterCodeEnumValue,Adds one named integer value to the Lua enum table currently on the stack; used by item-data enums including CodeEnumRuneType.
+WildStar64.exe,140413a20,Lua_RegisterItemDataBindings,Registers Game.ItemData Lua bindings plus CodeEnumItemType CodeEnumItemQuality CodeEnumRuneType and CodeEnumLootItemType.
+WildStar64.exe,14008cda0,ServerItemAdd_ReadPayload,Reads server opcode 0x0111 as one shared item payload followed by a 6-bit item-add reason.
+WildStar64.exe,140417570,Lua_GameItemData_IsRuneData,Implements Game.ItemData isRuneData by resolving the item-data userdata and testing the native rune-data marker.
+WildStar64.exe,14041b8d0,Lua_GameItemData_GetRuneSlots,Implements Game.ItemData GetRuneSlots by building the rune-slot Lua table for static item data or live item instances.
+WildStar64.exe,14066e000,ItemData_BuildRuneSlotsLuaTable,Creates the Lua table returned by GetRuneSlots and delegates rune-slot field and row population.
+WildStar64.exe,140673b80,ItemData_AddRuneSlotsLuaFields,Adds nMaximum nAbsoluteMax nMinimum and arRuneSlots to the GetRuneSlots Lua table from static ItemRuneInstance data or live item-instance rune state.
+WildStar64.exe,140677950,ItemData_AddRuneSlotLuaRow,Builds one GetRuneSlots arRuneSlots entry including eElement bDisabled and installed itemRune-derived details.
+WildStar64.exe,140514660,ItemRuneSlotType_ToRuneType,Maps compact live rune slot type bytes 1..7 to CodeEnumRuneType values Air..Fusion.
+WildStar64.exe,14020df20,ClientDB_GetItemRuneInstance,Looks up the ItemRuneInstance row used for static/default rune slot data.
+WildStar64.exe,14040efb0,ItemData_ComputeRuneSlotCounts,Computes GetRuneSlots minimum maximum and absolute maximum slot counts from item data and ItemRuneInstance state.

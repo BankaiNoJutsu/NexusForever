@@ -1,7 +1,7 @@
 # Group member stat block (`0x60` bytes)
 
 Client copier: `Group_CopyMemberStatBlockFromPayload` @ `140607490`
-Used by: `Group_HandleMemberAdd_ReadPayload` @ `1406031d0` (opcode `0x0436` / `ServerGroupRosterUpdate`), member remove, ready-check paths sharing the same stat layout.
+Known direct caller in the current fragment cache: `Group_HandleMemberRemove_ReadPayload` @ `140603380`. `Group_HandleMemberAdd_ReadPayload` @ `1406031d0` is a separate promote path and has not been proven to call this copier.
 
 NexusForever models: `ServerGroupMemberStatUpdate`, `ServerGroupRosterUpdate`, `ServerGroupMemberDetailUpdate` (prefix only).
 

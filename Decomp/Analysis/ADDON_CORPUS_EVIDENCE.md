@@ -56,8 +56,8 @@ This document records **player-addon evidence** from the local CurseForge-era zi
 | `MatchingPenaltyUpdated` | 1 (BCF) | `ServerMatchingPenaltyUpdated` (0x05D9) via `MatchingDeserterManager` |
 | `MatchVoteKickBegin` / `MatchVoteKickEnd` | 2 | `ServerMatchingMatchVoteKickBegin` / Failed / Cancelled / Succeeded |
 | `MatchVoteSurrenderBegin` / `End` | 2 | `ServerMatchingMatchVoteSurrenderBegin` / Failed; warplot forfeit in `PvpMatch.Surrender` |
-| `MatchLookingForReplacements` | 2 | Client-local after `0x05D5`; public AddOn Studio API events list the same event; partial backfill implemented with stale-match guard |
-| `MatchStoppedLookingForReplacements` | 2 | Client after `0x0602`; handler closes the active replacement queue |
+| `MatchLookingForReplacements` | 2 | Client-local after `0x05D5`; public AddOn Studio API events list the same event; runtime handler validates/logs only because server backfill remains unproven |
+| `MatchStoppedLookingForReplacements` | 2 | Client after `0x0602`; runtime handler validates/logs only because close/merge semantics remain unproven |
 
 ### Loot
 
@@ -101,7 +101,8 @@ strings, but only one item changes implementation confidence:
 | Map tracked unit | `GuardZoneMap_2.0`, `LUI_ZoneMap`, and `RavenMap_version1.3.1` register `MapTrackedUnitUpdate` / `MapTrackedUnitDisable` and call `GetMapTrackedUnitData(id)` for `label` / `iconPath`. | This matches `ServerMapTrackedUnitUpdate` (`0x0849`) and `ServerMapTrackedUnitDisable` (`0x0848`), **not** `0x0264`; `0x0264` is `ServerEntityCreateAuxScalarList`. Native consumers are mapped, but producer timing, tracked-unit id allocation, disable lifetime, and `TrackingSlotId` selection remain unknown. | **Observed / mapped consumer, blocked producer.** Do not auto-emit from quest objectives yet. |
 | Threat list | `Threat-2.1.1`, `FrostMod_ThreatBall`, `BijiPlates`, and other frames register `TargetThreatListUpdated`; threat addons consume alternating unit/value arguments. | `ServerEntityThreatListUpdate` (`0x0909`) is mapped as source unit + five unit ids + five values; `ThreatManager.BuildServerThreatListUpdate()` already sends the owner's current target first when present, and broadcasts on add/change/remove. | **Already implemented.** No new work from addon evidence. |
 | Crafting discovery hot/cold | `Athena-2.5.5a` references `CraftingLib.CodeEnumCraftingDiscoveryHotCold.{Cold,Warm,Hot,Success}` and colors/strings for those states. | Native `ServerCraftingFinish` (`0x0853`) consumer proves non-`Success` values fire the UI event, but the server-side discovery coordinate math and discovery-unlock mutation remain unmapped. Fixed-recipe craft success intentionally emits `Success`. | **Mapped display enum, blocked mechanic.** Do not randomize Cold/Warm/Hot. |
-| Crafting API / stations | Multiple crafting addons use `GetKnownTradeskills`, `GetTradeskillInfo`, `GetSchematicInfo`, and `AddAdditive`. | These APIs expose client UI metadata; native sender helpers prove the station-unit-id source but not every authoritative rule. | **Partial evidence only.** Non-zero station ids are validated conservatively; exact zero-station policy and service-key semantics stay blocked pending native/sniff proof. |
+| Crafting API / stations | Multiple crafting addons use `GetKnownTradeskills`, `GetTradeskillInfo`, `GetSchematicInfo`, and `AddAdditive`. | These APIs expose client UI metadata; native sender helpers prove the station-unit-id source and split fixed-recipe zero-station behavior from additive non-zero-station behavior. | **Native-mapped policy, partial naming.** Fixed-recipe zero station is accepted and additive zero station is rejected; exact 0x2C/0x4F/0x57 service-key meanings stay blocked pending stronger native/sniff proof. |
+| Rune slots | Online `RuneMaster_2.3.0` uses `item:GetRuneSlots().arRuneSlots`, `tRune.eElement`, `tRune.itemRune`, and `Item.CodeEnumRuneType.*`; AddOn Studio lists related `Item` APIs such as `GetGlyphInfo`, `GetMicrochipInfo`, and `GetSigils`. | Native `Lua_GameItemData_GetRuneSlots` now maps `nMaximum`, `nAbsoluteMax`, `nMinimum`, `arRuneSlots`, compact slot type bytes at `itemData+0x388`, and installed rune Item2 ids at `itemData+0x518 + index*4`. | **Mapped client Lua contract, blocked storage bridge.** Do not persist/broadcast rune state until shared item `RandomGlyphData`/`Glyphs` are proven to feed those live offsets and DB fields. |
 
 ## Emulator gaps closed or updated from this pass
 
@@ -112,12 +113,12 @@ strings, but only one item changes implementation confidence:
 | Penalty UI | BCF: `MatchingPenaltyUpdated` | **Already wired**: `ServerMatchingPenaltyUpdated` |
 | Vote kick cooldown | EMM vote events | **Implemented**: `Match.Retail.TryInitiateVoteKick` + retail constants |
 | Warplot surrender | EMM `MatchMaker_SurrenderMatch` | **Implemented**: `PvpMatch.Surrender` |
-| Replacement LFR | EMM `FindReplacements` / `IsLookingForReplacements` | **Partial**: `0x05D5`/`0x0602` open/close in-progress anchor queue; accepted replacements merge via `Match.AddReplacementMembers`; stale groups close without creating a fresh match |
+| Replacement LFR | EMM `FindReplacements` / `IsLookingForReplacements` | **Mapped client surface, blocked server behavior**: `0x05D5`/`0x0602` are validated/logged only; queue anchor, close timing, and accepted replacement merge are not implemented without stronger evidence |
 | Group stat block tail | Raid frame addons use runtime stats, not wire names | See `GROUP_MEMBER_STAT_BLOCK.md` |
 
 ## Still blocked (do not guess)
 
-1. **Replacement queue polish** - anchor queue + merge path implemented; needs live smoke for accept/teleport and multi-slot role fills.
+1. **Replacement queue backfill** - needs retail sniff/native evidence for queue anchor timing, accepted replacement merge, teleport, and multi-slot role fills.
 2. **`StatBlockPrefix17` / `GroupMemberStatSlot`** — no addon exposes wire layout; decomp copier only.
 3. **`ServerRaidQueueStatus` non-zero fields** — no addon reads queue IDs from that packet.
 4. **Realm bank storage** — only `Altometer` mentions `RealmBank` strings; entitlements exist, persistence unverified.
@@ -125,7 +126,7 @@ strings, but only one item changes implementation confidence:
 ## Suggested next captures
 
 1. Sniff `0x0628` after queue join with EasyMatchMaker enabled (confirm Apollo fires).
-2. Sniff `0x05D5` through accepted replacement teleport to validate the partial server backfill path.
+2. Sniff `0x05D5` through accepted replacement teleport before implementing a server backfill path.
 3. Live group roster with BuffedRaid + NF `ServerGroupMemberStatUpdate` to validate packed floats.
 
 ## Related repo files

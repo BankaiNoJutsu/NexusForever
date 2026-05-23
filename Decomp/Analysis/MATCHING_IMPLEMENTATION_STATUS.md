@@ -22,13 +22,12 @@ Generated exports, logs, and client binaries remain local artifacts. Add durable
 | Queue-left UI sync | Implemented + verified | Authoritative queue removal now emits `ServerMatchingLeftQueue` before the refreshed `ServerMatchingQueueStatus`. | `MatchingCharacterStatusTests`. |
 | Flexible role selection | Implemented + verified | The old `1 tank / 1 healer / 3 DPS` reducer was removed. Dungeon/adventure role validation now preserves each player's selected role mask and rejects `Role.None` or undefined role bits; full groups are not rejected solely for non-trinity composition. | `MatchingRoleEnforcerTests`. |
 | Raid queue packet neutralization | Implemented + verified | `ServerRaidQueueStatus` keeps the compatibility zero emission from raid-info, but speculative queue/game-type field names were reverted to neutral `Unknown*` fields after the client reader only proved wire widths. | `GroupPacketShapeTests`; build compile. |
-| Replacement role-mask guard | Implemented + verified | `ClientMatchingMatchInitiateLookingForReplacements` now accepts only native-emitted role bits `0..2` (`0x07`, locally `Tank/Healer/DPS`) before any future replacement backfill logic can consume the mask. | `ClientMatchingMatchInitiateLookingForReplacementsHandlerTests`. |
+| Replacement role-mask guard | Implemented + verified | `ClientMatchingMatchInitiateLookingForReplacements` accepts only native-emitted role bits `0..2` (`0x07`, locally `Tank/Healer/DPS`) and logs the mapped request without starting a server backfill queue. | `ClientMatchingMatchInitiateLookingForReplacementsHandlerTests`. |
 | Average wait UI (`0x0628`) | Implemented + verified | `ServerMatchingAverageWaitTimeUpdate` emitted on queue join, after non-solo pop samples queue time, and on login for active queues; EasyMatchMaker listens via `MatchingAverageWaitTimeUpdated`. | `MatchingAverageWaitTimeTests`; addon corpus `ADDON_CORPUS_EVIDENCE.md`. |
-| Replacement stale-match guard | Implemented + verified | In-progress replacement proposals now either merge into the registered active match or close the replacement queue with `UnableToQueue`; stale registry/group state can no longer fall through and create a fresh match. | `MatchManagerReplacementTests`. |
 | Warplot surrender winner | Implemented + build-covered | Surrender completion records the surrendering team and awards victory to the opposite team. | Covered by focused matching build; direct match-state test still needs a heavier PvP match fixture. |
 | Vote rejection packets | Implemented + build-covered | Failed vote-kick/surrender initiate/cast paths now return the matching vote failure packet unless the personal cooldown packet is more specific. | Covered by focused matching build; packet-sequence fixture is still a useful follow-up. |
 
-Focused verification:
+Prior focused verification:
 
 ```powershell
 dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false --filter "FullyQualifiedName~Matching|FullyQualifiedName~ClientRaidInfoRequestHandlerTests"
@@ -36,7 +35,7 @@ dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-r
 
 Result: passed `50/50`.
 
-Latest packet/evidence refresh verification:
+Prior packet/evidence refresh verification:
 
 ```powershell
 dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false --filter "FullyQualifiedName~Matching|FullyQualifiedName~ClientRaidInfoRequestHandlerTests|FullyQualifiedName~GroupPacketShapeTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests"
@@ -44,14 +43,14 @@ dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-r
 
 Result: passed `84/84`.
 
-Latest full verification:
+Latest full verification (2026-05-23 evidence-backed rollback):
 
 ```powershell
 dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo
 dotnet build Source\NexusForever.sln -v minimal --nologo
 ```
 
-Results: test project passed `928/928`; solution build succeeded with `0` warnings and `0` errors.
+Results: test project passed `943/943`; solution build succeeded with `0` warnings and `0` errors.
 
 ## Mapped-only / Blocked
 
@@ -59,7 +58,7 @@ Results: test project passed `928/928`; solution build succeeded with `0` warnin
 | --- | --- | --- |
 | `Client0x062A` / `Client0x0634` | `ClientWorldOpcodeRegister_MovementSpline` @ `1400a8190` registers both as 4-byte generic uint32 payloads using the same scalar write/read helpers as other diagnostic opcodes. | Native sender semantics or live sniff tying the value to a matching action. |
 | `ServerRaidQueueStatus` | `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` reads `uint64 + 15-bit uint32 + uint64 + uint32 + uint32`; runtime emits only zero-value compatibility state from raid-info and keeps neutral fields. | Queue consumer semantics and live non-zero payload examples. |
-| Replacement queue fill | **Partial (2026-05-23):** `0x05D5` opens an in-progress anchor queue (`SetInProgress`, `ServerMatchingMatchInProgressReady` path); `0x0602` closes it; successful replacement proposals call `Match.AddReplacementMembers` instead of spawning a new match. Replacement candidates are filtered against the requested role mask before popping, and stale replacement groups now close instead of creating a new match. Addon corpus: EMM `MatchLookingForReplacements`; public AddOn Studio API events also list `MatchLookingForReplacements` / `MatchStoppedLookingForReplacements`. | Multi-replacement sequencing and live client smoke for accept -> teleport into running instance. |
+| Replacement queue fill | **Mapped client surface only (2026-05-23 rollback):** `0x05D5` and `0x0602` are handled as validation/logging surfaces. Addon corpus: EMM `MatchLookingForReplacements`; public AddOn Studio API events also list `MatchLookingForReplacements` / `MatchStoppedLookingForReplacements`. Runtime anchor queues, accepted replacement merges, and close timing were removed because the available evidence does not prove server producer behavior. | Retail sniff/native evidence for queue anchor timing, multi-replacement sequencing, accepted replacement merge, and teleport into the running instance. |
 | Partial PUG role composition | The shipped `MatchMaker.lua` UI exposes DPS/Tank/Healer toggles from `MatchMakingLib.GetEligibleRoles()`, stores selected values in `tQueueOptions[*].arRoles`, requires at least one selected role for non-solo non-arena queues, and passes the option table to `MatchMakingLib.Queue` / `QueueAsGroup`. It does not prove a server-side 1/1/3 reducer. | Native/server-side evidence or live captures showing exact partial-group fill policy. |
 | Manager flag / group-is-queued / list-players broadcasts | `QueueJoin`, `LeftQueue`, `QueueStatus`, `PenaltyUpdated`, and `AverageWaitTimeUpdate` are runtime-emitted; manager-flag and list-players timing still incomplete. | Client consumer mapping or retail captures for remaining opcodes in `0x05B0..0x0628`. |
 | PvP rating, rewards, leaderboards | Matching packets can be shaped, but formulas and award triggers are outside current evidence. | Retail formula evidence or UI packet dependency requiring implementation. |

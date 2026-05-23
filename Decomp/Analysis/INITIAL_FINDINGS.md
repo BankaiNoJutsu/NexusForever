@@ -2031,11 +2031,11 @@ Thirty-fourth crafting request follow-up implemented from this pass:
   four-field prefix. The new crafting handlers validate the schematic and
   optional item ids against the `TradeskillSchematic2` and `Item2Entry` tables,
   log the request, and send a non-mutating `ServerCraftingFinish` failure.
-- Remaining bounded uncertainty: NexusForever still has no complete crafting
-  execution manager for material consumption, discovery rolls, schematic
-  unlocks, output creation, or station constraints. The receive boundary is now
-  mapped and safe, but real craft success remains blocked until that subsystem
-  is designed from table/server evidence.
+- Remaining bounded uncertainty at that point: NexusForever still had no
+  complete crafting execution manager for material consumption, discovery rolls,
+  schematic unlocks, output creation, or station constraints. Later F-008
+  passes implemented conservative fixed-recipe success and mapped the fixed
+  zero-station/additive non-zero-station split.
 - Verification: the shared-layout export applied the updated label set
   (`applied=167, created=0, skipped=0, missing=0`) and refreshed
   `selected_decompiled.c` with 260 functions. `dotnet build
@@ -2157,11 +2157,12 @@ Thirty-seventh crafting/rune request follow-up implemented from this pass:
   add/clear/reroll, and rune install. They validate table-backed `Item2` ids,
   target inventory items, and `RuneType` values where applicable, log the
   request, and leave inventory/currency/rune state untouched.
-- Remaining bounded uncertainty: the request boundary is mapped, but the actual
-  rune mutation subsystem is still absent. Installing, adding, clearing,
-  recovering, rerolling, charging currency, and returning precise
-  `ServerTradeskillSigilResult` statuses remain blocked until the item rune data
-  model and server-side result rules are mapped from table/runtime evidence.
+- Remaining bounded uncertainty at that point: the request boundary was mapped,
+  but the actual rune mutation subsystem was still absent. Later passes mapped
+  the `ServerTradeskillSigilResult` value names; installing, adding, clearing,
+  recovering, rerolling, charging currency, and returning precise non-success
+  result rules remain blocked until the item rune data model and server-side
+  result rules are mapped from table/runtime evidence.
 - Verification: the per-target WildStar64 export applied the expanded label set
   (`applied=182, created=0, skipped=0, missing=0`) and rendered
   `selected_decompiled.c` with 280 functions. `dotnet build
@@ -10927,10 +10928,10 @@ Crafting fixed-recipe boundary follow-up:
 - The missing-material path is covered separately: when the required material
   is absent, the handler emits a failed `ServerCraftingFinish` and does not
   remove satchel material, create output, or update achievements.
-- Discovery rolls, station constraints, complex/random output parity, broader
-  material-source precision, rune item data, and `ServerTradeskillSigilResult`
-  meanings remain blocked until client-reader, table, or runtime evidence maps
-  those flows.
+- Discovery rolls, exact station service-key meanings, complex/random output
+  parity, broader material-source precision, rune item data, and non-success
+  sigil result rules remain blocked until client-reader, table, or runtime
+  evidence maps those flows.
 - Verification: `dotnet test
   Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter
   FullyQualifiedName~NexusForever.Game.Tests.Crafting.CraftingSimpleCraftHandlerTests
@@ -11440,10 +11441,10 @@ Crafting fixed-recipe count/catalyst boundary follow-up:
   `SchematicCount > 1`: material and catalyst debits scale by count, output
   creation scales by count, achievements receive the crafted count, and earned
   crafting XP is forwarded in `ServerCraftingFinish`.
-- Discovery rolls, station constraints, coordinate hot/cold math, complex or
-  random output parity, durable rune item state, and sigil result meanings
-  remain blocked on the previously recorded client-reader/table/runtime
-  evidence gaps.
+- Discovery rolls, exact station service-key meanings, coordinate hot/cold math,
+  complex or random output parity, durable rune item state, and non-success
+  sigil result rules remain blocked on the previously recorded
+  client-reader/table/runtime evidence gaps.
 
 Challenge diagnostic `Client0x00C8` boundary follow-up:
 
@@ -11856,9 +11857,9 @@ Crafting LootId output coverage follow-up:
   item id in `ServerCraftingFinish`.
 - The test helper had a compile-only generic constraint drift; `CreateGameTable<T>`
   now matches `GameTable<T>`'s `where T : class, new()` constraint.
-- Discovery rolls, station constraints, broader random-output parity, material
-  source precision, rune item data, and sigil result meanings remain blocked on
-  stronger crafting reader/table evidence.
+- Discovery rolls, exact station service-key meanings, broader random-output
+  parity, material source precision, rune item data, and non-success sigil
+  result rules remain blocked on stronger crafting reader/table evidence.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
   --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
@@ -13371,27 +13372,21 @@ Matching evidence refresh (2026-05-23):
   --filter "FullyQualifiedName~Matching|FullyQualifiedName~ClientRaidInfoRequestHandlerTests|FullyQualifiedName~GroupPacketShapeTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests"`
   passed `76/76`.
 
-Matching stale replacement guard follow-up (2026-05-23):
+Matching replacement rollback follow-up (2026-05-23):
 
 - Online cross-check: AddOn Studio's WildStar API events page lists
   `MatchLookingForReplacements` and `MatchStoppedLookingForReplacements`, matching
   the local addon corpus and the native `0x05D5` / `0x0602` sender labels. This
   supports the UI/event boundary only; it does not prove multi-slot fill timing.
-- Implemented the safe stale-state guard for the partial replacement path:
-  in-progress replacement proposals now require a registered active
-  `MatchStatus.InProgress` match before calling `Match.AddReplacementMembers`.
-  If the original match has already finalised or registry state is stale, the
-  replacement queue is closed with `MatchingQueueResult.UnableToQueue` and no
-  fresh match is created from the replacement group.
-- `MatchManager.UpdateMatches` now closes any open replacement queue when a match
-  reaches `Finalised`, keeping the replacement registry and queue list aligned.
-- Added `MatchManagerReplacementTests` to pin the stale-match no-new-match guard.
-  Multi-replacement sequencing and live accept/teleport smoke remain blocked.
-- Verification:
-  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
-  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
-  --filter "FullyQualifiedName~Matching|FullyQualifiedName~ClientRaidInfoRequestHandlerTests|FullyQualifiedName~GroupPacketShapeTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests"`
-  passed `84/84`.
+- Runtime rollback: removed the unsupported replacement registry, in-progress
+  anchor queue, and `Match.AddReplacementMembers` merge path. The `0x05D5` and
+  `0x0602` handlers now validate/log the mapped client requests only.
+- Multi-replacement sequencing, close timing, accepted replacement merge, and live
+  accept/teleport behavior remain blocked pending retail sniff or stronger native
+  server-producer evidence.
+- Verification: `dotnet build Source\NexusForever.sln -v minimal --nologo`
+  succeeded; `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  -v minimal --nologo` passed `943/943`.
 
 Crafting station evidence follow-up (2026-05-23):
 
@@ -13416,10 +13411,40 @@ Crafting station evidence follow-up (2026-05-23):
   the schematic has a `TradeSkillId`, matches that schematic trade skill. The
   additive request path rejects zero, unknown, or non-station unit ids before
   recording transient additives.
-- The exact client service-key meanings for `0x2C`/`0x4F`/`0x57`, and whether
-  zero station ids should be rejected for every fixed-recipe craft path, remain
-  blocked. The implementation preserves the observed simple/complex sender
-  behavior by accepting zero station ids and only enforcing forged non-zero ids.
+- Follow-up sender inspection also mapped
+  `Crafting_SendClientCraftItemAutoCraft` @ `140399630`: it writes the
+  `Crafting_FindStationUnitForServiceKey` result and sends opcode `0x0852`
+  without a zero-station guard. Together with the simple/complex sender, this
+  maps the fixed-recipe zero-station policy: zero can be a legitimate client
+  payload when no matching context station is present. Additive remains the
+  contrasting path because its sender gates on a non-zero station before
+  emitting `0x084A`.
+- NexusForever now covers that policy with
+  `CraftingSimpleCraftHandlerTests.SimpleCraft_WithZeroStation_ConsumesMaterialCreatesOutputAndSendsSuccess`,
+  while the additive zero-station rejection test continues to pin the stricter
+  additive path. The exact client service-key meanings for
+  `0x2C`/`0x4F`/`0x57` remain blocked; no descriptive station names were found.
+
+Crafting current-craft evidence follow-up (2026-05-23):
+
+- `ServerCraftingCurrentCraft_ReadPayload` @ `1400a46b0` is the native reader
+  for opcode `0x0854`. It reads a 15-bit schematic id, packed `CraftStats`,
+  glyph data, schematic and additive counts, one unused uint32, five modifier
+  item ids, an 18-bit crafted `Item2` id, and five floats for discovery
+  coordinates, vector multipliers, and radius multiplier.
+- `Crafting_HandleServerCraftingCurrentCraft` @ `1405e6830` stores those decoded
+  fields into the local crafting context and dispatches `CraftingUpdateCurrent`.
+  `Lua_Crafting_AddCoordinateDiscoveryInfo` @ `14059e9a0` exposes the same
+  coordinate/vector/radius data to UI tables, but this path still does not prove
+  server-side discovery roll thresholds, unlock mutation, or when NexusForever
+  should emit non-success hot/cold results.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false --filter "FullyQualifiedName~CraftingSimpleCraftHandlerTests|FullyQualifiedName~CraftingAdditiveHandlerTests|FullyQualifiedName~CraftingPacketShapeTests"`
+  passed `16/16`; `dotnet build Source\NexusForever.sln -v minimal --nologo`
+  passed with `0 Warning(s)` and `0 Error(s)`. The export-only Ghidra inspection
+  of `1400a46b0`, `1405e6830`, `140399630`, `140399780`, and `14059b7c0`
+  confirmed the new labels in `exports\WildStar64.exe\functions.csv` and the
+  expected station/current-craft decompile shapes.
 
 Crafting auxiliary packet shape correction (2026-05-23):
 
@@ -13439,3 +13464,91 @@ Crafting auxiliary packet shape correction (2026-05-23):
   --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   --filter "FullyQualifiedName~CraftingAdditiveHandlerTests|FullyQualifiedName~CraftingSimpleCraftHandlerTests|FullyQualifiedName~CraftingLootIdCraftHandlerTests|FullyQualifiedName~CraftingPacketShapeTests"`
   passed `16/16`.
+
+Tradeskill sigil result evidence follow-up (2026-05-23):
+
+- Opcode registration inspection maps `0x085D ServerTradeskillSigilResult` as a
+  four-byte server packet with reader address `140099110`; the adjacent read
+  pattern is the same single raw uint32 shape modeled by NexusForever.
+- `Lua_RegisterCraftingBindings` @ `1405a3000` registers
+  `CodeEnumTradeskillResult` with native values:
+  `Success = 0`, `InsufficentFund = 1`, `InvalidItem = 2`,
+  `InvalidSlot = 3`, `MissingEngravingStation = 4`, `Unlocked = 5`,
+  `UnknownError = 6`, `RuneExists = 7`, `MissingRune = 8`,
+  `DuplicateRune = 9`, `AttemptFailed = 10`, and `RuneSlotLimit = 11`.
+  NexusForever's `TradeskillResult` enum already matches those names and values,
+  including the client typo in `InsufficentFund`; packet-shape tests now pin the
+  full value map.
+- This closes the sigil result status-name blocker. The server-side rules for
+  when to return `RuneExists`, `DuplicateRune`, `AttemptFailed`, and the other
+  non-success statuses remain tied to the durable item-rune data model, which is
+  still blocked until installed-rune slot/type packing is mapped to
+  database-owned item state.
+
+Rune type evidence follow-up (2026-05-23):
+
+- `TraceStringReferences` on `CodeEnumRuneType` (`140af9d00`) resolves its only
+  code xref to `FUN_140413a20` @ `140413a20`. Focused decompile shows this
+  function registers `Game.ItemData`, `isRuneData`, `GetRuneSlots`,
+  `CodeEnumItemType`, `CodeEnumItemQuality`, `CodeEnumRuneType`, and
+  `CodeEnumLootItemType`; it is now labelled `Lua_RegisterItemDataBindings`.
+- The repeated helper at `1400eff50` takes a name pointer and integer value and
+  adds one entry to the Lua enum table currently on the stack; it is now labelled
+  `Lua_RegisterCodeEnumValue`.
+- Raw call setup immediately after the `CodeEnumRuneType` table creation maps
+  the native values as `Air = 7`, `Water = 8`, `Earth = 9`, `Fire = 10`,
+  `Logic = 11`, `Life = 12`, and `Fusion = 13`. These match
+  `Source/NexusForever.Game.Static/Crafting/RuneType.cs`, and
+  `CraftingPacketShapeTests.RuneType_ValuesMatchNativeLuaEnum` now pins that
+  client-facing contract.
+- This closes the rune-type enum blocker only. Durable rune state is still
+  blocked because local inspection confirms `ItemModel` persists only item id,
+  owner, location, bag index, stack/charges, durability, expiration, and
+  soulbound state, while `IItem.Build()` does not populate `RandomGlyphData` or
+  `Glyphs`. The runtime rune dictionary in
+  `ClientCraftingRuneHandlers.CraftingRuneRequestHelper` is therefore still
+  transient until installed slot/type packing is mapped to database-owned item
+  fields and network item serialization.
+
+Rune item data bridge follow-up (2026-05-23):
+
+- Focused decompile now maps the `GetRuneSlots` Lua table producer:
+  `Lua_GameItemData_GetRuneSlots` (`14041b8d0`) calls
+  `ItemData_BuildRuneSlotsLuaTable` (`14066e000`), which delegates to
+  `ItemData_AddRuneSlotsLuaFields` (`140673b80`) and
+  `ItemData_AddRuneSlotLuaRow` (`140677950`). The table fields are
+  `nMaximum`, `nAbsoluteMax`, `nMinimum`, and `arRuneSlots`; each row includes
+  at least `eElement`, may include `bDisabled`, and includes `itemRune` plus
+  item-derived details when an installed rune Item2 id resolves.
+- The live item-instance path in `ItemData_AddRuneSlotsLuaFields` is mapped far
+  enough to narrow the durable blocker: the client tests flags around
+  `itemData+0x538`, `itemData+0x544`, and `itemData+0x548`, uses the current
+  rune slot count at `itemData+0x1f0`, reads compact slot-type bytes from
+  `itemData+0x388`, converts them through `ItemRuneSlotType_ToRuneType`
+  (`140514660`, compact `1..7` => native rune enum `7..13`), and reads
+  installed rune Item2 ids from `itemData+0x518 + index*4` when the installed
+  rune flag is set and `index < 8`.
+- The static/default fallback is also mapped: `ClientDB_GetItemRuneInstance`
+  (`14020df20`) and `ItemData_ComputeRuneSlotCounts` (`14040efb0`) provide
+  ItemRuneInstance-backed slot counts and default slot entries before live item
+  instance data is applied.
+- `SharedItem_ReadPayload` (`14008c0d0`) confirms the server wire item shape
+  NexusForever already models: the shared item carries `RandomCircuitData`,
+  `RandomGlyphData`, `ThresholdData`, a 3-bit counted microchip uint array, a
+  4-bit counted glyph uint array, a 6-bit counted unknown row array, and
+  `EffectiveItemLevel`. `ServerItemAdd_ReadPayload` (`14008cda0`) wraps one
+  shared item plus a 6-bit reason; `ServerPlayerCreate_ReadPayload`
+  (`14008cee0`) wraps counted shared item rows.
+- Online/addon-corpus evidence corroborates the public Lua contract but not the
+  storage bridge: AddOn Studio lists WildStar `Item` methods including
+  `GetGlyphInfo`, `GetMicrochipInfo`, and `GetSigils`, while RuneMaster
+  `2.3.0` from CurseForge uses `item:GetRuneSlots().arRuneSlots`,
+  `tRune.eElement`, `tRune.itemRune`, and `Item.CodeEnumRuneType.*` throughout
+  its rune-planning UI. This matches the native Lua table producer above.
+- The blocker is now narrower but still real: no mapped function yet proves how
+  shared item wire fields (`RandomGlyphData`/`Glyphs`) are unpacked into live
+  `itemData+0x388` slot types and `itemData+0x518` installed rune ids, and no
+  NexusForever database fields own that state. A broad immediate scan for
+  `0x388` also produced unrelated structures, so raw offset matches are not
+  sufficient evidence. Durable rune persistence and non-success sigil result
+  rules remain `Mapped only / Blocked` until that producer bridge is found.
