@@ -90,11 +90,12 @@ namespace NexusForever.Game.Matching.Queue
             (IMatchingQueueGroup MatchingQueueGroup, IMatchingQueueGroupTeam MatchingQueueGroupTeam)? matchDetails = matchingQueueMatcher.Match(matchingGroups, matchingQueueProposal);
             if (matchDetails != null)
             {
-                matchDetails.Value.MatchingQueueGroup.AddMatchingQueueProposal(matchingQueueProposal, matchDetails.Value.MatchingQueueGroupTeam);
+                IMatchingQueueGroup matchingQueueGroup = matchDetails.Value.MatchingQueueGroup;
+                matchingQueueGroup.AddMatchingQueueProposal(matchingQueueProposal, matchDetails.Value.MatchingQueueGroupTeam);
 
-                IMatchingMapSelectorResult matchingMapSelectorResult = matchingMapSelector.Select(matchDetails.Value.MatchingQueueGroup);
+                IMatchingMapSelectorResult matchingMapSelectorResult = matchingMapSelector.Select(matchingQueueGroup);
                 if (matchingMapSelectorResult != null)
-                    Matched(matchDetails.Value.MatchingQueueGroup, matchingMapSelectorResult);
+                    Matched(matchingQueueGroup, matchingMapSelectorResult);
 
                 return;
             }
@@ -116,6 +117,21 @@ namespace NexusForever.Game.Matching.Queue
             log.LogTrace($"Matching queue group {matchingGroup.Guid} added to store.");
 
             return matchingGroup;
+        }
+
+        public void RegisterReplacementGroup(IMatchingQueueGroup matchingQueueGroup)
+        {
+            if (matchingQueueGroup.MatchType != matchType)
+                throw new InvalidOperationException();
+
+            matchingGroups.Add(matchingQueueGroup);
+            log.LogTrace($"Registered in-progress replacement matching queue group {matchingQueueGroup.Guid}.");
+        }
+
+        public void UnregisterReplacementGroup(IMatchingQueueGroup matchingQueueGroup)
+        {
+            if (matchingGroups.Remove(matchingQueueGroup))
+                log.LogTrace($"Unregistered in-progress replacement matching queue group {matchingQueueGroup.Guid}.");
         }
     }
 }

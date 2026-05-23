@@ -19,5 +19,9 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         /// Attempt to add <see cref="IMatchingQueueProposal"/> to the queue.
         /// </summary>
         void JoinQueue(IMatchingQueueProposal matchingGroup);
+
+        void RegisterReplacementGroup(IMatchingQueueGroup matchingQueueGroup);
+
+        void UnregisterReplacementGroup(IMatchingQueueGroup matchingQueueGroup);
     }
 }

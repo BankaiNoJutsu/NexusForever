@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Matching.Match;
+using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 
@@ -12,13 +13,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 
         private readonly ILogger<ClientMatchingStopLookingForReplacementsHandler> log;
         private readonly IMatchManager matchManager;
+        private readonly IMatchingManager matchingManager;
 
         public ClientMatchingStopLookingForReplacementsHandler(
             ILogger<ClientMatchingStopLookingForReplacementsHandler> log,
-            IMatchManager matchManager)
+            IMatchManager matchManager,
+            IMatchingManager matchingManager)
         {
-            this.log          = log;
-            this.matchManager = matchManager;
+            this.log             = log;
+            this.matchManager    = matchManager;
+            this.matchingManager = matchingManager;
         }
 
         #endregion
@@ -38,11 +42,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
                 return;
             }
 
+            matchingManager.StopLookingForReplacements(match);
+
             log.LogInformation("ClientMatchingStopLookingForReplacements: player={Player}, match={Match}",
                 player.Guid, match.Guid);
-
-            // Full replacement backfill remains blocked until queue proposals can be attached
-            // to an existing in-progress match instead of creating a fresh match.
         }
     }
 }

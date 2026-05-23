@@ -1,3 +1,4 @@
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
@@ -43,6 +44,12 @@ internal sealed class TestPlayerBuilder
     public TestPlayerBuilder WithGuid(uint guid)
     {
         playerProxy.SetProperty(nameof(IPlayer.Guid), guid);
+        return this;
+    }
+
+    public TestPlayerBuilder WithIdentity(Identity identity)
+    {
+        playerProxy.SetProperty(nameof(IPlayer.Identity), identity);
         return this;
     }
 

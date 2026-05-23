@@ -40,6 +40,8 @@ namespace NexusForever.Game.Matching.Queue
         private readonly IPlayerManager playerManager;
         private readonly IMatchManager matchManager;
         private readonly IMatchingDeserterManager matchingDeserterManager;
+        private readonly IMatchingReplacementRegistry matchingReplacementRegistry;
+        private readonly IFactory<IMatchingQueueGroup> matchingQueueGroupFactory;
 
         public MatchingManager(
             ILogger<MatchingManager> log,
@@ -49,10 +51,12 @@ namespace NexusForever.Game.Matching.Queue
             IFactory<IMatchingQueueProposal> matchingQueueProposalFactory,
             IFactory<IMatchingRoleCheck> matchingRoleCheckFactory,
             IFactory<IMatchingCharacter> matchingCharacterFactory,
+            IFactory<IMatchingQueueGroup> matchingQueueGroupFactory,
             IGroupStateManager groupStateManager,
             IPlayerManager playerManager,
             IMatchManager matchManager,
-            IMatchingDeserterManager matchingDeserterManager)
+            IMatchingDeserterManager matchingDeserterManager,
+            IMatchingReplacementRegistry matchingReplacementRegistry)
         {
             this.log                          = log;
             this.matchingDataManager          = matchingDataManager;
@@ -61,10 +65,12 @@ namespace NexusForever.Game.Matching.Queue
             this.matchingQueueProposalFactory = matchingQueueProposalFactory;
             this.matchingRoleCheckFactory     = matchingRoleCheckFactory;
             this.matchingCharacterFactory     = matchingCharacterFactory;
+            this.matchingQueueGroupFactory    = matchingQueueGroupFactory;
             this.groupStateManager            = groupStateManager;
             this.playerManager                = playerManager;
             this.matchManager                 = matchManager;
             this.matchingDeserterManager      = matchingDeserterManager;
+            this.matchingReplacementRegistry  = matchingReplacementRegistry;
         }
 
         #endregion
@@ -408,6 +414,87 @@ namespace NexusForever.Game.Matching.Queue
             uint averageWaitTimeMs = (uint)matchingQueueTimeManager.GetAverageWaitTime(matchType).TotalMilliseconds;
             foreach (IMatchingCharacter matchingCharacter in characters.Values)
                 matchingCharacter.SendAverageWaitTimeUpdate(matchType, averageWaitTimeMs);
+        }
+
+        public MatchingQueueResult? TryStartLookingForReplacements(IPlayer leader, IMatch match, Role requestedRoles)
+        {
+            if (leader == null || match == null)
+                return MatchingQueueResult.UnableToQueue;
+
+            if (match.Status != MatchStatus.InProgress)
+                return MatchingQueueResult.UnableToQueue;
+
+            if (match.GetTeam(leader.Identity) == null)
+                return MatchingQueueResult.UnableToQueue;
+
+            if (requestedRoles == Role.None)
+                return MatchingQueueResult.UnableToQueue;
+
+            if ((requestedRoles & ~(Role.Tank | Role.Healer | Role.DPS)) != Role.None)
+                return MatchingQueueResult.UnableToQueue;
+
+            if (matchingReplacementRegistry.TryGetEntry(match.Guid, out _, out _))
+                return MatchingQueueResult.UnableToQueue;
+
+            MatchingQueueResult? leaderResult = RetailPartyQueueRules.ValidateGroupLeader(leader, groupStateManager);
+            if (leaderResult != null)
+                return leaderResult;
+
+            Static.Matching.MatchType matchType = match.MatchingMap.GameTypeEntry.MatchTypeEnum;
+            if (matchingDataManager.IsPvPMatchType(matchType))
+                return MatchingQueueResult.UnableToQueue;
+
+            IMatchingQueueProposal anchorProposal = matchingQueueProposalFactory.Resolve();
+            anchorProposal.Initialise(
+                leader.Faction1,
+                matchType,
+                [match.MatchingMap],
+                MatchingQueueFlags.None);
+
+            IMatchingQueueGroup replacementGroup = matchingQueueGroupFactory.Resolve();
+            replacementGroup.Initialise(anchorProposal);
+            replacementGroup.SetInProgress();
+
+            matchingReplacementRegistry.Register(match.Guid, replacementGroup, requestedRoles);
+            GetMatchingQueueManager(matchType).RegisterReplacementGroup(replacementGroup);
+
+            log.LogInformation("Opened replacement queue for match {Match} with roles {Roles}.", match.Guid, requestedRoles);
+            return null;
+        }
+
+        public void StopLookingForReplacements(IMatch match, MatchingQueueResult? leaveReason = MatchingQueueResult.Left)
+        {
+            if (match == null)
+                return;
+
+            if (!matchingReplacementRegistry.TryGetEntry(match.Guid, out IMatchingQueueGroup replacementGroup, out _))
+                return;
+
+            StopLookingForReplacements(replacementGroup, leaveReason);
+        }
+
+        public void StopLookingForReplacements(IMatchingQueueGroup replacementGroup, MatchingQueueResult? leaveReason = MatchingQueueResult.Left)
+        {
+            if (replacementGroup == null || !replacementGroup.InProgress)
+                return;
+
+            RemoveAllProposalsFromGroup(replacementGroup, leaveReason);
+            matchingReplacementRegistry.UnregisterByQueueGroup(replacementGroup.Guid);
+            GetMatchingQueueManager(replacementGroup.MatchType).UnregisterReplacementGroup(replacementGroup);
+
+            log.LogInformation("Closed replacement queue group {MatchingQueueGroup}.", replacementGroup.Guid);
+        }
+
+        private static void RemoveAllProposalsFromGroup(IMatchingQueueGroup matchingQueueGroup, MatchingQueueResult? leaveReason)
+        {
+            var matchingQueueProposals = matchingQueueGroup.GetTeams()
+                .SelectMany(t => t.GetMembers())
+                .Select(m => m.MatchingQueueProposal)
+                .Distinct()
+                .ToList();
+
+            foreach (IMatchingQueueProposal matchingQueueProposal in matchingQueueProposals)
+                matchingQueueGroup.RemoveMatchingQueueProposal(matchingQueueProposal, leaveReason);
         }
 
         public void OnLogin(IPlayer player)

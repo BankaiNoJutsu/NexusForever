@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Matching.Match;
+using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Static.Matching;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -21,13 +22,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 
         private readonly ILogger<ClientMatchingMatchInitiateLookingForReplacementsHandler> log;
         private readonly IMatchManager matchManager;
+        private readonly IMatchingManager matchingManager;
 
         public ClientMatchingMatchInitiateLookingForReplacementsHandler(
             ILogger<ClientMatchingMatchInitiateLookingForReplacementsHandler> log,
-            IMatchManager matchManager)
+            IMatchManager matchManager,
+            IMatchingManager matchingManager)
         {
-            this.log          = log;
-            this.matchManager = matchManager;
+            this.log             = log;
+            this.matchManager    = matchManager;
+            this.matchingManager = matchingManager;
         }
 
         #endregion
@@ -63,11 +67,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
                 return;
             }
 
-            log.LogInformation("ClientMatchingMatchInitiateLookingForReplacements: player={Player}, match={Match}, roles={Roles}",
-                player.Guid, match.Guid, requestedRoles);
-
-            // Full replacement backfill remains blocked. The current matching queue can create
-            // a new in-progress-ready proposal, but it cannot attach that proposal to this existing match.
+            MatchingQueueResult? result = matchingManager.TryStartLookingForReplacements(player, match, requestedRoles);
+            if (result != null)
+            {
+                log.LogWarning("ClientMatchingMatchInitiateLookingForReplacements: player={Player}, match={Match}, roles={Roles}, result={Result}",
+                    player.Guid, match.Guid, requestedRoles, result);
+            }
+            else
+            {
+                log.LogInformation("ClientMatchingMatchInitiateLookingForReplacements: player={Player}, match={Match}, roles={Roles}",
+                    player.Guid, match.Guid, requestedRoles);
+            }
         }
     }
 }
