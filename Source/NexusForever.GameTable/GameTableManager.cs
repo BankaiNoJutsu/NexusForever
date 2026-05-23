@@ -365,6 +365,8 @@ namespace NexusForever.GameTable
 
         [GameData]
         public GameTable<MapZoneWorldJoinEntry> MapZoneWorldJoin { get; private set; }
+
+        [GameData]
         public GameTable<MatchTypeRewardRotationContentEntry> MatchTypeRewardRotationContent { get; private set; }
 
         [GameData]
@@ -522,9 +524,16 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<RewardPropertyPremiumModifierEntry> RewardPropertyPremiumModifier { get; private set; }
 
+        [GameData]
         public GameTable<RewardRotationContentEntry> RewardRotationContent { get; private set; }
+
+        [GameData]
         public GameTable<RewardRotationEssenceEntry> RewardRotationEssence { get; private set; }
+
+        [GameData]
         public GameTable<RewardRotationItemEntry> RewardRotationItem { get; private set; }
+
+        [GameData]
         public GameTable<RewardRotationModifierEntry> RewardRotationModifier { get; private set; }
         public GameTable<RewardTrackEntry> RewardTrack { get; private set; }
         public GameTable<RewardTrackRewardsEntry> RewardTrackRewards { get; private set; }

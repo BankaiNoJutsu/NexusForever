@@ -15,6 +15,11 @@ public class GameTableManagerGameDataContractTests
     [InlineData(nameof(GameTableManager.ItemRandomStatGroup), typeof(ItemRandomStatGroupEntry), "ItemRandomStatGroup.tbl")]
     [InlineData(nameof(GameTableManager.QuestDirection), typeof(QuestDirectionEntry), "QuestDirection.tbl")]
     [InlineData(nameof(GameTableManager.QuestDirectionEntry), typeof(QuestDirectionEntryEntry), "QuestDirectionEntry.tbl")]
+    [InlineData(nameof(GameTableManager.MatchTypeRewardRotationContent), typeof(MatchTypeRewardRotationContentEntry), "MatchTypeRewardRotationContent.tbl")]
+    [InlineData(nameof(GameTableManager.RewardRotationContent), typeof(RewardRotationContentEntry), "RewardRotationContent.tbl")]
+    [InlineData(nameof(GameTableManager.RewardRotationEssence), typeof(RewardRotationEssenceEntry), "RewardRotationEssence.tbl")]
+    [InlineData(nameof(GameTableManager.RewardRotationItem), typeof(RewardRotationItemEntry), "RewardRotationItem.tbl")]
+    [InlineData(nameof(GameTableManager.RewardRotationModifier), typeof(RewardRotationModifierEntry), "RewardRotationModifier.tbl")]
     [InlineData(nameof(GameTableManager.ZoneCompletion), typeof(ZoneCompletionEntry), "ZoneCompletion.tbl")]
     public void RuntimeRequiredTables_LoadThroughDefaultInitialise(string propertyName, Type entryType, string expectedDefaultFileName)
     {
