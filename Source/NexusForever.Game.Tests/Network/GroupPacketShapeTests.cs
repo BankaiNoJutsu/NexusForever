@@ -205,7 +205,7 @@ public class GroupPacketShapeTests
             TargetPlayer   = new Identity { RealmId = 1, Id = 99ul },
             Level          = 50,
             EffectiveLevel = 50,
-            Unk1           = 0,
+            StatBlockPrefix17 = 0,
             GroupMemberId  = 7,
             Health         = 100f,
             HealthMax      = 100f,

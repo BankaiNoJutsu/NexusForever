@@ -9,8 +9,8 @@ namespace NexusForever.Database.World.Model
         public string Name { get; set; }
         public string Description { get; set; }
         public uint DisplayFlags { get; set; }
-        public long Unknown6 { get; set; }
-        public byte Unknown7 { get; set; }
+        public long RetailCatalogWireScalar { get; set; }
+        public byte RetailCatalogWireByte { get; set; }
         public byte Visible { get; set; }
 
         public StoreOfferGroupModel Group { get; set; }

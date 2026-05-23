@@ -4,33 +4,29 @@ namespace NexusForever.Network.World.Message.Model
 {
     /// <summary>
     /// Raid queue status update (0x0718, 0x1A bytes).
-    /// Decomp (0x14008bf80): uint64 + 15-bit + uint64 + 4 bytes + uint32.
+    /// Decomp (0x14008bf80): uint64 + 15-bit uint32 + uint64 + uint32 + uint32.
+    /// Field semantics remain blocked pending a non-zero retail capture or client consumer mapping.
     /// </summary>
     [Message(GameMessageOpcode.ServerRaidQueueStatus)]
     public class ServerRaidQueueStatus : IWritable
     {
-        /// <summary>Queue position or instance id.</summary>
-        public ulong QueueId { get; set; }
+        public ulong Unknown0 { get; set; }
 
-        /// <summary>15-bit queued flag.</summary>
-        public uint IsQueued { get; set; }
+        public uint Unknown1 { get; set; }
 
-        /// <summary>Wait time or game type value.</summary>
-        public ulong WaitValue { get; set; }
+        public ulong Unknown2 { get; set; }
 
-        /// <summary>Likely MatchingGameTypeId.</summary>
-        public uint MatchingGameTypeId { get; set; }
+        public uint Unknown3 { get; set; }
 
-        /// <summary>Unknown trailing field.</summary>
-        public uint Unknown { get; set; }
+        public uint Unknown4 { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(QueueId);
-            writer.Write(IsQueued, 15u);
-            writer.Write(WaitValue);
-            writer.Write(MatchingGameTypeId);
-            writer.Write(Unknown);
+            writer.Write(Unknown0);
+            writer.Write(Unknown1, 15u);
+            writer.Write(Unknown2);
+            writer.Write(Unknown3);
+            writer.Write(Unknown4);
         }
     }
 }

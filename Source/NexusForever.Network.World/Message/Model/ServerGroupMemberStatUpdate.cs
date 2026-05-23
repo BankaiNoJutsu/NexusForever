@@ -12,10 +12,11 @@ namespace NexusForever.Network.World.Message.Model
         public byte Level { get; set; }
         public byte EffectiveLevel { get; set; }
 
-        public uint Unk1 { get; set; }
+        /// <inheritdoc cref="GroupCharacter.StatBlockPrefix17"/>
+        public uint StatBlockPrefix17 { get; set; }
         public ushort GroupMemberId { get; set; }
 
-        public GroupCharacter.UnknownStruct0[] SomeStatList = new GroupCharacter.UnknownStruct0[5];
+        public GroupMemberStatSlot[] StatSlots = new GroupMemberStatSlot[5];
 
         public float Health { get; set; }
         public float HealthMax { get; set; }
@@ -42,13 +43,13 @@ namespace NexusForever.Network.World.Message.Model
             writer.Write(Level, 7);
             writer.Write(EffectiveLevel, 7);
 
-            writer.Write(Unk1, 17);
+            writer.Write(StatBlockPrefix17, 17);
             writer.Write(GroupMemberId);
 
             for (var i = 0; i < 5; ++i)
             {
-                SomeStatList[i] = new GroupCharacter.UnknownStruct0();
-                SomeStatList[i].Write(writer);
+                StatSlots[i] = new GroupMemberStatSlot();
+                StatSlots[i].Write(writer);
             }
 
             writer.WritePackedFloat(Health);

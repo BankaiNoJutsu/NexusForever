@@ -558,6 +558,11 @@ namespace NexusForever.Game.Entity
             return entityCreatePacket;
         }
 
+        public virtual IReadOnlyList<IWritable> BuildEntityCreateAuxPackets()
+        {
+            return EntityCreateAuxiliaryPacketBuilder.BuildPreCreatePackets(this);
+        }
+
         /// <summary>
         /// Invoked when <see cref="IWorldEntity"/> is activated.
         /// </summary>

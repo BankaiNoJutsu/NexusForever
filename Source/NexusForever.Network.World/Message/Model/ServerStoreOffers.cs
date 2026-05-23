@@ -69,16 +69,15 @@ namespace NexusForever.Network.World.Message.Model
                 public float PriceAlternative { get; set; }
                 public DisplayFlag DisplayFlags { get; set; }
                 /// <summary>
-                /// Retail <c>store_offer_item.field_6</c> is usually <c>-1016071787</c> (~<c>-239.97f</c>).
-                /// Parsed at offer <c>+0x28</c> by <c>ServerStoreOffers_Offer_ReadPayload</c> but not copied in
-                /// <c>Storefront_ApplyServerStoreOffers</c> @ <c>14044b750</c> (F-006 blocked).
+                /// Retail <c>store_offer_item.field_6</c> wire scalar at offer <c>+0x28</c>
+                /// (<see cref="RetailStoreOfferWireConstants.CatalogWireScalarBits"/>). Parsed by the client
+                /// but not copied in <c>Storefront_ApplyServerStoreOffers</c> @ <c>14044b750</c>.
                 /// </summary>
-                public long Unknown6 { get; set; }
+                public long RetailCatalogWireScalar { get; set; }
                 /// <summary>
-                /// Retail <c>store_offer_item.field_7</c> (8 bits at offer <c>+0x30</c>). Not consumed in
-                /// <c>Storefront_ApplyServerStoreOffers</c> @ <c>14044b750</c> (F-006 blocked).
+                /// Retail <c>store_offer_item.field_7</c> at offer <c>+0x30</c> (usually <c>0</c>).
                 /// </summary>
-                public byte Unknown7 { get; set; } 
+                public byte RetailCatalogWireByte { get; set; }
                 public List<OfferCurrencyData> CurrencyData { get; set; } = new();
                 public List<OfferItemData> ItemData { get; set; } = new();
 
@@ -92,8 +91,8 @@ namespace NexusForever.Network.World.Message.Model
                     writer.Write(PriceAlternative);
 
                     writer.Write(DisplayFlags, 32u);
-                    writer.Write(Unknown6);
-                    writer.Write(Unknown7);
+                    writer.Write(RetailCatalogWireScalar);
+                    writer.Write(RetailCatalogWireByte);
 
                     writer.Write(CurrencyData.Count);
                     CurrencyData.ForEach(e => e.Write(writer));

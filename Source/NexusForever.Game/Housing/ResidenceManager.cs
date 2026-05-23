@@ -146,6 +146,8 @@ namespace NexusForever.Game.Housing
                 _                                   => throw new InvalidOperationException($"Unsupported residence privacy level {Residence?.PrivacyLevel}.")
             };
 
+            HousingAuxiliaryPacketEmitter.EnqueueResidenceSessionPackets(owner, Residence?.Id ?? 0ul);
+
             owner.Session.EnqueueMessageEncrypted(new ServerHousingBasics
             {
                 ResidenceId     = Residence?.Id ?? 0ul,

@@ -189,7 +189,7 @@ public class EntityCreatePacketTests
         Assert.Equal((ushort)0x3456, reader.ReadUShort(15u));
     }
 
-    private static ServiceProvider BuildProvider()
+    internal static ServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -197,7 +197,7 @@ public class EntityCreatePacketTests
         return services.BuildServiceProvider();
     }
 
-    private static void SetWorldSocketId(IWorldEntity entity, ushort worldSocketId)
+    internal static void SetWorldSocketId(IWorldEntity entity, ushort worldSocketId)
     {
         PropertyInfo propertyInfo = typeof(WorldEntity).GetProperty(nameof(IWorldEntity.WorldSocketId), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new Xunit.Sdk.XunitException($"Unable to find {nameof(IWorldEntity.WorldSocketId)} on {nameof(WorldEntity)}.");

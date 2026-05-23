@@ -110,6 +110,11 @@ namespace NexusForever.Game.Abstract.Entity
         ServerEntityCreate BuildCreatePacket(bool initialCommands);
 
         /// <summary>
+        /// Auxiliary entity-create packets emitted before <see cref="BuildCreatePacket"/> (opcodes <c>0x025F</c>..<c>0x0264</c>).
+        /// </summary>
+        IReadOnlyList<IWritable> BuildEntityCreateAuxPackets();
+
+        /// <summary>
         /// Invoked when <see cref="IWorldEntity"/> is activated.
         /// </summary>
         void OnActivate(IPlayer activator);

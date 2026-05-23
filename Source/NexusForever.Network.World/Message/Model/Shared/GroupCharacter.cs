@@ -6,18 +6,6 @@ namespace NexusForever.Network.World.Message.Model.Shared
 {
     public class GroupCharacter : IWritable
     {
-        public class UnknownStruct0 : IWritable
-        {
-            public ushort Unknown6 { get; set; } = 0;
-            public byte Unknown7 { get; set; } = 48;
-
-            public void Write(GamePacketWriter writer)
-            {
-                writer.Write(Unknown6);
-                writer.Write(Unknown7);
-            }
-        }
-
         public class UnknownStruct1 : IWritable
         {
             public ushort Unknown30 { get; set; }
@@ -38,10 +26,14 @@ namespace NexusForever.Network.World.Message.Model.Shared
         public byte Level { get; set; }
         public byte EffectiveLevel { get; set; }
         public Game.Static.PlayerPath.Path Path { get; set; }
-        public uint Unknown4 { get; set; }
+        /// <summary>
+        /// 17-bit prefix in the group stat block (parsed <c>+0x1c</c> in
+        /// <c>Group_CopyMemberStatBlockFromPayload</c> @ <c>140607490</c>). Semantics blocked.
+        /// </summary>
+        public uint StatBlockPrefix17 { get; set; }
         public ushort GroupMemberId { get; set; }
 
-        public UnknownStruct0[] SomeStatList = new UnknownStruct0[5];
+        public GroupMemberStatSlot[] StatSlots = new GroupMemberStatSlot[5];
         public List<UnknownStruct1> UnknownStruct1List { get; set; } = new List<UnknownStruct1>();
 
         public Identity MentoringTarget { get; set; }
@@ -79,13 +71,13 @@ namespace NexusForever.Network.World.Message.Model.Shared
             writer.Write(Level, 7u);
             writer.Write(EffectiveLevel, 7u);
             writer.Write(Path, 3u);
-            writer.Write(Unknown4, 17u);
+            writer.Write(StatBlockPrefix17, 17u);
             writer.Write(GroupMemberId);
 
             for (var i = 0; i < 5; ++i)
             {
-                SomeStatList[i] = new UnknownStruct0();
-                SomeStatList[i].Write(writer);
+                StatSlots[i] = new GroupMemberStatSlot();
+                StatSlots[i].Write(writer);
             }
 
             if (MentoringTarget == null)

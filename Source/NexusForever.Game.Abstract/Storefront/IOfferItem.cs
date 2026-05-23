@@ -11,8 +11,8 @@ namespace NexusForever.Game.Abstract.Storefront
         string Name { get; }
         string Description { get; }
         DisplayFlag DisplayFlags { get; }
-        long Unknown6 { get; }
-        byte Unknown7 { get; }
+        long RetailCatalogWireScalar { get; }
+        byte RetailCatalogWireByte { get; }
         bool Visible { get; }
         IReadOnlyList<IOfferItemData> Items { get; }
 

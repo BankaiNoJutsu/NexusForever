@@ -14,8 +14,8 @@ namespace NexusForever.Game.Storefront
         public string Name { get; }
         public string Description { get; }
         public DisplayFlag DisplayFlags { get; }
-        public long Unknown6 { get; }
-        public byte Unknown7 { get; }
+        public long RetailCatalogWireScalar { get; }
+        public byte RetailCatalogWireByte { get; }
         public bool Visible { get; }
         public IReadOnlyList<IOfferItemData> Items => items;
 
@@ -31,8 +31,8 @@ namespace NexusForever.Game.Storefront
             Name         = model.Name;
             Description  = model.Description;
             DisplayFlags = (DisplayFlag)model.DisplayFlags;
-            Unknown6     = model.Unknown6;
-            Unknown7     = model.Unknown7;
+            RetailCatalogWireScalar = model.RetailCatalogWireScalar;
+            RetailCatalogWireByte     = model.RetailCatalogWireByte;
             Visible      = Convert.ToBoolean(model.Visible);
 
             var itemBuilder = ImmutableList.CreateBuilder<IOfferItemData>();
@@ -80,8 +80,8 @@ namespace NexusForever.Game.Storefront
                 DisplayFlags     = DisplayFlags,
                 PricePremium     = pricePremium,
                 PriceAlternative = priceAlternative,
-                Unknown6         = Unknown6,
-                Unknown7         = Unknown7,
+                RetailCatalogWireScalar = RetailCatalogWireScalar,
+                RetailCatalogWireByte     = RetailCatalogWireByte,
                 ItemData         = items
                     .Select(i => i.Build())
                     .ToList(),

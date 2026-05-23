@@ -67,14 +67,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Instance
 
             session.EnqueueMessageEncrypted(response);
 
-            // Send raid queue status (used by the raid lockout / saved instances UI)
+            // Keep the raid-info UI compatibility emission; non-zero queue semantics are not mapped yet.
             session.EnqueueMessageEncrypted(new ServerRaidQueueStatus
             {
-                IsQueued            = 0u,
-                MatchingGameTypeId  = 0u,
-                QueueId             = 0u,
-                WaitValue           = 0u,
-                Unknown             = 0u
+                Unknown0 = 0u,
+                Unknown1 = 0u,
+                Unknown2 = 0u,
+                Unknown3 = 0u,
+                Unknown4 = 0u
             });
         }
     }

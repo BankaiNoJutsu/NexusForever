@@ -17,9 +17,11 @@ namespace NexusForever.Network.World.Message.Model
             public uint AccountItemId { get; set; }
             /// <summary>
             /// Trailing u64 at wire <c>+0x10</c> after <see cref="AccountItemId"/>. Stored in client cache
-            /// slot <c>[2]</c> by <c>AccountPendingItemGroupCache_InsertFromPayload</c> but not used by
-            /// <c>AccountPendingItemGroupCache_LookupByPendingItemId</c> (keyed by <see cref="Id"/>).
-            /// NF has no DB column; emit <c>0</c> unless retail evidence appears.
+            /// slot <c>[2]</c> by <c>AccountPendingItemGroupCache_InsertFromPayload</c> @ <c>140005bf0</c>.
+            /// Grouped lookup uses <see cref="Id"/> only (<c>AccountPendingItemGroupCache_LookupByPendingItemId</c>
+            /// @ <c>140007810</c>). <c>AccountItemUi_GiftSelectedPendingItemGroup</c> @ <c>140519260</c> reads the
+            /// group wide string at cache <c>+0x38</c> and gift targets from UI fields, not this slot.
+            /// NF has no DB column; emit <c>0</c> unless retail sends non-zero.
             /// </summary>
             public ulong Unknown2 { get; set; }
             public string Group { get; set; } = string.Empty;

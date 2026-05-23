@@ -706,8 +706,8 @@ namespace NexusForever.Network.Message
         ServerMatchingMatchOperationResult = 0x0623,
         ClientMatchingMatchCastVoteSurrender = 0x0624,
         ServerMatchingAverageWaitTimeUpdate = 0x0628,
-        Client0x062A                    = 0x062A, // single 32-bit payload field; semantics unresolved
-        Client0x0634                    = 0x0634, // single 32-bit payload field; semantics unresolved
+        Client0x062A                    = 0x062A, // registered at 0x1400a8190 as a 4-byte generic uint32; semantics unresolved
+        Client0x0634                    = 0x0634, // registered at 0x1400a8190 as a 4-byte generic uint32; semantics unresolved
         ClientMovementControlAck        = 0x0635,
         ServerMovementControl           = 0x0636, // client acknowledges with 0x0635; zone transfers can follow with 0x063A
         ClientEntityCommand             = 0x0637, // bidirectional? packet has both read and write handlers 
@@ -792,7 +792,7 @@ namespace NexusForever.Network.Message
         Client0x0701                    = 0x0701, // 0x8-byte payload; semantics unresolved
         ServerQueueFinish               = 0x0715,
         ServerQueueStatus               = 0x0717,
-        ServerRaidQueueStatus            = 0x0718, // 0x20-byte payload; between ServerQueueStatus (0x0717) and ClientRaidInfoRequest (0x0719).
+        ServerRaidQueueStatus            = 0x0718, // registered object size 0x20; mapped wire payload is 0x1A bytes.
         ClientRaidInfoRequest           = 0x0719,
         ServerRaidInfoResponse          = 0x071A,
         ClientRandomRollRequest         = 0x071B,

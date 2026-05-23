@@ -18,7 +18,8 @@ namespace NexusForever.Network.World.Message.Model
 
         public byte EffectiveLevel { get; set; }
 
-        public uint Unk1 { get; set; }
+        /// <inheritdoc cref="GroupCharacter.StatBlockPrefix17"/>
+        public uint StatBlockPrefix17 { get; set; }
 
         public ushort GroupMemberId { get; set; }
 
@@ -34,7 +35,7 @@ namespace NexusForever.Network.World.Message.Model
             TargetPlayer.Write(writer);
             writer.Write(Level, 7u);
             writer.Write(EffectiveLevel, 7u);
-            writer.Write(Unk1, 17u);
+            writer.Write(StatBlockPrefix17, 17u);
             writer.Write(GroupMemberId);
             writer.WritePackedFloat(Health);
             writer.WritePackedFloat(HealthMax);

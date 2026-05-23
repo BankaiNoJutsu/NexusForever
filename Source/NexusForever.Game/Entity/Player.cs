@@ -49,6 +49,7 @@ using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Pvp;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.Message;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Player;
 using NexusForever.Network.Session;
@@ -1163,6 +1164,9 @@ namespace NexusForever.Game.Entity
 
             if (entity is IWorldEntity worldEntity)
             {
+                foreach (IWritable auxiliary in worldEntity.BuildEntityCreateAuxPackets())
+                    Session.EnqueueMessageEncrypted(auxiliary);
+
                 Session.EnqueueMessageEncrypted(worldEntity.BuildCreatePacket(IsLoading));
                 GlobalLootManager.Instance.SendLootNotifyForVisibleOwner(this, worldEntity);
             }
