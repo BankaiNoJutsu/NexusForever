@@ -34,7 +34,7 @@ namespace NexusForever.Game.Achievement
             set => SetProgressState(value);
         }
 
-        // Data0 stores either scalar progress or the completed checklist bitmask depending on the achievement type.
+        // ProgressState stores either scalar progress or the completed checklist bitmask depending on the achievement type.
         private uint progressState;
 
         public uint CreditedChecklistMask
@@ -73,8 +73,8 @@ namespace NexusForever.Game.Achievement
         {
             ownerId       = model.Id;
             Info          = info;
-            progressState = model.Data0;
-            creditedChecklistMask = model.Data1;
+            progressState = model.ProgressState;
+            creditedChecklistMask = model.CreditedChecklistMask;
             DateCompleted = model.DateCompleted;
         }
 
@@ -100,8 +100,8 @@ namespace NexusForever.Game.Achievement
                 {
                     Id            = ownerId,
                     AchievementId = Id,
-                    Data0         = progressState,
-                    Data1         = creditedChecklistMask,
+                    ProgressState         = progressState,
+                    CreditedChecklistMask = creditedChecklistMask,
                     DateCompleted = DateCompleted
                 });
             }
@@ -116,13 +116,13 @@ namespace NexusForever.Game.Achievement
                 EntityEntry<T> entity = context.Attach(model);
                 if ((saveMask & SaveMask.ProgressState) != 0)
                 {
-                    model.Data0 = progressState;
-                    entity.Property(p => p.Data0).IsModified = true;
+                    model.ProgressState = progressState;
+                    entity.Property(p => p.ProgressState).IsModified = true;
                 }
                 if ((saveMask & SaveMask.CreditedChecklistMask) != 0)
                 {
-                    model.Data1 = creditedChecklistMask;
-                    entity.Property(p => p.Data1).IsModified = true;
+                    model.CreditedChecklistMask = creditedChecklistMask;
+                    entity.Property(p => p.CreditedChecklistMask).IsModified = true;
                 }
                 if ((saveMask & SaveMask.TimeCompleted) != 0)
                 {
@@ -142,8 +142,8 @@ namespace NexusForever.Game.Achievement
             return new()
             {
                 AchievementId = Id,
-                Data0         = progressState,
-                Data1         = creditedChecklistMask,
+                ProgressState         = progressState,
+                CreditedChecklistMask = creditedChecklistMask,
                 DateCompleted = (ulong)(DateCompleted?.ToFileTimeUtc() ?? 0L)
             };
         }

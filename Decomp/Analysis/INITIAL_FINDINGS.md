@@ -11241,6 +11241,61 @@ One-hundred-twenty-fourth storefront error/result semantics pass:
   `0x0987..0x0991`, so `0x0986` has no mapped store event consumer yet and
   remains blocked as a raw `uint64` packet.
 
+One-hundred-twenty-eighth pending/store negative-evidence pass:
+
+- `AccountPendingItemGroupCache_LookupByPendingItemId` (`140007810`) proves grouped
+  pending groups are indexed by the wire `Id` u64 at `+0x00`, not the trailing u64 at
+  `+0x10` (`Unknown2`). Gift UI (`AccountItemUi_GiftSelectedPendingItemGroup`,
+  `Lua_AccountItemLib_GiftPendingItemGroupToAccount`) reads `TargetAccountId` from cache
+  `+0x38` only. `Unknown2` stays blocked; NF should keep emitting zero.
+- `Storefront_ApplyServerStoreOffers` (`14044b750`) still does not consume catalog-offer
+  `+0x28/+0x30`. `Storefront_HandleStorePurchaseHistoryReady` (`14044c540`, opcode `0x098E`)
+  uses different row layout offsets; do not conflate with `ServerStoreOffers.Offer.Unknown6`.
+- `FindCallsToTarget` shows only `0976` and `0979` call
+  `AccountPendingItemGroupCache_InsertFromPayload` (`140005bf0`).
+
+One-hundred-twenty-seventh storefront account purchase and pending gift emit pass:
+
+- `Storefront_PurchaseAccount_WritePayload` (`140080a20`) appends a second u32 at struct
+  `+0x30` after the shared character purchase body, using the same Lua `PurchaseOffer`
+  arg 4 binding as `PurchaseExtensionId`. NexusForever names this wire slot
+  `AccountPurchaseExtensionId` on `ClientStorefrontPurchaseAccount` (handlers still
+  ignore it). `AccountItem_SendClientGiftPendingItemGroupToAccount` (`140006e50`)
+  confirms pending-group `TargetAccountId` is the u64 consumed for account gifts;
+  emitters now populate `TargetAccountId` when delivering pending groups to a
+  recipient account.
+- `PendingAccountItemGroup.Unknown2` (`+0x10`) remains blocked: cached at
+  `AccountPendingItemGroupCache_InsertFromPayload` (`140005bf0`) but no claim/gift
+  UI consumer was found for that slot.
+
+One-hundred-twenty-sixth pending account item group field semantics pass:
+
+- `PendingAccountItemGroup_ReadPayload` (`1400a9b20`) and
+  `AccountPendingItemGroupCache_InsertFromPayload` (`140005bf0`) bound the 0x60-byte
+  pending-group row. NexusForever now names `SenderAccountId`, `TargetAccountId`, and
+  wire `HasTargetPlayerIdentity` (u64) on `ServerAccountItemsPending.PendingAccountItemGroup`.
+  `Unknown2` at `+0x10` remains blocked. Emitters populate sender account id and the
+  target-player flag from existing NF pending-item state.
+- `Storefront_ApplyServerStoreOffers` (`14044b750`) copies offer id, strings, headline
+  price dword, and nested currency/item rows into the client cache but does not reference
+  parsed offer `+0x28/+0x30` in the inspected path; `Unknown6`/`Unknown7` stay blocked.
+
+One-hundred-twenty-fifth storefront purchase field semantics pass:
+
+- `Storefront_PurchaseCharacter_WritePayload` (`1400acf80`) and
+  `StorefrontLib_PurchaseOffer` (`1404f1150`) correlate the shared `0x082A` /
+  `0x0828` purchase payload fields: 5-bit `Game.Money` slot at `+0x14`,
+  32-bit money amount float bits, 14-bit account currency type id, Lua purchase
+  arg 3, target identity, and Lua purchase arg 4. NexusForever now names these
+  `PaymentCurrencySlot`, `PurchaseMoneyAmountBits`, `PurchaseOptionId`, and
+  `PurchaseExtensionId` on `ClientStorefrontPurchaseCharacter` and
+  `ClientStorefrontPurchaseAccount`. NF handlers still only validate
+  `OfferId` and `CurrencyId`.
+- `ServerStoreOffers_Offer_ReadPayload` (`1400a0dc0`) reads int64 `+0x28` and
+  8 bytes `+0x30` after `DisplayFlags`; retail `store_offer_item.field_6` is
+  almost always `-1016071787`. These remain `Unknown6` / `Unknown7` until a
+  named client consumer is proven. See `PLACEHOLDER_RENAME_TRACKER.md`.
+
 One-hundred-twenty-third CREDD info/history response semantics pass:
 
 - `CREDDOperationHistory_BuildLuaResults` (`14042c760`) builds the client
@@ -12003,6 +12058,29 @@ Achievement packet-boundary follow-up:
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-achievements\
   --filter "FullyQualifiedName~Achievement"` passed (`15/15`).
 
+Housing early-cluster opcode naming (`0x00CB..0x00D1`, `0x010D`, `0x0110`, 2026-05-23):
+
+- Replaced `Server0x00CB`..`Server0x00D1` and `Server0x010D`/`Server0x0110` with reader-backed
+  names in `GameMessageOpcode.cs` and `ServerHousingAuxPackets.cs`:
+  `ServerHousingResidenceEmpty`, `ServerHousingResidenceUInt15`, `ServerHousingResidenceUInt15Alt`,
+  `ServerHousingResidenceWideString`, `ServerHousingResidenceEmptyFollowUp`,
+  `ServerHousingBasicsEmpty`, and `ServerHousingBasicsFollowup`.
+- Consumer intent and emit sites remain blocked; `PacketPlaceholderNamingTests` housing cluster
+  coverage was updated to the new type names.
+- Corrected `Server0x077E` enum comment: it is a 16-byte fixed payload between recruitment and
+  pet despawn, not `ServerFlightPathUpdate_ReadPayload` (`0x0188`).
+
+Spell broadcast opcode naming (`0x0814..0x0819`, 2026-05-23):
+
+- `GameMessageOpcode` now names the mapped spell-threshold and spell-wrapper follow-up cluster:
+  `ServerSpellThresholdClear` (`0x0814`), `ServerSpellThresholdSpell4` (`0x0815`),
+  `ServerSpellThresholdStart` (`0x0816`), `ServerSpellThresholdUpdate` (`0x0817`),
+  `ServerSpellWrapperTierEntry` (`0x0818`), and newly added `ServerSpellWrapperNodeRemove` (`0x0819`).
+- Evidence: WildStar64 registration/dispatch in `FUN_14006c290`, consumer paths documented in
+  `Decomp/Analysis/SPELL_BROADCAST_ROADMAP.md`, and focused wire-shape tests in
+  `SpellBroadcastPacketShapeTests`.
+- Runtime emitters for threshold/wrapper packets remain blocked; this pass is enum/model naming only.
+
 Opcode model cleanup and coverage refresh follow-up:
 
 - `ServerUnresolvedOutputPackets.cs` was reconciled after a partial checkout
@@ -12090,9 +12168,9 @@ Protocol semantics pass (2026-05-22, PROTOCOL SEMANTICS workstream):
 - F-002 client diagnostics: all `17` `Client0xNNNN` handlers remain
   non-mutating; native writer functions for `003D`, `00C8`, `00ED`, etc. were
   not recovered in this pass.
-- Remaining `Server0xNNNN` count after the housing-neighborhood cluster pass:
-  `73` server placeholders remain (`90` at the protocol baseline; nine more
-  housing opcodes were remapped after the `0x0507`/`0x04FE` follow-ups).
+- **Resolved (2026-05-23):** all `Server0xNNNN` enum placeholders were renamed to
+  cluster/shape names; see the `Server0x elimination` follow-up at the end of
+  this file. Runtime emit semantics for those packets remain blocked where noted.
 
 Housing neighbor list packet follow-up:
 
@@ -12819,21 +12897,24 @@ F-025 entity auxiliary reader follow-up (mapped wire shapes):
 - Ghidra `FUN_14006c290` registration plus focused `InspectCodeAddresses.java`
   passes mapped the remaining F-025-adjacent create/stat auxiliary server readers
   without changing runtime mutation:
-  `Server0x025F_ReadPayload` @ `140095c20`, `Server0x0260_ReadPayload` @
-  `140095ce0`, `Server0x0261_ReadPayload` @ `140095a80`,
-  `Server0x0263_ReadPayload` @ `1400959c0`, and `Server0x0264_ReadPayload` @
-  `140095b40`. The row shapes are now represented in
-  `ServerUnresolvedOutputPackets.cs` as neutral field models rather than fixed raw
+  `ServerEntityCreateAuxRow_ReadPayload` @ `140095c20`,
+  `ServerEntityCreateAuxRowList_ReadPayload` @ `140095ce0`,
+  `ServerEntityCreateAuxBitPackedRowList_ReadPayload` @ `140095a80`,
+  `ServerEntityCreateAuxBitPackedRow_ReadPayload` @ `1400959c0`, and
+  `ServerEntityCreateAuxScalarList_ReadPayload` @ `140095b40`. The row shapes live in
+  `ServerEntityCreateAuxPackets.cs` rather than fixed raw
   byte buffers. `0x0260` is a counted list of `0x025F` rows; `0x0261` is a
   counted list of `0x0263` rows.
 - The unit-combat/entity-stat auxiliary cluster is now field-shape mapped at the
   reader level: `0x0889` shares the three-uint32 reader used by
-  `ServerEntityThreatUpdate`; `Server0x08F4_ReadPayload` @ `140097620` reads
-  uint32 + 5-bit value + uint32; `ServerUInt32WideString_ReadPayload` @
-  `1400980f0` covers `0x08CC`; `Server0x0939_ReadPayload` @ `140097ee0` reads
-  uint32 + 14-bit value + 18-bit value + wide string; `Server0x093D_ReadPayload`
-  @ `140097690` reads uint32 + 5-bit value + two uint32 fields; and
-  `Server0x093E_ReadPayload` @ `140097f70` reads two uint32 fields plus uint64.
+  `ServerEntityThreatUpdate`; `ServerEntityStatUInt32UInt5UInt32_ReadPayload` @
+  `140097620` reads uint32 + 5-bit value + uint32; `ServerUInt32WideString_ReadPayload` @
+  `1400980f0` covers `0x08CC`; `ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload` @
+  `140097ee0` reads uint32 + 14-bit value + 18-bit value + wide string;
+  `ServerEntityStatUInt32UInt5Pair_ReadPayload` @ `140097690` reads uint32 + 5-bit
+  value + two uint32 fields; and `ServerEntityStatTwoUInt32UInt64_ReadPayload` @
+  `140097f70` reads two uint32 fields plus uint64. Models:
+  `ServerEntityStatAuxPackets.cs`.
   These shapes have packet tests, but names and emit policy remain blocked.
 - `ServerEntityThreatListUpdate_ReadPayload` @ `140098080` now has a durable label
   matching the existing server model: source unit id, five threat unit ids, and
@@ -13078,3 +13159,51 @@ F-010 group/raid/queue cluster opcode mapping (2026-05-22):
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
   --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   --filter FullyQualifiedName~Group` passed (`92/92`).
+
+Server0x elimination follow-up (2026-05-23):
+
+- Renamed the last `48` `Server0xNNNN` entries in `GameMessageOpcode.cs` to
+  cluster/shape names (entity-create aux `0x025F`-`0x0264`, entity-stat aux
+  `0x0889`/`0x08CC`/`0x08F4`/`0x0939`/`0x093D`/`0x093E`, item/options/path/chat/
+  marketplace/public-event/story/realm/recruitment aux bands, and related
+  single-byte or fixed-buffer packets). Spell (`0x0814`-`0x0819`) and housing
+  (`0x00CB`-`0x00D1`, `0x010D`, `0x0110`) clusters were renamed in the same pass.
+- Split models into `ServerEntityCreateAuxPackets.cs`, `ServerEntityStatAuxPackets.cs`,
+  `ServerClusterAuxPackets.cs`, and `ServerHousingAuxPackets.cs`; removed duplicate
+  placeholder classes from `ServerUnresolvedOutputPackets.cs` (bases and
+  account/store packets remain there).
+- `rg Server0x` over `Source/` is now **zero**. Opcode inventory refresh reports
+  **699/699** server opcodes modeled with **no** placeholder-model queue.
+- Field semantics and runtime emit policy for the renamed packets remain blocked
+  per the evidence ladder; wire shapes are covered by
+  `EntityAuxiliaryPacketShapeTests`, `PacketPlaceholderNamingTests`, and
+  `SpellBroadcastPacketShapeTests`.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --filter "FullyQualifiedName~EntityAuxiliary|FullyQualifiedName~PacketPlaceholder|FullyQualifiedName~SpellBroadcast"`
+  passed `51/51`.
+
+Entity/cluster aux decompile follow-up (2026-05-23, consumer discovery):
+
+- Added `Decomp/Analysis/ENTITY_AUX_DECODE_ROADMAP.md` with the **62** opcode inventory,
+  registration object sizes (`0x025F` = `0x2C` row, `0x0263` = `0x24` row, list headers =
+  `0x10`), and explicit **emit/semantics blocked** gates.
+- `TraceFunctionCallers` on `ServerEntityCreateAuxRow_ReadPayload` (`140095c20`) finds only
+  `ServerEntityCreateAuxRowList_ReadPayload`, `Network_RegisterServerOpcode_0351`, and data
+  table pointers - no `HandleServer*` consumer yet. Confirms indirect dispatch, not missing
+  labels on static call sites.
+- Labeled `ServerUInt32Triple_ReadPayload` @ `1400a8a30` and
+  `QueuedStateReplay_EnqueueUnitCreatedRecord` @ `1405cef50` (replay case `0x12`; not yet
+  correlated to `0x025F`-`0x0264`).
+- `ServerEntityStatUInt32UInt5UInt32_ReadPayload` @ `140097620` is registered for **`0x08F4`,
+  `0x938`, and `0x93B`**; do not treat as a single gameplay packet.
+- **Mapped (2026-05-23):** live post-read apply dispatcher =
+  `WorldSocket_ProcessServerMessage` @ `140014f10`. `WorldSocket_Ctor` @ `14000a490` installs
+  callback table `PTR_LAB_140b55100` at socket `+0x100` with filter `140014d30` @ `+0x08` and
+  apply `140014f10` @ `+0x10`. Flow: `DAT_140c65808` `vtable+0x100` deserialize -> optional
+  `AccountInventory_HandleServer0966To0980` / storefront fast paths -> linked handlers at
+  `socket+0x14b0` via `vtable+0x58(handler, conn, opcode, parsedPayload)`. Pre-filter uses
+  `vtable+0x50` in `WorldSocket_FilterServerMessageHandlers` @ `140014d30`. Example list
+  insertion: `WorldZone_InsertUnitHandlerIntoList` @ `140356a30`. See
+  `ENTITY_AUX_DECODE_ROADMAP.md` for the table and blocked next step (per-handler `+0x58`
+  opcode maps for `0x025F`-`0x0264` and the **62** aux packets).

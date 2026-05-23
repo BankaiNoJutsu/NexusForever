@@ -37,12 +37,12 @@ namespace NexusForever.Game.Account.Inventory
             }
         }
 
-        public bool Unknown1
+        public bool HasTargetPlayerIdentity
         {
-            get => unknown1;
+            get => hasTargetPlayerIdentity;
             set
             {
-                unknown1 = value;
+                hasTargetPlayerIdentity = value;
                 if ((saveMask & AccountInventorySaveMask.Create) == 0)
                     saveMask |= AccountInventorySaveMask.Update;
             }
@@ -54,7 +54,7 @@ namespace NexusForever.Game.Account.Inventory
         public bool PendingDelete => (saveMask & AccountInventorySaveMask.Delete) != 0;
 
         private AccountItemClaimState claimState;
-        private bool unknown1;
+        private bool hasTargetPlayerIdentity;
         private AccountInventorySaveMask saveMask;
 
         private readonly IAccount account;
@@ -66,7 +66,7 @@ namespace NexusForever.Game.Account.Inventory
             Id            = model.InventoryId;
             AccountItemId = model.AccountItemId;
             claimState    = (AccountItemClaimState)model.ClaimState;
-            unknown1      = model.Unknown1;
+            hasTargetPlayerIdentity = model.HasTargetPlayerIdentity;
 
             TargetPlayerIdentity.RealmId = model.TargetRealmId;
             TargetPlayerIdentity.Id      = model.TargetCharacterId;
@@ -78,14 +78,14 @@ namespace NexusForever.Game.Account.Inventory
             saveMask = AccountInventorySaveMask.None;
         }
 
-        public AccountInventoryItem(IAccount account, ulong id, uint accountItemId, NetworkIdentity targetPlayerIdentity, AccountItemClaimState claimState, bool unknown1)
+        public AccountInventoryItem(IAccount account, ulong id, uint accountItemId, NetworkIdentity targetPlayerIdentity, AccountItemClaimState claimState, bool hasTargetPlayerIdentity)
         {
             this.account = account;
 
             Id            = id;
             AccountItemId = accountItemId;
             this.claimState = claimState;
-            this.unknown1   = unknown1;
+            this.hasTargetPlayerIdentity = hasTargetPlayerIdentity;
 
             if (targetPlayerIdentity != null)
             {
@@ -119,7 +119,7 @@ namespace NexusForever.Game.Account.Inventory
             {
                 EntityEntry<AccountInventoryModel> entity = context.Attach(model);
                 entity.Property(p => p.ClaimState).IsModified = true;
-                entity.Property(p => p.Unknown1).IsModified = true;
+                entity.Property(p => p.HasTargetPlayerIdentity).IsModified = true;
                 entity.Property(p => p.TargetRealmId).IsModified = true;
                 entity.Property(p => p.TargetCharacterId).IsModified = true;
             }
@@ -142,7 +142,7 @@ namespace NexusForever.Game.Account.Inventory
                 Id                   = Id,
                 ItemId               = AccountItemId,
                 ClaimState           = ClaimState,
-                Unknown1             = Unknown1,
+                HasTargetPlayerIdentity = HasTargetPlayerIdentity,
                 TargetPlayerIdentity = new NetworkIdentity
                 {
                     RealmId = TargetPlayerIdentity.RealmId,
@@ -159,7 +159,7 @@ namespace NexusForever.Game.Account.Inventory
                 InventoryId       = Id,
                 AccountItemId     = AccountItemId,
                 ClaimState        = (byte)ClaimState,
-                Unknown1          = Unknown1,
+                HasTargetPlayerIdentity = HasTargetPlayerIdentity,
                 TargetRealmId     = TargetPlayerIdentity.RealmId,
                 TargetCharacterId = TargetPlayerIdentity.Id
             };

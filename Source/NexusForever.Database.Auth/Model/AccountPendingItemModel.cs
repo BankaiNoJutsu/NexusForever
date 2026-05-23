@@ -14,7 +14,7 @@ namespace NexusForever.Database.Auth.Model
         public ushort TargetRealmId { get; set; }
         public ulong TargetCharacterId { get; set; }
         public byte ClaimState { get; set; }
-        public bool Unknown1 { get; set; }
+        public bool HasTargetPlayerIdentity { get; set; }
         public DateTime CreateTime { get; set; }
 
         public virtual AccountModel Account { get; set; }

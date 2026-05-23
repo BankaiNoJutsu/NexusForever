@@ -190,7 +190,7 @@ namespace NexusForever.Database.Auth.Migrations
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("targetRealmId");
 
-                    b.Property<bool>("Unknown1")
+                    b.Property<bool>("HasTargetPlayerIdentity")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(1)")
                         .HasDefaultValue(false)

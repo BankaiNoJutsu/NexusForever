@@ -47,7 +47,7 @@ public class PacketPlaceholderNamingTests
     }
 
     [Fact]
-    public void ClientStorefrontPurchaseCharacter_ReadExposesSelector()
+    public void ClientStorefrontPurchaseCharacter_ReadExposesMappedPurchaseFields()
     {
         var target = new Identity
         {
@@ -57,12 +57,12 @@ public class PacketPlaceholderNamingTests
 
         byte[] packetData = BuildStorefrontPurchaseCharacterPacket(
             offerId: 77u,
-            selector: 17,
-            purchaseField0: 0x10203040u,
+            paymentCurrencySlot: 17,
+            purchaseMoneyAmountBits: 0x10203040u,
             currencyId: 123,
-            purchaseField1: 0x50607080u,
+            purchaseOptionId: 0x50607080u,
             target: target,
-            purchaseField2: 0x90A0B0C0u);
+            purchaseExtensionId: 0x90A0B0C0u);
 
         using var stream = new MemoryStream(packetData);
         using var reader = new GamePacketReader(stream);
@@ -71,14 +71,17 @@ public class PacketPlaceholderNamingTests
         message.Read(reader);
 
         Assert.Equal(77u, message.OfferId);
-        Assert.Equal((byte)17, message.Selector);
+        Assert.Equal((byte)17, message.PaymentCurrencySlot);
+        Assert.Equal(0x10203040u, message.PurchaseMoneyAmountBits);
         Assert.Equal((ushort)123, message.CurrencyId);
+        Assert.Equal(0x50607080u, message.PurchaseOptionId);
+        Assert.Equal(0x90A0B0C0u, message.PurchaseExtensionId);
         Assert.Equal((ushort)12, message.Target.RealmId);
         Assert.Equal(3456ul, message.Target.Id);
     }
 
     [Fact]
-    public void ClientStorefrontPurchaseAccount_ReadExposesSelector()
+    public void ClientStorefrontPurchaseAccount_ReadExposesMappedPurchaseFields()
     {
         var target = new Identity
         {
@@ -94,13 +97,13 @@ public class PacketPlaceholderNamingTests
 
         byte[] packetData = BuildStorefrontPurchaseAccountPacket(
             offerId: 88u,
-            selector: 9,
-            purchaseField0: 0x11223344u,
+            paymentCurrencySlot: 9,
+            purchaseMoneyAmountBits: 0x11223344u,
             currencyId: 321,
-            purchaseField1: 0x55667788u,
+            purchaseOptionId: 0x55667788u,
             target: target,
-            purchaseField2: 0x99AABBCCu,
-            accountField: 0xDDEEFF00u,
+            purchaseExtensionId: 0x99AABBCCu,
+            accountTrailingField: 0xDDEEFF00u,
             accountTarget: accountTarget,
             recipientName: "Gift Recipient");
 
@@ -111,8 +114,12 @@ public class PacketPlaceholderNamingTests
         message.Read(reader);
 
         Assert.Equal(88u, message.OfferId);
-        Assert.Equal((byte)9, message.Selector);
+        Assert.Equal((byte)9, message.PaymentCurrencySlot);
+        Assert.Equal(0x11223344u, message.PurchaseMoneyAmountBits);
         Assert.Equal((ushort)321, message.CurrencyId);
+        Assert.Equal(0x55667788u, message.PurchaseOptionId);
+        Assert.Equal(0x99AABBCCu, message.PurchaseExtensionId);
+        Assert.Equal(0xDDEEFF00u, message.AccountPurchaseExtensionId);
         Assert.Equal((ushort)2, message.Target.RealmId);
         Assert.Equal(111ul, message.Target.Id);
         Assert.Equal((ushort)3, message.AccountTarget.RealmId);
@@ -259,7 +266,7 @@ public class PacketPlaceholderNamingTests
                 Id         = 0x0102030405060708ul,
                 ItemId     = 77u,
                 ClaimState = AccountItemClaimState.CanClaim,
-                Unknown1   = true,
+                HasTargetPlayerIdentity = true,
                 TargetPlayerIdentity = new Identity
                 {
                     RealmId = 12,
@@ -294,7 +301,7 @@ public class PacketPlaceholderNamingTests
             Id         = 0x0102030405060708ul,
             ItemId     = 123u,
             ClaimState = AccountItemClaimState.AccountMaxed,
-            Unknown1   = true,
+            HasTargetPlayerIdentity = true,
             TargetPlayerIdentity = new Identity
             {
                 RealmId = 9,
@@ -344,17 +351,17 @@ public class PacketPlaceholderNamingTests
             {
                 Id            = 0x0102030405060708ul,
                 AccountItemId = 321u,
-                Unknown2      = 0x1112131415161718ul,
-                Group         = "gift-group",
-                Unknown4      = 0x55667788u,
+                Unknown2           = 0x1112131415161718ul,
+                Group              = "gift-group",
+                SenderAccountId    = 0x55667788u,
                 SenderIdentity = new Identity
                 {
                     RealmId = 14,
                     Id      = 0x2122232425262728ul
                 },
-                Unknown7   = 0x3132333435363738ul,
-                ClaimState = AccountItemClaimState.AccountMaxedWithPending,
-                Unknown9   = 0x4142434445464748ul,
+                TargetAccountId           = 0x3132333435363738ul,
+                ClaimState                = AccountItemClaimState.AccountMaxedWithPending,
+                HasTargetPlayerIdentity   = 0x4142434445464748ul,
                 TargetIdentity = new Identity
                 {
                     RealmId = 15,
@@ -623,32 +630,32 @@ public class PacketPlaceholderNamingTests
     [Fact]
     public void HousingClusterPlaceholderPackets_WriteReaderBackedShapes()
     {
-        Assert.Empty(WritePacket(new Server0x00CB()));
-        Assert.Empty(WritePacket(new Server0x00D1()));
-        Assert.Empty(WritePacket(new Server0x010D()));
+        Assert.Empty(WritePacket(new ServerHousingResidenceEmpty()));
+        Assert.Empty(WritePacket(new ServerHousingResidenceEmptyFollowUp()));
+        Assert.Empty(WritePacket(new ServerHousingBasicsEmpty()));
 
-        using (var stream = new MemoryStream(WritePacket(new Server0x00CC(0x1234u))))
+        using (var stream = new MemoryStream(WritePacket(new ServerHousingResidenceUInt15 { Value = 0x1234u })))
         using (var reader = new GamePacketReader(stream))
         {
             Assert.Equal(0x1234u, reader.ReadUInt(15u));
             Assert.Equal(stream.Length, stream.Position);
         }
 
-        using (var stream = new MemoryStream(WritePacket(new Server0x00CD(0x2345u))))
+        using (var stream = new MemoryStream(WritePacket(new ServerHousingResidenceUInt15Alt { Value = 0x2345u })))
         using (var reader = new GamePacketReader(stream))
         {
             Assert.Equal(0x2345u, reader.ReadUInt(15u));
             Assert.Equal(stream.Length, stream.Position);
         }
 
-        using (var stream = new MemoryStream(WritePacket(new Server0x00CE("Housing"))))
+        using (var stream = new MemoryStream(WritePacket(new ServerHousingResidenceWideString { Text = "Housing" })))
         using (var reader = new GamePacketReader(stream))
         {
             Assert.Equal("Housing", reader.ReadWideString());
             Assert.Equal(stream.Length, stream.Position);
         }
 
-        var basicsFollowup = new Server0x0110
+        var basicsFollowup = new ServerHousingBasicsFollowup
         {
             Value0 = 0x01020304u,
             Value1 = 0x23456u,
@@ -665,6 +672,29 @@ public class PacketPlaceholderNamingTests
             Assert.Equal(0x7Fu, reader.ReadUInt(8u));
             Assert.Equal(stream.Length, stream.Position);
         }
+    }
+
+    [Fact]
+    public void ClusterAuxPackets_WriteRepresentativeReaderBackedShapes()
+    {
+        Assert.Equal(new byte[] { 0xAB }, WritePacket(new ServerItemContextActionAck([0xAB])));
+        Assert.Equal(8, WritePacket(new ServerSupplySatchelAux()).Length);
+        Assert.Equal(0x20, WritePacket(new ServerChatAuxPayload()).Length);
+
+        using var stream = new MemoryStream(WritePacket(new ServerRecruitmentAuxFourUInt32
+        {
+            Value0 = 0x01020304u,
+            Value1 = 0x05060708u,
+            Value2 = 0x090A0B0Cu,
+            Value3 = 0x0D0E0F10u
+        }));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal(0x05060708u, reader.ReadUInt());
+        Assert.Equal(0x090A0B0Cu, reader.ReadUInt());
+        Assert.Equal(0x0D0E0F10u, reader.ReadUInt());
+        Assert.Equal(stream.Length, stream.Position);
     }
 
     [Fact]
@@ -900,23 +930,23 @@ public class PacketPlaceholderNamingTests
 
     private static byte[] BuildStorefrontPurchaseCharacterPacket(
         uint offerId,
-        byte selector,
-        uint purchaseField0,
+        byte paymentCurrencySlot,
+        uint purchaseMoneyAmountBits,
         ushort currencyId,
-        uint purchaseField1,
+        uint purchaseOptionId,
         Identity target,
-        uint purchaseField2)
+        uint purchaseExtensionId)
     {
         using var stream = new MemoryStream();
         using (var writer = new GamePacketWriter(stream))
         {
             writer.Write(offerId);
-            writer.Write(selector, 5u);
-            writer.Write(purchaseField0);
+            writer.Write(paymentCurrencySlot, 5u);
+            writer.Write(purchaseMoneyAmountBits);
             writer.Write(currencyId, 14u);
-            writer.Write(purchaseField1);
+            writer.Write(purchaseOptionId);
             target.Write(writer);
-            writer.Write(purchaseField2);
+            writer.Write(purchaseExtensionId);
             writer.FlushBits();
         }
 
@@ -925,13 +955,13 @@ public class PacketPlaceholderNamingTests
 
     private static byte[] BuildStorefrontPurchaseAccountPacket(
         uint offerId,
-        byte selector,
-        uint purchaseField0,
+        byte paymentCurrencySlot,
+        uint purchaseMoneyAmountBits,
         ushort currencyId,
-        uint purchaseField1,
+        uint purchaseOptionId,
         Identity target,
-        uint purchaseField2,
-        uint accountField,
+        uint purchaseExtensionId,
+        uint accountTrailingField,
         Identity accountTarget,
         string recipientName)
     {
@@ -939,13 +969,13 @@ public class PacketPlaceholderNamingTests
         using (var writer = new GamePacketWriter(stream))
         {
             writer.Write(offerId);
-            writer.Write(selector, 5u);
-            writer.Write(purchaseField0);
+            writer.Write(paymentCurrencySlot, 5u);
+            writer.Write(purchaseMoneyAmountBits);
             writer.Write(currencyId, 14u);
-            writer.Write(purchaseField1);
+            writer.Write(purchaseOptionId);
             target.Write(writer);
-            writer.Write(purchaseField2);
-            writer.Write(accountField);
+            writer.Write(purchaseExtensionId);
+            writer.Write(accountTrailingField);
             accountTarget.Write(writer);
             writer.WriteStringWide(recipientName);
             writer.FlushBits();

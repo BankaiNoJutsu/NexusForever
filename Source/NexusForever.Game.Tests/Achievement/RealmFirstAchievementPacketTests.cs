@@ -16,8 +16,8 @@ public class RealmFirstAchievementPacketTests
                 new NexusForever.Network.World.Message.Model.Achievement.Achievement
                 {
                     AchievementId = 0x1234,
-                    Data0         = 0x01020304u,
-                    Data1         = 0x05060708u,
+                    ProgressState         = 0x01020304u,
+                    CreditedChecklistMask = 0x05060708u,
                     DateCompleted = 0x1112131415161718ul
                 }
             ]
@@ -42,8 +42,8 @@ public class RealmFirstAchievementPacketTests
                 new NexusForever.Network.World.Message.Model.Achievement.Achievement
                 {
                     AchievementId = 0x2345,
-                    Data0         = 0x21222324u,
-                    Data1         = 0x25262728u,
+                    ProgressState         = 0x21222324u,
+                    CreditedChecklistMask = 0x25262728u,
                     DateCompleted = 0x3132333435363738ul
                 }
             ]
@@ -77,11 +77,11 @@ public class RealmFirstAchievementPacketTests
         Assert.Equal("First Guild", reader.ReadWideString());
     }
 
-    private static void AssertAchievement(GamePacketReader reader, ushort achievementId, uint data0, uint data1, ulong dateCompleted)
+    private static void AssertAchievement(GamePacketReader reader, ushort achievementId, uint progressState, uint creditedChecklistMask, ulong dateCompleted)
     {
         Assert.Equal(achievementId, reader.ReadUShort(15u));
-        Assert.Equal(data0, reader.ReadUInt());
-        Assert.Equal(data1, reader.ReadUInt());
+        Assert.Equal(progressState, reader.ReadUInt());
+        Assert.Equal(creditedChecklistMask, reader.ReadUInt());
         Assert.Equal(dateCompleted, reader.ReadULong());
     }
 

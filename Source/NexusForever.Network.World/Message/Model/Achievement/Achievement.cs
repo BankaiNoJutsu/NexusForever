@@ -5,15 +5,15 @@ namespace NexusForever.Network.World.Message.Model.Achievement
     public class Achievement : IWritable
     {
         public ushort AchievementId { get; set; } 
-        public uint Data0 { get; set; }
-        public uint Data1 { get; set; }
+        public uint ProgressState { get; set; }
+        public uint CreditedChecklistMask { get; set; }
         public ulong DateCompleted { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
             writer.Write(AchievementId, 15u);
-            writer.Write(Data0);
-            writer.Write(Data1);
+            writer.Write(ProgressState);
+            writer.Write(CreditedChecklistMask);
             writer.Write(DateCompleted);
         }
     }

@@ -9,8 +9,8 @@ namespace NexusForever.Game.Abstract.Account.Inventory
     public interface IAccountInventoryManager : IDatabaseAuth, IEnumerable<IAccountInventoryItem>
     {
         IAccountInventoryItem GetItem(ulong id);
-        IAccountInventoryItem AddItem(uint accountItemId, NetworkIdentity targetPlayerIdentity = null, AccountItemClaimState claimState = AccountItemClaimState.CanClaim, bool unknown1 = false, bool notify = true);
-        string AddPendingItemGroup(IEnumerable<uint> accountItemIds, NetworkIdentity senderIdentity = null, NetworkIdentity targetPlayerIdentity = null, string group = null, bool notify = true, uint senderAccountId = 0u);
+        IAccountInventoryItem AddItem(uint accountItemId, NetworkIdentity targetPlayerIdentity = null, AccountItemClaimState claimState = AccountItemClaimState.CanClaim, bool hasTargetPlayerIdentity = false, bool notify = true);
+        string AddPendingItemGroup(IEnumerable<uint> accountItemIds, NetworkIdentity senderIdentity = null, NetworkIdentity targetPlayerIdentity = null, string group = null, bool notify = true, uint senderAccountId = 0u, ulong targetAccountId = 0ul);
         bool CanAddItem(uint accountItemId);
         bool RemoveItem(ulong id);
         AccountOperationResult TakeItem(IPlayer player, ulong id);

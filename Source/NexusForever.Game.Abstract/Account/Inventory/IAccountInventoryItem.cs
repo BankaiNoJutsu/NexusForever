@@ -13,7 +13,7 @@ namespace NexusForever.Game.Abstract.Account.Inventory
         ulong Id { get; }
         uint AccountItemId { get; }
         AccountItemClaimState ClaimState { get; set; }
-        bool Unknown1 { get; set; }
+        bool HasTargetPlayerIdentity { get; set; }
         NetworkIdentity TargetPlayerIdentity { get; }
         AccountItemEntry Entry { get; }
     }

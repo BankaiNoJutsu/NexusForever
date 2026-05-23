@@ -1,0 +1,6 @@
+# Candidate rows from FindEntityAuxCallers.java (2026-05-23).
+# Direct xrefs only - these are registration-table and list-reader callers, NOT gameplay consumers.
+# Do not import as durable labels without review. See ENTITY_AUX_DECODE_ROADMAP.md.
+WildStar64.exe,140095ce0,ServerEntityCreateAuxRowList_ReadPayload,List reader calls ServerEntityCreateAuxRow_ReadPayload in a loop; not a post-parse gameplay consumer.
+WildStar64.exe,140095a80,ServerEntityCreateAuxBitPackedRowList_ReadPayload,List reader calls ServerEntityCreateAuxBitPackedRow_ReadPayload in a loop; not a post-parse gameplay consumer.
+WildStar64.exe,14006c290,Network_RegisterServerOpcode_0351,Stores reader function pointers in the server opcode registration table; not a gameplay consumer.

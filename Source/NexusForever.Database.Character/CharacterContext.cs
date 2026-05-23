@@ -285,12 +285,12 @@ namespace NexusForever.Database.Character
                     .HasColumnType("smallint(5) unsigned")
                     .HasDefaultValue(0);
 
-                entity.Property(e => e.Data0)
+                entity.Property(e => e.ProgressState)
                     .HasColumnName("data0")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0);
 
-                entity.Property(e => e.Data1)
+                entity.Property(e => e.CreditedChecklistMask)
                     .HasColumnName("data1")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0);
@@ -1960,12 +1960,12 @@ namespace NexusForever.Database.Character
                     .HasColumnType("smallint(5) unsigned")
                     .HasDefaultValue(0);
 
-                entity.Property(e => e.Data0)
+                entity.Property(e => e.ProgressState)
                     .HasColumnName("data0")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0);
 
-                entity.Property(e => e.Data1)
+                entity.Property(e => e.CreditedChecklistMask)
                     .HasColumnName("data1")
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0);

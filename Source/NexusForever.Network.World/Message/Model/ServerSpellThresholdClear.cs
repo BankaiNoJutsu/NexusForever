@@ -3,11 +3,11 @@ using NexusForever.Network.Message;
 namespace NexusForever.Network.World.Message.Model
 {
     /// <summary>
-    /// Opaque spell follow-up packet carrying a concrete Spell4 id plus a boolean flag.
-    /// Treat this as diagnostic-only until the client-side event meaning is mapped.
+    /// Spell threshold clear follow-up carrying a Spell4 id plus one trailing flag.
+    /// Client consumer: <c>SpellThreshold_HandleClear</c> @ <c>1403bed60</c>.
     /// </summary>
-    [Message(GameMessageOpcode.ServerSpellTriggerFlag)]
-    public class ServerSpellTriggerFlag : IWritable
+    [Message(GameMessageOpcode.ServerSpellThresholdClear)]
+    public class ServerSpellThresholdClear : IWritable
     {
         public uint Spell4Id { get; set; }
         public bool Unknown0 { get; set; }

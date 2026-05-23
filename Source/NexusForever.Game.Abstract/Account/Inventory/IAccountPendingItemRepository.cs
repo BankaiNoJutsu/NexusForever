@@ -11,7 +11,7 @@ namespace NexusForever.Game.Abstract.Account.Inventory
         public NetworkIdentity SenderIdentity { get; init; }
         public NetworkIdentity TargetIdentity { get; init; }
         public AccountItemClaimState ClaimState { get; init; } = AccountItemClaimState.CanClaim;
-        public bool Unknown1 { get; init; }
+        public bool HasTargetPlayerIdentity { get; init; }
     }
 
     public interface IAccountPendingItemRepository

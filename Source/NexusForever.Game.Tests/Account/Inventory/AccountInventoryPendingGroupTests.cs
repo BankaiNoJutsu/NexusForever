@@ -57,6 +57,7 @@ public class AccountInventoryPendingGroupTests
             Assert.Equal(environment.Source.Identity.RealmId, gifted.SenderIdentity.RealmId);
             Assert.Equal(environment.Target.Identity.Id, gifted.TargetIdentity.Id);
             Assert.Equal(environment.Target.Identity.RealmId, gifted.TargetIdentity.RealmId);
+            Assert.Equal(1ul, gifted.HasTargetPlayerIdentity);
 
             ServerAccountOperationResult operationResult = GetLastMessage<ServerAccountOperationResult>(environment.Source.SessionProxy);
             Assert.Equal(AccountOperation.GiftItem, operationResult.Operation);
@@ -92,10 +93,12 @@ public class AccountInventoryPendingGroupTests
 
             ServerAccountItemsPending.PendingAccountItemGroup gifted = Assert.Single(GetPendingGroups(environment.Target.SessionProxy));
             Assert.Equal(AccountItemId, gifted.AccountItemId);
+            Assert.Equal((ulong)environment.Target.AccountId, gifted.TargetAccountId);
             Assert.Equal(environment.Source.Identity.Id, gifted.SenderIdentity.Id);
             Assert.Equal(environment.Source.Identity.RealmId, gifted.SenderIdentity.RealmId);
             Assert.Equal(0ul, gifted.TargetIdentity.Id);
             Assert.Equal(0, gifted.TargetIdentity.RealmId);
+            Assert.Equal(0ul, gifted.HasTargetPlayerIdentity);
 
             ServerAccountOperationResult operationResult = GetLastMessage<ServerAccountOperationResult>(environment.Source.SessionProxy);
             Assert.Equal(AccountOperation.GiftItem, operationResult.Operation);
@@ -240,6 +243,7 @@ public class AccountInventoryPendingGroupTests
                 InMemoryAccountPendingItemRepository.GetPendingItems(environment.Target.AccountId));
             Assert.Equal(AccountItemId, stored.AccountItemId);
             Assert.Equal(environment.Source.AccountId, stored.SenderAccountId);
+            Assert.True(stored.HasTargetPlayerIdentity);
 
             ServerAccountOperationResult operationResult = GetLastMessage<ServerAccountOperationResult>(environment.Source.SessionProxy);
             Assert.Equal(AccountOperation.GiftItem, operationResult.Operation);
@@ -283,6 +287,51 @@ public class AccountInventoryPendingGroupTests
             ServerAccountOperationResult operationResult = GetLastMessage<ServerAccountOperationResult>(environment.Target.SessionProxy);
             Assert.Equal(AccountOperation.ReturnPending, operationResult.Operation);
             Assert.Equal(AccountOperationResult.Ok, operationResult.Result);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void LoadedOfflineAccountGift_EmitsOwnerAccountAsTargetAccount()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var environment = CreateEnvironment(CreateCharacter(accountId: 2002u, characterId: 202ul, name: "Recipient"));
+        LegacyServiceProvider.Provider = environment.Provider;
+
+        try
+        {
+            var manager = new AccountInventoryManager(environment.Source.Account, new AccountModel
+            {
+                AccountInventory = [],
+                AccountItemCooldown = [],
+                AccountPendingItem =
+                [
+                    new AccountPendingItemModel
+                    {
+                        Id                      = 2002u,
+                        PendingItemId           = 1ul,
+                        GroupName               = "account-gift",
+                        AccountItemId           = AccountItemId,
+                        SenderAccountId         = 1001u,
+                        SenderRealmId           = RealmId,
+                        SenderCharacterId       = 101ul,
+                        TargetRealmId           = 0,
+                        TargetCharacterId       = 0ul,
+                        ClaimState              = (byte)AccountItemClaimState.CanClaim,
+                        HasTargetPlayerIdentity = false
+                    }
+                ]
+            });
+
+            manager.SendPendingItems();
+
+            ServerAccountItemsPending.PendingAccountItemGroup pending = Assert.Single(GetPendingGroups(environment.Source.SessionProxy));
+            Assert.Equal(2002ul, pending.TargetAccountId);
+            Assert.Equal(0ul, pending.TargetIdentity.Id);
+            Assert.Equal(0ul, pending.HasTargetPlayerIdentity);
         }
         finally
         {

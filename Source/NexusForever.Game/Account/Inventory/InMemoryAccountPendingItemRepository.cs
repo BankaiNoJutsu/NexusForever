@@ -37,8 +37,8 @@ namespace NexusForever.Game.Account.Inventory
                     SenderCharacterId = senderIdentity.Id,
                     TargetRealmId     = targetIdentity.RealmId,
                     TargetCharacterId = targetIdentity.Id,
-                    ClaimState        = insert.ClaimState,
-                    Unknown1          = insert.Unknown1
+                    ClaimState              = insert.ClaimState,
+                    HasTargetPlayerIdentity = insert.HasTargetPlayerIdentity
                 });
             }
         }
@@ -66,7 +66,7 @@ namespace NexusForever.Game.Account.Inventory
             public ushort TargetRealmId { get; init; }
             public ulong TargetCharacterId { get; init; }
             public AccountItemClaimState ClaimState { get; init; }
-            public bool Unknown1 { get; init; }
+            public bool HasTargetPlayerIdentity { get; init; }
         }
     }
 }

@@ -46,15 +46,17 @@ WildStar64.exe,140088e60,Marketplace_AuctionSellOrderSubmit_WritePayload,Seriali
 WildStar64.exe,1400946c0,SpellDamageDescription_ReadPayload,Parses spell damage details used by ServerSpellGo target effect info and ServerSpellEffectDamage: seven 32-bit damage fields, killed bit, 4-bit combat result, 3-bit damage type, and trailing structure list.
 WildStar64.exe,1400953f0,ServerSpellGo_ReadPayload,Parses server opcode 0x07F4 as server unique id, ignore-cooldown bit, primary destination, TargetInfo list, initial positions, telegraph positions, missile list, and phase.
 WildStar64.exe,140095910,ServerSpellEffectDamage_ReadPayload,Parses server opcode 0x07F6 as server unique id, 19-bit Spell4Effect id, unit id, target id, and SpellDamageDescription.
-WildStar64.exe,1400959c0,Server0x0263_ReadPayload,Parses server opcode 0x0263 as two uint32 fields, three 17-bit values, one uint32 field, and a trailing three-uint32 tuple; semantics unresolved.
-WildStar64.exe,140095a80,Server0x0261_ReadPayload,Parses server opcode 0x0261 as a counted list of Server0x0263 rows; semantics unresolved.
-WildStar64.exe,140095b40,Server0x0264_ReadPayload,Parses server opcode 0x0264 as uint32, 16-bit value, uint32, and a counted uint32 list; semantics unresolved.
-WildStar64.exe,140095c20,Server0x025F_ReadPayload,Parses server opcode 0x025F as a 16-bit value, uint32, three-uint32 tuple, uint32, three-uint32 tuple, and two trailing uint32 fields; semantics unresolved.
-WildStar64.exe,140095ce0,Server0x0260_ReadPayload,Parses server opcode 0x0260 as a counted list of Server0x025F rows; semantics unresolved.
-WildStar64.exe,140097620,Server0x08F4_ReadPayload,Parses server opcode 0x08F4 as uint32, 5-bit value, and uint32; semantics unresolved.
-WildStar64.exe,140097690,Server0x093D_ReadPayload,Parses server opcode 0x093D as uint32, 5-bit value, uint32, and uint32; semantics unresolved.
-WildStar64.exe,140097ee0,Server0x0939_ReadPayload,Parses server opcode 0x0939 as uint32, 14-bit value, 18-bit value, and wide string; semantics unresolved.
-WildStar64.exe,140097f70,Server0x093E_ReadPayload,Parses server opcode 0x093E as two uint32 fields and one uint64 field; semantics unresolved.
+WildStar64.exe,1400959c0,ServerEntityCreateAuxBitPackedRow_ReadPayload,Parses server opcode 0x0263 as two uint32 fields, three 17-bit values, one uint32 field, and a trailing three-uint32 tuple; semantics unresolved.
+WildStar64.exe,140095a80,ServerEntityCreateAuxBitPackedRowList_ReadPayload,Parses server opcode 0x0261 as a counted list of 0x0263 bit-packed rows; semantics unresolved.
+WildStar64.exe,140095b40,ServerEntityCreateAuxScalarList_ReadPayload,Parses server opcode 0x0264 as uint32, 16-bit value, uint32, and a counted uint32 list; semantics unresolved.
+WildStar64.exe,140095c20,ServerEntityCreateAuxRow_ReadPayload,Parses server opcode 0x025F as a 16-bit value, uint32, three-uint32 tuple, uint32, three-uint32 tuple, and two trailing uint32 fields; semantics unresolved.
+WildStar64.exe,140095ce0,ServerEntityCreateAuxRowList_ReadPayload,Parses server opcode 0x0260 as a counted list of 0x025F entity-create aux rows; allocates count*0x2C bytes and calls ServerEntityCreateAuxRow_ReadPayload per row; semantics unresolved.
+WildStar64.exe,1400a8a30,ServerUInt32Triple_ReadPayload,Reads three consecutive uint32 fields from the network bitstream; shared by entity-create aux row readers at +tuple offsets.
+WildStar64.exe,1405cef50,QueuedStateReplay_EnqueueUnitCreatedRecord,QueuedStateReplay_DispatchRecord case 0x12: allocates a replay node and chains FUN_1405caf20 before UnitCreated-linked apply helpers; not yet tied to opcodes 0x025F-0x0264.
+WildStar64.exe,140097620,ServerEntityStatUInt32UInt5UInt32_ReadPayload,Parses server opcode 0x08F4 as uint32, 5-bit value, and uint32; semantics unresolved.
+WildStar64.exe,140097690,ServerEntityStatUInt32UInt5Pair_ReadPayload,Parses server opcode 0x093D as uint32, 5-bit value, uint32, and uint32; semantics unresolved.
+WildStar64.exe,140097ee0,ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload,Parses server opcode 0x0939 as uint32, 14-bit value, 18-bit value, and wide string; semantics unresolved.
+WildStar64.exe,140097f70,ServerEntityStatTwoUInt32UInt64_ReadPayload,Parses server opcode 0x093E as two uint32 fields and one uint64 field; semantics unresolved.
 WildStar64.exe,140098080,ServerEntityThreatListUpdate_ReadPayload,Parses server opcode 0x0909 as source unit id, five threat unit ids, and five threat values.
 WildStar64.exe,1400980f0,ServerUInt32WideString_ReadPayload,Parses a uint32 followed by a wide string; used by server opcode 0x08CC and other unresolved UI/result packets.
 WildStar64.exe,1400982d0,ServerEntityVisualUpdate_ReadPayload,Parses server opcode 0x0905 as unit id, race, sex, Creature2 id, display info, outfit, item color set, a trailing flag, and item-visual rows.
@@ -707,8 +709,8 @@ WildStar64.exe,14073e640,IncidentReport_SendClientIncidentReport,Builds and send
 WildStar64.exe,14006bd80,NetworkBitWriter_WriteRaw32,Serialises one raw 32-bit value into the packet bitstream.
 WildStar64.exe,140085170,NetworkBitWriter_WriteIdentity,Serialises an Identity payload as a 14-bit realm id followed by a 64-bit identity id.
 WildStar64.exe,14007a610,Storefront_RequestCatalog_WritePayload,Serialises opcode 0x082D ClientStorefrontRequestCatalog as one 14-bit catalog context field.
-WildStar64.exe,1400acf80,Storefront_PurchaseCharacter_WritePayload,Serialises the shared store purchase payload for opcode 0x082A: offer id, 5-bit selector, two 32-bit fields around a 14-bit currency id, target identity, and a trailing 32-bit field.
-WildStar64.exe,140080a20,Storefront_PurchaseAccount_WritePayload,Serialises opcode 0x0828 ClientStorefrontPurchaseAccount as the shared store purchase payload plus one 32-bit field, an identity, and a wide string.
+WildStar64.exe,1400acf80,Storefront_PurchaseCharacter_WritePayload,Serialises opcode 0x082A: offer id; 5-bit Game.Money slot (+0x14); money amount float bits; 14-bit currency type id; Lua purchase arg 3; target identity; Lua purchase arg 4 (StorefrontLib_PurchaseOffer).
+WildStar64.exe,140080a20,Storefront_PurchaseAccount_WritePayload,Serialises opcode 0x0828 after Storefront_PurchaseCharacter_WritePayload: extra u32 at struct +0x30 (Lua PurchaseOffer arg 4), account-target identity at +0x38, recipient wide string at +0x48.
 WildStar64.exe,140080d30,ServerUInt18_ReadPayload,Shared 4-byte server reader registered for 0x00B0 ServerLasOpeningUInt18 0x0129 ServerUnlockMount 0x01AE ServerUnlockVanityPet and 0x0815; body reads one 18-bit field with no trailing flag.
 WildStar64.exe,1400852f0,NetworkBitReader_ReadIdentity,Reads an Identity payload as a 14-bit realm id followed by a 64-bit identity id.
 WildStar64.exe,1400a9c20,AccountInventoryItem_ReadPayload,Reads one account inventory item: 64-bit inventory id, 32-bit AccountItem id, 5-bit claim state, one flag bit, and target identity.
@@ -757,7 +759,9 @@ WildStar64.exe,1404f2860,Lua_RegisterGameEnumTables,Registers Lua enum tables in
 WildStar64.exe,14007a040,ServerTwoUInt32_ReadPayload,Shared 8-byte server reader registered for many opcodes including 0x021A 0x0223-0x0225 0x0813 0x0819 0x08C7 0x0970 0x0973 and 0x0974; body reads two 32-bit fields.
 WildStar64.exe,14007c340,ServerUInt32AndFlag_ReadPayload,Shared 8-byte server reader registered for multiple opcodes including 0x0219 0x022B 0x0355 0x0357 0x06F5 0x0700 0x0755 and 0x089A; body reads one 32-bit field followed by one bit.
 WildStar64.exe,140080510,ServerAccountItemsPending_ReadPayload,Reads opcode 0x0979 as a 32-bit count followed by pending account item group records of size 0x60.
-WildStar64.exe,1400a9b20,PendingAccountItemGroup_ReadPayload,Reads one pending account item group record used by opcode 0x0979, including ids, a wide string group key, claim state, and two identity payloads.
+WildStar64.exe,1400a9b20,PendingAccountItemGroup_ReadPayload,Reads one 0x60-byte pending group: pending item id; account item id; trailing u64; group key; sender account id; sender identity; target account id; 5-bit claim state; target-player flag u64; target identity.
+WildStar64.exe,140005bf0,AccountPendingItemGroupCache_InsertFromPayload,Inserts one parsed pending group row into grouped/ungrouped caches; used by AccountPendingItemAdd_HandleServer0976 and AccountPendingItemsList_HandleServer0979.
+WildStar64.exe,140007810,AccountPendingItemGroupCache_LookupByPendingItemId,Grouped pending-group map lookup keyed by the wire row pending item id (first u64); called from AccountPendingItemGroupCache_InsertFromPayload when param_3==0.
 WildStar64.exe,140080990,ClientAccountItemGiftPendingItemGroupToCharacter_WritePayload,Serialises opcode 0x03F2 as pending group wide string followed by target character identity.
 WildStar64.exe,1400a0550,ClientAccountItemGiftPendingItemGroupToAccount_WritePayload,Serialises opcode 0x03F1 as pending group wide string, a 64-bit target account field, a 32-bit field, and current character identity.
 WildStar64.exe,140006d00,AccountItem_SendClientAccountItemTake,Sends opcode 0x0839 from AccountItemLib:TakeAccountItem with one 64-bit account inventory id after validating it is present locally.
@@ -864,8 +868,8 @@ WildStar64.exe,14008eaa0,ServerFlightPathUpdate_ReadPayload,Reads opcode 0x0188 
 WildStar64.exe,140096000,ServerOpcode0814_ReadSpell4IdAndFlag,Registration block FUN_14006c290 wires server opcode 0x0814 and 8-byte object size to this reader; body parses one 18-bit Spell4 id plus a trailing 1-bit flag.
 WildStar64.exe,140096060,ServerSpellList_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0551 and 0x10-byte object size to this reader; body parses a counted spell list with nested tier and state records.
 WildStar64.exe,140095e60,ServerOpcode0818_ReadLeadingUInt32AndTierEntry,Registration block FUN_14006c290 wires server opcode 0x0818 and 0x20-byte object size to this reader; body reads one leading 32-bit field then calls ServerSpellList_ReadTierEntry at +0x8. Current subtype-4 spellbook evidence makes that leading field look more like an index or slot than a casting id, but the exact role remains under re-verification.
-WildStar64.exe,140095f30,ServerSpellHierarchy_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0816 ServerSpellHierarchy and 0x10-byte object size to this reader; body reads three 18-bit Spell4 ids followed by a 32-bit casting id.
-WildStar64.exe,140095fb0,ServerSpellEventByte_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0817 ServerSpellEventByte and 8-byte object size to this reader; body reads an 18-bit Spell4 id followed by one byte.
+WildStar64.exe,140095f30,ServerSpellThresholdStart_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0816 ServerSpellThresholdStart and 0x10-byte object size to this reader; body reads three 18-bit Spell4 ids followed by a 32-bit casting id.
+WildStar64.exe,140095fb0,ServerSpellThresholdUpdate_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0817 ServerSpellThresholdUpdate and 8-byte object size to this reader; body reads an 18-bit Spell4 id followed by one byte.
 WildStar64.exe,14008dc30,ServerActionSetDualUInt32Lists_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x016B and 0x20-byte object size; reads 4-bit field 32-bit field 4-bit count then two counted uint32 arrays.
 WildStar64.exe,14008ed80,ServerActionSetUInt16_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x016D; reads one 16-bit field through FUN_14006c090.
 WildStar64.exe,14008e1f0,ServerActionSetUInt16List_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x019C and 0x10-byte object size; reads 7-bit count then count ushort values.
@@ -1079,7 +1083,7 @@ WildStar64.exe,14007915a,Network_RegisterServerOpcode_0351,Registers server opco
 WildStar64.exe,1400a3fd0,ServerSupportUInt32AndTwoTriplets_ReadPayload,Reads opcode 0x0351 as uint32 two uint32 triplets and trailing uint32 (32 bytes).
 WildStar64.exe,140603a60,Group_HandleGroupDisband_ReadPayload,Client reader for a server group-disband or large roster packet (2116 bytes — very large, likely a dispatcher or multi-opcode handler). Decompile to confirm opcode and field layout.
 WildStar64.exe,14008de20,ServerHousingResidenceKeyedUpdate_ReadPayload,Reads opcode 0x00CA as one 64-bit field plus one uint32; the 0x10 registration size is client object size/padding, not a second uint32 wire field.
-WildStar64.exe,14007c3a0,ServerUInt15_ReadPayload,Shared scalar reader registered for opcodes 0x00CC and 0x00CD; reads one 15-bit field.
+WildStar64.exe,14007c3a0,ServerUInt15_ReadPayload,Shared scalar reader registered for opcodes 0x00CC ServerHousingResidenceUInt15 and 0x00CD ServerHousingResidenceUInt15Alt; reads one 15-bit field.
 WildStar64.exe,14008de70,ServerHousingBasicsFollowup_ReadPayload,Reads opcode 0x0110 as uint32, 18-bit field, uint32, and 8-bit field in the housing-basics cluster; field semantics unresolved.
 WildStar64.exe,14008e610,ServerHousingBasics_ReadPayload,Reads opcode 0x010E ServerHousingBasics as two uint64 fields followed by one 32-bit privacy/status flags field.
 WildStar64.exe,14009e7f0,ServerHousingVendorList_ReadPayload,Reads opcode 0x0508 as a uint32 count, count 0x18-byte housing vendor rows, then one 2-bit list type.
@@ -1114,10 +1118,10 @@ WildStar64.exe,140095da0,ServerSpellUInt32TripletList_ReadPayload,Reads opcodes 
 WildStar64.exe,140080bf0,ServerSpellUInt32TripletListRow_ReadPayload,Reads one spell auxiliary row of three uint32 fields (12 bytes).
 WildStar64.exe,14007fef0,ServerSpellFourUInt32_ReadPayload,Reads opcodes 0x078C and 0x0812 as four consecutive uint32 fields (16 bytes); 0x078C is consumed as a housing community rename result.
 WildStar64.exe,1404bbfc0,Housing_HandleCommunityRenameResult,Consumes opcode 0x078C by switching on the first uint32 as HousingResult and dispatching CommunityRenameResult for mapped result values.
-WildStar64.exe,1406031d0,Group_HandleMemberAdd_ReadPayload,Client reader for a server group-member-add packet (422 bytes). Decompile to confirm opcode and field layout.
-WildStar64.exe,140603380,Group_HandleMemberRemove_ReadPayload,Client reader for a server group-member-removal packet (193 bytes). Decompile to confirm opcode and field layout.
-WildStar64.exe,140603450,Group_HandleMemberPromote_ReadPayload,Client reader for a server group-promote packet (271 bytes). Decompile to confirm opcode and field layout.
-WildStar64.exe,140603610,Group_HandleMemberFlags_ReadPayload,Client reader for a server group-member-flags packet (860 bytes — likely multi-opcode). Decompile to confirm opcode and field layout.
-WildStar64.exe,140603970,Group_HandleReadyCheck_ReadPayload,Client reader for a server group-ready-check packet (186 bytes). Decompile to confirm opcode and field layout.
-WildStar64.exe,140603a60,Group_HandleGroupDisband_ReadPayload,Client reader for a server group-disband or large roster packet (2116 bytes). Decompile to confirm opcode and field layout.
 WildStar64.exe,14008bf80,ServerRaidQueueStatus_ReadPayload,Client reader for opcode 0x0718; registered object size 32 bytes, mapped wire fields currently serialize to 0x1A bytes. Registered in Network_RegisterServerOpcode_0351 at 0x14006c290.
+WildStar64.exe,14000a490,WorldSocket_Ctor,Constructs the world socket object; installs main vtable PTR_FUN_140b55120 and sets field +0x100 to callback table PTR_LAB_140b55100 (filter/apply processors at +0x08/+0x10).
+WildStar64.exe,14000a780,WorldSocket_Ctor_CopyInit,Secondary world-socket init path that also stores PTR_LAB_140b55100 at object +0x100.
+WildStar64.exe,140014d30,WorldSocket_FilterServerMessageHandlers,Pre-deserialize filter phase: walks handler linked list at socket+0x14b0 and calls each handler vtable+0x50 with (handler, connection, messageCategory).
+WildStar64.exe,140014f10,WorldSocket_ProcessServerMessage,Live server-message apply path: deserializes via DAT_140c65808 vtable+0x100 then AccountInventory/Storefront fast paths and handler-list vtable+0x58 dispatch with (handler, connection, opcode, parsedPayload).
+WildStar64.exe,140014c60,WorldSocket_LogZoneMessageById,Formats a zone message name via WorldZone_GetNameString and forwards it to FUN_140015ec0 for logging/UI on unhandled opcodes.
+WildStar64.exe,140356a30,WorldZone_InsertUnitHandlerIntoList,Inserts visible unit handlers into the zone/world handler linked list rooted at parent+0x14b0 (head-insert with back-link at handler+0x450).

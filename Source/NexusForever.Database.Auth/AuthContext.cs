@@ -271,7 +271,7 @@ namespace NexusForever.Database.Auth
                     .HasColumnType("tinyint(3) unsigned")
                     .HasDefaultValue(0);
 
-                entity.Property(e => e.Unknown1)
+                entity.Property(e => e.HasTargetPlayerIdentity)
                     .HasColumnName("unknown1")
                     .HasColumnType("tinyint(1)")
                     .HasDefaultValue(false);
@@ -355,7 +355,7 @@ namespace NexusForever.Database.Auth
                     .HasColumnType("tinyint(3) unsigned")
                     .HasDefaultValue(0);
 
-                entity.Property(e => e.Unknown1)
+                entity.Property(e => e.HasTargetPlayerIdentity)
                     .HasColumnName("unknown1")
                     .HasColumnType("tinyint(1)")
                     .HasDefaultValue(false);

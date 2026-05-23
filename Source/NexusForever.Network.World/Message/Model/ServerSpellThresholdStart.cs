@@ -3,11 +3,11 @@ using NexusForever.Network.Message;
 namespace NexusForever.Network.World.Message.Model
 {
     /// <summary>
-    /// Opaque spell hierarchy follow-up packet carrying root, parent, and current Spell4 ids.
-    /// This is tracked as part of the broader 0x07F5..0x0818 spell broadcast family.
+    /// Spell threshold start follow-up carrying current, root, and parent Spell4 ids plus a casting id.
+    /// Client consumer: <c>SpellThreshold_HandleStart</c> @ <c>1403be940</c>; reader <c>ServerSpellThresholdStart_ReadPayload</c> @ <c>140095f30</c>.
     /// </summary>
-    [Message(GameMessageOpcode.ServerSpellHierarchy)]
-    public class ServerSpellHierarchy : IWritable
+    [Message(GameMessageOpcode.ServerSpellThresholdStart)]
+    public class ServerSpellThresholdStart : IWritable
     {
         public uint Spell4Id { get; set; }
         public uint RootSpell4Id { get; set; }

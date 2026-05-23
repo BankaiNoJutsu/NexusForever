@@ -8,7 +8,7 @@ namespace NexusForever.Network.World.Message.Model.Shared
         public ulong Id { get; set; }
         public uint ItemId { get; set; }
         public AccountItemClaimState ClaimState { get; set; }
-        public bool Unknown1 { get; set; }
+        public bool HasTargetPlayerIdentity { get; set; }
         public Identity TargetPlayerIdentity { get; set; } = new();
 
         public void Write(GamePacketWriter writer)
@@ -16,7 +16,7 @@ namespace NexusForever.Network.World.Message.Model.Shared
             writer.Write(Id);
             writer.Write(ItemId);
             writer.Write(ClaimState, 5u);
-            writer.Write(Unknown1);
+            writer.Write(HasTargetPlayerIdentity);
             TargetPlayerIdentity.Write(writer);
         }
     }

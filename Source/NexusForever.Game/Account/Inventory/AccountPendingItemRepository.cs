@@ -46,8 +46,8 @@ namespace NexusForever.Game.Account.Inventory
                         SenderCharacterId = senderIdentity.Id,
                         TargetRealmId     = targetIdentity.RealmId,
                         TargetCharacterId = targetIdentity.Id,
-                        ClaimState        = (byte)insert.ClaimState,
-                        Unknown1          = insert.Unknown1
+                        ClaimState              = (byte)insert.ClaimState,
+                        HasTargetPlayerIdentity = insert.HasTargetPlayerIdentity
                     });
                 }
             }).GetAwaiter().GetResult();

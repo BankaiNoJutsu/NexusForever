@@ -152,7 +152,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                     accountItemIds,
                     StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session),
                     recipientIdentity,
-                    senderAccountId: session.Account.Id);
+                    senderAccountId: session.Account.Id,
+                    targetAccountId: recipientAccountId);
                 return;
             }
 

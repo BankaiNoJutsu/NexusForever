@@ -904,12 +904,12 @@ namespace NexusForever.Database.World
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0);
 
-                entity.Property(e => e.Field6)
+                entity.Property(e => e.Unknown6)
                     .HasColumnName("field_6")
                     .HasColumnType("bigint(20)")
                     .HasDefaultValue(0);
 
-                entity.Property(e => e.Field7)
+                entity.Property(e => e.Unknown7)
                     .HasColumnName("field_7")
                     .HasColumnType("tinyint(3) unsigned")
                     .HasDefaultValue(0);

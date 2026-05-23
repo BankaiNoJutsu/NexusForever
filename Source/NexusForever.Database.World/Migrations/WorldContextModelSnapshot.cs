@@ -940,13 +940,13 @@ namespace NexusForever.Database.World.Migrations
                         .HasDefaultValue(0u)
                         .HasColumnName("displayFlags");
 
-                    b.Property<long>("Field6")
+                    b.Property<long>("Unknown6")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0L)
                         .HasColumnName("field_6");
 
-                    b.Property<byte>("Field7")
+                    b.Property<byte>("Unknown7")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(3) unsigned")
                         .HasDefaultValue((byte)0)

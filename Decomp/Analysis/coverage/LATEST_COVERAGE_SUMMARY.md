@@ -19,7 +19,7 @@
 | Direction | Total | Implemented | Partial | Missing |
 | --- | --- | --- | --- | --- |
 | Client | 350 | 350 | 0 | 0 |
-| Server | 698 | 698 | 0 | 0 |
+| Server | 699 | 699 | 0 | 0 |
 | Core | 3 | 3 | 0 | 0 |
 
 ## Queue: Client Opcodes Missing Models

@@ -36,9 +36,9 @@ public class InventoryQuestObjectiveUpdaterTests
         PublicEventQuestObjectiveUpdater.OnPublicEventObjectiveSucceeded(player, 5281u);
 
         AssertObjectiveUpdate(questProxy, QuestObjectiveType.CompleteEvent, 5281u, 1u);
-        AssertObjectiveUpdate(questProxy, QuestObjectiveType.Unknown31, 5281u, 1u);
+        AssertObjectiveUpdate(questProxy, QuestObjectiveType.CompletePublicEventObjective, 5281u, 1u);
         AssertObjectiveUpdate(questProxy, QuestObjectiveType.CraftSchematic, 5281u, 1u);
-        AssertObjectiveUpdate(questProxy, QuestObjectiveType.Unknown20, 5281u, 1u);
+        AssertObjectiveUpdate(questProxy, QuestObjectiveType.CompletePublicEventRecipe, 5281u, 1u);
         AssertObjectiveUpdate(questProxy, QuestObjectiveType.CombatMomentum, 5281u, 1u);
     }
 

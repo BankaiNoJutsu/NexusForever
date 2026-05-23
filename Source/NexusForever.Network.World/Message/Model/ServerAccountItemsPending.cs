@@ -7,17 +7,29 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ServerAccountItemsPending)]
     public class ServerAccountItemsPending : IWritable
     {
+        /// <summary>
+        /// One pending group row from <c>PendingAccountItemGroup_ReadPayload</c> @ <c>1400a9b20</c>
+        /// (0x60-byte client struct; cached by <c>AccountPendingItemGroupCache_InsertFromPayload</c> @ <c>140005bf0</c>).
+        /// </summary>
         public class PendingAccountItemGroup : IWritable
         {
             public ulong Id { get; set; }
             public uint AccountItemId { get; set; }
+            /// <summary>
+            /// Trailing u64 at wire <c>+0x10</c> after <see cref="AccountItemId"/>. Stored in client cache
+            /// slot <c>[2]</c> by <c>AccountPendingItemGroupCache_InsertFromPayload</c> but not used by
+            /// <c>AccountPendingItemGroupCache_LookupByPendingItemId</c> (keyed by <see cref="Id"/>).
+            /// NF has no DB column; emit <c>0</c> unless retail evidence appears.
+            /// </summary>
             public ulong Unknown2 { get; set; }
             public string Group { get; set; } = string.Empty;
-            public uint Unknown4 { get; set; }
+            public uint SenderAccountId { get; set; }
             public Identity SenderIdentity { get; set; } = new();
-            public ulong Unknown7 { get; set; }
+            /// <summary>Account gift target; zero when not an account-targeted pending group.</summary>
+            public ulong TargetAccountId { get; set; }
             public AccountItemClaimState ClaimState { get; set; }
-            public ulong Unknown9 { get; set; }
+            /// <summary>Wire u64; retail uses low bit for target-player identity presence (see account inventory items).</summary>
+            public ulong HasTargetPlayerIdentity { get; set; }
             public Identity TargetIdentity { get; set; } = new();
 
             public void Write(GamePacketWriter writer)
@@ -26,11 +38,11 @@ namespace NexusForever.Network.World.Message.Model
                 writer.Write(AccountItemId);
                 writer.Write(Unknown2);
                 writer.WriteStringWide(Group);
-                writer.Write(Unknown4);
+                writer.Write(SenderAccountId);
                 SenderIdentity.Write(writer);
-                writer.Write(Unknown7);
+                writer.Write(TargetAccountId);
                 writer.Write(ClaimState, 5u);
-                writer.Write(Unknown9);
+                writer.Write(HasTargetPlayerIdentity);
                 TargetIdentity.Write(writer);
             }
         }

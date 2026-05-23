@@ -36,13 +36,13 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("achievementId");
 
-                    b.Property<uint>("Data0")
+                    b.Property<uint>("ProgressState")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("data0");
 
-                    b.Property<uint>("Data1")
+                    b.Property<uint>("CreditedChecklistMask")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
@@ -1798,13 +1798,13 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("achievementId");
 
-                    b.Property<uint>("Data0")
+                    b.Property<uint>("ProgressState")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
                         .HasColumnName("data0");
 
-                    b.Property<uint>("Data1")
+                    b.Property<uint>("CreditedChecklistMask")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)

@@ -3,6 +3,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Entity;
 using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Network.World.Message.Model.Shared;
 
@@ -11,20 +12,20 @@ namespace NexusForever.Game.Tests.Entity;
 public class EntityAuxiliaryPacketShapeTests
 {
     [Fact]
-    public void Server0x025F_WriteSerializesDecodedScalarAndTripleFields()
+    public void ServerEntityCreateAuxSingleRow_WriteSerializesDecodedScalarAndTripleFields()
     {
-        byte[] data = WritePacket(new Server0x025F
+        byte[] data = WritePacket(new ServerEntityCreateAuxSingleRow
         {
             Value0 = 0x1234,
             Value1 = 0x20304050u,
-            Value2 = new ServerUnresolvedUInt32Triple
+            Value2 = new ServerEntityCreateAuxUInt32Triple
             {
                 Value0 = 0x01020304u,
                 Value1 = 0x05060708u,
                 Value2 = 0x090A0B0Cu
             },
             Value5 = 0x60708090u,
-            Value6 = new ServerUnresolvedUInt32Triple
+            Value6 = new ServerEntityCreateAuxUInt32Triple
             {
                 Value0 = 0x11121314u,
                 Value1 = 0x15161718u,
@@ -49,21 +50,21 @@ public class EntityAuxiliaryPacketShapeTests
     }
 
     [Fact]
-    public void Server0x0260_WriteSerializesDecodedRowList()
+    public void ServerEntityCreateAuxRowList_WriteSerializesDecodedRowList()
     {
-        var packet = new Server0x0260();
-        packet.Rows.Add(new Server0x025FRow
+        var packet = new ServerEntityCreateAuxRowList();
+        packet.Rows.Add(new ServerEntityCreateAuxRow
         {
             Value0 = 0x2222,
             Value1 = 0x33333333u,
-            Value2 = new ServerUnresolvedUInt32Triple
+            Value2 = new ServerEntityCreateAuxUInt32Triple
             {
                 Value0 = 1u,
                 Value1 = 2u,
                 Value2 = 3u
             },
             Value5 = 4u,
-            Value6 = new ServerUnresolvedUInt32Triple
+            Value6 = new ServerEntityCreateAuxUInt32Triple
             {
                 Value0 = 5u,
                 Value1 = 6u,
@@ -82,9 +83,9 @@ public class EntityAuxiliaryPacketShapeTests
     }
 
     [Fact]
-    public void Server0x0263_WriteSerializesDecodedBitPackedRow()
+    public void ServerEntityCreateAuxSingleBitPackedRow_WriteSerializesDecodedBitPackedRow()
     {
-        byte[] data = WritePacket(new Server0x0263
+        byte[] data = WritePacket(new ServerEntityCreateAuxSingleBitPackedRow
         {
             Value0 = 0x10203040u,
             Value1 = 0x50607080u,
@@ -92,7 +93,7 @@ public class EntityAuxiliaryPacketShapeTests
             Value3 = 0x0FEDCu,
             Value4 = 0x11111u,
             Value5 = 0x90A0B0C0u,
-            Value6 = new ServerUnresolvedUInt32Triple
+            Value6 = new ServerEntityCreateAuxUInt32Triple
             {
                 Value0 = 0x01010101u,
                 Value1 = 0x02020202u,
@@ -113,10 +114,10 @@ public class EntityAuxiliaryPacketShapeTests
     }
 
     [Fact]
-    public void Server0x0261_WriteSerializesDecodedBitPackedRows()
+    public void ServerEntityCreateAuxBitPackedRowList_WriteSerializesDecodedBitPackedRows()
     {
-        var packet = new Server0x0261();
-        packet.Rows.Add(new Server0x0263Row
+        var packet = new ServerEntityCreateAuxBitPackedRowList();
+        packet.Rows.Add(new ServerEntityCreateAuxBitPackedRow
         {
             Value0 = 1u,
             Value1 = 2u,
@@ -124,7 +125,7 @@ public class EntityAuxiliaryPacketShapeTests
             Value3 = 4u,
             Value4 = 5u,
             Value5 = 6u,
-            Value6 = new ServerUnresolvedUInt32Triple
+            Value6 = new ServerEntityCreateAuxUInt32Triple
             {
                 Value0 = 7u,
                 Value1 = 8u,
@@ -146,9 +147,9 @@ public class EntityAuxiliaryPacketShapeTests
     }
 
     [Fact]
-    public void Server0x0264_WriteSerializesDecodedScalarAndValueList()
+    public void ServerEntityCreateAuxScalarList_WriteSerializesDecodedScalarAndValueList()
     {
-        var packet = new Server0x0264
+        var packet = new ServerEntityCreateAuxScalarList
         {
             Value0 = 0x10203040u,
             Value1 = 0x1234,
@@ -167,9 +168,9 @@ public class EntityAuxiliaryPacketShapeTests
     }
 
     [Fact]
-    public void Server0x0889_WriteSerializesDecodedUInt32Triplet()
+    public void ServerEntityStatUInt32Triplet_WriteSerializesDecodedUInt32Triplet()
     {
-        using var reader = CreateReader(WritePacket(new Server0x0889
+        using var reader = CreateReader(WritePacket(new ServerEntityStatUInt32Triplet
         {
             Value0 = 0x10203040u,
             Value1 = 0x50607080u,
@@ -182,9 +183,9 @@ public class EntityAuxiliaryPacketShapeTests
     }
 
     [Fact]
-    public void Server0x08CC_WriteSerializesDecodedUInt32AndWideString()
+    public void ServerEntityStatUInt32WideString_WriteSerializesDecodedUInt32AndWideString()
     {
-        using var reader = CreateReader(WritePacket(new Server0x08CC
+        using var reader = CreateReader(WritePacket(new ServerEntityStatUInt32WideString
         {
             Value = 0x10203040u,
             Text = "entity text"
@@ -195,9 +196,9 @@ public class EntityAuxiliaryPacketShapeTests
     }
 
     [Fact]
-    public void Server0x08F4_WriteSerializesDecodedUInt32UInt5UInt32()
+    public void ServerEntityStatUInt32UInt5UInt32_WriteSerializesDecodedUInt32UInt5UInt32()
     {
-        using var reader = CreateReader(WritePacket(new Server0x08F4
+        using var reader = CreateReader(WritePacket(new ServerEntityStatUInt32UInt5UInt32
         {
             Value0 = 0x10203040u,
             Value1 = 0x1Au,
@@ -210,9 +211,9 @@ public class EntityAuxiliaryPacketShapeTests
     }
 
     [Fact]
-    public void Server0x0939_WriteSerializesDecodedUInt32UInt14UInt18AndWideString()
+    public void ServerEntityStatUInt32UInt14UInt18WideString_WriteSerializesDecodedUInt32UInt14UInt18AndWideString()
     {
-        using var reader = CreateReader(WritePacket(new Server0x0939
+        using var reader = CreateReader(WritePacket(new ServerEntityStatUInt32UInt14UInt18WideString
         {
             Value0 = 0x10203040u,
             Value1 = 0x1234u,
@@ -227,9 +228,9 @@ public class EntityAuxiliaryPacketShapeTests
     }
 
     [Fact]
-    public void Server0x093D_WriteSerializesDecodedUInt32UInt5Pair()
+    public void ServerEntityStatUInt32UInt5Pair_WriteSerializesDecodedUInt32UInt5Pair()
     {
-        using var reader = CreateReader(WritePacket(new Server0x093D
+        using var reader = CreateReader(WritePacket(new ServerEntityStatUInt32UInt5Pair
         {
             Value0 = 0x10203040u,
             Value1 = 0x1Bu,
@@ -244,9 +245,9 @@ public class EntityAuxiliaryPacketShapeTests
     }
 
     [Fact]
-    public void Server0x093E_WriteSerializesDecodedTwoUInt32AndUInt64()
+    public void ServerEntityStatTwoUInt32UInt64_WriteSerializesDecodedTwoUInt32AndUInt64()
     {
-        using var reader = CreateReader(WritePacket(new Server0x093E
+        using var reader = CreateReader(WritePacket(new ServerEntityStatTwoUInt32UInt64
         {
             Value0 = 0x10203040u,
             Value1 = 0x50607080u,

@@ -68,7 +68,16 @@ namespace NexusForever.Network.World.Message.Model
                 public float PricePremium { get; set; }
                 public float PriceAlternative { get; set; }
                 public DisplayFlag DisplayFlags { get; set; }
-                public long Unknown6 { get; set; } 
+                /// <summary>
+                /// Retail <c>store_offer_item.field_6</c> is usually <c>-1016071787</c> (~<c>-239.97f</c>).
+                /// Parsed at offer <c>+0x28</c> by <c>ServerStoreOffers_Offer_ReadPayload</c> but not copied in
+                /// <c>Storefront_ApplyServerStoreOffers</c> @ <c>14044b750</c> (F-006 blocked).
+                /// </summary>
+                public long Unknown6 { get; set; }
+                /// <summary>
+                /// Retail <c>store_offer_item.field_7</c> (8 bits at offer <c>+0x30</c>). Not consumed in
+                /// <c>Storefront_ApplyServerStoreOffers</c> @ <c>14044b750</c> (F-006 blocked).
+                /// </summary>
                 public byte Unknown7 { get; set; } 
                 public List<OfferCurrencyData> CurrencyData { get; set; } = new();
                 public List<OfferItemData> ItemData { get; set; } = new();

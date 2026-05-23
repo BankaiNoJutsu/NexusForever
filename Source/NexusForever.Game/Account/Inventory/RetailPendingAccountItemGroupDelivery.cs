@@ -36,7 +36,8 @@ namespace NexusForever.Game.Account.Inventory
                     request.SenderIdentity,
                     request.TargetIdentity,
                     request.SourceGroup,
-                    senderAccountId: request.SourceAccountId);
+                    senderAccountId: request.SourceAccountId,
+                    targetAccountId: request.TargetAccountId);
 
                 return AccountOperationResult.Ok;
             }
@@ -50,8 +51,9 @@ namespace NexusForever.Game.Account.Inventory
                 GroupName        = request.SourceGroup,
                 AccountItemIds   = request.AccountItemIds,
                 SenderAccountId  = persistedSenderAccountId,
-                SenderIdentity   = request.SenderIdentity,
-                TargetIdentity   = request.TargetIdentity
+                SenderIdentity = request.SenderIdentity,
+                TargetIdentity = request.TargetIdentity,
+                HasTargetPlayerIdentity = request.TargetIdentity?.Id != 0ul
             });
 
             log.LogDebug(

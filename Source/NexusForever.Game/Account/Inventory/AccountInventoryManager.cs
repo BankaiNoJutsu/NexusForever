@@ -89,6 +89,7 @@ namespace NexusForever.Game.Account.Inventory
                     AccountItemId   = pendingModel.AccountItemId,
                     Group           = pendingModel.GroupName,
                     SenderAccountId = pendingModel.SenderAccountId,
+                    TargetAccountId = pendingModel.SenderAccountId != 0u && pendingModel.TargetCharacterId == 0ul ? pendingModel.Id : 0ul,
                     SenderIdentity  = new NetworkIdentity
                     {
                         RealmId = pendingModel.SenderRealmId,
@@ -99,8 +100,8 @@ namespace NexusForever.Game.Account.Inventory
                         RealmId = pendingModel.TargetRealmId,
                         Id      = pendingModel.TargetCharacterId
                     },
-                    ClaimState      = (AccountItemClaimState)pendingModel.ClaimState,
-                    Unknown1        = pendingModel.Unknown1
+                    ClaimState              = (AccountItemClaimState)pendingModel.ClaimState,
+                    HasTargetPlayerIdentity = pendingModel.HasTargetPlayerIdentity
                 });
 
                 nextPendingItemId = Math.Max(nextPendingItemId, pendingModel.PendingItemId + 1ul);
@@ -143,8 +144,8 @@ namespace NexusForever.Game.Account.Inventory
                         SenderCharacterId = pendingItem.SenderIdentity?.Id ?? 0ul,
                         TargetRealmId     = pendingItem.TargetIdentity?.RealmId ?? 0,
                         TargetCharacterId = pendingItem.TargetIdentity?.Id ?? 0ul,
-                        ClaimState        = (byte)pendingItem.ClaimState,
-                        Unknown1          = pendingItem.Unknown1
+                        ClaimState              = (byte)pendingItem.ClaimState,
+                        HasTargetPlayerIdentity = pendingItem.HasTargetPlayerIdentity
                     });
                 }
             }
@@ -161,13 +162,13 @@ namespace NexusForever.Game.Account.Inventory
             return items.TryGetValue(id, out IAccountInventoryItem item) ? item : null;
         }
 
-        public IAccountInventoryItem AddItem(uint accountItemId, NetworkIdentity targetPlayerIdentity = null, AccountItemClaimState claimState = AccountItemClaimState.CanClaim, bool unknown1 = false, bool notify = true)
+        public IAccountInventoryItem AddItem(uint accountItemId, NetworkIdentity targetPlayerIdentity = null, AccountItemClaimState claimState = AccountItemClaimState.CanClaim, bool hasTargetPlayerIdentity = false, bool notify = true)
         {
             if (!CanAddItem(accountItemId))
                 throw new ArgumentException($"Account item {accountItemId} does not exist!");
 
             ulong inventoryId = GetNextInventoryId();
-            var item = new AccountInventoryItem(account, inventoryId, accountItemId, targetPlayerIdentity, claimState, unknown1);
+            var item = new AccountInventoryItem(account, inventoryId, accountItemId, targetPlayerIdentity, claimState, hasTargetPlayerIdentity);
             items.Add(item.Id, item);
 
             if (notify)
@@ -176,7 +177,7 @@ namespace NexusForever.Game.Account.Inventory
             return item;
         }
 
-        public string AddPendingItemGroup(IEnumerable<uint> accountItemIds, NetworkIdentity senderIdentity = null, NetworkIdentity targetPlayerIdentity = null, string group = null, bool notify = true, uint senderAccountId = 0u)
+        public string AddPendingItemGroup(IEnumerable<uint> accountItemIds, NetworkIdentity senderIdentity = null, NetworkIdentity targetPlayerIdentity = null, string group = null, bool notify = true, uint senderAccountId = 0u, ulong targetAccountId = 0ul)
         {
             ArgumentNullException.ThrowIfNull(accountItemIds);
 
@@ -200,13 +201,15 @@ namespace NexusForever.Game.Account.Inventory
             pendingGroups.Add(groupName, accountItemIdList
                 .Select(accountItemId => new PendingAccountItem
                 {
-                    Id             = GetNextPendingItemId(),
-                    AccountItemId  = accountItemId,
-                    Group          = groupName,
-                    SenderAccountId = senderAccountId,
-                    SenderIdentity = CloneIdentity(senderIdentity),
-                    TargetIdentity = CloneIdentity(targetPlayerIdentity),
-                    ClaimState     = AccountItemClaimState.CanClaim
+                    Id                = GetNextPendingItemId(),
+                    AccountItemId     = accountItemId,
+                    Group             = groupName,
+                    SenderAccountId   = senderAccountId,
+                    TargetAccountId   = targetAccountId,
+                    SenderIdentity    = CloneIdentity(senderIdentity),
+                    TargetIdentity    = CloneIdentity(targetPlayerIdentity),
+                    ClaimState              = AccountItemClaimState.CanClaim,
+                    HasTargetPlayerIdentity = targetPlayerIdentity?.Id != 0ul
                 })
                 .ToList());
 
@@ -296,7 +299,7 @@ namespace NexusForever.Game.Account.Inventory
             }
 
             foreach (PendingAccountItem pendingItem in pendingItems)
-                AddItem(pendingItem.AccountItemId, pendingItem.TargetIdentity, pendingItem.ClaimState, pendingItem.Unknown1);
+                AddItem(pendingItem.AccountItemId, pendingItem.TargetIdentity, pendingItem.ClaimState, pendingItem.HasTargetPlayerIdentity);
 
             RemovePendingGroup(group, notify: true);
 
@@ -900,21 +903,25 @@ namespace NexusForever.Game.Account.Inventory
             public uint AccountItemId { get; init; }
             public string Group { get; init; }
             public uint SenderAccountId { get; init; }
+            public ulong TargetAccountId { get; init; }
             public NetworkIdentity SenderIdentity { get; set; }
             public NetworkIdentity TargetIdentity { get; set; }
             public AccountItemClaimState ClaimState { get; init; }
-            public bool Unknown1 { get; init; }
+            public bool HasTargetPlayerIdentity { get; init; }
 
             public ServerAccountItemsPending.PendingAccountItemGroup Build()
             {
                 return new ServerAccountItemsPending.PendingAccountItemGroup
                 {
-                    Id             = Id,
-                    AccountItemId  = AccountItemId,
-                    Group          = Group,
-                    SenderIdentity = CloneIdentity(SenderIdentity),
-                    ClaimState     = ClaimState,
-                    TargetIdentity = CloneIdentity(TargetIdentity)
+                    Id                      = Id,
+                    AccountItemId           = AccountItemId,
+                    Group                   = Group,
+                    SenderAccountId         = SenderAccountId,
+                    TargetAccountId         = TargetAccountId,
+                    SenderIdentity          = CloneIdentity(SenderIdentity),
+                    ClaimState              = ClaimState,
+                    HasTargetPlayerIdentity = HasTargetPlayerIdentity ? 1ul : 0ul,
+                    TargetIdentity          = CloneIdentity(TargetIdentity)
                 };
             }
         }

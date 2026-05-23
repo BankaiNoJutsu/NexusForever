@@ -14,10 +14,10 @@ namespace NexusForever.Game.Quest
     {
         private static readonly QuestObjectiveType[] PublicEventObjectiveLinkedTypes =
         [
-            QuestObjectiveType.Unknown20,
+            QuestObjectiveType.CompletePublicEventRecipe,
             QuestObjectiveType.CompleteEvent,
-            QuestObjectiveType.Unknown28,
-            QuestObjectiveType.Unknown31,
+            QuestObjectiveType.RescuePublicEventCreatures,
+            QuestObjectiveType.CompletePublicEventObjective,
             QuestObjectiveType.CraftSchematic,
             QuestObjectiveType.CombatMomentum,
         ];

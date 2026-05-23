@@ -286,7 +286,7 @@ namespace NexusForever.Network.Session
                 or GameMessageOpcode.ServerSpellCastResult
                 or GameMessageOpcode.ServerSpellFinish
                 or GameMessageOpcode.ServerSpellBuffRemove
-                || ((uint)opcode >= 0x07F4u && (uint)opcode <= 0x0818u);
+                || ((uint)opcode >= 0x07F4u && (uint)opcode <= 0x0819u);
         }
 
         protected virtual IServiceScope CreateHandlePacketScope()
