@@ -3,7 +3,21 @@
 Tracks `Unknown*` / opaque `Data*` placeholders in `Source/**` (excluding EF migration history).
 Use the evidence ladder from `CONTINUATION_GUIDE.md`: Observed -> Correlated -> Mapped -> Verified -> Implemented.
 
-**Inventory (2026-05-23):** ~733 `Unknown*` references in 153 files; ~147 distinct symbol names; ~205 enum members (64 in `PrerequisiteType` alone).
+**Inventory (2026-05-23):** ~761 `Unknown*` token matches in 176 `Source/**/*.cs` files (ripgrep); ~147 distinct symbol names; ~205 enum members (64 in `PrerequisiteType` alone).
+
+## Initiative status — ACTIVE (2026-05-23 resume)
+
+Decomp pass 130 added group stat-block layout mapping and retail catalog wire scalar names. Ghidra shared project was lock-blocked; used cached `140607490.fragment.c` and retail SQL.
+
+## Initiative status — prior closure note
+
+The 2026-05-23 closure pass marked the first tranche complete. Every in-scope placeholder was either **renamed with evidence** (below) or **explicitly blocked / out of scope** with Ghidra or runtime negative evidence. Remaining `Unknown*` in `Source/**` are intentional until a future pass adds per-field proof.
+
+**In scope:** packet/account/storefront/pending-item/achievement/quest-objective placeholders touched by the 2026-05 decomp passes, plus correlated group stat-block packets (`0x0436` / `0x0468`).
+
+**Out of scope (do not bulk-rename):** `PrerequisiteType.UnknownNNN` (64 members), generic `Network.World` packet tails and `Server0x*` unresolved rows, item wire offset names (`Unknown44`, …), `Stat` / `InventoryLocation` enums, table-backed `Game.Static` ids without client strings, and cosmetic renames (`Field6`, `PurchaseField0`, housing `Unknown0` without semantics).
+
+**Re-open criteria:** new Ghidra consumer for a blocked offset, live capture with non-zero blocked wire fields, or NF runtime proof tying `QuestObjectiveType` / prerequisite id to behavior.
 
 ## Implemented (safe to use in code)
 
@@ -19,6 +33,8 @@ Use the evidence ladder from `CONTINUATION_GUIDE.md`: Observed -> Correlated -> 
 | Storefront purchase shared payload | `PaymentCurrencySlot`, `PurchaseMoneyAmountBits`, `PurchaseOptionId`, `PurchaseExtensionId` | `Storefront_PurchaseCharacter_WritePayload` @ `1400acf80`; `StorefrontLib_PurchaseOffer` @ `1404f1150` |
 | Storefront account purchase tail | `AccountPurchaseExtensionId`, `AccountTarget`, `RecipientName` | `Storefront_PurchaseAccount_WritePayload` @ `140080a20`; `Storefront_SendClientPurchaseAccountOffer` @ `1404507e0` |
 | `PendingAccountItemGroup` wire fields | `SenderAccountId`, `TargetAccountId`, `HasTargetPlayerIdentity` (u64) | `PendingAccountItemGroup_ReadPayload` @ `1400a9b20`; cache insert @ `140005bf0`; NF `account_pending_item` columns |
+| Group stat block | `StatBlockPrefix17`, `GroupMemberId`, `GroupMemberStatSlot` | `Group_CopyMemberStatBlockFromPayload` @ `140607490`; `GROUP_MEMBER_STAT_BLOCK.md` |
+| Store catalog offer tail | `RetailCatalogWireScalar`, `RetailCatalogWireByte` | `RetailStoreOfferWireConstants.CatalogWireScalarBits`; retail `field_6`/`field_7`; not consumed in Apply @ `14044b750` |
 
 ## Mapped - storefront purchase (`0x082A` / `0x0828`) - detail reference
 
@@ -51,19 +67,29 @@ Account route adds after shared payload: `AccountPurchaseExtensionId` (u32 at st
 | `+0x10` | wstr | `Description` | `description` | Verified |
 | `+0x18` | 8 | `PricePremium` / `PriceAlternative` | (derived in NF from prices table) | Verified |
 | `+0x20` | u32 | `DisplayFlags` | `displayFlags` | Verified |
-| `+0x28` | i64 | `Unknown6` | `field_6` (almost always `-1016071787` / float bits ~`-239.97`) | **Blocked** - parsed by `ServerStoreOffers_Offer_ReadPayload` but not consumed in `Storefront_ApplyServerStoreOffers` @ `14044b750` (Apply copies id/strings/prices/currency rows only) |
-| `+0x30` | 8 | `Unknown7` | `field_7` (usually `0`) | **Blocked** |
+| `+0x28` | i64 | `RetailCatalogWireScalar` | `field_6` (`RetailStoreOfferWireConstants.CatalogWireScalarBits`) | **Mapped** - retail wire passthrough; Apply @ `14044b750` does not copy |
+| `+0x30` | 8 | `RetailCatalogWireByte` | `field_7` (usually `0`) | **Mapped** - retail wire passthrough |
 | `+0x34` | u32 | currency row count | - | Verified |
 | `+0x40` | u32 | item row count | - | Verified |
 
-Do **not** rename `Unknown6`/`Unknown7` to `Field6`/`Field7`; that duplicates opacity.
+Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `RetailCatalogWireByte` for the documented passthrough.
+
+## Blocked — per-field (closed without rename)
+
+| Symbol | Evidence summary |
+|--------|------------------|
+| `PendingAccountItemGroup.Unknown2` | Wire `+0x10`; cache `[2]` @ `140005bf0`; lookup by `Id` only @ `140007810`; gift UI @ `140519260` uses group string at cache `+0x38` and UI target fields — not slot `[2]` |
+| `GroupCharacter.StatBlockPrefix17` | 17-bit prefix at parsed `+0x1c` in stat block; copied to client `+0x98`; gameplay meaning blocked |
+| `GroupMemberStatSlot.Value` | Five-row ushort in stat block; per-row semantics blocked |
+| `GroupCharacter.Unknown10`–`Unknown22`, `Unknown28`/`Unknown29`, `UnknownStruct1` | Full roster wire tail; NF `ToNetworkGroupCharacter` does not populate; client roster handler @ `1406031d0` shares `0x60` stat block only for stat refresh |
+| `QuestObjectiveType.Unknown27` / `Unknown29` | No localization / single-digit table counts; no NF runtime handler |
 
 ## Blocked buckets (do not rename without new evidence)
 
 | Bucket | Count | Notes |
 |--------|------:|-------|
-| `PrerequisiteType.UnknownNNN` | 64 | Table ids + generic failure strings only |
-| `Network.World` packet tails | ~400 refs | Many `Server0xNNNN` shapes decoded but event semantics open |
+| `PrerequisiteType.UnknownNNN` | 64 | Table ids + generic failure strings only — **out of scope** |
+| `Network.World` packet tails | ~400 refs | Many `Server0xNNNN` shapes decoded but event semantics open — **out of scope** |
 | `Stat.Unknown*`, `InventoryLocation.Unknown*` | ~15 | No client stat/location enum strings |
 | `EntityCreateFlag.Unknown08` | 1 | Used in cinematics; no label |
 | Marketplace `AuctionInfo.Unknown2` | 1 | No consumer label |
@@ -84,12 +110,19 @@ Do **not** rename `Unknown6`/`Unknown7` to `Field6`/`Field7`; that duplicates op
 | `+0x48` | `HasTargetPlayerIdentity` | Wire u64; NF emits `0`/`1` |
 | after | `TargetIdentity` | Second identity in 0x60 struct |
 
-## Next decomp targets (highest ROI)
+## Deferred (future passes — not part of closed initiative)
 
-1. `PendingAccountItemGroup.Unknown2` - live sniff or Lua/UI frame code that reads cache `[2]`; grouped lookup and gift paths do not use it.
-2. `ServerStoreOffers.Offer.Unknown6`/`Unknown7` - catalog apply drops them; opcode `0x098E` purchase-history rows use a different `+0x28` layout (`Storefront_HandleStorePurchaseHistoryReady` @ `14044c540`).
-3. Confirm `0x082A` `[3]` 14-bit field against live `CurrencyId` / `AccountCurrencyType` (sniff or Lua `Game.Money` layout).
-4. Group roster `GroupCharacter.Unknown10`-`Unknown22` - map `ServerGroupMemberDetailUpdate` consumer.
+1. `PendingAccountItemGroup.Unknown2` — live `0x0979` capture with non-zero `+0x10`, or Lua/UI reading cache `[2]`.
+2. `ServerStoreOffers.Offer.Unknown6`/`Unknown7` — any client path outside catalog Apply that consumes `+0x28/+0x30` (purchase history @ `14044c540` uses a different row layout).
+3. `0x082A` purchase `[3]` 14-bit — live sniff vs `AccountCurrencyType` if handlers diverge from retail.
+4. Group roster tail — decompile `Group_HandleMemberAdd_ReadPayload` @ `1406031d0` past the shared `0x60` stat block for `Unknown10+` ushort semantics.
+
+## Verification (initiative closure)
+
+```powershell
+dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj `
+  --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~AccountInventoryPendingGroupTests|FullyQualifiedName~GroupPacketShapeTests|FullyQualifiedName~StorefrontPurchaseHandlerTests" -v minimal --nologo
+```
 
 ## Commands
 

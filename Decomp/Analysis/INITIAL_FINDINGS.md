@@ -11564,12 +11564,28 @@ Matching leave-as-group queue boundary follow-up:
 
 Matching role enforcer coverage follow-up:
 
-- No runtime behavior changed. Focused coverage now pins the existing
-  `MatchingRoleEnforcer` composition reducer: a flexible tank/DPS member is
-  reduced to tank when the party already has one healer and three DPS, four
-  single-role DPS members are rejected, and members with `Role.None` keep the
-  proposal unsuccessful.
-- This covers only the local queue proposal role reducer. Queue status timing,
+- Superseded on 2026-05-23: the old reducer represented a repo-era
+  `1 tank / 1 healer / 3 DPS` assumption and is no longer treated as retail
+  evidence. `MatchingRoleEnforcer` now preserves selected role masks and rejects
+  only `Role.None` or undefined bits outside `Tank|Healer|DPS`.
+- Online client addon evidence was checked against the Carbine `MatchMaker`
+  addon mirror. `MatchMaker.xml` defines the three displayed role toggles
+  (`DPS`, `Tank`, `Healer`), while `MatchMaker.lua` builds valid roles from
+  `MatchMakingLib.GetEligibleRoles()`, stores selected values in
+  `tQueueOptions[*].arRoles`, requires at least one role for non-solo
+  non-arena queues, and passes that options table to `MatchMakingLib.Queue` and
+  `QueueAsGroup`.
+- This proves the client-facing role vocabulary and selected-role array path,
+  but not a server-side forced `1/1/3` composition. Until native/server-side
+  evidence or live captures prove exact partial-PUG fill policy, NexusForever
+  must not reject a full eligible group solely because it is non-trinity.
+- Online references:
+  `https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/MatchMaker/MatchMaker.xml#L57-L85`,
+  `https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/MatchMaker/MatchMaker.lua#L871-L938`,
+  `https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/MatchMaker/MatchMaker.lua#L2617-L2637`,
+  `https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/MatchMaker/MatchMaker.lua#L2717-L2733`,
+  `https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/MatchMaker/MatchMaker.lua#L3166-L3175`.
+- This covers only local queue proposal role validation. Queue status timing,
   replacement/vote flows, exact role-selection lifecycle and client signaling,
   group member role-change packets, and saved-instance/raid integration remain
   blocked on the existing client reader/sender evidence gaps.
@@ -11578,6 +11594,11 @@ Matching role enforcer coverage follow-up:
   --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-matching-role\
   --filter "FullyQualifiedName~MatchingRoleEnforcerTests"` passed (`3/3`).
+- Latest correction verification on 2026-05-23:
+  focused matching/packet slice passed (`76/76`), full
+  `NexusForever.Game.Tests` passed (`920/920`), and
+  `dotnet build Source\NexusForever.sln -v minimal --nologo` succeeded with
+  `0` warnings and `0` errors.
 
 Group flag bridge follow-up:
 
@@ -13207,3 +13228,146 @@ Entity/cluster aux decompile follow-up (2026-05-23, consumer discovery):
   insertion: `WorldZone_InsertUnitHandlerIntoList` @ `140356a30`. See
   `ENTITY_AUX_DECODE_ROADMAP.md` for the table and blocked next step (per-handler `+0x58`
   opcode maps for `0x025F`-`0x0264` and the **62** aux packets).
+
+One-hundred-twenty-ninth placeholder-rename initiative closure (2026-05-23):
+
+- Closed `Decomp/Analysis/PLACEHOLDER_RENAME_TRACKER.md` as **COMPLETE**. In-scope
+  evidence-backed renames are finished; remaining `Unknown*` in `Source/**` (~761 token
+  matches / 176 files) are documented as blocked buckets or out of scope until per-field
+  proof exists.
+- **Implemented this initiative:** achievement progress fields; four quest objective
+  types; account item `HasTargetPlayerIdentity`; storefront purchase/account extension
+  fields; pending-group `SenderAccountId` / `TargetAccountId` / wire
+  `HasTargetPlayerIdentity`; account currency grant tail; group stat-block packet models
+  (`0x0436` / `0x0468` / related) with shape tests.
+- **Blocked with negative evidence (keep `Unknown*`):** `PendingAccountItemGroup.Unknown2`;
+  `ServerStoreOffers.Offer.Unknown6`/`Unknown7`; group `Unk1` / `GroupCharacter.Unknown4`
+  and full roster tail (`Unknown10+`); `QuestObjectiveType.Unknown27`/`Unknown29`.
+- **Rejected cosmetic renames:** store offer `Field6`/`Field7`, purchase `PurchaseFieldN`,
+  housing `Unknown0` without semantics.
+- **Out of scope:** bulk `PrerequisiteType` (64), generic packet tails, item offset
+  names, unresolved aux packet field semantics (separate `ENTITY_AUX_DECODE_ROADMAP.md`).
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~AccountInventoryPendingGroupTests|FullyQualifiedName~GroupPacketShapeTests|FullyQualifiedName~StorefrontPurchaseHandlerTests"`
+  passed `62/62`.
+
+One-hundred-thirtieth placeholder-rename resume pass (2026-05-23):
+
+- Ghidra shared project lock blocked fresh `InspectCodeAddresses` runs; used cached
+  `Group_CopyMemberStatBlockFromPayload` @ `140607490` export and retail
+  `store_offer_item.field_6` SQL (`-1016071787` / ~`-239.97f` on all rows).
+- Group: documented `0x60` stat-block offsets in `GROUP_MEMBER_STAT_BLOCK.md`.
+  Renamed `Unk1`/`Unknown4` to `StatBlockPrefix17`, extracted `GroupMemberStatSlot`
+  (ushort `Value`, byte `WireMarker0x30`) for group/matching stat rows.
+- Store: renamed offer tail to `RetailCatalogWireScalar` / `RetailCatalogWireByte`
+  with `RetailStoreOfferWireConstants.CatalogWireScalarBits`; still not consumed in
+  `Storefront_ApplyServerStoreOffers` @ `14044b750`.
+- `PendingAccountItemGroup.Unknown2` remains blocked (needs `1400a9b20` / cache
+  consumer decompile when Ghidra lock clears).
+
+One-hundred-thirty-first pending gift UI and group handler correction (2026-05-23):
+
+- `InspectCodeAddresses` on `1400a9b20`, `140005bf0`, `140519260`, `1406031d0` (user run;
+  manifest `selected.count=0` — output in fragment cache / prior exports).
+- `PendingAccountItemGroup_ReadPayload` @ `1400a9b20`: `u64` @ `+0x10` after `AccountItemId`;
+  `FUN_14006c090` @ `+0x08` reads 32-bit item id; wide string @ `+0x18`; `TargetAccountId` @ `+0x38`.
+- `AccountPendingItemGroupCache_InsertFromPayload` @ `140005bf0`: `plVar12[2] = param_2[2]` (wire
+  `+0x10`); grouped dedupe keys on `Id` / group string only.
+- `AccountItemUi_GiftSelectedPendingItemGroup` @ `140519260`: loads pending row, passes
+  `cacheRow+0x38` wide string to gift senders; account gift uses UI `param_1+0x38` target account;
+  character gift uses UI `param_1+0x40` identity — **does not read cache slot `[2]`**. `Unknown2`
+  stays blocked; NF continues emitting `0`.
+- **Label fix:** `1406031d0` decompile dispatches `Group_MemberPromoted` from `param_2[2]`/`[3]`;
+  it does **not** call `Group_CopyMemberStatBlockFromPayload`. Roster stat refresh uses
+  `Group_HandleMemberRemove_ReadPayload` @ `140603380` (calls `140607490`). Corrected
+  `function_labels.csv` entry for `1406031d0`.
+
+Matching closure implementation pass (2026-05-23):
+
+- Added `Decomp/Analysis/MATCHING_IMPLEMENTATION_STATUS.md` as the focused tracker
+  for matching surfaces. Runtime changes are intentionally scoped to evidence-backed
+  or compatibility-safe behavior; unmapped packet semantics remain diagnostic/blocked.
+- **Implemented + verified:** stale/duplicate queue removal hardening; authoritative
+  `ReadyMatchType` in `ServerMatchingQueueStatus`; proposal pending/accepted/declined
+  response counts for match-ready packets; deserter UI sync through
+  `ServerMatchingPenaltyUpdated`; focused tests passed `31/31`.
+- **Implemented + build-covered:** warplot surrender now awards victory to the
+  opposite team from the surrendering team; vote-kick and vote-surrender rejected
+  initiate/cast paths emit matching failure packets when not handled by personal
+  cooldown packets.
+- **Blocked:** `Client0x062A` / `Client0x0634` sender semantics; live
+  `ServerRaidQueueStatus` semantics; replacement-queue existing-match fill contract;
+  exact average-wait / manager-flag / eligibility broadcast policy; deserter
+  persistence across world restart; PvP rating/reward formulas.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~Matching|FullyQualifiedName~ClientRaidInfoRequestHandlerTests"`
+  passed `31/31`.
+- Full verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  -v minimal --nologo` passed `903/903`; `dotnet build Source\NexusForever.sln
+  -v minimal --nologo` succeeded with `0` warnings and `0` errors.
+
+Matching safe-unblock follow-up (2026-05-23):
+
+- **Implemented + verified:** deserter state now persists through
+  `character_matching_penalty` and `IMatchingPenaltyStore`, restores on login/lazy
+  queue checks, and deletes on clear/expiry. This safely closes the restart
+  persistence blocker without relying on unmapped aura restore behavior.
+- **Implemented + verified:** queue removal now emits `ServerMatchingLeftQueue`
+  from the authoritative `MatchingCharacter.RemoveMatchingQueueProposal` path
+  before the refreshed `ServerMatchingQueueStatus`.
+- **Still blocked by evidence:** `Client0x062A` / `Client0x0634` semantics; live
+  non-zero `ServerRaidQueueStatus`; replacement candidate accept/fill into an
+  existing match/team/role slot; standalone average-wait / manager-flag /
+  eligibility / group-is-queued / queued-player-list emit policy; PvP
+  rating/reward formulas; random selector parity beyond current table-backed
+  compatibility behavior.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~Matching|FullyQualifiedName~ClientRaidInfoRequestHandlerTests"`
+  passed `34/34`.
+- Full verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  -v minimal --nologo` passed `909/909` after one unrelated heartbeat test
+  passed on rerun; `dotnet build Source\NexusForever.sln -v minimal --nologo`
+  succeeded with `0` warnings and `0` errors.
+
+Matching evidence refresh (2026-05-23):
+
+- Cleared stale per-target Ghidra gate lock for `NexusForeverClient64_WildStar64`
+  only after confirming no Java/Ghidra process was alive and the recorded owner PID
+  was gone.
+- `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` decompiles to
+  `uint64 + 15-bit uint32 + uint64 + uint32 + uint32`; helper probes at
+  `14006c090`, `14006c120`, and `14006c1c0` confirm the 15/32/64-bit scalar widths.
+  No consumer or live non-zero meaning was found, so runtime behavior remains the
+  zero-value compatibility emission from raid-info.
+- Implemented the safe code cleanup from that evidence: `ServerRaidQueueStatus`
+  fields are neutral `Unknown0..Unknown4` instead of speculative queue/game-type
+  names.
+- `Client0x062A` and `Client0x0634` are registered by
+  `ClientWorldOpcodeRegister_MovementSpline` @ `1400a8190` as 4-byte generic
+  uint32 payloads using the same scalar helper path as other diagnostic opcodes.
+  Sender/UI semantics remain blocked; packet models stay diagnostic.
+- Replacement request sender mapping:
+  `MatchingReplacement_SendStartLookingForReplacements` @ `14076aa30` builds a
+  bitmask from selected role values `0..2` and sends client opcode `0x05D5` with
+  a 32-bit payload; `MatchingReplacement_SendStopLookingForReplacements` @
+  `14076abb0` sends client opcode `0x0602` with the empty one-byte registered
+  payload when the current match UI state is valid. This proves the client does
+  not send a target match/team id; the server must infer target context from the
+  sender's active match. The actual accepted-candidate fill sequence remains
+  blocked.
+- Implemented the safe runtime guard from that sender evidence:
+  `ClientMatchingMatchInitiateLookingForReplacementsHandler` rejects role masks
+  outside native-emitted bits `0..2` (`0x07` in the local `Role` enum, currently
+  `Tank|Healer|DPS`).
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~Matching|FullyQualifiedName~ClientRaidInfoRequestHandlerTests|FullyQualifiedName~GroupPacketShapeTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests"`
+  passed `76/76`.

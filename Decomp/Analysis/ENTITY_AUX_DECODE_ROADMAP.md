@@ -10,7 +10,7 @@ shape-mapped server-output clusters that replaced `Server0xNNNN` placeholders.
 | Bucket | Count | Notes |
 | --- | ---: | --- |
 | Server opcodes with wire models | **699** | Structural queue empty |
-| Shape-mapped aux + spell aux (neutral `ValueN` / raw buffer) | **62** | No `new ...()` in `NexusForever.Game` or `WorldServer` (tests only) |
+| Shape-mapped aux + spell aux (neutral `ValueN` / raw buffer) | **62** | **12/62** production emit paths (entity-create + housing); **50** still blocked |
 | Entity-create aux (`0x025F`-`0x0264`) | **5** | Adjacent to `ServerEntityCreate` (`0x0262`) in registration order |
 | Entity-stat aux (`0x0889`, `0x08CC`, `0x08F4`, `0x0939`, `0x093D`, `0x093E`) | **6** | Several readers shared with other opcodes |
 | Cluster aux (`ServerClusterAuxPackets.cs`) | **35** | Item/options/path/chat/marketplace/PE/story/realm/recruitment bands |
@@ -101,13 +101,19 @@ Parallel **queued replay** path (already mapped elsewhere, not yet tied to `0x02
 
 ## NexusForever implementation gate
 
-Do **not** add production emitters for the **62** shape-mapped packets until:
+Production emitters are **partial** (2026-05-23):
 
-1. Client **post-read consumer** functions are mapped (field offsets -> gameplay names), or
-2. Sniff evidence shows paired send order/size with a mapped retail server, or
-3. A dedicated `HandleServer...` label documents opcode -> state mutation (as with store `096A`).
+| Cluster | Count | Production emit site | Status |
+| --- | ---: | --- | --- |
+| Entity-create aux | 5 | `Player.AddVisible` -> `BuildEntityCreateAuxPackets()` before `ServerEntityCreate` | **Implemented** (fields correlated to `Guid`/placement; consumer names blocked) |
+| Housing aux | 7 | `ResidenceManager.SendHousingBasics` -> `HousingAuxiliaryPacketEmitter` | **Implemented** (empty/scalar wire shapes; consumer intent blocked) |
+| Entity-stat aux | 6 | — | **Blocked** |
+| Cluster aux | 35 | — | **Blocked** |
+| Spell aux | 9 | — | **Blocked** (client threshold handlers mapped; server threshold runtime not wired) |
 
-Safe now: packet-shape tests, enum/model names, registration notes in `GameMessageOpcode.cs`.
+Do **not** widen the remaining **50** packets until per-opcode `vtable+0x58` consumers or sniff order is mapped.
+
+Safe always: packet-shape tests, enum/model names, registration notes in `GameMessageOpcode.cs`.
 
 ## Next decompile passes (priority)
 

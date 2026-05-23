@@ -65,10 +65,10 @@ Maps **terminal-baseline (16042)** claims to **client Lua** and **emulator code*
 | Cosmic +10 AH/CX | `LoyaltyExtraAuctions`, `LoyaltyExtraCommodityOrders` in Lua | `LoyaltyExtra*SlotsPerStack = 10` | **Aligned** |
 | Community create **50p** or **600 Service Tokens** | Wiki + Communities page | `ClientGuildRegisterHandler` → `GameFormula.GetEntry(1159)` (`Dataint0` credits, `Dataint01` service tokens); `RetailCertainRules.CommunityCreateCostGameFormulaId = 1159` | **Table-driven** (verify against extracted `GameFormula.tbl` from 16042) |
 | Guild create credit cost | Client `GuildLib` formula **764** | `ClientGuildRegisterHandler` entry **764**; `RetailCertainRules.GuildCreateCostGameFormulaId` | **Table-driven** |
-| PvE deserter **15m** (scaled), PvP **10m** | S8 beta; Strain patch | `MatchingDeserterManager.ApplyDeserter` uses `RetailCertainRules` 900s / 600s base | **Partial** — `CanQueue` cross-activity rule not referenced from queue validator yet |
+| PvE deserter **15m** (scaled), PvP **10m** | S8 beta; Strain patch; addon `MatchingPenaltyUpdated` (BCF) | `MatchingDeserterManager` + `MatchingQueueValidator.CanQueue` cross-activity | **Aligned** (2026-05-23; was Partial) |
 | Warplot queue **10 online** | Strain 1.0.9 | `RetailWarplotQueueRules` checks `WarplotOnlineMembersRequiredToQueue` | **Partial** — queued-member count (**10 in queue**) not validated in same helper |
-| Votekick **10m / 2m** offline | S8 beta | `RetailCertainRules.VoteKickCooldown*` constants only | **Gap** — `ClientMatchingMatchCastVoteKickHandler` logs only |
-| Warplot surrender **10m**, **60%** | Sabotage + warplot beta | `RetailCertainRules.WarplotSurrender*` constants only | **Gap** — no surrender vote handler cited |
+| Votekick **10m / 2m** offline | S8 beta; EMM `MatchVoteKickBegin/End` | `Match.Retail.TryInitiateVoteKick` + `RetailCertainRules.VoteKickCooldown*` | **Aligned** (2026-05-23) |
+| Warplot surrender **10m**, **60%** | Sabotage + warplot beta; EMM surrender UI | `PvpMatch.Surrender` + `RetailCertainRules.WarplotSurrender*` | **Aligned** (2026-05-23) |
 | **Realm bank** per realm | Steam 1.7.1 | `RealmBankViewer.lua`: `SharedRealmBankUnlock` (74), `SharedRealmBankSlots` (75); `ClientEntityInteraction` case **67** `ShowRealmBank` | **Partial** — UI/entitlements modeled; storage logic not cross-walked here |
 | **2** concurrent challenges | Wiki + MOP essay | `ChallengeManager` `MaxConcurrentActiveChallenges = 2`; `RetailCertainRules` duplicate | **Aligned** (duplicate const; could share `RetailCertainRules`) |
 | Mail **COD**, expiry, VIP cash gate | `Mail.lua` | Mail manager COD path (pass 4) | **Aligned** (per prior passes) |
@@ -536,7 +536,6 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 - **15-minute deserter** leaving incomplete **dungeon or battleground**; duration **scales with how much of the run you completed**. **S4** [Pastebin winter beta](https://pastebin.com/Nfy3hr3f)
 - **PvP deserter** (BG/Arena/Warplots) increased **5→10 minutes** (Strain 1.0.9 — separate from dungeon deserter). **S4** [Strain patch](http://wildstar.mmorpg-life.com/patch-notes/wildstar-patch-notes-1-0-9-strain/)
 - Group loot: **Need vs. Greed**, **Master Looter**, **round robin**; **trash** can roll to group members (patch **1.0.9 Strain**). **S4** strain patch; repo `Source/NexusForever.Game.Static/Group/LootRule.cs`
-- **Tank/heal/DPS** trinity enforced for instanced content (general MMO doc + emulator). **S3** TV Tropes WildStar; repo
 - **Shiphands** renamed **Expeditions**; scalable **1–5** players; veteran mode at 50 with **medal UI pane** and **Renown/Glory** from medals, dailies, random queue (Protogames). **S1** [Expedition wiki](https://wildstar.fandom.com/wiki/Expedition); **S2** [PCGamesN Protogames](https://www.pcgamesn.com/wildstar/wildstar-s-protogames-initiative-update-is-colossal-new-missions-for-both-low-and-high-level-players); **S5** [Mein-MMO endgame DE](https://mein-mmo.de/wildstar-was-tun-auf-stufe-50/)
 - **War of the Wilds** adventure: optional objectives required for silver/gold after difficulty patch (OwnedCore tactics). **S3** [OwnedCore guide](https://www.ownedcore.com/forums/mmo/wildstar/wildstar-guides/480220-guide-veteran-war-of-the-wilds.html)
 - **Deserter** debuff should **persist through death**; dying in matchmaking should **not** block deserter application (July 2014 fix). **S4** [July 15 patch](http://wildstar.mmorpg-life.com/patch-notes/wildstar-patch-notes-july-15th/)
@@ -545,11 +544,12 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 - **Cross-activity deserter**: player with **dungeon** deserter may still queue **PvP**; **BG/Open Arena** deserter may still queue **PvE or Rated Arena**. **S8** winter beta
 - Dungeons: **My Realm Only** opt-in; must leave queue to toggle cross-realm. **S8** winter beta
 - **Cross-activity deserter** (dungeon penalty still allows PvP queue, etc.) per **S8**; emulator applies PvE/PvP base durations via `MatchingDeserterManager` + `RetailCertainRules` but **does not yet** hook `CanQueue` into `MatchingQueueValidator` (pass 7 **Partial**).
+- Group Finder role UI uses the client-facing roles **DPS/Tank/Healer** and class eligibility from `MatchMakingLib.GetEligibleRoles`; selected roles are stored in the queue options table and sent through `MatchMakingLib.Queue` / `QueueAsGroup`. This supports role selection, not a proven forced `1/1/3` server reducer. **S7** [MatchMaker XML](https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/MatchMaker/MatchMaker.xml#L57-L85), **S7** [MatchMaker Lua](https://github.com/Zod-/Wildstar-Carbine-Addons/blob/master/Live/MatchMaker/MatchMaker.lua#L871-L938)
 
 ### Need confirmation
 - LFG **fake tank** / long queue anecdotes (Harbinger Zero, Why I Game). **S3** player blogs
 - **Inhaltsfinder** (DE) for level-50 expeditions — same as group finder at cap. **S5** Mein-MMO
-- Flexible **1 tank / 1 healer / 3 DPS** queue roles (emulator enforces; weak public doc). **S3** repo
+- Exact group-finder composition policy for partial PUG queues. Do **not** treat the old emulator `1 tank / 1 healer / 3 DPS` reducer as retail proof; full instance groups must not be rejected solely for non-trinity composition without native/server-side or live-capture evidence.
 
 ### Not sure
 
