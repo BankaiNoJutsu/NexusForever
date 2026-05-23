@@ -40,13 +40,6 @@ namespace NexusForever.Game.Matching.Queue
 
         private bool CanSelect(IMatchingQueueGroup matchingQueueGroup, IMatchingMap matchingMap)
         {
-            if (matchingQueueGroup.InProgress)
-            {
-                return matchingQueueGroup.GetTeams()
-                    .SelectMany(t => t.GetMembers())
-                    .Any();
-            }
-
             foreach (IMatchingQueueGroupTeam item in matchingQueueGroup.GetTeams())
             {
                 if (item.GetMembers().Count() != matchingMap.GameTypeEntry.TeamSize)

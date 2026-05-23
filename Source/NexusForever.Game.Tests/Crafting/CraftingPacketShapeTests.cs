@@ -250,8 +250,40 @@ public class CraftingPacketShapeTests
 
         byte[] packetData = WritePacket(packet);
 
+        Assert.Equal(4, packetData.Length);
         using var reader = new GamePacketReader(new MemoryStream(packetData));
         Assert.Equal(TradeskillResult.DuplicateRune, reader.ReadEnum<TradeskillResult>(32u));
+    }
+
+    [Theory]
+    [InlineData(TradeskillResult.Success, 0u)]
+    [InlineData(TradeskillResult.InsufficentFund, 1u)]
+    [InlineData(TradeskillResult.InvalidItem, 2u)]
+    [InlineData(TradeskillResult.InvalidSlot, 3u)]
+    [InlineData(TradeskillResult.MissingEngravingStation, 4u)]
+    [InlineData(TradeskillResult.Unlocked, 5u)]
+    [InlineData(TradeskillResult.UnknownError, 6u)]
+    [InlineData(TradeskillResult.RuneExists, 7u)]
+    [InlineData(TradeskillResult.MissingRune, 8u)]
+    [InlineData(TradeskillResult.DuplicateRune, 9u)]
+    [InlineData(TradeskillResult.AttemptFailed, 10u)]
+    [InlineData(TradeskillResult.RuneSlotLimit, 11u)]
+    public void TradeskillResult_ValuesMatchNativeLuaEnum(TradeskillResult result, uint value)
+    {
+        Assert.Equal(value, (uint)result);
+    }
+
+    [Theory]
+    [InlineData(RuneType.Air, 7u)]
+    [InlineData(RuneType.Water, 8u)]
+    [InlineData(RuneType.Earth, 9u)]
+    [InlineData(RuneType.Fire, 10u)]
+    [InlineData(RuneType.Logic, 11u)]
+    [InlineData(RuneType.Life, 12u)]
+    [InlineData(RuneType.Fusion, 13u)]
+    public void RuneType_ValuesMatchNativeLuaEnum(RuneType type, uint value)
+    {
+        Assert.Equal(value, (uint)type);
     }
 
     private static CraftStats CreateCraftStats()

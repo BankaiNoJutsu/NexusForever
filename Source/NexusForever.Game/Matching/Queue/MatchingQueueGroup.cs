@@ -33,21 +33,6 @@ namespace NexusForever.Game.Matching.Queue
         private bool isPaused;
 
         /// <summary>
-        /// Determines if the <see cref="IMatchingQueueGroup"/> is from a looking for replacements request.
-        /// </summary>
-        public bool InProgress { get; private set; }
-
-        /// <summary>
-        /// Set the <see cref="IMatchingQueueGroup"/> as looking for replacements for an in-progress match.
-        /// </summary>
-        public void SetInProgress()
-        {
-            InProgress = true;
-            IsPaused = false;
-            log.LogTrace($"Matching queue group {Guid} set to in-progress (looking for replacements).");
-        }
-
-        /// <summary>
         /// Determines if the <see cref="IMatchingQueueGroup"/> is from a solo queue join request.
         /// </summary>
         /// <remarks>

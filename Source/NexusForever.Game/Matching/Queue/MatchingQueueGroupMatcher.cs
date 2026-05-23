@@ -15,21 +15,17 @@ namespace NexusForever.Game.Matching.Queue
         private readonly IMatchingDataManager matchingDataManager; 
         private readonly IMatchingRoleEnforcer matchingRoleEnforcer;
         private readonly IPlayerManager playerManager;
-        private readonly IMatchingReplacementRegistry matchingReplacementRegistry;
-
         public MatchingQueueGroupMatcher(
             ILogger<MatchingQueueGroupMatcher> log,
             IMatchingDataManager matchingDataManager,
             IMatchingRoleEnforcer matchingRoleEnforcer,
-            IPlayerManager playerManager,
-            IMatchingReplacementRegistry matchingReplacementRegistry)
+            IPlayerManager playerManager)
         {
             this.log                         = log;
 
             this.matchingDataManager         = matchingDataManager;
             this.matchingRoleEnforcer        = matchingRoleEnforcer;
             this.playerManager               = playerManager;
-            this.matchingReplacementRegistry = matchingReplacementRegistry;
         }
 
         #endregion
@@ -49,7 +45,7 @@ namespace NexusForever.Game.Matching.Queue
 
             foreach (IMatchingQueueGroupTeam matchingQueueGroupTeam in matchingQueueGroup.GetTeams()
                 .OrderBy(GetOldestQueueTime))
-                if (Match(commonMatchingMaps, matchingQueueGroup, matchingQueueGroupTeam, matchingQueueProposal))
+                if (Match(commonMatchingMaps, matchingQueueGroupTeam, matchingQueueProposal))
                     return matchingQueueGroupTeam;
 
             return null;
@@ -63,7 +59,7 @@ namespace NexusForever.Game.Matching.Queue
                 .Min();
         }
 
-        private bool Match(IEnumerable<IMatchingMap> commonMatchingMaps, IMatchingQueueGroup matchingQueueGroup, IMatchingQueueGroupTeam matchingQueueGroupTeam, IMatchingQueueProposal matchingQueueProposal)
+        private bool Match(IEnumerable<IMatchingMap> commonMatchingMaps, IMatchingQueueGroupTeam matchingQueueGroupTeam, IMatchingQueueProposal matchingQueueProposal)
         {
             if (matchingDataManager.IsSingleFactionEnforced(matchingQueueProposal.MatchType))
                 if (matchingQueueGroupTeam.Faction != matchingQueueProposal.Faction)
@@ -76,9 +72,6 @@ namespace NexusForever.Game.Matching.Queue
                 .GetMembers()
                 .Concat(matchingQueueProposal.GetMembers())
                 .ToList();
-
-            if (!IsReplacementRoleAllowed(matchingQueueGroup, matchingQueueProposal))
-                return false;
 
             foreach (IMatchingMap matchingMap in commonMatchingMaps)
             {
@@ -102,19 +95,6 @@ namespace NexusForever.Game.Matching.Queue
             }
 
             return true;
-        }
-
-        private bool IsReplacementRoleAllowed(IMatchingQueueGroup matchingQueueGroup, IMatchingQueueProposal matchingQueueProposal)
-        {
-            if (!matchingQueueGroup.InProgress)
-                return true;
-
-            if (!matchingReplacementRegistry.TryGetMatchGuid(matchingQueueGroup.Guid, out Guid matchGuid)
-                || !matchingReplacementRegistry.TryGetEntry(matchGuid, out _, out Static.Matching.Role requestedRoles))
-                return false;
-
-            return matchingQueueProposal.GetMembers()
-                .All(m => (m.Roles & requestedRoles) != Static.Matching.Role.None);
         }
 
         private bool IsRealmMatchAllowed(IMatchingQueueGroupTeam matchingQueueGroupTeam, IMatchingQueueProposal matchingQueueProposal)

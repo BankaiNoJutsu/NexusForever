@@ -119,19 +119,5 @@ namespace NexusForever.Game.Matching.Queue
             return matchingGroup;
         }
 
-        public void RegisterReplacementGroup(IMatchingQueueGroup matchingQueueGroup)
-        {
-            if (matchingQueueGroup.MatchType != matchType)
-                throw new InvalidOperationException();
-
-            matchingGroups.Add(matchingQueueGroup);
-            log.LogTrace($"Registered in-progress replacement matching queue group {matchingQueueGroup.Guid}.");
-        }
-
-        public void UnregisterReplacementGroup(IMatchingQueueGroup matchingQueueGroup)
-        {
-            if (matchingGroups.Remove(matchingQueueGroup))
-                log.LogTrace($"Unregistered in-progress replacement matching queue group {matchingQueueGroup.Guid}.");
-        }
     }
 }

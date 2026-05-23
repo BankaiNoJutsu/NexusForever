@@ -2,7 +2,6 @@
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Matching.Match;
-using NexusForever.Game.Abstract.Matching;
 using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Static.Matching;
 using NexusForever.Network.World.Message.Model;
@@ -26,7 +25,6 @@ namespace NexusForever.Game.Matching.Match
         private readonly IMatchFactory matchFactory;
         private readonly IMatchingManager matchingManager;
         private readonly IMatchingQueueTimeManager matchingQueueTimeManager;
-        private readonly IMatchingReplacementRegistry matchingReplacementRegistry;
 
         public MatchManager(
             ILogger<MatchManager> log,
@@ -34,8 +32,7 @@ namespace NexusForever.Game.Matching.Match
             IFactory<IMatchProposal> matchProposalFactory,
             IMatchFactory matchFactory,
             IMatchingManager matchingManager,
-            IMatchingQueueTimeManager matchingQueueTimeManager,
-            IMatchingReplacementRegistry matchingReplacementRegistry)
+            IMatchingQueueTimeManager matchingQueueTimeManager)
         {
             this.log = log;
 
@@ -44,7 +41,6 @@ namespace NexusForever.Game.Matching.Match
             this.matchFactory = matchFactory;
             this.matchingManager = matchingManager;
             this.matchingQueueTimeManager = matchingQueueTimeManager;
-            this.matchingReplacementRegistry = matchingReplacementRegistry;
         }
 
         #endregion
@@ -109,7 +105,6 @@ namespace NexusForever.Game.Matching.Match
                     {
                         case MatchStatus.Finalised:
                         {
-                            matchingManager.StopLookingForReplacements(match, null);
                             matchesToRemove.Add(match);
                             break;
                         }
@@ -126,15 +121,6 @@ namespace NexusForever.Game.Matching.Match
 
         private void MatchProposalDeclined(IMatchProposal matchProposal)
         {
-            if (matchProposal.MatchingQueueGroup.InProgress)
-            {
-                foreach (IMatchProposalTeam matchProposalTeam in matchProposal.GetTeams())
-                    matchProposalTeam.Broadcast(new ServerMatchingMatchReadyCancel());
-
-                matchingManager.StopLookingForReplacements(matchProposal.MatchingQueueGroup, MatchingQueueResult.Declined);
-                return;
-            }
-
             // find unique set of matching queue proposals which responded with decline
             // this is required since multiple characters can be in the same matching queue proposal
             var matchingQueueProposalsToRemove = new HashSet<IMatchingQueueProposal>();
@@ -155,24 +141,6 @@ namespace NexusForever.Game.Matching.Match
 
         private void CreateMatch(IMatchProposal matchProposal)
         {
-            if (matchProposal.MatchingQueueGroup.InProgress)
-            {
-                if (matchingReplacementRegistry.TryGetMatchGuid(matchProposal.MatchingQueueGroup.Guid, out Guid existingMatchGuid)
-                    && matches.TryGetValue(existingMatchGuid, out IMatch existingMatch)
-                    && existingMatch is Match replacementMatch
-                    && existingMatch.Status == MatchStatus.InProgress)
-                {
-                    replacementMatch.AddReplacementMembers(matchProposal);
-                    matchingManager.StopLookingForReplacements(existingMatch, null);
-                    return;
-                }
-
-                log.LogWarning("Replacement match proposal {MatchProposal} could not resolve an active match for queue group {MatchingQueueGroup}; closing replacement queue.",
-                    matchProposal.Guid, matchProposal.MatchingQueueGroup.Guid);
-                matchingManager.StopLookingForReplacements(matchProposal.MatchingQueueGroup, MatchingQueueResult.UnableToQueue);
-                return;
-            }
-
             if (!matchProposal.MatchingQueueGroup.IsSolo)
             {
                 matchingQueueTimeManager.Update(matchProposal.MatchingQueueGroup);

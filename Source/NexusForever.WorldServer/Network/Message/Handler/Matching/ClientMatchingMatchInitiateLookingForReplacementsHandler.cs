@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Matching.Match;
-using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Static.Matching;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -22,16 +21,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 
         private readonly ILogger<ClientMatchingMatchInitiateLookingForReplacementsHandler> log;
         private readonly IMatchManager matchManager;
-        private readonly IMatchingManager matchingManager;
 
         public ClientMatchingMatchInitiateLookingForReplacementsHandler(
             ILogger<ClientMatchingMatchInitiateLookingForReplacementsHandler> log,
-            IMatchManager matchManager,
-            IMatchingManager matchingManager)
+            IMatchManager matchManager)
         {
-            this.log             = log;
-            this.matchManager    = matchManager;
-            this.matchingManager = matchingManager;
+            this.log          = log;
+            this.matchManager = matchManager;
         }
 
         #endregion
@@ -67,17 +63,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
                 return;
             }
 
-            MatchingQueueResult? result = matchingManager.TryStartLookingForReplacements(player, match, requestedRoles);
-            if (result != null)
-            {
-                log.LogWarning("ClientMatchingMatchInitiateLookingForReplacements: player={Player}, match={Match}, roles={Roles}, result={Result}",
-                    player.Guid, match.Guid, requestedRoles, result);
-            }
-            else
-            {
-                log.LogInformation("ClientMatchingMatchInitiateLookingForReplacements: player={Player}, match={Match}, roles={Roles}",
-                    player.Guid, match.Guid, requestedRoles);
-            }
+            log.LogInformation("ClientMatchingMatchInitiateLookingForReplacements: player={Player}, match={Match}, roles={Roles}",
+                player.Guid, match.Guid, requestedRoles);
         }
     }
 }

@@ -69,21 +69,6 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         void BroadcastAverageWaitTimeUpdate(Static.Matching.MatchType matchType);
 
         /// <summary>
-        /// Open an in-progress replacement queue for <paramref name="match"/> (client opcode 0x05D5).
-        /// </summary>
-        MatchingQueueResult? TryStartLookingForReplacements(IPlayer leader, NexusForever.Game.Abstract.Matching.Match.IMatch match, Role requestedRoles);
-
-        /// <summary>
-        /// Close the replacement queue for <paramref name="match"/> (client opcode 0x0602).
-        /// </summary>
-        void StopLookingForReplacements(NexusForever.Game.Abstract.Matching.Match.IMatch match, MatchingQueueResult? leaveReason = MatchingQueueResult.Left);
-
-        /// <summary>
-        /// Close an in-progress replacement queue by queue group when the original match is unavailable.
-        /// </summary>
-        void StopLookingForReplacements(IMatchingQueueGroup replacementGroup, MatchingQueueResult? leaveReason = MatchingQueueResult.Left);
-
-        /// <summary>
         /// Invoked when <see cref="IPlayer"/> logs in.
         /// </summary>
         void OnLogin(IPlayer player);

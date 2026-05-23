@@ -20,8 +20,5 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         /// </summary>
         void JoinQueue(IMatchingQueueProposal matchingGroup);
 
-        void RegisterReplacementGroup(IMatchingQueueGroup matchingQueueGroup);
-
-        void UnregisterReplacementGroup(IMatchingQueueGroup matchingQueueGroup);
     }
 }

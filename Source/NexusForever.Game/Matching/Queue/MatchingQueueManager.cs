@@ -65,20 +65,5 @@ namespace NexusForever.Game.Matching.Queue
             queue.JoinQueue(matchingParty);
         }
 
-        public void RegisterReplacementGroup(IMatchingQueueGroup matchingQueueGroup)
-        {
-            if (!queues.TryGetValue(matchingQueueGroup.MatchType, out IMatchingQueue queue))
-                throw new ArgumentOutOfRangeException(nameof(matchingQueueGroup), matchingQueueGroup.MatchType, "No queue for match type.");
-
-            queue.RegisterReplacementGroup(matchingQueueGroup);
-        }
-
-        public void UnregisterReplacementGroup(IMatchingQueueGroup matchingQueueGroup)
-        {
-            if (!queues.TryGetValue(matchingQueueGroup.MatchType, out IMatchingQueue queue))
-                return;
-
-            queue.UnregisterReplacementGroup(matchingQueueGroup);
-        }
     }
 }

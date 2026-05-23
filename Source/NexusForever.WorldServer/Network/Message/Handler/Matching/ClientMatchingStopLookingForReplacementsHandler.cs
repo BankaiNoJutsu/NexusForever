@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Matching.Match;
-using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 
@@ -13,16 +12,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 
         private readonly ILogger<ClientMatchingStopLookingForReplacementsHandler> log;
         private readonly IMatchManager matchManager;
-        private readonly IMatchingManager matchingManager;
 
         public ClientMatchingStopLookingForReplacementsHandler(
             ILogger<ClientMatchingStopLookingForReplacementsHandler> log,
-            IMatchManager matchManager,
-            IMatchingManager matchingManager)
+            IMatchManager matchManager)
         {
-            this.log             = log;
-            this.matchManager    = matchManager;
-            this.matchingManager = matchingManager;
+            this.log          = log;
+            this.matchManager = matchManager;
         }
 
         #endregion
@@ -41,8 +37,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
                 log.LogWarning("ClientMatchingStopLookingForReplacements: player {Player} is not in a match.", player.Guid);
                 return;
             }
-
-            matchingManager.StopLookingForReplacements(match);
 
             log.LogInformation("ClientMatchingStopLookingForReplacements: player={Player}, match={Match}",
                 player.Guid, match.Guid);

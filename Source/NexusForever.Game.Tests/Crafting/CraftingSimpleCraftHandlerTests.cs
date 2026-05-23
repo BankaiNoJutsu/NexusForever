@@ -83,6 +83,36 @@ public class CraftingSimpleCraftHandlerTests
     }
 
     [Fact]
+    public void SimpleCraft_WithZeroStation_ConsumesMaterialCreatesOutputAndSendsSuccess()
+    {
+        IWorldSession session = CreateSession(
+            satchelMaterialAmount: 2,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<ISupplySatchelManager> satchelProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> _,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out IItemInfo outputInfo);
+        ClientCraftingSimpleCraftHandler handler = CreateHandler(outputInfo);
+
+        handler.HandleMessage(session, CreateRequest(SchematicId, craftingStationUnitId: 0u));
+
+        RecordingDispatchProxy<ISupplySatchelManager>.Invocation materialDebit =
+            Assert.Single(satchelProxy.GetInvocations(nameof(ISupplySatchelManager.RemoveAmount)));
+        Assert.Equal(MaterialId, materialDebit.Arguments[0]);
+        Assert.Equal(2u, materialDebit.Arguments[1]);
+
+        RecordingDispatchProxy<IInventory>.Invocation outputCreate =
+            Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Same(outputInfo, outputCreate.Arguments[1]);
+
+        ServerCraftingFinish finish = Assert.Single(GetMessages<ServerCraftingFinish>(sessionProxy));
+        Assert.True(finish.Pass);
+        Assert.Equal(SchematicId, finish.TradeskillSchematic2IdCrafted);
+        Assert.Equal(OutputItemId, finish.Item2IdCrafted);
+        Assert.Equal(CraftingDiscovery.Success, finish.HotOrCold);
+    }
+
+    [Fact]
     public void SimpleCraft_MissingMaterial_SendsFailureWithoutOutput()
     {
         IWorldSession session = CreateSession(
@@ -320,11 +350,11 @@ public class CraftingSimpleCraftHandlerTests
         return gameTableManager;
     }
 
-    private static ClientCraftingSimpleCraft CreateRequest(uint schematicId)
+    private static ClientCraftingSimpleCraft CreateRequest(uint schematicId, uint craftingStationUnitId = 456u)
     {
         var request = (ClientCraftingSimpleCraft)RuntimeHelpers.GetUninitializedObject(typeof(ClientCraftingSimpleCraft));
         SetAutoProperty(request, nameof(ClientCraftingSimpleCraft.ContextToken), 123u);
-        SetAutoProperty(request, nameof(ClientCraftingSimpleCraft.CraftingStationUnitId), 456u);
+        SetAutoProperty(request, nameof(ClientCraftingSimpleCraft.CraftingStationUnitId), craftingStationUnitId);
         SetAutoProperty(request, nameof(ClientCraftingSimpleCraft.TradeskillSchematic2Id), schematicId);
         return request;
     }

@@ -5,7 +5,6 @@ using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Static.Matching;
 using NexusForever.Game.Static.Reputation;
-using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared;
 using NexusForever.Shared.Game;
@@ -62,7 +61,7 @@ namespace NexusForever.Game.Matching.Match
             }
 
             foreach (IMatchProposalTeam matchProposalTeam in teams)
-                SendMatchReady(matchingQueueGroup.InProgress, matchProposalTeam);
+                SendMatchReady(matchProposalTeam);
 
             expiryTimer = new UpdateTimer(TimeSpan.FromSeconds(30d));
 
@@ -128,29 +127,16 @@ namespace NexusForever.Game.Matching.Match
                 SendMatchPendingUpdate(team, matchProposalTeam);
         }
 
-        private void SendMatchReady(bool inProgress, IMatchProposalTeam allyTeam)
+        private void SendMatchReady(IMatchProposalTeam allyTeam)
         {
             IMatchProposalTeam enemyTeam = GetOpposingTeam(allyTeam);
 
-            IWritable message;
-            if (inProgress)
+            var message = new ServerMatchingMatchReady()
             {
-                message = new ServerMatchingMatchInProgressReady()
-                {
-                    MatchType    = MatchingQueueGroup.MatchType,
-                    CurrentAllies = allyTeam.AcceptedCount,
-                    PendingAllies = allyTeam.PendingCount,
-                };
-            }
-            else
-            {
-                message = new ServerMatchingMatchReady()
-                {
-                    MatchType    = MatchingQueueGroup.MatchType,
-                    PendingAllies  = allyTeam.PendingCount,
-                    PendingEnemies = enemyTeam?.PendingCount ?? 0u,
-                };
-            }
+                MatchType    = MatchingQueueGroup.MatchType,
+                PendingAllies  = allyTeam.PendingCount,
+                PendingEnemies = enemyTeam?.PendingCount ?? 0u,
+            };
 
             allyTeam.Broadcast(message);
         }
