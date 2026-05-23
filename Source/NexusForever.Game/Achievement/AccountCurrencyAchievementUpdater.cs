@@ -1,4 +1,5 @@
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Achievement;
 
@@ -13,7 +14,10 @@ namespace NexusForever.Game.Achievement
             player.AchievementManager.CheckAchievements(player, AchievementType.AccountCurrencyEarned, (uint)currencyType, count: count);
 
             if (IsPrimalEssence(currencyType))
+            {
                 player.AchievementManager.CheckAchievements(player, AchievementType.PrimalEssenceEarned, 0u, count: count);
+                PrimalMatrixQuestObjectiveUpdater.OnPrimalEssenceAccountCurrencyGranted(player, currencyType, amount);
+            }
         }
 
         private static bool IsPrimalEssence(AccountCurrencyType currencyType)

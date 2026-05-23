@@ -2920,6 +2920,10 @@ namespace NexusForever.Game.Entity
 
         protected override void RewardKiller(IPlayer player)
         {
+            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.PvPKills, 0u, 1u);
+            if (Map?.Entry != null)
+                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.PvPKills, Map.Entry.Id, 1u);
+
             // PvP reward currencies are not awarded by the currently modeled duel flow.
         }
 

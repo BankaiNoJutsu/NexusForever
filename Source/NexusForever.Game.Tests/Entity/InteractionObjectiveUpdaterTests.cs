@@ -20,6 +20,8 @@ public class InteractionObjectiveUpdaterTests
         AssertObjectiveUpdate(questProxy, QuestObjectiveType.SucceedCSI, 73498u, 1u);
         AssertObjectiveUpdate(questProxy, QuestObjectiveType.ActivateEntity, 73498u, 1u);
         AssertObjectiveUpdate(questProxy, QuestObjectiveType.TalkTo, 73498u, 1u);
+        AssertObjectiveUpdate(questProxy, QuestObjectiveType.ActivateTargetGroup, 73498u, 1u);
+        AssertObjectiveUpdate(questProxy, QuestObjectiveType.GatheResource, 73498u, 1u);
     }
 
     [Fact]

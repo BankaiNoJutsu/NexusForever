@@ -250,6 +250,7 @@ public class LootBindOnPickupPolicyTests
         public bool IsInventoryFull(InventoryLocation location) => InventoryBag.SlotsRemaining == 0u;
         public uint GetInventorySlotsRemaining(InventoryLocation location) => InventoryBag.SlotsRemaining;
         public bool HasItemCount(uint itemId, uint count) => throw new NotSupportedException();
+        public uint GetItemCount(uint itemId) => throw new NotSupportedException();
         public IItem GetItem(ItemLocation itemLocation) => throw new NotSupportedException();
         public IItem GetItem(InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
         public IItem GetItem(ulong guid) => throw new NotSupportedException();

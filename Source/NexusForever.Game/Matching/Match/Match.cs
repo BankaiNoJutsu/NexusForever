@@ -9,6 +9,7 @@ using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Static.Matching;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Retail;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Match;
@@ -215,6 +216,9 @@ namespace NexusForever.Game.Matching.Match
 
             team.MatchEnter(player.Identity, MatchingMap);
             player.SetTemporaryFaction(team.Faction);
+
+            if (MatchingMap?.GameTypeEntry != null)
+                MatchingQuestObjectiveUpdater.OnMatchEntered(player, MatchingMap.GameTypeEntry.Id);
 
             log.LogTrace($"Member {player.Identity} has entered match {Guid}.");
         }

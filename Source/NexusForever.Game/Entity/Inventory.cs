@@ -3,6 +3,7 @@ using System.Diagnostics;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Quest;
 using NexusForever.Game.RealmBank;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
@@ -155,6 +156,20 @@ namespace NexusForever.Game.Entity
             return false;
         }
 
+        /// <inheritdoc/>
+        public uint GetItemCount(uint itemId)
+        {
+            IBag bag = GetBag(InventoryLocation.Inventory);
+            if (bag == null)
+                throw new ArgumentException();
+
+            ulong total = 0ul;
+            foreach (IItem item in bag.Where(i => i.Id == itemId))
+                total += item.StackCount;
+
+            return total > uint.MaxValue ? uint.MaxValue : (uint)total;
+        }
+
         /// <summary>
         /// Return <see cref="IItem"/> at supplied <see cref="ItemLocation"/>.
         /// </summary>
@@ -303,6 +318,9 @@ namespace NexusForever.Game.Entity
 
                 count -= item.StackCount;
             }
+
+            if (location == InventoryLocation.Inventory && player != null && !player.IsLoading)
+                InventoryQuestObjectiveUpdater.RefreshCollectItemForItem(player, info.Id);
         }
 
         /// <summary>
@@ -1083,7 +1101,16 @@ namespace NexusForever.Game.Entity
             if (item == null)
                 throw new ArgumentNullException();
 
+            uint previousStackCount = item.StackCount;
             item.StackCount = stackCount;
+
+            if (item.Location == InventoryLocation.Inventory
+                && stackCount > previousStackCount
+                && player != null
+                && !player.IsLoading)
+            {
+                InventoryQuestObjectiveUpdater.RefreshCollectItemForItem(player, item.Id);
+            }
 
             player.Session.EnqueueMessageEncrypted(new ServerItemStackCountUpdate
             {

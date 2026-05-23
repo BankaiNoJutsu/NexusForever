@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Abstract.Spell.Event;
 using NexusForever.Game.Combat.CrowdControl;
 using NexusForever.Game.Prerequisite;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Spell.Effect;
 using NexusForever.Game.Spell.Event;
 using NexusForever.Game.Static.Entity;
@@ -783,6 +784,10 @@ namespace NexusForever.Game.Spell
 
             SelectTargets();
             ExecuteEffects();
+
+            if (Caster is IPlayer executingPlayer)
+                SpellQuestObjectiveUpdater.UpdateSpellSuccessObjectives(executingPlayer, Parameters.SpellInfo.Entry.Id);
+
             CostSpell();
         }
 

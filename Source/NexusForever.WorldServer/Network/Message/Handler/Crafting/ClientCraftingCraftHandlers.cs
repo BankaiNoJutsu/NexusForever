@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Crafting;
@@ -340,6 +341,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                 : generatedLoot);
 
             uint earnedXp = GrantCraftingXp(session.Player, gameTableManager, schematic, craftCount);
+            CraftingQuestObjectiveUpdater.OnSchematicCrafted(session.Player, schematic.Id, craftCount);
             SendCraftSuccess(session, schematic, item2IdCrafted, earnedXp);
             CraftingRuneRequestHelper.ClearCraftingAdditives(session);
             return true;

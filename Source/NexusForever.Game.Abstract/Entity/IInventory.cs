@@ -40,6 +40,11 @@ namespace NexusForever.Game.Abstract.Entity
         bool HasItemCount(uint itemId, uint count);
 
         /// <summary>
+        /// Returns the total stack count of items with id in <see cref="InventoryLocation.Inventory"/>.
+        /// </summary>
+        uint GetItemCount(uint itemId);
+
+        /// <summary>
         /// Return <see cref="IItem"/> at supplied <see cref="ItemLocation"/>.
         /// </summary>
         IItem GetItem(ItemLocation itemLocation);

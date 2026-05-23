@@ -1,6 +1,7 @@
 ﻿using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.GameTable.Model;
@@ -73,7 +74,11 @@ namespace NexusForever.Game.PublicEvent
             foreach (IPublicEventTeamMember member in Team.GetMembers())
             {
                 IPlayer player = PlayerManager.Instance.GetPlayer(member.CharacterId);
-                player?.AchievementManager.CheckAchievements(player, AchievementType.PublicEventObjectiveComplete, Entry.Id);
+                if (player != null)
+                {
+                    player.AchievementManager.CheckAchievements(player, AchievementType.PublicEventObjectiveComplete, Entry.Id);
+                    PublicEventQuestObjectiveUpdater.OnPublicEventObjectiveSucceeded(player, Entry.Id);
+                }
             }
         }
 

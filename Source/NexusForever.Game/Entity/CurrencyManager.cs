@@ -2,6 +2,7 @@ using System.Collections;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
@@ -105,7 +106,10 @@ namespace NexusForever.Game.Entity
             CurrencyAmountUpdate(currency, amount, isLoot);
 
             if (addedAmount != 0ul)
+            {
                 player.AchievementManager.CheckAchievements(player, AchievementType.CurrencyEarned, (uint)currency.Entry.Id, count: ToAchievementCount(addedAmount));
+                CurrencyQuestObjectiveUpdater.OnCurrencyAdded(player, currency.Id, addedAmount);
+            }
         }
 
         private ICurrency CurrencyCreate(CurrencyTypeEntry currencyEntry)

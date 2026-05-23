@@ -449,6 +449,8 @@ namespace NexusForever.Game.Entity
             activeQuests.Add((ushort)info.Entry.Id, quest);
 
             quest.InitialiseTimer();
+            InventoryQuestObjectiveUpdater.SyncCollectObjectivesForQuest(quest);
+            PrimalMatrixQuestObjectiveUpdater.SyncBeginMatrixForQuest(quest);
 
             log.Trace($"Accepted new quest {info.Entry.Id}.");
             LogTutorialRegionQuestLifecycle("accepted", (ushort)info.Entry.Id, quest.State);
@@ -669,6 +671,10 @@ namespace NexusForever.Game.Entity
 
             RewardQuest(quest.Info, reward);
             quest.State = QuestState.Completed;
+            ObjectiveUpdate(QuestObjectiveType.CompleteQuest, questId, 1u);
+
+            if (player.Level >= 50u)
+                ObjectiveUpdate(QuestObjectiveType.CompleteMaxLevelQuests, 0u, 1u);
 
             // mark repeatable quests for reset
             switch ((QuestRepeatPeriod)quest.Info.Entry.QuestRepeatPeriodEnum)
