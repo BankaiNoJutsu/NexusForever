@@ -7,8 +7,10 @@ SQL and NexusForever implementation surfaces.
 It intentionally works offline and uses only the Python standard library. The
 default inputs are:
 
-- wiki archive: `artifacts\wildstar-fandom-wiki-2026-05-18`
-- client SQL dump directory: `wildstar_client_mysql`
+- wiki archive: `artifacts\wildstar-fandom-wiki-2026-05-18` (local, gitignored)
+- client SQL dump directory: `wildstar_client_mysql` (local, gitignored)
+- committed audit snapshots: `Tools\WikiArchiveAudit\reports\`
+- quest bucket inventory: `Decomp\Analysis\coverage\QUEST_IMPLEMENTATION_AUDIT.md`
 
 ## Implemented Domains
 
@@ -180,8 +182,17 @@ Run from the repository root:
 python Tools\WikiArchiveAudit\audit_wildstar_wiki.py `
   --domain quests `
   --archive-dir artifacts\wildstar-fandom-wiki-2026-05-18 `
-  --output artifacts\wiki-audit\quests-audit.md
+  --output Tools\WikiArchiveAudit\reports\quests-wiki-audit.md
 ```
+
+Quest bucket coverage (curated vs generic vs blocked) is a separate offline pass:
+
+```powershell
+python Tools\WikiArchiveAudit\quest_implementation_audit.py
+```
+
+That writes `Decomp/Analysis/coverage/QUEST_IMPLEMENTATION_AUDIT.md` and is
+summarized in `Decomp/Analysis/QUEST_IMPLEMENTATION_STATUS.md`.
 
 Current quest notes:
 
@@ -338,4 +349,5 @@ When adding a domain, keep it additive:
    hard failures, and warnings.
 3. Register the domain in `IMPLEMENTED_AUDIT_DOMAINS`.
 4. Run the audit with `--domain <name>` and save the report under
-   `artifacts\wiki-audit\`.
+   `Tools\WikiArchiveAudit\reports\` when the snapshot should be committed.
+   Use `artifacts\wiki-audit\` for local scratch reruns (gitignored).

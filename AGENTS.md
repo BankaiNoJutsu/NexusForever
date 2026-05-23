@@ -207,6 +207,10 @@ asks for that artifact:
   `Decomp/Analysis/exports`, and `Decomp/Analysis/logs`. Durable decompile
   knowledge belongs in tracked labels, findings, coverage summaries, and
   focused tracker docs.
+- `artifacts/` (gitignored): local wiki dumps, load-test JSON, build scratch,
+  and live-session capture JSON. Promote audit snapshots to
+  `Tools/WikiArchiveAudit/reports/` or quest coverage to
+  `Decomp/Analysis/coverage/` when they should be versioned.
 - Local server JSON files may contain machine-specific settings. Prefer editing
   `*.example.json` templates or setup scripts unless the task calls for a local
   runtime config change.

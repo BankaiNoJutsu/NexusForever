@@ -1120,3 +1120,4 @@ WildStar64.exe,140603450,Group_HandleMemberPromote_ReadPayload,Client reader for
 WildStar64.exe,140603610,Group_HandleMemberFlags_ReadPayload,Client reader for a server group-member-flags packet (860 bytes — likely multi-opcode). Decompile to confirm opcode and field layout.
 WildStar64.exe,140603970,Group_HandleReadyCheck_ReadPayload,Client reader for a server group-ready-check packet (186 bytes). Decompile to confirm opcode and field layout.
 WildStar64.exe,140603a60,Group_HandleGroupDisband_ReadPayload,Client reader for a server group-disband or large roster packet (2116 bytes). Decompile to confirm opcode and field layout.
+WildStar64.exe,14008bf80,ServerRaidQueueStatus_ReadPayload,Client reader for opcode 0x0718; registered object size 32 bytes, mapped wire fields currently serialize to 0x1A bytes. Registered in Network_RegisterServerOpcode_0351 at 0x14006c290.

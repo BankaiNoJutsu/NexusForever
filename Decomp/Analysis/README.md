@@ -263,6 +263,11 @@ See [CONTINUATION_GUIDE.md](CONTINUATION_GUIDE.md) for the repeatable map,
 label, implement, and verification workflow to use when continuing the
 client-binary decompile.
 
+Quest coverage (curated scripts vs generic table-driven vs blocked objective
+types) is tracked in [QUEST_IMPLEMENTATION_STATUS.md](QUEST_IMPLEMENTATION_STATUS.md).
+Regenerate the inventory with
+`python Tools/WikiArchiveAudit/quest_implementation_audit.py`.
+
 See [EVIDENCE_LOOP_PROCEDURE.md](EVIDENCE_LOOP_PROCEDURE.md) for the spell and
 packet evidence workflow that pairs the decompile exports with fixture SQL,
 `/spell inspect4`, `/spell cast4`, diagnostics, and packet comparisons.
