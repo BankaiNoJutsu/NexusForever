@@ -7,6 +7,7 @@ using NexusForever.Game.Static.Map.Lock;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Instance;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Instance;
@@ -39,6 +40,13 @@ public class ClientRaidInfoRequestHandlerTests
 
         ServerRaidInfoResponse response = Assert.Single(GetEncryptedMessages<ServerRaidInfoResponse>(sessionProxy));
         Assert.Empty(response.Raids);
+
+        ServerRaidQueueStatus queueStatus = Assert.Single(GetEncryptedMessages<ServerRaidQueueStatus>(sessionProxy));
+        Assert.Equal(0ul, queueStatus.Unknown0);
+        Assert.Equal(0u, queueStatus.Unknown1);
+        Assert.Equal(0ul, queueStatus.Unknown2);
+        Assert.Equal(0u, queueStatus.Unknown3);
+        Assert.Equal(0u, queueStatus.Unknown4);
     }
 
     [Fact]
@@ -75,6 +83,13 @@ public class ClientRaidInfoRequestHandlerTests
         RecordingDispatchProxy<IMapLockManager>.Invocation lookup =
             Assert.Single(mapLockManagerProxy.GetInvocations(nameof(IMapLockManager.TryGetSoloLockCollection)));
         Assert.Equal(identity, lookup.Arguments[0]);
+
+        ServerRaidQueueStatus queueStatus = Assert.Single(GetEncryptedMessages<ServerRaidQueueStatus>(sessionProxy));
+        Assert.Equal(0ul, queueStatus.Unknown0);
+        Assert.Equal(0u, queueStatus.Unknown1);
+        Assert.Equal(0ul, queueStatus.Unknown2);
+        Assert.Equal(0u, queueStatus.Unknown3);
+        Assert.Equal(0u, queueStatus.Unknown4);
     }
 
     private static IReadOnlyList<T> GetEncryptedMessages<T>(RecordingDispatchProxy<IWorldSession> sessionProxy)

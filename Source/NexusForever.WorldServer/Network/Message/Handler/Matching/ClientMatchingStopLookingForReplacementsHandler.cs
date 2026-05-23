@@ -29,12 +29,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
             if (player == null)
                 return;
 
-            // Validate player is in a match
-            IMatchCharacter matchCharacter = matchManager.GetMatchCharacter(player.Identity);
-            IMatch match = matchCharacter?.Match;
-            if (match == null)
+            if (!MatchingLookingForReplacementsValidation.TryGetInProgressMatch(matchManager, player, out IMatch match))
             {
-                log.LogWarning("ClientMatchingStopLookingForReplacements: player {Player} is not in a match.", player.Guid);
+                log.LogWarning("ClientMatchingStopLookingForReplacements: player {Player} is not in an in-progress match.", player.Guid);
                 return;
             }
 

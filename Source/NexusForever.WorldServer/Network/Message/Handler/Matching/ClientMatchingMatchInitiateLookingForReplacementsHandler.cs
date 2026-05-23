@@ -9,14 +9,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 {
     public class ClientMatchingMatchInitiateLookingForReplacementsHandler : IMessageHandler<IWorldSession, ClientMatchingMatchInitiateLookingForReplacements>
     {
-        // Client sender 0x14076aa30 emits only role bits 0..2 for opcode 0x05D5.
-        private const Role ValidReplacementRoles = Role.Tank | Role.Healer | Role.DPS;
-
-        internal static bool IsValidReplacementRoleMask(Role roles)
-        {
-            return (roles & ~ValidReplacementRoles) == Role.None;
-        }
-
         #region Dependency Injection
 
         private readonly ILogger<ClientMatchingMatchInitiateLookingForReplacementsHandler> log;
@@ -38,25 +30,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
             if (player == null)
                 return;
 
-            // 1. Validate player is in a match
-            IMatchCharacter matchCharacter = matchManager.GetMatchCharacter(player.Identity);
-            IMatch match = matchCharacter?.Match;
-            if (match == null)
+            if (!MatchingLookingForReplacementsValidation.TryGetInProgressMatch(matchManager, player, out IMatch match))
             {
-                log.LogWarning("ClientMatchingMatchInitiateLookingForReplacements: player {Player} is not in a match.", player.Guid);
-                return;
-            }
-
-            // 2. Validate match is in progress
-            if (match.Status != MatchStatus.InProgress)
-            {
-                log.LogWarning("ClientMatchingMatchInitiateLookingForReplacements: player {Player} match {Match} status is {Status}, expected InProgress.",
-                    player.Guid, match.Guid, match.Status);
+                log.LogWarning("ClientMatchingMatchInitiateLookingForReplacements: player {Player} is not in an in-progress match.", player.Guid);
                 return;
             }
 
             Role requestedRoles = initiateLookingForReplacements.Roles;
-            if (!IsValidReplacementRoleMask(requestedRoles))
+            if (!MatchingLookingForReplacementsValidation.IsValidReplacementRoleMask(requestedRoles))
             {
                 log.LogWarning("ClientMatchingMatchInitiateLookingForReplacements: player={Player}, match={Match}, invalid role mask={Roles}",
                     player.Guid, match.Guid, requestedRoles);

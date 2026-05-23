@@ -1,6 +1,6 @@
 # Entity / Cluster Aux Opcode Decode Roadmap
 
-Updated: 2026-05-23
+Updated: 2026-05-23 (third pass: entity-create emit marked implemented in ladder table)
 
 Tracks decompile progress to unblock **field semantics** and **runtime emitters** for the
 shape-mapped server-output clusters that replaced `Server0xNNNN` placeholders.
@@ -24,11 +24,11 @@ map-tracked-unit, etc.) remain tracked in `MISSING_FEATURE_MATRIX.md` feature ro
 
 | Opcode | Enum / model | Client reader | Object size (registration) | Direct code callers | Consumer / emit |
 | --- | --- | --- | --- | --- | --- |
-| `0x025F` | `ServerEntityCreateAuxRow` | `ServerEntityCreateAuxRow_ReadPayload` @ `140095c20` | `0x2C` | Registration table + `0x0260` list reader | **Blocked** |
-| `0x0260` | `ServerEntityCreateAuxRowList` | `ServerEntityCreateAuxRowList_ReadPayload` @ `140095ce0` | `0x10` (count + pointer) | Registration table only | **Blocked** |
-| `0x0261` | `ServerEntityCreateAuxBitPackedRowList` | `ServerEntityCreateAuxBitPackedRowList_ReadPayload` @ `140095a80` | `0x10` | Registration table only | **Blocked** |
-| `0x0263` | `ServerEntityCreateAuxBitPackedRow` | `ServerEntityCreateAuxBitPackedRow_ReadPayload` @ `1400959c0` | `0x24` | Registration table + `0x0261` list reader | **Blocked** |
-| `0x0264` | `ServerEntityCreateAuxScalarList` | `ServerEntityCreateAuxScalarList_ReadPayload` @ `140095b40` | `0x18` | Registration table only | **Blocked** |
+| `0x025F` | `ServerEntityCreateAuxRow` | `ServerEntityCreateAuxRow_ReadPayload` @ `140095c20` | `0x2C` | Registration table + `0x0260` list reader | **Emitted** (`BuildEntityCreateAuxPackets`; consumer names blocked) |
+| `0x0260` | `ServerEntityCreateAuxRowList` | `ServerEntityCreateAuxRowList_ReadPayload` @ `140095ce0` | `0x10` (count + pointer) | Registration table only | **Emitted** (same builder) |
+| `0x0261` | `ServerEntityCreateAuxBitPackedRowList` | `ServerEntityCreateAuxBitPackedRowList_ReadPayload` @ `140095a80` | `0x10` | Registration table only | **Emitted** (same builder) |
+| `0x0263` | `ServerEntityCreateAuxBitPackedRow` | `ServerEntityCreateAuxBitPackedRow_ReadPayload` @ `1400959c0` | `0x24` | Registration table + `0x0261` list reader | **Emitted** (same builder) |
+| `0x0264` | `ServerEntityCreateAuxScalarList` | `ServerEntityCreateAuxScalarList_ReadPayload` @ `140095b40` | `0x18` | Registration table only | **Emitted** (same builder) |
 
 Registration evidence: `Network_RegisterServerOpcode_0351` @ `14006c290` (see
 `selected_decompiled.c` registration block ~line 2313).

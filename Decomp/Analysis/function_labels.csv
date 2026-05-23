@@ -296,6 +296,7 @@ WildStar64.exe,14059a900,Tradeskill_SendClientTradeskillPickTalent,Sends world o
 WildStar64.exe,14059acb0,Tradeskill_SendClientTradeskillResetTalents,Sends world opcode 0x0858 ClientTradeskillResetTalents with the active Tradeskill id when that profession has at least one selected talent.
 WildStar64.exe,14059b7c0,Crafting_SendClientCraftingAdditive,Sends world opcode 0x084A ClientCraftingAdditive with crafting station unit id plus additive and catalyst Item2 ids.
 WildStar64.exe,1405926a0,Crafting_GetStationServiceKeyForSchematic,Maps a TradeskillSchematic2 row to station service key 0x4F for runecrafting (TradeSkillId 22), 0x57 for tier-zero Flags bit 0x04 schematics, and 0x2C otherwise.
+WildStar64.exe,1405e6140,Crafting_GetProfessionModifierValue,Returns the effective tradeskill modifier float for a CraftingModifierType index using base GameTable data plus active additive modifiers (multiplier when modifier mode is 3).
 WildStar64.exe,14059d250,RuneCrafting_SendClientRuneInstall,Sends world opcode 0x085B ClientCraftingRuneInstall with target item guid, rune item count, and rune Item2 id array.
 WildStar64.exe,1405a5b90,Entity_LookupSpellWrapperInBST,Performs BST lower_bound lookup for a spell wrapper by spell4 ID on a given entity. param_1=entity_ptr, param_2=spell4_id. Reads BST root at entity+0x7d18. BST node layout: +0x10=left child, +0x18=right child, +0x20=key (spell4_id uint), +0x28=value (spell_wrapper ptr). Returns spell_wrapper ptr on exact match, 0 if not found. Called by SpellService_ResolveSpellWrapper when target is local player or current target.
 WildStar64.exe,1405a8a40,QuestRuntime_FindObjectiveNodeById,Hashes a quest-objective id into the DAT_140c65b80 store and returns the current runtime node when present.
@@ -1668,3 +1669,7 @@ WildStar64.exe,140677950,ItemData_AddRuneSlotLuaRow,Builds one GetRuneSlots arRu
 WildStar64.exe,140514660,ItemRuneSlotType_ToRuneType,Maps compact live rune slot type bytes 1..7 to CodeEnumRuneType values Air..Fusion.
 WildStar64.exe,14020df20,ClientDB_GetItemRuneInstance,Looks up the ItemRuneInstance row used for static/default rune slot data.
 WildStar64.exe,14040efb0,ItemData_ComputeRuneSlotCounts,Computes GetRuneSlots minimum maximum and absolute maximum slot counts from item data and ItemRuneInstance state.
+WildStar64.exe,140766a30,Lua_RegisterFortunesLib,Registers FortunesLib with GetFortunesLootList and FXMisc constants for the Madame Fay UI.
+WildStar64.exe,140766370,FortunesLib_GetFortunesLootList,Builds arItems from cached ServerFortuneRewards item2 ids and parallel float probabilities (UI shows fProbability = server float * 100).
+WildStar64.exe,140081f60,ServerFortuneRewards_ReadPayload,Reads opcode 0x03D2: uint32 item2 id list, money-reward rows, and parallel float item/money probability arrays.
+WildStar64.exe,1400a0b10,ServerFortuneCards_ReadPayload,Reads opcode 0x03D1: fortune operation, three rarity values, three account-item ids, and three flipped flags.
