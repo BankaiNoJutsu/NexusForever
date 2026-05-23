@@ -1,4 +1,5 @@
 using System.Collections;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
@@ -8,12 +9,15 @@ using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Shared;
 using NexusForever.Shared.Game;
+using NLog;
 using NetworkLootItem = NexusForever.Network.World.Message.Model.Loot.LootItem;
 
 namespace NexusForever.Game.Loot
 {
     public class LootInstance : IEnumerable<LootInstanceItem>, IUpdate
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
         public uint OwnerUnitId { get; }
         public uint ParentUnitId { get; }
         public LootEntityType LootEntityType { get; }
@@ -151,13 +155,21 @@ namespace NexusForever.Game.Loot
                 throw new InvalidOperationException($"Character {player.CharacterId} is not permitted to loot owner {OwnerUnitId}.");
 
             bool deliveredAny = false;
+            int failedCount = 0;
             foreach (LootInstanceItem item in lootItems.Values.Where(i => !i.Delivered).ToList())
             {
                 if (item.WinnerCharacterId == 0ul)
                     item.SetWinner(player);
 
-                deliveredAny |= item.DeliverItem(player, sendAsGrant);
+                if (item.DeliverItem(player, sendAsGrant))
+                    deliveredAny = true;
+                else
+                    failedCount++;
             }
+
+            if (failedCount > 0)
+                log.Warn("DeliverAllLoot for owner {OwnerUnitId}, player {PlayerId}: {FailedCount} item(s) failed to deliver.",
+                    OwnerUnitId, player.CharacterId, failedCount);
 
             return deliveredAny;
         }
@@ -168,6 +180,18 @@ namespace NexusForever.Game.Loot
             {
                 OwnerUnitId = OwnerUnitId
             });
+        }
+
+        public void SendLootRemoveToAllLooters()
+        {
+            foreach (ulong characterId in looterGuids.Keys)
+            {
+                IPlayer player = TryGetPlayer(characterId);
+                player?.Session.EnqueueMessageEncrypted(new ServerLootRemove
+                {
+                    OwnerUnitId = OwnerUnitId
+                });
+            }
         }
 
         public bool HasLootInstanceId(uint lootInstanceId)
@@ -200,7 +224,14 @@ namespace NexusForever.Game.Loot
             if (item.WinnerCharacterId == 0ul)
                 item.SetWinner(player);
 
-            return item.DeliverItem(player);
+            bool delivered = item.DeliverItem(player);
+            if (delivered)
+            {
+                BroadcastLootItemUpdate(item);
+                BroadcastLootNotification(item, player);
+            }
+
+            return delivered;
         }
 
         public bool RollLoot(IPlayer player, uint lootInstanceItemId, LootRollAction action)
@@ -215,6 +246,7 @@ namespace NexusForever.Game.Loot
                 return false;
 
             BroadcastToAudience(item, item.BuildRollMessage(player, action));
+            BroadcastLootItemUpdate(item);
 
             if (item.ShouldFinaliseRoll())
                 FinaliseRoll(item);
@@ -238,12 +270,23 @@ namespace NexusForever.Game.Loot
 
             item.ResolveAssignedWinner(assignee, assigneeGuid);
             BroadcastToAudience(item, item.BuildAssignedWinnerMessage(assignee));
+            BroadcastLootItemUpdate(item);
 
-            IPlayer assigneePlayer = PlayerManager.Instance.GetPlayer(assignee);
+            IPlayer assigneePlayer = TryGetPlayer(assignee);
             if (assigneePlayer == null)
+            {
+                log.Warn("Master loot assignment for loot unit {LootUnitId} on owner {OwnerUnitId}: assignee {AssigneeId} is offline; item remains on corpse.",
+                    lootInstanceItemId, OwnerUnitId, assignee.Id);
                 return true;
+            }
 
             bool delivered = item.DeliverItem(assigneePlayer);
+            if (delivered)
+            {
+                BroadcastLootItemUpdate(item);
+                BroadcastLootNotification(item, assigneePlayer);
+            }
+
             if (delivered && HasExpired)
                 BroadcastToAudience(item, new ServerLootRemove { OwnerUnitId = OwnerUnitId });
 
@@ -283,18 +326,29 @@ namespace NexusForever.Game.Loot
             if (winnerIdentity == null || !looterGuids.TryGetValue(winnerIdentity.Id, out uint winnerGuid))
             {
                 item.MarkDeliveredWithoutWinner();
+                BroadcastLootItemUpdate(item);
                 if (HasExpired)
                     BroadcastToAudience(item, new ServerLootRemove { OwnerUnitId = OwnerUnitId });
                 return;
             }
 
             item.ResolveRollWinner(winnerIdentity, winnerGuid);
+            BroadcastLootItemUpdate(item);
 
-            IPlayer winner = PlayerManager.Instance.GetPlayer(winnerIdentity);
+            IPlayer winner = TryGetPlayer(winnerIdentity);
             if (winner == null)
+            {
+                log.Warn("Roll winner {WinnerId} is offline for loot unit {LootUnitId} on owner {OwnerUnitId}; item remains assigned for deferred delivery.",
+                    winnerIdentity.Id, item.Id, OwnerUnitId);
                 return;
+            }
 
-            item.DeliverItem(winner);
+            if (item.DeliverItem(winner))
+            {
+                BroadcastLootItemUpdate(item);
+                BroadcastLootNotification(item, winner);
+            }
+
             if (HasExpired)
                 BroadcastToAudience(item, new ServerLootRemove { OwnerUnitId = OwnerUnitId });
         }
@@ -307,9 +361,29 @@ namespace NexusForever.Game.Loot
 
             foreach (ulong characterId in audience.Distinct())
             {
-                IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
+                IPlayer player = TryGetPlayer(characterId);
                 player?.Session.EnqueueMessageEncrypted(message);
             }
+        }
+
+        private static IPlayer TryGetPlayer(ulong characterId)
+        {
+            IPlayerManager playerManager = LegacyServiceProvider.Provider.GetService<IPlayerManager>();
+            return playerManager?.GetPlayer(characterId);
+        }
+
+        private static IPlayer TryGetPlayer(Identity identity)
+        {
+            IPlayerManager playerManager = LegacyServiceProvider.Provider.GetService<IPlayerManager>();
+            return playerManager?.GetPlayer(identity);
+        }
+
+        private void BroadcastLootItemUpdate(LootInstanceItem item)
+        {
+            BroadcastToAudience(item, new ServerLootItemUpdate
+            {
+                LootItem = item.Build()
+            });
         }
 
         public void BroadcastLootNotification(LootInstanceItem item, IPlayer excludedLooter)
@@ -334,7 +408,7 @@ namespace NexusForever.Game.Loot
                 if (characterId == excludedLooter?.CharacterId)
                     continue;
 
-                IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
+                IPlayer player = TryGetPlayer(characterId);
                 player?.Session.EnqueueMessageEncrypted(notification);
             }
         }

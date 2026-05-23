@@ -18,11 +18,14 @@ using NexusForever.Network.World.Message.Model.Marketplace.Filter;
 using NexusForever.Network.World.Message.Static;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Shared;
+using NLog;
 
 namespace NexusForever.Game.Marketplace
 {
     public sealed class GlobalMarketplaceManager : Singleton<GlobalMarketplaceManager>, IGlobalMarketplaceManager
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
         private const uint MaxAuctionFilters = 7u;
         private const uint AuctionPageSize = 50u;
         private const uint CommodityOrderQuantityLimitGameFormulaId = 0x439u;
@@ -39,7 +42,10 @@ namespace NexusForever.Game.Marketplace
         {
             CharacterDatabase database = TryGetCharacterDatabase();
             if (database == null)
+            {
+                log.Warn("GlobalMarketplaceManager.Initialise skipped: CharacterDatabase is null. No auction/order data loaded.");
                 return;
+            }
 
             nextAuctionId        = database.GetNextMarketplaceAuctionId() + 1ul;
             nextCommodityOrderId = database.GetNextMarketplaceCommodityOrderId() + 1ul;
@@ -52,7 +58,10 @@ namespace NexusForever.Game.Marketplace
                 foreach (MarketplaceAuctionModel model in database.GetMarketplaceAuctions())
                 {
                     if (model.Item == null)
+                    {
+                        log.Debug("GlobalMarketplaceManager.Initialise skipping auction id={0}: model.Item is null.", model.Id);
                         continue;
+                    }
 
                     auctions.Add(new MarketplaceAuction
                     {
@@ -136,19 +145,31 @@ namespace NexusForever.Game.Marketplace
         {
             lock (syncRoot)
             {
-                List<AuctionInfo> results = auctions
+                List<MarketplaceAuction> matching = auctions
                     .Where(a => MatchesAuctionRequest(itemManager, a, request))
+                    .ToList();
+
+                bool descending = (request.ReverseSort & 1u) != 0u;
+                IOrderedEnumerable<MarketplaceAuction> sorted = request.AuctionSort switch
+                {
+                    AuctionSort.Buyout   => descending ? matching.OrderByDescending(a => a.Auction.BuyoutPrice) : matching.OrderBy(a => a.Auction.BuyoutPrice),
+                    AuctionSort.TimeLeft => descending ? matching.OrderByDescending(GetAuctionSortExpiration) : matching.OrderBy(GetAuctionSortExpiration),
+                    _                    => descending ? matching.OrderByDescending(a => a.Auction.CurrentBid == 0ul ? a.Auction.MinimumBid : a.Auction.CurrentBid) : matching.OrderBy(a => a.Auction.CurrentBid == 0ul ? a.Auction.MinimumBid : a.Auction.CurrentBid)
+                };
+                List<MarketplaceAuction> sortedList = sorted.ToList();
+
+                int skip = checked((int)(request.Page * AuctionPageSize));
+                List<AuctionInfo> page = sortedList
+                    .Skip(skip)
+                    .Take((int)AuctionPageSize)
                     .Select(a => CloneAuction(a.Auction, a.ExpiresAtUtc))
                     .ToList();
 
-                results = SortAuctions(results, request);
-
-                int skip = checked((int)(request.Page * AuctionPageSize));
                 return new ServerAuctionSearchResults
                 {
-                    TotalResultCount = (uint)results.Count,
+                    TotalResultCount = (uint)sortedList.Count,
                     CurrentPage      = request.Page,
-                    Auctions         = results.Skip(skip).Take((int)AuctionPageSize).ToList()
+                    Auctions         = page
                 };
             }
         }
@@ -296,14 +317,22 @@ namespace NexusForever.Game.Marketplace
                 if (record.Auction.OwnerCharacterId != player.CharacterId)
                     return GenericError.Params;
 
+                bool canReturnToInventory = player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
+                if (!canReturnToInventory && !MarketplaceMailDelivery.IsAvailable)
+                    return GenericError.ItemInventoryFull;
+
+                record.Item.CharacterId = player.CharacterId;
+                if (!canReturnToInventory
+                    && !MarketplaceMailDelivery.TrySendItemAuctionReturnMail(player.CharacterId, record.Item))
+                {
+                    return GenericError.ItemInventoryFull;
+                }
+
                 auctions.Remove(record);
                 RefundTopBidder(record);
-                record.Item.CharacterId = player.CharacterId;
 
-                if (player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u)
+                if (canReturnToInventory)
                     player.Inventory.AddItem(record.Item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
-                else if (!MarketplaceMailDelivery.TrySendItemAuctionReturnMail(player.CharacterId, record.Item))
-                    return GenericError.ItemInventoryFull;
 
                 PersistAuctionDelete(record, record.Item);
                 return GenericError.Ok;
@@ -379,26 +408,26 @@ namespace NexusForever.Game.Marketplace
                     return GenericError.ItemBadId;
 
                 cancelledOrder = CloneOrder(record.Order);
-                if (!record.Order.IsBuyOrder
-                    && player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) == 0u
-                    && !MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
-                        player.CharacterId,
-                        record.Order.Item2Id,
-                        record.Order.Quantity))
+
+                bool returnByMail = !record.Order.IsBuyOrder
+                    && player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) == 0u;
+                if (returnByMail)
                 {
-                    return GenericError.ItemInventoryFull;
+                    if (!MarketplaceMailDelivery.IsAvailable
+                        || !MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
+                            player.CharacterId,
+                            record.Order.Item2Id,
+                            record.Order.Quantity))
+                    {
+                        return GenericError.ItemInventoryFull;
+                    }
                 }
 
                 commodityOrders.Remove(record);
                 if (record.Order.IsBuyOrder)
                     player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, record.Order.Price);
-                else if (player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u)
+                else if (!returnByMail)
                     player.Inventory.ItemCreate(InventoryLocation.Inventory, record.Order.Item2Id, record.Order.Quantity, ItemUpdateReason.Auction);
-                else
-                    MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
-                        player.CharacterId,
-                        record.Order.Item2Id,
-                        record.Order.Quantity);
 
                 PersistCommodityOrderDelete(record);
                 return GenericError.Ok;
@@ -463,6 +492,10 @@ namespace NexusForever.Game.Marketplace
         {
             ValidateItem2(itemManager, order.Item2Id);
             if (order.Quantity == 0u || order.PricePerUnit == 0ul || order.Price == 0ul)
+                throw new InvalidPacketValueException();
+
+            if (!TryComputeCommodityEscrowPrice(order.PricePerUnit, order.Quantity, out ulong expectedPrice)
+                || order.Price != expectedPrice)
                 throw new InvalidPacketValueException();
 
             GameFormulaEntry quantityLimit = gameTableManager.GameFormula.GetEntry(CommodityOrderQuantityLimitGameFormulaId);
@@ -555,9 +588,12 @@ namespace NexusForever.Game.Marketplace
         {
             CharacterDatabase database = TryGetCharacterDatabase();
             if (database == null)
+            {
+                log.Warn("GlobalMarketplaceManager.Persist skipped: CharacterDatabase is null. In-memory state may diverge from database.");
                 return;
+            }
 
-            database.Save(action).GetAwaiter().GetResult();
+            database.Save(action).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         private static CharacterDatabase TryGetCharacterDatabase()
@@ -669,9 +705,18 @@ namespace NexusForever.Game.Marketplace
             if (string.IsNullOrWhiteSpace(value))
                 return [];
 
-            return value.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(v => uint.Parse(v, CultureInfo.InvariantCulture))
-                .ToList();
+            try
+            {
+                return value.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(v => uint.Parse(v, CultureInfo.InvariantCulture))
+                    .ToList();
+            }
+            catch (FormatException ex)
+            {
+                log.Error(ex, "GlobalMarketplaceManager.DeserializeUnknownArray failed to parse corrupt DB value '{0}'. Returning empty array.",
+                    value.Length > 200 ? value[..200] + "..." : value);
+                return [];
+            }
         }
 
         private static ulong[] BuildCommodityPriceBuckets(IEnumerable<MarketplaceCommodityOrder> orders, bool buyOrders)
@@ -718,19 +763,6 @@ namespace NexusForever.Game.Marketplace
             }
 
             return true;
-        }
-
-        private static List<AuctionInfo> SortAuctions(List<AuctionInfo> auctionsToSort, ClientAuctionsByFilterRequest request)
-        {
-            bool descending = (request.ReverseSort & 1u) != 0u;
-            IOrderedEnumerable<AuctionInfo> sorted = request.AuctionSort switch
-            {
-                AuctionSort.Buyout   => descending ? auctionsToSort.OrderByDescending(a => a.BuyoutPrice) : auctionsToSort.OrderBy(a => a.BuyoutPrice),
-                AuctionSort.TimeLeft => descending ? auctionsToSort.OrderByDescending(a => a.ExpirationTime) : auctionsToSort.OrderBy(a => a.ExpirationTime),
-                _                    => descending ? auctionsToSort.OrderByDescending(a => a.CurrentBid == 0ul ? a.MinimumBid : a.CurrentBid) : auctionsToSort.OrderBy(a => a.CurrentBid == 0ul ? a.MinimumBid : a.CurrentBid)
-            };
-
-            return sorted.ToList();
         }
 
         private void ProcessExpiredAuctions()
@@ -903,6 +935,14 @@ namespace NexusForever.Game.Marketplace
             TryGetCharacterDatabase()?.CreditCharacterCurrency(characterId, (byte)currencyType, amount);
         }
 
+        /// <summary>
+        /// Attempts to match an incoming commodity order against all opposite-side orders.
+        /// </summary>
+        /// <remarks>
+        /// NOTE: This performs a full scan over all opposite orders for every new post,
+        /// resulting in O(n²) behaviour under load. A deeper refactor (e.g. price-indexed
+        /// order book) is needed to bring this to O(log n) per match.
+        /// </remarks>
         private void TryMatchCommodityOrder(MarketplaceCommodityOrder incoming)
         {
             IEnumerable<MarketplaceCommodityOrder> candidates = commodityOrders
@@ -1013,6 +1053,11 @@ namespace NexusForever.Game.Marketplace
             };
         }
 
+        private static ulong GetAuctionSortExpiration(MarketplaceAuction auction)
+        {
+            return auction.ExpiresAtUtc != 0ul ? auction.ExpiresAtUtc : auction.Auction.ExpirationTime;
+        }
+
         private static CommodityOrder CloneOrder(CommodityOrder order)
         {
             return new CommodityOrder
@@ -1046,6 +1091,19 @@ namespace NexusForever.Game.Marketplace
             return commodityOrders.Count(o =>
                 o.OwnerCharacterId == ownerCharacterId
                 && o.Order.IsBuyOrder == isBuyOrder);
+        }
+
+        private static bool TryComputeCommodityEscrowPrice(ulong pricePerUnit, uint quantity, out ulong totalPrice)
+        {
+            totalPrice = 0ul;
+            if (quantity == 0u || pricePerUnit == 0ul)
+                return false;
+
+            if (pricePerUnit > ulong.MaxValue / quantity)
+                return false;
+
+            totalPrice = pricePerUnit * quantity;
+            return true;
         }
 
         private static void ValidateAuctionFilter(IAuctionFilter filter)

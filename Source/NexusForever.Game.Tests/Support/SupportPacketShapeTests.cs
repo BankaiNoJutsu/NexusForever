@@ -34,6 +34,22 @@ public class SupportPacketShapeTests
     }
 
     [Fact]
+    public void ServerSupportUInt32AndFlags_WritesValueFlagsAndPadding()
+    {
+        var packet = new ServerSupportUInt32AndFlags
+        {
+            Value = 0x12345678u,
+            Flags = 0x3u,     // max 2-bit value
+        };
+
+        using var reader = CreateReader(WritePacket(packet));
+        Assert.Equal(0x12345678u, reader.ReadUInt());
+        Assert.Equal(0x3u, reader.ReadUInt(2u));
+        // 30-bit zero padding consumed implicitly (remaining bits in the byte are zero).
+        Assert.Equal(0u, reader.ReadUInt(30u));
+    }
+
+    [Fact]
     public void ServerSupportUInt32WideString_WritesMappedFields()
     {
         var packet = new ServerSupportUInt32WideString

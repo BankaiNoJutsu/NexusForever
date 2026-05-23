@@ -170,6 +170,20 @@ namespace NexusForever.Game.Pvp
             }
         }
 
+        public void OnPlayerDisconnect(IPlayer player)
+        {
+            if (player == null)
+                return;
+
+            lock (syncRoot)
+            {
+                if (!sessionsByPlayer.TryGetValue(player.Guid, out DuelSession session))
+                    return;
+
+                Finish(session, session.Challenger, session.Opponent, DuelFinishReason.DuelCancelled);
+            }
+        }
+
         public void Update(double lastTick)
         {
             lock (syncRoot)
@@ -226,7 +240,6 @@ namespace NexusForever.Game.Pvp
                 session.LeashTimer -= lastTick;
                 if (session.LeashTimer <= 0d)
                 {
-                    // Both players are out of range for too long — cancel the duel.
                     Finish(session, session.Challenger, session.Opponent, DuelFinishReason.DuelCancelled);
                 }
             }
@@ -316,10 +329,13 @@ namespace NexusForever.Game.Pvp
 
             UpdateDuelAchievements(winner, loser, reason);
 
+            bool hasWinner = reason != DuelFinishReason.DuelCancelled
+                          && reason != DuelFinishReason.DeclinedRequest;
+
             SendToParticipants(session, new ServerDuelResult
             {
-                WinnerUnitId = winner?.Guid ?? 0u,
-                LoserUnitId  = loser?.Guid ?? 0u,
+                WinnerUnitId = hasWinner ? winner?.Guid ?? 0u : 0u,
+                LoserUnitId  = hasWinner ? loser?.Guid ?? 0u : 0u,
                 Reason       = reason
             });
         }

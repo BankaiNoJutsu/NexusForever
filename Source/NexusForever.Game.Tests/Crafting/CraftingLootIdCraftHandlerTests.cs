@@ -246,6 +246,8 @@ public class CraftingLootIdCraftHandlerTests
         public bool DropLoot(IPlayer looter, IWorldEntity lootedEntity) => false;
         public bool HasLoot(IItem lootedItem) => false;
         public bool DropLoot(IPlayer looter, IItem lootedItem) => false;
+        public bool TryDeliverHarvestLoot(IPlayer harvester, IReadOnlyList<GeneratedLootItem> items, uint ownerUnitId) => false;
+
         public bool TryUseLootBag(IPlayer looter, IItem lootedItem, out string reason)
         {
             reason = string.Empty;

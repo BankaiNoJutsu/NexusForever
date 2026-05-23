@@ -41,6 +41,14 @@ namespace NexusForever.Game.Loot
             public IReadOnlyList<IPlayer> MasterLootCandidates { get; init; } = [];
         }
 
+        /// <summary>
+        /// Monotonically increasing loot-unit id.
+        /// </summary>
+        /// <remarks>
+        /// Allocated only from the world tick (<see cref="Update"/> or synchronous
+        /// player actions that arrive on the world thread). No lock is required
+        /// because the world server processes a single tick at a time on one thread.
+        /// </remarks>
         public uint NextLootId
         {
             get
@@ -55,6 +63,16 @@ namespace NexusForever.Game.Loot
         private readonly Dictionary<uint, List<LootGroup>> creatureLoot = [];
         private readonly Dictionary<uint, List<LootGroup>> itemLoot = [];
         private readonly Dictionary<uint, List<LootItem>> directCreatureLoot = [];
+
+        /// <summary>
+        /// Active loot instances in the world.
+        /// </summary>
+        /// <remarks>
+        /// Mutated only on the world thread (via <see cref="Update"/>, <see cref="DropLoot"/>,
+        /// <see cref="GiveLoot"/>, and other player-driven actions that are dispatched
+        /// synchronously on the world tick). No lock is required because the world server
+        /// processes a single tick at a time on one thread.
+        /// </remarks>
         private readonly List<LootInstance> lootInstances = [];
 
         private readonly UpdateTimer updateTimer = new(1d);
@@ -166,6 +184,9 @@ namespace NexusForever.Game.Loot
 
         private void RemoveExpiredLootInstances()
         {
+            foreach (LootInstance lootInstance in lootInstances.Where(i => i.HasExpired).ToList())
+                lootInstance.SendLootRemoveToAllLooters();
+
             lootInstances.RemoveAll(i => i.HasExpired);
         }
 
@@ -275,6 +296,12 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
+            if (!CanDeliverGeneratedItemLoot(looter, items, out reason))
+            {
+                log.Trace($"Loot bag use failed during delivery preflight for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: reason={reason}, generatedItems=[{FormatGeneratedLootItems(items)}].");
+                return false;
+            }
+
             if (!looter.Inventory.ItemUse(lootedItem))
             {
                 reason = "item-use-failed";
@@ -282,15 +309,57 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            if (TryDeliverGeneratedItemLoot(looter, items, looter.Guid))
+            if (!TryDeliverGeneratedItemLoot(looter, items, looter.Guid))
             {
-                log.Trace($"Loot bag use delivered generated loot for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: generatedItems=[{FormatGeneratedLootItems(items)}].");
-                return true;
+                reason = "loot-delivery-failed";
+                log.Warn($"Loot bag use failed during final delivery after item consumption for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: generatedItems=[{FormatGeneratedLootItems(items)}].");
+                return false;
             }
 
-            reason = "loot-delivery-failed";
-            log.Trace($"Loot bag use failed during final delivery for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: reason={reason}, generatedItems=[{FormatGeneratedLootItems(items)}].");
-            return false;
+            log.Trace($"Loot bag use succeeded for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: generatedItems=[{FormatGeneratedLootItems(items)}].");
+            return true;
+        }
+
+        /// <summary>
+        /// Delivers resource/harvest loot using the group's <see cref="HarvestLootRule"/> when applicable.
+        /// Corpse loot uses <see cref="ConfigureLootDistribution"/> instead.
+        /// </summary>
+        public bool TryDeliverHarvestLoot(IPlayer harvester, IReadOnlyList<GeneratedLootItem> items, uint ownerUnitId)
+        {
+            if (harvester == null)
+                return false;
+
+            ArgumentNullException.ThrowIfNull(items);
+            if (items.Count == 0)
+                return false;
+
+            IPlayer recipient = harvester;
+            if (harvester.GroupAssociation != 0ul
+                && groupStateManager.TryGetGroup(harvester.GroupAssociation, out GroupLootState group)
+                && group.HasMember(harvester.Identity))
+            {
+                List<(IPlayer Player, GroupLootMember Member)> eligible = [];
+                foreach (GroupLootMember member in group.Members)
+                {
+                    IPlayer player = PlayerManager.Instance.GetPlayer(member.Identity);
+                    if (player == null || player.Map == null || player.Map != harvester.Map)
+                        continue;
+
+                    eligible.Add((player, member));
+                }
+
+                if (eligible.Count > 1)
+                {
+                    GroupLootMember winner = groupStateManager.ResolveHarvestLootRecipient(
+                        group,
+                        harvester,
+                        eligible.Select(e => e.Member).ToList());
+                    recipient = eligible.First(e => e.Member.Identity.Id == winner.Identity.Id).Player
+                        ?? harvester;
+                }
+            }
+
+            return TryDeliverGeneratedItemLoot(recipient, items, ownerUnitId);
         }
 
         private static Dictionary<ulong, uint> CreatePlayerLooterMap(IPlayer player)
@@ -326,21 +395,23 @@ namespace NexusForever.Game.Loot
                 eligible.Add((player, member));
             }
 
-            if (eligible.All(e => e.Player.CharacterId != looter.CharacterId))
-            {
-                GroupLootMember member = group.GetMember(looter.Identity) ?? new GroupLootMember
-                {
-                    Identity   = looter.Identity,
-                    GroupIndex = 0u
-                };
-                if (sameMapMembers.All(e => e.Player.CharacterId != looter.CharacterId))
-                    sameMapMembers.Add((looter, member));
-
-                eligible.Add((looter, member));
-            }
-
             if (eligible.Count <= 1)
+            {
+                if (sameMapMembers.Count > 1)
+                {
+                    return new LootRecipientContext
+                    {
+                        LooterType           = LooterType.Group,
+                        Group                = group,
+                        LooterIds            = sameMapMembers.ToDictionary(e => e.Player.CharacterId, e => e.Player.Guid),
+                        EligiblePlayers      = sameMapMembers.Select(e => e.Player).ToList(),
+                        EligibleMembers      = sameMapMembers.Select(e => e.Member).ToList(),
+                        MasterLootCandidates = sameMapMembers.Select(e => e.Player).Distinct().ToList()
+                    };
+                }
+
                 return CreateSoloRecipientContext(looter);
+            }
 
             return new LootRecipientContext
             {
@@ -424,6 +495,10 @@ namespace NexusForever.Game.Loot
             return lootInstance;
         }
 
+        /// <summary>
+        /// Applies corpse loot rules (Need/Greed/Master/RR/FFA). Resource harvest uses
+        /// <see cref="TryDeliverHarvestLoot"/> with <see cref="GroupLootState.HarvestRule"/>.
+        /// </summary>
         private void ConfigureLootDistribution(LootInstance lootInstance, LootRecipientContext recipients)
         {
             if (recipients.Group == null || recipients.EligiblePlayers.Count <= 1)
@@ -577,6 +652,46 @@ namespace NexusForever.Game.Loot
             return true;
         }
 
+        private static bool CanDeliverGeneratedItemLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, out string reason)
+        {
+            reason = string.Empty;
+            if (looter == null)
+            {
+                reason = "missing-looter";
+                return false;
+            }
+
+            ArgumentNullException.ThrowIfNull(items);
+            foreach (GeneratedLootItem item in items)
+            {
+                if (item.Count == 0u)
+                    continue;
+
+                switch (item.Type)
+                {
+                    case LootItemType.StaticItem:
+                        if (!LootInstanceItem.CanDeliverStaticItem(looter, item.StaticId, item.Count, out bool inventoryFull))
+                        {
+                            reason = inventoryFull
+                                ? "inventory-full"
+                                : $"invalid-loot-item:{item.Type}:{item.StaticId}";
+                            return false;
+                        }
+                        break;
+                    case LootItemType.AccountCurrency:
+                    case LootItemType.AccountItem:
+                    case LootItemType.Cash:
+                    case LootItemType.VirtualItem:
+                        break;
+                    default:
+                        reason = $"invalid-loot-item:{item.Type}:{item.StaticId}";
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
         private static bool TryDeliverGeneratedItemLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId)
         {
             if (looter == null)
@@ -681,7 +796,7 @@ namespace NexusForever.Game.Loot
             bool delivered = lootInstance.GiveLoot(looter, resolvedLootUnitId);
             log.Trace($"Loot collect delivery result for player {looter.CharacterId}, ownerUnit={ownerUnitId}, resolvedLootUnitId={resolvedLootUnitId}: delivered={delivered}, hasExpired={lootInstance.HasExpired}, items=[{FormatLootInstanceItems(lootInstance)}].");
             if (delivered && lootInstance.HasExpired)
-                lootInstance.SendLootRemove(looter);
+                lootInstance.SendLootRemoveToAllLooters();
         }
 
         public void GiveAllLootInRange(IPlayer looter)
@@ -710,7 +825,7 @@ namespace NexusForever.Game.Loot
                 log.Trace($"Loot vacuum processed instance for player {looter.CharacterId}, ownerUnit={lootInstance.OwnerUnitId}: deliveredCount={deliveredCount}, hasExpired={lootInstance.HasExpired}, items=[{FormatLootInstanceItems(lootInstance)}].");
 
                 if (lootInstance.HasExpired)
-                    lootInstance.SendLootRemove(looter);
+                    lootInstance.SendLootRemoveToAllLooters();
             }
         }
 

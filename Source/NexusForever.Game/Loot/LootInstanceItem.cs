@@ -418,7 +418,7 @@ namespace NexusForever.Game.Loot
                     player.CurrencyManager.CurrencyAddAmount((CurrencyType)StaticId, Amount, isLoot: true);
                     break;
                 case LootItemType.StaticItem:
-                    if (!TryCanDeliverStaticItem(player, out bool inventoryFull))
+                    if (!CanDeliverStaticItem(player, StaticId, Amount, out bool inventoryFull))
                     {
                         if (inventoryFull)
                         {
@@ -436,9 +436,10 @@ namespace NexusForever.Game.Loot
                         return false;
                     }
 
-                    player.Inventory.ItemCreate(InventoryLocation.Inventory, StaticId, Amount, ItemUpdateReason.Loot);
-                    if (RequiresBindOnPickupConfirmation())
-                        SoulbindDeliveredStaticItems(player);
+                    SoulbindDeliveredStaticItems(player, () =>
+                    {
+                        player.Inventory.ItemCreate(InventoryLocation.Inventory, StaticId, Amount, ItemUpdateReason.Loot);
+                    });
                     break;
                 case LootItemType.VirtualItem:
                     player.QuestManager.ObjectiveUpdate(QuestObjectiveType.VirtualCollect, StaticId, Amount);
@@ -496,9 +497,11 @@ namespace NexusForever.Game.Loot
             return [item];
         }
 
-        private bool TryCanDeliverStaticItem(IPlayer player, out bool inventoryFull)
+        public static bool CanDeliverStaticItem(IPlayer player, uint staticId, uint amount, out bool inventoryFull)
         {
             inventoryFull = false;
+            if (player?.Inventory == null)
+                return false;
 
             IBag inventoryBag = player.Inventory.SingleOrDefault(bag => bag.Location == InventoryLocation.Inventory);
             if (inventoryBag == null)
@@ -507,11 +510,11 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            IItemInfo itemInfo = ItemManager.Instance.GetItemInfo(StaticId);
+            IItemInfo itemInfo = ItemManager.Instance.GetItemInfo(staticId);
             if (itemInfo == null)
                 return false;
 
-            ulong remainingCount = Amount;
+            ulong remainingCount = amount;
             if (itemInfo.IsStackable())
             {
                 foreach (IItem item in inventoryBag.Where(i => i.Info.Id == itemInfo.Id && i.ExpirationTimeLeft == 0u))
@@ -599,16 +602,25 @@ namespace NexusForever.Game.Loot
             bindPickupConfirmations.Clear();
         }
 
-        private void SoulbindDeliveredStaticItems(IPlayer player)
+        private void SoulbindDeliveredStaticItems(IPlayer player, Action deliver)
         {
             if (!RequiresBindOnPickupConfirmation())
+            {
+                deliver();
                 return;
+            }
 
             IBag inventoryBag = player.Inventory.SingleOrDefault(bag => bag.Location == InventoryLocation.Inventory);
             if (inventoryBag == null)
+            {
+                deliver();
                 return;
+            }
 
-            foreach (IItem item in inventoryBag.Where(i => i.Info?.Entry.Id == StaticId && !i.Soulbound))
+            HashSet<ulong> existingGuids = inventoryBag.Select(i => i.Guid).ToHashSet();
+            deliver();
+
+            foreach (IItem item in inventoryBag.Where(i => !existingGuids.Contains(i.Guid) && i.Info?.Entry.Id == StaticId && !i.Soulbound))
                 item.MakeSoulbound();
         }
 

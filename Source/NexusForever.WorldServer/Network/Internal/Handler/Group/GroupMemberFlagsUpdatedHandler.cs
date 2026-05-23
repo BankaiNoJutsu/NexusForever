@@ -25,6 +25,8 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
 
         public Task Handle(GroupMemberFlagsUpdatedMessage message)
         {
+            uint memberIndex = message.Member.GroupIndex;
+
             foreach (GroupMember item in message.Group.Members)
             {
                 IPlayer player = playerManager.GetPlayer(item.Identity.ToGameIdentity());
@@ -36,6 +38,7 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
                     player.Session.EnqueueMessageEncrypted(new ServerGroupMemberFlagsChanged
                     {
                         GroupId         = message.Group.Id,
+                        MemberIndex     = memberIndex,
                         TargetedPlayer  = message.Member.Identity.ToNetworkIdentity(),
                         ChangedFlags    = message.Member.Flags,
                         IsFromPromotion = true,
@@ -46,32 +49,21 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
                     player.Session.EnqueueMessageEncrypted(new ServerGroupMemberRoleChange
                     {
                         GroupId        = message.Group.Id,
+                        MemberIndex    = memberIndex,
                         TargetedPlayer = message.Member.Identity.ToNetworkIdentity(),
                         ChangedFlags   = message.Member.Flags,
                     });
                 }
 
-                if (HasReadyCheckFlags(message.Member.Flags))
+                player.Session.EnqueueMessageEncrypted(new ServerGroupReadyCheckStatusUpdate
                 {
-                    player.Session.EnqueueMessageEncrypted(new ServerGroupReadyCheckStatusUpdate
-                    {
-                        GroupId        = message.Group.Id,
-                        MemberIdentity = message.Member.Identity.ToNetworkIdentity(),
-                        ReadyStatus    = BuildReadyCheckStatus(message.Member.Flags),
-                    });
-                }
+                    GroupId        = message.Group.Id,
+                    MemberIdentity = message.Member.Identity.ToNetworkIdentity(),
+                    ReadyStatus    = BuildReadyCheckStatus(message.Member.Flags),
+                });
             }
 
             return Task.CompletedTask;
-        }
-
-        private static bool HasReadyCheckFlags(GroupMemberInfoFlags flags)
-        {
-            const GroupMemberInfoFlags readyCheckMask = GroupMemberInfoFlags.Pending
-                | GroupMemberInfoFlags.Ready
-                | GroupMemberInfoFlags.HasSetReady;
-
-            return (flags & readyCheckMask) != 0;
         }
 
         private static uint BuildReadyCheckStatus(GroupMemberInfoFlags flags)

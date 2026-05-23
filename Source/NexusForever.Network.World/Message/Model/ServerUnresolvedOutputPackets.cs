@@ -464,17 +464,12 @@ namespace NexusForever.Network.World.Message.Model
         }
     }
 
+    /// <summary>
+    /// Shares wire format with <see cref="Shared.ServerUInt32WideStringPayload"/> (client reader <c>1400980f0</c>).
+    /// </summary>
     [Message(GameMessageOpcode.Server0x08CC)]
-    public class Server0x08CC : IWritable
+    public class Server0x08CC : Shared.ServerUInt32WideStringPayload
     {
-        public uint Value { get; set; }
-        public string Text { get; set; } = "";
-
-        public void Write(GamePacketWriter writer)
-        {
-            writer.Write(Value);
-            writer.WriteStringWide(Text);
-        }
     }
 
     [Message(GameMessageOpcode.Server0x08F4)]

@@ -8,6 +8,7 @@ using NexusForever.Game;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Account;
+using NexusForever.Game.Pvp;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Message;
 using NexusForever.Network.Message.Model;
@@ -94,6 +95,8 @@ namespace NexusForever.WorldServer.Network
                     Player.Position.Z,
                     Heartbeat.SecondsUntilFlatline);
             }
+
+            DuelManager.Instance.OnPlayerDisconnect(Player);
 
             base.OnDisconnect();
             Player?.LogoutManager.Finish(LogoutReason.AccountDisconnected);

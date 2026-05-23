@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
+using NexusForever.Game.Static.Group;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Group
@@ -136,6 +138,26 @@ namespace NexusForever.Game.Group
                 roundRobinLastGroupIndices[group.GroupId] = winner.GroupIndex;
                 return winner;
             }
+        }
+
+        public GroupLootMember ResolveHarvestLootRecipient(GroupLootState group, IPlayer harvester, IReadOnlyList<GroupLootMember> eligibleMembers)
+        {
+            if (group == null)
+                throw new ArgumentNullException(nameof(group));
+
+            if (harvester == null)
+                throw new ArgumentNullException(nameof(harvester));
+
+            if (eligibleMembers == null || eligibleMembers.Count == 0)
+                throw new ArgumentException("At least one eligible member is required.", nameof(eligibleMembers));
+
+            if (group.HarvestRule == HarvestLootRule.FirstTagger)
+            {
+                GroupLootMember tagger = eligibleMembers.FirstOrDefault(m => m.Identity.Id == harvester.CharacterId);
+                return tagger ?? eligibleMembers[0];
+            }
+
+            return NextRoundRobinWinner(group, eligibleMembers);
         }
     }
 }

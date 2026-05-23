@@ -15,6 +15,9 @@ namespace NexusForever.Game.Retail
         public const int PveDeserterBaseSeconds  = 15 * 60;
         public const int PvpDeserterBaseSeconds  = 10 * 60;
 
+        /// <summary>PvP flag toggle cooldown before re-enabling (5 minutes).</summary>
+        public const uint PvpFlagCooldownMs = 5 * 60 * 1000;
+
         /// <summary>Matching queue flag for dungeon "My Realm Only" (winter beta S8).</summary>
         public const MatchingQueueFlags DungeonRealmOnlyQueueFlag = MatchingQueueFlags.RealmOnly;
 

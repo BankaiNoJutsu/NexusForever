@@ -67,8 +67,8 @@ public class DuelManagerTests
         manager.Update(0.02d);
 
         ServerDuelResult result = Assert.Single(GetMessages<ServerDuelResult>(challengerSessionProxy));
-        Assert.Equal(101u, result.WinnerUnitId);
-        Assert.Equal(202u, result.LoserUnitId);
+        Assert.Equal(0u, result.WinnerUnitId);
+        Assert.Equal(0u, result.LoserUnitId);
         Assert.Equal(DuelFinishReason.DuelCancelled, result.Reason);
         Assert.Single(GetMessages<ServerDuelResult>(opponentSessionProxy));
         Assert.Equal(DuelFailureReason.CannotDuelRightNow, manager.Accept(opponent));

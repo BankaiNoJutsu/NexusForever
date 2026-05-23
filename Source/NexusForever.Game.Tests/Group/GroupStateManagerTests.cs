@@ -1,8 +1,10 @@
 using NexusForever.Game;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Group;
 using NexusForever.Game.Static.Group;
+using NexusForever.Game.Tests.TestSupport;
 using NexusForever.WorldServer.Network.Internal.Handler.Group;
 using InternalGroup = NexusForever.Network.Internal.Message.Group.Shared.Group;
 using InternalGroupMember = NexusForever.Network.Internal.Message.Group.Shared.GroupMember;
@@ -71,6 +73,50 @@ public class GroupStateManagerTests
         GroupLootState state = group.ToGroupLootState();
 
         Assert.Equal(HarvestLootRule.RoundRobin, state.HarvestRule);
+    }
+
+    [Fact]
+    public void ResolveHarvestLootRecipient_FirstTagger_PrefersHarvester()
+    {
+        var manager = new GroupStateManager();
+        GroupLootState group = BuildGroup(HarvestLootRule.FirstTagger);
+        manager.UpdateGroup(group);
+
+        IPlayer harvester = CreatePlayer(20ul);
+        GroupLootMember winner = manager.ResolveHarvestLootRecipient(
+            group,
+            harvester,
+            group.Members);
+
+        Assert.Equal(20ul, winner.Identity.Id);
+    }
+
+    [Fact]
+    public void ResolveHarvestLootRecipient_RoundRobin_RotatesEligibleMembers()
+    {
+        var manager = new GroupStateManager();
+        GroupLootState group = BuildGroup(HarvestLootRule.RoundRobin);
+        manager.UpdateGroup(group);
+
+        IPlayer firstHarvester = CreatePlayer(10ul);
+        GroupLootMember firstWinner = manager.ResolveHarvestLootRecipient(group, firstHarvester, group.Members);
+        Assert.Equal(10ul, firstWinner.Identity.Id);
+
+        IPlayer secondHarvester = CreatePlayer(20ul);
+        GroupLootMember secondWinner = manager.ResolveHarvestLootRecipient(group, secondHarvester, group.Members);
+        Assert.Equal(20ul, secondWinner.Identity.Id);
+    }
+
+    private static IPlayer CreatePlayer(ulong characterId)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), characterId);
+        playerProxy.SetProperty(nameof(IPlayer.Identity), new Identity
+        {
+            RealmId = 1,
+            Id      = characterId
+        });
+        return player;
     }
 
     private static GroupLootState BuildGroup(HarvestLootRule harvestRule)

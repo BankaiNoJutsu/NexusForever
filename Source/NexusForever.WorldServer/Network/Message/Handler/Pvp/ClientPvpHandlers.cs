@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Pvp;
+using NexusForever.Game.Retail;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Pvp;
 using NexusForever.Network.Message;
@@ -192,7 +193,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
 
             session.Player.SetPvPFlag(pvpFlag);
             if (!pvpToggleFlags.Value)
-                session.EnqueueMessageEncrypted(new ServerPvpCooldownClear());
+                session.EnqueueMessageEncrypted(new ServerPvpCooldownUpdate
+                {
+                    CooldownRemaining = RetailCertainRules.PvpFlagCooldownMs
+                });
 
             log.LogDebug("Updated PvP flag toggle for player {PlayerGuid}: value {Value}.",
                 session.Player?.Guid, pvpToggleFlags.Value);

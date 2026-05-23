@@ -15,8 +15,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
 
         public void HandleMessage(IWorldSession session, ClientItemContextAction itemContextAction)
         {
-            log.LogDebug("ClientItemContextAction: player={Player} itemGuid={ItemGuid} selectedBranch={SelectedBranch}",
-                session.Player?.Guid, itemContextAction.ItemGuid, itemContextAction.SelectedBranch);
+            if (session.Player?.Inventory == null)
+                return;
+
+            var item = session.Player.Inventory.GetItem(itemContextAction.ItemGuid);
+            log.LogDebug("ClientItemContextAction: player={Player} itemGuid={ItemGuid} selectedBranch={SelectedBranch} itemFound={ItemFound}",
+                session.Player.Guid,
+                itemContextAction.ItemGuid,
+                itemContextAction.SelectedBranch,
+                item != null);
         }
     }
 }

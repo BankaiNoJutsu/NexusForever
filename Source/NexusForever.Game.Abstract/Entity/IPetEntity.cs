@@ -1,4 +1,5 @@
-﻿using NexusForever.GameTable.Model;
+﻿using NexusForever.Game.Static.Pet;
+using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Abstract.Entity
 {
@@ -6,6 +7,7 @@ namespace NexusForever.Game.Abstract.Entity
     {
         uint OwnerGuid { get; }
         Creature2DisplayGroupEntryEntry Creature2DisplayGroup { get; }
+        PetStance Stance { get; set; }
 
         void Initialise(IPlayer owner, uint creature);
     }

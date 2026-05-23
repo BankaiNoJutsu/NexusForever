@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Pet;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Entity;
@@ -24,6 +25,7 @@ namespace NexusForever.Game.Entity
 
         public uint OwnerGuid { get; private set; }
         public Creature2DisplayGroupEntryEntry Creature2DisplayGroup { get; private set; }
+        public PetStance Stance { get; set; } = PetStance.Assist;
 
         private readonly UpdateTimer followTimer = new(1d);
 
@@ -98,6 +100,9 @@ namespace NexusForever.Game.Entity
 
         private void Follow(double lastTick)
         {
+            if (Stance == PetStance.Stay)
+                return;
+
             followTimer.Update(lastTick);
             if (!followTimer.HasElapsed)
                 return;

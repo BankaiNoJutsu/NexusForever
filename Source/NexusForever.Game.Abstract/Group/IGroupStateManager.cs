@@ -1,3 +1,4 @@
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Abstract.Group
@@ -13,5 +14,7 @@ namespace NexusForever.Game.Abstract.Group
         bool TryGetGroupForCharacter(Identity identity, out GroupLootState group);
 
         GroupLootMember NextRoundRobinWinner(GroupLootState group, IReadOnlyList<GroupLootMember> eligibleMembers);
+
+        GroupLootMember ResolveHarvestLootRecipient(GroupLootState group, IPlayer harvester, IReadOnlyList<GroupLootMember> eligibleMembers);
     }
 }

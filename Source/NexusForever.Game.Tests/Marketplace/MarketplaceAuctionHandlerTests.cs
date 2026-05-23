@@ -781,15 +781,58 @@ public class MarketplaceAuctionHandlerTests
         return new ServiceProviderScope(services.BuildServiceProvider());
     }
 
+    [Fact]
+    public void ValidateCommodityOrder_RejectsPriceMismatch()
+    {
+        using ServiceProviderScope scope = UseMarketplaceProvider();
+        GlobalMarketplaceManager manager = (GlobalMarketplaceManager)scope.Provider.GetRequiredService<IGlobalMarketplaceManager>();
+
+        var order = new CommodityOrder
+        {
+            Item2Id      = ItemId,
+            Quantity     = 10u,
+            PricePerUnit = 100ul,
+            Price        = 1ul,
+            IsBuyOrder   = true
+        };
+
+        IItemInfo itemInfo = CreateItemInfo();
+        Assert.Throws<InvalidPacketValueException>(() =>
+            manager.ValidateCommodityOrder(CreateGameTableManager(), CreateItemManager(itemInfo), order));
+    }
+
+    [Fact]
+    public void PostCommodityBuyOrder_RejectsEscrowPriceMismatch()
+    {
+        using ServiceProviderScope scope = UseMarketplaceProvider();
+        GlobalMarketplaceManager manager = (GlobalMarketplaceManager)scope.Provider.GetRequiredService<IGlobalMarketplaceManager>();
+        IItemInfo itemInfo = CreateItemInfo();
+        IWorldSession buyerSession = CreateSession(BuyerGuid, BuyerCharacterId, out _, out RecordingDispatchProxy<ICurrencyManager> buyerCurrencyProxy, out _, out _);
+        buyerCurrencyProxy.SetMethodReturn(nameof(ICurrencyManager.CanAfford), true);
+
+        var sellHandler = new ClientCommoditySellOrderSubmitHandler(
+            NullLogger<ClientCommoditySellOrderSubmitHandler>.Instance,
+            CreateGameTableManager(),
+            CreateItemManager(itemInfo));
+        ClientCommoditySellOrderSubmit request = CreateCommodityBuyRequest(10u, 100ul);
+        request.Order.Price = 1ul;
+
+        Assert.Throws<InvalidPacketValueException>(() => sellHandler.HandleMessage(buyerSession, request));
+        Assert.Empty(manager.GetOwnedCommodityOrders(buyerSession.Player));
+    }
+
     private sealed class ServiceProviderScope : IDisposable
     {
         private readonly IServiceProvider previous;
 
         public ServiceProviderScope(IServiceProvider provider)
         {
+            Provider               = provider;
             previous               = LegacyServiceProvider.Provider;
             LegacyServiceProvider.Provider = provider;
         }
+
+        public IServiceProvider Provider { get; }
 
         public void Dispose()
         {

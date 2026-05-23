@@ -1,8 +1,9 @@
-﻿using NexusForever.Game;
+using NexusForever.Game;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Group;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Shared;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Group
 {
@@ -27,7 +28,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Group
                 GroupId  = groupFlagsChanged.GroupId,
                 Identity = session.Player.Identity.ToInternalIdentity(),
                 Flags    = groupFlagsChanged.NewFlags
-            });
+            }).FireAndForgetAsync();
         }
     }
 }

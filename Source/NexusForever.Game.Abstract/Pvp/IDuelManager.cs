@@ -12,5 +12,6 @@ namespace NexusForever.Game.Abstract.Pvp
         bool Forfeit(IPlayer player);
         bool AreDueling(IPlayer player, IPlayer target);
         bool TryFinishDefeat(IPlayer loser, IPlayer winner);
+        void OnPlayerDisconnect(IPlayer player);
     }
 }

@@ -22,7 +22,7 @@ public class GroupPacketShapeTests
             { new ServerGroupRequestJoinWindow(), 0x20 },
             { new ServerQuestShareResult(), 0x10 },
             { new ServerGroupMemberDetailUpdate(), 0x28 },
-            { new ServerRaidQueueStatus(), 0x20 }
+            { new ServerRaidQueueStatus(), 0x1A }
         };
     }
 

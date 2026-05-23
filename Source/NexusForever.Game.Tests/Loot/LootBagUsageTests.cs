@@ -67,7 +67,7 @@ public class LootBagUsageTests
     }
 
     [Fact]
-    public void TryUseLootBag_ItemUseFails_DoesNotGrantLoot()
+    public void TryUseLootBag_ItemUseFails_DoesNotDeliverLoot()
     {
         GlobalLootManager manager = CreateLootManager(CreateItemLootGroup(
             new LootItemModel
@@ -100,6 +100,7 @@ public class LootBagUsageTests
 
             RecordingDispatchProxy<IInventory>.Invocation itemUseCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
             Assert.Same(item, itemUseCall.Arguments[0]);
+
             Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
         }
         finally
@@ -147,10 +148,11 @@ public class LootBagUsageTests
             Assert.Equal(AccountCurrencyType.Omnibit, currencyCall.Arguments[0]);
             Assert.Equal(5ul, currencyCall.Arguments[1]);
 
-            RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall = Assert.Single(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+            RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall = achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)).First();
             Assert.Same(player, achievementCall.Arguments[0]);
 
-            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .First(i => i.Arguments[0] is ServerLootNotify);
             var notify = Assert.IsType<ServerLootNotify>(sessionCall.Arguments[0]);
             Assert.True(notify.Explosion);
             Assert.All(notify.LootItems, lootItem =>

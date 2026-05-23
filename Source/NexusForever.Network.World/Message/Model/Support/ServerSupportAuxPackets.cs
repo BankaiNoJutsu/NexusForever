@@ -141,6 +141,10 @@ namespace NexusForever.Network.World.Message.Model.Support
         public uint Value1 { get; set; }
         public uint Value2 { get; set; }
         public uint Value3 { get; set; }
+        /// <summary>
+        /// Computed convenience property for diagnostic / log use only.
+        /// The wire serialises <c>Rows.Count</c> directly in <see cref="Write"/>; this property is not used for writing.
+        /// </summary>
         public uint RowCount => (uint)Rows.Count;
         public List<ServerSupportSurveyRow> Rows { get; } = [];
 

@@ -3,7 +3,7 @@ using NexusForever.Network.Message;
 namespace NexusForever.Network.World.Message.Model.Crafting
 {
     /// <summary>
-    /// Crafting-adjacent server output (0x084B, 24 bytes). Reader <c>Server0x084B_ReadPayload</c> @ <c>1400a3af0</c>;
+    /// Crafting-adjacent server output (0x084B, 24 bytes). Reader <c>FUN_1400a3af0</c> @ <c>1400a3af0</c>;
     /// registered beside <see cref="GameMessageOpcode.ServerCraftingFinish"/> / <see cref="GameMessageOpcode.ServerCraftingCurrentCraft"/>.
     /// </summary>
     [Message(GameMessageOpcode.ServerCraftingAuxSixUInt32)]
