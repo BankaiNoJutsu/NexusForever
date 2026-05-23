@@ -9957,6 +9957,36 @@ Quest objective placeholder follow-up from source/runtime coverage:
   cluster currently provides payload layouts for several unresolved opcodes,
   but not enough evidence for safe semantic names.
 
+Quest objective type crosswalk (client `QuestObjective.tbl`, build 16042,
+verified 2026-05-23):
+
+- Type `4` (`CollectItem`): `Data` matches `Item2Id` on 274/327 rows. Server
+  now syncs progress from `Inventory.GetItemCount` on item create/stack gain and
+  quest accept (`InventoryQuestObjectiveUpdater`).
+- Type `25` (`CompleteEvent`) and type `31` (`Unknown31`): `Data` matches
+  `PublicEventObjective.Id` on 111/142 and 206/257 rows respectively (not
+  `PublicEvent.Id`). Server credits these when `PublicEventObjective` reaches
+  `Succeeded` (`PublicEventQuestObjectiveUpdater`).
+- Type `33` (`CraftSchematic`): `Data` matches `TradeskillSchematic2.Id` on
+  recipe rows and overlaps `PublicEventObjective.Id` on event-craft rows.
+  Server credits successful fixed-recipe crafts (`CraftingQuestObjectiveUpdater`)
+  plus the public-event success path above.
+- Type `23` (`ActivateTargetGroup`): already credited from spell activate
+  effects; direct interaction now mirrors that path in
+  `InteractionObjectiveUpdater`.
+- Follow-up crosswalk (2026-05-23, second pass): types `20`, `28`, and `44` also use
+  `PublicEventObjective.Id` as `Data` (not a separate combat-momentum table).
+  Type `21` (`GatheResource`) uses `CreatureId` and is credited on kill/interaction.
+  Type `42` (`EarnCurrency`) uses `CurrencyType` ids; type `40`
+  (`ParticipateInGroupContent`) uses `MatchingGameType.Id`; type `46`
+  (`KillCreature2`) uses `Creature2Difficulty.Id` (fix: do not key on `CreatureId`).
+  Type `39` (`CompleteMaxLevelQuests`) is credited when a level-50 player completes
+  a quest. Type `41` (`PvPKills`) is credited on player-versus-player kills.
+  Type `48` (`BeginMatrix`) is credited from server-owned account primal-essence grants
+  (Crimson/Cobalt/Viridian/Violet, ids 15-18) and quest-accept sync when essence is already
+  held; client matrix UI open packets remain unmapped.
+  Audit regeneration: `python Tools/WikiArchiveAudit/quest_implementation_audit.py`.
+
 Evidence-backed restoration workboard follow-up:
 
 - `plan-evidenceBackedRestorationEpic.prompt.md` now carries the active
@@ -12548,12 +12578,12 @@ Housing F-004 blocked-evidence tightening and wallpaper restore follow-up:
 Housing F-004 pass 2 blocked-evidence sweep (eviction fanout, invite timeout
 broadcast, donation debits, vendor purchase debits):
 
-- **BLOCKED — evicted-player online notify:** Native consumer
+- **BLOCKED - evicted-player online notify:** Native consumer
   `Housing_HandleNeighborUpdate` (`WildStar64.exe:1404bb790`) handles inbound
   `ServerHousingNeighborUpdate` (`0x0519`) for the local client only. Action
   `2` removes a row from the local neighbor caches and dispatches
   `HousingNeighborsLoaded`; action `0` adds and dispatches `HousingNeighborUpdate`.
-  The eviction send path is client→server only:
+  The eviction send path is client-to-server only:
   `HousingEvent_SendClientNeighborEvict` (`1404b9f10`) and
   `Lua_HousingLib_NeighborEvict` (`140735fb0`) emit `ClientHousingNeighborEvict`
   (`0x0515`) with the selected neighbor residence identity and do not open a
@@ -12563,7 +12593,7 @@ broadcast, donation debits, vendor purchase debits):
   correctly updates the evictor (`ClientHousingNeighborEvictHandler` sends
   `ServerHousingNeighborUpdate` Removed to the acting session only); fanout to
   an online evicted neighbor stays blocked pending server/sniff evidence.
-- **BLOCKED — proactive invite timeout broadcast:** Invite prompt consumer
+- **BLOCKED - proactive invite timeout broadcast:** Invite prompt consumer
   `Housing_HandleNeighborInvitePrompt` (`1404bba70`) caches inviter identity/name
   and dispatches `HousingNeighborInviteRecieved`; accept/decline callbacks
   `HousingEvent_SendClientNeighborInviteAccept` (`1404ba070`) and
@@ -12574,7 +12604,7 @@ broadcast, donation debits, vendor purchase debits):
   NexusForever's `ResidenceManager.DefaultNeighborInviteExpirySeconds` (`300`)
   is emulator policy for expired invitee responses only; proactive inviter
   timeout packets remain blocked.
-- **BLOCKED — `HousingCommunityDonate` debit:** Client sender
+- **BLOCKED - `HousingCommunityDonate` debit:** Client sender
   `Housing_SendClientCommunityDonate` (`1404b9ca0`) resolves
   `HousingDecorInfo`, rejects `Flags & 0x8`, and serialises one `DecorInfo` row
   through `ClientHousingCommunityDonate_WritePayload` (`14009da00`). Consumer
@@ -12582,7 +12612,7 @@ broadcast, donation debits, vendor purchase debits):
   uint32 source/target decor id arrays only. No currency, item, or
   contribution-point subtract call appears on the mapped donate path. Safe
   server mutation today is decor transfer + `0x04FE` id remap only.
-- **BLOCKED — housing vendor plug purchase debit:** Vendor list reader
+- **BLOCKED - housing vendor plug purchase debit:** Vendor list reader
   `ServerHousingVendorList_ReadPayload` (`14009e7f0`) and row reader
   `ServerHousingVendorListRow_ReadPayload` (`14008bf00`) expose plug item id,
   cost, and flags for `0x0508`; placement still routes through

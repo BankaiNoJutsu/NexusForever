@@ -340,3 +340,83 @@ Maps backlog items to feature rows. Use **Aligned** items as "done for retail sc
 | Quests | `Script.Main/Quests/NorthernWilds/*`, `NorthernWildsMapScript.cs` |
 | Packets | `Network.World/Message/Model/Support/ServerSupportAuxPackets.cs`, tests in `Game.Tests/Support/` |
 | Evidence | `Decomp/Analysis/function_labels.csv`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md` |
+
+---
+
+## Current-tree addendum (2026-05-23 parallel review)
+
+Read-only pass against the current working tree using parallel subagents plus a
+local cross-cutting scan. Local helper scripts under `Decomp/Analysis/scripts`
+were reviewed as candidate discovery tooling; generated auto-label rows were
+not kept in `function_labels.csv` unless they already met the evidence-backed
+label rule. Items below supersede stale rows above where they explicitly say so.
+
+### Status corrections from current source
+
+| Backlog row | Current-tree correction |
+|-------------|-------------------------|
+| #18 duel leash comment | The code now documents the leash as inter-duelist distance (`Game/Pvp/DuelManager.cs:17`). Retail anchor-vs-distance semantics still need evidence, but the misleading comment is gone. |
+| #19 duel cancel winner/loser | `ServerDuelResult` now zeroes winner/loser for `DuelCancelled` and `DeclinedRequest` (`DuelManager.cs:332`). |
+| #20 duel disconnect | `WorldSession.OnDisconnect` calls `DuelManager.Instance.OnPlayerDisconnect(Player)` (`WorldServer/Network/WorldSession.cs:99`). |
+| D-L7 loot handler throws | **Reopen.** `GlobalLootManager` still resolves a loot instance by owner/item before checking looter membership, and `LootInstance.GiveLoot` / `RollLoot` / `AssignMasterLoot` throw for non-looters (`LootInstance.cs:209`, `:239`, `:259`). |
+| Offline master loot fixed row | The row saying `AssignMasterLoot` returns `false` when the assignee is offline is inaccurate. Current code logs the offline assignee and returns `true` (`LootInstance.cs:275`). |
+| #13 marketplace `UnknownArray` | **Partial, not fixed.** `DeserializeUnknownArray` catches `FormatException` only; overflow values still throw during startup (`GlobalMarketplaceManager.cs:703`). |
+| D-Q3 Q3667 objective 4770 | Tracker/source conflict. `Q3667TheTower.cs:31` says Quest2 verification exists, while this backlog still marks 4770 unverified. Add the Quest2/DataMapping evidence link or remove the source certainty. |
+| D-Q4 Q5594 achievement | Correction: current `Q5594LastResistance` grants achievement **1730**, not 1296, but it is still unguarded and `GrantAchievement` throws when already complete (`Q5594LastResistance.cs:61`, `BaseAchievementManager.cs:94`). |
+| D-N1 empty exports | Stale. Local ignored exports now exist and include `ServerSupportSurveyList_ReadPayload` (`function_labels.csv:1074`, `exports/WildStar64.exe/functions.csv:1841`). |
+| D-N3 `Server0x08CC` duplication | Fixed/refactored. `Server0x08CC` now inherits `Shared.ServerUInt32WideStringPayload` (`ServerUnresolvedOutputPackets.cs:471`). |
+
+### P1 - Loot, item use, and delivery
+
+| # | Item | Category |
+|---|------|----------|
+| R3-L1 | `ClientItemUseHandler` consumes the item before casting and `UnitEntity.CastSpell` discards `TryCastSpell` failure (`ClientItemUseHandler.cs:49`, `UnitEntity.cs:1803`, `UnitEntity.cs:1889`). Dead/disabled/failed casts can delete consumables. | Bug |
+| R3-L2 | `ClientItemUseDecorHandler` consumes decor items before `ResidenceManager.DecorCreate` can validate or create the residence (`ClientItemUseDecorHandler.cs:34`, `ResidenceManager.cs:39`, `ResidenceManager.cs:64`). Locked/no-residence failures can lose the item. | Bug |
+| R3-L3 | `TryDeliverHarvestLoot` selects round-robin harvest recipients from all online same-map group members with no range check and no delivery preflight for the chosen recipient (`GlobalLootManager.cs:341`). | Bug |
+| R3-L4 | `LootInstance.AddLootItem` merges duplicate loot through unchecked `Amount += amount`, unlike generated item-loot overflow guards (`LootInstance.cs:63`, `LootInstanceItem.cs:68`). Data-driven duplicate rows can wrap counts. | Bug / Refactor |
+
+### P1 - Marketplace and mail
+
+| # | Item | Category |
+|---|------|----------|
+| R3-M1 | Same-bidder auction increases require the player to afford the full new bid before the held current bid is refunded (`GlobalMarketplaceManager.cs:241`, `:258`, `:272`). Check/refund only the delta or preflight with escrow included. | Bug |
+| R3-M2 | `ForceImmediate` commodity orders are parsed/persisted but matched like durable resting orders, consuming account slots and leaving unmatched remainder live (`CommodityOrder.cs:13`, `GlobalMarketplaceManager.cs:350`, `GlobalMarketplaceManager.cs:946`). | Bug |
+| R3-M3 | Accepted auction property/rune/equippable filters and `AuctionSort.Property` are ignored or default to min-bid sorting (`ClientAuctionsByFilterRequest.cs:18`, `GlobalMarketplaceManager.cs:152`, `GlobalMarketplaceManager.cs:754`). Implement or reject them. | Bug |
+| R3-M4 | Commodity cancel/fill uses inventory delivery when at least one slot is free, but multi-stack `ItemCreate` can partially create then return full; the order is still removed/filled (`GlobalMarketplaceManager.cs:412`, `GlobalMarketplaceManager.cs:1008`, `Inventory.cs:285`). | Bug |
+| R3-M5 | Marketplace settlement still ignores mail-delivery failures on auction buyout/expiry and commodity fill; seller/order state can be committed before item delivery succeeds (`GlobalMarketplaceManager.cs:844`, `:881`, `:1015`). | Bug |
+| R3-M6 | Marketplace mail `ContentType` is not persisted; reload resolves all item/commodity auction mail as `AuctionWon`, losing expired/return semantics (`MailItem.cs:109`, `MailItem.cs:138`, `MailItem.cs:341`). | Bug |
+| R3-M7 | System/marketplace mail can be returned to `SenderId == 0` unless explicitly marked not-returnable (`MailItem.cs:142`, `MailItem.cs:294`). Reject non-player returns or mark these mails not-returnable at creation. | Bug |
+| R3-M8 | Auction search page is unbounded; huge `request.Page` can overflow the checked `int` skip calculation (`GlobalMarketplaceManager.cs:161`). | Bug / Test |
+| R3-M9 | Persisted commodity rows are trusted on load without item, quantity, escrow, or duration validation (`GlobalMarketplaceManager.cs:74`, `GlobalMarketplaceManager.cs:679`). Quarantine corrupt rows before they can refund or deliver. | Bug |
+
+### P1 - Group, PvP, housing, matching, social
+
+| # | Item | Category |
+|---|------|----------|
+| R3-G1 | Group instance difficulty accepts any member and only mutates the requester's `Player.InstanceDifficulty`; loot-rule changes require leader and server-side group state (`ClientGroupInstanceHandlers.cs:123`, `Server.GroupServer/Group/Group.cs:719`). | Bug |
+| R3-P1 | PvP toggle-off clears `PvPFlag.Enabled` immediately, then sends a 5-minute cooldown packet with no pending state/timer (`ClientPvpHandlers.cs:190`, `Player.cs:2686`). Keep the flag active until cooldown expiry. | Bug |
+| R3-H1 | Private residence visits always return `Visit_Private`, even for the owner or authorized modifiers, unlike neighbors/roommates branches (`HousingVisitHelper.cs:39`). | Bug |
+| R3-H2 | Housing decor create subtracts currency before validating colour shift, scale, and plot bounds; create also lacks the plot-position validation used by move (`ResidenceMapInstance.cs:683`, `:711`, `:715`). | Bug |
+| R3-Match1 | Matching leave is not idempotent: single leave dereferences a null queue when not queued, and leave-all enumerates live queue values while removal mutates the dictionary (`MatchingManager.cs:359`, `MatchingCharacter.cs:57`). | Bug |
+| R3-Match2 | Match cleanup enumerates live team members while `MatchLeave` removes from the same dictionary (`Match.cs:168`, `MatchTeam.cs:77`). Snapshot before cleanup. | Bug |
+| R3-IC1 | ICComm group/guild membership is checked at join only; send/update only verify channel membership and `InWorld`, so former group/guild members can keep transient channel traffic (`ICCommManager.cs:163`). | Bug |
+| R3-X1 | Several WorldServer handlers still call `PublishAsync` from `void HandleMessage` without `FireAndForgetAsync` or an await-safe helper, so publish failures are unobserved (`ClientGroupLeaveHandler.cs`, `ClientChatJoinHandler.cs`, `ClientChatModeratorHandler.cs`, etc.). | Bug / Refactor |
+
+### P1/P2 - Quest, packet, and tracker hygiene
+
+| # | Item | Category |
+|---|------|----------|
+| R3-N1 | `Get-DecompCoverageSnapshot.ps1` placeholder detection misses `Server0xNNNN` / `Client0xNNNN` names because the regex omits `0x`; coverage reports say no placeholder queue while unresolved models remain (`Get-DecompCoverageSnapshot.ps1:363`). | Bug |
+| R3-Q1 | `quest_implementation_audit.py` scans whole files per quest id, so mixed files can make stub-only terminal quest classes look implemented because sibling classes contain `FollowUpQuestScript` or objective calls (`quest_implementation_audit.py:176`). | Bug |
+| R3-Q2 | Manual follow-up grant boilerplate remains in `Q3480`, `Q3671`, `Q3673`, and `Q5604`; convert to `FollowUpQuestScript<T>` or a shared helper while preserving cinematic/objective hooks. | Refactor |
+| R3-Q3 | Quest script xUnit coverage is still only a construction smoke test for Q3479; add behavior tests for follow-up grants, achievement repeat guards, cinematic-complete objectives, and targeted objective gates (`QuestScriptConstructionTests.cs:11`). | Test |
+
+### Current priority waves
+
+1. **Wave A (data-loss / crash guards):** R3-L1, R3-L2, D-L7 reopen, offline master-loot result semantics, R3-M4/R3-M5, R3-M7.
+2. **Wave B (economy correctness):** R3-M1, R3-M2, R3-M3, #13 overflow, R3-M6, R3-M8/R3-M9.
+3. **Wave C (group/housing/matching state):** R3-G1, R3-P1, R3-H1/R3-H2, R3-Match1/R3-Match2, R3-IC1.
+4. **Wave D (tracker/test cleanup):** D-Q3/D-Q4 corrections, R3-N1, R3-Q1/R3-Q2/R3-Q3, D-G1 0x0437 packet-shape coverage.
+
+Verification for this addendum: read-only source inspection and subagent review;
+no build/test run was needed for the markdown-only backlog update.

@@ -78,24 +78,44 @@ def parse_objectives(sql_dir: Path):
 GENERIC = {
     2,
     3,
+    4,
     5,
     8,
     9,
     10,
+    11,
     12,
+    13,
     14,
     15,
     16,
     17,
     18,
+    20,
+    21,
     22,
+    23,
+    24,
+    25,
+    28,
+    31,
     32,
+    33,
+    35,
+    36,
     37,
     38,
+    39,
+    40,
+    41,
+    42,
+    44,
+    46,
     47,
+    48,
 }
-PARTIAL = {11, 13, 23, 35, 36}
-UNSUPPORTED = {4, 19, 20, 21, 24, 25, 27, 28, 29, 31, 33, 39, 40, 41, 42, 44, 46, 48}
+PARTIAL = set()
+UNSUPPORTED = {19, 27, 29}
 
 # Hand-verified quest chains called out in CURRENT_STATUS / focused script work.
 CURATED_FULL = {
@@ -118,6 +138,7 @@ CURATED_FULL = {
     3479,
     3480,
     3667,
+    10510,
     3486,
     3671,
     3668,
@@ -139,8 +160,17 @@ CURATED_FULL = {
     5604,
     5610,
     8855,
+    10544,
+    10545,
+    10547,
+    10548,
+    10550,
+    10551,
+    10553,
+    10554,
+    10556,
+    10558,
 }
-PATH_STUB_RANGE = range(10544, 10571)
 
 
 def load_script_ids(script_main: Path) -> set[int]:
@@ -153,7 +183,29 @@ def load_script_ids(script_main: Path) -> set[int]:
     return script_ids
 
 
-def classify(quest, objectives: dict[int, dict[str, int]], script_ids: set[int]) -> str:
+def load_script_quality(script_main: Path) -> set[int]:
+    """Quest ids whose scripts only log state (no follow-up grant or objective hook)."""
+    quest_text: dict[int, str] = {}
+    for path in script_main.rglob("*.cs"):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for match in re.finditer(r"ScriptFilterOwnerId\((\d+)", text):
+            quest_id = int(match.group(1))
+            quest_text[quest_id] = f"{quest_text.get(quest_id, '')}\n{text}"
+
+    stub_only: set[int] = set()
+    for quest_id, text in quest_text.items():
+        if re.search(
+            r"FollowUpQuestScript|protected override ushort NextQuestId|GrantNext(?:Quest)?\s*\(|ObjectiveUpdate\s*\(",
+            text,
+        ):
+            continue
+
+        stub_only.add(quest_id)
+
+    return stub_only
+
+
+def classify(quest, objectives: dict[int, dict[str, int]], script_ids: set[int], stub_script_ids: set[int]) -> str:
     qid = quest["id"]
     obj_types = []
     for objective_id in quest["objective_ids"]:
@@ -169,7 +221,7 @@ def classify(quest, objectives: dict[int, dict[str, int]], script_ids: set[int])
     if qid in CURATED_FULL:
         return "curated_full"
 
-    if qid in PATH_STUB_RANGE or qid == 10510:
+    if qid in stub_script_ids:
         return "curated_partial_stub_script"
 
     unsupported = [obj_type for obj_type in obj_types if obj_type in UNSUPPORTED]
@@ -195,12 +247,13 @@ def build_report(sql_dir: Path, script_main: Path) -> list[str]:
     quests = parse_quests(sql_dir)
     objectives = parse_objectives(sql_dir)
     script_ids = load_script_ids(script_main)
+    stub_script_ids = load_script_quality(script_main)
 
     buckets = Counter()
     obj_type_quest_counts = Counter()
 
     for quest in quests:
-        bucket = classify(quest, objectives, script_ids)
+        bucket = classify(quest, objectives, script_ids, stub_script_ids)
         buckets[bucket] += 1
         for objective_id in quest["objective_ids"]:
             objective = objectives.get(objective_id)
@@ -237,7 +290,7 @@ def build_report(sql_dir: Path, script_main: Path) -> list[str]:
         f"| Quests with at least one objective | {with_objectives} | {with_objectives * 100 / total:.1f}% |",
         f"| Quests with **no objectives** (mention/placeholder rows) | {no_objectives} | {no_objectives * 100 / total:.1f}% |",
         f"| **Fully curated** (hand-tuned script chains) | {curated_full} | {curated_full * 100 / total:.1f}% |",
-        f"| **Generic table-driven** (supported objective types; no custom script) | {generic_playable} | {generic_playable * 100 / total:.1f}% |",
+        f"| **Generic table-driven** (supported objective types) | {generic_playable} | {generic_playable * 100 / total:.1f}% |",
         f"| **Partial** (partial objective mix or stub path scripts) | {partial} | {partial * 100 / total:.1f}% |",
         f"| **Blocked / missing gameplay** (unsupported objective types) | {blocked} | {blocked * 100 / total:.1f}% |",
         f"| Distinct quest ids with `ScriptFilterOwnerId` | {any_script} | {any_script * 100 / total:.1f}% |",
@@ -246,7 +299,7 @@ def build_report(sql_dir: Path, script_main: Path) -> list[str]:
         "",
         "| Tier | Count | % of quests with objectives |",
         "| --- | ---: | ---: |",
-        f"| Completable (generic + curated) | {generic_playable + curated_full - buckets['generic_with_script']} | {(generic_playable + curated_full - buckets['generic_with_script']) * 100 / with_objectives:.1f}% |",
+        f"| Completable (generic + curated) | {generic_playable + curated_full} | {(generic_playable + curated_full) * 100 / with_objectives:.1f}% |",
         f"| Partial | {partial} | {partial * 100 / with_objectives:.1f}% |",
         f"| Blocked | {blocked} | {blocked * 100 / with_objectives:.1f}% |",
         "",
@@ -255,7 +308,7 @@ def build_report(sql_dir: Path, script_main: Path) -> list[str]:
         "- **Lifecycle** (accept, track, abandon, complete, rewards) is implemented for all `Quest2` rows via `GlobalQuestManager` / `QuestManager`.",
         "- **Fully curated** means a dedicated `IQuestScript` chain was hand-built and verified (tutorial, Northern Wilds, Crimson Isle focus areas).",
         "- **Generic table-driven** quests can progress through shared kill/talk/activate/CSI/enter-zone/virtual-collect handlers without a per-quest script.",
-        "- **Blocked** quests contain objective types with no mapped server trigger (for example `CollectItem`, `CompleteEvent`, `CraftSchematic`, `Unknown31`).",
+        "- **Blocked** quests contain objective types with no mapped server trigger; no current client quest objectives use the remaining unsupported types.",
         "- Counts are objective-type coverage, not in-game QA. Generic quests still need world spawns, volumes, and loot.",
         "",
         "## Bucket detail",
