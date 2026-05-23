@@ -7,6 +7,7 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Loot;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Entity;
@@ -93,6 +94,8 @@ public class CraftingLootIdCraftHandlerTests
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
         player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
+        IWorldEntity station = RecordingDispatchProxy<IWorldEntity>.Create(out RecordingDispatchProxy<IWorldEntity> stationProxy);
         IInventory inventory = RecordingDispatchProxy<IInventory>.Create(out inventoryProxy);
         IBag inventoryBag = RecordingDispatchProxy<IBag>.Create(out RecordingDispatchProxy<IBag> bagProxy);
         ISupplySatchelManager satchel = RecordingDispatchProxy<ISupplySatchelManager>.Create(out satchelProxy);
@@ -103,11 +106,17 @@ public class CraftingLootIdCraftHandlerTests
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         playerProxy.SetProperty(nameof(IPlayer.Guid), 42u);
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), CharacterId);
+        playerProxy.SetProperty(nameof(IPlayer.Map), map);
         playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
         playerProxy.SetProperty(nameof(IPlayer.SupplySatchelManager), satchel);
         playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
         playerProxy.SetMethodReturn(nameof(IPlayer.HasTradeskill), true);
         playerProxy.SetMethodReturn(nameof(IPlayer.AddTradeskillXp), 12u);
+        stationProxy.SetProperty(nameof(IWorldEntity.CreatureEntry), new Creature2Entry
+        {
+            TradeSkillIdStation = (uint)TradeskillType.Armorer
+        });
+        mapProxy.SetMethodReturn(nameof(IBaseMap.GetEntity), station);
 
         inventoryProxy.SetMethodReturnFactory(nameof(IEnumerable<IBag>.GetEnumerator), () => new[] { inventoryBag }.AsEnumerable().GetEnumerator());
         bagProxy.SetProperty(nameof(IBag.Location), InventoryLocation.Inventory);

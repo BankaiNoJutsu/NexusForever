@@ -42,7 +42,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         {
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
 
-            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, 1u, out string reason))
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, 1u, craft.CraftingStationUnitId, out string reason))
             {
                 log.LogDebug("Completed simple craft request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}.",
                     session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id);
@@ -79,7 +79,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
             CraftingCraftRequestHelper.ValidateItem(gameTableManager, craft.PowerCoreItem2Id);
 
-            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, 1u, out string reason, craft.PowerCoreItem2Id))
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, 1u, craft.CraftingStationUnitId, out string reason, craft.PowerCoreItem2Id))
             {
                 log.LogDebug("Completed complex craft request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, powerCore {PowerCoreItem2Id}, charges {ChargeCount}.",
                     session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.PowerCoreItem2Id, craft.ChargeCounts?.Length ?? 0);
@@ -116,7 +116,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
             CraftingCraftRequestHelper.ValidateItem(gameTableManager, craft.CatalystItem2Id);
 
-            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, craft.SchematicCount, out string reason, craft.CatalystItem2Id))
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, craft.SchematicCount, craft.CraftingStationUnitId, out string reason, craft.CatalystItem2Id))
             {
                 log.LogDebug("Completed craft-item request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, count {SchematicCount}.",
                     session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.SchematicCount);
@@ -152,7 +152,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         {
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
 
-            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, craft.SchematicCount, out string reason))
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, craft.SchematicCount, craft.CraftingStationUnitId, out string reason))
             {
                 log.LogDebug("Completed auto-craft request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, count {SchematicCount}.",
                     session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.SchematicCount);
@@ -198,6 +198,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             IGlobalLootManager lootManager,
             TradeskillSchematic2Entry schematic,
             uint craftCount,
+            uint craftingStationUnitId,
             out string reason,
             uint extraConsumeItem2Id = 0u)
         {
@@ -214,6 +215,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                 reason = "zero-count";
                 return false;
             }
+
+            if (!TryValidateCraftingStation(session.Player, schematic, craftingStationUnitId, out reason))
+                return false;
 
             if (schematic.TradeSkillId != 0u)
             {
@@ -344,6 +348,68 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             CraftingQuestObjectiveUpdater.OnSchematicCrafted(session.Player, schematic.Id, craftCount);
             SendCraftSuccess(session, schematic, item2IdCrafted, earnedXp);
             CraftingRuneRequestHelper.ClearCraftingAdditives(session);
+            return true;
+        }
+
+        public static bool TryValidateCraftingStation(IPlayer player, TradeskillSchematic2Entry schematic, uint craftingStationUnitId, out string reason)
+        {
+            reason = string.Empty;
+
+            if (craftingStationUnitId == 0u)
+                return true;
+
+            IWorldEntity station = player.Map?.GetEntity<IWorldEntity>(craftingStationUnitId);
+            if (station == null)
+            {
+                reason = $"unknown-station:{craftingStationUnitId}";
+                return false;
+            }
+
+            uint stationTradeskillId = station.CreatureEntry?.TradeSkillIdStation ?? 0u;
+            if (stationTradeskillId == 0u)
+            {
+                reason = $"not-crafting-station:{craftingStationUnitId}";
+                return false;
+            }
+
+            if (schematic.TradeSkillId != 0u && stationTradeskillId != schematic.TradeSkillId)
+            {
+                reason = $"station-tradeskill-mismatch:{craftingStationUnitId}:{stationTradeskillId}:{schematic.TradeSkillId}";
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool TryValidateAnyCraftingStation(IPlayer player, uint craftingStationUnitId, out string reason)
+        {
+            reason = string.Empty;
+
+            if (player == null)
+            {
+                reason = "no-player";
+                return false;
+            }
+
+            if (craftingStationUnitId == 0u)
+            {
+                reason = "zero-station";
+                return false;
+            }
+
+            IWorldEntity station = player.Map?.GetEntity<IWorldEntity>(craftingStationUnitId);
+            if (station == null)
+            {
+                reason = $"unknown-station:{craftingStationUnitId}";
+                return false;
+            }
+
+            if ((station.CreatureEntry?.TradeSkillIdStation ?? 0u) == 0u)
+            {
+                reason = $"not-crafting-station:{craftingStationUnitId}";
+                return false;
+            }
+
             return true;
         }
 

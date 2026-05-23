@@ -915,7 +915,7 @@ namespace NexusForever.Network.Message
         ServerMapTrackedUnitDisable     = 0x0848,
         ServerMapTrackedUnitUpdate      = 0x0849,
         ClientCraftingAdditive          = 0x084A,
-        ServerCraftingAuxSixUInt32      = 0x084B, // 6x uint32; reader 1400a3af0
+        ServerCraftingAuxFourUInt32FloatUInt32 = 0x084B, // uint32,uint32,uint32,uint32,float,uint32; reader 1400a3af0
         ServerProfessionModifiers       = 0x084C,
         ClientCraftingAbandon           = 0x084D,
         ClientTradeskillPickTalent      = 0x084E,
@@ -925,7 +925,7 @@ namespace NexusForever.Network.Message
         ClientCraftingCraftItemAutoCraft = 0x0852,
         ServerCraftingFinish            = 0x0853,
         ServerCraftingCurrentCraft      = 0x0854,
-        ServerCraftingAuxThreeUInt32    = 0x0855, // 3x uint32; reader 140081df0
+        ServerCraftingAuxUInt32AndTwoFloats = 0x0855, // uint32,float,float; reader 140081df0
         ServerProfessionsLoad           = 0x0856,
         ClientTradeskillLearn           = 0x0857,
         ClientTradeskillResetTalents    = 0x0858,

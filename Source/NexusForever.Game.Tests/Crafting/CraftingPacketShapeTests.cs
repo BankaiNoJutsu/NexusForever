@@ -197,15 +197,15 @@ public class CraftingPacketShapeTests
     }
 
     [Fact]
-    public void ServerCraftingAuxSixUInt32_WritesMappedFields()
+    public void ServerCraftingAuxFourUInt32FloatUInt32_WritesMappedFields()
     {
-        var packet = new ServerCraftingAuxSixUInt32
+        var packet = new ServerCraftingAuxFourUInt32FloatUInt32
         {
             Value0 = 0x01020304u,
             Value1 = 0x50607080u,
             Value2 = 0x90A0B0C0u,
             Value3 = 0xDEADBEEFu,
-            Value4 = 0xCAFEBABEu,
+            FloatValue4 = 12.5f,
             Value5 = 0x11223344u,
         };
 
@@ -217,18 +217,18 @@ public class CraftingPacketShapeTests
         Assert.Equal(0x50607080u, reader.ReadUInt());
         Assert.Equal(0x90A0B0C0u, reader.ReadUInt());
         Assert.Equal(0xDEADBEEFu, reader.ReadUInt());
-        Assert.Equal(0xCAFEBABEu, reader.ReadUInt());
+        Assert.Equal(12.5f, reader.ReadSingle());
         Assert.Equal(0x11223344u, reader.ReadUInt());
     }
 
     [Fact]
-    public void ServerCraftingAuxThreeUInt32_WritesMappedFields()
+    public void ServerCraftingAuxUInt32AndTwoFloats_WritesMappedFields()
     {
-        var packet = new ServerCraftingAuxThreeUInt32
+        var packet = new ServerCraftingAuxUInt32AndTwoFloats
         {
             Value0 = 0xAABBCCDDu,
-            Value1 = 0x01020304u,
-            Value2 = 0x50607080u,
+            FloatValue1 = 1.25f,
+            FloatValue2 = -2.5f,
         };
 
         byte[] packetData = WritePacket(packet);
@@ -236,8 +236,8 @@ public class CraftingPacketShapeTests
 
         using var reader = new GamePacketReader(new MemoryStream(packetData));
         Assert.Equal(0xAABBCCDDu, reader.ReadUInt());
-        Assert.Equal(0x01020304u, reader.ReadUInt());
-        Assert.Equal(0x50607080u, reader.ReadUInt());
+        Assert.Equal(1.25f, reader.ReadSingle());
+        Assert.Equal(-2.5f, reader.ReadSingle());
     }
 
     [Fact]

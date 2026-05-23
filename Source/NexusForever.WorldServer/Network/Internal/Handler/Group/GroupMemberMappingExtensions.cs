@@ -21,23 +21,26 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
         {
             return new ServerGroupMemberStatUpdate
             {
-                GroupId          = groupId,
-                TargetPlayer     = member.Identity.ToNetworkIdentity(),
-                Level            = member.Character.Level,
-                EffectiveLevel   = member.Character.EffectiveLevel,
-                Health           = member.Character.Health,
-                HealthMax        = member.Character.HealthMax,
-                Shield           = member.Character.Shield,
-                ShieldMax        = member.Character.ShieldMax,
-                Absorption       = member.Character.Absorption,
-                AbsorptionMax    = member.Character.AbsorptionMax,
-                Mana             = member.Character.Focus,
-                ManaMax          = member.Character.FocusMax,
-                HealingAbsorb    = member.Character.HealingAbsorb,
-                HealingAbsorbMax = member.Character.HealingAbsorbMax,
-                PhaseFlags1      = member.Character.PhaseFlags1,
-                PhaseFlags2      = member.Character.PhaseFlags2,
-                Path             = member.Character.Path
+                GroupId            = groupId,
+                TargetPlayer       = member.Identity.ToNetworkIdentity(),
+                Level              = member.Character.Level,
+                EffectiveLevel     = member.Character.EffectiveLevel,
+                GroupMemberId      = (ushort)member.GroupIndex,
+                Health             = member.Character.Health,
+                HealthMax          = member.Character.HealthMax,
+                Shield             = member.Character.Shield,
+                ShieldMax          = member.Character.ShieldMax,
+                InterruptArmor     = member.Character.InterruptArmour,
+                InterruptArmorMax  = member.Character.InterruptArmourMax,
+                Absorption         = member.Character.Absorption,
+                AbsorptionMax      = member.Character.AbsorptionMax,
+                Mana               = member.Character.Focus,
+                ManaMax            = member.Character.FocusMax,
+                HealingAbsorb      = member.Character.HealingAbsorb,
+                HealingAbsorbMax   = member.Character.HealingAbsorbMax,
+                PhaseFlags1        = member.Character.PhaseFlags1,
+                PhaseFlags2        = member.Character.PhaseFlags2,
+                Path               = member.Character.Path
             };
         }
 
@@ -46,23 +49,26 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
             ServerGroupMemberStatUpdate source = member.ToNetworkGroupMemberStatUpdate(groupId);
             return new ServerGroupRosterUpdate
             {
-                GroupId          = source.GroupId,
-                TargetPlayer     = source.TargetPlayer,
-                Level            = source.Level,
-                EffectiveLevel   = source.EffectiveLevel,
-                Health           = source.Health,
-                HealthMax        = source.HealthMax,
-                Shield           = source.Shield,
-                ShieldMax        = source.ShieldMax,
-                Absorption       = source.Absorption,
-                AbsorptionMax    = source.AbsorptionMax,
-                Mana             = source.Mana,
-                ManaMax          = source.ManaMax,
-                HealingAbsorb    = source.HealingAbsorb,
-                HealingAbsorbMax = source.HealingAbsorbMax,
-                PhaseFlags1      = source.PhaseFlags1,
-                PhaseFlags2      = source.PhaseFlags2,
-                Path             = source.Path
+                GroupId           = source.GroupId,
+                TargetPlayer      = source.TargetPlayer,
+                Level             = source.Level,
+                EffectiveLevel    = source.EffectiveLevel,
+                GroupMemberId     = source.GroupMemberId,
+                Health            = source.Health,
+                HealthMax         = source.HealthMax,
+                Shield            = source.Shield,
+                ShieldMax         = source.ShieldMax,
+                InterruptArmor    = source.InterruptArmor,
+                InterruptArmorMax = source.InterruptArmorMax,
+                Absorption        = source.Absorption,
+                AbsorptionMax     = source.AbsorptionMax,
+                Mana              = source.Mana,
+                ManaMax           = source.ManaMax,
+                HealingAbsorb     = source.HealingAbsorb,
+                HealingAbsorbMax  = source.HealingAbsorbMax,
+                PhaseFlags1       = source.PhaseFlags1,
+                PhaseFlags2       = source.PhaseFlags2,
+                Path              = source.Path
             };
         }
 
@@ -70,13 +76,14 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
         {
             return new ServerGroupMemberDetailUpdate
             {
-                GroupId        = groupId,
-                TargetPlayer   = member.Identity.ToNetworkIdentity(),
-                Level          = member.Character.Level,
-                EffectiveLevel = member.Character.EffectiveLevel,
-                Health         = member.Character.Health,
-                HealthMax      = member.Character.HealthMax,
-                Path           = member.Character.Path
+                GroupId         = groupId,
+                TargetPlayer    = member.Identity.ToNetworkIdentity(),
+                Level           = member.Character.Level,
+                EffectiveLevel  = member.Character.EffectiveLevel,
+                GroupMemberId   = (ushort)member.GroupIndex,
+                Health          = member.Character.Health,
+                HealthMax       = member.Character.HealthMax,
+                Path            = member.Character.Path
             };
         }
     }

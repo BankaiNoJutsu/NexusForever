@@ -32,6 +32,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             CraftingRuneRequestHelper.ValidateCraftingAdditive(gameTableManager, additive.AdditiveItem2Id);
             CraftingRuneRequestHelper.ValidateCraftingCatalyst(gameTableManager, additive.CatalystItem2Id);
 
+            if (!CraftingCraftRequestHelper.TryValidateAnyCraftingStation(session.Player, additive.CraftingStationUnitId, out string reason))
+            {
+                log.LogDebug("Rejected crafting additive request from player {PlayerGuid}: station {StationUnitId}, additive {AdditiveItem2Id}, catalyst {CatalystItem2Id}, reason {Reason}.",
+                    session.Player?.Guid, additive.CraftingStationUnitId, additive.AdditiveItem2Id, additive.CatalystItem2Id, reason);
+                throw new InvalidPacketValueException();
+            }
+
             bool applied = CraftingRuneRequestHelper.ApplyCraftingAdditive(session, additive.AdditiveItem2Id, additive.CatalystItem2Id);
             if (!applied)
                 session.Player?.SendGenericError(GenericError.CraftTooManyAdditives);

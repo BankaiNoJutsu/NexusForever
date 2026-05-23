@@ -6,6 +6,7 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Loot;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Entity;
@@ -156,6 +157,30 @@ public class CraftingSimpleCraftHandlerTests
         Assert.Equal(24u, finish.EarnedXp);
     }
 
+    [Fact]
+    public void SimpleCraft_WithStationForDifferentTradeskill_SendsFailureWithoutOutput()
+    {
+        IWorldSession session = CreateSession(
+            satchelMaterialAmount: 2,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<ISupplySatchelManager> satchelProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out IItemInfo outputInfo,
+            stationTradeskillId: (uint)TradeskillType.Weaponsmith);
+        ClientCraftingSimpleCraftHandler handler = CreateHandler(outputInfo);
+
+        handler.HandleMessage(session, CreateRequest(SchematicId));
+
+        Assert.Empty(satchelProxy.GetInvocations(nameof(ISupplySatchelManager.RemoveAmount)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Empty(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+
+        ServerCraftingFinish finish = Assert.Single(GetMessages<ServerCraftingFinish>(sessionProxy));
+        Assert.False(finish.Pass);
+        Assert.Equal(SchematicId, finish.TradeskillSchematic2IdCrafted);
+    }
+
     private static ClientCraftingSimpleCraftHandler CreateHandler(IItemInfo outputInfo)
     {
         IItemManager itemManager = RecordingDispatchProxy<IItemManager>.Create(out RecordingDispatchProxy<IItemManager> itemManagerProxy);
@@ -190,10 +215,13 @@ public class CraftingSimpleCraftHandlerTests
         out RecordingDispatchProxy<IWorldSession> sessionProxy,
         out IItemInfo outputInfo,
         ushort catalystMaterialAmount = 0,
-        uint addTradeskillXpReturn = 12u)
+        uint addTradeskillXpReturn = 12u,
+        uint stationTradeskillId = (uint)TradeskillType.Armorer)
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
+        IWorldEntity station = RecordingDispatchProxy<IWorldEntity>.Create(out RecordingDispatchProxy<IWorldEntity> stationProxy);
         IInventory inventory = RecordingDispatchProxy<IInventory>.Create(out inventoryProxy);
         IBag inventoryBag = RecordingDispatchProxy<IBag>.Create(out RecordingDispatchProxy<IBag> bagProxy);
         ISupplySatchelManager satchel = RecordingDispatchProxy<ISupplySatchelManager>.Create(out satchelProxy);
@@ -205,11 +233,17 @@ public class CraftingSimpleCraftHandlerTests
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         playerProxy.SetProperty(nameof(IPlayer.Guid), 42u);
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), CharacterId + satchelMaterialAmount);
+        playerProxy.SetProperty(nameof(IPlayer.Map), map);
         playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
         playerProxy.SetProperty(nameof(IPlayer.SupplySatchelManager), satchel);
         playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
         playerProxy.SetMethodReturn(nameof(IPlayer.HasTradeskill), true);
         playerProxy.SetMethodReturn(nameof(IPlayer.AddTradeskillXp), addTradeskillXpReturn);
+        stationProxy.SetProperty(nameof(IWorldEntity.CreatureEntry), new Creature2Entry
+        {
+            TradeSkillIdStation = stationTradeskillId
+        });
+        mapProxy.SetMethodReturn(nameof(IBaseMap.GetEntity), station);
 
         inventoryProxy.SetMethodReturnFactory(nameof(IEnumerable<IBag>.GetEnumerator), () => new[] { inventoryBag }.AsEnumerable().GetEnumerator());
         bagProxy.SetProperty(nameof(IBag.Location), InventoryLocation.Inventory);
