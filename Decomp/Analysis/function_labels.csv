@@ -1054,6 +1054,29 @@ WildStar64.exe,140603450,Group_HandleMemberPromote_ReadPayload,Client reader for
 WildStar64.exe,140607490,Group_CopyMemberStatBlockFromPayload,Copies the 0x60-byte member stat block from a server packet into the local group-member runtime object; shared by roster/detail refresh handlers.
 WildStar64.exe,140603610,Group_HandleMemberFlags_ReadPayload,Client reader for a server group-member-flags packet (860 bytes — large, likely handles multiple opcodes or a complex roster packet). Decompile to confirm opcode and field layout.
 WildStar64.exe,140603970,Group_HandleReadyCheck_ReadPayload,Client reader for server ready-check status (opcode 0x0441 ServerGroupReadyCheckStatusUpdate); reads group id plus member key fields and dispatches Group_ReadyCheck.
+WildStar64.exe,140078eac,Network_RegisterServerOpcode_084B,Registers server opcode 0x084B with 0x18-byte reader @1400a3af0 in FUN_14006c290 packet registration table.
+WildStar64.exe,1400a3af0,ServerCraftingAuxSixUInt32_ReadPayload,Reads opcode 0x084B as six consecutive uint32 fields (24 bytes); neighbor to ServerCraftingFinish 0x0853.
+WildStar64.exe,140078e4a,Network_RegisterServerOpcode_0855,Registers server opcode 0x0855 with 0xC-byte reader @140081df0 in FUN_14006c290 packet registration table.
+WildStar64.exe,140081df0,ServerCraftingAuxThreeUInt32_ReadPayload,Reads opcode 0x0855 as three consecutive uint32 fields (12 bytes).
+WildStar64.exe,14006e125,Network_RegisterServerOpcode_05A1,Registers server opcode 0x05A1 with 0x10-byte reader @140080b00 between ServerRealmInfoResponse 0x059D and ServerMailResult 0x05A2.
+WildStar64.exe,140080b00,ServerRealmAuxUInt32TripletList_ReadPayload,Reads opcode 0x05A1 as uint32 count followed by count 12-byte rows of three uint32 fields (same wire as 0x080F).
+WildStar64.exe,1400792e2,Network_RegisterServerOpcode_0347,Registers server opcode 0x0347 with 0x10-byte reader @1400980f0 (ServerUInt32WideString_ReadPayload).
+WildStar64.exe,1400791ed,Network_RegisterServerOpcode_0348,Registers server opcode 0x0348 with 0x30-byte reader @1400a40c0 in FUN_14006c290.
+WildStar64.exe,1400a40c0,ServerSupportUInt32HeaderAndTriplets_ReadPayload,Reads opcode 0x0348 as three uint32 header fields plus three uint32 triplets (48 bytes).
+WildStar64.exe,140079280,Network_RegisterServerOpcode_0349,Registers server opcode 0x0349 with 1-byte empty reader @14007d8e0.
+WildStar64.exe,14007924f,Network_RegisterServerOpcode_034A,Registers server opcode 0x034A with 4-byte reader @14007ab50 (ServerUInt32_ReadPayload).
+WildStar64.exe,1400792b3,Network_RegisterServerOpcode_034B,Registers server opcode 0x034B with 1-byte empty reader @14007d8e0.
+WildStar64.exe,1400791bc,Network_RegisterServerOpcode_034C,Registers server opcode 0x034C with 0x1C-byte reader @1400a4040.
+WildStar64.exe,1400a4040,ServerSupportUInt5AndSixUInt32_ReadPayload,Reads opcode 0x034C as 5-bit field plus six uint32 fields (28 bytes).
+WildStar64.exe,14007921e,Network_RegisterServerOpcode_034D,Registers server opcode 0x034D with 0x40-byte reader @1400a4150.
+WildStar64.exe,1400a4150,ServerSupportUInt32HeaderAndFourTriplets_ReadPayload,Reads opcode 0x034D as four uint32 header fields plus four uint32 triplets (64 bytes).
+WildStar64.exe,140079313,Network_RegisterServerOpcode_034E,Registers server opcode 0x034E with 0x28-byte reader @1400a4260.
+WildStar64.exe,1400a4260,ServerSupportSurveyList_ReadPayload,Reads opcode 0x034E as wide string five uint32 header fields and counted 0x30-byte rows (wide string plus five ulong).
+WildStar64.exe,14007912b,Network_RegisterServerOpcode_034F,Registers server opcode 0x034F with 8-byte reader @1400a3f70.
+WildStar64.exe,1400a3f70,ServerSupportUInt32AndFlags_ReadPayload,Reads opcode 0x034F as uint32 plus 2-bit field (8 bytes).
+WildStar64.exe,14007918b,Network_RegisterServerOpcode_0350,Registers server opcode 0x0350 with 4-byte reader @14007ab50.
+WildStar64.exe,14007915a,Network_RegisterServerOpcode_0351,Registers server opcode 0x0351 with 0x20-byte reader @1400a3fd0.
+WildStar64.exe,1400a3fd0,ServerSupportUInt32AndTwoTriplets_ReadPayload,Reads opcode 0x0351 as uint32 two uint32 triplets and trailing uint32 (32 bytes).
 WildStar64.exe,140603a60,Group_HandleGroupDisband_ReadPayload,Client reader for a server group-disband or large roster packet (2116 bytes — very large, likely a dispatcher or multi-opcode handler). Decompile to confirm opcode and field layout.
 WildStar64.exe,14008de20,ServerHousingResidenceKeyedUpdate_ReadPayload,Reads opcode 0x00CA as one 64-bit field plus one uint32; the 0x10 registration size is client object size/padding, not a second uint32 wire field.
 WildStar64.exe,14007c3a0,ServerUInt15_ReadPayload,Shared scalar reader registered for opcodes 0x00CC and 0x00CD; reads one 15-bit field.
@@ -1091,3 +1114,9 @@ WildStar64.exe,140095da0,ServerSpellUInt32TripletList_ReadPayload,Reads opcodes 
 WildStar64.exe,140080bf0,ServerSpellUInt32TripletListRow_ReadPayload,Reads one spell auxiliary row of three uint32 fields (12 bytes).
 WildStar64.exe,14007fef0,ServerSpellFourUInt32_ReadPayload,Reads opcodes 0x078C and 0x0812 as four consecutive uint32 fields (16 bytes); 0x078C is consumed as a housing community rename result.
 WildStar64.exe,1404bbfc0,Housing_HandleCommunityRenameResult,Consumes opcode 0x078C by switching on the first uint32 as HousingResult and dispatching CommunityRenameResult for mapped result values.
+WildStar64.exe,1406031d0,Group_HandleMemberAdd_ReadPayload,Client reader for a server group-member-add packet (422 bytes). Decompile to confirm opcode and field layout.
+WildStar64.exe,140603380,Group_HandleMemberRemove_ReadPayload,Client reader for a server group-member-removal packet (193 bytes). Decompile to confirm opcode and field layout.
+WildStar64.exe,140603450,Group_HandleMemberPromote_ReadPayload,Client reader for a server group-promote packet (271 bytes). Decompile to confirm opcode and field layout.
+WildStar64.exe,140603610,Group_HandleMemberFlags_ReadPayload,Client reader for a server group-member-flags packet (860 bytes — likely multi-opcode). Decompile to confirm opcode and field layout.
+WildStar64.exe,140603970,Group_HandleReadyCheck_ReadPayload,Client reader for a server group-ready-check packet (186 bytes). Decompile to confirm opcode and field layout.
+WildStar64.exe,140603a60,Group_HandleGroupDisband_ReadPayload,Client reader for a server group-disband or large roster packet (2116 bytes). Decompile to confirm opcode and field layout.

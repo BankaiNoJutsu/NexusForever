@@ -377,42 +377,6 @@ namespace NexusForever.Network.World.Message.Model
         }
     }
 
-    [Message(GameMessageOpcode.Server0x0347)]
-    public class Server0x0347 : ServerUnresolvedRawPayload
-    {
-        public Server0x0347(byte[] payload = null) : base(0x10u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x0348)]
-    public class Server0x0348 : ServerUnresolvedRawPayload
-    {
-        public Server0x0348(byte[] payload = null) : base(0x30u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x034C)]
-    public class Server0x034C : ServerUnresolvedRawPayload
-    {
-        public Server0x034C(byte[] payload = null) : base(0x1Cu, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x034D)]
-    public class Server0x034D : ServerUnresolvedRawPayload
-    {
-        public Server0x034D(byte[] payload = null) : base(0x40u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x034E)]
-    public class Server0x034E : ServerUnresolvedRawPayload
-    {
-        public Server0x034E(byte[] payload = null) : base(0x28u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x0351)]
-    public class Server0x0351 : ServerUnresolvedRawPayload
-    {
-        public Server0x0351(byte[] payload = null) : base(0x20u, payload) { }
-    }
-
     [Message(GameMessageOpcode.Server0x037F)]
     public class Server0x037F : ServerUnresolvedRawPayload
     {
@@ -449,12 +413,6 @@ namespace NexusForever.Network.World.Message.Model
         public Server0x056D(byte[] payload = null) : base(0x18u, payload) { }
     }
 
-    [Message(GameMessageOpcode.Server0x05A1)]
-    public class Server0x05A1 : ServerUnresolvedRawPayload
-    {
-        public Server0x05A1(byte[] payload = null) : base(0x10u, payload) { }
-    }
-
     [Message(GameMessageOpcode.Server0x06DF)]
     public class Server0x06DF : ServerUnresolvedRawPayload
     {
@@ -489,18 +447,6 @@ namespace NexusForever.Network.World.Message.Model
     public class Server0x0846 : ServerUnresolvedRawPayload
     {
         public Server0x0846(byte[] payload = null) : base(0x4u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x084B)]
-    public class Server0x084B : ServerUnresolvedRawPayload
-    {
-        public Server0x084B(byte[] payload = null) : base(0x18u, payload) { }
-    }
-
-    [Message(GameMessageOpcode.Server0x0855)]
-    public class Server0x0855 : ServerUnresolvedRawPayload
-    {
-        public Server0x0855(byte[] payload = null) : base(0xCu, payload) { }
     }
 
     [Message(GameMessageOpcode.Server0x0889)]

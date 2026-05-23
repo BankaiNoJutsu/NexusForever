@@ -12545,6 +12545,57 @@ Housing F-004 blocked-evidence tightening and wallpaper restore follow-up:
   collection, unresolved housing output consumer intent, and remaining
   provisional neighborhood/community field names.
 
+Housing F-004 pass 2 blocked-evidence sweep (eviction fanout, invite timeout
+broadcast, donation debits, vendor purchase debits):
+
+- **BLOCKED — evicted-player online notify:** Native consumer
+  `Housing_HandleNeighborUpdate` (`WildStar64.exe:1404bb790`) handles inbound
+  `ServerHousingNeighborUpdate` (`0x0519`) for the local client only. Action
+  `2` removes a row from the local neighbor caches and dispatches
+  `HousingNeighborsLoaded`; action `0` adds and dispatches `HousingNeighborUpdate`.
+  The eviction send path is client→server only:
+  `HousingEvent_SendClientNeighborEvict` (`1404b9f10`) and
+  `Lua_HousingLib_NeighborEvict` (`140735fb0`) emit `ClientHousingNeighborEvict`
+  (`0x0515`) with the selected neighbor residence identity and do not open a
+  second outbound notify channel. No WildStar64 export/label shows the server
+  proactively pushing `0x0519` Removed (or any alternate housing result/update)
+  to the evicted player's session when another owner evicts them. NexusForever
+  correctly updates the evictor (`ClientHousingNeighborEvictHandler` sends
+  `ServerHousingNeighborUpdate` Removed to the acting session only); fanout to
+  an online evicted neighbor stays blocked pending server/sniff evidence.
+- **BLOCKED — proactive invite timeout broadcast:** Invite prompt consumer
+  `Housing_HandleNeighborInvitePrompt` (`1404bba70`) caches inviter identity/name
+  and dispatches `HousingNeighborInviteRecieved`; accept/decline callbacks
+  `HousingEvent_SendClientNeighborInviteAccept` (`1404ba070`) and
+  `HousingEvent_SendClientNeighborInviteDecline` (`1404ba0a0`) only send
+  `ClientHousingNeighborInviteResponse` (`0x0513`) with boolean `1`/`0`. No
+  housing-neighbor label or `HousingResult_*` string maps a client-side invite
+  timer, `Neighbor_RequestTimedOut` auto-dispatch, or inviter timeout broadcast.
+  NexusForever's `ResidenceManager.DefaultNeighborInviteExpirySeconds` (`300`)
+  is emulator policy for expired invitee responses only; proactive inviter
+  timeout packets remain blocked.
+- **BLOCKED — `HousingCommunityDonate` debit:** Client sender
+  `Housing_SendClientCommunityDonate` (`1404b9ca0`) resolves
+  `HousingDecorInfo`, rejects `Flags & 0x8`, and serialises one `DecorInfo` row
+  through `ClientHousingCommunityDonate_WritePayload` (`14009da00`). Consumer
+  `ServerHousingCommunityDonateUpdate_ReadPayload` (`14009e930`) reads paired
+  uint32 source/target decor id arrays only. No currency, item, or
+  contribution-point subtract call appears on the mapped donate path. Safe
+  server mutation today is decor transfer + `0x04FE` id remap only.
+- **BLOCKED — housing vendor plug purchase debit:** Vendor list reader
+  `ServerHousingVendorList_ReadPayload` (`14009e7f0`) and row reader
+  `ServerHousingVendorListRow_ReadPayload` (`14008bf00`) expose plug item id,
+  cost, and flags for `0x0508`; placement still routes through
+  `Housing_SendClientPlugPlaceOrRotate` (`1404b73e0`) on `ClientHousingPlugUpdate`
+  (`0x0510`) with five `HousingContributionInfo`-derived 20-byte records where
+  only `ContributionPointRequirement` is populated in the observed senders.
+  No verified client helper debits currency/items on vendor-list receipt or
+  plug-place alone; NexusForever lists vendor costs but keeps placement/repair
+  contribution spending blocked (`ResidenceMapInstance.ValidateNewPlugPlacement`
+  returns `Plug_CannotAfford` when contribution ids/payload are present).
+- **Pass 2 decision:** Mapped-only / **Blocked** for all four pass-1 items; no
+  NexusForever behavior changes in this pass.
+
 Marketplace duration and mail template follow-up (F-005):
 
 - **Mapped**: `Marketplace_SendClientAuctionSellOrderSubmit` @ `140519a00` sends only
@@ -12928,6 +12979,25 @@ F-006 account/storefront terminal cluster `0969..0991` unblock pass:
   "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~AccountItemCooldownTests|FullyQualifiedName~CREDDExchangeHandlerTests|FullyQualifiedName~StorefrontPurchaseHandlerTests|FullyQualifiedName~AccountInventoryPendingGroupTests|FullyQualifiedName~AccountItemHandlerTests|FullyQualifiedName~AccountRuntimeEvidenceTests|FullyQualifiedName~AccountTerminalHandlerTests|FullyQualifiedName~VirtualCurrencyPackageHandlerTests|FullyQualifiedName~StorePurchaseVelocityLimiterTests"
   -m:1 -v minimal --nologo -p:UseSharedCompilation=false`
   (focused F-006 cluster).
+
+F-003 crafting/support/realm auxiliary opcode decode (2026-05-22, second unblock pass):
+
+- Ghidra `FUN_14006c290` registration plus `FindImmediateInstructions` / `InspectCodeAddress`
+  mapped wire shapes for `0x084B`, `0x0855`, `0x05A1`, and support cluster `0x0347..0x0351`
+  (including `0x0349`, `0x034A`, `0x034B`, `0x034F`, `0x0350` newly added to
+  `GameMessageOpcode`).
+- Typed `IWritable` models now replace `ServerUnresolvedRawPayload` placeholders:
+  `ServerCraftingAuxSixUInt32`, `ServerCraftingAuxThreeUInt32`, `ServerRealmAuxUInt32TripletList`,
+  and `ServerSupport*` models under `Message/Model/Support/`.
+- Shared readers reused: `ServerUInt32WideString_ReadPayload` (`1400980f0`) for `0x0347`,
+  `ServerUInt32_ReadPayload` (`14007ab50`) for `0x034A`/`0x0350`,
+  `ServerEmpty_ReadPayload` (`14007d8e0`) for `0x0349`/`0x034B`.
+- No live NexusForever emitters reference these opcodes; emitters intentionally omitted.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~CraftingPacketShapeTests|FullyQualifiedName~SupportPacketShapeTests"`
+  (packet-shape tests).
 
 F-016..F-020 spell-runtime family evidence ladder (2026-05-22):
 

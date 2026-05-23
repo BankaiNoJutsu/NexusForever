@@ -197,6 +197,50 @@ public class CraftingPacketShapeTests
     }
 
     [Fact]
+    public void ServerCraftingAuxSixUInt32_WritesMappedFields()
+    {
+        var packet = new ServerCraftingAuxSixUInt32
+        {
+            Value0 = 0x01020304u,
+            Value1 = 0x50607080u,
+            Value2 = 0x90A0B0C0u,
+            Value3 = 0xDEADBEEFu,
+            Value4 = 0xCAFEBABEu,
+            Value5 = 0x11223344u,
+        };
+
+        byte[] packetData = WritePacket(packet);
+        Assert.Equal(0x18, packetData.Length);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal(0x50607080u, reader.ReadUInt());
+        Assert.Equal(0x90A0B0C0u, reader.ReadUInt());
+        Assert.Equal(0xDEADBEEFu, reader.ReadUInt());
+        Assert.Equal(0xCAFEBABEu, reader.ReadUInt());
+        Assert.Equal(0x11223344u, reader.ReadUInt());
+    }
+
+    [Fact]
+    public void ServerCraftingAuxThreeUInt32_WritesMappedFields()
+    {
+        var packet = new ServerCraftingAuxThreeUInt32
+        {
+            Value0 = 0xAABBCCDDu,
+            Value1 = 0x01020304u,
+            Value2 = 0x50607080u,
+        };
+
+        byte[] packetData = WritePacket(packet);
+        Assert.Equal(0xC, packetData.Length);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(0xAABBCCDDu, reader.ReadUInt());
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal(0x50607080u, reader.ReadUInt());
+    }
+
+    [Fact]
     public void ServerTradeskillSigilResult_WritesResultAsUInt32()
     {
         var packet = new ServerTradeskillSigilResult
