@@ -41,11 +41,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
             log.LogInformation("ClientMatchingStopLookingForReplacements: player={Player}, match={Match}",
                 player.Guid, match.Guid);
 
-            // When the full replacement flow is implemented, this would:
-            // 1. Find the player's matching queue group
-            // 2. Clear the InProgress flag
-            // 3. Remove the group from the matching queue if it was registered for replacements
-            // 4. Broadcast status to all match members
+            // Full replacement backfill remains blocked until queue proposals can be attached
+            // to an existing in-progress match instead of creating a fresh match.
         }
     }
 }

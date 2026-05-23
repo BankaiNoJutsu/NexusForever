@@ -2,6 +2,7 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Instance;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Instance
@@ -48,14 +49,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Instance
 
                 foreach (IMapLock mapLock in lockCollection)
                 {
-                    // Only report instance locks (skip residence locks which have WorldId == 0)
+                    // Only report instance locks (skip residence locks which have WorldId == 0).
                     if (mapLock.WorldId == 0)
                         continue;
 
                     response.Raids.Add(new ServerRaidInfoResponse.RaidInfo
                     {
-                        // Take the low 64 bits of the instance GUID as the saved instance ID.
-                        // Retail used database auto-increment IDs; we derive a stable ulong from the Guid.
+                        // Retail used database auto-increment IDs; derive a stable local id from the instance Guid.
                         SavedInstanceId = System.BitConverter.ToUInt64(mapLock.InstanceId.ToByteArray(), 0),
                         WorldId         = (ushort)mapLock.WorldId,
                         DateExpireUTC   = expireTimestamp,
@@ -66,6 +66,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Instance
             }
 
             session.EnqueueMessageEncrypted(response);
+
+            // Send raid queue status (used by the raid lockout / saved instances UI)
+            session.EnqueueMessageEncrypted(new ServerRaidQueueStatus
+            {
+                IsQueued            = 0u,
+                MatchingGameTypeId  = 0u,
+                QueueId             = 0u,
+                WaitValue           = 0u,
+                Unknown             = 0u
+            });
         }
     }
 }

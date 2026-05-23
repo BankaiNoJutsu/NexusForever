@@ -51,15 +51,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
             log.LogInformation("ClientMatchingMatchInitiateLookingForReplacements: player={Player}, match={Match}, roles={Roles}",
                 player.Guid, match.Guid, requestedRoles);
 
-            // The full replacement flow requires:
-            // 1. Creating a matching queue proposal with InProgress=true on the queue group
-            // 2. The matching queue then matches solo queuers into the existing match
-            // 3. Upon match, sends ServerMatchingMatchInProgressReady instead of ServerMatchingMatchReady
-            //
-            // This infrastructure is partially implemented:
-            // - MatchingQueueGroup.InProgress flag and SetInProgress() method exist
-            // - MatchProposal.SendMatchReady checks InProgress for correct packet type
-            // - F-010 in MISSING_FEATURE_MATRIX.md tracks the remaining gap
+            // Full replacement backfill remains blocked. The current matching queue can create
+            // a new in-progress-ready proposal, but it cannot attach that proposal to this existing match.
         }
     }
 }
