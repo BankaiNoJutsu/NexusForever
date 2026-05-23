@@ -81,6 +81,7 @@ namespace NexusForever.Game.Marketplace
 
             expirationCheckTimer = 0d;
             ProcessExpiredAuctions();
+            ProcessExpiredCommodityOrders();
         }
 
         public ServerCommodityInfoResults BuildCommodityInfo(uint item2Id)
@@ -758,6 +759,44 @@ namespace NexusForever.Game.Marketplace
                 ReturnExpiredAuctionToOwner(record, auctionSnapshot);
 
             PersistAuctionDelete(record, record.Item);
+        }
+
+        private void ProcessExpiredCommodityOrders()
+        {
+            long nowFileTime = DateTime.UtcNow.ToFileTimeUtc();
+
+            lock (syncRoot)
+            {
+                foreach (MarketplaceCommodityOrder record in commodityOrders
+                    .Where(o => o.Order.ExpirationTime != 0ul && (long)o.Order.ExpirationTime <= nowFileTime)
+                    .ToList())
+                {
+                    ExpireCommodityOrder(record);
+                }
+            }
+        }
+
+        private void ExpireCommodityOrder(MarketplaceCommodityOrder record)
+        {
+            commodityOrders.Remove(record);
+
+            IPlayer owner = PlayerManager.Instance.GetPlayer(record.OwnerCharacterId);
+            if (record.Order.IsBuyOrder)
+            {
+                CreditCharacter(record.OwnerCharacterId, CurrencyType.Credits, record.Order.Price);
+            }
+            else
+            {
+                DeliverCommodityItems(record.OwnerCharacterId, record.Order.Item2Id, record.Order.Quantity);
+            }
+
+            owner?.Session.EnqueueMessageEncrypted(new ServerCommodityAuctionRemoved
+            {
+                OrderRemoved = CloneOrder(record.Order),
+                Type         = AuctionEventType.Expire
+            });
+
+            PersistCommodityOrderDelete(record);
         }
 
         private void CompleteAuctionSale(

@@ -363,10 +363,11 @@ namespace NexusForever.Game.Loot
             };
         }
 
-        private LootInstance GenerateLootInstance(uint entityId, uint ownerUnitId, IPlayer player, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType)
+        private LootInstance GenerateLootInstance(uint entityId, uint ownerUnitId, IPlayer player, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType, uint parentUnitId = 0u)
         {
-            LootInstance lootInstance = new(ownerUnitId, looterIds, looterType, lootEntityType);
-            log.Trace($"Generating loot instance: entityId={entityId}, ownerUnit={ownerUnitId}, playerCharacter={player?.CharacterId.ToString() ?? "none"}, looterType={looterType}, lootEntityType={lootEntityType}, looterIds=[{string.Join(",", looterIds.Select(kvp => $"{kvp.Key}:{kvp.Value}"))}].");
+            uint resolvedParentUnitId = parentUnitId != 0u ? parentUnitId : ownerUnitId;
+            LootInstance lootInstance = new(ownerUnitId, resolvedParentUnitId, looterIds, looterType, lootEntityType);
+            log.Trace($"Generating loot instance: entityId={entityId}, ownerUnit={ownerUnitId}, parentUnit={resolvedParentUnitId}, playerCharacter={player?.CharacterId.ToString() ?? "none"}, looterType={looterType}, lootEntityType={lootEntityType}, looterIds=[{string.Join(",", looterIds.Select(kvp => $"{kvp.Key}:{kvp.Value}"))}].");
 
             switch (lootEntityType)
             {
@@ -667,7 +668,7 @@ namespace NexusForever.Game.Loot
             if (owner == null || distance > LOOT_RANGE)
             {
                 log.Debug($"Player {looter.CharacterId} cannot collect loot {resolvedLootUnitId} from owner {ownerUnitId}: ownerFound={owner != null}, distance={distance:R}, lootRange={LOOT_RANGE:R}.");
-                throw new InvalidOperationException($"Owner {ownerUnitId} is unavailable or out of loot range for player {looter.CharacterId}.");
+                return;
             }
 
             if (lootInstance.HasExpired)
@@ -731,7 +732,7 @@ namespace NexusForever.Game.Loot
             if (owner == null || distance > LOOT_RANGE)
             {
                 log.Debug($"Player {looter.CharacterId} cannot roll on loot {resolvedLootUnitId} from owner {ownerUnitId}: ownerFound={owner != null}, distance={distance:R}, lootRange={LOOT_RANGE:R}.");
-                throw new InvalidOperationException($"Owner {ownerUnitId} is unavailable or out of loot range for player {looter.CharacterId}.");
+                return;
             }
 
             if (lootInstance.HasExpired)
@@ -763,7 +764,7 @@ namespace NexusForever.Game.Loot
             if (owner == null || distance > LOOT_RANGE)
             {
                 log.Debug($"Player {master.CharacterId} cannot assign master loot {resolvedLootUnitId} from owner {ownerUnitId}: ownerFound={owner != null}, distance={distance:R}, lootRange={LOOT_RANGE:R}.");
-                throw new InvalidOperationException($"Owner {ownerUnitId} is unavailable or out of loot range for player {master.CharacterId}.");
+                return;
             }
 
             if (lootInstance.HasExpired)

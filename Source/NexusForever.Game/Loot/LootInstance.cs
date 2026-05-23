@@ -15,6 +15,7 @@ namespace NexusForever.Game.Loot
     public class LootInstance : IEnumerable<LootInstanceItem>, IUpdate
     {
         public uint OwnerUnitId { get; }
+        public uint ParentUnitId { get; }
         public LootEntityType LootEntityType { get; }
         public LooterType LooterType { get; }
         public bool Explosion { get; set; }
@@ -27,8 +28,14 @@ namespace NexusForever.Game.Loot
         private readonly UpdateTimer expiryTimer = new(1800d);
 
         public LootInstance(uint ownerUnitId, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType)
+            : this(ownerUnitId, ownerUnitId, looterIds, looterType, lootEntityType)
+        {
+        }
+
+        public LootInstance(uint ownerUnitId, uint parentUnitId, Dictionary<ulong, uint> looterIds, LooterType looterType, LootEntityType lootEntityType)
         {
             OwnerUnitId    = ownerUnitId;
+            ParentUnitId   = parentUnitId;
             LooterType     = looterType;
             LootEntityType = lootEntityType;
 
@@ -119,7 +126,7 @@ namespace NexusForever.Game.Loot
                 return;
             }
 
-            uint parentUnitId = OwnerUnitId;
+            uint parentUnitId = ParentUnitId;
             LootPacketDiagnostics.TraceLootNotify(
                 player.CharacterId,
                 OwnerUnitId,
@@ -250,8 +257,10 @@ namespace NexusForever.Game.Loot
             return new LootRuntimeSnapshot
             {
                 OwnerUnitId = OwnerUnitId,
-                ParentUnitIdRuntimeValue = OwnerUnitId,
-                ParentUnitIdNotes = "Client uses ParentUnitId as the loot visual source; current runtime mirrors OwnerUnitId because LootInstance does not yet track a distinct parent source.",
+                ParentUnitIdRuntimeValue = ParentUnitId,
+                ParentUnitIdNotes = ParentUnitId == OwnerUnitId
+                    ? "ParentUnitId mirrors OwnerUnitId because this LootInstance was constructed without a distinct parent source."
+                    : "ParentUnitId tracks a distinct parent source.",
                 LootEntityType = LootEntityType,
                 LooterType = LooterType,
                 Explosion = Explosion,
@@ -300,6 +309,33 @@ namespace NexusForever.Game.Loot
             {
                 IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
                 player?.Session.EnqueueMessageEncrypted(message);
+            }
+        }
+
+        public void BroadcastLootNotification(LootInstanceItem item, IPlayer excludedLooter)
+        {
+            if (item.WinnerGuid == 0u)
+                return;
+
+            ServerLootNotification notification = new()
+            {
+                LootUnitId        = item.Id,
+                ItemId            = item.StaticId,
+                Amount            = item.Amount,
+                LooterUnitId      = item.WinnerGuid,
+                Type              = item.Type,
+                RandomCircuitData = 0ul,
+                RandomGlyphData   = 0u,
+                ItemQuality2Id    = item.ItemQualityId
+            };
+
+            foreach (ulong characterId in looterGuids.Keys)
+            {
+                if (characterId == excludedLooter?.CharacterId)
+                    continue;
+
+                IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
+                player?.Session.EnqueueMessageEncrypted(notification);
             }
         }
 

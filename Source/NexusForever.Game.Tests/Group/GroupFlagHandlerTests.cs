@@ -169,6 +169,37 @@ public class GroupFlagHandlerTests
         Assert.Equal(aliceMessage.ChangedFlags, bobMessage.ChangedFlags);
     }
 
+    [Fact]
+    public async Task GroupMemberFlagsUpdated_BroadcastsReadyCheckStatusWhenPending()
+    {
+        var playerManager = new TestPlayerManager();
+        IPlayer alice = CreatePlayer(101ul, out RecordingDispatchProxy<IGameSession> aliceSessionProxy);
+        IPlayer bob = CreatePlayer(202ul, out RecordingDispatchProxy<IGameSession> bobSessionProxy);
+        playerManager.AddPlayer(alice);
+        playerManager.AddPlayer(bob);
+        InternalGroupMember targetMember = CreateGroupMember(202ul, GroupMemberInfoFlags.Pending | GroupMemberInfoFlags.Healer);
+        var handler = new GroupMemberFlagsUpdatedHandler(playerManager);
+
+        await handler.Handle(new GroupMemberFlagsUpdatedMessage
+        {
+            Group = new InternalGroup
+            {
+                Id      = 9001ul,
+                Members = [CreateGroupMember(101ul), targetMember]
+            },
+            Member        = targetMember,
+            FromPromotion = false
+        });
+
+        ServerGroupMemberRoleChange roleChange = AssertEncryptedMessage<ServerGroupMemberRoleChange>(aliceSessionProxy);
+        ServerGroupReadyCheckStatusUpdate readyCheck = AssertEncryptedMessage<ServerGroupReadyCheckStatusUpdate>(bobSessionProxy, 1);
+
+        Assert.Equal(9001ul, roleChange.GroupId);
+        Assert.Equal(9001ul, readyCheck.GroupId);
+        Assert.Equal(202ul, readyCheck.MemberIdentity.Id);
+        Assert.Equal(0u, readyCheck.ReadyStatus);
+    }
+
     private static IWorldSession CreateWorldSession(ulong characterId)
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
@@ -202,10 +233,11 @@ public class GroupFlagHandlerTests
         };
     }
 
-    private static T AssertEncryptedMessage<T>(RecordingDispatchProxy<IGameSession> sessionProxy)
+    private static T AssertEncryptedMessage<T>(RecordingDispatchProxy<IGameSession> sessionProxy, int index = 0)
     {
-        RecordingDispatchProxy<IGameSession>.Invocation invocation =
-            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> invocations =
+            sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        RecordingDispatchProxy<IGameSession>.Invocation invocation = invocations[index];
         return Assert.IsType<T>(invocation.Arguments[0]);
     }
 

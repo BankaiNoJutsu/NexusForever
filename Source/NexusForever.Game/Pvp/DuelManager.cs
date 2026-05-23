@@ -14,6 +14,12 @@ namespace NexusForever.Game.Pvp
         private const double ChallengeTimeoutSeconds = 30d;
         private const double CountdownSeconds = 3d;
 
+        /// <summary>Max distance (metres) between duelists before the left-area warning fires.</summary>
+        private const float DuelLeashRange = 120f;
+
+        /// <summary>How long (seconds) both duelists can be out of leash range before the duel is cancelled.</summary>
+        private const double DuelLeashTimeout = 15d;
+
         private enum DuelState
         {
             Pending,
@@ -27,6 +33,8 @@ namespace NexusForever.Game.Pvp
             public IPlayer Opponent { get; init; }
             public DuelState State { get; set; }
             public double Timer { get; set; }
+            public bool LeftAreaWarningSent { get; set; }
+            public double LeashTimer { get; set; }
         }
 
         private readonly object syncRoot = new();
@@ -193,8 +201,40 @@ namespace NexusForever.Game.Pvp
                                 });
                             }
                             break;
+                        case DuelState.Active:
+                            UpdateActiveDuelLeash(session, lastTick);
+                            break;
                     }
                 }
+            }
+        }
+
+        private void UpdateActiveDuelLeash(DuelSession session, double lastTick)
+        {
+            float distance = session.Challenger.Position.GetDistance(session.Opponent.Position);
+            bool outOfRange = distance > DuelLeashRange;
+
+            if (outOfRange)
+            {
+                if (!session.LeftAreaWarningSent)
+                {
+                    SendToParticipants(session, new ServerDuelLeftArea());
+                    session.LeftAreaWarningSent = true;
+                    session.LeashTimer = DuelLeashTimeout;
+                }
+
+                session.LeashTimer -= lastTick;
+                if (session.LeashTimer <= 0d)
+                {
+                    // Both players are out of range for too long — cancel the duel.
+                    Finish(session, session.Challenger, session.Opponent, DuelFinishReason.DuelCancelled);
+                }
+            }
+            else if (session.LeftAreaWarningSent)
+            {
+                // Player re-entered the dueling area while the warning is still active.
+                SendToParticipants(session, new ServerDuelCancelWarning());
+                session.LeftAreaWarningSent = false;
             }
         }
 

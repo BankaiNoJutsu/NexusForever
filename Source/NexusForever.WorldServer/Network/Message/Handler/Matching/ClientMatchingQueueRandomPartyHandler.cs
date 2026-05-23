@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 
@@ -6,17 +6,21 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 {
     public class ClientMatchingQueueRandomPartyHandler : IMessageHandler<IWorldSession, ClientMatchingQueueRandomParty>
     {
-        private readonly ILogger<ClientMatchingQueueRandomPartyHandler> log;
+        #region Dependency Injection
 
-        public ClientMatchingQueueRandomPartyHandler(ILogger<ClientMatchingQueueRandomPartyHandler> log)
+        private readonly IMatchingManager matchingManager;
+
+        public ClientMatchingQueueRandomPartyHandler(
+            IMatchingManager matchingManager)
         {
-            this.log = log;
+            this.matchingManager = matchingManager;
         }
+
+        #endregion
 
         public void HandleMessage(IWorldSession session, ClientMatchingQueueRandomParty queueRandomParty)
         {
-            log.LogDebug("ClientMatchingQueueRandomParty: player={Player} matchType={MatchType}",
-                session.Player?.Guid, queueRandomParty.MatchType);
+            matchingManager.JoinRandomPartyQueue(session.Player, queueRandomParty.Roles, queueRandomParty.MatchType, queueRandomParty.Flags);
         }
     }
 }
