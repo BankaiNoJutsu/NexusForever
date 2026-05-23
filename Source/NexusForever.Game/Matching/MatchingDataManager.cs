@@ -170,9 +170,9 @@ namespace NexusForever.Game.Matching
         }
 
         /// <summary>
-        /// Return if <see cref="Static.Matching.MatchType"/> enforces a specific team composition.
+        /// Return if <see cref="Static.Matching.MatchType"/> requires queue role selection.
         /// </summary>
-        public bool IsCompositionEnforced(Static.Matching.MatchType matchType)
+        public bool RequiresRoleSelection(Static.Matching.MatchType matchType)
         {
             return matchType
                 is Static.Matching.MatchType.Dungeon

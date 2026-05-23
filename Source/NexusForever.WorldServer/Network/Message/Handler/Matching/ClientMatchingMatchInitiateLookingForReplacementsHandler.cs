@@ -9,6 +9,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 {
     public class ClientMatchingMatchInitiateLookingForReplacementsHandler : IMessageHandler<IWorldSession, ClientMatchingMatchInitiateLookingForReplacements>
     {
+        // Client sender 0x14076aa30 emits only role bits 0..2 for opcode 0x05D5.
+        private const Role ValidReplacementRoles = Role.Tank | Role.Healer | Role.DPS;
+
+        internal static bool IsValidReplacementRoleMask(Role roles)
+        {
+            return (roles & ~ValidReplacementRoles) == Role.None;
+        }
+
         #region Dependency Injection
 
         private readonly ILogger<ClientMatchingMatchInitiateLookingForReplacementsHandler> log;
@@ -48,6 +56,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
             }
 
             Role requestedRoles = initiateLookingForReplacements.Roles;
+            if (!IsValidReplacementRoleMask(requestedRoles))
+            {
+                log.LogWarning("ClientMatchingMatchInitiateLookingForReplacements: player={Player}, match={Match}, invalid role mask={Roles}",
+                    player.Guid, match.Guid, requestedRoles);
+                return;
+            }
+
             log.LogInformation("ClientMatchingMatchInitiateLookingForReplacements: player={Player}, match={Match}, roles={Roles}",
                 player.Guid, match.Guid, requestedRoles);
 

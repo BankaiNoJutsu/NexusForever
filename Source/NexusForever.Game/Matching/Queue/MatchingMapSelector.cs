@@ -21,7 +21,7 @@ namespace NexusForever.Game.Matching.Queue
         #endregion
 
         /// <summary>
-        /// Determines the best <see cref="IMatchingMap"/> and role composition for the given <see cref="IMatchingQueueGroup"/>.
+        /// Determines the best <see cref="IMatchingMap"/> and role-selection result for the given <see cref="IMatchingQueueGroup"/>.
         /// </summary>
         public IMatchingMapSelectorResult Select(IMatchingQueueGroup matchingQueueGroup)
         {
@@ -56,7 +56,7 @@ namespace NexusForever.Game.Matching.Queue
                 MatchingMap = matchingMaps[Random.Shared.Next(matchingMaps.Count)]
             };
 
-            if (matchingDataManager.IsCompositionEnforced(matchingMapSelectorResult.MatchingMap.GameTypeEntry.MatchTypeEnum))
+            if (matchingDataManager.RequiresRoleSelection(matchingMapSelectorResult.MatchingMap.GameTypeEntry.MatchTypeEnum))
             {
                 foreach (IMatchingQueueGroupTeam matchingQueueGroupTeam in matchingQueueGroup.GetTeams())
                 {

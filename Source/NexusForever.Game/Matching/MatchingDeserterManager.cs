@@ -15,22 +15,25 @@ namespace NexusForever.Game.Matching
     {
         private readonly object syncRoot = new();
         private readonly Dictionary<ulong, DeserterPenalty> penalties = new();
+        private readonly HashSet<ulong> loadedCharacterIds = [];
+
+        private readonly IMatchingPenaltyStore matchingPenaltyStore;
+
+        public MatchingDeserterManager()
+        {
+        }
+
+        public MatchingDeserterManager(IMatchingPenaltyStore matchingPenaltyStore)
+        {
+            this.matchingPenaltyStore = matchingPenaltyStore;
+        }
 
         public bool CanQueue(ulong characterId, MatchType matchType)
         {
-            lock (syncRoot)
-            {
-                if (!penalties.TryGetValue(characterId, out DeserterPenalty penalty))
-                    return true;
+            if (!TryGetActivePenalty(characterId, out DeserterPenalty penalty))
+                return true;
 
-                if (penalty.ExpiresAtUtc <= DateTimeOffset.UtcNow)
-                {
-                    penalties.Remove(characterId);
-                    return true;
-                }
-
-                return penalty.IsPvP != IsPvPMatchType(matchType);
-            }
+            return penalty.IsPvP != IsPvPMatchType(matchType);
         }
 
         public void ApplyDeserter(ulong characterId, MatchType matchType, double completionRatio)
@@ -44,15 +47,21 @@ namespace NexusForever.Game.Matching
                 ? RetailMatchingDeserterSpells.PvpDeserterSpell4Id
                 : RetailMatchingDeserterSpells.GetPveDeserterSpell4Id(completionRatio);
 
+            var penalty = new DeserterPenalty
+            {
+                IsPvP        = isPvP,
+                MatchType    = matchType,
+                Spell4Id     = spell4Id,
+                ExpiresAtUtc = DateTimeOffset.UtcNow.AddSeconds(durationSeconds)
+            };
+
             lock (syncRoot)
             {
-                penalties[characterId] = new DeserterPenalty
-                {
-                    IsPvP        = isPvP,
-                    Spell4Id     = spell4Id,
-                    ExpiresAtUtc = DateTimeOffset.UtcNow.AddSeconds(durationSeconds)
-                };
+                loadedCharacterIds.Add(characterId);
+                penalties[characterId] = penalty;
             }
+
+            PersistPenalty(characterId, penalty);
 
             IPlayer player = TryGetOnlinePlayer(characterId);
             ApplyDeserterSpell(player, spell4Id);
@@ -67,8 +76,11 @@ namespace NexusForever.Game.Matching
                 if (penalties.TryGetValue(characterId, out DeserterPenalty penalty))
                     spell4Id = penalty.Spell4Id;
 
+                loadedCharacterIds.Add(characterId);
                 penalties.Remove(characterId);
             }
+
+            DeletePersistedPenalty(characterId);
 
             IPlayer player = TryGetOnlinePlayer(characterId);
             if (spell4Id != 0u)
@@ -77,16 +89,44 @@ namespace NexusForever.Game.Matching
             SyncDeserterUi(player);
         }
 
+        public void RestoreDeserter(IPlayer player)
+        {
+            if (player == null)
+                return;
+
+            if (!TryGetActivePenalty(player.CharacterId, out DeserterPenalty penalty))
+                return;
+
+            ApplyDeserterSpell(player, penalty.Spell4Id);
+        }
+
         public int GetRemainingPenaltyMilliseconds(ulong characterId)
         {
-            lock (syncRoot)
-            {
-                if (!penalties.TryGetValue(characterId, out DeserterPenalty penalty))
-                    return 0;
+            if (!TryGetActivePenalty(characterId, out DeserterPenalty penalty))
+                return 0;
 
-                TimeSpan remaining = penalty.ExpiresAtUtc - DateTimeOffset.UtcNow;
-                return remaining <= TimeSpan.Zero ? 0 : (int)remaining.TotalMilliseconds;
+            return (int)(penalty.ExpiresAtUtc - DateTimeOffset.UtcNow).TotalMilliseconds;
+        }
+
+        public uint[] GetMatchingPenaltyTimesMilliseconds(ulong characterId)
+        {
+            var penaltyTimes = new uint[16];
+
+            if (!TryGetActivePenalty(characterId, out DeserterPenalty penalty))
+                return penaltyTimes;
+
+            TimeSpan remaining = penalty.ExpiresAtUtc - DateTimeOffset.UtcNow;
+            uint remainingMs = (uint)Math.Min(uint.MaxValue, Math.Ceiling(remaining.TotalMilliseconds));
+            foreach (MatchType matchType in Enum.GetValues<MatchType>())
+            {
+                if (matchType == MatchType.None)
+                    continue;
+
+                if (IsPvPMatchType(matchType) == penalty.IsPvP)
+                    penaltyTimes[(int)matchType] = remainingMs;
             }
+
+            return penaltyTimes;
         }
 
         public void SyncDeserterUi(IPlayer player)
@@ -94,15 +134,80 @@ namespace NexusForever.Game.Matching
             if (player?.Session == null)
                 return;
 
-            int remainingMs = GetRemainingPenaltyMilliseconds(player.CharacterId);
-            if (remainingMs <= 0)
+            player.Session.EnqueueMessageEncrypted(new ServerMatchingPenaltyUpdated
+            {
+                MatchingPenaltyTimesMS = GetMatchingPenaltyTimesMilliseconds(player.CharacterId)
+            });
+        }
+
+        private bool TryGetActivePenalty(ulong characterId, out DeserterPenalty penalty)
+        {
+            EnsurePenaltyLoaded(characterId);
+
+            bool deletePersisted = false;
+            lock (syncRoot)
+            {
+                if (!penalties.TryGetValue(characterId, out penalty))
+                    return false;
+
+                if (penalty.ExpiresAtUtc > DateTimeOffset.UtcNow)
+                    return true;
+
+                penalties.Remove(characterId);
+                deletePersisted = true;
+            }
+
+            if (deletePersisted)
+                DeletePersistedPenalty(characterId);
+
+            penalty = null;
+            return false;
+        }
+
+        private void EnsurePenaltyLoaded(ulong characterId)
+        {
+            lock (syncRoot)
+            {
+                if (loadedCharacterIds.Contains(characterId))
+                    return;
+
+                loadedCharacterIds.Add(characterId);
+            }
+
+            MatchingPenaltyState? state = matchingPenaltyStore?.Get(characterId);
+            if (state == null)
                 return;
 
-            player.Session.EnqueueMessageEncrypted(new ServerMatchingMatchKickCooldownUpdate
+            var penalty = new DeserterPenalty
             {
-                Result               = MatchingQueueResult.PersonalKickCooldown,
-                WaitTimeBeforeVoteMS = (uint)remainingMs
-            });
+                IsPvP        = state.Value.IsPvP,
+                MatchType    = state.Value.MatchType,
+                Spell4Id     = state.Value.Spell4Id,
+                ExpiresAtUtc = state.Value.ExpiresAtUtc
+            };
+
+            if (penalty.ExpiresAtUtc <= DateTimeOffset.UtcNow)
+            {
+                DeletePersistedPenalty(characterId);
+                return;
+            }
+
+            lock (syncRoot)
+                penalties[characterId] = penalty;
+        }
+
+        private void PersistPenalty(ulong characterId, DeserterPenalty penalty)
+        {
+            matchingPenaltyStore?.Save(characterId, new MatchingPenaltyState(
+                penalty.IsPvP,
+                penalty.MatchType,
+                penalty.Spell4Id,
+                penalty.ExpiresAtUtc));
+        }
+
+        private void DeletePersistedPenalty(ulong characterId)
+        {
+            matchingPenaltyStore?.Delete(characterId);
         }
 
         static IPlayer TryGetOnlinePlayer(ulong characterId)
@@ -146,6 +251,7 @@ namespace NexusForever.Game.Matching
         private sealed class DeserterPenalty
         {
             public bool IsPvP { get; init; }
+            public MatchType MatchType { get; init; }
             public uint Spell4Id { get; init; }
             public DateTimeOffset ExpiresAtUtc { get; init; }
         }

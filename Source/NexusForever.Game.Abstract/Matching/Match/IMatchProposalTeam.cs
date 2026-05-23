@@ -7,6 +7,9 @@ namespace NexusForever.Game.Abstract.Matching.Match
     {
         public Guid Guid { get; }
         uint MemberCount { get; }
+        uint AcceptedCount { get; }
+        uint PendingCount { get; }
+        uint DeclinedCount { get; }
         bool TeamReady { get; }
 
         /// <summary>

@@ -88,7 +88,7 @@ namespace NexusForever.Game.Matching.Queue
             if (matchingQueueProposalMembers.Count > matchingMap.GameTypeEntry.TeamSize)
                 return false;
 
-            if (matchingDataManager.IsCompositionEnforced(matchingMap.GameTypeEntry.MatchTypeEnum))
+            if (matchingDataManager.RequiresRoleSelection(matchingMap.GameTypeEntry.MatchTypeEnum))
             {
                 IMatchingRoleEnforcerResult result = matchingRoleEnforcer.Check(matchingQueueProposalMembers);
                 if (!result.Success)

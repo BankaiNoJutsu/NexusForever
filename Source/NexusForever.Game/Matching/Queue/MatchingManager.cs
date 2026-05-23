@@ -146,7 +146,10 @@ namespace NexusForever.Game.Matching.Queue
                 {
                     matchingRoleChecks.Remove(matchingRoleCheck);
                     foreach (IMatchingRoleCheckMember matchingRoleCheckMember in matchingRoleCheck.GetMembers())
+                    {
                         characterMatchingRoleChecks.Remove(matchingRoleCheckMember.Identity);
+                        GetMatchingCharacter(matchingRoleCheckMember.Identity).SendMatchingStatus();
+                    }
 
                     log.LogTrace($"Role check {matchingRoleCheck.Guid} removed from store.");
                 }
@@ -160,7 +163,7 @@ namespace NexusForever.Game.Matching.Queue
                 matchingRoleCheck.MatchingQueueProposal.AddMember(matchingRoleCheckMember.Identity, matchingRoleCheckMember.Roles.Value);
 
                 // remove member from all solo queues
-                foreach (IMatchingCharacterQueue matchingCharacterQueue in GetMatchingCharacter(matchingRoleCheckMember.Identity).GetMatchingCharacterQueues())
+                foreach (IMatchingCharacterQueue matchingCharacterQueue in GetMatchingCharacter(matchingRoleCheckMember.Identity).GetMatchingCharacterQueues().ToList())
                     if (!matchingCharacterQueue.MatchingQueueProposal.IsParty)
                         matchingCharacterQueue.MatchingQueueGroup.RemoveMatchingQueueProposal(matchingCharacterQueue.MatchingQueueProposal);
             }
@@ -193,6 +196,14 @@ namespace NexusForever.Game.Matching.Queue
         public IMatchingRoleCheck GetMatchingRoleCheck(Identity identity)
         {
             return characterMatchingRoleChecks.TryGetValue(identity, out IMatchingRoleCheck matchingRoleCheck) ? matchingRoleCheck : null;
+        }
+
+        public Static.Matching.MatchType GetReadyMatchType(Identity identity)
+        {
+            IMatchingRoleCheck matchingRoleCheck = GetMatchingRoleCheck(identity);
+            return matchingRoleCheck?.Status == MatchingRoleCheckStatus.Pending
+                ? matchingRoleCheck.MatchingQueueProposal.MatchType
+                : Static.Matching.MatchType.None;
         }
 
         /// <summary>
@@ -291,6 +302,9 @@ namespace NexusForever.Game.Matching.Queue
             foreach (Identity identity in identities)
                 characterMatchingRoleChecks.Add(identity, matchingRoleCheck);
 
+            foreach (Identity identity in identities)
+                GetMatchingCharacter(identity).SendMatchingStatus();
+
             log.LogTrace($"Role check {matchingRoleCheck.Guid} added to store.");
         }
 
@@ -358,11 +372,14 @@ namespace NexusForever.Game.Matching.Queue
         /// </summary>
         public void LeaveQueue(IPlayer player, Static.Matching.MatchType matchType)
         {
+            if (player == null)
+                return;
+
             log.LogTrace($"Leave queue request, Character: {player.Identity}, MatchType: {matchType}.");
 
             IMatchingCharacter character = GetMatchingCharacter(player.Identity);
             IMatchingCharacterQueue matchingCharacterQueue = character.GetMatchingCharacterQueue(matchType);
-            matchingCharacterQueue.MatchingQueueGroup.RemoveMatchingQueueProposal(matchingCharacterQueue.MatchingQueueProposal);
+            matchingCharacterQueue?.MatchingQueueGroup.RemoveMatchingQueueProposal(matchingCharacterQueue.MatchingQueueProposal);
         }
 
         /// <summary>
@@ -370,21 +387,42 @@ namespace NexusForever.Game.Matching.Queue
         /// </summary>
         public void LeaveQueue(IPlayer player)
         {
+            if (player == null)
+                return;
+
             log.LogTrace($"Leave queue request, Character: {player.Identity}.");
 
             IMatchingCharacter character = GetMatchingCharacter(player.Identity);
-            foreach (IMatchingCharacterQueue matchingCharacterQueue in character.GetMatchingCharacterQueues())
+            foreach (IMatchingCharacterQueue matchingCharacterQueue in character.GetMatchingCharacterQueues().ToList())
                 matchingCharacterQueue.MatchingQueueGroup.RemoveMatchingQueueProposal(matchingCharacterQueue.MatchingQueueProposal);
         }
 
         /// <summary>
         /// Invoked when <see cref="IPlayer"/> logs in.
         /// </summary>
+        public void BroadcastAverageWaitTimeUpdate(Static.Matching.MatchType matchType)
+        {
+            if (matchType == Static.Matching.MatchType.None)
+                return;
+
+            uint averageWaitTimeMs = (uint)matchingQueueTimeManager.GetAverageWaitTime(matchType).TotalMilliseconds;
+            foreach (IMatchingCharacter matchingCharacter in characters.Values)
+                matchingCharacter.SendAverageWaitTimeUpdate(matchType, averageWaitTimeMs);
+        }
+
         public void OnLogin(IPlayer player)
         {
             IMatchingCharacter matchingCharacter = GetMatchingCharacter(player.Identity);
+            matchingDeserterManager.RestoreDeserter(player);
             matchingCharacter.SendMatchingStatus();
             matchingDeserterManager.SyncDeserterUi(player);
+
+            foreach (IMatchingCharacterQueue matchingCharacterQueue in matchingCharacter.GetMatchingCharacterQueues())
+            {
+                Static.Matching.MatchType matchType = matchingCharacterQueue.MatchingQueueProposal.MatchType;
+                uint averageWaitTimeMs = (uint)matchingQueueTimeManager.GetAverageWaitTime(matchType).TotalMilliseconds;
+                matchingCharacter.SendAverageWaitTimeUpdate(matchType, averageWaitTimeMs);
+            }
         }
 
         /// <summary>

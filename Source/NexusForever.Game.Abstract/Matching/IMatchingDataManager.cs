@@ -33,9 +33,9 @@ namespace NexusForever.Game.Abstract.Matching
         bool IsPvPMatchType(Static.Matching.MatchType matchType);
 
         /// <summary>
-        /// Return if <see cref="Static.Matching.MatchType"/> enforces a specific team composition.
+        /// Return if <see cref="Static.Matching.MatchType"/> requires queue role selection.
         /// </summary>
-        bool IsCompositionEnforced(Static.Matching.MatchType matchType);
+        bool RequiresRoleSelection(Static.Matching.MatchType matchType);
 
         /// <summary>
         /// Return if <see cref="Static.Matching.MatchType"/> enforces a single faction queue.

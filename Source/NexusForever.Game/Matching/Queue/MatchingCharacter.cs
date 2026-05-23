@@ -20,15 +20,18 @@ namespace NexusForever.Game.Matching.Queue
         private readonly ILogger<MatchingCharacter> log;
         private readonly IPlayerManager playerManager;
         private readonly IMatchManager matchManager;
+        private readonly IMatchingManager matchingManager;
 
         public MatchingCharacter(
             ILogger<MatchingCharacter> log,
             IPlayerManager playerManager,
-            IMatchManager matchManager)
+            IMatchManager matchManager,
+            IMatchingManager matchingManager)
         {
-            this.log           = log;
-            this.playerManager = playerManager;
-            this.matchManager  = matchManager;
+            this.log             = log;
+            this.playerManager   = playerManager;
+            this.matchManager    = matchManager;
+            this.matchingManager = matchingManager;
         }
 
         #endregion
@@ -85,7 +88,7 @@ namespace NexusForever.Game.Matching.Queue
         public void RemoveMatchingQueueProposal(Static.Matching.MatchType matchType, MatchingQueueResult? leaveReason = MatchingQueueResult.Left)
         {
             if (!matchingCharacterGroups.ContainsKey(matchType))
-                throw new InvalidOperationException();
+                return;
 
             matchingCharacterGroups.Remove(matchType);
 
@@ -95,6 +98,8 @@ namespace NexusForever.Game.Matching.Queue
                 {
                     Result = leaveReason.Value,
                 });
+
+                Send(new ServerMatchingLeftQueue());
             }
 
             SendMatchingStatus();
@@ -114,7 +119,7 @@ namespace NexusForever.Game.Matching.Queue
             {
                 Status              = MatchingQueueStatus.NotInQueue,
                 JoinedMatchType     = currentMatchType,
-                ReadyMatchType      = Static.Matching.MatchType.None,
+                ReadyMatchType      = matchingManager.GetReadyMatchType(Identity),
             };
 
             // bit mask of all match types this character is queued for
@@ -122,6 +127,18 @@ namespace NexusForever.Game.Matching.Queue
                 matchingQueueLeave.QueuesJoined.SetBit((uint)existingMatchType, true);
 
             Send(matchingQueueLeave);
+        }
+
+        public void SendAverageWaitTimeUpdate(Static.Matching.MatchType matchType, uint averageWaitTimeMs)
+        {
+            if (GetMatchingCharacterQueue(matchType) == null)
+                return;
+
+            Send(new ServerMatchingAverageWaitTimeUpdate
+            {
+                Type            = matchType,
+                AverageWaitTime = averageWaitTimeMs,
+            });
         }
 
         private void Send(IWritable message)

@@ -266,6 +266,44 @@ namespace NexusForever.Database.Character
                 .ToList();
         }
 
+        public CharacterMatchingPenaltyModel GetCharacterMatchingPenalty(ulong characterId)
+        {
+            using var context = new CharacterContext(config);
+            return context.CharacterMatchingPenalty
+                .AsNoTracking()
+                .FirstOrDefault(p => p.Id == characterId);
+        }
+
+        public void UpsertCharacterMatchingPenalty(CharacterMatchingPenaltyModel model)
+        {
+            using var context = new CharacterContext(config);
+            CharacterMatchingPenaltyModel existing = context.CharacterMatchingPenalty.Find(model.Id);
+            if (existing == null)
+            {
+                context.CharacterMatchingPenalty.Add(model);
+            }
+            else
+            {
+                existing.IsPvp       = model.IsPvp;
+                existing.MatchType   = model.MatchType;
+                existing.Spell4Id    = model.Spell4Id;
+                existing.ExpiresAtUtc = model.ExpiresAtUtc;
+            }
+
+            context.SaveChanges();
+        }
+
+        public void DeleteCharacterMatchingPenalty(ulong characterId)
+        {
+            using var context = new CharacterContext(config);
+            CharacterMatchingPenaltyModel existing = context.CharacterMatchingPenalty.Find(characterId);
+            if (existing == null)
+                return;
+
+            context.CharacterMatchingPenalty.Remove(existing);
+            context.SaveChanges();
+        }
+
         public List<MarketplaceAuctionModel> GetMarketplaceAuctions()
         {
             using var context = new CharacterContext(config);

@@ -25,6 +25,11 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         IMatchingRoleCheck GetMatchingRoleCheck(Identity identity);
 
         /// <summary>
+        /// Return active role-check match type for supplied character id.
+        /// </summary>
+        Static.Matching.MatchType GetReadyMatchType(Identity identity);
+
+        /// <summary>
         /// Attempt to join a matching queue.
         /// </summary>
         void JoinQueue(IPlayer player, Role roles, Static.Matching.MatchType matchType, List<uint> maps, uint matchingGameTypeId, MatchingQueueFlags matchingQueueFlags);
@@ -57,6 +62,11 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         /// Remove <see cref="IPlayer"/> from all queues.
         /// </summary>
         void LeaveQueue(IPlayer player);
+
+        /// <summary>
+        /// Broadcast <see cref="ServerMatchingAverageWaitTimeUpdate"/> to characters queued for <paramref name="matchType"/>.
+        /// </summary>
+        void BroadcastAverageWaitTimeUpdate(Static.Matching.MatchType matchType);
 
         /// <summary>
         /// Invoked when <see cref="IPlayer"/> logs in.

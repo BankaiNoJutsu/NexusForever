@@ -10,6 +10,9 @@ namespace NexusForever.Game.Matching.Match
     {
         public Guid Guid { get; private set; }
         public uint MemberCount => (uint)members.Count;
+        public uint AcceptedCount => (uint)members.Values.Count(m => m.Response == true);
+        public uint PendingCount => (uint)members.Values.Count(m => !m.Response.HasValue);
+        public uint DeclinedCount => (uint)members.Values.Count(m => m.Response == false);
         public bool TeamReady { get; private set; }
 
         private IMatchingQueueGroupTeam team;

@@ -142,7 +142,10 @@ namespace NexusForever.Game.Matching.Match
         private void CreateMatch(IMatchProposal matchProposal)
         {
             if (!matchProposal.MatchingQueueGroup.IsSolo)
+            {
                 matchingQueueTimeManager.Update(matchProposal.MatchingQueueGroup);
+                matchingManager.BroadcastAverageWaitTimeUpdate(matchProposal.MatchingQueueGroup.MatchType);
+            }
 
             IMatch match = matchFactory.CreateMatch(matchProposal.MatchingQueueGroup.MatchType);
             match.Initialise(matchProposal);

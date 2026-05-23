@@ -130,6 +130,7 @@ namespace NexusForever.Game.Matching.Queue
             this.matchingQueueGroup = matchingQueueGroup;
 
             Broadcast(BuildServerMatchingQueueJoin());
+            matchingManager.BroadcastAverageWaitTimeUpdate(MatchType);
 
             foreach (IMatchingQueueProposalMember matchingQueueProposalMember in GetMembers())
             {

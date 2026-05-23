@@ -138,8 +138,8 @@ namespace NexusForever.Game.Matching.Match
                 message = new ServerMatchingMatchInProgressReady()
                 {
                     MatchType    = MatchingQueueGroup.MatchType,
-                    CurrentAllies  = allyTeam.MemberCount, // Needs concept of total invited allies, accepted allies, and unaccepted allies
-                    PendingAllies = 0, // Related to the above
+                    CurrentAllies = allyTeam.AcceptedCount,
+                    PendingAllies = allyTeam.PendingCount,
                 };
             }
             else
@@ -147,8 +147,8 @@ namespace NexusForever.Game.Matching.Match
                 message = new ServerMatchingMatchReady()
                 {
                     MatchType    = MatchingQueueGroup.MatchType,
-                    PendingAllies  = allyTeam.MemberCount, // Needs works, as above
-                    PendingEnemies = enemyTeam?.MemberCount ?? 0u, // Needs works, as above
+                    PendingAllies  = allyTeam.PendingCount,
+                    PendingEnemies = enemyTeam?.PendingCount ?? 0u,
                 };
             }
 

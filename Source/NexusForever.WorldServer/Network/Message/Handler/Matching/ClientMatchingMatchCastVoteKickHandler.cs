@@ -32,7 +32,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 
             MatchingQueueResult? result = match.CastVoteKick(session.Player, castVoteKick.MemberToKick.ToGameIdentity(), castVoteKick.Vote);
             if (result != null)
+            {
+                session.EnqueueMessageEncrypted(new ServerMatchingMatchVoteKickFailed());
                 log.LogDebug("Vote kick cast rejected for player {PlayerGuid}: {Result}.", session.Player.Guid, result);
+            }
         }
     }
 }

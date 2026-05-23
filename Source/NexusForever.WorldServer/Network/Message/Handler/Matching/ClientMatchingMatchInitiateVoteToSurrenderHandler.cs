@@ -31,7 +31,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 
             MatchingQueueResult? result = match.TryInitiateVoteSurrender(session.Player);
             if (result != null)
+            {
+                if (result != MatchingQueueResult.PersonalSurrenderCooldown)
+                    session.EnqueueMessageEncrypted(new ServerMatchingMatchVoteSurrenderFailed());
+
                 log.LogDebug("Surrender vote initiate rejected for player {PlayerGuid}: {Result}.", session.Player.Guid, result);
+            }
         }
     }
 }

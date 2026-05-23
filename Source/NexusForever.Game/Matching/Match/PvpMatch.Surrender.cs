@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Retail;
 using NexusForever.Game.Static.Matching;
 using NexusForever.Network.World.Message.Model;
+using MatchTeamType = NexusForever.Game.Static.Matching.MatchTeam;
 using MatchType = NexusForever.Game.Static.Matching.MatchType;
 
 namespace NexusForever.Game.Matching.Match
@@ -10,6 +11,7 @@ namespace NexusForever.Game.Matching.Match
     public partial class PvpMatch
     {
         private bool surrenderVoteActive;
+        private MatchTeamType surrenderingTeam;
         private readonly HashSet<Identity> surrenderVotesYes = [];
 
         public MatchingQueueResult? TryInitiateVoteSurrender(IPlayer initiator)
@@ -32,6 +34,7 @@ namespace NexusForever.Game.Matching.Match
             }
 
             surrenderVoteActive = true;
+            surrenderingTeam = GetTeam(initiator.Identity)?.Team ?? MatchTeamType.Red;
             surrenderVotesYes.Clear();
             surrenderVotesYes.Add(initiator.Identity);
 
@@ -55,9 +58,11 @@ namespace NexusForever.Game.Matching.Match
                 return null;
 
             surrenderVoteActive = false;
+            MatchTeamType winner = surrenderingTeam == MatchTeamType.Red ? MatchTeamType.Blue : MatchTeamType.Red;
+            surrenderingTeam = default;
             surrenderVotesYes.Clear();
 
-            MatchFinish(MatchWinner.Blue, MatchEndReason.Forfeit);
+            MatchFinish(winner == MatchTeamType.Red ? MatchWinner.Red : MatchWinner.Blue, MatchEndReason.Forfeit);
             return null;
         }
     }

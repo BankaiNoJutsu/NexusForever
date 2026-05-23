@@ -96,7 +96,7 @@ namespace NexusForever.Game.Matching.Queue
                 && !matchingDataManager.CanRequeueAsGroup(matchingQueueProposal.MatchType))
                 return MatchingQueueResult.InvalidRequeueType;
 
-            if (matchingDataManager.IsCompositionEnforced(matchingQueueProposal.MatchType))
+            if (matchingDataManager.RequiresRoleSelection(matchingQueueProposal.MatchType))
                 if (!matchingRoleEnforcer.Check(members).Success)
                     return MatchingQueueResult.GroupSize;
 

@@ -35,5 +35,10 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         /// Send match and queue status for character.
         /// </summary>
         void SendMatchingStatus();
+
+        /// <summary>
+        /// Send <see cref="ServerMatchingAverageWaitTimeUpdate"/> when the character is queued for <paramref name="matchType"/>.
+        /// </summary>
+        void SendAverageWaitTimeUpdate(Static.Matching.MatchType matchType, uint averageWaitTimeMs);
     }
 }

@@ -37,6 +37,7 @@ namespace NexusForever.Database.Character
         public DbSet<CharacterTradeskillModel> CharacterTradeskill { get; set; }
         public DbSet<CharacterTradeskillMaterialModel> CharacterTradeskillMaterial { get; set; }
         public DbSet<CharacterZonemapHexgroupModel> CharacterZonemapHexgroup { get; set; }
+        public DbSet<CharacterMatchingPenaltyModel> CharacterMatchingPenalty { get; set; }
         public DbSet<ChatChannelModel> ChatChannel { get; set; }
         public DbSet<ChatChannelMemberModel> ChatChannelMember { get; set; }
         public DbSet<GuildModel> Guild { get; set; }
@@ -1836,6 +1837,43 @@ namespace NexusForever.Database.Character
                     .WithMany(p => p.ZonemapHexgroup)
                     .HasForeignKey(d => d.Id)
                     .HasConstraintName("FK__character_zonemap_hexgroup_id__character_id");
+            });
+
+            modelBuilder.Entity<CharacterMatchingPenaltyModel>(entity =>
+            {
+                entity.ToTable("character_matching_penalty");
+
+                entity.HasKey(e => e.Id)
+                    .HasName("PRIMARY");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20) unsigned")
+                    .HasDefaultValue(0ul);
+
+                entity.Property(e => e.IsPvp)
+                    .HasColumnName("isPvp")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.MatchType)
+                    .HasColumnName("matchType")
+                    .HasColumnType("tinyint(3) unsigned")
+                    .HasDefaultValue((byte)0);
+
+                entity.Property(e => e.Spell4Id)
+                    .HasColumnName("spell4Id")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
+                entity.Property(e => e.ExpiresAtUtc)
+                    .HasColumnName("expiresAtUtc")
+                    .HasColumnType("datetime");
+
+                entity.HasOne(d => d.Character)
+                    .WithOne(p => p.MatchingPenalty)
+                    .HasForeignKey<CharacterMatchingPenaltyModel>(d => d.Id)
+                    .HasConstraintName("FK__character_matching_penalty_id__character_id");
             });
 
             modelBuilder.Entity<ChatChannelModel>(entity =>

@@ -31,7 +31,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 
             MatchingQueueResult? result = match.CastVoteSurrender(session.Player, castVoteSurrender.Vote);
             if (result != null)
+            {
+                session.EnqueueMessageEncrypted(new ServerMatchingMatchVoteSurrenderFailed());
                 log.LogDebug("Surrender vote cast rejected for player {PlayerGuid}: {Result}.", session.Player.Guid, result);
+            }
         }
     }
 }
