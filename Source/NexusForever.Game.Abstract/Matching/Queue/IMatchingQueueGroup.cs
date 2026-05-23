@@ -24,6 +24,11 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         bool InProgress { get; }
 
         /// <summary>
+        /// Set the <see cref="IMatchingQueueGroup"/> as looking for replacements for an in-progress match.
+        /// </summary>
+        void SetInProgress();
+
+        /// <summary>
         /// Determines if the <see cref="IMatchingQueueGroup"/> is from a solo queue join request.
         /// </summary>
         /// <remarks>
