@@ -1160,7 +1160,11 @@ namespace NexusForever.Game.Entity
 
         public override void AddVisible(IGridEntity entity)
         {
+            bool wasVisible = visibleEntities.ContainsKey(entity.Guid);
             base.AddVisible(entity);
+
+            if (wasVisible || !visibleEntities.ContainsKey(entity.Guid))
+                return;
 
             if (entity is IWorldEntity worldEntity)
             {
@@ -1211,7 +1215,11 @@ namespace NexusForever.Game.Entity
             if (ShouldForceStarterTutorialEntityVisibility(entity))
                 return;
 
+            bool wasVisible = visibleEntities.ContainsKey(entity.Guid);
             base.RemoveVisible(entity);
+
+            if (!wasVisible || visibleEntities.ContainsKey(entity.Guid))
+                return;
 
             if (selectedVendorGuid == entity.Guid)
                 SelectedVendorInfo = null;
