@@ -1119,7 +1119,6 @@ namespace NexusForever.Game.Entity
             Account.InventoryManager.SendInitialPackets();
             Account.GenericUnlockManager.SendCharacterUnlockSync();
             SendTradeskillInitialPackets();
-            QuestManager.SendInitialPackets();
             AchievementManager.SendInitialPackets(null);
             Account.RewardPropertyManager.SendInitialPackets();
             ResurrectionManager.SendInitialPackets();
@@ -1514,6 +1513,7 @@ namespace NexusForever.Game.Entity
                     we.MovementManager.SendNetworkEntityCommands(Session);
 
             Session.EnqueueMessageEncrypted(new ServerPlayerEnteredWorld());
+            QuestManager.SendInitialPackets();
 
             TryRecoverStarterTutorialOnEnteredWorld();
             SyncStarterTutorialEntityVisibility();

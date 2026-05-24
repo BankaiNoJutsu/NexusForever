@@ -1,6 +1,6 @@
 # Quest Implementation Status
 
-Last updated: 2026-05-23
+Last updated: 2026-05-25
 
 Canonical quest coverage tracker for NexusForever. Pair with feature row **F-022**
 in `CURRENT_STATUS.md` and the generated inventory in
@@ -72,6 +72,12 @@ For the **3,903 quests with objectives**:
 | Crimson Isle | 870 | 5573, 5575, 5580, 5583, 5584, 5594-5597, 5604, 5610, 8855 |
 
 Map scripts and entity hooks live under `Source/NexusForever.Script.Main/Quests/`.
+
+## Rider's Reef Codex boundary (2026-05-25)
+
+- Tutorial quests `10513..10541` can be active, tracked, and objective-synced, but they are not ordinary browseable quest-log/Codex rows in the stock client.
+- Probe result: after moving `ServerQuestInit` to the post-`ClientEnteredWorld` bootstrap and replaying quest state/objective deltas, an injected comparison quest (`6708`) appeared in the Codex while the Rider's Reef chain still did not.
+- Client data cause: the Rider's Reef rows in `wildstar_client.Quest2` have `groupId = 0`, `questCategoryId = 0`, `questContentFinderTypeEnum = 0`, and no `EpisodeQuest` rows. Treat them as HUD task-style tutorial content unless client tables or client UI logic are patched.
 
 ## Blocked objective families (remaining)
 

@@ -161,6 +161,38 @@ namespace NexusForever.Game.Entity
                     }).ToList()
             });
 
+            // Replay the normal quest delta packets after the snapshot so the client
+            // refreshes its quest runtime rows on login the same way it does during play.
+            foreach (IQuest quest in inactiveQuests.Values)
+            {
+                player.Session.EnqueueMessageEncrypted(new ServerQuestStateChange
+                {
+                    QuestId          = quest.Id,
+                    QuestState       = quest.State,
+                    QuestObjectiveId = quest.GetCurrentObjectiveId()
+                });
+            }
+
+            foreach (IQuest quest in activeQuests.Values)
+            {
+                player.Session.EnqueueMessageEncrypted(new ServerQuestStateChange
+                {
+                    QuestId          = quest.Id,
+                    QuestState       = quest.State,
+                    QuestObjectiveId = quest.GetCurrentObjectiveId()
+                });
+
+                foreach (IQuestObjective objective in quest)
+                {
+                    player.Session.EnqueueMessageEncrypted(new ServerQuestObjectiveUpdate
+                    {
+                        QuestId             = quest.Id,
+                        QuestObjectiveIndex = objective.Index,
+                        Completed           = objective.Progress
+                    });
+                }
+            }
+
             foreach (IQuest quest in activeQuests.Values.ToList())
                 quest.SendObjectiveWorldLocationUpdates();
         }

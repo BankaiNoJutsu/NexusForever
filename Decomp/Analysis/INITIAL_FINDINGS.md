@@ -13229,6 +13229,22 @@ Entity/cluster aux decompile follow-up (2026-05-23, consumer discovery):
   insertion: `WorldZone_InsertUnitHandlerIntoList` @ `140356a30`. See
   `ENTITY_AUX_DECODE_ROADMAP.md` for the table and blocked next step (per-handler `+0x58`
   opcode maps for `0x025F`-`0x0264` and the **62** aux packets).
+- Follow-up decomp on `WorldZone_InsertUnitHandlerIntoList` sharpens that anchor: the helper
+  does **not** insert the zone/world object itself. It walks visible-unit node lists rooted at
+  `param_1+0x1488` plus local spatial-bucket families and splices each `plVar4` node into
+  `param_1+0x14b0` with back-links at `plVar4+0x450`; a sibling family is inserted into
+  `param_1+0x13c0` with back-links at `plVar4+0x4d0`. The sole direct caller `FUN_14036dd50`
+  is therefore a zone/world update method, not the message-consumer family.
+- `FindPointerInData` on `14036dd50` hit `.rdata` cell `140b65a10`, but the adjacent code cell
+  `14036dd30` is only a tiny getter (`this+0x12b0 -> *(ptr+0x18)`), which falsifies the
+  tempting assumption that the caller's recovered vtable is the live `+0x50` / `+0x58`
+  handler table. Next passes should recover the inserted `plVar4` node vtables themselves,
+  not keep chasing the caller vtable or already named loot-consumer bodies.
+- A `FindImmediateInstructions` scan for `0x14b0` now gives the concrete sibling-method set for
+  that recovery: `14035c650`, `140369f30`, `14036a460`, `14036a980`, and `14036b8d0` all splice
+  or unlink the same `+0x450` / `+0x458` node family around `param_1+0x1488` and
+  `param_1+0x14b0`, reinforcing that the next anchor is the inserted node vtables, not the
+  zone-owner vtable.
 
 One-hundred-twenty-ninth placeholder-rename initiative closure (2026-05-23):
 
@@ -13446,6 +13462,26 @@ Crafting current-craft evidence follow-up (2026-05-23):
   confirmed the new labels in `exports\WildStar64.exe\functions.csv` and the
   expected station/current-craft decompile shapes.
 
+Crafting discovery threshold implementation follow-up (2026-05-23):
+
+- `Lua_Crafting_AddCoordinateDiscoveryInfo` @ `14059e9a0` maps undiscovered
+  `TradeskillSchematic2` rows with `Flags & 0x02` to UI distance bands:
+  `fRadius = mod(17) * Radius * global`, `fDiscoveryDistanceMin = VectorX -
+  mod(20) * DiscoverableRadius * global`, and `fDiscoveryDistanceMax =
+  mod(20) * DiscoverableRadius + VectorY`. `Crafting_GetProfessionModifierValue`
+  @ `1405e6140` applies additive/multiplicative profession modifiers with a
+  default pass-through of `1.0` when no active modifier list is present.
+- NexusForever now treats `Flags & 0x02` as coordinate-discovery schematics,
+  evaluates complex-craft attempts against `VectorX`/`VectorY` using
+  `CritRadius`/`Radius`/`DiscoverableRadius` bands, emits non-`Success`
+  `ServerCraftingFinish.HotOrCold` plus direction on misses, grants output and
+  calls `DiscoverSchematic` only on `Success`, and documents station service
+  keys `0x2C` general, `0x4F` runecrafting (`TradeSkillId 22`), `0x57`
+  tier-zero `Flags & 0x04`.
+- Attempt coordinates are parsed from `ApSpSplitDelta` float bits or packed
+  `CraftStats.CircuitComplete` ushort coordinates. Live capture can still
+  refine encoding if client UI uses a different grid packing.
+
 Crafting auxiliary packet shape correction (2026-05-23):
 
 - Follow-up inspection of `ServerCraftingAuxFourUInt32FloatUInt32_ReadPayload`
@@ -13552,3 +13588,58 @@ Rune item data bridge follow-up (2026-05-23):
   `0x388` also produced unrelated structures, so raw offset matches are not
   sufficient evidence. Durable rune persistence and non-success sigil result
   rules remain `Mapped only / Blocked` until that producer bridge is found.
+
+F-031 Madame Fay fortune weight table follow-up (2026-05-23):
+
+- `AccountItem.tbl` has exactly **17** fields; the current
+  `AccountItemEntry` model matches that count, so there is no hidden retail
+  weight column in the promoted game table.
+- `ClientDataEN.archive` (576 entries) and embedded `\x1bLua` chunks inside
+  `WildStar64.exe` contain **no** plaintext `fortune`/`madame` strings; the
+  Madame Fay UI is native (`FortunesLib`), not leaked Carbine addon Lua.
+- Native registration: `Lua_RegisterFortunesLib` (`140766a30`) exposes
+  `GetFortunesLootList` (`140766370`). That function reads cached
+  `ServerFortuneRewards` data: each item row is `uint32 item2Id` plus
+  `float probability`, and the UI field `fProbability` is `serverFloat * 100`.
+- Packet readers: `ServerFortuneRewards_ReadPayload` (`140081f60`, opcode
+  `0x03D2`, 0x40-byte header) reads item2 ids, money rows, and parallel float
+  probability arrays; `ServerFortuneCards_ReadPayload` (`1400a0b10`, opcode
+  `0x03D1`) reads operation, three rarities, three account-item ids, and flip
+  flags.
+- Implementation: `FortuneRewardPool` now uses rarity-tier weights
+  (Normal/Rare/Epic) for both card deals and
+  `ServerFortuneRewards.RewardItemProbabilities`. This is **Verified** for
+  client wire/UI shape but **not** retail-parity for exact per-item weights.
+- Remaining blocker: capture live retail `ServerFortuneRewards` during a fixed
+  rotation week, or recover storefront-server catalog weights, before claiming
+  item-level retail parity.
+
+Quest log / tutorial Codex classification follow-up (2026-05-25):
+
+- `QuestRuntime_HandleQuestInit` (`1405fb350`) is now the stable client ingest
+  anchor for `ServerQuestInit`: it walks inactive quest rows, active quest
+  rows, and per-objective progress/timer arrays, refreshes cached quest UI
+  state, and dispatches the `QuestInit` named event after the snapshot is
+  applied.
+- That ingest anchor helped disconfirm the earlier packet-layout and send-order
+  hypothesis. After NexusForever moved quest bootstrap to send
+  `ServerQuestInit` after `ServerPlayerEnteredWorld` and replayed
+  `ServerQuestStateChange` plus `ServerQuestObjectiveUpdate`, an injected
+  ordinary quest (`6708`) became browseable in the Codex while the Rider's
+  Reef tutorial chain still did not.
+- The remaining blocker is client classification, not server runtime. In
+  `wildstar_client.Quest2`, Rider's Reef tutorial quests `10513..10541` all
+  have `groupId = 0`, `questCategoryId = 0`,
+  `questContentFinderTypeEnum = 0`, and no `EpisodeQuest` rows. They still
+  appear on the HUD task tracker, which fits task-style tutorial content rather
+  than normal browseable quest-log rows.
+- The shared high flag bit alone is not sufficient to force exclusion. Of the
+  10 quests carrying bit `0x800000`, all 10 lacked `EpisodeQuest` rows but only
+  8 were fully zero-classified; outliers `10604` and `10605` still carry nonzero
+  quest categories. The stronger durable boundary for Rider's Reef is therefore
+  “unclassified in `Quest2`/`EpisodeQuest`”, not merely “flagged with
+  `0x800000`”.
+- Net result: blank Codex browse rows for the Rider's Reef starter/follow-up
+  chain are a stock client data/UI limitation. Server-side fixes can keep those
+  quests active, tracked, and objective-synced, but cannot make them browseable
+  in the Codex without client data or client code changes.

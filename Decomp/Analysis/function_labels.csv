@@ -309,6 +309,7 @@ WildStar64.exe,1405e7fd0,Lua_GameSpell_Equals,Game.Spell __eq metamethod.
 WildStar64.exe,1405e8070,Lua_GameSpell_CreateOrWrap,Creates or wraps a Game.Spell Lua userdata value.
 WildStar64.exe,1405e81b0,Lua_GameSpell_Gc,Game.Spell __gc metamethod.
 WildStar64.exe,1405e8230,Lua_RegisterGameSpellBindings,Registers the Game.Spell Lua method/property bindings.
+WildStar64.exe,1405fb350,QuestRuntime_HandleQuestInit,Consumes the ServerQuestInit snapshot by resolving inactive and active quest rows, applying per-objective progress and timer arrays, refreshing cached quest UI state, and dispatching the QuestInit named event.
 WildStar64.exe,1405fb830,QuestRuntime_UpdateObjectiveStateAndDispatch,Updates quest-objective runtime state, refreshes local quest UI helpers, and dispatches QuestObjectiveUpdated or ContractObjectiveUpdated.
 WildStar64.exe,1405fcd70,QuestRuntime_BuildVirtualItemList,Builds client virtual item triples from Quest2 VirtualItemIdPushed fields and VirtualCollect objective state using local quest/objective runtime state.
 WildStar64.exe,1405e95f0,Lua_GameSpell_GetId,Game.Spell:GetId Lua method.

@@ -62,6 +62,14 @@ namespace NexusForever.Game.Quest
             Timer  = 0x20
         }
 
+        private const QuestStateFlags ObjectiveCompletionFlagsMask =
+            QuestStateFlags.Objective0Complete |
+            QuestStateFlags.Objective1Complete |
+            QuestStateFlags.Objective2Complete |
+            QuestStateFlags.Objective3Complete |
+            QuestStateFlags.Objective4Complete |
+            QuestStateFlags.Objective5Complete;
+
         public ushort Id => (ushort)Info.Entry.Id;
         public IQuestInfo Info { get; }
         public IPlayer Player => player;
@@ -160,6 +168,8 @@ namespace NexusForever.Game.Quest
             foreach (CharacterQuestObjectiveModel objectiveModel in model.QuestObjective)
                 objectives.Add(new QuestObjective(player, info, info.Objectives[objectiveModel.Index], objectiveModel));
 
+            SyncObjectiveCompletionFlags(true);
+
             currentObjectiveId = GetCurrentObjectiveId();
             scriptCollection = ScriptManager.Instance.InitialiseOwnedScripts<IQuest>(this, info.Entry.Id);
         }
@@ -178,6 +188,8 @@ namespace NexusForever.Game.Quest
 
             if (objectives.Count == 0)
                 state = QuestState.Achieved;
+
+            SyncObjectiveCompletionFlags(false);
 
             saveMask = QuestSaveMask.Create;
 
@@ -319,6 +331,42 @@ namespace NexusForever.Game.Quest
                 objective.Update(lastTick);
         }
 
+        private void SyncObjectiveCompletionFlags(bool requestSave)
+        {
+            QuestStateFlags syncedFlags = flags & ~ObjectiveCompletionFlagsMask;
+
+            for (int index = 0; index < objectives.Count && index <= 5; index++)
+            {
+                if (!objectives[index].IsComplete())
+                    continue;
+
+                syncedFlags |= GetObjectiveCompletionFlag(index);
+            }
+
+            if (syncedFlags == flags)
+                return;
+
+            flags = syncedFlags;
+            saveMask |= QuestSaveMask.Flags;
+
+            if (requestSave)
+                player.RequestSave();
+        }
+
+        private static QuestStateFlags GetObjectiveCompletionFlag(int objectiveIndex)
+        {
+            return objectiveIndex switch
+            {
+                0 => QuestStateFlags.Objective0Complete,
+                1 => QuestStateFlags.Objective1Complete,
+                2 => QuestStateFlags.Objective2Complete,
+                3 => QuestStateFlags.Objective3Complete,
+                4 => QuestStateFlags.Objective4Complete,
+                5 => QuestStateFlags.Objective5Complete,
+                _ => QuestStateFlags.None
+            };
+        }
+
         /// <summary>
         /// Enqueue <see cref="IQuest"/> to be deleted from the database.
         /// </summary>
@@ -401,6 +449,8 @@ namespace NexusForever.Game.Quest
             if (RequiredObjectivesComplete())
                 CompleteOptionalObjectives();
 
+            SyncObjectiveCompletionFlags(true);
+
             if (objectives.All(o => o.IsComplete()))
                 State = QuestState.Achieved;
             else
@@ -440,6 +490,8 @@ namespace NexusForever.Game.Quest
 
             if (RequiredObjectivesComplete())
                 CompleteOptionalObjectives();
+
+            SyncObjectiveCompletionFlags(true);
 
             if (objectives.All(o => o.IsComplete()))
                 State = QuestState.Achieved;
