@@ -23,5 +23,14 @@ internal sealed class StubFortuneRewardPool : IFortuneRewardPool
 
     public IReadOnlyList<uint> GetDisplayItem2Ids() => displayItem2Ids;
 
+    public FortuneRewardCatalog GetRewardCatalog()
+    {
+        var probabilities = new float[displayItem2Ids.Count];
+        if (probabilities.Length > 0)
+            probabilities[0] = 1f;
+
+        return new FortuneRewardCatalog(displayItem2Ids, probabilities);
+    }
+
     public FortuneCardReward[] PickCardRewards(Random random) => cardRewards;
 }

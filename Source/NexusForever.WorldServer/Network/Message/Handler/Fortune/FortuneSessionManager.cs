@@ -198,9 +198,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
 
         private ServerFortuneRewards BuildRewards()
         {
+            FortuneRewardCatalog catalog = fortuneRewardPool.GetRewardCatalog();
             return new ServerFortuneRewards
             {
-                Item2IdRewards = fortuneRewardPool.GetDisplayItem2Ids().ToList()
+                Item2IdRewards          = catalog.Item2IdRewards.ToList(),
+                RewardItemProbabilities = catalog.RewardItemProbabilities.ToList()
             };
         }
 

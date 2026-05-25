@@ -26,7 +26,9 @@ public class FortuneSessionManagerTests
 
         object[] messages = GetEncryptedMessages(sessionProxy).ToArray();
         ServerFortuneRewards rewards = Assert.IsType<ServerFortuneRewards>(messages[0]);
-        Assert.Equal(rewardPool.GetDisplayItem2Ids(), rewards.Item2IdRewards);
+        FortuneRewardCatalog catalog = rewardPool.GetRewardCatalog();
+        Assert.Equal(catalog.Item2IdRewards, rewards.Item2IdRewards);
+        Assert.Equal(catalog.RewardItemProbabilities, rewards.RewardItemProbabilities);
 
         ServerFortuneCards cards = Assert.IsType<ServerFortuneCards>(messages[1]);
         Assert.Equal(FortuneOperation.Reset, cards.Operation);

@@ -25,7 +25,7 @@ Legend: **Partial** = real behavior exists but retail parity incomplete; **Block
 | F-027 Options | Partial | `OptionPersistenceTests` | Account-level option split; `056B..056D` readback |
 | F-028 Support | Partial | Stuck failures via `ServerSpellCastResult` + spell4 ids; recall-house uses global residence entrance; **19** support tests; `SupportPacketShapeTests` now pin typed `0x0347..0x0351` auxiliary payloads | DB case workflow and support-case readback semantics |
 | F-030 Realm transfer | Partial | `RealmTransferProtocolTests` | Real destinations/results; `Client0x0760/0762`; PTR copy |
-| F-031 Fortune | Partial | Fortune coin cost; card deal + flip payout via `FortuneRewardPool`; **15** fortune tests | Retail weight table; durable resume |
+| F-031 Fortune | Partial | Fortune coin cost; emulator rarity-tier `FortuneRewardPool` + `RewardItemProbabilities`; `account_fortune_session` persistence code path; `FORTUNE_WEIGHT_AUDIT.md` catalog/table audit; **17** fortune tests | Exact per-item retail weights and active rotation catalog (no tbl weight column, no local live Fortune capture) |
 | F-032 Leaderboards | Partial | `LeaderboardProvider` + in-memory store + aggregation; **10** leaderboard tests | DB scores; live ingestion hooks |
 | F-033 Challenges | Partial | `ChallengeManager` lifecycle + 18 challenge tests | Persistence; `Client0x00C8`; share-init opcode; reward tracks; objective hooks |
 
@@ -34,7 +34,7 @@ Legend: **Partial** = real behavior exists but retail parity incomplete; **Block
 1. ~~Ghidra field proof for remaining group cluster `0x042A..0x0718` and wire emitters.~~ **Pass 2:** cluster typed + emitters; `0x0441` ready-check status now emits on Pending/Ready/HasSetReady flag updates (conservative `ReadyStatus` 0/1/2).
 2. Apply auth migrations: `20260522120000_AccountPendingItem`, `20260522130000_AccountCREDDExchange`, `20260522140000_AccountDailyLoginAndStoreHistory`, `20260522150000_AccountRewardRotationGrant`, character `20260522114611_MarketplacePersistence`.
 3. Challenge DB persistence + combat objective hooks + `Client0x00C8` decode.
-4. Fortune retail weight table + session DB resume.
+4. Fortune per-item retail weights (rarity-tier weights + UI probability transport implemented; live retail `ServerFortuneRewards` or storefront catalog capture still needed).
 5. Leaderboard DB + dungeon/PvP score ingestion.
 6. Spell families F-016..F-020 (family-by-family evidence ladder).
 

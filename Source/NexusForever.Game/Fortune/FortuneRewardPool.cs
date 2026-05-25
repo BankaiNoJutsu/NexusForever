@@ -8,9 +8,10 @@ using NexusForever.GameTable.Model;
 namespace NexusForever.Game.Fortune
 {
     /// <summary>
-    /// Builds a conservative fortune reward pool from <see cref="AccountItemEntry"/> rows until a
-    /// dedicated client fortune table is mapped.
-    /// BLOCKED: retail Madame Fay weight table is not mapped; selection uses uniform random over candidates.
+    /// Builds the Madame Fay reward pool from <see cref="AccountItemEntry"/> rows. Card selection and
+    /// <c>ServerFortuneRewards.RewardItemProbabilities</c> use the same emulator rarity-tier weights.
+    /// Exact retail per-item weights remain blocked: <c>AccountItem.tbl</c> has no weight column and
+    /// <c>FortunesLib.GetFortunesLootList</c> reads server-sent floats.
     /// </summary>
     public sealed class FortuneRewardPool : IFortuneRewardPool
     {
@@ -25,12 +26,35 @@ namespace NexusForever.Game.Fortune
 
         public IReadOnlyList<uint> GetDisplayItem2Ids()
         {
-            return pool.Value
-                .Where(entry => entry.Item2Id != 0u)
-                .Select(entry => entry.Item2Id)
-                .Distinct()
-                .OrderBy(id => id)
-                .ToList();
+            return GetRewardCatalog().Item2IdRewards;
+        }
+
+        public FortuneRewardCatalog GetRewardCatalog()
+        {
+            IReadOnlyList<FortunePoolEntry> entries = pool.Value;
+            if (entries.Count == 0)
+                return new FortuneRewardCatalog([], []);
+
+            var item2Ids = new List<uint>(entries.Count);
+            var weights = new List<uint>(entries.Count);
+            foreach (FortunePoolEntry entry in entries)
+            {
+                if (entry.Item2Id == 0u)
+                    continue;
+
+                item2Ids.Add(entry.Item2Id);
+                weights.Add(entry.Weight);
+            }
+
+            ulong totalWeight = 0;
+            foreach (uint weight in weights)
+                totalWeight += weight;
+
+            var probabilities = new List<float>(weights.Count);
+            foreach (uint weight in weights)
+                probabilities.Add(FortuneRewardWeights.ToDisplayProbability(weight, totalWeight));
+
+            return new FortuneRewardCatalog(item2Ids, probabilities);
         }
 
         public FortuneCardReward[] PickCardRewards(Random random)
@@ -52,7 +76,10 @@ namespace NexusForever.Game.Fortune
             return picks;
         }
 
-        private static FortunePoolEntry PickEntry(IReadOnlyList<FortunePoolEntry> entries, HashSet<uint> usedAccountItemIds, Random random)
+        private static FortunePoolEntry PickEntry(
+            IReadOnlyList<FortunePoolEntry> entries,
+            HashSet<uint> usedAccountItemIds,
+            Random random)
         {
             List<FortunePoolEntry> available = entries
                 .Where(entry => !usedAccountItemIds.Contains(entry.AccountItemId))
@@ -61,14 +88,42 @@ namespace NexusForever.Game.Fortune
             if (available.Count == 0)
                 available = entries.ToList();
 
-            return available[random.Next(available.Count)];
+            uint totalWeight = 0;
+            foreach (FortunePoolEntry entry in available)
+                totalWeight += entry.Weight;
+
+            if (totalWeight == 0u)
+                return available[random.Next(available.Count)];
+
+            uint roll = (uint)random.NextInt64((long)totalWeight);
+            foreach (FortunePoolEntry entry in available)
+            {
+                if (entry.Weight <= roll)
+                {
+                    roll -= entry.Weight;
+                    continue;
+                }
+
+                return entry;
+            }
+
+            return available[^1];
         }
 
         private static IReadOnlyList<FortunePoolEntry> BuildPool()
         {
             return GameTableManager.Instance.AccountItem.Entries
                 .Where(IsFortuneRewardCandidate)
-                .Select(entry => new FortunePoolEntry(entry.Id, ResolveItem2Id(entry), MapRarity(entry)))
+                .Select(entry =>
+                {
+                    RewardRarity rarity = MapRarity(entry);
+                    return new FortunePoolEntry(
+                        entry.Id,
+                        ResolveItem2Id(entry),
+                        rarity,
+                        FortuneRewardWeights.GetWeight(entry, rarity));
+                })
+                .Where(entry => entry.Weight > 0u)
                 .OrderBy(entry => entry.AccountItemId)
                 .ToList();
         }
@@ -116,6 +171,10 @@ namespace NexusForever.Game.Fortune
             };
         }
 
-        private readonly record struct FortunePoolEntry(uint AccountItemId, uint Item2Id, RewardRarity Rarity);
+        private readonly record struct FortunePoolEntry(
+            uint AccountItemId,
+            uint Item2Id,
+            RewardRarity Rarity,
+            uint Weight);
     }
 }

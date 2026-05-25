@@ -13614,6 +13614,29 @@ F-031 Madame Fay fortune weight table follow-up (2026-05-23):
   rotation week, or recover storefront-server catalog weights, before claiming
   item-level retail parity.
 
+F-031 Madame Fay local weight audit follow-up (2026-05-25):
+
+- Added `FORTUNE_WEIGHT_AUDIT.md` to separate confirmed transport/table evidence
+  from unsupported per-item retail claims. The audit uses only local docs, code,
+  tests, extracted tables, SQL dumps, DataMapping CSV, and runtime logs.
+- Catalog/table audit: `AccountItem.tbl` remains 17 fields with no chance,
+  weight, active-rotation, or Madame Fay season column. The current
+  `AccountItemEntry` model still matches those 17 fields.
+- Current emulator probability shape from `AccountItem` + `Item2` data:
+  `2176` picker candidates; `2121` displayed item candidates; `55` non-item
+  picker candidates are not advertised in `Item2IdRewards`. With the current
+  `1000/200/50` rarity-tier constants, displayed item probability mass is
+  Normal `41.0026%`, Rare `58.7491%`, Epic `0.2483%`.
+- Local live/server evidence check found only Fortune opcode/model/handler
+  registration lines in `.nexusforever-runtime/logs` and
+  `Source/NexusForever.WorldServer/bin/Debug/net10.0/logs`. No local
+  `ClientFortuneStart`, card-flip, payout, screenshot, packet capture, or
+  observed `RewardItemProbabilities` artifact was present.
+- Conclusion stays `Mapped only / Blocked`: client-facing probability transport
+  and current emulator output are auditable, but exact retail per-item weights
+  require retail `ServerFortuneRewards` capture, storefront-server catalog
+  evidence, or a native/server artifact for active rotation weights.
+
 Quest log / tutorial Codex classification follow-up (2026-05-25):
 
 - `QuestRuntime_HandleQuestInit` (`1405fb350`) is now the stable client ingest

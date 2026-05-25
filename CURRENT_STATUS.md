@@ -348,9 +348,16 @@ Current-realm select ignored for client safety. Offline target returns
 ServerDown.
 
 ### F-031 - Fortune Minigame - COMPLETE
-4 handlers functional, DB-persisted sessions via `account_fortune_session`,
+4 handlers functional, session persistence code path via `account_fortune_session`,
 reward payouts with account item grants, card flip state tracking.
-**Remaining:** Madame Fay weight table (compiled Lua in binary; uniform random approximation used).
+Weighted emulator rarity-tier pool + `ServerFortuneRewards.RewardItemProbabilities`
+match the mapped retail client UI transport (`FortunesLib.GetFortunesLootList`
+reads server floats and shows `fProbability = value * 100`; native evidence
+2026-05-23). `Decomp/Analysis/FORTUNE_WEIGHT_AUDIT.md` verifies the local
+catalog/table state and current Fortune tests.
+**Blocked:** exact per-item retail weights and active rotation catalog (no
+`AccountItem.tbl` weight column; no retail `ServerFortuneRewards` or
+storefront-server catalog capture).
 
 ### F-032 - Leaderboards - COMPLETE
 Real database-backed pipeline (NOT empty stub). `DatabaseLeaderboardStore`
@@ -388,7 +395,7 @@ faction-aware. DB persistence.
 | 2 | F-025 | Map-tracked-unit producer timing and TrackingSlot selection | Server producer semantics or live capture |
 | 3 | F-004 | NeighborhoodEntry/List (0x0501/0x0506) | Unknown client request trigger |
 | 4 | F-008 | Discovery/station/complex-craft semantics and 0x084B/0x0855 emit intent | Server producer semantics, client decomp, or live capture |
-| 5 | F-031 | Madame Fay weight table | Compiled Lua in binary; uniform random approximation used |
+| 5 | F-031 | Per-item retail Madame Fay weights | No weight column in `AccountItem.tbl`; rarity-tier weights remain emulator approximation until retail `ServerFortuneRewards` or storefront catalog capture |
 
 ---
 
