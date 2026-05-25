@@ -19,7 +19,7 @@ namespace NexusForever.Network.World.Message.Model.Fortune
 
         public List<uint> Item2IdRewards { get; set; } = [];
         public List<MoneyReward> MoneyRewards { get; set; } = [];       // not seen used in sniffs
-        public List<float> RewardItemProbabilities { get; set; } = [];  // not seen used in sniffs
+        public List<float> RewardItemProbabilities { get; set; } = [];  // client UI uses normalized fractions
         public List<float> RewardMoneyProbabilities { get; set; } = []; // not seen used in sniffs
 
         public void Write(GamePacketWriter writer)
