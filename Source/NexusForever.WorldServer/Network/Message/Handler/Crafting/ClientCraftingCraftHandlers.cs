@@ -424,12 +424,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         private static void SendCraftSuccess(IWorldSession session, TradeskillSchematic2Entry schematic, uint item2IdCrafted, uint earnedXp)
         {
+            SendCraftFinish(session, schematic, pass: true, item2IdCrafted, earnedXp, CraftingDiscovery.Success);
+        }
+
+        private static void SendCraftFinish(
+            IWorldSession session,
+            TradeskillSchematic2Entry schematic,
+            bool pass,
+            uint item2IdCrafted,
+            uint earnedXp,
+            CraftingDiscovery hotOrCold,
+            CraftingDirection direction = CraftingDirection.None)
+        {
             session.EnqueueMessageEncrypted(new ServerCraftingFinish
             {
-                Pass = true,
+                Pass = pass,
                 TradeskillSchematic2IdCrafted = schematic.Id,
                 Item2IdCrafted = item2IdCrafted,
-                HotOrCold = CraftingDiscovery.Success,
+                HotOrCold = hotOrCold,
+                Direction = direction,
                 EarnedXp = earnedXp
             });
         }

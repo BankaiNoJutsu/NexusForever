@@ -17,6 +17,7 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Crafting;
+using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Crafting;
@@ -110,6 +111,37 @@ public class CraftingSimpleCraftHandlerTests
         Assert.Equal(SchematicId, finish.TradeskillSchematic2IdCrafted);
         Assert.Equal(OutputItemId, finish.Item2IdCrafted);
         Assert.Equal(CraftingDiscovery.Success, finish.HotOrCold);
+    }
+
+    [Fact]
+    public void ComplexCraft_WithCraftStatsAndChargeCounts_PreservesFixedRecipeSuccess()
+    {
+        IWorldSession session = CreateSession(
+            satchelMaterialAmount: 2,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<ISupplySatchelManager> satchelProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> _,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out IItemInfo outputInfo);
+        ClientCraftingComplexCraftHandler handler = CreateComplexHandler(outputInfo);
+
+        handler.HandleMessage(session, CreateComplexRequest(SchematicId));
+
+        RecordingDispatchProxy<ISupplySatchelManager>.Invocation materialDebit =
+            Assert.Single(satchelProxy.GetInvocations(nameof(ISupplySatchelManager.RemoveAmount)));
+        Assert.Equal(MaterialId, materialDebit.Arguments[0]);
+        Assert.Equal(2u, materialDebit.Arguments[1]);
+
+        RecordingDispatchProxy<IInventory>.Invocation outputCreate =
+            Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Same(outputInfo, outputCreate.Arguments[1]);
+
+        ServerCraftingFinish finish = Assert.Single(GetMessages<ServerCraftingFinish>(sessionProxy));
+        Assert.True(finish.Pass);
+        Assert.Equal(SchematicId, finish.TradeskillSchematic2IdCrafted);
+        Assert.Equal(OutputItemId, finish.Item2IdCrafted);
+        Assert.Equal(CraftingDiscovery.Success, finish.HotOrCold);
+        Assert.Equal(CraftingDirection.None, finish.Direction);
     }
 
     [Fact]
@@ -232,6 +264,19 @@ public class CraftingSimpleCraftHandlerTests
 
         return new ClientCraftingCraftItemHandler(
             NullLogger<ClientCraftingCraftItemHandler>.Instance,
+            CreateGameTableManager(),
+            itemManager,
+            lootManager);
+    }
+
+    private static ClientCraftingComplexCraftHandler CreateComplexHandler(IItemInfo outputInfo)
+    {
+        IItemManager itemManager = RecordingDispatchProxy<IItemManager>.Create(out RecordingDispatchProxy<IItemManager> itemManagerProxy);
+        IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out _);
+        itemManagerProxy.SetMethodReturn(nameof(IItemManager.GetItemInfo), outputInfo);
+
+        return new ClientCraftingComplexCraftHandler(
+            NullLogger<ClientCraftingComplexCraftHandler>.Instance,
             CreateGameTableManager(),
             itemManager,
             lootManager);
@@ -367,6 +412,32 @@ public class CraftingSimpleCraftHandlerTests
         SetAutoProperty(request, nameof(ClientCraftingCraftItem.TradeskillSchematic2Id), schematicId);
         SetAutoProperty(request, nameof(ClientCraftingCraftItem.SchematicCount), schematicCount);
         SetAutoProperty(request, nameof(ClientCraftingCraftItem.CatalystItem2Id), catalystItem2Id);
+        return request;
+    }
+
+    private static ClientCraftingComplexCraft CreateComplexRequest(uint schematicId)
+    {
+        var request = (ClientCraftingComplexCraft)RuntimeHelpers.GetUninitializedObject(typeof(ClientCraftingComplexCraft));
+        SetAutoProperty(request, nameof(ClientCraftingComplexCraft.ContextToken), 123u);
+        SetAutoProperty(request, nameof(ClientCraftingComplexCraft.CraftingStationUnitId), 456u);
+        SetAutoProperty(request, nameof(ClientCraftingComplexCraft.TradeskillSchematic2Id), schematicId);
+        SetAutoProperty(request, nameof(ClientCraftingComplexCraft.CraftStats), new CraftStats
+        {
+            StatType =
+            [
+                Property.AssaultRating,
+                Property.SupportRating,
+                Property.RatingCritSeverityIncrease,
+                Property.RatingArmorPierce,
+                Property.RatingAvoidIncrease
+            ],
+            Unknown = 7,
+            ApSpSplit = 8,
+            CircuitComplete = 1098u | (3u << 16)
+        });
+        SetAutoProperty(request, nameof(ClientCraftingComplexCraft.PowerCoreItem2Id), 0u);
+        SetAutoProperty(request, nameof(ClientCraftingComplexCraft.ApSpSplitDelta), 400u);
+        SetAutoProperty(request, nameof(ClientCraftingComplexCraft.ChargeCounts), new[] { -1, 5 });
         return request;
     }
 
