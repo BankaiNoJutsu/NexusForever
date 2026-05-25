@@ -13462,7 +13462,7 @@ Crafting current-craft evidence follow-up (2026-05-23):
   confirmed the new labels in `exports\WildStar64.exe\functions.csv` and the
   expected station/current-craft decompile shapes.
 
-Crafting discovery threshold implementation follow-up (2026-05-23):
+Crafting discovery threshold diagnostic follow-up (2026-05-25):
 
 - `Lua_Crafting_AddCoordinateDiscoveryInfo` @ `14059e9a0` maps undiscovered
   `TradeskillSchematic2` rows with `Flags & 0x02` to UI distance bands:
@@ -13471,16 +13471,29 @@ Crafting discovery threshold implementation follow-up (2026-05-23):
   mod(20) * DiscoverableRadius + VectorY`. `Crafting_GetProfessionModifierValue`
   @ `1405e6140` applies additive/multiplicative profession modifiers with a
   default pass-through of `1.0` when no active modifier list is present.
-- NexusForever now treats `Flags & 0x02` as coordinate-discovery schematics,
-  evaluates complex-craft attempts against `VectorX`/`VectorY` using
-  `CritRadius`/`Radius`/`DiscoverableRadius` bands, emits non-`Success`
-  `ServerCraftingFinish.HotOrCold` plus direction on misses, grants output and
-  calls `DiscoverSchematic` only on `Success`, and documents station service
-  keys `0x2C` general, `0x4F` runecrafting (`TradeSkillId 22`), `0x57`
-  tier-zero `Flags & 0x04`.
-- Attempt coordinates are parsed from `ApSpSplitDelta` float bits or packed
-  `CraftStats.CircuitComplete` ushort coordinates. Live capture can still
-  refine encoding if client UI uses a different grid packing.
+- This is UI/client-state evidence only. NexusForever does not use
+  `CraftStats`, `ApSpSplitDelta`, or `ChargeCounts` to decide success,
+  non-success hot/cold emission, direction, output grants, or
+  `DiscoverSchematic` mutation until a native producer or live capture maps the
+  authoritative attempt-coordinate bridge.
+- Focused regression coverage now pins the conservative runtime boundary:
+  non-zero complex-craft stat/charge payloads still use fixed-recipe completion
+  and emit `ServerCraftingFinish` with `CraftingDiscovery.Success` plus
+  `CraftingDirection.None`.
+- Station/request semantics remain closed by native producer evidence:
+  simple/complex/autocraft senders may emit zero station ids when no matching
+  context service key resolves, while `Crafting_SendClientCraftingAdditive`
+  requires a non-zero station before sending `0x084A`. The numeric service-key
+  ids (`0x2C`, `0x4F`, `0x57`) are recorded diagnostically; their native names
+  remain unmapped.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --artifacts-path artifacts\verify\dotnet-artifacts --disable-build-servers
+  -m:1 -v minimal --nologo -p:UseSharedCompilation=false --filter
+  "FullyQualifiedName~Crafting"` passed `44/44`; `dotnet build
+  Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --artifacts-path artifacts\verify\dotnet-artifacts --no-restore
+  --disable-build-servers -m:1 -v minimal --nologo
+  -p:UseSharedCompilation=false` passed with `0` warnings and `0` errors.
 
 Crafting auxiliary packet shape correction (2026-05-23):
 

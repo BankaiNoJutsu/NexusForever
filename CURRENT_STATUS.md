@@ -91,18 +91,18 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
 
 ## Ghidra Decomp Evidence (2026-05-23, 2400-function run)
 
-### Crafting - Discovery Mechanics (F-008, Mapped But Blocked)
+### Crafting - Station Semantics / Discovery Diagnostics (F-008)
 - **`Crafting_HandleServerCraftingFinish`** (0x1405e6690):
   - `CraftingDiscovery` field at `param_2[4]`. Value `3` = Success. All other values dispatch `CraftingDiscoveryHotCold` client event.
   - `param_2[5]` = discovery value sent with the event.
   - On craft completion, discovery state resets: `DiscoveryVectorMultiplier=1.0f`, `DiscoveryRadiusMultiplier=1.0f`, position/unknown fields zeroed.
-  - Server already sends `ServerCraftingFinish` with `HotOrCold` field, but the fixed-recipe path remains hardcoded to `Success` until server-side roll thresholds and discovery-coordinate state are mapped.
-  - Addon scan confirmed `CraftingLib.CodeEnumCraftingDiscoveryHotCold` usage in Athena, but that only proves client display states and does not unblock random Cold/Warm/Hot emission.
+  - NexusForever keeps complex-craft `CraftStats`, `ApSpSplitDelta`, and `ChargeCounts` diagnostic-only for server behavior. Focused coverage now pins that non-zero complex-craft stat/charge payloads still follow fixed-recipe completion and emit `CraftingDiscovery.Success`/`CraftingDirection.None`.
+  - Addon scan confirmed `CraftingLib.CodeEnumCraftingDiscoveryHotCold` usage in Athena, and `Lua_Crafting_AddCoordinateDiscoveryInfo` maps UI distance-band fields, but neither proves authoritative server-side coordinate packing, hot/cold emit timing, or discovery-unlock mutation.
 
 - **`Crafting_SendClientComplexOrSimpleCraft`** (0x140399780):
   - Resolves `CraftingStationUnitId` and schematic, validates via `SpellCast_ResolveTargetsAndValidate`.
   - Sends opcode 0x084F (complex) or 0x0850 (simple) depending on schematic flags.
-  - `Crafting_GetStationServiceKeyForSchematic` (0x1405926a0) maps `TradeskillSchematic2` to station service key 0x4F for runecrafting (`TradeSkillId=22`), 0x57 for tier-zero `Flags & 0x04`, and 0x2C otherwise. `Crafting_FindStationUnitForServiceKey` (0x1403a0d20) resolves that service key through the current context tree and returns the station unit id, or 0 when no key exists.
+  - `Crafting_GetStationServiceKeyForSchematic` (0x1405926a0) maps `TradeskillSchematic2` to numeric station service keys `0x4F` for `TradeSkillId=22`, `0x57` for tier-zero `Flags & 0x04`, and `0x2C` otherwise. `Crafting_FindStationUnitForServiceKey` (0x1403a0d20) resolves that service key through the current context tree and returns the station unit id, or 0 when no key exists. Native service-key names remain unmapped; server validation continues to use `Creature2.TradeSkillIdStation`, not service-key integers.
   - Server now validates forged non-zero `CraftingStationUnitId` values against the player's map and `Creature2.TradeSkillIdStation`, while preserving the observed client ability to send 0 from the simple/complex sender.
 
 - **`Crafting_SendClientCraftingAdditive`** (0x14059b7c0):
@@ -188,8 +188,8 @@ clear, install, reroll - all 4 operations send `ServerTradeskillSigilResult`).
 
 **Remaining gaps:**
 - Complex craft stats (CraftStats, ApSpSplitDelta, ChargeCounts discarded)
-- Discovery roll mechanics (fixed-recipe path intentionally emits Success)
-- Crafting station constraints now partially enforced for non-zero/forged ids; exact 0x2C/0x4F/0x57 service-key meanings and whether every fixed-recipe craft should reject zero remain blocked
+- Discovery attempt coordinate packing, hot/cold emit timing, and unlock mutation remain blocked; validate with an F-008 live capture before enabling non-success discovery results
+- Crafting station request semantics are implemented; native service-key names remain diagnostic-only
 - 0x084B/0x0855 emit intent (corrected 24-byte and 12-byte payload shapes modeled, never sent)
 - Rune item data semantics
 
