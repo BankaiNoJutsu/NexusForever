@@ -1,5 +1,6 @@
 using System.Numerics;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Entity.Movement.AntiTamper;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Mode;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Move;
@@ -103,6 +104,151 @@ public class MovementManagerTests
     }
 
     [Fact]
+    public void ServerPositionPathCommands_WithInvalidNode_AreStopped()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create();
+
+        harness.Manager.SetPositionPath(
+        [
+            Vector3.Zero,
+            new Vector3(float.NaN, 0f, 0f)
+        ], SplineType.Linear, SplineMode.OneShot, 4f);
+
+        Assert.Empty(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPositionPath)));
+
+        var positionInvocation = Assert.Single(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPosition)));
+        Assert.Equal(Vector3.Zero, Assert.IsType<Vector3>(positionInvocation.Arguments[0]));
+        Assert.True(Assert.IsType<bool>(positionInvocation.Arguments[1]));
+    }
+
+    [Fact]
+    public void ServerPositionKeys_WithInvalidPosition_AreStoppedBeforeBroadcast()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create();
+
+        harness.Manager.SetPositionKeys(
+            [0u, 100u, 200u],
+            [
+                Vector3.Zero,
+                Vector3.One,
+                new Vector3(float.NaN, 0f, 0f)
+            ]);
+
+        Assert.Empty(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPositionKeys)));
+
+        var positionInvocation = Assert.Single(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPosition)));
+        Assert.Equal(Vector3.One, Assert.IsType<Vector3>(positionInvocation.Arguments[0]));
+        Assert.True(Assert.IsType<bool>(positionInvocation.Arguments[1]));
+    }
+
+    [Fact]
+    public void ServerPositionKeys_WithDecreasingTimes_AreStoppedBeforeBroadcast()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create();
+
+        harness.Manager.SetPositionKeys(
+            [100u, 50u, 200u],
+            [
+                new Vector3(2f, 0f, 0f),
+                new Vector3(3f, 0f, 0f),
+                new Vector3(4f, 0f, 0f)
+            ]);
+
+        Assert.Empty(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPositionKeys)));
+
+        var positionInvocation = Assert.Single(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPosition)));
+        Assert.Equal(new Vector3(2f, 0f, 0f), Assert.IsType<Vector3>(positionInvocation.Arguments[0]));
+        Assert.True(Assert.IsType<bool>(positionInvocation.Arguments[1]));
+    }
+
+    [Fact]
+    public void ServerPositionPathCommands_WithZeroLengthPath_AreStopped()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create();
+
+        harness.Manager.SetPositionPath(
+        [
+            Vector3.One,
+            Vector3.One
+        ], SplineType.Linear, SplineMode.OneShot, 4f);
+
+        Assert.Empty(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPositionPath)));
+
+        var positionInvocation = Assert.Single(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPosition)));
+        Assert.Equal(Vector3.One, Assert.IsType<Vector3>(positionInvocation.Arguments[0]));
+        Assert.True(Assert.IsType<bool>(positionInvocation.Arguments[1]));
+    }
+
+    [Fact]
+    public void LaunchPath_UsesPathGeneratorFromCurrentPosition()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create();
+        harness.PositionProxy.SetMethodReturn(nameof(IPositionCommandGroup.GetPosition), new Vector3(0f, 1f, 0f));
+
+        harness.Manager.LaunchPath(new Vector3(5f, 5f, 0f), 4f);
+
+        var pathInvocation = Assert.Single(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPositionPath)));
+        var nodes = Assert.IsType<List<Vector3>>(pathInvocation.Arguments[0]);
+        Assert.Equal(4, nodes.Count);
+        AssertVector(nodes[0], 0f, 1f, 0f);
+        AssertVector(nodes[1], 2f, 2.6f, 0f);
+        AssertVector(nodes[2], 4f, 4.2f, 0f);
+        AssertVector(nodes[3], 5f, 5f, 0f);
+        Assert.Equal(SplineType.Linear, Assert.IsType<SplineType>(pathInvocation.Arguments[1]));
+        Assert.Equal(SplineMode.OneShot, Assert.IsType<SplineMode>(pathInvocation.Arguments[2]));
+        Assert.Equal(4f, Assert.IsType<float>(pathInvocation.Arguments[3]));
+    }
+
+    [Fact]
+    public void Follow_WithInvalidTargetRotation_UsesFinitePathAndSpeed()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create();
+        harness.PositionProxy.SetMethodReturn(nameof(IPositionCommandGroup.GetPosition), Vector3.Zero);
+
+        IWorldEntity target = RecordingDispatchProxy<IWorldEntity>.Create(out RecordingDispatchProxy<IWorldEntity> targetProxy);
+        IMovementManager targetMovement = RecordingDispatchProxy<IMovementManager>.Create(out RecordingDispatchProxy<IMovementManager> targetMovementProxy);
+        targetProxy.SetProperty(nameof(IWorldEntity.Guid), 2u);
+        targetProxy.SetProperty(nameof(IWorldEntity.Position), new Vector3(10f, 0f, 0f));
+        targetProxy.SetProperty(nameof(IWorldEntity.Rotation), new Vector3(float.NaN, 0f, 0f));
+        targetProxy.SetProperty(nameof(IWorldEntity.MovementManager), targetMovement);
+        targetMovementProxy.SetMethodReturn(nameof(IMovementManager.GetVelocity), new Vector3(float.NaN, 0f, 0f));
+
+        harness.Manager.Follow(target, 2f);
+
+        var pathInvocation = Assert.Single(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPositionPath)));
+        var nodes = Assert.IsType<List<Vector3>>(pathInvocation.Arguments[0]);
+        Assert.All(nodes, node =>
+        {
+            Assert.True(float.IsFinite(node.X));
+            Assert.True(float.IsFinite(node.Y));
+            Assert.True(float.IsFinite(node.Z));
+        });
+        Assert.Equal(SplineType.Linear, Assert.IsType<SplineType>(pathInvocation.Arguments[1]));
+        Assert.Equal(SplineMode.OneShot, Assert.IsType<SplineMode>(pathInvocation.Arguments[2]));
+        Assert.Equal(8f, Assert.IsType<float>(pathInvocation.Arguments[3]));
+    }
+
+    [Fact]
+    public void Follow_WithDifferentFollowerGuids_SpreadsFinalPositionAroundTarget()
+    {
+        MovementManagerHarness first = MovementManagerHarness.Create(ownerGuid: 101u);
+        first.PositionProxy.SetMethodReturn(nameof(IPositionCommandGroup.GetPosition), Vector3.Zero);
+        MovementManagerHarness second = MovementManagerHarness.Create(ownerGuid: 103u);
+        second.PositionProxy.SetMethodReturn(nameof(IPositionCommandGroup.GetPosition), Vector3.Zero);
+
+        IWorldEntity target = CreateFollowTarget();
+
+        first.Manager.Follow(target, 2f);
+        second.Manager.Follow(target, 2f);
+
+        Vector3 firstFinal = GetFinalPathNode(first);
+        Vector3 secondFinal = GetFinalPathNode(second);
+        Assert.NotEqual(firstFinal, secondFinal);
+        Assert.Equal(2f, Vector2.Distance(new Vector2(target.Position.X, target.Position.Z), new Vector2(firstFinal.X, firstFinal.Z)), 4);
+        Assert.Equal(2f, Vector2.Distance(new Vector2(target.Position.X, target.Position.Z), new Vector2(secondFinal.X, secondFinal.Z)), 4);
+    }
+
+    [Fact]
     public void HandleClientEntityCommands_ClientTimeSynchronisesMovementClock()
     {
         MovementManagerHarness harness = MovementManagerHarness.Create();
@@ -124,6 +270,32 @@ public class MovementManagerTests
 
         var timeInvocation = Assert.Single(harness.TimeProxy.GetInvocations(nameof(ITimeCommandGroup.SetTime)));
         Assert.Equal(TimeSpan.FromMilliseconds(365339u), Assert.IsType<TimeSpan>(timeInvocation.Arguments[0]));
+    }
+
+    private static IWorldEntity CreateFollowTarget()
+    {
+        IWorldEntity target = RecordingDispatchProxy<IWorldEntity>.Create(out RecordingDispatchProxy<IWorldEntity> targetProxy);
+        IMovementManager targetMovement = RecordingDispatchProxy<IMovementManager>.Create(out RecordingDispatchProxy<IMovementManager> targetMovementProxy);
+        targetProxy.SetProperty(nameof(IWorldEntity.Guid), 2u);
+        targetProxy.SetProperty(nameof(IWorldEntity.Position), new Vector3(10f, 0f, 0f));
+        targetProxy.SetProperty(nameof(IWorldEntity.Rotation), Vector3.Zero);
+        targetProxy.SetProperty(nameof(IWorldEntity.MovementManager), targetMovement);
+        targetMovementProxy.SetMethodReturn(nameof(IMovementManager.GetVelocity), Vector3.Zero);
+        return target;
+    }
+
+    private static Vector3 GetFinalPathNode(MovementManagerHarness harness)
+    {
+        var pathInvocation = Assert.Single(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPositionPath)));
+        var nodes = Assert.IsType<List<Vector3>>(pathInvocation.Arguments[0]);
+        return nodes[^1];
+    }
+
+    private static void AssertVector(Vector3 actual, float expectedX, float expectedY, float expectedZ)
+    {
+        Assert.Equal(expectedX, actual.X, 5);
+        Assert.Equal(expectedY, actual.Y, 5);
+        Assert.Equal(expectedZ, actual.Z, 5);
     }
 
     private sealed class MovementManagerHarness
@@ -154,7 +326,7 @@ public class MovementManagerTests
             ValidatorProxy = validatorProxy;
         }
 
-        public static MovementManagerHarness Create(uint activeCCStateMask = 0u)
+        public static MovementManagerHarness Create(uint activeCCStateMask = 0u, uint ownerGuid = 0u)
         {
             ITimeCommandGroup timeGroup = RecordingDispatchProxy<ITimeCommandGroup>.Create(out RecordingDispatchProxy<ITimeCommandGroup> timeProxy);
             IPlatformCommandGroup platformGroup = RecordingDispatchProxy<IPlatformCommandGroup>.Create(out _);
@@ -168,7 +340,9 @@ public class MovementManagerTests
             IClientMovementCommandValidator validator = RecordingDispatchProxy<IClientMovementCommandValidator>.Create(out RecordingDispatchProxy<IClientMovementCommandValidator> validatorProxy);
             IUnitEntity owner = RecordingDispatchProxy<IUnitEntity>.Create(out RecordingDispatchProxy<IUnitEntity> ownerProxy);
 
+            ownerProxy.SetProperty(nameof(IUnitEntity.Guid), ownerGuid);
             ownerProxy.SetProperty(nameof(IUnitEntity.ActiveCCStateMask), activeCCStateMask);
+            ownerProxy.SetProperty(nameof(IUnitEntity.Position), Vector3.Zero);
 
             var manager = new MovementManager(
                 timeGroup,

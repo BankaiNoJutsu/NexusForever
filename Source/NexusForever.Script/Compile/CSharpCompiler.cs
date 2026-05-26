@@ -108,21 +108,26 @@ namespace NexusForever.Script.Compile
                     .WithOptimizationLevel(OptimizationLevel.Release));
                 #endif
 
-            EmitResult result = compilation.Emit(stream);
-
-            if (!result.Success)
+            try
             {
-                var sb = new StringBuilder();
-                foreach (Diagnostic diagnostic in result.Diagnostics)
-                    sb.AppendLine(diagnostic.ToString());
+                EmitResult result = compilation.Emit(stream);
 
-                throw new CompileException(sb.ToString());
+                if (!result.Success)
+                {
+                    var sb = new StringBuilder();
+                    foreach (Diagnostic diagnostic in result.Diagnostics)
+                        sb.AppendLine(diagnostic.ToString());
+
+                    throw new CompileException(sb.ToString());
+                }
+
+                log.LogInformation("Finished {name} compile in {ElapsedMilliseconds}ms.", name, sw.ElapsedMilliseconds);
             }
-
-            metadataReferences.Clear();
-            syntaxTrees.Clear();
-
-            log.LogInformation("Finished {name} compile in {ElapsedMilliseconds}ms.", name, sw.ElapsedMilliseconds);
+            finally
+            {
+                metadataReferences.Clear();
+                syntaxTrees.Clear();
+            }
         }
     }
 }

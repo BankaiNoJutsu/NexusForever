@@ -88,6 +88,23 @@ public class DamageCalculatorRetailParityTests
         Assert.Equal(100u, damage);
     }
 
+    [Theory]
+    [InlineData(9u, 10u, 1.20f, 9u)]
+    [InlineData(100u, 40u, 0.50f, 40u)]
+    [InlineData(100u, 80u, 0.50f, 50u)]
+    [InlineData(100u, 80u, 0.00f, 0u)]
+    [InlineData(100u, 80u, -1.00f, 0u)]
+    public void CalculateShieldAmount_ClampsAbsorbToRemainingDamage(
+        uint damage,
+        uint shield,
+        float shieldMitigationMax,
+        uint expectedShieldAmount)
+    {
+        uint shieldAmount = DamageCalculator.CalculateShieldAmount(damage, shield, shieldMitigationMax);
+
+        Assert.Equal(expectedShieldAmount, shieldAmount);
+    }
+
     private static GameFormulaEntry CreateArmorFormula(uint maximumMitigationPercent)
     {
         return new GameFormulaEntry

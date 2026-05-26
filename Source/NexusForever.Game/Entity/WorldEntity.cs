@@ -1193,6 +1193,9 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public virtual Disposition GetDispositionTo(Faction factionId, bool primary = true)
         {
+            if (factionId == Faction.None)
+                return Disposition.Unknown;
+
             IFactionNode targetFaction = FactionManager.Instance.GetFaction(factionId);
             if (targetFaction == null)
                 throw new ArgumentException($"Invalid faction {factionId}!");

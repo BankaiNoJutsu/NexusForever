@@ -5,6 +5,7 @@ using NexusForever.Network.World.Entity.Command;
 using NexusForever.Network.World.Entity;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Rotation;
+using NexusForever.Game.Entity.Movement;
 
 namespace NexusForever.Game.Entity.Movement.Command.Rotation
 {
@@ -61,7 +62,10 @@ namespace NexusForever.Game.Entity.Movement.Command.Rotation
             if (entity == null)
                 return Vector3.Zero;
 
-            Vector3 vector = Vector3.Normalize(entity.MovementManager.GetPosition() - movementManager.GetPosition());
+            Vector3 vector = MovementMath.NormaliseOrZero(entity.MovementManager.GetPosition() - movementManager.GetPosition());
+            if (vector == Vector3.Zero)
+                return Vector3.Zero;
+
             float yaw = MathF.Atan2(-vector.X, -vector.Z);
 
             // RotationFaceUnitCommand is only yaw regardless of mode

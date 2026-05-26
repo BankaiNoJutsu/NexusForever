@@ -12,6 +12,7 @@ using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static;
+using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Static.RBAC;
 using NexusForever.Game.Tests.TestSupport;
@@ -22,6 +23,9 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Packet;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model.Chat;
+using NexusForever.Network.World.Message.Model.Loot;
+using NexusForever.Network.World.Message.Model.Story;
 using NexusForever.Shared;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Command.Context;
@@ -85,6 +89,9 @@ public class LootRuntimeEvidenceTests
             Assert.NotEmpty(notifyPacket.GetProperty("PayloadHex").GetString());
 
             JsonElement item = Assert.Single(root.GetProperty("Items").EnumerateArray().ToArray());
+            JsonElement itemState = item.GetProperty("State");
+            Assert.Equal(5u, itemState.GetProperty("ItemQuality2Id").GetUInt32());
+            Assert.Equal(9876u, itemState.GetProperty("ItemQualityVisualEffectIdLoot").GetUInt32());
             Assert.Equal("LootItem", item.GetProperty("LootItemPayload").GetProperty("PacketName").GetString());
             Assert.Equal("ServerLootNotification", item.GetProperty("FeedbackPacketTemplates").GetProperty("Notification").GetProperty("PacketName").GetString());
             Assert.Equal("ServerLootCanLoot", item.GetProperty("FeedbackPacketTemplates").GetProperty("CanLoot").GetProperty("PacketName").GetString());
@@ -139,7 +146,19 @@ public class LootRuntimeEvidenceTests
             Assert.Equal(1, root.GetProperty("DeliveredItemCount").GetInt32());
             Assert.Equal(JsonValueKind.Null, root.GetProperty("NotifyPacket").ValueKind);
             Assert.Empty(root.GetProperty("Items").EnumerateArray().ToArray());
-            Assert.IsType<NexusForever.Network.World.Message.Model.Loot.ServerLootRemove>(Assert.Single(session.EncryptedMessages));
+            Assert.Collection(session.EncryptedMessages,
+                message =>
+                {
+                    var floater = Assert.IsType<ServerGenericFloaterString>(message);
+                    Assert.Equal("+5 Credits", floater.Text);
+                },
+                message =>
+                {
+                    var chat = Assert.IsType<ServerChat>(message);
+                    Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
+                    Assert.Equal("You receive 5 Credits.", chat.Text);
+                },
+                message => Assert.IsType<ServerLootRemove>(message));
         }
         finally
         {
@@ -179,7 +198,13 @@ public class LootRuntimeEvidenceTests
 
         SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), CreateGameTable(new Item2Entry
         {
-            Id = staticItemId
+            Id            = staticItemId,
+            ItemQualityId = 5u
+        }));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.ItemQuality), CreateGameTable(new ItemQualityEntry
+        {
+            Id                 = 5u,
+            VisualEffectIdLoot = 9876u
         }));
 
         return new ServiceCollection()

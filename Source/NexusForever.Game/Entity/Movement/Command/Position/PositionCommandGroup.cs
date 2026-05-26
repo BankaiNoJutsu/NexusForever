@@ -5,6 +5,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Position;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Entity.Movement;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -99,7 +100,35 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
 
         private void Relocate()
         {
-            Vector3 position = GetRelocationPosition();
+            Vector3 commandPosition = Command.GetPosition();
+            if (!MovementMath.IsFinite(commandPosition))
+            {
+                log.LogWarning(
+                    "Stopping invalid position command for entity {Guid}: command {Command} produced ({X}, {Y}, {Z}).",
+                    movementManager.Owner.Guid,
+                    Command.Command,
+                    commandPosition.X,
+                    commandPosition.Y,
+                    commandPosition.Z);
+
+                ResetInvalidPositionCommand();
+                return;
+            }
+
+            Vector3 position = GetRelocationPosition(commandPosition);
+            if (!MovementMath.IsFinite(position))
+            {
+                log.LogWarning(
+                    "Stopping invalid relocation for entity {Guid}: command {Command} produced world position ({X}, {Y}, {Z}).",
+                    movementManager.Owner.Guid,
+                    Command.Command,
+                    position.X,
+                    position.Y,
+                    position.Z);
+
+                ResetInvalidPositionCommand();
+                return;
+            }
 
             if (movementManager.Owner.Position == position)
             {
@@ -116,8 +145,11 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
 
         private Vector3 GetRelocationPosition()
         {
-            Vector3 position = GetPosition();
+            return GetRelocationPosition(GetPosition());
+        }
 
+        private Vector3 GetRelocationPosition(Vector3 position)
+        {
             uint? platformUnitId = movementManager.GetPlatform();
             if (platformUnitId != null)
             {
@@ -127,6 +159,16 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
             }
 
             return position;
+        }
+
+        private void ResetInvalidPositionCommand()
+        {
+            Vector3 fallback = MovementMath.IsFinite(movementManager.Owner.Position)
+                ? movementManager.Owner.Position
+                : Vector3.Zero;
+
+            Command = null;
+            SetPosition(fallback, true);
         }
 
         /// <summary>
@@ -159,6 +201,11 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
                 return;
 
             Vector3 position = GetPosition();
+            if (!MovementMath.IsFinite(position))
+                position = MovementMath.IsFinite(movementManager.Owner.Position)
+                    ? movementManager.Owner.Position
+                    : Vector3.Zero;
+
             Command = null;
 
             SetPosition(position, true);
@@ -170,6 +217,10 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
         public Vector3 GetPosition()
         {
             Vector3 position = Command.GetPosition();
+            if (!MovementMath.IsFinite(position))
+                return MovementMath.IsFinite(movementManager.Owner.Position)
+                    ? movementManager.Owner.Position
+                    : Vector3.Zero;
 
             // add "float" height for modes 1 and 3
             if (movementManager.GetMode() is ModeType.Swim or ModeType.Free)
@@ -184,6 +235,20 @@ namespace NexusForever.Game.Entity.Movement.Command.Position
         public void SetPosition(Vector3 position, bool blend)
         {
             Finalise();
+
+            if (!MovementMath.IsFinite(position))
+            {
+                log.LogWarning(
+                    "Replacing invalid position for entity {Guid}: ({X}, {Y}, {Z}).",
+                    movementManager.Owner.Guid,
+                    position.X,
+                    position.Y,
+                    position.Z);
+
+                position = MovementMath.IsFinite(movementManager.Owner.Position)
+                    ? movementManager.Owner.Position
+                    : Vector3.Zero;
+            }
 
             var command = factory.Resolve<PositionCommand>();
             command.Initialise(position, blend);

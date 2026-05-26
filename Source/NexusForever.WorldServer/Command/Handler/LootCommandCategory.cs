@@ -50,7 +50,7 @@ namespace NexusForever.WorldServer.Command.Handler
             foreach (LootRuntimeSnapshotItem item in snapshot.Items)
             {
                 builder.AppendLine(
-                    $"  lootUnitId {item.LootUnitId}, type {item.Type}, itemId {item.ItemId}, amount {item.Amount}, delivered {item.Delivered}, canLootForViewer {item.ViewerCanLoot}, requiresRoll {item.RequiresRoll}, onlyMasterLootable {item.OnlyMasterLootable}, rollTime {item.RollTime}, winnerChar {item.WinnerCharacterId}, winnerGuid {item.WinnerGuid}, itemQuality2Id {item.ItemQuality2Id}, eligible [{string.Join(", ", item.EligibleCharacterIds)}], masters [{string.Join(", ", item.MasterCharacterIds)}], masterCandidates [{string.Join(", ", item.MasterCandidateCharacterIds)}], masterListCount {item.MasterListCount}.");
+                    $"  lootUnitId {item.LootUnitId}, type {item.Type}, itemId {item.ItemId}, amount {item.Amount}, delivered {item.Delivered}, canLootForViewer {item.ViewerCanLoot}, requiresRoll {item.RequiresRoll}, onlyMasterLootable {item.OnlyMasterLootable}, rollTime {item.RollTime}, winnerChar {item.WinnerCharacterId}, winnerGuid {item.WinnerGuid}, itemQuality2Id {item.ItemQuality2Id}, lootVisualEffectId {item.ItemQualityVisualEffectIdLoot}, eligible [{string.Join(", ", item.EligibleCharacterIds)}], masters [{string.Join(", ", item.MasterCharacterIds)}], masterCandidates [{string.Join(", ", item.MasterCandidateCharacterIds)}], masterListCount {item.MasterListCount}.");
             }
 
             builder.AppendLine($"Use !loot capturenext before the next kill, bag use, or forced loot notify to export packet-shape evidence under {LootRuntimeEvidenceCollector.GetOutputDirectoryHint()}.");

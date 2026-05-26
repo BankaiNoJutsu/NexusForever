@@ -158,7 +158,7 @@ namespace NexusForever.Game.Entity
                 rule,
                 IsAchievementComplete,
                 IsQuestComplete,
-                _ => false);
+                player.PathManager.IsMissionComplete);
         }
 
         private bool IsAchievementComplete(uint objectId)

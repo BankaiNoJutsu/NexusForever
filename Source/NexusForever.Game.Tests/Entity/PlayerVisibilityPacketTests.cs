@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Reflection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
@@ -7,6 +8,7 @@ using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.Matching.Queue;
+using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity;
@@ -18,6 +20,7 @@ using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared;
+using NexusForever.Shared.Configuration;
 
 namespace NexusForever.Game.Tests.Entity;
 
@@ -124,10 +127,18 @@ public class PlayerVisibilityPacketTests
     private static IServiceProvider BuildProvider()
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var configuration = new SharedConfiguration(new ConfigurationBuilder().Build());
+        configuration.Initialise<TestConfiguration>();
 
         return new ServiceCollection()
+            .AddSingleton(configuration)
             .AddSingleton(new GlobalLootManager(groupStateManager))
             .BuildServiceProvider();
+    }
+
+    private sealed class TestConfiguration
+    {
+        public WorldConfig World { get; set; }
     }
 
     private static TestPlayer CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy)

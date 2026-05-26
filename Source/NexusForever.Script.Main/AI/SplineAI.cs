@@ -34,7 +34,7 @@ namespace NexusForever.Script.Main.AI
             owner.MovementManager.LaunchSpline(owner.Spline.SplineId, mode, speed, false);
         }
 
-        private static bool TryResolveSpline(SplineMode mode, float speed, out SplineMode resolvedMode, out float resolvedSpeed)
+        internal static bool TryResolveSpline(SplineMode mode, float speed, out SplineMode resolvedMode, out float resolvedSpeed)
         {
             resolvedMode  = mode;
             resolvedSpeed = MathF.Abs(speed);

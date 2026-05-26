@@ -62,14 +62,15 @@ namespace NexusForever.Game.Loot
                 RollTime              = networkItem.RollTime,
                 RandomCircuitData     = networkItem.RandomCircuitData,
                 RandomGlyphData       = networkItem.RandomGlyphData,
-                ItemQuality2Id        = networkItem.ItemQuality2Id,
-                MasterListCount       = networkItem.MasterList?.Count ?? 0
+                ItemQuality2Id                 = networkItem.ItemQuality2Id,
+                ItemQualityVisualEffectIdLoot = sourceItem.ItemQualityVisualEffectIdLoot,
+                MasterListCount                = networkItem.MasterList?.Count ?? 0
             };
         }
 
         private static string FormatItem(NotifyItemState item)
         {
-            return $"sourceLootUnitId={item.SourceLootUnitId},wireLootUnitId={item.LootUnitId},type={item.Type},itemId={item.ItemId},amount={item.Amount},canLoot={item.CanLoot},requiresRoll={item.RequiresRoll},onlyMasterLootable={item.OnlyMasterLootable},explosion={item.Explosion},granted={item.Granted},rollTime={item.RollTime},randomCircuitData={item.RandomCircuitData},randomGlyphData={item.RandomGlyphData},itemQuality2Id={item.ItemQuality2Id},masterListCount={item.MasterListCount},sourceDelivered={item.SourceDelivered},winnerCharacterId={item.WinnerCharacterId},winnerGuid={item.WinnerGuid}";
+            return $"sourceLootUnitId={item.SourceLootUnitId},wireLootUnitId={item.LootUnitId},type={item.Type},itemId={item.ItemId},amount={item.Amount},canLoot={item.CanLoot},requiresRoll={item.RequiresRoll},onlyMasterLootable={item.OnlyMasterLootable},explosion={item.Explosion},granted={item.Granted},rollTime={item.RollTime},randomCircuitData={item.RandomCircuitData},randomGlyphData={item.RandomGlyphData},itemQuality2Id={item.ItemQuality2Id},itemQualityVisualEffectIdLoot={item.ItemQualityVisualEffectIdLoot},masterListCount={item.MasterListCount},sourceDelivered={item.SourceDelivered},winnerCharacterId={item.WinnerCharacterId},winnerGuid={item.WinnerGuid}";
         }
 
         public sealed class NotifyItemState
@@ -91,6 +92,7 @@ namespace NexusForever.Game.Loot
             public ulong RandomCircuitData { get; init; }
             public uint RandomGlyphData { get; init; }
             public uint ItemQuality2Id { get; init; }
+            public uint ItemQualityVisualEffectIdLoot { get; init; }
             public int MasterListCount { get; init; }
         }
     }

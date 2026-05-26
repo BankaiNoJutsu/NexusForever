@@ -114,8 +114,19 @@ namespace NexusForever.Script
                 if (!assemblyInfo.Reload.HasValue)
                     continue;
 
-                Reload(assemblyInfo, assemblyInfo.Reload.Value);
-                assemblyInfo.Reload = null;
+                ReloadType reloadType = assemblyInfo.Reload.Value;
+                try
+                {
+                    Reload(assemblyInfo, reloadType);
+                }
+                catch (Exception ex)
+                {
+                    log.LogError(ex, "An exception occured during reload {reloadType} for script assembly {Name}.", reloadType, assemblyInfo.Name);
+                }
+                finally
+                {
+                    assemblyInfo.Reload = null;
+                }
             }
         }
 
@@ -144,6 +155,9 @@ namespace NexusForever.Script
             log.LogTrace("Unloading script assembly {Name}...", assemblyInfo.Name);
 
             WeakReference weakReference = assemblyInfo.Unload();
+            if (weakReference == null)
+                return;
+
             for (uint i = 0; i < 25 && weakReference.IsAlive; i++)
             {
                 GC.Collect();

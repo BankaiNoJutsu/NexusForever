@@ -1067,34 +1067,68 @@ namespace NexusForever.Game.Loot
             return CanHoldStaticLoot(looter, staticItems, out reason);
         }
 
-        public void GiveGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId, bool sendGrantedNotify = false)
+        public void GiveGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId, bool sendGrantedNotify = false, uint parentUnitId = 0u)
         {
             if (looter == null)
                 return;
 
             ArgumentNullException.ThrowIfNull(items);
             List<GeneratedLootItem> generatedItems = items.ToList();
-            log.Trace($"Giving generated loot to player {looter.CharacterId}, ownerUnit={ownerUnitId}, sendGrantedNotify={sendGrantedNotify}, generatedItems=[{FormatGeneratedLootItems(generatedItems)}].");
+            uint resolvedParentUnitId = parentUnitId != 0u ? parentUnitId : ownerUnitId;
+            log.Trace($"Giving generated loot to player {looter.CharacterId}, ownerUnit={ownerUnitId}, parentUnit={resolvedParentUnitId}, sendGrantedNotify={sendGrantedNotify}, generatedItems=[{FormatGeneratedLootItems(generatedItems)}].");
+
+            if (sendGrantedNotify)
+            {
+                GiveGeneratedLootWithGrantedNotify(looter, generatedItems, ownerUnitId, resolvedParentUnitId);
+                return;
+            }
 
             foreach (GeneratedLootItem item in generatedItems)
-                GiveImmediateLoot(looter, item.Type, item.StaticId, item.Count, ownerUnitId, sendGrantedNotify);
+                GiveImmediateLoot(looter, item.Type, item.StaticId, item.Count, ownerUnitId, sendGrantedNotify, resolvedParentUnitId);
         }
 
-        private static void GiveImmediateLoot(IPlayer looter, LootItemType type, uint staticId, uint count, uint ownerUnitId, bool sendGrantedNotify = false)
+        private static void GiveGeneratedLootWithGrantedNotify(IPlayer looter, IReadOnlyCollection<GeneratedLootItem> items, uint ownerUnitId, uint parentUnitId)
+        {
+            LootInstance lootInstance = new(ownerUnitId, parentUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Creature)
+            {
+                Explosion = true
+            };
+
+            foreach (GeneratedLootItem item in items)
+            {
+                if (item.Count == 0u)
+                    continue;
+
+                LootInstanceItem grantedItem = lootInstance.AddLootItem(item.StaticId, item.Type, item.Count);
+                grantedItem.SetWinner(looter);
+            }
+
+            bool deliveredAny = false;
+            foreach (LootInstanceItem grantedItem in lootInstance.ToList())
+                deliveredAny |= grantedItem.DeliverItem(looter, sendAsGrant: false);
+
+            if (deliveredAny)
+            {
+                log.Trace($"Generated loot delivered with granted notify for player {looter.CharacterId}: ownerUnit={ownerUnitId}, parentUnit={parentUnitId}, items=[{FormatLootInstanceItems(lootInstance)}].");
+                lootInstance.SendLootNotify(looter, includeGrantedItems: true);
+            }
+            else
+            {
+                log.Trace($"Generated loot delivery with granted notify failed for player {looter.CharacterId}: ownerUnit={ownerUnitId}, parentUnit={parentUnitId}, items=[{FormatLootInstanceItems(lootInstance)}].");
+            }
+        }
+
+        private static void GiveImmediateLoot(IPlayer looter, LootItemType type, uint staticId, uint count, uint ownerUnitId, bool sendGrantedNotify = false, uint parentUnitId = 0u)
         {
             if (looter == null || count == 0u)
                 return;
 
-            log.Trace($"Giving immediate loot to player {looter.CharacterId}: ownerUnit={ownerUnitId}, type={type}, staticId={staticId}, count={count}, sendGrantedNotify={sendGrantedNotify}.");
-            if (sendGrantedNotify && type == LootItemType.AccountCurrency)
-            {
-                log.Trace($"Immediate account-currency loot uses direct grant for player {looter.CharacterId}: ownerUnit={ownerUnitId}, staticId={staticId}, count={count}; skipping explosion notify because account-currency drops are not client-lootable items.");
-                sendGrantedNotify = false;
-            }
+            uint resolvedParentUnitId = parentUnitId != 0u ? parentUnitId : ownerUnitId;
+            log.Trace($"Giving immediate loot to player {looter.CharacterId}: ownerUnit={ownerUnitId}, parentUnit={resolvedParentUnitId}, type={type}, staticId={staticId}, count={count}, sendGrantedNotify={sendGrantedNotify}.");
 
             if (sendGrantedNotify)
             {
-                LootInstance lootInstance = new(ownerUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Creature)
+                LootInstance lootInstance = new(ownerUnitId, resolvedParentUnitId, CreatePlayerLooterMap(looter), LooterType.Player, LootEntityType.Creature)
                 {
                     Explosion = true
                 };
@@ -1103,12 +1137,12 @@ namespace NexusForever.Game.Loot
                 grantedItem.SetWinner(looter);
                 if (grantedItem.DeliverItem(looter, sendAsGrant: false))
                 {
-                    log.Trace($"Immediate loot delivered with granted notify for player {looter.CharacterId}: ownerUnit={ownerUnitId}, items=[{FormatLootInstanceItems(lootInstance)}].");
+                    log.Trace($"Immediate loot delivered with granted notify for player {looter.CharacterId}: ownerUnit={ownerUnitId}, parentUnit={resolvedParentUnitId}, items=[{FormatLootInstanceItems(lootInstance)}].");
                     lootInstance.SendLootNotify(looter, includeGrantedItems: true);
                 }
                 else
                 {
-                    log.Trace($"Immediate loot delivery with granted notify failed for player {looter.CharacterId}: ownerUnit={ownerUnitId}, items=[{FormatLootInstanceItems(lootInstance)}].");
+                    log.Trace($"Immediate loot delivery with granted notify failed for player {looter.CharacterId}: ownerUnit={ownerUnitId}, parentUnit={resolvedParentUnitId}, items=[{FormatLootInstanceItems(lootInstance)}].");
                 }
 
                 return;

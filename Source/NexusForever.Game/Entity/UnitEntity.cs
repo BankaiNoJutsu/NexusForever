@@ -99,7 +99,9 @@ namespace NexusForever.Game.Entity
 
         public IThreatManager ThreatManager { get; private set; }
 
-        private UpdateTimer statUpdateTimer = new UpdateTimer(0.25);
+        private readonly UpdateTimer statUpdateTimer = new UpdateTimer(0.25);
+        private double shieldRebootRemainingSeconds;
+        private double shieldRegenElapsedSeconds;
 
         private UpdateTimer respawnTimer;
 
@@ -1243,6 +1245,9 @@ namespace NexusForever.Game.Entity
                 Spell4Id  = spell4Id,
                 CastingId = castingId
             };
+
+            if (state == CCState.Interrupt)
+                CancelCastingSpells(CastResult.SpellInterrupted);
         }
 
         public bool RemoveCCState(CCState state, uint effectId)
@@ -1790,11 +1795,67 @@ namespace NexusForever.Game.Entity
             if (!IsAlive)
                 return;
 
-            if (Health < MaxHealth)
+            if (!InCombat && Health < MaxHealth)
                 ModifyHealth((uint)(MaxHealth / 200f), DamageType.Heal, null);
 
-            if (!IsShieldOverloaded && Shield < MaxShieldCapacity)
-                Shield += (uint)(MaxShieldCapacity * GetPropertyValue(Property.ShieldRegenPct) * statUpdateTimer.Duration);
+            HandleShieldRegenUpdate();
+        }
+
+        private void RestartShieldReboot()
+        {
+            shieldRebootRemainingSeconds = GetShieldPropertySeconds(Property.ShieldRebootTime);
+            shieldRegenElapsedSeconds = 0d;
+        }
+
+        private void HandleShieldRegenUpdate()
+        {
+            if (IsShieldOverloaded || Shield >= MaxShieldCapacity)
+            {
+                shieldRegenElapsedSeconds = 0d;
+                return;
+            }
+
+            if (shieldRebootRemainingSeconds > 0d)
+            {
+                shieldRebootRemainingSeconds = Math.Max(0d, shieldRebootRemainingSeconds - statUpdateTimer.Duration);
+                shieldRegenElapsedSeconds = 0d;
+                return;
+            }
+
+            double shieldTickSeconds = GetShieldPropertySeconds(Property.ShieldTickTime);
+            if (shieldTickSeconds <= 0d)
+                shieldTickSeconds = statUpdateTimer.Duration;
+
+            shieldRegenElapsedSeconds += statUpdateTimer.Duration;
+            if (shieldRegenElapsedSeconds < shieldTickSeconds)
+                return;
+
+            uint regenAmount = CalculateShieldRegenAmount(MaxShieldCapacity, GetPropertyValue(Property.ShieldRegenPct), shieldRegenElapsedSeconds);
+            shieldRegenElapsedSeconds = 0d;
+
+            if (regenAmount != 0u)
+                Shield += regenAmount;
+        }
+
+        private double GetShieldPropertySeconds(Property property)
+        {
+            float milliseconds = GetPropertyValue(property);
+            if (!float.IsFinite(milliseconds) || milliseconds <= 0f)
+                return 0d;
+
+            return milliseconds / 1000d;
+        }
+
+        internal static uint CalculateShieldRegenAmount(uint maxShieldCapacity, float shieldRegenPct, double elapsedSeconds)
+        {
+            if (maxShieldCapacity == 0u || !float.IsFinite(shieldRegenPct) || shieldRegenPct <= 0f || !double.IsFinite(elapsedSeconds) || elapsedSeconds <= 0d)
+                return 0u;
+
+            double regenAmount = maxShieldCapacity * (double)shieldRegenPct * elapsedSeconds;
+            if (regenAmount >= uint.MaxValue)
+                return uint.MaxValue;
+
+            return (uint)regenAmount;
         }
 
         /// <summary>
@@ -1926,6 +1987,13 @@ namespace NexusForever.Game.Entity
                     spell.CancelCast(CastResult.CasterMovement);
         }
 
+        private void CancelCastingSpells(CastResult result)
+        {
+            foreach (ISpell spell in pendingSpells)
+                if (spell.IsCasting)
+                    spell.CancelCast(result);
+        }
+
         /// <summary>
         /// Cancel an <see cref="ISpell"/> based on its casting id.
         /// </summary>
@@ -2022,6 +2090,10 @@ namespace NexusForever.Game.Entity
 
             if (damageDescription.ShieldAbsorbAmount != 0u)
                 Shield -= damageDescription.ShieldAbsorbAmount;
+
+            if (MaxShieldCapacity != 0u && (damageDescription.AdjustedDamage != 0u || damageDescription.ShieldAbsorbAmount != 0u))
+                RestartShieldReboot();
+
             ModifyHealth(damageDescription.AdjustedDamage, damageDescription.DamageType, attacker);
 
             damageDescription.KilledTarget = wasAlive && !IsAlive;

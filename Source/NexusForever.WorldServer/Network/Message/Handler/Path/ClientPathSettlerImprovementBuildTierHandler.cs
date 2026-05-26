@@ -15,7 +15,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Path
 
         public void HandleMessage(IWorldSession session, ClientPathSettlerImprovementBuildTier buildTier)
         {
-            log.LogDebug("ClientPathSettlerImprovementBuildTier: player={Player}", session.Player?.Guid);
+            log.LogDebug("ClientPathSettlerImprovementBuildTier: player={Player} improvementGroupId={ImprovementGroupId} buildTier={BuildTier}",
+                session.Player?.Guid, buildTier.PathSettlerImprovementGroupId, buildTier.BuildTier);
+
+            session.Player?.PathManager.CompleteMissionBySettlerImprovementGroupId(buildTier.PathSettlerImprovementGroupId);
         }
     }
 }

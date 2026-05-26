@@ -17,6 +17,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Path
         {
             log.LogDebug("ClientPathExplorerPowerMapProgress: player={Player} powerMapId={PowerMapId}",
                 session.Player?.Guid, powerMapProgress.PathExplorerPowerMapId);
+
+            session.Player?.PathManager.CompleteMissionByObjectId(powerMapProgress.PathExplorerPowerMapId);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Rotation;
+using NexusForever.Game.Entity.Movement;
 using NexusForever.Game.Static.Entity.Movement.Command;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Command;
@@ -55,7 +56,10 @@ namespace NexusForever.Game.Entity.Movement.Command.Rotation
         /// </summary>
         public Vector3 GetRotation()
         {
-            Vector3 vector = Vector3.Normalize(facePosition - movementManager.GetPosition());
+            Vector3 vector = MovementMath.NormaliseOrZero(facePosition - movementManager.GetPosition());
+            if (vector == Vector3.Zero)
+                return Vector3.Zero;
+
             float pitch = MathF.Asin(-vector.Y);
             float yaw = MathF.Atan2(-vector.X, -vector.Z);
             return new Vector3(yaw, pitch, 0f);

@@ -6,6 +6,7 @@ using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Loot;
+using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Tests.TestSupport;
@@ -13,9 +14,12 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Chat.Model;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Chat;
 using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Network.World.Message.Model.Shared;
+using NexusForever.Network.World.Message.Model.Story;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared;
 
@@ -77,12 +81,93 @@ public class LootInstanceDeliveryTests
                     Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
                     Assert.Equal(StaticItemId, grant.LootItem.ItemId);
                     Assert.Equal(3u, grant.LootItem.Amount);
+                },
+                call =>
+                {
+                    var chat = Assert.IsType<ServerChat>(call.Arguments[0]);
+                    AssertStaticItemLootChat(chat, StaticItemId, "You receive [I] x3.");
                 });
         }
         finally
         {
             LegacyServiceProvider.Provider = previousProvider;
         }
+    }
+
+    [Fact]
+    public void GiveLoot_Cash_SendsLootFloaterAndChatFeedback()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
+
+        try
+        {
+            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+            ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out var currencyProxy);
+            IPlayer player = TestPlayerBuilder.Create()
+                .WithCurrencyManager(currencyManager)
+                .WithSession(session)
+                .WithCharacterId(42ul)
+                .WithGuid(4242u)
+                .Build();
+            var lootInstance = new LootInstance(
+                ownerUnitId: 99u,
+                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+                looterType: LooterType.Player,
+                lootEntityType: LootEntityType.Creature);
+
+            LootInstanceItem lootItem = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 17u);
+
+            bool delivered = lootInstance.GiveLoot(player, lootItem.Id);
+
+            Assert.True(delivered);
+            RecordingDispatchProxy<ICurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(CurrencyType.Credits, currencyCall.Arguments[0]);
+            Assert.Equal(17ul, currencyCall.Arguments[1]);
+            Assert.True((bool)currencyCall.Arguments[2]);
+
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+            Assert.Collection(sessionCalls,
+                call =>
+                {
+                    var grant = Assert.IsType<ServerLootGrant>(call.Arguments[0]);
+                    Assert.Equal(99u, grant.OwnerUnitId);
+                    Assert.Equal(4242u, grant.LooterUnitId);
+                    Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
+                    Assert.Equal(LootItemType.Cash, grant.LootItem.Type);
+                    Assert.Equal((uint)CurrencyType.Credits, grant.LootItem.ItemId);
+                    Assert.Equal(17u, grant.LootItem.Amount);
+                },
+                call =>
+                {
+                    var floater = Assert.IsType<ServerGenericFloaterString>(call.Arguments[0]);
+                    Assert.Equal("+17 Credits", floater.Text);
+                },
+                call =>
+                {
+                    var chat = Assert.IsType<ServerChat>(call.Arguments[0]);
+                    Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
+                    Assert.Equal("You receive 17 Credits.", chat.Text);
+                });
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    private static void AssertStaticItemLootChat(ServerChat chat, uint itemId, string expectedText)
+    {
+        Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
+        Assert.Equal(expectedText, chat.Text);
+
+        ChatFormat format = Assert.Single(chat.Formats);
+        Assert.Equal(ChatFormatType.ItemId, format.Type);
+        Assert.Equal(12, format.StartIndex);
+        Assert.Equal(15, format.StopIndex);
+
+        var itemFormat = Assert.IsType<ChatFormatItemId>(format.Model);
+        Assert.Equal(itemId, itemFormat.Item2Id);
     }
 
     private static IServiceProvider BuildProvider(IItemInfo itemInfo)

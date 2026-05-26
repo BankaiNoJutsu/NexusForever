@@ -2,6 +2,7 @@
 {
     public enum Faction : uint
     {
+        None          = 0,
         Dominion      = 166,
         Exile         = 167,
         MatchingTeam1 = 391,

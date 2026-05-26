@@ -98,7 +98,7 @@ namespace NexusForever.Game.Combat
             damage -= absorbedAmount;
             damageDescription.AbsorbedAmount = absorbedAmount;
 
-            uint shieldedAmount = CalculateShieldAmount(damage, victim);
+            uint shieldedAmount = CalculateShieldAmount(damage, victim.Shield, victim.GetPropertyValue(Property.ShieldMitigationMax));
             damage -= shieldedAmount;
             damageDescription.ShieldAbsorbAmount = shieldedAmount;
 
@@ -627,12 +627,19 @@ namespace NexusForever.Game.Combat
         /// <summary>
         /// Calculates and returns the shielded amount of damage.
         /// </summary>
-        private uint CalculateShieldAmount(uint damage, IUnitEntity victim)
+        internal static uint CalculateShieldAmount(uint damage, uint shield, float shieldMitigationMax)
         {
-            uint maxShieldAmount = (uint)(damage * victim.GetPropertyValue(Property.ShieldMitigationMax));
-            uint shieldedAmount = Math.Min(victim.Shield, maxShieldAmount);
+            if (damage == 0u || shield == 0u || !float.IsFinite(shieldMitigationMax) || shieldMitigationMax <= 0f)
+                return 0u;
 
-            return shieldedAmount;
+            double maxShieldAmount = damage * (double)shieldMitigationMax;
+            uint cappedShieldAmount = maxShieldAmount >= uint.MaxValue
+                ? uint.MaxValue
+                : (uint)maxShieldAmount;
+
+            uint shieldedAmount = Math.Min(shield, cappedShieldAmount);
+
+            return Math.Min(damage, shieldedAmount);
         }
 
         /// <summary>

@@ -2,6 +2,7 @@
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Position;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Rotation;
+using NexusForever.Game.Entity.Movement;
 using NexusForever.Game.Static.Entity.Movement.Command;
 using NexusForever.Network.World.Entity;
 using NexusForever.Shared;
@@ -115,6 +116,9 @@ namespace NexusForever.Game.Entity.Movement.Command.Rotation
         public void SetRotation(Vector3 rotation, bool blend)
         {
             Finalise();
+
+            if (!MovementMath.IsFinite(rotation))
+                rotation = Vector3.Zero;
 
             var command = factory.Resolve<RotationCommand>();
             command.Initialise(rotation, blend);

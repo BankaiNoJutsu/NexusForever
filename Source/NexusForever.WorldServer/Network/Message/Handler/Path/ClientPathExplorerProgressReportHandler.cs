@@ -17,6 +17,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Path
         {
             log.LogDebug("ClientPathExplorerProgressReport: player={Player} missionId={MissionId} nodeIndex={NodeIndex}",
                 session.Player?.Guid, progressReport.PathMissionId, progressReport.ExplorerNodeIndex);
+
+            if (progressReport.PathMissionId <= ushort.MaxValue)
+                session.Player?.PathManager.CompleteMission((ushort)progressReport.PathMissionId);
         }
     }
 }

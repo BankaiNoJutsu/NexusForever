@@ -36,6 +36,6 @@ namespace NexusForever.Game.Abstract.Loot
 
         bool TryGenerateLoot(uint lootGroupId, IPlayer looter, uint rollCount, out IReadOnlyList<GeneratedLootItem> items, out string reason);
         bool CanDeliverGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, out string reason);
-        void GiveGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId, bool sendGrantedNotify = false);
+        void GiveGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId, bool sendGrantedNotify = false, uint parentUnitId = 0u);
     }
 }

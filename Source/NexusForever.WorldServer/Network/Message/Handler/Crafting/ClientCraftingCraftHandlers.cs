@@ -338,7 +338,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             if (hasDirectOutput)
                 session.Player.Inventory.ItemCreate(InventoryLocation.Inventory, outputInfo, totalOutputCount, ItemUpdateReason.Crafting);
             else
-                lootManager.GiveGeneratedLoot(session.Player, generatedLoot, session.Player.Guid, sendGrantedNotify: true);
+                lootManager.GiveGeneratedLoot(session.Player, generatedLoot, session.Player.Guid, sendGrantedNotify: true, parentUnitId: craftingStationUnitId);
 
             GrantCraftingAchievements(session.Player, hasDirectOutput
                 ? [new GeneratedLootItem(LootItemType.StaticItem, outputInfo.Id, totalOutputCount)]

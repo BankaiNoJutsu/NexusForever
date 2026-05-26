@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using NexusForever.Game.Entity.Movement;
 
 namespace NexusForever.Game.Entity.Movement.Key
 {
@@ -17,9 +18,14 @@ namespace NexusForever.Game.Entity.Movement.Key
         /// </summary>
         public Vector3 GetRotation()
         {
-            int index = GetIndex();
+            int index = Math.Min(GetIndex(), Values.Count - 2);
+            if (index < 0)
+                return Vector3.Zero;
 
-            Vector3 vector = Vector3.Normalize(Values[index + 1] - Values[index]);
+            Vector3 vector = MovementMath.NormaliseOrZero(Values[index + 1] - Values[index]);
+            if (vector == Vector3.Zero)
+                return Vector3.Zero;
+
             float pitch = MathF.Asin(-vector.Y);
             float yaw = MathF.Atan2(-vector.X, -vector.Z);
             return new Vector3(yaw, pitch, 0f);

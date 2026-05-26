@@ -35,7 +35,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 throw new InvalidPacketValueException();
 
             if (!lootManager.HasLoot(item))
-                throw new InvalidPacketValueException();
+            {
+                session.Player.SendGenericError(GenericError.ItemNoItems);
+                return;
+            }
 
             if (!lootManager.TryUseLootBag(session.Player, item, out string reason) && reason == "inventory-full")
                 session.Player.SendGenericError(GenericError.ItemInventoryFull);

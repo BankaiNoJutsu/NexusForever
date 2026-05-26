@@ -302,6 +302,11 @@ namespace NexusForever.Game.Abstract.Entity.Movement
         void LaunchGenerator(IMovementGenerator generator, float speed, SplineMode mode = SplineMode.OneShot);
 
         /// <summary>
+        /// Launch a path-generated linear spline to the supplied destination.
+        /// </summary>
+        void LaunchPath(Vector3 position, float speed, SplineMode mode = SplineMode.OneShot);
+
+        /// <summary>
         /// Launch a new follow spline, following the supplied <see cref="IWorldEntity"/> at distance.
         /// </summary>
         void Follow(IWorldEntity entity, float distance);

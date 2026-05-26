@@ -29,10 +29,7 @@
 
             if (search.ScriptNames != null)
             {
-                if (script.ScriptName == null)
-                    return false;
-
-                if (!search.ScriptNames.Contains(script.ScriptName))
+                if (script.ScriptName != null && !search.ScriptNames.Contains(script.ScriptName))
                     return false;
             }
             else if (script.ScriptName != null)

@@ -6,7 +6,7 @@ namespace NexusForever.Network.World.Message.Model.Loot
     public class ServerLootNotify : IWritable
     {
         public uint OwnerUnitId { get; set; }
-        public uint ParentUnitId { get; set; } // runtime currently mirrors OwnerUnitId pending retail confirmation
+        public uint ParentUnitId { get; set; }
         public bool Explosion { get; set; }
         public List<LootItem> LootItems { get; set; } = [];
 

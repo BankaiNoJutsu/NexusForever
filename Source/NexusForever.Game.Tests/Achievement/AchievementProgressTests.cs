@@ -123,6 +123,68 @@ public class AchievementProgressTests
         }
     }
 
+    [Fact]
+    public void KillCreatureGroup_DoesNotTreatZeroObjectAsWildcard()
+    {
+        var info = new TestAchievementInfo(
+            new AchievementEntry
+            {
+                Id                = 15,
+                AchievementTypeId = (uint)AchievementType.KillCreatureGroup,
+                ObjectId          = 0,
+                Value             = 1
+            });
+
+        var manager = new TestAchievementManager(info);
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildDisableProvider();
+
+        try
+        {
+            manager.Check(info, 1463u);
+
+            IAchievement achievement = manager.Get(info.Id);
+            Assert.False(achievement.IsComplete());
+            Assert.Equal(0u, achievement.ProgressCount);
+            Assert.Empty(manager.SentUpdates);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void KillCreatureGroup_UpdatesWhenObjectMatches()
+    {
+        var info = new TestAchievementInfo(
+            new AchievementEntry
+            {
+                Id                = 16,
+                AchievementTypeId = (uint)AchievementType.KillCreatureGroup,
+                ObjectId          = 1463,
+                Value             = 1
+            });
+
+        var manager = new TestAchievementManager(info);
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildDisableProvider();
+
+        try
+        {
+            manager.Check(info, 1463u);
+
+            IAchievement achievement = manager.Get(info.Id);
+            Assert.True(achievement.IsComplete());
+            Assert.Equal(1u, achievement.ProgressCount);
+            Assert.Single(manager.SentUpdates);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     private sealed class TestAchievementInfo : IAchievementInfo
     {
         public TestAchievementInfo(AchievementEntry entry, params AchievementChecklistEntry[] checklistEntries)
@@ -140,7 +202,11 @@ public class AchievementProgressTests
 
     private sealed class TestAchievementManager : BaseAchievementManager<CharacterAchievementModel>
     {
+        private readonly List<IAchievement> sentUpdates = new();
+
         protected override ulong OwnerId => 1ul;
+
+        public IReadOnlyList<IAchievement> SentUpdates => sentUpdates;
 
         public TestAchievementManager(IAchievementInfo info)
         {
@@ -169,6 +235,7 @@ public class AchievementProgressTests
 
         protected override void SendAchievementUpdate(IEnumerable<IAchievement> updates)
         {
+            sentUpdates.AddRange(updates);
         }
     }
 

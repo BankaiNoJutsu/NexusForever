@@ -385,7 +385,9 @@ namespace NexusForever.Game.Map
             {
                 for (float x = vector.X - range; x < vector.X + range + MapDefines.GridSize; x += MapDefines.GridSize)
                 {
-                    (uint gridX, uint gridZ) = MapGrid.GetGridCoord(new Vector3(x, 0f, z));
+                    if (!TryGetGridCoord(new Vector3(x, 0f, z), out uint gridX, out uint gridZ))
+                        continue;
+
                     IMapGrid grid = GetGrid(gridX, gridZ);
                     if (grid == null)
                         ActivateGrid(gridX, gridZ);
@@ -501,9 +503,34 @@ namespace NexusForever.Game.Map
         {
             Debug.Assert(entity.Map != null);
 
+            if (!IsFinite(vector))
+            {
+                log.Warn($"Skipping relocate for entity {entity.Guid} on map {Entry.Id}: destination position at {vector.X},{vector.Y},{vector.Z} is invalid.");
+                return;
+            }
+
+            if (!TryGetGridCoord(vector, out _, out _))
+            {
+                log.Warn($"Skipping relocate for entity {entity.Guid} on map {Entry.Id}: destination grid at {vector.X},{vector.Y},{vector.Z} is invalid.");
+                return;
+            }
+
             ActivateGrid(entity, vector);
-            IMapGrid newGrid = GetGrid(vector);
-            IMapGrid oldGrid = GetGrid(entity.Position);
+            IMapGrid newGrid = TryGetGrid(vector);
+            IMapGrid oldGrid = TryGetGrid(entity.Position);
+            if (newGrid == null)
+            {
+                log.Warn($"Skipping relocate for entity {entity.Guid} on map {Entry.Id}: destination grid at {vector.X},{vector.Y},{vector.Z} is not active.");
+                return;
+            }
+
+            if (oldGrid == null)
+            {
+                log.Warn($"Recovering relocate for entity {entity.Guid} on map {Entry.Id}: source grid at {entity.Position.X},{entity.Position.Y},{entity.Position.Z} is invalid or not active.");
+                newGrid.AddEntity(entity, vector);
+                entity.OnRelocate(vector);
+                return;
+            }
 
             if (newGrid.Coord.X != oldGrid.Coord.X
                 || newGrid.Coord.Z != oldGrid.Coord.Z)
@@ -515,6 +542,39 @@ namespace NexusForever.Game.Map
                 oldGrid.RelocateEntity(entity, vector);
 
             entity.OnRelocate(vector);
+        }
+
+        private static bool IsFinite(Vector3 vector)
+        {
+            return float.IsFinite(vector.X)
+                && float.IsFinite(vector.Y)
+                && float.IsFinite(vector.Z);
+        }
+
+        private IMapGrid TryGetGrid(Vector3 vector)
+        {
+            return TryGetGridCoord(vector, out uint gridX, out uint gridZ)
+                ? GetGrid(gridX, gridZ)
+                : null;
+        }
+
+        private static bool TryGetGridCoord(Vector3 vector, out uint gridX, out uint gridZ)
+        {
+            gridX = 0u;
+            gridZ = 0u;
+
+            if (!IsFinite(vector))
+                return false;
+
+            try
+            {
+                (gridX, gridZ) = MapGrid.GetGridCoord(vector);
+                return true;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return false;
+            }
         }
 
         /// <summary>

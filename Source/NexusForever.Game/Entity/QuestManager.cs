@@ -12,6 +12,7 @@ using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
+using NexusForever.Game.Static.Tutorial;
 using NexusForever.Game.Reputation;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -25,8 +26,26 @@ namespace NexusForever.Game.Entity
     public class QuestManager : IQuestManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
-        private static readonly ushort[] receiverlessStarterTutorialQuestIds = [10513, 10518, 10521, 10524, 10527, 10532];
+        // Build 16042 final Rider's Reef quests receive at the destination surface NPCs
+        // (10528: 53532/53533, 10530: 53619/53620), so server completion must not
+        // require a visible receiver while the terminal handoff still happens on world 3460.
+        private static readonly ushort[] receiverlessStarterTutorialQuestIds =
+        [
+            StarterTutorialDefinition.ExileMovementQuestId,
+            StarterTutorialDefinition.ExileCombatQuestId,
+            StarterTutorialDefinition.ExileHoverboardQuestId,
+            StarterTutorialDefinition.DominionMovementQuestId,
+            StarterTutorialDefinition.DominionCombatQuestId,
+            StarterTutorialDefinition.DominionHoverboardQuestId,
+            StarterTutorialDefinition.ExileDepartureQuestId,
+            StarterTutorialDefinition.DominionDepartureQuestId
+        ];
         private static readonly ushort[] tutorialRegionQuestIds = [10513, 10518, 10519, 10520, 10521, 10522, 10523, 10524, 10525, 10526, 10527, 10528, 10530, 10532, 10540, 10541];
+        private static readonly Dictionary<ushort, ushort> starterTutorialPresentationFollowUps = new()
+        {
+            [StarterTutorialDefinition.ExileMovementQuestId]    = StarterTutorialDefinition.ExileHoverboardQuestId,
+            [StarterTutorialDefinition.DominionMovementQuestId] = StarterTutorialDefinition.DominionHoverboardQuestId
+        };
 
         [Flags]
         private enum GetQuestFlags
@@ -134,6 +153,7 @@ namespace NexusForever.Game.Entity
             player.Session.EnqueueMessageEncrypted(new ServerQuestInit
             {
                 Completed = completedQuests.Values
+                    .Where(q => !ShouldSuppressCompletedQuestFromInitialSnapshot(q))
                     .Select(q => new ServerQuestInit.QuestComplete
                     {
                         QuestId        = q.Id,
@@ -195,6 +215,14 @@ namespace NexusForever.Game.Entity
 
             foreach (IQuest quest in activeQuests.Values.ToList())
                 quest.SendObjectiveWorldLocationUpdates();
+        }
+
+        private bool ShouldSuppressCompletedQuestFromInitialSnapshot(IQuest quest)
+        {
+            if (!starterTutorialPresentationFollowUps.TryGetValue(quest.Id, out ushort followUpQuestId))
+                return false;
+
+            return GetQuestState(followUpQuestId) is QuestState.Accepted or QuestState.Achieved or QuestState.Completed;
         }
 
         /// <summary>

@@ -19,5 +19,10 @@ namespace NexusForever.Game.Abstract.Challenges
         /// Receive a shared-challenge invitation from another player.
         /// </summary>
         void ReceiveShare(ushort challengeId, uint sharerUnitId);
+
+        /// <summary>
+        /// Returns the number of recorded completions for the supplied challenge.
+        /// </summary>
+        uint GetCompletionCount(ushort challengeId);
     }
 }

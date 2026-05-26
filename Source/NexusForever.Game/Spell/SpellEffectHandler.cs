@@ -45,6 +45,7 @@ namespace NexusForever.Game.Spell
         private const uint ItemVisualColourSetPacketMax = 0x3FFFu;
         private const uint ActionBarShortcutSetPacketMax = 0x3FFFu;
         private const uint OutfitInfoPacketMax = 0x7FFFu;
+        private const uint StarterTutorialScanSpellId = 81662u;
 
         private static IDamageCalculator CreateDamageCalculator()
         {
@@ -1757,8 +1758,22 @@ namespace NexusForever.Game.Spell
             else
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "summon-mount", player.Guid, info.Entry.DataBits00, spell.Parameters.SpellInfo.Entry.Id, false, "map-cannot-enter");
 
-            player.CastSpell(52539, new SpellParameters());
-            player.CastSpell(80530, new SpellParameters());
+            player.CastSpell(52539, new SpellParameters
+            {
+                PrimaryTargetId        = player.Guid,
+                UserInitiatedSpellCast = false,
+                IgnoreGlobalCooldown   = true,
+                CancelActiveTrade      = true,
+                ClientRequestSource    = nameof(HandleEffectSummonMount)
+            });
+            player.CastSpell(80530, new SpellParameters
+            {
+                PrimaryTargetId        = player.Guid,
+                UserInitiatedSpellCast = false,
+                IgnoreGlobalCooldown   = true,
+                CancelActiveTrade      = true,
+                ClientRequestSource    = nameof(HandleEffectSummonMount)
+            });
         }
 
         [SpellEffectHandler(SpellEffectType.Disembark)]
@@ -2263,6 +2278,12 @@ namespace NexusForever.Game.Spell
             if (ccState == null)
                 return;
 
+            if (ShouldSuppressStarterTutorialScanCrowdControl(spell, ccState))
+            {
+                info.DropEffect = true;
+                return;
+            }
+
             if (info.Entry.DurationTime > 0u)
                 target.AddCCState(ccState.State, info.EffectId, spell.Parameters.SpellInfo.Entry.Id, spell.CastingId);
 
@@ -2281,6 +2302,12 @@ namespace NexusForever.Game.Spell
                     CombatResult = CombatResult.Hit
                 }
             });
+        }
+
+        internal static bool ShouldSuppressStarterTutorialScanCrowdControl(ISpell spell, SpellEffectCCStateSemantics ccState)
+        {
+            return spell.Parameters.SpellInfo.Entry.Id == StarterTutorialScanSpellId
+                && ccState.State == CCState.Disable;
         }
 
         private static IReadOnlyCollection<(CCState State, uint EffectId)> ToCCStateTraceTuples(IReadOnlyCollection<SpellStateRemoval> removals)

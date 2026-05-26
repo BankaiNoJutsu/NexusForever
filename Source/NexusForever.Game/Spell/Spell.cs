@@ -129,7 +129,7 @@ namespace NexusForever.Game.Spell
             }
 
             if (Caster is IPlayer player)
-                if (Parameters.SpellInfo.GlobalCooldown != null)
+                if (!Parameters.IgnoreGlobalCooldown && Parameters.SpellInfo.GlobalCooldown != null)
                     player.SpellManager.SetGlobalSpellCooldown(Parameters.SpellInfo.GlobalCooldown.CooldownTime / 1000d);
 
             if (Caster is not IPlayer)
@@ -1724,11 +1724,10 @@ namespace NexusForever.Game.Spell
                 TelegraphPositionData  = new List<ServerSpellStart.TelegraphPosition>()
             };
 
-            var unitsCasting = new List<IWorldEntity>();
-            if (Parameters.PrimaryTargetId > 0)
-                unitsCasting.Add(GetPrimaryTargetWorldEntity());
-            else
-                unitsCasting.Add(Caster);
+            var unitsCasting = new List<IWorldEntity>
+            {
+                Caster
+            };
 
             foreach (IWorldEntity unit in unitsCasting.Where(u => u != null))
             {

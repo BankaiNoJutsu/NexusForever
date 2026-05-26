@@ -242,7 +242,18 @@ namespace NexusForever.Script
         public WeakReference Unload()
         {
             if (context == null)
-                throw new InvalidOperationException();
+            {
+                log.LogWarning("Skipping unload for script assembly {Name} because it is not loaded.", Name);
+
+                if (assemblyWatcher?.IsWatching == true)
+                    assemblyWatcher.Stop();
+
+                if (sourceWatcher?.IsWatching == true)
+                    sourceWatcher.Stop();
+
+                scripts.Clear();
+                return null;
+            }
 
             log.LogInformation("Starting unload for script assembly {Name}.", Name);
 

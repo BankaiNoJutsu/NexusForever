@@ -5,6 +5,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Challenges;
 using NexusForever.Game.Static.Challenges;
+using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
@@ -33,9 +34,80 @@ public class ChallengeCombatHooksTests
         Assert.True(result.Result is ChallengeResult.TierAchieved or ChallengeResult.Completed);
     }
 
+    [Fact]
+    public void OnCreatureKilled_AdvancesCombatChallengeForDirectTargetGroupMember()
+    {
+        const uint targetGroupId = 1852u;
+        GameTableManager gameTables = CreateCombatGameTables(
+            target: targetGroupId,
+            new TargetGroupEntry
+            {
+                Id          = targetGroupId,
+                Type        = (uint)TargetGroupType.CreatureIdGroup,
+                DataEntries = [TargetCreatureId, 13549u, 12213u, 0u, 0u, 0u, 0u]
+            });
+        IPlayer player = CreatePlayer(9001u, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables);
+        player.ChallengeManager.HandleChoice(CombatChallengeId, ChallengeChoice.Activate);
+
+        ChallengeCombatHooks.OnCreatureKilled(player, TargetCreatureId);
+
+        ServerChallengeResult result = GetMessages<ServerChallengeResult>(sessionProxy).Last();
+        Assert.True(result.Result is ChallengeResult.TierAchieved or ChallengeResult.Completed);
+    }
+
+    [Fact]
+    public void OnCreatureKilled_AdvancesCombatChallengeForNestedTargetGroupMember()
+    {
+        const uint parentTargetGroupId = 8851u;
+        const uint childTargetGroupId = 2309u;
+        GameTableManager gameTables = CreateCombatGameTables(
+            target: parentTargetGroupId,
+            new TargetGroupEntry
+            {
+                Id          = parentTargetGroupId,
+                Type        = (uint)TargetGroupType.OtherTargetGroupCreatures,
+                DataEntries = [childTargetGroupId, 0u, 0u, 0u, 0u, 0u, 0u]
+            },
+            new TargetGroupEntry
+            {
+                Id          = childTargetGroupId,
+                Type        = (uint)TargetGroupType.CreatureIdListGroup,
+                DataEntries = [TargetCreatureId, 11965u, 11580u, 0u, 0u, 0u, 0u]
+            });
+        IPlayer player = CreatePlayer(9001u, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables);
+        player.ChallengeManager.HandleChoice(CombatChallengeId, ChallengeChoice.Activate);
+
+        ChallengeCombatHooks.OnCreatureKilled(player, TargetCreatureId);
+
+        ServerChallengeResult result = GetMessages<ServerChallengeResult>(sessionProxy).Last();
+        Assert.True(result.Result is ChallengeResult.TierAchieved or ChallengeResult.Completed);
+    }
+
+    [Fact]
+    public void OnCreatureKilled_IgnoresNonMatchingTargetGroupMember()
+    {
+        const uint targetGroupId = 1852u;
+        GameTableManager gameTables = CreateCombatGameTables(
+            target: targetGroupId,
+            new TargetGroupEntry
+            {
+                Id          = targetGroupId,
+                Type        = (uint)TargetGroupType.CreatureIdGroup,
+                DataEntries = [12212u, 13549u, 12213u, 0u, 0u, 0u, 0u]
+            });
+        IPlayer player = CreatePlayer(9001u, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables);
+        player.ChallengeManager.HandleChoice(CombatChallengeId, ChallengeChoice.Activate);
+
+        ChallengeCombatHooks.OnCreatureKilled(player, TargetCreatureId);
+
+        Assert.DoesNotContain(
+            GetMessages<ServerChallengeResult>(sessionProxy),
+            result => result.Result is ChallengeResult.TierAchieved or ChallengeResult.Completed);
+    }
+
     private const uint CooldownTypeFlag = 0x10u;
 
-    private static GameTableManager CreateCombatGameTables()
+    private static GameTableManager CreateCombatGameTables(uint target = TargetCreatureId, params TargetGroupEntry[] targetGroups)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -52,13 +124,14 @@ public class ChallengeCombatHooksTests
         {
             Id                      = CombatChallengeId,
             ChallengeTypeEnum       = (uint)ChallengeType.Combat,
-            Target                  = TargetCreatureId,
+            Target                  = target,
             ChallengeFlags          = CooldownTypeFlag,
             TargetGroupIdRewardPane = 42u,
             ChallengeTierId00       = 2001,
             CompletionCount         = 1u
         }));
 
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.TargetGroup), CreateGameTable(targetGroups));
         return gameTableManager;
     }
 

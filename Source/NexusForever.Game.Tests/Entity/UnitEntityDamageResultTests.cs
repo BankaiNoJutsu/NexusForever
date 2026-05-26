@@ -1,17 +1,23 @@
+using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Combat;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Spell;
+using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
+using NexusForever.Network.World.Message.Static;
+using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Entity;
 
+[Collection(LegacyServiceProviderCollection.Name)]
 public class UnitEntityDamageResultTests
 {
     [Fact]
@@ -47,7 +53,102 @@ public class UnitEntityDamageResultTests
         Assert.False(damage.KilledTarget);
         Assert.Equal(0u, damage.OverkillAmount);
         Assert.Equal(60u, victim.Health);
+    }
 
+    [Fact]
+    public void TakeDamage_ShieldAbsorbDelaysShieldRegenUntilRebootExpires()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildEntityProvider();
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            TestUnitEntity victim = new();
+            victim.SetHealthForTest(maxHealth: 100u, health: 100u);
+            victim.SetShieldForTest(maxShield: 100u, shield: 100u, shieldRegenPct: 0.25f, shieldRebootTimeMs: 2500f, shieldTickTimeMs: 500f);
+            IUnitEntity attacker = CreateAttacker();
+
+            IDamageDescription damage = CreateDamage(adjustedDamage: 0u, shieldAbsorbAmount: 10u);
+
+            victim.TakeDamage(attacker, damage);
+            Assert.Equal(90u, victim.Shield);
+
+            for (int i = 0; i < 10; i++)
+                victim.Update(0.25d);
+
+            Assert.Equal(90u, victim.Shield);
+
+            victim.Update(0.25d);
+            victim.Update(0.25d);
+
+            Assert.Equal(100u, victim.Shield);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void TakeDamage_HealthDamageAlsoDelaysShieldRegen()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildEntityProvider();
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            TestUnitEntity victim = new();
+            victim.SetHealthForTest(maxHealth: 100u, health: 100u);
+            victim.SetShieldForTest(maxShield: 100u, shield: 0u, shieldRegenPct: 0.25f, shieldRebootTimeMs: 2500f, shieldTickTimeMs: 500f);
+            IUnitEntity attacker = CreateAttacker();
+
+            victim.TakeDamage(attacker, CreateDamage(adjustedDamage: 10u));
+
+            for (int i = 0; i < 10; i++)
+                victim.Update(0.25d);
+
+            Assert.Equal(0u, victim.Shield);
+
+            victim.Update(0.25d);
+            victim.Update(0.25d);
+
+            Assert.Equal(12u, victim.Shield);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void Update_DoesNotRegenerateHealthWhileInCombat()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildEntityProvider();
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            TestUnitEntity unit = new();
+            unit.SetHealthForTest(maxHealth: 1000u, health: 500u);
+            unit.SetInCombatForTest(true);
+
+            unit.Update(0.25d);
+
+            Assert.Equal(500u, unit.Health);
+
+            unit.SetInCombatForTest(false);
+
+            unit.Update(0.25d);
+
+            Assert.Equal(505u, unit.Health);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
     }
 
     [Theory]
@@ -59,16 +160,31 @@ public class UnitEntityDamageResultTests
         Assert.Equal(expected, UnitEntity.CalculateHealthOverkill(healthBefore, adjustedDamage, killedTarget));
     }
 
-    private static IDamageDescription CreateDamage(uint adjustedDamage)
+    [Fact]
+    public void AddCCState_Interrupt_CancelsActiveCastingSpells()
+    {
+        TestUnitEntity unit = new();
+        ISpell spell = RecordingDispatchProxy<ISpell>.Create(out RecordingDispatchProxy<ISpell> spellProxy);
+        spellProxy.SetProperty(nameof(ISpell.IsCasting), true);
+        AddPendingSpell(unit, spell);
+
+        unit.AddCCState(CCState.Interrupt, effectId: 10u, spell4Id: 20u, castingId: 30u);
+
+        RecordingDispatchProxy<ISpell>.Invocation cancel = Assert.Single(spellProxy.GetInvocations(nameof(ISpell.CancelCast)));
+        Assert.Equal(CastResult.SpellInterrupted, cancel.Arguments[0]);
+    }
+
+    private static IDamageDescription CreateDamage(uint adjustedDamage, uint shieldAbsorbAmount = 0u)
     {
         return new SpellTargetInfo.SpellTargetEffectInfo.DamageDescription
         {
-            DamageType       = DamageType.Physical,
-            RawDamage        = adjustedDamage,
-            RawScaledDamage  = adjustedDamage,
-            AdjustedDamage   = adjustedDamage,
-            ThreatMultiplier = 0f,
-            CombatResult     = CombatResult.Hit
+            DamageType         = DamageType.Physical,
+            RawDamage          = adjustedDamage + shieldAbsorbAmount,
+            RawScaledDamage    = adjustedDamage + shieldAbsorbAmount,
+            AdjustedDamage     = adjustedDamage,
+            ShieldAbsorbAmount = shieldAbsorbAmount,
+            ThreatMultiplier   = 0f,
+            CombatResult       = CombatResult.Hit
         };
     }
 
@@ -80,6 +196,27 @@ public class UnitEntityDamageResultTests
         attackerProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
         attackerProxy.SetProperty(nameof(IUnitEntity.ThreatManager), threatManager);
         return attacker;
+    }
+
+    private static void AddPendingSpell(UnitEntity unit, ISpell spell)
+    {
+        var pendingSpells = (List<ISpell>)typeof(UnitEntity)
+            .GetField("pendingSpells", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(unit)!;
+
+        pendingSpells.Add(spell);
+    }
+
+    private static ServiceProvider BuildEntityProvider()
+    {
+        EntityManager entityManager = new();
+        typeof(EntityManager)
+            .GetMethod("InitialiseEntityStats", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(entityManager, null);
+
+        return new ServiceCollection()
+            .AddSingleton(entityManager)
+            .BuildServiceProvider();
     }
 
     private sealed class TestUnitEntity : UnitEntity
@@ -97,6 +234,22 @@ public class UnitEntityDamageResultTests
         {
             MaxHealth = maxHealth;
             Health    = health;
+        }
+
+        public void SetInCombatForTest(bool value)
+        {
+            typeof(UnitEntity)
+                .GetField("inCombat", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(this, value);
+        }
+
+        public void SetShieldForTest(uint maxShield, uint shield, float shieldRegenPct, float shieldRebootTimeMs, float shieldTickTimeMs)
+        {
+            MaxShieldCapacity = maxShield;
+            Shield = shield;
+            SetBaseProperty(Property.ShieldRegenPct, shieldRegenPct);
+            SetBaseProperty(Property.ShieldRebootTime, shieldRebootTimeMs);
+            SetBaseProperty(Property.ShieldTickTime, shieldTickTimeMs);
         }
 
         protected override IEntityModel BuildEntityModel()

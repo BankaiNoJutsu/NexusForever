@@ -94,7 +94,7 @@ namespace NexusForever.Game.Loot
                 Blockers =
                 [
                     "LootItem boolean meaning/order still needs retail confirmation.",
-                    "ServerLootNotify.ParentUnitId currently mirrors OwnerUnitId because runtime has no distinct parent source yet.",
+                    "ServerLootNotify.ParentUnitId capture records whether the runtime used owner-as-source or a distinct parent source; live evidence is still needed for the exact source-selection policy.",
                     "ServerLootNotification and ServerLootCanLoot remain evidence-only packet models and are exported here as packet-shape references without being enqueued. ServerLootBindOnPickup is emitted when a bind-on-pickup static item needs client confirmation before delivery."
                 ]
             };
@@ -123,6 +123,7 @@ namespace NexusForever.Game.Loot
                     RandomCircuitData = item.RandomCircuitData,
                     RandomGlyphData = item.RandomGlyphData,
                     ItemQuality2Id = item.ItemQuality2Id,
+                    ItemQualityVisualEffectIdLoot = item.ItemQualityVisualEffectIdLoot,
                     MasterListCount = item.MasterListCount
                 },
                 LootItemPayload = CreatePayloadReference(new NetworkLootItem
@@ -177,7 +178,7 @@ namespace NexusForever.Game.Loot
                     : null,
                 CanLootTemplateNotes = item.LootUnitId != 0u
                     ? "Shape-only reference for the currently unused can-loot feedback opcode."
-                    : "Skipped because granted shower entries use LootUnitId 0.",
+                    : "Skipped because granted notify rows use LootUnitId 0.",
                 BindOnPickup = item.Type == NexusForever.Game.Static.Loot.LootItemType.StaticItem && item.LootUnitId != 0u
                     ? CreatePacketReference(new ServerLootBindOnPickup
                     {
@@ -393,6 +394,7 @@ namespace NexusForever.Game.Loot
             public ulong RandomCircuitData { get; set; }
             public uint RandomGlyphData { get; set; }
             public uint ItemQuality2Id { get; set; }
+            public uint ItemQualityVisualEffectIdLoot { get; set; }
             public int MasterListCount { get; set; }
         }
 

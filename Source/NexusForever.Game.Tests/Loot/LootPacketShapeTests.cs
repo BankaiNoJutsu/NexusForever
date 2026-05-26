@@ -1,13 +1,19 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Configuration.Model;
+using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Loot;
@@ -323,6 +329,151 @@ public class LootPacketShapeTests
     }
 
     [Fact]
+    public void SendLootNotify_IncludeGrantedStaticItemPreservesItemQualityForDropPresentation()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig()));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), CreateGameTable(new Item2Entry
+        {
+            Id            = 87654u,
+            ItemQualityId = 5u
+        }));
+
+        LegacyServiceProvider.Provider = new ServiceCollection()
+            .AddSingleton(new GlobalLootManager(groupStateManager))
+            .AddSingleton(gameTableManager)
+            .BuildServiceProvider();
+
+        try
+        {
+            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+
+            playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+            playerProxy.SetProperty(nameof(IPlayer.Session), session);
+            playerProxy.SetProperty("Guid", 4242u);
+
+            var lootInstance = new LootInstance(
+                ownerUnitId: 99u,
+                parentUnitId: 123u,
+                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+                looterType: LooterType.Player,
+                lootEntityType: LootEntityType.Creature)
+            {
+                Explosion = true
+            };
+
+            LootInstanceItem delivered = lootInstance.AddLootItem(87654u, LootItemType.StaticItem, 1u);
+            delivered.MarkDeliveredWithoutWinner();
+
+            lootInstance.SendLootNotify(player, includeGrantedItems: true);
+
+            RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+            var notify = Assert.IsType<ServerLootNotify>(call.Arguments[0]);
+
+            Assert.Equal(99u, notify.OwnerUnitId);
+            Assert.Equal(123u, notify.ParentUnitId);
+            Assert.True(notify.Explosion);
+
+            NetworkLootItem granted = Assert.Single(notify.LootItems);
+            Assert.Equal(0u, granted.LootUnitId);
+            Assert.Equal(LootItemType.StaticItem, granted.Type);
+            Assert.Equal(87654u, granted.ItemId);
+            Assert.Equal(1u, granted.Amount);
+            Assert.Equal(5u, granted.ItemQuality2Id);
+            Assert.True(granted.CanLoot);
+            Assert.True(granted.Granted);
+            Assert.True(granted.Explosion);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendLootNotify_IncludeGrantedTableBackedNonItemRewardsPreservesPresentationQuality()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig()));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), CreateGameTable(new Item2Entry
+        {
+            Id            = 2222u,
+            ItemQualityId = 6u
+        }));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.VirtualItem), CreateGameTable(new VirtualItemEntry
+        {
+            Id            = 3333u,
+            ItemQualityId = 4u
+        }));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItem), CreateGameTable(new AccountItemEntry
+        {
+            Id      = 4444u,
+            Item2Id = 2222u
+        }));
+
+        LegacyServiceProvider.Provider = new ServiceCollection()
+            .AddSingleton(new GlobalLootManager(groupStateManager))
+            .AddSingleton(gameTableManager)
+            .BuildServiceProvider();
+
+        try
+        {
+            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+
+            playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+            playerProxy.SetProperty(nameof(IPlayer.Session), session);
+            playerProxy.SetProperty("Guid", 4242u);
+
+            var lootInstance = new LootInstance(
+                ownerUnitId: 99u,
+                parentUnitId: 123u,
+                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+                looterType: LooterType.Player,
+                lootEntityType: LootEntityType.Creature)
+            {
+                Explosion = true
+            };
+
+            LootInstanceItem virtualItem = lootInstance.AddLootItem(3333u, LootItemType.VirtualItem, 1u);
+            virtualItem.MarkDeliveredWithoutWinner();
+            LootInstanceItem accountItem = lootInstance.AddLootItem(4444u, LootItemType.AccountItem, 1u);
+            accountItem.MarkDeliveredWithoutWinner();
+
+            lootInstance.SendLootNotify(player, includeGrantedItems: true);
+
+            RecordingDispatchProxy<IGameSession>.Invocation call = Assert.Single(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+            var notify = Assert.IsType<ServerLootNotify>(call.Arguments[0]);
+
+            Assert.Equal(99u, notify.OwnerUnitId);
+            Assert.Equal(123u, notify.ParentUnitId);
+            Assert.True(notify.Explosion);
+            Assert.Equal(2, notify.LootItems.Count);
+
+            NetworkLootItem virtualLoot = Assert.Single(notify.LootItems, item => item.Type == LootItemType.VirtualItem);
+            Assert.Equal(3333u, virtualLoot.ItemId);
+            Assert.Equal(4u, virtualLoot.ItemQuality2Id);
+            Assert.True(virtualLoot.Granted);
+            Assert.True(virtualLoot.Explosion);
+
+            NetworkLootItem accountLoot = Assert.Single(notify.LootItems, item => item.Type == LootItemType.AccountItem);
+            Assert.Equal(4444u, accountLoot.ItemId);
+            Assert.Equal(6u, accountLoot.ItemQuality2Id);
+            Assert.True(accountLoot.Granted);
+            Assert.True(accountLoot.Explosion);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void SendLootNotify_IncludeGrantedItemsPreservesCurrentDeliveryState()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -344,6 +495,7 @@ public class LootPacketShapeTests
 
             var lootInstance = new LootInstance(
                 ownerUnitId: 99u,
+                parentUnitId: 123u,
                 looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
                 looterType: LooterType.Player,
                 lootEntityType: LootEntityType.Creature)
@@ -366,7 +518,7 @@ public class LootPacketShapeTests
             var notify = Assert.IsType<ServerLootNotify>(call.Arguments[0]);
 
             Assert.Equal(99u, notify.OwnerUnitId);
-            Assert.Equal(99u, notify.ParentUnitId);
+            Assert.Equal(123u, notify.ParentUnitId);
             Assert.True(notify.Explosion);
             Assert.Equal(2, notify.LootItems.Count);
 
@@ -392,6 +544,49 @@ public class LootPacketShapeTests
         {
             LegacyServiceProvider.Provider = previousProvider;
         }
+    }
+
+    private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
+    {
+        var table = (GameTable<T>)RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
+        SetAutoProperty(table, nameof(GameTable<T>.Entries), entries);
+        SetPrivateField(table, "header", new GameTableHeader
+        {
+            MaxId = entries.Length == 0 ? 0u : entries.Max(GetEntryId) + 1u
+        });
+        SetPrivateField(table, "lookup", BuildLookup(entries));
+        return table;
+    }
+
+    private static void SetAutoProperty(object instance, string propertyName, object value)
+    {
+        FieldInfo backingField = instance.GetType()
+            .GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        backingField.SetValue(instance, value);
+    }
+
+    private static void SetPrivateField(object instance, string fieldName, object value)
+    {
+        FieldInfo field = instance.GetType()
+            .GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
+        field.SetValue(instance, value);
+    }
+
+    private static int[] BuildLookup<T>(IReadOnlyList<T> entries)
+    {
+        if (entries.Count == 0)
+            return [];
+
+        int[] lookup = Enumerable.Repeat(-1, (int)(entries.Max(GetEntryId) + 1u)).ToArray();
+        for (int i = 0; i < entries.Count; i++)
+            lookup[GetEntryId(entries[i])] = i;
+
+        return lookup;
+    }
+
+    private static uint GetEntryId<T>(T entry)
+    {
+        return (uint)typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public)[0].GetValue(entry)!;
     }
 
     private static byte[] WritePacket(NexusForever.Network.Message.IWritable packet)

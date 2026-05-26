@@ -12,5 +12,8 @@
     <ProjectReference Include="..\NexusForever.Script\NexusForever.Script.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="AI\CombatProfiles.json" />
+  </ItemGroup>
 
 </Project>

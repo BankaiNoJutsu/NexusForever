@@ -146,7 +146,260 @@ public class PathManagerTests
         }
     }
 
+    [Fact]
+    public void ActivateMissions_SendsEpisodeProgressAndMissionActivate()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            []);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [35] = 25,
+                [36] = 25
+            });
+
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(messages[0]);
+            Assert.Equal(9, currentEpisode.PathEpisodeId);
+
+            ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[1]);
+            Assert.Equal(9, episodeProgress.EpisodeId);
+            Assert.Equal([35u, 36u], episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
+
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
+            Assert.Equal([35u, 36u], missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CompleteMission_UpdatesMissionAndAwardsConfiguredPathXp()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u },
+                new PathLevelEntry { Id = 2u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 2u, PathXP = 100u }
+            ],
+            []);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [35] = 25
+            });
+
+            Assert.True(manager.CompleteMission(35));
+
+            Assert.True(manager.IsMissionComplete(35));
+
+            ServerPathMissionAdvanced advanced = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionAdvanced>()
+                .Single();
+            Assert.Equal(35, advanced.PathMissionId);
+
+            ServerPathMissionUpdate missionUpdate = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathMissionUpdate>()
+                .Single();
+            Assert.True(missionUpdate.Mission.Completed);
+            Assert.Equal(1u, missionUpdate.Mission.ObjectiveCompletionFlags);
+
+            ServerPathUpdateXP xpUpdate = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .OfType<ServerPathUpdateXP>()
+                .Single();
+            Assert.Equal(25u, xpUpdate.TotalXP);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CompleteMissionByObjectId_CompletesMatchingActiveMission()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 1254u, PathEpisodeId = 9u, ObjectId = 1u }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out _,
+                out _,
+                out _);
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [1254] = 0
+            });
+
+            Assert.True(manager.CompleteMissionByObjectId(1u));
+
+            Assert.True(manager.IsMissionComplete(1254u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CompleteMissionBySoldierTowerDefenseId_CompletesMatchingEventMission()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 156u, PathEpisodeId = 8u, ObjectId = 2u }
+            ],
+            [
+                new PathSoldierTowerDefenseEntry { Id = 2u, PathSoldierEventId = 2u }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out _,
+                out _,
+                out _);
+            manager.ActivateMissions(8, new Dictionary<ushort, uint>
+            {
+                [156] = 0
+            });
+
+            Assert.True(manager.CompleteMissionBySoldierTowerDefenseId(2u));
+
+            Assert.True(manager.IsMissionComplete(156u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CompleteMissionBySettlerImprovementGroupId_CompletesMatchingHubMission()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 650u, PathEpisodeId = 82u, ObjectId = 46u }
+            ],
+            settlerImprovementGroups:
+            [
+                new PathSettlerImprovementGroupEntry { Id = 11u, PathSettlerHubId = 46u }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Settler,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out _,
+                out _,
+                out _);
+            manager.ActivateMissions(82, new Dictionary<ushort, uint>
+            {
+                [650] = 0
+            });
+
+            Assert.True(manager.CompleteMissionBySettlerImprovementGroupId(11u));
+
+            Assert.True(manager.IsMissionComplete(650u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     private static PathManager CreateManager(
+        uint totalXp,
+        byte levelRewarded,
+        out IPlayer player,
+        out RecordingDispatchProxy<IPlayer> playerProxy,
+        out RecordingDispatchProxy<IGameSession> sessionProxy,
+        out RecordingDispatchProxy<ICharacterAchievementManager> achievementManagerProxy,
+        out RecordingDispatchProxy<IInventory> inventoryProxy)
+    {
+        return CreateManager(
+            Path.Soldier,
+            totalXp,
+            levelRewarded,
+            out player,
+            out playerProxy,
+            out sessionProxy,
+            out achievementManagerProxy,
+            out inventoryProxy);
+    }
+
+    private static PathManager CreateManager(
+        Path path,
         uint totalXp,
         byte levelRewarded,
         out IPlayer player,
@@ -160,7 +413,7 @@ public class PathManagerTests
         ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out achievementManagerProxy);
         IInventory inventory = RecordingDispatchProxy<IInventory>.Create(out inventoryProxy);
 
-        playerProxy.SetProperty(nameof(IPlayer.Path), Path.Soldier);
+        playerProxy.SetProperty(nameof(IPlayer.Path), path);
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
         playerProxy.SetProperty(nameof(IPlayer.Session), session);
         playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
@@ -174,7 +427,7 @@ public class PathManagerTests
                 new CharacterPathModel
                 {
                     Id = 42ul,
-                    Path = (byte)Path.Soldier,
+                    Path = (byte)path,
                     Unlocked = 1,
                     TotalXp = totalXp,
                     LevelRewarded = levelRewarded
@@ -183,7 +436,12 @@ public class PathManagerTests
         });
     }
 
-    private static IServiceProvider BuildGameTableProvider(IEnumerable<PathLevelEntry> pathLevels, IEnumerable<PathRewardEntry> pathRewards)
+    private static IServiceProvider BuildGameTableProvider(
+        IEnumerable<PathLevelEntry> pathLevels,
+        IEnumerable<PathRewardEntry> pathRewards,
+        IEnumerable<PathMissionEntry> pathMissions = null,
+        IEnumerable<PathSoldierTowerDefenseEntry> soldierTowerDefense = null,
+        IEnumerable<PathSettlerImprovementGroupEntry> settlerImprovementGroups = null)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -191,6 +449,9 @@ public class PathManagerTests
         }));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.PathLevel), CreateGameTable(pathLevels.ToArray()));
         SetAutoProperty(gameTableManager, nameof(GameTableManager.PathReward), CreateGameTable(pathRewards.ToArray()));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.PathMission), CreateGameTable((pathMissions ?? []).ToArray()));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.PathSoldierTowerDefense), CreateGameTable((soldierTowerDefense ?? []).ToArray()));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.PathSettlerImprovementGroup), CreateGameTable((settlerImprovementGroups ?? []).ToArray()));
 
         return new ServiceCollection()
             .AddSingleton(gameTableManager)
@@ -201,12 +462,40 @@ public class PathManagerTests
     {
         var table = (GameTable<T>)RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
         SetAutoProperty(table, nameof(GameTable<T>.Entries), entries);
+        SetPrivateField(table, "header", new GameTableHeader
+        {
+            MaxId = entries.Length == 0 ? 0u : entries.Max(GetEntryId) + 1u
+        });
+        SetPrivateField(table, "lookup", BuildLookup(entries));
         return table;
+    }
+
+    private static int[] BuildLookup<T>(IReadOnlyList<T> entries)
+    {
+        if (entries.Count == 0)
+            return [];
+
+        int[] lookup = Enumerable.Repeat(-1, (int)(entries.Max(GetEntryId) + 1u)).ToArray();
+        for (int i = 0; i < entries.Count; i++)
+            lookup[GetEntryId(entries[i])] = i;
+
+        return lookup;
+    }
+
+    private static uint GetEntryId<T>(T entry)
+    {
+        return (uint)typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public)[0].GetValue(entry)!;
     }
 
     private static void SetAutoProperty(object instance, string propertyName, object value)
     {
         FieldInfo backingField = instance.GetType().GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!;
         backingField.SetValue(instance, value);
+    }
+
+    private static void SetPrivateField(object instance, string fieldName, object value)
+    {
+        FieldInfo field = instance.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
+        field.SetValue(instance, value);
     }
 }

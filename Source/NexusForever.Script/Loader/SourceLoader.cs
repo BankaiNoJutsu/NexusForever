@@ -45,6 +45,8 @@ namespace NexusForever.Script.Loader
         {
             foreach (Assembly assemblies in NexusForeverAssemblyHelper.GetAssemblies())
                 compiler.AddReference(assemblies.Location);
+
+            compiler.AddReference(typeof(Microsoft.Extensions.Logging.ILogger).Assembly.Location);
         }
 
         private void AddSourceFiles(string path)

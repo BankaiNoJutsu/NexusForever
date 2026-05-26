@@ -11,13 +11,16 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Account;
+using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model.Chat;
 using NexusForever.Network.World.Message.Model.Loot;
+using NexusForever.Network.World.Message.Model.Story;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Loot;
@@ -151,16 +154,29 @@ public class LootBagUsageTests
             RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall = achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)).First();
             Assert.Same(player, achievementCall.Arguments[0]);
 
+            RecordingDispatchProxy<IGameSession>.Invocation floaterCall = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .First(i => i.Arguments[0] is ServerGenericFloaterString);
+            var floater = Assert.IsType<ServerGenericFloaterString>(floaterCall.Arguments[0]);
+            Assert.Equal("+5 Omnibit", floater.Text);
+
+            RecordingDispatchProxy<IGameSession>.Invocation chatCall = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .First(i => i.Arguments[0] is ServerChat);
+            var chat = Assert.IsType<ServerChat>(chatCall.Arguments[0]);
+            Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
+            Assert.Equal("You receive 5 Omnibit.", chat.Text);
+
             RecordingDispatchProxy<IGameSession>.Invocation sessionCall = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
                 .First(i => i.Arguments[0] is ServerLootNotify);
             var notify = Assert.IsType<ServerLootNotify>(sessionCall.Arguments[0]);
             Assert.True(notify.Explosion);
+            var singleLootItem = Assert.Single(notify.LootItems);
             Assert.All(notify.LootItems, lootItem =>
             {
                 Assert.True(lootItem.Granted);
                 Assert.Equal(LootItemType.AccountCurrency, lootItem.Type);
                 Assert.Equal((uint)AccountCurrencyType.Omnibit, lootItem.ItemId);
             });
+            Assert.Equal(5u, singleLootItem.Amount);
             Assert.Equal(5u, notify.LootItems.Sum(lootItem => lootItem.Amount));
         }
         finally

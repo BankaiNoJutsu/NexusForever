@@ -421,7 +421,7 @@ namespace NexusForever.Game.Quest
             if (PendingDelete)
                 return;
 
-            if (State == QuestState.Achieved)
+            if (State is QuestState.Achieved or QuestState.Completed)
                 return;
 
             uint previousObjectiveId = currentObjectiveId;
@@ -465,7 +465,7 @@ namespace NexusForever.Game.Quest
             if (PendingDelete)
                 return;
 
-            if (State == QuestState.Achieved)
+            if (State is QuestState.Achieved or QuestState.Completed)
                 return;
 
             uint previousObjectiveId = currentObjectiveId;

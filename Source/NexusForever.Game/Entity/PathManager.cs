@@ -22,6 +22,8 @@ namespace NexusForever.Game.Entity
 
         private readonly IPlayer player;
         private readonly Dictionary<Path, IPathEntry> paths = new();
+        private readonly Dictionary<ushort, PathMissionRuntimeState> pathMissions = [];
+        private readonly HashSet<ushort> activatedEpisodes = [];
 
         /// <summary>
         /// Create a new <see cref="IPathManager"/> from <see cref="IPlayer"/> database model.
@@ -176,6 +178,105 @@ namespace NexusForever.Game.Entity
             }
 
             AddXp(targetXp - entry.TotalXp);
+        }
+
+        public void ActivateMissions(ushort episodeId, IReadOnlyDictionary<ushort, uint> missionXp)
+        {
+            if (episodeId == 0 || missionXp == null || missionXp.Count == 0)
+                return;
+
+            foreach ((ushort missionId, uint xp) in missionXp)
+            {
+                if (!pathMissions.TryGetValue(missionId, out PathMissionRuntimeState state))
+                {
+                    state = new PathMissionRuntimeState
+                    {
+                        EpisodeId = episodeId,
+                        MissionId = missionId
+                    };
+                    pathMissions.Add(missionId, state);
+                }
+
+                state.EpisodeId = episodeId;
+                state.Xp = xp;
+                if (!state.Completed)
+                    state.State = PathMissionState.Started;
+            }
+
+            if (!activatedEpisodes.Add(episodeId))
+                return;
+
+            SendPathCurrentEpisode(episodeId);
+            SendPathEpisodeProgress(episodeId);
+            SendPathMissionActivate(episodeId);
+        }
+
+        public bool CompleteMission(ushort pathMissionId)
+        {
+            PathMissionRuntimeState state = GetOrCreateMissionState(pathMissionId);
+            if (state.Completed)
+                return false;
+
+            state.Completed = true;
+            state.ObjectiveCompletionFlags = 1u;
+            state.State = PathMissionState.Complete;
+
+            player.Session.EnqueueMessageEncrypted(new ServerPathMissionAdvanced
+            {
+                PathMissionId = pathMissionId
+            });
+            player.Session.EnqueueMessageEncrypted(new ServerPathMissionUpdate
+            {
+                Mission = BuildMission(state)
+            });
+
+            if (state.Xp > 0u)
+                AddXp(state.Xp);
+
+            return true;
+        }
+
+        public bool CompleteMissionByObjectId(uint objectId)
+        {
+            if (objectId == 0u)
+                return false;
+
+            bool completedAny = false;
+            foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
+            {
+                PathMissionEntry entry = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                if (entry?.ObjectId != objectId)
+                    continue;
+
+                completedAny |= CompleteMission(state.MissionId);
+            }
+
+            return completedAny;
+        }
+
+        public bool CompleteMissionBySoldierTowerDefenseId(uint pathSoldierTowerDefenseId)
+        {
+            if (pathSoldierTowerDefenseId == 0u)
+                return false;
+
+            PathSoldierTowerDefenseEntry entry = GameTableManager.Instance.PathSoldierTowerDefense.GetEntry(pathSoldierTowerDefenseId);
+            return entry != null && CompleteMissionByObjectId(entry.PathSoldierEventId);
+        }
+
+        public bool CompleteMissionBySettlerImprovementGroupId(uint pathSettlerImprovementGroupId)
+        {
+            if (pathSettlerImprovementGroupId == 0u)
+                return false;
+
+            PathSettlerImprovementGroupEntry entry = GameTableManager.Instance.PathSettlerImprovementGroup.GetEntry(pathSettlerImprovementGroupId);
+            return entry != null && CompleteMissionByObjectId(entry.PathSettlerHubId);
+        }
+
+        public bool IsMissionComplete(uint pathMissionId)
+        {
+            return pathMissionId <= ushort.MaxValue
+                && pathMissions.TryGetValue((ushort)pathMissionId, out PathMissionRuntimeState state)
+                && state.Completed;
         }
 
         /// <summary>
@@ -355,6 +456,68 @@ namespace NexusForever.Game.Entity
             });
         }
 
+        private PathMissionRuntimeState GetOrCreateMissionState(ushort pathMissionId)
+        {
+            if (pathMissions.TryGetValue(pathMissionId, out PathMissionRuntimeState state))
+                return state;
+
+            PathMissionEntry entry = GameTableManager.Instance.PathMission.GetEntry(pathMissionId);
+            state = new PathMissionRuntimeState
+            {
+                EpisodeId = (ushort)(entry?.PathEpisodeId ?? 0u),
+                MissionId = pathMissionId,
+                State = PathMissionState.Started
+            };
+            pathMissions.Add(pathMissionId, state);
+            return state;
+        }
+
+        private void SendPathCurrentEpisode(ushort episodeId)
+        {
+            player.Session.EnqueueMessageEncrypted(new ServerPathSetCurrentEpisode
+            {
+                PathEpisodeId = episodeId
+            });
+        }
+
+        private void SendPathEpisodeProgress(ushort episodeId)
+        {
+            player.Session.EnqueueMessageEncrypted(new ServerPathEpisodeProgress
+            {
+                EpisodeId = episodeId,
+                Missions = pathMissions.Values
+                    .Where(m => m.EpisodeId == episodeId)
+                    .OrderBy(m => m.MissionId)
+                    .Select(BuildMission)
+                    .ToList()
+            });
+        }
+
+        private void SendPathMissionActivate(ushort episodeId)
+        {
+            player.Session.EnqueueMessageEncrypted(new ServerPathMissionActivate
+            {
+                Missions = pathMissions.Values
+                    .Where(m => m.EpisodeId == episodeId && !m.Completed)
+                    .OrderBy(m => m.MissionId)
+                    .Select(BuildMission)
+                    .ToList()
+            });
+        }
+
+        private static Mission BuildMission(PathMissionRuntimeState state)
+        {
+            return new Mission
+            {
+                PathMissionId = state.MissionId,
+                Completed = state.Completed,
+                ObjectiveCompletionFlags = state.ObjectiveCompletionFlags,
+                StateFlags = state.StateFlags,
+                State = state.State,
+                GiverUnitId = state.GiverUnitId
+            };
+        }
+
         private IPathEntry GetPathEntry(Path path)
         {
             paths.TryGetValue(path, out IPathEntry pathEntry);
@@ -374,6 +537,18 @@ namespace NexusForever.Game.Entity
         public IEnumerator<IPathEntry> GetEnumerator()
         {
             return paths.Values.GetEnumerator();
+        }
+
+        private sealed class PathMissionRuntimeState
+        {
+            public ushort EpisodeId { get; set; }
+            public ushort MissionId { get; init; }
+            public uint Xp { get; set; }
+            public bool Completed { get; set; }
+            public uint ObjectiveCompletionFlags { get; set; }
+            public uint StateFlags { get; set; }
+            public PathMissionState State { get; set; } = PathMissionState.Started;
+            public uint GiverUnitId { get; init; }
         }
     }
 }

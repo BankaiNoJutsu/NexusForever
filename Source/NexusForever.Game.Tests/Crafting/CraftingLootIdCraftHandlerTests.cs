@@ -64,6 +64,7 @@ public class CraftingLootIdCraftHandlerTests
         Assert.Same(player, lootManager.LastDeliverLooter);
         Assert.Equal(generatedLoot, lootManager.LastDeliveredLoot);
         Assert.Equal(player.Guid, lootManager.LastOwnerUnitId);
+        Assert.Equal(456u, lootManager.LastParentUnitId);
         Assert.True(lootManager.LastSendGrantedNotify);
 
         ServerCraftingFinish finish = Assert.Single(GetMessages<ServerCraftingFinish>(sessionProxy));
@@ -246,6 +247,7 @@ public class CraftingLootIdCraftHandlerTests
         public IPlayer LastDeliverLooter { get; private set; }
         public IEnumerable<GeneratedLootItem> LastDeliveredLoot { get; private set; }
         public uint LastOwnerUnitId { get; private set; }
+        public uint LastParentUnitId { get; private set; }
         public bool LastSendGrantedNotify { get; private set; }
 
         public void Update(double time) { }
@@ -296,11 +298,12 @@ public class CraftingLootIdCraftHandlerTests
             return true;
         }
 
-        public void GiveGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId, bool sendGrantedNotify = false)
+        public void GiveGeneratedLoot(IPlayer looter, IEnumerable<GeneratedLootItem> items, uint ownerUnitId, bool sendGrantedNotify = false, uint parentUnitId = 0u)
         {
             LastDeliverLooter = looter;
             LastDeliveredLoot = items;
             LastOwnerUnitId = ownerUnitId;
+            LastParentUnitId = parentUnitId;
             LastSendGrantedNotify = sendGrantedNotify;
         }
     }

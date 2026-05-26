@@ -2,15 +2,20 @@ using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Achievement;
+using NexusForever.Game.Chat;
 using NexusForever.Game.Static.Account;
+using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.GameTable.Static;
+using NexusForever.Network.World.Chat.Model;
+using NexusForever.Network.World.Message.Model.Chat;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Loot;
+using NexusForever.Network.World.Message.Model.Story;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared.Game;
 using NLog;
@@ -32,14 +37,13 @@ namespace NexusForever.Game.Loot
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
         private const double ROLL_DURATION_SECONDS = 30d;
-        private const uint ACCOUNT_CURRENCY_SHOWER_ITEM_LIMIT = 50u;
-
         public uint Id { get; }
         public uint OwnerUnitId { get; private set; }
         public uint StaticId { get; }
         public LootItemType Type { get; }
         public uint Amount { get; private set; }
         public uint ItemQualityId => GetItemQualityId();
+        public uint ItemQualityVisualEffectIdLoot => GetItemQualityVisualEffectIdLoot();
 
         public uint WinnerGuid { get; private set; }
         public ulong WinnerCharacterId { get; private set; }
@@ -409,6 +413,8 @@ namespace NexusForever.Game.Loot
                 case LootItemType.AccountCurrency:
                     player.Account.CurrencyManager.CurrencyAddAmount((AccountCurrencyType)StaticId, Amount);
                     AccountCurrencyAchievementUpdater.Update(player, (AccountCurrencyType)StaticId, Amount);
+                    if (!sendAsGrant)
+                        SendAccountCurrencyLootFeedback(player);
                     break;
                 case LootItemType.AccountItem:
                     for (uint i = 0; i < Amount; i++)
@@ -455,6 +461,7 @@ namespace NexusForever.Game.Loot
             if (sendAsGrant)
                 SendGrant(player);
 
+            SendDeliveredLootFeedback(player);
             return true;
         }
 
@@ -466,6 +473,81 @@ namespace NexusForever.Game.Loot
                 LooterUnitId = WinnerGuid,
                 LootItem     = Build()
             });
+        }
+
+        private void SendAccountCurrencyLootFeedback(IPlayer player)
+        {
+            string currencyName = FormatAccountCurrencyName();
+            player.Session.EnqueueMessageEncrypted(new ServerGenericFloaterString
+            {
+                Text = $"+{Amount} {currencyName}"
+            });
+            player.Session.EnqueueMessageEncrypted(new ChatMessageBuilder
+            {
+                Type     = ChatChannelType.Loot,
+                FromName = string.Empty,
+                FromRealm = string.Empty,
+                Text     = $"You receive {Amount} {currencyName}."
+            }.Build());
+        }
+
+        private void SendDeliveredLootFeedback(IPlayer player)
+        {
+            switch (Type)
+            {
+                case LootItemType.Cash:
+                    SendCharacterCurrencyLootFeedback(player);
+                    break;
+                case LootItemType.StaticItem:
+                    SendStaticItemLootFeedback(player);
+                    break;
+            }
+        }
+
+        private void SendCharacterCurrencyLootFeedback(IPlayer player)
+        {
+            string currencyName = FormatCharacterCurrencyName();
+            player.Session.EnqueueMessageEncrypted(new ServerGenericFloaterString
+            {
+                Text = $"+{Amount} {currencyName}"
+            });
+            player.Session.EnqueueMessageEncrypted(new ChatMessageBuilder
+            {
+                Type      = ChatChannelType.Loot,
+                FromName  = string.Empty,
+                FromRealm = string.Empty,
+                Text      = $"You receive {Amount} {currencyName}."
+            }.Build());
+        }
+
+        private void SendStaticItemLootFeedback(IPlayer player)
+        {
+            var builder = new ChatMessageBuilder
+            {
+                Type      = ChatChannelType.Loot,
+                FromName  = string.Empty,
+                FromRealm = string.Empty
+            };
+
+            builder.AppendText("You receive ");
+            ushort startIndex = checked((ushort)builder.Text.Length);
+            builder.AppendText("[I]");
+            ushort stopIndex = checked((ushort)builder.Text.Length);
+            if (Amount > 1u)
+                builder.AppendText($" x{Amount}");
+            builder.AppendText(".");
+            builder.Formats.Add(new ChatFormat
+            {
+                Type       = ChatFormatType.ItemId,
+                StartIndex = startIndex,
+                StopIndex  = stopIndex,
+                Model      = new ChatFormatItemId
+                {
+                    Item2Id = StaticId
+                }
+            });
+
+            player.Session.EnqueueMessageEncrypted(builder.Build());
         }
 
         public NetworkLootItem Build()
@@ -486,9 +568,6 @@ namespace NexusForever.Game.Loot
 
         public IEnumerable<NetworkLootItem> BuildGrantedNotificationItems()
         {
-            if (Type == LootItemType.AccountCurrency)
-                return BuildGrantedAccountCurrencyNotificationItems();
-
             NetworkLootItem item = Build();
             item.LootUnitId = 0u;
             item.CanLoot    = true;
@@ -559,6 +638,7 @@ namespace NexusForever.Game.Loot
                 OnlyMasterLootable = OnlyMasterLootable,
                 RollTime = RollTime,
                 ItemQuality2Id = ItemQualityId,
+                ItemQualityVisualEffectIdLoot = ItemQualityVisualEffectIdLoot,
                 WinnerCharacterId = WinnerCharacterId,
                 WinnerGuid = WinnerGuid,
                 EligibleCharacterIds = eligibleIdentities.Keys.OrderBy(id => id).ToList(),
@@ -566,29 +646,6 @@ namespace NexusForever.Game.Loot
                 MasterCandidateCharacterIds = masterLootCandidates.Keys.OrderBy(id => id).ToList(),
                 MasterListCount = (uint)masterLootCandidates.Count
             };
-        }
-
-        private IEnumerable<NetworkLootItem> BuildGrantedAccountCurrencyNotificationItems()
-        {
-            uint itemCount = Math.Min(Amount, ACCOUNT_CURRENCY_SHOWER_ITEM_LIMIT);
-            if (itemCount == 0u)
-                yield break;
-
-            uint baseAmount = Amount / itemCount;
-            uint remainder  = Amount % itemCount;
-            for (uint i = 0u; i < itemCount; i++)
-            {
-                yield return new NetworkLootItem
-                {
-                    LootUnitId     = 0u,
-                    Type           = Type,
-                    ItemId         = StaticId,
-                    Amount         = baseAmount + (i < remainder ? 1u : 0u),
-                    CanLoot        = true,
-                    Granted        = true,
-                    ItemQuality2Id = ItemQualityId
-                };
-            }
         }
 
         private void ClearPendingLootState()
@@ -626,9 +683,66 @@ namespace NexusForever.Game.Loot
 
         private uint GetItemQualityId()
         {
-            return Type == LootItemType.StaticItem
-                ? GameTableManager.Instance.Item.GetEntry(StaticId)?.ItemQualityId ?? 0u
-                : 0u;
+            switch (Type)
+            {
+                case LootItemType.StaticItem:
+                    return GameTableManager.Instance.Item?.GetEntry(StaticId)?.ItemQualityId ?? 0u;
+                case LootItemType.VirtualItem:
+                    return GameTableManager.Instance.VirtualItem?.GetEntry(StaticId)?.ItemQualityId ?? 0u;
+                case LootItemType.AccountItem:
+                {
+                    AccountItemEntry accountItemEntry = GameTableManager.Instance.AccountItem?.GetEntry(StaticId);
+                    if (accountItemEntry == null || accountItemEntry.Item2Id == 0u)
+                        return 0u;
+
+                    return GameTableManager.Instance.Item?.GetEntry(accountItemEntry.Item2Id)?.ItemQualityId ?? 0u;
+                }
+                default:
+                    return 0u;
+            }
+        }
+
+        private uint GetItemQualityVisualEffectIdLoot()
+        {
+            uint itemQualityId = ItemQualityId;
+            if (itemQualityId == 0u)
+                return 0u;
+
+            return GameTableManager.Instance.ItemQuality?.GetEntry(itemQualityId)?.VisualEffectIdLoot ?? 0u;
+        }
+
+        private string FormatAccountCurrencyName()
+        {
+            if (Enum.IsDefined(typeof(AccountCurrencyType), (int)StaticId))
+                return SplitPascalCase(((AccountCurrencyType)StaticId).ToString());
+
+            return $"Account Currency {StaticId}";
+        }
+
+        private string FormatCharacterCurrencyName()
+        {
+            if (Enum.IsDefined(typeof(CurrencyType), (int)StaticId))
+                return SplitPascalCase(((CurrencyType)StaticId).ToString());
+
+            return $"Currency {StaticId}";
+        }
+
+        private static string SplitPascalCase(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return value;
+
+            var result = new System.Text.StringBuilder(value.Length + 4);
+            for (int i = 0; i < value.Length; i++)
+            {
+                char c = value[i];
+                if (i > 0 && char.IsUpper(c) && !char.IsUpper(value[i - 1]))
+                    result.Append(' ');
+
+                result.Append(c);
+            }
+
+            return result.ToString();
         }
     }
 }

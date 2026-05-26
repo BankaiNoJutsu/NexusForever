@@ -7,7 +7,9 @@ namespace NexusForever.Game.Entity
     /// <summary>
     /// Builds entity-create auxiliary server packets in client registration order
     /// (<c>0x025F</c>..<c>0x0261</c>, <c>0x0263</c>, <c>0x0264</c>) before <see cref="ServerEntityCreate"/>.
-    /// Field values correlate <see cref="IWorldEntity.Guid"/> until native consumer mapping is verified.
+    /// Blocked field semantics currently reuse bounded create-surface values only; the 17-bit row
+    /// slots intentionally avoid wide identifiers such as <see cref="IWorldEntity.ActivePropId"/>
+    /// until native consumer mapping is verified.
     /// </summary>
     public static class EntityCreateAuxiliaryPacketBuilder
     {
@@ -88,7 +90,7 @@ namespace NexusForever.Game.Entity
             {
                 Value0 = entity.Guid,
                 Value1 = (uint)entity.Type,
-                Value2 = (uint)(entity.ActivePropId & 0xFFFFFFFFu),
+                Value2 = entity.DisplayInfo,
                 Value3 = entity.WorldSocketId,
                 Value4 = (uint)entity.Faction1,
                 Value5 = (uint)entity.Faction2,

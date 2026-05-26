@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using NexusForever.Game.Abstract.Entity.Movement.Generator;
 using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Entity.Movement;
 
 namespace NexusForever.Game.Entity.Movement.Generator
 {
@@ -15,9 +16,11 @@ namespace NexusForever.Game.Entity.Movement.Generator
         public List<Vector3> CalculatePath()
         {
             var points = new List<Vector3> { Begin };
+            if (!MovementMath.IsFinite(Begin) || !MovementMath.IsFinite(Final))
+                return points;
 
             float distance = Vector2.Distance(new Vector2(Begin.X, Begin.Z), new Vector2(Final.X, Final.Z));
-            if (distance <= float.Epsilon)
+            if (!MovementMath.IsFinite(distance) || distance <= float.Epsilon)
             {
                 points.Add(Final);
                 return points;

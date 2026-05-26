@@ -430,10 +430,47 @@ namespace NexusForever.Game.Challenges
                 if (entry == null || entry.ChallengeTypeEnum != (uint)ChallengeType.Combat)
                     continue;
 
-                if (entry.Target == 0u || entry.Target != creatureId)
+                if (!MatchesCombatTarget(entry, creatureId))
                     continue;
 
                 TryAdvanceProgress(challengeId);
+            }
+        }
+
+        private bool MatchesCombatTarget(ChallengeEntry entry, uint creatureId)
+        {
+            if (entry.Target == 0u)
+                return false;
+
+            if (entry.Target == creatureId)
+                return true;
+
+            TargetGroupEntry targetGroup = gameTableManager.TargetGroup?.GetEntry(entry.Target);
+            return TargetGroupContainsCreature(targetGroup, creatureId, new HashSet<uint>());
+        }
+
+        private bool TargetGroupContainsCreature(TargetGroupEntry entry, uint creatureId, ISet<uint> visitedTargetGroups)
+        {
+            if (entry == null || !visitedTargetGroups.Add(entry.Id))
+                return false;
+
+            switch ((TargetGroupType)entry.Type)
+            {
+                case TargetGroupType.CreatureIdGroup:
+                case TargetGroupType.CreatureIdListGroup:
+                    return entry.DataEntries?.Any(id => id == creatureId) == true;
+                case TargetGroupType.OtherTargetGroup:
+                case TargetGroupType.OtherTargetGroupCreatures:
+                    foreach (uint targetGroupId in entry.DataEntries?.Where(id => id != 0u) ?? [])
+                    {
+                        TargetGroupEntry childEntry = gameTableManager.TargetGroup?.GetEntry(targetGroupId);
+                        if (TargetGroupContainsCreature(childEntry, creatureId, visitedTargetGroups))
+                            return true;
+                    }
+
+                    return false;
+                default:
+                    return false;
             }
         }
 
@@ -604,6 +641,13 @@ namespace NexusForever.Game.Challenges
             }
 
             return count;
+        }
+
+        public uint GetCompletionCount(ushort challengeId)
+        {
+            return activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state)
+                ? state.CompletionCount
+                : 0u;
         }
     }
 }

@@ -30,6 +30,7 @@ namespace NexusForever.Game.Abstract.Loot
         public bool OnlyMasterLootable { get; init; }
         public uint RollTime { get; init; }
         public uint ItemQuality2Id { get; init; }
+        public uint ItemQualityVisualEffectIdLoot { get; init; }
         public ulong WinnerCharacterId { get; init; }
         public uint WinnerGuid { get; init; }
         public List<ulong> EligibleCharacterIds { get; init; } = [];

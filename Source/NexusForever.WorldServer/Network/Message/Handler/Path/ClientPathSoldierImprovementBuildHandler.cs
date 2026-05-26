@@ -15,7 +15,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Path
 
         public void HandleMessage(IWorldSession session, ClientPathSoldierImprovementBuild soldierBuild)
         {
-            log.LogDebug("ClientPathSoldierImprovementBuild: player={Player}", session.Player?.Guid);
+            log.LogDebug("ClientPathSoldierImprovementBuild: player={Player} towerDefenseId={TowerDefenseId}",
+                session.Player?.Guid, soldierBuild.PathSoldierTowerDefenseId);
+
+            session.Player?.PathManager.CompleteMissionBySoldierTowerDefenseId(soldierBuild.PathSoldierTowerDefenseId);
         }
     }
 }

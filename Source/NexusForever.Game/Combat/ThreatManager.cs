@@ -56,6 +56,9 @@ namespace NexusForever.Game.Combat
         /// </summary>
         public void UpdateThreat(IUnitEntity target, int threat)
         {
+            if (target == null || target.Guid == owner.Guid)
+                return;
+
             if (hostiles.TryGetValue(target.Guid, out IHostileEntity hostile))
                 UpdateThreat(hostile, threat);
             else
@@ -64,6 +67,9 @@ namespace NexusForever.Game.Combat
 
         public void SetThreat(IUnitEntity target, uint threat)
         {
+            if (target == null || target.Guid == owner.Guid)
+                return;
+
             IHostileEntity hostile = GetHostile(target.Guid);
             uint currentThreat = hostile?.Threat ?? 0u;
             if (currentThreat == threat)
@@ -92,12 +98,18 @@ namespace NexusForever.Game.Combat
             hostiles.Add(hostile.HatedUnitId, hostile);
 
             owner.OnThreatAddTarget(hostile);
+            if (!hostiles.ContainsKey(hostile.HatedUnitId))
+                return;
 
             log.Trace($"Added {hostile.HatedUnitId} to threat list for {owner.Guid}.");
             
             // place owner on threat list of new hostile
             if (target.ThreatManager.GetHostile(owner.Guid) == null)
+            {
                 target.ThreatManager.UpdateThreat(owner, 1);
+                if (target.ThreatManager.GetHostile(owner.Guid) == null)
+                    RemoveHostile(target.Guid);
+            }
         }
 
         /// <summary>

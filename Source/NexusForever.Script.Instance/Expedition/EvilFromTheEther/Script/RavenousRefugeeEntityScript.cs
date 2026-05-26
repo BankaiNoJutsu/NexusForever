@@ -28,8 +28,10 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
         /// <summary>
         /// Invoked when <see cref="IGridEntity"/> is added to <see cref="IBaseMap"/>.
         /// </summary>
-        public void OnAddToMap(IBaseMap map)
+        public override void OnAddToMap(IBaseMap map)
         {
+            base.OnAddToMap(map);
+
             ISpellParameters spellParameters = spellParametersFactory.Resolve();
             spellParameters.PrimaryTargetId = entity.Guid;
             entity.CastSpell(87237, spellParameters);

@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Entity.Movement.Spline;
 using NexusForever.Game.Abstract.Entity.Movement.Spline.Mode;
 using NexusForever.Game.Abstract.Entity.Movement.Spline.Template;
 using NexusForever.Game.Abstract.Entity.Movement.Spline.Type;
+using NexusForever.Game.Entity.Movement;
 using NexusForever.Game.Static.Entity.Movement.Spline;
 
 namespace NexusForever.Game.Entity.Movement.Spline
@@ -34,7 +35,17 @@ namespace NexusForever.Game.Entity.Movement.Spline
         /// <remarks>
         /// Value will be between 0 and t max (usually 1).
         /// </remarks>
-        public float Offset => Position / (Type.Length + (Type.DelayLength * Speed));
+        public float Offset
+        {
+            get
+            {
+                float length = Type.Length + (Type.DelayLength * Speed);
+                if (!MovementMath.IsValidSpeed(length))
+                    return 1f;
+
+                return Position / length;
+            }
+        }
 
         public float InverseTotalDuration { get; private set; }
 
@@ -58,7 +69,7 @@ namespace NexusForever.Game.Entity.Movement.Spline
         /// </summary>
         public void Initialise(ISplineTemplate template, SplineMode mode, float speed)
         {
-            if (speed < float.Epsilon)
+            if (!MovementMath.IsValidSpeed(speed))
                 throw new ArgumentOutOfRangeException();
 
             Speed = speed;
@@ -103,10 +114,27 @@ namespace NexusForever.Game.Entity.Movement.Spline
         /// </remarks>
         private void CalculateOffsets()
         {
+            if (Type.Length <= float.Epsilon)
+            {
+                Points[1].Offsets.Add(0f);
+                Points[^2].Offsets.Add(1f);
+                InverseTotalDuration = 0f;
+                return;
+            }
+
             float v12 = Type.Length / Speed;
             float v12WithDelay = v12 + Type.DelayLength;
-            float v14 = v12 / Points[^2].FrameTime;
             float v15 = 1f / v12WithDelay;
+
+            if (!MovementMath.IsFinite(Points[^2].FrameTime) || Points[^2].FrameTime <= float.Epsilon)
+            {
+                Points[1].Offsets.Add(0f);
+                Points[^2].Offsets.Add(1f);
+                InverseTotalDuration = MovementMath.IsFinite(v15) ? v15 : 0f;
+                return;
+            }
+
+            float v14 = v12 / Points[^2].FrameTime;
             float totalDelay = 0f;
 
             for (int i = 1; i < Points.Count - 2; i++)
@@ -151,6 +179,12 @@ namespace NexusForever.Game.Entity.Movement.Spline
                 return;
 
             float delta = (float)(lastTick * Speed);
+            if (!MovementMath.IsFinite(delta))
+            {
+                IsFinialised = true;
+                return;
+            }
+
             Position += delta;
 
             ISplineModeInterpolatedOffset result = Mode.GetInterpolatedOffset(Offset);
@@ -203,7 +237,11 @@ namespace NexusForever.Game.Entity.Movement.Spline
                 v25 = point2.Lengths[index2].Delay * InverseTotalDuration;
 
             float v26 = (point.Lengths[index].Delay * InverseTotalDuration) + point.Offsets[index];
-            float v54 = (offset - v26) * (1.0f / (point2.Offsets[index2] - v25 - v26));
+            float divisor = point2.Offsets[index2] - v25 - v26;
+            if (!MovementMath.IsFinite(divisor) || MathF.Abs(divisor) <= float.Epsilon)
+                return point.Lengths[index].T;
+
+            float v54 = (offset - v26) * (1.0f / divisor);
 
             return (tLength * Math.Clamp(v54, 0.0f, 1.0f)) + point.Lengths[index].T;
         }
@@ -231,7 +269,10 @@ namespace NexusForever.Game.Entity.Movement.Spline
             float t = CalculateT(result.Offset, point, index, point2, index2);
             Vector3 rotation = Type.GetInterpolatedRotation(point, Points[point.Index + 1], t);
 
-            Vector3 vector = Vector3.Normalize(rotation);
+            Vector3 vector = MovementMath.NormaliseOrZero(rotation);
+            if (vector == Vector3.Zero)
+                return Vector3.Zero;
+
             if (Direction == SplineDirection.Backward)
                 vector = -vector;
 

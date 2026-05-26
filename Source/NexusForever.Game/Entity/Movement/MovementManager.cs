@@ -27,6 +27,9 @@ namespace NexusForever.Game.Entity.Movement
 {
     public class MovementManager : IMovementManager
     {
+        private const int FollowSpreadSlotCount = 5;
+        private const float FollowSpreadAngleStep = 0.2617994f;
+
         /// <summary>
         /// Owner <see cref="IWorldEntity"/> for the <see cref="IMovementManager"/>.
         /// </summary>
@@ -396,7 +399,13 @@ namespace NexusForever.Game.Entity.Movement
             if (!ServerControl)
                 return;
 
-            positionCommandGroup.SetPositionKeys(times, positions);
+            if (!TryPreparePositionKeys(times, positions, out List<uint> preparedTimes, out List<Vector3> preparedPositions, out Vector3 fallbackPosition))
+            {
+                StopInvalidPositionPath(fallbackPosition);
+                return;
+            }
+
+            positionCommandGroup.SetPositionKeys(preparedTimes, preparedPositions);
         }
 
         /// <summary>
@@ -407,7 +416,13 @@ namespace NexusForever.Game.Entity.Movement
             if (!ServerControl)
                 return;
 
-            positionCommandGroup.SetPositionPath(nodes, type, mode, speed);
+            if (!TryPreparePositionPath(nodes, type, speed, out List<Vector3> preparedNodes, out Vector3 fallbackPosition))
+            {
+                StopInvalidPositionPath(fallbackPosition);
+                return;
+            }
+
+            positionCommandGroup.SetPositionPath(preparedNodes, type, mode, speed);
         }
 
         /// <summary>
@@ -730,11 +745,17 @@ namespace NexusForever.Game.Entity.Movement
             if (!ServerControl)
                 return;
 
+            if (!TryPreparePositionPath(nodes, type, speed, out List<Vector3> preparedNodes, out Vector3 fallbackPosition))
+            {
+                StopInvalidPositionPath(fallbackPosition);
+                return;
+            }
+
             SetState(StateFlags.Move);
             SetMoveDefaults(false);
             SetRotationDefaults();
 
-            SetPositionPath(nodes, type, mode, speed);
+            positionCommandGroup.SetPositionPath(preparedNodes, type, mode, speed);
         }
 
         /// <summary>
@@ -772,6 +793,34 @@ namespace NexusForever.Game.Entity.Movement
         }
 
         /// <summary>
+        /// Launch a path-generated linear spline to the supplied destination.
+        /// </summary>
+        public void LaunchPath(Vector3 position, float speed, SplineMode mode = SplineMode.OneShot)
+        {
+            if (!ServerControl)
+                return;
+
+            Vector3 begin = positionCommandGroup.GetPosition();
+            if (!MovementMath.IsFinite(begin))
+                begin = Owner.Position;
+
+            if (!MovementMath.IsFinite(begin) || !MovementMath.IsFinite(position))
+            {
+                StopInvalidPositionPath(MovementMath.IsFinite(begin) ? begin : Owner.Position);
+                return;
+            }
+
+            var generator = new PathMovementGenerator
+            {
+                Begin = begin,
+                Final = position,
+                Map   = Owner.Map
+            };
+
+            LaunchGenerator(generator, speed, mode);
+        }
+
+        /// <summary>
         /// Launch a new follow spline, following the supplied <see cref="IWorldEntity"/> at distance.
         /// </summary>
         public void Follow(IWorldEntity entity, float distance)
@@ -779,24 +828,118 @@ namespace NexusForever.Game.Entity.Movement
             if (!ServerControl)
                 return;
 
+            Vector3 begin = positionCommandGroup.GetPosition();
+            if (!MovementMath.IsFinite(begin))
+                begin = Owner.Position;
+
+            if (!MovementMath.IsFinite(begin) || !MovementMath.IsFinite(entity.Position))
+            {
+                StopInvalidPositionPath(MovementMath.IsFinite(begin) ? begin : Owner.Position);
+                return;
+            }
+
             SetState(StateFlags.Move);
             SetMoveDefaults(false);
             SetRotationFaceUnit(entity.Guid);
 
-            // angle is directly behind entity being followed
-            float angle = -entity.Rotation.X;
-            angle += MathF.PI / 2;
+            // Start behind the target and apply a small deterministic spread so multiple followers do not stack.
+            float angle = MovementMath.IsFinite(entity.Rotation.X)
+                ? -entity.Rotation.X + MathF.PI / 2f
+                : MathF.Atan2(begin.Z - entity.Position.Z, begin.X - entity.Position.X);
 
-            var generator = new DirectMovementGenerator
+            float followDistance = MovementMath.IsFinite(distance) && distance > 0f
+                ? distance
+                : 0f;
+            angle += GetFollowSpreadAngleOffset(entity, followDistance);
+
+            var generator = new PathMovementGenerator
             {
-                Begin = positionCommandGroup.GetPosition(),
-                Final = entity.Position.GetPoint2D(angle, distance),
+                Begin = begin,
+                Final = entity.Position.GetPoint2D(angle, followDistance),
                 Map   = entity.Map
             };
 
             List<Vector3> nodes = generator.CalculatePath();
-            float speed = Math.Max(entity.MovementManager.GetVelocity().Length(), 8f);
+            float targetSpeed = entity.MovementManager.GetVelocity().Length();
+            float speed = MovementMath.IsFinite(targetSpeed)
+                ? Math.Max(targetSpeed, 8f)
+                : 8f;
             SetPositionPath(nodes, SplineType.Linear, SplineMode.OneShot, speed);
+        }
+
+        private float GetFollowSpreadAngleOffset(IWorldEntity target, float followDistance)
+        {
+            if (followDistance <= 0f || Owner?.Guid == 0u || target?.Guid == 0u)
+                return 0f;
+
+            int slot = (int)(Owner.Guid % FollowSpreadSlotCount) - (FollowSpreadSlotCount / 2);
+            return slot * FollowSpreadAngleStep;
+        }
+
+        private bool TryPreparePositionPath(List<Vector3> nodes, SplineType type, float speed, out List<Vector3> preparedNodes, out Vector3 fallbackPosition)
+        {
+            preparedNodes = [];
+            fallbackPosition = MovementMath.IsFinite(Owner.Position)
+                ? Owner.Position
+                : Vector3.Zero;
+
+            if (!MovementMath.IsValidSpeed(speed) || nodes == null || nodes.Count == 0)
+                return false;
+
+            foreach (Vector3 node in nodes)
+            {
+                if (!MovementMath.IsFinite(node))
+                    return false;
+
+                fallbackPosition = node;
+                if (preparedNodes.Count == 0 || Vector3.DistanceSquared(preparedNodes[^1], node) > float.Epsilon)
+                    preparedNodes.Add(node);
+            }
+
+            int minimumNodes = type == SplineType.Linear ? 2 : 4;
+            return preparedNodes.Count >= minimumNodes;
+        }
+
+        private bool TryPreparePositionKeys(List<uint> times, List<Vector3> positions, out List<uint> preparedTimes, out List<Vector3> preparedPositions, out Vector3 fallbackPosition)
+        {
+            preparedTimes = [];
+            preparedPositions = [];
+            fallbackPosition = MovementMath.IsFinite(Owner.Position)
+                ? Owner.Position
+                : Vector3.Zero;
+
+            if (times == null || positions == null || times.Count != positions.Count || times.Count < 2)
+                return false;
+
+            uint previousTime = times[0];
+            for (int i = 0; i < times.Count; i++)
+            {
+                if (i != 0 && times[i] < previousTime)
+                    return false;
+
+                Vector3 position = positions[i];
+                if (!MovementMath.IsFinite(position))
+                    return false;
+
+                fallbackPosition = position;
+                preparedTimes.Add(times[i]);
+                preparedPositions.Add(position);
+                previousTime = times[i];
+            }
+
+            return true;
+        }
+
+        private void StopInvalidPositionPath(Vector3 fallbackPosition)
+        {
+            if (!MovementMath.IsFinite(fallbackPosition))
+                fallbackPosition = MovementMath.IsFinite(Owner.Position)
+                    ? Owner.Position
+                    : Vector3.Zero;
+
+            SetMoveDefaults(false);
+            SetStateDefault();
+            SetPosition(fallbackPosition, true);
         }
     }
 }

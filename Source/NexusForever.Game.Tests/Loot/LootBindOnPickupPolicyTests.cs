@@ -8,11 +8,14 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Loot;
+using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
+using NexusForever.Network.World.Chat.Model;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Chat;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.GameTable.Configuration.Model;
@@ -83,7 +86,12 @@ public class LootBindOnPickupPolicyTests
                 sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
             Assert.Collection(sessionCalls,
                 call => Assert.IsType<ServerLootBindOnPickup>(call.Arguments[0]),
-                call => Assert.IsType<ServerLootGrant>(call.Arguments[0]));
+                call => Assert.IsType<ServerLootGrant>(call.Arguments[0]),
+                call =>
+                {
+                    var chat = Assert.IsType<ServerChat>(call.Arguments[0]);
+                    AssertStaticItemLootChat(chat, BindOnPickupItemId, "You receive [I].");
+                });
         }
         finally
         {
@@ -113,6 +121,20 @@ public class LootBindOnPickupPolicyTests
         {
             LegacyServiceProvider.Provider = previousProvider;
         }
+    }
+
+    private static void AssertStaticItemLootChat(ServerChat chat, uint itemId, string expectedText)
+    {
+        Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
+        Assert.Equal(expectedText, chat.Text);
+
+        ChatFormat format = Assert.Single(chat.Formats);
+        Assert.Equal(ChatFormatType.ItemId, format.Type);
+        Assert.Equal(12, format.StartIndex);
+        Assert.Equal(15, format.StopIndex);
+
+        var itemFormat = Assert.IsType<ChatFormatItemId>(format.Model);
+        Assert.Equal(itemId, itemFormat.Item2Id);
     }
 
     private static LootInstance CreateLootInstance(IPlayer player)

@@ -59,6 +59,12 @@ internal sealed class TestPlayerBuilder
         return this;
     }
 
+    public TestPlayerBuilder WithCurrencyManager(ICurrencyManager currencyManager)
+    {
+        playerProxy.SetProperty(nameof(IPlayer.CurrencyManager), currencyManager);
+        return this;
+    }
+
     public TestPlayerBuilder WithSession(IGameSession session)
     {
         playerProxy.SetProperty(nameof(IPlayer.Session), session);

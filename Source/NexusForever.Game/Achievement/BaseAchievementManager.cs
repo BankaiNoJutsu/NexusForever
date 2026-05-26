@@ -280,12 +280,26 @@ namespace NexusForever.Game.Achievement
                 && entry.WorldZoneId != objectId)
                 return false;
 
+            if (RequiresExplicitObjectMatch((AchievementType)entry.AchievementTypeId)
+                && entry.ObjectId == 0u
+                && entry.ObjectIdAlt == 0u)
+                return false;
+
             if (entry.ObjectId != 0u && entry.ObjectId != objectId)
                 return false;
             if (entry.ObjectIdAlt != 0u && entry.ObjectIdAlt != objectIdAlt)
                 return false;
 
             return true;
+        }
+
+        private static bool RequiresExplicitObjectMatch(AchievementType type)
+        {
+            return type switch
+            {
+                AchievementType.KillCreatureGroup => true,
+                _ => false
+            };
         }
 
         /// <summary>
