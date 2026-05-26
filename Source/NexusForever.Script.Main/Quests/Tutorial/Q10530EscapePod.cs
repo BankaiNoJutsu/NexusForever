@@ -1,12 +1,12 @@
-using System.Numerics;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
+using NexusForever.Game.Static.Tutorial;
+using NexusForever.Script.Main.Tutorial;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
-using static NexusForever.Game.Static.Tutorial.StarterTutorialDefinition;
 
 namespace NexusForever.Script.Main.Quests.Tutorial
 {
@@ -19,26 +19,30 @@ namespace NexusForever.Script.Main.Quests.Tutorial
     [ScriptFilterOwnerId(10530u)]
     public class Q10530EscapePodQuestScript : IQuestScript, IOwnedScript<IQuest>
     {
-        private readonly record struct DepartureDestination(string Name, ushort WorldId, Vector3 Position);
-
-        private const ushort CrimsonIsleWorldId = 870;
-        private const ushort LevianBayWorldId = 1387;
-        private static readonly Vector3 CrimsonIsleArrival = new(-8261.3984f, -995.471f, -242.3648f);
-        private static readonly Vector3 LevianBayArrival = new(-3835.341f, -980.2174f, -6050.524f);
-
         private readonly ILogger<Q10530EscapePodQuestScript> log;
+        private readonly IGlobalQuestManager globalQuestManager;
         private IQuest owner;
+        private TutorialCommunicatorSequence communicatorSequence;
 
-        public Q10530EscapePodQuestScript(ILogger<Q10530EscapePodQuestScript> log)
+        public Q10530EscapePodQuestScript(
+            ILogger<Q10530EscapePodQuestScript> log,
+            IGlobalQuestManager globalQuestManager)
         {
-            this.log = log;
+            this.log                = log;
+            this.globalQuestManager = globalQuestManager;
         }
 
         public void OnLoad(IQuest owner)
         {
             this.owner = owner;
+            communicatorSequence = new TutorialCommunicatorSequence(owner, globalQuestManager);
             log.LogDebug("Loaded quest {QuestId} for character {CharacterId}: faction={Faction}, state={QuestState}.",
                 owner.Id, owner.Player.CharacterId, owner.Player.Faction1, owner.State);
+        }
+
+        public void OnObjectiveUpdate(IQuestObjective objective)
+        {
+            communicatorSequence.TrySendWhenComplete(objective, 21347u, 8064u);
         }
 
         public void OnQuestStateChange(QuestState newState, QuestState oldState)
@@ -49,7 +53,7 @@ namespace NexusForever.Script.Main.Quests.Tutorial
             if (newState != QuestState.Completed)
                 return;
 
-            DepartureDestination destination = ResolveDepartureDestination(owner.Player.StarterTutorialDepartureTerminalCreatureId);
+            StarterTutorialDepartureDestination destination = StarterTutorialDepartureRouting.ResolveDominionDestination(owner.Player.StarterTutorialDepartureTerminalCreatureId);
             if (!owner.Player.CanTeleport())
             {
                 log.LogWarning("Quest {QuestId} completed but player {CharacterId} cannot teleport to {DestinationName} - CanTeleport returned false.",
@@ -64,20 +68,30 @@ namespace NexusForever.Script.Main.Quests.Tutorial
                 destination.Position.Z,
                 reason: TeleportReason.Relocate);
 
+            GrantWelcomeQuest(destination);
+
             log.LogInformation("Quest {QuestId} completed - teleported player {CharacterId} to {DestinationName} (world {WorldId}, {X:F0},{Y:F0},{Z:F0}) from terminal {TerminalCreatureId}.",
                 owner.Id, owner.Player.CharacterId, destination.Name, destination.WorldId,
                 destination.Position.X, destination.Position.Y, destination.Position.Z,
                 owner.Player.StarterTutorialDepartureTerminalCreatureId ?? 0u);
         }
 
-        private static DepartureDestination ResolveDepartureDestination(uint? terminalCreatureId)
+        private void GrantWelcomeQuest(StarterTutorialDepartureDestination destination)
         {
-            return terminalCreatureId switch
+            if (owner.Player.QuestManager.GetQuestState(destination.WelcomeQuestId) != null)
+                return;
+
+            IQuestInfo questInfo = globalQuestManager.GetQuestInfo(destination.WelcomeQuestId);
+            if (questInfo == null)
             {
-                DominionCrimsonIsleDepartureTerminalCreatureId => new DepartureDestination("Crimson Isle", CrimsonIsleWorldId, CrimsonIsleArrival),
-                DominionLevianBayDepartureTerminalCreatureId => new DepartureDestination("Levian Bay", LevianBayWorldId, LevianBayArrival),
-                _ => new DepartureDestination("Crimson Isle", CrimsonIsleWorldId, CrimsonIsleArrival)
-            };
+                log.LogWarning("Welcome quest {WelcomeQuestId} info missing for character {CharacterId} after Rider's Reef departure to {DestinationName}.",
+                    destination.WelcomeQuestId, owner.Player.CharacterId, destination.Name);
+                return;
+            }
+
+            owner.Player.QuestManager.QuestAdd(questInfo);
+            log.LogDebug("Granted welcome quest {WelcomeQuestId} to character {CharacterId} after Rider's Reef departure to {DestinationName}.",
+                destination.WelcomeQuestId, owner.Player.CharacterId, destination.Name);
         }
     }
 }

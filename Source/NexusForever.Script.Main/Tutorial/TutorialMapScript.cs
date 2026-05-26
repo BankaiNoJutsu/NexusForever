@@ -13,6 +13,7 @@ using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.IO.Map;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 using static NexusForever.Game.Static.Tutorial.StarterTutorialDefinition;
@@ -73,6 +74,8 @@ namespace NexusForever.Script.Main.Tutorial
         private const uint DominionCombatDagunCreatureId = 73465u;
         private const uint ExileCombatTurretCreatureId = 73494u;
         private const uint DominionCombatTurretCreatureId = 74862u;
+        private const Faction TutorialDominionCombatFaction = (Faction)1441u;
+        private const Faction TutorialExileCombatFaction = (Faction)1442u;
 
         // Post-combat ship deck (zone 5968): quests 10519/10522 NPCs
         private const uint ShipDeckNpcA = 73498u;
@@ -127,10 +130,12 @@ namespace NexusForever.Script.Main.Tutorial
         private bool exileDepartureEntitiesSpawned;
         private bool dominionDepartureEntitiesSpawned;
         private readonly HashSet<uint> initialisedPlayerGuids = [];
+        private readonly HashSet<uint> deferredCombatInitialisationPlayerGuids = [];
 
         #region Dependency Injection
 
         private readonly ICinematicFactory cinematicFactory;
+        private readonly IEntityCacheManager entityCacheManager;
         private readonly IEntityFactory entityFactory;
         private readonly IGlobalQuestManager globalQuestManager;
         private readonly IGameTableManager gameTableManager;
@@ -139,12 +144,14 @@ namespace NexusForever.Script.Main.Tutorial
         public TutorialMapScript(
             ILogger<TutorialMapScript> log,
             ICinematicFactory cinematicFactory,
+            IEntityCacheManager entityCacheManager,
             IEntityFactory entityFactory,
             IGlobalQuestManager globalQuestManager,
             IGameTableManager gameTableManager)
         {
             this.log               = log;
             this.cinematicFactory   = cinematicFactory;
+            this.entityCacheManager = entityCacheManager;
             this.entityFactory      = entityFactory;
             this.globalQuestManager = globalQuestManager;
             this.gameTableManager   = gameTableManager;
@@ -156,8 +163,6 @@ namespace NexusForever.Script.Main.Tutorial
         {
             this.owner = owner;
             EnsureTutorialTriggers();
-            EnsureExileCombatSimulationEntities();
-            EnsureDominionCombatSimulationEntities();
             EnsureShipDeckNpcs();
             EnsureShipInteriorEntities();
             EnsureCryopodNpcs();
@@ -172,6 +177,9 @@ namespace NexusForever.Script.Main.Tutorial
 
             foreach (IPlayer player in owner.Search(Vector3.Zero, null, matchAllPlayers))
             {
+                if (deferredCombatInitialisationPlayerGuids.Remove(player.Guid))
+                    continue;
+
                 if (!initialisedPlayerGuids.Add(player.Guid))
                     continue;
 
@@ -185,6 +193,7 @@ namespace NexusForever.Script.Main.Tutorial
                     FormatQuestStates(player, StarterQuestIds),
                     FormatQuestStates(player, FollowUpQuestIds));
 
+                EnsureCombatSimulationEntities(player);
                 EnsureTutorialQuests(player);
             }
         }
@@ -194,7 +203,7 @@ namespace NexusForever.Script.Main.Tutorial
             if (entity is not IPlayer player)
                 return;
 
-            initialisedPlayerGuids.Add(player.Guid);
+            deferredCombatInitialisationPlayerGuids.Add(player.Guid);
             bool hadTutorialState = HasAnyQuestState(player, StarterQuestIds)
                 || HasAnyQuestState(player, FollowUpQuestIds);
 
@@ -223,6 +232,23 @@ namespace NexusForever.Script.Main.Tutorial
         public void OnRemoveFromMap(IGridEntity entity)
         {
             initialisedPlayerGuids.Remove(entity.Guid);
+            deferredCombatInitialisationPlayerGuids.Remove(entity.Guid);
+        }
+
+        private void EnsureCombatSimulationEntities(IPlayer player)
+        {
+            if (player == null || owner == null)
+                return;
+
+            switch (player.Faction1)
+            {
+                case Faction.Exile:
+                    EnsureExileCombatSimulationEntities();
+                    break;
+                case Faction.Dominion:
+                    EnsureDominionCombatSimulationEntities();
+                    break;
+            }
         }
 
         private void EnsureTutorialTriggers()
@@ -271,9 +297,14 @@ namespace NexusForever.Script.Main.Tutorial
                 return;
             }
 
-            if (owner.Search(ToVector3(start), 30f, new CreatureSearchCheck(ExileCombatDagunCreatureId)).Any())
+            if (HasActiveCombatLaneAnchors(
+                (ToVector3(easyMine), 5f, 73463u),
+                (ToVector3(mediumMine), 5f, 73667u),
+                (ToVector3(hardMine), 5f, 73668u),
+                (ToVector3(turret00), 5f, ExileCombatTurretCreatureId),
+                (ToVector3(turret01), 5f, ExileCombatTurretCreatureId)))
             {
-                log.LogDebug("Skipping Rider's Reef Exile combat lane fallback on map {MapId}: imported combat entities are already active.",
+                log.LogDebug("Skipping Rider's Reef Exile combat lane fallback on map {MapId}: imported combat anchor entities are already active.",
                     owner.Entry.Id);
                 exileCombatLaneSpawned = true;
                 return;
@@ -289,8 +320,8 @@ namespace NexusForever.Script.Main.Tutorial
             SpawnTutorialEntity<ISimpleCollidableEntity>(73667u, ToVector3(mediumMine));
             SpawnTutorialEntity<ISimpleCollidableEntity>(73668u, ToVector3(hardMine));
 
-            SpawnTutorialEntity<INonPlayerEntity>(ExileCombatTurretCreatureId, ToVector3(turret00));
-            SpawnTutorialEntity<INonPlayerEntity>(ExileCombatTurretCreatureId, ToVector3(turret01));
+            SpawnTutorialEntity<INonPlayerEntity>(ExileCombatTurretCreatureId, ToVector3(turret00), factionOverride: TutorialDominionCombatFaction);
+            SpawnTutorialEntity<INonPlayerEntity>(ExileCombatTurretCreatureId, ToVector3(turret01), factionOverride: TutorialDominionCombatFaction);
 
             Vector3 finalPosition = ToVector3(final);
             SpawnTutorialEntity<INonPlayerEntity>(73492u, finalPosition + new Vector3(-9f, 0f, -6f));
@@ -298,7 +329,7 @@ namespace NexusForever.Script.Main.Tutorial
             SpawnTutorialEntity<INonPlayerEntity>(73492u, finalPosition + new Vector3(14f, 0f, -9f));
 
             exileCombatLaneSpawned = true;
-            log.LogDebug("Spawned Rider's Reef Exile combat lane on map {MapId}: dagun=5, mines=3, turrets=2, legionnaires=3.",
+            log.LogDebug("Spawned Rider's Reef Exile combat lane on map {MapId}: battleBeasts=5, mines=3, turrets=2, legionnaires=3.",
                 owner.Entry.Id);
         }
 
@@ -322,9 +353,14 @@ namespace NexusForever.Script.Main.Tutorial
                 return;
             }
 
-            if (owner.Search(ToVector3(start), 30f, new CreatureSearchCheck(DominionCombatDagunCreatureId)).Any())
+            if (HasActiveCombatLaneAnchors(
+                (ToVector3(easyMine), 5f, 73463u),
+                (ToVector3(mediumMine), 5f, 73667u),
+                (ToVector3(hardMine), 5f, 73668u),
+                (ToVector3(turret00), 5f, DominionCombatTurretCreatureId),
+                (ToVector3(turret01), 5f, DominionCombatTurretCreatureId)))
             {
-                log.LogDebug("Skipping Rider's Reef Dominion combat lane fallback on map {MapId}: imported combat entities are already active.",
+                log.LogDebug("Skipping Rider's Reef Dominion combat lane fallback on map {MapId}: imported combat anchor entities are already active.",
                     owner.Entry.Id);
                 dominionCombatLaneSpawned = true;
                 return;
@@ -340,8 +376,8 @@ namespace NexusForever.Script.Main.Tutorial
             SpawnTutorialEntity<ISimpleCollidableEntity>(73667u, ToVector3(mediumMine));
             SpawnTutorialEntity<ISimpleCollidableEntity>(73668u, ToVector3(hardMine));
 
-            SpawnTutorialEntity<INonPlayerEntity>(DominionCombatTurretCreatureId, ToVector3(turret00));
-            SpawnTutorialEntity<INonPlayerEntity>(DominionCombatTurretCreatureId, ToVector3(turret01));
+            SpawnTutorialEntity<INonPlayerEntity>(DominionCombatTurretCreatureId, ToVector3(turret00), factionOverride: TutorialExileCombatFaction);
+            SpawnTutorialEntity<INonPlayerEntity>(DominionCombatTurretCreatureId, ToVector3(turret01), factionOverride: TutorialExileCombatFaction);
 
             Vector3 elitePosition = ToVector3(elite);
             SpawnTutorialEntity<INonPlayerEntity>(73473u, elitePosition + new Vector3(-9f, 0f, -6f));
@@ -358,7 +394,8 @@ namespace NexusForever.Script.Main.Tutorial
             Vector3 position,
             Vector3 rotation = default,
             byte? questChecklistIdx = null,
-            EntityCreateFlag createFlags = 0) where T : class, IWorldEntity
+            EntityCreateFlag createFlags = 0,
+            Faction? factionOverride = null) where T : class, IWorldEntity
         {
             T entity = entityFactory.CreateEntity<T>();
             if (entity == null)
@@ -375,6 +412,12 @@ namespace NexusForever.Script.Main.Tutorial
             if (questChecklistIdx.HasValue)
                 entity.SetQuestChecklistIndex(questChecklistIdx.Value);
 
+            if (factionOverride.HasValue)
+            {
+                entity.Faction1 = factionOverride.Value;
+                entity.Faction2 = factionOverride.Value;
+            }
+
             entity.CreateFlags |= createFlags;
 
             owner.EnqueueAdd(entity, new TutorialMapPosition
@@ -390,6 +433,74 @@ namespace NexusForever.Script.Main.Tutorial
         private static Vector3 ToVector3(WorldLocation2Entry worldLocation)
         {
             return new Vector3(worldLocation.Position0, worldLocation.Position1, worldLocation.Position2);
+        }
+
+        private bool HasActiveCombatLaneAnchors(params (Vector3 Position, float Radius, uint CreatureId)[] anchors)
+        {
+            IEntityCache entityCache = entityCacheManager.GetEntityCache((ushort)owner.Entry.Id);
+
+            foreach ((Vector3 position, float radius, uint creatureId) in anchors)
+            {
+                if (owner.Search(Vector3.Zero, null, new CreatureSearchCheck(creatureId))
+                    .Any(entity => IsWithinAnchorRadius(entity.Position, position, radius)))
+                {
+                    continue;
+                }
+
+                if (!HasCachedCombatAnchor(entityCache, position, radius, creatureId))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static bool HasCachedCombatAnchor(IEntityCache entityCache, Vector3 anchorPosition, float radius, uint creatureId)
+        {
+            if (entityCache == null)
+                return false;
+
+            for (float z = anchorPosition.Z - radius; z < anchorPosition.Z + radius + MapDefines.GridSize; z += MapDefines.GridSize)
+            {
+                for (float x = anchorPosition.X - radius; x < anchorPosition.X + radius + MapDefines.GridSize; x += MapDefines.GridSize)
+                {
+                    if (!TryGetGridCoord(new Vector3(x, 0f, z), out uint gridX, out uint gridZ))
+                        continue;
+
+                    if (entityCache.GetEntities(gridX, gridZ)
+                        .Any(model => model.Creature == creatureId
+                            && IsWithinAnchorRadius(new Vector3(model.X, model.Y, model.Z), anchorPosition, radius)))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryGetGridCoord(Vector3 vector, out uint gridX, out uint gridZ)
+        {
+            int candidateGridX = MapDefines.WorldGridOrigin + (int)MathF.Floor(vector.X / MapDefines.GridSize);
+            int candidateGridZ = MapDefines.WorldGridOrigin + (int)MathF.Floor(vector.Z / MapDefines.GridSize);
+
+            if (candidateGridX < 0 || candidateGridX >= MapDefines.WorldGridCount
+                || candidateGridZ < 0 || candidateGridZ >= MapDefines.WorldGridCount)
+            {
+                gridX = 0u;
+                gridZ = 0u;
+                return false;
+            }
+
+            gridX = (uint)candidateGridX;
+            gridZ = (uint)candidateGridZ;
+            return true;
+        }
+
+        private static bool IsWithinAnchorRadius(Vector3 entityPosition, Vector3 anchorPosition, float radius)
+        {
+            var entityPosition2D = new Vector2(entityPosition.X, entityPosition.Z);
+            var anchorPosition2D = new Vector2(anchorPosition.X, anchorPosition.Z);
+            return Vector2.DistanceSquared(entityPosition2D, anchorPosition2D) <= radius * radius;
         }
 
         private void EnsureShipDeckNpcs()
@@ -618,15 +729,19 @@ namespace NexusForever.Script.Main.Tutorial
             if (movementQuestId == 0)
                 return;
 
-            GrantQuestIfMissing(player, movementQuestId);
-            GrantQuestIfMissing(player, hoverboardQuestId);
+            QuestState? movementQuestState = player.QuestManager.GetQuestState(movementQuestId);
+            if (movementQuestState == null)
+                GrantQuestIfMissing(player, movementQuestId);
+            else if (movementQuestState == QuestState.Completed)
+                GrantQuestIfMissing(player, hoverboardQuestId);
+
             SyncTutorialAreaObjectives(player);
         }
 
-        private void GrantQuestIfMissing(IPlayer player, ushort questId)
+        private bool GrantQuestIfMissing(IPlayer player, ushort questId)
         {
             if (player.QuestManager.GetQuestState(questId) != null)
-                return;
+                return false;
 
             IQuestInfo questInfo = globalQuestManager.GetQuestInfo(questId);
             if (questInfo != null)
@@ -634,7 +749,10 @@ namespace NexusForever.Script.Main.Tutorial
                 player.QuestManager.QuestAdd(questInfo);
                 log.LogDebug("Granted Rider's Reef tutorial quest {QuestId} to character {CharacterId} (guid {PlayerGuid}) on map {MapId}.",
                     questId, player.CharacterId, player.Guid, owner?.Entry?.Id);
+                return true;
             }
+
+            return false;
         }
 
         private void SyncTutorialAreaObjectives(IPlayer player)

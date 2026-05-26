@@ -2,11 +2,13 @@ using System.Numerics;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Entity.Movement.Command.State;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
+using NexusForever.Shared;
 
 namespace NexusForever.Script.Main.Tutorial
 {
@@ -19,19 +21,25 @@ namespace NexusForever.Script.Main.Tutorial
         private const ushort ExileCombatQuestId = 10518;
         private const ushort DominionCombatQuestId = 10524;
         private const uint TutorialHoverboardSpellId = 85562u;
+        private const uint ExtraGasSpellId = 85424u;
+        private const uint HoverboardSprintVisualSpellId = 82298u;
         private const float BoosterRange = 4.5f;
-        private const float BoosterSpeed = 38f;
+        private const float BoosterSpeed = 57f;
 
         private static readonly TimeSpan boostCooldown = TimeSpan.FromMilliseconds(800d);
 
         private readonly Dictionary<uint, DateTime> playerBoosts = [];
 
+        private readonly IFactory<ISpellParameters> spellParametersFactory;
         private readonly ILogger<TutorialHoverboardBoosterEntityScript> log;
         private ISimpleEntity owner;
 
-        public TutorialHoverboardBoosterEntityScript(ILogger<TutorialHoverboardBoosterEntityScript> log)
+        public TutorialHoverboardBoosterEntityScript(
+            ILogger<TutorialHoverboardBoosterEntityScript> log,
+            IFactory<ISpellParameters> spellParametersFactory)
         {
-            this.log = log;
+            this.log                    = log;
+            this.spellParametersFactory = spellParametersFactory;
         }
 
         public void OnLoad(ISimpleEntity owner)
@@ -62,6 +70,7 @@ namespace NexusForever.Script.Main.Tutorial
 
             Vector3 direction = ResolveBoostDirection(player, mover);
             ApplyBoost(mover, direction);
+            CastBoosterEffects(player);
 
             playerBoosts[player.Guid] = now;
             log.LogDebug("Starter tutorial hoverboard booster applied for player {PlayerGuid}: booster={BoosterGuid}, mover={MoverGuid}, speed={Speed}, direction=({X}, {Y}, {Z}).",
@@ -105,6 +114,23 @@ namespace NexusForever.Script.Main.Tutorial
             return pilotGuid.HasValue
                 ? owner.Map?.GetEntity<IPlayer>(pilotGuid.Value)
                 : null;
+        }
+
+        private void CastBoosterEffects(IPlayer player)
+        {
+            player.CastSpell(ExtraGasSpellId, CreateSpellParameters(player));
+            player.CastSpell(HoverboardSprintVisualSpellId, CreateSpellParameters(player));
+        }
+
+        private ISpellParameters CreateSpellParameters(IPlayer player)
+        {
+            ISpellParameters spellParameters = spellParametersFactory.Resolve();
+            spellParameters.PrimaryTargetId        = player.Guid;
+            spellParameters.UserInitiatedSpellCast = false;
+            spellParameters.IgnoreGlobalCooldown   = true;
+            spellParameters.CancelActiveTrade      = true;
+            spellParameters.ClientRequestSource    = nameof(TutorialHoverboardBoosterEntityScript);
+            return spellParameters;
         }
 
         private static bool CanBoost(IPlayer player)

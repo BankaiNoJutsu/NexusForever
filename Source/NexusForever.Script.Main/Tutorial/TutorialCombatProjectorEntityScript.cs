@@ -129,13 +129,20 @@ namespace NexusForever.Script.Main.Tutorial
                     return;
                 }
 
+                activator.TryRecoverStarterTutorialQuestProgression();
+
+                QuestState? hoverboardStateAfterRecovery = activator.QuestManager.GetQuestState(hoverboardQuestId);
+                QuestState? combatStateAfterRecovery = activator.QuestManager.GetQuestState(combatQuestId);
+
                 activator.TeleportTo((ushort)destination.WorldId, destination.Position0, destination.Position1, destination.Position2);
-                log.LogDebug("Starter tutorial combat projector transported player {PlayerGuid} to combat simulation world location {WorldLocationId}: ({X}, {Y}, {Z}).",
+                log.LogDebug("Starter tutorial combat projector transported player {PlayerGuid} to combat simulation world location {WorldLocationId}: ({X}, {Y}, {Z}), hoverboardState={HoverboardState}, combatState={CombatState}.",
                     activator.Guid,
                     destinationWorldLocationId,
                     destination.Position0,
                     destination.Position1,
-                    destination.Position2);
+                    destination.Position2,
+                    hoverboardStateAfterRecovery?.ToString() ?? "None",
+                    combatStateAfterRecovery?.ToString() ?? "None");
             }));
         }
 
@@ -147,7 +154,7 @@ namespace NexusForever.Script.Main.Tutorial
             if (hoverboardState is not (QuestState.Accepted or QuestState.Achieved or QuestState.Completed))
                 return false;
 
-            IQuest hoverboardQuest = activator.QuestManager.GetActiveQuests().FirstOrDefault(q => q.Id == hoverboardQuestId);
+            IQuest hoverboardQuest = activator.QuestManager.GetActiveQuests()?.FirstOrDefault(q => q.Id == hoverboardQuestId);
             if (hoverboardQuest == null)
                 return false;
 

@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Cinematic;
 using NexusForever.Game.Abstract.Cinematic.Cinematics;
 using NexusForever.Game.Static.Cinematic;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Reputation;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message.Model.Cinematic;
 
@@ -126,6 +127,13 @@ namespace NexusForever.Game.Cinematic.Cinematics
 
         private void SetupTexts()
         {
+            if (Player.Faction1 == Faction.Dominion)
+            {
+                AddText(749288, 1500, 6400);
+                AddText(749289, 6500, 14900);
+                return;
+            }
+
             AddText(749303, 1500, 6400);
             AddText(749304, 6500, 14900);
         }

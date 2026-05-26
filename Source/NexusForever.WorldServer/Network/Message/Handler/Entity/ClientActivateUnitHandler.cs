@@ -1,6 +1,7 @@
 ﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Trade;
+using NexusForever.Game.Spell;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -13,6 +14,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
         private const uint TutorialHoverboardProjectorCreatureId = 73419u;
         private const uint TutorialHoverboardFinishCreatureId = 73735u;
+        private const uint TutorialHoverboardMountSpellId = 85562u;
         private const ushort TutorialWorldId = 3460;
 
         private readonly ITradeManager tradeManager;
@@ -57,6 +59,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 return;
             }
 
+            TryCastTutorialHoverboardMount(session, entity, nameof(ClientActivateUnit));
+
             entity.OnActivate(session.Player);
             tradeManager.Cancel(session.Player);
             entity.OnActivateSuccess(session.Player);
@@ -70,6 +74,24 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         private static bool IsTutorialHoverboardActivationEntity(IWorldEntity entity)
         {
             return entity.CreatureId is TutorialHoverboardProjectorCreatureId or TutorialHoverboardFinishCreatureId;
+        }
+
+        private static void TryCastTutorialHoverboardMount(IWorldSession session, IWorldEntity entity, string clientRequestSource)
+        {
+            if (entity.CreatureId != TutorialHoverboardProjectorCreatureId)
+                return;
+
+            var mountSpellParameters = new SpellParameters
+            {
+                PrimaryTargetId        = session.Player.Guid,
+                UserInitiatedSpellCast = false,
+                IgnoreGlobalCooldown   = true,
+                CancelActiveTrade      = true,
+                ClientRequestSource    = clientRequestSource
+            };
+
+            var castResult = session.Player.TryCastSpell(TutorialHoverboardMountSpellId, mountSpellParameters);
+            log.Debug($"Tutorial hoverboard direct activate mount cast: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, castResult={castResult}.");
         }
 
         private static bool TryRecoverTutorialActivationTarget(IWorldSession session, uint targetId, out IWorldEntity entity, string opcodeName)

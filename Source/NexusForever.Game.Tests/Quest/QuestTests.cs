@@ -2,10 +2,16 @@ using System.Collections.Immutable;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Account.Currency;
+using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Quest;
+using NexusForever.Game.Static.Account;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network;
@@ -144,6 +150,55 @@ public class QuestTests
         }
     }
 
+    [Theory]
+    [InlineData(10513, 10527)]
+    [InlineData(10521, 10532)]
+    public void SendInitialPackets_RidersReefMovementCompleteAndHoverboardActive_HidesCompletedMovementRoot(
+        ushort movementQuestId,
+        ushort hoverboardQuestId)
+    {
+        IPlayer player = CreatePlayer(out var sessionProxy);
+        var manager = new QuestManager(player, new CharacterModel());
+
+        AddCompletedQuest(manager, CreateQuest(movementQuestId, CreateQuestInfo(movementQuestId), QuestState.Completed));
+        AddActiveQuest(manager, CreateQuest(hoverboardQuestId, CreateQuestInfo(hoverboardQuestId), QuestState.Accepted, 21321u));
+
+        manager.SendInitialPackets();
+
+        ServerQuestInit init = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerQuestInit>()
+            .Single();
+
+        Assert.Empty(init.Completed);
+
+        ServerQuestInit.QuestActive activeQuest = Assert.Single(init.Active);
+        Assert.Equal(hoverboardQuestId, activeQuest.QuestId);
+        Assert.Equal(21321u, activeQuest.QuestObjectiveId);
+    }
+
+    [Fact]
+    public void SendInitialPackets_RidersReefMovementCompleteWithoutHoverboardActive_IncludesCompletedMovementRoot()
+    {
+        IPlayer player = CreatePlayer(out var sessionProxy);
+        var manager = new QuestManager(player, new CharacterModel());
+
+        AddCompletedQuest(manager, CreateQuest(10513, CreateQuestInfo(10513), QuestState.Completed));
+
+        manager.SendInitialPackets();
+
+        ServerQuestInit init = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(i => i.Arguments[0])
+            .OfType<ServerQuestInit>()
+            .Single();
+
+        ServerQuestInit.QuestComplete completedQuest = Assert.Single(init.Completed);
+        Assert.Equal((ushort)10513, completedQuest.QuestId);
+        Assert.Empty(init.Active);
+    }
+
     [Fact]
     public void ObjectiveUpdate_WhenSequentialObjectiveUnlocks_SendsCurrentObjectiveId()
     {
@@ -192,6 +247,203 @@ public class QuestTests
             quest.ObjectiveUpdate(QuestObjectiveType.KillCreature, 73464u, 5u);
 
             Assert.Equal(QuestStateFlags.Tracked | QuestStateFlags.Objective0Complete, quest.Flags);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Theory]
+    [InlineData(10528, 53532u, 53533u)]
+    [InlineData(10530, 53619u, 53620u)]
+    public void QuestComplete_RidersReefFinalQuest_AllowsCompletionWithoutVisibleSurfaceReceiver(
+        ushort questId,
+        uint receiverA,
+        uint receiverB)
+    {
+        IQuestInfo questInfo = CreateQuestInfo(questId);
+        IPlayer player = CreateQuestCompletePlayer();
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+            new Dictionary<ushort, IQuestInfo>
+            {
+                [questId] = questInfo
+            },
+            new Dictionary<ushort, ImmutableList<uint>>
+            {
+                [questId] = ImmutableList.Create(receiverA, receiverB)
+            });
+
+        try
+        {
+            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+            var manager = new QuestManager(player, new CharacterModel());
+            AddActiveQuest(manager, quest);
+
+            manager.QuestComplete(questId, reward: 0, communicator: false);
+
+            Assert.Equal(QuestState.Completed, quest.State);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void QuestComplete_NonReceiverlessQuest_RequiresVisibleReceiver()
+    {
+        const ushort questId = 10520;
+
+        IQuestInfo questInfo = CreateQuestInfo(questId);
+        IPlayer player = CreateQuestCompletePlayer();
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+            new Dictionary<ushort, IQuestInfo>
+            {
+                [questId] = questInfo
+            },
+            new Dictionary<ushort, ImmutableList<uint>>
+            {
+                [questId] = ImmutableList.Create(74812u)
+            });
+
+        try
+        {
+            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+            var manager = new QuestManager(player, new CharacterModel());
+            AddActiveQuest(manager, quest);
+
+            Assert.Throws<QuestException>(() => manager.QuestComplete(questId, reward: 0, communicator: false));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Theory]
+    [InlineData(10525, 9494u)]
+    [InlineData(10526, 9530u)]
+    public void QuestComplete_RidersReefCryopodReward_GrantsOmnibit(
+        ushort questId,
+        uint rewardId)
+    {
+        IQuestInfo questInfo = CreateQuestInfo(
+            questId,
+            new Quest2RewardEntry
+            {
+                Id                 = rewardId,
+                Quest2Id           = questId,
+                Quest2RewardTypeId = (uint)QuestRewardType.AccountCurrency,
+                ObjectId           = (uint)AccountCurrencyType.Omnibit,
+                ObjectAmount       = 1u
+            });
+        IPlayer player = CreateQuestRewardPlayer(
+            out _,
+            out RecordingDispatchProxy<IAccountCurrencyManager> accountCurrencyProxy,
+            visibleReceiverIds: ImmutableHashSet.Create(73421u));
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+            new Dictionary<ushort, IQuestInfo>
+            {
+                [questId] = questInfo
+            },
+            new Dictionary<ushort, ImmutableList<uint>>
+            {
+                [questId] = ImmutableList.Create(73421u)
+            });
+
+        try
+        {
+            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+            var manager = new QuestManager(player, new CharacterModel());
+            AddActiveQuest(manager, quest);
+
+            manager.QuestComplete(questId, reward: 0, communicator: false);
+
+            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyGrant = Assert.Single(
+                accountCurrencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(AccountCurrencyType.Omnibit, currencyGrant.Arguments[0]);
+            Assert.Equal(1ul, currencyGrant.Arguments[1]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Theory]
+    [InlineData(10528, 9503u)]
+    [InlineData(10530, 9504u)]
+    public void QuestComplete_RidersReefFinalReward_GrantsEscapePodItem(
+        ushort questId,
+        uint rewardId)
+    {
+        IQuestInfo questInfo = CreateQuestInfo(
+            questId,
+            new Quest2RewardEntry
+            {
+                Id                 = rewardId,
+                Quest2Id           = questId,
+                Quest2RewardTypeId = (uint)QuestRewardType.Item,
+                ObjectId           = 80875u,
+                ObjectAmount       = 1u
+            });
+        IPlayer player = CreateQuestRewardPlayer(
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out _);
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+            new Dictionary<ushort, IQuestInfo>
+            {
+                [questId] = questInfo
+            },
+            new Dictionary<ushort, ImmutableList<uint>>
+            {
+                [questId] = questId == 10528
+                    ? ImmutableList.Create(53532u, 53533u)
+                    : ImmutableList.Create(53619u, 53620u)
+            });
+
+        try
+        {
+            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+            var manager = new QuestManager(player, new CharacterModel());
+            AddActiveQuest(manager, quest);
+
+            manager.QuestComplete(questId, reward: 0, communicator: false);
+
+            RecordingDispatchProxy<IInventory>.Invocation itemGrant = Assert.Single(
+                inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+            Assert.Equal(InventoryLocation.Inventory, itemGrant.Arguments[0]);
+            Assert.Equal(80875u, itemGrant.Arguments[1]);
+            Assert.Equal(1u, itemGrant.Arguments[2]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void ObjectiveUpdate_WhenQuestIsCompleted_DoesNotRevertToAchieved()
+    {
+        IPlayer player = CreatePlayer(out _);
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider();
+
+        try
+        {
+            var quest = new NexusForever.Game.Quest.Quest(
+                player,
+                CreateSequentialQuestInfo(),
+                CreateCompletedSequentialQuestModel());
+
+            quest.ObjectiveUpdate(QuestObjectiveType.CompleteQuest, 9001u, 1u);
+
+            Assert.Equal(QuestState.Completed, quest.State);
         }
         finally
         {
@@ -320,6 +572,46 @@ public class QuestTests
         return player;
     }
 
+    private static IPlayer CreateQuestCompletePlayer()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out _);
+
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        playerProxy.SetMethodHandler(nameof(IPlayer.GetVisibleCreature), _ => Array.Empty<WorldEntity>());
+        return player;
+    }
+
+    private static IPlayer CreateQuestRewardPlayer(
+        out RecordingDispatchProxy<IInventory> inventoryProxy,
+        out RecordingDispatchProxy<IAccountCurrencyManager> accountCurrencyProxy,
+        IReadOnlySet<uint> visibleReceiverIds = null)
+    {
+        IInventory inventory = RecordingDispatchProxy<IInventory>.Create(out inventoryProxy);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.GetInventorySlotsRemaining), 10u);
+
+        IAccountCurrencyManager accountCurrencyManager = RecordingDispatchProxy<IAccountCurrencyManager>.Create(out accountCurrencyProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.CurrencyManager), accountCurrencyManager);
+
+        ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out _);
+
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+        playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        playerProxy.SetMethodHandler(nameof(IPlayer.GetVisibleCreature), args =>
+        {
+            uint creatureId = (uint)args[0];
+            return visibleReceiverIds?.Contains(creatureId) == true
+                ? new WorldEntity[] { null }
+                : Array.Empty<WorldEntity>();
+        });
+        return player;
+    }
+
     private static CharacterQuestModel CreateAcceptedQuestModel(uint firstObjectiveProgress)
     {
         return new CharacterQuestModel
@@ -342,6 +634,34 @@ public class QuestTests
                     Id      = 42ul,
                     QuestId = 9001,
                     Index   = 1
+                }
+            }
+        };
+    }
+
+    private static CharacterQuestModel CreateCompletedSequentialQuestModel()
+    {
+        return new CharacterQuestModel
+        {
+            Id      = 42ul,
+            QuestId = 9001,
+            State   = (byte)QuestState.Completed,
+            Flags   = (byte)(QuestStateFlags.Tracked | QuestStateFlags.Objective0Complete | QuestStateFlags.Objective1Complete),
+            QuestObjective =
+            {
+                new CharacterQuestObjectiveModel
+                {
+                    Id       = 42ul,
+                    QuestId  = 9001,
+                    Index    = 0,
+                    Progress = 5u
+                },
+                new CharacterQuestObjectiveModel
+                {
+                    Id       = 42ul,
+                    QuestId  = 9001,
+                    Index    = 1,
+                    Progress = 1u
                 }
             }
         };
@@ -375,6 +695,33 @@ public class QuestTests
         return questInfo;
     }
 
+    private static IQuestInfo CreateQuestInfo(ushort questId, params Quest2RewardEntry[] rewards)
+    {
+        IQuestInfo questInfo = RecordingDispatchProxy<IQuestInfo>.Create(out RecordingDispatchProxy<IQuestInfo> questInfoProxy);
+        questInfoProxy.SetProperty(nameof(IQuestInfo.Entry), new Quest2Entry
+        {
+            Id               = questId,
+            PushedItemIds    = new uint[6],
+            PushedItemCounts = new uint[6]
+        });
+        questInfoProxy.SetProperty(
+            nameof(IQuestInfo.Rewards),
+            rewards.ToImmutableDictionary(r => r.Id));
+        return questInfo;
+    }
+
+    private static IQuest CreateQuest(ushort questId, IQuestInfo questInfo, QuestState state, uint currentObjectiveId = 0u)
+    {
+        IQuest quest = RecordingDispatchProxy<IQuest>.Create(out RecordingDispatchProxy<IQuest> questProxy);
+        questProxy.SetProperty(nameof(IQuest.Id), questId);
+        questProxy.SetProperty(nameof(IQuest.Info), questInfo);
+        questProxy.SetProperty(nameof(IQuest.State), state);
+        questProxy.SetProperty(nameof(IQuest.Flags), QuestStateFlags.Tracked);
+        questProxy.SetMethodHandler("GetEnumerator", _ => Enumerable.Empty<IQuestObjective>().GetEnumerator());
+        questProxy.SetMethodReturn(nameof(IQuest.GetCurrentObjectiveId), currentObjectiveId);
+        return quest;
+    }
+
     private static IServiceProvider BuildProvider()
     {
         IScriptCollection scriptCollection = RecordingDispatchProxy<IScriptCollection>.Create(out _);
@@ -386,6 +733,36 @@ public class QuestTests
             .BuildServiceProvider();
     }
 
+    private static IServiceProvider BuildQuestCompleteProvider(
+        IReadOnlyDictionary<ushort, IQuestInfo> questInfos,
+        IReadOnlyDictionary<ushort, ImmutableList<uint>> questReceivers)
+    {
+        var globalQuestManager = new GlobalQuestManager();
+        SetPrivateField(
+            globalQuestManager,
+            "questInfoStore",
+            questInfos.ToImmutableDictionary());
+        SetPrivateField(
+            globalQuestManager,
+            "questGiverStore",
+            ImmutableDictionary<ushort, ImmutableList<uint>>.Empty);
+        SetPrivateField(
+            globalQuestManager,
+            "questReceiverStore",
+            questReceivers.ToImmutableDictionary());
+
+        var disableManager = new DisableManager();
+        SetPrivateField(
+            disableManager,
+            "disables",
+            ImmutableDictionary<ulong, Disable>.Empty);
+
+        return new ServiceCollection()
+            .AddSingleton(globalQuestManager)
+            .AddSingleton(disableManager)
+            .BuildServiceProvider();
+    }
+
     private static void AddActiveQuest(QuestManager manager, IQuest quest)
     {
         FieldInfo field = typeof(QuestManager)
@@ -393,6 +770,22 @@ public class QuestTests
 
         var activeQuests = Assert.IsType<Dictionary<ushort, IQuest>>(field?.GetValue(manager));
         activeQuests.Add(quest.Id, quest);
+    }
+
+    private static void AddCompletedQuest(QuestManager manager, IQuest quest)
+    {
+        FieldInfo field = typeof(QuestManager)
+            .GetField("completedQuests", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        var completedQuests = Assert.IsType<Dictionary<ushort, IQuest>>(field?.GetValue(manager));
+        completedQuests.Add(quest.Id, quest);
+    }
+
+    private static void SetPrivateField<T>(T instance, string fieldName, object value)
+    {
+        FieldInfo field = typeof(T).GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(field);
+        field.SetValue(instance, value);
     }
 
     private static byte[] WritePacket(IWritable packet)

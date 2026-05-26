@@ -49,6 +49,32 @@ public class InteractionObjectiveUpdaterTests
     }
 
     [Fact]
+    public void UpdateActivateSuccessObjectives_DepartureTerminal_RecordsTerminalSelection()
+    {
+        IPlayer player = CreatePlayer(
+            out RecordingDispatchProxy<IQuestManager> questProxy,
+            out RecordingDispatchProxy<IPlayer> playerProxy);
+        IWorldEntity entity = CreateEntity(creatureId: 73605u);
+
+        InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(player, entity, assetManager: null, includeActivateEntity: false);
+
+        Assert.Contains(playerProxy.GetInvocations(nameof(IPlayer.RecordStarterTutorialDepartureTerminal)), i =>
+            (uint)i.Arguments[0] == 73605u);
+        AssertObjectiveUpdate(questProxy, QuestObjectiveType.ActivateTargetGroup, 73605u, 1u);
+    }
+
+    [Fact]
+    public void UpdateActivateSuccessObjectives_DepartureChecklistEntity_CreditsChecklistProgress()
+    {
+        IPlayer player = CreatePlayer(out RecordingDispatchProxy<IQuestManager> questProxy);
+        IWorldEntity entity = CreateEntity(creatureId: 73681u, questChecklistIdx: 4);
+
+        InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(player, entity, assetManager: null, includeActivateEntity: false);
+
+        AssertObjectiveUpdate(questProxy, QuestObjectiveType.ActivateTargetGroupChecklist, 73681u, 4u);
+    }
+
+    [Fact]
     public void UpdateDirectInteractionObjectives_NullEntity_DoesNotCreditObjectives()
     {
         IPlayer player = CreatePlayer(out RecordingDispatchProxy<IQuestManager> questProxy);
@@ -60,16 +86,24 @@ public class InteractionObjectiveUpdaterTests
 
     private static IPlayer CreatePlayer(out RecordingDispatchProxy<IQuestManager> questProxy)
     {
+        return CreatePlayer(out questProxy, out _);
+    }
+
+    private static IPlayer CreatePlayer(
+        out RecordingDispatchProxy<IQuestManager> questProxy,
+        out RecordingDispatchProxy<IPlayer> playerProxy)
+    {
         IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out questProxy);
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
         return player;
     }
 
-    private static IWorldEntity CreateEntity(uint creatureId)
+    private static IWorldEntity CreateEntity(uint creatureId, byte questChecklistIdx = 0)
     {
         IWorldEntity entity = RecordingDispatchProxy<IWorldEntity>.Create(out RecordingDispatchProxy<IWorldEntity> entityProxy);
         entityProxy.SetProperty(nameof(IWorldEntity.CreatureId), creatureId);
+        entityProxy.SetProperty(nameof(IWorldEntity.QuestChecklistIdx), questChecklistIdx);
         return entity;
     }
 

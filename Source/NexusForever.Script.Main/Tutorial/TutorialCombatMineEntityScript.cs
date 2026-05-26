@@ -56,7 +56,7 @@ namespace NexusForever.Script.Main.Tutorial
         public void OnLoad(ISimpleCollidableEntity owner)
         {
             this.owner = owner;
-            owner.CreateFlags |= EntityCreateFlag.HasInteractionPrereq;
+            owner.CreateFlags |= EntityCreateFlag.Immediate | EntityCreateFlag.HasInteractionPrereq;
             log.LogDebug("Starter tutorial combat mine script loaded for entity {EntityGuid}: creature={CreatureId}, position=({X}, {Y}, {Z}).",
                 owner.Guid,
                 owner.CreatureId,
@@ -99,7 +99,7 @@ namespace NexusForever.Script.Main.Tutorial
 
             uint castingId = globalSpellManager.NextCastingId;
             uint busyEffectId = globalSpellManager.NextEffectId;
-            TimeSpan detonationDelay = TimeSpan.FromMilliseconds(Math.Max(dangerSpell.SpellDuration, 1u));
+            TimeSpan detonationDelay = TimeSpan.FromMilliseconds(Math.Max(GetDangerZoneWarningDurationMs(dangerSpell), 1u));
 
             owner.AddBusy(busyEffectId, TutorialMineActivateSpellId, castingId, 1u, activator.Guid, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u);
             SendDangerZoneStart(castingId, profile);
@@ -344,6 +344,13 @@ namespace NexusForever.Script.Main.Tutorial
             };
 
             return profile.DangerZoneSpellId != 0u;
+        }
+
+        private static uint GetDangerZoneWarningDurationMs(Spell4Entry dangerSpell)
+        {
+            return dangerSpell.CastTime != 0u
+                ? dangerSpell.CastTime
+                : dangerSpell.SpellDuration;
         }
 
         private readonly record struct MineProfile(uint DangerZoneSpellId, uint DamageSpell4EffectId, uint DamageAmount, float Radius, DamageType DamageType);

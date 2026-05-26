@@ -16,6 +16,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
         private const uint TutorialHoverboardProjectorCreatureId = 73419u;
         private const uint TutorialHoverboardFinishCreatureId = 73735u;
+        private const uint TutorialHoverboardMountSpellId = 85562u;
+        private const uint TutorialCombatMineEasyCreatureId = 73463u;
+        private const uint TutorialCombatMineMediumCreatureId = 73667u;
+        private const uint TutorialCombatMineHardCreatureId = 73668u;
         private const ushort TutorialWorldId = 3460;
 
         #region Dependency Injection
@@ -82,6 +86,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 if (IsTutorialHoverboardActivationEntity(entity))
                     log.Debug($"Tutorial hoverboard activate-cast resolve failed: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");
 
+                if (TryCompleteTutorialHoverboardProjectorActivationWithoutActivateSpell(session, entity, 0u, CastResult.NoValidActivateSpell, clientRequestSource))
+                    return;
+
+                if (TryCompleteTutorialMineActivationWithoutSpell(session, entity, 0u, CastResult.NoValidActivateSpell))
+                    return;
+
                 SendSpellCastResult(session, GetFallbackActivateSpellId(entity), CastResult.NoValidActivateSpell);
                 entity.OnActivateFail(session.Player);
                 return;
@@ -108,17 +118,65 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 if (IsTutorialHoverboardActivationEntity(entity))
                     log.Debug($"Tutorial hoverboard activate-cast failed: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, spell4Id={spell4Id}, castResult={castResult}.");
 
+                if (TryCompleteTutorialHoverboardProjectorActivationWithoutActivateSpell(session, entity, spell4Id, castResult, clientRequestSource))
+                    return;
+
+                if (TryCompleteTutorialMineActivationWithoutSpell(session, entity, spell4Id, castResult))
+                    return;
+
                 entity.OnActivateFail(session.Player);
                 return;
             }
 
-            entity.OnActivateCast(session.Player);
-            entity.OnActivateSuccess(session.Player);
-            InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(session.Player, entity, assetManager, includeActivateEntity: false);
-            ActivationAchievementUpdater.Update(session.Player, entity);
+            CompleteActivation(session, entity, invokeActivateCast: true);
 
             if (IsTutorialHoverboardActivationEntity(entity))
                 log.Debug($"Tutorial hoverboard activate-cast success: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, spell4Id={spell4Id}.");
+        }
+
+        private void CompleteActivation(IWorldSession session, IWorldEntity entity, bool invokeActivateCast)
+        {
+            if (invokeActivateCast)
+                entity.OnActivateCast(session.Player);
+
+            entity.OnActivateSuccess(session.Player);
+            InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(session.Player, entity, assetManager, includeActivateEntity: false);
+            ActivationAchievementUpdater.Update(session.Player, entity);
+        }
+
+        private bool TryCompleteTutorialMineActivationWithoutSpell(IWorldSession session, IWorldEntity entity, uint spell4Id, CastResult castResult)
+        {
+            if (!IsTutorialCombatMineEntity(entity))
+                return false;
+
+            log.Debug($"Tutorial combat mine activate-cast bypassed blocked activate spell: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, spell4Id={spell4Id}, castResult={castResult}.");
+            CompleteActivation(session, entity, invokeActivateCast: false);
+            return true;
+        }
+
+        private bool TryCompleteTutorialHoverboardProjectorActivationWithoutActivateSpell(IWorldSession session, IWorldEntity entity, uint spell4Id, CastResult castResult, string clientRequestSource)
+        {
+            if (entity.CreatureId != TutorialHoverboardProjectorCreatureId)
+                return false;
+
+            CastResult mountCastResult = TryCastTutorialHoverboardMount(session, clientRequestSource);
+            log.Debug($"Tutorial hoverboard projector activate-cast bypassed blocked activate spell: player={session.Player.Guid}, entity={entity.Guid}, spell4Id={spell4Id}, castResult={castResult}, mountCastResult={mountCastResult}.");
+            CompleteActivation(session, entity, invokeActivateCast: false);
+            return true;
+        }
+
+        private static CastResult TryCastTutorialHoverboardMount(IWorldSession session, string clientRequestSource)
+        {
+            var mountSpellParameters = new SpellParameters
+            {
+                PrimaryTargetId        = session.Player.Guid,
+                UserInitiatedSpellCast = false,
+                IgnoreGlobalCooldown   = true,
+                CancelActiveTrade      = true,
+                ClientRequestSource    = clientRequestSource
+            };
+
+            return session.Player.TryCastSpell(TutorialHoverboardMountSpellId, mountSpellParameters);
         }
 
         private bool TryResolveActivateSpell(IWorldEntity entity, IPlayer player, out uint spell4Id)
@@ -179,6 +237,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         private static bool IsTutorialHoverboardActivationEntity(IWorldEntity entity)
         {
             return entity.CreatureId is TutorialHoverboardProjectorCreatureId or TutorialHoverboardFinishCreatureId;
+        }
+
+        private static bool IsTutorialCombatMineEntity(IWorldEntity entity)
+        {
+            return entity.CreatureId is TutorialCombatMineEasyCreatureId or TutorialCombatMineMediumCreatureId or TutorialCombatMineHardCreatureId;
         }
     }
 }

@@ -131,8 +131,11 @@ namespace NexusForever.Game.Entity
         private const uint TutorialCombatProjectorCreatureId = 73735u;
         private const uint TutorialCombatFireHazardCreatureId = 75094u;
         private const uint TutorialCombatMortarHazardCreatureId = 75096u;
+        private const uint TutorialHoverboardMountSpellId = 85562u;
+        private const uint TutorialHoverboardSprintVisualSpellId = 82298u;
         private const uint TutorialHoverboardProjectorActivateSpellId = 86744u;
         private const float TutorialHoverboardFinishRecoveryPadding = 6f;
+        private const float TutorialHoverboardFinishSnapTolerance = 1.25f;
 
         private static readonly uint[] tutorialManagedCreatureIds =
         [
@@ -1547,8 +1550,12 @@ namespace NexusForever.Game.Entity
             if (movementQuestId == 0)
                 return;
 
-            GrantTutorialQuestIfMissing(movementQuestId);
-            GrantTutorialQuestIfMissing(hoverboardQuestId);
+            QuestState? movementQuestState = QuestManager.GetQuestState(movementQuestId);
+            if (movementQuestState == null)
+                GrantTutorialQuestIfMissing(movementQuestId);
+            else if (movementQuestState == QuestState.Completed)
+                GrantTutorialQuestIfMissing(hoverboardQuestId);
+
             SyncStarterTutorialAreaObjectives(logNoOverlap: true);
         }
 
@@ -2303,6 +2310,32 @@ namespace NexusForever.Game.Entity
             if (!IsStarterHoverboardRidePending())
                 return;
 
+            var mountSpellParameters = new SpellParameters
+            {
+                PrimaryTargetId        = Guid,
+                UserInitiatedSpellCast = false,
+                IgnoreGlobalCooldown   = true,
+                CancelActiveTrade      = true,
+                ClientRequestSource    = nameof(TryRecoverStarterTutorialHoverboardRide)
+            };
+
+            CastResult mountCastResult = TryCastSpell(TutorialHoverboardMountSpellId, mountSpellParameters);
+            log.Debug($"Tutorial hoverboard ride direct remount recovery for player {Guid}: castResult={mountCastResult}, progress [{FormatStarterHoverboardQuestProgress()}].");
+
+            if (mountCastResult == CastResult.Ok)
+            {
+                CastSpell(TutorialHoverboardSprintVisualSpellId, new SpellParameters
+                {
+                    PrimaryTargetId        = Guid,
+                    UserInitiatedSpellCast = false,
+                    IgnoreGlobalCooldown   = true,
+                    CancelActiveTrade      = true,
+                    ClientRequestSource    = nameof(TryRecoverStarterTutorialHoverboardRide)
+                });
+                TryRecoverStarterTutorialQuestProgression();
+                return;
+            }
+
             IWorldEntity projector = GetVisibleCreature<IWorldEntity>(TutorialHoverboardProjectorCreatureId).FirstOrDefault();
             if (projector == null)
             {
@@ -2397,21 +2430,46 @@ namespace NexusForever.Game.Entity
 
             foreach (IQuest quest in QuestManager.GetActiveQuests().Where(q => q.Id == ExileHoverboardQuestId || q.Id == DominionHoverboardQuestId))
             {
-                if (!quest.Any(o => HoverboardProjectorObjectiveIds.Contains(o.ObjectiveInfo.Id) && o.IsComplete()))
+                bool projectorObjectiveComplete = quest.Any(o => HoverboardProjectorObjectiveIds.Contains(o.ObjectiveInfo.Id) && o.IsComplete());
+                if (!projectorObjectiveComplete)
                     continue;
 
-                IQuestObjective rideObjective = quest.FirstOrDefault(o => HoverboardRideObjectiveIds.Contains(o.ObjectiveInfo.Id) && !o.IsComplete());
-                if (rideObjective == null)
-                    continue;
+                IQuestObjective rideObjective = quest.FirstOrDefault(o => HoverboardRideObjectiveIds.Contains(o.ObjectiveInfo.Id));
+                bool rideObjectiveComplete = rideObjective?.IsComplete() == true;
 
-                uint requiredProgress = rideObjective.ObjectiveInfo.Entry.Count;
-                quest.ObjectiveUpdate(rideObjective.ObjectiveInfo.Id, requiredProgress == 0u ? 1u : requiredProgress);
-                updated = true;
+                if (rideObjective != null && !rideObjectiveComplete)
+                {
+                    uint requiredProgress = rideObjective.ObjectiveInfo.Entry.Count;
+                    quest.ObjectiveUpdate(rideObjective.ObjectiveInfo.Id, requiredProgress == 0u ? 1u : requiredProgress);
+                    rideObjectiveComplete = true;
+                    updated = true;
 
-                log.Debug($"Starter tutorial hoverboard ride objective recovery for player {Guid}: quest={quest.Id}, objective={rideObjective.ObjectiveInfo.Id}, progress [{FormatStarterHoverboardQuestProgress()}].");
+                    log.Debug($"Starter tutorial hoverboard ride objective recovery for player {Guid}: quest={quest.Id}, objective={rideObjective.ObjectiveInfo.Id}, progress [{FormatStarterHoverboardQuestProgress()}].");
+                }
+
+                bool finishObjectiveComplete = quest.Any(o => HoverboardFinishObjectiveIds.Contains(o.ObjectiveInfo.Id) && o.IsComplete());
+                if (ShouldRecoverHoverboardFinishPosition(projectorObjectiveComplete, rideObjectiveComplete, finishObjectiveComplete))
+                    updated |= TrySnapStarterTutorialHoverboardFinishLocation(finishWorldLocation);
             }
 
             return updated;
+        }
+
+        private bool TrySnapStarterTutorialHoverboardFinishLocation(WorldLocation2Entry finishWorldLocation)
+        {
+            if (!CanTeleport())
+                return false;
+
+            var destination = new Vector3(finishWorldLocation.Position0, finishWorldLocation.Position1, finishWorldLocation.Position2);
+            if (Vector3.DistanceSquared(Position, destination) <= TutorialHoverboardFinishSnapTolerance * TutorialHoverboardFinishSnapTolerance)
+                return false;
+
+            if (PlatformGuid != null)
+                Dismount();
+
+            TeleportToLocal(destination, showLoadingScreen: false);
+            log.Debug($"Starter tutorial hoverboard finish snap for player {Guid}: destination=({destination.X}, {destination.Y}, {destination.Z}), progress [{FormatStarterHoverboardQuestProgress()}].");
+            return true;
         }
 
         private bool TryRecoverStarterTutorialCombatTransition(bool requireFinishWorldLocation = true)
@@ -2580,8 +2638,7 @@ namespace NexusForever.Game.Entity
             return QuestManager.GetActiveQuests()
                 .Where(q => q.Id == ExileHoverboardQuestId || q.Id == DominionHoverboardQuestId)
                 .Any(q => q.Any(o => HoverboardProjectorObjectiveIds.Contains(o.ObjectiveInfo.Id) && o.IsComplete())
-                    && (q.Any(o => HoverboardRideObjectiveIds.Contains(o.ObjectiveInfo.Id) && !o.IsComplete())
-                        || q.Any(o => HoverboardFinishObjectiveIds.Contains(o.ObjectiveInfo.Id) && !o.IsComplete())));
+                    && q.Any(o => HoverboardRideObjectiveIds.Contains(o.ObjectiveInfo.Id) && !o.IsComplete()));
         }
 
         private string FormatStarterHoverboardQuestProgress()
@@ -2632,6 +2689,9 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public override Disposition GetDispositionTo(Faction factionId, bool primary = true)
         {
+            if (factionId == Faction.None)
+                return Disposition.Unknown;
+
             IFactionNode targetFaction = FactionManager.Instance.GetFaction(factionId);
             if (targetFaction == null)
                 throw new ArgumentException($"Invalid faction {factionId}!");

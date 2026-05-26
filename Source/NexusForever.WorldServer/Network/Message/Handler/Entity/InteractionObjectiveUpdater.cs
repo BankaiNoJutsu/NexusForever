@@ -68,6 +68,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkToTargetGroup, entity.CreatureId, 1u);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroup, entity.CreatureId, 1u);
+            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroupChecklist, entity.CreatureId, entity.QuestChecklistIdx);
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.GatheResource, entity.CreatureId, 1u);
 
             player.SyncStarterTutorialEntityVisibility();

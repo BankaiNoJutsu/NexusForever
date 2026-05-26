@@ -8,6 +8,8 @@ namespace NexusForever.Game.Static.Tutorial
         public const ushort DominionCombatQuestId = 10524;
         public const ushort ExileHoverboardQuestId = 10527;
         public const ushort DominionHoverboardQuestId = 10532;
+        public const ushort ExileDepartureQuestId = 10528;
+        public const ushort DominionDepartureQuestId = 10530;
 
         public const uint ExileCombatSimulationWorldLocationId = 51739u;
         public const uint DominionCombatSimulationWorldLocationId = 52898u;
@@ -24,13 +26,13 @@ namespace NexusForever.Game.Static.Tutorial
             [ExileMovementQuestId, DominionMovementQuestId, ExileHoverboardQuestId, DominionHoverboardQuestId, ExileCombatQuestId, DominionCombatQuestId];
 
         public static readonly ushort[] FollowUpQuestIds =
-            [ExileCombatQuestId, 10519, 10520, 10522, 10523, DominionCombatQuestId, 10525, 10526, 10528, 10530, 10540, 10541];
+            [ExileCombatQuestId, 10519, 10520, 10522, 10523, DominionCombatQuestId, 10525, 10526, ExileDepartureQuestId, DominionDepartureQuestId, 10540, 10541];
 
         public static readonly ushort[] ExileQuestChain =
-            [ExileMovementQuestId, ExileHoverboardQuestId, ExileCombatQuestId, 10525, 10540, 10519, 10520, 10528];
+            [ExileMovementQuestId, ExileHoverboardQuestId, ExileCombatQuestId, 10525, 10540, 10519, 10520, ExileDepartureQuestId];
 
         public static readonly ushort[] DominionQuestChain =
-            [DominionMovementQuestId, DominionHoverboardQuestId, DominionCombatQuestId, 10526, 10541, 10522, 10523, 10530];
+            [DominionMovementQuestId, DominionHoverboardQuestId, DominionCombatQuestId, 10526, 10541, 10522, 10523, DominionDepartureQuestId];
 
         public static readonly uint[] HoverboardProjectorObjectiveIds = [21324u, 21354u];
         public static readonly uint[] HoverboardRideObjectiveIds = [21323u, 21355u];
@@ -43,5 +45,15 @@ namespace NexusForever.Game.Static.Tutorial
             DominionCrimsonIsleDepartureTerminalCreatureId,
             DominionLevianBayDepartureTerminalCreatureId
         ];
+
+        public static bool ShouldRecoverHoverboardFinishPosition(
+            bool projectorObjectiveComplete,
+            bool rideObjectiveComplete,
+            bool finishObjectiveComplete)
+        {
+            return projectorObjectiveComplete
+                && rideObjectiveComplete
+                && !finishObjectiveComplete;
+        }
     }
 }
