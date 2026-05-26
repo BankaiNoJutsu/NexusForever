@@ -5,10 +5,13 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Map.Search;
+using NexusForever.Game.Abstract.PublicEvent;
+using NexusForever.Game.Static.PublicEvent;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
+using Path = NexusForever.Game.Static.PlayerPath.Path;
 
 namespace NexusForever.Script.Main.Quests.NorthernWilds
 {
@@ -61,12 +64,46 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         private const uint Q3487UltrabotId = 12526u;
         private const uint Q3487UltrabotWL = 9200u;
 
+        private const uint DominionUltrabotPublicEventId = 154u;
+        private const uint CampIcefuryZoneId = 602u;
+
+        private static readonly IReadOnlyDictionary<Path, (ushort EpisodeId, IReadOnlyDictionary<ushort, uint> Missions)> PathMissions = new Dictionary<Path, (ushort, IReadOnlyDictionary<ushort, uint>)>
+        {
+            [Path.Soldier] = (8, new Dictionary<ushort, uint>
+            {
+                [33] = 25,
+                [34] = 25,
+                [156] = 25
+            }),
+            [Path.Settler] = (82, new Dictionary<ushort, uint>
+            {
+                [650] = 25,
+                [651] = 25,
+                [652] = 25
+            }),
+            [Path.Scientist] = (28, new Dictionary<ushort, uint>
+            {
+                [42] = 25,
+                [160] = 25,
+                [648] = 25
+            }),
+            [Path.Explorer] = (9, new Dictionary<ushort, uint>
+            {
+                [35] = 25,
+                [36] = 25,
+                [158] = 25,
+                [1254] = 25
+            })
+        };
+
         private readonly IEntityFactory entityFactory;
         private readonly IGameTableManager gameTableManager;
         private readonly ILogger<NorthernWildsMapScript> log;
 
         private IBaseMap owner;
         private bool entitiesSpawned;
+        private IPublicEvent dominionUltrabotPublicEvent;
+        private readonly HashSet<ulong> dominionUltrabotParticipants = [];
 
         public NorthernWildsMapScript(
             ILogger<NorthernWildsMapScript> log,
@@ -82,12 +119,38 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         {
             this.owner = owner;
             EnsureQuestEntities();
+            EnsureDominionUltrabotEvent();
         }
 
         public void Update(double lastTick) { }
 
-        public void OnAddToMap(IGridEntity entity) { }
-        public void OnRemoveFromMap(IGridEntity entity) { }
+        public void OnAddToMap(IGridEntity entity)
+        {
+            if (entity is not IPlayer player)
+                return;
+
+            ActivatePathMissions(player);
+            if (player.Zone?.Id == CampIcefuryZoneId)
+                TryJoinDominionUltrabotEvent(player);
+        }
+
+        public void OnRemoveFromMap(IGridEntity entity)
+        {
+            if (entity is IPlayer player)
+                TryLeaveDominionUltrabotEvent(player);
+        }
+
+        public void OnEnterZone(IWorldEntity entity, uint zone)
+        {
+            if (entity is not IPlayer player)
+                return;
+
+            ActivatePathMissions(player);
+            if (zone == CampIcefuryZoneId)
+                TryJoinDominionUltrabotEvent(player);
+            else
+                TryLeaveDominionUltrabotEvent(player);
+        }
 
         private void EnsureQuestEntities()
         {
@@ -102,6 +165,69 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
             entitiesSpawned = true;
             log.LogDebug("Northern Wilds quest entities initialised on map {MapId}.", owner.Entry.Id);
+        }
+
+        private IPublicEvent EnsureDominionUltrabotEvent()
+        {
+            if (owner == null)
+                return null;
+
+            IPublicEvent existingEvent = owner.PublicEventManager.GetEvent(DominionUltrabotPublicEventId);
+            if (existingEvent != null)
+            {
+                dominionUltrabotPublicEvent = existingEvent;
+                return existingEvent.IsFinalised ? null : existingEvent;
+            }
+
+            dominionUltrabotPublicEvent = owner.PublicEventManager.CreateEvent(DominionUltrabotPublicEventId);
+            if (dominionUltrabotPublicEvent == null)
+                log.LogWarning("Unable to create Northern Wilds public event {PublicEventId} on map {MapId}.", DominionUltrabotPublicEventId, owner.Entry.Id);
+
+            return dominionUltrabotPublicEvent;
+        }
+
+        private static void ActivatePathMissions(IPlayer player)
+        {
+            if (!PathMissions.TryGetValue(player.Path, out (ushort EpisodeId, IReadOnlyDictionary<ushort, uint> Missions) pathEpisode))
+                return;
+
+            player.PathManager.ActivateMissions(pathEpisode.EpisodeId, pathEpisode.Missions);
+        }
+
+        private void TryJoinDominionUltrabotEvent(IPlayer player)
+        {
+            if (!dominionUltrabotParticipants.Add(player.CharacterId))
+                return;
+
+            IPublicEvent publicEvent = EnsureDominionUltrabotEvent();
+            if (publicEvent == null || publicEvent.IsFinalised)
+            {
+                dominionUltrabotParticipants.Remove(player.CharacterId);
+                return;
+            }
+
+            publicEvent.JoinEvent(player, PublicEventTeam.PublicTeam);
+        }
+
+        private void TryLeaveDominionUltrabotEvent(IPlayer player)
+        {
+            if (!dominionUltrabotParticipants.Remove(player.CharacterId))
+                return;
+
+            IPublicEvent publicEvent = dominionUltrabotPublicEvent;
+            if (publicEvent == null || publicEvent.IsFinalised)
+                return;
+
+            publicEvent.LeaveEvent(player, PublicEventRemoveReason.LeftArea);
+        }
+
+        public void OnPublicEventFinish(IPublicEvent publicEvent, IPublicEventTeam publicEventTeam)
+        {
+            if (publicEvent.Id != DominionUltrabotPublicEventId)
+                return;
+
+            dominionUltrabotParticipants.Clear();
+            dominionUltrabotPublicEvent = null;
         }
 
         private void SpawnEntityIfMissing(uint creatureId, uint worldLocationId, string label)

@@ -10,13 +10,12 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
 {
     /// <summary>
     /// Crimson Isle: Tactical Demolitions; destroy Exile cannons and play cinematic.
-    /// Quest 5604 grants 5580 on completion.
-    /// Retail chain: ... -> 5597 -> 5604 -> 5580 -> [merge gate 5594].
+    /// Quest2 makes Q5580 and Q5583 available on completion.
+    /// Retail chain: ... -> 5597 -> 5604 -> 5580/5583 -> [merge gate 5594].
     /// </summary>
     [ScriptFilterOwnerId(5604u)]
     public class Q5604TacticalDemolitionsQuestScript : IQuestScript, IOwnedScript<IQuest>
     {
-        private const ushort NextQuestId = 5580;
         private const uint QObjExileCannons      = 8268u;
         private const uint QObjCinematicComplete = 15918u;
 
@@ -55,23 +54,14 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
         public void OnQuestStateChange(QuestState newState, QuestState oldState)
         {
             if (newState == QuestState.Completed)
-                GrantNext();
-        }
-
-        private void GrantNext()
-        {
-            if (owner.Player.QuestManager.GetQuestState(NextQuestId) != null)
-                return;
-
-            IQuestInfo info = globalQuestManager.GetQuestInfo(NextQuestId);
-            if (info == null)
             {
-                log.LogWarning("Next quest {NextId} info missing.", NextQuestId);
-                return;
+                CrimsonIsleQuestChain.GrantQuestsIfMissing(
+                    owner,
+                    globalQuestManager,
+                    log,
+                    CrimsonIsleQuestChain.Q5580EnforcedRadioSilence,
+                    CrimsonIsleQuestChain.Q5583HeavyArmor);
             }
-
-            owner.Player.QuestManager.QuestAdd(info);
-            log.LogDebug("Granted follow-up quest {NextId} after {QuestId}.", NextQuestId, owner.Id);
         }
     }
 }

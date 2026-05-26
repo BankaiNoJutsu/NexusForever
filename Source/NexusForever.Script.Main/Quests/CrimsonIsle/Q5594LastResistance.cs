@@ -58,7 +58,9 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
             if (killer is not IPlayer player)
                 return;
 
-            player.AchievementManager.GrantAchievement(AchievementWarbot);
+            if (!player.AchievementManager.HasCompletedAchievement(AchievementWarbot))
+                player.AchievementManager.GrantAchievement(AchievementWarbot);
+
             player.QuestManager.ObjectiveUpdate(QObjWarbotKill, 1u);
         }
     }

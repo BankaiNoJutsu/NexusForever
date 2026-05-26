@@ -14,17 +14,32 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
     public class Q5580QuestScript : IQuestScript, IOwnedScript<IQuest>
     {
         private readonly ILogger<Q5580QuestScript> log;
+        private readonly IGlobalQuestManager globalQuestManager;
         private IQuest owner;
 
-        public Q5580QuestScript(ILogger<Q5580QuestScript> log)
+        public Q5580QuestScript(
+            ILogger<Q5580QuestScript> log,
+            IGlobalQuestManager globalQuestManager)
         {
-            this.log = log;
+            this.log                = log;
+            this.globalQuestManager = globalQuestManager;
         }
 
         public void OnLoad(IQuest owner) { this.owner = owner; }
         public void OnQuestStateChange(QuestState newState, QuestState oldState)
         {
             log.LogDebug("Quest {QuestId} state: {OldState} -> {NewState}.", owner.Id, oldState, newState);
+
+            if (newState == QuestState.Completed)
+            {
+                CrimsonIsleQuestChain.GrantQuestIfPrerequisitesComplete(
+                    owner,
+                    globalQuestManager,
+                    log,
+                    CrimsonIsleQuestChain.Q5594LastResistance,
+                    CrimsonIsleQuestChain.Q5580EnforcedRadioSilence,
+                    CrimsonIsleQuestChain.Q5583HeavyArmor);
+            }
         }
     }
 }

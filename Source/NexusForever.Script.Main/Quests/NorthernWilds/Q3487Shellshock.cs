@@ -66,7 +66,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         public void OnAddToMap(IBaseMap map)
         {
             owner.MovementManager.SetPositionPath(
-                new List<Vector3> { LocDestination },
+                new List<Vector3> { owner.Position, LocDestination },
                 SplineType.Linear,
                 SplineMode.OneShot,
                 5f);

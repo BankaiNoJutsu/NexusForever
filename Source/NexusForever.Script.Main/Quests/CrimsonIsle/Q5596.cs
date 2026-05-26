@@ -7,7 +7,7 @@ using NexusForever.Script.Template.Filter;
 namespace NexusForever.Script.Main.Quests.CrimsonIsle
 {
     /// <summary>
-    /// Crimson Isle merge gate: requires BOTH Q5573 (Powering Down) and Q5575 completed.
+    /// Crimson Isle either-branch gate: Quest2 preq_flags=1 requires Q5573 or Q5575 completed.
     /// Grants Q5597 on completion. Prerequisites handled by server quest system.
     /// </summary>
     [ScriptFilterOwnerId(5596u)]

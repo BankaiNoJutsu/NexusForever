@@ -18,6 +18,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
     public class Q3486EmpoweredTowerQuestScript : IQuestScript, IOwnedScript<IQuest>
     {
         private const ushort QuestSettingUpCamp = 3671;
+        private const ushort QuestSecuringTheArea = 3797;
 
         private IQuest owner;
 
@@ -39,6 +40,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             {
                 owner.Player.CinematicManager.QueueCinematic(cinematicFactory.CreateCinematic<IQ3486EmpoweredTowerCinematic>());
                 owner.Player.QuestManager.QuestMention(QuestSettingUpCamp);
+                owner.Player.QuestManager.QuestMention(QuestSecuringTheArea);
             }
         }
     }
