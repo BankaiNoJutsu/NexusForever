@@ -33,6 +33,10 @@ implement server behavior from the evidence in the existing C# codebase.
 | `Decomp/Analysis/coverage/LATEST_COVERAGE_SUMMARY.md` | Human-readable coverage snapshot and priority queues. |
 | `Decomp/Analysis/coverage/export_coverage_inventory.csv` | Per-target export coverage counts for the current local snapshot. |
 | `Decomp/Analysis/coverage/opcode_coverage_inventory.csv` | Opcode/model/handler coverage inventory for the current local snapshot. |
+| `Decomp/Analysis/BLOCKER_EVIDENCE_PLAN.md` | Live-client evidence passes for remaining partial features (F-008..F-021, F-031) with implement/diagnostic/blocked boundaries. |
+| `CURRENT_STATUS.md` (repo root) | Single source of truth for all 36 feature-area completion states, consolidated emit gaps, and code-audit notes vs false "ghost gap" claims. |
+| `Decomp/Analysis/MATCHING_IMPLEMENTATION_STATUS.md` | Matching-only implemented vs mapped-only vs rejected surfaces. |
+| `Decomp/Analysis/Start-BlockerEvidenceHarness.ps1` | Starts Trace logging + client console and prints log-tail commands for evidence bundles. |
 
 The default analysis targets are:
 

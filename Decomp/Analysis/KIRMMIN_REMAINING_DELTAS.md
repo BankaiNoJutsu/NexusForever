@@ -1,6 +1,6 @@
 # Remaining kirmmin/latest Deltas
 
-Last updated: 2026-05-17
+Last updated: 2026-05-25
 
 Baseline checked:
 - Current repo after the loot granted/explosion/account-item-delete pass.
@@ -12,7 +12,11 @@ This is a parking lot for deltas still worth revisiting later. Do not blindly co
 
 - `LootItem.Granted` is now in the loot item packet model.
 - Loot bags now deliver immediately and send granted/explosion `ServerLootNotify` entries.
-- Immediate account-currency loot, including random Omnibit kill rewards, now uses the granted shower path.
+- Immediate account-currency loot, including random Omnibit kill rewards, now uses the optional granted-notify path with one actual currency row plus a local generic floater rather than old-branch split/fake shower rows.
+- Generated granted-notify rewards now batch all actually delivered generated rows into one explosion `ServerLootNotify`, so mixed generated rewards can present as one actual-row shower without one packet per row or fake split entries.
+- Delivered character-currency/cash loot now emits readable player-local floater and loot-channel chat feedback while preserving the existing currency update packets.
+- Granted/explosion loot rows now preserve table-backed presentation quality for static items, virtual items, and account items with an underlying `Item2Id`; currency rows still do not invent a quality value.
+- `!loot inspect` and `!loot capturenext` now expose the table-backed `ItemQuality.VisualEffectIdLoot` resolved from the loot row quality, so live smoke can distinguish rows with client-supported loot visuals from currency/unsupported rows.
 - `ServerAccountItemDelete = 0x097C` is present and account item removal sends the explicit delete packet.
 - Current group loot has basic FreeForAll, RoundRobin, NeedBeforeGreed, and Master distribution, which the old branch did not really solve.
 
@@ -35,12 +39,12 @@ Evidence:
 
 Remaining work:
 - Confirm the UI semantics attached to the middle `LootItem` flags under live captures, especially whether the current `OnlyMasterLootable` field directly drives `bIsMaster` or whether `bIsMaster` is still derived from `MasterList`/roll state.
-- `ServerLootNotify.ParentUnitId` is a client-side loot visual source field: the client stores it on the owner entity and later resolves it while preparing loot visual placement/scale. Current runtime still mirrors `OwnerUnitId` because `LootInstance` does not track a distinct source/parent entity.
+- `ServerLootNotify.ParentUnitId` is a client-side loot visual source field: the client stores it on the owner entity and later resolves it while preparing loot visual placement/scale. `LootInstance` can track a distinct source/parent entity; generated crafting loot now uses the crafting station as `ParentUnitId` while keeping the player as `OwnerUnitId`. Live evidence is still needed to decide when corpse/item callers should send a distinct source instead of mirroring `OwnerUnitId`.
 - If validation fails, adjust packet order before changing group/master semantics.
 
 Suggested validation:
 - Capture a client session where loot bag, solo corpse loot, need/greed loot, and master loot all render.
-- Use `!loot capturenext` before the live action to export `artifacts\verify\loot-evidence\*.json`; the artifact records the current `LootItem` field/boolean order, the runtime `ParentUnitId` mirror, mapped-but-unwired payload references for `ServerLootNotification` and `ServerLootBindOnPickup`, and the shape-only `ServerLootCanLoot` reference without wiring them into gameplay.
+- Use `!loot capturenext` before the live action to export `artifacts\verify\loot-evidence\*.json`; the artifact records the current `LootItem` field/boolean order, the runtime `ParentUnitId` mirror or distinct parent value, mapped-but-unwired payload references for `ServerLootNotification` and `ServerLootBindOnPickup`, and the shape-only `ServerLootCanLoot` reference without wiring them into gameplay.
 - Use `!loot inspect [ownerUnitId]` (or target the corpse/container first) to dump the active runtime loot snapshot before comparing packet bytes.
 - If one mode breaks, inspect the first differing boolean field before touching gameplay logic.
 
@@ -95,16 +99,16 @@ Remaining work:
 
 ### P2: Unused loot packets
 
-Current packet models exist but are not wired:
-- `ServerLootNotification`: mapped to the remote-looter `ChannelUpdate_Loot` consumer; still not emitted until group feedback policy is validated.
+Current packet models and feedback paths:
+- `ServerLootNotification`: mapped to the remote-looter `ChannelUpdate_Loot` consumer and now emitted to non-winning looters after a real winner delivery. The winning looter gets a local loot-channel item-link chat line for successful static-item delivery instead of a local-looter notification, matching current client evidence that local-looter notifications are ignored.
 - `ServerLootCanLoot`: shape remains one `LootUnitId`; the standalone scalar consumer/timing is not mapped. Full-row `ServerLootNotify` and `ServerLootItemUpdate` paths already populate the Lua-facing `bCanLoot`/`CanLoot` slot through the local loot row payload.
-- `ServerLootBindOnPickup`: mapped as two uint32 fields; the second field is the loot id consumed by the client `LootBindcheck` path, while the first field and confirmation policy remain unmapped.
+- `ServerLootBindOnPickup`: mapped as two uint32 fields and emitted before delivering bind-on-pickup static items; the second field is the loot id consumed by the client `LootBindcheck` path, while the first field and exact confirmation policy remain partially unmapped.
 - Adjacent diagnostic client opcodes `Client0x011B`/`Client0x011D` are not proven bind-confirm acknowledgements: direct and packed send-helper traces found no BOP-confirm send site for those opcodes.
 
 Remaining work:
 - Map standalone `ServerLootCanLoot`, the first `ServerLootBindOnPickup` uint, and bind-confirm result policy from decompile/sniff before use. For BOP, live-capture the `LootBindcheck` prompt and confirm whether acceptance sends another `0x014F ClientLootItem` collect request before adding pending-confirm state. These may be needed for retail-like group loot feedback, BoP prompts, and delayed can-loot updates after roll/master resolution.
 - Compare the live-capture template payloads from `artifacts\verify\loot-evidence` against client sniffs before wiring any of these opcodes into gameplay.
-- `ChatFormatLoot` says its `LootUnitId` must match `ServerLootNotification`, so group loot chat and notification path should be validated together.
+- `ChatFormatLoot` says its `LootUnitId` must match `ServerLootNotification`, so group loot chat and notification path should be validated together. The current winning-looter item chat deliberately uses `ChatFormatItemId` instead, because it does not depend on the unresolved local-looter notification behavior.
 
 ### P2: Account-currency grant model cleanup
 
@@ -115,15 +119,17 @@ Current status:
 Remaining work:
 - Old branch also grants CosmicReward when spending Omnibits/Protobucks. This is gameplay policy, not packet-required; port only if desired.
 
-### P2: Random Omnibit shower tuning
+### P2: Random Omnibit feedback tuning
 
 Current status:
-- Random Omnibit kill rewards are implemented with local constants and the granted shower packet path.
+- Random Omnibit kill rewards are implemented with local constants, the optional granted-notify packet path, a player-local generic floater, and a loot-channel chat line for the actual currency amount granted.
+- Multi-row generated granted-notify rewards now send one explosion notify containing the actual delivered rows, preserving the real amount and loot type per row.
+- Character-currency/cash loot delivery now emits the same readable floater/chat layer, for example `+17 Credits` and `You receive 17 Credits.`, without adding fake granted loot rows.
 
 Remaining work:
 - Find retail-ish chance/amount formulas if available in client tables, server data, or sniffs.
 - Confirm whether Omnibits should be suppressed for tutorial maps, PvP, pets, summons, or non-XP creatures.
-- Confirm whether shower entries should sum exactly to the grant amount. Current code preserves the exact total; old branch did not.
+- Live-smoke whether one actual granted account-currency row plus the local floater/chat feedback gives acceptable client visual feedback without recreating the old branch's fake split rows, and whether retail shows separate chat/floater text for ordinary character currencies.
 
 ### P3: Quest/content script ports from old branch
 

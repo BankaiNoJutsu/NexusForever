@@ -14,6 +14,9 @@ For Codex and contributor orientation, see [AGENTS.md](AGENTS.md). It captures
 the repo layout, common commands, generated files, constraints, and done
 criteria for future agent sessions.
 
+For the 36 feature-area completion snapshot and consolidated emit/producer gaps,
+see [CURRENT_STATUS.md](CURRENT_STATUS.md).
+
 ### Requirements
  * Visual Studio 2026 (.NET 10 and C# 14 support required)
  * MySQL Server (or equivalent, eg: MariaDB)

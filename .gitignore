@@ -372,3 +372,6 @@ all_wildstar_client_mysql.sql
 **/Decomp/Analysis/exports
 # Keep durable coverage snapshots outside logs so they can be tracked separately.
 **/Decomp/Analysis/logs
+
+# Exclude Patch Notes output
+Tools/PatchNotes/*

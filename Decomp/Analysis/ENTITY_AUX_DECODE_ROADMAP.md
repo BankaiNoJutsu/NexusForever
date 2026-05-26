@@ -75,6 +75,13 @@ not through static calls to the reader.
 | Apply phase | `140014f10` | `WorldSocket_ProcessServerMessage` | Walks same `socket+0x14b0` list; each node `vtable+0x58(handler, conn, opcode, parsedPayload)`. Returns `<0` error, `0` handled, `>0` try next. |
 | Handler registration | `140356a30` | `WorldZone_InsertUnitHandlerIntoList` | Example head-insert into `parent+0x14b0` for visible units (not opcode-specific). |
 
+Focused follow-up on `WorldZone_InsertUnitHandlerIntoList` changes the next anchor:
+
+- `InspectCodeAddresses` on `140356a30` shows the helper does **not** insert the zone/world object itself. It walks visible-unit node lists rooted at `param_1+0x1488` plus the local spatial-bucket families and splices each `plVar4` node into `param_1+0x14b0` with back-links at `plVar4+0x450`; a sibling family is inserted into `param_1+0x13c0` with back-links at `plVar4+0x4d0`.
+- The sole direct caller `FUN_14036dd50` is therefore the owning zone/world update method, not the handler consumer family. `FindPointerInData` on `14036dd50` hit `.rdata` cell `140b65a10`, but the adjacent code cell `14036dd30` is only a tiny getter from `this+0x12b0`; do **not** treat that recovered vtable as the `+0x50` / `+0x58` handler table.
+- A `FindImmediateInstructions` scan for `0x14b0` also surfaced sibling zone methods `14035c650`, `140369f30`, `14036a460`, `14036a980`, and `14036b8d0`, each splicing or unlinking the same `+0x450` / `+0x458` node family around `param_1+0x1488` and `param_1+0x14b0`.
+- Practical consequence: the next pass should recover the inserted `plVar4` node vtables themselves, using that sibling method cluster as the concrete next-address set, not keep chasing the caller's own vtable or already named loot consumer bodies.
+
 Callback table @ `140b55100` (installed at socket `+0x100`):
 
 | Index | Offset | Value | Notes |
@@ -89,9 +96,11 @@ Callback table @ `140b55100` (installed at socket `+0x100`):
 signature matches the `+0x58` handler shape `(ctx, ?, opcode, payload*)` but is invoked from
 the dedicated fast-path gate inside `WorldSocket_ProcessServerMessage`, not from the linked list.
 
-**Still blocked:** which `+0x58` handler nodes cover opcodes `0x025F`-`0x0264` (and the other
-**62** shape-mapped aux packets). Loot handlers (`1403db050`, ...) use parsed-object type tag
-`*(payload+0x80)==0x14` and are not registered as vtable slot `+0x58` in `.rdata` scans.
+**Still blocked:** which inserted `plVar4` handler-node vtables actually cover opcodes
+`0x025F`-`0x0264` (and the other **62** shape-mapped aux packets). Loot handlers (`1403db050`, ...)
+use parsed-object type tag `*(payload+0x80)==0x14` and are not registered as the linked-list
+`vtable+0x58` handlers. The direct caller/vtable recovered from `14036dd50` is a zone/world
+owner false lead, not the consumer family.
 
 Parallel **queued replay** path (already mapped elsewhere, not yet tied to `0x025F`):
 
@@ -117,10 +126,12 @@ Safe always: packet-shape tests, enum/model names, registration notes in `GameMe
 
 ## Next decompile passes (priority)
 
-1. **Handler `vtable+0x58` implementers** - For each node on the `+0x14b0` list, decompile slot
-   `+0x58` and catalog opcode switches (seed: classes registered by zone/unit systems, loot
-   cluster `1403d9340`...`1403db610`, group/housing handlers). Use `FindVtableSlotReferences.java`
-   and targeted `InspectCodeAddresses.java` passes.
+1. **Inserted handler-node `vtable+0x58` implementers** - Start from the node families that
+   `WorldZone_InsertUnitHandlerIntoList` actually splices into `param_1+0x14b0` / `param_1+0x13c0`
+   (`plVar4` with back-links at `+0x450` / `+0x4d0`), then recover their vtables and catalog
+   the `+0x58` opcode switches. Do not anchor on the direct caller `14036dd50` again. Use
+   `FindPointerInData.java`, `DumpNearbyData.java`, and targeted `InspectCodeAddress(es).java`
+   passes once a concrete node-family method is found.
 2. **Entity-create aux consumer** - Prove whether `0x025F`-`0x0264` are live packets,
    replay-only, or both; correlate with `ServerEntityCreate` (`0x0262`) send order via sniff.
 3. **Entity-stat aux cluster** - Map consumers for `0x0889` / `0x08CC` / `0x08F4` / `0x0939`

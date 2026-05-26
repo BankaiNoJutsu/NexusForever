@@ -272,6 +272,16 @@ See [EVIDENCE_LOOP_PROCEDURE.md](EVIDENCE_LOOP_PROCEDURE.md) for the spell and
 packet evidence workflow that pairs the decompile exports with fixture SQL,
 `/spell inspect4`, `/spell cast4`, diagnostics, and packet comparisons.
 
+For repo-wide feature-area completion (36 matrix rows), see
+[`CURRENT_STATUS.md`](../../CURRENT_STATUS.md) at the repository root.
+
+For gameplay/economy/social partial features (crafting, transport, matching,
+guild, ICComm, duels, fortune), use [GAMEPLAY_ECONOMY_SOCIAL_STATUS.md](GAMEPLAY_ECONOMY_SOCIAL_STATUS.md),
+[BLOCKER_EVIDENCE_PLAN.md](BLOCKER_EVIDENCE_PLAN.md), and matching detail in
+[MATCHING_IMPLEMENTATION_STATUS.md](MATCHING_IMPLEMENTATION_STATUS.md).
+Use `.\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1` for Trace-logged client
+smoke passes.
+
 ## How To Use The First-Pass Output
 
 Good starting points for packet/data mapping:

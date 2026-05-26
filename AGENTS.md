@@ -13,9 +13,14 @@ update it when repeated session friction appears.
 - `README.md` for the project summary, requirements, and quick commands.
 - `Tools/Setup/README.md` before changing local setup, launch, database, broker,
   or client runtime flows.
+- `CURRENT_STATUS.md` for the 36 feature-area completion snapshot and consolidated
+  emit/producer gaps before broad status or parity discussions.
 - `Decomp/Analysis/README.md` and `Decomp/Analysis/CONTINUATION_GUIDE.md`
   before any client-binary, Ghidra, opcode, packet, spell, or evidence-backed
   implementation work.
+- `Decomp/Analysis/BLOCKER_EVIDENCE_PLAN.md` before live-client passes on
+ partial gameplay/economy/social blockers (crafting, transport, matching, guild,
+ ICComm, duels, fortune).
 - `Tools/DataMapping/README.md` and `Tools/DataMapping/sql/README.md` before
   changing data-mapping scripts, staging tables, or safe world imports.
 - `Tools/NexusForever.LoadTest/README.md` before changing or running the
@@ -175,6 +180,13 @@ Run the load-test harness commands listed in
 - Runtime code must not query `wildstar_client`, `jabbithole`, or `nf_map_*`
   staging/reference tables. Promote reviewed data into runtime-owned world/auth
   tables, scripts, or code-owned assets first.
+- For local investigation of achievement IDs, names, checklist rows, and related
+  client data, query the imported MySQL reference databases first:
+  `wildstar_client` has `achievement`, `achievementchecklist`,
+  `achievementtext`, `achievementgroup`, and related tables; `jabbithole` may
+  also have useful `achievements`, `achievement_titles`, and
+  `character_achievements` data. Do not build scratch TBL readers for this
+  unless the reference DBs are unavailable or stale.
 - For decompile work, follow the evidence ladder in
   `Decomp/Analysis/CONTINUATION_GUIDE.md`. Do not implement behavior from a
   single observation, do not copy decompiled client source into the repo, and

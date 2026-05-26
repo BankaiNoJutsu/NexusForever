@@ -1644,6 +1644,268 @@ Twenty-fifth spell-helper/audio-selector follow-up implemented from this pass:
   raw state update or widen `CombatAI` behavior beyond the existing reset path
   without guessing.
 
+Combat AI NaN/stale-target stabilization follow-up implemented from the
+2026-05-25 live log pass:
+
+- `NexusForever.WorldServer_20260525_46184.log` showed repeated relocate skips
+  for entity positions at `NaN,NaN,NaN` on map `426`, followed by creature combat
+  continuing against targets that were no longer safe to chase. The log did not
+  prove a self-damage loop; the mapped failure was invalid movement state plus
+  stale/non-visible combat targets.
+- Existing client anchors support the defensive boundary without adding new
+  guessed packet behavior: visible-unit handler insertion is still rooted in the
+  `WorldZone_InsertUnitHandlerIntoList` family, local target/threat UI updates
+  remain covered by the `TargetThreatListUpdated` mapping, and `UnitEvaded`
+  remains mapped only as raw state value `4` at
+  `UnitState_MaybeDispatchUnitEvaded`.
+- Server implementation now enforces those invariants directly: `CombatAI`
+  requires the current combat target to remain visible before auto-attacking or
+  chasing; `ThreatManager` ignores owner-as-target threat and cleans up rejected
+  reciprocal threat; movement path launch/follow rejects non-finite positions,
+  non-positive speeds, and zero-length linear paths; spline, position command,
+  rotation command, and map relocate layers stop or clamp invalid state instead
+  of propagating `NaN`.
+- Verification passed:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PathMovementGeneratorTests|FullyQualifiedName~ThreatManagerTests" -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test\`
+  reported 12 passing tests, and
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo -p:OutDir=I:\GIT\NexusForever\artifacts\codex-build\`
+  completed with 0 warnings and 0 errors.
+- Remaining blocker: exact retail evade packet/state production and broader
+  leash threshold tuning are still not proven tightly enough from client code.
+  This pass is therefore an implemented server-side safety invariant, not a new
+  raw `UnitEvaded` producer.
+
+Combat AI idle aggro acquisition follow-up implemented from the same live
+behavior investigation:
+
+- Server source audit found a real aggro acquisition hole after the tutorial
+  leash/aggro split. `CombatAI.OnLoad()` intentionally keeps a leash-sized
+  `SetInRangeCheck(...)` so `OnExitRange()` can prune kited hostiles, while
+  `AggroEntity(..., requireAggroRange: true)` enforces the smaller initial
+  aggro radius. Because `GridEntity.CheckEntityInRange(...)` only emits
+  `OnEnterRange()` at the single configured range boundary, a player who first
+  entered the 50m leash bubble outside the 14m aggro radius could walk into the
+  actual aggro radius without a second range event.
+- Existing client/decompile evidence supports this only as server-side
+  acquisition bookkeeping: visible-unit handling remains tied to the mapped
+  `WorldZone_InsertUnitHandlerIntoList` family, threat/target UI behavior
+  remains covered by `ServerEntityTargetUnit`, `ServerEntityAggroSwitch`, and
+  `TargetThreatListUpdated`, and no new raw `UnitEvaded` producer is claimed.
+- `CombatAI.Update(...)` now scans leash-tracked visible units while idle every
+  0.5 seconds, orders candidates by current aggro distance, and calls the same
+  `AggroEntity(..., true)` gate used by `OnEnterRange()`. This preserves the
+  leash-sized cleanup range while allowing creatures to react when a player
+  moves into actual aggro range after already being visible/in-range.
+- Verification passed:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PathMovementGeneratorTests" -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test\`
+  reported 14 passing tests. Sequential single-process builds also passed for
+  `Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj` and
+  `Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj` using
+  `-m:1 -p:UseSharedCompilation=false` into `artifacts\codex-build`.
+- Remaining blocker stays unchanged: exact retail aggro radius tables,
+  evade-state packet production, and broader chase/leash tuning still need
+  stronger client or live-session evidence before further behavior widening.
+
+Combat AI chase-command stabilization follow-up implemented from the movement
+audit:
+
+- Server source audit found that `CombatAI.DoChase()` reissued
+  `MovementManager.Follow(...)` every chase tick whenever the target remained
+  outside the current attack band, even if the creature already had an active
+  follow command for the same target and the target had not moved meaningfully.
+  Repeatedly replacing one-shot path commands at tick cadence can produce
+  visible jitter or snap-like movement even when the underlying destination is
+  valid.
+- The implemented invariant is deliberately server-side and does not claim a
+  newly mapped client chase packet: while a chase path is active, `CombatAI`
+  records the target guid, target position, and follow distance. It suppresses
+  duplicate follow launches until the target changes, the target moves at least
+  2m horizontally, or the follow distance changes meaningfully. When the target
+  moves back inside chase distance, the AI finalises the active follow command
+  instead of letting the creature continue walking past the attack band.
+- `OnPositionEntityCommandFinalise(...)`, new aggro handoff, and reset paths
+  clear the active chase marker so later target changes or completed movement
+  can issue a fresh path normally.
+- Verification passed:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PathMovementGeneratorTests" -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test\`
+  reported 17 passing tests. Sequential single-process builds also passed for
+  `Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj` and
+  `Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj` using
+  `-m:1 -p:UseSharedCompilation=false` into `artifacts\codex-build`.
+- Remaining blocker stays unchanged: exact retail chase repath thresholds,
+  movement-controller packet cadence, and evade/leash state production are not
+  yet proven from the client. This pass only prevents redundant server command
+  churn while preserving existing target, threat, and path semantics.
+
+Combat AI profile/social-assist follow-up implemented from the Rider's Reef
+combat audit:
+
+- Read-only `wildstar_client` sampling for Rider's Reef combat Creature2 ids
+  (`73464`, `73465`, `73473`, `73492`, `73494`, `73566`, `73567`, `74862`)
+  showed `Creature2ActionSetId 4095` rows dominated by visual-effect actions
+  such as Holo Squares on enter-combat, Holo Envelop on birth/death, and Tech
+  Squares; the turret rows join to action set `0`/visual `7167`. The sampled
+  rows had `ActionData00/01 = 0`, so `Creature2Action` remains unsafe as a
+  combat-spell source until stronger native/action semantics are mapped.
+- `CombatAI` now resolves `CombatProfile` through `ICombatProfileProvider`
+  instead of baking spell/range constants into the runtime loop. The default
+  provider now loads the known Rider's Reef combat Creature2-to-profile mappings
+  from the tracked embedded `AI/CombatProfiles.json` data asset: auto-attacks,
+  aggro spell, chase distance, aggro radius, minimum leash radius, stationary
+  turret behavior, detailed tracing, and bounded assist radius are profile data
+  rather than `CombatAI` branches. Focused regressions prove both that the
+  embedded starter profiles load and that an injected provider can change aggro
+  spell/range behavior without editing `CombatAI`, which is a conservative step
+  toward data-driven AI while leaving `Creature2Action` behavior blocked.
+- A later fallback-profile cleanup added a top-level `default-combat` profile to
+  `AI/CombatProfiles.json`; default-enabled derived scripts now inherit their
+  fallback auto-attacks, aggro spell, and chase distance through the same
+  embedded data path while base unprofiled `CombatAI` remains passive.
+- `CombatProfile` now also carries optional `CombatSpecialAttack` rows. Each
+  row is cooldown-gated, faces the target when configured, resolves the
+  concrete `Spell4` row from game-table data, and casts through the existing
+  spell runtime with `PrimaryTargetId` set. Range gating now uses the same
+  primary-target shape as the spell validator: `TargetMinRange`, hit-radius-aware
+  effective max range with profile `MaxRange` as an explicit override, and
+  `TargetVerticalRange`. The AI now starts these rows through `TryCastSpell` so
+  rejected runtime starts leave the AI cooldown pending, and successful non-instant
+  rows use `Spell4.CastTime` as a movement/auto-attack lockout. This lets profiled
+  NPCs use normal cast-time/telegraph-capable spell data for WildStar-ish windups
+  without adding a speculative AI-only telegraph packet path.
+- The interrupt follow-up keeps that windup behavior cancellable through the
+  existing CC path: `UnitEntity.AddCCState(CCState.Interrupt)` cancels active
+  pending casts with `CastResult.SpellInterrupted`, and `CombatAI` clears the
+  profile cast-time lockout when the caster's `ActiveCCStateMask` contains
+  interrupt. This is server-side interrupt plumbing for proven CC application;
+  exact retail interrupt-armor consumption and combat-log policy stay evidence
+  blocked under the CC/runtime rows.
+- Profiled same-faction nearby creatures now assist an accepted aggro target by
+  adding the target to their threat list when they are alive, idle, within the
+  bounded assist radius, share faction, can attack the target, and the target is
+  still within the assisting creature's effective leash. Different-faction
+  nearby creatures do not assist.
+- Patrolling creatures now preserve the existing leash-return behavior before
+  relaunching their data-backed patrol spline. On reset, finite off-leash
+  positions launch a one-shot linear spline back to the leash position; after
+  the movement finalises with no target, `CombatAI` relaunches the stored
+  `EntitySplineModel` through `SplineAI`'s speed/mode normalisation, including
+  negative-speed reverse modes.
+- Verification passed:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~NexusForever.Game.Tests.Combat"`
+  reported 33 passing tests after the embedded-profile follow-up. A later
+  later targeted combat/entity filter reported 42 passing tests and includes a
+  constructor guard proving `ActivatorUtilities`
+  can still create `CombatAI` when no custom profile provider is registered,
+  an embedded-profile load regression for starter combat/turret Creature2 ids,
+  a data-backed default fallback regression,
+  plus special-attack cooldown/min-range/vertical-range, rejected-cast, and
+  cast-time windup regressions, plus the interrupt-cancel and windup-resume
+  regressions.
+- Remaining blocker stays unchanged: exact retail NPC spell kits, `Creature2Action`
+  action semantics, social aggro radius tables, exact patrol resume timing, and
+  evade/leash packet production still need native/client evidence before broad
+  AI widening.
+
+Combat AI baseline script attachment follow-up implemented from the spawn/script
+audit:
+
+- Server source audit found that `ScriptFilterMatch` treated a non-empty
+  `EntityScript` name list as exclusive. If a spawned creature had a named
+  quest/entity script, every script without a `ScriptFilterScriptNameAttribute`
+  was rejected, including generic baseline creature scripts such as `CombatAI`
+  and creature/id-filtered scripts that do not use a database script-name row.
+  That can make otherwise valid spawned creatures fail to aggro, chase, or
+  reset simply because another script was attached to the entity.
+- The implemented invariant is server-side and data-shape based: named entity
+  script rows now restrict only scripts that declare a script-name requirement.
+  Generic scripts, creature-id scripts, owner-id scripts, active-prop scripts,
+  and dynamic filters still participate in normal matching, while named scripts
+  continue to require an explicit name match. This restores baseline CombatAI
+  to named scripted creatures without making named-only scripts attach to
+  unrelated entities.
+- Verification passed:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~ScriptFilterMatchTests|FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PathMovementGeneratorTests" -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test\`
+  reported 23 passing tests. Sequential single-process builds also passed for
+  `Source\NexusForever.Script\NexusForever.Script.csproj` and
+  `Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj` using
+  `-m:1 -p:UseSharedCompilation=false` into `artifacts\codex-build`.
+- Remaining blocker stays unchanged: this fixes script attachment semantics for
+  spawned creatures, but exact retail aggro tables, evade state production, and
+  movement-controller cadence still require stronger client/live evidence.
+
+Combat AI non-player idle aggro containment follow-up implemented from the live
+Northern Wilds log audit:
+
+- Live server log
+  `Source/NexusForever.WorldServer/bin/Debug/net10.0/logs/NexusForever.WorldServer_20260525_2564.log`
+  showed the regression from the baseline-script restoration: immediately after
+  map `426` spawn/visibility updates, generic `CombatAI` instances added large
+  numbers of non-player unit ids to each other's threat lists, emitted the
+  `41368` aggro proxy spell, and in several cases started auto-attacking other
+  creature ids such as `1295`/`1296`. From the client this presents as NPCs
+  entering combat with targets the player cannot see.
+- No new native labels were added. This is a conservative runtime containment
+  pass on top of the existing combat/threat labels and the previous
+  `Creature2Action` blocker. Current evidence does not prove broad ambient
+  NPC-vs-NPC acquisition from generic `CombatAI`; profiled or scripted
+  non-player combat can be re-enabled only when a concrete table/script/native
+  source proves it.
+- `CombatAI` profiles now carry an explicit `AllowNonPlayerTargets` flag, which
+  defaults to false. Idle aggro scans, direct aggro handoff, target selection,
+  and current-target validation all reject non-player targets unless a future
+  profile opts in. The Rider's Reef combat profiles therefore continue to
+  acquire player targets, while the generic baseline script no longer makes
+  nearby hostile creatures fight each other just because both became visible.
+- Profiled assist now also requires the assisting ally to see the accepted
+  target before adding threat, preventing a transient combat state against a
+  target outside that ally's visible set.
+- Verification passed:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~ScriptFilterMatchTests|FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PathMovementGeneratorTests" -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test\`
+  reported 26 passing tests. Sequential single-process builds also passed for
+  `Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj` and
+  `Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj` using
+  `-m:1 -p:UseSharedCompilation=false` into `artifacts\codex-build`.
+- Remaining blocker: exact retail ambient social-combat/NPC-vs-NPC rules,
+  `Creature2Action` action semantics, and broader aggro table/profile data are
+  still unmapped. The current safe default is player-driven creature combat.
+
+Combat health-regeneration and source-health-range cleanup follow-up implemented
+from the Northern Wilds Yeti pass:
+
+- Runtime source audit found that `UnitEntity.HandleStatUpdate(...)` healed
+  every living unit by `MaxHealth / 200` on each stat tick even while in combat.
+  This is now gated behind `!InCombat`, so creatures can still recover after
+  combat/reset but no longer regenerate health while the player is actively
+  damaging them.
+- Database audit found the Yeti health ordering issue in the safe import layer.
+  `Yeti Snowstalker` (`Creature2 11945`) is the higher-difficulty fixed-level
+  row with source health `442`, but its exact-name bridge is still marked
+  `ambiguous_name`. `Yeti Frostclaw` (`Creature2 11948`) has source health
+  range `353-844`; the previous import promoted the range maximum `844` as a
+  template-wide `creature_info_property` `BaseHealth` override, so every level-3
+  Frostclaw spawn got the max-level health and could appear healthier than the
+  higher-difficulty Snowstalker.
+- `apply_safe_world_imports_from_staging.sql` now treats ranged source health
+  as unsafe for template-wide property promotion. It removes prior max-of-range
+  `BaseHealth` rows, only imports collapsed/single health values into
+  `creature_info_property`, and carries the tracked exact-name/fixed-health
+  Snowstalker correction (`11945`, `BaseHealth = 442`). The local
+  `nexus_forever_world` cleanup removed 1,892 stale max-of-range property rows,
+  then an idempotent safe-import run kept direct range-only overrides at zero.
+- Verification passed:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~UnitEntityDamageResultTests|FullyQualifiedName~DamageCalculatorRetailParityTests" -v minimal --nologo -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test\`
+  reported 22 passing tests,
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo -p:OutDir=I:\GIT\NexusForever\artifacts\codex-worldserver-build\`
+  completed with 0 warnings and 0 errors, and
+  `Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql` plus
+  `verify_safe_world_imports.sql` both executed successfully against local
+  MySQL. Post-cleanup Yeti checks reported `11945` with runtime override `442`,
+  `11948` with no ranged health override, and no Northern Wilds DataMapping-owned
+  spawn rows.
+- Remaining blocker: exact retail per-level/per-spawn health property promotion
+  is still not mapped. Ranged source health such as `353-844` remains evidence
+  for review, not a safe single runtime property value.
+
 Twenty-sixth Game.Spell Lua accessor follow-up implemented from this pass:
 
 - The remaining nearby `Game.Spell` accessor cluster is now mapped far enough
@@ -4918,8 +5180,9 @@ Ninety-sixth loot granted/explosion packet-field delta pass:
   Loot bags now follow the old branch's packet path more closely: consume the
   bag, deliver all generated contents without individual grant packets, then
   send an explosion `ServerLootNotify` with granted loot entries. Immediate
-  account-currency loot, including random Omnibit kills, now also sends an
-  explosion/granted notify after applying the currency reward.
+  account-currency loot, including random Omnibit kills, now also sends a
+  player-local generic floater and an explosion/granted notify after applying
+  the currency reward.
 - Account-item packet delta:
   current opcodes now include `ServerAccountItemDelete = 0x097C`, with a
   one-field payload containing the account inventory id. Account-item claim/take
@@ -4928,17 +5191,69 @@ Ninety-sixth loot granted/explosion packet-field delta pass:
   more closely.
 - Account-currency shower note:
   the old branch split account-currency notify payloads into up to 50 granted
-  loot entries for the visual shower. The current implementation keeps that
-  packet shape but distributes the total amount across the entries so the
-  notification amounts sum to the actual granted currency amount.
+  loot entries for the visual shower. The current implementation intentionally
+  avoids those fake split rows: granted account-currency notifications now emit
+  one actual granted row with the real currency type and full granted amount.
+  The same immediate account-currency feedback path now also emits a player-local
+  `ServerGenericFloaterString` plus a `ChatChannelType.Loot` chat line such as
+  `You receive 75 Omnibit.` for the actual amount granted. This is emulator-side
+  feedback coverage; exact retail account-currency chat/floater policy still
+  needs live-client validation.
+- Generated granted-notify grouping follow-up:
+  `GiveGeneratedLoot(..., sendGrantedNotify: true)` now builds one temporary
+  `LootInstance`, delivers each actual generated row, and emits one explosion
+  `ServerLootNotify` with the delivered rows marked `Granted`. A focused
+  regression covers mixed account-currency plus character-currency output and
+  proves the path sends one notify with two real rows, not one notify per row
+  and not old-branch fake split rows.
+- Character-currency feedback follow-up:
+  delivered `LootItemType.Cash` rewards now emit the same player-local
+  `ServerGenericFloaterString` plus `ChatChannelType.Loot` chat line, for
+  example `+17 Credits` and `You receive 17 Credits.`, while preserving the
+  existing `CurrencyManager.CurrencyAddAmount(..., isLoot: true)` update path.
+  This covers currency-only kill readability without adding fake loot rows.
+  Exact retail character-currency chat/floater policy still needs live-client
+  validation.
+- Static item feedback follow-up:
+  successful static-item delivery now also sends the winning looter a
+  `ChatChannelType.Loot` chat line with a `ChatFormatItemId` item link, using
+  `You receive [I].` or `You receive [I] xN.` text. This covers the local
+  looter feedback path without adding fake loot rows or wiring unresolved loot
+  auxiliary visuals. Exact retail static-item chat text/format policy still
+  needs live-client validation.
+- Parent-source follow-up:
+  the generated-loot grant path now accepts an explicit parent/source unit id.
+  The crafting fixed-recipe LootId path keeps `OwnerUnitId = player.Guid` while
+  passing the crafting station unit as `ParentUnitId`, so station-generated loot
+  has a distinct visual source without changing corpse-loot policy. Focused
+  loot/crafting verification passed with
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~NexusForever.Game.Tests.Loot|FullyQualifiedName~NexusForever.Game.Tests.Crafting.CraftingLootIdCraftHandlerTests"`,
+  and `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo`
+  succeeded with 0 warnings/errors.
+- Drop-presentation regression:
+  `LootPacketShapeTests.SendLootNotify_IncludeGrantedStaticItemPreservesItemQualityForDropPresentation`
+  now pins that granted/explosion static-item loot rows preserve
+  `ItemQuality2Id` from `Item2` along with owner/source/granted/can-loot flags,
+  so future loot-shower or visual-source changes do not strip item quality from
+  the client drop presentation.
+- Table-backed non-item quality follow-up:
+  `LootInstanceItem` now also resolves `ItemQuality2Id` for
+  `LootItemType.VirtualItem` from `VirtualItem.ItemQualityId` and for
+  `LootItemType.AccountItem` from the account item's underlying `Item2Id`.
+  `LootPacketShapeTests.SendLootNotify_IncludeGrantedTableBackedNonItemRewardsPreservesPresentationQuality`
+  pins the granted/explosion packet shape for both paths. Currency loot rows
+  intentionally keep quality `0` because no account-currency or character-currency
+  quality field is mapped.
+- Loot visual-effect evidence follow-up:
+  runtime snapshots, `!loot inspect`, and `!loot capturenext` artifacts now also
+  expose `ItemQuality.VisualEffectIdLoot` for the resolved loot-row quality.
+  This does not invent a new packet field; it makes the client-table visual
+  support visible during smoke validation of quality-colored loot beams/sparkles.
 - Verification:
-  `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj --no-restore`
-  succeeds with only the pre-existing `Spline.formation` warning. A normal
-  WorldServer build is blocked by the live `NexusForever.WorldServer` process
-  locking its bin output, but the same project builds successfully to isolated
-  output after the account-item delete packet change with
-  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
-  --no-restore -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\loot-granted-delta\`.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~NexusForever.Game.Tests.Loot"`
+  passed 40/40 after the loot visual-effect evidence follow-up, and
+  `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo`
+  passed with 0 warnings/errors.
 
 Ninety-seventh mapped opcode enum follow-up implemented from this pass:
 
@@ -10183,8 +10498,9 @@ Rider's Reef loot and self-anchored combat validation follow-up:
 - Immediate granted loot now follows the already mapped loot-bag explosion path
   more closely: the delivered item updates inventory/currency first and then
   sends the granted/explosion `ServerLootNotify`, without also sending an
-  individual `ServerLootGrant` for the same visual-shower item. This keeps random
-  OmniBit kill notifications on the cleaner granted-notify path.
+  individual `ServerLootGrant` for the same granted-notify item. Random
+  OmniBit kill notifications use that granted-notify path with a single real
+  account-currency row, not the old branch's split-row shower payload.
 - Verification: `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj
   --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo` passed,
   `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
@@ -10236,17 +10552,18 @@ Rider's Reef mine and turret behavior follow-up:
   retail video sequence in `o0ADNHDjDQ4` plus local table evidence for the
   starter mine spells: activation spell `85452` ("Dismantle Explosive Mine")
   emits RavelSignal and SetBusy effects, while the danger-zone spells are
-  `85430` easy, `85629` medium, and `85630` hard with durations `4000`/`3000`/
-  `2000` ms and radius telegraphs `1991`/`2440`/`2495`+`2496`.
+  `85430` easy, `85629` medium, and `85630` hard with `CastTime`
+  `4000`/`3000`/`2000` ms and radius telegraphs
+  `1991`/`2440`/`2495`+`2496`.
 - Runtime follow-up implemented from this pass:
   `TutorialCombatMineEntityScript` now attaches to combat mine creatures
   `73463`, `73667`, and `73668`. On a valid Rider's Reef combat-quest
   activation it marks the mine busy, broadcasts the mapped danger-zone spell
   start from the mine position with the corresponding telegraph data, then
   sends `ServerSpellGo`/`ServerSpellFinish` and clears the busy state after the
-  table duration. The existing `InteractionObjectiveUpdater` mine-credit path
-  remains responsible for quest progress, so the new script is visual/gameplay
-  behavior rather than a second objective mutator.
+  table cast-time warning window. The existing `InteractionObjectiveUpdater`
+  mine-credit path remains responsible for quest progress, so the new script is
+  visual/gameplay behavior rather than a second objective mutator.
 - Turret follow-up implemented from this pass:
   retail evidence shows the turret step as a fixed interrupt/destroy station.
   `CombatAI` now treats Rider's Reef turret creatures `73494` and `74862` as
@@ -10303,6 +10620,12 @@ Rider's Reef mine damage evidence and implementation follow-up:
   effect info in the emitted `ServerSpellGo` target-info payload. Damage remains
   scoped to the tutorial mine script rather than broadening generic spell
   runtime for non-unit simple-collidable casters.
+- Follow-up correction: the danger-zone warning delay now uses `Spell4.CastTime`
+  before falling back to `SpellDuration`, matching the table fields and generic
+  spell runtime for `85430`/`85629`/`85630`. Focused regression coverage pins
+  that `ServerSpellStart` remains visible during the warning window and that
+  `ServerSpellGo`/`ServerSpellFinish` plus busy removal occur only after the
+  cast-time delay elapses.
 - Verification: `run_ghidra_analysis.ps1 -Targets WildStar64.exe
   -MaxDecompiledFunctions 220 -ExportOnly -SkipCoverage` succeeded and applied
   labels; `functions.csv` and `selected_decompiled.c` contain the three new
@@ -10328,10 +10651,12 @@ Rider's Reef loot and mine activation log follow-up:
   ids that the server had never registered as tracked loot. The server correctly
   logged those as unknown loot item requests, so the visible drops were a packet
   presentation bug rather than missing starter creature loot.
-- `GlobalLootManager.GiveImmediateLoot` now suppresses granted explosion
-  notifies for `LootItemType.AccountCurrency`. Omnibit rewards still use the
-  direct `ServerLootGrant` delivery path, but no longer advertise fake
-  collectable ground loot that cannot be looted by `V`, `F`, or click.
+- Follow-up fix: `GlobalLootManager.GiveImmediateLoot` no longer emits split
+  fake account-currency rows. When granted notify is requested for
+  `LootItemType.AccountCurrency`, it now delivers the reward and sends one
+  granted/explosion `ServerLootNotify` row for the actual currency and amount.
+  This restores the optional visual-feedback path without advertising extra
+  collectable ground loot ids.
 - The same log showed starter mine scripts loading and mine creatures becoming
   visible, but no `ClientActivateUnit`/interaction packets and no mine arm or
   detonation entries while the player tested them. The fallback simple-collidable
@@ -10353,10 +10678,12 @@ Rider's Reef loot and mine activation log follow-up:
   `TutorialHoverboardBoosterEntityScript`, and `CombatAI` discovered, and no
   `ERROR`, `FATAL`, `Exception`, or `Unhandled` matches were found in the
   checked startup window.
-- A live follow-up on the relaunched process showed the loot fix in effect: the
-  next starter kill logged direct account-currency delivery and `ServerLootGrant`
-  only, with no granted `ServerLootNotify` ground-drop packet. The same window
-  still showed repeated map tick stalls while trace logging was enabled, with
+- A live follow-up on the relaunched process showed the prior suppression in
+  effect: the next starter kill logged direct account-currency delivery and
+  `ServerLootGrant` only, with no granted `ServerLootNotify` ground-drop packet.
+  The current single-row granted-notify path still needs live smoke to confirm
+  the client presentation. The same window still showed repeated map tick stalls
+  while trace logging was enabled, with
   bursts of entity/packet logging around player add and movement updates. The
   WorldServer NLog file and console targets now use async wrappers, the file
   target keeps the log file open, and concurrent file writes are disabled for
@@ -10808,9 +11135,19 @@ Loot roll/master request boundary follow-up:
   source field rather than an arbitrary spare dword. `Loot_HandleLootNotify`
   stores packet field `[1]` at owner entity `+0x36a8`; the only non-init reader
   found at `14045f080` resolves that stored entity id and uses the resolved
-  entity/model radius while preparing loot visual placement. Current
-  NexusForever still mirrors `OwnerUnitId` because `LootInstance` has no
-  distinct parent/source entity for spawned loot visuals.
+  entity/model radius while preparing loot visual placement. `LootInstance`
+  can carry a distinct `ParentUnitId`; generated crafting loot now keeps the
+  player as `OwnerUnitId` while using the crafting station unit id as the
+  `ParentUnitId` visual source when a station is present. Creature/item callers
+  still mirror `OwnerUnitId` when no separate visual source is known, so the
+  exact corpse/source-selection policy remains a live-capture blocker.
+- Granted/explosion notify coverage now verifies the drop row keeps
+  table-backed `ItemQuality2Id` from game-table `Item2`, `VirtualItem`, or an
+  account item's underlying `Item2Id`, alongside the mapped
+  owner/source/granted/can-loot fields. This keeps item-rarity coloring stable
+  for supported loot feedback; runtime capture now also records the matching
+  `ItemQuality.VisualEffectIdLoot` for client-smoke validation while broader
+  auxiliary loot visuals and any invented currency quality remain blocked.
 - The remaining roll feedback consumers are labeled:
   `Loot_HandleLootRollSelection` (`1403db510`) dispatches
   `LootRollSelected`/`LootRollPassed` feedback and removes the local roll row
@@ -13679,3 +14016,929 @@ Quest log / tutorial Codex classification follow-up (2026-05-25):
   chain are a stock client data/UI limitation. Server-side fixes can keep those
   quests active, tracked, and objective-synced, but cannot make them browseable
   in the Codex without client data or client code changes.
+
+Rider's Reef tutorial retail-video communicator follow-up (2026-05-25):
+
+- Evidence sources: Exile video `https://www.youtube.com/watch?v=qM_r4fpCu0o`
+  from the 5:30 mark through departure, plus Dominion comparator videos
+  `https://www.youtube.com/watch?v=B1T4TRL9A_A` and
+  `https://www.youtube.com/watch?v=o0ADNHDjDQ4`. Extracted local frames and
+  transcript windows line up the Exile movement/hoverboard/combat/mission/
+  departure beats with the Dominion hoverboard and combat equivalents.
+- `wildstar_client.CommunicatorMessages` rows for the starter tutorial do not
+  all use normal `QuestState` values. State `1` and `3` rows fit accepted/
+  completed lifecycle handling, but rows such as `5`, `6`, `7`, `8`, `9`,
+  `16`, and `18` are objective/checkpoint beats observed in the videos:
+  hoverboard terrain scan, combat-projector prompt, mine/turret/final-wave
+  callouts, mission-simulation Eldan/primal lines, decor, and departure.
+- Implemented a tutorial-scoped communicator sequencer rather than widening
+  generic quest-state handling. It sends the exact `CommunicatorMessages` rows
+  when the corresponding tutorial objective completes, preserving the generic
+  quest lifecycle path for accepted/completed rows.
+- Exile rows wired from the video/table crosswalk include `7981`, `8025`,
+  `7971`, `8026`, `8027`, `7972`, `8035`, `7973`, `8065`, `7982`-`7984`,
+  `7985`, `7987`, `7992`, and `8063`. Dominion comparator rows are wired in
+  parallel for the shared tutorial skeleton: `7997`, `8000`, `8006`, `8010`,
+  `8011`, `8018`, `8033`, `8034`, `7991`, `8055`-`8058`, `8060`, `8061`, and
+  `8064`.
+- The combat-projector cinematic text is now faction-specific: Exile keeps
+  `749303`/`749304`, while Dominion uses `749288`/`749289`, matching the
+  Dominion comparator framing instead of showing Exile copy to Dominion
+  players.
+- Verification: `NexusForever.Game` and `NexusForever.Script.Main` build in an
+  artifact output directory; focused tutorial communicator tests pass when the
+  pre-existing `ActivationInteractionGuardsTests.cs` compile blocker is
+  excluded from the test project invocation. A live client smoke pass remains
+  needed for audio queue timing, VO overlap, and cinematic playback feel.
+
+Rider's Reef DataMapping safe import verification (2026-05-25):
+
+- Target bridge: DataMapping-owned staging/output remains development-only, but
+  the safe SQL import now promotes reviewed runtime rows and applies a
+  Rider's Reef world `3460` cleanup for tutorial combat support data. The
+  cleanup deletes stray `73665` Beacon Arrow rows and normalizes imported
+  tutorial turret creatures `73494`/`74862` to runtime `NonPlayer` rows with
+  combat factions `1441`/`1442`.
+- Runtime owners checked: `WorldDatabase` loads runtime `entity` and
+  creature-info tables; `TutorialMapScript` uses `73494`/`74862` as imported
+  anchor/fallback turret creatures; `CombatAI` treats the same Creature2 ids as
+  Rider's Reef turret actors. `rg` over `Source/**/*.cs` found no runtime reads
+  of `nf_map_*`, `wildstar_client`, or `jabbithole` tables, only explanatory
+  comments and the runtime boundary test.
+- Mapping smoke:
+  `python Tools\DataMapping\map_wildstar_data.py --limit-creatures 200
+  --limit-relation-rows 500 --limit-spawns 500 --output-dir
+  Tools\DataMapping\output_test` completed successfully. The manifest generated
+  at `2026-05-25 09:12:48` produced `500` world-entity candidate rows and
+  `913` world-entity-stat candidate rows.
+- Staging/import verification:
+  `python Tools\DataMapping\load_mapping_staging_tables.py --apply` loaded
+  `95/95` staging tables from the full mapping output, including `732694`
+  `nf_map_world_entity_candidate` rows and `2442855`
+  `nf_map_world_entity_stats_candidate` rows, then restored `local_infile`.
+  Applying `Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql`
+  succeeded on `nexus_forever_world`.
+- SQL verification:
+  `Tools\DataMapping\sql\verify_safe_world_imports.sql` reported `95`
+  `nf_map_*` tables, `17520` safe vendor rows, `460121` safe loot rows, `3795`
+  mapped creature runtime loot groups, `17612` safe creature rows, and `23865`
+  safe item-container rows. Rider's Reef checks returned
+  `riders_reef_beacon_rows=0`, `riders_reef_wrong_faction_turrets=0`, and
+  `riders_reef_wrong_type_turrets=0`; the remaining world `3460` target rows
+  were two `73494` entities with `type=0`, `faction1=1441`, `faction2=1441`.
+
+Build 16042 starter-zone classification follow-up (2026-05-25):
+
+- Current NexusForever target: build 16042 / Reloaded-style character creation
+  treats Rider's Reef (`world 3460`) as the shared Novice new-player experience
+  for both factions. `CharacterContext` seeds `CreationStart = 4` rows for every
+  race/faction into world `3460`.
+- Veteran (`CreationStart = 3`) skips the NPE and starts on surface starter
+  zones: Exile Human/Granok to Northern Wilds (`426`), Exile Aurin/Mordesh to
+  Everstar Grove (`990`), Dominion Chua/Draken to Crimson Isle (`870`), and
+  Dominion Cassian/Mechari to Levian Bay (`1387`).
+- Rider's Reef departure scripts route the final Exile tutorial quest `10528`
+  to Everstar Grove or Northern Wilds, and the final Dominion tutorial quest
+  `10530` to Crimson Isle or Levian Bay. `StarterTutorialDefinition` also pins
+  the four departure terminal creature ids: `73605`, `73606`, `74772`, `74773`.
+- Historical context: archived public WildStar pages describe Gambler's Ruin
+  (Exile) and Destiny (Dominion) as older level 1-3 arkship training zones with
+  exits to the same surface starter zones. They are useful retail-history
+  context, but should not displace Rider's Reef when restoring build 16042
+  Novice parity unless a task explicitly targets pre-16042 arkship behavior.
+
+Rider's Reef start-flow routing evidence matrix follow-up (2026-05-25):
+
+- Added `Decomp/Analysis/coverage/RIDERS_REEF_EVIDENCE_MATRIX_2026-05-25.md`
+  as the timestamped tutorial beat matrix. It maps the build 16042 start model,
+  Exile/Dominion tutorial videos, `Quest2`/`QuestObjective`/`TargetGroup`
+  evidence, repo files, verification state, and the manual smoke checklist.
+- Extracted Rider's Reef terminal routing into
+  `StarterTutorialDepartureRouting`. Q10528/Q10530 now share the same
+  destination contract while preserving their faction-specific default
+  fallbacks: Exile defaults to Northern Wilds (`426`) and Dominion defaults to
+  Crimson Isle (`870`) when no valid terminal is recorded.
+- Local `wildstar_client.Quest2` verification for the surface welcome rows:
+  `9112` and `9113` are Exile welcome quests with `preq_quest0=10528` and
+  `preq_flags=1`; `9126` and `9127` are Dominion welcome quests with
+  `preq_quest0=10530` and `preq_flags=1`. The routing helper pins these welcome
+  quest IDs with the same terminal destinations.
+- Local `wildstar_client.Creature2` verification showed final Rider's Reef quest
+  completion is received by surface starter NPCs, not by the Rider's Reef
+  terminals themselves: `10528` receives on `53532`/`53533` and `10530`
+  receives on `53620`/`53619`. `QuestManager` therefore allows only the curated
+  starter tutorial receiverless completion set, including `10528`/`10530`, to
+  complete before those surface receivers are visible; the normal receiver gate
+  still applies to non-curated quests.
+- Local `wildstar_client.Quest2`/`Quest2Reward` verification for the Rider's Reef
+  reward rows: combat quests `10518`/`10524` use XP override `655`; ship-interior
+  quests `10520`/`10523` use XP override `1055`; cryopod quests `10525`/`10526`
+  grant Omnibit (`Quest2Reward` ids `9494`/`9530`, account currency object `6`,
+  amount `1`); final departure quests `10528`/`10530` grant item `80875`
+  (`Quest2Reward` ids `9503`/`9504`, amount `1`). Focused reward regressions now
+  pin the account-currency and item reward paths used by the tutorial chain.
+- Added focused regressions:
+  `CharacterCreationStartLocationTests` covers all 8 race/faction Novice
+  `CreationStart=4` rows to Rider's Reef, all 8 Veteran `CreationStart=3`
+  surface routes, Level 50 spot checks, and absence of historical/non-retail
+  start seeds; `TutorialMapScriptQuestInitialisationTests` covers the one-quest
+  initial grant (`10513` Exile / `10521` Dominion), completed-movement recovery
+  into `10527`/`10532`, delta-only live grants without a mid-play quest
+  snapshot, no duplicate starter grants, and follow-up re-entry not restarting
+  the root quests; `TutorialQuestChainRoutingTests` covers the table-backed
+  Rider's Reef follow-up chain; `StarterTutorialDepartureRoutingTests` covers
+  all four terminals, fallback behavior, teleport reason, and welcome quest
+  grants, cross-faction terminal IDs falling back to faction defaults,
+  null/missing terminal memory falling back to faction defaults, duplicate
+  welcome guards, and no welcome grant when teleport is denied;
+  `PlayerStarterTutorialDepartureTerminalTests` and
+  `InteractionObjectiveUpdaterTests` cover known-terminal filtering,
+  per-player terminal storage, terminal recording from the activation objective
+  update path, and direct activation checklist credit for the actual departure
+  checklist interactables via `QuestChecklistIdx`; `StarterTutorialActivateEffectTests`
+  covers the spell activate path that also feeds the terminal objective families;
+  `TutorialMapScriptDepartureEntityTests` covers fallback-spawned Exile and
+  Dominion departure terminals plus the eight checklist interactables, including
+  `HasInteractionPrereq` flags and checklist indices; `TutorialQuestChainRoutingTests`
+  pins the logout/re-entry recovery boundary so the final departure quests
+  `10528`/`10530` do not enter the tutorial auto-complete recovery set.
+- Verification: isolated test run with the focused Rider's Reef/Quest filters
+  passed 92/92 after adding both-faction starter grant and follow-up re-entry
+  coverage, table-backed reward coverage, the recovery boundary, re-applying
+  final quest receiver-gate coverage, and the direct activation checklist credit
+  change. The narrower `QuestTests` filter passed 14/14; the map-initialisation
+  filter passed 4/4.
+  Isolated output paths are required while the local WorldServer process is
+  running because it locks normal `bin\Debug\net10.0` outputs. The owning
+  `NexusForever.WorldServer` build also succeeded with 0 warnings/errors.
+- Runtime restart check: `Restart-NexusForeverAuthWorldLocal.ps1
+  -ClientDirectory "I:\WildStar" -SkipClientLaunch -WaitTimeoutSeconds 120`
+  returned successfully. Fresh Auth/World PIDs were `18420`/`42184`, the new
+  world log had no reload/error/stack-overflow matches, and ports `24000`,
+  `5000`, and `23115` accepted TCP connections.
+- Fresh post-restart world-log review found startup/message-registration and
+  map-cache evidence for `world 3460`, but no new character-create, tutorial
+  quest-progress, Q10528/Q10530 completion, or terminal-handoff lines after
+  startup.
+- Read-only `nexus_forever_character` audit on 2026-05-25 found 28 local
+  characters still on `worldId=3460` and one local character on `426` at the
+  Human/Granok Veteran start coordinates; no character rows were on `990`,
+  `870`, or `1387`.
+- The same audit found early tutorial quest rows such as `10513`/`10527` and
+  `10521`/`10532`, but no persisted `10528`, `10530`, `9112`, `9113`, `9126`,
+  or `9127` rows. Current local data therefore proves partial early NPE
+  coverage and one Northern Wilds surface-start row only, not a completed
+  terminal handoff.
+- Server-side runtime is ready for manual smoke, but live client smoke remains
+  blocked in this pass because this API context cannot safely drive the full
+  native Exile/Dominion playthrough against the already running local
+  `WildStar64` session.
+
+Eighty-ninth Rider's Reef restoration-plan verification (2026-05-25):
+
+- Re-ran the focused Rider's Reef regression filter at 92/92 with isolated
+  `OutputPath`; no beat-fix code changes were required.
+- Re-ran `Restart-NexusForeverAuthWorldLocal.ps1 -ClientDirectory "I:\WildStar"
+  -SkipClientLaunch`; fresh Auth/World PIDs were `30632`/`43212`, world log
+  `NexusForever.WorldServer_20260525_43212.log` was clean, and ports `24000`/`23115`
+  accepted connections.
+- Post-restart DB audit unchanged: 28 characters on `worldId=3460`, one on `426`,
+  no persisted `10528`/`10530` or welcome-quest rows. F-023 remains PARTIAL until
+  manual Exile/Dominion terminal-handoff smoke completes.
+
+Ninetieth Rider's Reef initial-chain correction (2026-05-25):
+
+- Fixed the fresh Rider's Reef entry grant path so the client receives only the
+  movement root quest (`10513` Exile / `10521` Dominion) instead of both movement
+  and hoverboard roots at spawn. `10527`/`10532` remain in the table-backed chain
+  and are recovered only when the movement root is already completed.
+- Patched both grant producers: `TutorialMapScript.EnsureTutorialQuests` and
+  `Player.TryRecoverStarterTutorialOnEnteredWorld`.
+- Verification: map/chain filter passed 17/17, focused Rider's Reef filter
+  passed 79/79, `NexusForever.Game` build passed, and `NexusForever.Script.Main`
+  build passed after one transient locked-DLL copy retry.
+
+Ninetieth Rider's Reef initial-chain UI follow-up (2026-05-25):
+
+- Live UI smoke showed the opening flow could still present the completed
+  movement root beside the newly recovered hoverboard quest. The follow-up now
+  removes the mid-play `ServerQuestInit` refresh from
+  `TutorialMapScript.EnsureTutorialQuests`,
+  `Player.TryRecoverStarterTutorialQuestChain`, and the combat-projector
+  transition recovery path. `QuestAdd` still emits the normal live quest state
+  delta, but the client no longer receives an additive quest snapshot during the
+  "three points -> platform -> projector" opening chain.
+- `QuestManager.SendInitialPackets` still suppresses completed movement roots
+  `10513`/`10521` from login snapshots while paired hoverboard quests
+  `10527`/`10532` are active, but no tutorial grant path depends on that packet
+  during live play. Verification: focused quest/map/chain/projector filter
+  passed 35/35 after rebuild, and the broader `FullyQualifiedName~Tutorial`
+  filter passed 74/74 from the same assembly.
+
+Ninety-first Rider's Reef hoverboard presentation/recovery pass (2026-05-25):
+
+- Local build 16042 table evidence for the presentation hooks:
+  `Spell4` `81662` is `Pre-Tutorial - Scan (Give Achievement)` with visual
+  group `23025`; `82460` is `HA15 - Hoverboard Race Objective Increment FX`
+  with visual group `17971`; `85424` is `Extra Gas - NPEU - Part 1` with visual
+  group `23866` and a one-second `MountSpeedMultiplier` (`Property 191`)
+  modifier; `82298` is the mapped hoverboard sprint visual; `85562` is the
+  Rider's Reef hoverboard equip spell proxied from projector activation
+  `86744`.
+- Implemented only the mapped table-backed hooks at the time: opening movement
+  objective completion was initially wired to scan spell `81662`, course
+  holoring/objective-ring creatures `73416`/`70939` range contact cast race FX
+  `82460` plus the sprint/trail visual `82298`, and booster creature `73461`
+  casts `85424` and `82298` while applying a stronger forward velocity aligned
+  to the table's 1.5x boost multiplier. Later 2026-05-25 passes reject the
+  `81662` opening-pad cast and then narrow ring contact back to character-side
+  `82460` only after live observation showed the added pulse/trail stack was
+  the wrong presentation.
+- Recovery fixes: Rider's Reef entered-world recovery now directly remounts via
+  `85562` when the hoverboard ride objective is still incomplete, so logout
+  while mounted no longer depends on being within range of projector `73419`.
+  Recovery no longer remounts after the ride objective is complete and only the
+  combat-projector objective remains. When the finish objective is recovered
+  from the padded `51734` volume, the player is snapped locally to the exact
+  `WorldLocation2 51734` center so projector interaction starts from the mapped
+  table coordinates.
+- Verification: `TutorialHoverboardCourseEffectTests` and
+  `TutorialCommunicatorCheckpointTests` passed 16/16; the broader
+  `FullyQualifiedName~Tutorial` filter passed 66/66; isolated-output
+  `NexusForever.Game` and `NexusForever.Script.Main` builds succeeded. The
+  script build had one transient locked-file retry warning before succeeding.
+- Remaining blocker: exact client-visible animation layering, SFX/sound, hoverboard
+  trail persistence, and finish snap feel still require native Exile/Dominion
+  live smoke; these are now instrumented through table-backed casts rather than
+  speculative packets.
+
+Ninety-second Rider's Reef hoverboard presentation follow-up (2026-05-25):
+
+- Added the missing table-backed sprint/trail cast at the hoverboard grant
+  boundary: when Exile hoverboard objective `21324` or Dominion objective
+  `21354` completes, `StarterTutorialQuestScript` now casts `82298` on the
+  player so the trail starts immediately after the projector/equip step instead
+  of waiting for the first ring, booster, or relog recovery path.
+- Extended course regressions to cover the retail runtime shape where the range
+  callback entity is the mounted hoverboard vehicle. Ring creatures `73416` and
+  `70939` initially had test coverage proving `82460` and `82298` were cast on
+  the pilot, while booster `73461` applies `85424`/`82298` to the pilot and
+  velocity to the vehicle mover. A later temporary remap tried `84387` on ring
+  pass; the current follow-up backs that out for live presentation parity.
+- Table audit boundary is now: `82298` is the mapped hoverboard sprint visual,
+  `82460` is the current ring-contact character-side lightning/objective FX,
+  `84387` is mapped-only NPEU Power Boost tier-1 pulse/trail/speed pending an
+  exact retail producer, `85424` is the NPEU Extra Gas booster speed/visual
+  hook, and higher NPEU Power Boost tiers remain mapped-only pending evidence
+  for tier progression.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-build --no-restore -p:OutputPath=I:\GIT\NexusForever\artifacts\verify\riders-reef-hoverboard-current\
+  -m:1 -nr:false -v minimal --nologo --filter "FullyQualifiedName~TutorialHoverboardCourseEffectTests|FullyQualifiedName~TutorialCommunicatorCheckpointTests"`
+  passed 20/20, and the rebuild-backed same filter with
+  `OutputPath=I:\GIT\NexusForever\artifacts\verify\riders-reef-hoverboard-current-rebuild\`
+  passed 20/20 after compiling `NexusForever.Game`, `NexusForever.Script.Main`,
+  and `NexusForever.Game.Tests`.
+
+Ninety-second-b Rider's Reef IVehicleEntity hoverboard speed audit (2026-05-25):
+
+- `IVehicleEntity` extends `IWorldEntity` rather than `IUnitEntity`, and
+  NexusForever's `UnitPropertyModifier` handler only applies spell property
+  modifiers to `IUnitEntity` targets. A booster cast targeted directly at the
+  hoverboard vehicle would therefore drop the `Property 191`
+  (`MountSpeedMultiplier`) modifier in current runtime code.
+- The build 16042 table rows support pilot-side mount speed instead of
+  vehicle-targeted speed: `80530` (`Mount Sprint - Tier 2`) applies
+  `Property 191` with a `1.5` multiplier to target flags `Caster`, while
+  `85424` (`Extra Gas - NPEU - Part 1`) applies `Property 191` with a
+  one-second `1.5` multiplier to target flags `Target` and proxies `82501`
+  safe-fall on target flags `Caster`. `UnitProperty2` identifies property
+  `191` as `MountSpeedMultiplier` and property `134` as
+  `FallingDamageMultiplier`.
+- Visual-table audit for the same hooks lines up with the requested
+  presentation pass: `82298` visual group `7708` attaches
+  `Art\Mount\Hoverboard\Hoverboard_FX\PRP_FX_HoverBoard_Trail_000.m3`;
+  `85424` visual group `23866` includes
+  `Art\FX\Model\Props\HoverRacing\Hover_SpeedBoost_Trail_000.m3`,
+  `Art\FX\Model\Props\HoverRacing\Hover_Jump_Minor_Crackle_000.m3`, and a
+  sound-bearing visual effect `48814` (`soundEventId00=68170`); `82460`
+  visual group `17971` resolves to the character-side ring/objective impact
+  visual
+  `Art\FX\Model\Impacts\Warrior\ElectriShot_Hit_BLU\ElectriShot_Hit_BLU.m3`
+  with `soundEventId00=6570`.
+- The current booster implementation is therefore intentionally left
+  pilot-targeted (`PrimaryTargetId = player.Guid`) while applying the velocity
+  impulse to the controlled mover/vehicle. The next live smoke should verify
+  that the 16042 client applies the pilot's `MountSpeedMultiplier` while the
+  player controls the hoverboard; if it does not, that is a client/runtime
+  mapping blocker rather than evidence for retargeting `85424` to the vehicle.
+
+Ninety-second-c Rider's Reef scan Disable suppression (2026-05-25):
+
+- Live client smoke on the opening step-pad movement objectives, during the
+  earlier wrong scan mapping, showed table scan spell `81662` presenting
+  "Disable" and leaving the character stuck. The table row explains the
+  symptom: `81662` has scan visual group `23025`, but its first effect is
+  `CCStateSet` state `12`
+  (`CCState.Disable`) for `2000ms`.
+- The server no longer uses `81662` for the opening step-pad objective
+  completion after user screenshot/video evidence separated the pad pose beat
+  from the later hoverboard ring pulse. `SpellEffectHandler` still drops only
+  this exact starter-tutorial `Disable` CC effect if `81662` is encountered, so
+  an accidental or future mapped scan cast cannot call `AddCCState`, zero
+  movement, or emit `ServerEntityCCStateSet`. This is a narrow rejection of the
+  server-applied CC effect, not a broad CC runtime change.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseSharedCompilation=false
+  -p:OutputPath=I:\GIT\NexusForever\artifacts\verify\riders-reef-scan-disable-fix\
+  -m:1 -nr:false -v minimal --nologo --filter
+  "FullyQualifiedName~CCStateSetFixtureWitnessTests|FullyQualifiedName~TutorialCommunicatorCheckpointTests|FullyQualifiedName~TutorialHoverboardCourseEffectTests"`
+  passed 22/22 after rebuilding `Game`, `Script.Main`, and `Game.Tests`.
+
+Ninety-second-d Rider's Reef ring/pad presentation remap (2026-05-25):
+
+- User-provided screenshots separate the early pressure-plate step pads from
+  the later hoverboard ring/booster presentation. Local table evidence matches
+  that split: opening movement objectives `21271/21279/21272` and
+  `21300/21301/21303` point at world locations `51735/51736/51737`, where
+  pressure plate creatures `74767/74768/74769` and early objective ring
+  `70939` rows are imported. Those pressure plates carry model-sequence
+  priority rows gated by prerequisite rows `42977/42978/42979`
+  (`PrerequisiteType.QuestObjective`, table id `68`), but no exact server-side
+  player pose/emote producer has been proven yet.
+- The initial hoverboard ring screenshot pass mapped `84387` (`Power Boost -
+  NPEU - Part 1`) as a candidate because visual group `25116` contains
+  `Art\FX\Model\Props\HoverRacing\Hover_Pulse_001_BLU.m3`,
+  `Art\FX\Model\Props\HoverRacing\Hover_Trail_Tier_000.m3`, sound event
+  `68166`, and a six-second `Property 191` (`MountSpeedMultiplier`) tier-1
+  modifier. Follow-up live observation clarified that ring contact should look
+  like character-side lightning/arm movement rather than that added pulse/trail
+  stack. Course ring contact now casts only `82460` on the pilot; `84387`
+  remains mapped-only until its exact retail producer is proven. Opening step
+  objectives no longer cast `81662`; pre-hoverboard `70939` contact is
+  regression-covered to emit no hoverboard FX.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseSharedCompilation=false
+  -p:OutputPath=I:\GIT\NexusForever\artifacts\verify\riders-reef-ring-powerboost-remap\
+  -m:1 -nr:false -v minimal --nologo --filter
+  "FullyQualifiedName~TutorialCommunicatorCheckpointTests|FullyQualifiedName~TutorialHoverboardCourseEffectTests|FullyQualifiedName~CCStateSetFixtureWitnessTests"`
+  passed 23/23 after rebuilding `Game`, `Script.Main`, and `Game.Tests`;
+  the no-build broader `FullyQualifiedName~Tutorial` filter passed 78/78 from
+  the same output assembly.
+
+Ninety-second-e Rider's Reef projector/ring correction (2026-05-25):
+
+- Follow-up live validation reported that the hoverboard projector could no
+  longer reliably activate. Build 16042 table rows still identify projector
+  creature `73419` with activate spell `86744`, whose effects activate the
+  target and proxy hoverboard equip spell `85562` back to the caster. The world
+  handlers now keep the table-backed `86744` path, but recover when the
+  emulator spell cast is blocked: `ClientActivateUnitCastHandler` directly
+  casts `85562` and completes the projector activation, while
+  `ClientActivateUnitHandler` also casts `85562` for the non-cast activation
+  opcode path.
+- The same pass narrowed ring contact to `82460` only. Table visual group
+  `17971` uses `ElectriShot_Hit_BLU` on character attachment `8`, matching the
+  observed lightning/arm movement better than the temporary `84387`/`82298`
+  pulse/trail stack. `84387` stays mapped-only for Power Boost/holoring
+  investigation.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseSharedCompilation=false
+  -p:OutputPath=I:\GIT\NexusForever\artifacts\verify\riders-reef-projector-ring-fix\
+  -m:1 -nr:false -v minimal --nologo --filter
+  "FullyQualifiedName~ClientActivateUnitHandlerTests|FullyQualifiedName~ClientActivateUnitCastHandlerTests|FullyQualifiedName~TutorialHoverboardCourseEffectTests"`
+  passed 11/11 after rebuilding `Game`, `Script.Main`, `WorldServer`, and
+  `Game.Tests`; the no-build broader correction slice
+  `"FullyQualifiedName~Tutorial|FullyQualifiedName~ClientActivateUnitHandlerTests|FullyQualifiedName~ClientActivateUnitCastHandlerTests"`
+  passed 82/82 from the same output assembly. The first run was blocked by an
+  unrelated duplicate namespace in `SpellTargetValidationTests`; that local
+  compile fix was applied before rerunning the filter.
+
+Ninety-third Rider's Reef hoverboard finish-snap follow-up (2026-05-25):
+
+- Local `wildstar_client.Quest2`/`QuestObjective` verification shows Exile
+  hoverboard quest `10527` uses projector objective `21324`, ride objective
+  `21323`, and finish interactable objective `21325`; Dominion `10532` uses
+  the equivalent `21354`, `21355`, and `21356`. The ride objectives
+  `21323`/`21355` and finish interactable objectives `21325`/`21356` all point
+  to `WorldLocation2 51734`, whose build 16042 coordinates are
+  `(48.0406, -830.33, 156.467)` on world `3460`.
+- The previous recovery branch snapped to `51734` only when it had to complete
+  the ride objective itself. If the normal area-objective sync had already
+  completed the ride objective before recovery ran, the player could remain in
+  the padded finish volume instead of being placed on the exact mapped
+  interactable coordinates. `Player.TryRecoverStarterTutorialHoverboardRideObjective`
+  now also calls the finish snap when projector and ride objectives are complete
+  and the finish interactable objective is still incomplete.
+- `StarterTutorialDefinition.ShouldRecoverHoverboardFinishPosition` captures the
+  condition so both factions keep the same boundary: projector complete, ride
+  complete, finish interactable not complete.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseSharedCompilation=false -p:OutputPath=I:\GIT\NexusForever\artifacts\verify\riders-reef-hoverboard-finish-snap\
+  -m:1 -nr:false -v minimal --nologo --filter "FullyQualifiedName~StarterTutorialHoverboardFinishRecoveryTests|FullyQualifiedName~TutorialHoverboardCourseEffectTests|FullyQualifiedName~TutorialCommunicatorCheckpointTests|FullyQualifiedName~QuestTests|FullyQualifiedName~TutorialMapScriptQuestInitialisationTests|FullyQualifiedName~TutorialQuestChainRoutingTests"`
+  passed 58/58 after compiling `NexusForever.Game.Static`, `NexusForever.Game`,
+  `NexusForever.Script.Main`, and `NexusForever.Game.Tests`.
+
+Northern Wilds Scientist path-mission creature-info pass (2026-05-25):
+
+- No new native labels were added. This pass uses already recorded
+  `PathMission` type evidence: client mission type `2` dispatches through the
+  scientist-general lookup (`ScientistMission_LookupById`), while
+  experimentation is the separate `0x16` type and therefore not applicable to
+  Northern Wilds missions `42`, `160`, or `648`.
+- Local MySQL evidence:
+  `wildstar_client.pathmission` rows `42`/`160`/`648` have
+  `pathMissionTypeEnum=2` and `objectId` values `34`/`130`/`128`, matching
+  `PathScientistCreatureInfo` rows. Jabbithole `path_missions` rows by
+  `game_id` map these to mission creatures: `42` uses `6651`/`11313`
+  Dominion turrets, `160` uses `118` Vitalium Crystal, and `648` uses the
+  Northern Wilds Skeech set. The reviewed creature bridge maps those Jabbithole
+  rows to runtime Creature2 IDs `18680`, `15888`, `11907`, `11910`, `11912`,
+  `11917`, `36429`, and `36884`.
+- Implemented only the mapped Northern Wilds surface in
+  `Source/NexusForever.Script.Main/Quests/NorthernWilds/NorthernWildsScientistPathMissionScripts.cs`:
+  when a Scientist sees one of the mapped mission creatures the script emits
+  `ServerPathScientistAddCreatureInfoToCreature` plus
+  `ServerPathScientistUnitScanParameters`; on activation success it completes
+  the corresponding active mission through `PathManager`.
+- Blocker retained: the generic scanbot scan-result/minigame packet semantics
+  are still not mapped. Do not complete arbitrary Scientist missions from
+  `ClientPathMissionAttemptScientistExperimentation`, because that packet only
+  carries four experimentation pattern IDs and the Northern Wilds rows are not
+  experimentation missions.
+- Verification: `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
+  --no-restore -v minimal --nologo` passed after a transient locked compiler
+  output retry and one accessibility fix.
+
+Northern Wilds Soldier holdout control-point pass (2026-05-25):
+
+- No new native labels were added. This pass uses the existing
+  `SoldierHoldout_LookupById`/`PathMission` table mapping and local database
+  evidence rather than broad wave simulation.
+- Local MySQL evidence:
+  `wildstar_client.pathmission` rows `33`, `34`, and `156` have
+  `pathMissionTypeEnum=0` and object IDs `12`, `13`, and `2`. Those object IDs
+  are `PathSoldierEvent` rows. Jabbithole `path_missions` by `game_id` map the
+  same missions to control-point creatures `390`, `6151`, and `3818`; the
+  bridge maps them to runtime Creature2 IDs `11139`, `11141`, and `12508`.
+- Implemented only the mapped Northern Wilds control-point completion in
+  `Source/NexusForever.Script.Main/Quests/NorthernWilds/NorthernWildsSoldierPathMissionScripts.cs`:
+  activating one of those control-point creatures as a Soldier completes the
+  active mission whose `PathMission.objectId` matches the `PathSoldierEvent`
+  and emits `ServerPathSoldierHoldoutEnd` with `PlayerPathSoldierResult.Success`.
+- Blocker retained: exact holdout wave spawning, status timing, death counters,
+  participation rules, and failure reasons are still mapped-only and require
+  packet/live-client evidence before implementing generic Soldier wave runtime.
+- Verification: `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
+  --no-restore -v minimal --nologo` passed.
+
+CombatAI invalid-target and relocation recovery pass (2026-05-25):
+
+- Live Northern Wilds log `NexusForever.WorldServer_20260525_2564.log` showed
+  two server-side failure signatures rather than new client-behavior evidence:
+  default CombatAI-created NPC/NPC threat around aggro proxy spell `41368`, and
+  repeated map relocate warnings for destinations logged as `NaN,NaN,NaN`.
+- Current server code now treats non-player hostile acquisition as opt-in through
+  the CombatAI profile. Default and starter-profile creatures reject creature
+  threats during target selection, clear stale threat on reset, and recover an
+  already-invalid current position by moving back to finite leash coordinates.
+- `BaseMap.RelocateEntity` now recovers when an entity's current/source position
+  is invalid but the requested destination is valid, and grid activation skips
+  out-of-world activation samples instead of letting invalid coordinates poison
+  relocation.
+- This is a mapped server invariant, not a native client mapping claim. The
+  remaining client-code work is still to map exact retail creature faction/social
+  assist profiles where NPC/NPC combat is intentionally allowed.
+- Verification: focused test filter
+  `FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PathMovementGeneratorTests|FullyQualifiedName~BaseMapRelocateTests`
+  passed 26/26. `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj`
+  and `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj`
+  both passed; each had transient locked-PDB copy retry warnings only.
+
+CombatAI visible-target acquisition guard (2026-05-25):
+
+- Follow-up review of `NexusForever.WorldServer_20260525_2564.log` showed
+  repeated aggro spell `41368` casts followed by threat adds and immediate
+  reciprocal removals, for example caster NPCs adding entity `2`/nearby units
+  and then clearing the hostile in the same tick. This correlates with CombatAI
+  accepting range-check units before the target could be resolved through the
+  visibility set that `SelectTarget` and attack/chase logic already require.
+- `CombatAI.AggroEntity` now rejects a source unit unless
+  `entity.GetVisible<IUnitEntity>(source.Guid)` resolves it first. The resolved
+  visible unit is used for player/non-player profile gating, attack checks,
+  leash/aggro distance checks, aggro spell emission, facing, threat, and assist.
+  This prevents range-only or stale entities from briefly putting NPCs and
+  players into combat with targets the AI cannot actually select.
+- This is an implemented server invariant based on current NexusForever runtime
+  behavior and log correlation. No new native labels were added; exact retail
+  social-aggro profiles remain blocked on client/live evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PathMovementGeneratorTests|FullyQualifiedName~BaseMapRelocateTests" -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test\`
+  passed 29/29.
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj --no-restore -v minimal --nologo -m:1 -nr:false -p:UseSharedCompilation=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-build\script-main\`
+  and
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo -m:1 -nr:false -p:UseSharedCompilation=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-build\worldserver\`
+  both passed.
+
+CombatAI terrain-aware leash-return path pass (2026-05-25):
+
+- Source audit found that chase/follow movement already uses
+  `PathMovementGenerator`, terrain-height sampling, finite-position guards, and
+  `MovementManager.SetPositionPath`, while `CombatAI.Reset` still returned
+  off-leash creatures with a raw two-node linear spline
+  `[entity.Position, entity.LeashPosition]`. That can look like straight-line
+  clipping or snap-back movement when terrain changes between the combat point
+  and leash point.
+- `IMovementManager` now exposes `LaunchPath(Vector3 position, float speed,
+  SplineMode mode = OneShot)`. `MovementManager.LaunchPath` resolves the current
+  position command, falls back to the owner position when needed, rejects
+  non-finite endpoints through the existing invalid-path stop path, then uses
+  `PathMovementGenerator` and `LaunchGenerator` to create the actual linear
+  spline nodes.
+- `CombatAI.Reset` now calls `LaunchPath(entity.LeashPosition, speed,
+  SplineMode.OneShot)` for finite off-leash returns. The existing
+  `returningToLeash`/`OnPositionEntityCommandFinalise` path still resumes the
+  creature's stored patrol spline after the return path completes.
+- This is an implemented server movement invariant. No new native labels were
+  added; exact retail evade packet timing, leash thresholds, and terrain/path
+  controller cadence remain blocked on stronger client or live-session evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PathMovementGeneratorTests|FullyQualifiedName~ThreatManagerTests|FullyQualifiedName~BaseMapRelocateTests" -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test\`
+  passed 31/31.
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj --no-restore -v minimal --nologo -m:1 -nr:false -p:UseSharedCompilation=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-build\script-main\`
+  and
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo -m:1 -nr:false -p:UseSharedCompilation=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-build\worldserver\`
+  both passed.
+
+CombatAI follow-spacing/local avoidance pass (2026-05-25):
+
+- `MovementManager.Follow` now applies a small deterministic GUID-based angular
+  spread around the target when both follower and target have real entity GUIDs.
+  Multiple server-controlled followers chasing the same target therefore keep
+  the requested follow distance but no longer select an identical final path
+  endpoint.
+- This is emulator-side UX/gameplay polish for local avoidance and clustered
+  combat readability, not a retail parity claim. Exact native formation or
+  avoidance rules remain unmapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PathMovementGeneratorTests"`
+  passed 9/9.
+
+CombatAI spell-range alignment pass (2026-05-25):
+
+- Follow-up review of `NexusForever.WorldServer_20260525_46184.log` showed the
+  still-running world server binary producing NPC/NPC threat churn and later
+  `NaN,NaN,NaN` relocation warnings. The current working tree already contains
+  the visibility/invalid-relocation guards above, so this pass focused on the
+  remaining combat decision mismatch found in source: `CombatAI` used raw 3D
+  distance for auto-attack and chase decisions while `Spell.CheckPrimaryTarget`
+  uses horizontal range, caster/target hit-radius reduction, and optional
+  vertical range.
+- `CombatAI` now computes a shared spell-range snapshot for combat decisions:
+  horizontal range, effective range after half hit radii, and vertical delta.
+  Auto-attacks use the same min/max/vertical rules as spell primary-target
+  validation, including treating `TargetMaxRange <= 0` as unbounded instead of
+  clamping chase distance to zero.
+- Chase stopping now uses effective range instead of raw 3D distance, so large
+  hit-radius targets stop at the same distance the spell system considers
+  attackable. Profile special attacks also use the same min/max/vertical range
+  gates, with profile `MaxRange` acting as an explicit max-range override.
+- This is an implemented server invariant based on the existing spell validator;
+  no new native labels were added. Exact retail combat-controller cadence,
+  reposition behavior for minimum-range attacks, and intentional NPC/NPC social
+  combat profiles remain blocked on stronger client/live evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter FullyQualifiedName~CombatAITests -v minimal --nologo`
+  passed 29/29.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo --filter "FullyQualifiedName~NexusForever.Game.Tests.Combat"`
+  passed 33/33.
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo`
+  passed with 0 warnings and 0 errors.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter FullyQualifiedName~PathMovementGeneratorTests -v minimal --nologo`
+  passed 2/2.
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj --no-restore -v minimal --nologo`
+  and
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
+  both passed.
+
+CombatAI map-lifecycle aggro arming pass (2026-05-25):
+
+- Follow-up review of the newer `NexusForever.WorldServer_20260525_2564.log`
+  still showed large spawn-time NPC/NPC threat churn and repeated
+  `NaN,NaN,NaN` relocation warnings from a stale world-server binary. Source
+  review also showed `CombatAI.OnLoad` arming `SetInRangeCheck` before the
+  creature had been added to the map; profile trace lines therefore reported
+  `guid=0` and origin positions during script load. Because `GridEntity` runs
+  visibility and range checks during map add before script `OnAddToMap`
+  callbacks, an already-armed range check can evaluate combat acquisition during
+  spawn/bootstrap instead of after the creature has a stable map lifecycle.
+- `CombatAI` now separates profile preparation from runtime aggro activation:
+  `OnLoad` resolves the profile and cooldown state, while `OnAddToMap` arms
+  `SetInRangeCheck` and trace logging with the real guid, leash, and position.
+  `Update`, threat callbacks, and `AggroEntity` ignore work until this map
+  lifecycle gate is armed.
+- Self entries from visible/range lists are now ignored before target
+  validation. This prevents self-casts, self-facing, and self-threat attempts
+  even for future profiles that intentionally allow non-player targets.
+- This is an implemented server lifecycle invariant. No new native labels were
+  added; exact retail aggro-controller scheduling and intentional NPC/NPC
+  social-combat profiles remain blocked on stronger client/live evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter FullyQualifiedName~CombatAITests -v minimal --nologo`
+  passed 27/27.
+  `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj --no-restore -v minimal --nologo`
+  and
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
+  both passed with 0 warnings and 0 errors.
+
+CombatAI idle-hostility acquisition pass (2026-05-25):
+
+- Source review of script filtering showed `CombatAI` has no static filter, so
+  the generic script is intentionally broad enough to load on any creature. The
+  runtime guard therefore has to distinguish passive/neutral creatures from
+  hostile idle acquisition instead of relying on script attachment alone.
+- `UnitEntity.CanAttack` permits both hostile and neutral targets
+  (`Disposition < Friendly`), which is appropriate for retaliation and
+  attackable neutral units but too broad for proximity aggro. `CombatAI` now
+  requires `Disposition.Hostile` for idle range acquisition and `OnEnterRange`
+  starts while keeping damage-triggered `OnHealthChange` retaliation on the
+  existing `CanAttack` path.
+- This narrows automatic starts to genuinely hostile targets while preserving
+  "react to attacks" behavior for neutral/default creatures. Intentional
+  neutral social-assist edge cases and broader retail faction exceptions remain
+  blocked on stronger live/client evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter FullyQualifiedName~CombatAITests -v minimal --nologo`
+  passed 31/31.
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
+  passed with 0 warnings and 0 errors.
+
+CombatAI profile-gated generic arming pass (2026-05-25):
+
+- Follow-up player observation reported NPCs entering combat with invisible
+  enemies after the broad CombatAI work. The newest available world logs were
+  still stale relative to the current source, but they continued to demonstrate
+  the same failure shape: generic `CombatAI` instances on map `426` starting
+  large NPC/NPC combat chains and then emitting many invalid relocation warnings.
+  Source review found the remaining unsafe default: `DefaultCombatProfileProvider`
+  returned an active default combat profile for every unprofiled creature, while
+  the base `CombatAI` script has no static creature filter.
+- The base generic `CombatAI` now only arms proximity aggro when the embedded
+  profile table has an explicit Creature2 profile. Unprofiled base `CombatAI`
+  instances do not set range checks or idle-scan. Explicit scripts that inherit
+  `CombatAI` still opt into the default profile via the new
+  `EnablesDefaultCombatProfile` hook, preserving existing named instance combat
+  scripts while stopping zone-wide generic arming.
+- `RavenousRefugeeEntityScript.OnAddToMap` now overrides and calls the base
+  map-lifecycle arming hook before its local self-cast, fixing the warning from
+  the new virtual lifecycle method and keeping derived CombatAI scripts on the
+  same map-add path.
+- This is an implemented server ownership invariant, not a new retail AI
+  mapping. Broad Creature2 combat coverage remains blocked on profile data or
+  client/live evidence; unprofiled creatures must stay passive under the generic
+  script until they are explicitly mapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter FullyQualifiedName~CombatAITests -v minimal --nologo`
+  passed 33/33.
+  `dotnet build Source\NexusForever.Script.Instance\NexusForever.Script.Instance.csproj --no-restore -v minimal --nologo`
+  passed with 0 warnings and 0 errors.
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
+  passed with 0 warnings and 0 errors.
+
+CombatAI reactive fallback split (2026-05-25):
+
+- Review after the profile-gate pass found that the previous arming rule was
+  too broad in the other direction: unprofiled generic creatures no longer
+  performed idle aggro, but they also could not react through `CombatAI` when
+  directly damaged or otherwise given valid threat. That conflicts with the
+  server design goal that unmapped creatures should stay passive until attacked,
+  while mapped profiles control automatic proximity starts.
+- `CombatAI` now separates reactive combat from idle aggro arming. Every loaded
+  `CombatAI` has a default reactive spell/chase kit from the data-backed
+  default profile, but only explicit Creature2 profiles or explicit derived
+  combat scripts set range checks and run idle acquisition. `AggroEntity` only
+  requires an armed range check for range-triggered starts; damage-triggered
+  starts (`OnHealthChange`) and threat callbacks can select a visible, valid,
+  attackable target without re-enabling generic proximity aggro.
+- This preserves the safety invariant from the invisible-enemy fix while
+  restoring "react to attacks" behavior for unprofiled generic creatures.
+  Broader "attack on sight" coverage remains profile-data-bound and should only
+  be expanded with Creature2/faction/client evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter FullyQualifiedName~CombatAITests -v minimal --nologo`
+  passed 35/35.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~PositionKeysTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~SplineTests" -v minimal --nologo`
+  passed 46/46.
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
+  passed with 0 warnings and 0 errors.
+
+Position-key rotation NaN hardening pass (2026-05-25):
+
+- Follow-up movement source review targeted the remaining teleport/invalid
+  relocation symptom seen in the world logs. The current movement path already
+  guards path nodes, spline rotation, projectile rotation, and map relocation
+  positions, but `PositionKeys.GetRotation()` still normalised
+  `Values[index + 1] - Values[index]` directly. Duplicate adjacent key
+  positions therefore produced a zero direction vector and NaN yaw/pitch, and
+  a caller asking for rotation at or past the final key could index past the
+  final segment.
+- `PositionKeys.GetRotation()` now mirrors the spline rotation invariant: clamp
+  the active segment to the last valid segment, normalise through
+  `MovementMath.NormaliseOrZero`, and return zero rotation for no-direction
+  segments. This prevents key-based forced movement/projectile/finalisation
+  paths from emitting NaN rotations that can corrupt server-controlled creature
+  movement state.
+- This is an implemented server movement hardening invariant. It does not map
+  exact retail forced-move controller behavior; broader creature locomotion
+  design still needs profile/live-client evidence for when to choose keyed
+  movement, spline paths, direct relocation, or velocity fallback.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~PositionKeysTests|FullyQualifiedName~SplineTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~CombatAITests" -v minimal --nologo`
+  passed 44/44.
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
+  passed with 0 warnings and 0 errors.
+
+Position-key command validation pass (2026-05-25):
+
+- Follow-up review found the path validation hardening did not yet cover direct
+  position-key timelines. `MovementManager.SetPositionKeys` accepted mismatched,
+  too-short, non-finite, or decreasing key data and forwarded it straight to the
+  position command group, leaving later interpolation/finalisation code to deal
+  with corrupted server movement state.
+- `MovementManager.SetPositionKeys` now mirrors the server path command
+  invariant: validate counts, require at least two keys, reject non-finite
+  positions, and reject decreasing key times before broadcasting the timeline.
+  Invalid input stops movement at the last finite known key/current position via
+  the same safe fallback used for bad paths.
+- Equal adjacent key times remain allowed because the generic key interpolator
+  already handles duplicate timestamps by returning the previous value. Exact
+  retail controller semantics for duplicate position keys are still unmapped;
+  this pass only prevents impossible key streams from escaping server movement
+  ownership.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PositionKeysTests|FullyQualifiedName~SplineTests|FullyQualifiedName~CombatAITests" -v minimal --nologo`
+  passed 48/48.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo`
+  passed 1199/1199.
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
+  passed with 0 warnings and 0 errors.
+
+CombatAI default awareness-spell split (2026-05-25):
+
+- Follow-up review targeted the remaining log signature where generic combat
+  starts repeatedly cast aggro proxy spell `41368` before or alongside NPC/NPC
+  threat churn. Local MySQL table checks showed `wildstar_client.spell4` row
+  `41368` is `Generic - Choose Color of Awareness Eye - Tier 1`, with two
+  caster-target proxy effects to `53531` red awareness VFX and `29658` blue
+  awareness VFX. `jabbithole.creature_spells` has 0 rows for game spell `41368`
+  / base `25565`, while the unarmed fallback auto-attacks `5649`/`5652` have
+  980 creature-spell bridge rows.
+- The data-backed default combat fallback no longer casts `41368` on reactive
+  aggro. Unprofiled generic or derived fallback `CombatAI` instances can still
+  acquire valid player threat and run the default unarmed auto-attack/chase kit,
+  but they no longer emit the awareness-eye proxy unless a mapped profile
+  explicitly opts in. The starter tutorial combat/turret profiles now carry
+  `aggroSpell4Id=41368` directly so the previously mapped tutorial awareness
+  behavior remains intentional instead of inherited from the global fallback.
+- This is an implemented table-evidence-backed narrowing of the default combat
+  kit. Exact retail rules for awareness VFX on every hostile creature remain
+  blocked on profile/live-client evidence; broad fallback AI must stay minimal
+  until Creature2-specific spell data is mapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests" -v minimal --nologo`
+  passed 39/39.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PositionKeysTests|FullyQualifiedName~SplineTests" -v minimal --nologo`
+  passed 53/53.
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
+  passed with 0 warnings and 0 errors.
+  Full `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -v minimal --nologo`
+  was run but is blocked by unrelated untracked
+  `PlayerStarterTutorialDepartureTerminalTests`: `Player` construction reads
+  `LegacyServiceProvider.Provider == null` for `World:PlayerSaveIntervalSeconds`.
+
+CombatAI reactive damage ordering pass (2026-05-25):
+
+- Source review of the real damage path found a callback-ordering mismatch in
+  the previous CombatAI tests. `UnitEntity.TakeDamage(...)` computes threat and
+  calls `ThreatManager.UpdateThreat(attacker, ...)` before
+  `ModifyHealth(...).OnHealthChange(...)`. `ThreatManager.CreateHostile(...)`
+  immediately calls `UnitEntity.OnThreatAddTarget(...)`, which flips
+  `InCombat=true` and lets `CombatAI.OnThreatAddTarget(...)` select the attacker
+  before the damage callback runs. The old `AggroEntity` guard rejected all
+  already-in-combat units, so real damage could select a target but skip the
+  engage side effects that make a creature visibly react: aggro spell for
+  mapped profiles, movement finalise, face-target rotation, and social assist.
+- `AggroEntity` now treats `InCombat` as a blocker for idle/range starts and
+  off-target damage, but allows reactive damage to continue when the attacker
+  is already the current selected target. It also only adds the initial 1
+  threat when that hostile entry does not already exist, avoiding an extra
+  threat bump after `TakeDamage` has already credited damage threat.
+- This preserves the NPC/NPC safety invariant from the profile-gated passes
+  while making the live server damage path match the intended "react to
+  attacks" behavior. More exact retail reaction timing remains blocked on
+  live-client/sniff evidence, especially for when social assist should fan out
+  beyond currently profiled starter content.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests" -v minimal --nologo`
+  passed 41/41.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PositionKeysTests|FullyQualifiedName~SplineTests" -v minimal --nologo`
+  passed 54/54.
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
+  passed with 0 warnings and 0 errors.
+
+CombatAI Northern Wilds profile promotion pass (2026-05-25):
+
+- To move beyond the starter tutorial without reopening generic NPC/NPC aggro,
+  this pass used promoted staging/client evidence rather than broad runtime
+  inference. `nexus_forever_world.nf_map_creature` and
+  `nf_map_creature_spell`, joined to `wildstar_client.creature2`, identify a
+  constrained world `426` Northern Wilds set whose client descriptions carry
+  explicit combat markers (`[NW-CBC]` or `[NW-hCBC]`) and whose Jabbithole
+  spell bridge resolves concrete Spell4 kits. Rows with `Simple`, invisible,
+  flavor/dead, object, or non-combat descriptions were left out.
+- `AI/CombatProfiles.json` now promotes those combat-tagged Creature2 ids into
+  explicit profiles with their bridged Spell4 auto-attack kits, `aggroRange=14`,
+  `minimumLeashRange=35`, default no awareness-eye aggro spell, and default
+  player-only targeting. This gives Northern Wilds creatures such as Skeech
+  Scratchers, Skeech casters, Dagun, Yetis, Dominion soldiers/bots, Rootbrutes,
+  Xenobites, and holdout bosses real idle range aggro and table-backed spell
+  rotations while preserving the safety invariant that profiled default combat
+  does not acquire non-player targets.
+- Focused tests now prove the provider loads a Northern Wilds spell kit and
+  that a profiled Northern Wilds creature idle-aggroes a hostile player without
+  casting tutorial awareness VFX. Exact retail spell cadence, interruptible
+  special rotations, social assist for these outdoor packs, and profile coverage
+  outside the combat-tagged Northern Wilds set remain blocked on stronger
+  Creature2Action/live-client evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests" -v minimal --nologo`
+  passed 43/43.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PositionKeysTests|FullyQualifiedName~SplineTests" -v minimal --nologo`
+  passed 56/56.
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
+  passed with 0 warnings and 0 errors.
+
+Northern Wilds spawn-density rollback and shield underflow fix (2026-05-25):
+
+- Live log `NexusForever.WorldServer_20260525_48236.log` showed Northern Wilds
+  world `426` caching `3976` runtime spawns on only `6` grids, then sending
+  `2473` entity add traces during the session. Local DB inspection confirmed
+  this was not a `CombatAI` duplication loop: `nexus_forever_world.entity`
+  contained `3238` DataMapping-owned rows for world `426` under ids
+  `1000000000..1999999999`, plus `738` legacy/manual rows.
+- The overpopulation came from promoting raw Jabbithole/source coordinate
+  observations as concrete retail spawn rows. Examples from the reported area
+  were Granok Mercenary (`11467`) at `54` runtime rows (`50` DataMapping) and
+  Yeti Snowstalker (`11945`) at `111` rows (`93` DataMapping). These coordinates
+  are useful review evidence, but they are not safe spawn groups or respawn-pack
+  semantics.
+- `Tools/DataMapping/sql/apply_safe_world_imports_from_staging.sql` now treats
+  Northern Wilds bulk coordinate spawns as unsafe by default and removes
+  DataMapping-owned world `426` rows unless
+  `@nf_safe_import_allow_unsafe_northern_wilds_spawns = 1` is explicitly set for
+  focused review. The local world DB was cleaned to `738` world `426` rows:
+  Granok Mercenary `4`, Yeti Snowstalker `18`, and
+  `northern_wilds_unsafe_datamapping_spawns=0`.
+- The same log showed the one-shot symptom was a separate combat math defect:
+  ordinary incoming hits such as `rawDamage=31 shieldAbsorb=10` produced
+  `adjustedDamage=4294967295`. `DamageCalculator.CalculateShieldAmount(...)`
+  now clamps shield absorption to the remaining post-absorb damage and rejects
+  non-finite/negative mitigation, preventing unsigned underflow.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~DamageCalculatorRetailParityTests" -v minimal --nologo -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test\`
+  passed 13/13.
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo -p:OutDir=I:\GIT\NexusForever\artifacts\codex-worldserver-build\`
+  passed with 0 warnings and 0 errors.
+  Applying `Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql`
+  completed and reported `northern_wilds_unsafe_spawn_rows=0`.
+
+Shield reboot delay and remaining promoted coordinate inventory (2026-05-25):
+
+- Follow-up DB inventory after the Northern Wilds cleanup found one remaining
+  DataMapping-owned coordinate promotion surface: world `51` has `1137`
+  runtime entity rows under the `1000000000..1999999999` id range, covering `40`
+  Creature2 ids. All `1137` join back to `nf_map_world_entity_candidate`
+  staged source coordinates, not the direct Jabbithole-coordinate fallback.
+  Highest-count examples include Stormwing Murgh Striker `22406` (`100` rows),
+  Stormwing Striker `23953` (`93`), Dominion Warrant Officer `16911` (`91`),
+  and Dominion Assault Trooper `16910` (`81`). No other world currently has
+  DataMapping-owned runtime entity rows.
+- The Yeti "does damage but never reaches health" report mapped to a separate
+  shield-vital gap. Client/runtime tables expose `ShieldRegenPct`,
+  `ShieldTickTime`, and `ShieldRebootTime`, but `UnitEntity.HandleStatUpdate()`
+  was regenerating shields every server stat tick and ignored reboot timing
+  after incoming damage. This allowed small mob hits to be erased by immediate
+  shield recovery after the previous unsigned-underflow fix.
+- `UnitEntity.TakeDamage(...)` now restarts shield reboot when incoming damage
+  affects shield or health, and shield regeneration waits for
+  `ShieldRebootTime` before ticking on the `ShieldTickTime` cadence. The amount
+  remains the existing conservative `MaxShieldCapacity * ShieldRegenPct *
+  elapsedSeconds` formula; exact retail shield tick amount/rounding remains a
+  wider F-017 parity question.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~UnitEntityDamageResultTests|FullyQualifiedName~DamageCalculatorRetailParityTests" -v minimal --nologo -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test\`
+  passed 21/21.
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo -p:OutDir=I:\GIT\NexusForever\artifacts\codex-worldserver-build\`
+  passed with 0 warnings and 0 errors.
