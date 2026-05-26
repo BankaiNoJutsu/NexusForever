@@ -26,6 +26,7 @@ from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 DEFAULT_MYSQL = r"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 REVIEWED_MATCH_STATUS = "reviewed"
 APPROVED_REVIEW_DECISIONS = {"approve", "approved", "use", "map", "mapped", "reviewed"}
+TRACKED_CREATURE_BRIDGE_OVERRIDES = Path("Tools/DataMapping/creature_bridge_overrides.csv")
 
 CREATURE_BRIDGE_OVERRIDE_FIELDS = [
     "source_table",
@@ -2007,6 +2008,20 @@ def clean_cell(value) -> str:
     return str(value)
 
 
+def template_health_value(health_min_value, health_max_value) -> Optional[float]:
+    health_min = to_float(health_min_value)
+    health_max = to_float(health_max_value)
+    if health_min is not None and health_min <= 0:
+        health_min = None
+    if health_max is not None and health_max <= 0:
+        health_max = None
+    if health_min is not None and health_max is not None:
+        if health_min == health_max:
+            return health_min
+        return None
+    return health_min if health_min is not None else health_max
+
+
 def display_text(value) -> str:
     if value is None:
         return ""
@@ -2715,53 +2730,67 @@ def load_creature_bridge_overrides(
     client_creatures: Dict[int, Dict[str, object]],
 ) -> Tuple[Dict[int, Dict[str, object]], List[Dict[str, object]]]:
     ensure_review_templates(args)
-    path = args.review_dir / "creature_bridge_overrides.csv"
+    paths = [
+        args.repo_root / TRACKED_CREATURE_BRIDGE_OVERRIDES,
+        args.review_dir / "creature_bridge_overrides.csv",
+    ]
     overrides: Dict[int, Dict[str, object]] = {}
     audit_rows: List[Dict[str, object]] = []
-    with path.open("r", encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle)
-        for row_number, row in enumerate(reader, start=2):
-            source_table = clean_cell(row.get("source_table") or "creatures")
-            source_id = to_int(row.get("source_id"))
-            chosen_id = to_int(row.get("chosen_creature2_id") or row.get("candidate_creature2_id"))
-            decision = clean_cell(row.get("decision")).lower()
-            status = "skipped"
-            note = ""
-            if source_table and source_table != "creatures":
-                note = "source_table is not creatures"
-            elif source_id is None:
-                note = "missing source_id"
-            elif chosen_id is None:
-                note = "missing chosen_creature2_id"
-            elif decision not in APPROVED_REVIEW_DECISIONS:
-                note = "decision is not approved"
-            elif chosen_id not in client_creatures:
-                note = "chosen_creature2_id not found in Creature2"
-            else:
-                status = "applied"
-                note = "reviewed creature bridge override"
-                overrides[source_id] = {
-                    "chosen_creature2_id": chosen_id,
-                    "decision": row.get("decision", ""),
-                    "reason": row.get("reason", ""),
-                    "reviewer": row.get("reviewer", ""),
-                    "reviewed_at": row.get("reviewed_at", ""),
-                    "row_number": row_number,
-                }
-            audit_rows.append(
-                {
-                    "row_number": row_number,
-                    "source_table": source_table,
-                    "source_id": row.get("source_id", ""),
-                    "chosen_creature2_id": row.get("chosen_creature2_id") or row.get("candidate_creature2_id", ""),
-                    "decision": row.get("decision", ""),
-                    "status": status,
-                    "note": note,
-                    "reason": row.get("reason", ""),
-                    "reviewer": row.get("reviewer", ""),
-                    "reviewed_at": row.get("reviewed_at", ""),
-                }
-            )
+    seen_paths = set()
+    for path in paths:
+        resolved_path = path.resolve()
+        if resolved_path in seen_paths or not resolved_path.exists():
+            continue
+        seen_paths.add(resolved_path)
+        try:
+            source_file = str(resolved_path.relative_to(args.repo_root))
+        except ValueError:
+            source_file = str(resolved_path)
+        with resolved_path.open("r", encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            for row_number, row in enumerate(reader, start=2):
+                source_table = clean_cell(row.get("source_table") or "creatures")
+                source_id = to_int(row.get("source_id"))
+                chosen_id = to_int(row.get("chosen_creature2_id") or row.get("candidate_creature2_id"))
+                decision = clean_cell(row.get("decision")).lower()
+                status = "skipped"
+                note = ""
+                if source_table and source_table != "creatures":
+                    note = "source_table is not creatures"
+                elif source_id is None:
+                    note = "missing source_id"
+                elif chosen_id is None:
+                    note = "missing chosen_creature2_id"
+                elif decision not in APPROVED_REVIEW_DECISIONS:
+                    note = "decision is not approved"
+                elif chosen_id not in client_creatures:
+                    note = "chosen_creature2_id not found in Creature2"
+                else:
+                    status = "applied"
+                    note = "reviewed creature bridge override"
+                    overrides[source_id] = {
+                        "chosen_creature2_id": chosen_id,
+                        "decision": row.get("decision", ""),
+                        "reason": row.get("reason", ""),
+                        "reviewer": row.get("reviewer", ""),
+                        "reviewed_at": row.get("reviewed_at", ""),
+                        "row_number": row_number,
+                    }
+                audit_rows.append(
+                    {
+                        "source_file": source_file,
+                        "row_number": row_number,
+                        "source_table": source_table,
+                        "source_id": row.get("source_id", ""),
+                        "chosen_creature2_id": row.get("chosen_creature2_id") or row.get("candidate_creature2_id", ""),
+                        "decision": row.get("decision", ""),
+                        "status": status,
+                        "note": note,
+                        "reason": row.get("reason", ""),
+                        "reviewer": row.get("reviewer", ""),
+                        "reviewed_at": row.get("reviewed_at", ""),
+                    }
+                )
     return overrides, audit_rows
 
 
@@ -2854,6 +2883,7 @@ def build_creature_map(
             "client_difficulty": best.get("creature2DifficultyId", ""),
             "health_min": jabbit.get("health_min", ""),
             "health_max": jabbit.get("health_max", ""),
+            "template_base_health": template_health_value(jabbit.get("health_min"), jabbit.get("health_max")),
             "shield": jabbit.get("shield", ""),
             "interrupt_armor_max": jabbit.get("interrupt_armor_max", ""),
             "creature_type": jabbit.get("creature_type", ""),
@@ -5449,7 +5479,7 @@ ORDER BY co.id
                 counts["world_entity_candidate.csv"] += 1
 
                 stats = [
-                    ("Health", row.get("health_max") or row.get("health_min")),
+                    ("Health", template_health_value(row.get("health_min"), row.get("health_max"))),
                     ("Level", row.get("level_max") or row.get("level_min")),
                     ("Shield", row.get("shield")),
                     ("InterruptArmour", row.get("interrupt_armor_max")),
@@ -12528,6 +12558,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     counts["creature_bridge_override_audit.csv"] = write_csv(
         args.output_dir / "creature_bridge_override_audit.csv",
         [
+            "source_file",
             "row_number",
             "source_table",
             "source_id",

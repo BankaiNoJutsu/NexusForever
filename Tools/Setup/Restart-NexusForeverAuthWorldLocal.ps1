@@ -8,9 +8,9 @@ Use this for the fast local auth/world edit loop after the repo has already been
 initialized once. The script:
 
 * rebuilds NexusForever.AuthServer and NexusForever.WorldServer
-* restarts only those two processes if they are already running
+* kills any running NexusForever.AuthServer and NexusForever.WorldServer processes before rebuilding
 * reuses other running local server processes and starts any missing ones
-* launches the WildStar client through the existing local launcher flow
+* launches the WildStar client through the existing local launcher flow only when the client is not already running
 
 .EXAMPLE
 .\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1 -ClientDirectory "D:\Games\WildStar"
@@ -74,6 +74,8 @@ param(
     [string] $WorldDatabasePath = '',
     [switch] $SkipWorldDatabaseImport,
     [switch] $CreateWorldDatabaseCompatibilityTables,
+    [string] $RuntimeWorldSeedPath = '',
+    [switch] $SkipRuntimeWorldSeedImport,
 
     [Alias('DefaultAccountUsername')]
     [string] $PlayerAccountUsername = 'player',
@@ -134,6 +136,22 @@ function Get-RunningProcessesByPath {
     @($runningProcesses)
 }
 
+function Get-RunningWildStarProcesses {
+    $runningProcessIds = @(
+        Get-CimInstance Win32_Process -Filter "Name = 'WildStar64.exe' OR Name = 'WildStar32.exe'" -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty ProcessId
+    )
+
+    $runningProcesses = foreach ($processId in $runningProcessIds) {
+        $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
+        if ($process) {
+            $process
+        }
+    }
+
+    @($runningProcesses)
+}
+
 function Stop-RunningProcessByPath {
     param(
         [string] $ExecutablePath,
@@ -182,6 +200,15 @@ Write-Section 'Build'
 Invoke-ProjectBuild -ProjectPath (Join-Path $RepoRoot 'Source\NexusForever.AuthServer\NexusForever.AuthServer.csproj')
 Invoke-ProjectBuild -ProjectPath (Join-Path $RepoRoot 'Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj')
 
+$skipClientLaunchBecauseRunning = $false
+if (!$SkipClientLaunch) {
+    $runningWildStarProcesses = @(Get-RunningWildStarProcesses)
+    if ($runningWildStarProcesses.Count -gt 0) {
+        Write-Info "Skipping WildStar launch because the client is already running: $(@($runningWildStarProcesses | ForEach-Object Id) -join ', ')"
+        $skipClientLaunchBecauseRunning = $true
+    }
+}
+
 $launcherParameters = @{
     RepoRoot                            = $RepoRoot
     DependencyMode                      = $DependencyMode
@@ -214,6 +241,7 @@ $launcherParameters = @{
     BrokerPort                          = $BrokerPort
     RabbitMqCtl                         = $RabbitMqCtl
     WorldDatabasePath                   = $WorldDatabasePath
+    RuntimeWorldSeedPath                = $RuntimeWorldSeedPath
     PlayerAccountUsername               = $PlayerAccountUsername
     PlayerAccountPassword               = $PlayerAccountPassword
     GameMasterAccountUsername           = $GameMasterAccountUsername
@@ -240,7 +268,7 @@ if ($SkipServerLaunch) {
     $launcherParameters.SkipServerLaunch = $true
 }
 
-if ($SkipClientLaunch) {
+if ($SkipClientLaunch -or $skipClientLaunchBecauseRunning) {
     $launcherParameters.SkipClientLaunch = $true
 }
 
@@ -270,6 +298,10 @@ if ($SkipWorldDatabaseImport) {
 
 if ($CreateWorldDatabaseCompatibilityTables) {
     $launcherParameters.CreateWorldDatabaseCompatibilityTables = $true
+}
+
+if ($SkipRuntimeWorldSeedImport) {
+    $launcherParameters.SkipRuntimeWorldSeedImport = $true
 }
 
 if ($InstallDotNetEf) {

@@ -218,6 +218,13 @@ Reference dump databases:
 - `jabbithole` from `jabbithole_mysql\*.sql`
 - `wildstar_client` from `wildstar_client_mysql\*.sql`
 
+Promoted runtime world data:
+
+- `Tools\DataMapping\sql\runtime_world_seed.sql` is imported into
+  `nexus_forever_world` after the official world database SQL files. This seed
+  carries the reviewed DataMapping runtime rows and does not require running the
+  mapper on a fresh machine.
+
 If either split folder is missing or empty, the script falls back to the older
 single-file dump for that database:
 
@@ -254,6 +261,13 @@ Create databases, copy configs, build, and migrate without optional data imports
 
 ```powershell
 .\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -SkipLargeDumpImports -SkipWorldDatabaseImport
+```
+
+Skip only the promoted DataMapping runtime seed while still importing the
+official world database:
+
+```powershell
+.\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -SkipRuntimeWorldSeedImport
 ```
 
 Recover from a failed partial reference SQL import without dropping completed

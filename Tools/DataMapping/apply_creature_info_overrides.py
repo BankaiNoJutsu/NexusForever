@@ -72,6 +72,26 @@ def to_float_text(value) -> Optional[str]:
     return f"{number:.6f}".rstrip("0").rstrip(".")
 
 
+def template_health_text(row: Dict[str, str]) -> Optional[str]:
+    template_health = to_float_text(row.get("template_base_health"))
+    if template_health:
+        return template_health
+
+    health_min = to_float_text(row.get("health_min"))
+    health_max = to_float_text(row.get("health_max"))
+    if health_min and health_max:
+        if health_min == health_max:
+            return health_min
+        return None
+    return health_min or health_max
+
+
+def has_skipped_health_range(row: Dict[str, str]) -> bool:
+    health_min = to_float_text(row.get("health_min"))
+    health_max = to_float_text(row.get("health_max"))
+    return bool(health_min and health_max and health_min != health_max)
+
+
 def sql_string(value: str) -> str:
     return "'" + str(value).replace("\\", "\\\\").replace("'", "''") + "'"
 
@@ -177,6 +197,7 @@ def load_override_rows(
     stat_candidates: Dict[Tuple[int, int], list[OverrideRow]] = defaultdict(list)
     input_count = 0
     rows_after_status_filter = 0
+    ranged_health_rows_skipped = 0
 
     with args.creature_map.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -192,7 +213,9 @@ def load_override_rows(
             if creature2_id == 0:
                 continue
 
-            health = to_float_text(row.get("health_max")) or to_float_text(row.get("health_min"))
+            health = template_health_text(row)
+            if health is None and has_skipped_health_range(row):
+                ranged_health_rows_skipped += 1
             shield = to_float_text(row.get("shield"))
             interrupt_armour = to_float_text(row.get("interrupt_armor_max"))
 
@@ -209,6 +232,7 @@ def load_override_rows(
         "allowed_statuses": ",".join(sorted(allowed_statuses)),
         "property_candidate_keys": len(property_candidates),
         "stat_candidate_keys": len(stat_candidates),
+        "ranged_health_rows_skipped": ranged_health_rows_skipped,
         "property_conflict_keys_skipped": property_conflict_count,
         "stat_conflict_keys_skipped": stat_conflict_count,
         "property_conflict_examples": property_conflicts,

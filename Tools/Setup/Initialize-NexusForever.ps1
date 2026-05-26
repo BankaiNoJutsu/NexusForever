@@ -14,6 +14,7 @@ server guide:
 * build the solution and run EF Core migrations
 * create or verify the local player, gm, and admin login accounts
 * import the NexusForever.WorldDatabase SQL files into nexus_forever_world
+* import the checked-in DataMapping runtime world seed SQL
 * optionally configure RabbitMQ and start the standalone server processes
 
 By default, the world database import searches for a sibling checkout named
@@ -30,6 +31,13 @@ runs skip already imported files. If you need a clean re-import, pass
 Official world SQL files are imported only when their target tables and columns
 exist in the migrated world schema. This keeps branch-specific world data from
 being forced into a server checkout that does not support it yet.
+
+After the official world import, the setup imports
+Tools\DataMapping\sql\runtime_world_seed.sql by default. That seed contains the
+promoted reviewed DataMapping runtime rows and does not require the Jabbithole,
+WildStar client, or nf_map_* staging databases on a fresh machine. Pass
+-SkipRuntimeWorldSeedImport to skip it, or -RuntimeWorldSeedPath to use a
+different seed file.
 
 The split folders jabbithole_mysql and wildstar_client_mysql are preferred over
 the older all_jabbithole_mysql.sql and all_wildstar_client_mysql.sql files. The
@@ -108,6 +116,8 @@ param(
     [string] $WorldDatabasePath = '',
     [switch] $SkipWorldDatabaseImport,
     [switch] $CreateWorldDatabaseCompatibilityTables,
+    [string] $RuntimeWorldSeedPath = '',
+    [switch] $SkipRuntimeWorldSeedImport,
 
     [string] $JabbitholeSqlDirectory = 'jabbithole_mysql',
     [string] $JabbitholeSql = 'all_jabbithole_mysql.sql',
@@ -367,6 +377,26 @@ function Resolve-WorldDatabasePath {
 
     Write-Info "No official world database checkout detected. Checked $siblingPath and $guidePath."
     return $siblingPath
+}
+
+function Resolve-RuntimeWorldSeedPath {
+    param(
+        [AllowNull()][string] $Path,
+        [string] $RepositoryRoot
+    )
+
+    if (![string]::IsNullOrWhiteSpace($Path)) {
+        if (Test-Path -LiteralPath $Path -PathType Leaf) {
+            $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
+            Write-Info "Using configured runtime world seed: $resolvedPath"
+            return $resolvedPath
+        }
+
+        Write-Warning "Configured runtime world seed does not exist yet: $Path"
+        return $Path
+    }
+
+    Join-Path $RepositoryRoot 'Tools\DataMapping\sql\runtime_world_seed.sql'
 }
 
 function ConvertFrom-SecureStringToPlainText {
@@ -1622,13 +1652,13 @@ function Repair-PartialWorldSqlImport {
 function Import-WorldDatabaseSqlFiles {
     if (!(Test-Path -LiteralPath $WorldDatabasePath -PathType Container)) {
         Write-Warning "World database path does not exist; skipping official world import: $WorldDatabasePath"
-        return
+        return $false
     }
 
     $files = Get-ChildItem -LiteralPath $WorldDatabasePath -Recurse -Filter '*.sql' -File | Sort-Object FullName
     if (!$files) {
         Write-Warning "World database path contains no .sql files: $WorldDatabasePath"
-        return
+        return $false
     }
 
     if ($CreateWorldDatabaseCompatibilityTables) {
@@ -1665,6 +1695,31 @@ function Import-WorldDatabaseSqlFiles {
         Invoke-MySql -Arguments (Get-MySqlArguments -Database $GameDatabases.World) -InputFile $file.FullName -NormalizeWorldDatabaseColumns
         Invoke-MySqlSql -Database $GameDatabases.World -Sql "INSERT IGNORE INTO version (fileName, fileHash, appliedOn) VALUES ($quotedName, $quotedHash, UTC_TIMESTAMP(6));"
     }
+
+    return $true
+}
+
+function Import-RuntimeWorldSeedSqlFile {
+    if (!(Test-Path -LiteralPath $RuntimeWorldSeedPath -PathType Leaf)) {
+        Write-Warning "Runtime world seed SQL does not exist; skipping DataMapping runtime seed import: $RuntimeWorldSeedPath"
+        return
+    }
+
+    $file = Get-Item -LiteralPath $RuntimeWorldSeedPath
+    $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    $markerName = "DataMapping/$($file.Name)"
+    $quotedName = Quote-MySqlString $markerName
+    $quotedHash = Quote-MySqlString $hash
+    $existing = Invoke-MySqlScalar -Database $GameDatabases.World -Sql "SELECT COUNT(*) FROM version WHERE fileName = $quotedName AND fileHash = $quotedHash;"
+
+    if ([int] $existing -gt 0 -and !$ForceImport) {
+        Write-Info "Skipping already imported runtime world seed $($file.Name)"
+        return
+    }
+
+    Write-Info "Importing DataMapping runtime world seed $($file.FullName)"
+    Invoke-MySql -Arguments (Get-MySqlArguments -Database $GameDatabases.World) -InputFile $file.FullName
+    Invoke-MySqlSql -Database $GameDatabases.World -Sql "INSERT IGNORE INTO version (fileName, fileHash, appliedOn) VALUES ($quotedName, $quotedHash, UTC_TIMESTAMP(6));"
 }
 
 function Get-RabbitMqCtlCommandInvocation {
@@ -1769,6 +1824,7 @@ function Start-StandaloneServers {
 
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 $WorldDatabasePath = Resolve-WorldDatabasePath -Path $WorldDatabasePath -RepositoryRoot $RepoRoot
+$RuntimeWorldSeedPath = Resolve-RuntimeWorldSeedPath -Path $RuntimeWorldSeedPath -RepositoryRoot $RepoRoot
 
 $dependencyBootstrap = Resolve-NexusSetupDependencies `
     -RepoRoot $RepoRoot `
@@ -1889,7 +1945,20 @@ Invoke-AccountSeeder
 
 if (!$SkipWorldDatabaseImport) {
     Write-Section 'Official world database import'
-    Import-WorldDatabaseSqlFiles
+    $worldDatabaseSqlAvailable = Import-WorldDatabaseSqlFiles
+
+    if (!$SkipRuntimeWorldSeedImport) {
+        if ($worldDatabaseSqlAvailable) {
+            Write-Section 'DataMapping runtime world seed import'
+            Import-RuntimeWorldSeedSqlFile
+        }
+        else {
+            Write-Warning 'Skipping DataMapping runtime world seed import because no official world SQL files were imported or available.'
+        }
+    }
+}
+elseif (!$SkipRuntimeWorldSeedImport) {
+    Write-Warning 'Skipping DataMapping runtime world seed import because -SkipWorldDatabaseImport was set.'
 }
 
 if ($StartServers) {

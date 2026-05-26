@@ -302,9 +302,13 @@ The mapper now generates a review queue for uncertain creature bridge rows:
 
 Approved decisions live outside the generated output folder so remaps do not overwrite them:
 
+- `Tools\DataMapping\creature_bridge_overrides.csv` for tracked, reviewed decisions
 - `Tools\DataMapping\review\creature_bridge_overrides.csv`
 
-The mapper creates that file with the required header when it is missing. `Tools\DataMapping\creature_bridge_overrides.example.csv` is the tracked header template. To approve a mapping, add a row with:
+The mapper reads the tracked file first, then the local ignored review file.
+It creates the local review file with the required header when it is missing.
+`Tools\DataMapping\creature_bridge_overrides.example.csv` is the tracked header
+template. To approve a mapping, add a row with:
 
 - `source_table`: `creatures`
 - `source_id`: Jabbithole creature ID
@@ -337,7 +341,20 @@ python Tools\DataMapping\load_mapping_staging_tables.py --apply
 
 `load_mapping_staging_tables.py` creates/replaces each owned `nf_map_*` table in `nexus_forever_world` and loads every curated staging CSV covered by `schema.sql`. It uses `LOAD DATA LOCAL INFILE`, temporarily enables the local MySQL server setting when the login can do so, and restores it afterward by default. The current localhost apply loaded 95 `nf_map_*` tables and 6,383,288 exact rows.
 
-Once staging is loaded, the safe runtime data can be imported with a single SQL script:
+Fresh machines do not need to run the mapper. Import the checked-in promoted
+runtime seed after the base world database has been loaded:
+
+```powershell
+Get-Content -Raw Tools\DataMapping\sql\runtime_world_seed.sql |
+  & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
+  --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
+```
+
+`Tools\Setup\Initialize-NexusForever.ps1` runs this seed automatically after the
+official world database import unless `-SkipRuntimeWorldSeedImport` is passed.
+
+Once staging is loaded on an authoring machine, the safe runtime data can be
+imported with a single SQL script:
 
 ```powershell
 Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql |
@@ -345,7 +362,14 @@ Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
 
-That migration-style script imports vendor stock, creature loot, flat runtime creature loot groups, weighted item-container loot groups, and creature-info template overrides from `nf_map_*` into explicit `nexus_forever_world` runtime tables. Runtime code must consume those promoted tables only, never the staging/source databases. Creature-backed imports use only `unique_name`, `scored_name`, and `reviewed` creature bridges. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import.
+That migration-style script imports vendor stock, optional reviewed entity spawns, creature loot, flat runtime creature loot groups, weighted item-container loot groups, and creature-info template overrides from `nf_map_*` into explicit `nexus_forever_world` runtime tables. Runtime code must consume those promoted tables only, never the staging/source databases. Creature-backed imports use only `unique_name`, `scored_name`, and `reviewed` creature bridges by default; targeted world repair can opt into exact-name ambiguous rows and direct Jabbithole coordinate fallback for source-zone rows whose coordinates are valid but whose source `worldid` is blank. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import.
+
+After changing reviewed mappings and verifying the staging import, refresh the
+standalone seed with:
+
+```powershell
+python Tools\DataMapping\export_runtime_world_seed.py
+```
 
 Manual schema load example:
 
@@ -380,12 +404,15 @@ python Tools\DataMapping\apply_creature_info_overrides.py
 python Tools\DataMapping\apply_creature_info_overrides.py --apply
 ```
 
-`apply_creature_info_overrides.py` imports high-confidence creature template overrides from `creature_map.csv` into `creature_info_property` and `creature_info_stat`. By default it inserts only missing `BaseHealth`, `ShieldCapacityMax`, and `InterruptArmour` rows for `unique_name`/`scored_name`/`reviewed` creature bridges, and skips duplicate creature mappings with conflicting values. The current localhost SQL staging import contains 9,308 property overrides and 1,414 stat overrides after skipping 511 conflicting property keys and 14 conflicting stat keys.
+`map_wildstar_data.py` reads tracked approved bridge decisions from `Tools\DataMapping\creature_bridge_overrides.csv` first, then local ignored review work from `Tools\DataMapping\review\creature_bridge_overrides.csv`. `apply_creature_info_overrides.py` imports high-confidence creature template overrides from `creature_map.csv` into `creature_info_property` and `creature_info_stat`. By default it inserts only missing `BaseHealth`, `ShieldCapacityMax`, and `InterruptArmour` rows for `unique_name`/`scored_name`/`reviewed` creature bridges, and skips duplicate creature mappings with conflicting values. `BaseHealth` uses the mapper-generated `template_base_health` value, so source health ranges such as `353-844` are not promoted as template-wide overrides.
 
 ## Current Limitations
 
 - Rotation is not present in Jabbithole coordinates, so entity candidate rotations default to zero.
 - Final entity IDs are intentionally blank in candidate files to avoid colliding with existing world content.
+- SQL entity-spawn promotion is opt-in per world and assigns deterministic DataMapping-owned IDs under `1000000000 + source_coordinate_id`.
+- Direct Jabbithole coordinate fallback is opt-in and should be scoped by source zone plus target world; it infers missing area only from explicit source `worldzoneid` or nearby staged world candidates.
+- `creature_map.csv` emits `template_base_health` only for fixed or single-sided health observations; ranged observations are preserved in `health_min`/`health_max` for review but are not safe creature-template health.
 - Display and outfit IDs are selected from the first/highest-weight client display and outfit group entries.
 - AI actions skip `creature2ActionSetId = 0` because the client has no matching `Creature2ActionSet` row for ID 0.
 - Spline mapping is spatial only and disabled by default.

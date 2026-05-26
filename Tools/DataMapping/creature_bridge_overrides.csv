@@ -1,0 +1,2 @@
+source_table,source_id,source_name,chosen_creature2_id,decision,reason,reviewer,reviewed_at
+creatures,244,Yeti Snowstalker,11945,approved,northern_wilds_yeti_review: exact-name level-3 faction-1208 challenger row with fixed 442 health; prefer base bruiser over survivor duplicate 51126 until spawn-group evidence is mapped,Codex Northern Wilds review,2026-05-25

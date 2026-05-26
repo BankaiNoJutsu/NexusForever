@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS nf_map_creature (
     client_difficulty INT NULL,
     health_min INT NULL,
     health_max INT NULL,
+    template_base_health FLOAT NULL,
     shield INT NULL,
     interrupt_armor_max INT NULL,
     creature_type VARCHAR(32),

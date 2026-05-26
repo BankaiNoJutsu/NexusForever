@@ -93,6 +93,8 @@ param(
     [string] $WorldDatabasePath = '',
     [switch] $SkipWorldDatabaseImport,
     [switch] $CreateWorldDatabaseCompatibilityTables,
+    [string] $RuntimeWorldSeedPath = '',
+    [switch] $SkipRuntimeWorldSeedImport,
 
     [Alias('DefaultAccountUsername')]
     [string] $PlayerAccountUsername = 'player',
@@ -717,6 +719,7 @@ function Invoke-NexusForeverSetup {
         Configuration          = $Configuration
         TargetFramework        = $TargetFramework
         WorldDatabasePath      = $WorldDatabasePath
+        RuntimeWorldSeedPath   = $RuntimeWorldSeedPath
         PlayerAccountUsername  = $PlayerAccountUsername
         PlayerAccountPassword  = $PlayerAccountPassword
         GameMasterAccountUsername = $GameMasterAccountUsername
@@ -747,6 +750,10 @@ function Invoke-NexusForeverSetup {
 
     if ($CreateWorldDatabaseCompatibilityTables) {
         $setupParameters.CreateWorldDatabaseCompatibilityTables = $true
+    }
+
+    if ($SkipRuntimeWorldSeedImport) {
+        $setupParameters.SkipRuntimeWorldSeedImport = $true
     }
 
     if ($InstallDotNetEf) {
@@ -796,6 +803,22 @@ function Get-RunningProcessesByPath {
     $runningProcessIds = @(Get-CimInstance Win32_Process -Filter "Name = '$processName'" -ErrorAction SilentlyContinue | Where-Object {
         $_.ExecutablePath -and [string]::Equals($_.ExecutablePath, $ExecutablePath, [System.StringComparison]::OrdinalIgnoreCase)
     } | Select-Object -ExpandProperty ProcessId)
+
+    $runningProcesses = foreach ($processId in $runningProcessIds) {
+        $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
+        if ($process) {
+            $process
+        }
+    }
+
+    @($runningProcesses)
+}
+
+function Get-RunningWildStarProcesses {
+    $runningProcessIds = @(
+        Get-CimInstance Win32_Process -Filter "Name = 'WildStar64.exe' OR Name = 'WildStar32.exe'" -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty ProcessId
+    )
 
     $runningProcesses = foreach ($processId in $runningProcessIds) {
         $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
@@ -1109,6 +1132,12 @@ function Get-EffectiveClientArguments {
 function Start-WildStarClient {
     param([string] $ExecutablePath)
 
+    $runningWildStarProcesses = @(Get-RunningWildStarProcesses)
+    if ($runningWildStarProcesses.Count -gt 0) {
+        Write-Info "Skipping WildStar launch because the client is already running: $(@($runningWildStarProcesses | ForEach-Object Id) -join ', ')"
+        return
+    }
+
     $resolvedPatcherHost = if ([string]::IsNullOrWhiteSpace($PatcherHost)) {
         $AuthHost
     }
@@ -1236,8 +1265,14 @@ if (!$SkipServerLaunch -or !$SkipClientLaunch) {
 
 if (!$SkipClientLaunch) {
     Write-Section 'Client'
-    $resolvedClientExecutable = Resolve-ClientExecutablePath
-    Start-WildStarClient -ExecutablePath $resolvedClientExecutable
+    $runningWildStarProcesses = @(Get-RunningWildStarProcesses)
+    if ($runningWildStarProcesses.Count -gt 0) {
+        Write-Info "Skipping WildStar launch because the client is already running: $(@($runningWildStarProcesses | ForEach-Object Id) -join ', ')"
+    }
+    else {
+        $resolvedClientExecutable = Resolve-ClientExecutablePath
+        Start-WildStarClient -ExecutablePath $resolvedClientExecutable
+    }
 }
 
 Write-Section 'Done'

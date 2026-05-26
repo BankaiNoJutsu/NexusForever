@@ -19,6 +19,17 @@ SET @nf_loot_group_max := @nf_loot_group_base + 4294967295;
 SET @nf_item_loot_group_base := IFNULL(@nf_item_loot_group_base, 110000000000);
 SET @nf_item_loot_group_max := @nf_item_loot_group_base + 4294967295;
 SET @nf_safe_import_creature_loot_counts_from_aggregates := IFNULL(@nf_safe_import_creature_loot_counts_from_aggregates, 0);
+SET @nf_safe_import_entity_spawns := IFNULL(@nf_safe_import_entity_spawns, 0);
+SET @nf_safe_import_entity_spawn_world := IFNULL(@nf_safe_import_entity_spawn_world, 0);
+SET @nf_safe_import_entity_spawn_area := IFNULL(@nf_safe_import_entity_spawn_area, 0);
+SET @nf_safe_import_entity_spawn_include_ambiguous_exact_name := IFNULL(@nf_safe_import_entity_spawn_include_ambiguous_exact_name, 0);
+SET @nf_safe_import_entity_spawn_match_radius := IFNULL(@nf_safe_import_entity_spawn_match_radius, 10.0);
+SET @nf_safe_import_jabbithole_creature_coordinates := IFNULL(@nf_safe_import_jabbithole_creature_coordinates, 0);
+SET @nf_safe_import_jabbithole_creature_coordinate_zone := IFNULL(@nf_safe_import_jabbithole_creature_coordinate_zone, 0);
+SET @nf_safe_import_jabbithole_creature_coordinate_area_match_radius := IFNULL(@nf_safe_import_jabbithole_creature_coordinate_area_match_radius, 75.0);
+SET @nf_safe_import_allow_unsafe_northern_wilds_spawns := IFNULL(@nf_safe_import_allow_unsafe_northern_wilds_spawns, 0);
+SET @nf_entity_id_base := IFNULL(@nf_entity_id_base, 1000000000);
+SET @nf_entity_id_max := @nf_entity_id_base + 999999999;
 
 CREATE TABLE IF NOT EXISTS creature_loot (
   creatureId INT UNSIGNED NOT NULL,
@@ -139,6 +150,283 @@ EXECUTE nfTruncateLootStatement;
 DEALLOCATE PREPARE nfTruncateLootStatement;
 
 START TRANSACTION;
+
+DROP TEMPORARY TABLE IF EXISTS tmp_nf_world_entity_import;
+CREATE TEMPORARY TABLE tmp_nf_world_entity_import ENGINE=InnoDB AS
+SELECT
+  CAST(@nf_entity_id_base + c.source_coordinate_id AS UNSIGNED) AS id,
+  c.source_coordinate_id,
+  CAST(IFNULL(c.`Type`, 0) AS UNSIGNED) AS `type`,
+  CAST(c.Creature AS UNSIGNED) AS creature,
+  CAST(c.World AS UNSIGNED) AS world,
+  CAST(c.Area AS UNSIGNED) AS area,
+  CAST(c.X AS DECIMAL(18,6)) AS x,
+  CAST(c.Y AS DECIMAL(18,6)) AS y,
+  CAST(c.Z AS DECIMAL(18,6)) AS z,
+  CAST(IFNULL(c.RX, 0) AS DECIMAL(18,6)) AS rx,
+  CAST(IFNULL(c.RY, 0) AS DECIMAL(18,6)) AS ry,
+  CAST(IFNULL(c.RZ, 0) AS DECIMAL(18,6)) AS rz,
+  CAST(IFNULL(c.DisplayInfo, 0) AS UNSIGNED) AS displayInfo,
+  CAST(IFNULL(c.OutfitInfo, 0) AS UNSIGNED) AS outfitInfo,
+  CAST(IFNULL(c.Faction1, 0) AS UNSIGNED) AS faction1,
+  CAST(IFNULL(c.Faction2, 0) AS UNSIGNED) AS faction2,
+  CAST(IFNULL(c.QuestChecklistIdx, 0) AS UNSIGNED) AS questChecklistIdx,
+  CAST(IFNULL(c.ActivePropId, 0) AS UNSIGNED) AS activePropId,
+  CAST(IFNULL(c.WorldSocketId, 0) AS UNSIGNED) AS worldSocketId,
+  CAST(IFNULL(c.Mode, 0) AS UNSIGNED) AS mode
+FROM nf_map_world_entity_candidate c
+WHERE @nf_safe_import_entity_spawns = 1
+  AND (
+    c.match_status IN ('unique_name', 'scored_name', 'reviewed')
+    OR (
+      @nf_safe_import_entity_spawn_include_ambiguous_exact_name = 1
+      AND c.match_status = 'ambiguous_name'
+      AND EXISTS (
+        SELECT 1
+        FROM nf_map_creature m
+        WHERE m.jabbithole_creature_id = c.jabbithole_creature_id
+          AND m.creature2_id = c.Creature
+          AND TRIM(LOWER(IFNULL(m.source_name, ''))) = TRIM(LOWER(IFNULL(m.client_name, '')))
+      )
+    )
+  )
+  AND @nf_safe_import_entity_spawn_world > 0
+  AND c.World = @nf_safe_import_entity_spawn_world
+  AND (@nf_safe_import_allow_unsafe_northern_wilds_spawns = 1 OR c.World <> 426)
+  AND (@nf_safe_import_entity_spawn_area = 0 OR c.Area = @nf_safe_import_entity_spawn_area)
+  AND IFNULL(c.source_coordinate_id, 0) > 0
+  AND (@nf_entity_id_base + c.source_coordinate_id) BETWEEN @nf_entity_id_base AND @nf_entity_id_max
+  AND IFNULL(c.Creature, 0) > 0
+  AND IFNULL(c.World, 0) > 0
+  AND IFNULL(c.Area, 0) > 0
+  AND c.X IS NOT NULL
+  AND c.Y IS NOT NULL
+  AND c.Z IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1
+    FROM entity existing
+    WHERE existing.creature = c.Creature
+      AND existing.world = c.World
+      AND existing.area = c.Area
+      AND (
+        POW(existing.x - c.X, 2)
+        + POW(existing.y - c.Y, 2)
+        + POW(existing.z - c.Z, 2)
+      ) <= POW(@nf_safe_import_entity_spawn_match_radius, 2)
+  );
+
+ALTER TABLE tmp_nf_world_entity_import
+  ADD PRIMARY KEY (id),
+  ADD KEY ix_tmp_nf_world_entity_import_source (source_coordinate_id),
+  ADD KEY ix_tmp_nf_world_entity_import_creature (creature),
+  ADD KEY ix_tmp_nf_world_entity_import_world_area (world, area);
+
+SET @nfJabbitholeCoordinateImportSql := IF(
+  @nf_safe_import_entity_spawns = 1
+    AND @nf_safe_import_jabbithole_creature_coordinates = 1
+    AND @nf_safe_import_entity_spawn_world > 0
+    AND @nf_safe_import_jabbithole_creature_coordinate_zone > 0,
+  'INSERT IGNORE INTO tmp_nf_world_entity_import (
+      id, source_coordinate_id, type, creature, world, area, x, y, z, rx, ry, rz,
+      displayInfo, outfitInfo, faction1, faction2, questChecklistIdx, activePropId,
+      worldSocketId, mode
+    )
+    SELECT
+      direct.id,
+      direct.source_coordinate_id,
+      direct.type,
+      direct.creature,
+      direct.world,
+      direct.area,
+      direct.x,
+      direct.y,
+      direct.z,
+      direct.rx,
+      direct.ry,
+      direct.rz,
+      direct.displayInfo,
+      direct.outfitInfo,
+      direct.faction1,
+      direct.faction2,
+      direct.questChecklistIdx,
+      direct.activePropId,
+      direct.worldSocketId,
+      direct.mode
+    FROM (
+      SELECT
+        CAST(@nf_entity_id_base + co.id AS UNSIGNED) AS id,
+        co.id AS source_coordinate_id,
+        CAST(IFNULL(m.entity_type, 0) AS UNSIGNED) AS type,
+        CAST(m.creature2_id AS UNSIGNED) AS creature,
+        CAST(@nf_safe_import_entity_spawn_world AS UNSIGNED) AS world,
+        CAST(COALESCE(
+          NULLIF(c.worldzoneid, 0),
+          (
+            SELECT cand.Area
+            FROM nf_map_world_entity_candidate cand
+            WHERE cand.World = @nf_safe_import_entity_spawn_world
+              AND cand.Area > 0
+              AND cand.X BETWEEN co.x - @nf_safe_import_jabbithole_creature_coordinate_area_match_radius AND co.x + @nf_safe_import_jabbithole_creature_coordinate_area_match_radius
+              AND cand.Y BETWEEN co.y - @nf_safe_import_jabbithole_creature_coordinate_area_match_radius AND co.y + @nf_safe_import_jabbithole_creature_coordinate_area_match_radius
+              AND cand.Z BETWEEN co.z - @nf_safe_import_jabbithole_creature_coordinate_area_match_radius AND co.z + @nf_safe_import_jabbithole_creature_coordinate_area_match_radius
+              AND cand.X IS NOT NULL
+              AND cand.Y IS NOT NULL
+              AND cand.Z IS NOT NULL
+              AND (
+                POW(cand.X - co.x, 2)
+                + POW(cand.Y - co.y, 2)
+                + POW(cand.Z - co.z, 2)
+              ) <= POW(@nf_safe_import_jabbithole_creature_coordinate_area_match_radius, 2)
+            ORDER BY POW(cand.X - co.x, 2) + POW(cand.Y - co.y, 2) + POW(cand.Z - co.z, 2)
+            LIMIT 1
+          ),
+          NULLIF(@nf_safe_import_entity_spawn_area, 0)
+        ) AS UNSIGNED) AS area,
+        CAST(co.x AS DECIMAL(18,6)) AS x,
+        CAST(co.y AS DECIMAL(18,6)) AS y,
+        CAST(co.z AS DECIMAL(18,6)) AS z,
+        CAST(0 AS DECIMAL(18,6)) AS rx,
+        CAST(0 AS DECIMAL(18,6)) AS ry,
+        CAST(0 AS DECIMAL(18,6)) AS rz,
+        CAST(IFNULL(m.default_display_info, 0) AS UNSIGNED) AS displayInfo,
+        CAST(IFNULL(m.default_outfit_info, 0) AS UNSIGNED) AS outfitInfo,
+        CAST(IFNULL(m.client_faction, 0) AS UNSIGNED) AS faction1,
+        CAST(IFNULL(m.client_faction, 0) AS UNSIGNED) AS faction2,
+        CAST(0 AS UNSIGNED) AS questChecklistIdx,
+        CAST(0 AS UNSIGNED) AS activePropId,
+        CAST(0 AS UNSIGNED) AS worldSocketId,
+        CAST(0 AS UNSIGNED) AS mode
+      FROM jabbithole.coordinates co
+      JOIN jabbithole.creatures c ON c.id = co.location_id
+      JOIN nf_map_creature m ON m.jabbithole_creature_id = c.id
+      WHERE co.location_type = ''Creature''
+        AND c.zone_id = @nf_safe_import_jabbithole_creature_coordinate_zone
+        AND (IFNULL(c.worldid, 0) = 0 OR c.worldid = @nf_safe_import_entity_spawn_world)
+        AND (@nf_safe_import_allow_unsafe_northern_wilds_spawns = 1 OR @nf_safe_import_entity_spawn_world <> 426)
+        AND IFNULL(co.id, 0) > 0
+        AND (@nf_entity_id_base + co.id) BETWEEN @nf_entity_id_base AND @nf_entity_id_max
+        AND IFNULL(m.creature2_id, 0) > 0
+        AND co.x IS NOT NULL
+        AND co.y IS NOT NULL
+        AND co.z IS NOT NULL
+        AND (
+          m.match_status IN (''unique_name'', ''scored_name'', ''reviewed'')
+          OR (
+            @nf_safe_import_entity_spawn_include_ambiguous_exact_name = 1
+            AND m.match_status = ''ambiguous_name''
+            AND TRIM(LOWER(IFNULL(m.source_name, ''''))) = TRIM(LOWER(IFNULL(m.client_name, '''')))
+          )
+        )
+    ) direct
+    WHERE direct.area > 0
+      AND (@nf_safe_import_entity_spawn_area = 0 OR direct.area = @nf_safe_import_entity_spawn_area)
+      AND (
+        EXISTS (
+          SELECT 1
+          FROM entity existing_id
+          WHERE existing_id.id = direct.id
+        )
+        OR NOT EXISTS (
+          SELECT 1
+          FROM entity existing
+          WHERE existing.creature = direct.creature
+            AND existing.world = direct.world
+            AND (
+              POW(existing.x - direct.x, 2)
+              + POW(existing.y - direct.y, 2)
+              + POW(existing.z - direct.z, 2)
+            ) <= POW(@nf_safe_import_entity_spawn_match_radius, 2)
+        )
+      )',
+  'DO 0'
+);
+PREPARE nfJabbitholeCoordinateImportStatement FROM @nfJabbitholeCoordinateImportSql;
+EXECUTE nfJabbitholeCoordinateImportStatement;
+DEALLOCATE PREPARE nfJabbitholeCoordinateImportStatement;
+
+DELETE FROM entity
+WHERE @nf_safe_import_replace_existing = 1
+  AND @nf_safe_import_entity_spawns = 1
+  AND @nf_safe_import_entity_spawn_world > 0
+  AND id BETWEEN @nf_entity_id_base AND @nf_entity_id_max
+  AND world = @nf_safe_import_entity_spawn_world
+  AND (@nf_safe_import_entity_spawn_area = 0 OR area = @nf_safe_import_entity_spawn_area);
+
+INSERT IGNORE INTO entity (
+  id, type, creature, world, area, x, y, z, rx, ry, rz, displayInfo, outfitInfo,
+  faction1, faction2, questChecklistIdx, activePropId, worldSocketId, mode
+)
+SELECT
+  id, type, creature, world, area, x, y, z, rx, ry, rz, displayInfo, outfitInfo,
+  faction1, faction2, questChecklistIdx, activePropId, worldSocketId, mode
+FROM tmp_nf_world_entity_import;
+
+INSERT INTO entity_stats (id, stat, value)
+SELECT
+  i.id,
+  CAST(s.Stat AS UNSIGNED),
+  s.Value
+FROM tmp_nf_world_entity_import i
+JOIN nf_map_world_entity_stats_candidate s ON s.source_coordinate_id = i.source_coordinate_id
+JOIN nf_map_creature m ON m.jabbithole_creature_id = s.jabbithole_creature_id AND m.creature2_id = i.creature
+WHERE s.Stat BETWEEN 0 AND 255
+  AND (s.Stat <> 0 OR (IFNULL(m.template_base_health, 0) > 0 AND ABS(s.Value - m.template_base_health) < 0.01))
+ON DUPLICATE KEY UPDATE
+  value = VALUES(value);
+
+SET @nfJabbitholeCoordinateStatsSql := IF(
+  @nf_safe_import_entity_spawns = 1
+    AND @nf_safe_import_jabbithole_creature_coordinates = 1
+    AND @nf_safe_import_entity_spawn_world > 0
+    AND @nf_safe_import_jabbithole_creature_coordinate_zone > 0,
+  'INSERT INTO entity_stats (id, stat, value)
+    SELECT
+      i.id,
+      stat_def.stat,
+      CAST(
+        CASE stat_def.stat
+          WHEN 0 THEN m.template_base_health
+          WHEN 10 THEN COALESCE(NULLIF(m.level_max, 0), NULLIF(m.level_min, 0))
+          WHEN 20 THEN m.shield
+          WHEN 21 THEN m.interrupt_armor_max
+        END AS DECIMAL(18,6)
+      )
+    FROM tmp_nf_world_entity_import i
+    JOIN jabbithole.coordinates co ON co.id = i.source_coordinate_id
+    JOIN jabbithole.creatures c ON c.id = co.location_id
+    JOIN nf_map_creature m ON m.jabbithole_creature_id = c.id AND m.creature2_id = i.creature
+    JOIN (
+      SELECT 0 AS stat
+      UNION ALL SELECT 10
+      UNION ALL SELECT 20
+      UNION ALL SELECT 21
+    ) stat_def
+    WHERE co.location_type = ''Creature''
+      AND c.zone_id = @nf_safe_import_jabbithole_creature_coordinate_zone
+      AND (IFNULL(c.worldid, 0) = 0 OR c.worldid = @nf_safe_import_entity_spawn_world)
+      AND (
+        CASE stat_def.stat
+          WHEN 0 THEN m.template_base_health
+          WHEN 10 THEN COALESCE(NULLIF(m.level_max, 0), NULLIF(m.level_min, 0))
+          WHEN 20 THEN m.shield
+          WHEN 21 THEN m.interrupt_armor_max
+        END
+      ) > 0
+      AND (
+        m.match_status IN (''unique_name'', ''scored_name'', ''reviewed'')
+        OR (
+          @nf_safe_import_entity_spawn_include_ambiguous_exact_name = 1
+          AND m.match_status = ''ambiguous_name''
+          AND TRIM(LOWER(IFNULL(m.source_name, ''''))) = TRIM(LOWER(IFNULL(m.client_name, '''')))
+        )
+      )
+    ON DUPLICATE KEY UPDATE
+      value = VALUES(value)',
+  'DO 0'
+);
+PREPARE nfJabbitholeCoordinateStatsStatement FROM @nfJabbitholeCoordinateStatsSql;
+EXECUTE nfJabbitholeCoordinateStatsStatement;
+DEALLOCATE PREPARE nfJabbitholeCoordinateStatsStatement;
 
 DROP TEMPORARY TABLE IF EXISTS tmp_nf_vendor_item_latest;
 CREATE TEMPORARY TABLE tmp_nf_vendor_item_latest ENGINE=InnoDB AS
@@ -480,13 +768,31 @@ DELETE FROM creature_info_stat
 WHERE @nf_safe_import_replace_existing = 1
   AND `stat` IN (21);
 
+-- Health ranges such as 353-844 are source observations across a level band.
+-- A creature_info_property row is template-wide, so importing the range maximum
+-- pins every level of that creature to the max-level health. Remove prior rows
+-- created from that unsafe shape and only import collapsed/single health values
+-- below.
+DELETE p
+FROM creature_info_property p
+JOIN nf_map_creature m ON m.creature2_id = p.id
+WHERE p.`property` = 7
+  AND m.match_status IN ('unique_name', 'scored_name', 'reviewed')
+  AND IFNULL(m.creature2_id, 0) > 0
+  AND IFNULL(m.health_min, 0) > 0
+  AND IFNULL(m.health_max, 0) > 0
+  AND m.health_min <> m.health_max
+  AND ABS(p.`value` - m.health_max) < 0.01;
+
 DROP TEMPORARY TABLE IF EXISTS tmp_nf_creature_info_property_candidate;
 CREATE TEMPORARY TABLE tmp_nf_creature_info_property_candidate ENGINE=InnoDB AS
-SELECT creature2_id AS id, 7 AS `property`, CAST(COALESCE(NULLIF(health_max, 0), NULLIF(health_min, 0)) AS DECIMAL(18,6)) AS `value`
+SELECT creature2_id AS id, 7 AS `property`, CAST(CASE
+    WHEN IFNULL(template_base_health, 0) > 0 THEN template_base_health
+  END AS DECIMAL(18,6)) AS `value`
 FROM nf_map_creature
 WHERE match_status IN ('unique_name', 'scored_name', 'reviewed')
   AND IFNULL(creature2_id, 0) > 0
-  AND COALESCE(NULLIF(health_max, 0), NULLIF(health_min, 0)) > 0
+  AND IFNULL(template_base_health, 0) > 0
 UNION ALL
 SELECT creature2_id AS id, 41 AS `property`, CAST(shield AS DECIMAL(18,6)) AS `value`
 FROM nf_map_creature
@@ -514,11 +820,56 @@ FROM tmp_nf_creature_info_stat_candidate
 GROUP BY id, `stat`
 HAVING COUNT(DISTINCT `value`) = 1;
 
+-- Rider's Reef tutorial combat cleanup.
+-- The official/imported world rows can include three stray Beacon Arrow entities
+-- on the Exile mine anchors and turret rows imported as neutral AiTurretEntity
+-- placeholders. Normalize the imported runtime rows here so fresh world
+-- databases start from the intended combat lane data.
+DELETE FROM entity
+WHERE world = 3460
+  AND creature = 73665;
+
+UPDATE entity
+SET type = 0,
+    faction1 = CASE creature
+        WHEN 73494 THEN 1441
+        WHEN 74862 THEN 1442
+        ELSE faction1
+    END,
+    faction2 = CASE creature
+        WHEN 73494 THEN 1441
+        WHEN 74862 THEN 1442
+        ELSE faction2
+    END
+WHERE world = 3460
+  AND creature IN (73494, 74862);
+
+-- Northern Wilds bulk coordinate cleanup.
+-- Jabbithole/source coordinate observations for world 426 currently overpopulate
+-- tiny map grids and are not safe retail spawn groups. Keep legacy/manual rows
+-- and quest-script spawns, but remove DataMapping-owned coordinate imports unless
+-- a review session explicitly opts back in.
+DELETE FROM entity_loot
+WHERE @nf_safe_import_allow_unsafe_northern_wilds_spawns = 0
+  AND id IN (
+    SELECT e.id
+    FROM entity e
+    WHERE e.world = 426
+      AND e.id BETWEEN @nf_entity_id_base AND @nf_entity_id_max
+  );
+
+DELETE FROM entity
+WHERE @nf_safe_import_allow_unsafe_northern_wilds_spawns = 0
+  AND world = 426
+  AND id BETWEEN @nf_entity_id_base AND @nf_entity_id_max;
+
 COMMIT;
 
 SELECT 'entity_vendor' AS table_name, COUNT(*) AS row_count FROM entity_vendor
 UNION ALL SELECT 'entity_vendor_category', COUNT(*) FROM entity_vendor_category
 UNION ALL SELECT 'entity_vendor_item', COUNT(*) FROM entity_vendor_item
+UNION ALL SELECT 'entity_spawns_mapped', COUNT(*) FROM entity WHERE id BETWEEN @nf_entity_id_base AND @nf_entity_id_max
+UNION ALL SELECT 'entity_spawn_stats_mapped', COUNT(*) FROM entity_stats es JOIN entity e ON e.id = es.id WHERE e.id BETWEEN @nf_entity_id_base AND @nf_entity_id_max
 UNION ALL SELECT 'creature_loot', COUNT(*) FROM creature_loot
 UNION ALL SELECT 'loot_group_mapped', COUNT(*) FROM loot_group WHERE comment LIKE 'DataMapping creature_loot%'
 UNION ALL SELECT 'entity_loot_mapped', COUNT(*) FROM entity_loot WHERE comment LIKE 'DataMapping creature_loot%'
@@ -527,4 +878,5 @@ UNION ALL SELECT 'item_loot_group_mapped', COUNT(*) FROM loot_group WHERE commen
 UNION ALL SELECT 'item_loot_mapped', COUNT(*) FROM item_loot WHERE comment LIKE 'DataMapping item_container%'
 UNION ALL SELECT 'item_loot_item_mapped', COUNT(*) FROM loot_item li JOIN loot_group lg ON lg.id = li.id WHERE lg.comment LIKE 'DataMapping item_container%'
 UNION ALL SELECT 'creature_info_property', COUNT(*) FROM creature_info_property
-UNION ALL SELECT 'creature_info_stat', COUNT(*) FROM creature_info_stat;
+UNION ALL SELECT 'creature_info_stat', COUNT(*) FROM creature_info_stat
+UNION ALL SELECT 'northern_wilds_unsafe_spawn_rows', COUNT(*) FROM entity WHERE world = 426 AND id BETWEEN @nf_entity_id_base AND @nf_entity_id_max;
