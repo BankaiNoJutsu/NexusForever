@@ -9,7 +9,7 @@ using NexusForever.Script.Template.Filter;
 namespace NexusForever.Script.Main.Quests.CrimsonIsle
 {
     [ScriptFilterCreatureId(47687u, 47688u)]
-    public class Q8855DominionSoldiersEntityScript: IWorldEntityScript, IOwnedScript<ICreatureEntity>
+    public class Q8855DominionSoldiersEntityScript : IWorldEntityScript, IOwnedScript<ICreatureEntity>
     {
         private const ushort QuestStasisInterrupted = 8855;
 
@@ -22,6 +22,7 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
 
         public void OnAddToMap(IBaseMap map)
         {
+            // WIP/GUESSED: Questing-and-more uses a 5m proximity trigger; exact retail trigger volume/timing is not live-smoked.
             owner.SetInRangeCheck(5f);
         }
 
@@ -33,6 +34,7 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
             if (player.QuestManager.GetQuestState(QuestStasisInterrupted) != QuestState.Accepted)
                 return;
 
+            // WIP/GUESSED: branch credits ActivateEntity and despawns the soldier immediately; exact retail repeat/despawn timing is not live-smoked.
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateEntity, owner.CreatureId, 1u);
             owner.ModifyHealth(owner.Health, DamageType.Physical, null);
         }

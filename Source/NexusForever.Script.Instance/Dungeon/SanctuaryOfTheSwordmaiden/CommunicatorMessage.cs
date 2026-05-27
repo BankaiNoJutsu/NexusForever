@@ -1,0 +1,37 @@
+namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden
+{
+    public enum CommunicatorMessage
+    {
+        SpiritMotherSelene1  = 4812,
+        SpiritMotherSelene2  = 4813,
+        SpiritMotherSelene3  = 4814,
+        SpiritMotherSelene4  = 4815,
+        SpiritMotherSelene5  = 4816,
+        SpiritMotherSelene6  = 4821,
+        SpiritMotherSelene7  = 4822,
+        SpiritMotherSelene8  = 4823,
+        SpiritMotherSelene9  = 4824,
+        SpiritMotherSelene10 = 4825,
+        SpiritMotherSelene11 = 4826,
+        SpiritMotherSelene12 = 4827,
+        SpiritMotherSelene13 = 4828,
+        SpiritMotherSelene14 = 4829,
+        SpiritMotherSelene15 = 4830,
+        SpiritMotherSelene16 = 4831,
+        SpiritMotherSelene17 = 4832,
+        SpiritMotherSelene18 = 4833,
+        SpiritMotherSelene19 = 4834,
+        SpiritMotherSelene20 = 4835,
+        SpiritMotherSelene21 = 4836,
+        SpiritMotherSelene22 = 4837,
+        SpiritMotherSelene23 = 4838,
+        SpiritMotherSelene24 = 4840,
+        SpiritMotherSelene25 = 4841,
+        SpiritMotherSelene26 = 4842,
+        SpiritMotherSelene27 = 4843,
+        SpiritMotherSelene28 = 4843,
+        SpiritMotherSelene29 = 4844,
+        SpiritMotherSelene30 = 4845,
+        SpiritMotherSelene31 = 4846,
+    }
+}

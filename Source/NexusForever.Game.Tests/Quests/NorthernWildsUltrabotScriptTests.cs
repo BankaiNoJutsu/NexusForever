@@ -1,4 +1,5 @@
 using System.Numerics;
+using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Map;
@@ -29,5 +30,51 @@ public class NorthernWildsUltrabotScriptTests
         Assert.Equal(new Vector3(1f, 2f, 3f), path[0]);
         Assert.Equal(new Vector3(4450f, -700f, -5150f), path[1]);
         Assert.Equal(SplineType.Linear, Assert.IsType<SplineType>(invocation.Arguments[1]));
+    }
+
+    [Fact]
+    public void OnKilled_WhenPlayerHasNotCompletedAchievement_GrantsWarbotAchievement()
+    {
+        IPlayer player = CreatePlayerWithAchievementState(
+            alreadyCompleted: false,
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementManagerProxy);
+        var script = new Q3487UltrabotEntityScript();
+
+        script.OnLoad(RecordingDispatchProxy<ICreatureEntity>.Create(out _));
+        script.OnKilled(player);
+
+        RecordingDispatchProxy<ICharacterAchievementManager>.Invocation grant = Assert.Single(
+            achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+        Assert.Equal((ushort)1296, grant.Arguments[0]);
+    }
+
+    [Fact]
+    public void OnKilled_WhenPlayerAlreadyCompletedAchievement_DoesNotGrantAgain()
+    {
+        IPlayer player = CreatePlayerWithAchievementState(
+            alreadyCompleted: true,
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementManagerProxy);
+        var script = new Q3487UltrabotEntityScript();
+
+        script.OnLoad(RecordingDispatchProxy<ICreatureEntity>.Create(out _));
+        script.OnKilled(player);
+
+        Assert.Empty(achievementManagerProxy.GetInvocations(nameof(ICharacterAchievementManager.GrantAchievement)));
+    }
+
+    private static IPlayer CreatePlayerWithAchievementState(
+        bool alreadyCompleted,
+        out RecordingDispatchProxy<ICharacterAchievementManager> achievementManagerProxy)
+    {
+        ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out achievementManagerProxy);
+        achievementManagerProxy.SetMethodHandler(nameof(ICharacterAchievementManager.HasCompletedAchievement), args =>
+        {
+            Assert.Equal((ushort)1296, args[0]);
+            return alreadyCompleted;
+        });
+
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        return player;
     }
 }

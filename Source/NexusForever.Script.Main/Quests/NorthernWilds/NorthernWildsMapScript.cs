@@ -1,12 +1,16 @@
 using System.Linq;
 using System.Numerics;
 using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract.Cinematic;
+using NexusForever.Game.Abstract.Cinematic.Cinematics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Map.Search;
 using NexusForever.Game.Abstract.PublicEvent;
+using NexusForever.Game.Abstract.Story;
 using NexusForever.Game.Static.PublicEvent;
+using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Script.Template;
@@ -64,6 +68,13 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         private const uint Q3487UltrabotId = 12526u;
         private const uint Q3487UltrabotWL = 9200u;
 
+        private const ushort Q3480ReportingForDutyQuest = 3480;
+
+        private const ushort Q3486EmpoweredTowerQuest = 3486;
+        private const uint Q3486ArrivedAtTowerZoneId = 729u;
+        private const uint Q3486ArrivedAtTowerObjective = 4987u;
+        private const uint Q3486ArrivedAtTowerStoryPanel = 1575u;
+
         private const uint DominionUltrabotPublicEventId = 154u;
         private const uint CampIcefuryZoneId = 602u;
 
@@ -98,6 +109,8 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         private readonly IEntityFactory entityFactory;
         private readonly IGameTableManager gameTableManager;
+        private readonly ICinematicFactory cinematicFactory;
+        private readonly IStoryBuilder storyBuilder;
         private readonly ILogger<NorthernWildsMapScript> log;
 
         private IBaseMap owner;
@@ -108,11 +121,15 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         public NorthernWildsMapScript(
             ILogger<NorthernWildsMapScript> log,
             IEntityFactory entityFactory,
-            IGameTableManager gameTableManager)
+            IGameTableManager gameTableManager,
+            ICinematicFactory cinematicFactory,
+            IStoryBuilder storyBuilder)
         {
             this.log = log;
             this.entityFactory = entityFactory;
             this.gameTableManager = gameTableManager;
+            this.cinematicFactory = cinematicFactory;
+            this.storyBuilder = storyBuilder;
         }
 
         public void OnLoad(IBaseMap owner)
@@ -129,6 +146,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             if (entity is not IPlayer player)
                 return;
 
+            TryQueueIntroCinematic(player);
             ActivatePathMissions(player);
             if (player.Zone?.Id == CampIcefuryZoneId)
                 TryJoinDominionUltrabotEvent(player);
@@ -145,11 +163,33 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             if (entity is not IPlayer player)
                 return;
 
+            TryCreditEmpoweredTowerArrival(player, zone);
+
             ActivatePathMissions(player);
             if (zone == CampIcefuryZoneId)
                 TryJoinDominionUltrabotEvent(player);
             else
                 TryLeaveDominionUltrabotEvent(player);
+        }
+
+        private void TryCreditEmpoweredTowerArrival(IPlayer player, uint zone)
+        {
+            if (zone != Q3486ArrivedAtTowerZoneId)
+                return;
+
+            if (player.QuestManager.GetQuestState(Q3486EmpoweredTowerQuest) != QuestState.Accepted)
+                return;
+
+            storyBuilder.SendServerStoryPanelShow(player, Q3486ArrivedAtTowerStoryPanel);
+            player.QuestManager.ObjectiveUpdate(Q3486ArrivedAtTowerObjective, 1u);
+        }
+
+        private void TryQueueIntroCinematic(IPlayer player)
+        {
+            if (player.QuestManager.GetQuestState(Q3480ReportingForDutyQuest) != null)
+                return;
+
+            player.CinematicManager.QueueCinematic(cinematicFactory.CreateCinematic<INorthernWildsOnCreate>());
         }
 
         private void EnsureQuestEntities()

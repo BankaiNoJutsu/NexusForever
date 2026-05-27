@@ -27,6 +27,7 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
             if (activator.QuestManager.GetQuestState(5594) == QuestState.Accepted)
                 activator.QuestManager.QuestAchieve(5594);
 
+            // WIP/GUESSED: the branch teleports after activation even when quest credit is not active; exact access gating remains un-smoked.
             if (!activator.CanTeleport())
                 return;
 

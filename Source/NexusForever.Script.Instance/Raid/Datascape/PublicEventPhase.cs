@@ -1,0 +1,33 @@
+namespace NexusForever.Script.Instance.Raid.Datascape
+{
+    public enum PublicEventPhase
+    {
+        Enter,
+        HallsOfTheInfiniteMind,
+        TheOculus,
+        FirstFrostBoulder,
+        SecondFrostBoulder,
+        FrostbringerWarlock,
+        MaelstromAuthority,
+        AlphaElementalGuardians,
+        AlphaPersonalityDatacore,
+        EarthRoomCanimid,
+        EarthRoomRock,
+        Gloomclaw,
+        LogicWingRoom1,
+        LogicWingRoom2,
+        LogicWingRoom3,
+        LogicWingLogicElemental,
+        DeltaElementalGuardians,
+        DeltaPersonalityDatacore,
+        VolatilityLattice,
+        WarmongerAgratha,
+        WarmongerChuna,
+        WarmongerTalarii,
+        GrandWarmongerTargresh,
+        BetaElementalGuardians,
+        BetaPersonalityDatacore,
+        MemoryCores,
+        Avatus,
+    }
+}

@@ -38,6 +38,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         {
             if (newState == QuestState.Completed)
             {
+                // WIP/GUESSED: Questing-and-more queues this cinematic on completion; exact retail timing and secondary follow-up mention visibility are not live-smoked.
                 owner.Player.CinematicManager.QueueCinematic(cinematicFactory.CreateCinematic<IQ3486EmpoweredTowerCinematic>());
                 owner.Player.QuestManager.QuestMention(QuestSettingUpCamp);
                 owner.Player.QuestManager.QuestMention(QuestSecuringTheArea);
@@ -80,6 +81,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             if (player.QuestManager.GetQuestState(QuestEmpoweredTower) != QuestState.Accepted)
                 return;
 
+            // WIP/GUESSED: branch grants virtual item 206 and despawns the crystal on proximity; exact loot presentation/respawn timing is not live-smoked.
             VirtualItemEntry rewardItem = gameTableManager.VirtualItem.GetEntry(VirtualItemReward);
             globalLootManager.GiveLoot(player, rewardItem, 1u, owner.Guid);
             owner.ModifyHealth(owner.Health, DamageType.Physical, null);

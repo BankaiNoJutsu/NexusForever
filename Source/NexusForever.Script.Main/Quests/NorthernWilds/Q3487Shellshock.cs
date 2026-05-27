@@ -42,7 +42,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         public void OnActivateSuccess(IPlayer activator)
         {
-            // Only credit objective for players on Q3487 (Shellshock).
+            // WIP/GUESSED: Questing-and-more proves the checklist credit, but the Accepted-state gate is emulator-side safety pending retail activation smoke.
             if (activator.QuestManager.GetQuestState(QuestShellshock) != QuestState.Accepted)
                 return;
 
@@ -65,6 +65,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         public void OnAddToMap(IBaseMap map)
         {
+            // WIP/GUESSED: branch moves directly to this destination at speed 5; exact retail spline/path timing is not live-smoked.
             owner.MovementManager.SetPositionPath(
                 new List<Vector3> { owner.Position, LocDestination },
                 SplineType.Linear,
@@ -74,6 +75,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         public void OnKilled(IUnitEntity killer)
         {
+            // WIP/GUESSED: branch grants achievement 1296 on death; duplicate-achievement handling is guarded until retail reward timing is smoke-tested.
             if (killer is IPlayer player
                 && !player.AchievementManager.HasCompletedAchievement(AchievementWarbot))
                 player.AchievementManager.GrantAchievement(AchievementWarbot);

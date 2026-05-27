@@ -1,6 +1,6 @@
-﻿using NexusForever.Script.Template.Filter;
+using NexusForever.Script.Template.Filter;
 
-namespace NexusForever.Script.Instance.Expedition.Gautlet
+namespace NexusForever.Script.Instance.Expedition.Gauntlet
 {
     [ScriptFilterOwnerId(2183)]
     public class GauntletMapScript : EventBaseContentMapScript

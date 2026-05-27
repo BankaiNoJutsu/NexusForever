@@ -36,7 +36,10 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         public void OnQuestStateChange(QuestState newState, QuestState oldState)
         {
             if (newState == QuestState.Achieved)
+            {
+                // WIP/GUESSED: Questing-and-more queues this cinematic on Achieved; exact retail turn-in/cinematic timing is not live-smoked.
                 owner.Player.CinematicManager.QueueCinematic(cinematicFactory.CreateCinematic<IQ3673ContactWithThaydCinematic>());
+            }
 
             if (newState != QuestState.Completed)
                 return;

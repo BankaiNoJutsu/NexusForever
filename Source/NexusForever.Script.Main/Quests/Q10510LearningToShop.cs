@@ -25,6 +25,7 @@ namespace NexusForever.Script.Main.Quests
             if (newState < QuestState.Completed)
             {
                 IPlayer player = owner.Player;
+                // WIP/GUESSED: Questing-and-more proves the active-state item/title snapshot, but exact retail refresh timing is not live-smoked.
                 if (player.Inventory.HasItemCount(ItemTitleSmartShopper, 1u) || player.TitleManager.HasTitle(TitleSmartShopper))
                     player.QuestManager.ObjectiveUpdate(QObjPurchaseSmartShopper, 1u);
             }

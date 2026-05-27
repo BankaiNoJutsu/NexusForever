@@ -1,11 +1,19 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using NexusForever.Game.Abstract.Cinematic;
+using NexusForever.Game.Abstract.Cinematic.Cinematics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Abstract.Story;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
 using NexusForever.Script.Main.Quests.CrimsonIsle;
+using NexusForever.Script.Main.Quests.EverstarGrove;
+using NexusForever.Script.Main.Quests.LevianBay;
 using NexusForever.Script.Main.Quests.NorthernWilds;
 using NexusForever.Script.Template;
+using Path = NexusForever.Game.Static.PlayerPath.Path;
 
 namespace NexusForever.Game.Tests.Quests;
 
@@ -53,6 +61,19 @@ public class EarlyZoneEntityObjectiveCreditTests
         Assert.Equal(QuestObjectiveType.ScriptedTargetGroupChecklist, update.Arguments[0]);
         Assert.Equal(11251u, update.Arguments[1]);
         Assert.Equal(3u, update.Arguments[2]);
+    }
+
+    [Fact]
+    public void Q3487DominionCannon_OnActivateSuccess_WhenQuestMissing_DoesNotCreditChecklistIndex()
+    {
+        ICreatureEntity owner = CreateCreature(11251u, checklistIndex: 3, health: 100u, out _);
+        IPlayer player = CreatePlayerWithQuestState(3487, null, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        var script = new Q3487DominionCannonEntityScript();
+
+        script.OnLoad(owner);
+        script.OnActivateSuccess(player);
+
+        Assert.Empty(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
     }
 
     [Fact]
@@ -139,6 +160,138 @@ public class EarlyZoneEntityObjectiveCreditTests
         Assert.Empty(ownerProxy.GetInvocations(nameof(ICreatureEntity.ModifyHealth)));
     }
 
+    [Fact]
+    public void NorthernWildsMapScript_OnEnterZone_Q3486Accepted_ShowsTowerStoryPanelAndCreditsArrival()
+    {
+        var script = CreateNorthernWildsMapScript(out RecordingDispatchProxy<IStoryBuilder> storyBuilderProxy);
+        IPlayer player = CreatePlayerWithQuestState(3486, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+
+        script.OnEnterZone(player, 729u);
+
+        RecordingDispatchProxy<IStoryBuilder>.Invocation storyPanel = Assert.Single(storyBuilderProxy.GetInvocations(nameof(IStoryBuilder.SendServerStoryPanelShow)));
+        Assert.Same(player, storyPanel.Arguments[0]);
+        Assert.Equal(1575u, storyPanel.Arguments[1]);
+
+        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(4987u, update.Arguments[0]);
+        Assert.Equal(1u, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void NorthernWildsMapScript_OnEnterZone_Q3486Missing_DoesNotCreditArrival()
+    {
+        var script = CreateNorthernWildsMapScript(out RecordingDispatchProxy<IStoryBuilder> storyBuilderProxy);
+        IPlayer player = CreatePlayerWithQuestState(3486, null, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+
+        script.OnEnterZone(player, 729u);
+
+        Assert.Empty(storyBuilderProxy.GetInvocations(nameof(IStoryBuilder.SendServerStoryPanelShow)));
+        Assert.Empty(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+    }
+
+    [Fact]
+    public void CrimsonIsleMapScript_OnEnterZone_Q5596Accepted_CreditsCrashSiteObjective()
+    {
+        var script = CreateCrimsonIsleMapScript();
+        IPlayer player = CreatePlayerWithQuestState(5596, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+
+        script.OnEnterZone(player, 1611u);
+
+        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(8255u, update.Arguments[0]);
+        Assert.Equal(1u, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void CrimsonIsleMapScript_OnEnterZone_Q5596Missing_DoesNotCreditCrashSiteObjective()
+    {
+        var script = CreateCrimsonIsleMapScript();
+        IPlayer player = CreatePlayerWithQuestState(5596, null, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+
+        script.OnEnterZone(player, 1611u);
+
+        Assert.Empty(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+    }
+
+    [Fact]
+    public void NorthernWildsMapScript_OnAddToMap_OpeningQuestMissing_QueuesIntroCinematic()
+    {
+        ICinematicBase cinematic = RecordingDispatchProxy<INorthernWildsOnCreate>.Create(out _);
+        ICinematicFactory cinematicFactory = CreateCinematicFactory(cinematic);
+        var script = CreateNorthernWildsMapScript(out _, cinematicFactory);
+        IPlayer player = CreatePlayerWithQuestState(3480, null, out _, out RecordingDispatchProxy<ICinematicManager> cinematicManagerProxy);
+
+        script.OnAddToMap(player);
+
+        RecordingDispatchProxy<ICinematicManager>.Invocation queued = Assert.Single(cinematicManagerProxy.GetInvocations(nameof(ICinematicManager.QueueCinematic)));
+        Assert.Same(cinematic, queued.Arguments[0]);
+    }
+
+    [Fact]
+    public void CrimsonIsleMapScript_OnAddToMap_OpeningQuestMissing_QueuesIntroCinematic()
+    {
+        ICinematicBase cinematic = RecordingDispatchProxy<ICrimsonIsleOnCreate>.Create(out _);
+        ICinematicFactory cinematicFactory = CreateCinematicFactory(cinematic);
+        var script = CreateCrimsonIsleMapScript(cinematicFactory);
+        IPlayer player = CreatePlayerWithQuestState(5593, null, out _, out RecordingDispatchProxy<ICinematicManager> cinematicManagerProxy);
+
+        script.OnAddToMap(player);
+
+        RecordingDispatchProxy<ICinematicManager>.Invocation queued = Assert.Single(cinematicManagerProxy.GetInvocations(nameof(ICinematicManager.QueueCinematic)));
+        Assert.Same(cinematic, queued.Arguments[0]);
+    }
+
+    [Fact]
+    public void EverstarGroveMapScript_OnAddToMap_OpeningQuestMissing_QueuesIntroCinematic()
+    {
+        ICinematicBase cinematic = RecordingDispatchProxy<IEverstarGroveOnCreate>.Create(out _);
+        ICinematicFactory cinematicFactory = CreateCinematicFactory(cinematic);
+        var script = new EverstarGroveMapScript(cinematicFactory);
+        IPlayer player = CreatePlayerWithQuestState(6296, null, out _, out RecordingDispatchProxy<ICinematicManager> cinematicManagerProxy);
+
+        script.OnAddToMap(player);
+
+        RecordingDispatchProxy<ICinematicManager>.Invocation queued = Assert.Single(cinematicManagerProxy.GetInvocations(nameof(ICinematicManager.QueueCinematic)));
+        Assert.Same(cinematic, queued.Arguments[0]);
+    }
+
+    [Fact]
+    public void LevianBayMapScript_OnAddToMap_OpeningQuestMissing_QueuesIntroCinematic()
+    {
+        ICinematicBase cinematic = RecordingDispatchProxy<ILevianBayOnCreate>.Create(out _);
+        ICinematicFactory cinematicFactory = CreateCinematicFactory(cinematic);
+        var script = new LevianBayMapScript(cinematicFactory);
+        IPlayer player = CreatePlayerWithQuestState(6780, null, out _, out RecordingDispatchProxy<ICinematicManager> cinematicManagerProxy);
+
+        script.OnAddToMap(player);
+
+        RecordingDispatchProxy<ICinematicManager>.Invocation queued = Assert.Single(cinematicManagerProxy.GetInvocations(nameof(ICinematicManager.QueueCinematic)));
+        Assert.Same(cinematic, queued.Arguments[0]);
+    }
+
+    [Theory]
+    [InlineData("NorthernWilds", 3480)]
+    [InlineData("CrimsonIsle", 5593)]
+    [InlineData("EverstarGrove", 6296)]
+    [InlineData("LevianBay", 6780)]
+    public void SurfaceStarterMapScript_OnAddToMap_OpeningQuestKnown_DoesNotQueueIntroCinematic(string map, ushort questId)
+    {
+        ICinematicFactory cinematicFactory = CreateCinematicFactory(RecordingDispatchProxy<ICinematicBase>.Create(out _));
+        IMapScript script = map switch
+        {
+            "NorthernWilds" => CreateNorthernWildsMapScript(out _, cinematicFactory),
+            "CrimsonIsle" => CreateCrimsonIsleMapScript(cinematicFactory),
+            "EverstarGrove" => new EverstarGroveMapScript(cinematicFactory),
+            "LevianBay" => new LevianBayMapScript(cinematicFactory),
+            _ => throw new ArgumentOutOfRangeException(nameof(map), map, null)
+        };
+        IPlayer player = CreatePlayerWithQuestState(questId, QuestState.Accepted, out _, out RecordingDispatchProxy<ICinematicManager> cinematicManagerProxy);
+
+        script.OnAddToMap(player);
+
+        Assert.Empty(cinematicManagerProxy.GetInvocations(nameof(ICinematicManager.QueueCinematic)));
+    }
+
     [Theory]
     [InlineData(typeof(Q3667ControlPanelEntityScript), 7f)]
     [InlineData(typeof(Q3777LoftiteCrystalEntityScript), 5f)]
@@ -174,12 +327,62 @@ public class EarlyZoneEntityObjectiveCreditTests
         QuestState? questState,
         out RecordingDispatchProxy<IQuestManager> questManagerProxy)
     {
+        return CreatePlayerWithQuestState(questId, questState, out questManagerProxy, out _);
+    }
+
+    private static IPlayer CreatePlayerWithQuestState(
+        ushort questId,
+        QuestState? questState,
+        out RecordingDispatchProxy<IQuestManager> questManagerProxy,
+        out RecordingDispatchProxy<ICinematicManager> cinematicManagerProxy)
+    {
         IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out questManagerProxy);
         questManagerProxy.SetMethodHandler(nameof(IQuestManager.GetQuestState), args =>
             (ushort)args[0] == questId ? questState : null);
 
+        ICinematicManager cinematicManager = RecordingDispatchProxy<ICinematicManager>.Create(out cinematicManagerProxy);
+
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
+        playerProxy.SetProperty(nameof(IPlayer.CinematicManager), cinematicManager);
+        playerProxy.SetProperty(nameof(IPlayer.Path), (Path)byte.MaxValue);
         return player;
+    }
+
+    private static NorthernWildsMapScript CreateNorthernWildsMapScript(
+        out RecordingDispatchProxy<IStoryBuilder> storyBuilderProxy,
+        ICinematicFactory cinematicFactory = null)
+    {
+        cinematicFactory ??= CreateCinematicFactory(RecordingDispatchProxy<ICinematicBase>.Create(out _));
+        IEntityFactory entityFactory = RecordingDispatchProxy<IEntityFactory>.Create(out _);
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out _);
+        IStoryBuilder storyBuilder = RecordingDispatchProxy<IStoryBuilder>.Create(out storyBuilderProxy);
+
+        return new NorthernWildsMapScript(
+            NullLogger<NorthernWildsMapScript>.Instance,
+            entityFactory,
+            gameTableManager,
+            cinematicFactory,
+            storyBuilder);
+    }
+
+    private static CrimsonIsleMapScript CreateCrimsonIsleMapScript(ICinematicFactory cinematicFactory = null)
+    {
+        cinematicFactory ??= CreateCinematicFactory(RecordingDispatchProxy<ICinematicBase>.Create(out _));
+        IEntityFactory entityFactory = RecordingDispatchProxy<IEntityFactory>.Create(out _);
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out _);
+
+        return new CrimsonIsleMapScript(
+            NullLogger<CrimsonIsleMapScript>.Instance,
+            entityFactory,
+            gameTableManager,
+            cinematicFactory);
+    }
+
+    private static ICinematicFactory CreateCinematicFactory(ICinematicBase cinematic)
+    {
+        ICinematicFactory cinematicFactory = RecordingDispatchProxy<ICinematicFactory>.Create(out RecordingDispatchProxy<ICinematicFactory> cinematicFactoryProxy);
+        cinematicFactoryProxy.SetMethodReturn(nameof(ICinematicFactory.CreateCinematic), cinematic);
+        return cinematicFactory;
     }
 }

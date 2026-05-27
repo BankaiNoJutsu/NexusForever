@@ -2,6 +2,11 @@
 
 namespace NexusForever.Script.Instance.Battleground.WalatikiTemple
 {
+    /// <summary>
+    /// WIP-guessed map-only PvP binding from LaughingWS WorldDatabase map-entrance
+    /// rows. Queue smoke, mask scoring, capture timing, rewards, and objective
+    /// semantics remain blocked.
+    /// </summary>
     [ScriptFilterOwnerId(797)]
     public class WalatikiTempleMapScript : EventBasePvpContentMapScript
     {

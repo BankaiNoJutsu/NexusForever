@@ -40,6 +40,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         public void OnAddToMap(IBaseMap map)
         {
+            // WIP/GUESSED: Questing-and-more uses a 7m proximity trigger; exact retail trigger volume/timing is not live-smoked.
             owner.SetInRangeCheck(7f);
         }
 
@@ -51,6 +52,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             if (player.QuestManager.GetQuestState(QuestTheTower) != QuestState.Accepted)
                 return;
 
+            // WIP/GUESSED: branch credits this objective immediately on proximity; exact repeat/lockout behavior is not live-smoked.
             player.QuestManager.ObjectiveUpdate(QObjTerminal, 1u);
         }
     }

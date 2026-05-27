@@ -47,6 +47,7 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
 
             if (objective.IsComplete() && owner.State != QuestState.Achieved)
             {
+                // WIP/GUESSED: Questing-and-more advances the cinematic-complete objective immediately; exact retail cinematic timing is not live-smoked.
                 owner.Player.CinematicManager.QueueCinematic(cinematicFactory.CreateCinematic<IQ5573PoweringDownCinematic>());
                 owner.ObjectiveUpdate(QObjCinematicComplete, 1u);
             }

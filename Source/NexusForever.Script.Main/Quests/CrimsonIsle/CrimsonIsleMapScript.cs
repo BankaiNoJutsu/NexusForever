@@ -1,10 +1,13 @@
 using System.Linq;
 using System.Numerics;
 using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract.Cinematic;
+using NexusForever.Game.Abstract.Cinematic.Cinematics;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Map.Search;
+using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Script.Template;
@@ -69,6 +72,12 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
         private const uint Q8855StasisAreaWL = 38522u;
         private const uint Q8855TargetAreaWL = 17818u;
 
+        private const ushort Q5593MindTheMinesQuest = 5593;
+
+        private const ushort Q5596OrdnanceRecoveryQuest = 5596;
+        private const uint Q5596CrashSiteZoneId = 1611u;
+        private const uint Q5596CrashSiteObjective = 8255u;
+
         // Q5595 — activate entities + kill creatures
         private const uint Q5595ActivationEntityId = 24251u;
         private const uint Q5595ActivationAreaWL = 17837u;
@@ -77,6 +86,7 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
 
         private readonly IEntityFactory entityFactory;
         private readonly IGameTableManager gameTableManager;
+        private readonly ICinematicFactory cinematicFactory;
         private readonly ILogger<CrimsonIsleMapScript> log;
 
         private IBaseMap owner;
@@ -85,11 +95,13 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
         public CrimsonIsleMapScript(
             ILogger<CrimsonIsleMapScript> log,
             IEntityFactory entityFactory,
-            IGameTableManager gameTableManager)
+            IGameTableManager gameTableManager,
+            ICinematicFactory cinematicFactory)
         {
             this.log = log;
             this.entityFactory = entityFactory;
             this.gameTableManager = gameTableManager;
+            this.cinematicFactory = cinematicFactory;
         }
 
         public void OnLoad(IBaseMap owner)
@@ -100,8 +112,32 @@ namespace NexusForever.Script.Main.Quests.CrimsonIsle
 
         public void Update(double lastTick) { }
 
-        public void OnAddToMap(IGridEntity entity) { }
+        public void OnAddToMap(IGridEntity entity)
+        {
+            if (entity is not IPlayer player)
+                return;
+
+            if (player.QuestManager.GetQuestState(Q5593MindTheMinesQuest) != null)
+                return;
+
+            player.CinematicManager.QueueCinematic(cinematicFactory.CreateCinematic<ICrimsonIsleOnCreate>());
+        }
+
         public void OnRemoveFromMap(IGridEntity entity) { }
+
+        public void OnEnterZone(IWorldEntity entity, uint zone)
+        {
+            if (entity is not IPlayer player)
+                return;
+
+            if (zone != Q5596CrashSiteZoneId)
+                return;
+
+            if (player.QuestManager.GetQuestState(Q5596OrdnanceRecoveryQuest) != QuestState.Accepted)
+                return;
+
+            player.QuestManager.ObjectiveUpdate(Q5596CrashSiteObjective, 1u);
+        }
 
         private void EnsureQuestEntities()
         {
