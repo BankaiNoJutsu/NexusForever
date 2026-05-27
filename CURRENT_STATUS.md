@@ -1,6 +1,6 @@
 # NexusForever Feature Restoration - Current Status
 
-Last updated: 2026-05-25 (Rider's Reef hoverboard finish-snap correction; focused finish/effect/opening tests 58/58; F-023 remains partial pending manual client smoke)
+Last updated: 2026-05-27 (ported useful LaughingWS branch scripts/data overlays, quest-loot/store/catalog/WIP-Dust-Stalker-quest-instance/WIP-live-event/Skyplot-housing overlays, settler build acknowledgements, active Settler hub build-count progress, WIP current-zone path episode activation with optional PathMission prerequisite filtering, active-path object-id completion guard, active Soldier assassinate kill progress with decompile-mapped ProgressCount, branch-informed active-only node/explore-zone/power-map-validated Explorer progress completion, PathMission and PathMissionType achievement credit, client-mapped GameFormula 0x017a path XP fallback for known completed path missions without configured XP, and unflagged PathRewardType.Mission grants for known completed path missions, branch starter-zone/map-only hooks, Shade's Eve/Infestation/Fragment Zero/Gauntlet/Ruins of Kel Voreth/Stormtalon's Lair/Skullcano/Initialization Core Y-83/Red Moon Terror/Genetic Archives/Sanctuary of the Swordmaiden/Datascape/Protogames/Space Madness/Evil from the Ether event/map chains, WIP-guessed Coldblood Citadel, Ruins of Kel Voreth, Sanctuary of the Swordmaiden, Skullcano, and Stormtalon's Lair optional-objective rolls, Space Madness/Gauntlet/Infestation/Protogames Academy/Fragment Zero/Shade's Eve/Red Moon Terror/Genetic Archives/Datascape/Ruins of Kel Voreth/Skullcano/Initialization Core Y-83/Sanctuary/Evil from the Ether/Cryo-Plex/War of the Wilds trigger objective/message/teleport/PvP scripts and phase broadcasts, SQL-backed boss objective-credit hooks including WIP Red Moon Terror Laveka credit, Skullcano and Sanctuary WIP route scaffolding, remaining map-only bindings plus WIP entry/boss/phase/cinematic-hook scaffolds for Deep Space, Rage Logic, Ultimate Protogames dungeon/raid, Protostar SuperMall, Journey into OMNICore-1, Fragment Zero, Infestation, Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet, narrow branch spell-script hooks for Marauder Mine/Pulse Blast, and the client-table-backed Exo-Lab 22 range teleporter; focused branch/path/event tests 552/552, focused instance/public-event tests 436/436, focused map-only entry/boss/phase/cinematic-hook scaffold tests 22/22, focused event/trigger cinematic-hook tests 155/155, focused PvP/adventure branch tests 25/25, focused Evil from the Ether tests 12/12, focused Coldblood Citadel tests 10/10, focused Ruins of Kel Voreth tests 16/16, focused Sanctuary of the Swordmaiden tests 38/38, focused Skullcano tests 34/34, focused Stormtalon's Lair tests 19/19, focused Protogames Academy trigger tests 25/25, focused Fragment Zero trigger tests 13/13, focused Gauntlet trigger tests 16/16, focused Infestation trigger tests 9/9, focused Datascape/objective-credit tests 102/102, path-progress tests 36/36, focused transporter tests 49/49, plus branch spell tests 11/11; F-004/F-009/F-024 remain partial)
 
 Maintained from `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, focused trackers
 (`MATCHING_IMPLEMENTATION_STATUS.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`), and
@@ -23,6 +23,9 @@ of truth for feature-area completion.
 | Tests | 1036 passed, 0 failed, 0 skipped |
 | Handlers surveyed | 200+ |
 | Stubs found | 0 |
+| **LaughingWS blocker closure (2026-05-27)** | Evidence harness added; broad new-zone/sandbox/arkship/Rider's Reef rows closed as blocked or rejected; Dungeon Chase hidden SMC item `86919` rejected for current seeds because the world store model and type-`0` storefront transport cannot represent it |
+| **Dust Stalker Q4516 review (2026-05-27)** | Boss Xagg and bridge-control data remain WIP/GUESSED; self-destruct and exit-panel behavior are blocked pending a harness smoke bundle rather than inferred from source-only SQL |
+| **Arcterra/Palaver source-only review (2026-05-27)** | Arcterra Caretaker, Coldblood portal, and Palaver Ish'amel rows stay WIP/GUESSED pending placement, portal target, interaction, and quest smoke proof |
 | **Crafting review (2026-05-23)** | Speculative discovery, station, and charge mutations rejected; fixed-recipe success remains evidence-backed |
 | **Ghidra decomp evidence (2026-05-23 pass 3)** | Consumer dispatch found at WorldSocket_ProcessServerMessage; entity-create aux verified emitted by EntityCreateAuxiliaryPacketBuilder; 44,991 xrefs created |
 | **Addon corpus audit (2026-05-23)** | 876 addons scanned; map tracked/threat/crafting/housing strings confirmed, but only threat list is already implementation-backed |
@@ -171,6 +174,18 @@ return handler, vendor list, decor/plug/remodel/flags delegation.
 **Fixed this pass:** `ClientHousingEditModeHandler` - was empty-body stub,
 now validates residence map + logs.
 
+**Branch housing script port:** The useful housing scripts from
+`LaughingWS/NexusForever` branch `Questing-and-more` are now in
+`Source/NexusForever.Script.Main/Housing`: the housing portal (`26350`) grants
+missing Recall/Escape House spell-base rows and casts the housing dialog spell,
+while the Thayd/Illium housing intro decor entities (`54400`/`54401`/`54403`/
+`54404`/`65296`/`65297`/`65298`/`65299`) send their mapped story panels.
+The branch housing active-prop doors (`65852`/`70052`/`75398`) now initialise
+closed, toggle `StandState`, and emit the matching door emote from the
+activator's visibility set. Focused branch-script/event tests passed with the
+transporter/creature/Space Madness/Protogames Academy ports; see the top status
+line for the latest combined count.
+
 **Blocked:** `ServerHousingNeighborhoodEntry` (0x0501) and
 `ServerHousingNeighborhoodList` (0x0506) - packet models exist but nobody
 sends them. Unknown client request trigger (not accessible via addon API).
@@ -190,6 +205,12 @@ Catalog, purchase, account currency charge, claim/return, pending item groups,
 daily login, coupon redemption, VC packages, wallet updates, purchase history,
 privilege restriction, purchase-velocity gate (10/hr), CREDD redeem (1000:1).
 54 focused packet tests. All `0969..0991` opcodes mapped.
+The `LaughingWS/Questing-and-more` account/storefront slice is superseded by
+the current implementation: its useful account inventory, cooldown, operation
+result, account-tier, catalog, purchase, and purchase-history surfaces are
+already covered, while the branch's `0x097D` transaction-update name is rejected
+by current pending-item-group delete evidence and its `0x03DD` subscription
+packet remains unmapped/unemitted.
 
 ### F-007 - Reward Rotation - PARTIAL
 Game-table refresh emits (`0x07CA` schedule, `0x07CD`/`0x07D3` content context),
@@ -216,6 +237,27 @@ clear, install, reroll - all 4 operations send `ServerTradeskillSigilResult`).
 ### F-009 - Rapid Transport / Taxi / Flight Path - PARTIAL (blocked)
 Pricing/request validation partial. Service-token bypass, route state, taxi
 embark/completion, charge/teleport rules incomplete. Needs decomp.
+
+**Branch transporter port:** The useful table-backed transporter catalogue from
+`LaughingWS/NexusForever` branch `Questing-and-more` is now consolidated in
+`Source/NexusForever.Script.Main/Transport/WorldLocationTeleporterEntityScript.cs`.
+It covers the branch's Illium/Thayd city route pads plus Star-Comm Basin,
+Algoroc/Northern Wilds, Datascape, Ellevar, Genetic Archives, and
+Illium/Thayd Arcterra/Halon Ring/Malgrave/Museum routes through `WorldLocation2`
+destinations, plus the table-backed Exo-Lab 71 (`28454` -> `21760`) and
+Exo-Lab 22 (`25886` -> `19282`) range triggers. The Exo-Lab 22 destination is
+the client `WorldLocation2` row whose coordinates match the branch route, while
+the official world database supplies the outer `25886` teleporter placement; the
+branch's extra source entity row remains unimported because its SQL marks the
+ActivePropId as fake. A narrower coordinate route pass now ports the branch's
+starter-zone and cross-zone pads only where the official world database has paired
+portal/transport placement evidence: Everstar Grove -> Celestion (`32269`),
+Deradune/Levian Bay -> Crimson Isle (`45366`/`70174`), Northern Wilds ->
+Everstar Grove (`70172`), and Ellevar/Crimson Isle -> Levian Bay
+(`30352`/`70173`). The script guards missing rows / missing worlds / pending
+teleports and preserves the Exo-Lab trigger-plane side check. Focused
+transporter tests passed 49/49. The branch housing return pad remains
+superseded by current housing return handling.
 
 ### F-010 - Group / Raid / Matching - PARTIAL (replacement backfill remains blocked)
 All 13 group client handlers, 15 internal group handlers, 14 matching handlers,
@@ -274,7 +316,12 @@ generated crafting loot can carry the crafting station as a distinct
 `ParentUnitId` visual source, and runtime tests cover distinct parent propagation
 plus quality-preserving granted static, virtual, and account-item drop
 presentation; loot inspect/capture diagnostics now include the table-backed loot
-visual effect id for the resolved quality.
+visual effect id for the resolved quality. Imported direct `creature_loot` rows
+now coexist with old-table quest-only loot groups such as the LaughingWS
+`LaughingWS quest loot:` overlay; direct imports are skipped only when a
+DataMapping flat `DataMapping creature_loot` group already represents the same
+creature, avoiding duplicate broad drops while preserving quest-objective
+virtual-item loot.
 
 ### F-015 - PvP / Duels - COMPLETE
 **Fixed this pass:** Duel leash/distance system added.
@@ -286,10 +333,39 @@ visual effect id for the resolved quality.
 PvP cooldown timer (`ServerPvpCooldownUpdate`) sent on flag toggle off
 with `RetailCertainRules.PvpFlagCooldownMs`.
 
+**Cryo-Plex branch harvest:** arena map/event/sub-event IDs from the
+LaughingWS branch are now wired using the existing Slaughterdome arena runtime
+pattern: forcefield door release on match start, death stat updates, timed
+holocrypt resurrection, and team-spawn reset. The active Cryo-Plex behavior is
+now marked WIP-guessed in code and covered by focused PvP/adventure branch
+tests. Manual queue/match smoke is still needed before calling Cryo-Plex
+retail-complete.
+Branch-derived Daggerstone Pass (`438`/`466`, world `2166`), Halls of the
+Bloodsworn (`876`/`877`, world `3449`), and Walatiki Temple (`217`/`366`,
+world `797`) map bindings are also present so the existing PvP content-map base
+can create, join, and finish their public events; the bindings are marked
+WIP-guessed in code, and mode-specific scoring/round/capture objectives still
+need proof before behavior work.
+
 ### F-016-F-020 - Spell Runtime - PARTIAL (family-by-family)
 Damage/heal/shields/vitals, stack groups/buffs/CC/movement, procs, summons,
 RavelSignal. Many families conservative or partial. Work family-by-family
 with fixture captures. Most blocked on decomp.
+**Branch trap/spell ports:** Bramble trap (`27768`) now follows the useful
+branch behavior: failed activation casts penalty spell `46051`; successful
+activation removes tracked state from that spell and destroys the trap.
+`MarauderMineEntityScript` ports the branch disarm activation for mine creatures
+`16718`/`24251` by casting detonation spell `26443` at the activator, and
+`MarauderMineExplosionSpellScript` destroys the mine only after that detonation
+finishes without cancellation. `EngineerPulseBlastSpellScript` ports the branch
+hidden Volatility proc for the current Pulse Blast damage spell tiers
+(`37302`, `56145`..`56152`) by casting hidden spell `42148` when selected
+targets include a hostile unit; client spell/effect map rows corroborate the
+Pulse Blast tooltip and hidden `+15 Volatility` effect. The supporting
+`ISpellScript` hooks are deliberately narrow (`OnCast`, `OnExecute`,
+`OnFinish`); generic branch `SpellParameters.CompleteAction`,
+`currentPhase`/phase callbacks, and broad spell-script semantics remain blocked
+pending stronger runtime evidence.
 **AI movement this pass:** Rider's Reef `CombatAI` now resolves spell/range
 profiles through `ICombatProfileProvider` with the known starter combat
 Creature2-to-profile mappings loaded from the tracked embedded
@@ -321,10 +397,322 @@ action-bar lock state incomplete. Needs decomp.
 **Coverage audit:** see `Decomp/Analysis/QUEST_IMPLEMENTATION_STATUS.md`
 (5,194 client quests; no current unsupported objective-type blockers in client
 data; 56 hand-curated script rows).
+Branch-derived `Q10510LearningToShopQuestScript` now has focused coverage for
+the Smart Shopper item/title objective snapshot; exact retail refresh timing is
+still marked WIP-guessed in code.
+Q5573/Q5604 cinematic-complete objective helpers are covered and explicitly
+marked WIP-guessed for exact cinematic completion timing.
+Q5584 trapped-assistant and Q5594 ship-control branch interactions are also
+covered with focused tests, with quest/teleport activation gating explicitly
+marked WIP-guessed in code until live retail smoke proves the access rules.
+Q8855 Dominion soldier proximity objective credit/despawn is now explicitly
+marked WIP-guessed in code; focused tests already pin accepted/missing gates and
+range registration.
+Q3486/Q3673 Northern Wilds cinematic/mention/reward helpers now mark branch
+timing as WIP-guessed where un-smoked, and Q3486 Loftite Crystal range,
+virtual-item reward, despawn, and no-op gates have focused coverage.
+Q3487 cannon/Ultrabot and Q3667 control-panel helpers now mark branch-derived
+proximity/checklist/path/achievement timing as WIP-guessed, with focused tests
+for accepted/missing gates, Ultrabot movement, and achievement duplicate guard.
+PathManager now ports the branch current-zone PathEpisode activation as
+WIP-guessed table-backed runtime behavior on player zone updates: it matches
+current world/root zone/path, filters mission rows by faction and optional
+`PrerequisiteId`, and activates the episode without claiming durable path
+persistence, exact XP/rewards, or exact unlock sequencing. Explorer ExploreZone
+missions now complete only when already active and the player's current
+`WorldZone` resolves to a matching `MapZone.Id` (or the world-level
+`MapZoneWorldJoin` fallback); this is WIP-guessed from the branch `ObjectId ==
+MapZone.Id` mapping. Explorer power-map progress reports now
+complete only active Explorer type-`0x12` missions whose `ObjectId` has a
+matching `PathExplorerPowerMap` row; ready/active timers, failure packets,
+server-owned progress cadence, and durable completion state remain blocked.
+Soldier_Assassinate missions now progress from creature kill rewards when the
+killed Creature2 id or associated target group matches `PathSoldierAssassinate`;
+decompile proof maps Soldier_Assassinate current progress to the first mission
+payload now named `ProgressCount`, while alternate progress payload semantics
+remain blocked per mission type.
+Settler_Hub missions now progress from accepted build-tier requests when the
+improvement group maps to the active mission's `PathSettlerHub`, using
+`PathSettlerHub.MissionCount` as the contribution target; decompile proof maps
+Settler_Hub current progress to the first mission payload now named
+`ProgressCount`. Durable built-group state, resource costs, avenue totals,
+failure/result precision, and alternate progress payload semantics remain
+blocked.
+Settler build status packet shape is now mapped for the safe emitted surface:
+`ServerPathSettlerBuildStatus` (`0x0671`) reads `PathSettlerHubId` plus one
+status row; `ServerPathSettlerBuildStatusList` (`0x066E`) reads hub id, count,
+and counted rows; each status row is improvement-group id, tier, remaining time,
+and bundle count. `ServerPathSettlerBuildResult` (`0x066C`) now names its second
+field `PathSettlerImprovementId`. Non-success result values, durable built-group
+ownership, resource costs, and failure ordering remain blocked.
+Soldier holdout client accessors are mapped further: `Game.SoldierEvent` now has
+labels for type/state, health, elapsed/max time, wave count, waves released, and
+defend/auxiliary/escaping unit list accessors. These accessors read a client
+runtime holdout object re-resolved by event id, so generic server holdout status
+and wave runtime remain blocked pending packet/live capture or packet-consumer
+mapping.
+Path mission runtime state now has a narrow character-owned persistence model:
+`character_path_mission` records mission id, episode id, state, completion,
+progress payloads, and XP; `PathManager` restores completed mission state and
+replays unfinished active episodes during initial path packets. Sequencing
+regressions now cover completed-mission no-replay and persisted-active
+no-duplicate zone activation. Settler_Hub build-count mission progress also
+survives reload through this model, so a partially progressed hub can complete
+after the next accepted build-tier request. Active path object-id state,
+reward-history persistence, exact replay ordering, full Settler built-group/
+resource/avenue backing state, and negative reload/path/faction/zone cases
+remain blocked pending stronger proof.
+Known path mission completions now also fire `AchievementType.PathMission` with
+the mission id and `AchievementType.PathMissionType` with the mission row's
+`PathMissionTypeEnum`; total/count-style mission achievement semantics remain
+blocked. Known active-path mission completions with no stronger configured XP now
+use client-mapped `GameFormula` `0x017a` (`378`) `Dataint0`, with the client
+fallback `50` if the row is unavailable; exact per-mission path reward precision
+remains blocked. Mismatched
+mission/path rows do not receive the fallback, and object-id mission completion
+is now limited to active-path mission rows. Unflagged
+`PathRewardType.Mission` rows keyed by completed mission id now grant the same
+supported reward payloads as level rewards (item, spell, title, and scanbot
+profile); item rewards use `PathReward.Count` as a WIP-guessed stack count with
+zero falling back to one. Exact reward presentation, overflow behavior, and
+flagged reward semantics still remain blocked. Focused path-manager coverage is
+`38/38`, and the full current game test project passes `1806/1806`.
+Public-event scoreboard/end packet shapes are now decompile-backed for the safe
+model boundary: scoreboard request `0x06FA` carries public-event id plus
+subscribe flag, stats update `0x0130` carries counted team/participant rows,
+personal stat `0x013B` carries event/stat/value, and end `0x00D6` carries
+personal/team/participant/objective rows plus reward tier/type/threshold fields.
+Reward delivery, scoreboard population, result ordering, and reward tier
+semantics remain blocked pending content smoke/sniff evidence.
 **NorthernWilds Veteran pass updated this pass.** Core quest/objective,
 public-event, challenge, path packet, and opt-in spawn-promotion surfaces exist,
 but full 164-NPC parity is still blocked by 3 enabled Jabbithole creatures with
 unresolved Creature2 bridges.
+
+**Coldblood Citadel branch harvest:** public event `907` / world `3522` now has
+a conservative script scaffold imported from the LaughingWS `Instances-and-more`
+branch: map binding, phase/objective progression, communicator dispatch,
+entry/gather trigger handling, Hailstone Gatecrasher kill credit, and the
+branch optional-objective rolls for liquid Soulfrost, shards, Pell rally,
+prisoners, canisters, and Soulfrost traps. Optional objective selection is
+explicitly WIP-guessed in code; exact route weights and the full dungeon path
+still need live/manual smoke before treating the event as retail-complete.
+War of the Wilds (`world 1393`, public event `158`) now has the branch-mapped
+base adventure fight scaffold for the giant Moodie totem and totem-health
+objectives; the scaffold is marked WIP-guessed in code and covered by focused
+PvP/adventure branch tests. Faction-specific start events (`170`/`171`) and
+end-delay/chat timing remain blocked.
+Outpost M-13 (`world 1319`, public event `108`) now has a conservative
+branch-derived objective chain from Captain Milo through Hive Queen and shuttle
+return; the branch's unknown final shuttle world-location trigger remains
+intentionally omitted because the branch candidate uses world-location id `5`
+at the zero vector and is not safe runtime behavior without retail/table proof.
+Space Madness (`world 2149`, public event `390`) now has a conservative
+branch-derived public-event phase/objective chain from Captain Tero through the
+all-clear signal, with focused tests pinning initial phase, dynamic group
+objectives, side objective activation, finish behavior, and inactive-objective
+guarding. The participant-gather world-location triggers for the airlock and
+research-laboratory handoffs are now ported as WIP-guessed code with comments
+marking the missing retail trigger-row/timing proof. The branch's placeholder
+door creature IDs and direct local teleport remain intentionally omitted pending
+retail/client proof.
+Protogames Academy (`world 3173`, public event `667`) now has the branch map
+binding plus a conservative objective chain from academy initiation through
+Wrathbone, with focused tests covering initial phase, group objective max
+counts, phase advancement, finish behavior, and inactive-objective guarding.
+The PhineasARotostar1..9 phase communicator broadcasts are now ported as
+WIP-guessed behavior with code comments/tests. The branch gather/teleporter
+world-location triggers are now also ported as WIP-guessed code with tests
+pinning ids, objective object ids, and positions. Invulnotron, Gromka, Iruki
+Boldbeard, Seek-N-Slaughter, and Icebox Mk. 2 now have WIP-guessed
+objective-credit hooks only; exact boss combat mechanics, trigger timing,
+communicator timing, platform/launcher cleanup, and entity-removal choreography
+remain blocked pending stronger content smoke or client/table proof.
+Fragment Zero (`world 3180`, public event `680`) now has a conservative
+branch-derived objective chain starting at the branch-enabled "Continue the
+Search for the Missing Crew" phase through Hugo's final objective, with focused
+tests covering initial phase, multi-objective activation, prototype objective
+group activation, phase advancement, finish behavior, and inactive-objective
+guarding. Supervisor Lola phase broadcasts and the Captain Hugo continuation
+follow-up plus the early search/friendly-Skeech/continuation triggers are now
+WIP-guessed with code comments/tests. Exact trigger timing, cinematic gating,
+doors, and entity cleanup remain blocked pending retail smoke proof.
+Gauntlet (`world 2183`, public event `446`) now uses the corrected
+`Expedition\Gauntlet` map binding path and has a conservative branch-derived
+objective chain from Pilot Taboro through Judge Kain/Agent Lex, with focused
+tests covering group objective counts, chamber branch activation, branch kill
+objective activation, finish behavior, and inactive-objective guarding. The
+airlock and swarm-pit participant-gather triggers are now ported as
+WIP-guessed code with comments/tests marking missing retail trigger-row/timing
+proof. Cinematics, announcer/communicator timing, arena door choreography, and
+manual expedition smoke remain blocked.
+Infestation (`world 1232`, public event `95`) now has a conservative
+branch-derived objective chain from cargo-ship entry through the medical-bay and
+heal-shorthand phase, with focused tests covering initial phase, dynamic group
+objective counts, side objective activation, objective reset behavior, parasite
+finish handling, and inactive-objective guarding. The branch's guessed
+turnstile trigger is now ported as WIP-guessed code with comments/tests marking
+missing retail placement/range proof. Untracked door/open-vent choreography, exact
+medical-bay attack timing, parasite objective activation, and manual expedition
+smoke remain blocked pending proof.
+Ruins of Kel Voreth (`world 1336`, public event `161`) now has the branch map
+binding plus a conservative main boss chain from the Blood Pit through
+Forgemaster Trogun, with focused tests covering the initial phase,
+branch-mapped Blood Pit objective count, deterministic Drokk/Gurka/challenge
+activation, phase advancement, finish behavior, and inactive-objective
+guarding. The branch optional objective rolls for slave mercy, Eldan data
+storage, forge destruction, Osun, and war supplies are WIP-guessed with code
+comments/tests. The branch's guessed trigger placement, door choreography, exact
+optional route weights/objective availability, cinematics, and missing boss
+entity scripts remain blocked.
+Stormtalon's Lair (`world 382`, public event `145`) now has the branch map
+binding plus a conservative main objective chain from Thundercall Pell survival
+through Stormtalon, with focused tests covering the initial phase, objective
+activation, group-count handling for the High Priest gather objective, phase
+advancement, finish behavior, inactive-objective guarding, and the branch
+optional objective rolls for tainted stems, altar data, storm totems,
+prisoners, grenades, and the Arcanist/Overseer route split. The branch's
+guessed trigger placement, Stormtalon reborn cinematic, exact optional route
+weights/objective availability, boss spawn/version selection, and missing boss
+entity scripts remain blocked.
+Skullcano (`world 1263`, public event `148`) now has the branch map binding
+plus a conservative main route through Thunderfoot/Stew-Shaman Tugga,
+WIP-guessed cave/chasm route selection, Bosun Octog, the Redmoon platform
+handoff, and Mordechai Redmoon. Focused tests cover the initial phase, opening
+boss activation, random route selection, Find Chief cave-path objectives,
+Dorian/Artemis cave callouts, cave continuation objectives, dynamic group counts
+for chasm/platform objectives, final-approach objective activation, phase
+advancement, Redmoon Terraformer activation, finish behavior, and
+inactive-objective guarding. The branch's chasm, Find Chief, platform, and
+Eldan Terraformer trigger scripts are now ported as WIP-guessed objective
+updates with code comments marking the missing smoke proof. Branch optional side
+objectives for captured Lopp, Redmoon prisoners/marauders, and missile consoles
+are WIP-guessed with code comments/tests. Exact cave/chasm route weights, Chief
+Kaskalak cave route choreography, door/platform choreography, communicator
+timing, exact optional route weights/objective availability, and manual dungeon
+smoke remain blocked pending proof.
+Initialization Core Y-83 (`world 3040`, public event `595`) now has the branch
+map binding plus a conservative quarantine-door-to-boss objective chain: mapped
+freebot/door objectives advance to the door phase, the door objective advances
+to the boss phase, and defeating the Prime Evolutionary Operants finishes the
+event. Focused tests cover the initial phase, door objective activation, boss
+challenge objective activation, phase advancement, finish behavior, and
+inactive-objective guarding. The branch's guessed quarantine trigger placement,
+door entity choreography, communicator/cinematic timing, and manual raid smoke
+remain blocked pending proof.
+Red Moon Terror (`world 3032`, public event `705`) now has the branch map
+binding plus a conservative main raid objective chain from the Brig through
+Laveka, with focused tests covering all single-objective phases, multi-objective
+engineering/medbay/morgue phases, the full phase-advance chain, finish behavior,
+and inactive-objective guarding. Ish'amel Robomination/engineering callouts are
+WIP-guessed with code comments/tests; the branch static Laveka row is preserved
+as WIP/GUESSED seed data and now attaches a WIP-guessed objective-credit script
+for the final Laveka objective despite the source lacking an `entity_script`
+row. Exact communicator/cinematic timing, Laveka choreography/awakening
+mechanics, encounter-specific challenge mechanics, door/elevator
+movement, and manual raid smoke remain blocked pending proof.
+Genetic Archives (`world 1462`, public event `159`) now has the branch map
+binding plus a conservative middle-to-final raid objective chain from the
+post-Experiment/Kuralak ascent through Dreadphage Ohmna, with focused tests
+covering guardian, archive-defense, convergence, miniboss, and Ohmna objective
+activation; branch sub-objective activation; phase advancement; finish behavior;
+and inactive-objective guarding. Ohmna entry/final cinematic callouts are
+WIP-guessed with code comments/tests; exact communicator/cinematic timing,
+weekly/random encounter selection, boss entity choreography, door/elevator
+movement, and manual raid smoke remain blocked pending proof.
+Sanctuary of the Swordmaiden (`world 1271`, public event `166`) now has the
+branch map binding plus a conservative dungeon objective chain from Deadringer
+Shallaos through Spiritmother Selene's corrupted form, with focused tests
+covering initial, path, temple, Moldwood, Rayna, Skash, terrace, Ondu, relic,
+escort, final-boss, phase-advance, finish, and inactive-objective behavior. The
+branch's random Temple/Moldwood route choice is now ported as WIP-guessed phase
+routing without branch door/trigger placement, and the Spiritmother Selene
+random-path callout plus temple, Moldwood, Lifeweaver Terrace, and
+flame-miniboss communicator triggers are WIP-guessed objective/message updates
+with code comments/tests marking the missing smoke proof. Branch optional side
+objectives for corrupted Torine spirits, Moldwood corruptors, skurge/crawlers,
+soul spores, terrorantulas, and Corrupted Lifeweaver Pell are WIP-guessed with
+code comments/tests. Exact route weights/objective availability, trigger
+placement, door choreography, communicator timing, and manual dungeon smoke
+remain blocked pending proof.
+Datascape (`world 1333`, public event `157`) now has the branch map binding plus
+a conservative raid objective chain from the opening system-daemon/probe split
+through the Limbo, earth, logic, and volatility wings, all three personality
+datacores, and Avatus. Focused tests cover opening activation, single- and
+multi-objective phases, branch sub-objective activation, phase advancement, the
+Warmonger Chuna branch bug fix, three-datacore gating before the Oculus handoff,
+finish behavior, and inactive-objective guarding. The branch's
+Caretaker111..114 wing callouts are WIP-guessed with code comments/tests.
+`laughingws_instance_entity_wip_seed.sql` now preserves the placed Datascape
+boss/objective anchors for ED-1, TX-67, P2-Z, the system daemons, frost boulders,
+Frostbringer Warlock, Bio-Enhanced Broodmother, Gloomclaw, Hyper-Accelerated
+Skeledroid, Augmented Herald, the Warmongers, and Avatus with deterministic
+high entity IDs and WIP objective-credit scripts. Placeholder-coordinate rows,
+trash carpets, elemental weekly/wing mechanics, exact communicator/cinematic
+timing, encounter choreography, door/trigger placement, exact wing-order retail
+proof, challenge mechanics, and manual raid smoke remain blocked pending proof.
+The SQL-backed `entity_script` hook pass from
+`LaughingWS.WorldDatabase.New-Zones-and-more` now reconciles all non-full-dump
+boss script names for Protogames Academy, Ruins of Kel Voreth, Stormtalon's
+Lair, Skullcano, Sanctuary of the Swordmaiden, and Genetic Archives, plus the
+source-only Protogames Academy Seek-N-Slaughter/Icebox Mk. 2 WIP hooks,
+Red Moon Terror Laveka WIP objective-credit hook, Datascape placed-anchor
+objective-credit hooks, and the
+`OptimizedMemoryProbeTX-67EntityScript` alias, as WIP-guessed objective-credit/
+loader hooks with code comments and focused test coverage. Exact boss combat
+mechanics, encounter choreography, placeholder-coordinate Datascape rows, and the
+all-in-one-only Datascape Hydroflux/Mnemesis script references remain blocked
+pending stronger retail/client proof.
+Shade's Eve (`world 3044`, public event `597`) now has the branch map binding
+plus a conservative early objective chain from fountain discovery through the
+locals vote handoff, with focused tests covering the initial phase, dynamic
+group objective count, phase advancement, vote start, and inactive-objective
+guarding. The branch's guessed trigger placement, gather-ring cleanup, town
+gate opening, exact communicator/cinematic timing, and exact vote follow-up
+remain blocked; TheAngel1/TheAngel5 callouts are WIP-guessed with code
+comments/tests.
+Remaining branch map-only and entry/boss/phase/cinematic-hook scaffold content now covers Deep Space
+Exploration (`world 2188`, public event `447`), Rage Logic (`world 1627`,
+public event `213`), Ultimate Protogames dungeon (`world 2980`, public event
+`594`), Ultimate Protogames raid (`world 3041`, public event `642`), Protostar
+SuperMall in the Sky (`world 3094`, public event `679`), Journey into
+OMNICore-1 (`world 3045`, public event `605`), Fragment Zero, Infestation,
+Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair,
+Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet cinematic
+hooks. Focused map-binding
+tests pin `19/19` public event IDs. Deep Space, Rage Logic, Ultimate Protogames
+dungeon/raid, Protostar SuperMall, OMNICore, Fragment Zero, Infestation, Space
+Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization
+Core Y-83, Genetic Archives, Datascape, and Gauntlet now also have WIP-guessed
+entry/boss/phase/cinematic-hook scaffolds covered by `22/22` map-entry tests and
+`155/155` event/trigger cinematic-hook tests: Deep Space activates
+`TalkToCrewMembers`, Rage Logic sets the branch vehicle-choice phase, Ultimate
+Protogames dungeon activates `InitiateUltimateProtogames` then stops at the
+coarse random-event gate, Ultimate Protogames raid activates the Downsizer
+objective set and finishes on Downsizer defeat, and SuperMall activates the
+greeter gather objective then stops at the coarse random-path gate; OMNICore,
+Deep Space, SuperMall, Fragment Zero, Infestation, Space Madness, and Shade's
+Eve queue immediate completion-only placeholders for their branch on-create
+cinematic hooks, while Ruins, Stormtalon, Initialization Core, Genetic Archives,
+Datascape, Fragment Zero, and Gauntlet queue matching completion-only placeholders
+at the branch-derived event/trigger cinematic points. Deeper event objective
+routing, encounter logic, door/trigger placement, real cinematic payloads,
+rewards, vehicle choice, boss challenge semantics, and route/randomization
+choreography remain blocked pending proof.
+The branch Northern Wilds Dominion gate helper (`12653`) now opens visible
+Icefury Gate door `16799` and closes it after the mapped 10 second delay, with
+focused branch-script coverage.
+The branch map-zone objective hooks are now ported into the current map scripts:
+Northern Wilds Q3486 credits tower-arrival objective `4987` and shows story
+panel `1575` when an accepted player enters zone `729`; Crimson Isle Q5596
+credits crash-site objective `8255` when an accepted player enters zone `1611`.
+Focused `EarlyZoneEntityObjectiveCreditTests` cover accepted and missing-quest
+guards.
+The branch starter-zone intro cinematic hooks are now wired through current
+cinematic interfaces: Northern Wilds (`3480` missing), Crimson Isle (`5593`
+missing), Everstar Grove (`6296` missing), and Levian Bay (`6780` missing)
+queue their corresponding `*OnCreate` cinematic on player map entry, with
+accepted-quest guards covered by the same focused tests.
 
 **Build 16042 start-zone classification:** Novice creation starts both factions
 in Rider's Reef (`world 3460`). Veteran creation skips to the surface starter
@@ -400,11 +788,19 @@ checklist objective credit from table-backed creature/checklist data.
   covers Northern Wilds `103`/`105`; `ChallengeRequirement` prerequisites now
   compare challenge completion count instead of logging unhandled.
 - The 13 Northern Wilds path missions activate for the player's active path
-  episode with Jabbithole XP `25`; Explorer progress/power-map reports can
-  complete active missions, Soldier tower-defense build packets complete
+  episode with Jabbithole XP `25`; Explorer progress reports now complete only
+  active Explorer Vista missions with a matching `PathExplorerNode` table row
+  instead of creating runtime mission state or completing unrelated active
+  missions from a client report, ExploreZone missions can complete on zone
+  entry when the current map zone matches the active mission, power-map reports
+  can complete active missions, Soldier assassinate missions now progress from
+  matching killed Creature2/target-group counts, and Soldier tower-defense build packets complete
   matching active event missions, Soldier holdout control-point activations
   now complete Northern Wilds Soldier missions `33`, `34`, and `156`, and
-  Settler build-tier packets complete matching active hub missions. Scientist mission-creature mappings from
+  Settler build-tier packets progress active Settler_Hub missions against
+  `PathSettlerHub.MissionCount` while emitting table-backed build result/status
+  acknowledgements for the client UI.
+  Scientist mission-creature mappings from
   Jabbithole now drive scan metadata and activation-completion hooks for
   `42`, `160`, and `648` (`18680`, `15888`, and the mapped Skeech Creature2
   IDs). Generic Soldier wave simulation and the generic Scientist scan-result
@@ -507,10 +903,21 @@ creatures `73494`/`74862` to runtime `NonPlayer` rows with combat factions
 applied the safe import, and reported zero Beacon Arrow rows, zero wrong-faction
 turrets, and zero wrong-type turrets.
 
-### F-024 - Evil from the Ether (world 3404) - COMPLETE
-612-line event script, 27 phases with full state machine, 11 entity scripts.
-Dynamic entity spawning, door management, cinematic queuing, communicator
-messages, combat AI, spline movement.
+### F-024 - Evil from the Ether (world 3404) - PARTIAL / WIP-GUESSED
+Branch-derived map and public-event `781` scripts exist for the expedition
+route: objective/phase progression, dynamic trigger creation, door management,
+medbay/upper-deck/escape teleports, cinematic queuing, communicator messages,
+crew-log callouts, portal/tether behavior, and Security Chief/Ravenous/Katja
+combat scaffolds. The branch-derived trigger, teleport, communicator, cinematic,
+and encounter assumptions are now explicitly marked WIP-guessed in code.
+Focused Evil from the Ether event/trigger regressions pass `12/12`, and the
+focused instance/public-event slice passes `436/436` with isolated output.
+
+**Blocked:** manual expedition playthrough, exact retail trigger rows and
+coordinates, direct medbay transition proof, cinematic ids and completion timing,
+door/marker cleanup choreography, boss spell cadence/mechanics, objective
+notification parity, rewards, and unsupported content/spell dependencies remain
+blocked before this can be called retail-complete.
 
 ### F-025 - Entity Create/Update/Visibility/Interaction - PARTIAL
 
@@ -558,6 +965,219 @@ gated on packet/data contract + migration proof.
 loaded all `95` `nf_map_*` tables; `verify_safe_world_imports.sql` passed for
 vendor, loot, creature-info, item-container, and Rider's Reef world-row cleanup
 metrics without adding any runtime dependency on staging/reference tables.
+`apply_creature_loot.py` now writes per-pass selected creature/item counts plus
+status-filter, missing Creature2, invalid/missing Item2, duplicate, and
+runtime mapped-flat-group skip metrics to `creature_loot_apply_report.json`.
+
+**LaughingWS data intake (2026-05-27):** `Tools\DataMapping\analyze_laughingws_worlddb.py`
+audits the external `NexusForever.WorldDatabase.New-Zones-and-more` branch before
+promotion. Reviewed extracts are limited to additive/idempotent runtime overlays:
+`laughingws_map_entrance_seed.sql` keeps `23` missing `map_entrance` rows,
+`laughingws_city_content_seed.sql` keeps `17` curated placed
+city/museum/quest-terminal `entity` rows for the ported transport, Illium
+Museum content, WIP/GUESSED Illium Ringo Hax placement, and WIP/GUESSED
+Skull's Eye escape pod terminal, plus `8` coordinate-keyed WIP/GUESSED
+`questChecklistIdx` updates for the official Thayd/Illium housing intro props
+with guarded WIP/GUESSED fallback inserts for older local imports missing those
+rows, and
+`laughingws_quest_instance_wip_seed.sql` keeps `3` WIP/GUESSED Dust Stalker
+quest-instance `entity` rows plus `4` Boss Xagg `entity_stats` rows for quest
+`4516`, stripping the branch world delete and replacing its source health `1`
+with DataMapping-backed stats while leaving the exit panel marked source-only.
+`laughingws_small_world_wip_seed.sql` keeps `16` WIP/GUESSED small-world
+`entity` rows plus `59` `entity_stats` rows for Tactical Uplink, Captain
+Darkstone, Commander Durek, Cortex Prime Whitewater, Corrigan Doon, Star-Comm
+Basin The Caretaker, source-only Arcterra Caretaker/Coldblood portal
+placements, source-only Palaver Point Ish'amel, and the reviewed Northern Wilds
+Deadeye Brightland, Scientist Lusk, Elder Bartol, and Q3673 Signal Flare
+placements after reconciling DataMapping-backed branch creature/area/display/
+outfit mismatches where available; Dominion/Exile Arkship tutorial rows are
+audit-only/rejected for current build-16042 runtime seeds. It also applies
+`140` coordinate-keyed WIP/GUESSED `questChecklistIdx` updates to official
+rows: `2` Everstar Grove Exo-Lab 71 Eldan Teleporter rows, `33` Wilderrun Kel
+Ulgar Weapon Rack / Tattered Banner / Intact Data Cache / Cassian Commonwealth
+Emblem rows, `67` Auroria objective rows for Black Hoods Alchemy Supplies,
+Cubig Security Zapper Console, Seismic Thumper,
+Hycrest infected/plague-victim clusters, Freebot Drills, Navigation Control
+Panels, Bingberry Stills, and GL-04 Auto Turrets, plus `24` Crimson Isle
+objective rows for Megatech Terminals, Exile Anti-Air Cannons, Dreg Tents,
+Dominion Demolitions Experts, Power Regulators, and Tower Controls, plus `14`
+Levian Bay Signal Flare / Drop Pod Landing Beacon rows for Lighting the Way and
+Lost in the Fog. On older local bases missing those official Everstar Grove,
+Auroria, Crimson Isle, or Levian Bay rows, the seed inserts guarded WIP/GUESSED
+fallback `entity` rows in the
+`1100210001`..`1100210067`, `1100220001`..`1100220024`, and
+`1100230001`..`1100230002`, and `1100240001`..`1100240014` subranges, plus up
+to `219` fallback `entity_stats` rows; branch Wilderrun Dorian rows remain
+blocked
+because their source creature ids do not match current DataMapping identity,
+Northern Wilds branch spline-mode changes remain blocked pending movement
+proof, branch Supply Officer Windward vendor rows are rejected in favor of the
+existing DataMapping vendor import, and Everstar Grove/Levian Bay/Auroria/
+Crimson Isle branch-only residual rows remain blocked pending row-level proof.
+`laughingws_instance_entity_wip_seed.sql` keeps `75` WIP/GUESSED instance-local
+`entity` rows plus `67` `entity_event`, `35` `entity_script`, and `80`
+`entity_stats` rows for Coldblood Citadel, Protostar SuperMall, Space Madness,
+Gauntlet, Fragment Zero, Infestation, Outpost M-13, Evil from the Ether
+drive-spark phase anchors, Protogames Academy, Ruins of
+Kel Voreth, Stormtalon's Lair, Skullcano, Sanctuary of the Swordmaiden, and
+Genetic Archives, map-bound Ultimate Protogames, WIP-script-backed Red Moon
+Terror Laveka, Shade's Eve Etty/fountain anchors, and the placed Datascape
+boss/objective anchors where current WIP scripts/map bindings already exist. It also
+applies `14` coordinate-keyed WIP/GUESSED updates against the official Evil from
+the Ether import: `7` branch area reconciliations for Captain Weir, the gather
+ring, medbay controls, and spare-parts crates, plus `7` crew-log
+`questChecklistIdx` reconciliations for the branch-derived
+`CrewLogEntityScript` without duplicating official spawns; full encounter
+choreography, trigger timing, NPC interaction, Protogames static trigger
+cleanup, combat behavior, Evil from the Ether crew-log/area smoke, Datascape
+placeholder rows/trash carpets/elemental mechanics, and cinematics remain
+blocked pending client smoke proof.
+`laughingws_store_catalog_seed.sql` keeps `3,866` store-table upserts, including
+the reviewed Valentine's Day, Shades Eve, and Winterfest store-event rows, after
+stripping the branch dump's DDL/deletes and broad event entity rows. The store
+extractor now also audits Dungeon Chase by canonicalising its legacy store-table
+aliases and known `Field_7` typo, but the hidden SMC placeholder remains skipped
+because source type `0` item `86919` exceeds the current world store model and
+15-bit storefront transport proof; see
+`Decomp/Analysis/LAUGHINGWS_DUNGEON_CHASE_SMC_PLACEHOLDER_REVIEW.md`.
+`laughingws_quest_loot_seed.sql` keeps `7,650` virtual-item quest loot rows from
+`Loot\CreatureQuestLoot.sql`, shifting source `loot_group` ids into a
+DataMapping-owned high range so they do not collide with current runtime loot
+groups (`1174` loot groups, `1174` loot items, `5302` entity loot links).
+`laughingws_live_event_wip_seed.sql` keeps `440` WIP/guessed live-event rows
+(`198` `entity`, `68` `entity_stats`, `8` `entity_vendor`, `24`
+`entity_vendor_category`, and `142` `entity_vendor_item`) with deterministic
+high entity IDs and SQL comments marking the branch-authored placement as not
+retail-verified.
+`laughingws_housing_skyplot_wip_seed.sql` keeps `411` WIP/guessed Skyplot
+housing rows (`3` `entity`, `12` `entity_stats`, `2` `entity_vendor`, `72`
+`entity_vendor_category`, and `322` `entity_vendor_item`) with deterministic
+high entity IDs, strips the source world-replacement delete, and comments the
+one branch row whose omitted `OutfitInfo` column was corrected.
+The audit also treats explicit `ScriptFilterScriptName` aliases as implemented
+script names; after the SQL-backed hook pass, missing C# script references are
+limited to rejected all-in-one Datascape Hydroflux/Mnemesis mechanics rows.
+The latest LaughingWS SQL audit reports `0` unsupported current-schema targets.
+Pure `map_entrance` source files are now marked covered by the generated map
+entrance seed instead of remaining as unresolved candidates.
+Store catalog/event store rows and `Loot\CreatureQuestLoot.sql` are likewise
+marked covered by their generated seeds; mixed event files now pair store
+coverage with WIP live-event coverage or official-duplicate classification
+instead of generic manual review.
+Reviewed source files consumed by the city-content, Dust Stalker
+quest-instance, small-world, instance-entity, and Skyplot extractors are now
+also marked covered by their generated seeds, while the historical arkship,
+city-content placeholder, live-event placeholder/duplicate/remover, and
+Initialization Core Y-83 source rows are explicit rejections. The PvP arena
+forcefield/map-entrance rows in the branch Cryo-Plex and Slaughterdome SQL are
+now classified as covered by the official arena import already used by current
+runtime scripts, while Slaughterdome's decorative spectator rows remain
+rejected/audit-only pending retail placement proof. Five Isigrol open-world
+branch dumps are now classified as covered by the official world database
+import. The broad new-zone Dreadmoor, Halon Ring, and Murkmire SQL files are
+now classified as `blocked_laughingws_new_zone_broad_rows` because the source
+rows are hand-authored placeholders, mostly zero-coordinate/area-zero, or
+quest-checklist/stat-heavy without current script support. Illium's useful
+branch rows are now fully covered by the city-content seed while its orphan
+vendor stubs are rejected, Thayd's useful housing intro checklist rows are
+covered by the city-content seed while its residual vendor rows are blocked,
+and Levian Bay, Everstar Grove, Auroria, and Crimson Isle useful official-row
+quest checklist updates are covered by the small-world seed while residual
+branch-only rows are blocked. Northern Wilds row review found `23` useful
+entity/stat rows covered by the small-world seed, retained `9` official-only
+rows, rejected `30` duplicate entity/vendor rows, and blocked `8` branch
+spline-mode rows. Wilderrun row review found `33` useful checklist rows covered
+by the small-world seed, retained `33` official-only rows, and blocked `5`
+branch-only Dorian entity/stat queue rows because current DataMapping Dorian
+identities are `25779`/`51292`, not `27455`/`27843`/`58746`.
+The remaining LaughingWS implementation-plan smoke/proof gates are tracked
+task-by-task in `Decomp/Analysis/LAUGHINGWS_REMAINING_BLOCKERS_CLOSURE_MATRIX.md`
+as still-blocked, rejected, or already-verified states; no broad SQL or unproven
+runtime behavior was promoted by that tracker.
+The final implementation-plan closure pass leaves no unchecked plan rows:
+LWS-036 through LWS-125 now end as implemented-with-verification, mapped-only
+with the next evidence source named, or rejected with a recorded reason. The
+last verification pass reran Python syntax checks for the LaughingWS
+extractors/analyzer, repaired analyzer emission of the row reconciliation CSV,
+and reran the scratch analyzer/row-review queue path against the local
+LaughingWS external snapshot plus official worlddb comparison. The scratch
+audit produced `957,167` reconciliation rows and `7,749` queue rows, and all
+nine regenerated promoted LaughingWS seed SQL files matched the tracked seeds by
+SHA-256. Prior focused xUnit gates remain the script verification surface:
+path/Fortune `56/56`, PvP/adventure `29/29`, expedition `75/75`, dungeon
+`149/149`, and raid/event-instance `169/169`. No new data overlay,
+cross-service packet, storefront, or persistence code path was introduced by
+the final closure-matrix pass.
+LWS-070's evidence harness is now implemented: `Start-BlockerEvidenceHarness.ps1`
+creates timestamped blocker-evidence bundles with manifests,
+command/log/client-observation/negative-case templates, screenshot/video/log
+folders, and log-tail/collection helpers. Content smoke gates remain open until
+real bundles are captured.
+LWS-043's sandbox-zone checklist is also complete: all `23`
+test/unknown/unfinished/not-in-client files (`2,786` insert rows) remain
+runtime-rejected as `sandbox_only_client_asset_check_required` until a future
+explicit sandbox investigation supplies client-asset, placement, negative-case,
+and safety proof.
+LWS-040 through LWS-042 are closed as mapped-only new-zone blockers in
+`Decomp/Analysis/LAUGHINGWS_NEW_ZONE_BROAD_ROW_REVIEW.md`: Dreadmoor (`1,256`
+insert rows), Halon Ring broad residuals (`1,692` insert rows), and Murkmire
+(`841` insert rows) remain `blocked_laughingws_new_zone_broad_rows`; only the
+curated Halon city/transport crumbs are covered by the city-content seed.
+Algoroc's row-level review retained `5` official-only rows and blocked `64`
+branch-only queue rows as `blocked_laughingws_algoroc_residual_rows`.
+Celestion's row-level review retained `19` official-only queue rows, rejected
+`2` zero-coordinate placeholder rows, and blocked `50` branch-only queue rows
+as `blocked_laughingws_celestion_residual_rows`. Galeras's row-level review
+blocked `41` branch-only queue rows as
+`blocked_laughingws_galeras_residual_rows`. Thayd's row-level review keeps the
+housing intro branch entities covered by the city-content seed, retains `1,646`
+official-only queue rows, and blocks `25` branch-only vendor queue rows as
+`blocked_laughingws_thayd_residual_rows`. Whitevale's row-level review retains
+`15` official-only queue rows and blocks `105` branch-only queue rows as
+`blocked_laughingws_whitevale_residual_rows`. Levian Bay's row-level review
+keeps the already-covered `14` checklist rows in the small-world seed, retains
+`20` official-only entity rows, and blocks `115` branch-only residual queue
+rows as `blocked_laughingws_levian_bay_residual_rows`. Everstar Grove's
+row-level review keeps the already-covered `2` Exo-Lab 71 checklist rows in
+the small-world seed, retains `3` official-only entity rows, and blocks `59`
+branch-only residual queue rows as
+`blocked_laughingws_everstar_grove_residual_rows`. Auroria's row-level review
+keeps the already-covered `67` checklist rows in the small-world seed, retains
+`74` official-only entity rows, and blocks `56` branch-only residual queue rows
+as `blocked_laughingws_auroria_residual_rows`. Crimson Isle's row-level review
+keeps the already-covered `24` checklist rows in the small-world seed, retains
+`24` official-only entity rows, and blocks `74` branch-only residual queue rows
+as `blocked_laughingws_crimson_isle_residual_rows`. Deradune's row-level review
+retains `505` official-only queue rows and blocks `108` branch-only queue rows,
+including `47` checklist-index rows, as
+`blocked_laughingws_deradune_residual_rows`. Ellevar's row-level review retains
+`51` official-only queue rows and blocks `129` branch-only queue rows,
+including `65` checklist-index rows, as
+`blocked_laughingws_ellevar_residual_rows`. The remaining
+`extract_additive_world_overlay` audit bucket is `0`
+broad/residual files after Evil from the Ether, Datascape, Algoroc, Celestion,
+Galeras, Thayd, Whitevale, Deradune, and Ellevar residual active rows were reviewed and
+classified as blocked instance-entity residuals rather than generic extraction
+candidates, the new-zone broad rows were marked blocked, and the Isigrol
+duplicates plus Thayd/Illium/Levian Bay/Everstar Grove/Auroria/Crimson
+Isle/Northern Wilds/Wilderrun reviewed
+residuals were removed from the unresolved bucket.
+It also now treats the branch Rider's Reef `New Tutorial.sql` file as
+superseded/audit-only instead of an additive-overlay candidate because the
+official `New Player Experience.sql` import already supplies the active
+build-16042 rows and the branch-only combat rows are marked testing-only or
+wrong-faction in source.
+The audit also now keeps all `23` `Test zones` files as sandbox/client-asset
+work only, rather than suggesting additive runtime extraction for test maps,
+unfinished zones, unknown areas, or `Not in Client` SQL.
+`Tools\Setup\Initialize-NexusForever.ps1` imports these overlays after the
+primary runtime seed when present; when a LaughingWS entity seed hash changes, setup
+clears only that seed's owned deterministic high-ID range before reimport. The
+generated seeds intentionally omit DDL, deletes, raw `REPLACE`, and foreign-key
+disable blocks. `verify_safe_world_imports.sql` now has expected-count mismatch
+metrics for every promoted LaughingWS overlay slice, not only the largest WIP
+entity seeds.
 
 ### F-030 - Realm / Character Select/List/Transfer - COMPLETE
 Character list/select works. Realm transfer returns compatibility list.
@@ -571,7 +1191,9 @@ Weighted emulator rarity-tier pool + `ServerFortuneRewards.RewardItemProbabiliti
 match the mapped retail client UI transport (`FortunesLib.GetFortunesLootList`
 reads server floats and shows `fProbability = value * 100`; native evidence
 2026-05-23). `Decomp/Analysis/FORTUNE_WEIGHT_AUDIT.md` verifies the local
-catalog/table state and current Fortune tests.
+catalog/table state, current Fortune tests, and the rejection of the
+`Questing-and-more` branch's old hardcoded gacha handler as non-evidence for
+retail weights/rotation.
 **Blocked:** exact per-item retail weights and active rotation catalog (no
 `AccountItem.tbl` weight column; no retail `ServerFortuneRewards` or
 storefront-server catalog capture).

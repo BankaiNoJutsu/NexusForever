@@ -6740,10 +6740,66 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   `ClientPathExplorerPowerMapProgress` branch at `14056fbe0` sends
   `PathMission.ObjectId` from the PathMission row offset `+0x14` for the
   type-`0x12` progress path, not `PathMission.Id`; NexusForever now names that
-  parsed field `PathExplorerPowerMapId`. These reports still do not provide a
-  trusted persisted PathMission-completion source for ArchiveEntryUnlockRule
-  type `1`; that remains blocked until path mission progress/completion is
-  server-owned and persisted.
+  parsed field `PathExplorerPowerMapId` and routes it through active-only
+  Explorer power-map completion with a matching `PathExplorerPowerMap` row.
+  The LaughingWS `PathMission.SetGoals` table comment also maps
+  `Explorer_ExploreZone` (`0x10`) `ObjectId` to `MapZone.Id`; NexusForever now
+  treats this as WIP-guessed active-only completion on zone updates by resolving
+  the current `WorldZone` through `MapZone` / `MapZoneWorldJoin`. The same
+  branch goal mapping treats `Soldier_Assassinate` (`0x04`) `ObjectId` as
+  `PathSoldierAssassinate.Id` with `Count`; NexusForever now progresses active
+  Soldier missions on creature kill when the killed Creature2 id or associated
+  target group matches that row. A focused decompile pass maps
+  `Lua_PathMission_GetNumCompleted` (`14067c370`) to
+  `PathMissionRuntime_GetCurrentProgress` (`14056d0d0`): for
+  `Soldier_Assassinate` (`0x04`) the client reads the first runtime progress
+  payload, now named `Mission.ProgressCount` in NexusForever. That branch goal
+  mapping also treats `Settler_Hub` (`0x13`) `ObjectId` as `PathSettlerHub.Id`
+  with `MissionCount`; NexusForever now progresses active Settler hub missions
+  from accepted build-tier requests. `PathMissionRuntime_GetCurrentProgress`
+  also reads the first progress payload for `Settler_Hub` (`0x13`), and
+  `PathMissionRuntime_GetRequiredProgress` (`14056d330`) resolves the required
+  count through `PathSettlerHub.MissionCount`; durable built-group state,
+  resource costs, and avenue totals remain blocked. A follow-up packet pass maps
+  the Settler build packet readers: `ServerPathSettlerBuildStatus_ReadPayload`
+  (`14007a7b0`, opcode `0x0671`) reads `PathSettlerHubId` plus one
+  `ServerPathSettlerBuildStatusRow_ReadPayload` (`14007a730`) row, while
+  `ServerPathSettlerBuildStatusList_ReadPayload` (`14007a800`, opcode `0x066E`)
+  reads hub id, count, and counted rows. Each row is improvement-group id,
+  tier, remaining time, and bundle count; `PathSettler_HandleBuildStatus`
+  (`1406185a0`) and `PathSettler_HandleBuildStatusList` (`140618400`) apply the
+  rows and raise `SettlerBuildStatusUpdate` for the current player unit.
+  `ServerPathSettlerBuildResult_ReadPayload` (`14007aa70`, opcode `0x066C`)
+  reads result, `PathSettlerImprovementId`, and improvement-group id, but exact
+  non-success result values and failure ordering remain blocked. The second mission payload is
+  now named `Mission.ProgressData` because Explorer Vista (`0x0f`) and several
+  other mission types use it as their current-progress source; exact producer
+  semantics remain blocked per mission type. These reports and branch mappings
+  still do not provide a trusted persisted
+  PathMission-completion source for ArchiveEntryUnlockRule type `1`; that
+  remains blocked until path mission progress/completion is server-owned and
+  persisted. Client label `PathMissionRuntime_IsMissionVisibleForUnit`
+  (`1403d7c30`) maps current path mission visibility to player path, faction,
+  and an optional prerequisite; NexusForever now applies `PathMissionEntry`
+  `PrerequisiteId` during current-zone episode activation while exact unlock
+  sequencing remains blocked, and generic object-id completion is active-path
+  guarded for the same visibility boundary. Branch `AchievementType` maps `PathMission` to value `62` and
+  `PathMissionType` to value `63`; NexusForever now updates both for known
+  mission rows, passing the mission id and `PathMissionTypeEnum` respectively,
+  while leaving total/count-style path mission achievement triggers blocked.
+  Branch completion hardcodes a 30 XP mission-completion award with an explicit
+  TODO; NexusForever now replaces that with the client-mapped fallback for known
+  active-path mission rows with no stronger configured XP. `Lua_PathMission_GetRewardXp`
+  (`14067c010`) calls `GameFormula_GetEntryById` (`140200220`) with row `0x017a`
+  (`378`), reads `entry + 0x04` (`GameFormula.Dataint0`; local extracted value
+  `25`), and falls back to `50` when the row is unavailable. Exact per-mission
+  path reward presentation, overflow, and flagged reward semantics remain blocked.
+  Branch completion also looks up `PathRewardType.Mission` (`1`) by mission id;
+  NexusForever now grants currently-supported unflagged mission reward rows
+  through the existing path reward helper (item, spell, title, scanbot profile)
+  and treats `PathReward.Count` as a WIP-guessed item stack count with zero
+  falling back to one. Reward presentation, overflow behavior, flagged-row, and
+  broader episode reward semantics remain blocked.
 - Rotation essence blocker:
   Quest reward type `10` is confirmed as `RotationEssence`. The active client
   reward builder at `Lua_GameQuest_BuildRewardTables` (`140665c80`) queues type
@@ -9535,7 +9591,7 @@ FUN_14067b760() ? PathMission_ResolveCurrent() ? pathMissionRuntimeObj (vtable)
 | `140222b00` | `SettlerMayor_LookupById` |
 | `140721ef0` | `ExplorerNode_LookupById` |
 | `14021fc40` | `ScientistMission_LookupById` |
-| `140200220` | `GameTable_GetEntryById` |
+| `140200220` | `GameFormula_GetEntryById` |
 
 ### Related Globals
 
@@ -9547,8 +9603,9 @@ FUN_14067b760() ? PathMission_ResolveCurrent() ? pathMissionRuntimeObj (vtable)
 
 ### Reward XP
 
-`GetRewardXp` uses game table id `0x17a` (PathRewardTable); `entry + 0x04` = xpRewardAmount.
-Default fallback = 50 (`0x32`).
+`GetRewardXp` uses `GameFormula` row `0x17a` (`378`); `entry + 0x04` = `Dataint0`.
+Local extracted `GameFormula` row `378` has `Dataint0 = 25`.
+Default fallback when the row is unavailable = 50 (`0x32`).
 
 ---
 
@@ -14494,6 +14551,70 @@ Northern Wilds Soldier holdout control-point pass (2026-05-25):
 - Verification: `dotnet build Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj
   --no-restore -v minimal --nologo` passed.
 
+SoldierEvent Lua accessor mapping pass (2026-05-27):
+
+- Decompile workflow: `run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe
+  -ExtraPostScript DumpNearbyData.java -ExtraPostScriptArgs @('140c5c1e0','120')`
+  mapped the `Game.SoldierEvent` method table near `140c5c130`, then
+  `run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe
+  -MaxDecompiledFunctions 1320` refreshed the labeled fragments.
+- Added native labels for `Lua_SoldierEvent_GetType` (`140682d60`),
+  `GetState` (`140682e00`), `IsBoss` (`140682ea0`), `GetElapsedTime`
+  (`140682f40`), `GetMaxTime` (`140683060`), `GetDefendHealth`
+  (`140683290`), `GetAuxiliaryHealth` (`140683340`),
+  `GetMaxDefendHealth` (`140683490`), `GetMaxAuxiliaryHealth`
+  (`140683530`), `GetWaveCount` (`1406837d0`), `GetWavesReleased`
+  (`140683880`), `GetDefendUnits` (`140683930`), and
+  `GetAuxiliaryUnits` (`140683b30`), plus the related type/build/improvement
+  accessors in `function_labels.csv`.
+- Mapping result: the Lua object re-resolves the event by holdout id through
+  `SoldierHoldout_LookupById`, reads current state/type fields, max/current
+  health fields, elapsed/max time helpers, wave count at event offset `0x90`,
+  released-wave helper `FUN_140616cf0`, and unit trees where unit kind
+  `0` = defend, `1` = auxiliary, and `2` = escaping.
+- Blocker retained: this proves the client-side accessors and runtime object
+  shape, but still does not prove server-side `ServerPathSoldierHoldoutStatus`
+  producer timing, wave scheduler cadence, unit spawn ownership, death/failure
+  reasons, or packet ordering. Generic Soldier holdout runtime remains blocked
+  pending packet/live-client capture or a mapped client packet-consumer pass.
+
+LWS-060 path mission persistence implementation pass (2026-05-27):
+
+- `Source/NexusForever.Database.Character/Model/CharacterPathMissionModel.cs`
+  and EF migration `20260527191317_CharacterPathMissionState` add a
+  character-owned `character_path_mission` table for the mapped runtime fields:
+  path mission id, path episode id, mission state, completion flag,
+  `ProgressCount`, `ProgressData`, and configured XP.
+- `Source/NexusForever.Game/Entity/PathManager.cs` now loads those rows during
+  construction, restores completed mission status, saves modified runtime
+  states through the character save path, and replays unfinished active episode
+  state on initial path packets through `ServerPathSetCurrentEpisode`,
+  `ServerPathEpisodeProgress`, and `ServerPathMissionActivate`. This does not
+  claim exact retail replay ordering.
+- Remaining blockers: active path object-id persistence, per-character path
+  reward-history persistence, and negative reload/path/faction/zone transition
+  proof. LWS-062 follow-up tests cover completed-mission no-replay and
+  persisted-active no-duplicate zone activation. LWS-063 follow-up coverage
+  proves partial Settler_Hub mission progress can reload and complete after the
+  next accepted build-tier request, while built-group identity, resource costs,
+  avenue totals, and failure result packets remain blocked. Verification passed
+  focused `PathManagerTests` (`38/38`) and the full current
+  `NexusForever.Game.Tests` project (`1806/1806`).
+
+LWS-050 Dungeon Chase SMC storefront rejection verification (2026-05-27):
+
+- `Decomp/Analysis/LAUGHINGWS_DUNGEON_CHASE_SMC_PLACEHOLDER_REVIEW.md` keeps
+  the source type `0` account item `86919` rejected from current runtime seeds
+  because both the world `store_offer_item_data.itemId` model and the type `0`
+  `ServerStoreOffers` account-item transport are narrower than that value.
+- Added
+  `LaughingWsStoreCatalogSeedTests.StoreCatalogSeed_DoesNotEmitDungeonChaseUnsupportedType0AccountItem`
+  to require the generated `laughingws_store_catalog_seed.sql` skip note and to
+  reject any emitted type `0` row for account item `86919`.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --filter "FullyQualifiedName~LaughingWsStoreCatalogSeedTests" -v minimal
+  --nologo` passed `1/1`.
+
 CombatAI invalid-target and relocation recovery pass (2026-05-25):
 
 - Live Northern Wilds log `NexusForever.WorldServer_20260525_2564.log` showed
@@ -14942,3 +15063,54 @@ Shield reboot delay and remaining promoted coordinate inventory (2026-05-25):
   passed 21/21.
   `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo -p:OutDir=I:\GIT\NexusForever\artifacts\codex-worldserver-build\`
   passed with 0 warnings and 0 errors.
+
+Public-event aux packet-shape pass (2026-05-27):
+
+- `ServerPublicEventAux_ReadPayload` (`WildStar64.exe` `14007b930`, opcode
+  `0x0139`) reads a uint32 value, a 5-bit count, and counted uint32 values.
+  NexusForever now exposes this as diagnostic `ServerPublicEventAuxRaw.Value`
+  plus `Values` instead of an opaque fixed 16-byte payload. Producer semantics
+  remain blocked because the same cluster is referenced around public-event
+  map/objective/bomb status surfaces.
+- `ServerPublicEventVoteAux_ReadPayload` (`14007c0c0`, opcode `0x06F7`) reads a
+  15-bit value plus one flag. NexusForever now models those two fields directly
+  while keeping names generic until the vote producer/consumer sequence proves
+  whether the value is a vote id, event-local state id, or another public-event
+  runtime key.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj --no-restore -v minimal --nologo`
+  passed.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests" -v minimal --nologo`
+  passed 38/38 after the scoreboard/end stat packet-shape additions below.
+  `.\Decomp\Analysis\Test-DecompileManifest.ps1 -FailOnMismatch` reported
+  `WildStar64.exe ok`.
+
+Public-event scoreboard/end packet-shape pass (2026-05-27):
+
+- The opcode registration table binds `0x0137` to
+  `PublicEventTeamStats_ReadPayload` (`WildStar64.exe` `14007b9e0`), `0x013B`
+  to `ServerPublicEventPersonalStatUpdate_ReadPayload` (`14007bb10`), `0x00D6`
+  to `ServerPublicEventEnd_ReadPayload` (`14007bb80`), `0x0130` to
+  `ServerPublicEventStatsUpdate_ReadPayload` (`14007bde0`), and client opcode
+  `0x06FA` to `ClientPublicEventRequestScoreboard_WritePayload` (`14007c620`).
+- The mapped wire shapes are:
+  `ClientPublicEventRequestScoreboard` writes public-event id u14 plus subscribe
+  bit; `ServerPublicEventPersonalStatUpdate` reads public-event id u14, stat id
+  u32, and value u32; team stats read team id u14 plus `PublicEventStats`;
+  participant stats read team id u14, unit id u32, identity, class u32, path
+  u32, plus `PublicEventStats`; stats update reads counted team and participant
+  rows; end reads personal/team/participant/objective rows followed by reward
+  tier, reward type, and three threshold uint32 values.
+- NexusForever now names the scoreboard request field `PublicEventId`, records
+  these reader-backed shapes in comments, and has packet regression coverage for
+  request, stat update, stats update, and end serialization. Reward tier/type
+  and threshold fields remain packet-shape only: delivery rules, reward source
+  tables, eligibility, and result ordering are still blocked pending content
+  smoke/sniff evidence.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj --no-restore -v minimal --nologo`
+  passed.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests" -v minimal --nologo`
+  passed 38/38.
+  `.\Decomp\Analysis\Test-DecompileManifest.ps1 -FailOnMismatch` reported
+  `WildStar64.exe ok`.

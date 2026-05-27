@@ -156,13 +156,19 @@ Scripts landed:
 
 Current status:
 - WorldServer logs show loot loading from mapped loot tables and item loot.
-- Direct imported creature rows are currently skipped when mapped loot groups already exist for the same creature.
+- Direct imported creature rows are skipped only when a DataMapping flat
+  `DataMapping creature_loot` group already exists for the same creature. Other
+  old-table groups, including the LaughingWS `LaughingWS quest loot:` overlay,
+  now coexist with direct creature loot so quest-objective virtual-item drops do
+  not suppress normal creature drops.
+- `apply_creature_loot.py` now writes a per-pass report with selected
+  creature/item counts, status/missing-id/duplicate skip counts, invalid/missing
+  Item2 rows, and direct rows that runtime would skip because mapped flat
+  DataMapping loot groups already exist.
 
 Remaining work:
-- Decide a merge/precedence strategy for old-table `loot_group` rows versus direct imported `creature_loot` rows.
 - Validate probability scaling: old branch tables use percent-like probability in `LootGroup`/`LootItem`; current direct import clamps SQL chance from `0..1` then converts to percent.
 - Use `Various SQL`, jabbithole, and MySQL client data to map condition types, multi-drop groups, item loot bags, quest-only loot, and level/content gating.
-- Add a small data report after each import pass: creature count, item count, skipped rows, invalid Item2 ids, and rows skipped due to existing mapped groups.
 
 ## Suggested Next Pass Order
 

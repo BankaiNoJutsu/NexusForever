@@ -1,6 +1,6 @@
 # F-031 Madame Fay Weight Audit
 
-Status date: 2026-05-25
+Status date: 2026-05-26
 
 ## Scope
 
@@ -104,6 +104,35 @@ plus `wildstar_client_mysql/Item2.tbl.sql`:
 This proves the current approximation is deterministic and auditable against
 the extracted tables. It does not prove retail parity.
 
+## Questing-and-more Branch Audit
+
+The LaughingWS `Questing-and-more` Fortune commits `819197dc0f` and
+`27486d5e8d` were reviewed as a possible implementation source. They are
+rejected/superseded by the current Fortune subsystem and should not be ported
+over it.
+
+Confirmed branch shape:
+
+- The branch uses an old `MtxHandler` surface for `ClientGachaOpen`,
+  `ClientGachaRollRequest`, and `ClientGachaClaimItem`, emitting old
+  `ServerGachaInit`, `ServerGachaRollResult`, and `ServerGachaGrantItem`
+  messages rather than the currently mapped `ClientFortune*` /
+  `ServerFortune*` packet family.
+- `ServerGachaInit` hardcodes a visible account-item list, and card rolls use
+  three uniform account-item arrays plus a fourth bonus-card array added by
+  `27486d5e8d`. Those arrays do not encode per-item probabilities, active
+  storefront rotations, or server-synchronised catalog state.
+- Claim state is stored in a static process-wide `bool[]`, making it shared
+  across sessions/accounts instead of account-scoped or persistent.
+- `27486d5e8d` adds Fortune Coin debit and Fortune Charge reset behavior, but
+  still has no retail capture, rotation source, current packet shape, or durable
+  session evidence beyond the branch-local hardcoded lists.
+
+Conclusion: the branch records useful historical emulator intent and a sample
+set of account-item ids, but it is not stronger evidence than the current
+table-audited `FortuneRewardPool`. Its hardcoded arrays are not treated as
+retail Madame Fay weights or a validated active rotation.
+
 ## Unsupported
 
 - There is no local evidence for exact per-account-item Madame Fay retail
@@ -112,6 +141,9 @@ the extracted tables. It does not prove retail parity.
   `AccountItem` rows belonged to any particular retail Fortune week.
 - There is no local live/server capture proving the retail
   `ServerFortuneRewards.RewardItemProbabilities` values.
+- The `Questing-and-more` hardcoded gacha account-item arrays are not retail
+  weight or rotation evidence and are rejected/superseded by the current mapped
+  Fortune implementation.
 - There is no local evidence that the current `1000/200/50` rarity-tier
   constants are retail values. They are an emulator approximation that is
   compatible with the mapped client UI packet shape.
@@ -151,8 +183,9 @@ isolated local output directory. The build emitted unrelated existing warnings i
 Mapped only / blocked.
 
 The client-facing probability transport is mapped, current emulator probability
-output is table-audited, and current Fortune tests cover the implemented session
-and packet boundaries. Exact per-item retail weights remain blocked.
+output is table-audited, the `Questing-and-more` gacha implementation is
+audited/rejected as superseded, and current Fortune tests cover the implemented
+session and packet boundaries. Exact per-item retail weights remain blocked.
 
 The blocker would be unlocked by one of:
 

@@ -989,7 +989,7 @@ WildStar64.exe,140617410,SoldierHoldout_LookupById,Looks up a soldier holdout mi
 WildStar64.exe,140222b00,SettlerMayor_LookupById,Looks up a settler mayor mission entry by sub-data ID.
 WildStar64.exe,140721ef0,ExplorerNode_LookupById,Looks up an explorer node mission entry by type and sub-data ID.
 WildStar64.exe,14021fc40,ScientistMission_LookupById,Looks up a scientist mission entry (general/datacube) by sub-data ID.
-WildStar64.exe,140200220,GameTable_GetEntryById,Returns a game table entry pointer by integer ID; table 0x17a = PathRewardTable.
+WildStar64.exe,140200220,GameFormula_GetEntryById,Returns a GameFormula entry pointer by integer ID; Lua PathMission.GetRewardXp passes row 0x17a (378).
 WildStar64.exe,1403ba420,SpellWrapper_GetActiveForMission,Returns the active spell wrapper for a path mission objective.
 WildStar64.exe,1404331c0,Lua_PushSoldierHoldoutObject,Pushes a soldier holdout Lua userdata onto the stack from a holdout pointer.
 WildStar64.exe,140432ba0,Lua_PushPathEpisodeObject,Pushes a path episode Lua userdata onto the stack from an episode object.
@@ -1674,3 +1674,35 @@ WildStar64.exe,140766a30,Lua_RegisterFortunesLib,Registers FortunesLib with GetF
 WildStar64.exe,140766370,FortunesLib_GetFortunesLootList,Builds arItems from cached ServerFortuneRewards item2 ids and parallel float probabilities (UI shows fProbability = server float * 100).
 WildStar64.exe,140081f60,ServerFortuneRewards_ReadPayload,Reads opcode 0x03D2: uint32 item2 id list, money-reward rows, and parallel float item/money probability arrays.
 WildStar64.exe,1400a0b10,ServerFortuneCards_ReadPayload,Reads opcode 0x03D1: fortune operation, three rarity values, three account-item ids, and three flipped flags.
+WildStar64.exe,140682d60,Lua_SoldierEvent_GetType,Game.SoldierEvent.GetType Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140682e00,Lua_SoldierEvent_GetState,Game.SoldierEvent.GetState Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140682ea0,Lua_SoldierEvent_IsBoss,Game.SoldierEvent.IsBoss Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140682f40,Lua_SoldierEvent_GetElapsedTime,Game.SoldierEvent.GetElapsedTime Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140683060,Lua_SoldierEvent_GetMaxTime,Game.SoldierEvent.GetMaxTime Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140683110,Lua_SoldierEvent_IsDefendType,Game.SoldierEvent.IsDefendType Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,1406831d0,Lua_SoldierEvent_IsTimedType,Game.SoldierEvent.IsTimedType Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140683290,Lua_SoldierEvent_GetDefendHealth,Game.SoldierEvent.GetDefendHealth Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140683340,Lua_SoldierEvent_GetAuxiliaryHealth,Game.SoldierEvent.GetAuxiliaryHealth Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140683490,Lua_SoldierEvent_GetMaxDefendHealth,Game.SoldierEvent.GetMaxDefendHealth Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140683530,Lua_SoldierEvent_GetMaxAuxiliaryHealth,Game.SoldierEvent.GetMaxAuxiliaryHealth Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,1406835d0,Lua_SoldierEvent_GetEscapingUnits,Game.SoldierEvent.GetEscapingUnits Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,1406837d0,Lua_SoldierEvent_GetWaveCount,Game.SoldierEvent.GetWaveCount Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140683880,Lua_SoldierEvent_GetWavesReleased,Game.SoldierEvent.GetWavesReleased Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140683930,Lua_SoldierEvent_GetDefendUnits,Game.SoldierEvent.GetDefendUnits Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140683b30,Lua_SoldierEvent_GetAuxiliaryUnits,Game.SoldierEvent.GetAuxiliaryUnits Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140683d30,Lua_SoldierEvent_GetBuildCredits,Game.SoldierEvent.GetBuildCredits Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,140683dd0,Lua_SoldierEvent_GetImprovements,Game.SoldierEvent.GetImprovements Lua method from the SoldierEvent method table near 140c5c130.
+WildStar64.exe,14007a730,ServerPathSettlerBuildStatusRow_ReadPayload,Reads a Settler build status row: PathSettlerImprovementGroupId u14 tier i32 remaining-time u32 bundle-count u32.
+WildStar64.exe,14007a7b0,ServerPathSettlerBuildStatus_ReadPayload,Opcode 0x0671 reader: PathSettlerHubId u14 plus one ServerPathSettlerBuildStatusRow.
+WildStar64.exe,14007a800,ServerPathSettlerBuildStatusList_ReadPayload,Opcode 0x066E reader: PathSettlerHubId u14 count u32 then counted ServerPathSettlerBuildStatusRow entries.
+WildStar64.exe,14007aa70,ServerPathSettlerBuildResult_ReadPayload,Opcode 0x066C reader: result u32 PathSettlerImprovementId u15 PathSettlerImprovementGroupId u14.
+WildStar64.exe,140618400,PathSettler_HandleBuildStatusList,Applies opcode 0x066E Settler build status rows to PathSettlerHub runtime state and raises SettlerBuildStatusUpdate for the current player unit.
+WildStar64.exe,1406185a0,PathSettler_HandleBuildStatus,Applies opcode 0x0671 Settler build status row to PathSettlerHub runtime state and raises SettlerBuildStatusUpdate for the current player unit.
+WildStar64.exe,14007b930,ServerPublicEventAux_ReadPayload,Opcode 0x0139 reader: uint32 value 5-bit count and counted uint32 values; semantic producer meaning remains blocked.
+WildStar64.exe,14007b9e0,PublicEventTeamStats_ReadPayload,Reads a public-event team stat row as 14-bit team id plus PublicEventStats payload.
+WildStar64.exe,14007ba50,PublicEventParticipantStats_ReadPayload,Reads a public-event participant stat row as 14-bit team id unit id player identity class path and PublicEventStats payload.
+WildStar64.exe,14007bb10,ServerPublicEventPersonalStatUpdate_ReadPayload,Reads opcode 0x013B as 14-bit public-event id plus stat id and value uint32 fields.
+WildStar64.exe,14007bb80,ServerPublicEventEnd_ReadPayload,Reads opcode 0x00D6 public-event end payload with personal team participant objective status rows and reward tier/type thresholds.
+WildStar64.exe,14007bde0,ServerPublicEventStatsUpdate_ReadPayload,Reads opcode 0x0130 as public-event id plus counted team and participant stat rows.
+WildStar64.exe,14007c620,ClientPublicEventRequestScoreboard_WritePayload,Writes opcode 0x06FA as 14-bit public-event id plus scoreboard subscribe flag.
+WildStar64.exe,14007c0c0,ServerPublicEventVoteAux_ReadPayload,Opcode 0x06F7 reader: 15-bit value plus one flag; vote lifecycle semantics remain blocked.

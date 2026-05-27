@@ -27,8 +27,21 @@ A blocker is **closed** only when the evidence bundle, implementation, tests, an
 Start Trace logging and the client console:
 
 ```powershell
-.\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 -ClientDirectory "I:\WildStar" -PromptForRootPassword
+.\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
+  -BundleName "LWS-036-starter-zone-checklist-smoke" `
+  -ClientDirectory "I:\WildStar" `
+  -WorldIds 426,990 `
+  -ObjectiveIds 4888,4889,4890 `
+  -NegativeCases "missing quest objective", "wrong world/objective" `
+  -PromptForRootPassword
 ```
+
+The harness creates `artifacts\blocker_evidence\<timestamp>-<bundle>` before
+launching servers/client. Each bundle includes `manifest.json`, command
+transcript, server-log notes, client-observation notes, negative-case notes,
+screenshots/video/log folders, and helper scripts to tail or collect logs. Use
+`-CreateBundleOnly` to create the bundle skeleton without touching running
+services.
 
 Or invoke the setup script directly:
 
