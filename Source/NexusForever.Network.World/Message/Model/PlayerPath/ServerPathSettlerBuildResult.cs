@@ -5,16 +5,18 @@ namespace NexusForever.Network.World.Message.Model.PlayerPath
     [Message(GameMessageOpcode.ServerPathSettlerBuildResult)]
     public class ServerPathSettlerBuildResult : IWritable
     {
-        public uint Result { get; set; }  // Is an enum but was never used in client. Passed to SetterBuildResult lua event.
+        // Client reader ServerPathSettlerBuildResult_ReadPayload (WildStar64.exe 14007aa70)
+        // reads result, PathSettlerImprovementId, and PathSettlerImprovementGroupId.
+        // Exact non-success enum values remain unmapped.
+        public uint Result { get; set; }
 
-        public uint Unknown { get; set; } // If this is not zero, client gets localizedTextId from PathSettlerImproveGroup
-                                          // tbl entry to pass name of improvement that was build to SetterBuildResult event.
+        public uint PathSettlerImprovementId { get; set; }
         public uint PathSettlerImprovementGroupId { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
             writer.Write(Result);
-            writer.Write(Unknown, 15);
+            writer.Write(PathSettlerImprovementId, 15);
             writer.Write(PathSettlerImprovementGroupId, 14);
         }
     }

@@ -11,8 +11,8 @@ namespace NexusForever.Network.World.Message.Model.PlayerPath
         {
             writer.Write(Mission.PathMissionId, 15);
             writer.Write(Mission.Completed);
-            writer.Write(Mission.ObjectiveCompletionFlags);
-            writer.Write(Mission.StateFlags);
+            writer.Write(Mission.ProgressCount);
+            writer.Write(Mission.ProgressData);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+using System.Collections;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
@@ -6,6 +7,7 @@ using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PlayerPath;
+using NexusForever.Game.Static.Reputation;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
@@ -19,6 +21,13 @@ namespace NexusForever.Game.Entity
     {
         private const uint MaxPathCount = 4u;
         private const uint MaxPathLevel = PathRewardGrant.MaxPathLevel;
+        private const uint SoldierAssassinateMissionType = 0x0004;
+        private const uint ExplorerVistaMissionType = 0x000F;
+        private const uint ExplorerExploreZoneMissionType = 0x0010;
+        private const uint ExplorerPowerMapMissionType = 0x0012;
+        private const uint SettlerHubMissionType = 0x0013;
+        private const uint PathMissionCompletionXpGameFormulaId = 0x017Au;
+        private const uint DefaultMissionCompletionXp = 50u;
 
         private readonly IPlayer player;
         private readonly Dictionary<Path, IPathEntry> paths = new();
@@ -33,6 +42,18 @@ namespace NexusForever.Game.Entity
             player = owner;
             foreach (CharacterPathModel pathModel in model.Path)
                 paths.Add((Path)pathModel.Path, new PathEntry(pathModel));
+
+            foreach (CharacterPathMissionModel pathMissionModel in model.PathMission)
+            {
+                if (pathMissions.ContainsKey(pathMissionModel.PathMissionId))
+                    continue;
+
+                var state = new PathMissionRuntimeState(pathMissionModel);
+                pathMissions.Add(state.MissionId, state);
+
+                if (!state.Completed && state.EpisodeId != 0)
+                    activatedEpisodes.Add(state.EpisodeId);
+            }
 
             Validate();
         }
@@ -189,11 +210,7 @@ namespace NexusForever.Game.Entity
             {
                 if (!pathMissions.TryGetValue(missionId, out PathMissionRuntimeState state))
                 {
-                    state = new PathMissionRuntimeState
-                    {
-                        EpisodeId = episodeId,
-                        MissionId = missionId
-                    };
+                    state = new PathMissionRuntimeState(player.CharacterId, missionId, episodeId);
                     pathMissions.Add(missionId, state);
                 }
 
@@ -211,6 +228,43 @@ namespace NexusForever.Game.Entity
             SendPathMissionActivate(episodeId);
         }
 
+        public bool TryActivateCurrentZoneEpisode()
+        {
+            uint worldId = player.Map?.Entry?.Id ?? 0u;
+            WorldZoneEntry zone = player.Zone;
+            if (worldId == 0u || zone == null)
+                return false;
+
+            WorldZoneEntry rootZone = GetMostParentZone(zone);
+            if (rootZone == null)
+                return false;
+
+            PathEpisodeEntry pathEpisode = GameTableManager.Instance.PathEpisode.Entries
+                .FirstOrDefault(e => e.WorldId == worldId
+                    && e.WorldZoneId == rootZone.Id
+                    && e.PathTypeEnum == (uint)player.Path);
+            if (pathEpisode == null || pathEpisode.Id > 0x3FFFu)
+                return false;
+
+            Dictionary<ushort, uint> missions = GameTableManager.Instance.PathMission.Entries
+                .Where(m => m.PathEpisodeId == pathEpisode.Id
+                    && m.PathTypeEnum == (uint)player.Path
+                    && IsMissionFactionAllowed(m)
+                    && IsMissionPrerequisiteAllowed(m)
+                    && m.Id <= 0x7FFFu)
+                .OrderBy(m => m.Id)
+                .ToDictionary(m => (ushort)m.Id, _ => 0u);
+            if (missions.Count == 0)
+                return false;
+
+            // WIP/GUESSED: LaughingWS activated the current PathEpisode on zone changes.
+            // This keeps the safe table-backed episode/mission surface, but leaves durable
+            // path persistence, exact per-mission reward precision, and broader
+            // unlock sequencing blocked.
+            ActivateMissions((ushort)pathEpisode.Id, missions);
+            return true;
+        }
+
         public bool CompleteMission(ushort pathMissionId)
         {
             PathMissionRuntimeState state = GetOrCreateMissionState(pathMissionId);
@@ -218,7 +272,8 @@ namespace NexusForever.Game.Entity
                 return false;
 
             state.Completed = true;
-            state.ObjectiveCompletionFlags = 1u;
+            state.ProgressCount = Math.Max(state.ProgressCount, 1u);
+            state.ProgressData = 0u;
             state.State = PathMissionState.Complete;
 
             player.Session.EnqueueMessageEncrypted(new ServerPathMissionAdvanced
@@ -230,10 +285,127 @@ namespace NexusForever.Game.Entity
                 Mission = BuildMission(state)
             });
 
-            if (state.Xp > 0u)
-                AddXp(state.Xp);
+            PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(pathMissionId);
+            if (mission != null)
+            {
+                // WIP/GUESSED: LaughingWS exposes AchievementType.PathMission (62) and
+                // PathMissionType (63) for path mission completion credit. Total/count-style
+                // path mission achievement triggers remain blocked until their retail call
+                // pattern is mapped.
+                player.AchievementManager.CheckAchievements(player, AchievementType.PathMission, mission.Id);
+                player.AchievementManager.CheckAchievements(player, AchievementType.PathMissionType, mission.PathMissionTypeEnum);
+            }
+
+            uint xp = GetMissionCompletionXp(state, mission, player.Path);
+            if (xp > 0u)
+                AddXp(xp);
+
+            GrantMissionRewards(pathMissionId);
 
             return true;
+        }
+
+        private static uint GetMissionCompletionXp(PathMissionRuntimeState state, PathMissionEntry mission, Path activePath)
+        {
+            if (state.Xp > 0u)
+                return state.Xp;
+
+            if (mission == null)
+                return 0u;
+
+            if (mission.PathTypeEnum != (uint)activePath)
+                return 0u;
+
+            // Client Game.PathMission.GetRewardXp reads GameFormula 0x017a Dataint0,
+            // and falls back to 50 if the table row is unavailable. Per-mission reward
+            // precision remains blocked pending stronger PathReward evidence.
+            GameFormulaEntry formula = GameTableManager.Instance.GameFormula?.GetEntry(PathMissionCompletionXpGameFormulaId);
+            return formula?.Dataint0 > 0u ? formula.Dataint0 : DefaultMissionCompletionXp;
+        }
+
+        public bool CompleteActiveMission(ushort pathMissionId)
+        {
+            if (!pathMissions.ContainsKey(pathMissionId))
+                return false;
+
+            return CompleteMission(pathMissionId);
+        }
+
+        public bool CompleteExplorerProgressMission(ushort pathMissionId, uint explorerNodeIndex)
+        {
+            // Current evidence proves mission/node table validation; exact node-index semantics are still unmapped.
+            _ = explorerNodeIndex;
+
+            if (!pathMissions.ContainsKey(pathMissionId))
+                return false;
+
+            PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(pathMissionId);
+            if (mission == null
+                || mission.PathTypeEnum != (uint)Path.Explorer
+                || mission.PathMissionTypeEnum != ExplorerVistaMissionType)
+                return false;
+
+            bool hasExplorerNode = GameTableManager.Instance.PathExplorerNode.Entries
+                .Any(n => n.PathExplorerAreaId == mission.ObjectId);
+            if (!hasExplorerNode)
+                return false;
+
+            return CompleteMission(pathMissionId);
+        }
+
+        public bool CompleteExplorerPowerMapMission(uint pathExplorerPowerMapId)
+        {
+            if (pathExplorerPowerMapId == 0u)
+                return false;
+
+            if (GameTableManager.Instance.PathExplorerPowerMap.GetEntry(pathExplorerPowerMapId) == null)
+                return false;
+
+            bool completedAny = false;
+            foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
+            {
+                PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                if (mission == null
+                    || mission.PathTypeEnum != (uint)Path.Explorer
+                    || mission.PathMissionTypeEnum != ExplorerPowerMapMissionType
+                    || mission.ObjectId != pathExplorerPowerMapId)
+                    continue;
+
+                // WIP/GUESSED: client evidence proves 0x00F9 carries the PathMission.ObjectId
+                // for type 0x12 Explorer power-map progress. Exact server-owned progress,
+                // ready/active timers, and failure state packets remain blocked.
+                completedAny |= CompleteMission(state.MissionId);
+            }
+
+            return completedAny;
+        }
+
+        public bool CompleteCurrentExplorerExploreZoneMission()
+        {
+            if (player.Path != Path.Explorer)
+                return false;
+
+            uint mapZoneId = ResolveCurrentMapZoneId();
+            if (mapZoneId == 0u)
+                return false;
+
+            bool completedAny = false;
+            foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
+            {
+                PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                if (mission == null
+                    || mission.PathTypeEnum != (uint)Path.Explorer
+                    || mission.PathMissionTypeEnum != ExplorerExploreZoneMissionType
+                    || mission.ObjectId != mapZoneId)
+                    continue;
+
+                // WIP/GUESSED: LaughingWS marks Explorer_ExploreZone as ObjectId == MapZone.Id.
+                // Current server evidence is enough for active-only zone-entry completion, but
+                // durable path progress, exact reward timing, and non-map-zone edge cases remain blocked.
+                completedAny |= CompleteMission(state.MissionId);
+            }
+
+            return completedAny;
         }
 
         public bool CompleteMissionByObjectId(uint objectId)
@@ -248,6 +420,12 @@ namespace NexusForever.Game.Entity
                 if (entry?.ObjectId != objectId)
                     continue;
 
+                if (entry.PathTypeEnum != (uint)player.Path)
+                    continue;
+
+                // WIP/GUESSED: current path runtime is session-local, so object-id completion
+                // is limited to active-path rows. This mirrors the client visibility path gate
+                // while durable path episode/mission ownership remains blocked.
                 completedAny |= CompleteMission(state.MissionId);
             }
 
@@ -263,13 +441,105 @@ namespace NexusForever.Game.Entity
             return entry != null && CompleteMissionByObjectId(entry.PathSoldierEventId);
         }
 
+        public bool ProgressSoldierAssassinateMissionForCreatureKill(uint creature2Id, IReadOnlyCollection<uint> targetGroupIds)
+        {
+            if (player.Path != Path.Soldier)
+                return false;
+
+            targetGroupIds ??= Array.Empty<uint>();
+            if (creature2Id == 0u && targetGroupIds.Count == 0)
+                return false;
+
+            bool progressedAny = false;
+            foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
+            {
+                if (state.Completed)
+                    continue;
+
+                PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                if (mission == null
+                    || mission.PathTypeEnum != (uint)Path.Soldier
+                    || mission.PathMissionTypeEnum != SoldierAssassinateMissionType)
+                    continue;
+
+                PathSoldierAssassinateEntry assassinate = GameTableManager.Instance.PathSoldierAssassinate.GetEntry(mission.ObjectId);
+                if (!MatchesSoldierAssassinateKill(assassinate, creature2Id, targetGroupIds))
+                    continue;
+
+                uint requiredCount = Math.Max(assassinate.Count, 1u);
+                state.ProgressCount = Math.Min(state.ProgressCount + 1u, requiredCount);
+                state.ProgressData = state.ProgressCount >= requiredCount ? 0u : 1u;
+                progressedAny = true;
+
+                if (state.ProgressCount >= requiredCount)
+                {
+                    CompleteMission(state.MissionId);
+                    continue;
+                }
+
+                // Client PathMission.GetNumCompleted reads the first progress payload for
+                // Soldier_Assassinate (0x04). ProgressData remains a conservative in-progress
+                // marker until per-type producer semantics are fully mapped.
+                player.Session.EnqueueMessageEncrypted(new ServerPathMissionUpdate
+                {
+                    Mission = BuildMission(state)
+                });
+            }
+
+            return progressedAny;
+        }
+
         public bool CompleteMissionBySettlerImprovementGroupId(uint pathSettlerImprovementGroupId)
         {
+            if (player.Path != Path.Settler)
+                return false;
+
             if (pathSettlerImprovementGroupId == 0u)
                 return false;
 
             PathSettlerImprovementGroupEntry entry = GameTableManager.Instance.PathSettlerImprovementGroup.GetEntry(pathSettlerImprovementGroupId);
-            return entry != null && CompleteMissionByObjectId(entry.PathSettlerHubId);
+            if (entry == null || entry.PathSettlerHubId == 0u)
+                return false;
+
+            PathSettlerHubEntry hub = GameTableManager.Instance.PathSettlerHub.GetEntry(entry.PathSettlerHubId);
+            if (hub == null)
+                return false;
+
+            bool progressedAny = false;
+            foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
+            {
+                if (state.Completed)
+                    continue;
+
+                PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                if (mission == null
+                    || mission.PathTypeEnum != (uint)Path.Settler
+                    || mission.PathMissionTypeEnum != SettlerHubMissionType
+                    || mission.ObjectId != entry.PathSettlerHubId)
+                    continue;
+
+                uint requiredCount = Math.Max(hub.MissionCount, 1u);
+                state.ProgressCount = Math.Min(state.ProgressCount + 1u, requiredCount);
+                state.ProgressData = state.ProgressCount >= requiredCount ? 0u : 1u;
+                progressedAny = true;
+
+                if (state.ProgressCount >= requiredCount)
+                {
+                    CompleteMission(state.MissionId);
+                    continue;
+                }
+
+                // Client PathMission.GetNumCompleted reads the first progress payload for
+                // Settler_Hub (0x13). We count each accepted build-tier request as one hub
+                // contribution because durable built-group state, resource costs, avenue totals,
+                // and unique-build contribution semantics are still blocked.
+                player.Session.EnqueueMessageEncrypted(new ServerPathMissionUpdate
+                {
+                    Mission = BuildMission(state)
+                });
+            }
+
+            return progressedAny;
         }
 
         public bool IsMissionComplete(uint pathMissionId)
@@ -339,6 +609,24 @@ namespace NexusForever.Game.Entity
             player.CastSpell(53234, new Spell.SpellParameters());
         }
 
+        private void GrantMissionRewards(ushort pathMissionId)
+        {
+            foreach (PathRewardEntry pathRewardEntry in GameTableManager.Instance.PathReward.Entries
+                .Where(x => x.ObjectId == pathMissionId))
+            {
+                if (!PathRewardGrant.IsGrantableMissionReward(pathRewardEntry, pathMissionId))
+                    continue;
+
+                if (pathRewardEntry.PrerequisiteId > 0 && !PrerequisiteManager.Instance.Meets(player, pathRewardEntry.PrerequisiteId))
+                    continue;
+
+                // WIP/GUESSED: LaughingWS grants PathRewardType.Mission rows on path mission
+                // completion. Exact reward presentation, item-count handling, and flagged reward
+                // semantics remain blocked, so this only grants currently-supported unflagged rows.
+                GrantPathReward(pathRewardEntry);
+            }
+        }
+
         /// <summary>
         /// Grant the <see cref="IPlayer"/> rewards from the <see cref="PathRewardEntry"/>
         /// </summary>
@@ -349,7 +637,13 @@ namespace NexusForever.Game.Entity
                 throw new ArgumentNullException();
 
             if (pathRewardEntry.Item2Id > 0)
-                player.Inventory.ItemCreate(InventoryLocation.Inventory, pathRewardEntry.Item2Id, 1, ItemUpdateReason.PathReward);
+            {
+                // WIP/GUESSED: PathReward.Count is the only current table field that can
+                // carry an item quantity. Treat zero as the legacy single-item fallback
+                // until retail reward presentation and overflow semantics are mapped.
+                uint itemCount = pathRewardEntry.Count > 0u ? pathRewardEntry.Count : 1u;
+                player.Inventory.ItemCreate(InventoryLocation.Inventory, pathRewardEntry.Item2Id, itemCount, ItemUpdateReason.PathReward);
+            }
 
             if (pathRewardEntry.Spell4Id > 0)
             {
@@ -381,11 +675,24 @@ namespace NexusForever.Game.Entity
         {
             foreach (IPathEntry pathEntry in paths.Values)
                 pathEntry.Save(context);
+
+            foreach (PathMissionRuntimeState state in pathMissions.Values)
+                state.Save(context);
         }
 
         public void SendInitialPackets()
         {
             SendPathLogPacket();
+
+            foreach (ushort episodeId in activatedEpisodes.OrderBy(e => e))
+            {
+                if (!pathMissions.Values.Any(m => m.EpisodeId == episodeId && !m.Completed))
+                    continue;
+
+                SendPathCurrentEpisode(episodeId);
+                SendPathEpisodeProgress(episodeId);
+                SendPathMissionActivate(episodeId);
+            }
         }
 
         /// <summary>
@@ -405,6 +712,81 @@ namespace NexusForever.Game.Entity
         private float GetCooldownTime()
         {
             return (float)DateTime.UtcNow.Subtract(player.PathActivatedTime).TotalDays * -1;
+        }
+
+        private WorldZoneEntry GetMostParentZone(WorldZoneEntry zone)
+        {
+            WorldZoneEntry currentZone = zone;
+            for (int i = 0; i < 32 && currentZone?.ParentZoneId > 0u; i++)
+            {
+                WorldZoneEntry parentZone = GameTableManager.Instance.WorldZone.GetEntry(currentZone.ParentZoneId);
+                if (parentZone == null)
+                    break;
+
+                currentZone = parentZone;
+            }
+
+            return currentZone;
+        }
+
+        private uint ResolveCurrentMapZoneId()
+        {
+            WorldZoneEntry worldZoneEntry = player.Zone;
+            for (int i = 0; i < 32 && worldZoneEntry != null; i++)
+            {
+                MapZoneEntry zoneMap = GameTableManager.Instance.MapZone?.Entries?
+                    .FirstOrDefault(m => m.WorldZoneId == worldZoneEntry.Id);
+                if (zoneMap != null)
+                    return zoneMap.Id;
+
+                if (worldZoneEntry.ParentZoneId == 0u)
+                    break;
+
+                worldZoneEntry = GameTableManager.Instance.WorldZone?.GetEntry(worldZoneEntry.ParentZoneId);
+            }
+
+            uint worldId = player.Map?.Entry?.Id ?? 0u;
+            if (worldId == 0u)
+                return 0u;
+
+            return GameTableManager.Instance.MapZoneWorldJoin?.Entries?
+                .FirstOrDefault(m => m.WorldId == worldId)?.MapZoneId ?? 0u;
+        }
+
+        private bool IsMissionFactionAllowed(PathMissionEntry mission)
+        {
+            return mission.PathMissionFactionEnum switch
+            {
+                0u => true,
+                1u => player.Faction1 == Faction.Exile,
+                2u => player.Faction1 == Faction.Dominion,
+                _  => false
+            };
+        }
+
+        private static bool MatchesSoldierAssassinateKill(PathSoldierAssassinateEntry assassinate, uint creature2Id, IReadOnlyCollection<uint> targetGroupIds)
+        {
+            if (assassinate == null)
+                return false;
+
+            if (assassinate.Creature2Id != 0u && assassinate.Creature2Id == creature2Id)
+                return true;
+
+            return assassinate.TargetGroupId != 0u && targetGroupIds.Contains(assassinate.TargetGroupId);
+        }
+
+        private bool IsMissionPrerequisiteAllowed(PathMissionEntry mission)
+        {
+            if (mission.PrerequisiteId == 0u)
+                return true;
+
+            if (GameTableManager.Instance.Prerequisite?.GetEntry(mission.PrerequisiteId) == null)
+                return false;
+
+            // WIP/GUESSED: client labels map path mission visibility to path, faction,
+            // and optional prerequisite checks. This applies the table prerequisite gate
+            // during current-zone activation, while exact unlock sequencing remains blocked.
+            return PrerequisiteManager.Instance.Meets(player, mission.PrerequisiteId);
         }
 
         /// <summary>
@@ -462,12 +844,8 @@ namespace NexusForever.Game.Entity
                 return state;
 
             PathMissionEntry entry = GameTableManager.Instance.PathMission.GetEntry(pathMissionId);
-            state = new PathMissionRuntimeState
-            {
-                EpisodeId = (ushort)(entry?.PathEpisodeId ?? 0u),
-                MissionId = pathMissionId,
-                State = PathMissionState.Started
-            };
+            state = new PathMissionRuntimeState(player.CharacterId, pathMissionId, (ushort)(entry?.PathEpisodeId ?? 0u));
+            state.State = PathMissionState.Started;
             pathMissions.Add(pathMissionId, state);
             return state;
         }
@@ -511,8 +889,8 @@ namespace NexusForever.Game.Entity
             {
                 PathMissionId = state.MissionId,
                 Completed = state.Completed,
-                ObjectiveCompletionFlags = state.ObjectiveCompletionFlags,
-                StateFlags = state.StateFlags,
+                ProgressCount = state.ProgressCount,
+                ProgressData = state.ProgressData,
                 State = state.State,
                 GiverUnitId = state.GiverUnitId
             };
@@ -541,14 +919,149 @@ namespace NexusForever.Game.Entity
 
         private sealed class PathMissionRuntimeState
         {
-            public ushort EpisodeId { get; set; }
-            public ushort MissionId { get; init; }
-            public uint Xp { get; set; }
-            public bool Completed { get; set; }
-            public uint ObjectiveCompletionFlags { get; set; }
-            public uint StateFlags { get; set; }
-            public PathMissionState State { get; set; } = PathMissionState.Started;
+            [Flags]
+            private enum SaveMask
+            {
+                None          = 0x0000,
+                Create        = 0x0001,
+                Episode       = 0x0002,
+                Xp            = 0x0004,
+                Completed     = 0x0008,
+                ProgressCount = 0x0010,
+                ProgressData  = 0x0020,
+                State         = 0x0040
+            }
+
+            public ulong CharacterId { get; }
+            public ushort EpisodeId
+            {
+                get => episodeId;
+                set => SetField(ref episodeId, value, SaveMask.Episode);
+            }
+
+            public ushort MissionId { get; }
+
+            public uint Xp
+            {
+                get => xp;
+                set => SetField(ref xp, value, SaveMask.Xp);
+            }
+
+            public bool Completed
+            {
+                get => completed;
+                set => SetField(ref completed, value, SaveMask.Completed);
+            }
+
+            public uint ProgressCount
+            {
+                get => progressCount;
+                set => SetField(ref progressCount, value, SaveMask.ProgressCount);
+            }
+
+            public uint ProgressData
+            {
+                get => progressData;
+                set => SetField(ref progressData, value, SaveMask.ProgressData);
+            }
+
+            public PathMissionState State
+            {
+                get => state;
+                set => SetField(ref state, value, SaveMask.State);
+            }
+
             public uint GiverUnitId { get; init; }
+
+            private ushort episodeId;
+            private uint xp;
+            private bool completed;
+            private uint progressCount;
+            private uint progressData;
+            private PathMissionState state = PathMissionState.Started;
+            private SaveMask saveMask;
+
+            public PathMissionRuntimeState(ulong characterId, ushort missionId, ushort episodeId)
+            {
+                CharacterId = characterId;
+                MissionId   = missionId;
+
+                this.episodeId = episodeId;
+                saveMask       = SaveMask.Create;
+            }
+
+            public PathMissionRuntimeState(CharacterPathMissionModel model)
+            {
+                CharacterId   = model.Id;
+                MissionId     = model.PathMissionId;
+                episodeId     = model.PathEpisodeId;
+                state         = (PathMissionState)model.State;
+                completed     = Convert.ToBoolean(model.Completed);
+                progressCount = model.ProgressCount;
+                progressData  = model.ProgressData;
+                xp            = model.Xp;
+
+                saveMask = SaveMask.None;
+            }
+
+            public void Save(CharacterContext context)
+            {
+                if (saveMask == SaveMask.None)
+                    return;
+
+                CharacterPathMissionModel model = BuildModel();
+                if ((saveMask & SaveMask.Create) != 0)
+                {
+                    context.Add(model);
+                }
+                else
+                {
+                    EntityEntry<CharacterPathMissionModel> entity = context.Attach(model);
+                    if ((saveMask & SaveMask.Episode) != 0)
+                        entity.Property(p => p.PathEpisodeId).IsModified = true;
+
+                    if ((saveMask & SaveMask.Xp) != 0)
+                        entity.Property(p => p.Xp).IsModified = true;
+
+                    if ((saveMask & SaveMask.Completed) != 0)
+                        entity.Property(p => p.Completed).IsModified = true;
+
+                    if ((saveMask & SaveMask.ProgressCount) != 0)
+                        entity.Property(p => p.ProgressCount).IsModified = true;
+
+                    if ((saveMask & SaveMask.ProgressData) != 0)
+                        entity.Property(p => p.ProgressData).IsModified = true;
+
+                    if ((saveMask & SaveMask.State) != 0)
+                        entity.Property(p => p.State).IsModified = true;
+                }
+
+                saveMask = SaveMask.None;
+            }
+
+            private CharacterPathMissionModel BuildModel()
+            {
+                return new CharacterPathMissionModel
+                {
+                    Id             = CharacterId,
+                    PathMissionId  = MissionId,
+                    PathEpisodeId  = EpisodeId,
+                    State          = (byte)State,
+                    Completed      = Convert.ToByte(Completed),
+                    ProgressCount  = ProgressCount,
+                    ProgressData   = ProgressData,
+                    Xp             = Xp
+                };
+            }
+
+            private void SetField<T>(ref T field, T value, SaveMask mask)
+            {
+                if (EqualityComparer<T>.Default.Equals(field, value))
+                    return;
+
+                field = value;
+                saveMask |= mask;
+            }
         }
     }
 }

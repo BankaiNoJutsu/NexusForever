@@ -6,6 +6,8 @@ namespace NexusForever.Game.Entity
     public static class PathRewardGrant
     {
         public const uint MaxPathLevel = 30u;
+        public const uint LevelRewardType = 0u;
+        public const uint MissionRewardType = 1u;
 
         public static uint GetLevelRewardObjectId(Path path, uint level)
         {
@@ -25,7 +27,27 @@ namespace NexusForever.Game.Entity
             if (entry.PathRewardFlags > 0)
                 return false;
 
-            if (entry.PathRewardTypeEnum != 0)
+            if (entry.PathRewardTypeEnum != LevelRewardType)
+                return false;
+
+            return entry.Item2Id > 0
+                || entry.Spell4Id > 0
+                || entry.CharacterTitleId > 0
+                || entry.PathScientistScanBotProfileId > 0;
+        }
+
+        public static bool IsGrantableMissionReward(PathRewardEntry entry, ushort pathMissionId)
+        {
+            if (entry == null)
+                throw new ArgumentNullException(nameof(entry));
+
+            if (entry.PathRewardFlags > 0)
+                return false;
+
+            if (entry.PathRewardTypeEnum != MissionRewardType)
+                return false;
+
+            if (entry.ObjectId != pathMissionId)
                 return false;
 
             return entry.Item2Id > 0

@@ -2330,6 +2330,7 @@ namespace NexusForever.Game.Entity
                 player.AchievementManager.CheckAchievements(player, AchievementType.KillCreatureGroup, targetGroupId);
             }
 
+            player.PathManager.ProgressSoldierAssassinateMissionForCreatureKill(CreatureId, targetGroupIds);
             RewardPublicEventKiller(player, targetGroupIds);
 
             if (CreatureId > 0u)

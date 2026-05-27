@@ -11,12 +11,12 @@ namespace NexusForever.Game.Abstract.Entity
         bool IsPathActive(Static.PlayerPath.Path pathToCheck);
 
         /// <summary>
-        /// Attempts to activate supplied <see cref="Static.PlayerPath.Path"/>. 
+        /// Attempts to activate supplied <see cref="Static.PlayerPath.Path"/>.
         /// </summary>
         void ActivatePath(Static.PlayerPath.Path pathToActivate);
 
         /// <summary>
-        /// Checks if supplied <see cref="Static.PlayerPath.Path"/> is unlocked. 
+        /// Checks if supplied <see cref="Static.PlayerPath.Path"/> is unlocked.
         /// </summary>
         bool IsPathUnlocked(Static.PlayerPath.Path pathToUnlock);
 
@@ -41,9 +41,34 @@ namespace NexusForever.Game.Abstract.Entity
         void ActivateMissions(ushort episodeId, IReadOnlyDictionary<ushort, uint> missionXp);
 
         /// <summary>
+        /// Activates table-backed path missions for the player's current world/zone episode.
+        /// </summary>
+        bool TryActivateCurrentZoneEpisode();
+
+        /// <summary>
         /// Completes a path mission if it is active or known.
         /// </summary>
         bool CompleteMission(ushort pathMissionId);
+
+        /// <summary>
+        /// Completes a path mission only if it is already active.
+        /// </summary>
+        bool CompleteActiveMission(ushort pathMissionId);
+
+        /// <summary>
+        /// Completes an active explorer progress mission when the mission and node tables match the client report.
+        /// </summary>
+        bool CompleteExplorerProgressMission(ushort pathMissionId, uint explorerNodeIndex);
+
+        /// <summary>
+        /// Completes an active explorer power-map mission when the mission and power-map tables match the client report.
+        /// </summary>
+        bool CompleteExplorerPowerMapMission(uint pathExplorerPowerMapId);
+
+        /// <summary>
+        /// Completes active explorer explore-zone missions that match the player's current map zone.
+        /// </summary>
+        bool CompleteCurrentExplorerExploreZoneMission();
 
         /// <summary>
         /// Completes active path missions whose PathMission objectId matches the supplied object id.
@@ -56,7 +81,12 @@ namespace NexusForever.Game.Abstract.Entity
         bool CompleteMissionBySoldierTowerDefenseId(uint pathSoldierTowerDefenseId);
 
         /// <summary>
-        /// Completes active settler path missions associated with the supplied improvement group row.
+        /// Progresses active Soldier assassinate missions for a killed creature or target group.
+        /// </summary>
+        bool ProgressSoldierAssassinateMissionForCreatureKill(uint creature2Id, IReadOnlyCollection<uint> targetGroupIds);
+
+        /// <summary>
+        /// Progresses active Settler hub missions associated with the supplied improvement group row.
         /// </summary>
         bool CompleteMissionBySettlerImprovementGroupId(uint pathSettlerImprovementGroupId);
 

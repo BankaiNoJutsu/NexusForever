@@ -20,6 +20,8 @@
         MapComplete            = 53,
         CharacterLevel         = 54,
         TitleEarned            = 56,
+        PathMission            = 62,
+        PathMissionType        = 63,
         PathLevel              = 64,
         GuildBelovedReputation = 67,
         CurrencyEarned         = 75,

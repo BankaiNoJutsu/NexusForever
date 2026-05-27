@@ -7,8 +7,12 @@ namespace NexusForever.Network.World.Message.Model.PlayerPath
     {
         public uint PathMissionId { get; set; }
         public bool Completed { get; set; }
-        public uint ObjectiveCompletionFlags { get; set; }
-        public uint StateFlags { get; set; }
+        // Client PathMission.GetNumCompleted reads this payload for Soldier_Assassinate,
+        // Settler_Hub, and other count-style mission types.
+        public uint ProgressCount { get; set; }
+        // Some mission types use this alternate payload for current progress; exact
+        // producer semantics are still mapped per mission type.
+        public uint ProgressData { get; set; }
         public PathMissionState State { get; set; }
         public uint GiverUnitId { get; set; }
 
@@ -16,8 +20,8 @@ namespace NexusForever.Network.World.Message.Model.PlayerPath
         {
             writer.Write(PathMissionId, 15);
             writer.Write(Completed);
-            writer.Write(ObjectiveCompletionFlags);
-            writer.Write(StateFlags);
+            writer.Write(ProgressCount);
+            writer.Write(ProgressData);
             writer.Write(State, 3);
             writer.Write(GiverUnitId);
         }

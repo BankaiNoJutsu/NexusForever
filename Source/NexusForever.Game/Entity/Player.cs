@@ -1029,6 +1029,11 @@ namespace NexusForever.Game.Entity
 
                 AchievementManager.CheckAchievements(this, AchievementType.EnterWorldZone, Zone.Id);
                 QuestManager.ObjectiveUpdate(QuestObjectiveType.EnterZone, Zone.Id, 1);
+                // WIP/GUESSED: branch path content activates the table-backed path episode
+                // and completes Explorer_ExploreZone map-zone objectives on zone entry; exact
+                // unlock filters, persistence, progress cadence, and rewards remain blocked.
+                PathManager.TryActivateCurrentZoneEpisode();
+                PathManager.CompleteCurrentExplorerExploreZoneMission();
             }
 
             ZoneMapManager.OnZoneUpdate();
