@@ -32,12 +32,16 @@ Official world SQL files are imported only when their target tables and columns
 exist in the migrated world schema. This keeps branch-specific world data from
 being forced into a server checkout that does not support it yet.
 
-After the official world import, the setup imports
-Tools\DataMapping\sql\runtime_world_seed.sql by default. That seed contains the
-promoted reviewed DataMapping runtime rows and does not require the Jabbithole,
-WildStar client, or nf_map_* staging databases on a fresh machine. Pass
--SkipRuntimeWorldSeedImport to skip it, or -RuntimeWorldSeedPath to use a
-different seed file.
+After the official world import, the setup imports promoted runtime world seed
+SQL files by default. The primary seed is
+Tools\DataMapping\sql\runtime_world_seed.sql, which contains the reviewed
+DataMapping runtime rows and does not require the Jabbithole, WildStar client,
+or nf_map_* staging databases on a fresh machine. Additional safe overlays, such
+as the extracted LaughingWS map entrance, city/quest content, WIP quest-instance,
+WIP small world, WIP instance entity, WIP live event, WIP Skyplot housing, store
+catalog, and quest loot seeds, are imported after it when present. Pass
+-SkipRuntimeWorldSeedImport to skip these runtime seeds, or
+-RuntimeWorldSeedPath to use a different primary seed file.
 
 The split folders jabbithole_mysql and wildstar_client_mysql are preferred over
 the older all_jabbithole_mysql.sql and all_wildstar_client_mysql.sql files. The
@@ -1700,26 +1704,154 @@ function Import-WorldDatabaseSqlFiles {
 }
 
 function Import-RuntimeWorldSeedSqlFile {
-    if (!(Test-Path -LiteralPath $RuntimeWorldSeedPath -PathType Leaf)) {
-        Write-Warning "Runtime world seed SQL does not exist; skipping DataMapping runtime seed import: $RuntimeWorldSeedPath"
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $SeedPath,
+
+        [string] $Label = 'runtime world seed',
+
+        [string] $MarkerPrefix = 'DataMapping',
+
+        [string] $PreImportSql = '',
+
+        [switch] $Required
+    )
+
+    if (!(Test-Path -LiteralPath $SeedPath -PathType Leaf)) {
+        $message = "Runtime world seed SQL does not exist; skipping $Label import: $SeedPath"
+        if ($Required) {
+            Write-Warning $message
+        }
+        else {
+            Write-Info $message
+        }
         return
     }
 
-    $file = Get-Item -LiteralPath $RuntimeWorldSeedPath
+    $file = Get-Item -LiteralPath $SeedPath
     $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-    $markerName = "DataMapping/$($file.Name)"
+    $markerName = "$MarkerPrefix/$($file.Name)"
     $quotedName = Quote-MySqlString $markerName
     $quotedHash = Quote-MySqlString $hash
     $existing = Invoke-MySqlScalar -Database $GameDatabases.World -Sql "SELECT COUNT(*) FROM version WHERE fileName = $quotedName AND fileHash = $quotedHash;"
 
     if ([int] $existing -gt 0 -and !$ForceImport) {
-        Write-Info "Skipping already imported runtime world seed $($file.Name)"
+        Write-Info "Skipping already imported $Label $($file.Name)"
         return
     }
 
-    Write-Info "Importing DataMapping runtime world seed $($file.FullName)"
+    if (![string]::IsNullOrWhiteSpace($PreImportSql)) {
+        Write-Info "Preparing $Label refresh before import."
+        Invoke-MySqlSql -Database $GameDatabases.World -Sql $PreImportSql
+    }
+
+    Write-Info "Importing $Label $($file.FullName)"
     Invoke-MySql -Arguments (Get-MySqlArguments -Database $GameDatabases.World) -InputFile $file.FullName
     Invoke-MySqlSql -Database $GameDatabases.World -Sql "INSERT IGNORE INTO version (fileName, fileHash, appliedOn) VALUES ($quotedName, $quotedHash, UTC_TIMESTAMP(6));"
+}
+
+function Get-LaughingWsOwnedEntityRangeCleanupSql {
+    param(
+        [Parameter(Mandatory=$true)]
+        [long] $StartId,
+
+        [Parameter(Mandatory=$true)]
+        [long] $EndId
+    )
+
+    if ($StartId -gt $EndId) {
+        throw "Invalid LaughingWS WIP entity id range: $StartId..$EndId."
+    }
+
+    # Generated LaughingWS entity overlays own only these deterministic high-id ranges.
+    # Clear the owned range before a changed seed reimport so old generated ids cannot linger.
+    @(
+        'START TRANSACTION;',
+        "DELETE FROM entity_vendor_item WHERE id BETWEEN $StartId AND $EndId;",
+        "DELETE FROM entity_vendor_category WHERE id BETWEEN $StartId AND $EndId;",
+        "DELETE FROM entity_vendor WHERE id BETWEEN $StartId AND $EndId;",
+        "DELETE FROM entity_property WHERE id BETWEEN $StartId AND $EndId;",
+        "DELETE FROM entity_script WHERE id BETWEEN $StartId AND $EndId;",
+        "DELETE FROM entity_event WHERE id BETWEEN $StartId AND $EndId;",
+        "DELETE FROM entity_stats WHERE id BETWEEN $StartId AND $EndId;",
+        "DELETE FROM entity_spline WHERE id BETWEEN $StartId AND $EndId;",
+        "DELETE FROM entity WHERE id BETWEEN $StartId AND $EndId;",
+        'COMMIT;'
+    ) -join [Environment]::NewLine
+}
+
+function Import-RuntimeWorldSeedSqlFiles {
+    Import-RuntimeWorldSeedSqlFile `
+        -SeedPath $RuntimeWorldSeedPath `
+        -Label 'DataMapping runtime world seed' `
+        -MarkerPrefix 'DataMapping' `
+        -Required
+
+    $laughingWsMapEntranceSeedPath = Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_map_entrance_seed.sql'
+    Import-RuntimeWorldSeedSqlFile `
+        -SeedPath $laughingWsMapEntranceSeedPath `
+        -Label 'LaughingWS map entrance seed' `
+        -MarkerPrefix 'LaughingWS'
+
+    $laughingWsCityContentSeedPath = Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_city_content_seed.sql'
+    Import-RuntimeWorldSeedSqlFile `
+        -SeedPath $laughingWsCityContentSeedPath `
+        -Label 'LaughingWS city content seed' `
+        -MarkerPrefix 'LaughingWS' `
+        -PreImportSql (Get-LaughingWsOwnedEntityRangeCleanupSql -StartId 1100000000 -EndId 1100099999)
+
+    # WIP/GUESSED: branch quest-instance placement is useful but not retail-verified.
+    $laughingWsQuestInstanceSeedPath = Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_quest_instance_wip_seed.sql'
+    Import-RuntimeWorldSeedSqlFile `
+        -SeedPath $laughingWsQuestInstanceSeedPath `
+        -Label 'LaughingWS WIP quest instance seed' `
+        -MarkerPrefix 'LaughingWS' `
+        -PreImportSql (Get-LaughingWsOwnedEntityRangeCleanupSql -StartId 1100100000 -EndId 1100199999)
+
+    # WIP/GUESSED: small branch-authored world placements are DataMapping-corroborated but not retail-verified.
+    $laughingWsSmallWorldSeedPath = Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_small_world_wip_seed.sql'
+    Import-RuntimeWorldSeedSqlFile `
+        -SeedPath $laughingWsSmallWorldSeedPath `
+        -Label 'LaughingWS WIP small world seed' `
+        -MarkerPrefix 'LaughingWS' `
+        -PreImportSql (Get-LaughingWsOwnedEntityRangeCleanupSql -StartId 1100200000 -EndId 1100299999)
+
+    # WIP/GUESSED: branch-authored instance placement is script-backed locally
+    # but not retail-smoked for full encounter choreography.
+    $laughingWsInstanceEntitySeedPath = Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_instance_entity_wip_seed.sql'
+    Import-RuntimeWorldSeedSqlFile `
+        -SeedPath $laughingWsInstanceEntitySeedPath `
+        -Label 'LaughingWS WIP instance entity seed' `
+        -MarkerPrefix 'LaughingWS' `
+        -PreImportSql (Get-LaughingWsOwnedEntityRangeCleanupSql -StartId 1100300000 -EndId 1100399999)
+
+    # WIP/GUESSED: branch-authored live-event placements are deterministic but not retail-verified.
+    $laughingWsLiveEventSeedPath = Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_live_event_wip_seed.sql'
+    Import-RuntimeWorldSeedSqlFile `
+        -SeedPath $laughingWsLiveEventSeedPath `
+        -Label 'LaughingWS WIP live event seed' `
+        -MarkerPrefix 'LaughingWS' `
+        -PreImportSql (Get-LaughingWsOwnedEntityRangeCleanupSql -StartId 2100000000 -EndId 2147483647)
+
+    # WIP/GUESSED: branch Skyplot vendor/return-pad placement is useful but not retail-verified.
+    $laughingWsHousingSkyplotSeedPath = Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_housing_skyplot_wip_seed.sql'
+    Import-RuntimeWorldSeedSqlFile `
+        -SeedPath $laughingWsHousingSkyplotSeedPath `
+        -Label 'LaughingWS WIP Skyplot housing seed' `
+        -MarkerPrefix 'LaughingWS' `
+        -PreImportSql (Get-LaughingWsOwnedEntityRangeCleanupSql -StartId 2000000000 -EndId 2099999999)
+
+    $laughingWsStoreSeedPath = Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_store_catalog_seed.sql'
+    Import-RuntimeWorldSeedSqlFile `
+        -SeedPath $laughingWsStoreSeedPath `
+        -Label 'LaughingWS store catalog seed' `
+        -MarkerPrefix 'LaughingWS'
+
+    $laughingWsQuestLootSeedPath = Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_quest_loot_seed.sql'
+    Import-RuntimeWorldSeedSqlFile `
+        -SeedPath $laughingWsQuestLootSeedPath `
+        -Label 'LaughingWS quest loot seed' `
+        -MarkerPrefix 'LaughingWS'
 }
 
 function Get-RabbitMqCtlCommandInvocation {
@@ -1949,16 +2081,16 @@ if (!$SkipWorldDatabaseImport) {
 
     if (!$SkipRuntimeWorldSeedImport) {
         if ($worldDatabaseSqlAvailable) {
-            Write-Section 'DataMapping runtime world seed import'
-            Import-RuntimeWorldSeedSqlFile
+            Write-Section 'Runtime world seed import'
+            Import-RuntimeWorldSeedSqlFiles
         }
         else {
-            Write-Warning 'Skipping DataMapping runtime world seed import because no official world SQL files were imported or available.'
+            Write-Warning 'Skipping runtime world seed import because no official world SQL files were imported or available.'
         }
     }
 }
 elseif (!$SkipRuntimeWorldSeedImport) {
-    Write-Warning 'Skipping DataMapping runtime world seed import because -SkipWorldDatabaseImport was set.'
+    Write-Warning 'Skipping runtime world seed import because -SkipWorldDatabaseImport was set.'
 }
 
 if ($StartServers) {

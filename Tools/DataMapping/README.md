@@ -362,7 +362,7 @@ Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
 
-That migration-style script imports vendor stock, optional reviewed entity spawns, creature loot, flat runtime creature loot groups, weighted item-container loot groups, and creature-info template overrides from `nf_map_*` into explicit `nexus_forever_world` runtime tables. Runtime code must consume those promoted tables only, never the staging/source databases. Creature-backed imports use only `unique_name`, `scored_name`, and `reviewed` creature bridges by default; targeted world repair can opt into exact-name ambiguous rows and direct Jabbithole coordinate fallback for source-zone rows whose coordinates are valid but whose source `worldid` is blank. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import.
+That migration-style script imports vendor stock, optional reviewed entity spawns, creature loot, flat runtime creature loot groups, weighted item-container loot groups, and creature-info template overrides from `nf_map_*` into explicit `nexus_forever_world` runtime tables. Runtime code must consume those promoted tables only, never the staging/source databases. Creature-backed imports use only `unique_name`, `scored_name`, and `reviewed` creature bridges by default; targeted world repair can opt into exact-name ambiguous rows and direct Jabbithole coordinate fallback for source-zone rows whose coordinates are valid but whose source `worldid` is blank. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import, including mismatch metrics for each promoted LaughingWS overlay and the official Evil from the Ether script-hook count that is intentionally not duplicated by the WIP seed.
 
 After changing reviewed mappings and verifying the staging import, refresh the
 standalone seed with:
@@ -397,7 +397,7 @@ python Tools\DataMapping\apply_creature_loot.py
 python Tools\DataMapping\apply_creature_loot.py --apply
 ```
 
-`apply_creature_loot.py` creates/upserts `nexus_forever_world.creature_loot` from safe, de-duplicated `creature_loot_map.csv` rows. The current localhost apply upserted 198,735 creature-item loot rows for 3,795 creatures and 18,504 items. Runtime loot generation is now wired through `GlobalLootManager`; the SQL staging import also mirrors those rows into flat `loot_group`, `entity_loot`, and `loot_item` rows so the older loot-table path is populated too. The same SQL import now maps `item_container_map.csv` into `item_loot` groups for loot bags: 272 container items and 23,865 weighted contained-item rows on localhost.
+`apply_creature_loot.py` creates/upserts `nexus_forever_world.creature_loot` from safe, de-duplicated `creature_loot_map.csv` rows. The current localhost apply upserted 198,735 creature-item loot rows for 3,795 creatures and 18,504 items. The JSON report includes status-filter, missing Creature2, invalid/missing Item2, duplicate creature-item, selected creature/item, and runtime mapped-flat-group skip counts so each import pass shows what would load and what `GlobalLootManager` would ignore when table-backed `DataMapping creature_loot` groups already exist. Runtime loot generation is now wired through `GlobalLootManager`; the SQL staging import also mirrors those rows into flat `loot_group`, `entity_loot`, and `loot_item` rows so the older loot-table path is populated too. The same SQL import now maps `item_container_map.csv` into `item_loot` groups for loot bags: 272 container items and 23,865 weighted contained-item rows on localhost.
 
 ```powershell
 python Tools\DataMapping\apply_creature_info_overrides.py
@@ -405,6 +405,303 @@ python Tools\DataMapping\apply_creature_info_overrides.py --apply
 ```
 
 `map_wildstar_data.py` reads tracked approved bridge decisions from `Tools\DataMapping\creature_bridge_overrides.csv` first, then local ignored review work from `Tools\DataMapping\review\creature_bridge_overrides.csv`. `apply_creature_info_overrides.py` imports high-confidence creature template overrides from `creature_map.csv` into `creature_info_property` and `creature_info_stat`. By default it inserts only missing `BaseHealth`, `ShieldCapacityMax`, and `InterruptArmour` rows for `unique_name`/`scored_name`/`reviewed` creature bridges, and skips duplicate creature mappings with conflicting values. `BaseHealth` uses the mapper-generated `template_base_health` value, so source health ranges such as `353-844` are not promoted as template-wide overrides.
+
+## LaughingWS World Database Audit
+
+Use `analyze_laughingws_worlddb.py` before taking data from
+`LaughingWS/NexusForever.WorldDatabase.New-Zones-and-more`. That repository
+contains useful hand-authored content, but many files are replacement dumps with
+`DELETE FROM entity WHERE world = @WORLD`, and the all-in-one/store dumps contain
+schema DDL. Do not point setup's `-WorldDatabasePath` directly at that checkout.
+
+Example audit:
+
+```powershell
+python Tools\DataMapping\analyze_laughingws_worlddb.py `
+  --laughingws-path "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more" `
+  --official-worlddb-path "I:\GIT\NexusForever.WorldDatabase"
+```
+
+The default output goes to `artifacts\laughingws_worlddb_audit`:
+
+- `laughingws_worlddb_file_inventory.csv` records worlds, tables, row counts,
+  hazards, official-file deltas, missing entity script classes, unsupported
+  schema targets, and intake recommendations per SQL file.
+- `laughingws_worlddb_table_summary.csv` and
+  `laughingws_worlddb_world_summary.csv` aggregate row counts by target table and
+  world.
+- `laughingws_worlddb_audit.md` summarizes the high-risk files and largest
+  useful deltas.
+
+The script-name audit treats C# class names and explicit
+`ScriptFilterScriptName` aliases as implemented script names, so SQL hooks with
+punctuation can be reconciled to valid C# class names without hiding the source
+SQL name.
+
+After the audit, `extract_laughingws_map_entrances.py`,
+`extract_laughingws_city_content.py`, `extract_laughingws_store_catalog.py`,
+`extract_laughingws_live_events.py`,
+`extract_laughingws_housing_skyplot.py`,
+`extract_laughingws_quest_instances.py`,
+`extract_laughingws_small_world_overlays.py`,
+`extract_laughingws_instance_entities.py`, and
+`extract_laughingws_quest_loot.py`
+can regenerate the safe LaughingWS overlays used by setup:
+
+For the remaining broad/residual row-review queue, generate a flattened
+worksheet from the latest audit reconciliation output:
+
+```powershell
+python Tools\DataMapping\build_laughingws_row_review_queue.py `
+  --audit-dir artifacts\laughingws_worlddb_audit_latest
+```
+
+This writes `laughingws_worlddb_row_review_queue.csv` next to the audit
+artifacts with key row fields projected from `row_json`, current per-file
+recommendations refreshed from `laughingws_worlddb_file_inventory.csv`, and
+blank review decision columns for row-by-row promotion, rejection, or blocker
+notes.
+
+```powershell
+python Tools\DataMapping\extract_laughingws_map_entrances.py `
+  --laughingws-path "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more" `
+  --official-worlddb-path "I:\GIT\NexusForever.WorldDatabase"
+```
+
+```powershell
+python Tools\DataMapping\extract_laughingws_city_content.py `
+  --laughingws-path "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more" `
+  --official-worlddb-path "I:\GIT\NexusForever.WorldDatabase"
+```
+
+```powershell
+python Tools\DataMapping\extract_laughingws_quest_instances.py `
+  --laughingws-path "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more"
+```
+
+```powershell
+python Tools\DataMapping\extract_laughingws_small_world_overlays.py `
+  --laughingws-path "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more"
+```
+
+```powershell
+python Tools\DataMapping\extract_laughingws_instance_entities.py `
+  --laughingws-path "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more"
+```
+
+```powershell
+python Tools\DataMapping\extract_laughingws_store_catalog.py `
+  --source-sql "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more\Store\StoreCatalog.sql" `
+  --source-sql "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more\Store\Store Events\Valentine's Day items.sql" `
+  --source-sql "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more\Events\Dungeon Chase.sql" `
+  --source-sql "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more\Events\Shades Eve.sql" `
+  --source-sql "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more\Events\Winterfest.sql"
+```
+
+```powershell
+python Tools\DataMapping\extract_laughingws_live_events.py `
+  --laughingws-path "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more" `
+  --official-worlddb-path "I:\GIT\NexusForever.WorldDatabase"
+```
+
+```powershell
+python Tools\DataMapping\extract_laughingws_housing_skyplot.py `
+  --laughingws-path "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more" `
+  --official-worlddb-path "I:\GIT\NexusForever.WorldDatabase"
+```
+
+```powershell
+python Tools\DataMapping\extract_laughingws_quest_loot.py `
+  --source-sql "I:\GIT\NexusForever.WorldDatabase.New-Zones-and-more\Loot\CreatureQuestLoot.sql"
+```
+
+The generated `Tools\DataMapping\sql\laughingws_map_entrance_seed.sql` contains
+only missing `map_entrance` inserts relative to the official world database.
+The generated `Tools\DataMapping\sql\laughingws_city_content_seed.sql` contains
+only the curated placed city/museum/quest-terminal entity rows needed by the
+ported transporter script, Illium Museum content, WIP/GUESSED Illium Ringo Hax
+placement, and the Skull's Eye escape pod terminal for quest `3770`. It also
+applies `8` coordinate-keyed WIP/GUESSED `questChecklistIdx` updates to existing
+official Thayd/Illium housing intro props, with WIP/GUESSED fallback inserts for
+older local imports that do not yet contain those official prop rows. It skips
+zero-coordinate placeholders and the rest of the unfinished Halon Ring / broad
+Thayd/Illium zone dumps, and marks the Skull's Eye, Ringo Hax, and
+Thayd/Illium housing checklist placements WIP/GUESSED pending manual
+quest/client smoke.
+The generated `Tools\DataMapping\sql\laughingws_quest_instance_wip_seed.sql`
+contains `3` WIP/guessed Dust Stalker quest-instance `entity` rows and `4`
+Boss Xagg `entity_stats` rows. It strips the source world-replacement delete
+and `@GUID` allocation, emits DataMapping-backed Boss Xagg stats instead of the
+source health `1`, and overrides the branch bridge-control type `20` to current
+`SimpleCollidable` type `32`; the exit panel is still source-only and marked
+WIP/GUESSED.
+The generated `Tools\DataMapping\sql\laughingws_small_world_wip_seed.sql`
+contains `16` WIP/guessed small world `entity` rows and `59` `entity_stats`
+rows for Tactical Uplink, Captain Darkstone, Commander Durek, Cortex Prime
+Whitewater, Corrigan Doon, Star-Comm Basin The Caretaker, source-only Arcterra
+Caretaker/Coldblood portal placements, source-only Palaver Point Ish'amel, and
+the reviewed Northern Wilds Deadeye Brightland, Scientist Lusk, Elder Bartol,
+and Q3673 Signal Flare placements. It strips source world deletes and `@GUID`
+allocation, reconciles DataMapping-backed creature/area/display/outfit
+mismatches to DataMapping creature/spawn evidence, labels source-only rows
+explicitly, and now applies `140` coordinate-keyed WIP/GUESSED
+`questChecklistIdx` updates to existing official rows: `2` Everstar Grove
+Exo-Lab 71 Eldan Teleporter rows, `33` Wilderrun Kel Ulgar Weapon Rack /
+Tattered Banner / Intact Data Cache / Cassian Commonwealth Emblem rows, `67`
+Auroria objective rows for Black Hoods Alchemy Supplies,
+Cubig Security Zapper Console, Seismic Thumper, Hycrest infected/plague-victim
+clusters, Freebot Drills, Navigation Control Panels, Bingberry Stills, and
+GL-04 Auto Turrets, plus `24` Crimson Isle objective rows for Megatech
+Terminals, Exile Anti-Air Cannons, Dreg Tents, Dominion Demolitions Experts,
+Power Regulators, and Tower Controls, plus `14` Levian Bay Signal Flare / Drop
+Pod Landing Beacon rows for Lighting the Way and Lost in the Fog. When an older
+local import lacks those official Everstar Grove, Auroria, Crimson Isle, or
+Levian Bay rows, the seed uses guarded WIP/GUESSED fallback inserts for `107`
+deterministic `entity` rows and up to `219` fallback `entity_stats` rows in the
+small-world owned range.
+It rejects the Dominion/Exile Arkship tutorial rows for current build-16042
+runtime seeds, leaves branch Wilderrun Dorian rows blocked because their source
+creature ids do not match current DataMapping identity, leaves Northern Wilds
+branch spline-mode changes blocked pending movement proof, rejects the branch
+Supply Officer Windward vendor rows in favor of the existing DataMapping vendor
+import, leaves Thayd, Levian Bay, Everstar Grove, Auroria, and Crimson Isle
+branch-only residual rows blocked pending row-level proof, and leaves broad
+zone replacements blocked until
+stronger proof exists.
+The generated `Tools\DataMapping\sql\laughingws_instance_entity_wip_seed.sql`
+contains `75` WIP/guessed instance-local `entity` rows, `67` `entity_event`
+rows, `35` `entity_script` rows, and `80` `entity_stats` rows for Coldblood
+Citadel, Protostar SuperMall, Space Madness, Gauntlet, Fragment Zero,
+Infestation, Outpost M-13, Evil from the Ether drive-spark phase anchors,
+Protogames Academy, Ruins of Kel Voreth, Stormtalon's Lair, Skullcano,
+Sanctuary of the Swordmaiden, and Genetic
+Archives, plus the map-bound Ultimate Protogames Bev-O-Rage row, the
+source-only Red Moon Terror Laveka row, Shade's Eve Etty/fountain anchors, and
+`17` placed Datascape boss/objective anchors that match the current WIP
+Datascape event chain.
+It also emits `14`
+coordinate-keyed WIP/GUESSED updates that reconcile official Evil from the
+Ether branch area hints plus crew-log `questChecklistIdx` order with the branch-derived
+`CrewLogEntityScript`. It strips source world deletes and `@GUID` allocation,
+promotes only rows with current WIP script/map support, and keeps encounter
+choreography, trigger timing, NPC interaction, combat behavior, trigger cleanup,
+Datascape placeholder rows/trash carpets/elemental mechanics, and cinematics
+blocked pending client smoke proof.
+The generated `Tools\DataMapping\sql\laughingws_store_catalog_seed.sql`
+contains only idempotent store table upserts. The promoted overlays intentionally
+omit the source dump's DDL, deletes, broad event entity rows, and foreign-key
+toggles. The extractor canonicalises Dungeon Chase legacy store aliases and its
+known `Field_7` column typo, but still skips that file's hidden SMC placeholder
+with a generated WIP/GUESSED note because type `0` item `86919` exceeds the
+current 15-bit storefront wire/schema proof.
+The generated `Tools\DataMapping\sql\laughingws_live_event_wip_seed.sql`
+contains `440` WIP/guessed live-event entity/vendor rows: `198` `entity`, `68`
+`entity_stats`, `8` `entity_vendor`, `24` `entity_vendor_category`, and `142`
+`entity_vendor_item` rows. It assigns deterministic high entity IDs in the
+`2100000000` range, filters official duplicate and placeholder coordinates, and
+omits raw `@GUID` allocation, event remover scripts, and store rows. SQL
+comments mark this overlay as WIP/guessed because
+the source rows are branch-authored and not retail-verified.
+The generated `Tools\DataMapping\sql\laughingws_housing_skyplot_wip_seed.sql`
+contains `411` WIP/guessed Skyplot housing rows: `3` `entity`, `12`
+`entity_stats`, `2` `entity_vendor`, `72` `entity_vendor_category`, and `322`
+`entity_vendor_item` rows. It assigns deterministic high entity IDs in the
+`2000000000` range, strips the source world-replacement delete, and corrects one
+branch Skyplot vendor row where the source column list omitted `OutfitInfo`.
+The generated `Tools\DataMapping\sql\laughingws_quest_loot_seed.sql` contains
+virtual-item quest objective loot from `Loot\CreatureQuestLoot.sql` with source
+`loot_group` ids shifted into a DataMapping-owned high range, so it can coexist
+with current runtime loot groups.
+
+Treat the audit recommendations as intake bands:
+
+- `extract_store_catalog_without_ddl`, `candidate_store_overlay`, and
+  `candidate_loot_overlay` can become focused additive SQL after DDL and broad
+  deletes are stripped.
+- `covered_by_laughingws_map_entrance_seed` means the file's pure
+  `map_entrance` rows are already handled by
+  `laughingws_map_entrance_seed.sql`.
+- `covered_by_laughingws_city_content_seed` means reviewed city, museum,
+  quest-terminal, or transport rows are already handled by
+  `laughingws_city_content_seed.sql`. It can still pair with another residual
+  classification when only a narrow slice of a broad file was promoted, such as
+  Illium or Halon Ring.
+- `covered_by_laughingws_store_catalog_seed` and
+  `covered_by_laughingws_quest_loot_seed` mean the file's store or virtual
+  quest-loot rows are already handled by the generated runtime seed.
+- `covered_by_laughingws_live_event_wip_seed` means reviewed event
+  entity/vendor rows are already handled by the generated WIP live-event seed.
+  `covered_by_official_live_event_rows`, `rejected_live_event_placeholder_rows`,
+  `rejected_live_event_duplicate_source_rows`, and
+  `skip_live_event_remover_script` mark event rows that are intentionally not
+  emitted by that seed.
+- `covered_by_official_arena_import` means the LaughingWS arena rows are
+  already represented by the official world import and current verifier checks.
+  `rejected_branch_arena_decorative_rows` marks Slaughterdome spectator
+  placement rows that remain audit-only until retail placement proof exists.
+- `blocked_laughingws_new_zone_broad_rows` marks broad Dreadmoor, Halon Ring,
+  and Murkmire new-zone rows that remain audit-only because the source is
+  hand-authored placeholder/TODO placement data without enough current script,
+  placement, or client-smoke proof.
+- `rejected_laughingws_illium_orphan_vendor_stubs` marks Illium branch-only
+  `entity_vendor` stubs that have no paired category/item catalog rows and are
+  not useful runtime content by themselves.
+- `blocked_laughingws_wilderrun_dorian_rows` marks the remaining Wilderrun
+  branch Dorian rows that stay audit-only because the source creature ids do
+  not match current DataMapping identity for Dorian.
+- `blocked_laughingws_northern_wilds_residual_rows` marks Northern Wilds branch
+  spline-mode and coordinate residuals that stay audit-only pending movement or
+  placement proof.
+- `blocked_laughingws_everstar_grove_residual_rows` marks Everstar Grove
+  branch-only rows and broad residuals that stay audit-only after the two
+  useful Exo-Lab 71 official-row `questChecklistIdx` values were promoted.
+- `blocked_laughingws_levian_bay_residual_rows` marks Levian Bay branch-only
+  rows and broad residuals that stay audit-only after the useful Signal Flare
+  and Drop Pod Landing Beacon official-row `questChecklistIdx` values were
+  promoted.
+- `blocked_laughingws_auroria_residual_rows` marks Auroria branch-only rows and
+  broad residuals that stay audit-only after the useful official-row
+  `questChecklistIdx` values were promoted.
+- `blocked_laughingws_crimson_isle_residual_rows` marks Crimson Isle branch-only
+  rows and broad residuals that stay audit-only after the useful official-row
+  `questChecklistIdx` values were promoted.
+- `rejected_laughingws_northern_wilds_vendor_duplicate_rows` marks branch Supply
+  Officer Windward vendor rows that are superseded by the existing DataMapping
+  vendor import for the same placed NPC.
+- `extract_additive_world_overlay` files need row-level review against the
+  official world database, local DataMapping runtime seed, and available script
+  support before promotion.
+- `skip_raw_full_dump`, `skip_raw_destructive_ddl`,
+  `skip_replaces_required_riders_reef_import`, and
+  `sandbox_only_client_asset_check_required` are not direct runtime imports.
+  The Rider's Reef replacement skip takes precedence over additive extraction:
+  `Map\Instances\Tutorial Zones\New Tutorial.sql` is superseded by the official
+  `New Player Experience.sql` import plus the focused runtime cleanup.
+  The sandbox/client-asset requirement also takes precedence over additive
+  extraction for all `Test zones` files; test maps, unfinished zones, unknown
+  zones, and `Not in Client` rows stay audit-only until a client-asset target is
+  explicitly selected and proven.
+
+Current promoted LaughingWS extracts are limited to missing `map_entrance` rows,
+curated city/museum/quest-terminal transport rows, the WIP Dust Stalker
+quest-instance overlay, WIP small world entity/stat rows with source-only
+Arcterra/Palaver rows marked, WIP script-backed instance entity/event rows, WIP
+live-event entity/vendor rows, WIP Skyplot housing vendor rows,
+store catalog/event rows, and virtual-item quest loot. Broad world/entity
+replacement SQL still requires row-level review before promotion. The audit
+classifies the source files already consumed by the reviewed city-content,
+quest-instance, small-world, instance-entity, Skyplot, store, quest-loot, and
+map-entrance extractors as covered, classifies live-event sources as WIP-covered
+or explicitly skipped/rejected, and now classifies the Cryo-Plex and
+Slaughterdome arena forcefield/map-entrance rows as covered by the official
+arena import. The Isigrol Blighthaven, Malgrave, Southern Grimvault, The Defile,
+and Western Grimvault branch dumps are also classified as covered by the
+official world database import. Dreadmoor, Halon Ring, and Murkmire broad
+new-zone rows are marked blocked, Illium's orphan vendor stubs are rejected,
+Levian Bay, Everstar Grove, Auroria, and Crimson Isle residual branch-only rows
+are blocked, Northern Wilds residual spline/vendor rows are blocked or rejected,
+and Wilderrun's Dorian identity-mismatch rows are blocked; the current
+unresolved `extract_additive_world_overlay` bucket is `7` files.
 
 ## Current Limitations
 

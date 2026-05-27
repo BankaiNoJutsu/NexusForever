@@ -107,6 +107,9 @@ def load_loot_rows(args: argparse.Namespace) -> Tuple[list[LootRow], Dict[str, i
     status_counter: Counter[str] = Counter()
     latest_by_creature_item: Dict[Tuple[int, int], dict[str, str]] = {}
     input_count = 0
+    rows_after_status_filter = 0
+    skipped_missing_creature_id_rows = 0
+    skipped_missing_item2_id_rows = 0
 
     allowed_statuses = set(SAFE_MATCH_STATUSES)
     if args.include_ambiguous:
@@ -122,9 +125,14 @@ def load_loot_rows(args: argparse.Namespace) -> Tuple[list[LootRow], Dict[str, i
             status_counter[match_status] += 1
             if match_status not in allowed_statuses:
                 continue
+            rows_after_status_filter += 1
             creature2_id = to_int(row.get("creature2_id"))
             item2_id = to_int(row.get("item2_id"))
-            if creature2_id == 0 or item2_id == 0:
+            if creature2_id == 0:
+                skipped_missing_creature_id_rows += 1
+                continue
+            if item2_id == 0:
+                skipped_missing_item2_id_rows += 1
                 continue
             key = (creature2_id, item2_id)
             current = latest_by_creature_item.get(key)
@@ -159,9 +167,18 @@ def load_loot_rows(args: argparse.Namespace) -> Tuple[list[LootRow], Dict[str, i
 
     stats = {
         "input_rows": input_count,
-        "rows_after_status_filter": sum(
-            count for status, count in status_counter.items() if status in allowed_statuses
+        "rows_after_status_filter": rows_after_status_filter,
+        "skipped_status_rows": input_count - rows_after_status_filter,
+        "skipped_missing_creature_id_rows": skipped_missing_creature_id_rows,
+        "skipped_missing_item2_id_rows": skipped_missing_item2_id_rows,
+        "invalid_item2_id_rows": skipped_missing_item2_id_rows,
+        "skipped_duplicate_creature_item_rows": (
+            rows_after_status_filter
+            - skipped_missing_creature_id_rows
+            - skipped_missing_item2_id_rows
+            - len(rows)
         ),
+        "skipped_rows_total": input_count - len(rows),
         "deduped_creature_item_rows": len(rows),
         "allowed_statuses": ",".join(sorted(allowed_statuses)),
     }
@@ -182,6 +199,21 @@ def existing_count(args: argparse.Namespace) -> int:
     if not table_exists(args, "creature_loot"):
         return 0
     return to_int(mysql_rows(args, args.world_db, "SELECT COUNT(*) FROM creature_loot;")[0][0])
+
+
+def load_mapped_flat_creature_ids(args: argparse.Namespace) -> tuple[set[int], str]:
+    if not table_exists(args, "entity_loot"):
+        return set(), "unavailable: missing entity_loot table"
+    if not table_exists(args, "loot_group"):
+        return set(), "unavailable: missing loot_group table"
+
+    query = """
+SELECT DISTINCT el.id
+FROM entity_loot el
+JOIN loot_group lg ON lg.id = el.lootGroupId
+WHERE lg.comment LIKE 'DataMapping creature_loot%';
+""".strip()
+    return {to_int(row[0]) for row in mysql_rows(args, args.world_db, query)}, "available"
 
 
 def create_table_sql(args: argparse.Namespace) -> str:
@@ -311,6 +343,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         raise FileNotFoundError(args.mysql_exe)
 
     rows, stats = load_loot_rows(args)
+    mapped_flat_creature_ids, mapped_flat_report_status = load_mapped_flat_creature_ids(args)
+    runtime_skipped_by_flat_group = [
+        row for row in rows
+        if row.creature2_id in mapped_flat_creature_ids
+    ]
     summary: Dict[str, object] = dict(stats)
     summary.update(
         {
@@ -324,6 +361,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "would_upsert_creature_loot_rows": len(rows),
             "mapped_loot_creatures": len({row.creature2_id for row in rows}),
             "mapped_loot_items": len({row.item2_id for row in rows}),
+            "mapped_flat_group_report_status": mapped_flat_report_status,
+            "existing_mapped_flat_loot_group_creatures": len(mapped_flat_creature_ids),
+            "runtime_direct_rows_skipped_by_existing_mapped_flat_groups": len(runtime_skipped_by_flat_group),
+            "runtime_direct_creatures_skipped_by_existing_mapped_flat_groups": len({
+                row.creature2_id for row in runtime_skipped_by_flat_group
+            }),
         }
     )
 

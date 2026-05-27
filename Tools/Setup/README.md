@@ -224,6 +224,83 @@ Promoted runtime world data:
   `nexus_forever_world` after the official world database SQL files. This seed
   carries the reviewed DataMapping runtime rows and does not require running the
   mapper on a fresh machine.
+- `Tools\DataMapping\sql\laughingws_map_entrance_seed.sql` is imported after
+  the DataMapping seed when present. It adds missing matching `map_entrance`
+  rows extracted from LaughingWS without replacing official rows.
+- `Tools\DataMapping\sql\laughingws_city_content_seed.sql` is imported after
+  the map entrance seed when present. It adds placed city/museum transport rows,
+  Illium Museum relic/projector rows, the Halon Ring return ship pads, the
+  WIP/GUESSED Illium Ringo Hax placement, and the WIP/GUESSED Skull's Eye
+  escape pod terminal while skipping zero-coordinate placeholders and broad zone
+  replacement SQL. It also applies `8` coordinate-keyed WIP/GUESSED
+  `questChecklistIdx` updates to official Thayd/Illium housing intro props.
+- `Tools\DataMapping\sql\laughingws_quest_instance_wip_seed.sql` is imported
+  after the city content seed when present. It adds the WIP/GUESSED Dust Stalker
+  quest-instance rows for Boss Xagg, the bridge controls, and the source-only
+  exit panel while stripping the branch world delete and non-deterministic
+  `@GUID` allocation.
+- `Tools\DataMapping\sql\laughingws_small_world_wip_seed.sql` is imported after
+  the WIP quest-instance seed when present. It adds `16` small WIP/GUESSED
+  placed entity rows plus `59` `entity_stats` rows from reviewed Crimson
+  Badlands, Northern Wastes, Farside, Tideborn Facility, Star-Comm Basin,
+  Arcterra, Palaver Point, and Northern Wilds branch SQL, while stripping source
+  world deletes and `@GUID` allocation. It also applies `140` coordinate-keyed
+  WIP/GUESSED `questChecklistIdx` updates to official rows: `2` Everstar Grove
+  teleporter rows, `14` Levian Bay objective rows, `33` Wilderrun interactable
+  rows, `67` Auroria objective rows, and `24` Crimson Isle objective rows, with
+  guarded Everstar Grove, Levian Bay, Auroria, and Crimson Isle fallback inserts
+  for `107` `entity` rows and up to `219` fallback `entity_stats` rows when an
+  older local import lacks those official rows. The Arcterra/Palaver rows plus
+  Everstar Grove, Levian Bay, Wilderrun, Auroria, and Crimson Isle checklist
+  indices remain WIP/GUESSED pending placement/stat/interaction or quest-smoke
+  proof.
+- `Tools\DataMapping\sql\laughingws_instance_entity_wip_seed.sql` is imported
+  after the WIP small world seed when present. It adds `75` WIP/GUESSED
+  instance-local `entity` rows plus `67` `entity_event`, `35` `entity_script`,
+  and `80` `entity_stats` rows for Coldblood Citadel, Protostar SuperMall,
+  Space Madness, Gauntlet, Fragment Zero, Infestation, Outpost M-13,
+  Evil from the Ether drive-spark phase anchors, Protogames Academy,
+  Ruins of Kel Voreth, Stormtalon's Lair, Skullcano,
+  Sanctuary of the Swordmaiden, Genetic Archives, map-bound Ultimate
+  Protogames, WIP-script-backed Red Moon Terror Laveka, Shade's Eve early
+  anchors, and placed Datascape boss/objective anchors
+  where current scripts/map bindings already exist. It also
+  reconciles official Evil from the Ether branch area hints and crew-log
+  `questChecklistIdx` order to the branch-derived route/`CrewLogEntityScript`
+  behavior with `14` coordinate-keyed WIP/GUESSED updates. It strips source world deletes and
+  `@GUID` allocation, and leaves full encounter choreography, NPC interaction,
+  combat behavior, trigger cleanup, and cinematics blocked pending smoke proof.
+- `Tools\DataMapping\sql\laughingws_live_event_wip_seed.sql` is imported after
+  the WIP instance entity seed when present. It preserves branch-authored
+  live-event entity/vendor rows with deterministic high entity IDs. The SQL
+  comments mark this content as WIP/guessed because event lifecycle, spawn
+  timing, cleanup, and retail placement proof are not complete.
+- `Tools\DataMapping\sql\laughingws_housing_skyplot_wip_seed.sql` is imported
+  after the WIP live-event seed when present. It preserves the branch Skyplot
+  return pad plus the two housing vendors and their catalogue rows with
+  deterministic high entity IDs. The generated SQL marks this as WIP/guessed and
+  strips the source `DELETE FROM entity WHERE world = @WORLD` replacement.
+- `Tools\DataMapping\sql\laughingws_store_catalog_seed.sql` is imported after
+  the WIP Skyplot housing seed when present. It is an additive store-catalog overlay
+  extracted from `LaughingWS/NexusForever.WorldDatabase.New-Zones-and-more`,
+  including reviewed fixed-ID event store rows, without that branch's DDL or
+  broad world replacement SQL.
+- `Tools\DataMapping\sql\laughingws_quest_loot_seed.sql` is imported after
+  the store catalog seed when present. It adds the branch's virtual-item quest
+  loot with DataMapping-owned high loot group IDs, without importing the source
+  dump's DDL or foreign-key toggles.
+
+When a LaughingWS entity seed has a new hash, setup clears only that seed's
+owned deterministic high-ID range before re-importing it. The generated seed SQL
+stays additive and delete-free, while setup prevents stale generated rows from
+lingering after extractor changes:
+
+- city content: `1100000000..1100099999`
+- quest instance: `1100100000..1100199999`
+- small world: `1100200000..1100299999`
+- instance entity: `1100300000..1100399999`
+- Skyplot housing: `2000000000..2099999999`
+- live event: `2100000000..2147483647`
 
 If either split folder is missing or empty, the script falls back to the older
 single-file dump for that database:
@@ -263,8 +340,8 @@ Create databases, copy configs, build, and migrate without optional data imports
 .\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -SkipLargeDumpImports -SkipWorldDatabaseImport
 ```
 
-Skip only the promoted DataMapping runtime seed while still importing the
-official world database:
+Skip the promoted runtime seed overlays while still importing the official world
+database:
 
 ```powershell
 .\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -SkipRuntimeWorldSeedImport
