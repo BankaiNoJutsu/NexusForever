@@ -2,11 +2,16 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Cinematic;
+using NexusForever.Network.World.Message.Model.PlayerPath;
+using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Cinematic;
+using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Housing;
 using NexusForever.Game.Static.Storefront;
+using CharacterClass = NexusForever.Game.Static.Entity.Class;
+using PlayerPath = NexusForever.Game.Static.PlayerPath.Path;
 
 namespace NexusForever.Game.Tests.Network;
 
@@ -695,6 +700,198 @@ public class PacketPlaceholderNamingTests
         Assert.Equal(0x090A0B0Cu, reader.ReadUInt());
         Assert.Equal(0x0D0E0F10u, reader.ReadUInt());
         Assert.Equal(stream.Length, stream.Position);
+
+        using var publicEventStream = new MemoryStream(WritePacket(new ServerPublicEventAuxRaw
+        {
+            Value = 0x11223344u,
+            Values = [0x01020304u, 0x05060708u]
+        }));
+        using var publicEventReader = new GamePacketReader(publicEventStream);
+
+        Assert.Equal(0x11223344u, publicEventReader.ReadUInt());
+        Assert.Equal(2u, publicEventReader.ReadUInt(5u));
+        Assert.Equal(0x01020304u, publicEventReader.ReadUInt());
+        Assert.Equal(0x05060708u, publicEventReader.ReadUInt());
+        Assert.Equal(publicEventStream.Length, publicEventStream.Position);
+
+        using var voteStream = new MemoryStream(WritePacket(new ServerPublicEventVoteAux
+        {
+            Value = 0x1234,
+            Flag = true
+        }));
+        using var voteReader = new GamePacketReader(voteStream);
+
+        Assert.Equal(0x1234u, voteReader.ReadUInt(15u));
+        Assert.True(voteReader.ReadBit());
+        Assert.Equal(voteStream.Length, voteStream.Position);
+    }
+
+    [Fact]
+    public void ClientPublicEventRequestScoreboard_ReadExposesMappedFields()
+    {
+        byte[] packetData;
+        using (var stream = new MemoryStream())
+        {
+            using (var writer = new GamePacketWriter(stream))
+            {
+                writer.Write(0x1234u, 14u);
+                writer.Write(true);
+                writer.FlushBits();
+            }
+
+            packetData = stream.ToArray();
+        }
+
+        using var readStream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(readStream);
+
+        var message = new ClientPublicEventRequestScoreboard();
+        message.Read(reader);
+
+        Assert.Equal(0x1234u, message.PublicEventId);
+        Assert.True(message.Subscribe);
+        Assert.Equal(readStream.Length, readStream.Position);
+    }
+
+    [Fact]
+    public void ServerPublicEventStatsPackets_WriteMappedReaderBackedShapes()
+    {
+        var personalStat = new ServerPublicEventPersonalStatUpdate
+        {
+            PublicEventId = 0x1234u,
+            StatType      = PublicEventStat.Kills,
+            Value         = 42
+        };
+
+        using (var stream = new MemoryStream(WritePacket(personalStat)))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x1234u, reader.ReadUInt(14u));
+            Assert.Equal((uint)PublicEventStat.Kills, reader.ReadUInt());
+            Assert.Equal(42, reader.ReadInt());
+            Assert.Equal(stream.Length, stream.Position);
+        }
+
+        var statsUpdate = new ServerPublicEventStatsUpdate
+        {
+            PublicEventId = 0x1234u,
+            TeamStats =
+            [
+                new PublicEventTeamStats
+                {
+                    TeamId = PublicEventTeam.RedTeam,
+                    Stats = BuildPublicEventStats(0x00000005u, 10u, 20u)
+                }
+            ],
+            ParticipantStats =
+            [
+                new PublicEventParticipantStats
+                {
+                    TeamId = PublicEventTeam.BlueTeam,
+                    UnitId = 0x01020304u,
+                    Player = new Identity
+                    {
+                        RealmId = 7,
+                        Id      = 0x1112131415161718ul
+                    },
+                    Class = CharacterClass.Esper,
+                    Path  = PlayerPath.Scientist,
+                    Stats = BuildPublicEventStats(0x00000008u, 30u)
+                }
+            ]
+        };
+
+        using var updateStream = new MemoryStream(WritePacket(statsUpdate));
+        using var updateReader = new GamePacketReader(updateStream);
+
+        Assert.Equal(0x1234u, updateReader.ReadUInt(14u));
+        Assert.Equal(1u, updateReader.ReadUInt());
+        Assert.Equal((uint)PublicEventTeam.RedTeam, updateReader.ReadUInt(14u));
+        AssertPublicEventStats(updateReader, 0x00000005u, 10u, 20u);
+        Assert.Equal(1u, updateReader.ReadUInt());
+        Assert.Equal((uint)PublicEventTeam.BlueTeam, updateReader.ReadUInt(14u));
+        Assert.Equal(0x01020304u, updateReader.ReadUInt());
+        Assert.Equal(7u, updateReader.ReadUInt(14u));
+        Assert.Equal(0x1112131415161718ul, updateReader.ReadULong());
+        Assert.Equal((uint)CharacterClass.Esper, updateReader.ReadUInt());
+        Assert.Equal((uint)PlayerPath.Scientist, updateReader.ReadUInt());
+        AssertPublicEventStats(updateReader, 0x00000008u, 30u);
+        Assert.Equal(updateStream.Length, updateStream.Position);
+    }
+
+    [Fact]
+    public void ServerPublicEventEnd_WriteSerializesMappedScoreboardAndRewardFields()
+    {
+        var message = new ServerPublicEventEnd
+        {
+            PublicEventId = 0x1234u,
+            Reason = PublicEventRemoveReason.Success,
+            ElapsedTimeMs = 15000u,
+            PersonalStats = BuildPublicEventStats(0x00000002u, 99u),
+            TeamStats =
+            [
+                new PublicEventTeamStats
+                {
+                    TeamId = PublicEventTeam.RedTeam,
+                    Stats = BuildPublicEventStats(0x00000001u, 11u)
+                }
+            ],
+            ParticipantStats =
+            [
+                new PublicEventParticipantStats
+                {
+                    TeamId = PublicEventTeam.RedTeam,
+                    UnitId = 0x01020304u,
+                    Player = new Identity
+                    {
+                        RealmId = 8,
+                        Id      = 0x2122232425262728ul
+                    },
+                    Class = CharacterClass.Warrior,
+                    Path  = PlayerPath.Soldier,
+                    Stats = BuildPublicEventStats(0x00000004u, 22u)
+                }
+            ],
+            ObjectiveStatus =
+            [
+                new ServerPublicEventEnd.PublicEventObjectiveStatus
+                {
+                    ObjectiveId = 0x2345u,
+                    Status = PublicEventStatus.Succeeded
+                }
+            ],
+            RewardTier = PublicEventRewardTier.Gold,
+            RewardType = PublicEventRewardType.Completion,
+            RewardThreshold = [100u, 200u, 300u]
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x1234u, reader.ReadUInt(14u));
+        Assert.Equal((uint)PublicEventRemoveReason.Success, reader.ReadUInt());
+        Assert.Equal(15000u, reader.ReadUInt());
+        AssertPublicEventStats(reader, 0x00000002u, 99u);
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal((uint)PublicEventTeam.RedTeam, reader.ReadUInt(14u));
+        AssertPublicEventStats(reader, 0x00000001u, 11u);
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal((uint)PublicEventTeam.RedTeam, reader.ReadUInt(14u));
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal(8u, reader.ReadUInt(14u));
+        Assert.Equal(0x2122232425262728ul, reader.ReadULong());
+        Assert.Equal((uint)CharacterClass.Warrior, reader.ReadUInt());
+        Assert.Equal((uint)PlayerPath.Soldier, reader.ReadUInt());
+        AssertPublicEventStats(reader, 0x00000004u, 22u);
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(0x2345u, reader.ReadUInt(15u));
+        Assert.Equal((uint)PublicEventStatus.Succeeded, reader.ReadUInt());
+        Assert.Equal((uint)PublicEventRewardTier.Gold, reader.ReadUInt());
+        Assert.Equal((uint)PublicEventRewardType.Completion, reader.ReadUInt());
+        Assert.Equal(100u, reader.ReadUInt());
+        Assert.Equal(200u, reader.ReadUInt());
+        Assert.Equal(300u, reader.ReadUInt());
+        Assert.Equal(stream.Length, stream.Position);
     }
 
     [Fact]
@@ -901,6 +1098,89 @@ public class PacketPlaceholderNamingTests
         Assert.Equal(55u, type2Reader.ReadUInt());
     }
 
+    [Fact]
+    public void ServerPathSettlerBuildStatus_WriteSerializesMappedStatusRow()
+    {
+        var message = new ServerPathSettlerBuildStatus
+        {
+            PathSettlerHubId = 46,
+            Status = new SettlerImprovementGroupStatus
+            {
+                PathSettlerImprovementGroupId = 11,
+                Tier = 2,
+                RemainingTimeMs = 1234u,
+                BundleCount = 3u
+            }
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(46u, reader.ReadUInt(14u));
+        Assert.Equal(11u, reader.ReadUInt(14u));
+        Assert.Equal(2, reader.ReadInt());
+        Assert.Equal(1234u, reader.ReadUInt());
+        Assert.Equal(3u, reader.ReadUInt());
+    }
+
+    [Fact]
+    public void ServerPathSettlerBuildStatusList_WriteSerializesCountedRows()
+    {
+        var message = new ServerPathSettlerBuildStatusList
+        {
+            PathSettlerHubId = 46,
+            ImprovementGroupStatuses =
+            [
+                new SettlerImprovementGroupStatus
+                {
+                    PathSettlerImprovementGroupId = 11,
+                    Tier = 0,
+                    RemainingTimeMs = 100u,
+                    BundleCount = 1u
+                },
+                new SettlerImprovementGroupStatus
+                {
+                    PathSettlerImprovementGroupId = 12,
+                    Tier = -1,
+                    RemainingTimeMs = 0u,
+                    BundleCount = 0u
+                }
+            ]
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(46u, reader.ReadUInt(14u));
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.Equal(11u, reader.ReadUInt(14u));
+        Assert.Equal(0, reader.ReadInt());
+        Assert.Equal(100u, reader.ReadUInt());
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(12u, reader.ReadUInt(14u));
+        Assert.Equal(-1, reader.ReadInt());
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
+    }
+
+    [Fact]
+    public void ServerPathSettlerBuildResult_WriteSerializesMappedFields()
+    {
+        var message = new ServerPathSettlerBuildResult
+        {
+            Result = 1u,
+            PathSettlerImprovementId = 9002u,
+            PathSettlerImprovementGroupId = 11u
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(9002u, reader.ReadUInt(15u));
+        Assert.Equal(11u, reader.ReadUInt(14u));
+    }
+
     private static byte[] BuildPackedWorldPacket(byte envelopeType, byte[] payload)
     {
         using var stream = new MemoryStream();
@@ -1018,6 +1298,28 @@ public class PacketPlaceholderNamingTests
         }
 
         return stream.ToArray();
+    }
+
+    private static PublicEventStats BuildPublicEventStats(uint mask, params uint[] values)
+    {
+        var stats = new PublicEventStats();
+        for (uint bit = 0u; bit < 32u; bit++)
+        {
+            if ((mask & (1u << (int)bit)) != 0u)
+                stats.Mask.SetBit(bit, true);
+        }
+
+        stats.Values.AddRange(values);
+        return stats;
+    }
+
+    private static void AssertPublicEventStats(GamePacketReader reader, uint mask, params uint[] values)
+    {
+        Assert.Equal(mask, reader.ReadUInt());
+        Assert.Equal((uint)values.Length, reader.ReadUInt(5u));
+
+        foreach (uint value in values)
+            Assert.Equal(value, reader.ReadUInt());
     }
 
     private static byte[] WritePacket(IWritable message)

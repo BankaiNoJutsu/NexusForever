@@ -7,6 +7,10 @@ using NexusForever.Shared;
 
 namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 {
+    /// <summary>
+    /// WIP-guessed from LaughingWS Instances-and-more: tether visual linkage and
+    /// cleanup are branch-derived pending native mechanic proof.
+    /// </summary>
     [ScriptFilterCreatureId(71133)]
     public class TetheredOrganismEntityScript : INonPlayerScript, IOwnedScript<INonPlayerEntity>
     {

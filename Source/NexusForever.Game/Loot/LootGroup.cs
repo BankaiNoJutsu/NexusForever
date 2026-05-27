@@ -10,6 +10,7 @@ namespace NexusForever.Game.Loot
     {
         public ulong Id { get; }
         public float Probability { get; }
+        public string Comment { get; }
 
         private readonly uint minDrop;
         private readonly uint maxDrop;
@@ -23,6 +24,7 @@ namespace NexusForever.Game.Loot
         {
             Id            = lootGroupModel.Id;
             Probability   = lootGroupModel.Probability;
+            Comment       = lootGroupModel.Comment;
             minDrop       = lootGroupModel.MinDrop;
             maxDrop       = Math.Max(lootGroupModel.MinDrop, lootGroupModel.MaxDrop);
             conditionType = (LootConditionType)lootGroupModel.ConditionType;

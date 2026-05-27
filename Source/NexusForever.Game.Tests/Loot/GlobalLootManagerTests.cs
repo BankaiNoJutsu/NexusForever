@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Currency;
 using NexusForever.Game.Abstract.Achievement;
@@ -29,6 +30,22 @@ public class GlobalLootManagerTests
         uint normalised = GlobalLootManager.RemoveClientLootUnitIdOverlay(0xC0000019u);
 
         Assert.Equal(0x80000019u, normalised);
+    }
+
+    [Fact]
+    public void IsMappedFlatLootGroup_DataMappingComment_ReturnsTrue()
+    {
+        LootGroup group = CreateLootGroup("DataMapping creature_loot: Grimstone Digger");
+
+        Assert.True(GlobalLootManager.IsMappedFlatLootGroup(group));
+    }
+
+    [Fact]
+    public void IsMappedFlatLootGroup_LaughingWsQuestLootComment_ReturnsFalse()
+    {
+        LootGroup group = CreateLootGroup("LaughingWS quest loot: Item for QuestObjective 13011");
+
+        Assert.False(GlobalLootManager.IsMappedFlatLootGroup(group));
     }
 
     [Fact]
@@ -180,6 +197,15 @@ public class GlobalLootManagerTests
             out _,
             out achievementProxy,
             out sessionProxy);
+    }
+
+    private static LootGroup CreateLootGroup(string comment)
+    {
+        return new LootGroup(new LootGroupModel
+        {
+            Comment = comment,
+            Item = []
+        }, loadChildren: false);
     }
 
     private static IPlayer CreatePlayer(

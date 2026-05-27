@@ -4,6 +4,9 @@ using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model.PublicEvent
 {
+    // Client reader WildStar64.exe 14007bb80 reads public event id u14, remove reason u32,
+    // elapsed ms u32, personal stats, counted team/participant/objective rows, reward tier u32,
+    // reward type u32, and three reward threshold uint32 values.
     [Message(GameMessageOpcode.ServerPublicEventEnd)]
     public class ServerPublicEventEnd : IWritable
     {

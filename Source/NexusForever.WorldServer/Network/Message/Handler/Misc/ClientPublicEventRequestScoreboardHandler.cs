@@ -16,7 +16,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
         public void HandleMessage(IWorldSession session, ClientPublicEventRequestScoreboard requestScoreboard)
         {
             log.LogDebug("ClientPublicEventRequestScoreboard: player={Player} eventId={EventId} subscribe={Subscribe}",
-                session.Player?.Guid, requestScoreboard.EventId, requestScoreboard.Subscribe);
+                session.Player?.Guid, requestScoreboard.PublicEventId, requestScoreboard.Subscribe);
         }
     }
 }

@@ -103,12 +103,13 @@ namespace NexusForever.Game.Loot
                 BuildLoot(entityLootModel.Id, LootEntityType.Creature, entityLootModel.LootGroup);
 
             int skippedDirectRows = 0;
-            int skippedDirectRowsWithLootTables = 0;
+            int skippedDirectRowsWithMappedFlatLootTables = 0;
             foreach (CreatureLootModel creatureLootModel in worldDatabase.GetCreatureLoot())
             {
-                if (creatureLoot.ContainsKey(creatureLootModel.CreatureId))
+                if (creatureLoot.TryGetValue(creatureLootModel.CreatureId, out List<LootGroup> creatureGroups) &&
+                    creatureGroups.Any(IsMappedFlatLootGroup))
                 {
-                    skippedDirectRowsWithLootTables++;
+                    skippedDirectRowsWithMappedFlatLootTables++;
                     continue;
                 }
 
@@ -131,8 +132,8 @@ namespace NexusForever.Game.Loot
             log.Info($"Loaded loot for {creatureLoot.Count} old-table creature(s), {itemLoot.Count} item(s), and {directCreatureLoot.Count} imported creature(s) in {sw.ElapsedMilliseconds}ms.");
             if (skippedDirectRows > 0)
                 log.Warn($"Skipped {skippedDirectRows} imported creature loot row(s) because their Item2 id is not present in the current game tables.");
-            if (skippedDirectRowsWithLootTables > 0)
-                log.Info($"Skipped {skippedDirectRowsWithLootTables} imported creature loot row(s) because mapped loot_group rows are already present for those creatures.");
+            if (skippedDirectRowsWithMappedFlatLootTables > 0)
+                log.Info($"Skipped {skippedDirectRowsWithMappedFlatLootTables} imported creature loot row(s) because mapped flat creature loot_group rows are already present for those creatures.");
         }
 
         private void BuildLoot(uint entityId, LootEntityType type, LootGroupModel lootGroupModel)
@@ -163,9 +164,19 @@ namespace NexusForever.Game.Loot
             }
         }
 
+        internal static bool IsMappedFlatLootGroup(LootGroup lootGroup)
+        {
+            return IsMappedFlatLootGroupComment(lootGroup.Comment);
+        }
+
         private static bool IsMappedFlatLootGroup(LootGroupModel lootGroupModel)
         {
-            return lootGroupModel.Comment?.StartsWith("DataMapping creature_loot", StringComparison.OrdinalIgnoreCase) == true;
+            return IsMappedFlatLootGroupComment(lootGroupModel.Comment);
+        }
+
+        private static bool IsMappedFlatLootGroupComment(string comment)
+        {
+            return comment?.StartsWith("DataMapping creature_loot", StringComparison.OrdinalIgnoreCase) == true;
         }
 
         public void Update(double lastTick)

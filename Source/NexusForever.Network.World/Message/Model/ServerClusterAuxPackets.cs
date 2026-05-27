@@ -156,15 +156,37 @@ namespace NexusForever.Network.World.Message.Model
 
     // Public event cluster
     [Message(GameMessageOpcode.ServerPublicEventAuxRaw)]
-    public class ServerPublicEventAuxRaw : ServerUnresolvedRawPayload
+    public class ServerPublicEventAuxRaw : IWritable
     {
-        public ServerPublicEventAuxRaw(byte[] payload = null) : base(0x10u, payload) { }
+        public uint Value { get; set; }
+        public List<uint> Values { get; set; } = [];
+
+        public void Write(GamePacketWriter writer)
+        {
+            // Client reader ServerPublicEventAux_ReadPayload (WildStar64.exe 14007b930):
+            // uint32 value, 5-bit count, then count uint32 values. Semantic producer
+            // meaning remains blocked per public-event surface.
+            writer.Write(Value);
+            writer.Write(Values.Count, 5u);
+            foreach (uint value in Values)
+                writer.Write(value);
+        }
     }
 
     [Message(GameMessageOpcode.ServerPublicEventVoteAux)]
-    public class ServerPublicEventVoteAux : ServerUnresolvedRawPayload
+    public class ServerPublicEventVoteAux : IWritable
     {
-        public ServerPublicEventVoteAux(byte[] payload = null) : base(0x8u, payload) { }
+        public ushort Value { get; set; }
+        public bool Flag { get; set; }
+
+        public void Write(GamePacketWriter writer)
+        {
+            // Client reader ServerPublicEventVoteAux_ReadPayload (WildStar64.exe
+            // 14007c0c0): 15-bit value plus one flag. Vote lifecycle semantics remain
+            // blocked until the producer/consumer sequence is mapped.
+            writer.Write(Value, 15u);
+            writer.Write(Flag);
+        }
     }
 
     // Story / realm / recruitment / misc

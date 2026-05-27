@@ -4,6 +4,8 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model.Shared
 {
+    // Client reader WildStar64.exe 14007ba50 reads team id u14, unit id u32,
+    // identity, class u32, path u32, then PublicEventStats.
     public class PublicEventParticipantStats : IWritable
     {
         public PublicEventTeam TeamId { get; set; }

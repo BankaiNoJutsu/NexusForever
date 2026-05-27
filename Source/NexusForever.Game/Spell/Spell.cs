@@ -22,6 +22,7 @@ using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script;
+using NexusForever.Script.Template;
 using NexusForever.Script.Template.Collection;
 using NexusForever.Shared;
 using NLog;
@@ -44,6 +45,7 @@ namespace NexusForever.Game.Spell
         public IUnitEntity Caster { get; }
 
         private SpellStatus status;
+        private bool cancelled;
 
         private readonly List<ISpellTargetInfo> targets = new();
         private readonly List<ITelegraph> telegraphs = new();
@@ -92,6 +94,7 @@ namespace NexusForever.Game.Spell
                 status = SpellStatus.Finished;
                 log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} has finished.");
 
+                scriptCollection.Invoke<ISpellScript>(s => s.OnFinish(this, cancelled));
                 SendSpellFinish();
             }
 
@@ -135,6 +138,7 @@ namespace NexusForever.Game.Spell
             if (Caster is not IPlayer)
                 InitialiseTelegraphs();
 
+            scriptCollection.Invoke<ISpellScript>(s => s.OnCast(this));
             SendSpellStart();
 
             // enqueue spell to be executed after cast time
@@ -713,6 +717,7 @@ namespace NexusForever.Game.Spell
             }
 
             events.CancelEvents();
+            cancelled = true;
             status = SpellStatus.Executing;
 
             log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} cast was cancelled.");
@@ -761,7 +766,9 @@ namespace NexusForever.Game.Spell
 
             if (lifetimeEvents.Count == 0)
             {
+                cancelled = true;
                 status = SpellStatus.Finished;
+                scriptCollection.Invoke<ISpellScript>(s => s.OnFinish(this, cancelled));
                 SendSpellFinish();
             }
 
@@ -783,6 +790,7 @@ namespace NexusForever.Game.Spell
                 InitialiseTelegraphs();
 
             SelectTargets();
+            scriptCollection.Invoke<ISpellScript>(s => s.OnExecute(this, targets.AsReadOnly()));
             ExecuteEffects();
 
             if (Caster is IPlayer executingPlayer)

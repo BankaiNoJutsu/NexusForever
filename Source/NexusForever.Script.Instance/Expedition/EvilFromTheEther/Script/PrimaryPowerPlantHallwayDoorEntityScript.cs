@@ -29,6 +29,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
             if (door.Map is not IMapInstance mapInstance)
                 return;
 
+            // WIP-guessed from LaughingWS Instances-and-more: hallway-door callout timing
+            // is branch-mapped, but exact retail door/message choreography is unverified.
             ICommunicatorMessage communicatorMessage = globalQuestManager.GetCommunicatorMessage(CommunicatorMessage.CaptainWeir9);
             foreach (IPlayer player in mapInstance.GetPlayers())
                 communicatorMessage?.Send(player.Session);

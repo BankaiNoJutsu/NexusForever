@@ -51,6 +51,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
                 _ => 0
             };
 
+            // WIP-guessed from LaughingWS Instances-and-more: branch checklist indexes
+            // map to these crew-log callouts, but exact playback targeting is unverified.
             ICommunicatorMessage communicatorMessage = globalQuestManager.GetCommunicatorMessage(communicatorMessageId);
             foreach (IPlayer player in mapInstance.GetPlayers())
                 communicatorMessage?.Send(player.Session);

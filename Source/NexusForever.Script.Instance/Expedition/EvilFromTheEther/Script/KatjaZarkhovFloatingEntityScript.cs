@@ -10,6 +10,10 @@ using NexusForever.Shared;
 
 namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 {
+    /// <summary>
+    /// WIP-guessed from LaughingWS Instances-and-more: floating Katja visual tether,
+    /// spline movement, and floor knockback need client smoke before parity claims.
+    /// </summary>
     [ScriptFilterCreatureId(71832)]
     public class KatjaZarkhovFloatingEntityScript : INonPlayerScript, IOwnedScript<INonPlayerEntity>
     {

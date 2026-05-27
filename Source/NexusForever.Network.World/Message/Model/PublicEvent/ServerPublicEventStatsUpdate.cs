@@ -3,6 +3,8 @@ using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model.PublicEvent
 {
+    // Client reader WildStar64.exe 14007bde0 reads publicEventId u14,
+    // counted PublicEventTeamStats rows, then counted PublicEventParticipantStats rows.
     [Message(GameMessageOpcode.ServerPublicEventStatsUpdate)]
     public class ServerPublicEventStatsUpdate : IWritable
     {

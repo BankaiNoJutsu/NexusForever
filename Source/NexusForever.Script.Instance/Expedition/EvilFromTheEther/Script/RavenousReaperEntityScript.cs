@@ -10,6 +10,10 @@ using NexusForever.Shared;
 
 namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 {
+    /// <summary>
+    /// WIP-guessed from LaughingWS Instances-and-more: spell cadence and death callout
+    /// are branch-derived pending retail encounter proof.
+    /// </summary>
     [ScriptFilterScriptName("RavenousReaperEntityScript")]
     public class RavenousReaperEntityScript : CombatAI
     {

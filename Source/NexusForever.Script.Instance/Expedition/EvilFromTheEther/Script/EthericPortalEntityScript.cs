@@ -10,6 +10,10 @@ using NexusForever.Shared;
 
 namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 {
+    /// <summary>
+    /// WIP-guessed from LaughingWS Instances-and-more: portal summon cadence and tether
+    /// cleanup are branch-derived pending encounter smoke and native mechanic proof.
+    /// </summary>
     public abstract class EthericPortalEntityScript : INonPlayerScript, IOwnedScript<INonPlayerEntity>
     {
         private enum Creature
