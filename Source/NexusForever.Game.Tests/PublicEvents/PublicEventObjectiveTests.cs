@@ -1,4 +1,6 @@
+using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Static.PublicEvent;
+using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
 using PublicEventObjectiveModel = NexusForever.Game.PublicEvent.PublicEventObjective;
 
@@ -82,5 +84,27 @@ public class PublicEventObjectiveTests
         objective.UpdateObjective(1);
 
         Assert.Equal(PublicEventStatus.Succeeded, objective.Status);
+    }
+
+    [Fact]
+    public void SetBusy_WithUnchangedState_DoesNotBroadcastDuplicateObjectiveUpdate()
+    {
+        IPublicEventTeam team = RecordingDispatchProxy<IPublicEventTeam>.Create(out var teamProxy);
+        var objective = new PublicEventObjectiveModel();
+        objective.Initialise(team, new PublicEventObjectiveEntry
+        {
+            Id                              = 104,
+            Count                           = 1,
+            PublicEventTeamId               = PublicEventTeam.PublicTeam,
+            PublicEventObjectiveFlags       = PublicEventObjectiveFlag.InitialObjective,
+            PublicEventObjectiveCategoryEnum = PublicEventObjectiveCategory.Main
+        });
+
+        objective.SetBusy(true);
+        objective.SetBusy(true);
+        objective.SetBusy(false);
+        objective.SetBusy(false);
+
+        Assert.Equal(2, teamProxy.GetInvocations(nameof(IPublicEventTeam.Broadcast)).Count);
     }
 }

@@ -7,6 +7,7 @@ using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PlayerPath;
+using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -51,7 +52,7 @@ namespace NexusForever.Game.Entity
                 var state = new PathMissionRuntimeState(pathMissionModel);
                 pathMissions.Add(state.MissionId, state);
 
-                if (!state.Completed && state.EpisodeId != 0)
+                if (!state.Completed && IsPersistedMissionReplayEligible(state))
                     activatedEpisodes.Add(state.EpisodeId);
             }
 
@@ -223,9 +224,10 @@ namespace NexusForever.Game.Entity
             if (!activatedEpisodes.Add(episodeId))
                 return;
 
+            HashSet<ushort> activatedMissionIds = missionXp.Keys.ToHashSet();
             SendPathCurrentEpisode(episodeId);
-            SendPathEpisodeProgress(episodeId);
-            SendPathMissionActivate(episodeId);
+            SendPathEpisodeProgress(episodeId, missionIds: activatedMissionIds);
+            SendPathMissionActivate(episodeId, missionIds: activatedMissionIds);
         }
 
         public bool TryActivateCurrentZoneEpisode()
@@ -686,12 +688,12 @@ namespace NexusForever.Game.Entity
 
             foreach (ushort episodeId in activatedEpisodes.OrderBy(e => e))
             {
-                if (!pathMissions.Values.Any(m => m.EpisodeId == episodeId && !m.Completed))
+                if (!pathMissions.Values.Any(m => m.EpisodeId == episodeId && !m.Completed && IsPersistedMissionReplayEligible(m)))
                     continue;
 
                 SendPathCurrentEpisode(episodeId);
-                SendPathEpisodeProgress(episodeId);
-                SendPathMissionActivate(episodeId);
+                SendPathEpisodeProgress(episodeId, persistedReplayOnly: true);
+                SendPathMissionActivate(episodeId, persistedReplayOnly: true);
             }
         }
 
@@ -786,7 +788,37 @@ namespace NexusForever.Game.Entity
             // WIP/GUESSED: client labels map path mission visibility to path, faction,
             // and optional prerequisite checks. This applies the table prerequisite gate
             // during current-zone activation, while exact unlock sequencing remains blocked.
+            if (TryEvaluateSimplePathPrerequisite(mission.PrerequisiteId, out bool allowed))
+                return allowed;
+
             return PrerequisiteManager.Instance.Meets(player, mission.PrerequisiteId);
+        }
+
+        private bool TryEvaluateSimplePathPrerequisite(uint prerequisiteId, out bool allowed)
+        {
+            allowed = false;
+
+            PrerequisiteEntry entry = GameTableManager.Instance.Prerequisite?.GetEntry(prerequisiteId);
+            if (entry == null || entry.Flags != EvaluationMode.EvaluateAND)
+                return false;
+
+            bool evaluated = false;
+            for (int i = 0; i < entry.PrerequisiteTypeId.Length; i++)
+            {
+                PrerequisiteType type = entry.PrerequisiteTypeId[i];
+                if (type == PrerequisiteType.None)
+                    continue;
+
+                if (type != PrerequisiteType.Path || entry.PrerequisiteComparisonId[i] != PrerequisiteComparison.Equal)
+                    return false;
+
+                evaluated = true;
+                if (player.Path != (Path)entry.Value[i])
+                    return true;
+            }
+
+            allowed = evaluated;
+            return evaluated;
         }
 
         /// <summary>
@@ -858,29 +890,59 @@ namespace NexusForever.Game.Entity
             });
         }
 
-        private void SendPathEpisodeProgress(ushort episodeId)
+        private void SendPathEpisodeProgress(ushort episodeId, bool persistedReplayOnly = false, IReadOnlySet<ushort> missionIds = null)
         {
             player.Session.EnqueueMessageEncrypted(new ServerPathEpisodeProgress
             {
                 EpisodeId = episodeId,
                 Missions = pathMissions.Values
                     .Where(m => m.EpisodeId == episodeId)
+                    .Where(m => missionIds == null || missionIds.Contains(m.MissionId))
+                    .Where(m => !persistedReplayOnly || IsPersistedMissionReplayEligible(m))
                     .OrderBy(m => m.MissionId)
                     .Select(BuildMission)
                     .ToList()
             });
         }
 
-        private void SendPathMissionActivate(ushort episodeId)
+        private void SendPathMissionActivate(ushort episodeId, bool persistedReplayOnly = false, IReadOnlySet<ushort> missionIds = null)
         {
             player.Session.EnqueueMessageEncrypted(new ServerPathMissionActivate
             {
                 Missions = pathMissions.Values
                     .Where(m => m.EpisodeId == episodeId && !m.Completed)
+                    .Where(m => missionIds == null || missionIds.Contains(m.MissionId))
+                    .Where(m => !persistedReplayOnly || IsPersistedMissionReplayEligible(m))
                     .OrderBy(m => m.MissionId)
                     .Select(BuildMission)
                     .ToList()
             });
+        }
+
+        private bool IsPersistedMissionReplayEligible(PathMissionRuntimeState state)
+        {
+            if (state.Completed || state.EpisodeId == 0u)
+                return false;
+
+            PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
+            if (mission == null)
+                return false;
+
+            PathEpisodeEntry episode = GameTableManager.Instance.PathEpisode?.GetEntry(state.EpisodeId);
+            if (episode == null)
+                return false;
+
+            // Persisted active mission replay is intentionally narrower than normal script
+            // activation: LWS-060 still lacks retail proof for path/faction/zone reload
+            // transitions, so replay only table-backed rows that still match the active path.
+            return mission.PathEpisodeId == state.EpisodeId
+                && episode.Id == state.EpisodeId
+                && episode.PathTypeEnum == (uint)player.Path
+                && mission.PathTypeEnum == (uint)player.Path
+                && mission.Id <= 0x7FFFu
+                && episode.Id <= 0x3FFFu
+                && IsMissionFactionAllowed(mission)
+                && IsMissionPrerequisiteAllowed(mission);
         }
 
         private static Mission BuildMission(PathMissionRuntimeState state)

@@ -98,12 +98,12 @@ namespace NexusForever.Game.PublicEvent
         /// <summary>
         /// Respond to vote in a specific public event for the <see cref="IPlayer"/> with the supplied choice.
         /// </summary>
-        public void RespondVote(IPlayer player, uint publicEventId, uint choice)
+        public void RespondVote(IPlayer player, uint publicEventId, uint voteId, uint teamId, uint choice)
         {
             if (!events.TryGetValue(publicEventId, out IPublicEvent @event))
                 return;
 
-            @event.RespondVote(player, choice);
+            @event.RespondVote(player, voteId, teamId, choice);
         }
 
         /// <summary>

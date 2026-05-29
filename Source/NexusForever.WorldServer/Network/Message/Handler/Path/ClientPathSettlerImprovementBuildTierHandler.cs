@@ -41,6 +41,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Path
 
         private void SendSettlerBuildAcknowledgement(IPlayer player, PathSettlerImprovementGroupEntry improvementGroup, uint buildTier)
         {
+            // WildStar64.exe 14007aa70 maps the result payload shape, but not the server
+            // failure enum/resource semantics. Emit only table-backed success acknowledgements.
             if (!CanWriteUInt14(improvementGroup.Id) || !CanWriteUInt14(improvementGroup.PathSettlerHubId))
             {
                 log.LogDebug("Skipping settler build acknowledgement for out-of-range improvementGroupId={ImprovementGroupId} hubId={HubId}",

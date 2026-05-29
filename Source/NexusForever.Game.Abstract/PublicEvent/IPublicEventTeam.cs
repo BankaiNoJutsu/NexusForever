@@ -100,7 +100,7 @@ namespace NexusForever.Game.Abstract.PublicEvent
         /// <summary>
         /// Respond to vote for the <see cref="IPlayer"/> with the supplied choice.
         /// </summary>
-        void RespondVote(IPlayer player, uint choice);
+        void RespondVote(IPlayer player, uint voteId, uint choice);
 
         /// <summary>
         /// Broadcast <see cref="IWritable"/> to all <see cref="IPublicEventTeamMember"/> in <see cref="IPublicEventTeam"/>.

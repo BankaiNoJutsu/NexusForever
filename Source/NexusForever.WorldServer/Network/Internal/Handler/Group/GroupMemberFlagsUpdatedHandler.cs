@@ -46,6 +46,8 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
                 }
                 else
                 {
+                    // Provisional runtime emitter: retail opcode 0x0438 currently decompiles as a
+                    // counted identity/value payload, not this single-member wrapper.
                     player.Session.EnqueueMessageEncrypted(new ServerGroupMemberRoleChange
                     {
                         GroupId        = message.Group.Id,

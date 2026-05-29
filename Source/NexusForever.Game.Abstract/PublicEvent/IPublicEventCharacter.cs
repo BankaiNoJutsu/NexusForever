@@ -45,7 +45,7 @@ namespace NexusForever.Game.Abstract.PublicEvent
         /// <summary>
         /// Respond to vote in a specific public event for the <see cref="IPlayer"/> with the supplied choice.
         /// </summary>
-        void RespondVote(IPlayer player, uint eventId, uint choice);
+        void RespondVote(IPlayer player, uint eventId, uint voteId, uint teamId, uint choice);
 
         /// <summary>
         /// Invoked when a cinematic finishes for <see cref="IPlayer"/>.

@@ -86,6 +86,69 @@ public class PathSettlerBuildHandlerTests
         Assert.Equal(999u, completeCall.Arguments[0]);
     }
 
+    [Fact]
+    public void HandleMessage_WithOutOfRangeImprovementGroup_DoesNotSendBuildAcknowledgement()
+    {
+        IGameTableManager gameTableManager = CreateGameTableManager(
+            new PathSettlerImprovementGroupEntry
+            {
+                Id = 0x4000u,
+                PathSettlerHubId = 46u,
+                PathSettlerImprovementIdTier00 = 9001u
+            });
+        IWorldSession session = CreateSession(
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IPathManager> pathManagerProxy);
+        ClientPathSettlerImprovementBuildTier buildTier = CreateBuildTier(0x4000u, 0u);
+
+        var handler = new ClientPathSettlerImprovementBuildTierHandler(
+            NullLogger<ClientPathSettlerImprovementBuildTierHandler>.Instance,
+            gameTableManager);
+
+        handler.HandleMessage(session, buildTier);
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.EnqueueToVisible)));
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+
+        RecordingDispatchProxy<IPathManager>.Invocation completeCall =
+            Assert.Single(pathManagerProxy.GetInvocations(nameof(IPathManager.CompleteMissionBySettlerImprovementGroupId)));
+        Assert.Equal(0x4000u, completeCall.Arguments[0]);
+    }
+
+    [Theory]
+    [InlineData(4u, 9001u)]
+    [InlineData(0u, 0u)]
+    [InlineData(0u, 0x8000u)]
+    public void HandleMessage_WithUnmappedOrUnwritableImprovement_DoesNotSendBuildAcknowledgement(uint buildTier, uint tier00ImprovementId)
+    {
+        IGameTableManager gameTableManager = CreateGameTableManager(
+            new PathSettlerImprovementGroupEntry
+            {
+                Id = 11u,
+                PathSettlerHubId = 46u,
+                PathSettlerImprovementIdTier00 = tier00ImprovementId
+            });
+        IWorldSession session = CreateSession(
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IPathManager> pathManagerProxy);
+        ClientPathSettlerImprovementBuildTier request = CreateBuildTier(11u, buildTier);
+
+        var handler = new ClientPathSettlerImprovementBuildTierHandler(
+            NullLogger<ClientPathSettlerImprovementBuildTierHandler>.Instance,
+            gameTableManager);
+
+        handler.HandleMessage(session, request);
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.EnqueueToVisible)));
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+
+        RecordingDispatchProxy<IPathManager>.Invocation completeCall =
+            Assert.Single(pathManagerProxy.GetInvocations(nameof(IPathManager.CompleteMissionBySettlerImprovementGroupId)));
+        Assert.Equal(11u, completeCall.Arguments[0]);
+    }
+
     private static IWorldSession CreateSession(
         out RecordingDispatchProxy<IWorldSession> sessionProxy,
         out RecordingDispatchProxy<IPlayer> playerProxy,

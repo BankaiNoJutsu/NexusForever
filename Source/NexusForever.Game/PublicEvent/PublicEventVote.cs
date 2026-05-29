@@ -106,7 +106,15 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void Choice(ulong characterId, uint choice)
         {
+            if (IsFinalised)
+                return;
+
             if (!responses.TryGetValue(characterId, out IPublicEventVoteResponse response))
+                return;
+
+            // Client opcode 0x06EE carries event/vote/team ids plus choice; repeated client
+            // sends for the same active vote are ignored here so they cannot tear down the world tick.
+            if (response.Choice.HasValue)
                 return;
 
             if (!choices.Contains(choice))

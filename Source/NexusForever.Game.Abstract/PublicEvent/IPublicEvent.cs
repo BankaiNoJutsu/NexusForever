@@ -117,6 +117,11 @@ namespace NexusForever.Game.Abstract.PublicEvent
         void UpdateCustomStat(IPlayer player, uint index, uint value);
 
         /// <summary>
+        /// Send the current scoreboard stat snapshot to <see cref="IPlayer"/>.
+        /// </summary>
+        void SendScoreboardUpdate(IPlayer player);
+
+        /// <summary>
         /// Start a vote for <see cref="Static.PublicEvent.PublicEventTeam"/> with the supplied voteId and default choice.
         /// </summary>
         /// <remarks>
@@ -127,7 +132,7 @@ namespace NexusForever.Game.Abstract.PublicEvent
         /// <summary>
         /// Respond to vote for the <see cref="IPlayer"/> with the supplied choice.
         /// </summary>
-        void RespondVote(IPlayer player, uint choice);
+        void RespondVote(IPlayer player, uint voteId, uint teamId, uint choice);
 
         /// <summary>
         /// Finish <see cref="IPublicEvent"/> with the supplied <see cref="PublicEventTeam"/> as the winner.

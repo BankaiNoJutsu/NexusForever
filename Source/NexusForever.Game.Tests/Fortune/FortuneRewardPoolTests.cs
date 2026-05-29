@@ -1,11 +1,90 @@
-using NexusForever.Game.Fortune;
+using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NexusForever.Game.Abstract.Fortune;
+using NexusForever.Game.Fortune;
+using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Fortune;
+using NexusForever.Game.Static.Item;
+using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Configuration.Model;
+using NexusForever.GameTable.Model;
+using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Fortune;
 
+[Collection(LegacyServiceProviderCollection.Name)]
 public class FortuneRewardPoolTests
 {
+    [Fact]
+    public void GetRewardCatalog_RealPoolAdvertisesOnlyMappedItemRewards()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new AccountItemEntry { Id = 1u, Item2Id = 101u },
+                new AccountItemEntry { Id = 2u, Item2Id = 202u },
+                new AccountItemEntry { Id = 3u, EntitlementId = 303u },
+                new AccountItemEntry
+                {
+                    Id = 4u,
+                    AccountCurrencyEnum = (uint)AccountCurrencyType.FortuneCoin,
+                    AccountCurrencyAmount = 1ul
+                }
+            ],
+            [
+                new Item2Entry { Id = 101u, ItemQualityId = (uint)Quality.Good },
+                new Item2Entry { Id = 202u, ItemQualityId = (uint)Quality.Excellent }
+            ]);
+
+        try
+        {
+            var pool = new FortuneRewardPool();
+
+            FortuneRewardCatalog catalog = pool.GetRewardCatalog();
+
+            Assert.Equal([101u, 202u], catalog.Item2IdRewards);
+            Assert.Equal(2, catalog.RewardItemProbabilities.Count);
+            Assert.InRange(catalog.RewardItemProbabilities.Sum(), 0.99f, 1.01f);
+            Assert.True(catalog.RewardItemProbabilities[0] > catalog.RewardItemProbabilities[1]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void PickCardRewards_RealPoolKeepsNonItemAccountRewardsPickerOnly()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new AccountItemEntry { Id = 1u, Item2Id = 101u },
+                new AccountItemEntry { Id = 2u, EntitlementId = 202u },
+                new AccountItemEntry { Id = 3u, GenericUnlockSetId = 303u }
+            ],
+            [
+                new Item2Entry { Id = 101u, ItemQualityId = (uint)Quality.Good }
+            ]);
+
+        try
+        {
+            var pool = new FortuneRewardPool();
+
+            FortuneCardReward[] picks = pool.PickCardRewards(new ZeroRollRandom());
+
+            Assert.Equal(3, picks.Length);
+            Assert.Equal([1u, 2u, 3u], picks.Select(pick => pick.AccountItemId));
+            Assert.Equal([101u, 0u, 0u], picks.Select(pick => pick.Item2Id));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     [Fact]
     public void GetRewardCatalog_ProbabilitiesAreNormalizedFractions()
     {
@@ -41,6 +120,59 @@ public class FortuneRewardPoolTests
         Assert.Equal(3, picks.Length);
         Assert.Equal(3, picks.Select(pick => pick.AccountItemId).Distinct().Count());
         Assert.DoesNotContain(picks, pick => pick.AccountItemId == 4u);
+    }
+
+    private static IServiceProvider BuildGameTableProvider(AccountItemEntry[] accountItems, Item2Entry[] itemEntries)
+    {
+        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
+        {
+            GameTablePath = string.Empty
+        }));
+
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItem), CreateGameTable(accountItems));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), CreateGameTable(itemEntries));
+
+        return new ServiceCollection()
+            .AddSingleton(gameTableManager)
+            .BuildServiceProvider();
+    }
+
+    private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
+    {
+        var table = (GameTable<T>)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
+        int maxId = (int)entries.Select(GetEntryId).DefaultIfEmpty(0u).Max();
+        SetAutoProperty(table, nameof(GameTable<T>.Entries), entries);
+        SetField(table, "header", new GameTableHeader
+        {
+            MaxId = (ulong)(maxId + 1)
+        });
+
+        var lookup = new int[maxId + 1];
+        Array.Fill(lookup, -1);
+        for (int i = 0; i < entries.Length; i++)
+            lookup[(int)GetEntryId(entries[i])] = i;
+
+        SetField(table, "lookup", lookup);
+        return table;
+    }
+
+    private static uint GetEntryId<T>(T entry) where T : class, new()
+    {
+        return (uint)typeof(T)
+            .GetField("Id", BindingFlags.Instance | BindingFlags.Public)!
+            .GetValue(entry)!;
+    }
+
+    private static void SetAutoProperty(object instance, string propertyName, object value)
+    {
+        SetField(instance, $"<{propertyName}>k__BackingField", value);
+    }
+
+    private static void SetField(object instance, string fieldName, object value)
+    {
+        FieldInfo backingField = instance.GetType()
+            .GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
+        backingField.SetValue(instance, value);
     }
 
     private sealed class TestFortuneRewardPool : IFortuneRewardPool

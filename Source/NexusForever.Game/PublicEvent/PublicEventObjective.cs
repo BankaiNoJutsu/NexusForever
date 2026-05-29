@@ -98,6 +98,9 @@ namespace NexusForever.Game.PublicEvent
 
         private void BroadcastObjectiveUpdate(IWritable message)
         {
+            // Lua_PublicEventObjective_GetDescription/GetShortDescription switch
+            // viewers between owning-team and other-team text ids, so objectives
+            // with an other-team text variant need updates broadcast to every team.
             if (Entry.LocalizedTextIdOtherTeam == 0)
                 Team.Broadcast(message);
             else
@@ -115,6 +118,11 @@ namespace NexusForever.Game.PublicEvent
         /// </remarks>
         public void SetBusy(bool busy)
         {
+            // WildStar64.exe 14007b490 maps 0x0132 as the full objective payload;
+            // avoid emitting duplicate payloads when the server state is unchanged.
+            if (IsBusy == busy)
+                return;
+
             IsBusy = busy;
             BroadcastObjectiveUpdate();
         }

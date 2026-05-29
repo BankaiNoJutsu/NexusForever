@@ -9,6 +9,7 @@ using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
+using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
@@ -156,6 +157,57 @@ public class LootInstanceDeliveryTests
         }
     }
 
+    [Fact]
+    public void GiveLoot_VirtualItemUpdatesVirtualCollectObjective()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo(), CreateVirtualItemInfo(265u));
+
+        try
+        {
+            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+            IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out var questManagerProxy);
+            TestPlayerBuilder playerBuilder = TestPlayerBuilder.Create()
+                .WithSession(session)
+                .WithCharacterId(42ul)
+                .WithGuid(4242u);
+            playerBuilder.PlayerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
+            IPlayer player = playerBuilder.Build();
+            var lootInstance = new LootInstance(
+                ownerUnitId: 99u,
+                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+                looterType: LooterType.Player,
+                lootEntityType: LootEntityType.Creature);
+
+            LootInstanceItem lootItem = lootInstance.AddLootItem(265u, LootItemType.VirtualItem, 2u);
+
+            bool delivered = lootInstance.GiveLoot(player, lootItem.Id);
+
+            Assert.True(delivered);
+            Assert.True(lootItem.Delivered);
+
+            RecordingDispatchProxy<IQuestManager>.Invocation objectiveUpdate = Assert.Single(
+                questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+            Assert.Equal(QuestObjectiveType.VirtualCollect, objectiveUpdate.Arguments[0]);
+            Assert.Equal(265u, objectiveUpdate.Arguments[1]);
+            Assert.Equal(2u, objectiveUpdate.Arguments[2]);
+
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+            RecordingDispatchProxy<IGameSession>.Invocation grantCall = Assert.Single(sessionCalls);
+            var grant = Assert.IsType<ServerLootGrant>(grantCall.Arguments[0]);
+            Assert.Equal(99u, grant.OwnerUnitId);
+            Assert.Equal(4242u, grant.LooterUnitId);
+            Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
+            Assert.Equal(LootItemType.VirtualItem, grant.LootItem.Type);
+            Assert.Equal(265u, grant.LootItem.ItemId);
+            Assert.Equal(2u, grant.LootItem.Amount);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     private static void AssertStaticItemLootChat(ServerChat chat, uint itemId, string expectedText)
     {
         Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
@@ -170,7 +222,7 @@ public class LootInstanceDeliveryTests
         Assert.Equal(itemId, itemFormat.Item2Id);
     }
 
-    private static IServiceProvider BuildProvider(IItemInfo itemInfo)
+    private static IServiceProvider BuildProvider(IItemInfo itemInfo, VirtualItemEntry virtualItem = null)
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var lootManager = new GlobalLootManager(groupStateManager);
@@ -188,6 +240,7 @@ public class LootInstanceDeliveryTests
         {
             Id = StaticItemId
         }));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.VirtualItem), CreateGameTable(virtualItem ?? CreateVirtualItemInfo(0u)));
 
         return new ServiceCollection()
             .AddSingleton(lootManager)
@@ -206,6 +259,15 @@ public class LootInstanceDeliveryTests
         });
         itemInfoProxy.SetMethodReturn(nameof(IItemInfo.IsStackable), false);
         return itemInfo;
+    }
+
+    private static VirtualItemEntry CreateVirtualItemInfo(uint virtualItemId)
+    {
+        return new VirtualItemEntry
+        {
+            Id             = virtualItemId,
+            ItemQualityId  = 4u
+        };
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

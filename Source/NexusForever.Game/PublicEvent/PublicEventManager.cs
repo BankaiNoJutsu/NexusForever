@@ -282,12 +282,12 @@ namespace NexusForever.Game.PublicEvent
         /// <summary>
         /// Respond to vote in a specific public event for the <see cref="IPlayer"/> with the supplied choice.
         /// </summary>
-        public void RespondVote(IPlayer player, uint eventId, uint choice)
+        public void RespondVote(IPlayer player, uint eventId, uint voteId, uint teamId, uint choice)
         {
             if (!characters.TryGetValue(player.CharacterId, out IPublicEventCharacter character))
                 return;
 
-            character.RespondVote(player, eventId, choice);
+            character.RespondVote(player, eventId, voteId, teamId, choice);
         }
 
         private void InvokeScriptCollection<T>(Action<T> action)

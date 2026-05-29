@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Map;
+using NexusForever.Game.Static.Entity.Movement.Command;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network;
@@ -207,6 +208,75 @@ public class ProtocolRuntimeHardeningTests
     }
 
     [Fact]
+    public void ClientEntityCommand_ReadsTimeCountAndSetTimePayload()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var entityCommandManager = new EntityCommandManager();
+        entityCommandManager.Initialise();
+
+        LegacyServiceProvider.Provider = new ServiceCollection()
+            .AddSingleton(entityCommandManager)
+            .BuildServiceProvider();
+
+        try
+        {
+            byte[] packetData = WritePacket(writer =>
+            {
+                writer.Write(0x11223344u);
+                writer.Write(1u);
+                writer.Write((uint)EntityCommand.SetTime, 5u);
+                writer.Write(0x55667788u);
+            });
+
+            ClientEntityCommand packet = ReadPacket<ClientEntityCommand>(packetData);
+
+            Assert.Equal(0x11223344u, packet.Time);
+            NetworkEntityCommand command = Assert.IsType<NetworkEntityCommand>(Assert.Single(packet.Commands));
+            Assert.Equal(EntityCommand.SetTime, command.Command);
+
+            var setTime = Assert.IsType<SetTimeCommand>(command.Model);
+            Assert.Equal(0x55667788u, setTime.Time);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void ServerEntityCommand_WritesGuidTimeFlagsAndSetTimePayload()
+    {
+        byte[] packetData = WritePacket(new ServerEntityCommand
+        {
+            Guid             = 0x01020304u,
+            Time             = 0x11223344u,
+            TimeReset        = true,
+            ServerControlled = false,
+            Commands =
+            [
+                new NetworkEntityCommand
+                {
+                    Command = EntityCommand.SetTime,
+                    Model = new SetTimeCommand
+                    {
+                        Time = 0x55667788u
+                    }
+                }
+            ]
+        });
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal(0x11223344u, reader.ReadUInt());
+        Assert.True(reader.ReadBit());
+        Assert.False(reader.ReadBit());
+        Assert.Equal(1u, reader.ReadByte(5u));
+        Assert.Equal(EntityCommand.SetTime, reader.ReadEnum<EntityCommand>(5));
+        Assert.Equal(0x55667788u, reader.ReadUInt());
+    }
+
+    [Fact]
     public void SetPositionMultiSplineCommand_ReadRoundTripsPackedSpeedAndFloatFields()
     {
         var command = new SetPositionMultiSplineCommand
@@ -268,6 +338,43 @@ public class ProtocolRuntimeHardeningTests
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => WritePacket(character));
 
         Assert.Contains("Labels", exception.Message);
+    }
+
+    [Fact]
+    public void ServerCharacterListEntry_WriteUsesCharacterRowPayload()
+    {
+        var character = new ServerCharacterList.Character
+        {
+            Id = 1ul,
+            Name = "Tester"
+        };
+
+        byte[] entryPayload = WritePacket(new ServerCharacterListEntry
+        {
+            Character = character
+        });
+
+        Assert.Equal(WritePacket(character), entryPayload);
+    }
+
+    [Fact]
+    public void ClientStatisticsConnection_ReadsPackedUnitCountAndFlag()
+    {
+        byte[] packetData = WritePacket(writer =>
+        {
+            writer.Write(10u);
+            writer.Write(20u);
+            writer.Write(30u);
+            writer.Write((40u << 1) | 1u);
+        });
+
+        ClientStatisticsConnection packet = ReadPacket<ClientStatisticsConnection>(packetData);
+
+        Assert.Equal(10u, packet.AverageRoundTripInMs);
+        Assert.Equal(20u, packet.BytesReceivedPerSecond);
+        Assert.Equal(30u, packet.BytesSentPerSecond);
+        Assert.Equal(40u, packet.UnitHashTableEntryCount);
+        Assert.True(packet.Unknown);
     }
 
     private static ServerEntityCreate CreateEntityCreatePacket()
@@ -345,6 +452,18 @@ public class ProtocolRuntimeHardeningTests
         using (var writer = new GamePacketWriter(stream))
         {
             packet.Write(writer);
+            writer.FlushBits();
+        }
+
+        return stream.ToArray();
+    }
+
+    private static byte[] WritePacket(Action<GamePacketWriter> write)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new GamePacketWriter(stream))
+        {
+            write(writer);
             writer.FlushBits();
         }
 

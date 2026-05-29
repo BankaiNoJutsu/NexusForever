@@ -1228,6 +1228,7 @@ namespace NexusForever.Game.Entity
             if (!wasVisible || visibleEntities.ContainsKey(entity.Guid))
                 return;
 
+
             if (selectedVendorGuid == entity.Guid)
                 SelectedVendorInfo = null;
 

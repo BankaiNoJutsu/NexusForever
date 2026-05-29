@@ -320,46 +320,317 @@ public class PathManagerTests
     [Fact]
     public void SendInitialPackets_WithPersistedActiveMission_ReplaysEpisodeState()
     {
-        PathManager manager = CreateManager(
-            Path.Explorer,
-            totalXp: 0u,
-            levelRewarded: 1,
-            out _,
-            out _,
-            out var sessionProxy,
-            out _,
-            out _,
-            pathMissionModels:
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
             [
-                new CharacterPathMissionModel
-                {
-                    Id            = 42ul,
-                    PathMissionId = 35,
-                    PathEpisodeId = 9,
-                    State         = (byte)PathMissionState.Started,
-                    ProgressCount = 2,
-                    ProgressData  = 1,
-                    Xp            = 25
-                }
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 35u, PathEpisodeId = 9u, PathTypeEnum = (uint)Path.Explorer }
+            ],
+            pathEpisodes:
+            [
+                new PathEpisodeEntry { Id = 9u, WorldId = 51u, WorldZoneId = 10u, PathTypeEnum = (uint)Path.Explorer }
             ]);
 
-        manager.SendInitialPackets();
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _,
+                pathMissionModels:
+                [
+                    new CharacterPathMissionModel
+                    {
+                        Id            = 42ul,
+                        PathMissionId = 35,
+                        PathEpisodeId = 9,
+                        State         = (byte)PathMissionState.Started,
+                        ProgressCount = 2,
+                        ProgressData  = 1,
+                        Xp            = 25
+                    }
+                ]);
 
-        IReadOnlyList<object> messages = sessionProxy
-            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-            .Select(i => i.Arguments[0])
-            .ToList();
+            manager.SendInitialPackets();
 
-        Assert.IsType<ServerPathInitialise>(messages[0]);
-        ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(messages[1]);
-        Assert.Equal(9, currentEpisode.PathEpisodeId);
-        ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[2]);
-        Mission mission = Assert.Single(episodeProgress.Missions);
-        Assert.Equal(35u, mission.PathMissionId);
-        Assert.Equal(2u, mission.ProgressCount);
-        Assert.Equal(1u, mission.ProgressData);
-        ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[3]);
-        Assert.Equal(35u, Assert.Single(missionActivate.Missions).PathMissionId);
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            Assert.IsType<ServerPathInitialise>(messages[0]);
+            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(messages[1]);
+            Assert.Equal(9, currentEpisode.PathEpisodeId);
+            ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[2]);
+            Mission mission = Assert.Single(episodeProgress.Missions);
+            Assert.Equal(35u, mission.PathMissionId);
+            Assert.Equal(2u, mission.ProgressCount);
+            Assert.Equal(1u, mission.ProgressData);
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[3]);
+            Assert.Equal(35u, Assert.Single(missionActivate.Missions).PathMissionId);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendInitialPackets_WithPersistedMissionForMissingEpisode_DoesNotReplayEpisodeState()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 35u, PathEpisodeId = 9u, PathTypeEnum = (uint)Path.Explorer }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _,
+                pathMissionModels:
+                [
+                    new CharacterPathMissionModel
+                    {
+                        Id            = 42ul,
+                        PathMissionId = 35,
+                        PathEpisodeId = 9,
+                        State         = (byte)PathMissionState.Started
+                    }
+                ]);
+
+            manager.SendInitialPackets();
+
+            object message = Assert.Single(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0]));
+            Assert.IsType<ServerPathInitialise>(message);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendInitialPackets_WithPersistedMissionForMismatchedEpisodePath_DoesNotReplayEpisodeState()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 35u, PathEpisodeId = 9u, PathTypeEnum = (uint)Path.Explorer }
+            ],
+            pathEpisodes:
+            [
+                new PathEpisodeEntry { Id = 9u, WorldId = 51u, WorldZoneId = 10u, PathTypeEnum = (uint)Path.Soldier }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _,
+                pathMissionModels:
+                [
+                    new CharacterPathMissionModel
+                    {
+                        Id            = 42ul,
+                        PathMissionId = 35,
+                        PathEpisodeId = 9,
+                        State         = (byte)PathMissionState.Started
+                    }
+                ]);
+
+            manager.SendInitialPackets();
+
+            object message = Assert.Single(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0]));
+            Assert.IsType<ServerPathInitialise>(message);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendInitialPackets_WithPersistedMissionForDifferentPath_DoesNotReplayEpisodeState()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Soldier, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 35u, PathEpisodeId = 9u, PathTypeEnum = (uint)Path.Explorer }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Soldier,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _,
+                pathMissionModels:
+                [
+                    new CharacterPathMissionModel
+                    {
+                        Id            = 42ul,
+                        PathMissionId = 35,
+                        PathEpisodeId = 9,
+                        State         = (byte)PathMissionState.Started
+                    }
+                ]);
+
+            manager.SendInitialPackets();
+
+            object message = Assert.Single(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0]));
+            Assert.IsType<ServerPathInitialise>(message);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendInitialPackets_WithPersistedMissionForWrongFaction_DoesNotReplayEpisodeState()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 650u, PathEpisodeId = 82u, PathTypeEnum = (uint)Path.Settler, PathMissionFactionEnum = 2u }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Settler,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _,
+                pathMissionModels:
+                [
+                    new CharacterPathMissionModel
+                    {
+                        Id            = 42ul,
+                        PathMissionId = 650,
+                        PathEpisodeId = 82,
+                        State         = (byte)PathMissionState.Started
+                    }
+                ]);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+
+            manager.SendInitialPackets();
+
+            object message = Assert.Single(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0]));
+            Assert.IsType<ServerPathInitialise>(message);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendInitialPackets_WithPersistedMissionForUnmetPrerequisite_DoesNotReplayEpisodeState()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 650u, PathEpisodeId = 82u, PathTypeEnum = (uint)Path.Settler, PathMissionFactionEnum = 0u, PrerequisiteId = 701u }
+            ],
+            prerequisites:
+            [
+                CreatePathPrerequisite(701u, Path.Soldier)
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Settler,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _,
+                pathMissionModels:
+                [
+                    new CharacterPathMissionModel
+                    {
+                        Id            = 42ul,
+                        PathMissionId = 650,
+                        PathEpisodeId = 82,
+                        State         = (byte)PathMissionState.Started
+                    }
+                ]);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+
+            manager.SendInitialPackets();
+
+            object message = Assert.Single(sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0]));
+            Assert.IsType<ServerPathInitialise>(message);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
     }
 
     [Fact]
@@ -506,6 +777,72 @@ public class PathManagerTests
 
             Assert.True(manager.TryActivateCurrentZoneEpisode());
             Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void TryActivateCurrentZoneEpisode_WithPersistedDifferentPathEpisode_AllowsCurrentPathActivation()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry { Id = 35u, PathEpisodeId = 82u, PathTypeEnum = (uint)Path.Explorer, PathMissionFactionEnum = 0u },
+                new PathMissionEntry { Id = 650u, PathEpisodeId = 82u, PathTypeEnum = (uint)Path.Settler, PathMissionFactionEnum = 0u }
+            ],
+            pathEpisodes:
+            [
+                new PathEpisodeEntry { Id = 82u, WorldId = 51u, WorldZoneId = 10u, PathTypeEnum = (uint)Path.Settler }
+            ],
+            worldZones:
+            [
+                new WorldZoneEntry { Id = 10u }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Settler,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out var playerProxy,
+                out var sessionProxy,
+                out _,
+                out _,
+                pathMissionModels:
+                [
+                    new CharacterPathMissionModel
+                    {
+                        Id            = 42ul,
+                        PathMissionId = 35,
+                        PathEpisodeId = 82,
+                        State         = (byte)PathMissionState.Started
+                    }
+                ]);
+            playerProxy.SetProperty("Faction1", Faction.Exile);
+            playerProxy.SetProperty("Map", CreateMap(51u));
+            playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 10u });
+
+            Assert.True(manager.TryActivateCurrentZoneEpisode());
+
+            IReadOnlyList<object> messages = sessionProxy
+                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+                .Select(i => i.Arguments[0])
+                .ToList();
+
+            Assert.IsType<ServerPathSetCurrentEpisode>(messages[0]);
+            ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[1]);
+            Assert.Equal([650u], episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
+            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
+            Assert.Equal([650u], missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
         }
         finally
         {
@@ -964,6 +1301,65 @@ public class PathManagerTests
             RecordingDispatchProxy<IPetCustomisationManager>.Invocation unlockScanBotProfile =
                 Assert.Single(petCustomisationManagerProxy.GetInvocations(nameof(IPetCustomisationManager.UnlockScanBotProfile)));
             Assert.Equal(6u, unlockScanBotProfile.Arguments[0]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CompleteMission_WithZeroCountMissionItemReward_GrantsSingleItem()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Explorer, PathLevel = 1u, PathXP = 0u }
+            ],
+            [
+                new PathRewardEntry
+                {
+                    Id = 1u,
+                    PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+                    ObjectId = 35u,
+                    Item2Id = 9001u,
+                    Count = 0u
+                }
+            ],
+            [
+                new PathMissionEntry
+                {
+                    Id = 35u,
+                    PathTypeEnum = (uint)Path.Explorer,
+                    PathMissionTypeEnum = 0x000Fu
+                }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Explorer,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out _,
+                out _,
+                out var inventoryProxy);
+
+            manager.ActivateMissions(9, new Dictionary<ushort, uint>
+            {
+                [35] = 0
+            });
+
+            Assert.True(manager.CompleteMission(35));
+
+            RecordingDispatchProxy<IInventory>.Invocation itemCreate =
+                Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+            Assert.Equal(InventoryLocation.Inventory, itemCreate.Arguments[0]);
+            Assert.Equal(9001u, itemCreate.Arguments[1]);
+            Assert.Equal(1u, itemCreate.Arguments[2]);
+            Assert.Equal(ItemUpdateReason.PathReward, itemCreate.Arguments[3]);
         }
         finally
         {
@@ -2022,6 +2418,164 @@ public class PathManagerTests
             Assert.False(manager.CompleteMissionBySettlerImprovementGroupId(11u));
 
             Assert.False(manager.IsMissionComplete(651u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(99u)]
+    public void CompleteMissionBySettlerImprovementGroupId_WithMissingGroup_DoesNotProgressMission(uint pathSettlerImprovementGroupId)
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 650u,
+                    PathEpisodeId = 82u,
+                    PathTypeEnum = (uint)Path.Settler,
+                    PathMissionTypeEnum = 0x0013u,
+                    ObjectId = 46u
+                }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Settler,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+            manager.ActivateMissions(82, new Dictionary<ushort, uint>
+            {
+                [650] = 0
+            });
+            int beforeCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+
+            Assert.False(manager.CompleteMissionBySettlerImprovementGroupId(pathSettlerImprovementGroupId));
+
+            Assert.False(manager.IsMissionComplete(650u));
+            Assert.Equal(beforeCount, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CompleteMissionBySettlerImprovementGroupId_WithMissingHub_DoesNotProgressMission()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 650u,
+                    PathEpisodeId = 82u,
+                    PathTypeEnum = (uint)Path.Settler,
+                    PathMissionTypeEnum = 0x0013u,
+                    ObjectId = 46u
+                }
+            ],
+            settlerImprovementGroups:
+            [
+                new PathSettlerImprovementGroupEntry { Id = 11u, PathSettlerHubId = 46u }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Settler,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+            manager.ActivateMissions(82, new Dictionary<ushort, uint>
+            {
+                [650] = 0
+            });
+            int beforeCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+
+            Assert.False(manager.CompleteMissionBySettlerImprovementGroupId(11u));
+
+            Assert.False(manager.IsMissionComplete(650u));
+            Assert.Equal(beforeCount, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CompleteMissionBySettlerImprovementGroupId_WithDifferentHub_DoesNotProgressMission()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 650u,
+                    PathEpisodeId = 82u,
+                    PathTypeEnum = (uint)Path.Settler,
+                    PathMissionTypeEnum = 0x0013u,
+                    ObjectId = 46u
+                }
+            ],
+            settlerImprovementGroups:
+            [
+                new PathSettlerImprovementGroupEntry { Id = 11u, PathSettlerHubId = 47u }
+            ],
+            settlerHubs:
+            [
+                new PathSettlerHubEntry { Id = 47u, MissionCount = 1u }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Settler,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out var sessionProxy,
+                out _,
+                out _);
+            manager.ActivateMissions(82, new Dictionary<ushort, uint>
+            {
+                [650] = 0
+            });
+            int beforeCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+
+            Assert.False(manager.CompleteMissionBySettlerImprovementGroupId(11u));
+
+            Assert.False(manager.IsMissionComplete(650u));
+            Assert.Equal(beforeCount, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
         }
         finally
         {

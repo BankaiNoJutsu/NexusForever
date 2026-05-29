@@ -7,7 +7,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Event
     {
         public void HandleMessage(IWorldSession session, ClientPublicEventVote publicEventVote)
         {
-            session.Player.Map.PublicEventManager.RespondVote(session.Player, publicEventVote.EventId, publicEventVote.Choice);
+            // WildStar64.exe client opcode 0x06EE carries event, vote, team, and choice;
+            // route the whole mapped envelope so stale or cross-team replies are ignored.
+            session.Player.Map.PublicEventManager.RespondVote(
+                session.Player,
+                publicEventVote.EventId,
+                publicEventVote.VoteId,
+                publicEventVote.TeamId,
+                publicEventVote.Choice);
         }
     }
 }

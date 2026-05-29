@@ -35,13 +35,20 @@ namespace NexusForever.Game.Entity.Trigger
             if (objectId == 0u || entity is not IPlayer)
                 return;
 
+            // WildStar64.exe Lua_RegisterPublicEventConstants exposes
+            // PublicEventObjectiveType_ParticipantsInTriggerVolume; exact branch
+            // trigger rows/radii remain content-smoke gated.
             Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.ParticipantsInTriggerVolume, objectId, 1);
         }
 
         protected override void RemoveFromRange(IGridEntity entity)
         {
             if (objectId != 0u && entity is IPlayer)
+            {
+                // Keep leave semantics paired with the mapped trigger-volume objective
+                // producer while broader cleanup/respawn timing remains LWS-074 evidence-gated.
                 Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.ParticipantsInTriggerVolume, objectId, -1);
+            }
 
             base.RemoveFromRange(entity);
         }

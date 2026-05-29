@@ -98,9 +98,12 @@ namespace NexusForever.Game.PublicEvent
                 publicEventTeam.Update(lastTick);
         }
 
-        private void SendServerPublicEventStatsUpdate()
+        private ServerPublicEventStatsUpdate BuildStatsUpdate()
         {
-            var publicEventStatsUpdate = new ServerPublicEventStatsUpdate
+            // WildStar64.exe 14007bde0 consumes this scoreboard/update shape after
+            // ClientPublicEventRequestScoreboard (0x06FA); reward tiers remain gated
+            // to ServerPublicEventEnd until retail delivery semantics are captured.
+            return new ServerPublicEventStatsUpdate
             {
                 PublicEventId = Id,
                 TeamStats     = teams.Values
@@ -110,6 +113,11 @@ namespace NexusForever.Game.PublicEvent
                     .SelectMany(t => t.BuildParticipantStats())
                     .ToList()
             };
+        }
+
+        private void SendServerPublicEventStatsUpdate()
+        {
+            ServerPublicEventStatsUpdate publicEventStatsUpdate = BuildStatsUpdate();
 
             Broadcast(publicEventStatsUpdate);
         }
@@ -407,6 +415,20 @@ namespace NexusForever.Game.PublicEvent
         }
 
         /// <summary>
+        /// Send the current scoreboard stat snapshot to <see cref="IPlayer"/>.
+        /// </summary>
+        public void SendScoreboardUpdate(IPlayer player)
+        {
+            if (player == null)
+                return;
+
+            if (!memberTeams.ContainsKey(player.CharacterId))
+                return;
+
+            player.Session.EnqueueMessageEncrypted(BuildStatsUpdate());
+        }
+
+        /// <summary>
         /// Start a vote for <see cref="Static.PublicEvent.PublicEventTeam"/> with the supplied voteId and default choice.
         /// </summary>
         /// <remarks>
@@ -424,12 +446,17 @@ namespace NexusForever.Game.PublicEvent
         /// <summary>
         /// Respond to vote for the <see cref="IPlayer"/> with the supplied choice.
         /// </summary>
-        public void RespondVote(IPlayer player, uint choice)
+        public void RespondVote(IPlayer player, uint voteId, uint teamId, uint choice)
         {
             if (!memberTeams.TryGetValue(player.CharacterId, out IPublicEventTeam publicEventTeam))
                 return;
 
-            publicEventTeam.RespondVote(player, choice);
+            // ClientPublicEventVote (0x06EE) carries event, vote, team, and choice.
+            // Validate the mapped vote/team envelope here before touching vote state.
+            if ((uint)publicEventTeam.Team != teamId)
+                return;
+
+            publicEventTeam.RespondVote(player, voteId, choice);
         }
 
         /// <summary>

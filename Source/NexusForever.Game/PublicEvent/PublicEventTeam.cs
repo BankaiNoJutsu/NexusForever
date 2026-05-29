@@ -17,6 +17,10 @@ namespace NexusForever.Game.PublicEvent
 
         private readonly Dictionary<ulong, IPublicEventTeamMember> members = [];
         private readonly Dictionary<uint, IPublicEventObjective> objectives = [];
+        private readonly Dictionary<ulong, Dictionary<PublicEventStat, uint>> memberStatValues = [];
+        private readonly Dictionary<ulong, Dictionary<uint, uint>> memberCustomStatValues = [];
+        private readonly Dictionary<PublicEventStat, uint> teamStatTotals = [];
+        private readonly Dictionary<uint, uint> teamCustomStatTotals = [];
 
         private readonly IPublicEventStats teamStats;
 
@@ -129,6 +133,7 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void LeaveTeam(ulong characterId)
         {
+            RemoveMemberStats(characterId);
             members.Remove(characterId);
         }
 
@@ -215,9 +220,10 @@ namespace NexusForever.Game.PublicEvent
                 return;
 
             member.UpdateStat(stat, value);
-            teamStats.UpdateStat(stat, value);
+            uint total = UpdateTeamStatTotal(characterId, stat, value);
+            teamStats.UpdateStat(stat, total);
 
-            log.LogTrace($"Updated public event team {Team} stat {stat} to {value}.");
+            log.LogTrace($"Updated public event team {Team} stat {stat} to {total}.");
         }
 
         /// <summary>
@@ -225,13 +231,74 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void UpdateCustomStat(ulong characterId, uint index, uint value)
         {
+            if (index > 5u)
+                return;
+
             if (!members.TryGetValue(characterId, out IPublicEventTeamMember member))
                 return;
 
             member.UpdateCustomStat(index, value);
-            teamStats.UpdateCustomStat(index, value);
+            uint total = UpdateTeamCustomStatTotal(characterId, index, value);
+            teamStats.UpdateCustomStat(index, total);
 
-            log.LogTrace($"Updated public event team {Team} custom stat {index} to {value}.");
+            log.LogTrace($"Updated public event team {Team} custom stat {index} to {total}.");
+        }
+
+        private uint UpdateTeamStatTotal(ulong characterId, PublicEventStat stat, uint value)
+        {
+            if (!memberStatValues.TryGetValue(characterId, out Dictionary<PublicEventStat, uint> memberStats))
+            {
+                memberStats = [];
+                memberStatValues.Add(characterId, memberStats);
+            }
+
+            memberStats.TryGetValue(stat, out uint previous);
+            memberStats[stat] = value;
+
+            uint total = teamStatTotals.GetValueOrDefault(stat);
+            total = total - previous + value;
+            teamStatTotals[stat] = total;
+            return total;
+        }
+
+        private uint UpdateTeamCustomStatTotal(ulong characterId, uint index, uint value)
+        {
+            if (!memberCustomStatValues.TryGetValue(characterId, out Dictionary<uint, uint> memberStats))
+            {
+                memberStats = [];
+                memberCustomStatValues.Add(characterId, memberStats);
+            }
+
+            memberStats.TryGetValue(index, out uint previous);
+            memberStats[index] = value;
+
+            uint total = teamCustomStatTotals.GetValueOrDefault(index);
+            total = total - previous + value;
+            teamCustomStatTotals[index] = total;
+            return total;
+        }
+
+        private void RemoveMemberStats(ulong characterId)
+        {
+            if (memberStatValues.Remove(characterId, out Dictionary<PublicEventStat, uint> memberStats))
+            {
+                foreach ((PublicEventStat stat, uint value) in memberStats)
+                {
+                    uint total = teamStatTotals.GetValueOrDefault(stat) - value;
+                    teamStatTotals[stat] = total;
+                    teamStats.UpdateStat(stat, total);
+                }
+            }
+
+            if (memberCustomStatValues.Remove(characterId, out Dictionary<uint, uint> customStats))
+            {
+                foreach ((uint index, uint value) in customStats)
+                {
+                    uint total = teamCustomStatTotals.GetValueOrDefault(index) - value;
+                    teamCustomStatTotals[index] = total;
+                    teamStats.UpdateCustomStat(index, total);
+                }
+            }
         }
 
         /// <summary>
@@ -283,9 +350,12 @@ namespace NexusForever.Game.PublicEvent
         /// <summary>
         /// Respond to vote for the <see cref="IPlayer"/> with the supplied choice.
         /// </summary>
-        public void RespondVote(IPlayer player, uint choice)
+        public void RespondVote(IPlayer player, uint voteId, uint choice)
         {
             if (vote == null)
+                return;
+
+            if (vote.VoteId != voteId)
                 return;
 
             vote.Choice(player.CharacterId, choice);

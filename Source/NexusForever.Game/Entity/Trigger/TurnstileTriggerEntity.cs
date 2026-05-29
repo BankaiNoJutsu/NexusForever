@@ -32,9 +32,12 @@ namespace NexusForever.Game.Entity.Trigger
         {
             base.AddToRange(entity);
 
-            if (entity is not IPlayer)
+            if (objectId == 0u || entity is not IPlayer)
                 return;
 
+            // WildStar64.exe Lua_RegisterPublicEventConstants exposes
+            // PublicEventObjectiveType_Turnstile. The row placement and door
+            // state transitions stay content-specific until smoke/decompile proof exists.
             Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.Turnstile, objectId, 1);
         }
     }

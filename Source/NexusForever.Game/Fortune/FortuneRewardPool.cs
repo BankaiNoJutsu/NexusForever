@@ -39,6 +39,9 @@ namespace NexusForever.Game.Fortune
             var weights = new List<uint>(entries.Count);
             foreach (FortunePoolEntry entry in entries)
             {
+                // WildStar64.exe 140081f60 and FortunesLib_GetFortunesLootList (140766370)
+                // consume the ServerFortuneRewards item/probability arrays; non-item account
+                // rewards stay picker-only until retail rotation/catalog evidence maps them.
                 if (entry.Item2Id == 0u)
                     continue;
 

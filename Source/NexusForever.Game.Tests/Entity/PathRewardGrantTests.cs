@@ -67,4 +67,72 @@ public class PathRewardGrantTests
     {
         Assert.False(PathRewardGrant.IsGrantableLevelReward(new PathRewardEntry()));
     }
+
+    [Theory]
+    [InlineData(nameof(PathRewardEntry.Item2Id), 12886u)]
+    [InlineData(nameof(PathRewardEntry.Spell4Id), 69661u)]
+    [InlineData(nameof(PathRewardEntry.CharacterTitleId), 18u)]
+    [InlineData(nameof(PathRewardEntry.PathScientistScanBotProfileId), 6u)]
+    public void IsGrantableMissionReward_AllowsSupportedMissionRewardKindsForMatchingMission(string field, uint value)
+    {
+        var entry = new PathRewardEntry
+        {
+            PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+            ObjectId = 35u
+        };
+        typeof(PathRewardEntry).GetField(field)!.SetValue(entry, value);
+
+        Assert.True(PathRewardGrant.IsGrantableMissionReward(entry, 35));
+    }
+
+    [Fact]
+    public void IsGrantableMissionReward_RejectsNonMissionRewards()
+    {
+        var entry = new PathRewardEntry
+        {
+            Item2Id = 12886,
+            ObjectId = 35u
+        };
+
+        Assert.False(PathRewardGrant.IsGrantableMissionReward(entry, 35));
+    }
+
+    [Fact]
+    public void IsGrantableMissionReward_RejectsDifferentMissionObjectId()
+    {
+        var entry = new PathRewardEntry
+        {
+            PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+            ObjectId = 36u,
+            Item2Id = 12886
+        };
+
+        Assert.False(PathRewardGrant.IsGrantableMissionReward(entry, 35));
+    }
+
+    [Fact]
+    public void IsGrantableMissionReward_RejectsFlaggedRewards()
+    {
+        var entry = new PathRewardEntry
+        {
+            PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+            ObjectId = 35u,
+            Item2Id = 12886,
+            PathRewardFlags = 1
+        };
+
+        Assert.False(PathRewardGrant.IsGrantableMissionReward(entry, 35));
+    }
+
+    [Fact]
+    public void IsGrantableMissionReward_RejectsEmptyRewardRows()
+    {
+        var entry = new PathRewardEntry
+        {
+            PathRewardTypeEnum = PathRewardGrant.MissionRewardType,
+            ObjectId = 35u
+        };
+
+        Assert.False(PathRewardGrant.IsGrantableMissionReward(entry, 35));
+    }
 }
