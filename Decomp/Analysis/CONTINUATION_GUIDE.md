@@ -27,6 +27,9 @@ implement server behavior from the evidence in the existing C# codebase.
 | `Decomp/Analysis/INITIAL_FINDINGS.md` | Living summary of mapped behavior and follow-up implementation. |
 | `Decomp/Analysis/Get-DecompCoverageSnapshot.ps1` | Generates the current export and opcode coverage inventories from local artifacts and source. |
 | `Decomp/Analysis/exports/<binary>/selected_reasons_summary.csv` | Selection audit for the focused export, including why a function was selected and whether it is inside the current decompile cutoff. |
+| `Decomp/Analysis/exports/<binary>/selected_call_edges.csv` | Direct caller/callee edges for each selected function, including call/jump site addresses and whether the neighbor is also selected or inside the decompile cutoff. |
+| `Decomp/Analysis/exports/<binary>/function_pointer_families.csv` | Contiguous exact-function pointer families from non-executable memory, useful for vtable, callback-table, and dispatcher-family recovery. |
+| `Decomp/Analysis/exports/<binary>/function_pointer_family_slots.csv` | Per-slot function metadata for each pointer family, including namespace, thunk state, and slot reference counts. |
 | `Decomp/Analysis/exports/<binary>` | Generated analysis exports. Ignored by Git. |
 | `Decomp/Analysis/logs/LATEST_RUN_SUMMARY.json` | Queryable summary of the last headless run, target set, project layout, log paths, and export outputs. |
 | `Decomp/Analysis/logs/LATEST_COVERAGE_SUMMARY.json` | Queryable snapshot of export counts plus opcode/model/handler coverage. |
@@ -128,8 +131,10 @@ For a fresh default analysis:
 .\Decomp\Analysis\run_ghidra_analysis.ps1
 ```
 
-For callback-table or raw-stub work, keep the standard export and attach a
-focused helper script:
+For callback-table, vtable, or raw-stub work, start with the standard export so
+`function_pointer_families.csv` and `function_pointer_family_slots.csv` capture
+the reusable structure, then attach a focused helper script when you need local
+data bytes or instruction windows:
 
 ```powershell
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -MaxDecompiledFunctions 340 -ExtraPostScript DumpNearbyData.java -ExtraPostScriptArgs @('140b73540','20')
@@ -295,10 +300,16 @@ When an anchor appears in `interesting_strings.csv`, open the matching rows in:
 1. `interesting_strings.csv` for the literal string and address.
 2. `string_xrefs.csv` for exact xref addresses, especially data-table refs.
 3. `selected_reasons_summary.csv` for why the function stayed in the focused export and whether it is inside the current decompile cutoff.
-4. `selected_xrefs.csv` for the referencing function entry when the xref is code.
-5. `selected_decompiled.c` for the selected function body.
-6. `functions.csv` for nearby named or unlabeled functions.
-7. Source files under `Source/` for the current server behavior.
+4. `selected_call_edges.csv` for direct caller/callee follow-up when the anchor lands on a serializer, wrapper, or shared helper and you need the next step in the local call chain without reopening Ghidra.
+5. `selected_xrefs.csv` for the referencing function entry when the xref is code.
+6. `selected_decompiled.c` for the selected function body.
+7. `functions.csv` for nearby named or unlabeled functions.
+8. Source files under `Source/` for the current server behavior.
+
+For vtable or callback-table work, search `function_pointer_families.csv` and
+`function_pointer_family_slots.csv` before reopening Ghidra. Use the family
+address, first named slots, thunk counts, and per-slot reference counts to pick
+the right helper-script follow-up.
 
 ### 4. Map The Function
 

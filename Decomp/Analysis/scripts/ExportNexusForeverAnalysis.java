@@ -13,6 +13,9 @@
 //   functions.csv
 //   selected_xrefs.csv
 //   selected_reasons_summary.csv
+//   selected_call_edges.csv
+//   function_pointer_families.csv
+//   function_pointer_family_slots.csv
 //   selected_decompiled.c
 //
 // Selection is intentionally biased toward networking, packet, auth, and game-data
@@ -46,11 +49,16 @@ import ghidra.program.model.listing.DataIterator;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.FunctionManager;
+import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.listing.InstructionIterator;
 import ghidra.program.model.listing.Listing;
+import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.Reference;
 import ghidra.program.model.symbol.ReferenceIterator;
 import ghidra.program.model.symbol.ReferenceManager;
+import ghidra.program.model.symbol.FlowType;
+import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolIterator;
 import ghidra.program.model.symbol.SymbolTable;
@@ -60,8 +68,9 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 	private static final int DEFAULT_MAX_DECOMPILED = 200;
 	private static final int DEFAULT_MAX_WARM_FUNCTIONS = 100;
 	private static final int DECOMPILE_TIMEOUT_SECONDS = 45;
+	private static final int MIN_FUNCTION_POINTER_FAMILY_SLOTS = 4;
 	private static final int MAX_CELL_LENGTH = 8192;
-	private static final String EXPORT_SCRIPT_VERSION = "7";
+	private static final String EXPORT_SCRIPT_VERSION = "8";
 	private static final String DECOMPILE_MANIFEST_VERSION = "1";
 	private static final String DECOMPILE_FRAGMENT_VERSION = "1";
 	private static final String DECOMPILE_MODE_AUTO = "auto";
@@ -118,7 +127,30 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		"publiceventobjectivenotificationmode", "publiceventobjectivecategory", "publiceventstatus",
 		"defendobjectiveunits", "game.publicevent", "game.publiceventobjective", "tspell4idability",
 		"questobjective", "questtracker", "questdirection", "queststate", "pathmission",
-		"challengecompleted", "challengetracker", "achievementchecklist", "achievementtitle",
+		"pathexplorer", "db\\pathexploreractivate.tbl", "db\\pathexplorernode.tbl",
+		"db\\pathexplorerpowermap.tbl", "db\\pathexplorerscavengerclue.tbl",
+		"db\\pathexplorerscavengerhunt.tbl", "explorernode", "explorerhunt",
+		"explorerpowermap", "castpathexplorersearching", "game.pathmission.getexplorer",
+		"pathscientist", "db\\pathscientistcreatureinfo.tbl",
+		"db\\pathscientistdatacubediscovery.tbl", "db\\pathscientistexperimentation.tbl",
+		"db\\pathscientistexperimentationpattern.tbl", "db\\pathscientistfieldstudy.tbl",
+		"db\\pathscientistspecimensurvey.tbl", "db\\pathscientistscanbotprofile.tbl",
+		"scientistmission", "scientistdatacubediscovery", "scientistfieldstudy",
+		"scientistspecimensurvey", "scientistexperimentation", "scanbotprofile",
+		"setscannername", "dismissscanbot", "game.pathmission.getscientist",
+		"pathsettler", "db\\pathsettlerhub.tbl", "db\\pathsettlerimprovement.tbl",
+		"db\\pathsettlerimprovementgroup.tbl", "db\\pathsettlerinfrastructure.tbl",
+		"db\\pathsettlermayor.tbl", "db\\pathsettlersheriff.tbl", "settlermayor",
+		"settlersheriff", "pathsettlerhub", "pathsettlerimprovement",
+		"pathsettlerimprovementgroup", "settlerbuildstatus",
+		"game.pathmission.getsettler", "pathsoldier", "db\\pathsoldieractivate.tbl",
+		"db\\pathsoldierassassinate.tbl", "db\\pathsoldierevent.tbl",
+		"db\\pathsoldiereventwave.tbl", "db\\pathsoldierswat.tbl",
+		"db\\pathsoldiertowerdefense.tbl", "soldierholdout", "soldierevent",
+		"pathsoldierassassinate", "pathsoldiereventwave", "pathsoldierswat",
+		"pathsoldiertowerdefense", "game.pathmission.getsoldierholdout",
+		"game.soldierevent", "challengecompleted", "challengetracker",
+		"achievementchecklist", "achievementtitle",
 		"galacticarchive", "tutorialprompt", "tutorial", "hoverboard", "ridersreef",
 		"showinstancegamemodedialog", "hideinstancegamemodedialog", "raidinforesponse",
 		"strsavedinstanceid", "bremovessingleinstance", "matchjoined", "matchingpenalty",
@@ -181,6 +213,10 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		selectLabeledFunctions(listing, selection);
 		writeSelectedXrefs(programDir, selection, functionManager);
 		writeSelectedReasonsReport(programDir, selection, functionManager, maxDecompiled);
+		writeSelectedCallEdges(programDir, selection, functionManager, listing, referenceManager,
+			maxDecompiled);
+		writeFunctionPointerFamilies(programDir, functionManager, referenceManager, selection,
+			maxDecompiled);
 		DecompileCache decompileCache = new DecompileCache(programDir, decompileSettings);
 		CacheWarmSummary cacheWarmSummary = warmFullProgramCache(programDir, functionManager,
 			decompileSettings, decompileCache);
@@ -394,6 +430,152 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 					Boolean.toString(selectedEntries.contains(selectedFunction.entry)),
 					csv(selectedFunction.firstXref == null ? "" : selectedFunction.firstXref.toString()),
 					csv(joinReasons(selectedFunction)));
+			}
+		}
+	}
+
+	private void writeSelectedCallEdges(File programDir, Selection selection,
+			FunctionManager functionManager, Listing listing, ReferenceManager referenceManager,
+			int maxDecompiled) throws Exception {
+		File out = new File(programDir, "selected_call_edges.csv");
+		ArrayList<SelectedFunction> ordered = new ArrayList<>(selection.byEntry.values());
+		ordered.sort(Comparator.comparing((SelectedFunction item) -> item.priorityBucket())
+			.thenComparing(item -> item.entry.toString()));
+		ArrayList<SelectedFunction> selectedForDecompile =
+			getSelectedFunctionsForDecompilation(selection, functionManager, maxDecompiled);
+		Set<Address> selectedForDecompileEntries = new LinkedHashSet<>();
+		for (SelectedFunction selectedFunction : selectedForDecompile) {
+			selectedForDecompileEntries.add(selectedFunction.entry);
+		}
+
+		try (PrintWriter writer = new PrintWriter(new FileWriter(out))) {
+			writer.println(
+				"seed_entry,seed_name,seed_priority_bucket,seed_selected_for_decompile,relation," +
+				"edge_type,site_address,neighbor_entry,neighbor_name,neighbor_namespace," +
+				"neighbor_thunk,neighbor_external,neighbor_selected,neighbor_priority_bucket," +
+				"neighbor_selected_for_decompile,seed_reasons");
+
+			for (SelectedFunction selectedFunction : ordered) {
+				Function seed = functionManager.getFunctionAt(selectedFunction.entry);
+				if (seed == null || seed.isExternal()) {
+					continue;
+				}
+
+				ArrayList<SelectedCallEdge> edges = getSelectedCallEdges(seed, functionManager, listing,
+					referenceManager);
+				edges.sort(Comparator.comparing((SelectedCallEdge edge) -> edge.relation)
+					.thenComparing(edge -> edge.siteAddress.toString())
+					.thenComparing(edge -> edge.neighbor.getEntryPoint().toString()));
+
+				for (SelectedCallEdge edge : edges) {
+					SelectedFunction neighborSelected =
+						selection.byEntry.get(edge.neighbor.getEntryPoint());
+					writer.printf("%s,%s,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s%n",
+						csv(seed.getEntryPoint().toString()),
+						csv(seed.getName()),
+						selectedFunction.priorityBucket(),
+						Boolean.toString(selectedForDecompileEntries.contains(seed.getEntryPoint())),
+						csv(edge.relation),
+						csv(edge.edgeType),
+						csv(edge.siteAddress.toString()),
+						csv(edge.neighbor.getEntryPoint().toString()),
+						csv(edge.neighbor.getName()),
+						csv(edge.neighbor.getParentNamespace().getName(true)),
+						Boolean.toString(edge.neighbor.isThunk()),
+						Boolean.toString(edge.neighbor.isExternal()),
+						Boolean.toString(neighborSelected != null),
+						csv(neighborSelected == null
+							? ""
+							: Integer.toString(neighborSelected.priorityBucket())),
+						Boolean.toString(selectedForDecompileEntries.contains(
+							edge.neighbor.getEntryPoint())),
+						csv(joinReasons(selectedFunction)));
+				}
+			}
+		}
+	}
+
+	private void writeFunctionPointerFamilies(File programDir, FunctionManager functionManager,
+			ReferenceManager referenceManager, Selection selection, int maxDecompiled)
+			throws Exception {
+		File familiesOut = new File(programDir, "function_pointer_families.csv");
+		File slotsOut = new File(programDir, "function_pointer_family_slots.csv");
+		ArrayList<SelectedFunction> selectedForDecompile =
+			getSelectedFunctionsForDecompilation(selection, functionManager, maxDecompiled);
+		Set<Address> selectedForDecompileEntries = new LinkedHashSet<>();
+		for (SelectedFunction selectedFunction : selectedForDecompile) {
+			selectedForDecompileEntries.add(selectedFunction.entry);
+		}
+
+		ArrayList<FunctionPointerFamily> families =
+			getFunctionPointerFamilies(functionManager, referenceManager);
+		try (
+			PrintWriter familiesWriter = new PrintWriter(new FileWriter(familiesOut));
+			PrintWriter slotsWriter = new PrintWriter(new FileWriter(slotsOut))) {
+			familiesWriter.println(
+				"family_address,block_name,block_permissions,entry_count,named_entry_count," +
+				"thunk_entry_count,selected_entry_count,selected_for_decompile_count," +
+				"start_ref_count,slot0_entry,slot0_name,slot1_entry,slot1_name," +
+				"slot2_entry,slot2_name,slot3_entry,slot3_name");
+			slotsWriter.println(
+				"family_address,slot_index,slot_address,slot_ref_count,function_entry," +
+				"function_name,function_namespace,named,thunk,selected,selected_for_decompile");
+
+			for (FunctionPointerFamily family : families) {
+				int namedCount = 0;
+				int thunkCount = 0;
+				int selectedCount = 0;
+				int selectedForDecompileCount = 0;
+				for (FunctionPointerFamilySlot slot : family.slots) {
+					if (slot.named) {
+						namedCount++;
+					}
+					if (slot.function.isThunk()) {
+						thunkCount++;
+					}
+					if (selection.byEntry.containsKey(slot.function.getEntryPoint())) {
+						selectedCount++;
+					}
+					if (selectedForDecompileEntries.contains(slot.function.getEntryPoint())) {
+						selectedForDecompileCount++;
+					}
+				}
+
+				familiesWriter.printf("%s,%s,%s,%d,%d,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s%n",
+					csv(family.address.toString()),
+					csv(family.blockName),
+					csv(family.blockPermissions),
+					family.slots.size(),
+					namedCount,
+					thunkCount,
+					selectedCount,
+					selectedForDecompileCount,
+					family.slots.get(0).referenceCount,
+					csv(getFamilyPreviewEntry(family, 0)),
+					csv(getFamilyPreviewName(family, 0)),
+					csv(getFamilyPreviewEntry(family, 1)),
+					csv(getFamilyPreviewName(family, 1)),
+					csv(getFamilyPreviewEntry(family, 2)),
+					csv(getFamilyPreviewName(family, 2)),
+					csv(getFamilyPreviewEntry(family, 3)),
+					csv(getFamilyPreviewName(family, 3)));
+
+				for (int slotIndex = 0; slotIndex < family.slots.size(); slotIndex++) {
+					FunctionPointerFamilySlot slot = family.slots.get(slotIndex);
+					slotsWriter.printf("%s,%d,%s,%d,%s,%s,%s,%s,%s,%s,%s%n",
+						csv(family.address.toString()),
+						slotIndex,
+						csv(slot.slotAddress.toString()),
+						slot.referenceCount,
+						csv(slot.function.getEntryPoint().toString()),
+						csv(slot.function.getName()),
+						csv(slot.function.getParentNamespace().getName(true)),
+						Boolean.toString(slot.named),
+						Boolean.toString(slot.function.isThunk()),
+						Boolean.toString(selection.byEntry.containsKey(slot.function.getEntryPoint())),
+						Boolean.toString(selectedForDecompileEntries.contains(
+							slot.function.getEntryPoint())));
+				}
 			}
 		}
 	}
@@ -941,6 +1123,279 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		return decompiler;
 	}
 
+	private ArrayList<FunctionPointerFamily> getFunctionPointerFamilies(
+			FunctionManager functionManager, ReferenceManager referenceManager) {
+		ArrayList<FunctionPointerFamily> families = new ArrayList<>();
+		Memory memory = currentProgram.getMemory();
+		int pointerSize = currentProgram.getDefaultPointerSize();
+
+		for (MemoryBlock block : memory.getBlocks()) {
+			if (!block.isInitialized() || block.isExecute()) {
+				continue;
+			}
+			long minimumBytes = (long)pointerSize * MIN_FUNCTION_POINTER_FAMILY_SLOTS;
+			if (block.getSize() < minimumBytes) {
+				continue;
+			}
+
+			long offset = 0;
+			long maximumFamilyStart = block.getSize() - minimumBytes;
+			while (offset <= maximumFamilyStart && !monitor.isCancelled()) {
+				Address familyAddress = addAddressOffset(block.getStart(), offset);
+				if (familyAddress == null) {
+					break;
+				}
+
+				if (getFunctionPointerFamilySlot(memory, functionManager, referenceManager,
+						familyAddress) == null) {
+					offset += pointerSize;
+					continue;
+				}
+
+				ArrayList<FunctionPointerFamilySlot> slots = new ArrayList<>();
+				long scanOffset = offset;
+				while (scanOffset <= block.getSize() - pointerSize && !monitor.isCancelled()) {
+					Address slotAddress = addAddressOffset(block.getStart(), scanOffset);
+					if (slotAddress == null) {
+						break;
+					}
+
+					FunctionPointerFamilySlot slot = getFunctionPointerFamilySlot(memory,
+						functionManager, referenceManager, slotAddress);
+					if (slot == null) {
+						break;
+					}
+
+					slots.add(slot);
+					scanOffset += pointerSize;
+				}
+
+				if (slots.size() >= MIN_FUNCTION_POINTER_FAMILY_SLOTS) {
+					families.add(new FunctionPointerFamily(familyAddress, block.getName(),
+						getBlockPermissions(block), slots));
+					offset = scanOffset;
+					continue;
+				}
+
+				offset += pointerSize;
+			}
+		}
+
+		return families;
+	}
+
+	private ArrayList<SelectedCallEdge> getSelectedCallEdges(Function function,
+			FunctionManager functionManager, Listing listing, ReferenceManager referenceManager) {
+		ArrayList<SelectedCallEdge> edges = new ArrayList<>();
+		Set<String> seen = new LinkedHashSet<>();
+		InstructionIterator instructions = listing.getInstructions(function.getBody(), true);
+		while (instructions.hasNext() && !monitor.isCancelled()) {
+			Instruction instruction = instructions.next();
+			if (!isCallOrJump(instruction)) {
+				continue;
+			}
+
+			for (Address flow : instruction.getFlows()) {
+				Function callee = resolveFunction(functionManager, flow);
+				if (callee == null) {
+					continue;
+				}
+
+				addSelectedCallEdge(edges, seen, "callee", classifyEdgeType(instruction),
+					instruction.getAddress(), callee);
+			}
+		}
+
+		ReferenceIterator references = referenceManager.getReferencesTo(function.getEntryPoint());
+		while (references.hasNext() && !monitor.isCancelled()) {
+			Reference reference = references.next();
+			if (!isCallOrJump(reference)) {
+				continue;
+			}
+
+			Function caller = functionManager.getFunctionContaining(reference.getFromAddress());
+			if (caller == null) {
+				caller = resolveFunction(functionManager, reference.getFromAddress());
+			}
+			if (caller == null) {
+				continue;
+			}
+
+			addSelectedCallEdge(edges, seen, "caller", classifyEdgeType(reference),
+				reference.getFromAddress(), caller);
+		}
+
+		return edges;
+	}
+
+	private FunctionPointerFamilySlot getFunctionPointerFamilySlot(Memory memory,
+			FunctionManager functionManager, ReferenceManager referenceManager, Address slotAddress) {
+		Long pointerValue = readPointer(memory, slotAddress);
+		if (pointerValue == null || pointerValue.longValue() == 0L) {
+			return null;
+		}
+
+		Address targetAddress = toAbsoluteAddress(pointerValue.longValue());
+		if (targetAddress == null) {
+			return null;
+		}
+
+		Function function = functionManager.getFunctionAt(targetAddress);
+		if (function == null || function.isExternal()) {
+			return null;
+		}
+
+		return new FunctionPointerFamilySlot(slotAddress, function,
+			countReferences(referenceManager, slotAddress), hasMeaningfulFunctionName(function));
+	}
+
+	private void addSelectedCallEdge(ArrayList<SelectedCallEdge> edges, Set<String> seen,
+			String relation, String edgeType, Address siteAddress, Function neighbor) {
+		String key = relation + "|" + edgeType + "|" + siteAddress + "|" +
+			neighbor.getEntryPoint();
+		if (!seen.add(key)) {
+			return;
+		}
+
+		edges.add(new SelectedCallEdge(relation, edgeType, siteAddress, neighbor));
+	}
+
+	private boolean isCallOrJump(Instruction instruction) {
+		if (instruction == null) {
+			return false;
+		}
+
+		FlowType flowType = instruction.getFlowType();
+		return flowType != null && (flowType.isCall() || flowType.isJump());
+	}
+
+	private boolean isCallOrJump(Reference reference) {
+		if (reference == null || reference.getReferenceType() == null) {
+			return false;
+		}
+
+		RefType referenceType = reference.getReferenceType();
+		return referenceType.isCall() || referenceType.isJump();
+	}
+
+	private String classifyEdgeType(Instruction instruction) {
+		if (instruction == null || instruction.getFlowType() == null) {
+			return "";
+		}
+
+		FlowType flowType = instruction.getFlowType();
+		if (flowType.isCall()) {
+			return "call";
+		}
+		if (flowType.isJump()) {
+			return "jump";
+		}
+		return flowType.toString().toLowerCase(Locale.ROOT);
+	}
+
+	private String classifyEdgeType(Reference reference) {
+		if (reference == null || reference.getReferenceType() == null) {
+			return "";
+		}
+
+		RefType referenceType = reference.getReferenceType();
+		if (referenceType.isCall()) {
+			return "call";
+		}
+		if (referenceType.isJump()) {
+			return "jump";
+		}
+		return referenceType.toString().toLowerCase(Locale.ROOT);
+	}
+
+	private Function resolveFunction(FunctionManager functionManager, Address address) {
+		if (address == null) {
+			return null;
+		}
+
+		Function function = functionManager.getFunctionAt(address);
+		if (function == null) {
+			function = functionManager.getFunctionContaining(address);
+		}
+		return function;
+	}
+
+	private Address addAddressOffset(Address address, long offset) {
+		try {
+			return address.add(offset);
+		}
+		catch (Exception ex) {
+			return null;
+		}
+	}
+
+	private Long readPointer(Memory memory, Address address) {
+		try {
+			int pointerSize = currentProgram.getDefaultPointerSize();
+			if (pointerSize == 8) {
+				return Long.valueOf(memory.getLong(address));
+			}
+			if (pointerSize == 4) {
+				return Long.valueOf(Integer.toUnsignedLong(memory.getInt(address)));
+			}
+		}
+		catch (Exception ex) {
+			return null;
+		}
+
+		return null;
+	}
+
+	private Address toAbsoluteAddress(long value) {
+		try {
+			return toAddr(value);
+		}
+		catch (Exception ex) {
+			return null;
+		}
+	}
+
+	private int countReferences(ReferenceManager referenceManager, Address address) {
+		int count = 0;
+		ReferenceIterator iterator = referenceManager.getReferencesTo(address);
+		while (iterator.hasNext()) {
+			iterator.next();
+			count++;
+		}
+		return count;
+	}
+
+	private boolean hasMeaningfulFunctionName(Function function) {
+		if (function == null || function.getName() == null) {
+			return false;
+		}
+
+		String lowerName = function.getName().toLowerCase(Locale.ROOT);
+		return !lowerName.startsWith("fun_") &&
+			!lowerName.startsWith("thunk_fun_") &&
+			!lowerName.startsWith("nullsub_");
+	}
+
+	private String getBlockPermissions(MemoryBlock block) {
+		StringBuilder builder = new StringBuilder(3);
+		builder.append(block.isRead() ? 'r' : '-');
+		builder.append(block.isWrite() ? 'w' : '-');
+		builder.append(block.isExecute() ? 'x' : '-');
+		return builder.toString();
+	}
+
+	private String getFamilyPreviewEntry(FunctionPointerFamily family, int slotIndex) {
+		return slotIndex < family.slots.size()
+			? family.slots.get(slotIndex).function.getEntryPoint().toString()
+			: "";
+	}
+
+	private String getFamilyPreviewName(FunctionPointerFamily family, int slotIndex) {
+		return slotIndex < family.slots.size()
+			? family.slots.get(slotIndex).function.getName()
+			: "";
+	}
+
 	private int countFunctions(Listing listing) {
 		int count = 0;
 		FunctionIterator iterator = listing.getFunctions(true);
@@ -1166,6 +1621,51 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 				}
 			}
 			return 1;
+		}
+	}
+
+	private static class SelectedCallEdge {
+		private final String relation;
+		private final String edgeType;
+		private final Address siteAddress;
+		private final Function neighbor;
+
+		SelectedCallEdge(String relation, String edgeType, Address siteAddress,
+				Function neighbor) {
+			this.relation = relation;
+			this.edgeType = edgeType;
+			this.siteAddress = siteAddress;
+			this.neighbor = neighbor;
+		}
+	}
+
+	private static class FunctionPointerFamily {
+		private final Address address;
+		private final String blockName;
+		private final String blockPermissions;
+		private final ArrayList<FunctionPointerFamilySlot> slots;
+
+		FunctionPointerFamily(Address address, String blockName, String blockPermissions,
+				ArrayList<FunctionPointerFamilySlot> slots) {
+			this.address = address;
+			this.blockName = blockName;
+			this.blockPermissions = blockPermissions;
+			this.slots = slots;
+		}
+	}
+
+	private static class FunctionPointerFamilySlot {
+		private final Address slotAddress;
+		private final Function function;
+		private final int referenceCount;
+		private final boolean named;
+
+		FunctionPointerFamilySlot(Address slotAddress, Function function, int referenceCount,
+				boolean named) {
+			this.slotAddress = slotAddress;
+			this.function = function;
+			this.referenceCount = referenceCount;
+			this.named = named;
 		}
 	}
 

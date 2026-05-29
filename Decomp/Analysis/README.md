@@ -126,6 +126,10 @@ passes do not accidentally shrink `selected_reasons_summary.csv` or the
 coverage snapshot. Pass `-MaxDecompiledFunctions` explicitly when you
 intentionally want a smaller or larger focused export.
 
+When a pass only needs helper-script output, add `-SkipDefaultExport` to skip
+the normal `ExportNexusForeverAnalysis.java` export and reopen the saved Ghidra
+program just once for the helper work.
+
 Inspect the latest decompile manifests, selected-function counts, and fragment
 reuse after a run:
 
@@ -199,11 +203,28 @@ Re-export or analyze only one binary while iterating on a focused subsystem:
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets StsConnLib64.MT.dll -MaxDecompiledFunctions 260
 ```
 
-Attach a focused helper script to an export-only pass when chasing callback
-tables or raw code stubs:
+The default export now includes repeatable function-pointer family inventories
+for vtable, callback-table, and dispatcher-family recovery. Attach a focused
+helper script when you need nearby raw data or instruction windows after that
+first pass:
 
 ```powershell
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -ExtraPostScript DumpNearbyData.java -ExtraPostScriptArgs @('140b73540','20')
+```
+
+Skip the default export when you only need the helper-script output:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -SkipDefaultExport -SkipCoverage -Targets WildStar64.exe -ExtraPostScript DumpNearbyData.java -ExtraPostScriptArgs @('140b73540','20')
+```
+
+Batch `FindDataReferences.java` probes for many addresses in one saved-program
+session instead of reopening Ghidra once per address:
+
+```powershell
+$addrs = @('1405c0f00','1405c11c0','1405c1fc0','1405c26a0','1405c2d40','1405c2e70','1405c3360')
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -SkipDefaultExport -SkipCoverage -Targets WildStar64.exe `
+  -ExtraPostScript FindDataReferences.java -ExtraPostScriptArgs (@('--maxRefs','8') + $addrs)
 ```
 
 Trace direct callers of a mapped function when a subsystem appears to be wired
@@ -245,6 +266,10 @@ Per binary:
 - `string_xrefs.csv` - xref address and containing function for interesting strings.
 - `interesting_strings.csv` - packet/network/data/auth/gameplay keyword hits.
 - `selected_xrefs.csv` - functions selected because they reference interesting strings or imports.
+- `selected_reasons_summary.csv` - why each selected function made the focused export and whether it is inside the current decompile cutoff.
+- `selected_call_edges.csv` - direct caller/callee edges for selected functions, including call/jump site addresses and selected/cutoff state.
+- `function_pointer_families.csv` - contiguous exact-function pointer families from non-executable memory, useful for vtable, callback-table, and dispatcher recovery.
+- `function_pointer_family_slots.csv` - per-slot breakdown for each exported function-pointer family, including namespace, thunk state, and slot reference counts.
 - `selected_decompiled.c` - Ghidra C output for the selected functions.
 - `selected_decompiled.manifest` - local cache metadata used to reuse `selected_decompiled.c` when the export inputs are unchanged.
 - `decompile_cache_summary.properties` - full-program cache counts, including cached, warmed, remaining, and already-exported skip totals.

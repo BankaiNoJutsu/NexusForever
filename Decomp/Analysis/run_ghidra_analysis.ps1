@@ -29,6 +29,7 @@ param(
     [switch] $AllClientBinaries,
     [switch] $NoApplyLabels,
     [switch] $ExportOnly,
+    [switch] $SkipDefaultExport,
     [string] $ExtraPostScript,
     [string[]] $ExtraPostScriptArgs = @(),
     [string] $GhidraMaxHeap = '2G'
@@ -528,6 +529,10 @@ if ($Targets.Count -eq 0) {
     throw 'No decompile targets were supplied.'
 }
 
+if ($SkipDefaultExport -and [string]::IsNullOrWhiteSpace($ExtraPostScript)) {
+    throw '-SkipDefaultExport requires -ExtraPostScript so the run still has useful work to do.'
+}
+
 if ($ProjectLayout -eq 'Shared' -and $MaxParallel -gt 1 -and $Targets.Count -gt 1) {
     throw 'Shared project layout cannot be used safely with MaxParallel greater than 1. Use -ProjectLayout PerTarget, -ProjectLayout Auto, or -MaxParallel 1.'
 }
@@ -644,6 +649,10 @@ if ($MaxParallel -gt 1 -and $Targets.Count -gt 1) {
             $runnerParameters.ExportOnly = $true
         }
 
+        if ($SkipDefaultExport) {
+            $runnerParameters.SkipDefaultExport = $true
+        }
+
         if (-not [string]::IsNullOrWhiteSpace($ExtraPostScript)) {
             $runnerParameters.ExtraPostScript = $ExtraPostScript
             $runnerParameters.ExtraPostScriptArgs = $ExtraPostScriptArgs
@@ -729,6 +738,7 @@ if ($MaxParallel -gt 1 -and $Targets.Count -gt 1) {
         projectLockRetryDelaySeconds = $ProjectLockRetryDelaySeconds
         projectLockTimeoutMinutes = $ProjectLockTimeoutMinutes
         exportOnly = [bool]$ExportOnly
+        skipDefaultExport = [bool]$SkipDefaultExport
         skipCoverage = [bool]$SkipCoverage
         noApplyLabels = [bool]$NoApplyLabels
         labelsApplied = [bool]$labelsApplied
@@ -878,6 +888,7 @@ try {
             projectLockAttempts = 0
             projectGateLockPath = ''
             projectGateWaited = $false
+            skipDefaultExport = [bool]$SkipDefaultExport
             scriptFailure = $false
             exported = $false
             manifestExists = $false
@@ -890,12 +901,17 @@ try {
         )
 
         Write-Host ("Using Ghidra project {0}" -f $projectName)
-        if ($effectiveMaxDecompiledFunctions -ne $MaxDecompiledFunctions) {
+        if (-not $SkipDefaultExport -and $effectiveMaxDecompiledFunctions -ne $MaxDecompiledFunctions) {
             Write-Host ("Preserving manifest max decompile depth {0} for {1} because -ExtraPostScript was used without an explicit -MaxDecompiledFunctions override." -f $effectiveMaxDecompiledFunctions, $target)
         }
 
         if ($analysisAction -eq 'Process') {
-            Write-Host "Exporting existing Ghidra program $target"
+            if ($SkipDefaultExport) {
+                Write-Host "Opening existing Ghidra program $target"
+            }
+            else {
+                Write-Host "Exporting existing Ghidra program $target"
+            }
             $ghidraArgs += @(
                 '-process', $target,
                 '-noanalysis'
@@ -919,11 +935,13 @@ try {
             $ghidraArgs += @('-preScript', 'ApplyNexusForeverLabels.java', $resolvedLabelMap)
         }
 
-        $ghidraArgs += @(
-            '-postScript', 'ExportNexusForeverAnalysis.java', $OutputDir, $effectiveMaxDecompiledFunctions,
-            $DecompileMode, $ghidraVersion, $binaryFingerprint, $labelFingerprint,
-            $labelsApplied.ToString().ToLowerInvariant(), $CacheWarmMode, $MaxWarmFunctionsPerRun
-        )
+        if (-not $SkipDefaultExport) {
+            $ghidraArgs += @(
+                '-postScript', 'ExportNexusForeverAnalysis.java', $OutputDir, $effectiveMaxDecompiledFunctions,
+                $DecompileMode, $ghidraVersion, $binaryFingerprint, $labelFingerprint,
+                $labelsApplied.ToString().ToLowerInvariant(), $CacheWarmMode, $MaxWarmFunctionsPerRun
+            )
+        }
 
         if ($ExtraPostScript) {
             $ghidraArgs += @('-postScript', $ExtraPostScript)
@@ -1015,6 +1033,7 @@ finally {
         projectLockRetryDelaySeconds = $ProjectLockRetryDelaySeconds
         projectLockTimeoutMinutes = $ProjectLockTimeoutMinutes
         exportOnly = [bool]$ExportOnly
+        skipDefaultExport = [bool]$SkipDefaultExport
         skipCoverage = [bool]$SkipCoverage
         noApplyLabels = [bool]$NoApplyLabels
         labelsApplied = [bool]$labelsApplied
@@ -1058,4 +1077,9 @@ finally {
     }
 }
 
-Write-Host "Ghidra run complete. Exports: $OutputDir"
+if ($SkipDefaultExport) {
+    Write-Host 'Ghidra run complete. Default export skipped.'
+}
+else {
+    Write-Host "Ghidra run complete. Exports: $OutputDir"
+}

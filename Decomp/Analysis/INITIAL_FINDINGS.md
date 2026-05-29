@@ -13963,14 +13963,14 @@ One-hundred-thirtieth placeholder-rename resume pass (2026-05-23):
 One-hundred-thirty-first pending gift UI and group handler correction (2026-05-23):
 
 - `InspectCodeAddresses` on `1400a9b20`, `140005bf0`, `140519260`, `1406031d0` (user run;
-  manifest `selected.count=0` ù output in fragment cache / prior exports).
+  manifest `selected.count=0` ? output in fragment cache / prior exports).
 - `PendingAccountItemGroup_ReadPayload` @ `1400a9b20`: `u64` @ `+0x10` after `AccountItemId`;
   `FUN_14006c090` @ `+0x08` reads 32-bit item id; wide string @ `+0x18`; `TargetAccountId` @ `+0x38`.
 - `AccountPendingItemGroupCache_InsertFromPayload` @ `140005bf0`: `plVar12[2] = param_2[2]` (wire
   `+0x10`); grouped dedupe keys on `Id` / group string only.
 - `AccountItemUi_GiftSelectedPendingItemGroup` @ `140519260`: loads pending row, passes
   `cacheRow+0x38` wide string to gift senders; account gift uses UI `param_1+0x38` target account;
-  character gift uses UI `param_1+0x40` identity ù **does not read cache slot `[2]`**. `Unknown2`
+  character gift uses UI `param_1+0x40` identity ? **does not read cache slot `[2]`**. `Unknown2`
   stays blocked; NF continues emitting `0`.
 - **Label fix:** `1406031d0` decompile dispatches `Group_MemberPromoted` from `param_2[2]`/`[3]`;
   it does **not** call `Group_CopyMemberStatBlockFromPayload`. Roster stat refresh uses
@@ -14147,16 +14147,17 @@ One-hundred-seventeenth matching queued-player list pass:
   rows through `MatchingQueuedPlayerInfo_ReadPayload` (`140098500`).
 - The nested row is now strong enough for durable labels and source comments.
   `MatchingQueuedPlayerInfo_ReadPayload` reads identity, wide name,
-  14-bit faction/race/class, 2-bit gender, one 32-bit level-like field, 3-bit
-  path, three trailing uint32 slots plus one flag bit, five
+  14-bit faction/race/class, 2-bit gender, one 32-bit level field, 3-bit path,
+  a correlated tail of uint32 prime level (`+0x30`), party flag (`+0x34`), 32-bit
+  role mask (`+0x38`), and one blocked uint32 (`+0x3c`), five
   `GroupMemberStatSlot_ReadPayload` (`1400823c0`) rows, and a counted trailing
   array of `MatchingPrimeLevelInfo_ReadPayload` (`1400ad150`) rows. The prime-
   level helper reads one 15-bit world id and one 16-bit achieved-prime-level
   field.
-- NexusForever now comments `ServerMatchingListPlayersQueuedForMap` directly to
-  the native readers and corrects the two confirmed writer mismatches in the
-  existing model: `Gender` is serialized as a 2-bit field instead of 14 bits,
-  and the trailing `+0x3c` slot is treated as a raw uint32 instead of a float.
+- NexusForever models the correlated tail as `PrimeLevel`, `IsParty`, and
+  `Roles` on `ServerMatchingListPlayersQueuedForMap.QueuedPlayerInfo`; `+0x3c`
+  stays `TrailingUInt32_0x3C` until a second consumer or sniff proves semantics.
+  Writer fixes retained: `Gender` is 2-bit; `+0x3c` is uint32 not float.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
   --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
@@ -14916,7 +14917,7 @@ One-hundred-fifty-second entity-command runtime-envelope pass:
   `MovementManager.HandleClientEntityCommands` consumes opcode `0x0637`
   (`ClientEntityCommand`) as `Time + command count + repeated command ids and
   payloads`.
-- Source comments now replace the older generic ùbidirectional?ù note on the
+- Source comments now replace the older generic ?bidirectional?? note on the
   opcode enum and add matching runtime-boundary summaries to the client/server
   packet models. No client-native decompile label is implied here.
 - Focused protocol coverage now pins one simple `SetTime` command through both
@@ -15197,8 +15198,8 @@ Quest log / tutorial Codex classification follow-up (2026-05-25):
   10 quests carrying bit `0x800000`, all 10 lacked `EpisodeQuest` rows but only
   8 were fully zero-classified; outliers `10604` and `10605` still carry nonzero
   quest categories. The stronger durable boundary for Rider's Reef is therefore
-  ùunclassified in `Quest2`/`EpisodeQuest`ù, not merely ùflagged with
-  `0x800000`ù.
+  ?unclassified in `Quest2`/`EpisodeQuest`?, not merely ?flagged with
+  `0x800000`?.
 - Net result: blank Codex browse rows for the Rider's Reef starter/follow-up
   chain are a stock client data/UI limitation. Server-side fixes can keep those
   quests active, tracked, and objective-synced, but cannot make them browseable
@@ -15707,6 +15708,35 @@ SoldierEvent Lua accessor mapping pass (2026-05-27):
   producer timing, wave scheduler cadence, unit spawn ownership, death/failure
   reasons, or packet ordering. Generic Soldier holdout runtime remains blocked
   pending packet/live-client capture or a mapped client packet-consumer pass.
+
+Path family export selection expansion pass (2026-05-29):
+
+- `Decomp/Analysis/scripts/ExportNexusForeverAnalysis.java` now seeds explicit
+  high-value string patterns for all four path families instead of relying on
+  the broad `path` / `pathmission` strings alone.
+- Explorer anchors now include `PathExplorerActivate`, `PathExplorerNode`,
+  `PathExplorerPowerMap`, `PathExplorerScavengerClue`,
+  `PathExplorerScavengerHunt`, and `ClientCastPathExplorerSearching`, matching
+  the existing `PathExplorer_*` and `Explorer*_LookupById` label families.
+- Scientist anchors now include `PathScientistCreatureInfo`,
+  `PathScientistDatacubeDiscovery`, `PathScientistExperimentation`,
+  `PathScientistExperimentationPattern`, `PathScientistFieldStudy`,
+  `PathScientistSpecimenSurvey`, `PathScientistScanBotProfile`, plus the
+  already-mapped scanner-name / dismiss-scanbot request names called out
+  elsewhere in this file.
+- Settler anchors now include `PathSettlerHub`, `PathSettlerImprovement`,
+  `PathSettlerImprovementGroup`, `PathSettlerInfrastructure`,
+  `PathSettlerMayor`, `PathSettlerSheriff`, and the current Settler
+  build-status/runtime names.
+- Soldier anchors now include `PathSoldierActivate`,
+  `PathSoldierAssassinate`, `PathSoldierEvent`, `PathSoldierEventWave`,
+  `PathSoldierSWAT`, `PathSoldierTowerDefense`, `SoldierHoldout`, and
+  `Game.SoldierEvent`.
+- Result: future export-only passes can pull in unlabeled path-adjacent
+  functions directly from the strongest table/string xrefs for Explorer,
+  Scientist, Settler, and Soldier. No new durable native labels were promoted
+  in this pass because the strongest currently evidenced path-family functions
+  were already present in `Decomp/Analysis/function_labels.csv`.
 
 LWS-060 path mission persistence implementation pass (2026-05-27):
 
@@ -16607,7 +16637,7 @@ Client opcode discovery loop pass 9 (2026-05-29):
   plus CharacterScreenLib `InitiatePTRCharacterCopy` @ `1409edc80`. **`ClientPtrCopy`
   (`0x06E8`)** remains separate with unresolved managed wire shape.
 - `Client0x07B6` sender `1403f42e0` is sole `0x7B6` send site (addon/module walk);
-  no semantic rename yet. `Client0x00C8` has registration onlyùno dedicated send
+  no semantic rename yet. `Client0x00C8` has registration only?no dedicated send
   helper in export cache; do not alias to queue-leave beyond shared `MatchType` wire.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo`
@@ -16690,7 +16720,7 @@ Client opcode discovery loop pass 13 (2026-05-29):
 - ClientICCommChannelJoin_WritePayload 1400877a0 and ClientICCommMessage_WritePayload 1400875e0:
   TraceFunctionCallers show registration-only refs (same as cycle 12).
 - send_helper_filter_0550 / send_helper_filter_62a on Network_SendOpcodePayloadHelper: no call-site
-  instruction window contained 0x550 or 0x62A ù opcodes do not use direct helper immediates.
+  instruction window contained 0x550 or 0x62A ? opcodes do not use direct helper immediates.
 - MatchingReplacement_SendStartLookingForReplacements 14076aa30: callers trace shows two vtable
   DATA refs only (indirect UI dispatch table).
 - ClientSuggest family: AccountItem_SendOpcodePayloadHelper 1400161d0 rail relabeled (0x0233/0x07C6);
@@ -16706,16 +16736,16 @@ Client opcode discovery loop pass 13 (2026-05-29):
 
 Client opcode discovery loop pass 14 (2026-05-29):
 
-- Parallel subagent slice: matching UI cluster decompile (14076a9f0ù14076ac30), AccountItem rail
+- Parallel subagent slice: matching UI cluster decompile (14076a9f0?14076ac30), AccountItem rail
   filter for ClientSuggest 0x012D/0x063E, ICComm vtable send path, and 062A/0634 cluster ruling.
 - InspectCodeAddress 14076a9f0: sends 0x05DA via Network_SendOpcodePayloadHelper when
   *(DAT_140c65b98+0x10c)==0x10; label promoted Matching_SendMatchLeave.
 - InspectCodeAddress 14076ac30: map lookup + flag gate then sends 0x0606; label promoted
   Matching_SendTransferIntoMatch.
 - Matching UI cluster sends 0x05D5/0x0602/0x05DA/0x0606 only; decomp cache has no 0x062A/0x0634
-  anywhere ù LFR/replacement cluster ruled out for those opcodes.
+  anywhere ? LFR/replacement cluster ruled out for those opcodes.
 - AccountItem_SendOpcodePayloadHelper 1400161d0 TraceFunctionCallers filters 0x12D and 0x63E:
-  31 refs listed, zero matching instruction windows ù AccountItem rail ruled out for ClientSuggest
+  31 refs listed, zero matching instruction windows ? AccountItem rail ruled out for ClientSuggest
   siblings 0x012D/0x063E.
 - ICComm 0x0550 hypothesis weakened: opcode not in ICComm registration table 14006c290; lives in
   movement block 1400a8190; send uses DAT_140c65808 vtable+0x108 via Network_SendMessageById path.
@@ -16731,12 +16761,12 @@ Client opcode discovery loop pass 15 (2026-05-29):
 - Parallel subagent slice: ICComm 0x0550 hypothesis closure, ClientSuggest 0x012D/0x063E rail
   hunt, 062A/0634 vtable dispatch targets, ServerMatching0x05CF + Client0x00C8 follow-up.
 - send_helper_filter_12d / send_helper_filter_63e on Network_SendOpcodePayloadHelper 1403f4900:
-  348 callers each, zero matching instruction windows with 0x12D or 0x63E ù world send rail ruled
+  348 callers each, zero matching instruction windows with 0x12D or 0x63E ? world send rail ruled
   out for ClientSuggest siblings (same pattern as 0x0550/0x062A).
 - InspectCodeAddress 14076c830: Matching_QueueDispatchFromUi sends 0x05EF/0x05F3/0x05F8/0x05F9 via
   Network_SendOpcodePayloadHelper with map/role payload building and match-state gates; does not
   reference 0x062A/0x0634.
-- TraceFunctionCallers 140081f00 (ServerMatchingAverageWaitTimeUpdate reader): 6 refs ù registration
+- TraceFunctionCallers 140081f00 (ServerMatchingAverageWaitTimeUpdate reader): 6 refs ? registration
   DATA plus ServerFortuneRewards_ReadPayload loop call; no direct UI outbound chain to 062A/0634 yet.
 - ICComm-as-0x0550 hypothesis dead: opcode in movement registration 1400a8190 not ICComm 14006c290.
 - Client0x062A/0634, Client0x012D/063E, ServerMatching0x05CF, Client0x00C8: sender/handler still blocked.
@@ -16780,13 +16810,13 @@ Client opcode discovery loop pass 16 (2026-05-29):
 
 - Parallel subagent slice: 062A/0634 vtable/serializer probes, ClientSuggest 012D/063E
   accountitem010 rail, Client0x0550 indirect send chain, ServerMatching0x05CF + Client0x00C8 follow-up.
-- accountitem010_filter_12d/_63e on FUN_140016010: 9 refs, zero filter windows ù sibling helper
+- accountitem010_filter_12d/_63e on FUN_140016010: 9 refs, zero filter windows ? sibling helper
   ruled out for ClientSuggest opcodes.
-- InspectCodeAddress 140016010: relabeled AccountItem_SendViaNetworkMessageId ù sends via
+- InspectCodeAddress 140016010: relabeled AccountItem_SendViaNetworkMessageId ? sends via
   DAT_140c65808 vtable+0x108 using message ids ClientPackedWorld 0x038C and ClientEncrypted 0x0244
   (account-item take/gift, daily login, storefront callers); not 0x012D/0x063E.
 - cycle16_callers_14007dc80: callers FUN_14007dd40 and FUN_14007e070 only; relabeled
-  ClientCompoundTradeskillUInt32_WriteCluster ù compound serializer at object+0x30/+0x38/+0x58.
+  ClientCompoundTradeskillUInt32_WriteCluster ? compound serializer at object+0x30/+0x38/+0x58.
 - FindPointerInData 14007d010: 8 .data table pointers (140c1ec38..140c1f168), no gameplay caller.
 - FindOpcodeComparisons 0x62A/0x634 in movement block: registration-only at 1400a82b6/1400a872c.
 - DumpNearbyData 140b76488: matching UI vtable lists known senders 14076a9f0/14076aa30/14076abb0/
@@ -16802,18 +16832,18 @@ Client opcode discovery loop pass 17 (2026-05-29):
 
 - Parallel subagent slice: matching vtable stub inspect, Client0x0550 serializer upward walk,
   MatchType 0x00C8/0x05B5/0x05B6 send filters, ServerMatching0x05CF handler recovery.
-- InspectCodeAddress 14076b770: MatchingUi_BuildRoleSelectionTable ù Lua role table builder only.
-- InspectCodeAddress 14076b940: MatchingUi_BuildGameTypeSelectionTable ù MatchingGameType iteration
-  via FUN_140214e00; no Network_SendOpcodePayloadHelper ù not 062A/0634/05B5 sender.
+- InspectCodeAddress 14076b770: MatchingUi_BuildRoleSelectionTable ? Lua role table builder only.
+- InspectCodeAddress 14076b940: MatchingUi_BuildGameTypeSelectionTable ? MatchingGameType iteration
+  via FUN_140214e00; no Network_SendOpcodePayloadHelper ? not 062A/0634/05B5 sender.
 - send_helper_filter_05b5/_05b6 on Network_SendOpcodePayloadHelper 1403f4900: zero matching
   windows (same indirect-send pattern as 0x012D/0x062A).
-- TraceFunctionCallers 14007dd40: refs are registration DATA only ù bound to server opcode 0x06EA
+- TraceFunctionCallers 14007dd40: refs are registration DATA only ? bound to server opcode 0x06EA
   in Network_RegisterServerOpcode_0351; relabeled ServerPtrCharacterCopyQueued_WritePayloadCluster;
   compound chain is 0x06EA wire path not Client0x0550 outbound sender.
-- TraceFunctionCallers 1403355e0 filter 550: 4 refs, zero 0x550 windows ù message-id serialize
+- TraceFunctionCallers 1403355e0 filter 550: 4 refs, zero 0x550 windows ? message-id serialize
   path still blocked for 0x0550.
 - FindOpcodeComparisons 0x05CF in 140765000-140770000: total_matches=0; InspectCodeAddress
-  1407655c0 is Lua/fortune table builder ù not 0x05CF handler.
+  1407655c0 is Lua/fortune table builder ? not 0x05CF handler.
 - Client0x0550/062A/0634, Client0x012D/063E, Client0x00C8, ServerMatching0x05CF: still blocked.
 - Next: TraceFunctionCallers 140332920 (caller of 1403355e0); FindPointerInData 14008a150;
   inspect 14076bd30; live sniff F-010 for 05CF/00C8/062A/0634.
@@ -16826,19 +16856,19 @@ Client opcode discovery loop pass 18 (2026-05-29):
 - Parallel subagent slice: message-id dispatch chain for Client0x0550, MatchType sender hunt
   (FindPointerInData 14008a150), matching vtable tail stubs, ServerMatching0x05CF global handler scan.
 - TraceFunctionCallers 140332920: 4 vtable DATA refs only; relabeled Network_SerialiseBufferedMessageById
-  ù resolves metadata via vtable+0x130 then Network_SerialiseResolvedMessage (indirect rail for
+  ? resolves metadata via vtable+0x130 then Network_SerialiseResolvedMessage (indirect rail for
   blocked opcodes 0x0550/0x062A/0x0634/0x05B5).
-- FindPointerInData 14008a150 (MatchType writer): matches=0 ù writer referenced only via registration
+- FindPointerInData 14008a150 (MatchType writer): matches=0 ? writer referenced only via registration
   LEA rows, not .data pointers.
 - send_helper_filter_05b5 on Network_SendMessageById 140332580: 4 refs, zero 0x5B5 windows.
-- InspectCodeAddress 14076b6e0: inline vtable slot MatchingUi_VtableMatchStateEligibilityGate ù match
+- InspectCodeAddress 14076b6e0: inline vtable slot MatchingUi_VtableMatchStateEligibilityGate ? match
   state bool only.
-- InspectCodeAddress 14076bd30: MatchingUi_BuildPenaltyDurationTable ù Lua penalty UI, no send.
+- InspectCodeAddress 14076bd30: MatchingUi_BuildPenaltyDurationTable ? Lua penalty UI, no send.
 - FindOpcodeComparisons 0x05CF global: single registration hit at 140075a13 only; InspectCodeAddress
-  140765b00 is Lua table builder sibling to rejected 1407655c0 ù not 0x05CF handler.
+  140765b00 is Lua table builder sibling to rejected 1407655c0 ? not 0x05CF handler.
 - Matching UI vtable at 140b76488 fully swept: known senders + Lua/eligibility stubs only.
 - Client0x0550/062A/0634, Client0x012D/063E, Client0x00C8/0x05B5/0x05B6, ServerMatching0x05CF: still
-  blocked on static evidence ù live sniff F-010 recommended.
+  blocked on static evidence ? live sniff F-010 recommended.
 - Next: WorldSocket socket+0x14b0 handler-node recovery for 0x05CF; DumpNearbyData 140b648b8 vtable
   owner of 140332920; FindCallsToTarget 14008a150; positive-control inspect 14059acb0.
 - Verification:
@@ -16849,18 +16879,18 @@ Client opcode discovery loop pass 19 (2026-05-29):
 
 - Parallel subagent slice: WorldSocket handler recovery plan for 0x05CF, message-id vtable owner
   dump, FindCallsToTarget on MatchType writer, positive control 14059acb0, 062A/0634 static exhaustion.
-- FindCallsToTarget 14008a150 (ClientMatchType_WritePayload): total_calls_found=0 ù confirms
+- FindCallsToTarget 14008a150 (ClientMatchType_WritePayload): total_calls_found=0 ? confirms
   registration/vtable-only indirect path for 0x00C8/0x05B5/0x05B6.
 - InspectCodeAddress 14059acb0: positive control Tradeskill_SendClientTradeskillResetTalents sends
-  0x0858 via Network_SendOpcodePayloadHelper(DAT_140c65898) ù contrast with blocked opcodes on
+  0x0858 via Network_SendOpcodePayloadHelper(DAT_140c65898) ? contrast with blocked opcodes on
   message-id virtual rail.
-- DumpNearbyData 140b648b8: WorldSocket message-dispatch vtable ù slot -3 Network_SendMessageById
+- DumpNearbyData 140b648b8: WorldSocket message-dispatch vtable ? slot -3 Network_SendMessageById
   140332580, slot +0 Network_SerialiseBufferedMessageById 140332920, slot +20
   NetworkSocket_SelectDispatch 140339820; explains DATA-only caller traces (infrastructure vtable,
   not gameplay UI).
 - sendmsg filters 0x62A/0x634 on Network_SendMessageById: 4 refs, zero windows (same as 0x05B5).
 - FindOpcodeComparisons 0x05CA/0x05CC/0x05CF in reader cluster: registration-only for all three;
-  no handler switch found ù 0x05CF handler recovery must use WorldSocket+0x14b0 vtable+0x58 playbook.
+  no handler switch found ? 0x05CF handler recovery must use WorldSocket+0x14b0 vtable+0x58 playbook.
 - Client0x062A/0x0634: static sender discovery exhausted; escalate to F-010 live sniff with payload
   correlation vs 0x05D5/0x0602/0x0628/0x05EF-0x05F9.
 - Next: WorldSocket+0x14b0 handler-node recovery (FindImmediateInstructions 0x14b0, InspectCodeAddress
@@ -16874,10 +16904,10 @@ Client opcode discovery loop pass 20 (2026-05-29):
 - Priority A WorldSocket+0x14b0 handler recovery for ServerMatching0x05CF per ENTITY_AUX_DECODE_ROADMAP.md.
 - InspectCodeAddress 140014f10 reconfirms apply path: deserialize via DAT_140c65808 vtable+0x100, AccountInventory/Storefront fast paths, then handler chain `(**(code **)(*plVar21 + 0x58))(plVar21, conn, opcode, parsedPayload)` walking `*(socket+0x14b0)` nodes at +0x20.
 - FindImmediateInstructions 0x14b0: totalMatches=37; splice cluster at 140356a30, 14035c650, 140369f30, 14036a460, 14036a980, 14036b8d0 plus WorldSocket filter/apply readers.
-- InspectCodeAddress 140369f30: splices spatial-grid unit nodes into parent+0x14b0 (+0x13c0 sibling list); counter object uses base vtable PTR_FUN_140b787c0 whose slot+11 (+0x58) is default stub 14001b000 ù unit-handler family, not opcode-specific matching consumer.
-- FindVtableSlotReferences slot 11 target Loot_HandleLootGrant 1403db050: matches=0 ù confirms loot fast-path is not linked-list vtable+0x58 handler (roadmap negative control).
+- InspectCodeAddress 140369f30: splices spatial-grid unit nodes into parent+0x14b0 (+0x13c0 sibling list); counter object uses base vtable PTR_FUN_140b787c0 whose slot+11 (+0x58) is default stub 14001b000 ? unit-handler family, not opcode-specific matching consumer.
+- FindVtableSlotReferences slot 11 target Loot_HandleLootGrant 1403db050: matches=0 ? confirms loot fast-path is not linked-list vtable+0x58 handler (roadmap negative control).
 - FindOpcodeComparisons 0x05CF/0x05CA/0x05CC global: total_matches=2 (registration-only 0x05CF @140075a13, 0x05CA @140075c90; no 0x05CC cmp anywhere in scan).
-- FindOpcodeComparisons same trio in 1405c000-1405d000 matching-manager range: total_matches=0 ù handlers likely use non-CMP dispatch (parsed-object tag / switch table).
+- FindOpcodeComparisons same trio in 1405c000-1405d000 matching-manager range: total_matches=0 ? handlers likely use non-CMP dispatch (parsed-object tag / switch table).
 - FindDataReferences DAT_140c65b98: total_refs=64; FUN_1405bedf0 lazy-inits matching-manager singleton (0x238 alloc, ctor 1405bee80, reset 1405c2f20 sets +0x10c=0x10).
 - Client0x062A/0x0634: static sender path remains exhausted (pass 19); no new client send probes queued.
 - Next: recover inserted handler-node vtables whose +0x58 bodies dispatch matching opcodes without immediate CMP; F-010 sniff for 0x05CF vs 0x05CA/0x05CC during match-ready window.
@@ -16888,15 +16918,15 @@ Client opcode discovery loop pass 20 (2026-05-29):
 Client opcode discovery loop pass 21 (2026-05-29):
 
 - Priority: recover ServerMatching0x05CF consumer via matching-manager apply dispatch table (not WorldSocket CMP path).
-- FindDataReferences on known apply fn 1405c39f0 (0x05CA MatchingGameReady): single .rdata cell 140e1e60c ù confirms table-driven apply pointers with zero direct CALL sites.
+- FindDataReferences on known apply fn 1405c39f0 (0x05CA MatchingGameReady): single .rdata cell 140e1e60c ? confirms table-driven apply pointers with zero direct CALL sites.
 - TraceFunctionCallers 1405c39f0/1405c41c0: references=1 each, caller=<none> type=DATA only (indirect dispatch).
 - Matching-manager apply table cells mapped (FindDataReferences batch):
   140e1e228=1405c0760, 140e1e288=1405c0ad0, 140e1e294=1405c0b80, 140e1e2b8=1405c0e00, 140e1e2c4=1405c0e90,
   140e1e5a0=1405c3500 (client 0x05C8 sender), 140e1e60c=1405c39f0, 140e1e618=1405c3af0, 140e1e630=1405c3c90,
   140e1e63c=1405c3d30, 140e1e648=1405c3e40, 140e1e660=1405c4140 (MatchJoined), 140e1e66c=1405c41c0, 140e1e690=1405c4690.
-- InspectCodeAddress 1405c39f0: writes manager+0xa8/+0xac/+0xb4 and dispatches MatchingGameReady ù positive control for 0x05CA apply shape.
-- InspectCodeAddress 1405c41c0: silent `*(manager+0xa0) = *payload` (+ optional sub-object+0x98); no ClientEvent ù tentative ServerMatching0x05CF consumer (correlated, not opcode-index proven).
-- InspectCodeAddress 1405c3500: confirms outbound client 0x05C8 sender + MatchingCancelPendingGame ù not 0x05CF inbound.
+- InspectCodeAddress 1405c39f0: writes manager+0xa8/+0xac/+0xb4 and dispatches MatchingGameReady ? positive control for 0x05CA apply shape.
+- InspectCodeAddress 1405c41c0: silent `*(manager+0xa0) = *payload` (+ optional sub-object+0x98); no ClientEvent ? tentative ServerMatching0x05CF consumer (correlated, not opcode-index proven).
+- InspectCodeAddress 1405c3500: confirms outbound client 0x05C8 sender + MatchingCancelPendingGame ? not 0x05CF inbound.
 - FindDataReferences ServerUInt32_LocalReadThunk 140099110: registration-only (4 hits in Network_RegisterServerOpcode_0351); shared with 0x085D.
 - Registration block (selected_decompiled.c): 0x05CF -> reader 140099110 size 4; 0x05CA -> reader 140099700 size 0xc; apply linkage is via table not registration tuple.
 - ServerMatching0x05CF: correlated apply candidate at 1405c41c0; still blocked for rename/emit until opcode-to-cell index recovered or F-010 confirms field semantics at manager+0xa0.
@@ -16947,8 +16977,289 @@ Client opcode discovery loop pass 23 (2026-05-29):
   FindPointerInData 140e1e228=0 matches;
   FindImmediateInstructions 0x140e1e228=0 matches.
   Apply linkage remains purely indirect via computed table index (not a direct LEA of table base).
-- InspectCodeAddress 1400807f0 (shared reader for 0x05B0/0x05CC/0x05F1): MOV R8D,0x1 then JMP 14006c090 ù proves one-byte read surface despite registration size 4.
-- Zero-payload apply cluster (1405c1850/1405c2440/1405c24a0/1405c21d0) take manager only; likely selected by one-flag opcode routing without passing payload into apply ù candidate shape for 0x05B0/0x05CC/0x05F1 but opcode-to-cell index still unproven.
+- InspectCodeAddress 1400807f0 (shared reader for 0x05B0/0x05CC/0x05F1): MOV R8D,0x1 then JMP 14006c090 ? proves one-byte read surface despite registration size 4.
+- Zero-payload apply cluster (1405c1850/1405c2440/1405c24a0/1405c21d0) take manager only; likely selected by one-flag opcode routing without passing payload into apply ? candidate shape for 0x05B0/0x05CC/0x05F1 but opcode-to-cell index still unproven.
 - ServerMatching0x05CF: still correlated-only at 1405c41c0 (manager+0xa0 write + FUN_1400a8020); no second witness.
 - ServerMatchingMatchParticipantCountUpdate 0x05CC: reader surface confirmed one byte; apply cell among zero-payload / one-flag candidates still blocked.
 - Next: finish batch sweep for remaining 1405c* apply fns; recover computed index walker (likely via registration-table slot parallel to apply table); F-010 sniff for 0x05CF/0x05CC during match-ready.
+Client opcode discovery loop pass 24 (2026-05-29):
+
+- Question: can the `ServerRewardPropertySet` (`0x092C`) structural placeholder be
+  strengthened from cached client reader evidence without adding runtime behavior?
+- Mapped client readers:
+  `ServerRewardPropertySet_ReadPayload` @ `140097800` reads an 8-bit property
+  count, allocates `count * 0x20`, and calls `RewardPropertySetEntry_ReadPayload`
+  @ `1400acec0` for each row.
+- `RewardPropertySetEntry_ReadPayload` first calls `RewardProperty_ReadPayload`
+  @ `1400ace10`, then reads an 8-bit sub-property count, allocates
+  `count * 0x10`, and calls `SubRewardProperty_ReadPayload` @ `1400acd60`.
+- `RewardProperty_ReadPayload` reads a 6-bit reward property id, uint32 data,
+  2-bit modifier value type, and typed value. `SubRewardProperty_ReadPayload`
+  uses the same data/type/value tail with a 4-bit sub-property id.
+- Source now uses `SubRewardProperty` / `SubRewardProperties` and
+  `RewardPropertyModifierValueType` for the nested rows instead of the older
+  `UnknownStruct` names. No producer behavior changed; population of nested
+  sub-properties remains blocked until a server-side source for those rows is
+  mapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~RewardPropertyProtocolTests|FullyQualifiedName~PacketPlaceholderNamingTests" -v minimal --nologo`
+  passed after this pass.
+
+Client opcode discovery loop pass 25 (2026-05-29):
+
+- Question: pivot from matching-manager apply sweeps to unmapped quest/public-event/loot
+  opcode readers and apply consumers.
+- **ServerPublicEventStart (`0x0112`)** ? mapped reader + apply:
+  registration binds size `0x48` to `ServerPublicEventStart_ReadPayload` @ `14007b620`
+  (not the single-objective `0x0132` reader). Decompile shows u14 event id, u14 team,
+  u32 elapsed, bool busy, counted `0x58` objective rows via
+  `ServerPublicEventObjectiveUpdate_ReadPayload`, counted u32 location ids, u32 reward
+  type, three u32 thresholds, u14 world socket ? matches emulator
+  `ServerPublicEventStart`. Apply consumer `PublicEventStart_ApplyParsedPayload` @
+  `1405f2ae0` (apply-table cell `140e215ac`) materializes live event/objective state and
+  dispatches `PublicEventStart` / optional `PublicEventObjectiveJoinedMessage`
+  ClientEvents. Secondary map consumer `PublicEventMap_DispatchStartOrClear` @
+  `140496b10` dispatches `PublicEventStart` vs `PublicEventCleared` from a two-u32
+  payload after map lookup.
+- **Quest cluster (`0x035C`/`0x035F`/`0x0361`)** ? mapped reader/apply pairs except Lua:
+  `ServerQuestInit_ReadPayload` @ `14008f2d0` ? apply `QuestRuntime_HandleQuestInit`
+  @ `1405fb350` (cell `140e22158`). Shared reader
+  `ServerQuestStateOrObjective_ReadPayload` @ `14008f100` (u15 + u32 + u32) serves both
+  `0x035C` and `0x0361`; apply cells `140e22188` ?
+  `QuestRuntime_HandleQuestStateChange` @ `1405fb670` (state transition via
+  `QuestRuntime_ApplyQuestStateTransition` @ `1405fbdc0`, dispatches
+  `ContractStateChanged` on contract objectives) and `140e221ac` ?
+  `QuestRuntime_UpdateObjectiveStateAndDispatch` @ `1405fb830` (dispatches
+  `QuestObjectiveUpdated` / `ContractObjectiveUpdated`). Opcode-to-cell index proof
+  still blocked (DATA-only refs, no table walker).
+- **ServerQuestLuaEvent (`0x0359`)** ? reader mapped, apply blocked:
+  `ServerQuestLuaEvent_ReadPayload` @ `14008f530` reads u14 event id, u32 arg count,
+  per-arg u32 type + typed payload via `PTR` table @ `140c1eb98` (Int=
+  `ServerUInt32_ReadPayload`, String=`FUN_140080e80`, Unit=`FUN_140096f30`, Bool=
+  one-byte `1400807f0`, Item=`ServerUInt18_ReadPayload`, Quest=
+  `ServerUInt15_ReadPayload`). `LuaEvent` string hits (`FUN_140211ce0`/`FUN_140212000`)
+  are ClientDB `DB\LuaEvent.tbl` loaders, not packet apply. Apply consumer and script
+  dispatch path remain unmapped.
+- **Loot aux (`0x014D`, `0x089F`)** ? reader only:
+  `0x014D` size 1 ? `ServerEmpty_ReadPayload` (zero-byte surface; also referenced by
+  unrelated movement send path). `0x089F` size 4 ? `ServerUInt32_ReadPayload` (likely
+  loot unit id). No apply-table cells or loot-tree mutators labeled for standalone
+  `CanLoot` scalar updates; full-row `CanLoot` still ingested via
+  `Loot_IngestServerLootNotify` @ `1405fe2f0`.
+- **Still unmapped PE apply cluster:** `0x0132`?`0x013B`, `0x06F1`?`0x06F9` have
+  readers under `14007b*` / `14007c*` but most apply consumers beyond `0x0112` remain
+  unlabeled; `0x0132` reader has registration + nested call from `0x0112` reader only.
+- Next: recover quest/PE apply-table walker (parallel to matching `140e1e228` blocker);
+  map `0x0359` apply; sweep PE objective/status/vote apply fns (`1405f*` /
+  `PublicEventService_*`); F-010 or capture for `0x089F`/`0x014D` loot timing.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~PublicEventVoteTests|FullyQualifiedName~PublicEventObjectiveTests" -v minimal --nologo`
+  should pass after this pass.
+
+Client opcode discovery loop pass 26 (2026-05-29):
+
+- Question: does the shared `Client0x0928` writer expose another real packet
+  shape that can safely unblock source behavior?
+- Helper pass:
+  `run_ghidra_analysis.ps1 -ExportOnly -SkipDefaultExport -SkipCoverage
+  -Targets WildStar64.exe -ExtraPostScript TraceFunctionCallers.java
+  -ExtraPostScriptArgs @('1400898b0','8')` completed successfully.
+- `TraceFunctionCallers` on `1400898b0` shows registration refs for unresolved
+  `0x0928` in `ClientWorldOpcodeRegister_MovementSpline` and for named
+  `0x068E ClientPetSetStance` in `Network_RegisterServerOpcode_0351`; cached
+  decompile confirms the shared helper writes uint32 followed by a 5-bit value.
+- Durable label refined from `Client0x0928_WritePayload` to
+  `ClientUInt32UInt5_WritePayload`, and the duplicate
+  `Client0x0701_WritePayload` row was removed so future label application no
+  longer reports that duplicate.
+- Implemented fix: `ClientPetSetStance` now reads `PetStance` as 5 bits instead
+  of 8 bits. `Client0x0928` remains semantic-blocked because the direct sender
+  or consumer for that opcode is still missing; do not alias it to
+  cooldown/reward-property behavior without a second witness.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --filter
+  "FullyQualifiedName~RewardPropertyProtocolTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests"
+  -v minimal --nologo` passed `75/75`. Focused WildStar64 re-export with
+  `-DecompileMode Force -SkipCoverage` confirmed `ClientUInt32UInt5_WritePayload`
+  in `functions.csv` and `selected_decompiled.c`; label application now reports
+  `duplicateRows=0`.
+
+Client opcode discovery loop pass 27 (2026-05-29):
+
+- Question: can the `ServerCostumeItemAux` (`0x037F`) raw placeholder be replaced
+  with a client-reader-backed structural model?
+- `FindImmediateInstructions 0x037F` found exactly one opcode immediate:
+  registration in `Network_RegisterServerOpcode_0351` @ `14006c290`, binding
+  opcode `0x037F` to reader `1400874a0` with registered object size `0x18`.
+- `ServerCostumeItemAux_ReadPayload` @ `1400874a0` null-checks the destination
+  and reads one 14-bit field at offset `0`, three 32-bit fields at offsets
+  `+4`, `+8`, and `+0x0c`, then two 1-bit flags at offsets `+0x10` and
+  `+0x14`. Source now writes this exact bit shape instead of an opaque raw
+  0x18-byte payload.
+- `FindImmediateInstructions` for `Client0x011B` and `Client0x011D` did not
+  produce a safe rename. The non-registration `0x011B` hit in
+  `Movement_UpdateAndSendFallStateOpcodes` is a `GameFormula_GetEntryById`
+  lookup, and `0x011D` hits include spell/costume result constants rather than a
+  dedicated send path. Keep both diagnostic opcodes blocked pending sender,
+  consumer, or live-sniff evidence.
+- Remaining blocker: `0x037F` producer/consumer semantics are still unknown, so
+  the packet stays structurally named and should not be emitted by runtime
+  costume/unlock flows without a second witness.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~RewardPropertyProtocolTests" -v minimal --nologo`
+  passed `75/75`.
+
+Client opcode discovery loop pass 28 (2026-05-29):
+
+- Question: can the inventory-cluster aux opcode `0x019A` and shared client writer
+  `0x0701` move from opaque raw placeholders to client-reader-backed structural
+  models?
+- `FindImmediateInstructions 0x019A` found registration in
+  `Network_RegisterServerOpcode_0351` @ `14006c290`, binding opcode `0x019A` to
+  reader `MatchingQueueResultWaitTime_ReadPayload` @ `14007fcf0` with registered
+  object size `0x8`. The same helper is already mapped for matching opcodes
+  `0x0616` and `0x0623`.
+- `ServerSupplySatchelAux` now writes one 6-bit field plus one uint32 instead of
+  an opaque 8-byte payload. Do not alias this opcode to
+  `MatchingQueueResult` / wait-time semantics without a client consumer witness;
+  the supply-satchel cluster name stays provisional.
+- Durable label refined from `Client0x0701_WritePayload` to
+  `ClientUInt2UInt32_WritePayload` @ `1400a69d0`; the managed
+  `Client0x0701` diagnostic model already matched the 2-bit + uint32 wire shape.
+- Remaining blockers: `0x019A` producer/consumer intent is still unknown;
+  `Client0x0701` sender and gameplay owner remain unresolved.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~RewardPropertyProtocolTests" -v minimal --nologo`
+  passed `76/76`.
+
+Client opcode discovery loop pass 29 (2026-05-29):
+
+- Question: can `ServerRealmTransferDestinationsAux` (`0x03EF`) move from raw
+  bytes to a client-reader-backed structure?
+- `FindImmediateInstructions 0x03EF` found exactly one opcode immediate:
+  registration in `Network_RegisterServerOpcode_0351` @ `14006c290`, binding
+  opcode `0x03EF` to reader `14007d790` with registered object size `0x10`.
+- `ServerRealmTransferDestinationsAux_ReadPayload` @ `14007d790` null-checks
+  the destination, reads a 32-bit value at offset `0`, reads a 32-bit byte count
+  at offset `+4`, allocates a pointer-backed buffer at offset `+8`, and reads
+  exactly that many raw bytes into it via the packet bit reader.
+- Source now models the packet as `Value` plus counted `Data` bytes instead of
+  fixed opaque `0x10` raw bytes. The payload contents and producer/consumer
+  semantics remain blocked, so runtime realm-transfer/account-gift flows should
+  not emit this packet without a second witness.
+- Verification:
+  first focused packet test run hit a transient Windows file lock on the test
+  assembly from Defender; rerunning
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~RewardPropertyProtocolTests" -v minimal --nologo`
+  passed `76/76`.
+
+Client opcode discovery loop pass 30 (2026-05-29):
+
+- Question: can the item-swap and vehicle embark aux opcodes `0x0567` and `0x01B2`
+  move from opaque raw placeholders to client-reader-backed structural models?
+- `FindImmediateInstructions 0x0567` found registration in
+  `Network_RegisterServerOpcode_0351` @ `14006c290`, binding opcode `0x0567` to
+  reader `1400a48d0` with registered object size `0x10`. Adjacent opcode
+  `0x0568 ServerItemSwap` uses reader `1400a4840` with size `0x20`.
+- `ServerItemSwapAux_ReadPayload` @ `1400a48d0` reads one `ItemDragDrop` row
+  (two uint64 fields). `ServerItemSwap_ReadPayload` @ `1400a4840` reads the same
+  row shape twice, matching the existing managed `ServerItemSwap` model.
+- `ServerVehicleEmbarkAux_ReadPayload` @ `14008ff20` reads one flag, one 2-bit
+  field, one uint64 field, and two uint32 fields inside the registered 0x10-byte
+  object. Producer/consumer semantics remain blocked; do not alias to
+  `ClientVehicleEmbark` without a second witness.
+- Durable labels added for `NetworkBitReader_ReadUInt64` @ `14006c120`,
+  `ServerItemSwap_ReadPayload`, `ServerItemSwapAux_ReadPayload`, and
+  `ServerVehicleEmbarkAux_ReadPayload`.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~RewardPropertyProtocolTests" -v minimal --nologo`
+  passed `76/76`.
+
+Client opcode discovery loop pass 31 (2026-05-29):
+
+- Question: continue quest/public-event/loot apply discovery where pass 25 left
+  readers mapped but most apply consumers unlabeled.
+- **ServerPublicEventObjectiveUpdate (`0x0132`)** ? mapped apply:
+  `PublicEventObjectiveUpdate_ApplyParsedPayload` @ `1405f3520` (apply-table cell
+  `140e2163c`) resolves the live objective through the public-event service
+  vtable `+0x88`, writes the parsed status row (`+0x1b0`), elapsed/notification
+  fields (`+0x1c0/+0x1c8`), counted location ids (`+0x100`), counted map-region
+  pairs (`+0x120`), then dispatches `PublicEventObjectiveUpdate` and notifies
+  quest UI via `FUN_1405f9e30`. Wire layout matches the existing
+  `ServerPublicEventObjectiveUpdate` model and reuses the same objective-row
+  shape nested inside `0x0112` start. Sibling dispatchers `1405f3680` /
+  `1405f37e0` also emit the same ClientEvent string.
+- **Public-event apply routers** ? correlated:
+  `PublicEventPacketApply_DispatchByMode` @ `1405f5010` (cell `140e21948`) and
+  `PublicEventPacketApply_DispatchExtendedMode` @ `1405f50f0` (cell `140e21954`)
+  switch on a payload mode field and delegate to live-event/objective vtable
+  slots; opcode-to-mode mapping still blocked.
+- **ServerPublicEventVoteInitiate (`0x06F1`)** ? correlated apply:
+  `PublicEventVoteInitiate_Apply` @ `1405f5170` (cell `140e21960`) walks vote
+  nodes and dispatches `PublicEventInitiateVote` when the queue transitions
+  from empty.
+- **Related PE apply helpers** ? correlated only:
+  `PublicEventObjectiveUpdate_BroadcastByNotificationMode` @ `1405f3c50` walks
+  the live objective tree filtered by notification mode;
+  `PublicEventObjectiveLocationAdded_ApplyPair` @ `1405f4040` applies a u32
+  pair and dispatches `PublicEventObjectiveLocationAdded`. Opcode linkage for
+  both remains blocked.
+- **Partial apply-table map (DATA-only cells, no walker):**
+  `140e215ac`=`1405f2ae0` (`0x0112` start),
+  `140e2163c`=`1405f3520` (`0x0132` objective update),
+  `140e21948`=`1405f5010`, `140e21954`=`1405f50f0`,
+  `140e21960`=`1405f5170` (vote initiate),
+  `140e22158`=`1405fb350` (`0x035F` quest init),
+  `140e22188`=`1405fb670` (`0x035C` quest state),
+  `140e221ac`=`1405fb830` (`0x0361` quest objective),
+  `140e22578`=`1405ff500` (loot row apply; called from
+  `Loot_HandleLootNotification`).
+- **Still blocked:** `0x0359` QuestLua apply; standalone `0x089F` CanLoot apply
+  (reader only `ServerUInt32_ReadPayload`; no apply-table cell); `0x014D` loot
+  aux (`ServerEmpty_ReadPayload`); most remaining `0x0133`?`0x013B` / `0x06F5`?
+  `0x06FF` PE opcodes; apply-table index walker.
+- Next: map `0x0359` apply cell; tie `1405f3c50`/`1405f4040` to opcodes;
+  sweep `1405f3680`/`1405f37e0`/`1405f50f0` vtable targets; recover table
+  walker; F-010 sniff for `0x089F`.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~PublicEventVoteTests|FullyQualifiedName~PublicEventObjectiveTests" -v minimal --nologo`
+  should pass after this pass.
+
+F-017 `ServerSpellEffectDamage` (`0x07F6`) reader and trailing-row follow-up (2026-05-29):
+
+- `Network_RegisterServerOpcode_0351` @ `14006c290` registers opcode `0x07F6`
+  with parsed size `0x48`, reader `ServerSpellEffectDamage_ReadPayload` @
+  `140095910`, and no dedicated post-read apply function (handler slot `0`).
+  Sibling `0x07F8` uses the same pattern with
+  `ServerSpellEffectNestedTargets_ReadPayload` @ `140095810`.
+- `SpellDamageDescription_ReadPayload` @ `1400946c0` is referenced only from
+  the `0x07F6` and `0x07F8` readers, not from the `0x07F4` `ServerSpellGo`
+  parse path in this binary export.
+- Trailing rows are read by `SpellDamageTrailingRow_ReadPayload` @ `1400945e0`
+  (seven uint32 values, then a 3-bit field, stored in `count << 5` byte rows).
+  `TraceFunctionCallers` on `1400945e0` shows the only code caller is
+  `SpellDamageDescription_ReadPayload`; `1400946c0` is only called from the
+  `0x07F6` and `0x07F8` readers.
+  NexusForever renamed `TrailingStructure` fields to mirror the primary damage
+  row (`RawDamage` ? `GlanceAmount`, plus a 3-bit `DamageType`); per-row
+  gameplay consumer evidence remains blocked.
+- NF still does not emit `0x07F6`; `ServerSpellGo` embedded damage now writes
+  `GlanceAmount = 0` explicitly. Safe emit policy for trailing rows remains an
+  empty list until a retail witness shows non-zero counts.
+- Post-parse apply path for `0x07F6` (2026-05-29, no direct registration apply):
+  `WorldSocket_ProcessServerMessage` @ `140014f10` deserializes via
+  `DAT_140c65808` `vtable+0x100`, then walks `socket+0x14b0` handler nodes with
+  `vtable+0x58(handler, conn, opcode, parsedPayload)`. Handler entities use
+  `PTR_FUN_140b66880` slot 11 at `+0x58` =
+  `Entity_ExecuteSpellEffectHighRange` @ `1403ec6a0` (no direct `CALL` xrefs;
+  `FindCallsToTarget` = 0). Prologue copies **R9** (parsed payload) to **RDI**
+  before the jump table (`mov rdi, r9` @ `1403ec6c4`). Opcode `0x07F6` index
+  `0x795` lands in jump case **`1403ee268`**: `mov rdx, rdi` /
+  `call SpellWrapper_ApplyServerEffectDamage` @ `1405a5800`, which resolves
+  `*payload` as `ServerUniqueId`, calls wrapper `vtable+0x8`, then
+  `SpellWrapper_DispatchEffectDamageCombatLog` @ `14053f3f0`, which reads the
+  primary damage row and calls `CombatLog_MaybeDispatchFloatersForSourceAndTarget`
+  @ `14060b2b0`. Sibling `0x07F4` case @ `1403ee1c9` uses the same wrapper lookup
+  then `14053e5a0` (full spell-go apply). Trailing rows parsed on the wire are
+  still not walked in `14053f3f0`.

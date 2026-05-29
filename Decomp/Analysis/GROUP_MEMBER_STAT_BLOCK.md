@@ -22,7 +22,7 @@ NexusForever models: `ServerGroupMemberStatUpdate`, `ServerGroupRosterUpdate`, `
 | `+0x54` | `PhaseFlags2` | `+0xf0` | Verified |
 | `+0x58` | `Path` (3-bit) | `+0x70` | Verified |
 
-Full `GroupCharacter` roster wire (name, faction, zone, `Unknown10+` ushort block) is **not** part of this `0x60` copier; NF emitters only populate the stat-block subset today.
+Full `GroupCharacter` roster wire embeds the same vitals as packed `ushort` fields (`Health` … `HealingAbsorbMax` at parsed `+0x54`..`+0x6a`) plus `PhaseFlags1`/`PhaseFlags2` after the realm tail; that tail is **not** part of this `0x60` copier. NF `ToNetworkGroupCharacter` still omits most of the roster tail today.
 
 **Callers in fragment cache (2026-05-23):** only `Group_HandleMemberRemove_ReadPayload` @ `140603380` invokes `Group_CopyMemberStatBlockFromPayload` besides the copier itself (`140607490`). `1406031d0` does not call it (promote path).
 
@@ -30,4 +30,4 @@ Full `GroupCharacter` roster wire (name, faction, zone, `Unknown10+` ushort bloc
 
 - `StatBlockPrefix17` semantics
 - `GroupMemberStatSlot.Value` meaning (ushort per row)
-- `GroupCharacter.Unknown10`–`Unknown22` roster tail (separate handler past stat block)
+- `GroupCharacter.Unknown10` (`uint32` after mentoring, parsed `+0x50`)

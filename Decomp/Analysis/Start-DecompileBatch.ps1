@@ -29,6 +29,7 @@ param(
     [switch] $NoApplyLabels,
     [switch] $SkipCoverage,
     [switch] $NoLatestSummary,
+    [switch] $SkipDefaultExport,
     [string] $ExtraPostScript,
     [string[]] $ExtraPostScriptArgs = @()
 )
@@ -100,6 +101,10 @@ if ($Targets.Count -eq 0) {
     throw 'No decompile targets were supplied.'
 }
 
+if ($SkipDefaultExport -and [string]::IsNullOrWhiteSpace($ExtraPostScript)) {
+    throw '-SkipDefaultExport requires -ExtraPostScript so the batch still has useful work to do.'
+}
+
 if ([string]::IsNullOrWhiteSpace($RunId)) {
     $RunId = '{0}-{1}' -f (Get-Date -Format 'yyyyMMdd-HHmmss-fff'), $PID
 }
@@ -158,6 +163,10 @@ function Start-DecompileTargetJob {
     if (-not [string]::IsNullOrWhiteSpace($ExtraPostScript)) {
         $runnerParameters.ExtraPostScript = $ExtraPostScript
         $runnerParameters.ExtraPostScriptArgs = $ExtraPostScriptArgs
+    }
+
+    if ($SkipDefaultExport) {
+        $runnerParameters.SkipDefaultExport = $true
     }
 
     $job = Start-Job -Name ('decompile-{0}' -f $targetToken) -ScriptBlock {
@@ -237,6 +246,7 @@ $batchSummary = [ordered]@{
     projectLockRetryDelaySeconds = $ProjectLockRetryDelaySeconds
     projectLockTimeoutMinutes = $ProjectLockTimeoutMinutes
     exportOnly = -not [bool]$Analyze
+    skipDefaultExport = [bool]$SkipDefaultExport
     skipCoverage = [bool]$SkipCoverage
     noApplyLabels = [bool]$NoApplyLabels
     labelsApplied = if ($null -eq $firstSummary) { -not [bool]$NoApplyLabels } else { [bool]$firstSummary.labelsApplied }
