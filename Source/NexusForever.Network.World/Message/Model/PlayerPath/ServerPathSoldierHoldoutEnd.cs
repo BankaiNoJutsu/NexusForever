@@ -6,6 +6,8 @@ namespace NexusForever.Network.World.Message.Model.PlayerPath
     [Message(GameMessageOpcode.ServerPathSoldierHoldoutEnd)]
     public class ServerPathSoldierHoldoutEnd : IWritable
     {
+        // Result values are source-aligned, but failure ordering and generic
+        // holdout end producer semantics remain blocked pending smoke proof.
         public ushort PathSoldierEventId { get; set; }
         public PlayerPathSoldierResult Reason { get; set; }
 

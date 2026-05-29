@@ -3,6 +3,11 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Native reader: <c>ServerMatchingPvpRatingUpdated_ReadPayload</c> (<c>140099330</c>).
+    /// Reads four uint32 rating counters followed by one 3-bit
+    /// <see cref="MatchingGameRatingType"/>.
+    /// </summary>
     [Message(GameMessageOpcode.ServerMatchingPvpRatingUpdated)]
     public class ServerMatchingPvpRatingUpdated : IWritable
     {

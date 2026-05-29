@@ -20,6 +20,14 @@ namespace NexusForever.Network.World.Message.Model.Pregame
                 writer.WriteStringWide(LastPlayedCharacter);
                 writer.Write(LastPlayedTime);
             }
+
+            public void Read(GamePacketReader reader)
+            {
+                RealmId               = reader.ReadUShort(14u);
+                CharacterCount        = reader.ReadUInt();
+                LastPlayedCharacter     = reader.ReadWideString();
+                LastPlayedTime          = reader.ReadULong();
+            }
         }
 
         public uint RealmId { get; set; }
@@ -53,6 +61,25 @@ namespace NexusForever.Network.World.Message.Model.Pregame
             writer.Write(Unused4);
             writer.Write(Unused5);
             writer.Write(Unused6);
+        }
+
+        public void Read(GamePacketReader reader)
+        {
+            RealmId            = reader.ReadUInt();
+            RealmName          = reader.ReadWideString();
+            RealmNoteStringId  = reader.ReadUInt();
+            Flags              = reader.ReadEnum<RealmFlag>(32u);
+            Type               = reader.ReadEnum<RealmType>(2u);
+            Status             = reader.ReadEnum<RealmStatus>(3u);
+            Population         = reader.ReadEnum<RealmPopulation>(3u);
+            Unused1            = reader.ReadUInt();
+            Unused2            = reader.ReadBytes(16u);
+            AccountRealmInfo   = new AccountRealmData();
+            AccountRealmInfo.Read(reader);
+            Unused3            = reader.ReadUShort();
+            Unused4            = reader.ReadUShort();
+            Unused5            = reader.ReadUShort();
+            Unused6            = reader.ReadUShort();
         }
     }
 }

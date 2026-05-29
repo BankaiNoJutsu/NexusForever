@@ -40,6 +40,66 @@ public class RealmTransferProtocolTests
     }
 
     [Fact]
+    public void ClientRealmTransferHandler_OfflineRealmSendsServerDownTransferResult()
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        IServerManager serverManager = CreateServerManager(CreateServer(2, isOnline: false));
+        var handler = new ClientRealmTransferHandler(
+            serverManager,
+            NullLogger<ClientRealmTransferHandler>.Instance);
+
+        handler.HandleMessage(session, CreateRealmTransfer(0x1122334455667788ul, 2, transferFlag: false));
+
+        ServerRealmTransferResult result = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerRealmTransferResult>()
+            .Single();
+        Assert.Equal(CharacterModifyResult.RealmTransferFailed_ServerDown, result.Result);
+    }
+
+    [Fact]
+    public void ClientRealmTransferHandler_OnlineRealmReturnsInternalUntilImplemented()
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        IServerManager serverManager = CreateServerManager(CreateServer(3, isOnline: true));
+        var handler = new ClientRealmTransferHandler(
+            serverManager,
+            NullLogger<ClientRealmTransferHandler>.Instance);
+
+        handler.HandleMessage(session, CreateRealmTransfer(0x0102030405060708ul, 3, transferFlag: true));
+
+        ServerRealmTransferResult result = sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .OfType<ServerRealmTransferResult>()
+            .Single();
+        Assert.Equal(CharacterModifyResult.RealmTransferFailed_Internal, result.Result);
+    }
+
+    [Fact]
+    public void ClientInitiatePTRCharacterCopy_ReadsSelectedCharacterId()
+    {
+        byte[] packetData = WritePacket(writer => writer.Write(0x0102030405060708ul));
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        var packet = new ClientInitiatePTRCharacterCopy();
+        packet.Read(reader);
+
+        Assert.Equal(0x0102030405060708ul, packet.CharacterId);
+    }
+
+    [Fact]
+    public void ClientInitiatePTRCharacterCopyHandler_LogsCharacterId()
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out _);
+        var handler = new ClientInitiatePTRCharacterCopyHandler(
+            NullLogger<ClientInitiatePTRCharacterCopyHandler>.Instance);
+
+        handler.HandleMessage(session, CreateInitiatePtrCharacterCopy(0xAABBCCDDEEFF0011ul));
+    }
+
+    [Fact]
     public void ServerTransferDestinationRealmList_WriteSerializesDestinationRows()
     {
         var message = new ServerTransferDestinationRealmList
@@ -150,6 +210,15 @@ public class RealmTransferProtocolTests
         }
     }
 
+    private static byte[] WritePacket(Action<GamePacketWriter> write)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new GamePacketWriter(stream);
+        write(writer);
+        writer.FlushBits();
+        return stream.ToArray();
+    }
+
     private static byte[] WritePacket(ServerTransferDestinationRealmList message)
     {
         using var stream = new MemoryStream();
@@ -194,6 +263,22 @@ public class RealmTransferProtocolTests
     {
         var message = (ClientSelectRealm)RuntimeHelpers.GetUninitializedObject(typeof(ClientSelectRealm));
         SetAutoProperty(message, nameof(ClientSelectRealm.RealmId), realmId);
+        return message;
+    }
+
+    private static ClientInitiatePTRCharacterCopy CreateInitiatePtrCharacterCopy(ulong characterId)
+    {
+        var message = (ClientInitiatePTRCharacterCopy)RuntimeHelpers.GetUninitializedObject(typeof(ClientInitiatePTRCharacterCopy));
+        SetAutoProperty(message, nameof(ClientInitiatePTRCharacterCopy.CharacterId), characterId);
+        return message;
+    }
+
+    private static ClientRealmTransfer CreateRealmTransfer(ulong characterId, ushort targetRealmId, bool transferFlag)
+    {
+        var message = (ClientRealmTransfer)RuntimeHelpers.GetUninitializedObject(typeof(ClientRealmTransfer));
+        SetAutoProperty(message, nameof(ClientRealmTransfer.CharacterId), characterId);
+        SetAutoProperty(message, nameof(ClientRealmTransfer.TargetRealmId), targetRealmId);
+        SetAutoProperty(message, nameof(ClientRealmTransfer.TransferFlag), transferFlag);
         return message;
     }
 

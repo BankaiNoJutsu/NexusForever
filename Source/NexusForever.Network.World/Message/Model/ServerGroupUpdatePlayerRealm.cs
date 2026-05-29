@@ -3,6 +3,10 @@ using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Opcode <c>0x0467</c>; mapped from <c>ServerGroupUpdatePlayerRealm_ReadPayload</c> (<c>1400841d0</c>).
+    /// The native reader reuses the shared group realm/world/map/phase tail helper also seen in <see cref="Shared.GroupCharacter"/>.
+    /// </summary>
     [Message(GameMessageOpcode.ServerGroupUpdatePlayerRealm)]
     public class ServerGroupUpdatePlayerRealm : IWritable
     {

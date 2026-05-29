@@ -27,6 +27,8 @@ namespace NexusForever.Network.World.Message.Model.PublicEvent
 
         public void Write(GamePacketWriter writer)
         {
+            // WildStar64.exe registration maps opcode 0x06FE to the detailed vote reader:
+            // event/vote/team ids, counted tally rows, can-vote flag, and elapsed ms.
             writer.Write(EventId, 14);
             writer.Write(VoteId, 14);
             writer.Write(TeamId, 14);

@@ -31,6 +31,8 @@ namespace NexusForever.Network.World.Message.Model.Shared
 
         public void Write(GamePacketWriter writer)
         {
+            // WildStar64.exe 14007b2d0 reads status/objective data/dynamic max/count/state,
+            // then dispatches a 3-bit data-type-specific tail.
             writer.Write(Status, 32u);
             writer.Write(ObjectiveData);
             writer.Write(DynamicMax);

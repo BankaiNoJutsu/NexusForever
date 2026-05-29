@@ -3,8 +3,11 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
-    // If MatchQueueResult is GlobalKickCooldown, no wait time is needs to be sent as the message does not use the field
-    // If MatchQueueResult is that PersonalKickCooldown, uses the WaitTime to update client views
+    /// <summary>
+    /// Native registration in <c>Network_RegisterServerOpcode_0351</c> binds opcode <c>0x0616</c>
+    /// to shared <c>MatchingQueueResultWaitTime_ReadPayload</c> (<c>14007fcf0</c>).
+    /// The native reader proves one 6-bit <see cref="MatchingQueueResult"/> followed by one uint32 wait-time field.
+    /// </summary>
     [Message(GameMessageOpcode.ServerMatchingMatchKickCooldownUpdate)]
     public class ServerMatchingMatchKickCooldownUpdate : IWritable
     {
@@ -13,7 +16,7 @@ namespace NexusForever.Network.World.Message.Model
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Result, 6);
+            writer.Write(Result, 6u);
             writer.Write(WaitTimeBeforeVoteMS);
         }
     }

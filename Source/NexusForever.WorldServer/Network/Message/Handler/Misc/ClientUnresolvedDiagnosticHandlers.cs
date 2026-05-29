@@ -15,7 +15,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, Client0x003D message)
         {
-            ClientUnresolvedDiagnosticLog.LogPayload(log, session, nameof(Client0x003D), message.Payload);
+            log.LogDebug("Captured unresolved client opcode {Opcode} from player {PlayerGuid}: leadingValue {LeadingValue}, trailingValue {TrailingValue}, text {Text}, finalValue {FinalValue}.",
+                nameof(Client0x003D), session.Player?.Guid, message.LeadingValue, message.TrailingValue,
+                message.Text, message.FinalValue);
         }
     }
 
@@ -30,15 +32,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, Client0x00C8 message)
         {
-            ClientUnresolvedDiagnosticLog.LogValue(log, session, nameof(Client0x00C8), message.Value);
-
-            // Conservative decode attempt: treat the uint32 payload as a challenge id for share-with-target.
-            // Native owner remains unverified; only active challenges are accepted.
-            if (session.Player == null || message.Value == 0u || message.Value > ushort.MaxValue)
-                return;
-
-            ushort challengeId = (ushort)message.Value;
-            session.Player.ChallengeManager.ShareWithTarget(challengeId);
+            ClientUnresolvedDiagnosticLog.LogValue(log, session, nameof(Client0x00C8), (uint)message.MatchType);
         }
     }
 
@@ -53,7 +47,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, Client0x00ED message)
         {
-            ClientUnresolvedDiagnosticLog.LogPayload(log, session, nameof(Client0x00ED), message.Payload);
+            log.LogDebug("Captured unresolved client opcode {Opcode} from player {PlayerGuid}: value0 {Value0}, value1 {Value1}, value2 {Value2}, value3 {Value3}, value4 {Value4}, value5 {Value5}.",
+                nameof(Client0x00ED), session.Player?.Guid, message.Value0, message.Value1, message.Value2,
+                message.Value3, message.Value4, message.Value5);
         }
     }
 
@@ -68,7 +64,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, Client0x011B message)
         {
-            ClientUnresolvedDiagnosticLog.LogValue(log, session, nameof(Client0x011B), message.Value);
+            log.LogDebug("Captured unresolved client opcode {Opcode} from player {PlayerGuid}: empty payload.",
+                nameof(Client0x011B), session.Player?.Guid);
         }
     }
 
@@ -98,22 +95,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, Client0x012D message)
         {
-            ClientUnresolvedDiagnosticLog.LogValue(log, session, nameof(Client0x012D), message.Value);
-        }
-    }
-
-    public class Client0x0142Handler : IMessageHandler<IWorldSession, Client0x0142>
-    {
-        private readonly ILogger<Client0x0142Handler> log;
-
-        public Client0x0142Handler(ILogger<Client0x0142Handler> log)
-        {
-            this.log = log;
-        }
-
-        public void HandleMessage(IWorldSession session, Client0x0142 message)
-        {
-            ClientUnresolvedDiagnosticLog.LogPayload(log, session, nameof(Client0x0142), message.Payload);
+            log.LogDebug("Captured unresolved client opcode {Opcode} from player {PlayerGuid}: text length {Length}, text {Text}.",
+                nameof(Client0x012D), session.Player?.Guid, message.Text?.Length ?? 0, message.Text);
         }
     }
 
@@ -189,7 +172,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, Client0x0701 message)
         {
-            ClientUnresolvedDiagnosticLog.LogValue(log, session, nameof(Client0x0701), message.Value);
+            log.LogDebug("Client0x0701: player={PlayerGuid} leadingBits={LeadingBits} trailingValue={TrailingValue}.",
+                session.Player?.Guid, message.LeadingBits, message.TrailingValue);
         }
     }
 
@@ -204,7 +188,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, Client0x0760 message)
         {
-            ClientUnresolvedDiagnosticLog.LogPayload(log, session, nameof(Client0x0760), message.Payload);
+            log.LogDebug("Client0x0760: player={PlayerGuid} realmId={RealmId} realmName={RealmName}.",
+                session.Player?.Guid, message.Realm.RealmId, message.Realm.RealmName);
         }
     }
 
@@ -219,22 +204,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, Client0x0762 message)
         {
-            ClientUnresolvedDiagnosticLog.LogPayload(log, session, nameof(Client0x0762), message.Payload);
+            log.LogDebug("Client0x0762: player={PlayerGuid} index={Index} messageCount={MessageCount}.",
+                session.Player?.Guid, message.MessageRow.Index, message.MessageRow.Messages.Count);
         }
     }
 
-    public class Client0x07B6Handler : IMessageHandler<IWorldSession, Client0x07B6>
+    public class ClientAddonModuleListHandler : IMessageHandler<IWorldSession, ClientAddonModuleList>
     {
-        private readonly ILogger<Client0x07B6Handler> log;
+        private readonly ILogger<ClientAddonModuleListHandler> log;
 
-        public Client0x07B6Handler(ILogger<Client0x07B6Handler> log)
+        public ClientAddonModuleListHandler(ILogger<ClientAddonModuleListHandler> log)
         {
             this.log = log;
         }
 
-        public void HandleMessage(IWorldSession session, Client0x07B6 message)
+        public void HandleMessage(IWorldSession session, ClientAddonModuleList message)
         {
-            ClientUnresolvedDiagnosticLog.LogPayload(log, session, nameof(Client0x07B6), message.Payload);
+            log.LogDebug("Captured unresolved client opcode {Opcode} from player {PlayerGuid}: header0 {HeaderValue0}, header1 {HeaderValue1}, header2 {HeaderValue2}, header3 {HeaderValue3}, moduleCount {ModuleCount}, rowCount {RowCount}.",
+                nameof(ClientAddonModuleList), session.Player?.Guid, message.HeaderValue0, message.HeaderValue1, message.HeaderValue2,
+                message.HeaderValue3, message.ModuleCount, message.Modules.Count);
         }
     }
 
@@ -264,7 +252,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, Client0x0928 message)
         {
-            ClientUnresolvedDiagnosticLog.LogValue(log, session, nameof(Client0x0928), message.Value);
+            log.LogDebug("Client0x0928: player={PlayerGuid} leadingValue={LeadingValue} trailingBits={TrailingBits}.",
+                session.Player?.Guid, message.LeadingValue, message.TrailingBits);
         }
     }
 

@@ -16,6 +16,8 @@ namespace NexusForever.Network.World.Message.Model.Story
 
         public void Write(GamePacketWriter writer)
         {
+            // Client exports expose CommunicatorLib placement/overlay/background symbols.
+            // Actor/text timing remains packet-shape only until capture/decompile proof.
             StoryMessage.Write(writer);
             writer.Write(Creature2Id, 18u);
             writer.Write(DurationMs);

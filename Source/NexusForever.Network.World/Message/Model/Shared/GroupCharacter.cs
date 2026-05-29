@@ -4,6 +4,10 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model.Shared
 {
+    /// <summary>
+    /// Shared group-character row from <c>GroupCharacter_ReadPayload</c> (<c>140082420</c>).
+    /// Reused by group invite, group member, and nested group payload readers.
+    /// </summary>
     public class GroupCharacter : IWritable
     {
         public class UnknownStruct1 : IWritable

@@ -3,6 +3,11 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Native reader: <c>ServerMatchingMatchPvpFinished_ReadPayload</c> (<c>140099200</c>).
+    /// Reads one 2-bit <see cref="MatchWinner"/>, one 3-bit <see cref="MatchEndReason"/>,
+    /// and two trailing uint32 rating-change fields.
+    /// </summary>
     [Message(GameMessageOpcode.ServerMatchingMatchPvpFinished)]
     public class ServerMatchingMatchPvpFinished : IWritable
     {

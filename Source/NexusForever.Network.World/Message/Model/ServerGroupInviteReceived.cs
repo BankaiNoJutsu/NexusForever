@@ -3,6 +3,10 @@ using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Opcode <c>0x041F</c>; mapped from <c>ServerGroupInviteReceived_ReadPayload</c> (<c>140084390</c>).
+    /// Native layout is group id, leader index, inviter index, then counted <see cref="Shared.GroupCharacter"/> rows.
+    /// </summary>
     [Message(GameMessageOpcode.ServerGroupInviteReceived)]
     public class ServerGroupInviteReceived : IWritable
     {

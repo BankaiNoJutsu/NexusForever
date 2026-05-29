@@ -79,6 +79,26 @@ namespace NexusForever.Network.World.Message.Model
         }
     }
 
+    [Message(GameMessageOpcode.Server0x0015)]
+    public class Server0x0015 : IWritable
+    {
+        /// <summary>
+        /// Opcode 0x0015. Native reader <c>ServerUInt5UInt32_ReadPayload</c> (<c>140081f00</c>)
+        /// reads one 5-bit field followed by one uint32 field. Matching opcode <c>0x0628</c>
+        /// reuses the same reader but has stronger runtime semantics, so this placeholder keeps
+        /// both fields neutral.
+        /// </summary>
+        public uint Value0 { get; set; }
+
+        public uint Value1 { get; set; }
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write(Value0, 5u);
+            writer.Write(Value1);
+        }
+    }
+
     public class ServerUnresolvedUInt32Triple : IWritable
     {
         public uint Value0 { get; set; }

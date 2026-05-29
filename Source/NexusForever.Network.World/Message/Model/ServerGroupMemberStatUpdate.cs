@@ -3,6 +3,9 @@ using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Opcode <c>0x0466</c>; mapped from <c>ServerGroupMemberStatUpdate_ReadPayload</c> (<c>140083d30</c>).
+    /// </summary>
     [Message(GameMessageOpcode.ServerGroupMemberStatUpdate)]
     public class ServerGroupMemberStatUpdate : IWritable
     {

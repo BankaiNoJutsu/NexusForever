@@ -11,5 +11,14 @@
             writer.Write(Messages.Count, 8u);
             Messages.ForEach(writer.WriteStringWide);
         }
+
+        public void Read(GamePacketReader reader)
+        {
+            Index = reader.ReadUInt();
+            uint count = reader.ReadUInt(8u);
+            Messages.Clear();
+            for (uint i = 0; i < count; i++)
+                Messages.Add(reader.ReadWideString());
+        }
     }
 }

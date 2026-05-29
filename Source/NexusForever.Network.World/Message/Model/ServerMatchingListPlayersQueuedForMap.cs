@@ -4,9 +4,18 @@ using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Native reader: <c>ServerMatchingListPlayersQueuedForMap_ReadPayload</c> (<c>140099770</c>).
+    /// Reads one uint32 map id and a counted queued-player array via
+    /// <c>MatchingQueuedPlayerInfo_ReadPayload</c> (<c>140098500</c>).
+    /// </summary>
     [Message(GameMessageOpcode.ServerMatchingListPlayersQueuedForMap)]
     public class ServerMatchingListPlayersQueuedForMap : IWritable
     {
+        /// <summary>
+        /// Native reader: <c>MatchingPrimeLevelInfo_ReadPayload</c> (<c>1400ad150</c>).
+        /// Reads a 15-bit world id and one 16-bit achieved prime-level value.
+        /// </summary>
         public class PrimeLevelInfo : IWritable
         {
             public ushort WorldId { get; set; }
@@ -19,6 +28,13 @@ namespace NexusForever.Network.World.Message.Model
             }
         }
 
+        /// <summary>
+        /// Native row size is <c>0x60</c> bytes. Reader <c>140098500</c> confirms
+        /// 14-bit faction/race/class fields, a 2-bit gender slot, one 32-bit
+        /// level-like field, a 3-bit path, four trailing unknown scalar/flag
+        /// slots, five <see cref="GroupMemberStatSlot"/> rows, and a counted
+        /// <see cref="PrimeLevelInfo"/> array.
+        /// </summary>
         public class QueuedPlayerInfo : IWritable
         {
             public Identity Identity { get; set; }
@@ -29,10 +45,10 @@ namespace NexusForever.Network.World.Message.Model
             public uint Gender { get; set; }
             public uint Level { get; set; }
             public uint Path { get; set; }
-            public uint field_30_32bit { get; set; }
-            public bool field_34_1bit { get; set; }
-            public uint field_38_32bit { get; set; }
-            public float field_3C_32bit { get; set; }
+            public uint Unknown30 { get; set; }
+            public bool Unknown34 { get; set; }
+            public uint Unknown38 { get; set; }
+            public uint Unknown3C { get; set; }
             public GroupMemberStatSlot[] StatSlots = new GroupMemberStatSlot[5];
             public List<PrimeLevelInfo> PrimeLevels { get; set; } = new List<PrimeLevelInfo>();
 
@@ -43,13 +59,13 @@ namespace NexusForever.Network.World.Message.Model
                 writer.Write(Faction, 14u);
                 writer.Write(Race, 14u);
                 writer.Write(Class, 14u);
-                writer.Write(Gender, 14u);
+                writer.Write(Gender, 2u);
                 writer.Write(Level);
                 writer.Write(Path, 3u);
-                writer.Write(field_30_32bit);
-                writer.Write(field_34_1bit);
-                writer.Write(field_38_32bit);
-                writer.Write(field_3C_32bit);
+                writer.Write(Unknown30);
+                writer.Write(Unknown34);
+                writer.Write(Unknown38);
+                writer.Write(Unknown3C);
                 foreach (GroupMemberStatSlot stat in StatSlots)
                 {
                     stat.Write(writer);

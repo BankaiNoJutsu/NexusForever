@@ -15,6 +15,8 @@ namespace NexusForever.Network.World.Message.Model.Story
 
         public void Write(GamePacketWriter writer)
         {
+            // WildStar64.exe exports DB\StoryPanel.tbl and MessageManager_DisplayStoryPanel;
+            // real actor/camera/text sequencing remains blocked for LWS-075.
             StoryMessage.Write(writer);
             writer.Write(SoundContextEventId);
             writer.Write(StoryPanelType, 32u);

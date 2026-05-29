@@ -5,8 +5,10 @@ using NexusForever.Network.World.Message.Model.Shared;
 namespace NexusForever.Network.World.Message.Model
 {
     /// <summary>
-    /// Group member role/flag change broadcast (0x0438, 0x28 bytes).
-    /// Layout mirrors <see cref="ServerGroupMemberFlagsChanged"/> (0x0437).
+    /// Provisional managed payload for opcode <c>0x0438</c>.
+    /// Native reader <c>ServerGroupIdentityListAndUInt32Array_ReadPayload</c> (<c>140083990</c>)
+    /// parses group id, one leading uint32, a counted identity array, and a parallel uint32 array,
+    /// so this single-member wrapper remains blocked pending re-validation.
     /// </summary>
     [Message(GameMessageOpcode.ServerGroupMemberRoleChange)]
     public class ServerGroupMemberRoleChange : IWritable

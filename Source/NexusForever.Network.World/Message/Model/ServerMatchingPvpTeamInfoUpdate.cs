@@ -2,7 +2,10 @@
 
 namespace NexusForever.Network.World.Message.Model
 {
-    // Send whenever the information for a team in a PvP match is updated during a match. This includes when a team first joins a match.
+    /// <summary>
+    /// Native reader: <c>ServerMatchingPvpTeamInfoUpdate_ReadPayload</c> (<c>140099290</c>).
+    /// Reads two wide team-name strings followed by two uint32 rating fields.
+    /// </summary>
     [Message(GameMessageOpcode.ServerMatchingPvpTeamInfoUpdate)]
     public class ServerMatchingPvpTeamInfoUpdate : IWritable
     {

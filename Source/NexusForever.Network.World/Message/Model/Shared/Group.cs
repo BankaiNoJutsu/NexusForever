@@ -3,6 +3,10 @@ using NexusForever.Game.Static.Group;
 
 namespace NexusForever.Network.World.Message.Model.Shared
 {
+    /// <summary>
+    /// Shared group snapshot from <c>Group_ReadPayload</c> (<c>140082950</c>).
+    /// Used by <c>ServerGroupJoin_ReadPayload</c> (<c>1400844f0</c>).
+    /// </summary>
     public class Group : IWritable
     {
         public ulong GroupId { get; set; }

@@ -2,8 +2,11 @@
 
 namespace NexusForever.Network.World.Message.Model
 {
-    // Fires at regular intervals if the player is AFK in a PvP match. 
-    // This is triggered when the player has 2 minutes, 1 minute, 30 seconds, and 5 second intervals before they are removed from a match
+    /// <summary>
+    /// Native registration in <c>Network_RegisterServerOpcode_0351</c> binds opcode <c>0x05E6</c>
+    /// to shared <c>ServerUInt32_ReadPayload</c> (<c>14007ab50</c>).
+    /// The current single-field model matches that shared 32-bit countdown surface.
+    /// </summary>
     [Message(GameMessageOpcode.ServerMatchingPvpInactivityAlert)]
     public class ServerMatchingPvpInactivityAlert : IWritable
     {

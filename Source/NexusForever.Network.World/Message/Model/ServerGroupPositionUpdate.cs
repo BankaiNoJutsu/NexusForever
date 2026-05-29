@@ -4,6 +4,10 @@ using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Opcode <c>0x0469</c>; mapped from <c>ServerGroupPositionUpdate_ReadPayload</c> (<c>140084030</c>).
+    /// Native wire shape is four parallel arrays after the shared group/world prefix: identities, raw position triplets, world-zone ids, and flags.
+    /// </summary>
     [Message(GameMessageOpcode.ServerGroupPositionUpdate)]
     public class ServerGroupPositionUpdate : IWritable
     {

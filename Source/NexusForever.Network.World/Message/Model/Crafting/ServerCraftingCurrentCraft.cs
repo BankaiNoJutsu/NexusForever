@@ -7,6 +7,11 @@ namespace NexusForever.Network.World.Message.Model.Crafting
     [Message(GameMessageOpcode.ServerCraftingCurrentCraft)]
     public class ServerCraftingCurrentCraft : IWritable
     {
+        /// <summary>
+        /// Native reader <c>ServerCraftingCurrentCraft_ReadPayload</c> (<c>1400a46b0</c>) maps
+        /// opcode <c>0x0854</c> as schematic id, packed craft stats, glyph and count fields,
+        /// five modifier item ids, crafted item id, and discovery coordinate/vector/radius data.
+        /// </summary>
         public uint TradeskillSchematic2Id { get; set; }
         public CraftStats CraftStats { get; set; } = new CraftStats();
         public uint GlyphData { get; set; } // is of type RuneSlots in "Item / Inventory message" pull request

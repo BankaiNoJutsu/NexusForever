@@ -2,7 +2,7 @@
 
 namespace NexusForever.Network.World.Message.Model.PublicEvent
 {
-    // Only used to trigger a UI event. Not seen in sniffs but perfectly usable
+    // WildStar64.exe registers opcode 0x06F9 with the shared 15-bit scalar reader at 14007c3a0.
     [Message(GameMessageOpcode.ServerPublicEventObjectiveStart)]
     public class ServerPublicEventObjectiveStart : IWritable
     {

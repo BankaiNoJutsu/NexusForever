@@ -6,6 +6,10 @@ namespace NexusForever.Network.World.Message.Model.PlayerPath
     [Message(GameMessageOpcode.ServerPathSoldierHoldoutStatus)]
     public class ServerPathSoldierHoldoutStatus : IWritable
     {
+        // Soldier holdout packet producer timing is still blocked. The current
+        // shape is pinned to the client-side Game.SoldierEvent Lua accessors
+        // mapped at WildStar64.exe 140683290..140683b30: event id, unit kind,
+        // boss/mode, wave, defend/auxiliary health, and timing fields.
         public uint PathSoldierEventId { get; set; }
         public List<TowerDefenseUnit> Units { get; set; } = [];
         public uint UnitId { get; set; }

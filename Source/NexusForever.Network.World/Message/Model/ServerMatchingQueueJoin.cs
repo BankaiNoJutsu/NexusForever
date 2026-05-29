@@ -3,9 +3,20 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Native reader: <c>ServerMatchingQueueJoin_ReadPayload</c> (<c>1400995f0</c>).
+    /// Reads one map block via <c>MatchingQueueJoinMapData_ReadPayload</c> (<c>1400988f0</c>),
+    /// one queue block via <c>MatchingQueueJoinQueueData_ReadPayload</c> (<c>1400989d0</c>),
+    /// then one trailing 32-bit queued-roles field.
+    /// </summary>
     [Message(GameMessageOpcode.ServerMatchingQueueJoin)]
     public class ServerMatchingQueueJoin : IWritable
     {
+        /// <summary>
+        /// Native reader: <c>MatchingQueueJoinMapData_ReadPayload</c> (<c>1400988f0</c>).
+        /// Reads a 5-bit match type, counted uint32 map-id list, one 14-bit matching-game-type
+        /// field, and one 32-bit queue-flags field.
+        /// </summary>
         public class Map : IWritable
         {
             public Game.Static.Matching.MatchType MatchType { get; set; }
@@ -26,6 +37,10 @@ namespace NexusForever.Network.World.Message.Model
             }
         }
 
+        /// <summary>
+        /// Native reader: <c>MatchingQueueJoinQueueData_ReadPayload</c> (<c>1400989d0</c>).
+        /// Reads a 5-bit match type, one party flag bit, queue time, and average wait time.
+        /// </summary>
         public class Queue : IWritable
         {
             public Game.Static.Matching.MatchType MatchType { get; set; }

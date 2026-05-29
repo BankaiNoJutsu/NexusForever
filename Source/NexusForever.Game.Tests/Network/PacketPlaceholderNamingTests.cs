@@ -5,18 +5,34 @@ using NexusForever.Network.World.Message.Model.Cinematic;
 using NexusForever.Network.World.Message.Model.PlayerPath;
 using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Network.World.Message.Model.Shared;
+using NexusForever.Network.World.Message.Model.Story;
+using NexusForever.Network.World.Message.Model.Story.Message;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Cinematic;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Housing;
+using NexusForever.Game.Static.PlayerPath;
+using NexusForever.Game.Static.Story;
 using NexusForever.Game.Static.Storefront;
 using CharacterClass = NexusForever.Game.Static.Entity.Class;
+using CharacterRace = NexusForever.Game.Static.Entity.Race;
+using CharacterSex = NexusForever.Game.Static.Entity.Sex;
 using PlayerPath = NexusForever.Game.Static.PlayerPath.Path;
+using ReputationFaction = NexusForever.Game.Static.Reputation.Faction;
 
 namespace NexusForever.Game.Tests.Network;
 
 public class PacketPlaceholderNamingTests
 {
+    [Fact]
+    public void ClientAddonModuleList_UsesStructuralEvidenceBackedOpcodeName()
+    {
+        Assert.Equal((ushort)0x07B6, (ushort)GameMessageOpcode.ClientAddonModuleList);
+
+        var attribute = Assert.IsType<MessageAttribute>(Attribute.GetCustomAttribute(typeof(ClientAddonModuleList), typeof(MessageAttribute)));
+        Assert.Equal(GameMessageOpcode.ClientAddonModuleList, attribute.Opcode);
+    }
+
     [Theory]
     [InlineData((byte)11, true)]
     [InlineData((byte)19, true)]
@@ -680,6 +696,21 @@ public class PacketPlaceholderNamingTests
     }
 
     [Fact]
+    public void Server0x0015_WriteSerializesSharedUInt5UInt32Shape()
+    {
+        using var stream = new MemoryStream(WritePacket(new Server0x0015
+        {
+            Value0 = 0x1Au,
+            Value1 = 0x11223344u
+        }));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x1Au, reader.ReadUInt(5u));
+        Assert.Equal(0x11223344u, reader.ReadUInt());
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
     public void ClusterAuxPackets_WriteRepresentativeReaderBackedShapes()
     {
         Assert.Equal(new byte[] { 0xAB }, WritePacket(new ServerItemContextActionAck([0xAB])));
@@ -724,6 +755,112 @@ public class PacketPlaceholderNamingTests
         Assert.Equal(0x1234u, voteReader.ReadUInt(15u));
         Assert.True(voteReader.ReadBit());
         Assert.Equal(voteStream.Length, voteStream.Position);
+    }
+
+    [Fact]
+    public void ClientPublicEventVote_ReadExposesMappedFields()
+    {
+        byte[] packetData;
+        using (var stream = new MemoryStream())
+        {
+            using (var writer = new GamePacketWriter(stream))
+            {
+                writer.Write(0x1234u, 14u);
+                writer.Write(0x2345u, 14u);
+                writer.Write((uint)PublicEventTeam.BlueTeam, 14u);
+                writer.Write(3u);
+                writer.FlushBits();
+            }
+
+            packetData = stream.ToArray();
+        }
+
+        using var readStream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(readStream);
+
+        var message = new ClientPublicEventVote();
+        message.Read(reader);
+
+        Assert.Equal(0x1234u, message.EventId);
+        Assert.Equal(0x2345u, message.VoteId);
+        Assert.Equal((uint)PublicEventTeam.BlueTeam, message.TeamId);
+        Assert.Equal(3u, message.Choice);
+        Assert.Equal(readStream.Length, readStream.Position);
+    }
+
+    [Fact]
+    public void ServerPublicEventVotePackets_WriteMappedFields()
+    {
+        using (var stream = new MemoryStream(WritePacket(new ServerPublicEventVoteInitiate
+        {
+            EventId = 0x1234u,
+            VoteId = 0x2345u,
+            TeamId = (uint)PublicEventTeam.RedTeam
+        })))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x1234u, reader.ReadUInt(14u));
+            Assert.Equal(0x2345u, reader.ReadUInt(14u));
+            Assert.Equal((uint)PublicEventTeam.RedTeam, reader.ReadUInt(14u));
+            Assert.Equal(stream.Length, stream.Position);
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new ServerPublicEventDetailedVoteInitiate
+        {
+            EventId = 0x1234u,
+            VoteId = 0x2345u,
+            TeamId = PublicEventTeam.BlueTeam,
+            Tallies =
+            [
+                new ServerPublicEventDetailedVoteInitiate.Tally
+                {
+                    Choice = 2u,
+                    Count = 7u
+                }
+            ],
+            CanPlayerVote = true,
+            ElapsedTimeMs = 1500u
+        })))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x1234u, reader.ReadUInt(14u));
+            Assert.Equal(0x2345u, reader.ReadUInt(14u));
+            Assert.Equal((uint)PublicEventTeam.BlueTeam, reader.ReadUInt(14u));
+            Assert.Equal(1u, reader.ReadUInt());
+            Assert.Equal(2u, reader.ReadUInt());
+            Assert.Equal(7u, reader.ReadUInt());
+            Assert.True(reader.ReadBit());
+            Assert.Equal(1500u, reader.ReadUInt());
+            Assert.Equal(stream.Length, stream.Position);
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new ServerPublicEventVoteTally
+        {
+            EventId = 0x1234u,
+            VoteId = 0x2345u,
+            Choice = 2u
+        })))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x1234u, reader.ReadUInt(14u));
+            Assert.Equal(0x2345u, reader.ReadUInt(14u));
+            Assert.Equal(2u, reader.ReadUInt());
+            Assert.Equal(stream.Length, stream.Position);
+        }
+
+        using (var stream = new MemoryStream(WritePacket(new ServerPublicEventVoteEnd
+        {
+            EventId = 0x1234u,
+            VoteId = 0x2345u,
+            Winner = 3u
+        })))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal(0x1234u, reader.ReadUInt(14u));
+            Assert.Equal(0x2345u, reader.ReadUInt(14u));
+            Assert.Equal(3u, reader.ReadUInt());
+            Assert.Equal(stream.Length, stream.Position);
+        }
     }
 
     [Fact]
@@ -895,6 +1032,125 @@ public class PacketPlaceholderNamingTests
     }
 
     [Fact]
+    public void ServerPublicEventObjectiveNotificationMode_WriteSerializesMappedFields()
+    {
+        var message = new ServerPublicEventObjectiveNotificationMode
+        {
+            ObjectiveId = 0x5234u,
+            NotificationMode = PublicEventObjectiveNotificationMode.Critical
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x5234u, reader.ReadUInt(15u));
+        Assert.Equal((uint)PublicEventObjectiveNotificationMode.Critical, reader.ReadUInt());
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void ServerPublicEventObjectiveStatusUpdate_WriteSerializesMappedStatusRow()
+    {
+        var message = new ServerPublicEventObjectiveStatusUpdate
+        {
+            ObjectiveId = 0x2345u,
+            ObjectiveStatus = new PublicEventObjectiveStatus
+            {
+                Status = PublicEventStatus.Active,
+                ObjectiveData = 0x01020304u,
+                DynamicMax = 50u,
+                Count = 12.5f,
+                UnkState = 0xA0B0C0D0u,
+                DataType = PublicEventObjectiveDataType.CapturePoint,
+                CapturingTeam = PublicEventTeam.Dominion
+            }
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x2345u, reader.ReadUInt(15u));
+        AssertPublicEventObjectiveStatus(reader, PublicEventObjectiveDataType.CapturePoint);
+        Assert.Equal((uint)PublicEventTeam.Dominion, reader.ReadUInt());
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void ServerPublicEventObjectiveUpdate_WriteSerializesMappedObjectivePayload()
+    {
+        var message = new ServerPublicEventObjectiveUpdate
+        {
+            Objective = new PublicEventObjective
+            {
+                ObjectiveId = 0x3456u,
+                ObjectiveStatus = new PublicEventObjectiveStatus
+                {
+                    Status = PublicEventStatus.Active,
+                    ObjectiveData = 0x01020304u,
+                    DynamicMax = 50u,
+                    Count = 12.5f,
+                    UnkState = 0xA0B0C0D0u,
+                    DataType = PublicEventObjectiveDataType.VirtualItemDepot,
+                    VirtualItems =
+                    [
+                        new PublicEventObjectiveStatus.VirtualItem
+                        {
+                            ItemId = 0x1234u,
+                            Count = 7u
+                        }
+                    ]
+                },
+                Busy = true,
+                ElapsedTimeMs = 25000u,
+                NotificationMode = (uint)PublicEventObjectiveNotificationMode.Warn,
+                Locations = [0x01020304u, 0x05060708u],
+                MapRegions =
+                [
+                    new MapRegion
+                    {
+                        WorldSocketId = 0x2345u,
+                        WorldLocation2Id = 0x12345u
+                    }
+                ]
+            }
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x3456u, reader.ReadUInt(15u));
+        AssertPublicEventObjectiveStatus(reader, PublicEventObjectiveDataType.VirtualItemDepot);
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(0x1234u, reader.ReadUInt(14u));
+        Assert.Equal(7u, reader.ReadUInt());
+        Assert.True(reader.ReadBit());
+        Assert.Equal(25000u, reader.ReadUInt());
+        Assert.Equal((uint)PublicEventObjectiveNotificationMode.Warn, reader.ReadUInt());
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal(0x05060708u, reader.ReadUInt());
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(0x2345u, reader.ReadUInt(15u));
+        Assert.Equal(0x12345u, reader.ReadUInt(17u));
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void ServerPublicEventObjectiveStart_WriteSerializesObjectiveId()
+    {
+        var message = new ServerPublicEventObjectiveStart
+        {
+            ObjectiveId = 0x4567u
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x4567u, reader.ReadUInt(15u));
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
     public void ServerSpellUInt32TripletList_WriteSerializesCountedRows()
     {
         var message = new ServerSpellUInt32TripletList();
@@ -975,6 +1231,177 @@ public class PacketPlaceholderNamingTests
 
         Assert.Equal(1500u, reader.ReadUInt());
         Assert.True(reader.ReadBit());
+    }
+
+    [Fact]
+    public void ServerCommunicatorMessage_WriteSerializesMappedCommunicatorIdAndConditionFlag()
+    {
+        var message = new ServerCommunicatorMessage
+        {
+            CommunicatorMessagesId = 0x1234,
+            CheckConditions = true
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x1234u, reader.ReadUInt(15u));
+        Assert.True(reader.ReadBit());
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void ServerStoryTextCommunicator_WriteSerializesStoryAndCommunicatorFields()
+    {
+        var message = new ServerStoryTextCommunicator
+        {
+            StoryMessage = new StoryMessage
+            {
+                MsgId = 0x01020304u,
+                RandomTextLineId = 0x05060708u
+            },
+            Creature2Id = 0x23456u,
+            DurationMs = 15000u,
+            PortraitPlacement = CommunicatorPortraitPlacement.Right,
+            Overlay = CommunicatorOverlay.HeavyStatic,
+            Background = CommunicatorBackground.TheEntity
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        AssertStoryMessageHeader(reader, 0x01020304u, 0x05060708u, 0u);
+        Assert.Equal(0x23456u, reader.ReadUInt(18u));
+        Assert.Equal(15000u, reader.ReadUInt());
+        Assert.Equal((uint)CommunicatorPortraitPlacement.Right, reader.ReadUInt(2u));
+        Assert.Equal((uint)CommunicatorOverlay.HeavyStatic, reader.ReadUInt(2u));
+        Assert.Equal((uint)CommunicatorBackground.TheEntity, reader.ReadUInt(3u));
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void ServerStoryPanelCustomShow_WriteSerializesStoryPanelFields()
+    {
+        var message = new ServerStoryPanelCustomShow
+        {
+            StoryMessage = new StoryMessage
+            {
+                MsgId = 0x01020304u,
+                RandomTextLineId = 0x05060708u
+            },
+            SoundContextEventId = 0x11121314u,
+            StoryPanelType = StoryPanelType.FullScreen,
+            DurationMS = 7500u,
+            StoryPanelStyle = StoryPanelStyle.Eldan
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        AssertStoryMessageHeader(reader, 0x01020304u, 0x05060708u, 0u);
+        Assert.Equal(0x11121314u, reader.ReadUInt());
+        Assert.Equal((uint)StoryPanelType.FullScreen, reader.ReadUInt());
+        Assert.Equal(7500u, reader.ReadUInt());
+        Assert.Equal((uint)StoryPanelStyle.Eldan, reader.ReadUInt());
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void StoryMessage_WriteSerializesMappedActorRowsWithoutAddingRuntimeSequencing()
+    {
+        var message = new StoryMessage
+        {
+            MsgId = 0x01020304u,
+            RandomTextLineId = 0x05060708u,
+            Actors =
+            [
+                new CreatureActor
+                {
+                    Creature2Id = 0x23456u,
+                    TokenReplacementValue = 11u,
+                    TokenName = "creature"
+                },
+                new CustomTextActor
+                {
+                    Text = "custom text",
+                    TokenReplacementValue = 12u,
+                    TokenName = "custom"
+                },
+                new LocalisedTextActor
+                {
+                    LocalisedTextId = 0x1ABCDEu,
+                    TokenReplacementValue = 13u,
+                    TokenName = "localized"
+                },
+                new PlayerActor
+                {
+                    UnitId = 0x11121314u,
+                    Name = "Player Name",
+                    Level = 50u,
+                    Gender = CharacterSex.Female,
+                    Race = CharacterRace.Mechari,
+                    Class = CharacterClass.Engineer,
+                    Faction = ReputationFaction.Dominion,
+                    Path = PlayerPath.Scientist,
+                    TitleId = 0x1234,
+                    TokenReplacementValue = 14u,
+                    TokenName = "player"
+                },
+                new CreatureUnitActor
+                {
+                    UnitId = 0x21222324u,
+                    Creature2Id = 0x12345u,
+                    TokenReplacementValue = 15u,
+                    TokenName = "unit"
+                },
+                new PlayerSelfActor
+                {
+                    PlayerUnitId = 0x31323334u,
+                    TokenReplacementValue = 16u,
+                    TokenName = "self"
+                }
+            ]
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        AssertStoryMessageHeader(reader, 0x01020304u, 0x05060708u, 6u);
+
+        Assert.Equal((uint)StoryTextSourceType.Creature, reader.ReadUInt(3u));
+        Assert.Equal(0x23456u, reader.ReadUInt(18u));
+        AssertStoryActorToken(reader, 11u, "creature");
+
+        Assert.Equal((uint)StoryTextSourceType.CustomText, reader.ReadUInt(3u));
+        Assert.Equal("custom text", reader.ReadWideString());
+        AssertStoryActorToken(reader, 12u, "custom");
+
+        Assert.Equal((uint)StoryTextSourceType.LocalizedText, reader.ReadUInt(3u));
+        Assert.Equal(0x1ABCDEu, reader.ReadUInt(21u));
+        AssertStoryActorToken(reader, 13u, "localized");
+
+        Assert.Equal((uint)StoryTextSourceType.Player, reader.ReadUInt(3u));
+        Assert.Equal(0x11121314u, reader.ReadUInt());
+        Assert.Equal("Player Name", reader.ReadWideString());
+        Assert.Equal(50u, reader.ReadUInt());
+        Assert.Equal((uint)CharacterSex.Female, reader.ReadUInt(2u));
+        Assert.Equal((uint)CharacterRace.Mechari, reader.ReadUInt(5u));
+        Assert.Equal((uint)CharacterClass.Engineer, reader.ReadUInt(5u));
+        Assert.Equal((uint)ReputationFaction.Dominion, reader.ReadUInt(14u));
+        Assert.Equal((uint)PlayerPath.Scientist, reader.ReadUInt(3u));
+        Assert.Equal(0x1234u, reader.ReadUInt(14u));
+        AssertStoryActorToken(reader, 14u, "player");
+
+        Assert.Equal((uint)StoryTextSourceType.CreatureUnit, reader.ReadUInt(3u));
+        Assert.Equal(0x21222324u, reader.ReadUInt());
+        Assert.Equal(0x12345u, reader.ReadUInt(18u));
+        AssertStoryActorToken(reader, 15u, "unit");
+
+        Assert.Equal((uint)StoryTextSourceType.PlayerSelf, reader.ReadUInt(3u));
+        Assert.Equal(0x31323334u, reader.ReadUInt());
+        AssertStoryActorToken(reader, 16u, "self");
+
+        Assert.Equal(stream.Length, stream.Position);
     }
 
     [Fact]
@@ -1181,6 +1608,103 @@ public class PacketPlaceholderNamingTests
         Assert.Equal(11u, reader.ReadUInt(14u));
     }
 
+    [Fact]
+    public void ServerPathSoldierHoldoutStatus_WriteSerializesMappedSafeShape()
+    {
+        var message = new ServerPathSoldierHoldoutStatus
+        {
+            PathSoldierEventId = 12u,
+            UnitId = 0x01020304u,
+            IsBoss = true,
+            Mode = PlayerPathSoldierEventMode.Active,
+            DelayTime = 5000,
+            WaveIndex = 3,
+            MaxDefendHealth = 123.5f,
+            MaxAuxiliaryHealth = 45.25f,
+            StartTimeOffset = 99
+        };
+        message.Units.Add(new TowerDefenseUnit
+        {
+            UnitId = 0x11121314u,
+            Type = TowerDefenseUnitType.Defend
+        });
+        message.Units.Add(new TowerDefenseUnit
+        {
+            UnitId = 0x21222324u,
+            Type = TowerDefenseUnitType.Escaping
+        });
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(12u, reader.ReadUInt(14u));
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.Equal(0x11121314u, reader.ReadUInt());
+        Assert.Equal((uint)TowerDefenseUnitType.Defend, reader.ReadUInt());
+        Assert.Equal(0x21222324u, reader.ReadUInt());
+        Assert.Equal((uint)TowerDefenseUnitType.Escaping, reader.ReadUInt());
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.True(reader.ReadBit());
+        Assert.Equal((uint)PlayerPathSoldierEventMode.Active, reader.ReadUInt());
+        Assert.Equal(5000, reader.ReadInt());
+        Assert.Equal(3, reader.ReadInt());
+        Assert.Equal(123.5f, reader.ReadSingle());
+        Assert.Equal(45.25f, reader.ReadSingle());
+        Assert.Equal(99, reader.ReadInt());
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void ServerPathSoldierHoldOutNextWave_WriteSerializesEventWaveAndBossFlag()
+    {
+        var message = new ServerPathSoldierHoldOutNextWave
+        {
+            PathSoldierEventId = 12,
+            WaveIndex = 4u,
+            IsBoss = true
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(12u, reader.ReadUInt(14u));
+        Assert.Equal(4u, reader.ReadUInt());
+        Assert.True(reader.ReadBit());
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void ServerPathSoldierHoldoutEnd_WriteSerializesEventAndResult()
+    {
+        var message = new ServerPathSoldierHoldoutEnd
+        {
+            PathSoldierEventId = 12,
+            Reason = PlayerPathSoldierResult.Success
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(12u, reader.ReadUInt(14u));
+        Assert.Equal((uint)PlayerPathSoldierResult.Success, reader.ReadUInt());
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void ServerPathSoldierHoldoutDeath_WriteSerializesEventIdOnly()
+    {
+        var message = new ServerPathSoldierHoldoutDeath
+        {
+            PathSoldierEventId = 12
+        };
+
+        using var stream = new MemoryStream(WritePacket(message));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(12u, reader.ReadUInt(14u));
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
     private static byte[] BuildPackedWorldPacket(byte envelopeType, byte[] payload)
     {
         using var stream = new MemoryStream();
@@ -1320,6 +1844,29 @@ public class PacketPlaceholderNamingTests
 
         foreach (uint value in values)
             Assert.Equal(value, reader.ReadUInt());
+    }
+
+    private static void AssertPublicEventObjectiveStatus(GamePacketReader reader, PublicEventObjectiveDataType dataType)
+    {
+        Assert.Equal((uint)PublicEventStatus.Active, reader.ReadUInt());
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal(50u, reader.ReadUInt());
+        Assert.Equal(12.5f, reader.ReadSingle());
+        Assert.Equal(0xA0B0C0D0u, reader.ReadUInt());
+        Assert.Equal((uint)dataType, reader.ReadUInt(3u));
+    }
+
+    private static void AssertStoryMessageHeader(GamePacketReader reader, uint msgId, uint randomTextLineId, uint actorCount)
+    {
+        Assert.Equal(msgId, reader.ReadUInt());
+        Assert.Equal(randomTextLineId, reader.ReadUInt());
+        Assert.Equal(actorCount, reader.ReadUInt(8u));
+    }
+
+    private static void AssertStoryActorToken(GamePacketReader reader, uint tokenReplacementValue, string tokenName)
+    {
+        Assert.Equal(tokenReplacementValue, reader.ReadUInt());
+        Assert.Equal(tokenName, reader.ReadString());
     }
 
     private static byte[] WritePacket(IWritable message)

@@ -9,6 +9,7 @@ namespace NexusForever.Network.World.Message.Model.Shared
 
         public void Write(GamePacketWriter writer)
         {
+            // Used by public-event objective map-region rows in WildStar64.exe 14007b490.
             writer.Write(WorldSocketId, 15u);
             writer.Write(WorldLocation2Id, 17u);
         }

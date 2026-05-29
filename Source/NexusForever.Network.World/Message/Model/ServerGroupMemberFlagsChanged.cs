@@ -4,6 +4,9 @@ using NexusForever.Game.Static.Group;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Opcode <c>0x0437</c>; mapped from <c>ServerGroupMemberFlagsChanged_ReadPayload</c> (<c>1400838c0</c>).
+    /// </summary>
     [Message(GameMessageOpcode.ServerGroupMemberFlagsChanged)]
     public class ServerGroupMemberFlagsChanged : IWritable
     {

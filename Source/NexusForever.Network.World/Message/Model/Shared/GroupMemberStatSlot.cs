@@ -4,6 +4,7 @@ namespace NexusForever.Network.World.Message.Model.Shared
 {
     /// <summary>
     /// One of five stat-channel rows in group/matching member stat blocks.
+    /// Native reader: <c>GroupMemberStatSlot_ReadPayload</c> (<c>1400823c0</c>).
     /// Client copies five rows (0x14 bytes) from parsed offset <c>+0x22</c> via
     /// <c>Group_CopyMemberStatBlockFromPayload</c> @ <c>140607490</c>.
     /// </summary>

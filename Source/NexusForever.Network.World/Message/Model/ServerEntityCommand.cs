@@ -6,6 +6,11 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ServerEntityCommand)]
     public class ServerEntityCommand : IWritable
     {
+        /// <summary>
+        /// Runtime movement sync envelope built by <c>MovementManager.BuildNetworkEntityCommands</c>.
+        /// The packet carries one entity guid, one server clock value, two control bits, and a
+        /// repeated list of 5-bit command ids with command-specific payloads.
+        /// </summary>
         public uint Guid { get; set; }
         public uint Time { get; set; }
         public bool TimeReset { get; set; }

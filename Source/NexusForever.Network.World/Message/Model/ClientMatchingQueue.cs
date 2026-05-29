@@ -4,6 +4,10 @@ using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Opcode 0x05EF. Wire layout from <c>ClientMatchingQueue_WritePayload</c> @ <c>140098a70</c>:
+    /// shared <see cref="MatchingMap"/> payload, one 32-bit <see cref="Role"/> bitfield, and one uint32 <see cref="PrimeLevel"/>.
+    /// </summary>
     [Message(GameMessageOpcode.ClientMatchingQueue)]
     public class ClientMatchingQueue : IReadable
     {

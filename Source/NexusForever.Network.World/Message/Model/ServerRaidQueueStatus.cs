@@ -3,8 +3,10 @@ using NexusForever.Network.Message;
 namespace NexusForever.Network.World.Message.Model
 {
     /// <summary>
-    /// Raid queue status update (0x0718, 0x1A bytes).
-    /// Decomp (0x14008bf80): uint64 + 15-bit uint32 + uint64 + uint32 + uint32.
+    /// Native reader: <c>ServerRaidQueueStatus_ReadPayload</c> (<c>14008bf80</c>).
+    /// Reads opcode <c>0x0718</c> as one uint64, one 15-bit uint32, one uint64, and two trailing
+    /// uint32 fields. The registered object size is <c>0x20</c>, but the mapped wire payload is
+    /// only <c>0x1A</c> bytes.
     /// Field semantics remain blocked pending a non-zero retail capture or client consumer mapping.
     /// </summary>
     [Message(GameMessageOpcode.ServerRaidQueueStatus)]

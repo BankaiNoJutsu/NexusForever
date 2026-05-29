@@ -10,6 +10,7 @@ namespace NexusForever.Network.World.Message.Model.PublicEvent
 
         public void Write(GamePacketWriter writer)
         {
+            // WildStar64.exe 14007b490 reads opcode 0x0132 as the full PublicEventObjective payload.
             Objective.Write(writer);
         }
     }

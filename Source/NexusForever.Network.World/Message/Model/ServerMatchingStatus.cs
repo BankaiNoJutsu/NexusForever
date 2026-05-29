@@ -3,6 +3,14 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Native reader: <c>ServerMatchingQueueStatus_ReadPayload</c> (<c>140099650</c>).
+    /// Reads a 4-bit <see cref="MatchingQueueStatus"/>, a joined-match 5-bit
+    /// <see cref="Game.Static.Matching.MatchType"/>, a ready-match 5-bit
+    /// <see cref="Game.Static.Matching.MatchType"/>, and 16 trailing queue-membership bits.
+    /// The native reader stores those bits as per-slot booleans in a larger client object, so the
+    /// 0x4c registration size is object footprint, not a 76-byte wire payload.
+    /// </summary>
     [Message(GameMessageOpcode.ServerMatchingQueueStatus)]
     public class ServerMatchingQueueStatus : IWritable
     {

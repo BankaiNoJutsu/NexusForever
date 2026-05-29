@@ -7,6 +7,11 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ClientEntityCommand)]
     public class ClientEntityCommand : IReadable
     {
+        /// <summary>
+        /// Runtime movement input envelope consumed by <c>MovementManager.HandleClientEntityCommands</c>.
+        /// The packet carries one client clock value, one command count, and then repeated
+        /// 5-bit command ids followed by command-specific payloads.
+        /// </summary>
         public uint Time { get; set; }
         public List<INetworkEntityCommand> Commands { get; } = new();
 

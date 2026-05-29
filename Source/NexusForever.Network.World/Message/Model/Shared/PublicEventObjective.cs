@@ -14,6 +14,8 @@ namespace NexusForever.Network.World.Message.Model.Shared
 
         public void Write(GamePacketWriter writer)
         {
+            // WildStar64.exe 14007b490 reads objectiveId u15, status, busy flag, elapsed ms,
+            // notification mode, counted location ids, and counted map-region rows.
             writer.Write(ObjectiveId, 15);
             ObjectiveStatus.Write(writer);
             writer.Write(Busy);

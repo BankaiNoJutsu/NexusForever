@@ -2,6 +2,11 @@
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Native reader: <c>ServerMatchingReadyCounts_ReadPayload</c> (<c>140099700</c>).
+    /// Reads opcode <c>0x05C4</c> as a 5-bit <see cref="Game.Static.Matching.MatchType"/>
+    /// followed by two uint32 count fields.
+    /// </summary>
     [Message(GameMessageOpcode.ServerMatchingMatchInProgressReady)]
 
     // If player is in a match, fires MatchingGamePendingUpdate event for ally count update

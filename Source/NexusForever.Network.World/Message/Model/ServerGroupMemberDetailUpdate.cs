@@ -4,8 +4,10 @@ using NexusForever.Network.World.Message.Model.Shared;
 namespace NexusForever.Network.World.Message.Model
 {
     /// <summary>
-    /// Compact group-member detail refresh (0x0468, 0x28 bytes).
-    /// Prefix of the layout copied by FUN_140607490 @ 140607490.
+    /// Provisional managed payload for opcode <c>0x0468</c>.
+    /// Native reader <c>ServerGroupTargetIdentityUInt64List_ReadPayload</c> (<c>140084280</c>)
+    /// parses group id, target identity, a uint32 count, and a counted uint64 array,
+    /// so keep the model blocked for re-validation before treating it as evidence-backed.
     /// </summary>
     [Message(GameMessageOpcode.ServerGroupMemberDetailUpdate)]
     public class ServerGroupMemberDetailUpdate : IWritable

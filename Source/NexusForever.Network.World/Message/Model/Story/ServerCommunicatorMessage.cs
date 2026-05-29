@@ -13,6 +13,8 @@ namespace NexusForever.Network.World.Message.Model.Story
 
         public void Write(GamePacketWriter writer)
         {
+            // WildStar64.exe exports DB\CommunicatorMessages.tbl and
+            // Communicator_ShowQuestMsg anchors; send timing/conditions stay LWS-075 gated.
             writer.Write(CommunicatorMessagesId, 15u);
             writer.Write(CheckConditions);
         }

@@ -5,12 +5,18 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ServerMatchingPenaltyUpdated)]
     public class ServerMatchingPenaltyUpdated : IWritable
     {
-        public uint[] MatchingPenaltyTimesMS { get; set; } = new uint[16]; // These are the penalty times for each MatchType for the player
-                                                                           // Array is ordered by Game.Static.Matching.MatchType
+        private const int PenaltySlotCount = 16;
+
+        // Native registration in 14006c290 binds 0x05D9 to LAB_140099920 with a fixed 0x40-byte payload.
+        public uint[] MatchingPenaltyTimesMS { get; set; } = new uint[PenaltySlotCount];
+
         public void Write(GamePacketWriter writer)
         {
-            foreach (var penaltyTime in MatchingPenaltyTimesMS)
+            var penaltyTimes = MatchingPenaltyTimesMS;
+
+            for (int index = 0; index < PenaltySlotCount; index++)
             {
+                uint penaltyTime = penaltyTimes != null && index < penaltyTimes.Length ? penaltyTimes[index] : 0u;
                 writer.Write(penaltyTime);
             }
         }
