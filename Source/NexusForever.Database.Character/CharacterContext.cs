@@ -2802,7 +2802,7 @@ namespace NexusForever.Database.Character
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0u);
 
-                entity.Property(e => e.UnknownArray)
+                entity.Property(e => e.MicrochipIds)
                     .HasColumnName("unknownArray")
                     .HasColumnType("varchar(255)")
                     .HasDefaultValue("");

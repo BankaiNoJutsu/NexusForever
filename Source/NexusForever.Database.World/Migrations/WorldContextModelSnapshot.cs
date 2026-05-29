@@ -1010,7 +1010,7 @@ namespace NexusForever.Database.World.Migrations
                         .HasDefaultValue(0L)
                         .HasColumnName("expiry");
 
-                    b.Property<long>("Field14")
+                    b.Property<long>("DiscountTimeRemaining")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20)")
                         .HasDefaultValue(0L)

@@ -17,7 +17,7 @@ namespace NexusForever.Database.Character.Model
         public uint GlyphData { get; set; }
         public ulong ThresholdData { get; set; }
         public uint Unknown2 { get; set; }
-        public string UnknownArray { get; set; }
+        public string MicrochipIds { get; set; }
 
         public ItemModel Item { get; set; }
     }

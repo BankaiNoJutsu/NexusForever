@@ -39,9 +39,9 @@ namespace NexusForever.GameTable.Model
         public uint FactionLevelPreq0;
         public uint FactionLevelPreq01;
         public uint FactionLevelPreq02;
-        public bool FactionLevelCompPreq0;
-        public bool FactionLevelCompPreq01;
-        public bool FactionLevelCompPreq02;
+        public bool FactionLevelRequireAtMostPreq0;
+        public bool FactionLevelRequireAtMostPreq01;
+        public bool FactionLevelRequireAtMostPreq02;
         public uint QuestIdExclusionPreq0;
         public uint QuestIdExclusionPreq1;
         public uint QuestIdExclusionPreq2;

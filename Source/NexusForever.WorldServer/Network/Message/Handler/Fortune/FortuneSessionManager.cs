@@ -21,7 +21,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
     {
         private const int CardCount = 3;
         private const ulong FortuneCoinCost = 1ul;
-        private const uint ResetClickEmpty = 3u;
+        private const uint ClickEmptyResetValue = 3u;
 
         private readonly IFortuneRewardPool fortuneRewardPool;
         private readonly IRealmContext realmContext;
@@ -54,20 +54,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
         {
             if (!TryGetAccount(session, out IAccount account))
             {
-                SendReset(session);
+                SendClickEmptyReset(session);
                 return;
             }
 
             if (!account.CurrencyManager.CanAfford(AccountCurrencyType.FortuneCoin, FortuneCoinCost))
             {
-                SendReset(session);
+                SendClickEmptyReset(session);
                 return;
             }
 
             FortuneCardReward[] cardRewards = fortuneRewardPool.PickCardRewards(Random.Shared);
             if (cardRewards.Length != CardCount)
             {
-                SendReset(session);
+                SendClickEmptyReset(session);
                 return;
             }
 
@@ -85,7 +85,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
         {
             if (flipCard.SelectedCardIndex >= CardCount || !TryGetAccount(session, out IAccount account))
             {
-                SendReset(session);
+                SendClickEmptyReset(session);
                 return;
             }
 
@@ -97,7 +97,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                     fortuneSession = LoadSession(account.Id);
                     if (fortuneSession == null)
                     {
-                        SendReset(session);
+                        SendClickEmptyReset(session);
                         return;
                     }
 
@@ -107,7 +107,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 FortuneCardState card = fortuneSession.Cards[flipCard.SelectedCardIndex];
                 if (card.Flipped)
                 {
-                    SendReset(session);
+                    SendClickEmptyReset(session);
                     return;
                 }
 
@@ -258,11 +258,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             };
         }
 
-        private static void SendReset(IWorldSession session)
+        private static void SendClickEmptyReset(IWorldSession session)
         {
             session.EnqueueMessageEncrypted(new ServerFortuneReset
             {
-                Unknown = ResetClickEmpty
+                Unknown = ClickEmptyResetValue
             });
         }
 

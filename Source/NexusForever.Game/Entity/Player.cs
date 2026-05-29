@@ -1078,8 +1078,8 @@ namespace NexusForever.Game.Entity
                     FactionReputations = ReputationManager
                         .Select(r => new ServerPlayerCreate.Faction.FactionReputation
                         {
-                            FactionId = r.Id,
-                            Value     = r.Amount
+                            FactionId        = r.Id,
+                            ReputationAmount = r.Amount
                         })
                         .ToList()
                 },

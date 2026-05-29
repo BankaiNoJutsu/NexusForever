@@ -49,10 +49,10 @@
         InTargetGroup               = 44, // You cannot do that right now
         // 45 is unused in PrerequisiteType.tbl
         Waypoint                    = 46, // Incorrect waypoint direction
-        Unknown47                   = 47, // You cannot do that right now
-        Unknown48                   = 48, // You cannot do that right now
+        QuestObjective47            = 47, // You cannot do that right now - Value is QuestObjective id
+        Unknown48                   = 48, // You cannot do that right now - Rare AND companion to QuestObjective47 / Unknown77 (2 rows)
         Schedule                    = 49, // That schedule is unavailable
-        Unknown50                   = 50, // You cannot do that now
+        Spell50                     = 50, // You cannot do that now - Value is usually Spell4 id (model-sequence / unit spell gate)
         ItemQuantity                = 51, // You do not have the correct number of items
         Path                        = 52, // You do not meet the player path requirement
         PathEpisode                 = 53, // You do not meet the player path episode requirement
@@ -66,19 +66,19 @@
         PathMissionCount            = 61, // Path mission count is incorrect 
         ScanCreature                = 62, // Unable to scan this creature - Probably HasScannedCreature
         Unknown63                   = 63, // Requirements not met
-        Unknown64                   = 64, // Requirements not met
+        PathTypeLevel               = 64, // Requirements not met - ObjectId is path type, value is minimum path level for that path
         Deprecated65                = 65, // Marked as DEPRECATED
         Deprecated66                = 66, // Marked as DEPRECATED
         PathMissionRequirement      = 67, // You do not meet the path mission requirement
         QuestObjective              = 68, // Quest objective requirement not met
         ChallengeRequirement        = 69, // Challenge requirement not met
         ChallengeTier               = 70, // Challenge tier requirement not met
-        Unknown71                   = 71, // Requirements not met
+        ClassProgress               = 71, // Requirements not met - ObjectId is Class id, value is class progression threshold
         // 72 is unused in PrerequisiteType.tbl
         Vital                       = 73, // Requirements not met - Part of Vital
         ChallengeLocked             = 74, // The specified challenge is locked
         // 75 is unused in PrerequisiteType.tbl
-        Unknown76                   = 76, // Requirements not met
+        CreatureState               = 76, // Requirements not met - ObjectId is often Creature2 id, value is unit state index
         Unknown77                   = 77, // Requirements not met
         MovementMode                = 78, // Invalid movement mode
         UnderForcedMovement         = 79, // Not under forced movement
@@ -128,7 +128,7 @@
         PublicEvent120              = 120, // Public event requirement not met
         PublicEvent121              = 121, // Public event requirement not met.
         PublicEventObjective122     = 122, // Public event objective not objective spawn
-        Unknown123                  = 123, // Public event objective not objective spawn
+        PublicEventObjective123     = 123, // Public event objective requirement not met - ObjectId is PublicEventObjective id
         ChallengeCompletionCount    = 124, // Invalid challenge completion count
         Challenge125                = 125, // Challenge requirement not met
         PathHoldout                 = 126, // Path holdout requirement not met
@@ -147,7 +147,7 @@
         ItemMicrochip               = 139, // Item microchip requirement not met
         Item140                     = 140, // Item requirement not met
         IsOutOfBounds               = 141, // You are out of bounds
-        Unknown142                  = 142, // Spell requirement not met
+        Spell142                    = 142, // Spell requirement not met - Value is Spell4 id
         Difficulty                  = 143, // Difficulty requirement not met
         Unknown144                  = 144, // Exist in PrerequisiteType.tbl but does not have a description
         ItemIsSelfCraftedWeapon     = 145, // Self-crafted weapon requirement not met
@@ -226,7 +226,7 @@
         Datacube                    = 218, // Datacube requirement not met
         Volume                      = 219, // Volume requirement not met
         Unknown220                  = 220, // Exist in PrerequisiteType.tbl but does not have a description
-        Spell221                    = 221, // Spell requirement not met, Could be SpellBase
+        ActionSetSpell              = 221, // Spell requirement not met
         Unknown222                  = 222, // Requirements not met
         Unknown223                  = 223, // Requirements not met
         LevelGrantAbilityTierPoints = 224, // Level does not grant any ability tier points
@@ -274,7 +274,7 @@
         Unknown266                  = 266, // Exist in PrerequisiteType.tbl but does not have a description
         Unknown267                  = 267, // Exist in PrerequisiteType.tbl but does not have a description
         Unknown268                  = 268, // Exist in PrerequisiteType.tbl but does not have a description
-        Unknown269                  = 269, // Exist in PrerequisiteType.tbl but does not have a description
+        RapidTransport              = 269, // Exist in PrerequisiteType.tbl but does not have a description
         LoyaltyRewards              = 270, // Loyalty requirement not met
         Unknown271                  = 271, // Exist in PrerequisiteType.tbl but does not have a description
         Unknown272                  = 272, // Exist in PrerequisiteType.tbl but does not have a description

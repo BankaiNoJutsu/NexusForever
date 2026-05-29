@@ -434,13 +434,13 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
-        public static bool MeetsFactionLevelRequirement(FactionLevel currentLevel, uint requiredLevel, bool compareLessOrEqual)
+        public static bool MeetsFactionLevelRequirement(FactionLevel currentLevel, uint requiredLevel, bool requireAtMostLevel)
         {
             if (requiredLevel > (uint)FactionLevel.Beloved)
                 return false;
 
             var required = (FactionLevel)requiredLevel;
-            return compareLessOrEqual
+            return requireAtMostLevel
                 ? currentLevel <= required
                 : currentLevel >= required;
         }
@@ -453,19 +453,19 @@ namespace NexusForever.Game.Entity
 
         private bool MeetsFactionLevelPrerequisites(Quest2Entry entry)
         {
-            return MeetsFactionLevelPrerequisite(entry.FactionIdPreq0, entry.FactionLevelPreq0, entry.FactionLevelCompPreq0)
-                && MeetsFactionLevelPrerequisite(entry.FactionIdPreq01, entry.FactionLevelPreq01, entry.FactionLevelCompPreq01)
-                && MeetsFactionLevelPrerequisite(entry.FactionIdPreq02, entry.FactionLevelPreq02, entry.FactionLevelCompPreq02);
+            return MeetsFactionLevelPrerequisite(entry.FactionIdPreq0, entry.FactionLevelPreq0, entry.FactionLevelRequireAtMostPreq0)
+                && MeetsFactionLevelPrerequisite(entry.FactionIdPreq01, entry.FactionLevelPreq01, entry.FactionLevelRequireAtMostPreq01)
+                && MeetsFactionLevelPrerequisite(entry.FactionIdPreq02, entry.FactionLevelPreq02, entry.FactionLevelRequireAtMostPreq02);
         }
 
-        private bool MeetsFactionLevelPrerequisite(uint factionId, uint requiredLevel, bool compareLessOrEqual)
+        private bool MeetsFactionLevelPrerequisite(uint factionId, uint requiredLevel, bool requireAtMostLevel)
         {
             if (factionId == 0u)
                 return true;
 
             float reputationAmount = player.ReputationManager.GetReputation((Faction)factionId)?.Amount ?? 0f;
             FactionLevel currentLevel = FactionNode.GetFactionLevel(reputationAmount);
-            return MeetsFactionLevelRequirement(currentLevel, requiredLevel, compareLessOrEqual);
+            return MeetsFactionLevelRequirement(currentLevel, requiredLevel, requireAtMostLevel);
         }
 
         private static IEnumerable<uint> GetQuestExclusionPrerequisites(Quest2Entry entry)

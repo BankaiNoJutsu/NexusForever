@@ -634,7 +634,7 @@ namespace NexusForever.Game.Marketplace
             model.GlyphData             = auction.GlyphData;
             model.ThresholdData         = auction.ThresholdData;
             model.Unknown2              = auction.Unknown2;
-            model.UnknownArray          = SerializeUnknownArray(auction.UnknownArray);
+            model.MicrochipIds          = SerializeMicrochipIds(auction.MicrochipIds);
         }
 
         private static AuctionInfo ToAuctionInfo(MarketplaceAuctionModel model)
@@ -655,7 +655,7 @@ namespace NexusForever.Game.Marketplace
                 GlyphData                = model.GlyphData,
                 ThresholdData            = model.ThresholdData,
                 Unknown2                 = model.Unknown2,
-                UnknownArray             = DeserializeUnknownArray(model.UnknownArray)
+                MicrochipIds             = DeserializeMicrochipIds(model.MicrochipIds)
             };
         }
 
@@ -692,15 +692,16 @@ namespace NexusForever.Game.Marketplace
             };
         }
 
-        private static string SerializeUnknownArray(List<uint> values)
+        // AuctionInfo.MicrochipIds matches the shared-item 3-bit microchip id array that sits beside the circuit/glyph payload.
+        private static string SerializeMicrochipIds(List<uint> microchipIds)
         {
-            if (values == null || values.Count == 0)
+            if (microchipIds == null || microchipIds.Count == 0)
                 return string.Empty;
 
-            return string.Join(',', values);
+            return string.Join(',', microchipIds);
         }
 
-        private static List<uint> DeserializeUnknownArray(string value)
+        private static List<uint> DeserializeMicrochipIds(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
                 return [];
@@ -713,7 +714,7 @@ namespace NexusForever.Game.Marketplace
             }
             catch (FormatException ex)
             {
-                log.Error(ex, "GlobalMarketplaceManager.DeserializeUnknownArray failed to parse corrupt DB value '{0}'. Returning empty array.",
+                log.Error(ex, "GlobalMarketplaceManager.DeserializeMicrochipIds failed to parse corrupt DB value '{0}'. Returning empty array.",
                     value.Length > 200 ? value[..200] + "..." : value);
                 return [];
             }
@@ -1045,7 +1046,7 @@ namespace NexusForever.Game.Marketplace
                 Item2Id                  = auction.Item2Id,
                 Quantity                 = auction.Quantity,
                 WorldRequirement_Item2Id = auction.WorldRequirement_Item2Id,
-                UnknownArray             = auction.UnknownArray.ToList(),
+                MicrochipIds             = auction.MicrochipIds.ToList(),
                 CircuitData              = auction.CircuitData,
                 GlyphData                = auction.GlyphData,
                 ThresholdData            = auction.ThresholdData,

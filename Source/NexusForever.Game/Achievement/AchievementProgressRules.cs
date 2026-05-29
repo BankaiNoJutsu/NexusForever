@@ -11,9 +11,9 @@ namespace NexusForever.Game.Achievement
                 && (AchievementType)info.Entry.AchievementTypeId == AchievementType.QuestCompleteChecklistCount;
         }
 
-        public static uint GetRequiredProgress(uint value)
+        public static uint GetRequiredProgress(uint requiredProgress)
         {
-            return value == 0u ? 1u : value;
+            return requiredProgress == 0u ? 1u : requiredProgress;
         }
     }
 }

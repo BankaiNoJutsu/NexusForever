@@ -15,7 +15,7 @@ public class RewardRotationScheduleBuilderTests
         RewardRotationContentContextSources sources = CreateSources();
         SetEntries(sources.RewardRotationItem, new RewardRotationItemEntry { Id = 3u, Count = 6000u });
         SetEntries(sources.RewardRotationEssence, new RewardRotationEssenceEntry { Id = 5u });
-        SetEntries(sources.RewardRotationModifier, new RewardRotationModifierEntry { Id = 12u, Value = 15f });
+        SetEntries(sources.RewardRotationModifier, new RewardRotationModifierEntry { Id = 12u, ModifierValue = 15f });
 
         ServerRewardRotationScheduleArray schedule = RewardRotationScheduleBuilder.Build(
             sources,

@@ -149,9 +149,9 @@ namespace NexusForever.Game.Trade
                 {
                     TradeIndex = (uint)offer.ItemGuids.Count - 1u,
                     OwnerUnitId = player.Guid,
-                    Item2Id     = item.Id,
+                    ItemId      = item.Id,
                     ItemGuid    = item.Guid,
-                    Quantity    = item.StackCount
+                    StackCount  = item.StackCount
                 });
             }
 

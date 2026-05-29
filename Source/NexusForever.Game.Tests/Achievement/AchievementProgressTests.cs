@@ -16,14 +16,14 @@ namespace NexusForever.Game.Tests.Achievement;
 public class AchievementProgressTests
 {
     [Fact]
-    public void IsComplete_AllowsProgressBeyondRequiredValue()
+    public void IsComplete_AllowsProgressBeyondRequiredProgress()
     {
         var achievement = new Achievement<CharacterAchievementModel>(
             1u,
             new TestAchievementInfo(new AchievementEntry
             {
                 Id = 10,
-                Value = 3
+                RequiredProgress = 3
             }))
         {
             ProgressCount = 5
@@ -33,14 +33,14 @@ public class AchievementProgressTests
     }
 
     [Fact]
-    public void IsComplete_TreatsZeroValueAsSingleEventRequirement()
+    public void IsComplete_TreatsZeroRequiredProgressAsSingleEventRequirement()
     {
         var achievement = new Achievement<CharacterAchievementModel>(
             1u,
             new TestAchievementInfo(new AchievementEntry
             {
                 Id = 11,
-                Value = 0
+                RequiredProgress = 0
             }))
         {
             ProgressCount = 1
@@ -50,21 +50,21 @@ public class AchievementProgressTests
     }
 
     [Fact]
-    public void IsComplete_DoesNotCompleteZeroValueBeforeProgress()
+    public void IsComplete_DoesNotCompleteZeroRequiredProgressBeforeProgress()
     {
         var achievement = new Achievement<CharacterAchievementModel>(
             1u,
             new TestAchievementInfo(new AchievementEntry
             {
                 Id = 12,
-                Value = 0
+                RequiredProgress = 0
             }));
 
         Assert.False(achievement.IsComplete());
     }
 
     [Fact]
-    public void IsComplete_UsesValueForQuestCompleteChecklistCount()
+    public void IsComplete_UsesRequiredProgressForQuestCompleteChecklistCount()
     {
         var achievement = new Achievement<CharacterAchievementModel>(
             1u,
@@ -73,7 +73,7 @@ public class AchievementProgressTests
                 {
                     Id                = 13,
                     AchievementTypeId = (uint)AchievementType.QuestCompleteChecklistCount,
-                    Value             = 2
+                    RequiredProgress  = 2
                 },
                 new AchievementChecklistEntry { Bit = 0u, ObjectId = 100u },
                 new AchievementChecklistEntry { Bit = 1u, ObjectId = 101u },
@@ -93,7 +93,7 @@ public class AchievementProgressTests
             {
                 Id                = 14,
                 AchievementTypeId = (uint)AchievementType.QuestCompleteChecklistCount,
-                Value             = 2
+                RequiredProgress  = 2
             },
             new AchievementChecklistEntry { Bit = 0u, ObjectId = 100u },
             new AchievementChecklistEntry { Bit = 1u, ObjectId = 101u });
@@ -132,7 +132,7 @@ public class AchievementProgressTests
                 Id                = 15,
                 AchievementTypeId = (uint)AchievementType.KillCreatureGroup,
                 ObjectId          = 0,
-                Value             = 1
+                RequiredProgress  = 1
             });
 
         var manager = new TestAchievementManager(info);
@@ -163,7 +163,7 @@ public class AchievementProgressTests
                 Id                = 16,
                 AchievementTypeId = (uint)AchievementType.KillCreatureGroup,
                 ObjectId          = 1463,
-                Value             = 1
+                RequiredProgress  = 1
             });
 
         var manager = new TestAchievementManager(info);

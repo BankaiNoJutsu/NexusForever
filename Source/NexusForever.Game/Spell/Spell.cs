@@ -1841,6 +1841,7 @@ namespace NexusForever.Game.Spell
                             ShieldAbsorbAmount = targetEffectInfo.Damage.ShieldAbsorbAmount,
                             AdjustedDamage     = targetEffectInfo.Damage.AdjustedDamage,
                             OverkillAmount     = targetEffectInfo.Damage.OverkillAmount,
+                            GlanceAmount       = 0u,
                             KilledTarget       = targetEffectInfo.Damage.KilledTarget,
                             CombatResult       = targetEffectInfo.Damage.CombatResult,
                             DamageType         = targetEffectInfo.Damage.DamageType

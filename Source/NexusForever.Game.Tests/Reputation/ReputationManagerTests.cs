@@ -54,7 +54,7 @@ public class ReputationManagerTests
             RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
             var update = Assert.IsType<ServerReputationUpdate>(sessionCall.Arguments[0]);
             Assert.Equal(Faction.Dominion, update.FactionId);
-            Assert.Equal(40000f, update.Value);
+            Assert.Equal(40000f, update.ReputationDelta);
         }
         finally
         {
@@ -97,7 +97,7 @@ public class ReputationManagerTests
 
             RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
             var update = Assert.IsType<ServerReputationUpdate>(sessionCall.Arguments[0]);
-            Assert.Equal(-4000f, update.Value);
+            Assert.Equal(-4000f, update.ReputationDelta);
         }
         finally
         {

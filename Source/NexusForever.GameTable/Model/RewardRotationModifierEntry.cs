@@ -5,7 +5,7 @@ namespace NexusForever.GameTable.Model
         public uint Id;
         public uint RewardPropertyId;
         public uint RewardPropertyData;
-        public float Value;
+        public float ModifierValue;
         public uint MinPlayerLevel;
         public uint WorldDifficultyFlags;
     }

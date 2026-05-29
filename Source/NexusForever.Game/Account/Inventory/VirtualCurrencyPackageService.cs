@@ -93,11 +93,11 @@ namespace NexusForever.Game.Account.Inventory
             return Definitions
                 .Select(d => new ServerStoreCategories.CurrencyPackage
                 {
-                    Id        = d.PackageId,
-                    Name      = d.Name,
-                    Count     = (uint)Math.Min(d.GrantAmount, uint.MaxValue),
-                    Price     = d.DisplayPrice,
-                    Unknown9  = (uint)d.CurrencyType
+                    Id           = d.PackageId,
+                    Name         = d.Name,
+                    Count        = (uint)Math.Min(d.GrantAmount, uint.MaxValue),
+                    Price        = d.DisplayPrice,
+                    CurrencyType = d.CurrencyType
                 })
                 .ToList();
         }

@@ -997,7 +997,7 @@ namespace NexusForever.Database.World
                     .HasColumnType("bigint(20)")
                     .HasDefaultValue(0);
 
-                entity.Property(e => e.Field14)
+                entity.Property(e => e.DiscountTimeRemaining)
                     .HasColumnName("field_14")
                     .HasColumnType("bigint(20)")
                     .HasDefaultValue(0);

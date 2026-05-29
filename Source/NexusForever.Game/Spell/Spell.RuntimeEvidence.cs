@@ -37,7 +37,7 @@ namespace NexusForever.Game.Spell
             var message = new ServerSpellCastTargetReport
             {
                 CastingId = CastingId,
-                unknownStructure0 = diagnostics.Select(diagnostic => new ServerSpellCastTargetReport.UnknownStructure0
+                TargetReportRows = diagnostics.Select(diagnostic => new ServerSpellCastTargetReport.TargetReportRow
                 {
                     CasterId = diagnostic.TargetId,
                     Unknown4 = 0,
@@ -49,13 +49,13 @@ namespace NexusForever.Game.Spell
                 this,
                 nameof(ServerSpellCastTargetReport),
                 string.Join(", ", diagnostics.Select(diagnostic => $"{diagnostic.TargetId}:{diagnostic.Reason}:{diagnostic.BlockedEffectType}")),
-                entryCount: message.unknownStructure0.Count);
+                entryCount: message.TargetReportRows.Count);
 
             log.Debug(
                 "SpellDiagnostics diagnostic-broadcast packet={0} castingId={1} entries={2}",
                 nameof(ServerSpellCastTargetReport),
                 CastingId,
-                message.unknownStructure0.Count);
+                message.TargetReportRows.Count);
 
             Caster.EnqueueToVisible(message, true);
         }

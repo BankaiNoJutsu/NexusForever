@@ -46,8 +46,8 @@ public class GameTableRewardRotationRefreshProviderTests
             new RewardRotationEssenceEntry { Id = 30u, MinPlayerLevel = 1u },
             new RewardRotationEssenceEntry { Id = 40u, MinPlayerLevel = 1u });
         SetEntries(sources.RewardRotationModifier,
-            new RewardRotationModifierEntry { Id = 50u, Value = 1f, MinPlayerLevel = 1u },
-            new RewardRotationModifierEntry { Id = 60u, Value = 2f, MinPlayerLevel = 1u });
+            new RewardRotationModifierEntry { Id = 50u, ModifierValue = 1f, MinPlayerLevel = 1u },
+            new RewardRotationModifierEntry { Id = 60u, ModifierValue = 2f, MinPlayerLevel = 1u });
 
         ServerRewardRotationScheduleArray schedule = RewardRotationScheduleBuilder.Build(
             sources,

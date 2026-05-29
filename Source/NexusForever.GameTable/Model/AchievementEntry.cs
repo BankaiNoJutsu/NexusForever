@@ -13,7 +13,7 @@ namespace NexusForever.GameTable.Model
         public float PercCompletionToShow;
         public uint ObjectId;
         public uint ObjectIdAlt;
-        public uint Value;
+        public uint RequiredProgress;
         public uint CharacterTitleId;
         public uint PrerequisiteId;
         public uint PrerequisiteIdServer;

@@ -103,7 +103,7 @@ namespace NexusForever.Game.Achievement
             IAchievement achievement = GetAchievement(id);
             if (info.ChecklistEntries.Count == 0 || AchievementProgressRules.UsesChecklistValueProgress(info))
             {
-                achievement.ProgressCount = AchievementProgressRules.GetRequiredProgress(info.Entry.Value);
+                achievement.ProgressCount = AchievementProgressRules.GetRequiredProgress(info.Entry.RequiredProgress);
                 foreach (AchievementChecklistEntry entry in info.ChecklistEntries)
                     achievement.CreditedChecklistMask |= 1u << (int)entry.Bit;
             }
@@ -176,7 +176,7 @@ namespace NexusForever.Game.Achievement
                         return false;
 
                     achievement = GetAchievement(info.Id);
-                    achievement.ProgressCount = AddProgress(achievement.ProgressCount, count, AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
+                    achievement.ProgressCount = AddProgress(achievement.ProgressCount, count, AchievementProgressRules.GetRequiredProgress(info.Entry.RequiredProgress));
                     sendUpdate = true;
                 }
             }
@@ -202,7 +202,7 @@ namespace NexusForever.Game.Achievement
 
                 if (matchedNewChecklistEntry)
                 {
-                    achievement.ProgressCount = AddProgress(achievement.ProgressCount, count, AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
+                    achievement.ProgressCount = AddProgress(achievement.ProgressCount, count, AchievementProgressRules.GetRequiredProgress(info.Entry.RequiredProgress));
                     sendUpdate = true;
                 }
             }
@@ -247,7 +247,7 @@ namespace NexusForever.Game.Achievement
                 return false;
 
             IAchievement achievement = GetAchievement(info.Id);
-            uint progress = Math.Min(Math.Max(achievement.ProgressCount, value), AchievementProgressRules.GetRequiredProgress(info.Entry.Value));
+            uint progress = Math.Min(Math.Max(achievement.ProgressCount, value), AchievementProgressRules.GetRequiredProgress(info.Entry.RequiredProgress));
             if (progress == achievement.ProgressCount)
                 return false;
 

@@ -25,7 +25,7 @@ namespace NexusForever.Game.Storefront
             Price                 = model.Price;
             DiscountType          = (DiscountType)model.DiscountType;
             DiscountValue         = model.DiscountValue;
-            DiscountTimeRemaining = model.Field14;
+            DiscountTimeRemaining = model.DiscountTimeRemaining;
             Expiry                = model.Expiry;
         }
 

@@ -6,7 +6,7 @@ namespace NexusForever.Game.Tests.Entity;
 public class QuestPrerequisiteTests
 {
     [Fact]
-    public void MeetsFactionLevelRequirement_CompClearRequiresAtLeastRequiredLevel()
+    public void MeetsFactionLevelRequirement_RequireAtMostClearRequiresAtLeastRequiredLevel()
     {
         Assert.True(QuestManager.MeetsFactionLevelRequirement(FactionLevel.Accepted, (uint)FactionLevel.Liked, false));
         Assert.True(QuestManager.MeetsFactionLevelRequirement(FactionLevel.Liked, (uint)FactionLevel.Liked, false));
@@ -14,7 +14,7 @@ public class QuestPrerequisiteTests
     }
 
     [Fact]
-    public void MeetsFactionLevelRequirement_CompSetRequiresNoHigherThanRequiredLevel()
+    public void MeetsFactionLevelRequirement_RequireAtMostSetRequiresNoHigherThanRequiredLevel()
     {
         Assert.True(QuestManager.MeetsFactionLevelRequirement(FactionLevel.Wary, (uint)FactionLevel.Neutral, true));
         Assert.True(QuestManager.MeetsFactionLevelRequirement(FactionLevel.Neutral, (uint)FactionLevel.Neutral, true));

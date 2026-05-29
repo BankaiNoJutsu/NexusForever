@@ -19,7 +19,17 @@ public class RewardPropertyProtocolTests
                     Id = RewardPropertyType.XP,
                     Data = 0x10203040u,
                     Type = RewardPropertyModifierValueType.AdditiveScalar,
-                    Value = 1.5f
+                    Value = 1.5f,
+                    SubRewardProperties =
+                    {
+                        new ServerRewardPropertySet.RewardProperty.SubRewardProperty
+                        {
+                            Id = 0xA,
+                            Data = 0x01020304u,
+                            Type = RewardPropertyModifierValueType.MultiplicativeScalar,
+                            Value = 2.5f
+                        }
+                    }
                 },
                 new ServerRewardPropertySet.RewardProperty
                 {
@@ -47,7 +57,11 @@ public class RewardPropertyProtocolTests
         Assert.Equal(0x10203040u, reader.ReadUInt());
         Assert.Equal(RewardPropertyModifierValueType.AdditiveScalar, reader.ReadEnum<RewardPropertyModifierValueType>(2u));
         Assert.Equal(1.5f, reader.ReadSingle());
-        Assert.Equal(0u, reader.ReadUInt(8u));
+        Assert.Equal(1u, reader.ReadUInt(8u));
+        Assert.Equal(0xAu, reader.ReadUInt(4u));
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal(RewardPropertyModifierValueType.MultiplicativeScalar, reader.ReadEnum<RewardPropertyModifierValueType>(2u));
+        Assert.Equal(2.5f, reader.ReadSingle());
 
         Assert.Equal(RewardPropertyType.CommodityOrders, reader.ReadEnum<RewardPropertyType>(6u));
         Assert.Equal(0x50607080u, reader.ReadUInt());

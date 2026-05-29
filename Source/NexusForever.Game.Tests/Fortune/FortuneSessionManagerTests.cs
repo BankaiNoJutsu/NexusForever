@@ -16,6 +16,8 @@ namespace NexusForever.Game.Tests.Fortune;
 
 public class FortuneSessionManagerTests
 {
+    private const uint ClickEmptyResetValue = 3u;
+
     [Fact]
     public void SendStatus_WithNoSessionSendsRewardCatalogAndResetCards()
     {
@@ -66,7 +68,7 @@ public class FortuneSessionManagerTests
         manager.Start(session);
 
         ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Single();
-        Assert.Equal(3u, reset.Unknown);
+        Assert.Equal(ClickEmptyResetValue, reset.Unknown);
     }
 
     [Fact]
@@ -147,7 +149,7 @@ public class FortuneSessionManagerTests
         manager.FlipCard(session, CreateFlipCard(0u));
 
         ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Single();
-        Assert.Equal(3u, reset.Unknown);
+        Assert.Equal(ClickEmptyResetValue, reset.Unknown);
     }
 
     [Fact]
@@ -160,7 +162,7 @@ public class FortuneSessionManagerTests
         manager.FlipCard(session, CreateFlipCard(3u));
 
         ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Single();
-        Assert.Equal(3u, reset.Unknown);
+        Assert.Equal(ClickEmptyResetValue, reset.Unknown);
     }
 
     [Fact]
@@ -174,7 +176,7 @@ public class FortuneSessionManagerTests
         manager.FlipCard(session, CreateFlipCard(1u));
 
         ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Last();
-        Assert.Equal(3u, reset.Unknown);
+        Assert.Equal(ClickEmptyResetValue, reset.Unknown);
     }
 
     private const ushort TestRealmId = 7;

@@ -70,7 +70,7 @@ public class ClientRewardUpdateRequestClaimTests
         SetEntries(sources.RewardRotationEssence,
             new RewardRotationEssenceEntry { Id = 60u, MinPlayerLevel = 1u });
         SetEntries(sources.RewardRotationModifier,
-            new RewardRotationModifierEntry { Id = 70u, Value = 1f, MinPlayerLevel = 1u });
+            new RewardRotationModifierEntry { Id = 70u, ModifierValue = 1f, MinPlayerLevel = 1u });
 
         ServerRewardRotationScheduleArray schedule = RewardRotationScheduleBuilder.Build(sources, 1u, new List<uint> { 15u });
 

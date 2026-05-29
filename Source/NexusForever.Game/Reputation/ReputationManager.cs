@@ -74,8 +74,8 @@ namespace NexusForever.Game.Reputation
 
             owner.Session.EnqueueMessageEncrypted(new ServerReputationUpdate
             {
-                FactionId = factionId,
-                Value     = value
+                FactionId       = factionId,
+                ReputationDelta = value
             });
         }
 

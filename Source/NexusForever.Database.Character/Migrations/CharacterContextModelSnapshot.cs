@@ -2484,7 +2484,7 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue(0u)
                         .HasColumnName("unknown2");
 
-                    b.Property<string>("UnknownArray")
+                    b.Property<string>("MicrochipIds")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("varchar(255)")
                         .HasDefaultValue("")

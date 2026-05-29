@@ -29,10 +29,10 @@ public class CombatLogPacketShapeTests
                 ShieldAbsorbAmount = 0x61626364u,
                 AdjustedDamage     = 0x71727374u,
                 OverkillAmount     = 0x81828384u,
-                Unknown6           = 0x91929394u,
+                GlanceAmount       = 0x91929394u,
                 KilledTarget       = true,
-                CombatResult       = (byte)CombatResult.Critical,
-                DamageType         = (byte)DamageType.Magic
+                CombatResult       = CombatResult.Critical,
+                DamageType         = DamageType.Magic
             }
         });
 
@@ -41,7 +41,7 @@ public class CombatLogPacketShapeTests
         Assert.Equal(0x54321u, reader.ReadUInt(19u));
         Assert.Equal(0x11121314u, reader.ReadUInt());
         Assert.Equal(0x21222324u, reader.ReadUInt());
-        AssertDamageDescription(reader, CombatResult.Critical, DamageType.Magic);
+        AssertDamageDescription(reader, 0x91929394u, CombatResult.Critical, DamageType.Magic);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class CombatLogPacketShapeTests
                 ShieldAbsorbAmount = 0x61626364u,
                 AdjustedDamage     = 0x71727374u,
                 OverkillAmount     = 0x81828384u,
-                Unknown6           = 0x91929394u,
+                GlanceAmount       = 0x91929394u,
                 KilledTarget       = true,
                 CombatResult       = CombatResult.Critical,
                 DamageType         = DamageType.Magic
@@ -91,7 +91,7 @@ public class CombatLogPacketShapeTests
         Assert.Equal(0x21222324u, reader.ReadUInt());
         Assert.Equal(-1, reader.ReadInt());
         Assert.Equal((byte)1, reader.ReadByte(2u));
-        AssertDamageDescription(reader, CombatResult.Critical, DamageType.Magic);
+        AssertDamageDescription(reader, 0x91929394u, CombatResult.Critical, DamageType.Magic);
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public class CombatLogPacketShapeTests
         Assert.Equal(CombatResult.Critical, reader.ReadEnum<CombatResult>(4u));
     }
 
-    private static void AssertDamageDescription(GamePacketReader reader, CombatResult combatResult, DamageType damageType)
+    private static void AssertDamageDescription(GamePacketReader reader, uint glanceAmount, CombatResult combatResult, DamageType damageType)
     {
         Assert.Equal(0x31323334u, reader.ReadUInt());
         Assert.Equal(0x41424344u, reader.ReadUInt());
@@ -272,7 +272,7 @@ public class CombatLogPacketShapeTests
         Assert.Equal(0x61626364u, reader.ReadUInt());
         Assert.Equal(0x71727374u, reader.ReadUInt());
         Assert.Equal(0x81828384u, reader.ReadUInt());
-        Assert.Equal(0x91929394u, reader.ReadUInt());
+        Assert.Equal(glanceAmount, reader.ReadUInt());
         Assert.True(reader.ReadBit());
         Assert.Equal(combatResult, reader.ReadEnum<CombatResult>(4u));
         Assert.Equal(damageType, reader.ReadEnum<DamageType>(3u));

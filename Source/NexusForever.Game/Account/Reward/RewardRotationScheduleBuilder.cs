@@ -119,7 +119,7 @@ namespace NexusForever.Game.Account.Reward
                 RewardKeyId = entry.Id,
                 Duration = durationDays,
                 RewardType = RewardTypeModifier,
-                Value = unchecked((uint)entry.Value)
+                Value = unchecked((uint)entry.ModifierValue)
             });
         }
 
