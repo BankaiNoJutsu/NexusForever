@@ -270,8 +270,10 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
             publicEvent.ActivateObjective(PublicEventObjective.OpenMedbay);
             publicEvent.ActivateObjective(PublicEventObjective.DownloadCrewLogs);
 
-            // WIP-guessed from LaughingWS Instances-and-more: the branch teleports the group
-            // after opening the medbay, but the exact retail transition trigger is not mapped yet.
+            // Current fallback teleports players to (53.18, -852.86, -91.42) after the
+            // medbay objectives activate, then removes the gather ring before the
+            // CaptainWeir2 communicator follow-up; the retail transition trigger is
+            // still unmapped.
             foreach (IPlayer player in mapInstance.GetPlayers())
                 player.TeleportToLocal(new Vector3(53.180374f, -852.86273f, -91.41684f));
 
@@ -285,8 +287,9 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
         {
             publicEvent.ActivateObjective(PublicEventObjective.ScavengeSpareParts);
 
-            // WIP-guessed from LaughingWS Instances-and-more: communicator, cinematic, and
-            // refugee-awakening timing need retail/client smoke before this is parity behavior.
+            // This slice broadcasts CaptainWeir3, queues IEvilFromTheEtherOnOpenMedbay,
+            // and awakens each RavenousRefugeeEntityScript after the spare-parts
+            // objective activates; retail timing still needs smoke.
             BroadcastCommunicatorMessage(CommunicatorMessage.CaptainWeir3);
 
             foreach (IPlayer player in mapInstance.GetPlayers())
@@ -390,8 +393,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
 
             mapInstance.GetEntity<IDoorEntity>(upperDeckDoor1Guid)?.OpenDoor();
 
-            // WIP-guessed from LaughingWS Instances-and-more: this branch trigger placement
-            // advances the bridge-access gather step, but the retail trigger row is unverified.
+            // Spawn the bridge-access gather volume using world-location 50348 and
+            // objective object 8260; exact retail placement still needs live verification.
             var triggerEntity = publicEvent.CreateEntity<IWorldLocationVolumeGridTriggerEntity>();
             triggerEntity.Initialise(50348, 8260);
             AddToMap(triggerEntity, new Vector3(-53.3373f, -845.091f, 215.584f));
@@ -413,8 +416,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
             mapInstance.GetEntity<IDoorEntity>(upperDeckDoor2Guid)?.OpenDoor();
             mapInstance.GetEntity<IDoorEntity>(upperDeckDoor3Guid)?.OpenDoor();
 
-            // WIP-guessed from LaughingWS Instances-and-more: bridge gather trigger id and
-            // coordinates are branch-derived pending table/client confirmation.
+            // Spawn the Shades Bridge gather volume using world-location 50349 and
+            // objective object 8261; exact retail placement still needs live verification.
             var triggerEntity = publicEvent.CreateEntity<IWorldLocationVolumeGridTriggerEntity>();
             triggerEntity.Initialise(50349, 8261);
             AddToMap(triggerEntity, new Vector3(-53.3725f, -842.341f, 282.618f));
@@ -467,8 +470,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
 
         private void AddToMap(IGridEntity entity, Vector3 position)
         {
-            // WIP-guessed from LaughingWS Instances-and-more: dynamic trigger ids/positions
-            // preserve the branch route, but exact spawn timing and placement need live smoke.
+            // Enqueues a caller-configured grid entity at an explicit script position;
+            // retail spawn timing and placement still need live verification.
             mapInstance.EnqueueAdd(entity, new ScriptMapPosition
             {
                 Info = new ScriptMapInfo
@@ -482,8 +485,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
 
         private void SeedParticipantsInRangeObjective(PublicEventObjective objectiveId, params uint[] entityGuids)
         {
-            // WIP safeguard for branch-derived door triggers: recover players who are already
-            // inside the range volume before the objective phase starts.
+            // Seed progress for players already inside the supplied entity ranges before
+            // the objective phase starts.
             HashSet<ulong> characterIds = [];
             foreach (uint entityGuid in entityGuids)
             {
@@ -504,8 +507,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
 
         private void BroadcastCommunicatorMessage(CommunicatorMessage message)
         {
-            // WIP-guessed from LaughingWS Instances-and-more: message ids are branch-mapped,
-            // but exact retail timing and faction/participant targeting remain blocked.
+            // Broadcast the selected communicator message to every player currently in
+            // the instance.
             ICommunicatorMessage communicatorMessage = globalQuestManager.GetCommunicatorMessage(message);
             foreach (IPlayer player in mapInstance.GetPlayers())
                 communicatorMessage?.Send(player.Session);
@@ -609,8 +612,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther
         /// </summary>
         public void OnCinematicFinish(IPlayer player, uint cinematicId)
         {
-            // WIP-guessed from LaughingWS Instances-and-more: phase gates stand in for exact
-            // cinematic id proof until the native completion callbacks are mapped.
+            // Use the current public-event phase to send the next communicator follow-up
+            // to the player who finished the cinematic.
             switch ((PublicEventPhase)publicEvent.Phase)
             {
                 case PublicEventPhase.TalkToCaptainWeir:

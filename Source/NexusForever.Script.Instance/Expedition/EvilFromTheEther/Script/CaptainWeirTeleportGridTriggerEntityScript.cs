@@ -28,8 +28,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
             if (entity is not IPlayer player)
                 return;
 
-            // WIP-guessed from LaughingWS Instances-and-more: escape teleport coordinates
-            // and objective trigger id need expedition smoke before being treated as retail.
+            // Owner trigger 8243 currently teleports to (-398.66, -842.03, 119.30) and
+            // credits PublicEventObjectiveType.Script; expedition timing still needs smoke.
             player.TeleportToLocal(new Vector3(-398.65857f, -842.03436f, 119.298386f));
             trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.Script, 8243, 1);
         }

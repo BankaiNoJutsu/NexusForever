@@ -29,8 +29,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
             if (door.Map is not IMapInstance mapInstance)
                 return;
 
-            // WIP-guessed from LaughingWS Instances-and-more: hallway-door callout timing
-            // is branch-mapped, but exact retail door/message choreography is unverified.
+            // Opening this hallway door currently broadcasts CaptainWeir9 for creature 71266 /
+            // active prop 7059787. Exact retail door-message choreography remains unverified.
             ICommunicatorMessage communicatorMessage = globalQuestManager.GetCommunicatorMessage(CommunicatorMessage.CaptainWeir9);
             foreach (IPlayer player in mapInstance.GetPlayers())
                 communicatorMessage?.Send(player.Session);

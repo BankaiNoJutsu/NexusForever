@@ -11,8 +11,10 @@ using NexusForever.Shared;
 namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 {
     /// <summary>
-    /// WIP-guessed from LaughingWS Instances-and-more: floating Katja visual tether,
-    /// spline movement, and floor knockback need client smoke before parity claims.
+    /// Current floating creature 71832 casts spell 81640 at visible portal creature
+    /// 71134, launches spline 22523 toward the portal, and relocates to
+    /// (-53.63, -836.14, 362.95) for the floor knockback path; client parity is still
+    /// pending smoke.
     /// </summary>
     [ScriptFilterCreatureId(71832)]
     public class KatjaZarkhovFloatingEntityScript : INonPlayerScript, IOwnedScript<INonPlayerEntity>

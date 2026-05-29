@@ -8,8 +8,9 @@ using NexusForever.Shared;
 namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 {
     /// <summary>
-    /// WIP-guessed from LaughingWS Instances-and-more: tether visual linkage and
-    /// cleanup are branch-derived pending native mechanic proof.
+    /// Creature 71133 is confirmed by the script filter. Tether visual linkage
+    /// and cleanup remain branch-derived; the current slice casts spell 81640
+    /// back at the summoning portal pending native mechanic proof.
     /// </summary>
     [ScriptFilterCreatureId(71133)]
     public class TetheredOrganismEntityScript : INonPlayerScript, IOwnedScript<INonPlayerEntity>

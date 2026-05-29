@@ -28,8 +28,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
             if (entity is not IPlayer player)
                 return;
 
-            // WIP-guessed from LaughingWS Instances-and-more: upper-deck teleport
-            // coordinates and trigger timing still need retail/client confirmation.
+            // Owner trigger 8242 currently teleports to (-53.35, -841.45, 164.51) and
+            // credits PublicEventObjectiveType.Script; trigger timing still needs smoke.
             player.TeleportToLocal(new Vector3(-53.353714f, -841.44684f, 164.51099f), false);
             trigger.Map.PublicEventManager.UpdateObjective(PublicEventObjectiveType.Script, 8242, 1);
         }

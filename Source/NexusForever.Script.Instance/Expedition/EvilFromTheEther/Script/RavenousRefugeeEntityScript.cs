@@ -9,8 +9,9 @@ using NexusForever.Shared;
 namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 {
     /// <summary>
-    /// WIP-guessed from LaughingWS Instances-and-more: dormant/awaken visual spells
-    /// are branch-derived pending retail creature-behavior proof.
+    /// Current implementation casts dormant visual spell 87237 on add-to-map and
+    /// awaken visual spell 87245 in <see cref="Awaken"/>; broader creature-behavior
+    /// parity is still pending smoke.
     /// </summary>
     [ScriptFilterScriptName("RavenousRefugeeEntityScript")]
     public class RavenousRefugeeEntityScript : CombatAI, IUnitScript

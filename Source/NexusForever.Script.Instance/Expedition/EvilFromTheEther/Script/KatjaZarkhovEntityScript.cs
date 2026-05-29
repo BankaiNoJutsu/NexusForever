@@ -11,8 +11,11 @@ using NexusForever.Shared;
 namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 {
     /// <summary>
-    /// WIP-guessed from LaughingWS Instances-and-more: spell cadence, enrage timing,
-    /// and schematic spawning are branch-derived pending retail encounter proof.
+    /// Current implementation uses ClawedFury 56037, SlicingWind 56358,
+    /// PouncingSlice 56390, TurnedRavenous 81706, and RavenousBurst 82855 from
+    /// <see cref="Spell"/>, triggers enrage below 55% health, and summons creature
+    /// 71821 from <see cref="Creature"/> on death; encounter parity is still pending
+    /// smoke.
     /// </summary>
     [ScriptFilterScriptName("KatjaZarkhovEntityScript")]
     public class KatjaZarkhovEntityScript : CombatAI

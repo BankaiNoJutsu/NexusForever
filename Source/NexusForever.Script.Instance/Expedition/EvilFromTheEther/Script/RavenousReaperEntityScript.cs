@@ -11,8 +11,10 @@ using NexusForever.Shared;
 namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 {
     /// <summary>
-    /// WIP-guessed from LaughingWS Instances-and-more: spell cadence and death callout
-    /// are branch-derived pending retail encounter proof.
+    /// Current implementation schedules CrushingFlurry 46692 and FocusedAssualt
+    /// 46790 from <see cref="Spell"/>, then sends
+    /// <see cref="CommunicatorMessage.CaptainWeir6"/> to instance players on death;
+    /// encounter parity is still pending smoke.
     /// </summary>
     [ScriptFilterScriptName("RavenousReaperEntityScript")]
     public class RavenousReaperEntityScript : CombatAI

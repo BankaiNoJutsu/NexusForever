@@ -10,8 +10,10 @@ using NexusForever.Shared;
 namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
 {
     /// <summary>
-    /// WIP-guessed from LaughingWS Instances-and-more: combat cadence and objective
-    /// credit are branch-derived pending encounter smoke.
+    /// Current implementation uses FocusedAssualt 46790 and CrushingRush 46797 from
+    /// <see cref="Spell"/>, then credits
+    /// <see cref="PublicEventObjectiveType.KillEventObjectiveUnit"/> on death;
+    /// encounter parity is still pending smoke.
     /// </summary>
     [ScriptFilterScriptName("SecurityChiefKondovichEntityScript")]
     public class SecurityChiefKondovichEntityScript : CombatAI

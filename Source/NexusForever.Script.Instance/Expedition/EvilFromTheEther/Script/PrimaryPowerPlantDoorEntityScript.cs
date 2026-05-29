@@ -28,8 +28,8 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
             if (entity is not IPlayer player)
                 return;
 
-            // WIP-guessed from LaughingWS Instances-and-more: objective 8283 is the
-            // branch participant-trigger id; exact tracked volume semantics are blocked.
+            // Objective 8283 currently uses ParticipantsInTriggerVolume credit on range
+            // entry; exact tracked volume semantics still need encounter smoke.
             door.Map.PublicEventManager.UpdateObjective(player, PublicEventObjectiveType.ParticipantsInTriggerVolume, 8283, 1);
         }
 
@@ -41,7 +41,7 @@ namespace NexusForever.Script.Instance.Expedition.EvilFromTheEther.Script
             if (entity is not IPlayer player)
                 return;
 
-            // See OnEnterRange: branch-derived participant tracking remains WIP-guessed.
+            // See OnEnterRange: this slice decrements the same objective 8283 on exit.
             door.Map.PublicEventManager.UpdateObjective(player, PublicEventObjectiveType.ParticipantsInTriggerVolume, 8283, -1);
         }
     }
