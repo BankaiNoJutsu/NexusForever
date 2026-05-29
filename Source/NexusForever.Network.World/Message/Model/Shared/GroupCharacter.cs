@@ -10,18 +10,6 @@ namespace NexusForever.Network.World.Message.Model.Shared
     /// </summary>
     public class GroupCharacter : IWritable
     {
-        public class UnknownStruct1 : IWritable
-        {
-            public ushort Unknown30 { get; set; }
-            public ushort Unknown31 { get; set; }
-
-            public void Write(GamePacketWriter writer)
-            {
-                writer.Write(Unknown30, 15u);
-                writer.Write(Unknown31);
-            }
-        }
-
         public string Name { get; set; }
         public Faction Faction { get; set; }
         public Race Race { get; set; }
@@ -38,23 +26,58 @@ namespace NexusForever.Network.World.Message.Model.Shared
         public ushort GroupMemberId { get; set; }
 
         public GroupMemberStatSlot[] StatSlots = new GroupMemberStatSlot[5];
-        public List<UnknownStruct1> UnknownStruct1List { get; set; } = new List<UnknownStruct1>();
+
+        /// <summary>
+        /// Trailing counted rows reuse <see cref="PrimeLevelInfo"/> helper <c>1400ad150</c>.
+        /// </summary>
+        public List<PrimeLevelInfo> PrimeLevels { get; set; } = new List<PrimeLevelInfo>();
 
         public Identity MentoringTarget { get; set; }
 
+        /// <summary>
+        /// Trailing <c>uint32</c> after mentoring identity (parsed <c>+0x50</c>). Semantics blocked.
+        /// </summary>
         public uint Unknown10 { get; set; }
-        public ushort Unknown11 { get; set; }
-        public ushort Unknown12 { get; set; }
-        public ushort Unknown13 { get; set; }
-        public ushort Unknown14 { get; set; }
-        public ushort Unknown15 { get; set; }
-        public ushort Unknown16 { get; set; }
-        public ushort Unknown17 { get; set; }
-        public ushort Unknown18 { get; set; }
-        public ushort Unknown19 { get; set; }
-        public ushort Unknown20 { get; set; }
-        public ushort Unknown21 { get; set; }
-        public ushort Unknown22 { get; set; }
+
+        /// <summary>
+        /// Packed half-float vital pair matching <see cref="ServerGroupMemberStatUpdate"/> stat block.
+        /// Serialize with <see cref="GamePacketWriter.WritePackedFloat"/> when sourcing float vitals.
+        /// </summary>
+        public ushort Health { get; set; }
+
+        /// <inheritdoc cref="Health"/>
+        public ushort HealthMax { get; set; }
+
+        /// <inheritdoc cref="Health"/>
+        public ushort Shield { get; set; }
+
+        /// <inheritdoc cref="Health"/>
+        public ushort ShieldMax { get; set; }
+
+        /// <inheritdoc cref="Health"/>
+        public ushort InterruptArmor { get; set; }
+
+        /// <inheritdoc cref="Health"/>
+        public ushort InterruptArmorMax { get; set; }
+
+        /// <inheritdoc cref="Health"/>
+        public ushort Absorption { get; set; }
+
+        /// <inheritdoc cref="Health"/>
+        public ushort AbsorptionMax { get; set; }
+
+        /// <inheritdoc cref="Health"/>
+        /// <remarks>Client group UI label is mana; NF group-server maps player focus into this slot.</remarks>
+        public ushort Mana { get; set; }
+
+        /// <inheritdoc cref="Mana"/>
+        public ushort ManaMax { get; set; }
+
+        /// <inheritdoc cref="Health"/>
+        public ushort HealingAbsorb { get; set; }
+
+        /// <inheritdoc cref="Health"/>
+        public ushort HealingAbsorbMax { get; set; }
 
         public ushort Realm { get; set; }
         public ushort WorldZoneId { get; set; }
@@ -62,8 +85,11 @@ namespace NexusForever.Network.World.Message.Model.Shared
         public uint PhaseId { get; set; } = 1;
         public bool SyncedToGroup { get; set; }
 
-        public uint Unknown28 { get; set; }
-        public uint Unknown29 { get; set; }
+        /// <inheritdoc cref="ServerGroupMemberStatUpdate.PhaseFlags1"/>
+        public uint PhaseFlags1 { get; set; }
+
+        /// <inheritdoc cref="ServerGroupMemberStatUpdate.PhaseFlags2"/>
+        public uint PhaseFlags2 { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
@@ -93,28 +119,28 @@ namespace NexusForever.Network.World.Message.Model.Shared
                 MentoringTarget.Write(writer);
 
             writer.Write(Unknown10);
-            writer.Write(Unknown11);
-            writer.Write(Unknown12);
-            writer.Write(Unknown13);
-            writer.Write(Unknown14);
-            writer.Write(Unknown15);
-            writer.Write(Unknown16);
-            writer.Write(Unknown17);
-            writer.Write(Unknown18);
-            writer.Write(Unknown19);
-            writer.Write(Unknown20);
-            writer.Write(Unknown21);
-            writer.Write(Unknown22);
+            writer.Write(Health);
+            writer.Write(HealthMax);
+            writer.Write(Shield);
+            writer.Write(ShieldMax);
+            writer.Write(InterruptArmor);
+            writer.Write(InterruptArmorMax);
+            writer.Write(Absorption);
+            writer.Write(AbsorptionMax);
+            writer.Write(Mana);
+            writer.Write(ManaMax);
+            writer.Write(HealingAbsorb);
+            writer.Write(HealingAbsorbMax);
             writer.Write(Realm, 14u);
             writer.Write(WorldZoneId, 15u);
             writer.Write(MapId);
             writer.Write(PhaseId);
             writer.Write(SyncedToGroup);
-            writer.Write(Unknown28);
-            writer.Write(Unknown29);
+            writer.Write(PhaseFlags1);
+            writer.Write(PhaseFlags2);
 
-            writer.Write(UnknownStruct1List.Count);
-            UnknownStruct1List.ForEach(i => i.Write(writer));
+            writer.Write(PrimeLevels.Count);
+            PrimeLevels.ForEach(i => i.Write(writer));
         }
     }
 }

@@ -27,10 +27,10 @@ public class ClientDiagnosticPacketShapeTests
 
         packet.Read(reader);
 
-        Assert.Equal((ushort)0x2345, packet.LeadingValue);
-        Assert.Equal(0x11223344u, packet.TrailingValue);
-        Assert.Equal("realm-row-label", packet.Text);
-        Assert.Equal(0xAABBCCDDEEFF0011ul, packet.FinalValue);
+        Assert.Equal((ushort)0x2345, packet.RealmId);
+        Assert.Equal(0x11223344u, packet.CharacterCount);
+        Assert.Equal("realm-row-label", packet.LastPlayedCharacter);
+        Assert.Equal(0xAABBCCDDEEFF0011ul, packet.LastPlayedTime);
     }
 
     [Fact]

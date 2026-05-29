@@ -277,6 +277,37 @@ public class MatchingPacketShapeTests
     }
 
     [Fact]
+    public void ServerPveRatingUpdate_WritesPvpAlignedRatingCounters()
+    {
+        var packet = new ServerPveRatingUpdate
+        {
+            PveRatings =
+            [
+                new ServerPveRatingUpdate.PveRating
+                {
+                    Category = 0x5Au,
+                    Type = MatchingGameRatingType.Warplot,
+                    Rating = 0x11223344u,
+                    Wins = 0x55667788u,
+                    Losses = 0x99AABBCCu,
+                    Draws = 0xDDEEFF00u
+                }
+            ]
+        };
+
+        byte[] packetData = WritePacket(packet);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal((byte)0x5A, reader.ReadByte(8u));
+        Assert.Equal(MatchingGameRatingType.Warplot, reader.ReadEnum<MatchingGameRatingType>(3u));
+        Assert.Equal(0x11223344u, reader.ReadUInt());
+        Assert.Equal(0x55667788u, reader.ReadUInt());
+        Assert.Equal(0x99AABBCCu, reader.ReadUInt());
+        Assert.Equal(0xDDEEFF00u, reader.ReadUInt());
+    }
+
+    [Fact]
     public void ServerMatchingListPlayersQueuedForMap_WritesMappedQueuedPlayerFields()
     {
         var packet = new ServerMatchingListPlayersQueuedForMap
@@ -294,10 +325,10 @@ public class MatchingPacketShapeTests
                     Gender = 2u,
                     Level = 50u,
                     Path = 5u,
-                    Unknown30 = 0x89ABCDEFu,
-                    Unknown34 = true,
-                    Unknown38 = 0x10203040u,
-                    Unknown3C = 0x55667788u,
+                    PrimeLevel = 0x0A0B0C0Du,
+                    IsParty = true,
+                    Roles = Role.Tank | Role.Healer,
+                    TrailingUInt32_0x3C = 0u,
                     StatSlots =
                     [
                         new GroupMemberStatSlot { Value = 1, WireMarker0x30 = 48 },
@@ -308,7 +339,7 @@ public class MatchingPacketShapeTests
                     ],
                     PrimeLevels =
                     [
-                        new ServerMatchingListPlayersQueuedForMap.PrimeLevelInfo
+                        new PrimeLevelInfo
                         {
                             WorldId = 0x1234,
                             PrimeLevelAchieved = 0x5678
@@ -332,10 +363,10 @@ public class MatchingPacketShapeTests
         Assert.Equal(2u, reader.ReadUInt(2u));
         Assert.Equal(50u, reader.ReadUInt());
         Assert.Equal(5u, reader.ReadUInt(3u));
-        Assert.Equal(0x89ABCDEFu, reader.ReadUInt());
+        Assert.Equal(0x0A0B0C0Du, reader.ReadUInt());
         Assert.True(reader.ReadBit());
-        Assert.Equal(0x10203040u, reader.ReadUInt());
-        Assert.Equal(0x55667788u, reader.ReadUInt());
+        Assert.Equal(Role.Tank | Role.Healer, reader.ReadEnum<Role>(32u));
+        Assert.Equal(0u, reader.ReadUInt());
 
         for (ushort index = 1; index <= 5; index++)
         {

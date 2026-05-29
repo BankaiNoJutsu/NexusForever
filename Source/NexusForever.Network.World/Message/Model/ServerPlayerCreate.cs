@@ -13,12 +13,12 @@ namespace NexusForever.Network.World.Message.Model
             public class FactionReputation : IWritable
             {
                 public FactionId FactionId { get; set; }
-                public float Value { get; set; }
+                public float ReputationAmount { get; set; }
 
                 public void Write(GamePacketWriter writer)
                 {
                     writer.Write(FactionId, 14u);
-                    writer.Write(Value);
+                    writer.Write(ReputationAmount);
                 }
             }
 

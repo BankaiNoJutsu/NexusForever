@@ -15,9 +15,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 
         public void HandleMessage(IWorldSession session, Client0x003D message)
         {
-            log.LogDebug("Captured unresolved client opcode {Opcode} from player {PlayerGuid}: leadingValue {LeadingValue}, trailingValue {TrailingValue}, text {Text}, finalValue {FinalValue}.",
-                nameof(Client0x003D), session.Player?.Guid, message.LeadingValue, message.TrailingValue,
-                message.Text, message.FinalValue);
+            log.LogDebug("Captured unresolved client opcode {Opcode} from player {PlayerGuid}: realmId {RealmId}, characterCount {CharacterCount}, lastPlayedCharacter {LastPlayedCharacter}, lastPlayedTime {LastPlayedTime}.",
+                nameof(Client0x003D), session.Player?.Guid, message.RealmId, message.CharacterCount,
+                message.LastPlayedCharacter, message.LastPlayedTime);
         }
     }
 

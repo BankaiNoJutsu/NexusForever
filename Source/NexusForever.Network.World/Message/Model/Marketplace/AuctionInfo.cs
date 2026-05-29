@@ -14,7 +14,11 @@ namespace NexusForever.Network.World.Message.Model.Marketplace
         public uint Item2Id { get; set; }
         public uint Quantity { get; set; }
         public uint WorldRequirement_Item2Id { get; set; }
-        public List<uint> UnknownArray { get; set; } = [];
+        /// <summary>
+        /// Shared-item microchip id list (3-bit count on wire). Matches
+        /// <see cref="Shared.Item.Microchips"/> beside circuit/glyph payload.
+        /// </summary>
+        public List<uint> MicrochipIds { get; set; } = [];
         public ulong CircuitData { get; set; }
         public uint GlyphData { get; set; }
         public ulong ThresholdData { get; set; }
@@ -36,7 +40,7 @@ namespace NexusForever.Network.World.Message.Model.Marketplace
             uint count = reader.ReadUInt(3u);
             for(uint i = 0; i < count; i++)
             {
-                UnknownArray.Add(reader.ReadUInt());
+                MicrochipIds.Add(reader.ReadUInt());
             }
 
             CircuitData = reader.ReadULong();
@@ -58,8 +62,8 @@ namespace NexusForever.Network.World.Message.Model.Marketplace
             writer.Write(Quantity);
             writer.Write(WorldRequirement_Item2Id, 18u);
 
-            writer.Write(UnknownArray.Count, 3u);
-            UnknownArray.ForEach(unknown => writer.Write(unknown));
+            writer.Write(MicrochipIds.Count, 3u);
+            MicrochipIds.ForEach(microchipId => writer.Write(microchipId));
 
             writer.Write(CircuitData);
             writer.Write(GlyphData);

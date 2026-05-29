@@ -5,31 +5,17 @@ using NetworkMessage = NexusForever.Network.Message.Model.Shared.Message;
 namespace NexusForever.Network.World.Message.Model
 {
     [Message(GameMessageOpcode.Client0x003D)]
-    public class Client0x003D : IReadable
+    public class Client0x003D : RealmInfo.AccountRealmData, IReadable
     {
         /// <summary>
         /// Opcode 0x003D. Native registration in <c>ClientWorldOpcodeRegister_MovementSpline</c>
         /// @ <c>1400a8190</c> binds a <c>0x18</c>-byte client slot with writer
         /// <c>Client0x003D_WritePayload</c> @ <c>1400aba70</c>. The writer serialises one
-        /// 14-bit field, one uint32, one wide string, and one trailing uint64. The same
-        /// 24-byte layout is reused as a nested sub-structure inside <c>Client0x0760</c>
-        /// realm rows, but packet semantics remain unresolved.
+        /// 14-bit field, one uint32, one wide string, and one trailing uint64. That exact
+        /// row shape matches <see cref="RealmInfo.AccountRealmData"/> inside
+        /// <see cref="Client0x0760"/> realm rows, but standalone packet semantics remain
+        /// unresolved.
         /// </summary>
-        public ushort LeadingValue { get; private set; }
-
-        public uint TrailingValue { get; private set; }
-
-        public string Text { get; private set; }
-
-        public ulong FinalValue { get; private set; }
-
-        public void Read(GamePacketReader reader)
-        {
-            LeadingValue  = reader.ReadUShort(14u);
-            TrailingValue = reader.ReadUInt();
-            Text          = reader.ReadWideString();
-            FinalValue    = reader.ReadULong();
-        }
     }
 
     [Message(GameMessageOpcode.Client0x00C8)]
@@ -209,7 +195,7 @@ namespace NexusForever.Network.World.Message.Model
     public class Client0x0701 : IReadable
     {
         /// <summary>
-        /// Opcode 0x0701. Native writer <c>Client0x0701_WritePayload</c> @ <c>1400a69d0</c>
+        /// Opcode 0x0701. Native writer <c>ClientUInt2UInt32_WritePayload</c> @ <c>1400a69d0</c>
         /// serialises one 2-bit field followed by one uint32 inside the registered 8-byte slot.
         /// Packet semantics remain unresolved.
         /// </summary>
@@ -225,7 +211,7 @@ namespace NexusForever.Network.World.Message.Model
     }
 
     [Message(GameMessageOpcode.Client0x0760)]
-    public class Client0x0760 : IReadable
+    public class Client0x0760 : RealmInfo, IReadable
     {
         /// <summary>
         /// Opcode 0x0760. Native registration in <c>ClientWorldOpcodeRegister_MovementSpline</c>
@@ -235,16 +221,11 @@ namespace NexusForever.Network.World.Message.Model
         /// <see cref="ServerRealmList"/> realm entries. The source event that sends or consumes
         /// this client-side realm row remains unresolved, so the model stays numerically named.
         /// </summary>
-        public RealmInfo Realm { get; private set; } = new();
-
-        public void Read(GamePacketReader reader)
-        {
-            Realm.Read(reader);
-        }
+        public RealmInfo Realm => this;
     }
 
     [Message(GameMessageOpcode.Client0x0762)]
-    public class Client0x0762 : IReadable
+    public class Client0x0762 : NetworkMessage, IReadable
     {
         /// <summary>
         /// Opcode 0x0762. Native registration in <c>ClientWorldOpcodeRegister_MovementSpline</c>
@@ -254,12 +235,7 @@ namespace NexusForever.Network.World.Message.Model
         /// <see cref="ServerRealmList"/> messages. The source event that sends or consumes
         /// this client-side message row remains unresolved, so the model stays numerically named.
         /// </summary>
-        public NetworkMessage MessageRow { get; private set; } = new();
-
-        public void Read(GamePacketReader reader)
-        {
-            MessageRow.Read(reader);
-        }
+        public NetworkMessage MessageRow => this;
     }
 
     [Message(GameMessageOpcode.ClientAddonModuleList)]
@@ -342,9 +318,10 @@ namespace NexusForever.Network.World.Message.Model
     public class Client0x0928 : IReadable
     {
         /// <summary>
-        /// Opcode 0x0928. Native writer <c>Client0x0928_WritePayload</c> @ <c>1400898b0</c>
+        /// Opcode 0x0928. Native writer <c>ClientUInt32UInt5_WritePayload</c> @ <c>1400898b0</c>
         /// serialises one uint32 followed by one 5-bit field inside the registered 8-byte slot.
-        /// Packet semantics remain unresolved.
+        /// The same helper is used by <c>ClientPetSetStance</c> (<c>0x068E</c>), but the
+        /// sender/consumer for this opcode remains unresolved.
         /// </summary>
         public uint LeadingValue { get; private set; }
 

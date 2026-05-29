@@ -1,4 +1,5 @@
-﻿using NexusForever.Game.Static.Reputation;
+﻿using NexusForever.Game.Static.Matching;
+using NexusForever.Game.Static.Reputation;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Shared;
 
@@ -13,27 +14,10 @@ namespace NexusForever.Network.World.Message.Model
     public class ServerMatchingListPlayersQueuedForMap : IWritable
     {
         /// <summary>
-        /// Native reader: <c>MatchingPrimeLevelInfo_ReadPayload</c> (<c>1400ad150</c>).
-        /// Reads a 15-bit world id and one 16-bit achieved prime-level value.
-        /// </summary>
-        public class PrimeLevelInfo : IWritable
-        {
-            public ushort WorldId { get; set; }
-            public ushort PrimeLevelAchieved { get; set; }
-
-            public void Write(GamePacketWriter writer)
-            {
-                writer.Write(WorldId, 15u);
-                writer.Write(PrimeLevelAchieved);
-            }
-        }
-
-        /// <summary>
         /// Native row size is <c>0x60</c> bytes. Reader <c>140098500</c> confirms
-        /// 14-bit faction/race/class fields, a 2-bit gender slot, one 32-bit
-        /// level-like field, a 3-bit path, four trailing unknown scalar/flag
-        /// slots, five <see cref="GroupMemberStatSlot"/> rows, and a counted
-        /// <see cref="PrimeLevelInfo"/> array.
+        /// 14-bit faction/race/class fields, a 2-bit gender slot, one 32-bit level field,
+        /// 3-bit path, correlated prime-level / party / role tail fields, five
+        /// <see cref="GroupMemberStatSlot"/> rows, and a counted <see cref="PrimeLevelInfo"/> array.
         /// </summary>
         public class QueuedPlayerInfo : IWritable
         {
@@ -45,10 +29,25 @@ namespace NexusForever.Network.World.Message.Model
             public uint Gender { get; set; }
             public uint Level { get; set; }
             public uint Path { get; set; }
-            public uint Unknown30 { get; set; }
-            public bool Unknown34 { get; set; }
-            public uint Unknown38 { get; set; }
-            public uint Unknown3C { get; set; }
+
+            /// <summary>
+            /// Queue prime level at struct <c>+0x30</c>; correlates with
+            /// <see cref="ClientMatchingQueue.PrimeLevel"/> on <c>ClientMatchingQueue_WritePayload</c>
+            /// (<c>140098a70</c>).
+            /// </summary>
+            public uint PrimeLevel { get; set; }
+
+            /// <summary>Party-queue flag at struct <c>+0x34</c>; correlates with the party bit on
+            /// <c>MatchingQueueJoinQueueData_ReadPayload</c> (<c>1400989d0</c>).</summary>
+            public bool IsParty { get; set; }
+
+            /// <summary>Selected role mask at struct <c>+0x38</c>; correlates with
+            /// <see cref="ClientMatchingQueue.Roles"/> and <see cref="ServerMatchingQueueJoin.QueuedRoles"/>.</summary>
+            public Role Roles { get; set; }
+
+            /// <summary>Trailing uint32 at struct <c>+0x3C</c>; wire type confirmed, semantics blocked.</summary>
+            public uint TrailingUInt32_0x3C { get; set; }
+
             public GroupMemberStatSlot[] StatSlots = new GroupMemberStatSlot[5];
             public List<PrimeLevelInfo> PrimeLevels { get; set; } = new List<PrimeLevelInfo>();
 
@@ -62,10 +61,10 @@ namespace NexusForever.Network.World.Message.Model
                 writer.Write(Gender, 2u);
                 writer.Write(Level);
                 writer.Write(Path, 3u);
-                writer.Write(Unknown30);
-                writer.Write(Unknown34);
-                writer.Write(Unknown38);
-                writer.Write(Unknown3C);
+                writer.Write(PrimeLevel);
+                writer.Write(IsParty);
+                writer.Write(Roles, 32u);
+                writer.Write(TrailingUInt32_0x3C);
                 foreach (GroupMemberStatSlot stat in StatSlots)
                 {
                     stat.Write(writer);

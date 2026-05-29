@@ -31,5 +31,6 @@
         /// Get message handler delegate for supplied <see cref="GameMessageOpcode"/>.
         /// </summary>
         MessageHandlerDelegate GetMessageHandlerDelegate(GameMessageOpcode opcode);
+
     }
 }

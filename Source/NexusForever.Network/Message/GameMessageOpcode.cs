@@ -114,7 +114,7 @@ namespace NexusForever.Network.Message
         ServerCharacterListEntry        = 0x010F, // standalone 0xA0 character-list row; shares the ServerCharacterList.Character payload reader
         ServerHousingBasicsFollowup     = 0x0110, // uint32 + 18-bit + uint32 + 8-bit; reader 14008de70
         ServerItemAdd                   = 0x0111,
-        ServerPublicEventStart          = 0x0112,
+        ServerPublicEventStart          = 0x0112, // native 14006c290 binds 0x0112 size 0x48 to ServerPublicEventStart_ReadPayload 14007b620; apply PublicEventStart_ApplyParsedPayload 1405f2ae0 at cell 140e215ac dispatches PublicEventStart ClientEvent
         ServerPublicEventLeave          = 0x0113,
         ServerDuelLeftArea              = 0x0114,
         ServerCharacterDeletedInfo      = 0x0116,
@@ -138,7 +138,7 @@ namespace NexusForever.Network.Message
         ServerPetCustomisation          = 0x012F,
         ServerPublicEventStatsUpdate    = 0x0130,
         ServerPublicEventLocationUpdate = 0x0131,
-        ServerPublicEventObjectiveUpdate = 0x0132,
+        ServerPublicEventObjectiveUpdate = 0x0132, // native reader ServerPublicEventObjectiveUpdate_ReadPayload 14007b490; apply PublicEventObjectiveUpdate_ApplyParsedPayload 1405f3520 at cell 140e2163c dispatches PublicEventObjectiveUpdate ClientEvent; sibling dispatchers 1405f3680/1405f37e0
         ServerPublicEventObjectiveNotificationMode = 0x0133,
         ServerPublicEventObjectiveStatusUpdate = 0x0134,
         ServerPublicEventTeamMultiplier = 0x0135,
@@ -162,7 +162,7 @@ namespace NexusForever.Network.Message
         ServerAbilityRemove             = 0x014A,
         ServerCharacterRenameResult     = 0x014B,
         ClientRepairItemVendor          = 0x014C, // repair item/all vendor request; zero item branch carries total repair cost
-        ServerLootAuxByte               = 0x014D, // 1-byte loot cluster aux
+        ServerLootAuxByte               = 0x014D, // native 14006c290 binds 0x014D size 1 to ServerEmpty_ReadPayload; apply consumer still unmapped; also referenced by Movement_UpdateAndSendFallStateOpcodes (unrelated send path)
         ClientEntityInteractChair       = 0x014E,
         ClientLootItem                  = 0x014F,
         ClientResetAttributePoints      = 0x0150,
@@ -235,7 +235,7 @@ namespace NexusForever.Network.Message
         ClientP2PTradingSetMoney        = 0x0197,
         ServerP2PTradeUpdateMoney       = 0x0198,
         ServerSupplySatchelUpdate       = 0x0199,
-        ServerSupplySatchelAux          = 0x019A, // 8-byte supply-satchel cluster aux
+        ServerSupplySatchelAux          = 0x019A, // native 14007fcf0 reads one 6-bit field plus one uint32 via shared MatchingQueueResultWaitTime_ReadPayload; semantics unresolved
         ServerPlayerChanged             = 0x019B,
         ServerActionSetUInt16List       = 0x019C, // 7-bit count + ushort rows; reader FUN_14008e1f0
         ServerActionSet                 = 0x019D,
@@ -258,7 +258,7 @@ namespace NexusForever.Network.Message
         ServerUnlockVanityPet           = 0x01AE,
         ClientVehicleDisembark          = 0x01AF,
         ClientVehicleEmbark             = 0x01B0,
-        ServerVehicleEmbarkAux          = 0x01B2, // 0x10-byte vehicle embark cluster aux
+        ServerVehicleEmbarkAux          = 0x01B2, // native 14008ff20 reads one flag, one 2-bit field, one uint64, and two uint32 fields; vehicle embark semantics unresolved
         ServerResurrectionShow          = 0x01B3,
         ServerZoneMap                   = 0x01B4,
         ServerChatAction                = 0x01B5,
@@ -381,15 +381,15 @@ namespace NexusForever.Network.Message
         ClientDialogOpened              = 0x0356,  
         ServerDialogStart               = 0x0357,
         ServerDialogEnd                 = 0x0358,
-        ServerQuestLuaEvent             = 0x0359,
+        ServerQuestLuaEvent             = 0x0359, // native 14006c290 binds 0x0359 size 0x10 to ServerQuestLuaEvent_ReadPayload 14008f530; typed arg tail uses PTR table 140c1eb98 (Int/String/Unit/Bool/Item/Quest readers); apply consumer still unmapped
         ClientQuestAbandon              = 0x035A,
         ClientQuestAccept               = 0x035B,
-        ServerQuestStateChange          = 0x035C,
+        ServerQuestStateChange          = 0x035C, // native shared reader ServerQuestStateOrObjective_ReadPayload 14008f100; apply QuestRuntime_HandleQuestStateChange 1405fb670 at cell 140e22188
         ClientQuestComplete             = 0x035D,
         ClientQuestSetIgnore            = 0x035E,
-        ServerQuestInit                 = 0x035F,
+        ServerQuestInit                 = 0x035F, // native reader ServerQuestInit_ReadPayload 14008f2d0; apply QuestRuntime_HandleQuestInit 1405fb350 at cell 140e22158 dispatches QuestInit ClientEvent
         ClientCommunicatorAction        = 0x0360,
-        ServerQuestObjectiveUpdate      = 0x0361,
+        ServerQuestObjectiveUpdate      = 0x0361, // native shared reader ServerQuestStateOrObjective_ReadPayload 14008f100; apply QuestRuntime_UpdateObjectiveStateAndDispatch 1405fb830 at cell 140e221ac dispatches QuestObjectiveUpdated or ContractObjectiveUpdated
         ServerQuestPeriodicReset        = 0x0362,
         ServerQuestShared               = 0x0363,
         ClientQuestSetTracked           = 0x0364,
@@ -397,7 +397,7 @@ namespace NexusForever.Network.Message
         ServerDisabledGameplaySystems   = 0x0366,
         ServerForceKick                 = 0x036A,
         ClientEmote                     = 0x037E,
-        ServerCostumeItemAux            = 0x037F, // 0x18-byte costume/emote cluster aux
+        ServerCostumeItemAux            = 0x037F, // native 1400874a0 reads 14-bit field, three uint32 fields, and two trailing flags; costume/emote semantics unresolved
         ClientCostumeItemForget         = 0x038B,
         ClientPackedWorld               = 0x038C,
         ClientFriendshipAccountAddByEmail = 0x0397,
@@ -462,7 +462,7 @@ namespace NexusForever.Network.Message
         ClientRequestOwnedCommodityOrders = 0x03EC,
         ClientRequestOwnedItemAuctions  = 0x03ED,
         ClientGetRealmTransferDestinations = 0x03EE,
-        ServerRealmTransferDestinationsAux = 0x03EF, // 0x10-byte realm-transfer cluster aux
+        ServerRealmTransferDestinationsAux = 0x03EF, // native 14007d790 reads uint32 value plus uint32 byte count and counted raw bytes; realm-transfer/account-gift semantics unresolved
         ClientAccountItemGiftPendingItemGroupToAccount = 0x03F1,
         ClientAccountItemGiftPendingItemGroupToCharacter = 0x03F2,
         ClientItemGenericUnlock         = 0x0400,
@@ -627,7 +627,7 @@ namespace NexusForever.Network.Message
         ServerAuctionWon                = 0x0564,
         ServerAuctionCancelResult       = 0x0565,
         ServerMailItemDeprecation       = 0x0566,
-        ServerItemSwapAux               = 0x0567, // 0x10-byte item-swap cluster aux
+        ServerItemSwapAux               = 0x0567, // native 1400a48d0 reads one ItemDragDrop row; paired ServerItemSwap @ 0x0568 reads two rows via 1400a4840
         ServerItemSwap                  = 0x0568,
         ServerItemMove                  = 0x0569,
         ServerItemError                 = 0x056A,
@@ -754,7 +754,7 @@ namespace NexusForever.Network.Message
         ServerPetCustomisationFailed    = 0x068B,
         ClientPathScientistSetScannerName = 0x068C,
         ServerUnlockPetFlair            = 0x068D,
-        ClientPetSetStance              = 0x068E,
+        ClientPetSetStance              = 0x068E, // native writer 1400898b0 serialises pet unit id plus 5-bit PetStance; shared with unresolved 0x0928
         ServerPetStanceChanged          = 0x068F,
         ClientPlayedRequest             = 0x0693,
         ServerPlayedResponse            = 0x0694,
@@ -783,7 +783,7 @@ namespace NexusForever.Network.Message
         ClientPtrCopy                   = 0x06E8, // native registration size 1 via ClientCraftingAbandon_WritePayload; send sites FUN_14063f540 and FUN_140707d80 emit one zero padding byte; separate from ClientInitiatePTRCharacterCopy 0x06E7
         ServerPtrCharacterCopyQueued    = 0x06EA, // native ServerEmpty_ReadPayload size 1; client consumer FUN_140020ea0 fires Lua PTRCharacterCopyQueued @ 1409ed738; no NexusForever emit mapped yet
         ClientPublicEventVote           = 0x06EE,
-        ServerPublicEventVoteInitiate   = 0x06F1,
+        ServerPublicEventVoteInitiate   = 0x06F1, // native apply PublicEventVoteInitiate_Apply 1405f5170 at cell 140e21960 dispatches PublicEventInitiateVote ClientEvent; reader ServerPublicEventVoteAux cluster still partially blocked
         ServerPublicEventBombDropped    = 0x06F5,
         ServerPublicEventBombStatus     = 0x06F6,
         ServerPublicEventVoteAux        = 0x06F7, // 8-byte public-event vote cluster aux
@@ -793,7 +793,7 @@ namespace NexusForever.Network.Message
         ServerPublicEventDetailedVoteInitiate = 0x06FE,
         ServerPublicEventVoteTally      = 0x06FF,
         ServerPublicEventTriggerUiUpdates = 0x0700,
-        Client0x0701                    = 0x0701, // Network_RegisterServerOpcode_0351 @ 14006c290 registers 8-byte slot with writer Client0x0701_WritePayload @ 1400a69d0 (2-bit field + uint32); semantics unresolved
+        Client0x0701                    = 0x0701, // Network_RegisterServerOpcode_0351 @ 14006c290 registers 8-byte slot with writer ClientUInt2UInt32_WritePayload @ 1400a69d0 (2-bit field + uint32); semantics unresolved
         ServerQueueFinish               = 0x0715,
         ServerQueueStatus               = 0x0717,
         ServerRaidQueueStatus            = 0x0718, // native 14008bf80 reads uint64 + 15-bit uint32 + uint64 + uint32 + uint32; registered object size 0x20 maps to 0x1A wire bytes
@@ -957,7 +957,7 @@ namespace NexusForever.Network.Message
         ServerDuelChallenge             = 0x0896,
         ServerUnitEnteredCombat         = 0x089A,
         ServerVehiclePassengerSelf      = 0x089B, // local player vehicle/seat assignment
-        ServerLootCanLoot               = 0x089F,
+        ServerLootCanLoot               = 0x089F, // native 14006c290 binds 0x089F size 4 to ServerUInt32_ReadPayload; standalone CanLoot apply consumer still unmapped; full loot rows still carry CanLoot via ServerLootNotify ingestion
         ServerLootItemUpdate            = 0x08A0,
         ServerLootRemove                = 0x08A1, 
         ServerLootRoll                  = 0x08A2,
@@ -990,8 +990,8 @@ namespace NexusForever.Network.Message
         ServerEntitlement               = 0x0918,
         ServerCombatReward              = 0x0919,
         ServerCooldownList              = 0x091B,
-        Client0x0928                    = 0x0928, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers 8-byte slot with writer Client0x0928_WritePayload @ 1400898b0 (uint32 + 5-bit field); semantics unresolved
-        ServerRewardPropertySet         = 0x092C,
+        Client0x0928                    = 0x0928, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers 8-byte slot with shared ClientUInt32UInt5_WritePayload @ 1400898b0; semantics unresolved
+        ServerRewardPropertySet         = 0x092C, // native 140097800 reads counted RewardProperty rows; each row can include counted sub-reward-property modifiers
         ServerPlayerHealthUpdate        = 0x092F,
         ServerEntityBoneUpdate          = 0x0931,
         ServerItemVisualUpdate          = 0x0933,

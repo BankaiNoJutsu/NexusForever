@@ -7,12 +7,12 @@ namespace NexusForever.Network.World.Message.Model.Reputation
     public class ServerReputationUpdate : IWritable
     {
         public Faction FactionId { get; set; }
-        public float Value { get; set; }
+        public float ReputationDelta { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
             writer.Write(FactionId, 14u);
-            writer.Write(Value);
+            writer.Write(ReputationDelta);
         }
     }
 }

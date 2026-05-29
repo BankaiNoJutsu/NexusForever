@@ -1,3 +1,4 @@
+using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Storefront;
 using NexusForever.Network.Message;
 
@@ -32,7 +33,7 @@ namespace NexusForever.Network.World.Message.Model
             public string Name { get; set; }
             public uint Count { get; set; }
             public float Price { get; set; }
-            public uint Unknown9 { get; set; }
+            public AccountCurrencyType CurrencyType { get; set; }
 
             public void Write(GamePacketWriter writer)
             {
@@ -40,7 +41,7 @@ namespace NexusForever.Network.World.Message.Model
                 writer.WriteStringWide(Name);
                 writer.Write(Count);
                 writer.Write(Price);
-                writer.Write(Unknown9);
+                writer.Write(CurrencyType);
             }
         }
 

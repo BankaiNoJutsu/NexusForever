@@ -9,8 +9,8 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ServerSpellCastTargetReport)]
     public class ServerSpellCastTargetReport : IWritable
     {
-        public class UnknownStructure0 : IWritable
-        {   
+        public class TargetReportRow : IWritable
+        {
             public uint CasterId { get; set; }
             public byte Unknown4 { get; set; } = 0;
             public uint Unknown5 { get; set; } = 0;
@@ -24,13 +24,13 @@ namespace NexusForever.Network.World.Message.Model
         }
         public uint CastingId { get; set; }
 
-        public List<UnknownStructure0> unknownStructure0 { get; set; } = new();
+        public List<TargetReportRow> TargetReportRows { get; set; } = new();
 
         public void Write(GamePacketWriter writer)
         {
             writer.Write(CastingId);
-            writer.Write(unknownStructure0.Count, 32u);
-            unknownStructure0.ForEach(u => u.Write(writer));
+            writer.Write(TargetReportRows.Count, 32u);
+            TargetReportRows.ForEach(u => u.Write(writer));
         }
     }
 }

@@ -1,4 +1,5 @@
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model
 {
@@ -28,9 +29,17 @@ namespace NexusForever.Network.World.Message.Model
     }
 
     [Message(GameMessageOpcode.ServerItemSwapAux)]
-    public class ServerItemSwapAux : ServerUnresolvedRawPayload
+    public class ServerItemSwapAux : IWritable
     {
-        public ServerItemSwapAux(byte[] payload = null) : base(0x10u, payload) { }
+        public ItemDragDrop DragDrop { get; set; } = new();
+
+        public void Write(GamePacketWriter writer)
+        {
+            // Client reader ServerItemSwapAux_ReadPayload (WildStar64.exe 1400a48d0)
+            // reads one ItemDragDrop row (two uint64 fields). ServerItemSwap @ 0x0568
+            // reuses the same pair twice inside ServerItemSwap_ReadPayload @ 1400a4840.
+            DragDrop.Write(writer);
+        }
     }
 
     // Options / keybind cluster (ClientOptions 0x012B)

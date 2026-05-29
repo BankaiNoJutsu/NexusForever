@@ -3,82 +3,57 @@ using NexusForever.Network.Message;
 namespace NexusForever.Network.World.Message.Model
 {
     /// <summary>
-    /// Opaque spell broadcast follow-up packet in the 0x07F5..0x0818 family.
-    /// The current model preserves observed field widths until client parse or sniff evidence names the payload.
+    /// Spell broadcast follow-up for opcode <c>0x07F8</c>.
+    /// Client reader <c>ServerSpellEffectNestedTargets_ReadPayload</c> @ <c>140095810</c> reads:
+    /// <list type="number">
+    /// <item><description><see cref="ServerUniqueId"/> — 32-bit spell-cast / server-unique id (same role as <c>CastingId</c> on <c>0x07FF</c>).</description></item>
+    /// <item><description><see cref="Spell4EffectId"/> — 19-bit <c>Spell4Effects</c> row id.</description></item>
+    /// <item><description><see cref="TargetId"/> — 32-bit entity guid for the unit that receives the following damage rows.</description></item>
+    /// <item><description><see cref="DamageDescriptions"/> — 8-bit count, then count × <see cref="ServerSpellEffectDamage.DamageDescription"/> via <c>SpellDamageDescription_ReadPayload</c> @ <c>1400946c0</c>.</description></item>
+    /// </list>
     /// </summary>
+    /// <remarks>
+    /// Prior placeholder model (pre-2026-05) used nested <c>UnknownStructure0</c> / <c>UnknownStructure1</c> types.
+    /// Those layers flatten to the shared <see cref="ServerSpellEffectDamage.DamageDescription"/> shape used by
+    /// <c>0x07F4</c> / <c>0x07F6</c>:
+    /// <para>
+    /// Header: <c>CastingId</c> → <see cref="ServerUniqueId"/>; <c>Spell4EffectId</c> unchanged;
+    /// <c>CasterId</c> → <see cref="TargetId"/> (incorrect “caster” name; this packet has no separate caster guid).
+    /// </para>
+    /// <para>
+    /// Each list element (<c>UnknownStructure0</c>): seven damage uint32s → <c>RawDamage</c> … <c>GlanceAmount</c>;
+    /// <c>Unknown25</c> → <c>KilledTarget</c>; <c>Unknown26</c> → <c>CombatResult</c> (4-bit);
+    /// <c>Unknown27</c> → <c>DamageType</c> (3-bit); <c>unknownStructure1</c> → <c>TrailingStructures</c>
+    /// (8-bit count + rows via <c>SpellDamageTrailingRow_ReadPayload</c> @ <c>1400945e0</c>: same seven damage
+    /// uint32 names as the parent row, then a 3-bit tail on each row; gameplay consumer past the reader remains blocked).
+    /// </para>
+    /// Compared to opcode <c>0x07F6</c> (<see cref="ServerSpellEffectDamage"/>), <c>0x07F8</c> drops the second
+    /// entity guid (<c>UnitId</c> on <c>0x07F6</c>, typically caster/source) and emits multiple
+    /// <see cref="ServerSpellEffectDamage.DamageDescription"/> rows for one <see cref="TargetId"/> instead of a single row.
+    /// </remarks>
     [Message(GameMessageOpcode.ServerSpellEffectNestedTargets)]
     public class ServerSpellEffectNestedTargets : IWritable
     {
-        public class UnknownStructure0 : IWritable
-        {
-            public class UnknownStructure1 : IWritable
-            {
-                public uint Unknown0 { get; set; } = 0;
-                public uint Unknown4 { get; set; } = 0;
-                public uint Unknown8 { get; set; } = 0;
-                public uint Unknown12 { get; set; } = 0;
-                public uint Unknown16 { get; set; } = 0;
-                public uint Unknown20 { get; set; } = 0;
-                public uint Unknown24 { get; set; } = 0;
-                public byte Unknown25 { get; set; } = 0;
-                public void Write(GamePacketWriter writer)
-                {
-                    writer.Write(Unknown0);
-                    writer.Write(Unknown4);
-                    writer.Write(Unknown8);
-                    writer.Write(Unknown12);
-                    writer.Write(Unknown16);
-                    writer.Write(Unknown20);
-                    writer.Write(Unknown24);
-                    writer.Write(Unknown25);
-                }
-            }
+        /// <summary>Spell cast server-unique id (<c>ISpell.CastingId</c> / <see cref="ServerSpellGo.ServerUniqueId"/>).</summary>
+        public uint ServerUniqueId { get; set; }
 
-            public uint Unknown0 { get; set; } = 0;
-            public uint Unknown4 { get; set; } = 0;
-            public uint Unknown8 { get; set; } = 0;
-            public uint Unknown12 { get; set; } = 0;
-            public uint Unknown16 { get; set; } = 0;
-            public uint Unknown20 { get; set; } = 0;
-            public uint Unknown24 { get; set; } = 0;
-            public bool Unknown25 { get; set; } = false;
-            public byte Unknown26 { get; set; } = 0;
-            public byte Unknown27 { get; set; } = 0;
-
-            public List<UnknownStructure1> unknownStructure1 { get; set; } = new();
-
-            public void Write(GamePacketWriter writer)
-            {
-                writer.Write(Unknown0);
-                writer.Write(Unknown4);
-                writer.Write(Unknown8);
-                writer.Write(Unknown12);
-                writer.Write(Unknown16);
-                writer.Write(Unknown20);
-                writer.Write(Unknown24);
-                writer.Write(Unknown25);
-                writer.Write(Unknown26);
-                writer.Write(Unknown27);
-
-                writer.Write(unknownStructure1.Count, 8u);
-                unknownStructure1.ForEach(u => u.Write(writer));
-            }
-        }
-
-        public uint CastingId { get; set; }
+        /// <summary><c>Spell4Effects</c> table id for the effect producing these damage rows.</summary>
         public uint Spell4EffectId { get; set; }
-        public uint CasterId { get; set; }
 
-        public List<UnknownStructure0> unknownStructure0 { get; set; } = new();
+        /// <summary>Entity guid of the target receiving every <see cref="DamageDescriptions"/> entry.</summary>
+        public uint TargetId { get; set; }
+
+        /// <summary>Per-hit or per-tick damage rows for <see cref="TargetId"/> (multi-row AoE / channel / nested effect).</summary>
+        public List<ServerSpellEffectDamage.DamageDescription> DamageDescriptions { get; set; } = new();
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(CastingId);
+            writer.Write(ServerUniqueId);
             writer.Write(Spell4EffectId, 19);
-            writer.Write(CasterId);
+            writer.Write(TargetId);
 
-            writer.Write(unknownStructure0.Count, 8u);
-            unknownStructure0.ForEach(u => u.Write(writer));
+            writer.Write(DamageDescriptions.Count, 8u);
+            DamageDescriptions.ForEach(u => u.Write(writer));
         }
     }
 }

@@ -8,26 +8,26 @@ namespace NexusForever.Network.World.Message.Model
     {
         public class RewardProperty : IWritable
         {
-            public class UnknownStruct : IWritable
+            public class SubRewardProperty : IWritable
             {
-                public byte Unknown0 { get; set; } // 4
-                public uint Unknown1 { get; set; }
-                public byte Type { get; set; }
+                public byte Id { get; set; }
+                public uint Data { get; set; }
+                public RewardPropertyModifierValueType Type { get; set; }
                 public float Value { get; set; }
 
                 public void Write(GamePacketWriter writer)
                 {
-                    writer.Write(Unknown0, 4u);
-                    writer.Write(Unknown1);
+                    writer.Write(Id, 4u);
+                    writer.Write(Data);
                     writer.Write(Type, 2u);
 
                     switch (Type)
                     {
-                        case 0:
-                        case 2:
+                        case RewardPropertyModifierValueType.AdditiveScalar:
+                        case RewardPropertyModifierValueType.MultiplicativeScalar:
                             writer.Write(Value);
                             break;
-                        case 1:
+                        case RewardPropertyModifierValueType.Discrete:
                             writer.Write((uint)Value);
                             break;
                     }
@@ -38,7 +38,7 @@ namespace NexusForever.Network.World.Message.Model
             public uint Data { get; set; }
             public RewardPropertyModifierValueType Type { get; set; }
             public float Value { get; set; }
-            public List<UnknownStruct> UnknownStructs { get; set; } = new();
+            public List<SubRewardProperty> SubRewardProperties { get; set; } = new();
 
             public void Write(GamePacketWriter writer)
             {
@@ -57,8 +57,8 @@ namespace NexusForever.Network.World.Message.Model
                         break;
                 }
 
-                writer.Write(UnknownStructs.Count, 8u);
-                UnknownStructs.ForEach(u => u.Write(writer));
+                writer.Write(SubRewardProperties.Count, 8u);
+                SubRewardProperties.ForEach(u => u.Write(writer));
             }
         }
 

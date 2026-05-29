@@ -3,6 +3,7 @@ using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Cinematic;
 using NexusForever.Network.World.Message.Model.PlayerPath;
+using NexusForever.Network.World.Message.Model.Pet;
 using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Model.Story;
@@ -11,6 +12,7 @@ using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Cinematic;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Housing;
+using NexusForever.Game.Static.Pet;
 using NexusForever.Game.Static.PlayerPath;
 using NexusForever.Game.Static.Story;
 using NexusForever.Game.Static.Storefront;
@@ -372,7 +374,6 @@ public class PacketPlaceholderNamingTests
             {
                 Id            = 0x0102030405060708ul,
                 AccountItemId = 321u,
-                Unknown2           = 0x1112131415161718ul,
                 Group              = "gift-group",
                 SenderAccountId    = 0x55667788u,
                 SenderIdentity = new Identity
@@ -398,7 +399,7 @@ public class PacketPlaceholderNamingTests
 
         Assert.Equal(0x0102030405060708ul, reader.ReadULong());
         Assert.Equal(321u, reader.ReadUInt());
-        Assert.Equal(0x1112131415161718ul, reader.ReadULong());
+        Assert.Equal(0ul, reader.ReadULong());
         Assert.Equal("gift-group", reader.ReadWideString());
         Assert.Equal(0x55667788u, reader.ReadUInt());
         Assert.Equal(14u, reader.ReadUInt(14u));
@@ -636,15 +637,14 @@ public class PacketPlaceholderNamingTests
     {
         var message = new ServerHousingResidenceKeyedUpdate
         {
-            Key        = 0x0102030405060708ul,
-            Unknown0   = 0xA0B0C0D0u
+            Key = 0x0102030405060708ul
         };
 
         using var stream = new MemoryStream(WritePacket(message));
         using var reader = new GamePacketReader(stream);
 
         Assert.Equal(0x0102030405060708ul, reader.ReadULong());
-        Assert.Equal(0xA0B0C0D0u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
         Assert.Equal(stream.Length, stream.Position);
     }
 
@@ -696,6 +696,13 @@ public class PacketPlaceholderNamingTests
     }
 
     [Fact]
+    public void ServerRealmTransferDestinationsAux_WritePreservesRawPayload()
+    {
+        byte[] payload = [0x04, 0x03, 0x02, 0x01, 0x03, 0x00, 0x00, 0x00, 0xAA, 0xBB, 0xCC, 0xDD, 0x11, 0x22, 0x33, 0x44];
+        Assert.Equal(payload, WritePacket(new ServerRealmTransferDestinationsAux(payload)));
+    }
+
+    [Fact]
     public void Server0x0015_WriteSerializesSharedUInt5UInt32Shape()
     {
         using var stream = new MemoryStream(WritePacket(new Server0x0015
@@ -714,8 +721,39 @@ public class PacketPlaceholderNamingTests
     public void ClusterAuxPackets_WriteRepresentativeReaderBackedShapes()
     {
         Assert.Equal(new byte[] { 0xAB }, WritePacket(new ServerItemContextActionAck([0xAB])));
-        Assert.Equal(8, WritePacket(new ServerSupplySatchelAux()).Length);
+        byte[] supplySatchelPayload = [0x2A, 0x04, 0x03, 0x02, 0x01, 0xDD, 0xCC, 0xBB];
+        Assert.Equal(supplySatchelPayload, WritePacket(new ServerSupplySatchelAux(supplySatchelPayload)));
         Assert.Equal(0x20, WritePacket(new ServerChatAuxPayload()).Length);
+
+        byte[] costumePayload =
+        [
+            0x34, 0x12, 0x04, 0x03, 0x02, 0x01, 0x08, 0x07,
+            0x06, 0x05, 0x0C, 0x0B, 0x0A, 0x09, 0x01, 0x00,
+            0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80
+        ];
+        Assert.Equal(costumePayload, WritePacket(new ServerCostumeItemAux(costumePayload)));
+
+        using (var itemSwapStream = new MemoryStream(WritePacket(new ServerItemSwapAux
+        {
+            DragDrop = new ItemDragDrop
+            {
+                Guid     = 0x0102030405060708ul,
+                DragDrop = 0x090A0B0C0D0E0F10ul
+            }
+        })))
+        using (var itemSwapReader = new GamePacketReader(itemSwapStream))
+        {
+            Assert.Equal(0x0102030405060708ul, itemSwapReader.ReadULong());
+            Assert.Equal(0x090A0B0C0D0E0F10ul, itemSwapReader.ReadULong());
+            Assert.Equal(itemSwapStream.Length, itemSwapStream.Position);
+        }
+
+        byte[] vehicleEmbarkPayload =
+        [
+            0x01, 0x02, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03,
+            0x02, 0x01, 0x0C, 0x0B, 0x0A, 0x09, 0x10, 0x0F
+        ];
+        Assert.Equal(vehicleEmbarkPayload, WritePacket(new ServerVehicleEmbarkAux(vehicleEmbarkPayload)));
 
         using var stream = new MemoryStream(WritePacket(new ServerRecruitmentAuxFourUInt32
         {
@@ -1421,6 +1459,34 @@ public class PacketPlaceholderNamingTests
         Assert.Equal(4.5f, message.Velocity.X);
         Assert.Equal(-5.5f, message.Velocity.Y);
         Assert.Equal(6.5f, message.Velocity.Z);
+    }
+
+    [Fact]
+    public void ClientPetSetStance_ReadConsumesFiveBitStance()
+    {
+        byte[] packetData;
+        using (var stream = new MemoryStream())
+        {
+            using (var writer = new GamePacketWriter(stream))
+            {
+                writer.Write(0x01020304u);
+                writer.Write(PetStance.Aggressive, 5u);
+                writer.Write(0x5u, 3u);
+                writer.FlushBits();
+            }
+
+            packetData = stream.ToArray();
+        }
+
+        using var readStream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(readStream);
+
+        var message = new ClientPetSetStance();
+        message.Read(reader);
+
+        Assert.Equal(0x01020304u, message.PetUnitId);
+        Assert.Equal(PetStance.Aggressive, message.Stance);
+        Assert.Equal(0x5u, reader.ReadUInt(3u));
     }
 
     [Fact]
