@@ -169,48 +169,86 @@ Rules:
   Thayd/Illium housing intro story panels, Auroria, Crimson Isle, Levian Bay,
   Everstar Grove, Wilderrun, and Northern Wilds objective rows. Record exact
   character, world, coordinates, quest id, objective id, logs, and screenshots.
+  Harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1`
+  `-Lws036ChecklistSmoke` creates a dedicated `lws-036-targets.md` worksheet,
+  default target worlds, and required negative cases for this smoke gate. The
+  row stays unchecked until an actual completed client/server evidence bundle
+  proves the listed WIP/GUESSED rows. Dry-run guard progress (2026-05-28):
+  `test_blocker_evidence_harness_presets.py` now verifies this preset's
+  manifest, worksheet, default world ids, helper files, and negative-case
+  scaffold with `-CreateBundleOnly`.
 - [ ] LWS-037 Convert smoke-proven WIP/GUESSED checklist/entity rows to
   implemented status in audit docs. Leave unproven rows explicitly WIP/GUESSED
   or rejected.
 
 ## Milestone 3 - New-Zone And Sandbox Content Gates
 
-- [ ] LWS-040 Dreadmoor: keep the current broad rows blocked until client asset
+- [x] LWS-040 Dreadmoor: keep the current broad rows blocked until client asset
   proof exists for world `22`; reject zero-coordinate placeholders unless a
-  specific row gains table/client proof. Closed in
+  specific row gains table/client proof. Tracked in
   `Decomp/Analysis/LAUGHINGWS_NEW_ZONE_BROAD_ROW_REVIEW.md`: `1,256` broad
   insert rows remain blocked as `blocked_laughingws_new_zone_broad_rows`.
-- [ ] LWS-041 Halon Ring: keep the curated city/transport slice already covered,
+  Harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1`
+  `-NewZoneAssetProof` creates a row-level asset-proof worksheet and required
+  negative/safety cases for this new-zone gate. Analyzer guard progress
+  (2026-05-28): `test_laughingws_worlddb_classifications.py` asserts this
+  source stays blocked and not additive. Dry-run guard progress (2026-05-28):
+  `test_blocker_evidence_harness_presets.py` verifies this preset's manifest,
+  shared asset-proof worksheet, default world ids, helper files, and
+  negative-case scaffold with `-CreateBundleOnly`. This row is complete as a
+  blocked broad-row guard; no Dreadmoor runtime rows are promoted.
+- [x] LWS-041 Halon Ring: keep the curated city/transport slice already covered,
   then review the remaining mostly zero-coordinate/area-zero rows for narrow
-  quest, transport, or NPC proof. Closed in
+  quest, transport, or NPC proof. Tracked in
   `Decomp/Analysis/LAUGHINGWS_NEW_ZONE_BROAD_ROW_REVIEW.md`: only the curated
   city/transport crumbs remain covered by the city-content seed; `1,692` broad
   insert rows stay blocked as `blocked_laughingws_new_zone_broad_rows`.
-- [ ] LWS-042 Murkmire: reject or keep blocked the TODO-heavy,
+  `-NewZoneAssetProof` now provides the repeatable capture worksheet, but broad
+  residual rows stay blocked until a specific row gains proof beyond the curated
+  city/transport seed. The analyzer guard asserts the broad file stays blocked
+  and not additive; the dry-run guard verifies the shared asset-proof preset.
+  This row is complete as a blocked residual-row guard; the already-reviewed
+  Halon city/transport crumbs remain the only covered runtime slice.
+- [x] LWS-042 Murkmire: reject or keep blocked the TODO-heavy,
   placeholder-stat/quest-checklist rows until current script support and client
-  asset proof exist. Closed in
+  asset proof exist. Tracked in
   `Decomp/Analysis/LAUGHINGWS_NEW_ZONE_BROAD_ROW_REVIEW.md`: `841` broad
   insert rows remain blocked as `blocked_laughingws_new_zone_broad_rows`.
-- [ ] LWS-043 Test, unknown, unfinished, and not-in-client zones: build a
+  `-NewZoneAssetProof` now provides the repeatable capture worksheet for any
+  future row-level Murkmire investigation. The analyzer guard asserts this
+  source stays blocked and not additive; the dry-run guard verifies the shared
+  asset-proof preset. This row is complete as a blocked broad-row guard; no
+  Murkmire runtime rows are promoted.
+- [x] LWS-043 Test, unknown, unfinished, and not-in-client zones: build a
   sandbox-only asset proof checklist. Do not promote runtime seeds unless a
-  future task explicitly targets a sandbox/client-asset investigation. Closed
+  future task explicitly targets a sandbox/client-asset investigation. Tracked
   in `Decomp/Analysis/LAUGHINGWS_SANDBOX_ZONE_ASSET_PROOF_CHECKLIST.md`: all
   `23` sandbox/test/unknown/not-in-client files (`2,786` insert rows) remain
   rejected from runtime seed extraction as
-  `sandbox_only_client_asset_check_required`.
-- [ ] LWS-044 Historical Dominion/Exile arkship tutorial rows: keep audit-only
+  `sandbox_only_client_asset_check_required`. `-NewZoneAssetProof` now creates a
+  worksheet for future explicit sandbox investigations and keeps normal
+  build-16042 runtime safety proof mandatory. The analyzer guard asserts all
+  `23` test-zone files remain sandbox-only and not additive; the dry-run guard
+  verifies the shared asset-proof preset. This row is complete as a runtime
+  rejection plus future sandbox-proof checklist; no sandbox/test-zone runtime
+  seeds are promoted.
+- [x] LWS-044 Historical Dominion/Exile arkship tutorial rows: keep audit-only
   for build 16042. Reopen only for an explicit historical/pre-16042 target with
   table/client proof for canonical placements, display/outfit, stats, and
-  interaction behavior. Closed by the WorldDB audit's Arkship tutorial review:
+  interaction behavior. Tracked by the WorldDB audit's Arkship tutorial review:
   Dominion Arkship (`3` insert rows) and Exile Arkship (`40` insert rows) remain
-  classified as `rejected_historical_arkship_tutorial_rows`.
-- [ ] LWS-045 Rider's Reef `New Tutorial.sql` replacement rows: keep audit-only
+  classified as `rejected_historical_arkship_tutorial_rows`; the analyzer guard
+  asserts both files keep that rejection and are not additive. This row is
+  complete as a build-16042 rejection, not as historical arkship restoration.
+- [x] LWS-045 Rider's Reef `New Tutorial.sql` replacement rows: keep audit-only
   because the official `New Player Experience.sql` import remains authoritative.
   Reopen only if a specific branch-only row gains current retail proof despite
-  the source testing-only/wrong-faction notes. Closed by the WorldDB audit's
+  the source testing-only/wrong-faction notes. Tracked by the WorldDB audit's
   Rider's Reef replacement review: `Map/Instances/Tutorial Zones/New Tutorial.sql`
   (`38` insert rows) remains classified as
-  `skip_replaces_required_riders_reef_import`.
+  `skip_replaces_required_riders_reef_import`; the analyzer guard asserts it
+  stays skipped and not additive. This row is complete as a current-runtime
+  replacement rejection, not as Rider's Reef parity.
 
 ## Milestone 4 - WorldDB Special Blockers
 
@@ -228,23 +266,73 @@ Rules:
   mapped-only in `Decomp/Analysis/LAUGHINGWS_DUST_STALKER_Q4516_REVIEW.md`:
   Boss Xagg and bridge-control placement remain WIP/GUESSED data, while
   self-destruct and exit behavior stay blocked pending a harness smoke bundle.
+  Harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1`
+  `-DustStalkerQ4516Smoke` now creates a dedicated
+  `lws-051-dust-stalker-targets.md` worksheet, default world/objective filters,
+  and negative cases for premature bridge use, premature exit use, timer expiry,
+  and repeat interaction. This is capture infrastructure only; the row stays
+  unchecked until a completed client/server bundle proves the sequence. Dry-run
+  guard progress (2026-05-28): `test_blocker_evidence_harness_presets.py`
+  verifies this preset's manifest, worksheet, default ids, helper files, and
+  negative-case scaffold.
 - [ ] LWS-052 Arcterra Caretaker, Arcterra Coldblood portal, and Palaver Point
   Ish'amel: smoke exact placement, stats, interaction, portal target, and quest
   behavior before removing WIP/GUESSED status. Closed as mapped-only in
   `Decomp/Analysis/LAUGHINGWS_ARCTERRA_PALAVER_SOURCE_ONLY_REVIEW.md`: the
   preserved rows stay WIP/GUESSED until a harness bundle proves placement,
   portal target, interaction, and Palaver quest behavior.
+  Harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1`
+  `-ArcterraPalaverSourceSmoke` now creates a dedicated
+  `lws-052-arcterra-palaver-targets.md` worksheet, default world/objective
+  filters, and negative cases for invalid portal target/state, absent Palaver
+  quest state, missing Caretaker prerequisite, and repeat interaction. This is
+  capture infrastructure only; the row stays unchecked until a completed
+  client/server bundle proves the source-only behavior. The dry-run guard now
+  verifies this preset's manifest, worksheet, default ids, helper files, and
+  negative-case scaffold.
 - [ ] LWS-053 Skyplot housing: smoke vendor placement, return-pad interaction,
   vendor catalog completeness, and active housing lifecycle behavior. Promote
   only proven placement/catalog rows.
+  Harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1`
+  `-SkyplotHousingSmoke` now creates a dedicated
+  `lws-053-skyplot-housing-targets.md` worksheet, default world filter, and
+  negative cases for return pad without residence/community session, vendor
+  before unlock, invalid catalog rows, and inactive lifecycle. This is capture
+  infrastructure only; the row stays unchecked until a completed client/server
+  bundle proves placement, catalog, return-pad, and lifecycle behavior. The
+  dry-run guard now verifies this preset's manifest, worksheet, default world
+  id, helper files, and negative-case scaffold.
 - [ ] LWS-054 Live events: smoke Battle Chase, Dungeon Chase, Shades Eve, Space
   Chase, Starfall, Sim Chase 1, and zPrix for spawn timing, vendor timing,
   lifecycle activation, and cleanup. Add tests for any runtime event state
   implemented.
+  Harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1`
+  `-LiveEventSmoke` now creates a dedicated `lws-054-live-event-targets.md`
+  worksheet and negative cases for inactive event state, event ending during
+  vendor interaction, post-cleanup rejection, and skipped duplicate/placeholder/
+  malformed source row absence. This is capture infrastructure only; the row
+  stays unchecked until completed client/server bundles prove concrete
+  per-event lifecycle behavior. The dry-run guard now verifies this preset's
+  manifest, worksheet, helper files, and negative-case scaffold.
 - [ ] LWS-055 Quest virtual loot: capture quest-loot trigger cadence,
   probability, and objective integration for representative branch virtual-item
   rows. Keep current safe objective-loot preservation until retail probability
   evidence exists.
+  Harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1`
+  `-QuestVirtualLootSmoke` now creates a dedicated
+  `lws-055-quest-virtual-loot-targets.md` worksheet, default representative
+  objective filters, and negative cases for inactive objectives, pre-activation
+  kills, completed-objective repeats, and declined/abandoned loot windows. This
+  is capture infrastructure only; the row stays unchecked until completed
+  client/server bundles prove trigger cadence, probability, source selection,
+  and objective integration. The dry-run guard now verifies this preset's
+  manifest, worksheet, default objective ids, helper files, and negative-case
+  scaffold. Runtime-boundary coverage now pins the current safe behavior:
+  `ItemContainerLootTests.QuestVirtualLootGroup_DropsOnlyWhenQuestObjectiveIsActive`
+  requires condition `8` to stay behind `IsActiveObjectiveId`, and
+  `LootInstanceDeliveryTests.GiveLoot_VirtualItemUpdatesVirtualCollectObjective`
+  requires mapped virtual-item delivery to update
+  `QuestObjectiveType.VirtualCollect` while emitting only the mapped loot grant.
 
 ## Milestone 5 - Path, Settler, Explorer, Soldier, And Fortune Blockers
 
@@ -255,22 +343,48 @@ Rules:
   `character_path_mission` now persists active/completed mission state and
   replays unfinished episodes on initial packets; object-id state, reward
   history, and negative reload/path/faction/zone proof remain open.
+  Runtime progress (2026-05-28): persisted active mission replay is now guarded
+  by the current active path plus table-backed mission/episode, faction,
+  prerequisite, and packet-width checks. Different-path, missing-episode, and
+  mismatched-episode-path persisted missions no longer replay on login or
+  suppress the current path's zone activation for the same episode id. Focused
+  `PathManagerTests` passed `49/49`; object-id state, reward history, broader
+  zone/reload negatives, and exact replay ordering remain open.
 - [ ] LWS-061 Path reward precision: map path XP/reward evidence, item counts,
   and unflagged `PathRewardType.Mission` grants. The WIP `30` XP fallback was
   replaced where evidence is exact: client `Lua_PathMission_GetRewardXp` reads
-  `GameFormula` `0x017a` (`378`) `Dataint0` with fallback `50`. Exact
-  per-mission reward precision remains blocked in the closure matrix.
+  `GameFormula` `0x017a` (`378`) `Dataint0` with fallback `50`. Focused
+  reward/path tests now pass `74/74`, covering matching mission reward object
+  ids, supported payloads, flagged-row rejection, and zero-count item fallback.
+  Exact per-mission reward precision, presentation, overflow, reward history,
+  and retail flagged-row semantics remain blocked in the closure matrix.
 - [ ] LWS-062 Path unlock sequencing: prove current-zone episode activation,
   mission prerequisite filtering, faction filtering, and replay/completion
   rules through table data plus client smoke. Partial implementation: local
   tests cover table-backed faction/prerequisite filters plus completed-mission
   no-replay and persisted-active no-duplicate activation; client smoke and exact
   transition ordering remain open.
+  Runtime progress (2026-05-28): persisted active replay now has focused
+  negative coverage for different-path, wrong-faction, unmet simple
+  path-prerequisite, missing-episode, and mismatched-episode-path missions.
+  Constructor-time replay filtering can evaluate simple path prerequisites
+  before `player.PathManager` is assigned, while client-smoked filtering
+  semantics, exact replay/completion ordering, and broader path/zone reload
+  transitions remain open. Focused `PathManagerTests` passed `49/49`.
 - [ ] LWS-063 Settler hub state: map and implement durable built-group,
   resource, avenue, and hub progress state. Verify reload persistence and
   rejection paths. Partial implementation: Settler_Hub mission progress now
   persists/reloads through `character_path_mission`; built-group identity,
   resources, avenue totals, and failure result packets remain open.
+  Runtime progress (2026-05-28): focused rejection tests now pin that zero or
+  missing improvement-group ids, missing hub rows, different hub ids, and
+  non-Settler active paths do not progress the mission or emit extra mission
+  updates. Build-handler guard tests now also pin that out-of-range ids,
+  unmapped tiers, zero improvement ids, and improvement ids outside the mapped
+  15-bit result width do not emit status/result packets. Focused
+  `PathSettlerBuildHandlerTests|PathManagerTests` passed `55/55`; built-group
+  identity, resources, avenue totals, non-success result values, and failure
+  ordering remain open.
 - [ ] LWS-064 Settler/Soldier progress packets: decompile or capture packet
   fields for `ServerPathSettlerBuildStatus`,
   `ServerPathSettlerBuildResult`, and Soldier progress surfaces. Rename fields
@@ -289,7 +403,16 @@ Rules:
   improvement-group id, tier, remaining time, and bundle count; `ServerPathSettlerBuildResult`
   (`0x066C`) now names `PathSettlerImprovementId`. Non-success result values,
   failure ordering, resource costs, durable built-group state, and avenue/resource
-  semantics remain blocked, so the task stays unchecked.
+  semantics remain blocked, so the task stays unchecked. Build-handler guard
+  tests now pin the current no-emit boundary for unmapped or unwritable Settler
+  build acknowledgements without inventing failure packets.
+  Additional Soldier packet-shape progress: `ServerPathSoldierHoldoutStatus`,
+  `ServerPathSoldierHoldOutNextWave`, `ServerPathSoldierHoldoutEnd`, and
+  `ServerPathSoldierHoldoutDeath` now have source comments tied to the mapped
+  `Game.SoldierEvent` accessor surface and focused packet tests pin the current
+  serialized status/next-wave/end/death shapes. Generic holdout producer timing,
+  wave scheduling, unit ownership, death/failure semantics, and packet ordering
+  remain blocked, so the task stays unchecked.
 - [x] LWS-065 Generic path edge semantics: add focused tests for object-id
   completion guards, active-only Explorer Vista/ExploreZone/power-map
   completion, active Soldier assassinate credit, and already-complete/reload
@@ -297,7 +420,22 @@ Rules:
 - [ ] LWS-066 Fortune weights and rotations: capture retail
   `ServerFortuneRewards` or a storefront-server catalog dump. Replace emulator
   rarity-tier weights only with per-item/rotation evidence; otherwise keep the
-  current Fortune implementation complete-but-approximate.
+  current Fortune implementation complete-but-approximate. Evidence-harness
+  progress: `Start-BlockerEvidenceHarness.ps1 -FortuneRewardsSmoke` now creates
+  a worksheet for `ServerFortuneRewards` probabilities, active
+  rotation/storefront context, card deal/flip/payout, reload persistence,
+  insufficient currency, invalid flip, and repeated-flip rejection. The row
+  remains blocked until a completed bundle contains retail/catalog evidence.
+  Dry-run guard progress (2026-05-28): `test_blocker_evidence_harness_presets.py`
+  now verifies this preset's manifest, worksheet, helper files, and
+  negative-case scaffold. Runtime-boundary coverage now exercises the real
+  `FortuneRewardPool` against synthetic `AccountItem.tbl`/`Item2.tbl` rows:
+  `GetRewardCatalog_RealPoolAdvertisesOnlyMappedItemRewards` pins the mapped
+  item/probability transport and filters Fortune Coin/non-item rows from
+  `ServerFortuneRewards`, while
+  `PickCardRewards_RealPoolKeepsNonItemAccountRewardsPickerOnly` preserves
+  current picker-only account rewards without advertising unmapped item2
+  probabilities.
 
 ## Milestone 6 - Shared Instance/Public-Event Infrastructure
 
@@ -317,27 +455,100 @@ Rules:
   result. Partial packet-shape progress: opcode `0x06F7` now has a decoded
   15-bit value plus flag model, and opcode `0x0139` has a decoded uint32 value
   plus counted uint32 list model. Vote lifecycle, timeout, tally/result order,
-  and participant/default-choice behavior remain blocked, so the row stays
-  unchecked.
+  and participant/default-choice behavior remain blocked. Runtime hardening
+  progress (2026-05-28): `PublicEventVote.Choice` is now idempotent for
+  finalised votes, non-participants, duplicate responses, and invalid choices,
+  and focused tests cover initiate, tally/end, timeout default choice, and
+  duplicate/late/invalid response handling; packet tests also pin client vote
+  read plus server initiate/detailed-initiate/tally/end serialization, and a
+  handler test pins routing from `0x06EE` to `PublicEventManager.RespondVote`.
+  Additional envelope-hardening progress (2026-05-28): the mapped client vote
+  id/team id are now threaded through the response path; the public-event
+  runtime ignores cross-team and stale-vote replies before mutating active vote
+  state, and focused tests pin handler forwarding plus vote-id mismatch
+  rejection.
+  Retail UI packet sequence, exact timeout cadence, result order, vote/team id
+  mismatch UI feedback, and participant/default-choice semantics remain blocked,
+  so the row stays unchecked.
+  Evidence-harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1
+  -PublicEventVoteScoreboardSmoke` now creates a worksheet for vote
+  initiate/detailed-initiate, client choices, tally/end ordering,
+  timeout/default-choice behavior, vote/team id handling, and negative vote
+  cases. The dry-run guard now verifies this preset's manifest, worksheet,
+  helper files, and negative-case scaffold.
 - [ ] LWS-072 Scoreboards and rewards: map exact scoreboard rows, score fields,
   reward delivery, and completion/failure result packets before adding
   cross-event reward behavior. Partial packet-shape progress: opcode `0x06FA`
   scoreboard request now has a mapped public-event id plus subscribe flag,
   `0x0130` stats update and `0x00D6` event end now have decompile-backed
   team/participant/objective/reward-threshold row shapes, and focused packet
-  tests pin the current models. Runtime reward delivery, scoreboard population,
-  eligibility, result ordering, and reward tier semantics remain blocked, so the
-  row stays unchecked.
+  tests pin the current models. Runtime progress (2026-05-28): scoreboard
+  subscribe requests now emit one participant-scoped `0x0130` snapshot for the
+  requested event, and team stat rows now aggregate per-member absolute stat
+  values instead of overwriting with the last member update; focused runtime
+  tests cover handler routing, unsubscribe no-op before map/event lookup,
+  non-member suppression, and combined
+  team/participant stat payloads. Runtime reward delivery, exact live
+  subscription cadence, eligibility, result ordering, score-field precision, and
+  reward tier semantics remain blocked, so the row stays unchecked.
+  Evidence-harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1
+  -PublicEventVoteScoreboardSmoke` now creates a worksheet for scoreboard
+  subscribe/unsubscribe cadence, stat row payloads, event end/reward-threshold
+  rows, non-member request suppression, and reward delivery proof. The dry-run
+  guard verifies the same shared preset without proving cadence or rewards.
 - [ ] LWS-073 Objective notification parity: map objective update text, event
   phase notification, completion notification, and quest-share behavior.
+  Packet-shape progress (2026-05-27): decompile labels now map objective
+  notification mode `0x0133`, objective status update `0x0134`, objective
+  update `0x0132`, and objective start `0x06F9`; focused packet tests pin the
+  15-bit objective ids, status row, notification mode, location list, and
+  map-region list. Text ids, audience, packet ordering, event phase/completion
+  notification semantics, and quest-share behavior remain blocked, so the row
+  stays unchecked. Runtime hardening progress (2026-05-28): unchanged
+  objective busy-state calls no longer emit duplicate full objective updates,
+  with the guard tied to `WildStar64.exe` `14007b490` / opcode `0x0132` and
+  focused objective tests covering the no-duplicate boundary. This still does
+  not prove notification parity. Evidence-harness progress (2026-05-28):
+  `Start-BlockerEvidenceHarness.ps1 -PublicEventObjectiveNotificationSmoke`
+  now creates an LWS-073 worksheet for objective start/update/status/
+  notification packets, objective/phase text ids, quest-share side effects,
+  target audience, ordering, duplicate suppression, and negative cases. The
+  dry-run guard verifies this preset's manifest, worksheet, helper files, and
+  negative-case scaffold without proving notification parity.
 - [ ] LWS-074 Trigger/door framework: prove trigger rows, radius, coordinates,
   door ids, open/close state, cleanup timing, and respawn/despawn behavior.
+  Runtime producer hardening progress (2026-05-28): the existing mapped
+  `ParticipantsInTriggerVolume` and `Turnstile` public-event objective
+  producers now ignore zero object ids and non-player entities, and tests cover
+  trigger-volume enter/leave deltas, world-location horizontal radius plus
+  vertical clamp behavior, turnstile one-shot entry, duplicate in-range
+  suppression, and the no-leave-delta turnstile boundary. Exact trigger rows,
+  coordinates, door ids/states, cleanup timing, and respawn/despawn behavior
+  remain blocked, so the row stays unchecked.
 - [ ] LWS-075 Cinematic/communicator framework: replace completion-only
   placeholders only after actor/camera/text/timing payloads and send conditions
-  are mapped.
-- [ ] LWS-076 Catalog cleanup: keep unused branch-only `PublicEventCreature`,
+  are mapped. Packet-shape progress (2026-05-28): communicator/story-panel
+  packet comments now record the mapped client export anchors
+  `DB\CommunicatorMessages.tbl`, `Communicator_ShowQuestMsg`,
+  `DB\StoryPanel.tbl`, `MessageManager_DisplayStoryPanel`, and CommunicatorLib
+  placement/overlay/background symbols; packet tests pin
+  `ServerCommunicatorMessage`, `ServerStoryTextCommunicator`, and
+  `ServerStoryPanelCustomShow` serialization plus shared `StoryMessage`
+  actor-row serialization for creature, custom text, localized text, player,
+  creature-unit, and self-player token sources. Real actor/camera/text timing,
+  send conditions, completion-only placeholder replacement, and cinematic
+  sequencing remain blocked, so the row stays unchecked.
+- [x] LWS-076 Catalog cleanup: keep unused branch-only `PublicEventCreature`,
   `CommunicatorMessage`, `PublicEventObjective`, and `PublicEventPhase`
-  catalogs unported until an active runtime consumer uses them.
+  catalogs unported until an active runtime consumer uses them. Guard progress
+  (2026-05-28): `BranchCatalogCleanupTests` pins the current rejection by
+  asserting the all-in-one-only Datascape Hydroflux/Mnemesis script names and
+  known door/platform/marker-only or empty branch catalog files for War of the
+  Wilds, Protogames Academy, Ruins of Kel Voreth, Skullcano, Shade's Eve,
+  Gauntlet, Fragment Zero, Infestation, Outpost M-13, Space Madness,
+  Datascape, Genetic Archives, Initialization Core Y-83, and Red Moon Terror
+  remain absent until stronger consumer proof exists. This row is complete as a
+  rejected/no-port guard, not as runtime feature parity.
 
 ## Milestone 7 - PvP And Adventure Content
 
@@ -353,6 +564,15 @@ Rules:
   `171`, end-delay behavior, chat timing, reward grant, and adventure smoke.
 - [ ] LWS-085 Rage Logic: map vehicle choice, objective routing, rewards, and
   encounter behavior beyond the WIP `ChooseAVehicle` phase.
+  Evidence-harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1
+  -PvpAdventureSmoke` now creates the LWS-080 through LWS-085 worksheet,
+  defaults the known branch worlds/events, and records queue/match,
+  disconnect/leave, premature reward, wrong-team/wrong-phase, and early-finish
+  negative cases. The scaffold tests still pass `29/29`; queue/match, scoring,
+  rewards, stats, faction-start, vehicle, and encounter behavior remain blocked
+  until completed smoke bundles exist. The dry-run guard now verifies this
+  preset's manifest, worksheet, default world/public-event ids, helper files,
+  and negative-case scaffold.
 
 ## Milestone 8 - Expedition Content
 
@@ -375,6 +595,16 @@ Rules:
   branch-only placements for promotion or rejection.
 - [ ] LWS-096 Deep Space Exploration: map follow-up expedition routing, doors,
   real cinematic payload, encounter order, rewards, and full smoke.
+  Evidence-harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1
+  -ExpeditionSmoke` now creates the LWS-090 through LWS-096 worksheet, defaults
+  the known expedition worlds/events, and records placeholder trigger,
+  premature door/shuttle/teleport, wrong-phase trigger, completion-only
+  cinematic, and early-finish reward negative cases. The focused expedition
+  scaffold tests now pass `78/78`; shuttle, door, trigger, cinematic,
+  communicator, teleport, cleanup, routing, reward, and full-smoke behavior
+  remain blocked until completed smoke/decompile evidence exists. The dry-run
+  guard now verifies this preset's manifest, worksheet, default
+  world/public-event ids, helper files, and negative-case scaffold.
 
 ## Milestone 9 - Dungeon Content
 
@@ -400,6 +630,17 @@ Rules:
   choreography, communicator timing, and full smoke.
 - [ ] LWS-106 Ultimate Protogames dungeon: prove room randomization, objective
   routing, boss mechanics, rewards, and full smoke beyond `RandomEvent1`.
+  `Start-BlockerEvidenceHarness.ps1 -DungeonSmoke` now creates the LWS-100
+  through LWS-106 worksheet, defaults the map-script-backed worlds `382`,
+  `1263`, `1271`, `1336`, `2980`, `3173`, and `3522`, defaults public events
+  `145`, `148`, `161`, `166`, `594`, `667`, and `907`, and captures required
+  negative cases for premature triggers, doors/platforms/launchers/teleporters,
+  wrong-route optional objectives, completion-only cinematics, and early
+  finish/rewards. The focused dungeon scaffold filter still passes `149/149`;
+  route weights, trigger/door/choreography, real cinematics, boss mechanics,
+  rewards, and full-route smoke remain blocked pending completed bundles. The
+  dry-run guard now verifies this preset's manifest, worksheet, default
+  world/public-event ids, helper files, and negative-case scaffold.
 
 ## Milestone 10 - Raid And Event-Instance Content
 
@@ -427,6 +668,18 @@ Rules:
 - [ ] LWS-117 Journey into OMNICore-1: map real cinematic actor/camera/text/timing
   payload, event routing, rewards, and encounter behavior before replacing the
   immediate completion placeholder.
+  `Start-BlockerEvidenceHarness.ps1 -RaidEventSmoke` now creates the LWS-110
+  through LWS-117 worksheet, defaults the map-script-backed worlds `1333`,
+  `1462`, `3032`, `3040`, `3041`, `3044`, `3045`, and `3094`, defaults public
+  events `157`, `159`, `595`, `597`, `605`, `642`, `679`, and `705`, and
+  captures required negative cases for premature triggers/target sets,
+  doors/elevators/gates/rooms, wrong-route weekly/wing/room selection,
+  completion-only cinematics, and early finish/rewards. The focused
+  raid/event-instance scaffold filter still passes `169/169`; target sets,
+  routing, doors/elevators/gates, real cinematics, encounter mechanics, rewards,
+  and full smoke remain blocked pending completed bundles. The dry-run guard
+  now verifies this preset's manifest, worksheet, default world/public-event ids,
+  helper files, and negative-case scaffold.
 
 ## Milestone 11 - Verification And Closure
 

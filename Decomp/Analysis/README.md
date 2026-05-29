@@ -53,10 +53,14 @@ The runner automatically applies function names from
 `Decomp\Analysis\function_labels.csv` before export. This keeps high-value
 function mapping reproducible even if `ghidra_projects` is deleted and rebuilt.
 `selected_decompiled.c` now defaults to manifest-based reuse, so repeated runs
-with unchanged binary, label, and selection inputs do not re-run the decompiler.
-When the selected set changes slightly, the exporter also reuses cached
-per-function fragments for the unchanged functions and only decompiles the new
-or invalidated entries.
+with unchanged binary, label, and selection inputs do not rebuild the selected
+output file. The exporter also maintains a canonical per-function cache under
+`selected_decompiled_cache\functions\<binary-fingerprint>` and reuses an
+already-exported function body instead of writing another physical copy. Old
+context-hash cache folders are removed by the exporter; only `functions` is
+kept, used, and populated. Normal runs incrementally warm this full-program
+cache up to `-MaxWarmFunctionsPerRun`, so repeated passes steadily reduce the
+number of uncached functions.
 Single-target runs now default to isolated per-target Ghidra projects, which
 removes project-lock contention between targeted runs against different
 binaries. Multi-target and full-pass runs keep the shared project by default.
@@ -66,9 +70,9 @@ opening Ghidra, so concurrent sessions wait instead of surfacing Ghidra's
 runner already owns the project, the updated runner retries until the project is
 free; use `-ProjectLockTimeoutMinutes <minutes>` when automation should stop
 waiting after a bounded period.
-For multi-binary export refreshes, prefer `Start-DecompileBatch.ps1`; it starts
-one isolated runner per target, writes per-run summaries under `logs\runs`, and
-refreshes coverage once after all workers complete.
+For multi-binary export refreshes, prefer `run_ghidra_analysis.ps1 -MaxParallel`;
+it starts one isolated runner per target, writes per-run summaries under
+`logs\runs`, and refreshes coverage once after all workers complete.
 
 Run a smaller or larger decompiler export:
 
@@ -82,6 +86,39 @@ without re-running full analysis:
 ```powershell
 .\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly
 ```
+
+`-AnalysisMode Auto` is the default. It imports and analyzes a target only when
+the Ghidra project or analysis manifest is missing or stale; otherwise it uses
+`-process -noanalysis`. `-ExportOnly` remains a compatibility alias for
+`-AnalysisMode Skip`, and `-AnalysisMode Force` forces a fresh import/analysis.
+
+Bound the full-program cache warming done during a normal run:
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -Targets WildStar64.exe -CacheWarmMode Incremental -MaxWarmFunctionsPerRun 250
+```
+
+For full-program `Complete` cache passes on large binaries, raise the headless JVM heap
+(default Ghidra `MAXMEM` is 2G):
+
+```powershell
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -CacheWarmMode Complete -GhidraMaxHeap 8G
+```
+
+See `FULL_DECOMPILE_PASS_STATUS.md` for the 2026-05-27 full decompile pass notes.
+
+Promote evidence-backed rows into `function_labels.csv` from exports (including `DB\*.tbl`
+xrefs):
+
+```powershell
+.\Decomp\Analysis\Promote-FunctionLabelsFromExports.ps1
+```
+
+See `FUNCTION_LABEL_MAPPING_PASS.md` for the 2026-05-28 label/comment pass.
+
+Use `-CacheWarmMode Off` for a no-decompile metadata/xref pass, or
+`-CacheWarmMode Complete` when you intentionally want to warm every missing
+function for the current target.
 
 When `-ExtraPostScript` is used without an explicit `-MaxDecompiledFunctions`,
 the runner inherits the current manifest cutoff for that target so helper
@@ -130,14 +167,17 @@ automation:
 Seed or refresh the default target projects in parallel:
 
 ```powershell
-.\Decomp\Analysis\Start-DecompileBatch.ps1 -Analyze -ProjectLayout PerTarget -MaxParallel 3
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -AnalysisMode Force -ProjectLayout PerTarget -MaxParallel 3
 ```
 
 Re-export the default targets in parallel from existing per-target projects:
 
 ```powershell
-.\Decomp\Analysis\Start-DecompileBatch.ps1 -MaxDecompiledFunctions 2400 -MaxParallel 3
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -AnalysisMode Skip -ProjectLayout PerTarget -MaxDecompiledFunctions 2400 -MaxParallel 3
 ```
+
+`Start-DecompileBatch.ps1` remains available as a compatibility wrapper for the
+older command shape.
 
 Force a fresh `selected_decompiled.c` rebuild after manual Ghidra project edits
 that are not captured by `function_labels.csv`:
@@ -207,12 +247,14 @@ Per binary:
 - `selected_xrefs.csv` - functions selected because they reference interesting strings or imports.
 - `selected_decompiled.c` - Ghidra C output for the selected functions.
 - `selected_decompiled.manifest` - local cache metadata used to reuse `selected_decompiled.c` when the export inputs are unchanged.
-- `selected_decompiled_cache/<context-hash>` - local per-function fragment cache used to avoid re-decompiling unchanged functions when the selected set expands or contracts.
+- `decompile_cache_summary.properties` - full-program cache counts, including cached, warmed, remaining, and already-exported skip totals.
+- `selected_decompiled_cache/functions/<binary-fingerprint>` - canonical per-function fragment cache. A function that already exists here is reused and is not re-exported into another context directory.
 
 Function labels are maintained in `Decomp\Analysis\function_labels.csv` and
 applied by `scripts\ApplyNexusForeverLabels.java` before `selected_decompiled.c`
-is written. Changing the label file invalidates the manifest and fragment cache
-context automatically.
+is written. Changing the label file invalidates the selected-output manifest,
+but it does not create another physical copy of an already-exported function in
+the canonical cache.
 
 Focused helper scripts under `Decomp\Analysis\scripts` can be run with
 `-ExtraPostScript`, after the normal export, for one-off inspection without

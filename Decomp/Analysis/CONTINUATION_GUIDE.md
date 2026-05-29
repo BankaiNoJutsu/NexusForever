@@ -148,9 +148,23 @@ version, and ordered top-N selected functions are unchanged, the exporter keeps
 the existing decompiler output and refreshes only the cheaper CSV and text
 artifacts.
 
-If the selected set changes under the same binary and label context, the
-exporter reuses cached per-function fragments for any unchanged functions and
-decompiles only the newly selected or invalidated entries.
+The exporter also keeps a canonical per-function cache under
+`selected_decompiled_cache/functions/<binary-fingerprint>`. If a function body
+has already been exported for the same binary/function identity, later runs reuse
+that canonical fragment instead of writing another physical copy. The exporter
+removes old `selected_decompiled_cache/<context-hash>` folders; only the
+`functions` folder is kept, used, and populated.
+
+By default, normal runs incrementally warm the full-program cache up to the
+`-MaxWarmFunctionsPerRun` budget. Use `-CacheWarmMode Off` for a cheap xref-only
+pass, `-CacheWarmMode Incremental` for bounded background warming, and
+`-CacheWarmMode Complete` only when you intentionally want to fill every missing
+function in one pass.
+
+`-AnalysisMode Auto` is the default and skips Ghidra import/analysis when the
+project and analysis manifest match the current binary. `-ExportOnly` remains a
+compatibility alias for `-AnalysisMode Skip`; use `-AnalysisMode Force` when you
+need to rebuild the Ghidra project state.
 
 Single-target runs now default to per-target Ghidra projects so different
 binaries can be processed in parallel without fighting over the old shared
@@ -167,22 +181,25 @@ Use `-ProjectLockTimeoutMinutes <minutes>` when a scheduled job should stop
 waiting after a bounded period; the default is to wait until the project becomes
 available.
 
-For multi-binary refreshes, use the batch wrapper instead of one shared
-multi-target run:
+For multi-binary refreshes, use runner-level parallelism with per-target
+projects instead of one shared multi-target run:
 
 ```powershell
-.\Decomp\Analysis\Start-DecompileBatch.ps1 -MaxDecompiledFunctions 2400 -MaxParallel 3
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ProjectLayout PerTarget -MaxParallel 3 -MaxDecompiledFunctions 2400
 ```
 
-The wrapper starts one `run_ghidra_analysis.ps1` worker per target with
-collision-free `-RunId`, `-SummaryPath`, and `-SkipCoverage` settings, then
-writes `logs\runs\<run-id>\batch_summary.json` and refreshes the latest coverage
-once after all workers complete. Use `-Analyze -ProjectLayout PerTarget` when a
-target needs its split project seeded before export-only runs:
+The runner starts one worker per target with collision-free `-RunId`,
+`-SummaryPath`, and `-SkipCoverage` settings, then writes a merged summary and
+refreshes the latest coverage once after all workers complete. Use
+`-AnalysisMode Force -ProjectLayout PerTarget` when a target needs its split
+project seeded or refreshed:
 
 ```powershell
-.\Decomp\Analysis\Start-DecompileBatch.ps1 -Analyze -ProjectLayout PerTarget -MaxParallel 3
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -AnalysisMode Force -ProjectLayout PerTarget -MaxParallel 3
 ```
+
+`Start-DecompileBatch.ps1` remains available for older command lines, but it now
+forwards cache-warm and analysis-mode parameters to the main runner.
 
 Use `-ProjectLayout Shared` when you intentionally want the old single-project
 behavior for a targeted pass:
@@ -233,13 +250,15 @@ Use this when a focused pass misses a target function:
 ## Export Caching And Invalidation
 
 `ExportNexusForeverAnalysis.java` keeps `selected_decompiled.c` fast by caching
-per-function fragments under `selected_decompiled_cache/<context-fingerprint>/`
-and reusing them when the selected set is stable.
+per-function fragments in a canonical full-program store under
+`selected_decompiled_cache/functions/<binary-fingerprint>/`. Old context-hash
+cache folders are removed by the exporter; once a function exists in the
+canonical store, later runs skip re-exporting it.
 
 `-DecompileMode Auto` is the normal choice for repeated passes:
 
 - Reuses the existing `selected_decompiled.c` when the binary fingerprint, label state, Ghidra version, and selected function list are unchanged.
-- Reuses cached fragments for unchanged functions when the selected set expands or contracts.
+- Reuses canonical cached fragments for unchanged functions when the selected set expands or contracts.
 - Writes fresh CSV and text artifacts even when decompilation is skipped.
 
 Use `-DecompileMode Force` after interactive Ghidra edits or when you need to
@@ -249,6 +268,7 @@ needs strings, xrefs, imports, selection auditing, or helper-script output.
 The easiest ways to understand cache behavior are:
 
 - `selected_decompiled.manifest` in the export folder for decompile fingerprint details.
+- `decompile_cache_summary.properties` for full-program cached, warmed, remaining, duplicate, and already-exported counts.
 - `selected_reasons_summary.csv` for the current selection and cutoff.
 - `logs/LATEST_RUN_SUMMARY.json` for the most recent headless run inputs and outputs.
 - `coverage/LATEST_COVERAGE_SUMMARY.md` and `coverage/opcode_coverage_inventory.csv` for the current export and opcode backlog.

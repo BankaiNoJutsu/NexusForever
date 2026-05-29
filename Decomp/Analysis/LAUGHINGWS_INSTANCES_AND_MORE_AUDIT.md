@@ -23,7 +23,7 @@ stays mapped-only or explicitly rejected until the named evidence is captured.
 The evidence harness itself is now implemented: `Start-BlockerEvidenceHarness.ps1`
 creates timestamped bundles with manifests, command/log/client/negative-case
 templates, screenshot/video/log folders, and log-tail/collection helpers.
-The final closure pass records the remaining instance-side LWS rows as
+The current closure-matrix pass records the remaining instance-side LWS rows as
 implemented-with-verification, mapped-only with manual smoke or client/table
 proof named, or rejected with a reason. It does not convert WIP-guessed
 triggers, doors, cinematics, rewards, PvP scoring, or encounter mechanics into
@@ -80,7 +80,7 @@ retail-complete behavior.
 | `NexusForever.Script.Instance` build | Passed with `0` warnings and `0` errors after the map-only entry scaffold pass. |
 | Focused Space Madness trigger tests | `8/8` passed with an isolated `OutDir` because the local world server had the normal debug output locked. |
 | Manual client smoke | Not run. Manual instance, dungeon, raid, arena, battleground, and event-instance smoke remains required before claiming retail-complete content behavior. |
-| Final LWS closure verification | The post-review focused gates passed for PvP/adventure `29/29`, expedition `75/75`, dungeon `149/149`, and raid/event-instance `169/169`; no new instance/public-event script behavior was added by the final closure-matrix pass. |
+| LWS tracker verification | The post-review focused gates passed for PvP/adventure `29/29`, expedition `78/78`, dungeon `149/149`, and raid/event-instance `169/169`; no new instance/public-event script behavior was added by the current closure-matrix pass. |
 
 ## Not Fully Implemented Or Blocked
 
@@ -150,8 +150,13 @@ retail-complete behavior.
   communicator timing, cinematics, optional objective randomization, and boss
   choreography.
 - Public-event vote, scoreboard, objective notification, and reward semantics.
-- Unused branch-only `PublicEventCreature` and `CommunicatorMessage` catalogs until
-  active, evidence-backed runtime consumers need them.
+- Unused branch-only `PublicEventCreature`, `CommunicatorMessage`,
+  `PublicEventObjective`, and `PublicEventPhase` catalogs until active,
+  evidence-backed runtime consumers need them. `BranchCatalogCleanupTests` now
+  guards the known rejected all-in-one Datascape Hydroflux/Mnemesis script names
+  plus representative empty or door/platform/marker-only catalog files across
+  adventure, dungeon, expedition, event-instance, and raid content so they do
+  not quietly enter runtime source without consumer proof.
 - Exact route/randomization weights and choreography for Skullcano, Sanctuary of
   the Swordmaiden, Datascape, Genetic Archives, and other branch-derived paths.
 - Journey into OMNICore event routing and real cinematic payloads until concrete

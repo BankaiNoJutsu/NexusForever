@@ -2,7 +2,7 @@
 
 Updated: 2026-05-27
 
-This review closes LWS-040, LWS-041, and LWS-042 from
+This review tracks LWS-040, LWS-041, and LWS-042 from
 `Decomp/Analysis/LAUGHINGWS_REMAINING_BLOCKERS_IMPLEMENTATION_PLAN.md`.
 It records why the broad Dreadmoor, Halon Ring, and Murkmire source files remain
 blocked or partially rejected instead of runtime-promoted.
@@ -47,3 +47,24 @@ Reopen only a narrow row subset, never the broad source file. Required proof:
 Keep Dreadmoor, Halon Ring broad residuals, and Murkmire classified as
 `blocked_laughingws_new_zone_broad_rows`. The only currently allowed Halon Ring
 runtime data remains the previously reviewed city/transport slice.
+
+Harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1` now supports
+`-NewZoneAssetProof`. The preset creates
+`new-zone-asset-proof-targets.md`, preloads Dreadmoor/Halon/Murkmire target
+worlds when `-WorldIds` are omitted, and records negative/safety cases for
+zero-coordinate placeholders, destructive broad SQL replacement, and wrong-world
+or missing-client-asset proof. This is a capture aid only; no broad row is
+promoted without completed row-level evidence.
+
+Dry-run guard progress (2026-05-28): `test_blocker_evidence_harness_presets.py`
+now runs `-NewZoneAssetProof` with `-CreateBundleOnly` and verifies the
+manifest, target worksheet, default world ids, helper files, and negative-case
+scaffold. This protects the asset-proof workflow only; Dreadmoor, Halon Ring
+broad residuals, and Murkmire remain blocked until a completed row-level bundle
+proves client asset, runtime placement, and safety.
+
+Analyzer guard progress (2026-05-28): `Tools/DataMapping/test_laughingws_worlddb_classifications.py`
+now runs the real `analyze_laughingws_worlddb.py` recommendation logic against
+the local LaughingWS external snapshot and asserts that Dreadmoor, Halon Ring,
+and Murkmire keep `blocked_laughingws_new_zone_broad_rows` while avoiding
+`extract_additive_world_overlay`.

@@ -131,6 +131,11 @@ $records = foreach ($target in $Targets) {
 
     $issues = New-Object 'System.Collections.Generic.List[string]'
     $properties = Read-KeyValuePropertiesFile -Path $manifestPath
+    $cacheSummaryPath = Join-Path (Split-Path -Parent $manifestPath) 'decompile_cache_summary.properties'
+    $cacheProperties = Read-KeyValuePropertiesFile -Path $cacheSummaryPath
+    if ($null -eq $cacheProperties) {
+        $cacheProperties = @{}
+    }
     if ($null -eq $properties) {
         $issues.Add('missing-manifest')
         [pscustomobject]@{
@@ -139,10 +144,15 @@ $records = foreach ($target in $Targets) {
             selectedCount               = $null
             reusedFragments             = $null
             decompiledFragments         = $null
+            canonicalCachedFragments    = ConvertTo-NullableInt -Value $cacheProperties['cache.canonicalCachedFragments']
+            warmedThisRun               = ConvertTo-NullableInt -Value $cacheProperties['cache.warmedThisRun']
+            remainingUncached           = ConvertTo-NullableInt -Value $cacheProperties['cache.remainingUncached']
+            skippedAlreadyExported      = ConvertTo-NullableInt -Value $cacheProperties['cache.skippedAlreadyExported']
             outputExists                = $null
             binaryFingerprintMatchesRun = $null
             labelFingerprintMatchesRun  = $null
             manifestPath                = $manifestPath
+            cacheSummaryPath            = $cacheSummaryPath
         }
         continue
     }
@@ -174,10 +184,15 @@ $records = foreach ($target in $Targets) {
         selectedCount               = ConvertTo-NullableInt -Value $properties['selected.count']
         reusedFragments             = ConvertTo-NullableInt -Value $properties['cache.reusedFragments']
         decompiledFragments         = ConvertTo-NullableInt -Value $properties['cache.decompiledFragments']
+        canonicalCachedFragments    = ConvertTo-NullableInt -Value $cacheProperties['cache.canonicalCachedFragments']
+        warmedThisRun               = ConvertTo-NullableInt -Value $cacheProperties['cache.warmedThisRun']
+        remainingUncached           = ConvertTo-NullableInt -Value $cacheProperties['cache.remainingUncached']
+        skippedAlreadyExported      = ConvertTo-NullableInt -Value $cacheProperties['cache.skippedAlreadyExported']
         outputExists                = $outputExists
         binaryFingerprintMatchesRun = $binaryFingerprintMatchesRun
         labelFingerprintMatchesRun  = $labelFingerprintMatchesRun
         manifestPath                = $manifestPath
+        cacheSummaryPath            = $cacheSummaryPath
     }
 }
 
@@ -187,7 +202,7 @@ if ($AsJson) {
 else {
     $records |
         Sort-Object -Property target |
-        Format-Table -AutoSize target, status, selectedCount, reusedFragments, decompiledFragments, outputExists, binaryFingerprintMatchesRun, labelFingerprintMatchesRun, manifestPath
+        Format-Table -AutoSize target, status, selectedCount, reusedFragments, decompiledFragments, canonicalCachedFragments, warmedThisRun, remainingUncached, skippedAlreadyExported, outputExists, binaryFingerprintMatchesRun, labelFingerprintMatchesRun, manifestPath
 }
 
 if ($FailOnMismatch -and ($records | Where-Object { $_.status -ne 'ok' } | Measure-Object).Count -gt 0) {

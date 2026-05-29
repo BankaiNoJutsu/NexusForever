@@ -4,9 +4,9 @@ Date: 2026-05-27
 
 ## Decision
 
-LWS-054 is closed as mapped-only. The live-event seed preserves useful
-branch-authored entity/vendor rows, but no event lifecycle behavior is promoted
-or claimed retail-complete without live-client smoke.
+LWS-054 remains mapped-only. The live-event seed preserves useful branch-authored
+entity/vendor rows, but no event lifecycle behavior is promoted or claimed
+retail-complete without live-client smoke.
 
 Do not implement spawn timing, vendor timing, lifecycle activation, or cleanup
 state from the branch SQL alone. Add runtime tests only after a captured bundle
@@ -90,41 +90,58 @@ runtime event state:
 
 ```powershell
 .\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
+  -LiveEventSmoke `
   -BundleName LWS-054-battle-chase `
-  -Notes "Battle Chase spawn timing, vendor timing, lifecycle activation, cleanup" `
-  -NegativeCases "event inactive; event ending during vendor interaction; cleanup after event end"
+  -ClientDirectory "I:\WildStar" `
+  -PromptForRootPassword
 
 .\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
+  -LiveEventSmoke `
   -BundleName LWS-054-dungeon-chase `
-  -Notes "Dungeon Chase spawn timing, vendor timing, lifecycle activation, cleanup; hidden SMC placeholder remains rejected unless storefront schema proof changes" `
-  -NegativeCases "inactive event; vendor after cleanup; hidden SMC placeholder unavailable"
+  -ClientDirectory "I:\WildStar" `
+  -PromptForRootPassword
 
 .\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
+  -LiveEventSmoke `
   -BundleName LWS-054-shades-eve `
-  -Notes "Shades Eve live-event entity/vendor timing, activation, cleanup, and interaction proof" `
-  -NegativeCases "inactive event; post-cleanup interaction; malformed vendor row absence"
+  -ClientDirectory "I:\WildStar" `
+  -PromptForRootPassword
 
 .\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
+  -LiveEventSmoke `
   -BundleName LWS-054-space-chase `
-  -Notes "Space Chase spawn timing, vendor timing, lifecycle activation, cleanup" `
-  -NegativeCases "inactive event; vendor after cleanup; duplicate-source coordinate absence"
+  -ClientDirectory "I:\WildStar" `
+  -PromptForRootPassword
 
 .\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
+  -LiveEventSmoke `
   -BundleName LWS-054-starfall `
-  -Notes "Starfall week 1-5 spawn timing, lifecycle activation, weekly selection, cleanup" `
-  -NegativeCases "wrong week active; inactive event; cleanup after event end"
+  -ClientDirectory "I:\WildStar" `
+  -PromptForRootPassword
 
 .\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
+  -LiveEventSmoke `
   -BundleName LWS-054-sim-chase-1 `
-  -Notes "Sim Chase 1 spawn timing, vendor timing, lifecycle activation, cleanup" `
-  -NegativeCases "inactive event; duplicate Sim Chase sources absent; vendor after cleanup"
+  -ClientDirectory "I:\WildStar" `
+  -PromptForRootPassword
 
 .\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
+  -LiveEventSmoke `
   -BundleName LWS-054-zprix `
-  -Notes "zPrix WIP source placement, spawn timing, lifecycle activation, cleanup" `
-  -NegativeCases "inactive event; WIP-only placement absent after cleanup"
+  -ClientDirectory "I:\WildStar" `
+  -PromptForRootPassword
 ```
 
-Each bundle must include event calendar/state setup, character/account state,
-server logs, coordinates, screenshots/video, observed vendor rows where present,
-activation/deactivation timestamps, and post-cleanup negative checks.
+The preset creates `lws-054-live-event-targets.md` and configures negative cases
+for inactive event state, event ending during vendor interaction, post-cleanup
+interaction/vendor rejection, and skipped duplicate/placeholder/malformed source
+row absence. Each bundle must include event calendar/state setup,
+character/account state, server logs, coordinates, screenshots/video, observed
+vendor rows where present, activation/deactivation timestamps, and post-cleanup
+negative checks.
+
+Dry-run guard (2026-05-28): `Decomp/Analysis/test_blocker_evidence_harness_presets.py`
+now runs `-LiveEventSmoke -CreateBundleOnly` and verifies the generated
+manifest, live-event target worksheet, helper files, and negative-case
+scaffold. This does not prove event calendar activation, spawn/vendor timing,
+cleanup semantics, or event-specific lifecycle behavior.

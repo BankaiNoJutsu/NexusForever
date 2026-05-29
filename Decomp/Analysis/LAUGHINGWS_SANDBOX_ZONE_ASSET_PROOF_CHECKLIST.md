@@ -2,7 +2,7 @@
 
 Updated: 2026-05-27
 
-This checklist closes LWS-043 from
+This checklist tracks LWS-043 from
 `Decomp/Analysis/LAUGHINGWS_REMAINING_BLOCKERS_IMPLEMENTATION_PLAN.md`.
 It does not promote runtime data. These sources are sandbox/client-asset
 investigation candidates only until every required proof item below is met for a
@@ -83,3 +83,23 @@ Keep these sources classified as `sandbox_only_client_asset_check_required`.
 Reopen a specific file only when an investigation task names the target world,
 provides client asset proof, captures a blocker-evidence bundle, and proposes a
 deterministic sandbox-owned seed that strips all destructive source statements.
+
+Harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1`
+`-NewZoneAssetProof` creates a `new-zone-asset-proof-targets.md` worksheet that
+also covers sandbox/test/unknown/not-in-client rows. The worksheet requires a
+specific sandbox investigation target, client asset availability proof, isolated
+runtime seed plan, and negative proof that build-16042 normal runtime is not
+affected before any row can leave runtime-rejected status.
+
+Dry-run guard progress (2026-05-28): `test_blocker_evidence_harness_presets.py`
+now runs `-NewZoneAssetProof` with `-CreateBundleOnly` and verifies the
+manifest, shared asset-proof worksheet, default world ids, helper files, and
+negative-case scaffold. This protects the future investigation workflow only;
+all `23` sandbox/test/unknown/not-in-client files stay runtime-rejected until a
+specific sandbox target is proven safe.
+
+Analyzer guard progress (2026-05-28): `Tools/DataMapping/test_laughingws_worlddb_classifications.py`
+now runs the actual WorldDB analyzer recommendation logic against the local
+LaughingWS external snapshot and asserts that all `23` `Test zones` files keep
+`sandbox_only_client_asset_check_required` and do not emit
+`extract_additive_world_overlay`.

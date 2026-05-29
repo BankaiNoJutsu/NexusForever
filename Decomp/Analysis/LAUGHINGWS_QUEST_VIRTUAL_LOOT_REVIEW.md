@@ -4,9 +4,9 @@ Date: 2026-05-27
 
 ## Decision
 
-LWS-055 is closed as mapped-only. The branch virtual-item quest loot remains
-preserved as safe objective-gated loot data, but retail trigger cadence,
-probability, and objective integration are not proven by the source SQL alone.
+LWS-055 remains mapped-only. The branch virtual-item quest loot remains preserved
+as safe objective-gated loot data, but retail trigger cadence, probability, and
+objective integration are not proven by the source SQL alone.
 
 Do not widen quest-loot behavior, probability rules, or objective-side logic
 from `Loot/CreatureQuestLoot.sql` without representative live-client capture.
@@ -53,6 +53,14 @@ This proves the safe objective-gated delivery path. It does not prove retail
 cadence, repeated drop attempts, probability semantics, source/corpse selection,
 or exact objective integration for the branch's representative rows.
 
+Regression coverage (2026-05-28): `ItemContainerLootTests` now pins the
+preserved quest-virtual-loot group boundary by requiring condition `8` /
+`QuestObjectiveActive` to call `IsActiveObjectiveId` before dropping the mapped
+virtual item. `LootInstanceDeliveryTests` pins delivery of
+`LootItemType.VirtualItem` as a `QuestObjectiveType.VirtualCollect` objective
+update plus the mapped loot grant, without adding loot-window cadence,
+probability, or source-selection behavior.
+
 ## Required Capture
 
 Use the blocker evidence harness for a representative sample before changing
@@ -60,16 +68,25 @@ behavior:
 
 ```powershell
 .\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
-  -BundleName LWS-055-quest-virtual-loot `
-  -ObjectiveIds 13011,12605,6700,6313,21278 `
-  -Notes "Quest virtual loot trigger cadence, probability, corpse/source selection, virtual-item grant, and VirtualCollect objective integration for representative LaughingWS rows" `
-  -NegativeCases "objective inactive; creature killed before objective active; repeated eligible kills after objective completion; inventory/loot window declined or abandoned"
+  -QuestVirtualLootSmoke `
+  -ClientDirectory "I:\WildStar" `
+  -PromptForRootPassword
 ```
 
-The bundle must capture active quest/objective state, target entity id,
-kill/activation count, loot windows or immediate grants, `ServerLoot*` traffic
-where available, virtual item grant feedback, objective progress before/after,
-server logs, and repeated eligible attempts for probability/cadence evidence.
+The preset creates `lws-055-quest-virtual-loot-targets.md`, preloads objectives
+`13011`, `12605`, `6700`, `6313`, and `21278`, and configures negative cases for
+inactive objectives, kills before objective activation, repeated eligible kills
+after objective completion, and declined/abandoned loot windows. The bundle must
+capture active quest/objective state, target entity id, kill/activation count,
+loot windows or immediate grants, `ServerLoot*` traffic where available, virtual
+item grant feedback, objective progress before/after, server logs, and repeated
+eligible attempts for probability/cadence evidence.
+
+Dry-run guard (2026-05-28): `Decomp/Analysis/test_blocker_evidence_harness_presets.py`
+now runs `-QuestVirtualLootSmoke -CreateBundleOnly` and verifies the generated
+manifest, default representative objective ids, target worksheet, helper files,
+and negative-case scaffold. This does not prove trigger cadence, probability,
+source/corpse selection, loot-window behavior, or objective integration.
 
 Only captured rows should be promoted from mapped-only data to implemented
 retail behavior or tests. Until then, the current seed remains the safe

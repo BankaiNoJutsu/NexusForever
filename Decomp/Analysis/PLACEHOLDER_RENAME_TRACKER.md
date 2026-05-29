@@ -117,6 +117,13 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 3. `0x082A` purchase `[3]` 14-bit — live sniff vs `AccountCurrencyType` if handlers diverge from retail.
 4. Group roster tail — decompile `Group_HandleMemberAdd_ReadPayload` @ `1406031d0` past the shared `0x60` stat block for `Unknown10+` ushort semantics.
 
+## Deferred - structurally mapped packet opcodes
+
+| Opcode | Structure | Evidence | Blocker |
+|--------|-----------|----------|---------|
+| `Client0x0760` | `RealmInfo` row | `Client0x0760_WritePayload` @ `1400abd30`; field order mirrors `ServerRealmList` realm entries | Native send-site or consumer event before semantic rename |
+| `Client0x0762` | `NetworkMessage` row | `Client0x0762_WritePayload` @ `1400ac410`; field order mirrors `ServerRealmList` message entries | Native send-site or consumer event before semantic rename |
+
 ## Verification (initiative closure)
 
 ```powershell

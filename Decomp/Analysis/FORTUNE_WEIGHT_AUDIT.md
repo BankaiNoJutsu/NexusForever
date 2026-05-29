@@ -195,3 +195,23 @@ The blocker would be unlocked by one of:
   account-item ids and weights for a known rotation.
 - A native/server artifact that maps the active rotation list and per-item
   weights before `ServerFortuneRewards` is emitted.
+
+Evidence collection update (2026-05-28): `Start-BlockerEvidenceHarness.ps1`
+now supports `-FortuneRewardsSmoke`, which creates an LWS-066 bundle worksheet
+for the packet/catalog evidence above plus card deal/flip/payout, reload
+persistence, insufficient-currency, invalid-flip, and repeated-flip checks.
+Parser validation and a create-only bundle pass were run after adding the
+preset. `Decomp/Analysis/test_blocker_evidence_harness_presets.py` now
+dry-runs the preset and verifies the manifest, worksheet, helper files, and
+negative-case scaffold; the blocker remains open until a real bundle provides
+retail/catalog weights.
+
+Runtime-boundary update (2026-05-28): focused tests now exercise the real
+`FortuneRewardPool` with synthetic `AccountItem.tbl` and `Item2.tbl` rows.
+`GetRewardCatalog_RealPoolAdvertisesOnlyMappedItemRewards` pins the mapped
+`ServerFortuneRewards` item/probability transport and keeps Fortune Coin plus
+non-item account rewards out of the advertised display catalog.
+`PickCardRewards_RealPoolKeepsNonItemAccountRewardsPickerOnly` preserves the
+current picker-only handling for entitlement/generic-unlock account rewards
+without treating those rows as mapped retail item probabilities. Exact
+per-item weights and active rotations remain blocked.

@@ -2,24 +2,24 @@
 
 ## Export Coverage
 
-| Target | Functions | Named % | Default-name backlog | Selected | Decompiled | Full % |
+| Target | Functions | Named % | Cache % | Remaining | Selected | Focused % |
 | --- | --- | --- | --- | --- | --- | --- |
-| `Houston64.exe` | 25129 | 29.97% | 17599 | 1597 | 990 | 3.94% |
-| `StsConnLib64.MT.dll` | 4522 | 8.2% | 4151 | 863 | 400 | 8.85% |
-| `WildStar64.exe` | 25001 | 5.82% | 23547 | 2715 | 1320 | 5.28% |
+| `Houston64.exe` | 25129 | 31.39% | 100% | 0 | 1597 | 6.36% |
+| `StsConnLib64.MT.dll` | 4522 | 8.31% | 100% | 0 | 864 | 19.11% |
+| `WildStar64.exe` | 25009 | 6.56% | 100% | 0 | 3421 | 0.8% |
 
 ## Full Function Backlog
 
 | Scope | Functions | Named | Selected | Unselected | Selected % |
 | --- | --- | --- | --- | --- | --- |
-| Default targets | 54652 | 9355 | 5175 | 49477 | 9.47% |
+| Default targets | 54660 | 9906 | 5882 | 48778 | 10.76% |
 
 ## Opcode Coverage
 
 | Direction | Total | Implemented | Partial | Missing |
 | --- | --- | --- | --- | --- |
-| Client | 350 | 350 | 0 | 0 |
-| Server | 699 | 699 | 0 | 0 |
+| Client | 351 | 351 | 0 | 0 |
+| Server | 702 | 702 | 0 | 0 |
 | Core | 3 | 3 | 0 | 0 |
 
 ## Queue: Client Opcodes Missing Models
@@ -41,6 +41,6 @@ None.
 Generated artifacts:
 
 - ``Decomp/Analysis/coverage/LATEST_COVERAGE_SUMMARY.md``
-- ``Decomp/Analysis/logs/LATEST_COVERAGE_SUMMARY.json``
+- ``Decomp/Analysis/logs/runs/p21_dump_140b66df0/LATEST_COVERAGE_SUMMARY.json``
 - ``Decomp/Analysis/coverage/export_coverage_inventory.csv``
 - ``Decomp/Analysis/coverage/opcode_coverage_inventory.csv``

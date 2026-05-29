@@ -9,6 +9,12 @@ param(
     [int] $MaxDecompiledFunctions = 200,
     [ValidateSet('Auto', 'Force', 'Skip')]
     [string] $DecompileMode = 'Auto',
+    [ValidateSet('Auto', 'Force', 'Skip')]
+    [string] $AnalysisMode = 'Auto',
+    [ValidateSet('Off', 'Incremental', 'Complete')]
+    [string] $CacheWarmMode = 'Incremental',
+    [ValidateRange(0, 1000000)]
+    [int] $MaxWarmFunctionsPerRun = 100,
     [ValidateSet('Auto', 'Shared', 'PerTarget')]
     [string] $ProjectLayout = 'PerTarget',
     [ValidateRange(1, 3600)]
@@ -130,6 +136,9 @@ function Start-DecompileTargetJob {
         Targets                 = @($Target)
         MaxDecompiledFunctions  = $MaxDecompiledFunctions
         DecompileMode           = $DecompileMode
+        AnalysisMode            = if ($Analyze -and -not $PSBoundParameters.ContainsKey('AnalysisMode')) { 'Force' } else { $AnalysisMode }
+        CacheWarmMode           = $CacheWarmMode
+        MaxWarmFunctionsPerRun  = $MaxWarmFunctionsPerRun
         ProjectLayout           = $ProjectLayout
         ProjectLockRetryDelaySeconds = $ProjectLockRetryDelaySeconds
         ProjectLockTimeoutMinutes    = $ProjectLockTimeoutMinutes
@@ -221,6 +230,9 @@ $batchSummary = [ordered]@{
     logDir = $runDir
     summaryPath = $batchSummaryPath
     decompileMode = $DecompileMode
+    analysisMode = if ($Analyze -and -not $PSBoundParameters.ContainsKey('AnalysisMode')) { 'Force' } else { $AnalysisMode }
+    cacheWarmMode = $CacheWarmMode
+    maxWarmFunctionsPerRun = $MaxWarmFunctionsPerRun
     projectLayout = $ProjectLayout
     projectLockRetryDelaySeconds = $ProjectLockRetryDelaySeconds
     projectLockTimeoutMinutes = $ProjectLockTimeoutMinutes

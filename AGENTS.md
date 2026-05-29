@@ -147,10 +147,10 @@ Set up and run the decompile workflow only when the task needs it:
 .\Decomp\Analysis\Get-DecompCoverageSnapshot.ps1
 ```
 
-For multi-binary export refreshes, prefer the parallel-safe batch wrapper:
+For multi-binary export refreshes, prefer runner-level per-target parallelism:
 
 ```powershell
-.\Decomp\Analysis\Start-DecompileBatch.ps1 -MaxDecompiledFunctions 2400 -MaxParallel 3
+.\Decomp\Analysis\run_ghidra_analysis.ps1 -ProjectLayout PerTarget -MaxDecompiledFunctions 2400 -MaxParallel 3
 ```
 
 Run the load-test harness commands listed in

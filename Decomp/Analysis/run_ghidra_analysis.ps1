@@ -9,12 +9,20 @@ param(
     [int] $MaxDecompiledFunctions = 200,
     [ValidateSet('Auto', 'Force', 'Skip')]
     [string] $DecompileMode = 'Auto',
+    [ValidateSet('Auto', 'Force', 'Skip')]
+    [string] $AnalysisMode = 'Auto',
+    [ValidateSet('Off', 'Incremental', 'Complete')]
+    [string] $CacheWarmMode = 'Incremental',
+    [ValidateRange(0, 1000000)]
+    [int] $MaxWarmFunctionsPerRun = 100,
     [ValidateSet('Auto', 'Shared', 'PerTarget')]
     [string] $ProjectLayout = 'Auto',
     [ValidateRange(1, 3600)]
     [int] $ProjectLockRetryDelaySeconds = 15,
     [ValidateRange(0, 10080)]
     [int] $ProjectLockTimeoutMinutes = 0,
+    [ValidateRange(1, 32)]
+    [int] $MaxParallel = 1,
     [string] $RunId = '',
     [string] $SummaryPath = '',
     [switch] $SkipCoverage,
@@ -22,10 +30,13 @@ param(
     [switch] $NoApplyLabels,
     [switch] $ExportOnly,
     [string] $ExtraPostScript,
-    [string[]] $ExtraPostScriptArgs = @()
+    [string[]] $ExtraPostScriptArgs = @(),
+    [string] $GhidraMaxHeap = '2G'
 )
 
 $ErrorActionPreference = 'Stop'
+
+$AnalysisManifestVersion = '1'
 
 function Get-ArtifactFingerprint {
     param(
@@ -148,6 +159,91 @@ function Get-DecompileManifestSummary {
     }
 }
 
+function Get-DecompileCacheSummary {
+    param(
+        [string] $SummaryPath
+    )
+
+    $properties = Read-KeyValuePropertiesFile -Path $SummaryPath
+    if ($null -eq $properties) {
+        return $null
+    }
+
+    return [ordered]@{
+        summaryPath                 = $SummaryPath
+        scriptVersion               = $properties['script.version']
+        mode                        = $properties['cache.mode']
+        cacheDirectory              = $properties['cache.directory']
+        binaryFingerprint           = $properties['binary.fingerprint']
+        totalInternalFunctions      = ConvertTo-NullableInt -Value $properties['functions.totalInternal']
+        canonicalCachedFragments    = ConvertTo-NullableInt -Value $properties['cache.canonicalCachedFragments']
+        warmedThisRun               = ConvertTo-NullableInt -Value $properties['cache.warmedThisRun']
+        reusedExistingFragments     = ConvertTo-NullableInt -Value $properties['cache.reusedExistingFragments']
+        remainingUncached           = ConvertTo-NullableInt -Value $properties['cache.remainingUncached']
+        legacyDuplicateFragments    = ConvertTo-NullableInt -Value $properties['cache.legacyDuplicateFragments']
+        migratedLegacyFragments     = ConvertTo-NullableInt -Value $properties['cache.migratedLegacyFragments']
+        skippedAlreadyExported      = ConvertTo-NullableInt -Value $properties['cache.skippedAlreadyExported']
+    }
+}
+
+function Get-AnalysisManifestPath {
+    param(
+        [string] $ProjectDirectory,
+        [string] $ProjectName,
+        [string] $Target
+    )
+
+    $manifestDir = Join-Path $ProjectDirectory '.analysis_manifests'
+    New-Item -ItemType Directory -Force -Path $manifestDir | Out-Null
+    $manifestName = '{0}.{1}.analysis.properties' -f (ConvertTo-ProjectToken -Value $ProjectName), (ConvertTo-ProjectToken -Value $Target)
+    return Join-Path $manifestDir $manifestName
+}
+
+function Test-AnalysisManifestMatches {
+    param(
+        [string] $ManifestPath,
+        [string] $Target,
+        [string] $ProjectName,
+        [string] $ProjectLayout,
+        [string] $BinaryFingerprint,
+        [string] $GhidraVersion
+    )
+
+    $properties = Read-KeyValuePropertiesFile -Path $ManifestPath
+    if ($null -eq $properties) {
+        return $false
+    }
+
+    return $properties['manifest.version'] -eq $AnalysisManifestVersion -and
+        $properties['target'] -eq $Target -and
+        $properties['project.name'] -eq $ProjectName -and
+        $properties['project.layout'] -eq $ProjectLayout -and
+        $properties['binary.fingerprint'] -eq $BinaryFingerprint -and
+        $properties['ghidra.version'] -eq $GhidraVersion
+}
+
+function Write-AnalysisManifest {
+    param(
+        [string] $ManifestPath,
+        [string] $Target,
+        [string] $ProjectName,
+        [string] $ProjectLayout,
+        [string] $BinaryFingerprint,
+        [string] $GhidraVersion
+    )
+
+    $lines = @(
+        ('manifest.version={0}' -f $AnalysisManifestVersion),
+        ('target={0}' -f $Target),
+        ('project.name={0}' -f $ProjectName),
+        ('project.layout={0}' -f $ProjectLayout),
+        ('binary.fingerprint={0}' -f $BinaryFingerprint),
+        ('ghidra.version={0}' -f $GhidraVersion),
+        ('completedUtc={0:o}' -f [datetime]::UtcNow)
+    )
+    $lines | Out-File -LiteralPath $ManifestPath -Encoding utf8
+}
+
 function Resolve-EffectiveMaxDecompiledFunctions {
     param(
         [string] $ManifestPath,
@@ -180,6 +276,13 @@ function Finalize-TargetSummary {
     $TargetSummary.manifestExists = Test-Path -LiteralPath $TargetSummary.manifestPath
     $TargetSummary.manifest = if ($TargetSummary.manifestExists) {
         Get-DecompileManifestSummary -ManifestPath $TargetSummary.manifestPath -ExpectedBinaryFingerprint $ExpectedBinaryFingerprint -ExpectedLabelFingerprint $ExpectedLabelFingerprint
+    }
+    else {
+        $null
+    }
+    $TargetSummary.cacheSummaryExists = Test-Path -LiteralPath $TargetSummary.cacheSummaryPath -PathType Leaf
+    $TargetSummary.cacheSummary = if ($TargetSummary.cacheSummaryExists) {
+        Get-DecompileCacheSummary -SummaryPath $TargetSummary.cacheSummaryPath
     }
     else {
         $null
@@ -316,6 +419,30 @@ function Exit-GhidraProjectGate {
     $Gate.stream.Dispose()
 }
 
+function Get-AnalyzeHeadlessLauncher {
+    param(
+        [string] $GhidraDir,
+        [string] $MaxHeap
+    )
+
+    $defaultLauncher = Join-Path $GhidraDir 'support\analyzeHeadless.bat'
+    if ([string]::IsNullOrWhiteSpace($MaxHeap) -or $MaxHeap -eq '2G') {
+        return $defaultLauncher
+    }
+
+    $launcherDir = Join-Path $GhidraDir 'support'
+    $heapToken = ($MaxHeap.ToUpperInvariant() -replace '[^0-9A-Z]', '')
+    $customLauncher = Join-Path $launcherDir ('analyzeHeadless_{0}.bat' -f $heapToken)
+    if (-not (Test-Path -LiteralPath $customLauncher) -or
+        ((Get-Item -LiteralPath $defaultLauncher).LastWriteTimeUtc -gt (Get-Item -LiteralPath $customLauncher).LastWriteTimeUtc)) {
+        $content = Get-Content -LiteralPath $defaultLauncher
+        $content = $content -replace '^set MAXMEM=.*$', ('set MAXMEM={0}' -f $MaxHeap)
+        Set-Content -LiteralPath $customLauncher -Value $content -Encoding ASCII
+    }
+
+    return $customLauncher
+}
+
 function Invoke-GhidraHeadlessWithProjectRetry {
     param(
         [string] $AnalyzeHeadless,
@@ -375,7 +502,7 @@ function Invoke-GhidraHeadlessWithProjectRetry {
 $setupScript = Join-Path $PSScriptRoot 'setup_decomp_tools.ps1'
 $ghidraDir = Join-Path $ToolRoot 'ghidra_12.0.4_PUBLIC'
 $javaHome = Join-Path $ToolRoot 'jdk-21.0.11+10'
-$analyzeHeadless = Join-Path $ghidraDir 'support\analyzeHeadless.bat'
+$analyzeHeadless = Get-AnalyzeHeadlessLauncher -GhidraDir $ghidraDir -MaxHeap $GhidraMaxHeap
 $ghidraVersion = [IO.Path]::GetFileName($ghidraDir)
 
 if (-not (Test-Path -LiteralPath $analyzeHeadless) -or -not (Test-Path -LiteralPath (Join-Path $javaHome 'bin\java.exe'))) {
@@ -395,6 +522,18 @@ if ($AllClientBinaries) {
     $Targets = Get-ChildItem -LiteralPath $resolvedClientDir -File |
         Where-Object { $_.Extension -in @('.exe', '.dll') } |
         Select-Object -ExpandProperty Name
+}
+
+if ($Targets.Count -eq 0) {
+    throw 'No decompile targets were supplied.'
+}
+
+if ($ProjectLayout -eq 'Shared' -and $MaxParallel -gt 1 -and $Targets.Count -gt 1) {
+    throw 'Shared project layout cannot be used safely with MaxParallel greater than 1. Use -ProjectLayout PerTarget, -ProjectLayout Auto, or -MaxParallel 1.'
+}
+
+if ([string]::IsNullOrWhiteSpace($RunId) -and $MaxParallel -gt 1 -and $Targets.Count -gt 1) {
+    $RunId = '{0}-{1}' -f (Get-Date -Format 'yyyyMMdd-HHmmss-fff'), $PID
 }
 
 $runToken = if ([string]::IsNullOrWhiteSpace($RunId)) { '' } else { ConvertTo-ProjectToken -Value $RunId }
@@ -447,11 +586,208 @@ if (-not $NoApplyLabels -and (Test-Path -LiteralPath $LabelMap)) {
 $labelsApplied = $null -ne $resolvedLabelMap
 $labelFingerprint = if ($labelsApplied) { Get-ArtifactFingerprint -Path $resolvedLabelMap } else { '' }
 $maxDecompiledFunctionsExplicitlySet = $PSBoundParameters.ContainsKey('MaxDecompiledFunctions')
+$effectiveAnalysisMode = if ($ExportOnly) { 'Skip' } else { $AnalysisMode }
 $effectiveProjectLayout = if ($ProjectLayout -eq 'Auto') {
-    if ($AllClientBinaries -or $Targets.Count -gt 1) { 'Shared' } else { 'PerTarget' }
+    if ($MaxParallel -gt 1 -and $Targets.Count -gt 1) { 'PerTarget' }
+    elseif ($AllClientBinaries -or $Targets.Count -gt 1) { 'Shared' } else { 'PerTarget' }
 }
 else {
     $ProjectLayout
+}
+
+if ($MaxParallel -gt 1 -and $Targets.Count -gt 1) {
+    $pendingTargets = [System.Collections.Generic.Queue[string]]::new()
+    foreach ($target in $Targets) {
+        $pendingTargets.Enqueue($target)
+    }
+
+    $activeJobs = New-Object 'System.Collections.Generic.List[System.Management.Automation.Job]'
+    $jobInfoById = @{}
+    $jobResults = New-Object 'System.Collections.Generic.List[object]'
+
+    function Start-RunnerTargetJob {
+        param(
+            [string] $Target
+        )
+
+        $targetToken = ConvertTo-ProjectToken -Value ([IO.Path]::GetFileNameWithoutExtension($Target))
+        $targetSummaryPath = Join-Path $resolvedRunLogDir ('{0}.run_summary.json' -f $targetToken)
+        $jobOutputPath = Join-Path $resolvedRunLogDir ('{0}.job_output.log' -f $targetToken)
+
+        $runnerParameters = @{
+            ClientDir                    = $resolvedClientDir
+            OutputDir                    = $resolvedOutputDir
+            ProjectDir                   = $resolvedProjectDir
+            ToolRoot                     = $ToolRoot
+            LabelMap                     = if ($resolvedLabelMap) { $resolvedLabelMap } else { $LabelMap }
+            Targets                      = @($Target)
+            MaxDecompiledFunctions       = $MaxDecompiledFunctions
+            DecompileMode                = $DecompileMode
+            AnalysisMode                 = $AnalysisMode
+            CacheWarmMode                = $CacheWarmMode
+            MaxWarmFunctionsPerRun       = $MaxWarmFunctionsPerRun
+            GhidraMaxHeap                = $GhidraMaxHeap
+            ProjectLayout                = $effectiveProjectLayout
+            ProjectLockRetryDelaySeconds = $ProjectLockRetryDelaySeconds
+            ProjectLockTimeoutMinutes    = $ProjectLockTimeoutMinutes
+            MaxParallel                  = 1
+            RunId                        = $RunId
+            SummaryPath                  = $targetSummaryPath
+            SkipCoverage                 = $true
+        }
+
+        if ($NoApplyLabels) {
+            $runnerParameters.NoApplyLabels = $true
+        }
+
+        if ($ExportOnly) {
+            $runnerParameters.ExportOnly = $true
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($ExtraPostScript)) {
+            $runnerParameters.ExtraPostScript = $ExtraPostScript
+            $runnerParameters.ExtraPostScriptArgs = $ExtraPostScriptArgs
+        }
+
+        $job = Start-Job -Name ('ghidra-{0}' -f $targetToken) -ScriptBlock {
+            param(
+                [string] $RunnerPath,
+                [hashtable] $RunnerParameters
+            )
+
+            & $RunnerPath @RunnerParameters
+        } -ArgumentList $PSCommandPath, $runnerParameters
+
+        $activeJobs.Add($job)
+        $jobInfoById[$job.Id] = [pscustomobject]@{
+            target = $Target
+            summaryPath = $targetSummaryPath
+            jobOutputPath = $jobOutputPath
+        }
+
+        Write-Host ("Started {0} as job {1}; summary: {2}" -f $Target, $job.Id, $targetSummaryPath)
+    }
+
+    while ($pendingTargets.Count -gt 0 -or $activeJobs.Count -gt 0) {
+        while ($pendingTargets.Count -gt 0 -and $activeJobs.Count -lt $MaxParallel) {
+            Start-RunnerTargetJob -Target $pendingTargets.Dequeue()
+        }
+
+        if ($activeJobs.Count -eq 0) {
+            continue
+        }
+
+        Wait-Job -Job $activeJobs.ToArray() -Any | Out-Null
+        $finishedJobs = @($activeJobs.ToArray() | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') })
+        foreach ($job in $finishedJobs) {
+            $info = $jobInfoById[$job.Id]
+            $jobOutput = Receive-Job -Job $job -Keep 2>&1
+            $jobOutput | Out-String | Out-File -LiteralPath $info.jobOutputPath -Encoding utf8
+
+            $jobResults.Add([pscustomobject]@{
+                target = $info.target
+                jobId = $job.Id
+                state = [string] $job.State
+                summaryPath = $info.summaryPath
+                jobOutputPath = $info.jobOutputPath
+            })
+
+            Write-Host ("Finished {0} as job {1}: {2}" -f $info.target, $job.Id, $job.State)
+            Remove-Job -Job $job -Force
+            [void] $activeJobs.Remove($job)
+        }
+    }
+
+    $workerSummaries = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($result in $jobResults) {
+        if (Test-Path -LiteralPath $result.summaryPath -PathType Leaf) {
+            $workerSummaries.Add((Get-Content -LiteralPath $result.summaryPath -Raw | ConvertFrom-Json))
+        }
+    }
+
+    $mergedTargets = @($workerSummaries | ForEach-Object { $_.targets } | ForEach-Object { $_ })
+    $failedJobs = @($jobResults | Where-Object { $_.state -ne 'Completed' })
+    $failedTargets = @($mergedTargets | Where-Object { $_.status -ne 'success' })
+    $hasFailures = $failedJobs.Count -gt 0 -or $failedTargets.Count -gt 0 -or $workerSummaries.Count -ne $Targets.Count
+
+    $parallelSummary = [ordered]@{
+        timestampUtc = (Get-Date).ToUniversalTime().ToString('o')
+        runId = $RunId
+        parallel = $true
+        clientDir = $resolvedClientDir
+        outputDir = $resolvedOutputDir
+        projectDir = $resolvedProjectDir
+        logDir = $resolvedRunLogDir
+        summaryPath = $resolvedSummaryPath
+        decompileMode = $DecompileMode
+        analysisMode = $AnalysisMode
+        effectiveAnalysisMode = $effectiveAnalysisMode
+        cacheWarmMode = $CacheWarmMode
+        maxWarmFunctionsPerRun = $MaxWarmFunctionsPerRun
+        projectLayout = $effectiveProjectLayout
+        maxParallel = $MaxParallel
+        projectLockRetryDelaySeconds = $ProjectLockRetryDelaySeconds
+        projectLockTimeoutMinutes = $ProjectLockTimeoutMinutes
+        exportOnly = [bool]$ExportOnly
+        skipCoverage = [bool]$SkipCoverage
+        noApplyLabels = [bool]$NoApplyLabels
+        labelsApplied = [bool]$labelsApplied
+        labelMap = if ($resolvedLabelMap) { $resolvedLabelMap } else { '' }
+        labelFingerprint = $labelFingerprint
+        requestedMaxDecompiledFunctions = $MaxDecompiledFunctions
+        maxDecompiledFunctions = $MaxDecompiledFunctions
+        extraPostScript = if ($ExtraPostScript) { $ExtraPostScript } else { '' }
+        extraPostScriptArgs = $ExtraPostScriptArgs
+        targetCount = $Targets.Count
+        targets = $mergedTargets
+        workerSummaries = @($jobResults | Select-Object target, summaryPath, jobOutputPath, state)
+    }
+
+    $parallelSummary | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $resolvedSummaryPath -Encoding utf8
+    Write-Host "Parallel run summary written to: $resolvedSummaryPath"
+
+    $latestSummaryPath = Join-Path $logDir 'LATEST_RUN_SUMMARY.json'
+    if ($resolvedSummaryPath -ne $latestSummaryPath) {
+        $parallelSummary | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $latestSummaryPath -Encoding utf8
+        Write-Host "Latest run summary written to: $latestSummaryPath"
+    }
+
+    $coverageScript = Join-Path $PSScriptRoot 'Get-DecompCoverageSnapshot.ps1'
+    if (-not $hasFailures -and -not $SkipCoverage -and (Test-Path -LiteralPath $coverageScript -PathType Leaf)) {
+        $coverageSummary = & $coverageScript -RepoRoot $resolvedRepoRoot -OutputDir $resolvedOutputDir -LogDir $resolvedRunLogDir -RunSummaryPath $resolvedSummaryPath
+        if ($null -ne $coverageSummary) {
+            $parallelSummary.coverage = [ordered]@{
+                summaryPath = $coverageSummary.summaryPath
+                markdownPath = $coverageSummary.markdownPath
+                exportInventoryPath = $coverageSummary.exportInventoryPath
+                opcodeInventoryPath = $coverageSummary.opcodeInventoryPath
+                exportTargetCount = $coverageSummary.exportTargetCount
+                totalOpcodes = $coverageSummary.totalOpcodes
+            }
+            $parallelSummary | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $resolvedSummaryPath -Encoding utf8
+            $parallelSummary | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $latestSummaryPath -Encoding utf8
+            Write-Host ("Coverage summary written to: {0}" -f $coverageSummary.summaryPath)
+        }
+    }
+    elseif ($hasFailures -and -not $SkipCoverage) {
+        Write-Warning 'Skipping coverage snapshot because one or more decompile jobs failed.'
+    }
+
+    [pscustomobject]@{
+        runId = $RunId
+        summaryPath = $resolvedSummaryPath
+        latestSummaryPath = $latestSummaryPath
+        targetCount = $Targets.Count
+        completedTargets = @($mergedTargets | Where-Object { $_.status -eq 'success' }).Count
+        failedJobs = $failedJobs.Count
+        failedTargets = $failedTargets.Count
+    }
+
+    if ($hasFailures) {
+        throw 'One or more decompile jobs failed. Inspect the parallel summary and per-target job output logs.'
+    }
+
+    return
 }
 
 $runSummaryTargets = New-Object 'System.Collections.Generic.List[object]'
@@ -462,10 +798,41 @@ try {
         $binaryPath = Join-Path $resolvedClientDir $target
         $binaryFingerprint = Get-ArtifactFingerprint -Path $binaryPath
         $projectName = Get-GhidraProjectName -BaseProjectName $sharedProjectName -Target $target -Layout $effectiveProjectLayout
-        if ($effectiveProjectLayout -eq 'PerTarget' -and $ExportOnly -and -not (Test-GhidraProjectExists -Directory $ProjectDir -ProjectName $projectName)) {
+        $projectExists = Test-GhidraProjectExists -Directory $resolvedProjectDir -ProjectName $projectName
+        $analysisManifestPath = Get-AnalysisManifestPath -ProjectDirectory $resolvedProjectDir -ProjectName $projectName -Target $target
+        $analysisManifestMatches = Test-AnalysisManifestMatches `
+            -ManifestPath $analysisManifestPath `
+            -Target $target `
+            -ProjectName $projectName `
+            -ProjectLayout $effectiveProjectLayout `
+            -BinaryFingerprint $binaryFingerprint `
+            -GhidraVersion $ghidraVersion
+        $analysisAction = if ($effectiveAnalysisMode -eq 'Skip') {
+            'Process'
+        }
+        elseif ($effectiveAnalysisMode -eq 'Force') {
+            'Import'
+        }
+        elseif ($projectExists -and $analysisManifestMatches) {
+            'Process'
+        }
+        else {
+            'Import'
+        }
+
+        if ($effectiveProjectLayout -eq 'PerTarget' -and $analysisAction -eq 'Process' -and -not $projectExists) {
             if ($ProjectLayout -eq 'Auto' -and (Test-GhidraProjectExists -Directory $ProjectDir -ProjectName $sharedProjectName)) {
                 Write-Warning ("Per-target project {0} not found for {1}. Falling back to legacy shared project {2} for export-only. Run once without -ExportOnly to create the split project." -f $projectName, $target, $sharedProjectName)
                 $projectName = $sharedProjectName
+                $projectExists = $true
+                $analysisManifestPath = Get-AnalysisManifestPath -ProjectDirectory $resolvedProjectDir -ProjectName $projectName -Target $target
+                $analysisManifestMatches = Test-AnalysisManifestMatches `
+                    -ManifestPath $analysisManifestPath `
+                    -Target $target `
+                    -ProjectName $projectName `
+                    -ProjectLayout 'Shared' `
+                    -BinaryFingerprint $binaryFingerprint `
+                    -GhidraVersion $ghidraVersion
             }
             else {
                 throw ("Export-only requested for {0}, but per-target Ghidra project {1} does not exist under {2}. Run once without -ExportOnly to create it, or use -ProjectLayout Shared." -f $target, $projectName, $ProjectDir)
@@ -477,11 +844,12 @@ try {
         $logPath = Join-Path $resolvedRunLogDir ("{0}{1}{2}.ghidra.log" -f $targetName, $projectLogSuffix, $logSuffix)
         $exportDir = Join-Path $resolvedOutputDir $target
         $manifestPath = Join-Path $exportDir 'selected_decompiled.manifest'
+        $cacheSummaryPath = Join-Path $exportDir 'decompile_cache_summary.properties'
         $effectiveMaxDecompiledFunctions = Resolve-EffectiveMaxDecompiledFunctions `
             -ManifestPath $manifestPath `
             -RequestedMaxDecompiledFunctions $MaxDecompiledFunctions `
             -MaxExplicitlySet $maxDecompiledFunctionsExplicitlySet `
-            -ExportOnly ([bool] $ExportOnly) `
+            -ExportOnly ($effectiveAnalysisMode -eq 'Skip') `
             -ExtraPostScript $ExtraPostScript
         $targetSummary = [ordered]@{
             target = $target
@@ -493,6 +861,17 @@ try {
             logPath = $logPath
             requestedMaxDecompiledFunctions = $MaxDecompiledFunctions
             effectiveMaxDecompiledFunctions = $effectiveMaxDecompiledFunctions
+            analysisMode = $AnalysisMode
+            effectiveAnalysisMode = $effectiveAnalysisMode
+            analysisAction = $analysisAction
+            analysisManifestPath = $analysisManifestPath
+            analysisManifestMatches = [bool]$analysisManifestMatches
+            analysisManifestUpdated = $false
+            cacheWarmMode = $CacheWarmMode
+            maxWarmFunctionsPerRun = $MaxWarmFunctionsPerRun
+            cacheSummaryPath = $cacheSummaryPath
+            cacheSummaryExists = $false
+            cacheSummary = $null
             status = 'pending'
             exitCode = $null
             projectLockFailure = $false
@@ -515,7 +894,7 @@ try {
             Write-Host ("Preserving manifest max decompile depth {0} for {1} because -ExtraPostScript was used without an explicit -MaxDecompiledFunctions override." -f $effectiveMaxDecompiledFunctions, $target)
         }
 
-        if ($ExportOnly) {
+        if ($analysisAction -eq 'Process') {
             Write-Host "Exporting existing Ghidra program $target"
             $ghidraArgs += @(
                 '-process', $target,
@@ -543,7 +922,7 @@ try {
         $ghidraArgs += @(
             '-postScript', 'ExportNexusForeverAnalysis.java', $OutputDir, $effectiveMaxDecompiledFunctions,
             $DecompileMode, $ghidraVersion, $binaryFingerprint, $labelFingerprint,
-            $labelsApplied.ToString().ToLowerInvariant()
+            $labelsApplied.ToString().ToLowerInvariant(), $CacheWarmMode, $MaxWarmFunctionsPerRun
         )
 
         if ($ExtraPostScript) {
@@ -576,6 +955,17 @@ try {
         $targetSummary.exitCode = $ghidraResult.exitCode
         $targetSummary.projectLockFailure = [bool]$ghidraResult.projectLockFailure
         $targetSummary.projectLockAttempts = $ghidraResult.attempts
+
+        if ($ghidraResult.exitCode -eq 0 -and $analysisAction -eq 'Import') {
+            Write-AnalysisManifest `
+                -ManifestPath $analysisManifestPath `
+                -Target $target `
+                -ProjectName $projectName `
+                -ProjectLayout $effectiveProjectLayout `
+                -BinaryFingerprint $binaryFingerprint `
+                -GhidraVersion $ghidraVersion
+            $targetSummary.analysisManifestUpdated = $true
+        }
 
         if ($ghidraResult.exitCode -ne 0) {
             $targetSummary.status = 'failed'
@@ -616,7 +1006,12 @@ finally {
         logDir = $resolvedRunLogDir
         summaryPath = $resolvedSummaryPath
         decompileMode = $DecompileMode
+        analysisMode = $AnalysisMode
+        effectiveAnalysisMode = $effectiveAnalysisMode
+        cacheWarmMode = $CacheWarmMode
+        maxWarmFunctionsPerRun = $MaxWarmFunctionsPerRun
         projectLayout = $effectiveProjectLayout
+        maxParallel = $MaxParallel
         projectLockRetryDelaySeconds = $ProjectLockRetryDelaySeconds
         projectLockTimeoutMinutes = $ProjectLockTimeoutMinutes
         exportOnly = [bool]$ExportOnly

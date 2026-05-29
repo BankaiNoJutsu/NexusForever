@@ -4,8 +4,8 @@ Date: 2026-05-27
 
 ## Decision
 
-LWS-053 is closed as mapped-only. The branch Skyplot rows remain useful WIP
-overlay data, but they are not retail-complete housing behavior.
+LWS-053 remains mapped-only. The branch Skyplot rows remain useful WIP overlay
+data, but they are not retail-complete housing behavior.
 
 Do not promote these rows or related housing behavior beyond the current
 WIP/GUESSED overlay until a local DB/client smoke bundle proves vendor
@@ -67,13 +67,23 @@ new behavior:
 
 ```powershell
 .\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
-  -BundleName LWS-053-skyplot-housing `
-  -WorldIds 1229 `
-  -Notes "Skyplot return pad 35298 activePropId 4676188, vendors 68423/68424 placement/catalog, housing lifecycle/community behavior" `
-  -NegativeCases "return pad without residence/session; vendor before housing unlock; missing or invalid catalog row; inactive skyplot lifecycle"
+  -SkyplotHousingSmoke `
+  -ClientDirectory "I:\WildStar" `
+  -PromptForRootPassword
 ```
 
-The bundle must capture character/account state, loaded residence/community
-state, world coordinates, vendor-list rows, return-pad activation result,
-server logs, screenshots/video, and negative cases. Only rows or behavior
-proven by that bundle should be promoted beyond WIP/GUESSED.
+The preset creates `lws-053-skyplot-housing-targets.md`, preloads world `1229`,
+and configures negative cases for return-pad activation without a residence or
+community session, vendor open before unlock, missing or invalid catalog rows,
+and inactive Skyplot lifecycle. The bundle must capture character/account
+state, loaded residence/community state, world coordinates, vendor-list rows,
+return-pad activation result, server logs, screenshots/video, and negative
+cases. Only rows or behavior proven by that bundle should be promoted beyond
+WIP/GUESSED.
+
+Dry-run guard (2026-05-28): `Decomp/Analysis/test_blocker_evidence_harness_presets.py`
+now runs `-SkyplotHousingSmoke -CreateBundleOnly` and verifies the generated
+manifest, default world id, target worksheet, helper files, and negative-case
+scaffold. This remains capture infrastructure only; vendor placement,
+catalogue completeness, return-pad interaction, and active Skyplot lifecycle
+are still blocked pending client/server evidence.

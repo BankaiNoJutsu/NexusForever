@@ -4,9 +4,11 @@ Date: 2026-05-27
 
 ## Decision
 
-LWS-110 through LWS-117 are closed as mapped-only raid/event-instance smoke
-blockers. Current WIP scaffolds are covered by focused tests, but exact
-mechanics, routing, doors, cinematics, rewards, and full smoke remain unproven.
+LWS-110 through LWS-117 remain mapped-only raid/event-instance smoke blockers.
+Current WIP scaffolds are covered by focused tests, and
+`Start-BlockerEvidenceHarness.ps1 -RaidEventSmoke` now creates a targeted proof
+bundle for the required live-client pass, but exact mechanics, routing, doors,
+cinematics, rewards, and full smoke remain unproven.
 
 Verification:
 
@@ -15,6 +17,21 @@ dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filt
 ```
 
 Result: `169/169` passed.
+
+Follow-up harness verification:
+
+```powershell
+.\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 -RaidEventSmoke -CreateBundleOnly -OutputRoot artifacts\blocker_evidence_test
+```
+
+Result: created `20260528-014548-LWS-110-117-raid-event-instances` with the
+`lws-110-117-raid-event-targets.md` worksheet, default worlds/events, and
+negative cases for premature triggers/target sets, premature
+door/elevator/gate/room interactions, wrong-route weekly/wing/room selection,
+completion-only cinematics, and early-finish rewards.
+`Decomp/Analysis/test_blocker_evidence_harness_presets.py` now dry-runs the
+preset with `-CreateBundleOnly` and verifies its manifest, target worksheet,
+default world/public-event ids, helper files, and negative-case scaffold.
 
 | Task | Closure |
 | --- | --- |

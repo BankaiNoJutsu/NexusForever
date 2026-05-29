@@ -4,7 +4,7 @@ Date: 2026-05-27
 
 ## Decision
 
-LWS-036 and LWS-037 are closed as mapped-only smoke blockers. The current WIP
+LWS-036 and LWS-037 remain mapped-only smoke blockers. The current WIP
 city/checklist/entity rows stay labeled WIP/GUESSED until targeted client smoke
 proves each row's behavior.
 
@@ -32,3 +32,16 @@ rows WIP/GUESSED, blocked, or rejected according to their evidence level.
 Use `Start-BlockerEvidenceHarness.ps1` to capture future bundles, then promote
 only the specific proven rows and update the corresponding audit and verifier
 comments.
+
+Harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1` now supports
+`-Lws036ChecklistSmoke`. The preset creates `lws-036-targets.md` in each bundle,
+preloads the target world list when `-WorldIds` are omitted, and records the
+required negative cases for inactive/missing quest objectives, wrong world/prop
+interactions, and repeat interactions after completion. This is a capture aid
+only; no row is promoted without a completed bundle.
+
+Dry-run guard progress (2026-05-28): `test_blocker_evidence_harness_presets.py`
+now runs `-Lws036ChecklistSmoke` with `-CreateBundleOnly` and verifies the
+manifest, target worksheet, default world ids, helper files, and negative-case
+scaffold. This protects the capture workflow only; LWS-036/LWS-037 still require
+real client/server evidence before any WIP/GUESSED row is promoted.

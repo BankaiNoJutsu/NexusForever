@@ -4,10 +4,20 @@ Date: 2026-05-27
 
 ## Decision
 
-LWS-090 through LWS-096 are closed as mapped-only expedition smoke blockers.
-The current WIP expedition scaffolds are covered by focused tests, but exact
+LWS-090 through LWS-096 remain mapped-only expedition smoke blockers. The
+current WIP expedition scaffolds are covered by focused tests, but exact
 doors, triggers, cinematics, cleanup, rewards, and full route behavior remain
 unproven.
+
+Evidence harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1`
+now has an `-ExpeditionSmoke` preset that creates an LWS-090 through LWS-096
+worksheet with the known branch worlds/events, shuttle, door, trigger,
+cinematic, communicator, teleport, cleanup, routing, reward, and negative-case
+capture requirements. Parser validation and create-only bundle generation were
+verified after adding the preset.
+`Decomp/Analysis/test_blocker_evidence_harness_presets.py` now dry-runs the
+preset with `-CreateBundleOnly` and verifies its manifest, target worksheet,
+default world/public-event ids, helper files, and negative-case scaffold.
 
 Verification for current WIP scaffolds:
 
@@ -16,6 +26,10 @@ dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filt
 ```
 
 Result: `75/75` passed.
+
+Follow-up verification (2026-05-28): the focused expedition/map-binding filter
+including Deep Space Exploration tests passed `78/78` after adding the harness
+preset.
 
 ## Row Closures
 

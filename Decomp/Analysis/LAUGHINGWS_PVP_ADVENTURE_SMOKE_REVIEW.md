@@ -4,9 +4,19 @@ Date: 2026-05-27
 
 ## Decision
 
-LWS-080 through LWS-085 are closed as mapped-only smoke blockers. Existing
+LWS-080 through LWS-085 remain mapped-only smoke blockers. Existing
 branch-derived scaffolds are covered by focused tests, but queue/match smoke,
 scoring, rewards, stats, and deeper adventure routing remain unproven.
+
+Evidence harness progress (2026-05-28): `Start-BlockerEvidenceHarness.ps1`
+now has a `-PvpAdventureSmoke` preset that creates an LWS-080 through LWS-085
+worksheet with the known branch worlds/events, queue/match lifecycle, objective,
+scoreboard, reward, PvP stat, faction-start, vehicle-choice, and negative-case
+capture requirements. Parser validation and create-only bundle generation were
+verified after adding the preset.
+`Decomp/Analysis/test_blocker_evidence_harness_presets.py` now dry-runs the
+preset with `-CreateBundleOnly` and verifies its manifest, target worksheet,
+default world/public-event ids, helper files, and negative-case scaffold.
 
 Verification for the current scaffolds:
 
@@ -15,6 +25,9 @@ dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filt
 ```
 
 Result: `29/29` passed.
+
+Follow-up verification (2026-05-28): the same focused filter passed `29/29`
+after adding the harness preset.
 
 ## LWS-080 Cryo-Plex Arena
 

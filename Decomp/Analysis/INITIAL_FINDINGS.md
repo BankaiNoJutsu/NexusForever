@@ -5,11 +5,16 @@ and exports in `Decomp\Analysis\exports`.
 
 ## Export Coverage
 
-| Binary | Functions | Strings | Durable labels | Interesting strings | Selected | Decompiled |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `Houston64.exe` | 25,129 | 29,460 | 7,508 | 6,317 | 0 | 0 |
-| `StsConnLib64.MT.dll` | 4,522 | 10,893 | 371 | 3,406 | 863 | 40 |
-| `WildStar64.exe` | 24,981 | 45,034 | 1,037 | 11,000 | 2,259 | 200 |
+See `coverage/LATEST_COVERAGE_SUMMARY.md` for live counts. Full-program cache pass
+status: `FULL_DECOMPILE_PASS_STATUS.md`.
+
+| Binary | Functions | Strings | Durable labels | Interesting strings | Selected | Focused decompile | Canonical cache |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `Houston64.exe` | 25,129 | 29,460 | 7,530+ | 6,317 | 1,597 | 0 focused* | **100%** cache; **731** durable CSV labels |
+| `StsConnLib64.MT.dll` | 4,522 | 10,893 | 376+ | 3,406 | 864 | 400+ | **100%** cache; **40** durable CSV labels |
+| `WildStar64.exe` | 25,001 | 45,034 | 1,458+ | 11,000 | 2,719 | 1,320+ | **100%** cache; **1,636** durable CSV labels |
+
+\*Focused `selected_decompiled.c` counts are selection-bounded; full bodies live in `selected_decompiled_cache/functions/<fingerprint>/`.
 
 The selected C exports are biased toward protocol/data anchors, so they are a
 starting point rather than a complete native source reconstruction.
@@ -317,6 +322,15 @@ Follow-up implemented from this pass:
 - The client exposes `PublicEventObjectiveType_DefendObjectiveUnits` at value
   `12` around `selected_decompiled.c:9273`; NexusForever keeps the existing
   singular member and now has a plural alias for client-facing naming parity.
+- `Lua_RegisterPublicEventConstants` (`14068c2c0.fragment.c`) is useful for
+  public-event constant names, but its stack-lifted numeric assignments are not
+  authoritative for values. In the same fragment, already-proven enums are
+  visibly scrambled (`PublicEventStatus_Inactive = 1`, `Active = 3`,
+  `Failed = 2`, `Succeeded = 0`; `PublicEventObjectiveNotificationMode_Normal =
+  1`, `Achieving = 0`; `PublicEventObjectiveCategory_Main = 1`,
+  `Challenge = 0`). Do not renumber the later `PublicEventObjectiveType_*`
+  family from those fragment pushes alone; use `selected_decompiled.c` and
+  getter-side consumers instead.
 
 These constants now have explicit values in the static enums where they were
 previously implicit, and the export script keeps these public-event constant
@@ -3823,6 +3837,13 @@ pass:
   matches the previously labeled `CombatLog_DispatchVitalModifierEvent`: each
   helper builds a named-event payload object and dispatches it through
   `ClientEvent_DispatchNamedEvent`.
+- The former placeholder `14060b380 = Maybe_CombatLog_WriteCCStateContext` is
+  broader than the CC-state path suggested. Its decompile writes
+  `unitCaster`/`unitCasterOwner`, `unitTarget`/`unitTargetOwner`,
+  `eCombatResult`, and `splCallingSpell`, and it is reused by many
+  `CombatLog_Dispatch*Event` helpers beyond CC-state branches. The durable name
+  now reflects that wider role:
+  `14060b380 = CombatLog_WriteCasterTargetResultSpellContext`.
 - `CombatLog_DispatchCCStateEvent` is the most useful new anchor for the
   pending interrupt-armor and CC apply-rules work. The decompile shows it
   reusing `CombatLog_WriteCasterContext`, writing payload-backed `eState`, then
@@ -5908,6 +5929,231 @@ One-hundred-eleventh instance-settings handler pass:
   -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\instance-settings-world\`
   succeeds with only the existing `Spline.formation` warning.
+
+Instance-dialog cache follow-up (2026-05-28):
+
+- A focused cache pass against the canonical WildStar64 fragments plus direct
+  `string_xrefs.csv` hits on `ShowInstanceGameModeDialog`,
+  `HideInstanceGameModeDialog`, `RaidInfoResponse`, `strSavedInstanceId`, and
+  `bRemovesSingleInstance` closed the remaining naming/documentation gap around
+  the solo/group instance dialog flow.
+- The durable label map now names the three client DB table families that feed
+  that UI state: `ClientDB_RegisterInstancePortal` /
+  `ClientDB_GetInstancePortal` (`140209040` / `1402092a0`),
+  `ClientDB_RegisterCreature2Difficulty` /
+  `ClientDB_GetCreature2Difficulty` (`1401f6280` / `1401f64e0`), and
+  `ClientDB_RegisterQuest2Difficulty` /
+  `ClientDB_GetQuest2Difficulty` (`14022ac60` / `14022aec0`).
+- The same pass mapped the client-facing helpers surfaced by the broadened
+  string anchors: `InstanceDialog_DispatchShowGameModeDialog` (`1404259d0`)
+  builds the `ShowInstanceGameModeDialog` named-event payload from the native
+  instance-mode row; `Group_SendClientGroupInviteResponse` (`1406019a0`) sends
+  opcode `0x041A` / `ClientGroupInviteResponse`, hides the dialog, dispatches
+  `Group_AcceptInvite`, and clears the pending invite state;
+  `Group_DispatchRaidInfoResponse` (`1406042b0`) iterates saved-instance rows
+  and dispatches `RaidInfoResponse`; `CombatLog_DispatchDispelEvent`
+  (`14060db10`) is the `CombatLogDispel` builder that carries
+  `bRemovesSingleInstance` and `splRemovedSpell`; and
+  `Lua_GroupLib_SendInviteResponse` (`140742c60`) is the Lua wrapper that packs
+  the invite-response bitmask before forwarding to the `0x041A` sender.
+- A follow-up on unlabeled `1403b9720` first looked like a table-dispatched
+  wrapper because `TraceFunctionCallers.java` only surfaced a single `DATA`
+  reference at `140e00b70`, but `DumpNearbyData.java` showed that address lives
+  inside `_IMAGE_RUNTIME_FUNCTION_ENTRY` / `.pdata`, not a real handler table.
+  Local code evidence instead ties `1403b9720` to the same instance-settings
+  flow as `Lua_GameLib_SetInstanceSettings` (`140701650`),
+  `Lua_GameLib_ResetSingleInstance` (`1407017d0`), and
+  `Lua_GameLib_OnClosedInstanceSettings` (`140701800`): it caches the selected
+  portal unit id at `entity+0x7d84`, conditionally opens interaction state
+  `0x24`, and then forwards the native payload into
+  `InstanceDialog_DispatchShowGameModeDialog`. The durable label map now names
+  it `InstanceDialog_HandleShowGameModeDialog`.
+- The return path is now mapped as well: the packet registration block binds
+  server opcode `0x00F1` to `1400a37d0`, whose bit reads match the modeled
+  `ServerInstanceSettings` shape exactly (`2`-bit difficulty, `uint32`
+  prime level, `8`-bit flags, `uint32` client update interval). The downstream
+  apply helper `1403b67e0`, now labeled
+  `InstanceSettings_ApplyServerSettings`, stores those values into the local
+  world-state fields used by `Lua_GameLib_GetInstanceSettings`
+  (`entity+0x6424`, `+0x6428`, `+0x642c`) and the related teleport/scaling
+  bits, clamps the client-entity send interval, resends cached
+  `ClientCombatOptions` (`0x00D5`), sends `ClientPlayerMovementSpeedUpdate`
+  (`0x063B`), and clears pending instance-setting timers. That closes the
+  client-side `0x0163` / `0x0153` / `0x00D2` request loop with its `0x00F1`
+  response application path.
+- The replayed follow-up packets are now grounded too. `1403c2c10`
+  (`ClientCombatOptions_BuildCachedCastingOptions`) and `1403c2ca0`
+  (`ClientCombatOptions_BuildCachedCombatLogOptions`) materialize the cached
+  `ClientCombatOptions` state that lives at `entity+0x7ba0`, `+0x7ba4`, and
+  `+0x7ba8`, matching the managed packet model exactly: `4`-bit
+  `CastingOptionFlags`, `1`-bit disable-other-player-logging, and `14`-bit
+  `CombatLogOptions`. `1403c2ee0`
+  (`CombatLog_PassesClientFilterSettings`) is the shared combat-log suppression
+  gate that applies those cached flags to event-category / target pairs, and
+  `1404dafb0` (`ClientPlayerMovementSpeedUpdate_SendAndDispatch`) is the shared
+  helper that sends opcode `0x063B` and mirrors it into the
+  `PlayerMovementSpeedUpdate` named event.
+- The adjacent combat-log packet path is now grounded too. Server opcode
+  `0x0247` (`ServerCombatLog`) is read by `14009fac0`, now labeled
+  `ServerCombatLog_ReadTypeAndDispatch`: it consumes the leading `6`-bit
+  `CombatLogType`, validates the supported range, and dispatches through the
+  combat-log subtype table. One downstream dispatcher, `1403c3190`
+  (`CombatLog_DispatchEventByType`), handles the supported client-visible
+  combat-log variants by combining `CombatLog_PassesClientFilterSettings` with
+  local unit-target gating before forwarding to the per-type
+  `CombatLog_Dispatch*Event` helpers such as damage, heal, dispel, interrupt,
+  and healing-absorption.
+- The downstream helper family is now mostly named as well. The cached handler
+  cluster now covers reflect, multi-hit, falling-damage, life-steal,
+  delay-death, multi-heal, deflect, immunity, kill-streak, death, resurrect,
+  stealth, mount, pet, experience, durability-loss, LAS, build-switch, and
+  datacube dispatchers, with `14060e330` split out as a transference payload
+  builder that forwards into `14060e4e0`
+  (`CombatLog_DispatchTransferenceEvent`). The one notable outlier left in this
+  slice is the `CombatLogType.Crafting` branch at `140610a50`, which currently
+  routes through `Loot_DispatchChannelUpdateLootEvent` rather than a direct
+  `CombatLogCrafting` named-event dispatch.
+- That outlier is now grounded too: `140610a50`
+  (`CombatLog_DispatchCraftingLootChannelUpdate`) is the
+  `CombatLogType.Crafting` branch bridge into the loot UI path. It builds a
+  single-item descriptor from the combat-log payload and dispatches
+  `ChannelUpdate_Loot` type `3`, which `Loot_DispatchChannelUpdateLootEvent`
+  treats as the `itemDestroyed` branch rather than a dedicated
+  `CombatLogCrafting` named event.
+- The family also has a newly named shared gate at `14060b170`
+  (`CombatLog_HasType14Or17SourceOrTarget`): it resolves the event source and
+  target ids, falls back through their `+0x2b0` owner link, and returns true
+  when either side is one of the two entity classes (`0x14` / `0x17`) that the
+  client combat-log UI keeps.
+- The adjacent floater wrappers are grounded now too. `14060afe0`
+  (`CombatLogEvent_MaybeDispatchFloaterForUnit`) is the generic per-unit
+  floater dispatcher for these native combat-log event objects: it resolves the
+  supplied unit id to a type-`0x14`/`0x17` entity or owner fallback, checks the
+  event object's virtual floater predicate, reapplies the shared combat-log
+  filter gate, and then invokes the object's floater callback. `14060b2b0`
+  (`CombatLog_MaybeDispatchFloatersForSourceAndTarget`) sits on top of that for
+  combat-log payloads that can surface floaters on both source and target,
+  deduplicating when both sides share the same owner group.
+- `14060b250` now closes the remaining predicate gap in that floater path:
+  `CombatLog_PassesFloaterVisibilityGate` reapplies
+  `CombatLog_PassesClientFilterSettings` to the event's category/target fields
+  and then suppresses floaters when the linked spell wrapper carries an
+  unresolved `0x80000000` property-flag bit. The bit is not currently named in
+  the managed `SpellPropertyFlags` enum, so the label stays conservative.
+- `ExportNexusForeverAnalysis.java` now treats
+  `showinstancegamemodedialog`, `hideinstancegamemodedialog`,
+  `raidinforesponse`, `strsavedinstanceid`, and `bremovessingleinstance` as
+  high-value string anchors. Future export-only runs therefore keep this slice
+  visible under direct instance-dialog reasons instead of only incidental
+  `world` / `combat` matches.
+
+One-hundred-twelfth character-list row and statistics mapping pass:
+
+- Native evidence:
+  the full WildStar64 cache and selected export show `FUN_14007f720` registered
+  by `FUN_14006c290` as server opcode `0x010F` with semantic size `0xA0`.
+  The same row reader is called by `FUN_14007fab0`, the opcode `0x0117`
+  `ServerCharacterList` reader. Field order matches the existing
+  `ServerCharacterList.Character` writer: character id, wide name, sex, race,
+  class, faction, level, appearance visuals, gear visuals, world/zone/realm,
+  location, path, lock/rename flags, gear mask, customization label/value
+  arrays, bone floats, and last-logout days. `FUN_14053a000` is now mapped as
+  the periodic `ClientStatisticsConnection` sender for opcode `0x023F`, packing
+  average RTT, receive/send byte rates, unit hash-table entry count, and one
+  low-bit flag.
+- False-positive cleanup:
+  `14052ad50` and `14052bd40` were inspected and left as blocked `FUN_*` rows
+  with corrected comments because their bodies are coordinate/grid and UI/layout
+  helpers, not packet consumers.
+- NexusForever implementation:
+  `GameMessageOpcode` now names `ServerCharacterListEntry = 0x010F`, and
+  Network.World has a `ServerCharacterListEntry` model that reuses the already
+  verified `ServerCharacterList.Character` payload writer. No gameplay mutation
+  or character-list producer policy changed in this pass.
+- Verification:
+  WildStar64 export-only Auto applied `1637` labels with `0` skipped or missing
+  labels, and `Test-DecompileManifest.ps1 -FailOnMismatch` reports
+  `WildStar64.exe ok` with `selectedCount=2722`, `reusedFragments=2722`, and
+  `canonicalCachedFragments=25001`. `Get-DecompCoverageSnapshot.ps1` reports
+  WildStar64 named coverage at `5.84%`, full cache at `100%`, and no missing
+  opcode models or handlers. Focused packet-shape tests now assert that
+  `ServerCharacterListEntry` writes exactly the nested character-row payload and
+  that `ClientStatisticsConnection` reads the packed count/flag field used by
+  the native periodic sender; `dotnet test
+  Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
+  -v minimal --nologo --filter "FullyQualifiedName~ProtocolRuntimeHardeningTests"`
+  passes `19/19`. A full Game.Tests run compiled successfully but hit the
+  existing parallel shared-provider heartbeat failure once (`1891/1892`); the
+  failing `GameSessionHeartbeatTests` class passes by itself (`3/3`).
+
+One-hundred-thirteenth group packet mapping pass:
+
+- Native evidence:
+  `FUN_140082420` matches the shared `GroupCharacter` wire row: wide name,
+  faction/race/class, sex, level/effective level, path, 17-bit stat prefix,
+  16-bit member id, five `FUN_1400823c0` stat-slot rows, mentoring target
+  identity, twelve 16-bit unknowns, `FUN_1400a8bf0` realm/world/map/phase tail,
+  synced flag, two trailing uints, and a counted `(ushort, byte)` row list.
+  `FUN_1400828a0` wraps that row as `GroupMember` with identity, 32-bit flags,
+  and group index. `FUN_140082950` matches the shared `Group` payload with group
+  id, flags, member count, max size, four loot-rule fields, counted
+  `GroupMember` rows, leader identity, realm id, and `GroupMarkerInfo` pair
+  array. Registration in `FUN_14006c290` maps `FUN_140083710` to opcode
+  `0x0405` (`ServerGroupMemberAdd`), `FUN_140084390` to `0x041F`
+  (`ServerGroupInviteReceived`), `FUN_1400843f0` to `0x0424`
+  (`ServerGroupRequestJoinResponse`), and `FUN_1400844f0` to `0x0427`
+  (`ServerGroupJoin`).
+- NexusForever code comments:
+  shared group model classes now point at the mapped native readers so the
+  managed packet surface stays tied to the verified client functions without
+  changing gameplay behavior.
+
+One-hundred-fourteenth group stat and realm refresh pass:
+
+- Native evidence:
+  `FUN_140083d30` is registered by `FUN_14006c290` as opcode `0x0466` and
+  matches `ServerGroupMemberStatUpdate`: group id, target identity, level,
+  effective level, 17-bit stat prefix, group member id, five
+  `GroupMemberStatSlot` rows, twelve packed 16-bit stat values
+  (health/shield/interrupt/absorption/mana/healing-absorb pairs), two 32-bit
+  phase flags, and a 3-bit path. `FUN_1400841d0` is opcode `0x0467` and reads
+  group id, target identity, the shared realm/world/map/phase tail helper, and
+  one synced-to-group bit, matching `ServerGroupUpdatePlayerRealm`.
+  `FUN_140084030` is opcode `0x0469` and matches `ServerGroupPositionUpdate`:
+  group id, 15-bit world id, counted identity array, counted raw position
+  triplets, and parallel world-zone-id and flag arrays.
+- Blocker:
+  opcode `0x0468` (`FUN_140084280`) does not match the current
+  `ServerGroupMemberDetailUpdate` model. The native reader takes group id,
+  target identity, a counted array of 64-bit values, and no stat-prefix or
+  health/path fields. Leave `0x0468` blocked pending a consumer/call-site pass
+  before changing the managed model or renaming the reader.
+
+One-hundred-fifteenth group member flag pass:
+
+- Native evidence:
+  `FUN_1400838c0` is opcode `0x0437` and matches
+  `ServerGroupMemberFlagsChanged`: group id, member index, target identity,
+  32-bit changed flags, and one trailing bit.
+- Blocker:
+  opcode `0x0438` (`FUN_140083990`) does not match the current
+  `ServerGroupMemberRoleChange` model. The native reader takes group id, a
+  leading uint32, a counted identity array, and a parallel uint32 array rather
+  than a single identity/flags payload.
+
+One-hundred-sixteenth provisional group array pass:
+
+- Native evidence:
+  `FUN_140083990` and `FUN_140084280` are now promoted with conservative
+  shape-based names rather than semantic packet names. `0x0438` is
+  `ServerGroupIdentityListAndUInt32Array_ReadPayload`: group id, one leading
+  uint32, a counted identity array, and a parallel uint32 array. `0x0468` is
+  `ServerGroupTargetIdentityUInt64List_ReadPayload`: group id, target identity,
+  uint32 count, and a counted uint64 array.
+- NexusForever code comments:
+  opcode and model comments now point at those native readers, and the current
+  `GroupMemberFlagsUpdatedHandler` send path is explicitly marked provisional so
+  the runtime WIP surface does not look evidence-backed.
 
 One-hundred-twelfth housing plug update pass:
 
@@ -10819,19 +11065,23 @@ Rider's Reef final-departure checklist runtime follow-up:
 
 Client unresolved opcode diagnostic-model follow-up:
 
-- No new native labels were added. This pass closes the current client
-  enum-only queue using the already recorded opcode comments and coverage
-  inventory payload evidence: fixed raw byte payloads for `Client0x003D`,
-  `Client0x00ED`, `Client0x0142`, `Client0x0760`, `Client0x0762`, and
-  `Client0x07B6`; single scalar payloads for `Client0x00C8`, `Client0x011B`,
+- The current client enum-only queue now closes with mixed structural coverage:
+  fixed raw byte payloads for `Client0x003D`, `Client0x0760`, and
+  `Client0x0762`; structured field layouts for `Client0x00ED`, `Client0x0142`,
+  and `Client0x07B6`; single scalar payloads for `Client0x00C8`, `Client0x011B`,
   `Client0x011D`, `Client0x012D`, `Client0x0550`, `Client0x062A`,
-  `Client0x0634`, `Client0x0701`, `Client0x07E3`, and `Client0x0928`; and one
-  wide-string payload for `Client0x063E`.
+  `Client0x0634`, `Client0x0701`, and `Client0x07E3`; and one wide-string
+  payload for `Client0x063E`.
 - NexusForever now has conservative receive models and diagnostic-only
-  WorldServer handlers for all 17 unresolved client opcodes. The handlers log
-  payload length or scalar value only; they intentionally do not mutate player,
-  account, housing, matching, realm, or gameplay state while the opcode
+  WorldServer handlers for all 17 unresolved client opcodes. The handlers for
+  `Client0x00ED`, `Client0x0142`, and `Client0x07B6` now log decoded top-level
+  fields instead of only payload length, but they still do not mutate player,
+  account, housing, matching, realm, or gameplay state while the packet
   semantics remain unmapped.
+- `Client0x00ED`, `Client0x0142`, and `Client0x07B6` remain numerically named
+  because the current evidence still stops at registration tuples, writer
+  shapes, and coarse family placement rather than a stable gameplay or UI
+  semantic witness.
 - This pass resolves a source/coverage mismatch where the findings history had
   previously described a closed client opcode queue but the current source still
   exposed 17 client enum-only rows. The remaining missing-opcode work is now on
@@ -10852,6 +11102,33 @@ Client unresolved opcode diagnostic-model follow-up:
   Source\NexusForever.Script.Main\NexusForever.Script.Main.csproj --no-restore
   -p:UseSharedCompilation=false -m:1 -v minimal --nologo` (`0` warnings,
   `0` errors).
+
+Client unresolved opcode writer-label follow-up:
+
+- Durable WildStar64 labels/comments now capture the structural writer evidence
+  for `ClientUnresolvedDiagnosticPacket00ED_WritePayload` (`1400a6200`),
+  `ClientUnresolvedDiagnosticPacket0142_WritePayload` (`14007e6d0`),
+  `ClientUnresolvedDiagnosticPacket07B6_WritePayload` (`140080220`), and the
+  per-row helper `ClientUnresolvedDiagnosticPacket07B6Row_WritePayload`
+  (`14007ff70`). The selected-decompiled registration tuples pin the packet
+  slots at `0x20`, `0x10`, and `0x20` bytes respectively.
+- `Client0x0142` also has one extra decompile anchor beyond size alone: its
+  paired local reader stub `LAB_14007e6c0` is reused by `0x0538`, `0x053C`,
+  and `0x0617`, so both the source XML docs and durable function comment keep
+  the shared unresolved-diagnostic family noted even though the field layout is
+  now decoded.
+- `Source/NexusForever.Network.World/Message/Model/ClientUnresolvedDiagnosticPackets.cs`
+  now mirrors that evidence in WIP-style XML comments and managed read order for
+  `Client0x00ED`, `Client0x0142`, and `Client0x07B6`. `Client0x00ED` reads one
+  `uint64`, one `uint32`, one `uint64`, and three trailing bits; `Client0x0142`
+  reads one `uint64`, one 14-bit field, and one trailing bit; and
+  `Client0x07B6` reads four `uint32` values, one `uint32` row count, and
+  counted rows of `{ 4-bit value, bit, byte, wide string }`. No gameplay
+  behavior changed; all three handlers stay diagnostic-only until sender call
+  sites or payload semantics are mapped.
+- `Client0x003D`, `Client0x0760`, and `Client0x0762` remain on the native
+  writer backlog because the current selected export still does not surface
+  their registration tuples.
 
 Server unresolved output opcode structural-model follow-up:
 
@@ -11845,6 +12122,12 @@ Challenge diagnostic `Client0x00C8` boundary follow-up:
 - No runtime challenge behavior changed. `Client0x00C8` remains
   diagnostic-only, but its known 32-bit packet shape is now covered by a
   focused regression next to `Client0x0550`.
+- Isolated `TraceFunctionCallers` on `ClientMatchType_WritePayload` @
+  `14008a150` only returned data refs inside
+  `Network_RegisterServerOpcode_0351` @ `14006c290`. Reading the cached
+  registration fragment confirms the shared rows are decimal `200` (`0x00C8`),
+  `0x05B5`, and `0x05B6`; the trace did not expose a dedicated challenge or
+  matching gameplay sender.
 - Active challenge lifecycle, shared challenge accept/decline sequencing,
   `ServerChallengeUpdate` population, reward tiers, quest-objective mutation,
   and the exact `Client0x00C8` owner remain blocked until the challenge UI
@@ -13680,14 +13963,14 @@ One-hundred-thirtieth placeholder-rename resume pass (2026-05-23):
 One-hundred-thirty-first pending gift UI and group handler correction (2026-05-23):
 
 - `InspectCodeAddresses` on `1400a9b20`, `140005bf0`, `140519260`, `1406031d0` (user run;
-  manifest `selected.count=0` ‚Äî output in fragment cache / prior exports).
+  manifest `selected.count=0` ù output in fragment cache / prior exports).
 - `PendingAccountItemGroup_ReadPayload` @ `1400a9b20`: `u64` @ `+0x10` after `AccountItemId`;
   `FUN_14006c090` @ `+0x08` reads 32-bit item id; wide string @ `+0x18`; `TargetAccountId` @ `+0x38`.
 - `AccountPendingItemGroupCache_InsertFromPayload` @ `140005bf0`: `plVar12[2] = param_2[2]` (wire
   `+0x10`); grouped dedupe keys on `Id` / group string only.
 - `AccountItemUi_GiftSelectedPendingItemGroup` @ `140519260`: loads pending row, passes
   `cacheRow+0x38` wide string to gift senders; account gift uses UI `param_1+0x38` target account;
-  character gift uses UI `param_1+0x40` identity ‚Äî **does not read cache slot `[2]`**. `Unknown2`
+  character gift uses UI `param_1+0x40` identity ù **does not read cache slot `[2]`**. `Unknown2`
   stays blocked; NF continues emitting `0`.
 - **Label fix:** `1406031d0` decompile dispatches `Group_MemberPromoted` from `param_2[2]`/`[3]`;
   it does **not** call `Group_CopyMemberStatBlockFromPayload`. Roster stat refresh uses
@@ -13854,7 +14137,854 @@ Crafting current-craft evidence follow-up (2026-05-23):
   passed with `0 Warning(s)` and `0 Error(s)`. The export-only Ghidra inspection
   of `1400a46b0`, `1405e6830`, `140399630`, `140399780`, and `14059b7c0`
   confirmed the new labels in `exports\WildStar64.exe\functions.csv` and the
+
+One-hundred-seventeenth matching queued-player list pass:
+
+- `Network_RegisterServerOpcode_0351` already binds opcode `0x060A` to
+  `FUN_140099770`. Focused cache inspection now confirms
+  `ServerMatchingListPlayersQueuedForMap_ReadPayload` (`140099770`) reads one
+  uint32 map id and one uint32 count, then materialises `count` queued-player
+  rows through `MatchingQueuedPlayerInfo_ReadPayload` (`140098500`).
+- The nested row is now strong enough for durable labels and source comments.
+  `MatchingQueuedPlayerInfo_ReadPayload` reads identity, wide name,
+  14-bit faction/race/class, 2-bit gender, one 32-bit level-like field, 3-bit
+  path, three trailing uint32 slots plus one flag bit, five
+  `GroupMemberStatSlot_ReadPayload` (`1400823c0`) rows, and a counted trailing
+  array of `MatchingPrimeLevelInfo_ReadPayload` (`1400ad150`) rows. The prime-
+  level helper reads one 15-bit world id and one 16-bit achieved-prime-level
+  field.
+- NexusForever now comments `ServerMatchingListPlayersQueuedForMap` directly to
+  the native readers and corrects the two confirmed writer mismatches in the
+  existing model: `Gender` is serialized as a 2-bit field instead of 14 bits,
+  and the trailing `+0x3c` slot is treated as a raw uint32 instead of a float.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `1/1`.
+  `run_ghidra_analysis.ps1 -ExportOnly -ProjectLayout PerTarget -Targets
+  WildStar64.exe -DecompileMode Auto -CacheWarmMode Off -GhidraMaxHeap 8G
+  -MaxDecompiledFunctions 5000` refreshed the WildStar64 export, and the new
+  labels appear in `exports\WildStar64.exe\functions.csv` plus
+  `selected_decompiled.c`.
+
+One-hundred-eighteenth matching role-selection registration pass:
+
+- `Network_RegisterServerOpcode_0351` does not bind opcode `0x0600` to a new
+  matching-role reader. It reuses `ServerHousingCommunityPlotReservation_ReadPayload`
+  (`140086e70`) with registered object size `0x18`, the same helper already
+  mapped for opcode `0x051F`.
+- That reused reader remains structurally simple and already proven: target
+  residence identity plus one uint32 community plot reservation index, with
+  `0xffffffff` as the observed no-reservation sentinel. This falsifies the
+  current `ServerMatchingGroupMemberRoleSelection` source model as retail-backed
+  packet naming or shape.
+- No runtime behavior change was made in this pass. NexusForever now marks
+  opcode `0x0600` and `ServerMatchingGroupMemberRoleSelection` as provisional so
+  the code points directly at the native contradiction instead of implying a
+  verified matching-role packet.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo` succeeded.
+  `run_ghidra_analysis.ps1 -ExportOnly -ProjectLayout PerTarget -Targets
+  WildStar64.exe -DecompileMode Auto -CacheWarmMode Off -GhidraMaxHeap 8G
+  -MaxDecompiledFunctions 5000` succeeded.
+
+One-hundred-nineteenth matching empty-and-flag registration pass:
+
+- Focused registration reads in `Network_RegisterServerOpcode_0351` show opcode
+  `0x05F1` reuses the same shared reader slot `LAB_1400807f0` as `0x05B0`
+  (`ServerMatchingManagerFlag`) and `0x05CC`
+  (`ServerMatchingMatchParticipantCountUpdate`). That is consistent with the
+  current structural one-flag source surface, but still not strong enough to
+  name the field semantically beyond the existing `RolesRequired` UI-facing
+  boundary.
+- The neighboring empty packets are now explicitly confirmed from the same
+  registration block: opcode `0x05F2` (`ServerMatchingGroupIsQueued`),
+  opcode `0x0604` (`ServerMatchingLeftQueue`), and opcode `0x060D`
+  (`ServerMatchingMatchVoteKickCancelled`) all bind directly to
+  `ServerEmpty_ReadPayload`.
+- NexusForever now carries WIP-style native comments on those matching packet
+  models and enum entries so the code points at the exact decompile anchors
+  without widening behavior or inventing semantics.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo` succeeded.
+
+One-hundred-twentieth matching ready-count reader pass:
+
+- `Network_RegisterServerOpcode_0351` binds both opcode `0x05C4`
+  (`ServerMatchingMatchInProgressReady`) and opcode `0x05CA`
+  (`ServerMatchingMatchReady`) to the same native reader,
+  `ServerMatchingReadyCounts_ReadPayload` (`140099700`), with registered object
+  size `0x0c`.
+- Focused fragment inspection of `140099700` shows the shared wire shape is
+  stable and simple: one 5-bit `MatchType` field followed by two uint32 count
+  fields. That matches the existing source models for both packets, so this pass
+  promotes the durable native label and adds direct source comments rather than
+  changing runtime behavior.
+- A focused network regression now proves the two managed packet models
+  serialize identically when fed the same match type and count values, pinning
+  the shared native wire shape in tests.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `2/2`.
+  `run_ghidra_analysis.ps1 -ExportOnly -ProjectLayout PerTarget -Targets
+  WildStar64.exe -DecompileMode Auto -CacheWarmMode Off -GhidraMaxHeap 8G
+  -MaxDecompiledFunctions 5000` succeeded, and the new label appears in
+  `exports\WildStar64.exe\functions.csv` plus `selected_decompiled.c`.
+
+One-hundred-twenty-first matching queue-join reader pass:
+
+- `Network_RegisterServerOpcode_0351` binds opcode `0x05DF`
+  (`ServerMatchingQueueJoin`) to `FUN_1400995f0` with registered object size
+  `0x30`.
+- Focused helper inspection shows the packet already matches the current source
+  model structurally. `MatchingQueueJoinMapData_ReadPayload` (`1400988f0`) reads
+  a 5-bit match type, a counted uint32 map-id list, one 14-bit
+  `MatchingGameType` field, and one 32-bit queue-flags field.
+  `MatchingQueueJoinQueueData_ReadPayload` (`1400989d0`) reads a 5-bit match
+  type, one party flag bit, and two uint32 timing fields. The top-level reader
+  then reads one trailing 32-bit queued-roles field.
+- This pass promotes all three durable labels, adds direct native comments to
+  `ServerMatchingQueueJoin` and its nested `Map`/`Queue` models, and pins the
+  serialized field order in a focused packet-shape regression instead of
+  changing runtime behavior.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `3/3`.
+  `run_ghidra_analysis.ps1 -ExportOnly -ProjectLayout PerTarget -Targets
+  WildStar64.exe -DecompileMode Auto -CacheWarmMode Off -GhidraMaxHeap 8G
+  -MaxDecompiledFunctions 5000` succeeded, and the new labels appear in
+  `exports\WildStar64.exe\functions.csv` plus `selected_decompiled.c`.
+
+One-hundred-twenty-second matching queue-status reader pass:
+
+- Focused decompile inspection of `FUN_140099650` shows opcode `0x05E3`
+  (`ServerMatchingQueueStatus`) is structurally much smaller on the wire than
+  its registered object size suggests. The reader consumes a 4-bit
+  `MatchingQueueStatus`, two 5-bit `MatchType` fields, then 16 trailing one-bit
+  queue-membership flags.
+- That matches the existing source model exactly once the trailing
+  `NetworkBitArray` is understood as the packed wire surface and the `0x4c`
+  registration size is treated as client object footprint rather than wire
+  payload length.
+- This pass promotes the durable native label, adds direct source comments that
+  explain the registration-size trap, and extends the focused matching packet-
+  shape regression to read back the 16 queue-membership bits explicitly.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `4/4`.
+  `run_ghidra_analysis.ps1 -ExportOnly -ProjectLayout PerTarget -Targets
+  WildStar64.exe -DecompileMode Auto -CacheWarmMode Off -GhidraMaxHeap 8G
+  -MaxDecompiledFunctions 5000` succeeded, and the new label appears in
+  `exports\WildStar64.exe\functions.csv` plus `selected_decompiled.c`.
+
+One-hundred-twenty-third matching PvP kill notification pass:
+
+- Focused fragment inspection of `FUN_140099440` shows opcode `0x05E7`
+  (`ServerMatchingPvpKillNotification`) already matches the current source
+  model structurally. The native reader consumes a 2-bit killer opponent type,
+  dispatches the matching player-or-creature payload through the local variant
+  table, then repeats the same type-plus-payload pattern for the victim before
+  one 2-bit victim team field and one 3-bit death reason.
+- This pass promotes the durable native label, adds direct source comments for
+  the top-level variable-payload reader plus the player and creature opponent
+  payloads, and extends the focused matching packet-shape regression to cover a
+  mixed player-killer and creature-victim case.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `5/5`.
+  `run_ghidra_analysis.ps1 -ExportOnly -ProjectLayout PerTarget -Targets
+  WildStar64.exe -DecompileMode Auto -CacheWarmMode Off -GhidraMaxHeap 8G
+  -MaxDecompiledFunctions 5000` succeeded, and the promoted label appears in
+  `exports\WildStar64.exe\functions.csv` plus `selected_decompiled.c`.
   expected station/current-craft decompile shapes.
+
+One-hundred-twenty-fourth matching PvP state/rating reader pass:
+
+- Focused fragment inspection of `FUN_140099130`, `FUN_140099190`,
+  `FUN_140099200`, `FUN_140099290`, and `FUN_140099330` shows the remaining
+  mapped PvP matching packets already match the current source models
+  structurally. `0x05EA` reuses a shared state block of one 3-bit
+  `PvpGameState` plus one uint32 elapsed-time field; `0x05E8` prepends one
+  2-bit `MatchTeam`; `0x05E9` reads one 2-bit `MatchWinner`, one 3-bit
+  `MatchEndReason`, and two uint32 rating-change fields; `0x05ED` reads four
+  uint32 counters plus one 3-bit rating-type field; and `0x05EE` reads two
+  wide team names plus two uint32 rating fields.
+- Registration follow-up closes the last nearby structural gaps without widening
+  behavior: opcode `0x05E6` (`ServerMatchingPvpInactivityAlert`) reuses shared
+  `ServerUInt32_ReadPayload`, while opcode `0x05E5`
+  (`ServerMatchingMatchPvpPoolUpdated`) still lands on local reader slot
+  `LAB_140099270` with registered size `8`, which matches the current two-
+  uint32 pool-update surface but is not yet a durable standalone function
+  label.
+- This pass promotes five durable native labels, adds direct source comments and
+  enum notes across the matching PvP packet models, and keeps `0x05E5` on the
+  local-label boundary instead of inventing a wider name.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo` succeeded.
+
+One-hundred-twenty-fifth matching queue-result announce pass:
+
+- Focused fragment inspection of `FUN_1400998c0` shows opcode `0x05E1`
+  (`ServerMatchingQueueResultAnnounce`) reads exactly one 6-bit
+  `MatchingQueueResult` field followed by one 4-bit `MatchingQueueStatus`
+  field.
+- The current source model already matches that native layout, so this pass
+  promotes the durable native label, adds the direct source/opcode comments,
+  and extends the focused matching packet-shape regression with an explicit
+  result-plus-status test.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `6/6`.
+  `run_ghidra_analysis.ps1 -ExportOnly -ProjectLayout PerTarget -Targets
+  WildStar64.exe -DecompileMode Auto -CacheWarmMode Off -GhidraMaxHeap 8G
+  -MaxDecompiledFunctions 5000` succeeded, and the promoted label appears in
+  `exports\WildStar64.exe\functions.csv` plus `selected_decompiled.c`.
+
+One-hundred-thirty-second matching match-left registration pass:
+
+- Focused registration inspection shows opcode `0x05DC`
+  (`ServerMatchingMatchLeft`) is not a bespoke reader; `Network_RegisterServerOpcode_0351`
+  binds it directly to shared `ServerUInt5_ReadPayload` (`14007e950`) with registered
+  object size `4`.
+- The current source model already matches that shared wire surface as one 5-bit
+  `MatchType` field, so this pass keeps the shared native label, adds direct
+  source/opcode comments, and extends the focused matching packet-shape regression
+  with an explicit 5-bit `MatchType` test.
+- Verification: pending focused matching packet-shape test and WildStar64 export
+  refresh. Focused `MatchingPacketShapeTests` passed `15/15`, the WildStar64
+  export-only refresh completed successfully, and no new bespoke export symbol
+  was expected because this pass only extends consumer documentation around the
+  already-labeled shared `ServerUInt5_ReadPayload` anchor.
+
+One-hundred-thirty-third matching penalty-table width correction pass:
+
+- Focused registration follow-up closed opcode `0x05D9`
+  (`ServerMatchingPenaltyUpdated`) without inventing a durable native reader
+  label. `Network_RegisterServerOpcode_0351` binds it to local reader slot
+  `LAB_140099920` with registered size `0x40`, which is definitive evidence for
+  a fixed 16 x `uint32` payload even though the local reader body was not
+  exported separately in this pass.
+- The current runtime sender already builds a `uint[16]` penalty table ordered
+  by `MatchType` values `0..15`, so this pass keeps the model conservative and
+  corrects the managed serializer boundary instead: `ServerMatchingPenaltyUpdated`
+  now always writes exactly 16 penalty slots, zero-padding short arrays and
+  ignoring extras to preserve the native 64-byte wire shape.
+- Source comments now tie both the opcode enum and the model back to the
+  registration-only evidence, and the focused matching packet-shape regression
+  adds an explicit short-array probe that still expects 16 emitted `uint32`
+  values.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `19/19`.
+
+One-hundred-thirty-fourth matching participant-count registration pass:
+
+- Focused registration follow-up closed opcode `0x05CC`
+  (`ServerMatchingMatchParticipantCountUpdate`) as another consumer of the
+  shared one-flag reader boundary rather than a bespoke reader. Both
+  `selected_decompiled.c` and cached `14006c290.fragment.c` bind `0x05CC` to
+  local reader slot `LAB_1400807f0` with registered size `4`, the same shared
+  structural path already reused by `0x05B0` and `0x05F1`.
+- The current source model already matches that evidence as a single-bit
+  payload, so this pass keeps the model conservative, aligns the opcode enum
+  comment with the existing model note, and adds a focused regression proving
+  the `0x05CC` writer serializes the same one-flag shape as
+  `ServerMatchingRoleCheckStarted`.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `22/22`.
+
+One-hundred-thirty-fifth matching match-joined registration pass:
+
+- Focused registration follow-up closed opcode `0x05C6`
+  (`ServerMatchingMatchJoined`) without inventing a durable native reader
+  label. `selected_decompiled.c` and cached `14006c290.fragment.c` both bind
+  `0x05C6` to local reader slot `LAB_14007a530` with registered size `4`, which
+  is only registration-level evidence for a shared one-`uint14` reader path.
+- Nearby exported helpers show the same address family also contains a paired
+  `14`-bit reader (`FUN_14007a4d0`) used by `8`-byte registrations, so this pass
+  keeps `0x05C6` conservative instead of promoting a speculative shared label.
+  The current source model already matches the proven wire surface as one
+  `14`-bit matching-game-map id field.
+- Source comments now tie both the opcode enum and the model back to the local
+  registration slot, and the focused matching packet-shape regression adds an
+  explicit `14`-bit map-id check.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `24/24`.
+
+One-hundred-thirty-seventh matching manager-flag registration pass:
+
+- Focused registration follow-up closed opcode `0x05B0`
+  (`ServerMatchingManagerFlag`) as the same shared one-flag reader boundary
+  already proven for `0x05CC` and `0x05F1`. Both `selected_decompiled.c` and
+  cached `14006c290.fragment.c` bind `0x05B0` to local reader slot
+  `LAB_1400807f0` with registered size `4`.
+- The model already carried the conservative native note and still lacks a
+  recovered runtime sender/consumer, so this pass keeps the field diagnostic,
+  aligns the opcode enum comment with the existing source evidence, and extends
+  the focused regression to prove `ServerMatchingManagerFlag` serializes the
+  exact same one-bit payload as the other matching consumers on that shared
+  slot.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `24/24`.
+
+One-hundred-thirty-ninth matching role-selection structural-fit pass:
+
+- Focused follow-up on opcode `0x0600`
+  (`ServerMatchingGroupMemberRoleSelection`) kept the native reader mapping
+  conservative while closing a source-comment ambiguity. Native registration
+  still binds `0x0600` to `ServerHousingCommunityPlotReservation_ReadPayload`
+  (`140086e70`), the same identity + uint32 reader used by opcode `0x051F`, so
+  matching-specific semantics remain blocked.
+- This pass clarifies that the current managed wrapper is still a safe
+  structural fit, not a proven semantic name: it writes the same identity +
+  uint32 wire shape as the housing reservation packet even though the final
+  field is currently surfaced as `Role` on the matching side.
+- Focused packet-shape coverage now proves that structural fit directly by
+  serializing `ServerMatchingGroupMemberRoleSelection` and
+  `ServerHousingCommunityPlotReservation` with the same identity and trailing
+  uint32 value, then asserting the payload bytes are identical.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `26/26`.
+
+One-hundred-twenty-sixth matching vote and queue-writer follow-up pass:
+
+- Focused fragment inspection and registration follow-up closed the remaining
+  nearby vote-result reader surfaces without widening behavior. Opcode `0x0614`
+  now has a durable native label at `140099840` proving two back-to-back
+  `Identity` payloads, while opcodes `0x0616` and `0x0623` share
+  `MatchingQueueResultWaitTime_ReadPayload` at `14007fcf0`, which reads one
+  6-bit `MatchingQueueResult` plus one trailing uint32 wait-time field.
+- Empty vote-result notifications are now documented directly from native
+  registration. `selected_decompiled.c` shows opcode `0x061A`
+  (`ServerMatchingMatchVoteKickSucceeded`) binding to
+  `ServerEmpty_ReadPayload`, which closes the last undocumented zero-payload
+  server vote-kick result packet in this nearby cluster.
+- Client-side queue request serializers are now durably labeled and tied back
+  to source comments. `140098a70` serialises opcodes `0x05EF` and `0x05F3` as
+  shared `MatchingMap` plus `Roles` and `PrimeLevel`, while `140098c00`
+  serialises opcodes `0x05F8` and `0x05F9` as `MatchType`,
+  `MatchingQueueFlags`, and `Roles`.
+- Registration follow-up also surfaced the next unresolved reader boundary:
+  opcode `0x0628` binds to `FUN_140081f00` with registered size `8`, which is
+  enough to annotate the current average-wait-time model conservatively but not
+  enough yet to promote a durable standalone reader label without a direct body
+  fragment.
+- Focused matching packet-shape regressions now cover the vote-kick dual-
+  identity payload, the shared vote cooldown/result payload, the client queue
+  and random-queue read layouts, and the terminal empty vote-kick packets.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `11/11`.
+
+One-hundred-twenty-seventh matching client vote-request pass:
+
+- Client registration follow-up closed the next nearby request trio directly from
+  `selected_decompiled.c`. Opcode `0x0606` (`ClientMatchingTransferIntoMatch`)
+  binds to shared zero-payload `ClientCraftingAbandon_WritePayload`
+  (`140001ba0`); opcode `0x0624` (`ClientMatchingMatchCastVoteSurrender`)
+  binds to shared `ClientBool_WritePayload` (`14007e610`); and opcode `0x0617`
+  (`ClientMatchingMatchCastVoteKick`) binds to `140099030`, a shared writer
+  also reused by opcodes `0x0538` and `0x053C`.
+- Cross-checking the other shared uses keeps `140099030` on a structural name
+  rather than a packet-specific one. Across the matching and housing request
+  models, the proven wire surface is one 14-bit realm-scoped id, one 64-bit id,
+  and one trailing 1-bit flag/enum field.
+- Source comments now tie the three matching client request models plus the
+  opcode enum notes back to those native writers, and focused read-side tests
+  cover the empty transfer trigger, the vote-kick identity-plus-bit payload,
+  and the one-bit surrender vote.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `14/14`.
+
+One-hundred-twenty-eighth matching request-cluster follow-up pass:
+
+- The earlier matching client requests around `0x05C8..0x05D5` also closed from
+  registration evidence. Opcode `0x05C8` (`ClientMatchingGameReadyResponse`)
+  reuses shared `ClientBool_WritePayload` (`14007e610`); opcode `0x05D3`
+  (`ClientMatchingMatchInitiateVoteToSurrender`) reuses shared zero-payload
+  `ClientCraftingAbandon_WritePayload` (`140001ba0`); and opcode `0x05D5`
+  (`ClientMatchingMatchInitiateLookingForReplacements`) reuses shared single-
+  uint32 `ClientTradeskillResetTalents_WritePayload` (`14007d010`), which is
+  now documented as a replacement-role bitmask when used by that opcode.
+- Opcode `0x05D1` (`ClientMatchingMatchInitiateVoteToKick`) stays on the local
+  boundary rather than getting a durable standalone writer label. Native client
+  registration binds it to shared local slot `LAB_1400867f0` with registered
+  size `0x10`; the source model remains the proven single-`Identity` surface,
+  but the local writer body was not exported in this pass.
+- Focused request-shape coverage now also covers the match-ready response bit,
+  the vote-initiation identity request, the empty surrender-initiation trigger,
+  and the replacement-role bitmask request.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `16/16`.
+
+One-hundred-twenty-ninth matching queue-leave request follow-up pass:
+
+- Registration follow-up closed the next nearby queue-leave request cluster
+  without inventing a new shared writer label. Opcodes `0x05B4`
+  (`ClientMatchingQueueLeaveAll`), `0x05DA` (`ClientMatchingMatchLeave`), and
+  `0x0602` (`ClientMatchingStopLookingForReplacements`) all bind directly to
+  shared zero-payload `ClientCraftingAbandon_WritePayload` (`140001ba0`).
+- Opcodes `0x05B5` and `0x05B6` share local writer slot `LAB_14008a150` with
+  registered size `4`. That local slot is also reused by unresolved diagnostic
+  opcode `0x00C8`, so this pass keeps the matching queue-leave models on a
+  conservative structural note rather than promoting a packet-specific durable
+  writer label. The current source models stay a single `MatchType` payload.
+- Durable shared-writer notes were still improved: the zero-payload
+  `ClientCraftingAbandon_WritePayload` label now includes the newly proven
+  matching opcodes, and `ClientBool_WritePayload` now lists the already-proven
+  matching response/vote opcodes that reuse it.
+- Focused matching packet-shape coverage now also covers the shared queue-leave
+  `MatchType` payload and the nearby empty leave/stop-replacements requests.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` should pass `18/18`
+  after this pass.
+
+One-hundred-thirtieth matching role-check request follow-up pass:
+
+- Direct writer evidence closed opcode `0x05B2`
+  (`ClientMatchingRoleCheckResponse`) beyond registration-only notes. Native
+  client registration binds it to `FUN_140098e10` inside a registered `0x0C`
+  object, and the exported body serialises one 5-bit `MatchType`, one 32-bit
+  `Role` bitmask field, and one trailing 1-bit response flag.
+- That exported writer body is narrow enough to promote a durable native label
+  `ClientMatchingRoleCheckResponse_WritePayload` without inventing semantics
+  beyond the proven request surface. The local constructor slot remains a
+  registration detail only.
+- Source comments now tie the opcode enum and request model back to
+  `140098e10`, and focused read-side coverage pins the `MatchType + Roles +
+  response bit` shape.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` should pass `19/19`
+  after this pass.
+
+One-hundred-thirty-first matching server status follow-up pass:
+
+- The next adjacent server matching status cluster also closed directly from
+  registration evidence. Opcodes `0x05B8`
+  (`ServerMatchingEligibilityChanged`) and `0x05BF`
+  (`ServerMatchingMatchEntered`) both bind to shared
+  `ServerUInt32_ReadPayload` (`14007ab50`), confirming plain single-`uint32`
+  payloads.
+- Opcodes `0x05BC` (`ServerMatchingMatchReadyCancel`), `0x05BE`
+  (`ServerMatchingMatchFinished`), and `0x05C0`
+  (`ServerMatchingMatchExited`) all bind to shared `ServerEmpty_ReadPayload`
+  (`14007d8e0`), confirming empty payload surfaces.
+- Shared reader labels now mention the matching reuse, and source comments plus
+  focused packet-shape coverage pin the shared `uint32` versus empty split for
+  this cluster. Opcode `0x05B0` remains on its earlier local-slot note because
+  the `LAB_1400807f0` body is still not exported.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` should pass `20/20`
+  after this pass.
+
+One-hundred-thirty-fourth matching unresolved 0x05CF placeholder pass:
+
+- Focused registration inspection exposed a missing managed opcode surface in
+  the same matching registration block. `Network_RegisterServerOpcode_0351`
+  binds server opcode `0x05CF` to local reader slot `LAB_140099110` with
+  registered size `4`, but the opcode enum had no matching entry.
+- The local reader body is still not exported, so this pass does not promote a
+  durable native label or higher-level semantics. The cheap discriminating
+  cross-check is opcode `0x085D ServerTradeskillSigilResult`, which reuses the
+  same `LAB_140099110` slot and is already pinned elsewhere as a single raw
+  `uint32` payload.
+- Source now carries `ServerMatching0x05CF` as an explicit unresolved matching
+  placeholder, and focused packet-shape coverage pins the conservative 32-bit
+  value surface while future evidence works on semantics.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` should pass `22/22`
+  after this pass.
+
+One-hundred-thirty-sixth matching average-wait reader reuse follow-up pass:
+
+- Focused registration follow-up found the provisional average-wait reader is
+  shared rather than unique. `selected_decompiled.c` binds both matching opcode
+  `0x0628` and unresolved server opcode `0x0015` to `FUN_140081f00`, each with
+  registered size `8`.
+- That is stronger registration evidence for a shared 8-byte reader boundary,
+  but still not enough to promote a durable native label or extend semantics
+  beyond the current `ServerMatchingAverageWaitTimeUpdate` source model because
+  the direct `FUN_140081f00` body is still missing from the exported fragments.
+- Source comments now record the shared `0x0015` reuse so the next decompile
+  pass can target `FUN_140081f00` directly instead of re-deriving the matching
+  context from registration alone.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` should pass `23/23`
+  after this pass.
+
+One-hundred-thirty-eighth matching average-wait reader-body pass:
+
+- Direct fragment capture closes the remaining native-reader blocker for opcode
+  `0x0628`. Exported body `140081f00.fragment.c` reads one 5-bit field into the
+  first 4 bytes of an 8-byte object, then one 32-bit field at offset `+4`.
+- That is enough to promote a durable structural native label
+  `ServerUInt5UInt32_ReadPayload` and to replace the earlier registration-only
+  `FUN_140081f00` notes in matching source comments with direct reader-body
+  evidence.
+- Unresolved server opcode `0x0015` still reuses the same reader, so this pass
+  keeps the shared label structural rather than packet-specific. For opcode
+  `0x0628`, existing runtime and addon evidence continue to map the two fields
+  as `MatchType` plus average wait time.
+- Focused matching packet-shape coverage now pins opcode `0x0628` explicitly as
+  one 5-bit `MatchType` followed by one uint32 wait-time field.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` should pass `25/25`
+  after this pass.
+
+One-hundred-fortieth shared 0x0015 reader-followup pass:
+
+- The direct `140081f00` body closed more than the matching side alone. Native
+  registration also binds unresolved server opcode `0x0015` to the same shared
+  reader used by `0x0628`, and the exported body proves the shared wire shape is
+  one 5-bit field followed by one uint32 field.
+- Source now exposes `Server0x0015` as a neutral reader-backed placeholder
+  instead of leaving that second consumer hidden. The placeholder keeps generic
+  field names because only `0x0628` currently has runtime evidence mapping the
+  structure to `MatchType + average wait time`.
+- Focused placeholder coverage now pins opcode `0x0015` to the exact shared
+  `5-bit + uint32` wire layout.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~PacketPlaceholderNamingTests"` should pass with
+  the new `Server0x0015` shape assertion.
+
+One-hundred-forty-second matching-adjacent diagnostic uint32 writer pass:
+
+- Focused client registration follow-up tightened the next unresolved requests
+  adjacent to the matching block. In `ClientWorldOpcodeRegister_MovementSpline`
+  (`1400a8190`), both opcodes `0x062A` and `0x0634` bind to shared
+  `ClientTradeskillResetTalents_WritePayload` (`14007d010`) with the same
+  4-byte registration shape already used by opcode `0x05D5` and several other
+  diagnostic/control packets.
+- That shared native writer is direct enough to replace the older outer-
+  registration-only note on `Client0x062A` and `Client0x0634`. The packets
+  still stay semantically unresolved because no producer/consumer evidence ties
+  their uint32 values to a specific matching action yet.
+- Source comments now point both unresolved client models and the opcode enum at
+  `14007d010`, and the shared native label explicitly mentions `0x062A` and
+  `0x0634` among the known one-uint32 reuses.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~ClientDiagnosticPacketShapeTests"` should pass
+  with the existing `Client0x062A` and `Client0x0634` uint32 shape assertions.
+
+One-hundred-forty-third movement-control ack shared uint32 writer pass:
+
+- The same `1400a8190` registration block also closes opcode `0x0635`
+  (`ClientMovementControlAck`) beyond a bare enum entry. Native registration
+  binds it to shared `ClientTradeskillResetTalents_WritePayload` (`14007d010`),
+  the same one-uint32 writer already reused by `0x05D5`, `0x062A`, and `0x0634`.
+- Source comments now tie both the opcode enum and `ClientMovementControlAck`
+  model back to that shared writer. The packet still keeps its current runtime
+  `Ticket` naming because the handler already logs it as a movement-control ack
+  ticket and there is no shape mismatch to resolve.
+- Focused packet-shape coverage now pins `ClientMovementControlAck` explicitly
+  as one raw uint32 field.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~ClientDiagnosticPacketShapeTests"` should pass
+  with the added `ClientMovementControlAck` uint32 ticket assertion.
+
+One-hundred-forty-fourth matching vote-empty family follow-up pass:
+
+- Focused follow-up on the nearby vote-result cluster closed the remaining
+  regression gap around the shared empty packets. Native registration already
+  binds opcodes `0x060D`, `0x0612`, `0x061A`, `0x061F`, and `0x0621` to shared
+  `ServerEmpty_ReadPayload` (`14007d8e0`), but the focused matching packet-shape
+  suite had only been asserting the vote-kick trio.
+- This pass keeps all five packets as shared empty-reader consumers, aligns the
+  opcode enum comments to the explicit `14007d8e0` reader address, and extends
+  the focused matching regression so the surrender-begin and surrender-failed
+  packets are asserted as zero-byte payloads alongside the already-covered
+  vote-kick terminal notifications.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `26/26`.
+
+One-hundred-forty-fifth matching PvP pool registration-fit pass:
+
+- Focused follow-up on opcode `0x05E5`
+  (`ServerMatchingMatchPvpPoolUpdated`) kept the current source conservative and
+  evidence-backed. Native registration still binds `0x05E5` to local reader slot
+  `LAB_140099270` with registered size `8`, and there is still no standalone
+  exported body to justify a durable function label.
+- The existing enum/model notes already matched that registration evidence as a
+  two-`uint32` lives-remaining surface. This pass closes the remaining regression
+  gap by pinning the packet shape directly in the focused matching suite rather
+  than widening semantics or inventing a reader name for the local slot.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `27/27`.
+
+One-hundred-forty-sixth matching-adjacent wide-string writer pass:
+
+- Focused client registration follow-up closed the next diagnostic packet in the
+  same `1400a8190` neighborhood. Native registration binds opcode `0x063E` to
+  shared `ClientSuggest_WritePayload` (`14007ae80`) inside an 8-byte object,
+  which matches the current one-wide-string source model exactly.
+- This is direct enough to replace the old generic enum note with the explicit
+  shared writer and to extend the existing native label so `0x063E` is recorded
+  alongside the other known string-writer reuses.
+- The packet still stays semantically unresolved because only the wire surface is
+  proven here: one wide string field.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~ClientDiagnosticPacketShapeTests"` should pass
+  with the existing `Client0x063E` wide-string shape assertion.
+
+One-hundred-forty-eighth boundary wide-string diagnostic pass:
+
+- Focused client registration follow-up corrected another unresolved client
+  boundary packet structurally. Native registration binds opcode `0x012D` to
+  shared `ClientSuggest_WritePayload` (`14007ae80`) inside an 8-byte object,
+  which is the same one-wide-string serializer already reused by
+  `ClientSuggest` (`0x0833`), `ClientAccountItemClaimPendingItemGroup`
+  (`0x0233`), `ClientAccountItemReturnPendingItemGroup` (`0x07C6`), and
+  `Client0x063E`.
+- Source now exposes `Client0x012D` as one wide-string field instead of a fake
+  `uint64` payload, and the diagnostic handler logs the captured text rather
+  than a scalar placeholder.
+- The request owner remains blocked, so the packet stays numerically named even
+  though its wire surface is now evidence-backed.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~ClientDiagnosticPacketShapeTests"` should pass
+  with the updated `Client0x012D` wide-string shape assertion.
+
+One-hundred-forty-ninth boundary empty-request diagnostic pass:
+
+- Focused registration follow-up corrected the adjacent boundary packet
+  `Client0x011B`. Native registration binds opcode `0x011B` to shared
+  zero-payload `ClientCraftingAbandon_WritePayload` (`140001ba0`), which
+  already backs named empty requests such as `ClientPathScientistDismissScanbot`
+  (`0x00F0`), `ClientPathScientistDismissScanbotPathAction` (`0x015F`), and
+  `ClientLootVacuum` (`0x01AD`).
+- Source now treats `Client0x011B` as an empty request instead of a fake single
+  byte payload, and the diagnostic handler logs the request as empty.
+- Follow-up owner tracing weakens the earlier mail-adjacent hypothesis instead
+  of promoting a subsystem name. The strongest selected mail helpers around
+  `14062a080` through `14062b0b0` only send `0x0124`, `0x0125`, `0x0126`,
+  `0x0127`, `0x0168`, and `0x011E`, while the same zero-payload writer at
+  `140001ba0` is reused by already named vendor, loot, duel, trade, matching,
+  and crafting requests. Treat `0x011B` as structurally proven but owner
+  unresolved until a direct sender or consumer witness appears.
+- A wider generic-emitter sweep also stayed negative. Filtered
+  `TraceFunctionCallers.java` passes over `Network_SendOpcodePayloadHelper`
+  (`1403f4900`), `Network_SendOpcodePayloadOrPackedHelper` (`1403f4740`),
+  `FUN_140016010`, and `FUN_1400161d0` reported direct references but no caller
+  window containing `0x011B`, so the opcode still does not surface at the known
+  generic emit boundaries in the current project state.
+- The owner remains unresolved, so the packet stays numerically named.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~ClientDiagnosticPacketShapeTests"` should pass
+  with the updated empty-payload `Client0x011B` assertion.
+
+One-hundred-forty-seventh movement-speed scalar writer pass:
+
+- Focused native sender follow-up closed opcode `0x063B`
+  (`ClientPlayerMovementSpeedUpdate`) beyond the earlier generic scalar note.
+  `ClientPlayerMovementSpeedUpdate_SendAndDispatch` (`1404dafb0`) now provides a
+  direct client-side producer anchor proving the packet is built and sent as one
+  raw `uint32` value before dispatching the same value through the client
+  `PlayerMovementSpeedUpdate` named event.
+- Source comments now tie both the opcode enum and the client packet model back
+  to `1404dafb0`. The packet still stays structurally named as a scalar field
+  rather than a float because the native sender proves width, not float-vs-int
+  semantics.
+- Focused diagnostic packet-shape coverage now pins opcode `0x063B` explicitly
+  as one raw `uint32` field.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~ClientDiagnosticPacketShapeTests"` passed `19/19`.
+
+One-hundred-forty-eighth movement-control runtime-source pass:
+
+- Runtime-only follow-up closed the source-comment gap around the adjacent
+  server movement-control pair without inventing a client-native reader anchor.
+  `Player.SetControl` remains the controlling server sender: it writes opcode
+  `0x0636` as `Ticket + Immediate + UnitId`, and emits opcode `0x0639` as an
+  empty payload when control is removed.
+- The opcode enum plus `ServerMovementControl` and
+  `ServerMovementControlRemove` models now state that these packet shapes are
+  runtime-backed rather than decompile-backed. This keeps the source truthful
+  while preserving the already-added focused regression coverage.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MovementControlPacketShapeTests"` passed `2/2`.
+
+One-hundred-forty-ninth diagnostic uint32 writer follow-up pass:
+
+- The same `1400a8190` registration block that already closed `0x062A`,
+  `0x0634`, and `0x0635` also covers opcode `0x07E3`. Native client
+  registration binds `0x07E3` to shared
+  `ClientTradeskillResetTalents_WritePayload` (`14007d010`), the same direct
+  one-`uint32` writer already reused across the surrounding diagnostic family.
+- This pass aligns the opcode enum and `Client0x07E3` model comments to that
+  explicit shared writer while keeping the packet structurally named as a raw
+  `uint32` field. No stronger semantics are implied here.
+- Focused packet-shape coverage already existed for `Client0x07E3`, so the
+  validation remains the existing one-`uint32` regression.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~ClientDiagnosticPacketShapeTests"` should pass
+  with the existing `Client0x07E3` uint32 shape assertion.
+
+One-hundred-fiftieth diagnostic uint32 writer backfill pass:
+
+- Shared helper follow-up backfilled the earlier `0x0550` diagnostic packet to
+  the same direct evidence standard as the later `0x062A`, `0x0634`, `0x0635`,
+  and `0x07E3` passes. Native client registration binds opcode `0x0550` to
+  `ClientTradeskillResetTalents_WritePayload` (`14007d010`), the shared helper
+  that serialises one raw `uint32` field.
+- The packet shape was already modeled and test-pinned correctly, so this pass
+  only aligns the opcode enum and `Client0x0550` model comments to the explicit
+  native helper without implying stronger semantics.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~ClientDiagnosticPacketShapeTests"` should pass
+  with the existing `Client0x0550` uint32 shape assertion.
+
+One-hundred-fifty-first tradeskill reset-talents writer follow-up pass:
+
+- The original `ClientTradeskillResetTalents_WritePayload` mapping pass had
+  already named both the shared writer (`14007d010`) and its dedicated sender
+  `Tradeskill_SendClientTradeskillResetTalents` (`14059acb0`), but the source
+  enum/model comments had not yet been brought up to that same evidence level.
+- This pass aligns opcode `0x0858` and the `ClientTradeskillResetTalents` model
+  to the direct sender-plus-writer trail: one 32-bit tradeskill id emitted only
+  when the active profession has at least one selected talent.
+- No packet-shape change was required; the model already reads the payload as a
+  32-bit `TradeskillType` enum.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo` should pass.
+
+One-hundred-fifty-second entity-command runtime-envelope pass:
+
+- The next adjacent movement packets after `0x0636` / `0x0639` are not blocked
+  placeholders like `0x063A`; they are runtime-owned entity-command envelopes.
+  `MovementManager.BuildNetworkEntityCommands` constructs opcode `0x0638`
+  (`ServerEntityCommand`) as `Guid + Time + TimeReset bit + ServerControlled bit
+  + 5-bit command count + repeated command ids and payloads`, while
+  `MovementManager.HandleClientEntityCommands` consumes opcode `0x0637`
+  (`ClientEntityCommand`) as `Time + command count + repeated command ids and
+  payloads`.
+- Source comments now replace the older generic ùbidirectional?ù note on the
+  opcode enum and add matching runtime-boundary summaries to the client/server
+  packet models. No client-native decompile label is implied here.
+- Focused protocol coverage now pins one simple `SetTime` command through both
+  envelopes so the shared header/count framing stays guarded without widening to
+  broader movement-command semantics.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~ClientEntityCommand_ReadsTimeCountAndSetTimePayload|FullyQualifiedName~ServerEntityCommand_WritesGuidTimeFlagsAndSetTimePayload"` passed `2/2`.
+
+One-hundred-fifty-third crafting current-craft enum repair pass:
+
+- Validation of the adjacent crafting comment follow-up exposed an unrelated but
+  real source hole: `ServerCraftingCurrentCraft` already had a modeled payload,
+  handler notes, and focused packet-shape coverage, but `GameMessageOpcode` was
+  missing the corresponding `0x0854` enum member.
+- This pass restores the missing enum entry using the already-documented native
+  reader `ServerCraftingCurrentCraft_ReadPayload` (`1400a46b0`) and adds the
+  same reader-backed summary to the packet model. The payload surface itself is
+  unchanged.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
+  --no-restore -v minimal --nologo` should pass, and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~CraftingPacketShapeTests"` should continue to
+  cover `ServerCraftingCurrentCraft`.
+
+One-hundred-fifty-four unresolved client immediate blocker pass:
+
+- Focused exact-immediate follow-up tightened the remaining blocker evidence for
+  three unresolved client packets without unlocking a rename. An exact
+  `MOV R8D,0x142` scan found one hit in `FUN_140027d80`, but the cached
+  decompile only shows a generic consumer-dispatch candidate packaging local
+  state and invoking the dispatcher with opcode `0x0142`; no gameplay or UI
+  owner surfaced, so `Client0x0142` stays numerically named.
+- An exact `MOV R8D,0x7B6` scan returned zero sender-style hits for `0x07B6`
+  beyond registration, so `Client0x07B6` still has no producer witness.
+- An exact `MOV ECX,0xED` scan found three hits for `0x00ED`
+  (`FUN_14062a160`, `FUN_14062a5f0`, and `FUN_1406b4cf0`), but all three feed
+  `GameFormula_GetEntryById(0xed)` and cache the float at `[RAX + 0x18]` from
+  the returned record. `FUN_14062a5f0` is part of the `ClientMailSend`
+  (`0x0168`) path because it dispatches `MailResult` and emits opcode `0x0168`,
+  while the sibling helpers stay in the same mail-side range/target-check lane.
+  That closes the `0x00ED` immediate hunt as a false lead: the lookup key is a
+  mail formula id, not packet ownership evidence, so `Client0x00ED` remains
+  blocked.
+- Verification: targeted `run_ghidra_analysis.ps1 -ExportOnly` passes with
+  `FindImmediateInstructions.java` filters `MOV R8D,0X142`, `MOV R8D,0X7B6`,
+  and `MOV ECX,0XED` all completed successfully against the per-target
+  WildStar64 project.
+
+One-hundred-forty-first matching empty-reader pair follow-up pass:
+
+- The stale `0x05DF` todo did not require a new label or source correction:
+  `ServerMatchingQueueJoin_ReadPayload` (`1400995f0`) and its nested helpers were
+  already durably mapped. The next real matching delta in this neighborhood was
+  the adjacent empty-reader pair `0x05F2` (`ServerMatchingGroupIsQueued`) and
+  `0x0604` (`ServerMatchingLeftQueue`).
+- Native registration already binds both opcodes to shared
+  `ServerEmpty_ReadPayload` (`14007d8e0`). This pass keeps them as shared-reader
+  consumers, aligns the enum comments to the explicit shared reader address, and
+  extends the focused matching packet-shape regression so both packets are
+  asserted as zero-byte payloads alongside the nearby empty matching packets.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
+  --filter "FullyQualifiedName~MatchingPacketShapeTests"` passed `26/26`.
 
 Crafting discovery threshold diagnostic follow-up (2026-05-25):
 
@@ -14067,8 +15197,8 @@ Quest log / tutorial Codex classification follow-up (2026-05-25):
   10 quests carrying bit `0x800000`, all 10 lacked `EpisodeQuest` rows but only
   8 were fully zero-classified; outliers `10604` and `10605` still carry nonzero
   quest categories. The stronger durable boundary for Rider's Reef is therefore
-  ‚Äúunclassified in `Quest2`/`EpisodeQuest`‚Äù, not merely ‚Äúflagged with
-  `0x800000`‚Äù.
+  ùunclassified in `Quest2`/`EpisodeQuest`ù, not merely ùflagged with
+  `0x800000`ù.
 - Net result: blank Codex browse rows for the Rider's Reef starter/follow-up
   chain are a stock client data/UI limitation. Server-side fixes can keep those
   quests active, tracked, and objective-synced, but cannot make them browseable
@@ -15107,10 +16237,718 @@ Public-event scoreboard/end packet-shape pass (2026-05-27):
   and threshold fields remain packet-shape only: delivery rules, reward source
   tables, eligibility, and result ordering are still blocked pending content
   smoke/sniff evidence.
+- Runtime follow-up (2026-05-28): `ClientPublicEventRequestScoreboardHandler`
+  now handles the mapped subscribe request by looking up the event on the
+  player's map and asking the event to emit one `ServerPublicEventStatsUpdate`
+  snapshot to that member. `PublicEventTeam` now keeps per-member absolute stat
+  values and emits combined team totals, avoiding the previous last-update-wins
+  team row. Focused tests cover subscribe routing, unsubscribe no-op behavior,
+  non-member suppression, and combined team/participant stat snapshots. Exact
+  live subscription cadence, score-field precision, reward delivery, result
+  ordering, and reward tier semantics remain blocked.
 - Verification:
   `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj --no-restore -v minimal --nologo`
   passed.
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests" -v minimal --nologo`
   passed 38/38.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PublicEventScoreboardTests" -v minimal --nologo`
+  passed 4/4.
+  `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj --no-restore -v minimal --nologo`
+  and
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
+  passed.
   `.\Decomp\Analysis\Test-DecompileManifest.ps1 -FailOnMismatch` reported
   `WildStar64.exe ok`.
+
+Public-event objective packet-shape pass (2026-05-27):
+
+- The opcode registration table binds `0x0133` to
+  `ServerPublicEventObjectiveNotificationMode_ReadPayload` (`WildStar64.exe`
+  `14007a3a0`), `0x0134` to
+  `ServerPublicEventObjectiveStatusUpdate_ReadPayload` (`14007b3c0`), `0x0132`
+  to `ServerPublicEventObjectiveUpdate_ReadPayload` (`14007b490`), and `0x06F9`
+  to the shared `ServerUInt15_ReadPayload` (`14007c3a0`).
+- The mapped wire shapes are: notification mode reads objective id u15 plus
+  notification mode u32; status update reads objective id u15 plus
+  `PublicEventObjectiveStatus`; objective update reads objective id u15, status,
+  busy flag, elapsed ms, notification mode, counted uint32 location ids, and
+  counted map-region rows; objective start reads one u15 objective id.
+- NexusForever now writes `ServerPublicEventObjectiveNotificationMode.ObjectiveId`
+  as 15 bits instead of 14 and has packet regression coverage for notification
+  mode, status update, full objective update, and objective start serialization.
+  Objective text ids, phase/completion notification audience and ordering, mode
+  semantics beyond the enum values, and quest-share behavior remain blocked
+  pending capture evidence.
+
+Public-event objective text/audience semantics pass (2026-05-29):
+
+- `Lua_PublicEventObjective_GetDescription` (`WildStar64.exe` `14068d5b0`) reads
+  the live objective entry text id at offset `0x18` when the viewer's current
+  live-event team matches the owning team and switches to offset `0x1c` for the
+  other-team variant. Those offsets line up with
+  `PublicEventObjectiveEntry.LocalizedTextId` and
+  `LocalizedTextIdOtherTeam`.
+- `Lua_PublicEventObjective_GetShortDescription` (`14068d8a0`) uses the same
+  owning-team vs other-team switch at offsets `0x20` and `0x24`, matching
+  `PublicEventObjectiveEntry.LocalizedTextIdShort` and
+  `LocalizedTextIdOtherTeamShort`.
+- `Lua_PublicEventObjective_GetJoinMessage` (`140690f20`) and
+  `Lua_PublicEventObjective_GetStartMessage` (`140691150`) read localized string
+  ids from live-objective offsets `0x50` and `0x54`, matching
+  `PublicEventObjectiveEntry.LocalizedTextIdParticipantAdd` and
+  `LocalizedTextIdStart`.
+- The description getters also branch on internal objective type `0x18` and
+  replace the base description text with a 16-entry state-indexed localized-text
+  lookup. That shape matches the local
+  `PublicEventObjectiveStateEntry.LocalizedTextIdState00..15` table layout and
+  strongly suggests the internal family is `PublicEventObjectiveType.State`.
+  `Lua_PublicEventObjective_GetObjectiveType` (`1406900a0`) returns the raw
+  `(*plVar4 + 0x150)` objective type directly into Lua with no translation, so
+  the getter-side evidence supports the existing `State = 24` mapping. The
+  conflicting later-family values visible in `14068c2c0.fragment.c` should be
+  treated as non-authoritative fragment reconstruction noise, not a proven Lua
+  alias layer. Packet/UI conditions that trigger these text swaps still remain
+  blocked pending capture evidence.
+
+Public-event vote runtime hardening pass (2026-05-28):
+
+- `ClientPublicEventVote` remains mapped from the client registration table as
+  opcode `0x06EE` with event id u14, vote id u14, team id u14, and choice u32.
+  Server vote initiate/result comments now record the matching mapped public
+  event vote packet surfaces without adding unproven UI timing semantics.
+- `PublicEventVote.Choice` now treats finalised votes, unknown participants,
+  duplicate responses, and invalid choices as idempotent no-ops. This keeps
+  repeated or late client sends from throwing through `PublicEventVoteResponse`
+  while preserving the existing proven active-vote tally/end behavior.
+- Focused regression coverage now exercises detailed vote initiate, tally/end
+  after all members vote, timeout default choice, and duplicate/late/invalid
+  response handling in `PublicEventVoteTests`. `PacketPlaceholderNamingTests`
+  also pins `ClientPublicEventVote` read shape and server vote
+  initiate/detailed-initiate/tally/end serialization. `ClientPublicEventVoteHandlerTests`
+  pins the current handler route from opcode `0x06EE` to
+  `PublicEventManager.RespondVote(player, eventId, choice)` while leaving vote
+  id and team id mismatch semantics blocked.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj --no-restore -v minimal --nologo`
+  passed.
+  `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj --no-restore -v minimal --nologo`
+  passed.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PublicEventVoteTests|FullyQualifiedName~PacketPlaceholderNamingTests" -v minimal --nologo`
+  passed 48/48.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~ClientPublicEventVoteHandlerTests|FullyQualifiedName~PublicEventVoteTests|FullyQualifiedName~PacketPlaceholderNamingTests" -v minimal --nologo`
+  passed 49/49.
+- Remaining blocker: retail vote UI sequence, exact timeout cadence, tally/end
+  packet order, vote/team id mismatch handling, and default-choice semantics
+  still require capture or deeper client evidence before LWS-071 can be checked
+  off.
+
+Public-event trigger producer hardening pass (2026-05-28):
+
+- `Lua_RegisterPublicEventConstants` exposes
+  `PublicEventObjectiveType_Turnstile` and
+  `PublicEventObjectiveType_ParticipantsInTriggerVolume` in the WildStar64
+  public-event constant table. NexusForever already routes these through
+  `TurnstileTriggerEntity` and `VolumeGridTriggerEntity`.
+- `VolumeGridTriggerEntity` now keeps the mapped trigger-volume objective
+  producer bounded to nonzero object ids and players, with paired +1/-1 deltas
+  for enter/leave. `TurnstileTriggerEntity` now also ignores zero object ids and
+  non-player entities before sending a one-shot `Turnstile` objective update.
+  `WorldLocationVolumeGridTriggerEntity` focused tests pin the current
+  horizontal `WorldLocation2.Radius + HitRadius * 0.5` check and separate
+  `MaxVerticalDistance` clamp used by the trigger producer.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~VolumeGridTriggerEntityTests" -v minimal --nologo`
+  passed 7/7.
+  `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj --no-restore -v minimal --nologo`
+  passed.
+- Remaining LWS-074 blocker: branch trigger rows, exact radii/coordinates, door
+  ids, open/close state, cleanup timing, and respawn/despawn behavior still need
+  content-specific smoke/decompile proof before generic trigger/door behavior can
+  be widened.
+
+Communicator/story packet-shape pass (2026-05-28):
+
+- WildStar64 exports surface `DB\CommunicatorMessages.tbl`,
+  `Communicator_ShowQuestMsg`, `DB\StoryPanel.tbl`,
+  `MessageManager_DisplayStoryPanel`, and CommunicatorLib
+  placement/overlay/background symbols. NexusForever packet comments now record
+  these anchors on `ServerCommunicatorMessage`,
+  `ServerStoryTextCommunicator`, and `ServerStoryPanelCustomShow`.
+- Focused packet tests pin the current safe shapes:
+  `ServerCommunicatorMessage` writes communicator id u15 plus condition flag;
+  `ServerStoryTextCommunicator` writes `StoryMessage`, creature id u18,
+  duration, portrait placement u2, overlay u2, and background u3; and
+  `ServerStoryPanelCustomShow` writes `StoryMessage`, sound context id, panel
+  type, duration, and style.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests" -v minimal --nologo`
+  passed 47/47.
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj --no-restore -v minimal --nologo`
+  passed.
+- Remaining LWS-075 blocker: actor rows, camera subjects/positions/timing, exact
+  localized text/communicator ids, send conditions, skip behavior, and
+  content-specific completion/follow-up sequencing still require capture or
+  deeper client evidence before placeholder cinematic/communicator behavior can
+  be replaced.
+
+Client opcode discovery loop pass (2026-05-29):
+
+- Inventory target slice: the remaining placeholder queue still centers on
+  `ServerMatching0x05CF` plus the diagnostic `Client0x*` receive family. This
+  cycle closed two native-reader blockers without inventing packet-specific
+  semantics.
+- `LAB_140099110` direct inspection now proves opcode `0x05CF` reads one
+  4-byte field through shared helper `14006c090`, matching the already-modeled
+  `ServerTradeskillSigilResult` reuse at `0x085D`. Source comments and durable
+  label `ServerUInt32_LocalReadThunk` now record that structural evidence while
+  the packet stays `ServerMatching0x05CF`.
+- `LAB_14008a140` / `LAB_14008a150` direct inspection now proves the shared
+  queue-leave family reads/writes one 5-bit `MatchType` field. That closes the
+  wire-shape mismatch on unresolved `Client0x00C8`, which had been modeled as a
+  raw `uint32` and even routed speculatively into challenge share runtime.
+- Source now models `Client0x00C8` as the same 5-bit `MatchType` payload used by
+  `ClientMatchingQueueLeave` and `ClientMatchingQueueLeaveAsGroup`, keeps the
+  handler diagnostic-only again, and adds durable labels
+  `ClientMatchType_ReadPayload` / `ClientMatchType_WritePayload`.
+- Remaining blockers:
+  `ServerMatching0x05CF` still lacks a matching consumer/sender witness beyond
+  the shared raw `uint32` surface; `Client0x00C8` still lacks a second witness
+  for whether it is a challenge request, a third queue-leave variant, or another
+  MatchType-scoped action.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj --no-restore -v minimal --nologo`
+  passed.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests" -v minimal --nologo`
+  should pass after this pass.
+
+Client opcode discovery loop pass 2 (2026-05-29):
+
+- Target slice: unresolved `Client0x0142` plus adjacent diagnostic backfill for
+  `Client0x011D`, with a follow-up check that `ServerMatching0x05CF` still has no
+  consumer beyond registration.
+- Exported sender evidence now maps `Client0x0142_SendFromLuaDispatch`
+  (`140027d80`) as the native producer for opcode `0x0142`. The function builds
+  the known u64 + u14 + bit payload from a `DAT_140c66da8` table slot plus
+  `FUN_140056d60` Lua argument values, then performs the same follow-up send used
+  by adjacent CharacterSelection dispatch helpers. Semantic rename remains
+  blocked because the Lua/UI owner string anchor is still unresolved.
+- Writer/reader follow-up also closes a structural confusion: opcodes
+  `0x0538`/`0x053C`/`0x0617` share reader stub `LAB_14007e6c0` with `0x0142`,
+  but they use `ClientRealmScopedIdAndBit_WritePayload` with Identity-first field
+  order and a larger registered size. Source now keeps `Client0x0142` on explicit
+  structural field names (`LeadingValue`, `ScopedBits`, `TrailingFlag`) instead of
+  implying Identity semantics.
+- `Client0x011D` now documents the already-mapped shared one-uint32 writer
+  `ClientTradeskillResetTalents_WritePayload` (`14007d010`) in enum/model
+  comments without implying gameplay semantics.
+- `FindImmediateInstructions` for `0x05CF` still finds only the registration row in
+  `Network_RegisterServerOpcode_0351`, so `ServerMatching0x05CF` remains blocked.
+- Verification:
+  `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj --no-restore -v minimal --nologo`
+  passed.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests" -v minimal --nologo`
+  should pass after this pass.
+
+Client opcode discovery loop pass 3 (2026-05-29):
+
+- Follow-up caller tracing for `FUN_140027d80` showed no code callers; the first
+  two hits at `140b92cd4` / `140b92ce4` were `.pdata` unwind-info false
+  positives, while `DumpNearbyData` at `140c564a8` exposed a real function-pointer
+  table entry for `Client0x0142_SendFromLuaDispatch`.
+- `DumpAsciiAtAddress` on the paired data pointer `1409edbf0` resolved the table
+  string `RealmTransfer`, and adjacent string-xref/table entries pair
+  `FUN_140027c60` with `GetRealmTransferDestinations`. That neighboring function
+  sends opcode `0x03EE`, which closes the semantic loop: opcode `0x0142` is the
+  matching realm-transfer request, not a generic unresolved Lua dispatch.
+- Source now renames `0x0142` to `ClientRealmTransfer`, moves the packet model
+  into the pregame surface, and replaces the diagnostic-only handler with a
+  conservative compatibility handler that validates the target realm id and
+  returns `ServerRealmTransferResult` with `RealmTransferFailed_ServerDown` for
+  offline realms or `RealmTransferFailed_Internal` until live realm-transfer
+  handoff parity exists.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo`
+  passed (`25/25`).
+
+Client opcode discovery loop pass 4 (2026-05-29):
+
+- Parallel subagent + Ghidra slice: opaque diagnostic backlog (`Client0x003D`,
+  `Client0x0701`, `Client0x0760`, `Client0x0762`, `Client0x0928`) plus pregame
+  sender label promotion and doc sync for the already-landed `ClientRealmTransfer`
+  rename from pass 3.
+- `FindImmediateInstructions` plus `selected_decompiled.c` registration rows now
+  surface native writer addresses for all five opaque opcodes:
+  `ClientWorldOpcodeRegister_MovementSpline` @ `1400a8190` owns `0x003D`,
+  `0x0760`, `0x0762`, and `0x0928`; `Network_RegisterServerOpcode_0351` @
+  `14006c290` owns `0x0701`. Registered sizes match the existing managed models
+  (`0x18`, `0x58`, `0x10`, and two 8-byte scalars).
+- Durable labels added for writers `Client0x003D_WritePayload` @ `1400aba70`,
+  `Client0x0760_WritePayload` @ `1400abd30`, `Client0x0762_WritePayload` @
+  `1400ac410`, `Client0x0701_WritePayload` @ `1400a69d0`, and
+  `Client0x0928_WritePayload` @ `1400898b0`. Semantic rename remains blocked
+  because senders and UI anchors are still missing.
+- Character-select sender cluster labels promoted: `Client0x06E7_SendFromLuaDispatch`
+  @ `140022270`, `ClientCharacterDelete_SendFromLuaDispatch` @ `140024c10`,
+  `ClientCharacterRename_SendFromLuaDispatch` @ `140024dd0`, and
+  `ClientGetRealmTransferDestinations_SendFromLuaDispatch` @ `140027c60`.
+  `ClientRealmTransfer_WritePayload` @ `14007e6d0` replaces the legacy
+  `ClientUnresolvedDiagnosticPacket0142` name.
+- Tracker/docs: `MISSING_FEATURE_MATRIX` F-002/F-030 rows and
+  `MATCHING_IMPLEMENTATION_STATUS` `ServerMatching0x05CF` row updated; stale
+  `Client0x0142` blocked wording removed in favor of `ClientRealmTransfer`.
+- Remaining blockers: field decode for opaque payloads; native sender for
+  `Client0x00ED`/`Client0x07B6`; post-read consumer for `ServerMatching0x05CF`;
+  online realm-transfer handoff parity.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests" -v minimal --nologo`
+  should pass after this pass.
+
+Client opcode discovery loop pass 5 (2026-05-29):
+
+- Isolated `FindImmediateInstructions` runs now use `run_ghidra_analysis.ps1`
+  `-RunId` output folders when concurrent decompile activity would otherwise
+  overwrite shared `*.FindImmediateInstructions.ghidra.log` files.
+- Exact sender-style immediate scans for the shared one-wide-string writer family
+  both dead-end: `FindImmediateInstructions.java '0x12D' '6' 'MOV R8D,0X12D'`
+  returned `totalMatches=0`, and `FindImmediateInstructions.java '0x63E' '6'
+  'MOV R8D,0X63E'` also returned `totalMatches=0`.
+- That leaves `Client0x012D` and `Client0x063E` structurally confirmed as the
+  existing one-wide-string `ClientSuggest_WritePayload` reuse cases, but still
+  owner-blocked. No safe rename or subsystem assignment follows from the current
+  evidence.
+- Verification:
+  Isolated Ghidra runs `opcode012d_probe` and `opcode063e_probe` both completed
+  successfully and wrote per-run summaries/logs under
+  `Decomp\Analysis\logs\runs\`.
+
+Client opcode discovery loop pass 6 (2026-05-29):
+
+- The same isolated exact-immediate probe pattern now hardens `Client0x011B`
+  as another sender-blocked placeholder. `FindImmediateInstructions.java
+  '0x11B' '6' 'MOV R8D,0X11B'` returned `totalMatches=0`.
+- Combined with the earlier zero-payload shared writer evidence and the already
+  exhausted caller-window passes, `Client0x011B` should remain an empty request
+  until a different anchor surfaces a subsystem owner.
+- Verification:
+  Isolated Ghidra run `opcode011b_probe` completed successfully and wrote its
+  per-run summary/log under `Decomp\Analysis\logs\runs\`.
+
+Client opcode discovery loop pass 7 (2026-05-29):
+
+- Subagent sweep across the remaining unresolved client backlog keeps
+  `Client0x00C8` as the best next semantic target because its structural surface
+  is narrower than the opaque movement-family placeholders and it already shares
+  the proven one-`MatchType` boundary used by `ClientMatchingQueueLeave`
+  (`0x05B5`) and `ClientMatchingQueueLeaveAsGroup` (`0x05B6`).
+- The first exact-immediate discriminator for that target is not trustworthy:
+  isolated `FindImmediateInstructions.java '0xC8' '6' 'MOV R8D,0XC8'` hits are
+  dominated by unrelated gameplay helpers calling `FUN_1407e4830(..., 0, 200)`.
+  Nearby labeled examples include `SpellCast_SendClientSpellCastState`,
+  `ItemUse_SendClientItemUse`, `GuildBossToken_SendClientCastGuildBossToken`,
+  and `RapidTransport_SendClientRapidTransport`, which already send other proven
+  opcodes. For `0x00C8`, `0xC8` currently aliases too many decimal-200 buffer
+  sizes to be useful sender evidence.
+- Practical consequence: `Client0x00C8` stays promising, but the next real lead
+  is a dedicated sender or UI/consumer witness, not another raw exact-immediate
+  scan on `0xC8`.
+- Verification:
+  Isolated Ghidra run `opcode00c8_probe` completed successfully and wrote its
+  per-run summary/log under `Decomp\Analysis\logs\runs\`.
+
+Client opcode discovery loop pass 8 (2026-05-29):
+
+- Direct cached writer inspection closes the structural blocker for
+  `Client0x003D`. `Client0x003D_WritePayload` @ `1400aba70` serialises one
+  14-bit field, one uint32, one wide string, and one trailing uint64 inside the
+  registered `0x18`-byte client slot.
+- `Client0x0760_WritePayload` @ `1400abd30` reuses `Client0x003D_WritePayload`
+  as a nested sub-serializer inside its realm-row layout, which is why the
+  `0x003D` slice sits in the same realm/entry registration block even though a
+  standalone gameplay sender is still missing.
+- Source now replaces the raw-byte placeholder with that exact structural model
+  and updates the diagnostic handler plus packet-shape coverage accordingly.
+- Verification:
+  Focused client diagnostic packet-shape coverage should pass with the new
+  `Client0x003D` structured assertion.
+
+Client opcode discovery loop pass 8 (2026-05-29):
+
+- Parallel subagent + Ghidra slice: realm-cluster writer callers, opaque writer
+  caller traces, `ServerMatching0x05CF` registration closure, and
+  `Client0x07B6` sender hunt.
+- Wire-shape corrections landed for `Client0x0701` and `Client0x0928`: native
+  writers `1400a69d0` and `1400898b0` serialise bitfields (2+32 and 32+5),
+  not plain ulongs. Source models, handlers, and packet-shape tests now match
+  decompile evidence.
+- Realm cluster mapping: `Client0x0760_WritePayload` @ `1400abd30` row layout
+  mirrors `ServerRealmList` realm entries; bundle writer `1400ac770` is
+  **`ServerRealmList_WritePayload`** for opcode `0x0761`, not a client packet.
+  `Client0x003D` writer is nested inside `0x0760` rows only (no standalone
+  game caller yet).
+- `Client0x07B6` sender witness: `Client0x07B6_SendFromModuleList` @
+  `1403f42e0` walks loaded modules and skips Options/FrontEnd/ExternalTool;
+  matrix hypothesis "instance reset" is rejected pending addon/mod semantics.
+- `Client0x00ED` still has no packet sender (`0xED` mail-formula false positives
+  only). `ServerMatching0x05CF` registration tuple fully closed; emit remains
+  blocked (no post-read handler beyond shared uint32 thunk).
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo`
+  should pass after this pass.
+
+Client opcode discovery loop pass 9 (2026-05-29):
+
+- Parallel subagent + Ghidra slice: structured decode for `Client0x0760`/`0762`,
+  `ClientInitiatePTRCharacterCopy` rename evidence, `Client0x07B6` sender trace,
+  and `Client0x00C8` dedicated-sender hunt.
+- `Client0x0760` and `Client0x0762` now decode using `RealmInfo.Read` and
+  `NetworkMessage.Read` (mirrors `ServerRealmList` row serializers). Registered
+  slot sizes `0x58`/`0x10` are native object sizes, not fixed wire byte counts.
+- **`ClientInitiatePTRCharacterCopy` (`0x06E7`)** renamed: send site @ `140022270`
+  plus CharacterScreenLib `InitiatePTRCharacterCopy` @ `1409edc80`. **`ClientPtrCopy`
+  (`0x06E8`)** remains separate with unresolved managed wire shape.
+- `Client0x07B6` sender `1403f42e0` is sole `0x7B6` send site (addon/module walk);
+  no semantic rename yet. `Client0x00C8` has registration onlyùno dedicated send
+  helper in export cache; do not alias to queue-leave beyond shared `MatchType` wire.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo`
+  should pass after this pass.
+
+Client opcode discovery loop pass 10 (2026-05-29):
+
+- Parallel subagent + Ghidra slice: `Client0x00C8` sender hunt (74-hit `MOV EDX,0xC8`
+  scan mostly noise), `ClientPtrCopy`/`ServerPtrCharacterCopyQueued` wire mapping,
+  `Client0x07B6` Lua `GetAddons` path, and PTR-copy handoff emit safety review.
+- `Client0x00C8` still has registration-only evidence beside shared `0x05B5`/`0x05B6`
+  rows; no `Network_SendOpcodePayloadHelper(..., 200/0xC8, ...)` in export cache.
+  Do not alias to queue-leave without a dedicated sender or consumer witness.
+- **`ClientPtrCopy` (`0x06E8`)** native shape closed: registration size **1**, send sites
+  `14063f540`/`140707d80` emit one zero padding byte via shared zero writer. Separate
+  from **`ClientInitiatePTRCharacterCopy` (`0x06E7`)** which sends u64 then `0x0244`.
+- **`ServerPtrCharacterCopyQueued` (`0x06EA`)** client consumer `140020ea0` maps to Lua
+  `PTRCharacterCopyQueued` @ `1409ed738`, but **no** mapped server emit after `0x06E7`;
+  handler stays diagnostic-only.
+- **`Client0x07B6`** sender mirrors `Lua_GetAddons` module walk (`140043370`); opcode
+  rename remains blocked pending server consumer mapping.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo`
+  should pass after this pass.
+
+Client opcode discovery loop pass 11 (2026-05-29):
+
+- Parallel subagent slice: Client0x062A/0634 sender hunt, Client0x00C8 semantics vs
+  ClientChallengeChoice, ServerMatching0x05CF consumer mapping, and placeholder ranking
+  (Client0x0550 ICComm gap vs Client0x012D ClientSuggest family).
+- Ghidra probes opcode062a_probe / opcode0634_probe: FindImmediateInstructions MOV R8D
+  for 0x62A and 0x634 both returned totalMatches=0; sender remains blocked. Next anchor:
+  TraceFunctionCallers on ClientTradeskillResetTalents_WritePayload 14007d010.
+- Client0x00C8 stays mapped-only (5-bit MatchType shared with 0x05B5/0x05B6); imm_0xc8_send
+  and callers_14008a150 dead-end at registration. Do not alias to queue-leave or challenge.
+- ClientChallengeChoice (0x00C5) native send cluster promoted: writers 14008a200/14008a210,
+  senders 140710c10 (Activate/0x1), 140710d60 (Abandon/0x2), 140711ea0 (AcceptShared/0xE),
+  140711f10 (DeclineShared/0xF) per imm_0xC5 log.
+- ServerMatching0x05CF: wire closed via ServerUInt32_LocalReadThunk 140099110; post-read
+  apply through WorldSocket_ProcessServerMessage 140014f10 with no opcode handler mapped;
+  emit blocked. Live sniff during match-ready window recommended.
+- Next rename probe family: Client0x0550 (sole gap in mapped ICComm client cluster 0x0546-0x054E).
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
+  should pass after this pass.
+
+- Supplement: TraceFunctionCallers on ClientTradeskillResetTalents_WritePayload 14007d010
+  (callers_14007d010): one UNCONDITIONAL_CALL from FUN_14007dc80 (internal serializer helper);
+  all other refs are registration DATA rows in Network_RegisterServerOpcode_0351 and
+  ClientWorldOpcodeRegister_MovementSpline including 0x0550/0x07E3 tuples. Confirms
+  indirect-send pattern for shared uint32 writer family. opcode0550_immediate MOV R8D=0.
+
+Client opcode discovery loop pass 12 (2026-05-29):
+
+- Parallel subagent slice: Client0x0550 ICComm gap, Client0x062A/0634 matching sender hunt,
+  ServerMatching0x05CF handler recovery, and placeholder ranking (012D/063E ClientSuggest family).
+- Ghidra: TraceFunctionCallers on ClientICCommMessage_WritePayload 1400875e0 shows
+  registration-only refs (same indirect-send pattern as 0x0550). MOV EDX,0x550 and MOV EDX,0x62A
+  each return one hit at ClientWorldOpcodeRegister_MovementSpline registration rows only.
+- TraceFunctionCallers on ClientSuggest_WritePayload 14007ae80: 18 refs, all registration DATA;
+  siblings 0x0233/0x07C6/0x0833 send via indirect paths not visible at writer entry.
+- TraceFunctionCallers on FUN_14007dc80: callers FUN_14007dd40 and FUN_14007e070 only (struct
+  serialization helpers, not opcode dispatch).
+- Labels promoted: ClientUInt32_ReadPayload 14007d000, Lua_ICComm_CallbackHub 1406a4280.
+- Client0x07B6 model comment corrected: sender/Lua witnesses mapped; semantics still blocked.
+- ServerMatching0x05CF: no handler advance; live sniff during match-ready still recommended.
+- Next probe family: ICComm indirect dispatch via 1406a4280 / Network_SendOpcodePayloadHelper
+  filtered traces; matching UI cluster 14076aa30 caller tree for 0x062A/0x0634.
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
+  should pass after this pass.
+
+Client opcode discovery loop pass 13 (2026-05-29):
+
+- Parallel subagent slice: ICComm indirect dispatch (0x0550/0x054B), matching UI sender hunt
+  (0x062A/0x0634), ClientSuggest two-rail diff (0x012D/0x063E), and ServerMatching0x05CF
+  plus Client0x00C8 follow-up.
+- Lua_ICComm_CallbackHub 1406a4280 callers mapped: FUN_1406a4a00, Lua_ICComm_SetReceivedMessageFunction,
+  Lua_ICComm_SetSendMessageResultFunction, FUN_1406a4c10 (callback registration only, not packet send).
+- ClientICCommChannelJoin_WritePayload 1400877a0 and ClientICCommMessage_WritePayload 1400875e0:
+  TraceFunctionCallers show registration-only refs (same as cycle 12).
+- send_helper_filter_0550 / send_helper_filter_62a on Network_SendOpcodePayloadHelper: no call-site
+  instruction window contained 0x550 or 0x62A ù opcodes do not use direct helper immediates.
+- MatchingReplacement_SendStartLookingForReplacements 14076aa30: callers trace shows two vtable
+  DATA refs only (indirect UI dispatch table).
+- ClientSuggest family: AccountItem_SendOpcodePayloadHelper 1400161d0 rail relabeled (0x0233/0x07C6);
+  Support uses Network_SendOpcodePayloadHelper for 0x0833; 0x012D/0x063E still blocked.
+- Labels added: ClientICCommChannelJoin_ReadPayload 140087750, ClientICCommMessage_ReadPayload
+  140087550, Lua_ICComm_RegisterCallbackFromBinding 1406a4a00/1406a4c10.
+- ServerMatching0x05CF and Client0x00C8: no handler/sender advance; live sniff still recommended.
+- Next: vtable send path DAT_140c65898, AccountItem rail trace for 0x012D/0x063E, decompile
+  FUN_14076a9f0/14076ac30 matching UI neighbors.
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
+  should pass after this pass.
+
+Client opcode discovery loop pass 14 (2026-05-29):
+
+- Parallel subagent slice: matching UI cluster decompile (14076a9f0ù14076ac30), AccountItem rail
+  filter for ClientSuggest 0x012D/0x063E, ICComm vtable send path, and 062A/0634 cluster ruling.
+- InspectCodeAddress 14076a9f0: sends 0x05DA via Network_SendOpcodePayloadHelper when
+  *(DAT_140c65b98+0x10c)==0x10; label promoted Matching_SendMatchLeave.
+- InspectCodeAddress 14076ac30: map lookup + flag gate then sends 0x0606; label promoted
+  Matching_SendTransferIntoMatch.
+- Matching UI cluster sends 0x05D5/0x0602/0x05DA/0x0606 only; decomp cache has no 0x062A/0x0634
+  anywhere ù LFR/replacement cluster ruled out for those opcodes.
+- AccountItem_SendOpcodePayloadHelper 1400161d0 TraceFunctionCallers filters 0x12D and 0x63E:
+  31 refs listed, zero matching instruction windows ù AccountItem rail ruled out for ClientSuggest
+  siblings 0x012D/0x063E.
+- ICComm 0x0550 hypothesis weakened: opcode not in ICComm registration table 14006c290; lives in
+  movement block 1400a8190; send uses DAT_140c65808 vtable+0x108 via Network_SendMessageById path.
+- ServerMatching0x05CF and Client0x00C8: no handler/sender advance.
+- Next: Network_SendMessageById/Network_SendResolvedMessage filtered traces; send_helper_filter for
+  0x12D/0x63E; vtable dump 140b76488/140e36210; avg-wait consumer xref for 062A/0634 ack path.
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
+  should pass after this pass.
+
+Client opcode discovery loop pass 15 (2026-05-29):
+
+- Parallel subagent slice: ICComm 0x0550 hypothesis closure, ClientSuggest 0x012D/0x063E rail
+  hunt, 062A/0634 vtable dispatch targets, ServerMatching0x05CF + Client0x00C8 follow-up.
+- send_helper_filter_12d / send_helper_filter_63e on Network_SendOpcodePayloadHelper 1403f4900:
+  348 callers each, zero matching instruction windows with 0x12D or 0x63E ù world send rail ruled
+  out for ClientSuggest siblings (same pattern as 0x0550/0x062A).
+- InspectCodeAddress 14076c830: Matching_QueueDispatchFromUi sends 0x05EF/0x05F3/0x05F8/0x05F9 via
+  Network_SendOpcodePayloadHelper with map/role payload building and match-state gates; does not
+  reference 0x062A/0x0634.
+- TraceFunctionCallers 140081f00 (ServerMatchingAverageWaitTimeUpdate reader): 6 refs ù registration
+  DATA plus ServerFortuneRewards_ReadPayload loop call; no direct UI outbound chain to 062A/0634 yet.
+- ICComm-as-0x0550 hypothesis dead: opcode in movement registration 1400a8190 not ICComm 14006c290.
+- Client0x062A/0634, Client0x012D/063E, ServerMatching0x05CF, Client0x00C8: sender/handler still blocked.
+- Next: vtable dump 140b76488/140e36210; TraceFunctionCallers 14007dc80 serializer chain;
+  accountitem010_filter for 0x12D/0x063E on FUN_140016010; live sniff F-010 for 062A/0634/05CF/00C8.
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
+  should pass after this pass.
+
+Client opcode discovery loop pass 16 (2026-05-29):
+
+- High-value `0x07B6` structural naming slice landed from Lua/addon witness chain:
+  `Client0x07B6` / enum placeholder renamed to **`ClientAddonModuleList`**.
+- Model field names now stay structural while preserving mapped-only scope:
+  four top-level uint32 values are `HeaderValue0..3`, count is `ModuleCount`,
+  and row fields are `ModuleNibble`, `ModuleFlag`, `ModuleByte`, `ModuleName`.
+- This remains conservative: sender (`1403f42e0`) and `Lua_GetAddons` walk
+  (`140043370`) justify addon-module structure only; gameplay/UI consumer
+  semantics are still unresolved and runtime behavior is unchanged.
+
+Client opcode discovery loop pass 17 (2026-05-29):
+
+- Fleet/manual follow-up found no new two-witness semantic rename among the
+  remaining numeric diagnostic opcodes. The safe implementation slice is tracker
+  sync plus source-comment alignment rather than speculative behavior.
+- `MISSING_FEATURE_MATRIX` F-002 and the Client Diagnostic Opcode Matrix now
+  reflect the current source state: `ClientRealmTransfer` is no longer counted
+  as a diagnostic placeholder, `ClientAddonModuleList` (`0x07B6`) is the named
+  structural addon-module surface, and stale fixed-size notes for `0x00ED`,
+  `0x011B`, `0x011D`, `0x012D`, `0x0550`, `0x062A`, `0x0634`, `0x063E`,
+  `0x0760`, `0x0762`, and `0x07E3` were replaced with their mapped writer
+  evidence and explicit sender/consumer blockers.
+- The enum comment for `Client0x07E3` now matches the packet model and coverage
+  inventory: `ClientWorldOpcodeRegister_MovementSpline` @ `1400a8190` binds it
+  to shared `ClientTradeskillResetTalents_WritePayload` @ `14007d010`; semantics
+  remain unresolved.
+- Verification:
+  documentation/source-comment only; no packet behavior changed.
+
+Client opcode discovery loop pass 16 (2026-05-29):
+
+- Parallel subagent slice: 062A/0634 vtable/serializer probes, ClientSuggest 012D/063E
+  accountitem010 rail, Client0x0550 indirect send chain, ServerMatching0x05CF + Client0x00C8 follow-up.
+- accountitem010_filter_12d/_63e on FUN_140016010: 9 refs, zero filter windows ù sibling helper
+  ruled out for ClientSuggest opcodes.
+- InspectCodeAddress 140016010: relabeled AccountItem_SendViaNetworkMessageId ù sends via
+  DAT_140c65808 vtable+0x108 using message ids ClientPackedWorld 0x038C and ClientEncrypted 0x0244
+  (account-item take/gift, daily login, storefront callers); not 0x012D/0x063E.
+- cycle16_callers_14007dc80: callers FUN_14007dd40 and FUN_14007e070 only; relabeled
+  ClientCompoundTradeskillUInt32_WriteCluster ù compound serializer at object+0x30/+0x38/+0x58.
+- FindPointerInData 14007d010: 8 .data table pointers (140c1ec38..140c1f168), no gameplay caller.
+- FindOpcodeComparisons 0x62A/0x634 in movement block: registration-only at 1400a82b6/1400a872c.
+- DumpNearbyData 140b76488: matching UI vtable lists known senders 14076a9f0/14076aa30/14076abb0/
+  14076ac30 plus unlabeled stubs 14076b5c0/14076b770/14076b940/14076bd30 (no 062A/0634 in table).
+- Client0x0550/062A/0634, Client0x012D/063E, ServerMatching0x05CF, Client0x00C8: still blocked.
+- Next: inspect remaining vtable stubs 14076b770/14076b940; TraceFunctionCallers 14007dd40 upward;
+  Network_SendMessageById filtered traces; live sniff F-010 for 05CF/00C8/062A/0634.
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
+  should pass after this pass.
+
+Client opcode discovery loop pass 17 (2026-05-29):
+
+- Parallel subagent slice: matching vtable stub inspect, Client0x0550 serializer upward walk,
+  MatchType 0x00C8/0x05B5/0x05B6 send filters, ServerMatching0x05CF handler recovery.
+- InspectCodeAddress 14076b770: MatchingUi_BuildRoleSelectionTable ù Lua role table builder only.
+- InspectCodeAddress 14076b940: MatchingUi_BuildGameTypeSelectionTable ù MatchingGameType iteration
+  via FUN_140214e00; no Network_SendOpcodePayloadHelper ù not 062A/0634/05B5 sender.
+- send_helper_filter_05b5/_05b6 on Network_SendOpcodePayloadHelper 1403f4900: zero matching
+  windows (same indirect-send pattern as 0x012D/0x062A).
+- TraceFunctionCallers 14007dd40: refs are registration DATA only ù bound to server opcode 0x06EA
+  in Network_RegisterServerOpcode_0351; relabeled ServerPtrCharacterCopyQueued_WritePayloadCluster;
+  compound chain is 0x06EA wire path not Client0x0550 outbound sender.
+- TraceFunctionCallers 1403355e0 filter 550: 4 refs, zero 0x550 windows ù message-id serialize
+  path still blocked for 0x0550.
+- FindOpcodeComparisons 0x05CF in 140765000-140770000: total_matches=0; InspectCodeAddress
+  1407655c0 is Lua/fortune table builder ù not 0x05CF handler.
+- Client0x0550/062A/0634, Client0x012D/063E, Client0x00C8, ServerMatching0x05CF: still blocked.
+- Next: TraceFunctionCallers 140332920 (caller of 1403355e0); FindPointerInData 14008a150;
+  inspect 14076bd30; live sniff F-010 for 05CF/00C8/062A/0634.
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
+  should pass after this pass.
+
+Client opcode discovery loop pass 18 (2026-05-29):
+
+- Parallel subagent slice: message-id dispatch chain for Client0x0550, MatchType sender hunt
+  (FindPointerInData 14008a150), matching vtable tail stubs, ServerMatching0x05CF global handler scan.
+- TraceFunctionCallers 140332920: 4 vtable DATA refs only; relabeled Network_SerialiseBufferedMessageById
+  ù resolves metadata via vtable+0x130 then Network_SerialiseResolvedMessage (indirect rail for
+  blocked opcodes 0x0550/0x062A/0x0634/0x05B5).
+- FindPointerInData 14008a150 (MatchType writer): matches=0 ù writer referenced only via registration
+  LEA rows, not .data pointers.
+- send_helper_filter_05b5 on Network_SendMessageById 140332580: 4 refs, zero 0x5B5 windows.
+- InspectCodeAddress 14076b6e0: inline vtable slot MatchingUi_VtableMatchStateEligibilityGate ù match
+  state bool only.
+- InspectCodeAddress 14076bd30: MatchingUi_BuildPenaltyDurationTable ù Lua penalty UI, no send.
+- FindOpcodeComparisons 0x05CF global: single registration hit at 140075a13 only; InspectCodeAddress
+  140765b00 is Lua table builder sibling to rejected 1407655c0 ù not 0x05CF handler.
+- Matching UI vtable at 140b76488 fully swept: known senders + Lua/eligibility stubs only.
+- Client0x0550/062A/0634, Client0x012D/063E, Client0x00C8/0x05B5/0x05B6, ServerMatching0x05CF: still
+  blocked on static evidence ù live sniff F-010 recommended.
+- Next: WorldSocket socket+0x14b0 handler-node recovery for 0x05CF; DumpNearbyData 140b648b8 vtable
+  owner of 140332920; FindCallsToTarget 14008a150; positive-control inspect 14059acb0.
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
+  should pass after this pass.
+
+Client opcode discovery loop pass 19 (2026-05-29):
+
+- Parallel subagent slice: WorldSocket handler recovery plan for 0x05CF, message-id vtable owner
+  dump, FindCallsToTarget on MatchType writer, positive control 14059acb0, 062A/0634 static exhaustion.
+- FindCallsToTarget 14008a150 (ClientMatchType_WritePayload): total_calls_found=0 ù confirms
+  registration/vtable-only indirect path for 0x00C8/0x05B5/0x05B6.
+- InspectCodeAddress 14059acb0: positive control Tradeskill_SendClientTradeskillResetTalents sends
+  0x0858 via Network_SendOpcodePayloadHelper(DAT_140c65898) ù contrast with blocked opcodes on
+  message-id virtual rail.
+- DumpNearbyData 140b648b8: WorldSocket message-dispatch vtable ù slot -3 Network_SendMessageById
+  140332580, slot +0 Network_SerialiseBufferedMessageById 140332920, slot +20
+  NetworkSocket_SelectDispatch 140339820; explains DATA-only caller traces (infrastructure vtable,
+  not gameplay UI).
+- sendmsg filters 0x62A/0x634 on Network_SendMessageById: 4 refs, zero windows (same as 0x05B5).
+- FindOpcodeComparisons 0x05CA/0x05CC/0x05CF in reader cluster: registration-only for all three;
+  no handler switch found ù 0x05CF handler recovery must use WorldSocket+0x14b0 vtable+0x58 playbook.
+- Client0x062A/0x0634: static sender discovery exhausted; escalate to F-010 live sniff with payload
+  correlation vs 0x05D5/0x0602/0x0628/0x05EF-0x05F9.
+- Next: WorldSocket+0x14b0 handler-node recovery (FindImmediateInstructions 0x14b0, InspectCodeAddress
+  140014f10); FindDataReferences on vtable cells; F-010 matching sniff bundle.
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
+  should pass after this pass.
+
+Client opcode discovery loop pass 20 (2026-05-29):
+
+- Priority A WorldSocket+0x14b0 handler recovery for ServerMatching0x05CF per ENTITY_AUX_DECODE_ROADMAP.md.
+- InspectCodeAddress 140014f10 reconfirms apply path: deserialize via DAT_140c65808 vtable+0x100, AccountInventory/Storefront fast paths, then handler chain `(**(code **)(*plVar21 + 0x58))(plVar21, conn, opcode, parsedPayload)` walking `*(socket+0x14b0)` nodes at +0x20.
+- FindImmediateInstructions 0x14b0: totalMatches=37; splice cluster at 140356a30, 14035c650, 140369f30, 14036a460, 14036a980, 14036b8d0 plus WorldSocket filter/apply readers.
+- InspectCodeAddress 140369f30: splices spatial-grid unit nodes into parent+0x14b0 (+0x13c0 sibling list); counter object uses base vtable PTR_FUN_140b787c0 whose slot+11 (+0x58) is default stub 14001b000 ù unit-handler family, not opcode-specific matching consumer.
+- FindVtableSlotReferences slot 11 target Loot_HandleLootGrant 1403db050: matches=0 ù confirms loot fast-path is not linked-list vtable+0x58 handler (roadmap negative control).
+- FindOpcodeComparisons 0x05CF/0x05CA/0x05CC global: total_matches=2 (registration-only 0x05CF @140075a13, 0x05CA @140075c90; no 0x05CC cmp anywhere in scan).
+- FindOpcodeComparisons same trio in 1405c000-1405d000 matching-manager range: total_matches=0 ù handlers likely use non-CMP dispatch (parsed-object tag / switch table).
+- FindDataReferences DAT_140c65b98: total_refs=64; FUN_1405bedf0 lazy-inits matching-manager singleton (0x238 alloc, ctor 1405bee80, reset 1405c2f20 sets +0x10c=0x10).
+- Client0x062A/0x0634: static sender path remains exhausted (pass 19); no new client send probes queued.
+- Next: recover inserted handler-node vtables whose +0x58 bodies dispatch matching opcodes without immediate CMP; F-010 sniff for 0x05CF vs 0x05CA/0x05CC during match-ready window.
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
+  should pass after this pass.
+
+Client opcode discovery loop pass 21 (2026-05-29):
+
+- Priority: recover ServerMatching0x05CF consumer via matching-manager apply dispatch table (not WorldSocket CMP path).
+- FindDataReferences on known apply fn 1405c39f0 (0x05CA MatchingGameReady): single .rdata cell 140e1e60c ù confirms table-driven apply pointers with zero direct CALL sites.
+- TraceFunctionCallers 1405c39f0/1405c41c0: references=1 each, caller=<none> type=DATA only (indirect dispatch).
+- Matching-manager apply table cells mapped (FindDataReferences batch):
+  140e1e228=1405c0760, 140e1e288=1405c0ad0, 140e1e294=1405c0b80, 140e1e2b8=1405c0e00, 140e1e2c4=1405c0e90,
+  140e1e5a0=1405c3500 (client 0x05C8 sender), 140e1e60c=1405c39f0, 140e1e618=1405c3af0, 140e1e630=1405c3c90,
+  140e1e63c=1405c3d30, 140e1e648=1405c3e40, 140e1e660=1405c4140 (MatchJoined), 140e1e66c=1405c41c0, 140e1e690=1405c4690.
+- InspectCodeAddress 1405c39f0: writes manager+0xa8/+0xac/+0xb4 and dispatches MatchingGameReady ù positive control for 0x05CA apply shape.
+- InspectCodeAddress 1405c41c0: silent `*(manager+0xa0) = *payload` (+ optional sub-object+0x98); no ClientEvent ù tentative ServerMatching0x05CF consumer (correlated, not opcode-index proven).
+- InspectCodeAddress 1405c3500: confirms outbound client 0x05C8 sender + MatchingCancelPendingGame ù not 0x05CF inbound.
+- FindDataReferences ServerUInt32_LocalReadThunk 140099110: registration-only (4 hits in Network_RegisterServerOpcode_0351); shared with 0x085D.
+- Registration block (selected_decompiled.c): 0x05CF -> reader 140099110 size 4; 0x05CA -> reader 140099700 size 0xc; apply linkage is via table not registration tuple.
+- ServerMatching0x05CF: correlated apply candidate at 1405c41c0; still blocked for rename/emit until opcode-to-cell index recovered or F-010 confirms field semantics at manager+0xa0.
+- Next: recover table walker that indexes 140e1e228 by opcode; F-010 sniff 0x05CF vs 0x05CA/0x05CC during match-ready.
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
+  should pass after this pass.
+
+Client opcode discovery loop pass 22 (2026-05-29):
+
+- Fleet follow-up kept `ServerMatching0x05CF` blocked for implementation. Candidate
+  WorldSocket `+0x14b0` node vtables and matching-manager apply helpers were probed;
+  `1405c41c0` remains a correlated candidate for the one-uint32 apply path, but no
+  opcode-to-table-cell index or live packet witness ties it uniquely to `0x05CF`.
+- F-010 live sniff remains the required unblocker for `0x05CF` vs `0x05CA`/`0x05CC`
+  during match-ready and queue-state transitions; no automated capture harness exists
+  in this checkout.
+- Safe source/doc slice: tightened `Client0x0760` and `Client0x0762` realm-row
+  comments/tests to document that their decoded rows mirror `ServerRealmList`
+  `RealmInfo` and message entries while the send/consumer event remains unresolved.
+- Verification:
+  dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~ClientDiagnosticPacketShapeTests" -v minimal --nologo
+  should pass after this pass.
+
+Client opcode discovery loop pass 23 (2026-05-29):
+
+- Question: fill matching-manager apply-table gap between 140e1e2c4 and 140e1e5a0 and characterize shared one-flag reader 1400807f0.
+- FindDataReferences batch on 1405c0f00..1405c4620 discovered eight new table cells (all DATA refs only, zero code callers):
+  140e1e2d0=1405c0f00 (role-check result chat notify),
+  140e1e2f4=1405c11c0 (PvpRatingUpdated),
+  140e1e3b4=1405c1850 (MatchLeft reset),
+  140e1e3c0=1405c18d0 (PVPMatchStateUpdated),
+  140e1e420=1405c1cb0 (MatchVoteKickBegin),
+  140e1e450=1405c1fc0 (vote timer chat notify),
+  140e1e48c=1405c21d0 (MatchVoteSurrenderBegin),
+  140e1e4a4=1405c2440 (MatchLookingForReplacements),
+  140e1e4b0=1405c24a0 (MatchStoppedLookingForReplacements).
+- Batch sweep cycle22_dref (59 probe addresses, ~33 min): additional cells
+  140e1e4e0=1405c26a0 (PvpKillNotification),
+  140e1e510=1405c2d40 (MatchingRandomReward lookup helper),
+  140e1e51c=1405c2e70 (PvPRatingFloor lookup helper),
+  140e1e57c=1405c3360 (map capacity helper),
+  140e1e654=1405c3f50 (queued-players debug text),
+  140e1e678=1405c4260 (MatchingCancelPendingGame callback).
+  Most probe addresses had no table cell (helpers/internal mid-function probes).
+- Negative controls for table walker recovery:
+  FindDataReferences 140e1e228 (table base)=0 refs;
+  FindPointerInData 140e1e228=0 matches;
+  FindImmediateInstructions 0x140e1e228=0 matches.
+  Apply linkage remains purely indirect via computed table index (not a direct LEA of table base).
+- InspectCodeAddress 1400807f0 (shared reader for 0x05B0/0x05CC/0x05F1): MOV R8D,0x1 then JMP 14006c090 ù proves one-byte read surface despite registration size 4.
+- Zero-payload apply cluster (1405c1850/1405c2440/1405c24a0/1405c21d0) take manager only; likely selected by one-flag opcode routing without passing payload into apply ù candidate shape for 0x05B0/0x05CC/0x05F1 but opcode-to-cell index still unproven.
+- ServerMatching0x05CF: still correlated-only at 1405c41c0 (manager+0xa0 write + FUN_1400a8020); no second witness.
+- ServerMatchingMatchParticipantCountUpdate 0x05CC: reader surface confirmed one byte; apply cell among zero-payload / one-flag candidates still blocked.
+- Next: finish batch sweep for remaining 1405c* apply fns; recover computed index walker (likely via registration-table slot parallel to apply table); F-010 sniff for 0x05CF/0x05CC during match-ready.

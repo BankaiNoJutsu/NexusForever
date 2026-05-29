@@ -45,16 +45,25 @@ Use the evidence harness before promotion:
 
 ```powershell
 .\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
-  -BundleName LWS-052-arcterra-palaver-source-only `
-  -WorldIds 3335,3519 `
-  -ObjectiveIds 21469,21470,21477,21478,21485,21486,21487,21488 `
-  -Notes "Arcterra Caretaker placement, Coldblood portal target, Palaver Point Ish'amel placement/stat/quest behavior" `
-  -NegativeCases "portal with missing/invalid target; Ish'amel absent quest state; Caretaker interaction without expected prerequisite"
+  -ArcterraPalaverSourceSmoke `
+  -ClientDirectory "I:\WildStar" `
+  -PromptForRootPassword
 ```
 
-The bundle must include coordinates, entity ids or source creature ids, quest
-state, activation/interaction logs, portal destination or failure behavior,
-screenshots/video, and negative-case results.
+The preset creates `lws-052-arcterra-palaver-targets.md`, preloads worlds
+`3335` and `3519`, preloads Palaver objective ids `21469`, `21470`, `21477`,
+`21478`, `21485`, `21486`, `21487`, and `21488`, and configures negative cases
+for invalid portal target/state, absent Palaver quest state, Caretaker missing
+prerequisite, and repeat interaction. The bundle must include coordinates,
+entity ids or source creature ids, quest state, activation/interaction logs,
+portal destination or failure behavior, screenshots/video, and negative-case
+results.
+
+Dry-run guard (2026-05-28): `Decomp/Analysis/test_blocker_evidence_harness_presets.py`
+now runs this preset with `-CreateBundleOnly` and verifies the generated
+manifest, default world/objective ids, target worksheet, helper files, and
+negative-case scaffold. This does not prove placement, portal target,
+interaction, or Palaver quest behavior.
 
 ## Future Implementation Gate
 

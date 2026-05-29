@@ -3,7 +3,7 @@
 // Usage from analyzeHeadless:
 //   -postScript ExportNexusForeverAnalysis.java <output-dir> [max-decompiled-functions]
 //       [decompile-mode] [ghidra-version] [binary-fingerprint] [label-fingerprint]
-//       [labels-applied]
+//       [labels-applied] [cache-warm-mode] [max-warm-functions-per-run]
 //
 // The script writes a per-program folder containing:
 //   summary.txt
@@ -58,24 +58,36 @@ import ghidra.program.model.symbol.SymbolType;
 
 public class ExportNexusForeverAnalysis extends GhidraScript {
 	private static final int DEFAULT_MAX_DECOMPILED = 200;
+	private static final int DEFAULT_MAX_WARM_FUNCTIONS = 100;
 	private static final int DECOMPILE_TIMEOUT_SECONDS = 45;
 	private static final int MAX_CELL_LENGTH = 8192;
-	private static final String EXPORT_SCRIPT_VERSION = "3";
+	private static final String EXPORT_SCRIPT_VERSION = "7";
 	private static final String DECOMPILE_MANIFEST_VERSION = "1";
 	private static final String DECOMPILE_FRAGMENT_VERSION = "1";
 	private static final String DECOMPILE_MODE_AUTO = "auto";
 	private static final String DECOMPILE_MODE_FORCE = "force";
 	private static final String DECOMPILE_MODE_SKIP = "skip";
+	private static final String CACHE_WARM_MODE_OFF = "off";
+	private static final String CACHE_WARM_MODE_INCREMENTAL = "incremental";
+	private static final String CACHE_WARM_MODE_COMPLETE = "complete";
 	private static final String DECOMPILE_MANIFEST_NAME = "selected_decompiled.manifest";
 	private static final String DECOMPILE_CACHE_DIR_NAME = "selected_decompiled_cache";
+	private static final String CANONICAL_CACHE_DIR_NAME = "functions";
+	private static final String CACHE_WARM_SUMMARY_NAME = "decompile_cache_summary.properties";
 
 	private static final String[] INTERESTING_STRING_KEYWORDS = {
 		"packet", "opcode", "message", "client", "server", "auth", "login", "realm",
 		"world", "network", "sts", "socket", "connect", "send", "recv", "encrypt", "decrypt",
 		"crypt", "compress", "zlib", "archive", ".tbl", ".bin", ".xml", "lua",
-		"spell", "quest", "entity", "unit", "creature", "publicevent", "combat",
-		"position", "movement", "item", "vendor", "loot", "chat", "path", "map",
-		"houston", "wildstar"
+		"spell", "ability", "telegraph", "cooldown", "proc", "aura", "buff", "debuff",
+		"quest", "objective", "challenge", "achievement", "pathmission", "tutorial",
+		"entity", "unit", "creature", "vehicle", "mount", "publicevent", "combat",
+		"position", "movement", "velocity", "spline", "teleport", "item", "vendor", "loot",
+		"craft", "trade", "auction", "chat", "mail", "whisper", "channel", "guild",
+		"circle", "friend", "iccomm", "duel", "warparty", "matching", "queue", "raid",
+		"dungeon", "instance", "housing", "property", "plug", "neighbor", "taxi", "flight",
+		"transport", "portal", "storefront", "catalog", "currency", "reward", "datacube",
+		"hoverboard", "path", "map", "houston", "wildstar"
 	};
 
 	private static final String[] HIGH_VALUE_STRING_PATTERNS = {
@@ -89,23 +101,39 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		"accessmask", "aliases", "alias", "userstatus", "servicetimeschedule",
 		"externalaccount", "pccafe", "licenses", "loginname", "gameaccountid",
 		"premastersecret", "authntoken", "serverrand", "serverpublickey", "serversignature",
+		"sessionkey", "sessionticket", "sessiontoken", "gamecommand", "charactercreate",
+		"characterselect", "toonhandle", "accountcurrency", "entitlement",
 		"spellcastwithservicetoken", "servicetokencastresult",
-		"spellcastfailed", "prereqfailuremessage",
+		"spellcastfailed", "prereqfailuremessage", "spellcooldown", "spelltelegraph",
+		"spell4base", "spell4", "procchance", "procspell", "actionset", "innatespell",
 		"sapvital", "vitalmodifier", "combatlogvitalmodifier", "cmbtlog.disablevitalmodifier",
 		"monservicetokencost", "monrezservicetokencost", "bwakehereservicetoken", "wakeherecooldown",
 		"monaltcostrapidtransport", "moncostrapidtransport", "brapidtransportallowed",
-		"getrapidtransportcooldown", "rapidtransport", "rapidtransportresult",
-		"rapidtransport_invalid", "clientrapidtransport", "rapid transport price:", "rapid transport to $1n?",
+		"getrapidtransportcooldown", "rapidtransportresult", "rapidtransport_invalid",
+		"clientrapidtransport", "rapid transport price:", "rapid transport to $1n?", "rapidtransport",
 		"gettaxisforworld", "getplayertaxiunit", "purchaseflightpath", "invoketaxiwindow",
+		"flightpath", "instanceportal", "selectedportal", "portalteleport",
 		"setsendmessageresultfunction", "btaxiallowed", "btransportallowed",
 		"stsinetsocket", "socketcrypt", "publiceventobjectivetype",
 		"publiceventobjectivenotificationmode", "publiceventobjectivecategory", "publiceventstatus",
 		"defendobjectiveunits", "game.publicevent", "game.publiceventobjective", "tspell4idability",
+		"questobjective", "questtracker", "questdirection", "queststate", "pathmission",
+		"challengecompleted", "challengetracker", "achievementchecklist", "achievementtitle",
+		"galacticarchive", "tutorialprompt", "tutorial", "hoverboard", "ridersreef",
+		"showinstancegamemodedialog", "hideinstancegamemodedialog", "raidinforesponse",
+		"strsavedinstanceid", "bremovessingleinstance", "matchjoined", "matchingpenalty",
+		"matchingqueue", "matchingrole", "queuedplayers", "readycheck", "warpartyinvite",
+		"guildinvite", "guildrank", "circleinvite", "friendrequest", "ignorelist",
+		"mailattachment", "duelrequest", "duelcancel", "duelstart", "iccomm",
+		"housingneighbor", "housingplug", "decorplug", "propertymodifier", "neighborhood",
+		"storefront", "catalogoffer", "giftrecipient", "giftmessage",
 		"tunitproperty", "publiceventunitpropertymodifier",
 		"modifyinterruptarmor", "combatlogmodifyinterruptarmor",
 		"cmbtlog.disablemodifyinterruptarmor", "interruptarmor",
-		"combatlogccstatebreak", "ccstatebreak",
-		"unitcaster", "unitcasterowner"
+		"combatlogccstatebreak", "ccstatebreak", "unitstateset", "setbusy",
+		"unitcaster", "unitcasterowner",
+		"channelupdate_loot", "floatermultiheal", "floatertransference",
+		"combatlogbuildswitch", "combatlogdatacube"
 	};
 
 	private static final String[] INTERESTING_IMPORT_KEYWORDS = {
@@ -132,7 +160,9 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 			args.length > 3 ? args[3] : "",
 			args.length > 4 ? args[4] : "",
 			args.length > 5 ? args[5] : "",
-			args.length > 6 && Boolean.parseBoolean(args[6]));
+			args.length > 6 && Boolean.parseBoolean(args[6]),
+			args.length > 7 ? args[7] : CACHE_WARM_MODE_INCREMENTAL,
+			args.length > 8 ? Integer.parseInt(args[8]) : DEFAULT_MAX_WARM_FUNCTIONS);
 
 		File programDir = new File(outputRoot, sanitizePathPart(currentProgram.getName()));
 		if (!programDir.exists() && !programDir.mkdirs()) {
@@ -151,8 +181,13 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		selectLabeledFunctions(listing, selection);
 		writeSelectedXrefs(programDir, selection, functionManager);
 		writeSelectedReasonsReport(programDir, selection, functionManager, maxDecompiled);
+		DecompileCache decompileCache = new DecompileCache(programDir, decompileSettings);
+		CacheWarmSummary cacheWarmSummary = warmFullProgramCache(programDir, functionManager,
+			decompileSettings, decompileCache);
 		writeSelectedDecompiled(programDir, selection, functionManager, maxDecompiled,
-			decompileSettings);
+			decompileSettings, decompileCache);
+		refreshCacheWarmSummary(functionManager, decompileCache, cacheWarmSummary);
+		writeCacheWarmSummary(programDir, cacheWarmSummary);
 
 		println("NexusForever export complete: " + programDir.getAbsolutePath());
 	}
@@ -375,7 +410,8 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 	}
 
 	private void writeSelectedDecompiled(File programDir, Selection selection,
-			FunctionManager functionManager, int maxDecompiled, DecompileSettings settings)
+			FunctionManager functionManager, int maxDecompiled, DecompileSettings settings,
+			DecompileCache decompileCache)
 			throws Exception {
 		File out = new File(programDir, "selected_decompiled.c");
 		File manifestFile = new File(programDir, DECOMPILE_MANIFEST_NAME);
@@ -397,8 +433,6 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 			return;
 		}
 
-		File fragmentCacheDir = new File(new File(programDir, DECOMPILE_CACHE_DIR_NAME),
-			contextFingerprint);
 		LinkedHashMap<Address, DecompileFragment> fragmentsByEntry = new LinkedHashMap<>();
 		ArrayList<SelectedFunction> pendingDecompilation = new ArrayList<>();
 		int reusedFragments = 0;
@@ -408,12 +442,7 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 				continue;
 			}
 
-			String functionFingerprint = buildDecompileFunctionFingerprint(
-				selectedFunction, function, contextFingerprint);
-			DecompileFragment cachedFragment = settings.isAuto()
-				? tryReadDecompileFragment(fragmentCacheDir, selectedFunction, function,
-					functionFingerprint)
-				: null;
+			DecompileFragment cachedFragment = decompileCache.tryReadOrImport(function);
 			if (cachedFragment != null) {
 				fragmentsByEntry.put(selectedFunction.entry, cachedFragment);
 				reusedFragments++;
@@ -462,8 +491,6 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 
 				DecompileFragment fragment = fragmentsByEntry.get(selectedFunction.entry);
 				if (fragment == null) {
-					String functionFingerprint = buildDecompileFunctionFingerprint(
-						selectedFunction, function, contextFingerprint);
 					if (decompilerOpened) {
 						DecompileResults results =
 							decompiler.decompileFunction(function, DECOMPILE_TIMEOUT_SECONDS, monitor);
@@ -472,8 +499,7 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 							: "/* Decompile failed: " + results.getErrorMessage() + " */";
 						fragment = new DecompileFragment(body, false);
 						fragmentsByEntry.put(selectedFunction.entry, fragment);
-						writeDecompileFragment(fragmentCacheDir, selectedFunction, function,
-							functionFingerprint, body);
+						decompileCache.writeCanonicalFragment(function, body);
 						decompiledFragments++;
 					}
 					else {
@@ -506,6 +532,131 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		if (completedAll && (pendingDecompilation.isEmpty() || decompilerOpened)) {
 			writeDecompileManifest(manifestFile, out, fingerprint, selected, functionManager,
 				maxDecompiled, settings, contextFingerprint, reusedFragments, decompiledFragments);
+		}
+	}
+
+	private CacheWarmSummary warmFullProgramCache(File programDir, FunctionManager functionManager,
+			DecompileSettings settings, DecompileCache decompileCache) throws Exception {
+		ArrayList<Function> functions = getInternalFunctions(functionManager);
+		CacheWarmSummary summary = new CacheWarmSummary();
+		summary.mode = settings.cacheWarmMode;
+		summary.totalInternalFunctions = functions.size();
+		summary.canonicalCacheDir = decompileCache.canonicalCacheDir.getAbsolutePath();
+		summary.binaryFingerprint = settings.binaryFingerprint;
+
+		if (settings.isSkip() || settings.isCacheWarmOff()) {
+			for (Function function : functions) {
+				if (decompileCache.tryReadCanonical(function) != null) {
+					summary.canonicalCachedFragments++;
+				}
+			}
+			summary.remainingUncached = summary.totalInternalFunctions - summary.canonicalCachedFragments;
+			writeCacheWarmSummary(programDir, summary);
+			println("Full-program cache warm skipped for " + currentProgram.getName() +
+				" (mode=" + summary.mode + "). cached=" + summary.canonicalCachedFragments +
+				", remaining=" + summary.remainingUncached + ".");
+			return summary;
+		}
+
+		DecompInterface decompiler = null;
+		boolean decompilerOpened = false;
+		try {
+			for (Function function : functions) {
+				if (monitor.isCancelled()) {
+					break;
+				}
+
+				DecompileFragment cached = decompileCache.tryReadCanonical(function);
+				if (cached != null) {
+					summary.canonicalCachedFragments++;
+					summary.skippedAlreadyExported++;
+					continue;
+				}
+
+				if (settings.isCacheWarmIncremental() &&
+						summary.warmedThisRun >= settings.maxWarmFunctionsPerRun) {
+					summary.remainingUncached++;
+					continue;
+				}
+
+				if (decompiler == null) {
+					decompiler = setUpDecompiler();
+					decompilerOpened = decompiler.openProgram(currentProgram);
+					if (!decompilerOpened) {
+						println("Could not open program in decompiler for cache warm " +
+							currentProgram.getName() + ": " + decompiler.getLastMessage());
+						break;
+					}
+				}
+
+				DecompileResults results =
+					decompiler.decompileFunction(function, DECOMPILE_TIMEOUT_SECONDS, monitor);
+				String body = results.decompileCompleted() && results.getDecompiledFunction() != null
+					? results.getDecompiledFunction().getC()
+					: "/* Decompile failed: " + results.getErrorMessage() + " */";
+				decompileCache.writeCanonicalFragment(function, body);
+				summary.warmedThisRun++;
+				summary.canonicalCachedFragments++;
+			}
+		}
+		finally {
+			if (decompiler != null) {
+				decompiler.dispose();
+			}
+		}
+
+		summary.remainingUncached += Math.max(0,
+			summary.totalInternalFunctions - summary.canonicalCachedFragments - summary.remainingUncached);
+		writeCacheWarmSummary(programDir, summary);
+		println("Full-program cache warm for " + currentProgram.getName() +
+			": cached=" + summary.canonicalCachedFragments +
+			", warmed=" + summary.warmedThisRun +
+			", skippedExisting=" + summary.skippedAlreadyExported +
+			", remaining=" + summary.remainingUncached + ".");
+		return summary;
+	}
+
+	private void refreshCacheWarmSummary(FunctionManager functionManager,
+			DecompileCache decompileCache, CacheWarmSummary summary) {
+		summary.totalInternalFunctions = getInternalFunctions(functionManager).size();
+		summary.canonicalCachedFragments = decompileCache.countCanonicalFragments();
+		summary.remainingUncached = Math.max(0,
+			summary.totalInternalFunctions - summary.canonicalCachedFragments);
+	}
+
+	private ArrayList<Function> getInternalFunctions(FunctionManager functionManager) {
+		ArrayList<Function> functions = new ArrayList<>();
+		FunctionIterator iterator = currentProgram.getListing().getFunctions(true);
+		while (iterator.hasNext() && !monitor.isCancelled()) {
+			Function function = iterator.next();
+			if (!function.isExternal()) {
+				functions.add(function);
+			}
+		}
+		functions.sort(Comparator.comparing(function -> function.getEntryPoint().toString()));
+		return functions;
+	}
+
+	private void writeCacheWarmSummary(File programDir, CacheWarmSummary summary)
+			throws Exception {
+		Properties properties = new Properties();
+		properties.setProperty("summary.version", "1");
+		properties.setProperty("script.version", EXPORT_SCRIPT_VERSION);
+		properties.setProperty("timestampUtc", java.time.Instant.now().toString());
+		properties.setProperty("program.name", safeString(currentProgram.getName()));
+		properties.setProperty("binary.fingerprint", safeString(summary.binaryFingerprint));
+		properties.setProperty("cache.mode", safeString(summary.mode));
+		properties.setProperty("cache.directory", safeString(summary.canonicalCacheDir));
+		properties.setProperty("functions.totalInternal", Integer.toString(summary.totalInternalFunctions));
+		properties.setProperty("cache.canonicalCachedFragments", Integer.toString(summary.canonicalCachedFragments));
+		properties.setProperty("cache.warmedThisRun", Integer.toString(summary.warmedThisRun));
+		properties.setProperty("cache.reusedExistingFragments", Integer.toString(summary.reusedExistingFragments));
+		properties.setProperty("cache.remainingUncached", Integer.toString(summary.remainingUncached));
+		properties.setProperty("cache.skippedAlreadyExported", Integer.toString(summary.skippedAlreadyExported));
+
+		File summaryFile = new File(programDir, CACHE_WARM_SUMMARY_NAME);
+		try (var writer = Files.newBufferedWriter(summaryFile.toPath(), StandardCharsets.UTF_8)) {
+			properties.store(writer, "Full-program decompile cache summary");
 		}
 	}
 
@@ -644,22 +795,20 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		return sha256Hex(builder.toString());
 	}
 
-	private String buildDecompileFunctionFingerprint(SelectedFunction selectedFunction,
-			Function function, String contextFingerprint) throws Exception {
+	private String buildDecompileFunctionFingerprint(Function function, DecompileSettings settings)
+			throws Exception {
 		StringBuilder builder = new StringBuilder();
 		appendFingerprintValue(builder, "fragment.version", DECOMPILE_FRAGMENT_VERSION);
-		appendFingerprintValue(builder, "context.fingerprint", contextFingerprint);
-		appendFingerprintValue(builder, "entry", selectedFunction.entry.toString());
-		appendFingerprintValue(builder, "name", safeFunctionName(function));
+		appendFingerprintValue(builder, "binary.fingerprint", settings.binaryFingerprint);
+		appendFingerprintValue(builder, "entry", function.getEntryPoint().toString());
 		appendFingerprintValue(builder, "body.addressCount",
 			Long.toString(function.getBody().getNumAddresses()));
 		return sha256Hex(builder.toString());
 	}
 
-	private DecompileFragment tryReadDecompileFragment(File fragmentCacheDir,
-			SelectedFunction selectedFunction, Function function, String expectedFingerprint) {
-		File metadataFile = getDecompileFragmentMetadataFile(fragmentCacheDir, selectedFunction);
-		File bodyFile = getDecompileFragmentBodyFile(fragmentCacheDir, selectedFunction);
+	private DecompileFragment tryReadDecompileFragment(File metadataFile, Function function,
+			boolean canonical, String expectedProgramCacheToken) {
+		File bodyFile = getDecompileFragmentBodyFile(metadataFile);
 		if (!metadataFile.isFile() || !bodyFile.isFile()) {
 			return null;
 		}
@@ -675,9 +824,12 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		}
 
 		if (!DECOMPILE_FRAGMENT_VERSION.equals(properties.getProperty("fragment.version")) ||
-			!expectedFingerprint.equals(properties.getProperty("fingerprint")) ||
-			!selectedFunction.entry.toString().equals(properties.getProperty("entry")) ||
-			!safeFunctionName(function).equals(properties.getProperty("name"))) {
+			!function.getEntryPoint().toString().equals(properties.getProperty("entry"))) {
+			return null;
+		}
+
+		if (canonical && !safeString(expectedProgramCacheToken).equals(
+				properties.getProperty("program.cacheToken"))) {
 			return null;
 		}
 
@@ -697,21 +849,25 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		}
 	}
 
-	private void writeDecompileFragment(File fragmentCacheDir, SelectedFunction selectedFunction,
-			Function function, String fingerprint, String body) throws Exception {
+	private void writeDecompileFragment(File fragmentCacheDir, Function function,
+			DecompileSettings settings, String programCacheToken, String fingerprint, String body)
+			throws Exception {
 		if (!fragmentCacheDir.exists() && !fragmentCacheDir.mkdirs()) {
 			throw new IOException("Could not create decompile fragment cache directory: " +
 				fragmentCacheDir.getAbsolutePath());
 		}
 
-		File metadataFile = getDecompileFragmentMetadataFile(fragmentCacheDir, selectedFunction);
-		File bodyFile = getDecompileFragmentBodyFile(fragmentCacheDir, selectedFunction);
+		File metadataFile = getDecompileFragmentMetadataFile(fragmentCacheDir, function);
+		File bodyFile = getDecompileFragmentBodyFile(metadataFile);
 		Properties properties = new Properties();
 		properties.setProperty("fragment.version", DECOMPILE_FRAGMENT_VERSION);
 		properties.setProperty("script.version", EXPORT_SCRIPT_VERSION);
 		properties.setProperty("fingerprint", fingerprint);
-		properties.setProperty("entry", selectedFunction.entry.toString());
+		properties.setProperty("program.cacheToken", programCacheToken);
+		properties.setProperty("binary.fingerprint", settings.binaryFingerprint);
+		properties.setProperty("entry", function.getEntryPoint().toString());
 		properties.setProperty("name", safeFunctionName(function));
+		properties.setProperty("body.addressCount", Long.toString(function.getBody().getNumAddresses()));
 		properties.setProperty("body.file", bodyFile.getName());
 		properties.setProperty("body.sha256", sha256Hex(body));
 		Files.write(bodyFile.toPath(), body.getBytes(StandardCharsets.UTF_8));
@@ -720,16 +876,29 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		}
 	}
 
-	private File getDecompileFragmentMetadataFile(File fragmentCacheDir,
-			SelectedFunction selectedFunction) {
+	private File getDecompileFragmentMetadataFile(File fragmentCacheDir, Function function) {
 		return new File(fragmentCacheDir,
-			sanitizePathPart(selectedFunction.entry.toString()) + ".fragment.properties");
+			sanitizePathPart(function.getEntryPoint().toString()) + ".fragment.properties");
 	}
 
-	private File getDecompileFragmentBodyFile(File fragmentCacheDir,
-			SelectedFunction selectedFunction) {
-		return new File(fragmentCacheDir,
-			sanitizePathPart(selectedFunction.entry.toString()) + ".fragment.c");
+	private File getDecompileFragmentBodyFile(File metadataFile) {
+		String metadataName = metadataFile.getName();
+		String bodyName = metadataName.endsWith(".fragment.properties")
+			? metadataName.substring(0, metadataName.length() - ".fragment.properties".length()) + ".fragment.c"
+			: metadataName + ".c";
+		return new File(metadataFile.getParentFile(), bodyName);
+	}
+
+	private String buildCanonicalProgramToken(DecompileSettings settings) throws Exception {
+		if (!settings.binaryFingerprint.trim().isEmpty()) {
+			return sanitizePathPart(settings.binaryFingerprint.toLowerCase(Locale.ROOT));
+		}
+
+		StringBuilder builder = new StringBuilder();
+		appendFingerprintValue(builder, "program.name", currentProgram.getName());
+		appendFingerprintValue(builder, "program.executablePath", currentProgram.getExecutablePath());
+		appendFingerprintValue(builder, "program.imageBase", safeString(currentProgram.getImageBase()));
+		return sanitizePathPart("program_" + sha256Hex(builder.toString()));
 	}
 
 	private void appendFingerprintValue(StringBuilder builder, String key, String value) {
@@ -1000,6 +1169,96 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		}
 	}
 
+	private static class CacheWarmSummary {
+		private String mode = "";
+		private String canonicalCacheDir = "";
+		private String binaryFingerprint = "";
+		private int totalInternalFunctions;
+		private int canonicalCachedFragments;
+		private int warmedThisRun;
+		private int reusedExistingFragments;
+		private int remainingUncached;
+		private int skippedAlreadyExported;
+	}
+
+	private class DecompileCache {
+		private final DecompileSettings settings;
+		private final File cacheRoot;
+		private final File canonicalCacheDir;
+		private final String programCacheToken;
+
+		DecompileCache(File programDir, DecompileSettings settings) throws Exception {
+			this.settings = settings;
+			this.cacheRoot = new File(programDir, DECOMPILE_CACHE_DIR_NAME);
+			this.programCacheToken = buildCanonicalProgramToken(settings);
+			this.canonicalCacheDir = new File(new File(cacheRoot, CANONICAL_CACHE_DIR_NAME),
+				programCacheToken);
+			purgeLegacyCacheFolders();
+		}
+
+		DecompileFragment tryReadOrImport(Function function) {
+			return tryReadCanonical(function);
+		}
+
+		DecompileFragment tryReadCanonical(Function function) {
+			File metadataFile = getDecompileFragmentMetadataFile(canonicalCacheDir, function);
+			return tryReadDecompileFragment(metadataFile, function, true, programCacheToken);
+		}
+
+		int countCanonicalFragments() {
+			if (!canonicalCacheDir.isDirectory()) {
+				return 0;
+			}
+
+			File[] files = canonicalCacheDir.listFiles((dir, name) ->
+				name.endsWith(".fragment.properties"));
+			return files == null ? 0 : files.length;
+		}
+
+		void writeCanonicalFragment(Function function, String body) throws Exception {
+			if (tryReadCanonical(function) != null) {
+				return;
+			}
+
+			writeDecompileFragment(canonicalCacheDir, function, settings, programCacheToken,
+				buildDecompileFunctionFingerprint(function, settings), body);
+		}
+
+		private void purgeLegacyCacheFolders() throws IOException {
+			if (!cacheRoot.isDirectory()) {
+				return;
+			}
+
+			File[] children = cacheRoot.listFiles();
+			if (children == null) {
+				return;
+			}
+
+			for (File child : children) {
+				if (CANONICAL_CACHE_DIR_NAME.equals(child.getName())) {
+					continue;
+				}
+				deleteRecursively(child);
+			}
+		}
+
+		private void deleteRecursively(File file) throws IOException {
+			if (file.isDirectory()) {
+				File[] children = file.listFiles();
+				if (children != null) {
+					for (File child : children) {
+						deleteRecursively(child);
+					}
+				}
+			}
+
+			if (file.exists() && !file.delete()) {
+				throw new IOException("Could not delete legacy decompile cache path: " +
+					file.getAbsolutePath());
+			}
+		}
+	}
+
 	private static class DecompileFragment {
 		private final String body;
 		private final boolean reusedFromCache;
@@ -1016,14 +1275,19 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 		private final String binaryFingerprint;
 		private final String labelFingerprint;
 		private final boolean labelsApplied;
+		private final String cacheWarmMode;
+		private final int maxWarmFunctionsPerRun;
 
 		DecompileSettings(String mode, String ghidraVersion, String binaryFingerprint,
-				String labelFingerprint, boolean labelsApplied) {
+				String labelFingerprint, boolean labelsApplied, String cacheWarmMode,
+				int maxWarmFunctionsPerRun) {
 			this.mode = normalizeMode(mode);
 			this.ghidraVersion = ghidraVersion == null ? "" : ghidraVersion;
 			this.binaryFingerprint = binaryFingerprint == null ? "" : binaryFingerprint;
 			this.labelFingerprint = labelFingerprint == null ? "" : labelFingerprint;
 			this.labelsApplied = labelsApplied;
+			this.cacheWarmMode = normalizeCacheWarmMode(cacheWarmMode);
+			this.maxWarmFunctionsPerRun = Math.max(0, maxWarmFunctionsPerRun);
 		}
 
 		boolean isAuto() {
@@ -1032,6 +1296,14 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 
 		boolean isSkip() {
 			return DECOMPILE_MODE_SKIP.equals(mode);
+		}
+
+		boolean isCacheWarmOff() {
+			return CACHE_WARM_MODE_OFF.equals(cacheWarmMode);
+		}
+
+		boolean isCacheWarmIncremental() {
+			return CACHE_WARM_MODE_INCREMENTAL.equals(cacheWarmMode);
 		}
 
 		private static String normalizeMode(String mode) {
@@ -1044,6 +1316,19 @@ public class ExportNexusForeverAnalysis extends GhidraScript {
 				return normalized;
 			}
 			return DECOMPILE_MODE_AUTO;
+		}
+
+		private static String normalizeCacheWarmMode(String mode) {
+			if (mode == null) {
+				return CACHE_WARM_MODE_INCREMENTAL;
+			}
+
+			String normalized = mode.trim().toLowerCase(Locale.ROOT);
+			if (CACHE_WARM_MODE_OFF.equals(normalized) ||
+					CACHE_WARM_MODE_COMPLETE.equals(normalized)) {
+				return normalized;
+			}
+			return CACHE_WARM_MODE_INCREMENTAL;
 		}
 	}
 }

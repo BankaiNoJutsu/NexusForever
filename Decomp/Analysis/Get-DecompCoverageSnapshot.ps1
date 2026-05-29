@@ -218,6 +218,29 @@ function Get-ExportCoverageRecord {
         [string] $_.external -ne 'True' -and -not (Test-IsDefaultGhidraFunctionName -Name ([string] $_.name))
     }).Count
     $functionCount = $functions.Count
+    $cacheSummaryPath = Join-Path $ExportPath 'decompile_cache_summary.properties'
+    $cacheSummary = Read-KeyValuePropertiesFile -Path $cacheSummaryPath
+    $canonicalCacheFragments = if ($null -eq $cacheSummary) { $null } else { ConvertTo-NullableInt -Value $cacheSummary['cache.canonicalCachedFragments'] }
+    $remainingUncachedFragments = if ($null -eq $cacheSummary) { $null } else { ConvertTo-NullableInt -Value $cacheSummary['cache.remainingUncached'] }
+    $totalInternalFunctions = if ($null -eq $cacheSummary) { $null } else { ConvertTo-NullableInt -Value $cacheSummary['functions.totalInternal'] }
+    if ($null -eq $canonicalCacheFragments -or $canonicalCacheFragments -eq 0) {
+        $cacheRoot = Join-Path $ExportPath 'selected_decompiled_cache\functions'
+        if (Test-Path -LiteralPath $cacheRoot -PathType Container) {
+            $canonicalCacheFragments = @(
+                Get-ChildItem -LiteralPath $cacheRoot -Recurse -File -Filter '*.fragment.properties' -ErrorAction SilentlyContinue
+            ).Count
+        }
+    }
+
+    if ($null -eq $totalInternalFunctions -or $totalInternalFunctions -eq 0) {
+        $totalInternalFunctions = $functionCount
+    }
+
+    if ($null -eq $remainingUncachedFragments) {
+        $remainingUncachedFragments = [Math]::Max(0, $totalInternalFunctions - [int]$canonicalCacheFragments)
+    }
+
+    $canonicalCachePercent = Get-Percent -Numerator $canonicalCacheFragments -Denominator $totalInternalFunctions
     $selectedFunctionCount = if ($null -ne $manifestSelectedCount -and $manifestSelectedCount -gt $selectedReasons.Count) { $manifestSelectedCount } else { $selectedReasons.Count }
     $selectedForDecompileCount = if ($null -ne $decompiledFragments -and $decompiledFragments -gt $selectionAuditSelectedForDecompile) { $decompiledFragments } else { $selectionAuditSelectedForDecompile }
     $defaultNamedFunctionCount = @($functions | Where-Object { Test-IsDefaultGhidraFunctionName -Name ([string] $_.name) }).Count
@@ -242,6 +265,10 @@ function Get-ExportCoverageRecord {
         unselectedFunctions = [Math]::Max(0, $functionCount - $selectedFunctionCount)
         selectedForDecompile = $selectedForDecompileCount
         fullFunctionDecompilePercent = Get-Percent -Numerator $selectedForDecompileCount -Denominator $functionCount
+        canonicalCacheFragments = $canonicalCacheFragments
+        canonicalCachePercent = $canonicalCachePercent
+        remainingUncachedFragments = $remainingUncachedFragments
+        totalInternalFunctions = $totalInternalFunctions
         selectionAuditRows = $selectedReasons.Count
         selectionAuditSelectedForDecompile = $selectionAuditSelectedForDecompile
         labelAnchoredSelections = @($selectedReasons | Where-Object { [string] $_.reasons -match '(^| \|\| )label:' }).Count
@@ -534,6 +561,9 @@ $totalDefaultNamedFunctions = ($exportCoverage | Measure-Object -Property defaul
 $totalSelectedFunctions = ($exportCoverage | Measure-Object -Property selectedFunctions -Sum).Sum
 $totalSelectedForDecompile = ($exportCoverage | Measure-Object -Property selectedForDecompile -Sum).Sum
 $totalUnselectedFunctions = ($exportCoverage | Measure-Object -Property unselectedFunctions -Sum).Sum
+$totalCanonicalCacheFragments = ($exportCoverage | Measure-Object -Property canonicalCacheFragments -Sum).Sum
+$totalInternalFunctionCount = ($exportCoverage | Measure-Object -Property totalInternalFunctions -Sum).Sum
+$totalRemainingUncachedFragments = ($exportCoverage | Measure-Object -Property remainingUncachedFragments -Sum).Sum
 
 $opcodeEntries = Get-OpcodeEntries -Path $resolvedOpcodeFile
 $messageModels = Get-MessageModelRecords -Root $resolvedSourceDir
@@ -596,6 +626,9 @@ $summary = [ordered]@{
         totalUnselectedFunctions = $totalUnselectedFunctions
         totalSelectedForDecompile = $totalSelectedForDecompile
         totalFullFunctionDecompilePercent = Get-Percent -Numerator $totalSelectedForDecompile -Denominator $totalFunctions
+        totalCanonicalCacheFragments = $totalCanonicalCacheFragments
+        totalCanonicalCachePercent = Get-Percent -Numerator $totalCanonicalCacheFragments -Denominator $totalInternalFunctionCount
+        totalRemainingUncachedFragments = $totalRemainingUncachedFragments
     }
     opcodeSummary = [ordered]@{
         total = $opcodeCoverage.Count
@@ -623,15 +656,15 @@ $summary = [ordered]@{
 $summary | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $jsonPath -Encoding utf8
 
 $exportTable = if ($exportCoverage.Count -gt 0) {
-    Get-MarkdownTable -Headers @('Target', 'Functions', 'Named %', 'Default-name backlog', 'Selected', 'Decompiled', 'Full %') -Rows $exportCoverage -Selector {
+    Get-MarkdownTable -Headers @('Target', 'Functions', 'Named %', 'Cache %', 'Remaining', 'Selected', 'Focused %') -Rows $exportCoverage -Selector {
         param($row)
         @(
             "``$($row.target)``",
             $row.functions,
             ('{0}%' -f $row.namedFunctionCoveragePercent),
-            $row.defaultNamedFunctions,
+            ('{0}%' -f $row.canonicalCachePercent),
+            $row.remainingUncachedFragments,
             $row.selectedFunctions,
-            $row.selectedForDecompile,
             ('{0}%' -f $row.fullFunctionDecompilePercent)
         )
     }

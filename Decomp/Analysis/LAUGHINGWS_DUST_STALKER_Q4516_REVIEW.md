@@ -47,16 +47,25 @@ Use the blocker evidence harness before removing WIP/GUESSED labels:
 
 ```powershell
 .\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 `
-  -BundleName LWS-051-dust-stalker-q4516 `
-  -WorldIds 1138 `
-  -ObjectiveIds 7633,6189,7637,7638,7639 `
-  -Notes "Quest 4516: Boss Xagg kill, bridge controls self-destruct, exit panel, escape timing" `
-  -NegativeCases "activate bridge before kill; activate exit before self-destruct; miss escape timer"
+  -DustStalkerQ4516Smoke `
+  -ClientDirectory "I:\WildStar" `
+  -PromptForRootPassword
 ```
 
-The bundle must record character id, quest state, world/area, coordinates,
-objective ids, server log lines, client observations/screenshots or video, the
-observed timer duration, and negative-case results.
+The preset creates `lws-051-dust-stalker-targets.md`, preloads world `1138` and
+objectives `7633`, `6189`, `7637`, `7638`, and `7639`, and configures negative
+cases for premature bridge activation, premature exit-panel activation, missed
+escape timer, and repeat interaction after completion. The bundle must record
+character id, quest state, world/area, coordinates, objective ids, server log
+lines, client observations/screenshots or video, the observed timer duration,
+and negative-case results.
+
+Dry-run guard (2026-05-28): `Decomp/Analysis/test_blocker_evidence_harness_presets.py`
+now runs the preset with `-CreateBundleOnly` and verifies the generated manifest,
+default world/objective ids, required target worksheet, helper files, and
+negative-case scaffold. This only protects the capture workflow; bridge,
+self-destruct, exit-panel, and timing behavior remain blocked until a real
+client/server bundle is captured.
 
 ## Future Implementation Gate
 

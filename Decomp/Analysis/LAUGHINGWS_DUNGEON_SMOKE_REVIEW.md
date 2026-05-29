@@ -4,10 +4,12 @@ Date: 2026-05-27
 
 ## Decision
 
-LWS-100 through LWS-106 are closed as mapped-only dungeon smoke blockers. The
-current WIP dungeon scaffolds are covered by focused tests, but exact boss
-mechanics, route weights, trigger placement, door choreography, cinematics,
-rewards, and full-route smoke remain unproven.
+LWS-100 through LWS-106 remain mapped-only dungeon smoke blockers. The current
+WIP dungeon scaffolds are covered by focused tests, and
+`Start-BlockerEvidenceHarness.ps1 -DungeonSmoke` now creates a targeted proof
+bundle for the required live-client pass, but exact boss mechanics, route
+weights, trigger placement, door choreography, cinematics, rewards, and
+full-route smoke remain unproven.
 
 Verification:
 
@@ -16,6 +18,21 @@ dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filt
 ```
 
 Result: `149/149` passed.
+
+Follow-up harness verification:
+
+```powershell
+.\Decomp\Analysis\Start-BlockerEvidenceHarness.ps1 -DungeonSmoke -CreateBundleOnly -OutputRoot artifacts\blocker_evidence_test
+```
+
+Result: created `20260528-014236-LWS-100-106-dungeons` with the
+`lws-100-106-dungeon-targets.md` worksheet, default worlds/events, and negative
+cases for premature triggers, premature doors/platforms/launchers/teleporters,
+wrong-route optional objectives, completion-only cinematics, and early-finish
+rewards.
+`Decomp/Analysis/test_blocker_evidence_harness_presets.py` now dry-runs the
+preset with `-CreateBundleOnly` and verifies its manifest, target worksheet,
+default world/public-event ids, helper files, and negative-case scaffold.
 
 | Task | Closure |
 | --- | --- |
