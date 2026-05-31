@@ -110,8 +110,23 @@ early-finish reward negative cases for the raid/event-instance proof passes.
 Or invoke the setup script directly:
 
 ```powershell
-.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1 -ClientDirectory "I:\WildStar" -EnableClientConsole -LogLevel Trace -PromptForRootPassword
+.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1 `
+  -ClientDirectory "I:\WildStar" `
+  -EnableClientConsole `
+  -EnableClientLogging `
+  -LogLevel Trace `
+  -PromptForRootPassword
 ```
+
+`-LogLevel` configures NexusForever server NLog output only. `-EnableClientLogging`
+enables retail `CLog` file output under `<WildStar>\Logs`. See
+`Decomp/Analysis/CLIENT_LOGGING.md` for switch details and tail commands.
+
+The retail client toggles that console with `Alt` plus virtual key `0xC0`.
+On a typical US layout that is backtick; on a Swiss layout it is the key that
+produces `¨`, `!`, or `]` depending on modifiers. If the physical mapping is
+unclear, use `.\Tools\Setup\Send-WildStarConsoleToggle.ps1` after the client
+window is open.
 
 Tail evidence logs in separate terminals:
 

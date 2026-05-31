@@ -39,7 +39,10 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 | `ServerMatchingListPlayersQueuedForMap.QueuedPlayerInfo.Unknown30`–`Unknown38` | `PrimeLevel`, `IsParty`, `Roles` | `MatchingQueuedPlayerInfo_ReadPayload` @ `140098500`; correlates with `ClientMatchingQueue_WritePayload` @ `140098a70` and `MatchingQueueJoinQueueData_ReadPayload` @ `1400989d0` |
 | `ServerMatchingListPlayersQueuedForMap.QueuedPlayerInfo.Unknown3C` | `TrailingUInt32_0x3C` | `MatchingQueuedPlayerInfo_ReadPayload` @ `140098500`; uint32 wire confirmed, semantics blocked |
 | `ServerSpellCastTargetReport.UnknownStructure0` / `unknownStructure0` | `TargetReportRow` / `TargetReportRows` | Partial row map (`CasterId` known); tail fields blocked |
-| `PrerequisiteType.Spell221` / `Unknown269` | `ActionSetSpell` / `RapidTransport` | Table ids 221/269; handler correlation for 269 rapid transport |
+| `PrerequisiteType.Spell221` / `Unknown269` | `ActionSetSpell` / `RapidTransport` | Table ids 221/269; client dispatch @ `1404a2100` cases `0xdd` / `0x10d` |
+| `PrerequisiteType.Unknown170` | `GameFormula170` | `wildstar_client.prerequisite` rows use `value0` as `gameformula.id` (`1029`, `1031`, `1050`); client case `0xaa` @ `1404a2100` |
+| `PrerequisiteType.Unknown277` | `QuestObjective47Both` | Client case `0x115` @ `1404a2100` requires caster **and** target to pass QuestObjective47 handler (+0x2f8) |
+| `PrerequisiteType.Unknown292` | `PrimalMatrixNode` | `objectId0` matches `wildstar_client.primalmatrixnode.id` (`18`, `20`, `28`, `30`); client case `0x124` (+0x6c8) |
 | `AchievementEntry.Value` | `RequiredProgress` | Achievement progress runtime |
 | `Quest2Entry.FactionLevelCompPreq*` | `FactionLevelRequireAtMostPreq*` | Quest prerequisite comparison semantics |
 | `RewardRotationModifierEntry.Value` | `ModifierValue` | Reward rotation schedule builder |
@@ -85,7 +88,7 @@ Account route adds after shared payload: `AccountPurchaseExtensionId` (u32 at st
 | `+0x18` | 8 | `PricePremium` / `PriceAlternative` | (derived in NF from prices table) | Verified |
 | `+0x20` | u32 | `DisplayFlags` | `displayFlags` | Verified |
 | `+0x28` | i64 | `RetailCatalogWireScalar` | `field_6` (`RetailStoreOfferWireConstants.CatalogWireScalarBits`) | **Mapped** - retail wire passthrough; Apply @ `14044b750` does not copy |
-| `+0x30` | 8 | `RetailCatalogWireByte` | `field_7` (usually `0`) | **Mapped** - retail wire passthrough |
+| `+0x30` | 8 bits | `RetailCatalogWireTrailingByte` | `field_7` (usually `0`) | **Mapped** - `FUN_14006be30` @ `1400a0dc0` |
 | `+0x34` | u32 | currency row count | - | Verified |
 | `+0x40` | u32 | item row count | - | Verified |
 

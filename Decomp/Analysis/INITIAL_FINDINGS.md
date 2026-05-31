@@ -3905,7 +3905,10 @@ Seventy-first in-game store purchase follow-up implemented from this pass:
   `NetworkBitWriter_WriteIdentity` (`140085170`). Re-export confirmed all five
   labels in `exports\WildStar64.exe\functions.csv` and
   `selected_decompiled.c`.
-- `ClientStorefrontRequestCatalog` was already correct as one 14-bit field.
+- `ClientStorefrontRequestCatalog` was already correct as one 14-bit field,
+  and later helper inspection identified two native senders for opcode
+  `0x082D`: `Storefront_SendClientRequestCatalog` (`1404eae10`) and
+  `Storefront_SendClientRequestCatalogVariant` (`14044db80`).
   The character purchase model was corrected from the stale 20-bit layout to
   the mapped shared purchase payload: 32-bit offer id, 5-bit selector, 32-bit
   field, 14-bit currency id, 32-bit field, target identity, and trailing 32-bit
@@ -9136,7 +9139,7 @@ From `DashCast_SendClientDashCast`, `ActionSet_CheckUpdateSpellInProgress`.
 | `DAT_140c65b80` | QuestServiceGlobal | `*DAT_140c65b80` = QuestRuntime pointer |
 | `DAT_140c659c0` | ActionBarSlotTable | Slot count at `+0x10`, slot prereq array at `+0x08` (int32 each); up to 24 entries |
 | `DAT_140c65b98` | MatchingGameMapService | `+0x108` = inMatchingGame flag; `+0x114` = matchType (1=rated, 2=arena) |
-| `DAT_140c658d8` | DebugLogService | Used for debug output |
+| `DAT_140c658d8` | DebugLogService | Used for debug output; separate from retail `CLog` — see `Decomp/Analysis/CLIENT_LOGGING.md` |
 | `DAT_140c65990` | ?? | Called FUN_14049aa10(DAT_140c65990) in interaction success path |
 | `DAT_140c7de18` | GuildBossTokenEntryList | Ptr to list; `DAT_140c7de20` = count |
 | `DAT_140c635f0` | GameTimeGlobal | `+0x1680` = current game tick or timestamp |
@@ -11819,7 +11822,10 @@ Account/store `0x0969..0x0980` client-consumer semantics:
   messages. NexusForever now names these packets
   `ServerAccountItemCacheAdd`, `ServerAccountItemCacheListAppend`, and
   `ServerAccountItemCacheRemove`; the leading uint32 field remains `Unknown0`
-  because the observed handlers do not consume it. `0x097A` is now named
+  because the observed handlers do not consume it. Helper inspection confirms
+  `0x096B` and `0x096C` are cache-only append/remove handlers with no direct
+  `ClientEvent_DispatchNamedEvent` call in the observed bodies, while `0x096A`
+  still dispatches `AccountItemUpdate`. `0x097A` is now named
   `ServerCREDDExchangeOrderCacheRows` for its internal CREDD exchange order
   cache refresh; its row field semantics remain blocked.
 - Verification: focused packet, cooldown, and CREDD history tests now pass with
@@ -11840,6 +11846,127 @@ Storefront `0x0987..0x0991` client-consumer semantics:
   the store catalog dirty and dispatches `StoreCatalogUpdated`.
 - `0x098A` is `StoreError`: a single 5-bit error value is dispatched through
   the client event `StoreError`.
+- Helper inspect of `Storefront_DispatchStoreCatalogReady` (`14044dbd0`) shows
+  the `StoreCatalogReady` string path only dispatches `StoreCatalogReady` plus
+  `StoreLinksRefresh` UI events; no `StoreError` or `CatalogUnavailable`
+  emission was observed in that helper.
+- Helper inspect of `Storefront_SendClientRequestCatalog` (`1404eae10`) and
+  `Storefront_SendClientRequestCatalogVariant` (`14044db80`) shows both clear a
+  shared request-state dword at `DAT_140c65908 + 4` then send opcode `0x082D`
+  through `AccountItem_SendOpcodePayloadHelper`. The packet model remains one
+  14-bit `CatalogContext` field, and the actual `CatalogUnavailable` producer
+  remains unresolved.
+- Helper inspect of `FUN_140038120` shows one caller in the character-select
+  target path enters this request flow at state `10`, copies `param_2 + 4` into
+  `DAT_140c635f0 + 0x1680`, conditionally calls
+  `Storefront_SendClientRequestCatalogVariant` when `DAT_140c65908 != 0`, then
+  advances to state `11` through `FUN_14003e470`. Its failure path calls
+  `FUN_1400383a0`, which wraps a generic numeric result object and forwards it
+  to `FUN_1400384b0` instead of dispatching `StoreError`, so this nearby state
+  machine still does not expose the `CatalogUnavailable` producer.
+- Helper inspect of `FUN_140037f30` shows the neighboring `param_3 == 0x3DB`
+  branch is pre-request storefront setup, not error emission: it copies a block
+  of shared storefront fields into `DAT_140c635f0`, rebuilds the selected
+  target object, then advances client state from `9` to `10` through
+  `FUN_14003e470` before `FUN_140038120` runs.
+- Helper inspect of `FUN_140037b70` shows the other nearby sibling is an
+  auth/message mismatch branch. It validates the expected auth values, logs the
+  mismatch text, and forwards generic numeric failure codes through
+  `FUN_1400383a0`; it is not a `StoreError` or `CatalogUnavailable` producer.
+- Helper inspect of `ClientHelloAuth_SendFromState5` (`14003a620`) shows the
+  matching branch upstream of that sibling sends opcode `0x0592`
+  `ClientHelloAuth` from client state `5` and advances to state `6`. Combined
+  with the later `9 -> 10 -> 11` storefront setup/request chain, the adjacent
+  client path is still tracking auth/setup state rather than exposing the
+  missing `CatalogUnavailable` producer.
+- Helper inspect of `WorldSocket_ProcessServerMessage` (`140014f10`) shows the
+  storefront family does not have a closer producer branch in the immediate
+  parent dispatcher either: when `DAT_140c65908 != 0`, the world-message demux
+  simply calls `Storefront_HandleServer0987To0991` and propagates its result.
+  That confirms the local `0x0987..0x0991` control path is a gated incoming
+  packet consumer, not a native client-originated `StoreError` producer.
+- Source history check of commit `79704e423b` (`Persist account storefront and
+  CREDD retail state`) shows the runtime catalog request path already lacked any
+  `ServerStoreError` / `CatalogUnavailable` branch when the current account
+  storefront flow was introduced. At that point `HandleCatalogRequest` still
+  sent `ServerStoreCatalogUpdated` on every request, while
+  `ClientStorefrontRequestCatalogHandler` sent initial inventory packets, daily
+  login update, purchase history, and then the catalog. The current one-shot
+  `0x0989` gate is newer, but the absence of a catalog error producer is not.
+- String-xref review of native `CatalogUnavailable` shows only the enum token
+  registration path: address `140ac9e68` is referenced by
+  `Lua_RegisterGameEnumTables` (`1404f2860`) plus a backing data slot, with no
+  dedicated nearby storefront display/helper xref in the executable. The client
+  therefore appears to rely on the generic `StoreError` event plus Lua enum
+  mapping, not on a special native `CatalogUnavailable` presentation branch.
+- Direct inspect of `Storefront_HandleStoreError` (`14044cea0`) tightens that
+  result further: the handler body only dispatches the named client event
+  `StoreError` with the 5-bit payload value and then returns. No native
+  branch was observed for `CatalogUnavailable` or any other specific
+  `CodeEnumStoreError` value.
+- Houston64 does not currently expose a better storefront-error consumer in the
+  selected decompile set. Raw strings `CatalogUnavailable` (`140725cf8`) and
+  `StoreError` (`140725d20`) exist in `Houston64.exe`, but targeted
+  `TraceStringReferences` passes report `refs=0` for both, so the available UI
+  binary export set still does not reveal a live handler path for those names.
+- Exact source-history grep narrows runtime use even further: `CatalogUnavailable`
+  appears in the legacy storefront enum commit `aa9c293a92` and the current
+  static enum commit `cc07610d60`, but no `StoreError.CatalogUnavailable` source
+  use was found. In the legacy `aa9c293a92` storefront runtime diff, purchase
+  validation only returned `PurchasePending`, `InvalidPrice`, and `Success`, so
+  even that older runtime snapshot did not emit `CatalogUnavailable`.
+- A deeper WildStar64 string-trace pass still does not expose a dedicated client
+  consumer for the storefront error names. The storefront-near unicode
+  `StoreError` literal at `140ac9e50` traces with `refs=0`, while the adjacent
+  unicode `CatalogUnavailable` literal at `140ac9e68` still only resolves to
+  `Lua_RegisterGameEnumTables` (`1404f2860`) plus backing pointer
+  `140c36bf0`. Combined with `Storefront_HandleStoreError`, the recovered client
+  path is still just packet `0x098A` -> generic named event `StoreError` -> Lua
+  enum mapping.
+- One hop deeper confirms the event side is generic too. `ClientEvent_DispatchNamedEvent`
+  (`1400ea3e0`) is only a thin wrapper over `ClientEvent_DispatchNamedEventCore`
+  (`1400ea400`), and the core body performs a general event-name lookup in the
+  client scene-event tree before forwarding the payload through `FUN_1400f3040`.
+  The `StoreError` payload descriptor `1409f003c` has exactly one recovered
+  reference, the `LEA` inside `Storefront_HandleStoreError`, so the recovered
+  WildStar64 client path remains a generic named-event dispatch with no
+  storefront-specific native branch beyond the packet handler.
+- A tight tracked-source/docs sweep still does not support adding a runtime
+  `CatalogUnavailable` producer. Current source references for the specific value
+  remain the static enum definition and serializer coverage, while live runtime
+  `ServerStoreError` emitters in purchase/package handlers only use purchase-
+  validation values such as `GenericFail`, `InvalidOffer`, `InvalidPrice`,
+  `PurchaseVelocityLimit`, `IneligibleGiftRecipient`, and `CannotUseOffer`.
+- **2026-05-30 follow-up (see `Decomp/Analysis/STOREFRONT_CATALOG_UNAVAILABLE.md`):**
+  local `Catalogue Unavailable` on emulator sessions was **not** explained by an
+  empty world catalog or missing `0x0988`/`0x098B` payloads alone. World logs
+  after the server fixes show a full catalog (`30` categories, `348` offer
+  groups, `478` offers) ending in `ServerStoreFinalise` without initial
+  `0x0989`. The tighter client-side anchor was `malformed store banner data:
+  80072ee7` (`WININET_E_NAME_NOT_RESOLVED`) while local launch hardcoded
+  `realmDataCenterId 9`, whose `StoreBannerDataUrlTemplate` points at retired
+  retail host `http://static.wildstar-online.com/banners/`; row `6` leaves the
+  banner URL blank (`wildstar_client_mysql/RealmDataCenter.tbl.sql`). NexusForever
+  now defaults local launch to `RealmDataCenterId 6` via ClientConnector config
+  and `Start-NexusForeverLocal.ps1`. Server-side companions: defer catalog until
+  `HasSentPregameAccountPackets` (not full character list) and omit initial
+  `ServerStoreCatalogUpdated` on first catalog open.
+- Earlier live runtime diagnostics (pre-fix) pointed at the initial `0x0989`
+  `ServerStoreCatalogUpdated` dirty-notification as one practical server-side
+  contributor. That path sent `ServerStoreCatalogUpdated` before
+  `ServerStoreFinalise` on the first `0x082D` response; it lines up with
+  `Storefront_HandleStoreCatalogUpdated` (`14044cf40`), which marks the catalog
+  dirty and dispatches `StoreCatalogUpdated`, not success. Keep this note for
+  opcode semantics; the integrated resolution is in
+  `STOREFRONT_CATALOG_UNAVAILABLE.md`.
+- The strongest alternative data-shape causes were falsified against the live
+  world DB. Visible store categories are all non-root (`30` visible, `0` visible
+  `parentId = 0` rows), all `747` visible offer-group category links point to
+  visible non-root categories, there are `0` missing/invisible category links,
+  there are `0` groups with only root-category links, `displayInfoOverride`
+  never exceeds the 14-bit wire range (`max = 1758`), and `field_7` remains `0`
+  for all visible offers. That leaves the initial dirty-notification as the only
+  recovered path that matches the symptom.
 - `CodeEnumStoreError` is registered by `Lua_RegisterGameEnumTables`
   (`1404f2860`) with the 22 mapped values `CatalogUnavailable`,
   `StoreDisabled`, `InvalidOffer`, `InvalidPrice`, `GenericFail`,
@@ -17263,3 +17390,109 @@ F-017 `ServerSpellEffectDamage` (`0x07F6`) reader and trailing-row follow-up (20
   @ `14060b2b0`. Sibling `0x07F4` case @ `1403ee1c9` uses the same wrapper lookup
   then `14053e5a0` (full spell-go apply). Trailing rows parsed on the wire are
   still not walked in `14053f3f0`.
+
+F-018 Store/account follow-up (`0x0971`, `0x098E`, `0x098F`) (2026-05-30):
+
+- `AccountPrivilegeRestrictionUpdate_HandleServer0971` @ `140007180` only
+  accepts restriction indices `0..3`, stores the expiry timestamp at
+  `accountState + 0x1e8 + index * 8`, and dispatches
+  `AccountPrivilegeRestrictionUpdate(index, durationDays * 86400.0, activeFlag)`.
+  Current NexusForever names remain bounded correctly: indices `0` and `1`
+  match store purchase/gift velocity restrictions, while `2` and `3` stay
+  reserved until a separate native name source appears.
+- `ServerStoreCategories_ReadPayload` @ `1400a12d0` reads category rows, then a
+  3-bit real-currency field, then `0x098F` rows. `Storefront_ApplyServerStoreCategories`
+  @ `14044c170` stores that 3-bit field separately and copies each `0x098F` row
+  into the client currency-package cache as `(Id, Name, Count, Price, CurrencyType)`.
+  This confirms `0x098F` is a nested catalog row under `0x0988`, not a
+  standalone store event.
+- `Server0x098E_Row_ReadPayload` @ `1400a14c0` and
+  `Storefront_HandleStorePurchaseHistoryReady` @ `14044c540` still only prove
+  the purchase-history wire shape and the cache-replace +
+  `StorePurchaseHistoryReady` dispatch path. No additional UI/accessor evidence
+  surfaced this pass, so `0x098E` row fields remain intentionally unresolved.
+
+Prerequisite evaluation chain pass (2026-05-31):
+
+- Mapped the client prerequisite manager singleton and evaluation pipeline from
+  decompile-cache fragments (no new Ghidra export required):
+  `PrerequisiteManager_Initialise` (`14049be30`) -> `DAT_140c659a0`;
+  `PrerequisiteManager_Meets` (`14049bf10`, vtable `+0x18`) ->
+  `PrerequisiteManager_EvaluateEntry` (`1404a1ca0`) ->
+  `PrerequisiteManager_EvaluateTypeSlot` (`1404a2100`).
+- `PrerequisiteManager_EvaluateTypeSlot` is a jump-table dispatch for
+  prerequisite type ids `1..0x126` (294). Each slot reads comparison/objectId/value
+  triples from the registered handler row and returns pass/fail for AND/OR
+  aggregation inside `PrerequisiteManager_EvaluateEntry`.
+- Spell cast failure path in `SpellCast_ValidateAndDispatch` (`1403998e0`) calls
+  `(*DAT_140c659a0+0x18)(manager, player, spellBase.prerequisiteId, ...)` before
+  emitting `PrereqFailureMessage` and returning cast failure `0x11` (17). Row
+  lookup uses `Prerequisite_GetRowById` (`1402259c0`); failure text comes from
+  prerequisite row `+0x38` (`localizedTextIdFailure`).
+- Corrected the taxi/rapid-transport helper naming: `TaxiNode_CheckLevelRequirementMode`
+  (`1404af6b0`) is **not** the general prerequisite engine. It compares
+  `TaxiNode` row `+0x20` against the player level at entity `+0x38`, requiring
+  row mode (`+0x8`) to match param `1` (taxi) or `2` (rapid transport).
+  `RapidTransport_LookupNodeMetadata` (`1404af5f0`) binary-searches
+  `DAT_140c659d0+0x30`; `TaxiNode_GetTableEntry` (`1402413c0`) resolves
+  `TaxiNode.tbl`.
+- WildStar64 also registers `Prerequisite.tbl` / `PrerequisiteType.tbl` locally
+  via `ClientDB_RegisterPrerequisite` (`140225760`) and
+  `ClientDB_RegisterPrerequisiteType` (`140225ba0`), not only through Houston64.
+- `wildstar_client.localizedenum` exposes `PrerequisiteComp_*` names for types
+  `1..44` only (via `localizedTextIdError`). Type `10` is `PrerequisiteComp_Sex`
+  in client data; NexusForever keeps the member name `Gender` with an updated
+  comment. Types `>=47` have error-text ids but no durable enum names in the
+  reference DB.
+- Table-backed rename landed: `Unknown170` -> `GameFormula170`. Sample rows use
+  `value0` as `gameformula.id` (`1029`, `1031`, `1050` confirmed in
+  `wildstar_client`; `1363`/`1367` are achievements but are not the dominant
+  pattern). Client dispatch case `0xaa` routes through manager vtable `+0x90`.
+- Correlated but still unnamed types from dispatch + SQL usage:
+  - `221` (`0xdd`): `ActionSetSpell` (already renamed); vtable `+400`.
+  - `246` (`0xf6`): `Inventory`/account-item gate; vtable `+0x130`; `value0`
+    samples look like `Item2` ids.
+  - `269` (`0x10d`): `RapidTransport`; vtable `+0xd0`; table row `37806` uses
+    `objectId0=2`.
+  - `275` (`0x113`): high-volume entitlement-style gate; vtable `+0x6a0`;
+    `objectId0` samples `74893..74923` (not `entitlement.id` rows).
+- Opcode backlog unchanged this pass: modeled/handler coverage remains complete,
+  but sender-blocked placeholders persist (`Client0x062A`/`0x0634`,
+  `Client0x00C8`, `Client0x012D`/`0x063E`, `Client0x0550`) and
+  `ServerMatching0x05CF` apply indexing is still blocked pending F-010 live sniff.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`
+  should pass after this pass.
+
+Prerequisite and opcode follow-up pass (2026-05-31, continuation):
+
+- **Verified rename:** `Unknown292` -> `PrimalMatrixNode`. `wildstar_client.prerequisite`
+  rows use `objectId0` as `primalmatrixnode.id` (`18`, `20`, `28`, `30` confirmed;
+  `value0=1` matches one allocation). Client dispatch case `0x124` routes through
+  manager vtable `+0x6c8`.
+- **Mapped rename:** `Unknown277` -> `QuestObjective47Both`. Client case `0x115`
+  @ `1404a2100` requires **both** caster (`param_2`) and target (`param_2[1]`) to
+  pass the same QuestObjective47 handler at vtable `+0x2f8` used by type `47`
+  case `0x2f`.
+- **Correlated, still unnamed:**
+  - `48` case `0x30` -> manager `+0x1e8`; only one table row (comparison `Not`,
+    AND companion to `77`).
+  - `77` case `0x4d` -> manager `+0x548` with target context `param_2[1]`; often
+    AND'd with `48`, `InCombat` (`28`), or `UnderSpell` (`15`).
+  - `275` case `0x113` -> manager `+0x6a0`; `objectId0` samples `74757..74926`
+    (one row each; not `entitlement.id` or `accountitem.id`).
+  - `193` rare entitlement-style gate (`value0=53` once).
+- **Opcode sender proof:** `TargetSelection_SendClientMovementControlAck`
+  (`14057a630`) sends `0x0635` `ClientMovementControlAck` with
+  `param_2[0]` as the movement-control ticket during
+  `TargetSelection_ApplySelectionAndDispatch`. Same registration block
+  (`ClientWorldOpcodeRegister_MovementSpline` @ `1400a8190`) also binds
+  `0x0550`, `0x062A`, `0x0634`, `0x07E3`, `0x081C`, and `0x081D` to the shared
+  4-byte `ClientTradeskillResetTalents_WritePayload` writer — wire shape only;
+  semantic owners for `0x062A`/`0x0634`/`0x0550` remain blocked (no static send
+  site; F-010 live sniff still recommended). `0x081C`/`0x081D` already named
+  `ClientSpline2DataRequest` / `ClientSpline2Request` in NF opcode enum.
+- Verification:
+  `dotnet build Source\NexusForever.Game.Static\NexusForever.Game.Static.csproj --no-restore -v minimal --nologo`
+  and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`.

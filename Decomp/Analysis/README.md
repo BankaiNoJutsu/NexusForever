@@ -326,6 +326,9 @@ ignored `logs` tree so they can be reviewed and committed when useful.
 See `INITIAL_FINDINGS.md` for the first pass of protocol/data anchors found in
 the generated exports.
 
+See [CLIENT_LOGGING.md](CLIENT_LOGGING.md) for evidence-backed retail client
+`CLog` switches, severity levels, and NexusForever launcher integration.
+
 See [CONTINUATION_GUIDE.md](CONTINUATION_GUIDE.md) for the repeatable map,
 label, implement, and verification workflow to use when continuing the
 client-binary decompile.

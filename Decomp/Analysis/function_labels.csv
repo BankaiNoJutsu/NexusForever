@@ -138,6 +138,7 @@ WildStar64.exe,1400a74e0,NetworkBitWriter_Write5BitValue,Writes a 5-bit integer 
 WildStar64.exe,1400a7540,NetworkBitWriter_WriteBits64,Writes up to 64 bits into the packet bitstream.
 WildStar64.exe,14007d790,ServerRealmTransferDestinationsAux_ReadPayload,Reads server opcode 0x03EF as a uint32 value, a uint32 byte count, and that many raw bytes into a pointer-backed buffer inside the registered 0x10-byte object.
 WildStar64.exe,1400ea3e0,ClientEvent_DispatchNamedEvent,Generic named client event dispatcher used for UnitEvaded UnitEnteredCombat TargetUnitChanged GenericFloater and many UI or gameplay event names through the scene event sink.
+WildStar64.exe,1400ea400,ClientEvent_DispatchNamedEventCore,Resolves the named-event entry from the client scene-event tree by event name, then forwards the supplied payload through FUN_1400f3040; generic sink used by StoreError and many other UI or gameplay events.
 WildStar64.exe,140427d40,Loot_DispatchLootTakenByEvent,Builds the LootTakenBy named event payload with nLootId itemLoot and unitLooter before dispatching it through the scene event sink.
 WildStar64.exe,140427fa0,Loot_DispatchChannelUpdateLootEvent,Builds the ChannelUpdate_Loot named event payload for item currency and destroyed-item loot updates before dispatching it through the scene event sink.
 WildStar64.exe,1403daf90,Loot_HandleLootNotify,Handles ServerLootNotify by ingesting the full loot row array into the local loot service, storing the parent/source unit on the resolved owner entity, and updating entity loot visuals.
@@ -321,8 +322,20 @@ WildStar64.exe,1404694a0,EntityBuffRecord_PruneEmptyWrapperNodes,When the matche
 WildStar64.exe,140499a20,GalacticArchive_ApplyUnlockMaskAndDispatchEvents,Updates the local Galactic Archive unlock mask, dispatching GalacticArchiveRefresh plus GalacticArchiveArticleAdded and GalacticArchiveEntryAdded for newly unlocked bits.
 WildStar64.exe,1404aacb0,ActionSet_ValidateRequestedChanges,Validates a 12-entry action-set request and returns a LimitedActionSetResult.
 WildStar64.exe,1404acfa0,FlightPath_SendPurchaseRequest,Builds and sends opcode 0x00FF flight-path purchase payload from validated route data.
-WildStar64.exe,1404ad9b0,FlightPath_IsNodeUnlockedOrAvailable,Checks the loaded flight-path node tree at manager+0x110 for a TaxiNode id; absent nodes fall through static node flags or the taxi prerequisite helper with mode 1.
-WildStar64.exe,1404ada70,RapidTransport_IsNodeUsableForPlayer,Checks rapid-transport node type/faction/static flags and then falls through to the taxi prerequisite helper with mode 2.
+WildStar64.exe,1402413c0,TaxiNode_GetTableEntry,Resolves TaxiNode.tbl rows through the live ClientDB lookup path or the cached table provider fallback.
+WildStar64.exe,1404ad9b0,FlightPath_IsNodeUnlockedOrAvailable,Checks the loaded flight-path node tree at manager+0x110 for a TaxiNode id; absent nodes fall through static node flags or TaxiNode_CheckLevelRequirementMode with mode 1.
+WildStar64.exe,1404ada70,RapidTransport_IsNodeUsableForPlayer,Checks rapid-transport node type/faction/static flags and then falls through to TaxiNode_CheckLevelRequirementMode with mode 2.
+WildStar64.exe,1404af5f0,RapidTransport_LookupNodeMetadata,Binary-searches the rapid-transport metadata tree at DAT_140c659d0+0x30 for a node id and returns the row payload at +0x28.
+WildStar64.exe,1404af6b0,TaxiNode_CheckLevelRequirementMode,Compares TaxiNode.prerequisiteLevel at row+0x20 against the player level threshold; row+0x8 mode must match param_4 (1=taxi unlock path 2=rapid-transport UI path).
+WildStar64.exe,140225760,ClientDB_RegisterPrerequisite,Registers the Prerequisite client DB table loader for DB\Prerequisite.tbl in WildStar64.
+WildStar64.exe,140225ba0,ClientDB_RegisterPrerequisiteType,Registers the PrerequisiteType client DB table loader for DB\PrerequisiteType.tbl in WildStar64.
+WildStar64.exe,1402259c0,Prerequisite_GetRowById,Resolves a Prerequisite.tbl row by id through ClientDB or the cached provider at DAT_140c64208.
+WildStar64.exe,140225e00,PrerequisiteType_GetRowById,Resolves a PrerequisiteType.tbl row by id through ClientDB or the cached provider at DAT_140c64758.
+WildStar64.exe,14049be30,PrerequisiteManager_Initialise,Lazy singleton init for DAT_140c659a0; allocates the prerequisite manager and runs its init vtable method.
+WildStar64.exe,14049bf10,PrerequisiteManager_Meets,Public Meets entry on DAT_140c659a0 vtable+0x18; builds evaluation context and delegates to PrerequisiteManager_EvaluateEntry.
+WildStar64.exe,1404a1ca0,PrerequisiteManager_EvaluateEntry,Loads a registered prerequisite handler by id and evaluates up to three typed slots with AND/OR semantics from handler-row flag bit 0.
+WildStar64.exe,1404a2100,PrerequisiteManager_EvaluateTypeSlot,Main prerequisite-type dispatch switch for ids 1..0x126; param_3 carries comparison objectId and value for the active slot.
+WildStar64.exe,14057a630,TargetSelection_SendClientMovementControlAck,Sends opcode 0x0635 ClientMovementControlAck with param_2[0] as the movement-control ticket during TargetSelection_ApplySelectionAndDispatch; registered in ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 with ClientTradeskillResetTalents_WritePayload @ 14007d010.
 WildStar64.exe,1404d9450,CSIKey_HandlePress,Handles the context-sensitive interaction key by gating on local busy state, dispatching the named CSIKeyPressed event when the active object consumes the press, routing stored CSI action kinds through a local switch table, and falling back to Interaction_AttemptTargetAction for the stored target path.
 WildStar64.exe,1404dafb0,ClientPlayerMovementSpeedUpdate_SendAndDispatch,Builds and sends opcode 0x063B ClientPlayerMovementSpeedUpdate with the supplied uint32 value, then dispatches the matching PlayerMovementSpeedUpdate named event through the scene event sink.
 WildStar64.exe,1404e7f60,Lua_RegisterAccountEntitlementEnums,Registers account currency/operation and entitlement Lua enums.
@@ -837,8 +850,8 @@ WildStar64.exe,1400a0210,ServerCREDDExchangeOrderCacheRows_ReadPayload,Reads opc
 WildStar64.exe,1400a0300,ServerAccountItemCacheAdd_ReadPayload,Reads opcode 0x096A as one uint32 followed by AccountInventoryItem; consumer adds the item to the account item cache but does not use the leading uint32 field.
 WildStar64.exe,1400a0350,ServerAccountItemCacheListAppend_ReadPayload,Reads opcode 0x096B as one uint32 then a count followed by AccountInventoryItem rows; consumer appends missing account item cache rows but does not use the leading uint32 field.
 WildStar64.exe,1400a1170,ServerStoreCategory_Row_ReadPayload,Reads one store category row: two wide strings three uint32 fields and one flag.
-WildStar64.exe,1400a12d0,ServerStoreCategories_ReadPayload,Reads store categories: category rows then a 3-bit real-currency field and currency package result rows.
-WildStar64.exe,1400a1230,Server0x098F_ReadPayload,Reads opcode 0x098F and store currency package rows as uint32 wide string uint32 float uint32; the store dispatcher has no 0x098F event consumer in the mapped switch.
+WildStar64.exe,1400a12d0,ServerStoreCategories_ReadPayload,Reads store categories: category rows then a 3-bit real-currency field and nested currency-package rows.
+WildStar64.exe,1400a1230,ServerStoreCurrencyPackageRow_ReadPayload,Reads one nested 0x098F currency-package row as uint32 wide string uint32 float uint32; Storefront_ApplyServerStoreCategories copies it into the currency-package cache and the top-level store dispatcher has no standalone 0x098F event consumer.
 WildStar64.exe,1400a0fa0,ServerStoreOffers_OfferGroup_ReadPayload,Reads one store offer group including offers and category id/index arrays.
 WildStar64.exe,1400a0dc0,ServerStoreOffers_Offer_ReadPayload,Reads one store offer row including id strings prices flags timing currency rows and item rows.
 WildStar64.exe,1400a0d20,ServerStoreOffers_OfferCurrency_ReadPayload,Reads one store offer currency row: 5-bit currency float 2-bit discount type float and two uint64 time fields.
@@ -856,8 +869,10 @@ WildStar64.exe,14044c780,Storefront_HandleStorePurchaseOfferResult,Handles opcod
 WildStar64.exe,14044c540,Storefront_HandleStorePurchaseHistoryReady,Handles opcode 0x098E by replacing purchase-history rows and dispatching StorePurchaseHistoryReady.
 WildStar64.exe,14044cdf0,Storefront_HandleStoreCompleteOrderVirtualCurrencyPackageResult,Handles opcode 0x0990 by dispatching StoreCompleteOrderVirtualCurrencyPackageResult with the flag and 5-bit result value.
 WildStar64.exe,14044c840,Storefront_HandleStorePurchaseVirtualCurrencyPackageResult,Handles opcode 0x0991 by updating virtual-currency package result strings/floats and dispatching StorePurchaseVirtualCurrencyPackageResult.
+WildStar64.exe,14044db80,Storefront_SendClientRequestCatalogVariant,Sends opcode 0x082D ClientStorefrontRequestCatalog via AccountItem_SendOpcodePayloadHelper after clearing the shared request-state dword; the payload path reuses the current catalog context word and preserves a caller-supplied upper dword.
 WildStar64.exe,140450720,Storefront_SendClientPurchaseCharacterOffer,Sends opcode 0x082A from the normal StorefrontLib purchase route after building the character-target purchase payload.
 WildStar64.exe,1404507e0,Storefront_SendClientPurchaseAccountOffer,Sends opcode 0x0828 from the StorefrontLib recipient or account purchase route after building the account-target purchase payload.
+WildStar64.exe,1404eae10,Storefront_SendClientRequestCatalog,Sends opcode 0x082D ClientStorefrontRequestCatalog via AccountItem_SendOpcodePayloadHelper after clearing the shared request-state dword and reusing the current catalog context word.
 WildStar64.exe,1404f2860,Lua_RegisterGameEnumTables,Registers Lua enum tables including CodeEnumStoreError and CodeEnumPurchaseResultDisplayType.
 WildStar64.exe,14007a040,ServerTwoUInt32_ReadPayload,Shared 8-byte server reader registered for many opcodes including 0x021A 0x0223-0x0225 0x0813 0x0819 0x08C7 0x0970 0x0973 and 0x0974; body reads two 32-bit fields.
 WildStar64.exe,14007c340,ServerUInt32AndFlag_ReadPayload,Shared 8-byte server reader registered for multiple opcodes including 0x0219 0x022B 0x0355 0x0357 0x06F5 0x0700 0x0755 and 0x089A; body reads one 32-bit field followed by one bit.
@@ -967,7 +982,7 @@ WildStar64.exe,14009fb50,ClientCREDDExchangeSellOrderSubmit_WritePayload,Seriali
 WildStar64.exe,14009ddd0,ClientHousingInteriorWallpaperUpdate_WritePayload,Serialises opcode 0x050D as six 32-bit slot flags followed by six DecorInfo records.
 WildStar64.exe,14009d560,ClientHousingPlugUpdate_WritePayload,Serialises opcode 0x0510 as residence identity plot info id plug item id facing unknown zero operation and five contribution records.
 WildStar64.exe,14009d0a0,Housing_WriteDecorInfoPayload,Serialises one housing DecorInfo record for decor update style payloads.
-WildStar64.exe,1400a8190,ClientWorldOpcodeRegister_MovementSpline,Registers client-sent movement control and Spline2 opcodes 0x0635 through 0x081D including ack and Spline2 payload helpers.
+WildStar64.exe,1400a8190,ClientWorldOpcodeRegister_MovementSpline,Registers movement/spline/realm-list opcodes including shared 4-byte uint32 writers via ClientTradeskillResetTalents_WritePayload @ 14007d010 for 0x0550 0x062A 0x0634 0x0635 0x07E3 0x081C 0x081D plus Spline2 and realm-list compound payloads.
 WildStar64.exe,14008eaa0,ServerFlightPathUpdate_ReadPayload,Reads opcode 0x0188 as a 32-bit count followed by count raw 32-bit flight path ids.
 WildStar64.exe,140096000,ServerOpcode0814_ReadSpell4IdAndFlag,Registration block FUN_14006c290 wires server opcode 0x0814 and 8-byte object size to this reader; body parses one 18-bit Spell4 id plus a trailing 1-bit flag.
 WildStar64.exe,140096060,ServerSpellList_ReadPayload,Registration block FUN_14006c290 wires server opcode 0x0551 and 0x10-byte object size to this reader; body parses a counted spell list with nested tier and state records.
@@ -1350,8 +1365,11 @@ WildStar64.exe,140027c60,ClientGetRealmTransferDestinations_SendFromLuaDispatch,
 WildStar64.exe,140027d80,ClientRealmTransfer_SendFromLuaDispatch,Sends world opcode 0x0142 from the character-select Lua RealmTransfer dispatch entry; payload is a table-indexed selected-character u64 from DAT_140c66da8 plus FUN_140056d60 target-realm int32 and a trailing transfer bool before the shared 0x244 follow-up send used by adjacent CharacterSelection helpers.
 WildStar64.exe,140029f00,FUN_140029f00,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,14002a190,FUN_14002a190,Consumer dispatch candidate — may route server→client packets.
-WildStar64.exe,140038120,FUN_140038120,Consumer dispatch candidate — may route server→client packets.
-WildStar64.exe,14003a620,FUN_14003a620,Consumer dispatch candidate — may route server→client packets.
+WildStar64.exe,140037b70,FUN_140037b70,Handles the adjacent auth/message mismatch branch by validating expected auth values, logging mismatch text, and forwarding generic failure codes through FUN_1400383a0; not a StoreError producer.
+WildStar64.exe,140037f30,FUN_140037f30,Consumes the adjacent param3 0x3DB branch by caching shared storefront fields into DAT_140c635f0, rebuilding the selected target object, then advancing client state from 9 to 10 through FUN_14003e470 before FUN_140038120 sends 0x082D.
+WildStar64.exe,140038120,FUN_140038120,State-10 client flow that caches param2+4 into DAT_140c635f0+1680, conditionally sends 0x082D via Storefront_SendClientRequestCatalogVariant when DAT_140c65908 is nonzero, then advances state to 0xb; failure falls through FUN_1400383a0 rather than StoreError.
+WildStar64.exe,1400383a0,FUN_1400383a0,Generic failure-result wrapper used by FUN_140038120; packages the integer failure code into a transient object and forwards it to FUN_1400384b0 without emitting StoreError.
+WildStar64.exe,14003a620,ClientHelloAuth_SendFromState5,Sends opcode 0x0592 ClientHelloAuth from client state 5 using shared DAT_140c635f0 fields and then advances state to 6; this is upstream auth/setup flow rather than a storefront error path.
 WildStar64.exe,140045b70,FUN_140045b70,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140046340,FUN_140046340,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140047730,FUN_140047730,Consumer dispatch candidate — may route server→client packets.
@@ -1782,7 +1800,7 @@ WildStar64.exe,140936aa0,FUN_140936aa0,Consumer dispatch candidate — may route
 WildStar64.exe,140936c50,FUN_140936c50,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140936d10,FUN_140936d10,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140936e70,FUN_140936e70,Consumer dispatch candidate — may route server→client packets.
-WildStar64.exe,14044dbd0,FUN_14044dbd0,Consumer dispatch candidate — may route server→client packets.
+WildStar64.exe,14044dbd0,Storefront_DispatchStoreCatalogReady,Dispatches StoreCatalogReady plus StoreLinksRefresh UI events after catalog loads; no StoreError or CatalogUnavailable emission is observed in this helper.
 WildStar64.exe,14094cce0,FUN_14094cce0,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,14094cd10,FUN_14094cd10,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,14094cd40,FUN_14094cd40,Consumer dispatch candidate — may route server→client packets.

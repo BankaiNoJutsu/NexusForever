@@ -25,6 +25,7 @@ implement server behavior from the evidence in the existing C# codebase.
 | `Decomp/Analysis/scripts/TraceFunctionCallers.java` | Lists direct references to a target function and prints each caller instruction window. |
 | `Decomp/Analysis/function_labels.csv` | Durable function label map. This is the main bridge from native addresses to named evidence. |
 | `Decomp/Analysis/INITIAL_FINDINGS.md` | Living summary of mapped behavior and follow-up implementation. |
+| `Decomp/Analysis/STOREFRONT_CATALOG_UNAVAILABLE.md` | Resolved local storefront *Catalogue Unavailable* chain (realm data center id, catalog timing, `0x0989`). |
 | `Decomp/Analysis/Get-DecompCoverageSnapshot.ps1` | Generates the current export and opcode coverage inventories from local artifacts and source. |
 | `Decomp/Analysis/exports/<binary>/selected_reasons_summary.csv` | Selection audit for the focused export, including why a function was selected and whether it is inside the current decompile cutoff. |
 | `Decomp/Analysis/exports/<binary>/selected_call_edges.csv` | Direct caller/callee edges for each selected function, including call/jump site addresses and whether the neighbor is also selected or inside the decompile cutoff. |
