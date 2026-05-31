@@ -6,5 +6,6 @@ namespace NexusForever.Game.Prerequisite
     public class PrerequisiteParameters : IPrerequisiteParameters
     {
         public IUnitEntity Target { get; set; }
+        public IItem Item { get; set; }
     }
 }

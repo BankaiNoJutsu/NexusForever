@@ -1,4 +1,5 @@
 ﻿using NexusForever.Database.Character;
+using NexusForever.Game.Static.PlayerPath;
 using NexusForever.Network.World.Message.Static;
 
 namespace NexusForever.Game.Abstract.Entity
@@ -94,6 +95,11 @@ namespace NexusForever.Game.Abstract.Entity
         /// Returns if a path mission has been completed in the current session.
         /// </summary>
         bool IsMissionComplete(uint pathMissionId);
+
+        /// <summary>
+        /// Returns settler infrastructure progress for <see cref="GameTable.Model.PathSettlerInfrastructureEntry.Id"/>.
+        /// </summary>
+        SettlerInfrastructureState GetSettlerInfrastructureState(uint pathSettlerInfrastructureId);
 
         void SendInitialPackets();
         void SendSetUnitPathTypePacket();

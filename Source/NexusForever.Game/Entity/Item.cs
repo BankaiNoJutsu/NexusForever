@@ -122,6 +122,8 @@ namespace NexusForever.Game.Entity
 
         private float durability;
 
+        public IList<uint> MicrochipIds { get; } = new List<uint>();
+
         public uint ExpirationTimeLeft
         {
             get => expirationTimeLeft;
@@ -354,6 +356,9 @@ namespace NexusForever.Game.Entity
                     new NetworkItem.UnknownStructure()
                 }
             };
+
+            foreach (uint microchipId in MicrochipIds)
+                networkItem.Microchips.Add(microchipId);
 
             return networkItem;
         }

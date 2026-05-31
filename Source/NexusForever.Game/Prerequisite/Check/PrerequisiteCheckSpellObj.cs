@@ -5,7 +5,7 @@ using NexusForever.Game.Static.Prerequisite;
 
 namespace NexusForever.Game.Prerequisite.Check
 {
-    [PrerequisiteCheck(PrerequisiteType.SpellObj)]
+    [PrerequisiteCheck(PrerequisiteType.ActiveSpellEffectOnUnit)]
     internal class PrerequisiteCheckSpellObj : IPrerequisiteCheck
     {
         #region Dependency Injection
@@ -31,7 +31,7 @@ namespace NexusForever.Game.Prerequisite.Check
                 case PrerequisiteComparison.NotEqual:
                     return player.SpellManager.GetSpell(value) == null;
                 default:
-                    log.LogWarning($"Unhandled {comparison} for {PrerequisiteType.SpellObj}!");
+                    log.LogWarning($"Unhandled {comparison} for {PrerequisiteType.ActiveSpellEffectOnUnit}!");
                     return false;
             }
         }

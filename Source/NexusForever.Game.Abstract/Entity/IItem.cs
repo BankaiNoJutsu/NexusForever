@@ -1,4 +1,5 @@
-﻿using NexusForever.Database;
+﻿using System.Collections.Generic;
+using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable.Model;
@@ -23,6 +24,11 @@ namespace NexusForever.Game.Abstract.Entity
         float Durability { get; set; }
         uint ExpirationTimeLeft { get; set; }
         bool Soulbound { get; }
+
+        /// <summary>
+        /// Socketed microchip item ids (client item-eval +0x114 bitmask is derived from socket types 7-0xd).
+        /// </summary>
+        IList<uint> MicrochipIds { get; }
 
         /// <summary>
         /// Permanently bind this item to its current owner.

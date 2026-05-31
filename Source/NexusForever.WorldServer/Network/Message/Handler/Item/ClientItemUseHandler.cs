@@ -1,5 +1,6 @@
 ﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Shared;
 using NexusForever.Game.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -17,13 +18,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
 
         private readonly IGameTableManager gameTableManager;
         private readonly IPrerequisiteManager prerequisiteManager;
+        private readonly IFactory<IPrerequisiteParameters> prerequisiteParametersFactory;
 
         public ClientItemUseHandler(
             IGameTableManager gameTableManager,
-            IPrerequisiteManager prerequisiteManager)
+            IPrerequisiteManager prerequisiteManager,
+            IFactory<IPrerequisiteParameters> prerequisiteParametersFactory)
         {
-            this.gameTableManager    = gameTableManager;
-            this.prerequisiteManager = prerequisiteManager;
+            this.gameTableManager               = gameTableManager;
+            this.prerequisiteManager            = prerequisiteManager;
+            this.prerequisiteParametersFactory  = prerequisiteParametersFactory;
         }
 
         #endregion
@@ -40,10 +44,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
 
             if (itemSpecial.Spell4IdOnActivate > 0u)
             {
-                if (itemSpecial.PrerequisiteIdGeneric00 > 0 && !prerequisiteManager.Meets(session.Player, itemSpecial.PrerequisiteIdGeneric00))
+                if (itemSpecial.PrerequisiteIdGeneric00 > 0)
                 {
-                    session.Player.SendGenericError(GenericError.UnlockItemFailed);
-                    return;
+                    IPrerequisiteParameters prerequisiteParameters = prerequisiteParametersFactory.Resolve();
+                    prerequisiteParameters.Item = item;
+                    if (!prerequisiteManager.Meets(session.Player, itemSpecial.PrerequisiteIdGeneric00, prerequisiteParameters))
+                    {
+                        session.Player.SendGenericError(GenericError.UnlockItemFailed);
+                        return;
+                    }
                 }
 
                 if (session.Player.Inventory.ItemUse(item))

@@ -27,6 +27,7 @@ namespace NexusForever.Game.Entity
         private const uint ExplorerExploreZoneMissionType = 0x0010;
         private const uint ExplorerPowerMapMissionType = 0x0012;
         private const uint SettlerHubMissionType = 0x0013;
+        private const uint SettlerInfrastructureMissionType = 0x0015;
         private const uint PathMissionCompletionXpGameFormulaId = 0x017Au;
         private const uint DefaultMissionCompletionXp = 50u;
 
@@ -553,6 +554,32 @@ namespace NexusForever.Game.Entity
             return pathMissionId <= ushort.MaxValue
                 && pathMissions.TryGetValue((ushort)pathMissionId, out PathMissionRuntimeState state)
                 && state.Completed;
+        }
+
+        public SettlerInfrastructureState GetSettlerInfrastructureState(uint pathSettlerInfrastructureId)
+        {
+            if (GameTableManager.Instance.PathSettlerInfrastructure?.GetEntry(pathSettlerInfrastructureId) == null
+                || GameTableManager.Instance.PathMission?.Entries == null)
+            {
+                return SettlerInfrastructureState.Inactive;
+            }
+
+            PathMissionEntry mission = GameTableManager.Instance.PathMission.Entries
+                .FirstOrDefault(entry => entry.PathMissionTypeEnum == SettlerInfrastructureMissionType
+                    && entry.ObjectId == pathSettlerInfrastructureId);
+            if (mission == null)
+                return SettlerInfrastructureState.Inactive;
+
+            if (!pathMissions.TryGetValue((ushort)mission.Id, out PathMissionRuntimeState state))
+                return SettlerInfrastructureState.Inactive;
+
+            if (state.Completed || state.State == PathMissionState.Complete)
+                return SettlerInfrastructureState.Built;
+
+            if (state.State == PathMissionState.Started || state.State == PathMissionState.Unlocked)
+                return SettlerInfrastructureState.Building;
+
+            return SettlerInfrastructureState.Inactive;
         }
 
         /// <summary>
