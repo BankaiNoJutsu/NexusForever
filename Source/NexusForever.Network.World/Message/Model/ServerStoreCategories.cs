@@ -37,11 +37,15 @@ namespace NexusForever.Network.World.Message.Model
 
             public void Write(GamePacketWriter writer)
             {
-                writer.Write(Id);
-                writer.WriteStringWide(Name);
-                writer.Write(Count);
-                writer.Write(Price);
-                writer.Write(CurrencyType);
+                // Nested 0x098F row shape: uint32, wstr, uint32, float, uint32 (not a 64-bit enum write).
+                new ServerStoreCurrencyPackageRow
+                {
+                    Id           = Id,
+                    Name         = Name,
+                    Count        = Count,
+                    Price        = Price,
+                    CurrencyType = CurrencyType
+                }.Write(writer);
             }
         }
 

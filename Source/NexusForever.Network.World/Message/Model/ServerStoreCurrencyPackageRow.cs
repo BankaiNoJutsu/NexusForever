@@ -1,27 +1,29 @@
+using NexusForever.Game.Static.Account;
 using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
     /// <summary>
-    /// Store currency-package row shape for opcode 0x098F. Registered with the storefront
-    /// cluster but no mapped client event consumer; keep diagnostic-only.
+    /// Store currency-package row shape for opcode 0x098F. The client reads these rows
+    /// under <see cref="ServerStoreCategories"/> and applies them to the nested currency-
+    /// package cache rather than dispatching a standalone 0x098F event.
     /// </summary>
     [Message(GameMessageOpcode.ServerStoreCurrencyPackageRow)]
     public class ServerStoreCurrencyPackageRow : IWritable
     {
-        public uint Value0 { get; set; }
-        public string StringValue { get; set; } = string.Empty;
-        public uint Value2 { get; set; }
-        public float FloatValue { get; set; }
-        public uint Value4 { get; set; }
+        public uint Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public uint Count { get; set; }
+        public float Price { get; set; }
+        public AccountCurrencyType CurrencyType { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Value0);
-            writer.WriteStringWide(StringValue);
-            writer.Write(Value2);
-            writer.Write(FloatValue);
-            writer.Write(Value4);
+            writer.Write(Id);
+            writer.WriteStringWide(Name);
+            writer.Write(Count);
+            writer.Write(Price);
+            writer.Write((uint)CurrencyType);
         }
     }
 }

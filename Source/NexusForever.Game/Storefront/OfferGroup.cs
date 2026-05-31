@@ -15,6 +15,7 @@ namespace NexusForever.Game.Storefront
         public ushort DisplayInfoOverride { get; }
         public bool Visible { get; }
         public ImmutableList<IOfferGroupCategory> Categories { get; }
+        public bool HasOffers => offerItems.Count != 0;
 
         private readonly Dictionary</*offerId*/uint, IOfferItem> offerItems = new();
 
@@ -31,21 +32,23 @@ namespace NexusForever.Game.Storefront
             Visible      = Convert.ToBoolean(model.Visible);
 
             var builder = ImmutableList.CreateBuilder<IOfferGroupCategory>();
-            foreach (StoreOfferGroupCategoryModel categoryModel in model.StoreOfferGroupCategory)
+            foreach (StoreOfferGroupCategoryModel categoryModel in model.StoreOfferGroupCategory
+                .Where(categoryModel => Convert.ToBoolean(categoryModel.Visible))
+                .OrderBy(categoryModel => categoryModel.Index)
+                .ThenBy(categoryModel => categoryModel.CategoryId))
             {
-                if (Convert.ToBoolean(categoryModel.Visible))
+                builder.Add(new OfferGroupCategory
                 {
-                    builder.Add(new OfferGroupCategory
-                    {
-                        Id    = categoryModel.CategoryId,
-                        Index = categoryModel.Index
-                    });
-                }
+                    Id    = categoryModel.CategoryId,
+                    Index = categoryModel.Index
+                });
             }
 
             Categories = builder.ToImmutable();
 
-            foreach (StoreOfferItemModel offerItem in model.StoreOfferItem)
+            foreach (StoreOfferItemModel offerItem in model.StoreOfferItem
+                .Where(offerItem => Convert.ToBoolean(offerItem.Visible))
+                .OrderBy(offerItem => offerItem.Id))
             {
                 var offer = new OfferItem(offerItem);
                 offerItems.Add(offer.Id, offer);
@@ -77,6 +80,7 @@ namespace NexusForever.Game.Storefront
                     })
                     .ToList(),
                 Offers = offerItems.Values
+                    .OrderBy(i => i.Id)
                     .Select(i => i.Build())
                     .ToList()
             };

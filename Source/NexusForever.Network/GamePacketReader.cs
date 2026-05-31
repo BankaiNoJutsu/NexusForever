@@ -100,6 +100,78 @@ namespace NexusForever.Network
             return (uint)ReadBits(bits);
         }
 
+        /// <summary>
+        /// Reads a byte span encoded with <see cref="GamePacketWriter.WriteRetailCompositeByteSpan"/>.
+        /// </summary>
+        public byte[] ReadRetailCompositeByteSpan(int byteCount)
+        {
+            byte[] bytes = new byte[byteCount];
+            int remaining = byteCount;
+            int offset = 0;
+
+            ReadRetailCompositeHeadChunks(bytes, ref offset, ref remaining);
+
+            while (remaining >= 8)
+            {
+                ulong value = ReadULong(64u);
+                bytes[offset]     = (byte)value;
+                bytes[offset + 1] = (byte)(value >> 8);
+                bytes[offset + 2] = (byte)(value >> 16);
+                bytes[offset + 3] = (byte)(value >> 24);
+                bytes[offset + 4] = (byte)(value >> 32);
+                bytes[offset + 5] = (byte)(value >> 40);
+                bytes[offset + 6] = (byte)(value >> 48);
+                bytes[offset + 7] = (byte)(value >> 56);
+                offset += 8;
+                remaining -= 8;
+            }
+
+            if (remaining != 0)
+                ReadRetailCompositeHeadChunks(bytes, ref offset, ref remaining);
+
+            return bytes;
+        }
+
+        private void ReadRetailCompositeHeadChunks(byte[] bytes, ref int offset, ref int remaining)
+        {
+            if ((remaining & 1) != 0)
+            {
+                bytes[offset] = ReadByte(8u);
+                offset++;
+                remaining--;
+            }
+
+            if ((remaining & 2) != 0)
+            {
+                ushort value = ReadUShort(16u);
+                bytes[offset]     = (byte)value;
+                bytes[offset + 1] = (byte)(value >> 8);
+                offset += 2;
+                remaining -= 2;
+            }
+
+            if ((remaining & 4) != 0)
+            {
+                uint value = ReadUInt(32u);
+                bytes[offset]     = (byte)value;
+                bytes[offset + 1] = (byte)(value >> 8);
+                bytes[offset + 2] = (byte)(value >> 16);
+                bytes[offset + 3] = (byte)(value >> 24);
+                offset += 4;
+                remaining -= 4;
+            }
+        }
+
+        public uint[] ReadRetailCompositeUInt32Array(int elementCount)
+        {
+            byte[] bytes = ReadRetailCompositeByteSpan(elementCount * sizeof(uint));
+            var values = new uint[elementCount];
+            for (int i = 0; i < elementCount; i++)
+                values[i] = BitConverter.ToUInt32(bytes, i * sizeof(uint));
+
+            return values;
+        }
+
         public int ReadInt(uint bits = 32u)
         {
             if (bits > sizeof(int) * 8)

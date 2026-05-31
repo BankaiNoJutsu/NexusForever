@@ -45,8 +45,8 @@ namespace NexusForever.Game.Storefront
                 Price                 = Price,
                 DiscountType          = DiscountType,
                 DiscountValue         = DiscountValue,
-                DiscountTimeRemaining = (DiscountType != DiscountType.None ? 1 : -1), // Values more than 0 "enable" discount
-                TimeSinceExpiry       = -1995405795 // Expiry
+                DiscountTimeRemaining = DiscountTimeRemaining,
+                TimeSinceExpiry       = Expiry != 0 ? -Expiry : -1995405795L
             };
         }
     }

@@ -76,6 +76,8 @@ namespace NexusForever.Network.World.Message.Model
                 public long RetailCatalogWireScalar { get; set; }
                 /// <summary>
                 /// Retail <c>store_offer_item.field_7</c> at offer <c>+0x30</c> (usually <c>0</c>).
+                /// <c>ServerStoreOffers_Offer_ReadPayload</c> @ <c>1400a0dc0</c> reads this via
+                /// <c>FUN_14006be30</c> (one byte / 8 bits).
                 /// </summary>
                 public byte RetailCatalogWireByte { get; set; }
                 public List<OfferCurrencyData> CurrencyData { get; set; } = new();
@@ -87,8 +89,10 @@ namespace NexusForever.Network.World.Message.Model
                     writer.WriteStringWide(Name);
                     writer.WriteStringWide(Description);
 
-                    writer.Write(PricePremium);
-                    writer.Write(PriceAlternative);
+                    Span<byte> priceBytes = stackalloc byte[8];
+                    BitConverter.TryWriteBytes(priceBytes, BitConverter.SingleToUInt32Bits(PricePremium));
+                    BitConverter.TryWriteBytes(priceBytes[4..], BitConverter.SingleToUInt32Bits(PriceAlternative));
+                    writer.WriteRetailCompositeByteSpan(priceBytes);
 
                     writer.Write(DisplayFlags, 32u);
                     writer.Write(RetailCatalogWireScalar);
@@ -128,10 +132,19 @@ namespace NexusForever.Network.World.Message.Model
                 Offers.ForEach(e => e.Write(writer));
 
                 writer.Write(Categories.Count);
-                foreach (Category category in Categories)
-                    writer.Write(category.Id);
-                foreach (Category category in Categories)
-                    writer.Write(category.Index);
+                if (Categories.Count != 0)
+                {
+                    var categoryIds = new uint[Categories.Count];
+                    var categoryIndices = new uint[Categories.Count];
+                    for (int i = 0; i < Categories.Count; i++)
+                    {
+                        categoryIds[i]     = Categories[i].Id;
+                        categoryIndices[i] = Categories[i].Index;
+                    }
+
+                    writer.WriteRetailCompositeUInt32Array(categoryIds);
+                    writer.WriteRetailCompositeUInt32Array(categoryIndices);
+                }
             }
         }
 

@@ -31,18 +31,22 @@ namespace NexusForever.Game.Storefront
             Name         = model.Name;
             Description  = model.Description;
             DisplayFlags = (DisplayFlag)model.DisplayFlags;
-            RetailCatalogWireScalar = model.RetailCatalogWireScalar;
+            RetailCatalogWireScalar = RetailStoreOfferWireConstants.CatalogWireScalarBits;
             RetailCatalogWireByte     = model.RetailCatalogWireByte;
             Visible      = Convert.ToBoolean(model.Visible);
 
             var itemBuilder = ImmutableList.CreateBuilder<IOfferItemData>();
-            foreach (StoreOfferItemDataModel itemData in model.StoreOfferItemData)
+            foreach (StoreOfferItemDataModel itemData in model.StoreOfferItemData
+                .OrderBy(itemData => itemData.Type)
+                .ThenBy(itemData => itemData.ItemId)
+                .ThenBy(itemData => itemData.Amount))
                 itemBuilder.Add(new OfferItemData(itemData));
 
             items = itemBuilder.ToImmutable();
 
             var priceBuilder = ImmutableDictionary.CreateBuilder<AccountCurrencyType, IOfferItemPrice>();
-            foreach (StoreOfferItemPriceModel price in model.StoreOfferItemPrice)
+            foreach (StoreOfferItemPriceModel price in model.StoreOfferItemPrice
+                .OrderBy(price => price.CurrencyId))
             {
                 if (DisableManager.Instance.IsDisabled(DisableType.AccountCurrency, price.CurrencyId))
                     continue;
@@ -85,8 +89,9 @@ namespace NexusForever.Game.Storefront
                 ItemData         = items
                     .Select(i => i.Build())
                     .ToList(),
-                CurrencyData = prices.Values
-                    .Select(p => p.Build())
+                CurrencyData = prices
+                    .OrderBy(price => price.Key)
+                    .Select(price => price.Value.Build())
                     .ToList()
             };
         }

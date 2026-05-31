@@ -134,6 +134,61 @@ namespace NexusForever.Network
                 WriteBits(value, 8);
         }
 
+        /// <summary>
+        /// Writes a little-endian byte span using the retail composite reader pattern from
+        /// <c>FUN_140337160</c> (used for store offer-group category id/index arrays).
+        /// </summary>
+        public void WriteRetailCompositeByteSpan(ReadOnlySpan<byte> bytes)
+        {
+            int remaining = bytes.Length;
+            int offset = 0;
+
+            WriteRetailCompositeHeadChunks(bytes, ref offset, ref remaining);
+
+            while (remaining >= 8)
+            {
+                Write(BitConverter.ToUInt64(bytes.Slice(offset, 8)), 64u);
+                offset += 8;
+                remaining -= 8;
+            }
+
+            if (remaining != 0)
+                WriteRetailCompositeHeadChunks(bytes, ref offset, ref remaining);
+        }
+
+        private void WriteRetailCompositeHeadChunks(ReadOnlySpan<byte> bytes, ref int offset, ref int remaining)
+        {
+            if ((remaining & 1) != 0)
+            {
+                Write(bytes[offset], 8u);
+                offset++;
+                remaining--;
+            }
+
+            if ((remaining & 2) != 0)
+            {
+                Write(BitConverter.ToUInt16(bytes.Slice(offset, 2)), 16u);
+                offset += 2;
+                remaining -= 2;
+            }
+
+            if ((remaining & 4) != 0)
+            {
+                Write(BitConverter.ToUInt32(bytes.Slice(offset, 4)), 32u);
+                offset += 4;
+                remaining -= 4;
+            }
+        }
+
+        public void WriteRetailCompositeUInt32Array(ReadOnlySpan<uint> values)
+        {
+            Span<byte> bytes = stackalloc byte[values.Length * sizeof(uint)];
+            for (int i = 0; i < values.Length; i++)
+                BitConverter.TryWriteBytes(bytes.Slice(i * sizeof(uint), sizeof(uint)), values[i]);
+
+            WriteRetailCompositeByteSpan(bytes);
+        }
+
         public void Write(ulong[] data, uint elements = 0u)
         {
             if (elements != 0 && elements != data.Length)

@@ -16,14 +16,14 @@ namespace NexusForever.Game.Storefront
         /// <summary>
         /// Create a new <see cref="ICategory"/> from an existing database model.
         /// </summary>
-        public Category(StoreCategoryModel model)
+        public Category(StoreCategoryModel model, uint? parentCategoryIdOverride = null, bool? visibleOverride = null)
         {
             Id               = model.Id;
             Name             = model.Name;
             Description      = model.Description;
-            ParentCategoryId = model.ParentId;
+            ParentCategoryId = parentCategoryIdOverride ?? model.ParentId;
             Index            = model.Index;
-            Visible          = Convert.ToBoolean(model.Visible);
+            Visible          = visibleOverride ?? Convert.ToBoolean(model.Visible);
         }
 
         public ServerStoreCategories.StoreCategory Build()

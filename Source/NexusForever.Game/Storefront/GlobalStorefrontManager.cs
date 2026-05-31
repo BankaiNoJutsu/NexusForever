@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using NexusForever.Database;
 using NexusForever.Database.World;
@@ -5,6 +6,8 @@ using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Account.Inventory;
 using NexusForever.Game.Static.Storefront;
+using NexusForever.Network;
+using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared;
@@ -19,6 +22,9 @@ namespace NexusForever.Game.Storefront
     public sealed class GlobalStorefrontManager : Singleton<GlobalStorefrontManager>, IGlobalStorefrontManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
+        private readonly ConcurrentDictionary<string, byte> catalogDeliveredSessionIds = new();
+        private readonly ConcurrentDictionary<uint, byte> accountsCatalogRequestedBeforeWorldLogin = new();
 
         private ImmutableDictionary<uint, ICategory> storeCategories;
         private ImmutableList<ServerStoreCategories.StoreCategory> serverStoreCategoryCache;
@@ -35,21 +41,48 @@ namespace NexusForever.Game.Storefront
 
             BuildNetworkPackets();
 
+            ValidateCachedStoreCategoriesPacket();
+            StorefrontWireConstraintValidator.Validate(serverStoreCategoryCache, serverStoreOfferGroupCache);
+
             log.Info($"Initialised {storeCategories.Count} categories with {offerGroups.Count} offers groups.");
         }
 
         private void InitialiseStoreCategories()
         {
-            IEnumerable<StoreCategoryModel> storeCategoryModels = DatabaseManager.Instance.GetDatabase<WorldDatabase>().GetStoreCategories()
-                .OrderBy(i => i.Id)
-                .Where(x => x.ParentId != 0 // exclude top level parent category placeholder
-                    && Convert.ToBoolean(x.Visible));
+            ImmutableList<StoreCategoryModel> storeCategoryModels = DatabaseManager.Instance
+                .GetDatabase<WorldDatabase>()
+                .GetStoreCategories();
+
+            storeCategories = BuildStoreCategories(storeCategoryModels);
+        }
+
+        private static ImmutableDictionary<uint, ICategory> BuildStoreCategories(IEnumerable<StoreCategoryModel> storeCategoryModels)
+        {
+            List<StoreCategoryModel> orderedModels = storeCategoryModels
+                .OrderBy(category => category.Id)
+                .ToList();
+
+            Dictionary<uint, StoreCategoryModel> modelLookup = orderedModels
+                .ToDictionary(category => category.Id);
 
             var builder = ImmutableDictionary.CreateBuilder<uint, ICategory>();
-            foreach (StoreCategoryModel category in storeCategoryModels)
-                builder.Add(category.Id, new Category(category));
+            foreach (StoreCategoryModel category in orderedModels.Where(category => Convert.ToBoolean(category.Visible)))
+            {
+                uint parentCategoryId = category.ParentId;
+                while (parentCategoryId != 0 && modelLookup.TryGetValue(parentCategoryId, out StoreCategoryModel parentCategory))
+                {
+                    if (Convert.ToBoolean(parentCategory.Visible))
+                        break;
 
-            storeCategories = builder.ToImmutable();
+                    parentCategoryId = parentCategory.ParentId;
+                }
+
+                // Hidden structural categories such as the top-level placeholder should not surface as
+                // clickable storefront nodes. Rebase visible descendants to the nearest visible parent.
+                builder.Add(category.Id, new Category(category, parentCategoryIdOverride: parentCategoryId));
+            }
+
+            return builder.ToImmutable();
         }
 
         private void InitialiseStoreOfferGroups()
@@ -62,9 +95,13 @@ namespace NexusForever.Game.Storefront
             var offerBuilder      = ImmutableDictionary.CreateBuilder<uint, uint>();
             foreach (StoreOfferGroupModel offerGroup in offerGroupModels)
             {
-                offerGroupBuilder.Add(offerGroup.Id, new OfferGroup(offerGroup));
+                var group = new OfferGroup(offerGroup);
+                if (!group.HasOffers)
+                    continue;
 
-                foreach (StoreOfferItemModel offerItem in offerGroup.StoreOfferItem)
+                offerGroupBuilder.Add(offerGroup.Id, group);
+
+                foreach (StoreOfferItemModel offerItem in offerGroup.StoreOfferItem.Where(i => Convert.ToBoolean(i.Visible)))
                     offerBuilder.Add(offerItem.Id, offerGroup.Id); // Cache the offer item's group ID, to lookup the entry.
             }
                 
@@ -74,15 +111,115 @@ namespace NexusForever.Game.Storefront
 
         private void BuildNetworkPackets()
         {
-            var categoryBuilder = ImmutableList.CreateBuilder<ServerStoreCategories.StoreCategory>();
-            foreach (ICategory category in storeCategories.Values)
-                categoryBuilder.Add(category.Build());
-            serverStoreCategoryCache = categoryBuilder.ToImmutable();
+            serverStoreCategoryCache = BuildStoreCategoryPacketCache(storeCategories.Values);
+            serverStoreOfferGroupCache = offerGroups.Values
+                .OrderBy(offerGroup => offerGroup.Id)
+                .Select(offerGroup => offerGroup.Build())
+                .ToImmutableList();
 
-            var offerBuilder = ImmutableList.CreateBuilder<ServerStoreOffers.OfferGroup>();
-            foreach (IOfferGroup offerGroup in offerGroups.Values)
-                offerBuilder.Add(offerGroup.Build());
-            serverStoreOfferGroupCache = offerBuilder.ToImmutable();
+            ValidateCachedStoreOfferBatches();
+        }
+
+        private void ValidateCachedStoreCategoriesPacket()
+        {
+            List<ServerStoreCategories.CurrencyPackage> currencyPackages = VirtualCurrencyPackageCatalog.BuildCatalogRows().ToList();
+            var message = new ServerStoreCategories
+            {
+                StoreCategories  = serverStoreCategoryCache.ToList(),
+                RealCurrency     = RealCurrency.Usd,
+                CurrencyPackages = currencyPackages
+            };
+
+            byte[] body = GetBodyBytes(message);
+            using var stream = new MemoryStream(body);
+            using var reader = new GamePacketReader(stream);
+            if (!RetailStoreCategoriesWireReader.TryRead(reader, out string failure))
+            {
+                log.Error($"StorefrontCatalogDiagnostics retail categories wire validation failed " +
+                    $"failure={failure} bodyBytes={body.Length}.");
+            }
+        }
+
+        private void ValidateCachedStoreOfferBatches()
+        {
+            var batch = new ServerStoreOffers();
+            int packetIndex = 0;
+
+            foreach (ServerStoreOffers.OfferGroup offerGroup in serverStoreOfferGroupCache)
+            {
+                batch.OfferGroups.Add(offerGroup);
+
+                if (batch.OfferGroups.Count != 20)
+                    continue;
+
+                packetIndex++;
+                if (!TryValidateRetailStoreOffersBody(batch, out string failure, out uint groupId, out uint offerId))
+                {
+                    log.Error($"StorefrontCatalogDiagnostics retail wire validation failed at startup packet={packetIndex} " +
+                        $"groupId={groupId} offerId={offerId} failure={failure} bodyBytes={GetBodyByteCount(batch)}.");
+                }
+
+                batch = new ServerStoreOffers();
+            }
+
+            if (batch.OfferGroups.Count != 0)
+            {
+                packetIndex++;
+                if (!TryValidateRetailStoreOffersBody(batch, out string failure, out uint groupId, out uint offerId))
+                {
+                    log.Error($"StorefrontCatalogDiagnostics retail wire validation failed at startup packet={packetIndex} " +
+                        $"groupId={groupId} offerId={offerId} failure={failure} bodyBytes={GetBodyByteCount(batch)}.");
+                }
+            }
+        }
+
+        private static ImmutableList<ServerStoreCategories.StoreCategory> BuildStoreCategoryPacketCache(IEnumerable<ICategory> categories)
+        {
+            List<ICategory> categoryList = categories.ToList();
+            Dictionary<uint, List<ICategory>> childLookup = categoryList
+                .GroupBy(category => category.ParentCategoryId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group
+                        .OrderBy(category => category.Index)
+                        .ThenBy(category => category.Id)
+                        .ToList());
+
+            var remainingCategoryIds = categoryList
+                .Select(category => category.Id)
+                .ToHashSet();
+
+            var builder = ImmutableList.CreateBuilder<ServerStoreCategories.StoreCategory>();
+            AddChildren(0u);
+
+            foreach (ICategory category in categoryList
+                .Where(category => remainingCategoryIds.Contains(category.Id))
+                .OrderBy(category => category.ParentCategoryId)
+                .ThenBy(category => category.Index)
+                .ThenBy(category => category.Id))
+            {
+                AddCategorySubtree(category);
+            }
+
+            return builder.ToImmutable();
+
+            void AddChildren(uint parentCategoryId)
+            {
+                if (!childLookup.TryGetValue(parentCategoryId, out List<ICategory> children))
+                    return;
+
+                foreach (ICategory child in children)
+                    AddCategorySubtree(child);
+            }
+
+            void AddCategorySubtree(ICategory category)
+            {
+                if (!remainingCategoryIds.Remove(category.Id))
+                    return;
+
+                builder.Add(category.Build());
+                AddChildren(category.Id);
+            }
         }
 
         /// <summary>
@@ -99,44 +236,202 @@ namespace NexusForever.Game.Storefront
         /// <summary>
         /// This method is used to send the current Store Catalog to the <see cref="IGameSession"/>
         /// </summary>
-        public void HandleCatalogRequest(IGameSession session)
+        public void HandleCatalogRequest(IGameSession session, uint accountId)
         {
-            session.EnqueueMessageEncrypted(new ServerStoreCatalogUpdated());
+            // Retail answers 0x082D with 0x0988/0x098B/0x0987 only. Prepending 0x0989 here caused the
+            // client to re-request 0x082D in a loop whenever we had already sent a dirty notification.
+            log.Info($"StorefrontCatalogDiagnostics catalog start refresh=False categories={serverStoreCategoryCache.Count} " +
+                $"offerGroups={serverStoreOfferGroupCache.Count} offers={serverStoreOfferGroupCache.Sum(group => group.Offers.Count)} " +
+                $"itemRows={serverStoreOfferGroupCache.Sum(group => group.Offers.Sum(offer => offer.ItemData.Count))}.");
+
+            SendCatalogToSession(session, accountId, isRefresh: false);
+
+            log.Info("StorefrontCatalogDiagnostics catalog end.");
+        }
+
+        public void MarkAccountCatalogRequestedBeforeWorldLogin(uint accountId)
+        {
+            if (accountId != 0)
+                accountsCatalogRequestedBeforeWorldLogin[accountId] = 0;
+        }
+
+        public void SendBootstrapCatalogPacketsIfNeeded(IGameSession session, uint accountId)
+        {
+            string deliveryKey = GetCatalogDeliveryKey(session, accountId);
+            if (WasCatalogDelivered(session, accountId))
+            {
+                accountsCatalogRequestedBeforeWorldLogin.TryRemove(accountId, out _);
+                log.Info($"StorefrontCatalogDiagnostics notifying in-world catalog dirty for {deliveryKey}; client will issue 0x082D.");
+                NotifyStoreCatalogDirty(session);
+                return;
+            }
+
+            accountsCatalogRequestedBeforeWorldLogin.TryRemove(accountId, out _);
+            log.Info($"StorefrontCatalogDiagnostics sending in-world bootstrap catalog for {deliveryKey}.");
+            SendCatalogToSession(session, accountId, isRefresh: false);
+        }
+
+        public void ClearCatalogDeliveryState(string sessionId, uint accountId = 0)
+        {
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                catalogDeliveredSessionIds.TryRemove(sessionId, out _);
+                catalogDeliveredSessionIds.TryRemove($"session:{sessionId}", out _);
+            }
+
+            if (accountId != 0)
+            {
+                catalogDeliveredSessionIds.TryRemove(GetAccountCatalogDeliveryKey(accountId), out _);
+                accountsCatalogRequestedBeforeWorldLogin.TryRemove(accountId, out _);
+            }
+        }
+
+        public void SendCatalogPackets(IGameSession session, uint accountId = 0)
+        {
+            SendCatalogToSession(session, accountId, isRefresh: false);
+        }
+
+        private void SendCatalogToSession(IGameSession session, uint accountId, bool isRefresh)
+        {
+            if (isRefresh)
+                session.EnqueueMessageEncrypted(new ServerStoreCatalogUpdated());
+
+            log.Info($"StorefrontCatalogDiagnostics catalog packets only refresh={isRefresh} categories={serverStoreCategoryCache.Count} " +
+                $"offerGroups={serverStoreOfferGroupCache.Count} offers={serverStoreOfferGroupCache.Sum(group => group.Offers.Count)}.");
+
             SendStoreCategories(session);
             SendStoreOffers(session);
+
+            // WildStar64 treats 0x0989 as a dirty notification, so the initial catalog response
+            // must end with ServerStoreFinalise and reserve ServerStoreCatalogUpdated for real refreshes.
             SendStoreFinalise(session);
+            MarkCatalogDelivered(session, accountId);
         }
+
+        private bool WasCatalogDelivered(IGameSession session, uint accountId)
+        {
+            return catalogDeliveredSessionIds.ContainsKey(GetCatalogDeliveryKey(session, accountId));
+        }
+
+        private void MarkCatalogDelivered(IGameSession session, uint accountId)
+        {
+            catalogDeliveredSessionIds[GetCatalogDeliveryKey(session, accountId)] = 0;
+
+            if (accountId != 0)
+                accountsCatalogRequestedBeforeWorldLogin.TryRemove(accountId, out _);
+        }
+
+        private static string GetCatalogDeliveryKey(IGameSession session, uint accountId)
+        {
+            if (accountId != 0)
+                return GetAccountCatalogDeliveryKey(accountId);
+
+            if (session is INetworkSession networkSession)
+                return $"session:{networkSession.Id}";
+
+            return $"session:{session.GetHashCode()}";
+        }
+
+        private static string GetAccountCatalogDeliveryKey(uint accountId) => $"account:{accountId}";
 
         private void SendStoreCategories(IGameSession session)
         {
-            session.EnqueueMessageEncrypted(new ServerStoreCategories
+            List<ServerStoreCategories.CurrencyPackage> currencyPackages = VirtualCurrencyPackageCatalog.BuildCatalogRows().ToList();
+
+            var message = new ServerStoreCategories
             {
                 StoreCategories  = serverStoreCategoryCache.ToList(),
                 RealCurrency     = RealCurrency.Usd,
-                CurrencyPackages = VirtualCurrencyPackageCatalog.BuildCatalogRows().ToList()
-            });
+                CurrencyPackages = currencyPackages
+            };
+
+            log.Info($"StorefrontCatalogDiagnostics sending ServerStoreCategories categories={serverStoreCategoryCache.Count} " +
+                $"categoryIds=[{string.Join(",", serverStoreCategoryCache.Select(category => category.CategoryId))}] " +
+                $"currencyPackages={currencyPackages.Count} packageIds=[{string.Join(",", currencyPackages.Select(package => package.Id))}] " +
+                $"bodyBytes={GetBodyByteCount(message)}.");
+
+            session.EnqueueMessageEncrypted(message);
         }
 
         private void SendStoreOffers(IGameSession session)
         {
             var storeOffers = new ServerStoreOffers();
-            for (int i = 0; i < serverStoreOfferGroupCache.Count; i++)
+            int packetIndex = 0;
+            foreach (ServerStoreOffers.OfferGroup offerGroup in serverStoreOfferGroupCache)
             {
-                storeOffers.OfferGroups.Add(serverStoreOfferGroupCache[i]);
+                storeOffers.OfferGroups.Add(offerGroup);
 
                 // Ensure we only send 20 Offer Groups per packet. This is the same as Live.
-                if (i != 0 && i % 20 == 0
-                    || i == serverStoreOfferGroupCache.Count - 1)
+                if (storeOffers.OfferGroups.Count == 20)
                 {
+                    LogStoreOffersPacket(++packetIndex, storeOffers);
                     session.EnqueueMessageEncrypted(storeOffers);
-                    storeOffers.OfferGroups.Clear();
+                    storeOffers = new ServerStoreOffers();
                 }
+            }
+
+            if (storeOffers.OfferGroups.Count != 0)
+            {
+                LogStoreOffersPacket(++packetIndex, storeOffers);
+                session.EnqueueMessageEncrypted(storeOffers);
             }
         }
 
         private void SendStoreFinalise(IGameSession session)
         {
+            log.Info("StorefrontCatalogDiagnostics sending ServerStoreFinalise.");
             session.EnqueueMessageEncrypted(new ServerStoreFinalise());
+        }
+
+        private static void NotifyStoreCatalogDirty(IGameSession session)
+        {
+            session.EnqueueMessageEncrypted(new ServerStoreCatalogUpdated());
+        }
+
+        private static void LogStoreOffersPacket(int packetIndex, ServerStoreOffers storeOffers)
+        {
+            int bodyBytes = GetBodyByteCount(storeOffers);
+            if (!TryValidateRetailStoreOffersBody(storeOffers, out string failure, out uint groupId, out uint offerId))
+            {
+                log.Error($"StorefrontCatalogDiagnostics retail wire validation failed before send packet={packetIndex} " +
+                    $"groupId={groupId} offerId={offerId} failure={failure} bodyBytes={bodyBytes}.");
+            }
+
+            log.Info($"StorefrontCatalogDiagnostics sending ServerStoreOffers packet={packetIndex} " +
+                $"groups={storeOffers.OfferGroups.Count} groupIds=[{string.Join(",", storeOffers.OfferGroups.Select(group => group.Id))}] " +
+                $"offers={storeOffers.OfferGroups.Sum(group => group.Offers.Count)} " +
+                $"itemRows={storeOffers.OfferGroups.Sum(group => group.Offers.Sum(offer => offer.ItemData.Count))} " +
+                $"currencyRows={storeOffers.OfferGroups.Sum(group => group.Offers.Sum(offer => offer.CurrencyData.Count))} " +
+                $"categoryLinks={storeOffers.OfferGroups.Sum(group => group.Categories.Count)} " +
+                $"bodyBytes={bodyBytes}.");
+        }
+
+        private static bool TryValidateRetailStoreOffersBody(
+            ServerStoreOffers storeOffers,
+            out string failure,
+            out uint groupId,
+            out uint offerId)
+        {
+            byte[] body = GetBodyBytes(storeOffers);
+            using var stream = new MemoryStream(body);
+            using var reader = new GamePacketReader(stream);
+            return RetailStoreOffersWireReader.TryRead(reader, out failure, out groupId, out offerId);
+        }
+
+        private static byte[] GetBodyBytes(IWritable message)
+        {
+            using var stream = new MemoryStream();
+            using var writer = new GamePacketWriter(stream);
+
+            message.Write(writer);
+            writer.FlushBits();
+
+            return stream.ToArray();
+        }
+
+        private static int GetBodyByteCount(IWritable message)
+        {
+            return GetBodyBytes(message).Length;
         }
     }
 }

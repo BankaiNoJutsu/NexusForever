@@ -1,12 +1,16 @@
 ﻿using NexusForever.Game.Account.Inventory;
-using NexusForever.Network.World.Message.Model;
 using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message.Model;
+using NexusForever.Shared.Game.Events;
+using NLog;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Account
 {
     public class ClientStorefrontRequestCatalogHandler : IMessageHandler<IWorldSession, ClientStorefrontRequestCatalog>
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
         #region Dependency Injection
 
         private readonly IGlobalStorefrontManager globalStorefrontManager;
@@ -19,35 +23,50 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         #endregion
 
-        public void HandleMessage(IWorldSession session, ClientStorefrontRequestCatalog _)
+        public void HandleMessage(IWorldSession session, ClientStorefrontRequestCatalog request)
         {
-            // Packet order below, for reference and implementation
+            if (!CanProcessCatalogRequest(session))
+            {
+                log.Info($"StorefrontCatalogDiagnostics deferring request account={session.Account?.Id ?? 0u} player={session.Player?.Guid ?? 0u} catalogContext={request.CatalogContext} pregameAccountPacketsSent={session.HasSentPregameAccountPackets} characterListPacketsSent={session.HasSentCharacterListPackets} playerLoading={session.Player?.IsLoading ?? false} until pregame account packets are sent and any in-world player has finished loading.");
 
-            // 0x096D - Account inventory
+                session.Events.EnqueueEvent(new PredicateEvent(
+                    () => CanProcessCatalogRequest(session),
+                    () => SendCatalogResponse(session, request)));
 
-            // 0x0974 - Server Account Item Cooldowns (Boom Box!)
+                return;
+            }
 
-            // 0x0968 - Entitlements
+            SendCatalogResponse(session, request);
+        }
 
-            // 0x097F - Account Tier (Basic/Signature)
+        private static bool CanProcessCatalogRequest(IWorldSession session)
+        {
+            if (!session.HasSentPregameAccountPackets)
+                return false;
 
-            // 0x0966 - SetAccountCurrencyAmounts
+            if (session.Player != null && session.Player.IsLoading)
+                return false;
 
-            // 0x096F - Weekly Omnibit progress
+            return true;
+        }
 
-            // 0x096E - Daily Rewards packet
-            // 0x078F - Claim Reward Button
+        private void SendCatalogResponse(IWorldSession session, ClientStorefrontRequestCatalog request)
+        {
+            uint accountId = session.Account.Id;
 
-            // 0x0981 - Unknown
+            log.Info($"StorefrontCatalogDiagnostics request start account={accountId} player={session.Player?.Guid ?? 0u} catalogContext={request.CatalogContext}.");
 
-            // Store packets
-            // 0x0988 - Store catalogue categories 
-            // 0x098B - Store catalogue offer grouips + offers
-            // 0x0987 - Store catalogue finalised message
             session.Account.InventoryManager.SendInitialPackets();
-            session.Account.InventoryManager.SendDailyLoginUpdate();
             StorePurchaseHistoryManager.SendPurchaseHistory(session.Account);
-            globalStorefrontManager.HandleCatalogRequest(session);
+
+            if (session.Player == null)
+                globalStorefrontManager.MarkAccountCatalogRequestedBeforeWorldLogin(accountId);
+
+            // Retail ties StoreCatalogReady to the 082D response; deferring catalog to a later event tick
+            // left the client in Catalogue Unavailable even though packets were enqueued afterward.
+            globalStorefrontManager.HandleCatalogRequest(session, accountId);
+
+            log.Info($"StorefrontCatalogDiagnostics request end account={accountId} player={session.Player?.Guid ?? 0u} catalogContext={request.CatalogContext} (catalog sent).");
         }
     }
 }

@@ -265,8 +265,8 @@ public class PacketPlaceholderNamingTests
     {
         var message = new ServerAccountPrivilegeRestrictionUpdate
         {
-            UInt3Value = 6u,
-            FloatValue = 0.75f
+            RestrictionType = 6u,
+            DurationDays    = 0.75f
         };
 
         byte[] packetData = WritePacket(message);
@@ -518,6 +518,12 @@ public class PacketPlaceholderNamingTests
             Assert.Equal(0x0102030405060708ul, reader.ReadULong());
         }
 
+        using (var stream = new MemoryStream(WritePacket(new ServerStoreError(StoreError.CatalogUnavailable))))
+        using (var reader = new GamePacketReader(stream))
+        {
+            Assert.Equal((uint)StoreError.CatalogUnavailable, reader.ReadUInt(5u));
+        }
+
         using (var stream = new MemoryStream(WritePacket(new ServerStoreError(StoreError.IneligibleGiftRecipient))))
         using (var reader = new GamePacketReader(stream))
         {
@@ -573,11 +579,11 @@ public class PacketPlaceholderNamingTests
 
         var currencyPackage = new ServerStoreCurrencyPackageRow
         {
-            Value0      = 0x10203040u,
-            StringValue = "currency",
-            Value2      = 0x50607080u,
-            FloatValue  = 7.25f,
-            Value4      = 0x90A0B0C0u
+            Id           = 0x10203040u,
+            Name         = "currency",
+            Count        = 0x50607080u,
+            Price        = 7.25f,
+            CurrencyType = AccountCurrencyType.NCoin
         };
 
         using var resultStream = new MemoryStream(WritePacket(currencyPackage));
@@ -587,7 +593,7 @@ public class PacketPlaceholderNamingTests
         Assert.Equal("currency", resultReader.ReadWideString());
         Assert.Equal(0x50607080u, resultReader.ReadUInt());
         Assert.Equal(7.25f, resultReader.ReadSingle());
-        Assert.Equal(0x90A0B0C0u, resultReader.ReadUInt());
+        Assert.Equal((uint)AccountCurrencyType.NCoin, resultReader.ReadUInt());
     }
 
     [Fact]
@@ -1589,6 +1595,42 @@ public class PacketPlaceholderNamingTests
         Assert.Equal(2u, type2Reader.ReadUInt());
         Assert.Equal(987u, type2Reader.ReadUInt());
         Assert.Equal(55u, type2Reader.ReadUInt());
+    }
+
+    [Fact]
+    public void ServerStoreOffer_WriteSerializesTrailingBytePlaceholderBeforeCounts()
+    {
+        const long retailCatalogWireScalar = RetailStoreOfferWireConstants.CatalogWireScalarBits;
+        const byte retailCatalogWireTrailingByte = 0x42;
+
+        var offer = new ServerStoreOffers.OfferGroup.Offer
+        {
+            Id = 77u,
+            Name = "Visible Offer",
+            Description = "Visible Offer Description",
+            PricePremium = 12.5f,
+            PriceAlternative = 34.5f,
+            DisplayFlags = 0,
+            RetailCatalogWireScalar = retailCatalogWireScalar,
+            RetailCatalogWireByte = retailCatalogWireTrailingByte
+        };
+
+        byte[] packet = WritePacket(offer);
+
+        using var stream = new MemoryStream(packet);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(77u, reader.ReadUInt());
+        Assert.Equal("Visible Offer", reader.ReadWideString());
+        Assert.Equal("Visible Offer Description", reader.ReadWideString());
+        byte[] priceBytes = reader.ReadRetailCompositeByteSpan(8);
+        Assert.Equal(12.5f, BitConverter.ToSingle(priceBytes, 0));
+        Assert.Equal(34.5f, BitConverter.ToSingle(priceBytes, 4));
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(retailCatalogWireScalar, reader.ReadLong());
+        Assert.Equal(retailCatalogWireTrailingByte, reader.ReadByte());
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
     }
 
     [Fact]

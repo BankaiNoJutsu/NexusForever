@@ -146,7 +146,9 @@ namespace NexusForever.Network.World.Message.Model
     {
         /// <summary>
         /// Leading uint32 from <c>ServerAccountItemCacheAdd_ReadPayload</c> (<c>1400a0300</c>).
-        /// Not consumed by <c>AccountItemAddToCache_HandleServer096A</c> (<c>140004e30</c>); emit zero until a producer is mapped.
+        /// Cache-maintenance packet for one account-item add; <c>AccountItemAddToCache_HandleServer096A</c>
+        /// (<c>140004e30</c>) does not consume this leading word and later dispatches <c>AccountItemUpdate</c>.
+        /// Emit zero until a producer is mapped.
         /// </summary>
         public uint UnusedLeadingField { get; set; }
         public AccountInventoryItem AccountItem { get; set; } = new();
@@ -163,7 +165,10 @@ namespace NexusForever.Network.World.Message.Model
     {
         /// <summary>
         /// Leading uint32 from <c>ServerAccountItemCacheListAppend_ReadPayload</c> (<c>1400a0350</c>).
-        /// Not consumed by <c>AccountItemListAppend_HandleServer096B</c> (<c>140004f60</c>); emit zero until a producer is mapped.
+        /// Cache-maintenance packet for account-item list append; <c>AccountItemListAppend_HandleServer096B</c>
+        /// (<c>140004f60</c>) does not consume this leading word, does not directly dispatch a client event in the
+        /// observed body, and initial non-empty inventory sync uses this cache seed before <c>ServerAccountItems</c>.
+        /// Emit zero until a producer is mapped.
         /// </summary>
         public uint UnusedLeadingField { get; set; }
         public List<AccountInventoryItem> AccountItems { get; } = new();
@@ -181,7 +186,9 @@ namespace NexusForever.Network.World.Message.Model
     {
         /// <summary>
         /// Leading uint32 from <c>ServerAccountItemCacheRemove_ReadPayload</c> (<c>140098280</c>).
-        /// Not consumed by <c>AccountItemRemoveFromCache_HandleServer096C</c> (<c>140005040</c>); emit zero until a producer is mapped.
+        /// Cache-maintenance packet for one account-item remove; <c>AccountItemRemoveFromCache_HandleServer096C</c>
+        /// (<c>140005040</c>) does not consume this leading word, keys removal from <c>AccountInventoryItemId</c>,
+        /// and does not directly dispatch a client event in the observed body. Emit zero until a producer is mapped.
         /// </summary>
         public uint UnusedLeadingField { get; set; }
         public ulong AccountInventoryItemId { get; set; }
@@ -219,13 +226,22 @@ namespace NexusForever.Network.World.Message.Model
     [Message(GameMessageOpcode.ServerAccountPrivilegeRestrictionUpdate)]
     public class ServerAccountPrivilegeRestrictionUpdate : IWritable
     {
-        public uint UInt3Value { get; set; }
-        public float FloatValue { get; set; }
+        /// <summary>
+        /// Client consumer <c>AccountPrivilegeRestrictionUpdate_HandleServer0971</c> (<c>1400052b0</c>)
+        /// treats this 3-bit field as the restriction index/type.
+        /// </summary>
+        public uint RestrictionType { get; set; }
+
+        /// <summary>
+        /// The client converts this float day duration into a restriction expiry; emit <c>0</c>
+        /// when the restriction is inactive.
+        /// </summary>
+        public float DurationDays { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(UInt3Value, 3u);
-            writer.Write(FloatValue);
+            writer.Write(RestrictionType, 3u);
+            writer.Write(DurationDays);
         }
     }
 
@@ -392,6 +408,11 @@ namespace NexusForever.Network.World.Message.Model
     }
 
     [Message(GameMessageOpcode.ServerStoreError)]
+    /// <summary>
+    /// Storefront error enum payload for opcode 0x098A. The 5-bit value is consumed by
+    /// <c>Storefront_HandleStoreError</c> (<c>14044cea0</c>) and matches the client-exported
+    /// <c>CodeEnumStoreError</c> table.
+    /// </summary>
     public class ServerStoreError : IWritable
     {
         public StoreError Error { get; set; }
