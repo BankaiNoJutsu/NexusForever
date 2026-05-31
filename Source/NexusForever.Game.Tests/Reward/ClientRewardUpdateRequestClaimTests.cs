@@ -12,6 +12,7 @@ using NexusForever.Game.Abstract.Account.Entitlement;
 using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Account.Option;
 using NexusForever.Game.Abstract.Account.Reward;
+using NexusForever.Game.Tests.Storefront;
 using NexusForever.Game.Abstract.Account.Unlock;
 using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Account.Reward;
@@ -81,6 +82,7 @@ public class ClientRewardUpdateRequestClaimTests
         var session = new ClaimTestWorldSession(account);
         var handler = new ClientRewardUpdateRequestHandler(
             NullLogger<ClientRewardUpdateRequestHandler>.Instance,
+            NoOpGlobalStorefrontManager.Instance,
             new FixedScheduleRefreshProvider(schedule));
 
         handler.HandleMessage(session, BuildClaimRequest(1u, 15u, RewardRotationScheduleBuilder.RewardTypeItem));

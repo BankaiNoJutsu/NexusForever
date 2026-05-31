@@ -13,6 +13,9 @@ using NexusForever.Game.Abstract.Account.Reward;
 using NexusForever.Game.Abstract.Account.Unlock;
 using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Storefront;
+using NexusForever.Game.Tests.Storefront;
+using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Game.Account.Reward;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Entity;
@@ -36,7 +39,7 @@ public class ClientRewardUpdateRequestHandlerTests
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger, EmptyRewardRotationRefreshProvider.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(logger, NoOpGlobalStorefrontManager.Instance, EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(3u));
 
@@ -69,7 +72,7 @@ public class ClientRewardUpdateRequestHandlerTests
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger, NonEmptyRewardRotationRefreshProvider.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(logger, NoOpGlobalStorefrontManager.Instance, NonEmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(2u));
 
@@ -86,7 +89,7 @@ public class ClientRewardUpdateRequestHandlerTests
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger, ContentContextOnlyRewardRotationRefreshProvider.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(logger, NoOpGlobalStorefrontManager.Instance, ContentContextOnlyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(2u));
 
@@ -104,12 +107,32 @@ public class ClientRewardUpdateRequestHandlerTests
     }
 
     [Fact]
+    public void HandleMessage_WithPlaceholderIndexZeroAndPlayer_SendsCatalogBeforeRotationPackets()
+    {
+        var rewardPropertyManager = new TestRewardPropertyManager();
+        var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Guid), 600u);
+        session.Player = player;
+
+        IGlobalStorefrontManager storefront = RecordingDispatchProxy<IGlobalStorefrontManager>.Create(out RecordingDispatchProxy<IGlobalStorefrontManager> storefrontProxy);
+        var handler = new ClientRewardUpdateRequestHandler(
+            new TestLogger<ClientRewardUpdateRequestHandler>(),
+            storefront,
+            EmptyRewardRotationRefreshProvider.Instance);
+
+        handler.HandleMessage(session, BuildRequest(0u));
+
+        Assert.Single(storefrontProxy.GetInvocations(nameof(IGlobalStorefrontManager.HandleCatalogRequest)));
+    }
+
+    [Fact]
     public void HandleMessage_WithPlaceholderIndexZero_SendsEmptyRotationArrays()
     {
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger, EmptyRewardRotationRefreshProvider.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(logger, NoOpGlobalStorefrontManager.Instance, EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(0u));
 
@@ -143,7 +166,7 @@ public class ClientRewardUpdateRequestHandlerTests
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
         var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
-        var handler = new ClientRewardUpdateRequestHandler(logger, EmptyRewardRotationRefreshProvider.Instance);
+        var handler = new ClientRewardUpdateRequestHandler(logger, NoOpGlobalStorefrontManager.Instance, EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(RewardRotationRefreshBuilder.ContentTypeCount));
 

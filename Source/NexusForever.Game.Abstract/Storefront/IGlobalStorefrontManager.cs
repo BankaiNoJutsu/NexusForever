@@ -27,7 +27,7 @@ namespace NexusForever.Game.Abstract.Storefront
         void MarkAccountCatalogRequestedBeforeWorldLogin(uint accountId);
 
         /// <summary>
-        /// Sends the initial catalog after entering the world when this account has not received one yet.
+        /// Sends the initial in-world catalog after entering the world.
         /// </summary>
         void SendBootstrapCatalogPacketsIfNeeded(IGameSession session, uint accountId);
 

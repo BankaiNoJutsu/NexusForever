@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Account.Reward;
+using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Account.Reward;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
@@ -9,13 +10,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
     public class ClientRewardUpdateRequestHandler : IMessageHandler<IWorldSession, ClientRewardUpdateRequest>
     {
         private readonly ILogger<ClientRewardUpdateRequestHandler> log;
+        private readonly IGlobalStorefrontManager globalStorefrontManager;
         private readonly IRewardRotationRefreshProvider refreshProvider;
 
         public ClientRewardUpdateRequestHandler(
             ILogger<ClientRewardUpdateRequestHandler> log,
+            IGlobalStorefrontManager globalStorefrontManager,
             IRewardRotationRefreshProvider refreshProvider = null)
         {
             this.log = log;
+            this.globalStorefrontManager = globalStorefrontManager;
             this.refreshProvider = refreshProvider;
         }
 
@@ -23,6 +27,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
         {
             log.LogDebug("Received reward rotation refresh request for player {PlayerGuid}: reward rotation index {RewardRotationIndex}.",
                 session.Player?.Guid, rewardUpdateRequest.RewardRotationIndex);
+
+            // Store open issues rotation index 0 before 082D; catalog must lead rotation placeholders.
+            if (rewardUpdateRequest.RewardRotationIndex == 0u && session.Player != null)
+            {
+                log.LogInformation("StorefrontCatalogDiagnostics sending catalog before reward rotation index 0 for player {PlayerGuid} account={AccountId}.",
+                    session.Player.Guid, session.Account?.Id ?? 0u);
+                globalStorefrontManager.HandleCatalogRequest(session, session.Account.Id);
+            }
 
             session.Account.RewardPropertyManager.SendInitialPackets();
 

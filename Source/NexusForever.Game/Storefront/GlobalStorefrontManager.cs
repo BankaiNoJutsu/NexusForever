@@ -62,25 +62,11 @@ namespace NexusForever.Game.Storefront
                 .OrderBy(category => category.Id)
                 .ToList();
 
-            Dictionary<uint, StoreCategoryModel> modelLookup = orderedModels
-                .ToDictionary(category => category.Id);
-
             var builder = ImmutableDictionary.CreateBuilder<uint, ICategory>();
             foreach (StoreCategoryModel category in orderedModels.Where(category => Convert.ToBoolean(category.Visible)))
-            {
-                uint parentCategoryId = category.ParentId;
-                while (parentCategoryId != 0 && modelLookup.TryGetValue(parentCategoryId, out StoreCategoryModel parentCategory))
-                {
-                    if (Convert.ToBoolean(parentCategory.Visible))
-                        break;
-
-                    parentCategoryId = parentCategory.ParentId;
-                }
-
-                // Hidden structural categories such as the top-level placeholder should not surface as
-                // clickable storefront nodes. Rebase visible descendants to the nearest visible parent.
-                builder.Add(category.Id, new Category(category, parentCategoryIdOverride: parentCategoryId));
-            }
+                // StorefrontLib.GetCategoryTree roots the visible catalog under the retail hidden
+                // root category id from GameFormula (26 locally), so preserve original parent ids.
+                builder.Add(category.Id, new Category(category));
 
             return builder.ToImmutable();
         }
@@ -258,16 +244,18 @@ namespace NexusForever.Game.Storefront
         public void SendBootstrapCatalogPacketsIfNeeded(IGameSession session, uint accountId)
         {
             string deliveryKey = GetCatalogDeliveryKey(session, accountId);
-            if (WasCatalogDelivered(session, accountId))
-            {
-                accountsCatalogRequestedBeforeWorldLogin.TryRemove(accountId, out _);
-                log.Info($"StorefrontCatalogDiagnostics notifying in-world catalog dirty for {deliveryKey}; client will issue 0x082D.");
-                NotifyStoreCatalogDirty(session);
-                return;
-            }
 
-            accountsCatalogRequestedBeforeWorldLogin.TryRemove(accountId, out _);
-            log.Info($"StorefrontCatalogDiagnostics sending in-world bootstrap catalog for {deliveryKey}.");
+            bool catalogAlreadyDelivered = WasCatalogDelivered(session, accountId);
+            bool requestedBeforeWorldLogin = accountId != 0u &&
+                accountsCatalogRequestedBeforeWorldLogin.TryRemove(accountId, out _);
+            string reason = catalogAlreadyDelivered
+                ? "after prior catalog delivery so the in-world UI receives StoreCatalogReady"
+                : requestedBeforeWorldLogin
+                    ? "after a pre-world catalog request did not complete"
+                    : string.Empty;
+            log.Info(string.IsNullOrEmpty(reason)
+                ? $"StorefrontCatalogDiagnostics sending in-world bootstrap catalog for {deliveryKey}."
+                : $"StorefrontCatalogDiagnostics sending in-world bootstrap catalog for {deliveryKey} {reason}.");
             SendCatalogToSession(session, accountId, isRefresh: false);
         }
 
@@ -337,6 +325,7 @@ namespace NexusForever.Game.Storefront
         private void SendStoreCategories(IGameSession session)
         {
             List<ServerStoreCategories.CurrencyPackage> currencyPackages = VirtualCurrencyPackageCatalog.BuildCatalogRows().ToList();
+            string categoryParents = string.Join(",", serverStoreCategoryCache.Select(category => $"{category.CategoryId}->{category.ParentCategoryId}"));
 
             var message = new ServerStoreCategories
             {
@@ -347,6 +336,7 @@ namespace NexusForever.Game.Storefront
 
             log.Info($"StorefrontCatalogDiagnostics sending ServerStoreCategories categories={serverStoreCategoryCache.Count} " +
                 $"categoryIds=[{string.Join(",", serverStoreCategoryCache.Select(category => category.CategoryId))}] " +
+                $"categoryParents=[{categoryParents}] " +
                 $"currencyPackages={currencyPackages.Count} packageIds=[{string.Join(",", currencyPackages.Select(package => package.Id))}] " +
                 $"bodyBytes={GetBodyByteCount(message)}.");
 
@@ -381,11 +371,6 @@ namespace NexusForever.Game.Storefront
         {
             log.Info("StorefrontCatalogDiagnostics sending ServerStoreFinalise.");
             session.EnqueueMessageEncrypted(new ServerStoreFinalise());
-        }
-
-        private static void NotifyStoreCatalogDirty(IGameSession session)
-        {
-            session.EnqueueMessageEncrypted(new ServerStoreCatalogUpdated());
         }
 
         private static void LogStoreOffersPacket(int packetIndex, ServerStoreOffers storeOffers)

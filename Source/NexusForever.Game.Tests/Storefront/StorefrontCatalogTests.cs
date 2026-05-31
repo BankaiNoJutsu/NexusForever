@@ -124,7 +124,7 @@ public class StorefrontCatalogTests
     }
 
     [Fact]
-    public void SendBootstrapCatalogPacketsIfNeeded_NotifiesDirtyWhenCatalogAlreadySentAtPregame()
+    public void SendBootstrapCatalogPacketsIfNeeded_SendsInWorldCatalogWhenAlreadySentAtPregame()
     {
         var manager = new GlobalStorefrontManager();
         SetPrivateField(manager, "serverStoreCategoryCache", ImmutableList<ServerStoreCategories.StoreCategory>.Empty);
@@ -138,15 +138,22 @@ public class StorefrontCatalogTests
         manager.SendBootstrapCatalogPacketsIfNeeded(session, 1u);
 
         Type[] packetTypes = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-            .Skip(sentAfterFirstPass)
             .Select(invocation => invocation.Arguments[0].GetType())
             .ToArray();
 
-        Assert.Equal([typeof(ServerStoreCatalogUpdated)], packetTypes);
+        Assert.Equal(2, sentAfterFirstPass);
+        Assert.Equal(
+            [
+                typeof(ServerStoreCategories),
+                typeof(ServerStoreFinalise),
+                typeof(ServerStoreCategories),
+                typeof(ServerStoreFinalise)
+            ],
+            packetTypes);
     }
 
     [Fact]
-    public void SendBootstrapCatalogPacketsIfNeeded_SendsOncePerAccountDespiteSessionIdChange()
+    public void SendBootstrapCatalogPacketsIfNeeded_SendsInitialCatalogWhenNoPriorDelivery()
     {
         var manager = new GlobalStorefrontManager();
         SetPrivateField(manager, "serverStoreCategoryCache", ImmutableList<ServerStoreCategories.StoreCategory>.Empty);
@@ -193,7 +200,7 @@ public class StorefrontCatalogTests
     }
 
     [Fact]
-    public void BuildStoreCategories_RebasesVisibleChildrenOfHiddenStructuralParents()
+    public void BuildStoreCategories_PreservesHiddenRootParentForClientCategoryTree()
     {
         MethodInfo method = typeof(GlobalStorefrontManager)
             .GetMethod("BuildStoreCategories", BindingFlags.Static | BindingFlags.NonPublic)!;
@@ -246,19 +253,19 @@ public class StorefrontCatalogTests
         Assert.True(categories.ContainsKey(27u));
         Assert.True(categories.ContainsKey(28u));
         Assert.False(categories.ContainsKey(242u));
-        Assert.Equal(0u, categories[27u].ParentCategoryId);
+        Assert.Equal(26u, categories[27u].ParentCategoryId);
         Assert.Equal(27u, categories[28u].ParentCategoryId);
     }
 
     [Fact]
-    public void BuildNetworkPackets_OrdersStoreCategoriesByTreeIndex()
+    public void BuildNetworkPackets_OrdersStoreCategoriesByRetailRootTreeIndex()
     {
         var manager = new GlobalStorefrontManager();
         SetPrivateField(manager, "storeCategories", ImmutableDictionary<uint, ICategory>.Empty
             .Add(27u, new Category(new StoreCategoryModel
             {
                 Id          = 27u,
-                ParentId    = 0u,
+                ParentId    = 26u,
                 Name        = "Late Root",
                 Description = "Late Root",
                 Index       = 7u,
@@ -276,7 +283,7 @@ public class StorefrontCatalogTests
             .Add(76u, new Category(new StoreCategoryModel
             {
                 Id          = 76u,
-                ParentId    = 0u,
+                ParentId    = 26u,
                 Name        = "Featured",
                 Description = "Featured",
                 Index       = 1u,
@@ -293,6 +300,9 @@ public class StorefrontCatalogTests
             .GetValue(manager)!;
 
         Assert.Equal([76u, 27u, 28u], categoryCache.Select(category => category.CategoryId));
+        Assert.Equal(26u, categoryCache[0].ParentCategoryId);
+        Assert.Equal(26u, categoryCache[1].ParentCategoryId);
+        Assert.Equal(27u, categoryCache[2].ParentCategoryId);
     }
 
     [Fact]

@@ -15,6 +15,7 @@ using NexusForever.Game.Abstract.Account.Unlock;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Account.Reward;
+using NexusForever.Game.Tests.Storefront;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.RBAC;
@@ -45,6 +46,7 @@ public class RewardRotationRuntimeEvidenceTests
 
         var handler = new ClientRewardUpdateRequestHandler(
             NullLogger<ClientRewardUpdateRequestHandler>.Instance,
+            NoOpGlobalStorefrontManager.Instance,
             EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(3u));
@@ -79,6 +81,7 @@ public class RewardRotationRuntimeEvidenceTests
 
         var handler = new ClientRewardUpdateRequestHandler(
             NullLogger<ClientRewardUpdateRequestHandler>.Instance,
+            NoOpGlobalStorefrontManager.Instance,
             EmptyRewardRotationRefreshProvider.Instance);
 
         handler.HandleMessage(session, BuildRequest(RewardRotationRefreshBuilder.ContentTypeCount));
