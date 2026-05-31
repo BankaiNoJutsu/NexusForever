@@ -613,7 +613,7 @@ namespace NexusForever.Network.Message
         ServerICCommMessageResult       = 0x054C,
         ServerICCommOrderedMessage      = 0x054D,
         ServerICCommDirectedMessage     = 0x054E,
-        Client0x0550                    = 0x0550, // native ClientWorldOpcodeRegister_MovementSpline 1400a8190 (not ICComm table 14006c290) binds 0x0550 to ClientTradeskillResetTalents_WritePayload 14007d010; send_helper_filter_0550 and 1403355e0 filter found no 0x550 immediate — sender blocked via message-id rail; compound cluster 14007dd40 is registered for 0x06EA not 0x0550
+        Client0x0550                    = 0x0550, // ClientWorldOpcodeRegister_MovementSpline 1400a8190: 4-byte uint32 14007d010; DAT_140c65828=&DAT_140c1f210 but static PE name slot at (0x550-3)*0x10 is null (FUN_140335f10); not ICComm 14006c290; sender blocked
         ServerSpellList                 = 0x0551,
         ClientInspectPlayerRequest      = 0x0552,
         ServerInspectPlayerResponse     = 0x0553,

@@ -40,9 +40,35 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 | `ServerMatchingListPlayersQueuedForMap.QueuedPlayerInfo.Unknown3C` | `TrailingUInt32_0x3C` | `MatchingQueuedPlayerInfo_ReadPayload` @ `140098500`; uint32 wire confirmed, semantics blocked |
 | `ServerSpellCastTargetReport.UnknownStructure0` / `unknownStructure0` | `TargetReportRow` / `TargetReportRows` | Partial row map (`CasterId` known); tail fields blocked |
 | `PrerequisiteType.Spell221` / `Unknown269` | `ActionSetSpell` / `RapidTransport` | Table ids 221/269; client dispatch @ `1404a2100` cases `0xdd` / `0x10d` |
-| `PrerequisiteType.Unknown170` | `GameFormula170` | `wildstar_client.prerequisite` rows use `value0` as `gameformula.id` (`1029`, `1031`, `1050`); client case `0xaa` @ `1404a2100` |
-| `PrerequisiteType.Unknown277` | `QuestObjective47Both` | Client case `0x115` @ `1404a2100` requires caster **and** target to pass QuestObjective47 handler (+0x2f8) |
-| `PrerequisiteType.Unknown292` | `PrimalMatrixNode` | `objectId0` matches `wildstar_client.primalmatrixnode.id` (`18`, `20`, `28`, `30`); client case `0x124` (+0x6c8) |
+| `PrerequisiteType.Unknown170` | `GameFormula` | `value0` is `gameformula.id`; client case `0xaa` @ `1404a2100` (+0x90) |
+| `PrerequisiteType.Unknown277` | `QuestObjective47OnCasterAndTarget` | Client case `0x115` requires caster **and** target to pass QuestObjective47 handler (+0x2f8) |
+| `PrerequisiteType.Unknown292` | `PrimalMatrixNode` | `objectId0` matches `primalmatrixnode.id`; client case `0x124` (+0x6c8) |
+| `PrerequisiteType.Unknown275` | `DoesNotOwnAccountItem` | All rows `NotEqual` and join `accountitem.item2Id`; client case `0x113` (+0x6a0) |
+| `PrerequisiteType.Inventory` | `DoesNotOwnAccountItemOnCharacter` | All rows `NotEqual`; `value0` is account `item2.id`; client case `0xf6` (+0x130) |
+| `PrerequisiteType.Unknown50` | `UnderSpellOnTarget` | Client case `0x32` calls `FUN_1404699f0` on target `param_2[1]`; `value0` is Spell4 id |
+| `PrerequisiteType.Unknown59` | `SpellTier` | `objectId0` is Spell4 id; `value0` is tier rank; client case `0x3b` via `FUN_1404a4f60` |
+| `PrerequisiteType.Unknown60` | `SpellTierOnTarget` | Client case `0x3c` calls `FUN_14046a110` on target `param_2[1]`; same row shape as `SpellTier` |
+| `PrerequisiteType.Unknown56` | `DifficultyRankSlotAssigned` | Client case `0x38` checks populated pointer at `entity+0x2d8 + value0*0x10` when `value0 < 0x1c` |
+| `PrerequisiteType.Unknown106` | `TargetEntityLookupHit` | Client `14049e900` (+0x318) resolves target identity `+0x1a0` via `FUN_14079ee60` |
+| `PrerequisiteType.Unknown244` | `OwnsAccountItem` | Client `14049ca70` (+0xc0) checks account Item2 ownership on NPC types `0x14`/`0x17` |
+| `PrerequisiteType.Unknown248` | `NpcInventoryItemCount` | Client `1404a0cb0` (+0x5c0) counts Item2 id on NPC via `1405f68f0` bag walk |
+| `PrerequisiteType.Unknown279` | `UnderSpellOnCasterAndTarget` | Client case `0x117` requires caster **and** target to pass UnderSpell helper `FUN_1404a4ec0` |
+| `PrerequisiteType.Unknown129` | `ActiveSpellEffectOnUnit` | Client case `0x81` inline walk of `entity+0x15c8` with SpellService compare on `value0` |
+| `PrerequisiteType.Unknown130` | `ActiveSpellEffectOnTarget` | Client case `0x82` calls `FUN_140469a70` on caster with target `+8` Spell4 filter |
+| `PrerequisiteType.Unknown82` | `UnitEntityType` | Client case `0x52` via `14049c5b0` (+0x48); entity `+0x80` unit type id vs `value0` |
+| `PrerequisiteType.Unknown89` | `PetMatchTarget` | Client case `0x59` via `14049d4f0` (+0x160); pet lookup id match caster vs target |
+| `PrerequisiteType.Unknown102`–`105` | `SpellCooldownNodeOnUnit` / `OnTarget` / `InServiceSet` / `SpellEffectTypeOnUnit` | Client cases `0x66`–`0x69` walk `entity+0x15d0` cooldown-node list |
+| `PrerequisiteType.Unknown133`–`136` | `ItemStatData` / `ItemStatId` / `AppliedItemStatId` / `Item2Id` | Item eval handlers `1404a0d00`–`1404a0d90`; type `135` `objectId0` = `ItemStat.Id` @ `+0x144` |
+| `PrerequisiteType.Unknown90` | `MountVehicleType` | Client `14049e730` (+0x2c0) mount subobject unit-type gate |
+| `PrerequisiteType.Unknown191` | `PetEntitySpell4` | Client case `0xbf` inline `Prerequisite_ResolveSpellOnPetEntity` @ `1404695e0` on player/pet `entity+0x1600` |
+| `PrerequisiteType.InfrastructureState` (148) | NF `PrerequisiteCheckInfrastructureState` | Client `1404a0150`; retail pairs `PathSettlerInfrastructure.Id` with `PathMission` type `21` (`0x15`) |
+| `PrerequisiteType.PetEntitySpell4` (191) | NF `PrerequisiteCheckPetEntitySpell4` | Client case `0xbf`; vanity-pet summon proxy until `entity+0x1600` wrapper id is mapped |
+| `PrerequisiteType.ItemRolledPropertyValue` (was `Unknown140`) | renamed pass 19 | `1404a0e80` + `14040e610` Property slot ids at `+0x94..+0xcc`; zero `Prerequisite.tbl` rows |
+| `PrerequisiteType.ItemSpecial` (138) | NF handler pass 21 | `1404a0dd0` +0x114/+0x118; zero tbl rows typed 138 |
+| `PrerequisiteType.ItemMicrochip` (139) | NF handler pass 21 | `1404a0e10` + `14049bdc0`; 2 tbl rows objectId0=0 count via value0 |
+| `PrerequisiteType.Unknown92`–`93` | `ActiveSpellTargetMechanic` / `Spell4EffectCategoryOnUnit` | Client cases `0x5c`/`0x5d` on active spell-effect list |
+| `PrerequisiteType.Unknown280` | `SpellTierOnCasterAndTarget` | Client case `0x118` requires caster **and** target to pass SpellTier helper `FUN_1404a4f60` |
+| `PrerequisiteType.Unknown77` | `QuestObjectiveOnTarget` | Client case `0x4d` (+0x548) passes target context; `objectId0` is QuestObjective id |
 | `AchievementEntry.Value` | `RequiredProgress` | Achievement progress runtime |
 | `Quest2Entry.FactionLevelCompPreq*` | `FactionLevelRequireAtMostPreq*` | Quest prerequisite comparison semantics |
 | `RewardRotationModifierEntry.Value` | `ModifierValue` | Reward rotation schedule builder |
