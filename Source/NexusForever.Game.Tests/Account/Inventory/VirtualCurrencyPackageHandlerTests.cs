@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Currency;
+using NexusForever.Game.Account.Inventory;
 using NexusForever.Game.Static.Storefront;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network;
@@ -43,15 +44,37 @@ public class VirtualCurrencyPackageHandlerTests
         Assert.Equal(StoreError.InvalidOffer, error.Error);
     }
 
+    [Fact]
+    public void Purchase_WhenVelocityLimited_ReturnsStoreErrorAndCompletionResult()
+    {
+        const uint accountId = 88002u;
+        for (int i = 0; i < 10; i++)
+            StorePurchaseVelocityLimiter.NotePurchase(accountId);
+
+        IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out _, accountId);
+        var handler = new ClientStorefrontPurchaseVirtualCurrencyPackageHandler(
+            NullLogger<ClientStorefrontPurchaseVirtualCurrencyPackageHandler>.Instance);
+
+        handler.HandleMessage(session, ReadPurchase(packageId: 1));
+
+        ServerStoreError error = Assert.Single(GetMessages<ServerStoreError>(sessionProxy));
+        Assert.Equal(StoreError.PurchaseVelocityLimit, error.Error);
+        ServerStorePurchaseVirtualCurrencyPackageResult result = Assert.Single(GetMessages<ServerStorePurchaseVirtualCurrencyPackageResult>(sessionProxy));
+        Assert.False(result.Flag);
+        Assert.Equal((uint)StoreError.PurchaseVelocityLimit, result.UInt5Value);
+        Assert.Single(GetMessages<ServerStoreCompleteOrderVirtualCurrencyPackageResult>(sessionProxy));
+    }
+
     private static IWorldSession CreateSession(
         out RecordingDispatchProxy<IWorldSession> sessionProxy,
-        out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy)
+        out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
+        uint accountId = 88001u)
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
         IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
         IAccountCurrencyManager currencyManager = RecordingDispatchProxy<IAccountCurrencyManager>.Create(out currencyProxy);
 
-        accountProxy.SetProperty(nameof(IAccount.Id), 88001u);
+        accountProxy.SetProperty(nameof(IAccount.Id), accountId);
         accountProxy.SetProperty(nameof(IAccount.CurrencyManager), currencyManager);
         sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
 

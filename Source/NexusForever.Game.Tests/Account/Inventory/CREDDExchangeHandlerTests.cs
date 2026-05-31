@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Reflection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
@@ -27,6 +29,8 @@ public class CREDDExchangeHandlerTests
     [Fact]
     public void RequestInfo_ReturnsNonEmptyPriceBucketsWhenOrdersExist()
     {
+        ResetCREDDExchangeRuntime();
+
         IWorldSession session = CreateSession(
             out RecordingDispatchProxy<IWorldSession> sessionProxy,
             accountId: InfoAccountId,
@@ -55,8 +59,10 @@ public class CREDDExchangeHandlerTests
     }
 
     [Fact]
-    public void RequestInfo_ReturnsEmptyInfoSnapshotAndOperationResult()
+    public void RequestInfo_WithoutOrders_SkipsOrderCacheRows()
     {
+        ResetCREDDExchangeRuntime();
+
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy);
         var handler = new ClientCREDDExchangeRequestInfoHandler(
             NullLogger<ClientCREDDExchangeRequestInfoHandler>.Instance);
@@ -66,7 +72,7 @@ public class CREDDExchangeHandlerTests
         ServerCREDDExchangeInfoResults info = Assert.Single(GetMessages<ServerCREDDExchangeInfoResults>(sessionProxy));
         using var infoStream = new MemoryStream(WritePacket(info));
         Assert.Equal((int)ServerCREDDExchangeInfoResults.PayloadLength, infoStream.Length);
-        Assert.Single(GetMessages<ServerCREDDExchangeOrderCacheRows>(sessionProxy));
+    Assert.Empty(GetMessages<ServerCREDDExchangeOrderCacheRows>(sessionProxy));
 
         ServerAccountOperationResult result = Assert.Single(GetMessages<ServerAccountOperationResult>(sessionProxy));
         Assert.Equal(AccountOperation.GetCREDDExchangeInfo, result.Operation);
@@ -76,6 +82,8 @@ public class CREDDExchangeHandlerTests
     [Fact]
     public void RequestHistory_ReturnsEmptyHistoryAndOperationResult()
     {
+        ResetCREDDExchangeRuntime();
+
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy);
         var handler = new ClientCREDDExchangeRequestHistoryHandler(
             NullLogger<ClientCREDDExchangeRequestHistoryHandler>.Instance);
@@ -93,6 +101,8 @@ public class CREDDExchangeHandlerTests
     [Fact]
     public void RequestHistory_ReturnsTransientSubmittedOrderHistory()
     {
+        ResetCREDDExchangeRuntime();
+
         IWorldSession session = CreateSession(
             out RecordingDispatchProxy<IWorldSession> sessionProxy,
             accountId: HistoryAccountId,
@@ -122,6 +132,21 @@ public class CREDDExchangeHandlerTests
     private static IWorldSession CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy)
     {
         return CreateSession(out sessionProxy, accountId: 7001u, characterId: 8001ul, out _);
+    }
+
+    private static void ResetCREDDExchangeRuntime()
+    {
+        Type runtimeType = typeof(ClientCREDDExchangeRequestInfoHandler).Assembly.GetType("NexusForever.WorldServer.Network.Message.Handler.Account.CREDDExchangeRuntime");
+        BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Static;
+        object syncRoot = runtimeType.GetField("syncRoot", flags).GetValue(null);
+
+        lock (syncRoot)
+        {
+            ((IList)runtimeType.GetField("orders", flags).GetValue(null)).Clear();
+            ((IList)runtimeType.GetField("operationHistory", flags).GetValue(null)).Clear();
+            runtimeType.GetField("nextOrderId", flags).SetValue(null, 1ul);
+            runtimeType.GetField("loadedFromDatabase", flags).SetValue(null, true);
+        }
     }
 
     private static IWorldSession CreateSession(

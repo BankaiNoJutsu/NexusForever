@@ -30,9 +30,23 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientCREDDExchangeRequestInfo requestInfo)
         {
-            log.LogDebug("Returning CREDD exchange info snapshot for player {PlayerGuid}.", session.Player?.Guid);
-            session.EnqueueMessageEncrypted(CREDDExchangeRuntime.BuildInfoResults());
-            session.EnqueueMessageEncrypted(CREDDExchangeRuntime.BuildOrderCacheRows());
+            ServerCREDDExchangeInfoResults infoResults = CREDDExchangeRuntime.BuildInfoResults();
+            ServerCREDDExchangeOrderCacheRows orderCacheRows = CREDDExchangeRuntime.BuildOrderCacheRows();
+
+            log.LogInformation("StorefrontCatalogDiagnostics CREDD info request player={PlayerGuid} account={AccountId} buyOrders={BuyOrderCount} sellOrders={SellOrderCount} ownedOrders={OwnedOrderCount} cacheRows={CacheRowCount}.",
+                session.Player?.Guid, session.Account?.Id, infoResults.BuyOrderCount, infoResults.SellOrderCount, infoResults.OwnedOrderCount, orderCacheRows.Rows.Count);
+
+            session.EnqueueMessageEncrypted(infoResults);
+            if (orderCacheRows.Rows.Count == 0)
+            {
+                log.LogInformation("StorefrontCatalogDiagnostics CREDD info request player={PlayerGuid} account={AccountId}: skipping empty ServerCREDDExchangeOrderCacheRows.",
+                    session.Player?.Guid, session.Account?.Id);
+            }
+            else
+            {
+                session.EnqueueMessageEncrypted(orderCacheRows);
+            }
+
             ClientAccountItemOperationResultHelper.Send(session, AccountOperation.GetCREDDExchangeInfo, AccountOperationResult.Ok);
         }
     }

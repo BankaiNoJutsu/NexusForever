@@ -31,7 +31,7 @@ namespace NexusForever.Game.Tests.Reward;
 public class ClientRewardUpdateRequestHandlerTests
 {
     [Fact]
-    public void HandleMessage_SupportedIndex_SendsPlaceholderPacketsAndLogsDiagnostics()
+    public void HandleMessage_SupportedIndex_SkipsPlaceholderArrayPacketsAndLogsDiagnostics()
     {
         var rewardPropertyManager = new TestRewardPropertyManager();
         var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
@@ -41,9 +41,7 @@ public class ClientRewardUpdateRequestHandlerTests
         handler.HandleMessage(session, BuildRequest(3u));
 
         Assert.Equal(1, rewardPropertyManager.SendInitialPacketsCallCount);
-        Assert.Collection(session.EncryptedMessages,
-            message => Assert.IsType<ServerRewardRotationScheduleArray>(message),
-            message => Assert.IsType<ServerRewardRotationEntryStateArray>(message));
+        Assert.Empty(session.EncryptedMessages);
 
         Assert.Contains(logger.Entries, entry =>
             entry.Level == LogLevel.Debug &&
@@ -55,6 +53,88 @@ public class ClientRewardUpdateRequestHandlerTests
             entry.Level == LogLevel.Information &&
             entry.Message.Contains("empty placeholder", StringComparison.Ordinal) &&
             entry.Message.Contains("reward rotation index 3", StringComparison.Ordinal));
+        Assert.Contains(logger.Entries, entry =>
+            entry.Level == LogLevel.Information &&
+            entry.Message.Contains("skipping empty ServerRewardRotationScheduleArray", StringComparison.Ordinal) &&
+            entry.Message.Contains("reward rotation index 3", StringComparison.Ordinal));
+        Assert.Contains(logger.Entries, entry =>
+            entry.Level == LogLevel.Information &&
+            entry.Message.Contains("skipping empty ServerRewardRotationEntryStateArray", StringComparison.Ordinal) &&
+            entry.Message.Contains("reward rotation index 3", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void HandleMessage_WithNonEmptyRefresh_SendsRotationArrayPackets()
+    {
+        var rewardPropertyManager = new TestRewardPropertyManager();
+        var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
+        var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
+        var handler = new ClientRewardUpdateRequestHandler(logger, NonEmptyRewardRotationRefreshProvider.Instance);
+
+        handler.HandleMessage(session, BuildRequest(2u));
+
+        Assert.Equal(1, rewardPropertyManager.SendInitialPacketsCallCount);
+        Assert.Collection(session.EncryptedMessages,
+            message => Assert.IsType<ServerRewardRotationScheduleArray>(message),
+            message => Assert.IsType<ServerRewardRotationEntryStateArray>(message));
+        Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("skipping empty", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void HandleMessage_WithContentContextOnlyRefresh_SkipsEmptyRotationArrays()
+    {
+        var rewardPropertyManager = new TestRewardPropertyManager();
+        var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
+        var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
+        var handler = new ClientRewardUpdateRequestHandler(logger, ContentContextOnlyRewardRotationRefreshProvider.Instance);
+
+        handler.HandleMessage(session, BuildRequest(2u));
+
+        Assert.Equal(1, rewardPropertyManager.SendInitialPacketsCallCount);
+        Assert.Collection(session.EncryptedMessages,
+            message => Assert.IsType<ServerRewardRotationContentContext>(message));
+        Assert.Contains(logger.Entries, entry =>
+            entry.Level == LogLevel.Information &&
+            entry.Message.Contains("skipping empty ServerRewardRotationScheduleArray", StringComparison.Ordinal) &&
+            entry.Message.Contains("reward rotation index 2", StringComparison.Ordinal));
+        Assert.Contains(logger.Entries, entry =>
+            entry.Level == LogLevel.Information &&
+            entry.Message.Contains("skipping empty ServerRewardRotationEntryStateArray", StringComparison.Ordinal) &&
+            entry.Message.Contains("reward rotation index 2", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void HandleMessage_WithPlaceholderIndexZero_SendsEmptyRotationArrays()
+    {
+        var rewardPropertyManager = new TestRewardPropertyManager();
+        var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
+        var logger = new TestLogger<ClientRewardUpdateRequestHandler>();
+        var handler = new ClientRewardUpdateRequestHandler(logger, EmptyRewardRotationRefreshProvider.Instance);
+
+        handler.HandleMessage(session, BuildRequest(0u));
+
+        Assert.Equal(1, rewardPropertyManager.SendInitialPacketsCallCount);
+        Assert.Collection(session.EncryptedMessages,
+            message =>
+            {
+                var schedule = Assert.IsType<ServerRewardRotationScheduleArray>(message);
+                Assert.Empty(schedule.Entries);
+            },
+            message =>
+            {
+                var entryState = Assert.IsType<ServerRewardRotationEntryStateArray>(message);
+                Assert.Empty(entryState.Entries);
+            });
+        Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("skipping empty ServerRewardRotationScheduleArray", StringComparison.Ordinal));
+        Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("skipping empty ServerRewardRotationEntryStateArray", StringComparison.Ordinal));
+        Assert.Contains(logger.Entries, entry =>
+            entry.Level == LogLevel.Information &&
+            entry.Message.Contains("sending empty ServerRewardRotationScheduleArray", StringComparison.Ordinal) &&
+            entry.Message.Contains("reward rotation index 0", StringComparison.Ordinal));
+        Assert.Contains(logger.Entries, entry =>
+            entry.Level == LogLevel.Information &&
+            entry.Message.Contains("sending empty ServerRewardRotationEntryStateArray", StringComparison.Ordinal) &&
+            entry.Message.Contains("reward rotation index 0", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -96,10 +176,83 @@ public class ClientRewardUpdateRequestHandlerTests
         return request;
     }
 
+    private sealed class NonEmptyRewardRotationRefreshProvider : IRewardRotationRefreshProvider
+    {
+        public static NonEmptyRewardRotationRefreshProvider Instance { get; } = new();
+
+        private NonEmptyRewardRotationRefreshProvider()
+        {
+        }
+
+        public RewardRotationRefresh Build(uint rewardRotationIndex)
+        {
+            return new RewardRotationRefresh(
+                rewardRotationIndex,
+                new ServerRewardRotationScheduleArray
+                {
+                    Entries =
+                    {
+                        new ServerRewardRotationScheduleArray.ScheduleRow
+                        {
+                            ContentId = 10u,
+                            RewardKeyId = 20u,
+                            Duration = 1f,
+                            RewardType = RewardRotationScheduleBuilder.RewardTypeItem,
+                            Value = 30u
+                        }
+                    }
+                },
+                new ServerRewardRotationEntryStateArray
+                {
+                    Entries =
+                    {
+                        new ServerRewardRotationEntryStateArray.EntryStateRow
+                        {
+                            TypeId = 1u,
+                            ContentId = 10u,
+                            RewardTypeId = 20u,
+                            State = RewardRotationScheduleBuilder.RewardTypeItem,
+                            Value = 1u
+                        }
+                    }
+                },
+                "test-non-empty-refresh");
+        }
+    }
+
+    private sealed class ContentContextOnlyRewardRotationRefreshProvider : IRewardRotationRefreshProvider
+    {
+        public static ContentContextOnlyRewardRotationRefreshProvider Instance { get; } = new();
+
+        private ContentContextOnlyRewardRotationRefreshProvider()
+        {
+        }
+
+        public RewardRotationRefresh Build(uint rewardRotationIndex)
+        {
+            return new RewardRotationRefresh(
+                rewardRotationIndex,
+                new ServerRewardRotationContentContext
+                {
+                    RewardRotationIndex = rewardRotationIndex,
+                    UInt0 = 1u,
+                    UInt1 = 2u,
+                    UInt3 = 3u,
+                    ContentIds = { 10u },
+                    Flag = false
+                },
+                new ServerRewardRotationScheduleArray(),
+                new ServerRewardRotationEntryStateArray(),
+                "test-content-context-only-refresh");
+        }
+    }
+
     private sealed class TestWorldSession(IAccount account) : IWorldSession
     {
         public IAccount Account { get; } = account;
         public IPlayer Player { get; set; }
+        public bool HasSentCharacterListPackets { get; set; }
+        public bool HasSentPregameAccountPackets { get; set; }
         public List<CharacterModel> Characters { get; } = [];
         public bool? IsQueued { get; set; }
         public bool CanProcessIncomingPackets { get; set; }

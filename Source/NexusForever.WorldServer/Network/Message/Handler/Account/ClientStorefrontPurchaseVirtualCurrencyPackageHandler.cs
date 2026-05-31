@@ -19,6 +19,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientStorefrontPurchaseVirtualCurrencyPackage purchase)
         {
+            log.LogInformation("StorefrontCatalogDiagnostics virtual-currency package purchase request player={PlayerGuid} account={AccountId} package={PackageId}.",
+                session.Player?.Guid, session.Account?.Id, purchase.PackageId);
+
             if (session.Account == null)
             {
                 log.LogWarning("Rejecting virtual-currency package purchase: session has no account.");
@@ -32,6 +35,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                     session.Account.Id);
                 AccountPrivilegeRestrictionManager.SendStorePurchaseVelocityRestriction(session.Account);
                 session.EnqueueMessageEncrypted(new ServerStoreError(StoreError.PurchaseVelocityLimit));
+                VirtualCurrencyPackageService.SendPurchaseResults(session, isSuccess: false, displayValue: (uint)StoreError.PurchaseVelocityLimit);
                 return;
             }
 
@@ -45,6 +49,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             }
 
             StorePurchaseHistoryManager.RecordPurchase(session.Account.Id, purchase.PackageId, currencyId: 0, price: 0ul);
+            log.LogInformation("StorefrontCatalogDiagnostics virtual-currency package purchase completed player={PlayerGuid} account={AccountId} package={PackageId}.",
+                session.Player?.Guid, session.Account.Id, purchase.PackageId);
             log.LogDebug("Completed virtual-currency package purchase for account {AccountId}: package {PackageId}.",
                 session.Account.Id, purchase.PackageId);
         }

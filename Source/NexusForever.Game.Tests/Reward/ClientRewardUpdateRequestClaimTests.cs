@@ -177,6 +177,8 @@ public class ClientRewardUpdateRequestClaimTests
     {
         public IAccount Account { get; } = account;
         public IPlayer Player { get; set; }
+        public bool HasSentCharacterListPackets { get; set; }
+        public bool HasSentPregameAccountPackets { get; set; }
         public List<IWritable> EncryptedMessages { get; } = [];
 
         public void EnqueueMessage(IWritable message)

@@ -44,7 +44,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
             foreach (IWritable contentContextPacket in refresh.GetContentContextPackets())
                 session.EnqueueMessageEncrypted(contentContextPacket);
 
-            session.EnqueueMessageEncrypted(refresh.ScheduleArray);
+            EnqueueScheduleArrayIfNotEmpty(session, refresh);
 
             if (TryProcessClaimRequest(session, rewardUpdateRequest, refresh, out ServerRewardRotationEntryStateArray.EntryStateRow claimedRow))
             {
@@ -56,16 +56,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
                 if (grantManager != null)
                 {
                     ServerRewardRotationEntryStateArray entryState = grantManager.BuildEntryState(rewardUpdateRequest.RewardRotationIndex);
-                    session.EnqueueMessageEncrypted(entryState);
+                    EnqueueEntryStateArrayIfNotEmpty(session, refresh, entryState);
                 }
                 else
                 {
-                    session.EnqueueMessageEncrypted(refresh.EntryStateArray);
+                    EnqueueEntryStateArrayIfNotEmpty(session, refresh, refresh.EntryStateArray);
                 }
             }
             else
             {
-                session.EnqueueMessageEncrypted(refresh.EntryStateArray);
+                EnqueueEntryStateArrayIfNotEmpty(session, refresh, refresh.EntryStateArray);
             }
             RewardRotationRuntimeEvidenceCollector.RecordRequestIfArmed(
                 session.Player,
@@ -85,6 +85,59 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
                 log.LogInformation("Reward rotation response for player {PlayerGuid} carried observable rows from source {ResponseSource}: reward rotation index {RewardRotationIndex}, content-context ids {ContentContextIdCount}, schedule entries {ScheduleEntryCount}, entry-state entries {EntryStateCount}. Review reward evidence captures before implementing live semantics.",
                     session.Player?.Guid, refresh.ResponseSource, refresh.RewardRotationIndex, refresh.ContentContextIdCount, refresh.ScheduleEntryCount, refresh.EntryStateCount);
             }
+        }
+
+        private void EnqueueScheduleArrayIfNotEmpty(IWorldSession session, RewardRotationRefresh refresh)
+        {
+            if (refresh.ScheduleEntryCount == 0)
+            {
+                if (ShouldSendEmptyRotationArrays(refresh))
+                {
+                    log.LogInformation("StorefrontCatalogDiagnostics reward rotation response for player {PlayerGuid}: sending empty ServerRewardRotationScheduleArray for reward rotation index {RewardRotationIndex}, source {ResponseSource}, because {Reason}.",
+                        session.Player?.Guid, refresh.RewardRotationIndex, refresh.ResponseSource, DescribeEmptyArrayReason(refresh));
+                    session.EnqueueMessageEncrypted(refresh.ScheduleArray);
+                    return;
+                }
+
+                log.LogInformation("StorefrontCatalogDiagnostics reward rotation response for player {PlayerGuid}: skipping empty ServerRewardRotationScheduleArray for reward rotation index {RewardRotationIndex}, source {ResponseSource}.",
+                    session.Player?.Guid, refresh.RewardRotationIndex, refresh.ResponseSource);
+                return;
+            }
+
+            session.EnqueueMessageEncrypted(refresh.ScheduleArray);
+        }
+
+        private void EnqueueEntryStateArrayIfNotEmpty(
+            IWorldSession session,
+            RewardRotationRefresh refresh,
+            ServerRewardRotationEntryStateArray entryStateArray)
+        {
+            if (entryStateArray == null || entryStateArray.Entries.Count == 0)
+            {
+                if (ShouldSendEmptyRotationArrays(refresh))
+                {
+                    log.LogInformation("StorefrontCatalogDiagnostics reward rotation response for player {PlayerGuid}: sending empty ServerRewardRotationEntryStateArray for reward rotation index {RewardRotationIndex}, source {ResponseSource}, because {Reason}.",
+                        session.Player?.Guid, refresh.RewardRotationIndex, refresh.ResponseSource, DescribeEmptyArrayReason(refresh));
+                    session.EnqueueMessageEncrypted(entryStateArray ?? new ServerRewardRotationEntryStateArray());
+                    return;
+                }
+
+                log.LogInformation("StorefrontCatalogDiagnostics reward rotation response for player {PlayerGuid}: skipping empty ServerRewardRotationEntryStateArray for reward rotation index {RewardRotationIndex}, source {ResponseSource}.",
+                    session.Player?.Guid, refresh.RewardRotationIndex, refresh.ResponseSource);
+                return;
+            }
+
+            session.EnqueueMessageEncrypted(entryStateArray);
+        }
+
+        private static bool ShouldSendEmptyRotationArrays(RewardRotationRefresh refresh)
+        {
+            return refresh.IsPlaceholder && refresh.RewardRotationIndex == 0u;
+        }
+
+        private static string DescribeEmptyArrayReason(RewardRotationRefresh refresh)
+        {
+            return "reward rotation index 0 is a storefront-visible placeholder";
         }
 
         private static bool TryProcessClaimRequest(

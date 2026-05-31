@@ -1,5 +1,11 @@
 namespace NexusForever.Game.Static.Storefront
 {
+    /// <summary>
+    /// Client-exported store error enum used by opcode 0x098A. Native evidence comes from
+    /// <c>CodeEnumStoreError</c> registration in <c>Lua_RegisterGameEnumTables</c>
+    /// (<c>WildStar64.exe</c> <c>1404f2860</c>) and the matching storefront consumer
+    /// <c>Storefront_HandleStoreError</c> (<c>14044cea0</c>).
+    /// </summary>
     public enum StoreError
     {
         CatalogUnavailable       = 0,

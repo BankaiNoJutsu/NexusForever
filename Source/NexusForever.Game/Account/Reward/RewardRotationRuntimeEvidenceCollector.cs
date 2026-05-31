@@ -131,7 +131,7 @@ namespace NexusForever.Game.Account.Reward
                 ],
                 Notes =
                 [
-                    "Empty schedule/state arrays are intentional placeholders until live reward rotation evidence is captured.",
+                    "Empty schedule/state arrays are skipped until live reward rotation evidence is captured.",
                     "If a future provider injects non-placeholder rows, this report automatically records packet payloads plus structured row diagnostics for review before runtime behavior changes."
                 ]
             };
@@ -151,10 +151,10 @@ namespace NexusForever.Game.Account.Reward
                 : [];
             record.ScheduleRows = refresh?.ScheduleArray.Entries.Select((row, index) => CreateScheduleRowDiagnostic(row, index)).ToList() ?? [];
             record.EntryStateRows = refresh?.EntryStateArray.Entries.Select((row, index) => CreateEntryStateRowDiagnostic(row, index)).ToList() ?? [];
-            record.ScheduleArrayPacket = refresh != null
+            record.ScheduleArrayPacket = refresh != null && refresh.ScheduleEntryCount > 0
                 ? CreatePacketReference(refresh.ScheduleArray)
                 : null;
-            record.EntryStateArrayPacket = refresh != null
+            record.EntryStateArrayPacket = refresh != null && refresh.EntryStateCount > 0
                 ? CreatePacketReference(refresh.EntryStateArray)
                 : null;
 
@@ -166,7 +166,7 @@ namespace NexusForever.Game.Account.Reward
 
             if (refresh.IsPlaceholder)
             {
-                record.Notes.Add("Captured response is the current empty placeholder scaffold.");
+                record.Notes.Add("Captured response is the current empty placeholder scaffold; empty schedule and entry-state array packets are not enqueued.");
                 return;
             }
 

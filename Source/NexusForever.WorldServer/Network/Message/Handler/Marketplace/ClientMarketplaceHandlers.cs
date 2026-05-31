@@ -51,11 +51,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
         {
             MarketplaceRequestHelper.SendEnabledStatus(session);
 
-            log.LogDebug("Returning owned commodity orders for marketplace request from player {PlayerGuid}.",
-                session.Player?.Guid);
+            List<CommodityOrder> orders = MarketplaceRequestHelper.GetOwnedCommodityOrders(session);
+            if (orders.Count == 0)
+            {
+                log.LogInformation("StorefrontCatalogDiagnostics marketplace owned commodity orders request for player {PlayerGuid}: rows=0.",
+                    session.Player?.Guid);
+            }
+
+            log.LogDebug("Returning owned commodity orders for marketplace request from player {PlayerGuid}: rows {OrderCount}.",
+                session.Player?.Guid, orders.Count);
             session.EnqueueMessageEncrypted(new ServerOwnedCommodityOrders
             {
-                Orders = MarketplaceRequestHelper.GetOwnedCommodityOrders(session)
+                Orders = orders
             });
         }
     }
@@ -73,11 +80,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
         {
             MarketplaceRequestHelper.SendEnabledStatus(session);
 
-            log.LogDebug("Returning owned item auctions for marketplace request from player {PlayerGuid}.",
-                session.Player?.Guid);
+            List<AuctionInfo> auctions = MarketplaceRequestHelper.GetOwnedItemAuctions(session);
+            if (auctions.Count == 0)
+            {
+                log.LogInformation("StorefrontCatalogDiagnostics marketplace owned item auctions request for player {PlayerGuid}: rows=0.",
+                    session.Player?.Guid);
+            }
+
+            log.LogDebug("Returning owned item auctions for marketplace request from player {PlayerGuid}: rows {AuctionCount}.",
+                session.Player?.Guid, auctions.Count);
             session.EnqueueMessageEncrypted(new ServerOwnedItemAuctions
             {
-                Auctions = MarketplaceRequestHelper.GetOwnedItemAuctions(session)
+                Auctions = auctions
             });
         }
     }

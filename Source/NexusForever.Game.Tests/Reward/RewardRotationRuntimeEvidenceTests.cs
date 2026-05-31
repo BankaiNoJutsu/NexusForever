@@ -61,10 +61,10 @@ public class RewardRotationRuntimeEvidenceTests
         Assert.Equal(0, root.GetProperty("EntryStateCount").GetInt32());
         Assert.Empty(root.GetProperty("ScheduleRows").EnumerateArray().ToArray());
         Assert.Empty(root.GetProperty("EntryStateRows").EnumerateArray().ToArray());
-        Assert.Equal("ServerRewardRotationScheduleArray", root.GetProperty("ScheduleArrayPacket").GetProperty("PacketName").GetString());
-        Assert.Equal("ServerRewardRotationEntryStateArray", root.GetProperty("EntryStateArrayPacket").GetProperty("PacketName").GetString());
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("ScheduleArrayPacket").ValueKind);
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("EntryStateArrayPacket").ValueKind);
         Assert.Equal(3, root.GetProperty("EntryStateDeltaPackets").GetArrayLength());
-        Assert.Equal(2, session.EncryptedMessages.Count);
+        Assert.Empty(session.EncryptedMessages);
         Assert.Equal(1, rewardPropertyManager.SendInitialPacketsCallCount);
     }
 
@@ -245,6 +245,8 @@ public class RewardRotationRuntimeEvidenceTests
 
         public IAccount Account { get; set; }
         public IPlayer Player { get; set; }
+    public bool HasSentCharacterListPackets { get; set; }
+    public bool HasSentPregameAccountPackets { get; set; }
         public List<CharacterModel> Characters { get; } = [];
         public bool? IsQueued { get; set; }
         public bool CanProcessIncomingPackets { get; set; }
