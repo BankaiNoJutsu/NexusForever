@@ -2007,7 +2007,7 @@ if ($MySqlInvocationMode -eq 'Native') {
             throw
         }
 
-        $DockerCliResolved = Get-NexusSetupDockerCli -Command $DockerCli
+        $DockerCliResolved = Get-NexusSetupDockerCli -Command $DockerCli -StartDesktopIfNeeded
         if (!$DockerCliResolved) {
             throw
         }

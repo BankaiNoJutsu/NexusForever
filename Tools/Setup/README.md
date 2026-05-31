@@ -73,6 +73,11 @@ If you want the same reuse behavior from the base launcher, pass
 without that switch, the base launcher now keeps already-running local server
 processes and only starts the ones that are missing.
 
+`-SkipSetup` skips database/broker/user/migration setup, but it still performs
+the launcher build step before starting or reusing server processes. This keeps
+runtime assemblies in sync after source edits and avoids mixed-version startup
+failures.
+
 To launch the client with extra WildStar command-line arguments, pass
 `-ClientArguments`. For the built-in client console discovered in the retail
 binary, prefer `-EnableClientConsole`, which appends `-Console` for you without
@@ -565,8 +570,17 @@ RabbitMQ command not found:
 - No reachable broker was found on the configured host and port.
 - Install Docker Desktop if you want the scripts to provision a portable local
   RabbitMQ instance automatically.
+- On Windows, the setup scripts now attempt to start Docker Desktop automatically
+  when the Docker CLI is installed but the daemon is stopped.
 - Or pass `-DependencyMode ExternalOnly` and point the scripts at an existing
   broker.
+
+`Docker Desktop was started but the Docker daemon did not become ready`:
+
+- Wait for Docker Desktop to finish starting, then rerun the setup script.
+- Confirm Docker Desktop is installed and that WSL2 or Hyper-V backend is healthy.
+- Use `-DependencyMode ExternalOnly` if you prefer to manage MySQL and RabbitMQ
+  outside Docker.
 
 `Portable dependencies were created for the first time, but -SkipSetup was requested`:
 

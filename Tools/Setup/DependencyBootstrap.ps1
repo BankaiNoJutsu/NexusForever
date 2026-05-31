@@ -115,29 +115,131 @@ function Invoke-NexusSetupExternalCommand {
         [switch] $IgnoreExitCode
     )
 
-    $output = & $FilePath @Arguments 2>&1
-    $exitCode = $LASTEXITCODE
-
-    if ($exitCode -ne 0 -and !$IgnoreExitCode) {
-        throw "$([System.IO.Path]::GetFileName($FilePath)) failed with exit code $exitCode.`n$($output -join [Environment]::NewLine)"
+    $previousErrorActionPreference = $ErrorActionPreference
+    $previousNativeErrorActionPreference = $null
+    if ($IgnoreExitCode) {
+        $ErrorActionPreference = 'Continue'
+        if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -Scope Global -ErrorAction SilentlyContinue) {
+            $previousNativeErrorActionPreference = $global:PSNativeCommandUseErrorActionPreference
+            $global:PSNativeCommandUseErrorActionPreference = $false
+        }
     }
 
-    [pscustomobject]@{
-        ExitCode = $exitCode
-        Output   = @($output)
+    try {
+        $output = & $FilePath @Arguments 2>&1 | ForEach-Object {
+            if ($_ -is [System.Management.Automation.ErrorRecord]) {
+                $_.Exception.Message
+            }
+            else {
+                $_
+            }
+        }
+        $exitCode = $LASTEXITCODE
+
+        if ($exitCode -ne 0 -and !$IgnoreExitCode) {
+            throw "$([System.IO.Path]::GetFileName($FilePath)) failed with exit code $exitCode.`n$($output -join [Environment]::NewLine)"
+        }
+
+        [pscustomobject]@{
+            ExitCode = $exitCode
+            Output   = @($output)
+        }
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+        if ($null -ne $previousNativeErrorActionPreference) {
+            $global:PSNativeCommandUseErrorActionPreference = $previousNativeErrorActionPreference
+        }
     }
 }
 
+function Test-NexusSetupDockerDaemonReady {
+    param([string] $DockerCli)
+
+    $probe = Invoke-NexusSetupExternalCommand -FilePath $DockerCli -Arguments @('info', '--format', '{{.ServerVersion}}') -IgnoreExitCode
+    return $probe.ExitCode -eq 0 -and $probe.Output.Count -gt 0 -and ![string]::IsNullOrWhiteSpace([string] $probe.Output[0])
+}
+
+function Find-NexusSetupDockerDesktopExecutable {
+    $candidates = @(
+        (Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'),
+        (Join-Path ${env:ProgramFiles(x86)} 'Docker\Docker\Docker Desktop.exe'),
+        (Join-Path $env:LOCALAPPDATA 'Docker\Docker Desktop.exe')
+    )
+
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path -LiteralPath $candidate)) {
+            return (Resolve-Path -LiteralPath $candidate).Path
+        }
+    }
+
+    return $null
+}
+
+function Wait-NexusSetupDockerDaemonReady {
+    param(
+        [string] $DockerCli,
+        [int] $TimeoutSeconds = 180
+    )
+
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+    while ([DateTime]::UtcNow -lt $deadline) {
+        if (Test-NexusSetupDockerDaemonReady -DockerCli $DockerCli) {
+            return $true
+        }
+
+        Start-Sleep -Seconds 3
+    }
+
+    return $false
+}
+
+function Start-NexusSetupDockerDesktopIfNeeded {
+    param(
+        [string] $DockerCli,
+        [int] $TimeoutSeconds = 180
+    )
+
+    if (Test-NexusSetupDockerDaemonReady -DockerCli $DockerCli) {
+        return $true
+    }
+
+    if ([System.Environment]::OSVersion.Platform -ne [System.PlatformID]::Win32NT) {
+        return $false
+    }
+
+    $desktopExe = Find-NexusSetupDockerDesktopExecutable
+    if (!$desktopExe) {
+        return $false
+    }
+
+    Write-Info 'Docker daemon is not running; starting Docker Desktop.'
+    Start-Process -FilePath $desktopExe -WindowStyle Hidden | Out-Null
+
+    if (!(Wait-NexusSetupDockerDaemonReady -DockerCli $DockerCli -TimeoutSeconds $TimeoutSeconds)) {
+        throw "Docker Desktop was started but the Docker daemon did not become ready within $TimeoutSeconds seconds."
+    }
+
+    Write-Info 'Docker daemon is ready.'
+    return $true
+}
+
 function Get-NexusSetupDockerCli {
-    param([string] $Command)
+    param(
+        [string] $Command,
+        [switch] $StartDesktopIfNeeded
+    )
 
     $resolved = Resolve-NexusSetupExecutablePath -Command $Command
     if (!$resolved) {
         return $null
     }
 
-    $probe = Invoke-NexusSetupExternalCommand -FilePath $resolved -Arguments @('info', '--format', '{{.ServerVersion}}') -IgnoreExitCode
-    if ($probe.ExitCode -ne 0) {
+    if ($StartDesktopIfNeeded) {
+        Start-NexusSetupDockerDesktopIfNeeded -DockerCli $resolved | Out-Null
+    }
+
+    if (!(Test-NexusSetupDockerDaemonReady -DockerCli $resolved)) {
         return $null
     }
 
@@ -278,17 +380,24 @@ function Repair-NexusSetupRabbitMqVolumePermissions {
     param(
         [string] $DockerCli,
         [string] $ContainerName,
+        [string] $VolumeName,
         [string] $Image
     )
 
     Write-Info "Repairing portable RabbitMQ volume permissions for $ContainerName"
+
+    $inspect = Get-NexusSetupDockerInspect -DockerCli $DockerCli -ContainerName $ContainerName
+    if ($inspect -and $inspect.State.Running) {
+        Invoke-NexusSetupExternalCommand -FilePath $DockerCli -Arguments @('stop', $ContainerName) | Out-Null
+    }
+
     Invoke-NexusSetupExternalCommand -FilePath $DockerCli -Arguments @(
         'run',
         '--rm',
-        '--volumes-from', $ContainerName,
+        '--volume', "${VolumeName}:/var/lib/rabbitmq",
         '--user', 'root',
+        '--entrypoint', 'sh',
         $Image,
-        'sh',
         '-lc',
         'chown -R rabbitmq:rabbitmq /var/lib/rabbitmq && if [ -f /var/lib/rabbitmq/.erlang.cookie ]; then chmod 600 /var/lib/rabbitmq/.erlang.cookie; fi'
     ) | Out-Null
@@ -391,7 +500,7 @@ function Ensure-NexusSetupPortableRabbitMq {
         $created = $true
     }
 
-    Repair-NexusSetupRabbitMqVolumePermissions -DockerCli $DockerCli -ContainerName $ContainerName -Image $Image
+    Repair-NexusSetupRabbitMqVolumePermissions -DockerCli $DockerCli -ContainerName $ContainerName -VolumeName $VolumeName -Image $Image
     $inspect = Get-NexusSetupDockerInspect -DockerCli $DockerCli -ContainerName $ContainerName
     if (!$inspect.State.Running) {
         Write-Info "Starting portable RabbitMQ container $ContainerName after volume permission repair"
@@ -466,7 +575,7 @@ function Resolve-NexusSetupDependencies {
 
     function Get-ResolvedDockerCli {
         if (!$dockerWasChecked) {
-            $script:dockerCliResolved = Get-NexusSetupDockerCli -Command $DockerCli
+            $script:dockerCliResolved = Get-NexusSetupDockerCli -Command $DockerCli -StartDesktopIfNeeded
             $script:dockerWasChecked = $true
         }
 

@@ -343,6 +343,215 @@ function Test-ProjectLockWaitExpired {
     return [datetime]::UtcNow -ge $StartedUtc.AddMinutes($TimeoutMinutes)
 }
 
+function Format-WaitElapsed {
+    param(
+        [datetime] $StartedUtc
+    )
+
+    $elapsed = [datetime]::UtcNow - $StartedUtc
+    if ($elapsed.TotalHours -ge 1) {
+        return ('{0:00}:{1:00}:{2:00}' -f [int]$elapsed.TotalHours, $elapsed.Minutes, $elapsed.Seconds)
+    }
+
+    return ('{0:00}:{1:00}' -f [int]$elapsed.TotalMinutes, $elapsed.Seconds)
+}
+
+function Format-LockTimeout {
+    param(
+        [int] $TimeoutMinutes
+    )
+
+    if ($TimeoutMinutes -le 0) {
+        return 'none'
+    }
+
+    return ('{0}m' -f $TimeoutMinutes)
+}
+
+function Limit-ProcessCommandLine {
+    param(
+        [string] $CommandLine,
+        [int] $MaxLength = 220
+    )
+
+    if ([string]::IsNullOrWhiteSpace($CommandLine)) {
+        return ''
+    }
+
+    $singleLine = $CommandLine -replace '\s+', ' '
+    if ($singleLine.Length -le $MaxLength) {
+        return $singleLine
+    }
+
+    return $singleLine.Substring(0, $MaxLength - 3) + '...'
+}
+
+function Format-CimProcessSummary {
+    param(
+        [object] $Process
+    )
+
+    if ($null -eq $Process) {
+        return ''
+    }
+
+    $started = ''
+    if ($Process.CreationDate) {
+        $started = (' started={0}' -f $Process.CreationDate)
+    }
+
+    $command = Limit-ProcessCommandLine -CommandLine $Process.CommandLine
+    $commandPart = if ($command) { ' command="' + $command + '"' } else { '' }
+    return ('pid={0} name={1}{2}{3}' -f $Process.ProcessId, $Process.Name, $started, $commandPart)
+}
+
+function Get-ProcessSummary {
+    param(
+        [string] $ProcessId
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ProcessId)) {
+        return ''
+    }
+
+    [int] $numericProcessId = 0
+    if (-not [int]::TryParse($ProcessId, [ref]$numericProcessId)) {
+        return ('pid={0}' -f $ProcessId)
+    }
+
+    try {
+        $process = Get-CimInstance Win32_Process -Filter ('ProcessId = {0}' -f $numericProcessId) -ErrorAction Stop
+        if ($process) {
+            return Format-CimProcessSummary -Process $process
+        }
+    }
+    catch {
+    }
+
+    try {
+        $process = Get-Process -Id $numericProcessId -ErrorAction Stop
+        return ('pid={0} name={1} started={2}' -f $process.Id, $process.ProcessName, $process.StartTime)
+    }
+    catch {
+        return ('pid={0} (process exited or inaccessible)' -f $numericProcessId)
+    }
+}
+
+function Read-ProjectGateMetadata {
+    param(
+        [string] $LockPath
+    )
+
+    $metadata = @{}
+    if (-not (Test-Path -LiteralPath $LockPath -PathType Leaf)) {
+        return $metadata
+    }
+
+    $stream = $null
+    $reader = $null
+    try {
+        $stream = [System.IO.File]::Open($LockPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $reader = [System.IO.StreamReader]::new($stream, [System.Text.Encoding]::UTF8, $true)
+        $content = $reader.ReadToEnd()
+        foreach ($line in ($content -split "\r?\n")) {
+            if ($line -match '^\s*([^=]+)=(.*)$') {
+                $metadata[$matches[1].Trim()] = $matches[2].Trim()
+            }
+        }
+    }
+    catch {
+        $metadata['readError'] = $_.Exception.Message
+    }
+    finally {
+        if ($null -ne $reader) {
+            $reader.Dispose()
+        }
+        elseif ($null -ne $stream) {
+            $stream.Dispose()
+        }
+    }
+
+    return $metadata
+}
+
+function Get-ProjectGateOwnerSummary {
+    param(
+        [string] $LockPath
+    )
+
+    $metadata = Read-ProjectGateMetadata -LockPath $LockPath
+    if ($metadata.ContainsKey('readError')) {
+        return ('metadata unavailable: {0}' -f $metadata['readError'])
+    }
+
+    $parts = New-Object 'System.Collections.Generic.List[string]'
+    if ($metadata.ContainsKey('owner')) {
+        $parts.Add(('owner={0}' -f $metadata['owner']))
+    }
+    if ($metadata.ContainsKey('host')) {
+        $parts.Add(('host={0}' -f $metadata['host']))
+    }
+    if ($metadata.ContainsKey('pid')) {
+        $parts.Add((Get-ProcessSummary -ProcessId $metadata['pid']))
+    }
+    if ($metadata.ContainsKey('acquiredUtc')) {
+        $parts.Add(('acquiredUtc={0}' -f $metadata['acquiredUtc']))
+    }
+
+    if ($parts.Count -eq 0) {
+        return 'owner unknown'
+    }
+
+    return ($parts -join ', ')
+}
+
+function Write-GhidraProjectGateWaitStatus {
+    param(
+        [string] $ProjectName,
+        [string] $LockPath,
+        [datetime] $StartedUtc,
+        [int] $RetryDelaySeconds,
+        [int] $TimeoutMinutes
+    )
+
+    $ownerSummary = Get-ProjectGateOwnerSummary -LockPath $LockPath
+    Write-Host ("Waiting for Ghidra project gate {0}; owner: {1}; elapsed {2}; retrying in {3}s; timeout {4}. Lock file: {5}" -f $ProjectName, $ownerSummary, (Format-WaitElapsed -StartedUtc $StartedUtc), $RetryDelaySeconds, (Format-LockTimeout -TimeoutMinutes $TimeoutMinutes), $LockPath)
+}
+
+function Get-GhidraProjectProcessHints {
+    param(
+        [string] $ProjectName,
+        [string] $ProjectDir
+    )
+
+    try {
+        $ghidraProcesses = @(Get-CimInstance Win32_Process -ErrorAction Stop | Where-Object {
+            $commandLine = [string]$_.CommandLine
+            -not [string]::IsNullOrWhiteSpace($commandLine) -and
+                ($commandLine -match '(?i)ghidra|analyzeHeadless')
+        })
+    }
+    catch {
+        return @()
+    }
+
+    if ($ghidraProcesses.Count -eq 0) {
+        return @()
+    }
+
+    $matchingProcesses = @($ghidraProcesses | Where-Object {
+        $commandLine = [string]$_.CommandLine
+        ((-not [string]::IsNullOrWhiteSpace($ProjectName)) -and $commandLine.Contains($ProjectName)) -or
+            ((-not [string]::IsNullOrWhiteSpace($ProjectDir)) -and $commandLine.Contains($ProjectDir))
+    })
+
+    $selectedProcesses = if ($matchingProcesses.Count -gt 0) { $matchingProcesses } else { $ghidraProcesses }
+    return @($selectedProcesses |
+        Sort-Object ProcessId -Unique |
+        Select-Object -First 4 |
+        ForEach-Object { Format-CimProcessSummary -Process $_ })
+}
+
 function Enter-GhidraProjectGate {
     param(
         [string] $Directory,
@@ -359,11 +568,12 @@ function Enter-GhidraProjectGate {
 
     while ($true) {
         try {
-            $stream = [System.IO.File]::Open($lockPath, [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+            $stream = [System.IO.File]::Open($lockPath, [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::Read)
             $stream.SetLength(0)
 
             $content = @(
                 'owner=run_ghidra_analysis.ps1'
+                ('host={0}' -f $env:COMPUTERNAME)
                 ('project={0}' -f $ProjectName)
                 ('pid={0}' -f $PID)
                 ('acquiredUtc={0:o}' -f [datetime]::UtcNow)
@@ -373,7 +583,7 @@ function Enter-GhidraProjectGate {
             $stream.Flush($true)
 
             if ($waited) {
-                Write-Host ("Acquired Ghidra project gate for {0}" -f $ProjectName)
+                Write-Host ("Acquired Ghidra project gate for {0} after {1}" -f $ProjectName, (Format-WaitElapsed -StartedUtc $startedUtc))
             }
 
             return [pscustomobject]@{
@@ -385,24 +595,20 @@ function Enter-GhidraProjectGate {
         }
         catch [System.IO.IOException] {
             if (Test-ProjectLockWaitExpired -StartedUtc $startedUtc -TimeoutMinutes $TimeoutMinutes) {
-                throw ("Timed out waiting for Ghidra project gate {0}. Lock file: {1}" -f $ProjectName, $lockPath)
+                throw ("Timed out waiting for Ghidra project gate {0}. Owner: {1}. Lock file: {2}" -f $ProjectName, (Get-ProjectGateOwnerSummary -LockPath $lockPath), $lockPath)
             }
 
-            if (-not $waited) {
-                Write-Host ("Waiting for another decompile session to release Ghidra project {0}. Lock file: {1}" -f $ProjectName, $lockPath)
-                $waited = $true
-            }
+            Write-GhidraProjectGateWaitStatus -ProjectName $ProjectName -LockPath $lockPath -StartedUtc $startedUtc -RetryDelaySeconds $RetryDelaySeconds -TimeoutMinutes $TimeoutMinutes
+            $waited = $true
             Start-Sleep -Seconds $RetryDelaySeconds
         }
         catch [System.UnauthorizedAccessException] {
             if (Test-ProjectLockWaitExpired -StartedUtc $startedUtc -TimeoutMinutes $TimeoutMinutes) {
-                throw ("Timed out waiting for Ghidra project gate {0}. Lock file: {1}" -f $ProjectName, $lockPath)
+                throw ("Timed out waiting for Ghidra project gate {0}. Owner: {1}. Lock file: {2}" -f $ProjectName, (Get-ProjectGateOwnerSummary -LockPath $lockPath), $lockPath)
             }
 
-            if (-not $waited) {
-                Write-Host ("Waiting for another decompile session to release Ghidra project {0}. Lock file: {1}" -f $ProjectName, $lockPath)
-                $waited = $true
-            }
+            Write-GhidraProjectGateWaitStatus -ProjectName $ProjectName -LockPath $lockPath -StartedUtc $startedUtc -RetryDelaySeconds $RetryDelaySeconds -TimeoutMinutes $TimeoutMinutes
+            $waited = $true
             Start-Sleep -Seconds $RetryDelaySeconds
         }
     }
@@ -450,6 +656,7 @@ function Invoke-GhidraHeadlessWithProjectRetry {
         [object[]] $Arguments,
         [string] $LogPath,
         [string] $ProjectName,
+        [string] $ProjectDir,
         [int] $RetryDelaySeconds,
         [int] $TimeoutMinutes
     )
@@ -495,7 +702,16 @@ function Invoke-GhidraHeadlessWithProjectRetry {
             }
         }
 
-        Write-Warning ("Ghidra project {0} is locked by another process; retrying in {1} seconds. See {2}." -f $ProjectName, $RetryDelaySeconds, $LogPath)
+        $processHints = @(Get-GhidraProjectProcessHints -ProjectName $ProjectName -ProjectDir $ProjectDir)
+        $processHintText = if ($processHints.Count -gt 0) {
+            ' Candidate process(es): ' + ($processHints -join ' | ')
+        }
+        else {
+            ' No live Ghidra/analyzeHeadless process hints found.'
+        }
+        $waitMessage = ("Ghidra project {0} is locked by another process after attempt {1}; elapsed {2}; retrying in {3}s; timeout {4}.{5} See {6}." -f $ProjectName, $attempt, (Format-WaitElapsed -StartedUtc $startedUtc), $RetryDelaySeconds, (Format-LockTimeout -TimeoutMinutes $TimeoutMinutes), $processHintText, $LogPath)
+        Write-Warning $waitMessage
+        Add-Content -LiteralPath $LogPath -Encoding utf8 -Value ("--- {0} ---" -f $waitMessage)
         Start-Sleep -Seconds $RetryDelaySeconds
     }
 }
@@ -963,6 +1179,7 @@ try {
                 -Arguments $ghidraArgs `
                 -LogPath $logPath `
                 -ProjectName $projectName `
+                -ProjectDir $resolvedProjectDir `
                 -RetryDelaySeconds $ProjectLockRetryDelaySeconds `
                 -TimeoutMinutes $ProjectLockTimeoutMinutes
         }

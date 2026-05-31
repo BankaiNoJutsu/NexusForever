@@ -236,6 +236,36 @@ function Write-Info {
     Write-Host $Message -ForegroundColor Gray
 }
 
+function Invoke-NexusForeverBuild {
+    if (!(Get-Command dotnet -ErrorAction SilentlyContinue)) {
+        throw 'Required command ''dotnet'' was not found. Install the .NET SDK required by this repository.'
+    }
+
+    if (!$SkipServerLaunch) {
+        foreach ($server in $ServerProcesses) {
+            $executablePath = Join-Path $RepoRoot "Source\$($server.Project)\bin\$Configuration\$TargetFramework\$($server.Exe)"
+            if ((Test-Path -LiteralPath $executablePath -PathType Leaf) -and (Test-ShouldRestartServer -Server $server)) {
+                Stop-RunningProcessByPath -ExecutablePath $executablePath -DisplayName $server.Name
+            }
+        }
+    }
+
+    $solutionPath = Join-Path $RepoRoot 'Source\NexusForever.slnx'
+    if (!(Test-Path -LiteralPath $solutionPath -PathType Leaf)) {
+        $solutionPath = Join-Path $RepoRoot 'Source\NexusForever.sln'
+    }
+
+    if (!(Test-Path -LiteralPath $solutionPath -PathType Leaf)) {
+        throw "NexusForever solution was not found under $RepoRoot\Source."
+    }
+
+    Write-Info 'Building NexusForever because -SkipSetup skips Initialize-NexusForever.ps1 build phase.'
+    & dotnet build $solutionPath --configuration $Configuration
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet build failed with exit code $LASTEXITCODE."
+    }
+}
+
 $dependencyBootstrapScript = Join-Path $PSScriptRoot 'DependencyBootstrap.ps1'
 if (!(Test-Path -LiteralPath $dependencyBootstrapScript -PathType Leaf)) {
     throw "Dependency bootstrap script was not found: $dependencyBootstrapScript"
@@ -1226,6 +1256,10 @@ if ($SkipSetup -and ($MySqlProvisionedThisRun -or $RabbitMqProvisionedThisRun)) 
 if (!$SkipSetup) {
     Write-Section 'Setup'
     Invoke-NexusForeverSetup
+}
+else {
+    Write-Section 'Build'
+    Invoke-NexusForeverBuild
 }
 
 $assetInfo = Initialize-GameAssets
