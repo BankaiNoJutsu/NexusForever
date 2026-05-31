@@ -31,6 +31,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientStorefrontPurchaseCharacter purchase)
         {
+            log.LogInformation("StorefrontCatalogDiagnostics storefront character purchase request player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId} slot={PaymentCurrencySlot} amountBits={PurchaseMoneyAmountBits} option={PurchaseOptionId} extension={PurchaseExtensionId} target={Target}.",
+                session.Player?.Guid, session.Account?.Id, purchase.OfferId, purchase.CurrencyId, purchase.PaymentCurrencySlot, purchase.PurchaseMoneyAmountBits, purchase.PurchaseOptionId, purchase.PurchaseExtensionId, purchase.Target);
+
             if (!StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.Target))
             {
                 log.LogWarning("Rejecting storefront character purchase from player {PlayerGuid}: non-current target {Target}.",
@@ -43,6 +46,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 purchase.OfferId, purchase.CurrencyId,
                 accountItemIds =>
                 {
+                    log.LogInformation("StorefrontCatalogDiagnostics storefront character purchase delivery player={PlayerGuid} account={AccountId} itemCount={AccountItemCount} items=[{AccountItems}].",
+                        session.Player?.Guid, session.Account?.Id, accountItemIds.Count, string.Join(",", accountItemIds));
                     NetworkIdentity targetPlayerIdentity = StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session);
                     foreach (uint accountItemId in accountItemIds)
                         session.Account.InventoryManager.AddItem(accountItemId, targetPlayerIdentity);
@@ -77,6 +82,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public void HandleMessage(IWorldSession session, ClientStorefrontPurchaseAccount purchase)
         {
+            log.LogInformation("StorefrontCatalogDiagnostics storefront account purchase request player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId} slot={PaymentCurrencySlot} amountBits={PurchaseMoneyAmountBits} option={PurchaseOptionId} extension={PurchaseExtensionId} accountExtension={AccountPurchaseExtensionId} target={Target} accountTarget={AccountTarget} recipientLength={RecipientLength}.",
+                session.Player?.Guid, session.Account?.Id, purchase.OfferId, purchase.CurrencyId, purchase.PaymentCurrencySlot, purchase.PurchaseMoneyAmountBits, purchase.PurchaseOptionId, purchase.PurchaseExtensionId, purchase.AccountPurchaseExtensionId, purchase.Target, purchase.AccountTarget, purchase.RecipientName?.Length ?? 0);
+
             if (!StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.Target))
             {
                 log.LogDebug("Rejecting storefront account purchase from player {PlayerGuid}: non-current target {Target}, account target {AccountTarget}, recipient length {RecipientLength}.",
@@ -96,6 +104,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                     purchase.OfferId, purchase.CurrencyId,
                     accountItemIds =>
                     {
+                        log.LogInformation("StorefrontCatalogDiagnostics storefront account gift delivery player={PlayerGuid} account={AccountId} recipientAccount={RecipientAccountId} online={IsOnline} itemCount={AccountItemCount} items=[{AccountItems}].",
+                            session.Player?.Guid, session.Account?.Id, recipientAccountId, recipient != null, accountItemIds.Count, string.Join(",", accountItemIds));
                         DeliverStorefrontGift(session, recipientAccountId, recipient, recipientIdentity, accountItemIds);
                         StorefrontPurchaseHelper.SendAccountPurchaseSuccess(session);
                     },
@@ -107,6 +117,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 purchase.OfferId, purchase.CurrencyId,
                 accountItemIds =>
                 {
+                    log.LogInformation("StorefrontCatalogDiagnostics storefront account purchase delivery player={PlayerGuid} account={AccountId} itemCount={AccountItemCount} items=[{AccountItems}].",
+                        session.Player?.Guid, session.Account?.Id, accountItemIds.Count, string.Join(",", accountItemIds));
                     foreach (uint accountItemId in accountItemIds)
                         session.Account.InventoryManager.AddItem(accountItemId);
 
@@ -181,6 +193,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             Action<IReadOnlyList<uint>> deliverItems,
             string purchaseScope)
         {
+            log.LogInformation("StorefrontCatalogDiagnostics storefront {PurchaseScope} purchase validate player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId}.",
+                purchaseScope, session.Player?.Guid, session.Account?.Id, offerId, currencyId);
+
             if (session.Player == null)
             {
                 log.LogWarning("Rejecting storefront {PurchaseScope} purchase for offer {OfferId}: session has no player.",
@@ -262,6 +277,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             deliverItems(accountItemIds);
 
             StorePurchaseHistoryManager.RecordPurchase(session.Account.Id, offerId, currencyId, chargeAmount);
+
+            log.LogInformation("StorefrontCatalogDiagnostics storefront {PurchaseScope} purchase completed player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId} price={Price} accountItems={AccountItemCount}.",
+                purchaseScope, session.Player.Guid, session.Account.Id, offerId, currencyId, chargeAmount, accountItemIds.Count);
 
             log.LogDebug("Completed storefront {PurchaseScope} purchase for player {PlayerGuid}: offer {OfferId}, currency {CurrencyId}, price {Price}, account items {AccountItemCount}.",
                 purchaseScope, session.Player.Guid, offerId, currencyId, chargeAmount, accountItemIds.Count);

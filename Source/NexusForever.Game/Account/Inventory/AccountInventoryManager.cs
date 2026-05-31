@@ -120,6 +120,8 @@ namespace NexusForever.Game.Account.Inventory
             foreach (AccountItemCooldown cooldown in cooldowns.Values)
                 cooldown.Save(context);
 
+            dailyLoginRewardManager?.Save(context);
+
             if (!pendingItemsDirty && deletedPendingGroups.Count == 0 && deletedPendingItemIds.Count == 0)
                 return;
 
@@ -153,8 +155,6 @@ namespace NexusForever.Game.Account.Inventory
             pendingItemsDirty      = false;
             deletedPendingGroups.Clear();
             deletedPendingItemIds.Clear();
-
-            dailyLoginRewardManager?.Save(context);
         }
 
         public IAccountInventoryItem GetItem(ulong id)
@@ -375,6 +375,9 @@ namespace NexusForever.Game.Account.Inventory
 
         public void SendInitialPackets()
         {
+            log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: initial account packets inventoryItems={InventoryItemCount} inventory=[{InventoryItems}] pendingGroups={PendingGroupCount} pendingRows={PendingItemCount} pending=[{PendingGroups}] activeCooldowns={ActiveCooldownCount}.",
+                account.Id, items.Count, FormatInventoryItems(), pendingGroups.Count, CountPendingItems(), FormatPendingGroups(), BuildActiveCooldownList().Count);
+
             SendInventory();
             SendPendingItems();
             SendCooldowns();
@@ -393,25 +396,58 @@ namespace NexusForever.Game.Account.Inventory
 
         public void SendInventory()
         {
+            log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: ServerAccountItems rows={InventoryItemCount} inventory=[{InventoryItems}].",
+                account.Id, items.Count, FormatInventoryItems());
+
+            if (items.Count == 0)
+            {
+                log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: skipping empty ServerAccountItems list.", account.Id);
+                return;
+            }
+
+            var accountItems = items.Values
+                .OrderBy(i => i.Id)
+                .Select(i => i.Build())
+                .ToList();
+
+            var cacheAppend = new ServerAccountItemCacheListAppend
+            {
+                UnusedLeadingField = 0u
+            };
+            cacheAppend.AccountItems.AddRange(accountItems);
+
+            log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: ServerAccountItemCacheListAppend rows={InventoryItemCount} inventory=[{InventoryItems}].",
+                account.Id, accountItems.Count, FormatInventoryItems());
+            account.Session.EnqueueMessageEncrypted(cacheAppend);
+
             account.Session.EnqueueMessageEncrypted(new ServerAccountItems
             {
-                AccountItems = items.Values
-                    .OrderBy(i => i.Id)
-                    .Select(i => i.Build())
-                    .ToList()
+                AccountItems = accountItems
             });
         }
 
         public void SendPendingItems()
         {
+            log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: pending rows={PendingItemCount} groups={PendingGroupCount} pending=[{PendingGroups}].",
+                account.Id, CountPendingItems(), pendingGroups.Count, FormatPendingGroups());
+
+            List<ServerAccountItemsPending.PendingAccountItemGroup> pendingItems = pendingGroups.Values
+                .SelectMany(g => g)
+                .OrderBy(i => i.Group, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(i => i.Id)
+                .Select(i => i.Build())
+                .ToList();
+
+            if (pendingItems.Count == 0)
+            {
+                log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: sending ServerAccountPendingItemsClear instead of empty ServerAccountItemsPending list.", account.Id);
+                account.Session.EnqueueMessageEncrypted(new ServerAccountPendingItemsClear());
+                return;
+            }
+
             account.Session.EnqueueMessageEncrypted(new ServerAccountItemsPending
             {
-                PendingGroups = pendingGroups.Values
-                    .SelectMany(g => g)
-                    .OrderBy(i => i.Group, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(i => i.Id)
-                    .Select(i => i.Build())
-                    .ToList()
+                PendingGroups = pendingItems
             });
         }
 
@@ -449,14 +485,50 @@ namespace NexusForever.Game.Account.Inventory
 
         public void SendCooldowns()
         {
-            List<ServerAccountItemCooldowns.Cooldown> activeCooldowns = cooldowns.Values
-                .OrderBy(c => c.CooldownGroupId)
-                .Select(c => c.BuildListEntry())
-                .Where(c => c.CooldownInSeconds != 0u)
-                .ToList();
+            List<ServerAccountItemCooldowns.Cooldown> activeCooldowns = BuildActiveCooldownList();
+
+            log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: ServerAccountItemCooldowns activeRows={CooldownCount} cooldowns=[{Cooldowns}].",
+                account.Id, activeCooldowns.Count, FormatCooldowns(activeCooldowns));
 
             if (activeCooldowns.Count != 0)
                 account.Session.EnqueueMessageEncrypted(new ServerAccountItemCooldowns(activeCooldowns));
+        }
+
+        private int CountPendingItems()
+        {
+            return pendingGroups.Values.Sum(group => group.Count);
+        }
+
+        private string FormatInventoryItems()
+        {
+            return items.Count == 0
+                ? "none"
+                : string.Join(",", items.Values
+                    .OrderBy(item => item.Id)
+                    .Select(item => $"{item.Id}:{item.AccountItemId}:{item.ClaimState}"));
+        }
+
+        private string FormatPendingGroups()
+        {
+            return pendingGroups.Count == 0
+                ? "none"
+                : string.Join(",", pendingGroups
+                    .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(group => $"{group.Key}[{string.Join("|", group.Value.OrderBy(pendingItem => pendingItem.Id).Select(pendingItem => $"{pendingItem.Id}:{pendingItem.AccountItemId}:{pendingItem.ClaimState}"))}]"));
+        }
+
+        private List<ServerAccountItemCooldowns.Cooldown> BuildActiveCooldownList()
+        {
+            return cooldowns.Values
+                .OrderBy(cooldown => cooldown.CooldownGroupId)
+                .Select(cooldown => cooldown.BuildListEntry())
+                .Where(cooldown => cooldown.CooldownInSeconds != 0u)
+                .ToList();
+        }
+
+        private static string FormatCooldowns(IEnumerable<ServerAccountItemCooldowns.Cooldown> activeCooldowns)
+        {
+            return string.Join(",", activeCooldowns.Select(cooldown => $"{cooldown.AccountItemCooldownGroup}:{cooldown.CooldownInSeconds}"));
         }
 
         public IEnumerator<IAccountInventoryItem> GetEnumerator()
@@ -487,6 +559,9 @@ namespace NexusForever.Game.Account.Inventory
 
         private void SendItemAdd(IAccountInventoryItem item)
         {
+            log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: sending account item add inventoryId={InventoryId} accountItemId={AccountItemId} claimState={ClaimState} hasTarget={HasTargetPlayerIdentity} target={TargetPlayerIdentity}.",
+                account.Id, item.Id, item.AccountItemId, item.ClaimState, item.HasTargetPlayerIdentity, item.TargetPlayerIdentity);
+
             account.Session.EnqueueMessageEncrypted(new ServerAccountItemCacheAdd
             {
                 UnusedLeadingField = 0u,
@@ -508,6 +583,9 @@ namespace NexusForever.Game.Account.Inventory
 
         private AccountOperationResult SendAccountOperationResult(AccountOperation operation, AccountOperationResult result)
         {
+            log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: sending ServerAccountOperationResult operation={Operation} result={Result}.",
+                account.Id, operation, result);
+
             account.Session.EnqueueMessageEncrypted(new ServerAccountOperationResult
             {
                 Operation = operation,

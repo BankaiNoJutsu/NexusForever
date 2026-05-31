@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusForever.Database;
 using NexusForever.Database.Character;
@@ -8,6 +9,7 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account.Reward;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Message;
@@ -23,15 +25,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
 
         private readonly IDatabaseManager databaseManager;
         private readonly IRealmContext realmContext;
+        private readonly IGlobalStorefrontManager globalStorefrontManager;
 
         public CharacterListManager(
             ILogger<CharacterListHandler> log,
             IDatabaseManager databaseManager,
-            IRealmContext realmContext)
+            IRealmContext realmContext,
+            IGlobalStorefrontManager globalStorefrontManager)
         {
             this.log = log;
             this.databaseManager = databaseManager;
             this.realmContext = realmContext;
+            this.globalStorefrontManager = globalStorefrontManager;
         }
 
         public void SendCharacterListPackets(IWorldSession session)
@@ -39,24 +44,40 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
             if (session.IsQueued == true)
                 return;
 
+            QueueCharacterListPackets(session,
+                databaseManager.GetDatabase<CharacterDatabase>().GetCharacters(session.Account.Id));
+        }
+
+        internal void QueueCharacterListPackets(IWorldSession session, Task<List<CharacterModel>> loadCharactersTask)
+        {
+            // Retail can request the storefront before the character query completes, so
+            // send the prerequisite account-state packets before the async character list.
+            session.HasSentCharacterListPackets = false;
+            session.HasSentPregameAccountPackets = false;
+            globalStorefrontManager.ClearCatalogDeliveryState(session.Id, session.Account?.Id ?? 0u);
+            SendPregameAccountPackets(session);
+            session.HasSentPregameAccountPackets = true;
+
             session.Events.EnqueueEvent(new TaskGenericEvent<List<CharacterModel>>(
-                databaseManager.GetDatabase<CharacterDatabase>().GetCharacters(session.Account.Id),
+                loadCharactersTask,
                 characters =>
                 {
                     session.Characters.Clear();
                     session.Characters.AddRange(characters.Where(c => c.DeleteTime == null));
 
-                    foreach (IWritable packet in GetPackets(session))
+                    foreach (IWritable packet in GetCharacterListPackets(session))
                         session.EnqueueMessageEncrypted(packet);
+
+                    session.HasSentCharacterListPackets = true;
                 }));
         }
 
-        private IEnumerable<IWritable> GetPackets(IWorldSession session)
+        internal static void SendPregameAccountPackets(IWorldSession session)
         {
             session.Account.CurrencyManager.SendCharacterListPacket();
             session.Account.GenericUnlockManager.SendUnlockList();
 
-            yield return new ServerAccountEntitlements
+            session.EnqueueMessageEncrypted(new ServerAccountEntitlements
             {
                 Entitlements = session.Account.EntitlementManager
                     .Select(e => new ServerAccountEntitlements.AccountEntitlementInfo
@@ -65,12 +86,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                         Count       = e.Amount
                     })
                     .ToList()
-            };
+            });
 
-            yield return new ServerAccountTier
+            session.EnqueueMessageEncrypted(new ServerAccountTier
             {
                 Tier = session.Account.AccountTier
-            };
+            });
+        }
+
+        private IEnumerable<IWritable> GetCharacterListPackets(IWorldSession session)
+        {
 
             ServerCharacterList serverCharacterList = CreateServerCharacterList(
                 session.Account.RewardPropertyManager,

@@ -339,6 +339,74 @@ public class AccountInventoryPendingGroupTests
         }
     }
 
+    [Fact]
+    public void SendPendingItems_WithoutPendingGroups_EmitsClearInsteadOfEmptyList()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var environment = CreateEnvironment(CreateCharacter(accountId: 1001u, characterId: 101ul, name: "Source"));
+        LegacyServiceProvider.Provider = environment.Provider;
+
+        try
+        {
+            environment.Source.Manager.SendPendingItems();
+
+            IReadOnlyList<object> messages = GetMessages(environment.Source.SessionProxy);
+            Assert.Contains(messages, message => message is ServerAccountPendingItemsClear);
+            Assert.DoesNotContain(messages, message => message is ServerAccountItemsPending pendingList && pendingList.PendingGroups.Count == 0);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendInventory_WithoutAccountItems_DoesNotEmitEmptyList()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var environment = CreateEnvironment(CreateCharacter(accountId: 1001u, characterId: 101ul, name: "Source"));
+        LegacyServiceProvider.Provider = environment.Provider;
+
+        try
+        {
+            environment.Source.Manager.SendInventory();
+
+            IReadOnlyList<object> messages = GetMessages(environment.Source.SessionProxy);
+            Assert.DoesNotContain(messages, message => message is ServerAccountItemCacheListAppend cacheAppend && cacheAppend.AccountItems.Count == 0);
+            Assert.DoesNotContain(messages, message => message is ServerAccountItems accountItems && accountItems.AccountItems.Count == 0);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendInventory_WithAccountItems_EmitsCacheAppendBeforeInventoryList()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        var environment = CreateEnvironment(CreateCharacter(accountId: 1001u, characterId: 101ul, name: "Source"));
+        LegacyServiceProvider.Provider = environment.Provider;
+
+        try
+        {
+            environment.Source.Manager.AddItem(AccountItemId, notify: false);
+            environment.Source.Manager.SendInventory();
+
+            IReadOnlyList<object> messages = GetMessages(environment.Source.SessionProxy);
+            ServerAccountItemCacheListAppend cacheAppend = Assert.Single(messages.OfType<ServerAccountItemCacheListAppend>());
+            ServerAccountItems accountItems = Assert.Single(messages.OfType<ServerAccountItems>());
+
+            Assert.Equal(AccountItemId, Assert.Single(cacheAppend.AccountItems).ItemId);
+            Assert.Equal(AccountItemId, Assert.Single(accountItems.AccountItems).ItemId);
+            Assert.True(messages.ToList().IndexOf(cacheAppend) < messages.ToList().IndexOf(accountItems));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     private static TestEnvironment CreateEnvironment(params TestCharacter[] characters)
     {
         return CreateEnvironmentWithOnlineAccounts(characters.Select(c => c.AccountId).ToArray(), characters);
@@ -450,6 +518,9 @@ public class AccountInventoryPendingGroupTests
                     pendingGroups.Clear();
                     pendingGroups.AddRange(pendingList.PendingGroups);
                     break;
+                case ServerAccountPendingItemsClear:
+                    pendingGroups.Clear();
+                    break;
                 case ServerAccountPendingItemAdd pendingAdd:
                     pendingGroups.Add(pendingAdd.PendingGroup);
                     break;
@@ -460,6 +531,13 @@ public class AccountInventoryPendingGroupTests
         }
 
         return pendingGroups;
+    }
+
+    private static IReadOnlyList<object> GetMessages(RecordingDispatchProxy<IGameSession> sessionProxy)
+    {
+        return sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(invocation => invocation.Arguments[0])
+            .ToList();
     }
 
     private static TMessage GetLastMessage<TMessage>(RecordingDispatchProxy<IGameSession> sessionProxy) where TMessage : class

@@ -16,6 +16,7 @@ namespace NexusForever.Database.Auth
     public class AuthDatabase : IDatabase
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+        private static readonly object storePurchaseHistoryLock = new();
 
         private IConnectionString config;
 
@@ -360,14 +361,16 @@ namespace NexusForever.Database.Auth
 
         public void AddStorePurchaseHistory(AccountStorePurchaseHistoryModel model)
         {
-            using var context = new AuthContext(config);
-            ulong nextId = context.AccountStorePurchaseHistory
-                .Where(h => h.AccountId == model.AccountId)
-                .Select(h => (ulong?)h.Id)
-                .Max() ?? 0ul;
-            model.Id = nextId + 1ul;
-            context.AccountStorePurchaseHistory.Add(model);
-            context.SaveChanges();
+            lock (storePurchaseHistoryLock)
+            {
+                using var context = new AuthContext(config);
+                ulong nextId = context.AccountStorePurchaseHistory
+                    .Select(h => (ulong?)h.Id)
+                    .Max() ?? 0ul;
+                model.Id = nextId + 1ul;
+                context.AccountStorePurchaseHistory.Add(model);
+                context.SaveChanges();
+            }
         }
 
         public List<AccountStorePurchaseHistoryModel> GetStorePurchaseHistory(uint accountId, int maxRows)

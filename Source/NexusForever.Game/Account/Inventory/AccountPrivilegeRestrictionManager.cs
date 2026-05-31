@@ -13,8 +13,8 @@ namespace NexusForever.Game.Account.Inventory
 
             account.Session.EnqueueMessageEncrypted(new ServerAccountPrivilegeRestrictionUpdate
             {
-                UInt3Value = (uint)restrictionType,
-                FloatValue = active ? durationDays : 0f
+                RestrictionType = (uint)restrictionType,
+                DurationDays    = active ? durationDays : 0f
             });
         }
 

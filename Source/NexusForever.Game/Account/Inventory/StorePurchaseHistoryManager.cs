@@ -4,12 +4,16 @@ using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Network.World.Message.Model;
+using NLog;
 
 namespace NexusForever.Game.Account.Inventory
 {
     public static class StorePurchaseHistoryManager
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
         private const int MaxHistoryRows = 50;
+        private const uint UnresolvedPurchaseHistorySubType = 0u;
 
         public static void RecordPurchase(uint accountId, uint offerId, ushort currencyId, ulong price)
         {
@@ -36,21 +40,31 @@ namespace NexusForever.Game.Account.Inventory
                 return;
 
             var message = new ServerStorePurchaseHistoryReady();
+
             AuthDatabase authDatabase = TryGetAuthDatabase();
             if (authDatabase == null)
             {
+                log.Info($"StorefrontCatalogDiagnostics account {account.Id}: no auth database available; sending empty ServerStorePurchaseHistoryReady.");
                 account.Session.EnqueueMessageEncrypted(message);
                 return;
             }
 
-            foreach (AccountStorePurchaseHistoryModel row in authDatabase.GetStorePurchaseHistory(account.Id, MaxHistoryRows))
+            List<AccountStorePurchaseHistoryModel> rows = authDatabase.GetStorePurchaseHistory(account.Id, MaxHistoryRows);
+            if (rows.Count == 0)
+            {
+                log.Info($"StorefrontCatalogDiagnostics account {account.Id}: purchaseHistoryRows=0; sending empty ServerStorePurchaseHistoryReady.");
+                account.Session.EnqueueMessageEncrypted(message);
+                return;
+            }
+
+            foreach (AccountStorePurchaseHistoryModel row in rows)
             {
                 message.Rows.Add(new ServerStorePurchaseHistoryReady.Row
                 {
                     Value0      = row.OfferId,
                     Value1      = row.Price,
-                    UInt5Value  = 0u,
-                    UInt3Value  = row.CurrencyId,
+                    UInt5Value  = row.CurrencyId,
+                    UInt3Value  = UnresolvedPurchaseHistorySubType,
                     FloatValue  = row.Price,
                     StringValue = string.Empty,
                     Flag        = false,
@@ -58,6 +72,8 @@ namespace NexusForever.Game.Account.Inventory
                     Value8      = 0u
                 });
             }
+
+            log.Info($"StorefrontCatalogDiagnostics account {account.Id}: sending ServerStorePurchaseHistoryReady rows={message.Rows.Count} offerIds=[{string.Join(",", rows.Select(row => row.OfferId))}].");
 
             account.Session.EnqueueMessageEncrypted(message);
         }

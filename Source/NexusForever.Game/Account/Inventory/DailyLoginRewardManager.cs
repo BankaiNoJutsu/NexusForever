@@ -76,7 +76,8 @@ namespace NexusForever.Game.Account.Inventory
             if (rewardsAvailable == 0u)
                 return AccountOperationResult.AlreadyClaimed;
 
-            DailyLoginRewardEntry rewardEntry = GetRewardForDay(loginDaysTotal);
+            uint rewardLoginDay = GetNextClaimLoginDay();
+            DailyLoginRewardEntry rewardEntry = GetRewardForDay(rewardLoginDay);
             if (rewardEntry == null || rewardEntry.RewardObjectValue == 0u)
                 return AccountOperationResult.GenericFail;
 
@@ -113,12 +114,22 @@ namespace NexusForever.Game.Account.Inventory
             {
                 Value0     = loginDaysTotal,
                 Value1     = rewardsAvailable,
-                Value2     = lastRewardItemKey,
+                Value2     = GetLastClaimedLoginDay(),
                 Value3     = 0u,
                 Value4     = secondsUntilNextKey,
                 FloatValue = NextRewardDayDuration,
                 UInt3Value = premiumKeyStatus
             };
+        }
+
+        private uint GetNextClaimLoginDay()
+        {
+            return Math.Min(GetLastClaimedLoginDay() + 1u, loginDaysTotal);
+        }
+
+        private uint GetLastClaimedLoginDay()
+        {
+            return rewardsAvailable >= loginDaysTotal ? 0u : loginDaysTotal - rewardsAvailable;
         }
 
         private static DailyLoginRewardEntry GetRewardForDay(uint loginDay)
