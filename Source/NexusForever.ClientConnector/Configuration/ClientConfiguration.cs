@@ -4,6 +4,7 @@
     {
         public string HostName { get; set; }
         public string Language { get; set; }
+        public int RealmDataCenterId { get; set; } = 6;
         public string[] ExtraArguments { get; set; } = System.Array.Empty<string>();
     }
 }

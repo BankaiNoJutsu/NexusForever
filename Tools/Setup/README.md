@@ -62,10 +62,11 @@ use the auth/world restart wrapper instead of the full setup path:
   -PromptForRootPassword
 ```
 
-That wrapper rebuilds `NexusForever.AuthServer` and
-`NexusForever.WorldServer`, restarts only those two processes if they are
-already running, reuses the other local server processes when possible, and
-then launches the client through the same runtime-prep flow.
+That wrapper rebuilds `NexusForever.AuthServer`, `NexusForever.WorldServer`,
+and the runtime script assemblies loaded by WorldServer, restarts only those
+two processes if they are already running, reuses the other local server
+processes when possible, and then launches the client through the same
+runtime-prep flow.
 
 If you want the same reuse behavior from the base launcher, pass
 `-RestartAuthWorldOnly`. When you pass `-RestartExistingServers:$false`
@@ -75,8 +76,11 @@ processes and only starts the ones that are missing.
 To launch the client with extra WildStar command-line arguments, pass
 `-ClientArguments`. For the built-in client console discovered in the retail
 binary, prefer `-EnableClientConsole`, which appends `-Console` for you without
-relying on a dash-prefixed string argument. On a typical US layout, the client
-checks `Alt` plus the backtick key in game to toggle the console window.
+relying on a dash-prefixed string argument. The client checks `Alt` plus the
+hard-coded virtual key `0xC0` in game to toggle the console window, so the
+physical key varies by keyboard layout. On a typical US layout this is the
+backtick key; on a Swiss layout it is the key that produces `¨`, `!`, or `]`
+depending on modifiers.
 
 ```powershell
 .\Tools\Setup\Start-NexusForeverLocal.ps1 `
@@ -84,6 +88,48 @@ checks `Alt` plus the backtick key in game to toggle the console window.
   -EnableClientConsole `
   -PromptForRootPassword
 ```
+
+### Retail client file logging (`CLog`)
+
+`-LogLevel` on the setup scripts configures **NexusForever server** NLog output
+only. The retail WildStar client has a separate logging system (`CLog`) controlled
+by `-log*` command-line switches parsed at startup.
+
+Prefer `-EnableClientLogging`, which appends `-logFile`, `-logFlush`, and
+`-logDefaultLevel` for you. Combine with `-EnableClientConsole` when you also
+want the in-game dev console:
+
+```powershell
+.\Tools\Setup\Start-NexusForeverLocal.ps1 `
+  -ClientDirectory "D:\Games\WildStar" `
+  -EnableClientConsole `
+  -EnableClientLogging `
+  -PromptForRootPassword
+```
+
+Optional tuning:
+
+| Switch | Effect |
+|--------|--------|
+| `-ClientLogLevel Trace` | Most verbose client threshold (`Error` … `Trace`; default `Trace`) |
+| `-ClientLogStdout` | Also mirror CLog output to stdout |
+| `-ClientLogDir "D:\WildStarLogs"` | Override default `<install>\Logs` |
+| `-ClientArguments '-logNetwork','3'` | Pass any retail `-log*` switch verbatim |
+
+Staged switches are written to `Client64\config.json` as `ExtraArguments` and
+reused on later runs, the same way as `-EnableClientConsole`. Pass an explicit
+override switch when you want to replace the staged profile.
+
+After launch, tail client output:
+
+```powershell
+Get-ChildItem "D:\Games\WildStar\Logs\*.txt" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Get-Content -Wait -Tail 200
+Get-ChildItem "D:\Games\WildStar\Errors\WildStar64*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Get-Content -Wait -Tail 200
+```
+
+Evidence-backed switch names, severity levels, init chain, and the distinction
+between `CLog`, `DebugLogService`, and `Errors\` crash logs are documented in
+[`Decomp/Analysis/CLIENT_LOGGING.md`](../Decomp/Analysis/CLIENT_LOGGING.md).
 
 `-ClientArguments '-Console'` still works as a generic extra argument path, but
 `-EnableClientConsole` is the preferred dedicated switch for this case.
@@ -93,7 +139,8 @@ you do not need to repeat `-EnableClientConsole` unless you want to replace the
 staged client arguments explicitly.
 
 If your keyboard layout does not map the client's hard-coded toggle key cleanly,
-run the helper below after the WildStar window is open. It posts
+or you do not want to guess which physical key corresponds to `0xC0`, run the
+helper below after the WildStar window is open. It posts
 WM_SYSKEYDOWN and WM_SYSKEYUP for virtual key `0xC0` directly to the running
 client window instead of relying on the physical key mapping.
 
@@ -136,6 +183,29 @@ the WildStar `Client64` directory, and then launches that staged copy from
 there. If the PowerShell session is not already
 elevated, Windows should prompt for elevation because the official guide says
 the client connector should be run as Administrator.
+
+The local launch path also writes a `RealmDataCenterId` into the staged client
+config and defaults it to `6`. That matches the localhost or offline
+`RealmDataCenter` row from the extracted client data. Earlier local launches
+hardcoded `9`, which points `StoreBannerDataUrlTemplate` at the retired retail
+host `http://static.wildstar-online.com/banners/` and can surface the client
+log `malformed store banner data: 80072ee7` plus the store UI fallback. Both
+the staged `NexusForever.ClientConnector` flow and the direct `WildStar64.exe`
+fallback now use the same `-RealmDataCenterId` parameter so the two local
+launch routes stay aligned. Override it only when you intentionally need a
+different extracted client table row.
+
+When the client still fails in a way the server logs do not explain, check the
+retail client's `Logs\*.txt` CLog files and `Errors\WildStar64*.log` reports
+under the WildStar install root (one level above `Client64`). Enable file logging
+with `-EnableClientLogging` or see [`Decomp/Analysis/CLIENT_LOGGING.md`](../Decomp/Analysis/CLIENT_LOGGING.md).
+Those logs can preserve useful client-side diagnostics even for local emulator
+sessions. For example,
+`I:\WildStar\Errors\WildStar64.16042.Error.00007FF77A697597.93f3cb35.DAN.260530.215616.log`
+captured `Error: Message size exceeds remaining!`, `Malformed Packet:
+unPackFromStreamFn failure`, and `Invalid or foreign Message Id #988` for a
+bad world-stream decode, which is much more actionable than a generic launcher
+failure.
 
 If you intentionally need different values for `-AuthHost` and `-PatcherHost`,
 the script falls back to a direct `WildStar64.exe` launch because the current

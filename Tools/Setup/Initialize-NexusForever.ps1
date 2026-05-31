@@ -160,9 +160,9 @@ $GameDatabases = [ordered]@{
 }
 
 $LocalAccountRoleIds = [ordered]@{
-    Player        = 1u
-    GameMaster    = 2u
-    Administrator = 3u
+    Player        = 1
+    GameMaster    = 2
+    Administrator = 3
 }
 
 function Get-LocalLoginAccounts {

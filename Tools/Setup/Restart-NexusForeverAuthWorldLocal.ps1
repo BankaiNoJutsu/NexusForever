@@ -1,13 +1,13 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-Rebuilds Auth and World, reuses the rest of the local runtime, and launches WildStar.
+Rebuilds Auth, World, and runtime script assemblies, reuses the rest of the local runtime, and launches WildStar.
 
 .DESCRIPTION
 Use this for the fast local auth/world edit loop after the repo has already been
 initialized once. The script:
 
-* rebuilds NexusForever.AuthServer and NexusForever.WorldServer
+* rebuilds NexusForever.AuthServer, NexusForever.WorldServer, and runtime script assemblies loaded by WorldServer
 * kills any running NexusForever.AuthServer and NexusForever.WorldServer processes before rebuilding
 * reuses other running local server processes and starts any missing ones
 * launches the WildStar client through the existing local launcher flow only when the client is not already running
@@ -48,9 +48,15 @@ param(
 
     [string[]] $ClientArguments = @(),
     [switch] $EnableClientConsole,
+    [switch] $EnableClientLogging,
+    [ValidateSet('Error', 'Warn', 'Info', 'Debug', 'Trace')]
+    [string] $ClientLogLevel = 'Trace',
+    [switch] $ClientLogStdout,
+    [string] $ClientLogDir = '',
     [string] $ClientLanguage = 'en',
     [string] $AuthHost = '127.0.0.1',
     [string] $PatcherHost = '',
+    [int] $RealmDataCenterId = 6,
     [int] $WaitTimeoutSeconds = 120,
 
     [string] $MySqlExe = 'mysql',
@@ -179,6 +185,14 @@ function Invoke-ProjectBuild {
     Invoke-DotNet -Arguments @('build', $ProjectPath, '--configuration', $Configuration, '--framework', $TargetFramework)
 }
 
+function Get-WorldRuntimeScriptProjectPaths {
+    Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'Source') -Directory -Filter 'NexusForever.Script.*' |
+        Where-Object { $_.Name -ne 'NexusForever.Script' } |
+        ForEach-Object { Join-Path $_.FullName "$($_.Name).csproj" } |
+        Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
+        Sort-Object
+}
+
 $RepoRoot = [System.IO.Path]::GetFullPath($RepoRoot)
 $launcherScript = Join-Path $RepoRoot 'Tools\Setup\Start-NexusForeverLocal.ps1'
 if (!(Test-Path -LiteralPath $launcherScript -PathType Leaf)) {
@@ -199,6 +213,9 @@ Stop-RunningProcessByPath -ExecutablePath $worldServerExecutable -DisplayName 'N
 Write-Section 'Build'
 Invoke-ProjectBuild -ProjectPath (Join-Path $RepoRoot 'Source\NexusForever.AuthServer\NexusForever.AuthServer.csproj')
 Invoke-ProjectBuild -ProjectPath (Join-Path $RepoRoot 'Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj')
+foreach ($scriptProjectPath in Get-WorldRuntimeScriptProjectPaths) {
+    Invoke-ProjectBuild -ProjectPath $scriptProjectPath
+}
 
 $skipClientLaunchBecauseRunning = $false
 if (!$SkipClientLaunch) {
@@ -227,6 +244,7 @@ $launcherParameters = @{
     MapGeneratorParallelism             = $MapGeneratorParallelism
     ClientLanguage                      = $ClientLanguage
     AuthHost                            = $AuthHost
+    RealmDataCenterId                   = $RealmDataCenterId
     WaitTimeoutSeconds                  = $WaitTimeoutSeconds
     MySqlExe                            = $MySqlExe
     MySqlHost                           = $MySqlHost
@@ -278,6 +296,22 @@ if ($OverwriteConfig) {
 
 if ($EnableClientConsole) {
     $launcherParameters.EnableClientConsole = $true
+}
+
+if ($EnableClientLogging) {
+    $launcherParameters.EnableClientLogging = $true
+}
+
+if ($PSBoundParameters.ContainsKey('ClientLogLevel')) {
+    $launcherParameters.ClientLogLevel = $ClientLogLevel
+}
+
+if ($ClientLogStdout) {
+    $launcherParameters.ClientLogStdout = $true
+}
+
+if ($PSBoundParameters.ContainsKey('ClientLogDir')) {
+    $launcherParameters.ClientLogDir = $ClientLogDir
 }
 
 if ($PromptForRootPassword) {

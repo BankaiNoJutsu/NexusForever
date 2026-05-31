@@ -62,7 +62,8 @@ namespace NexusForever.ClientConnector
             if (!File.Exists(client))
                 client = "WildStar32.exe";
 
-            string commandLine = $"/auth {config.HostName} /authNc {config.HostName} /lang {config.Language} /patcher {config.HostName} /SettingsKey WildStar /realmDataCenterId 9";
+            int realmDataCenterId = config.RealmDataCenterId > 0 ? config.RealmDataCenterId : 6;
+            string commandLine = $"/auth {config.HostName} /authNc {config.HostName} /lang {config.Language} /patcher {config.HostName} /SettingsKey WildStar /realmDataCenterId {realmDataCenterId}";
             string extraArguments = BuildArgumentList(config.ExtraArguments);
             if (!string.IsNullOrWhiteSpace(extraArguments))
                 commandLine = $"{commandLine} {extraArguments}";

@@ -30,6 +30,13 @@ default. Pass -MapGeneratorParallelism to override it.
   -ExistingMapDirectory "D:\WildStarAssets\map" `
   -ClientDirectory "D:\Games\WildStar" `
   -SkipSetup
+
+.EXAMPLE
+.\Tools\Setup\Start-NexusForeverLocal.ps1 `
+  -ClientDirectory "D:\Games\WildStar" `
+  -EnableClientConsole `
+  -EnableClientLogging `
+  -PromptForRootPassword
 #>
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '')]
@@ -67,9 +74,15 @@ param(
 
     [string[]] $ClientArguments = @(),
     [switch] $EnableClientConsole,
+    [switch] $EnableClientLogging,
+    [ValidateSet('Error', 'Warn', 'Info', 'Debug', 'Trace')]
+    [string] $ClientLogLevel = 'Trace',
+    [switch] $ClientLogStdout,
+    [string] $ClientLogDir = '',
     [string] $ClientLanguage = 'en',
     [string] $AuthHost = '127.0.0.1',
     [string] $PatcherHost = '',
+    [int] $RealmDataCenterId = 6,
     [int] $WaitTimeoutSeconds = 120,
 
     [string] $MySqlExe = 'mysql',
@@ -110,7 +123,15 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$ExplicitClientArgumentsOverrideRequested = $PSBoundParameters.ContainsKey('ClientArguments') -or $PSBoundParameters.ContainsKey('EnableClientConsole')
+
+$wildStarClientLaunchScript = Join-Path $PSScriptRoot 'WildStarClientLaunch.ps1'
+if (!(Test-Path -LiteralPath $wildStarClientLaunchScript -PathType Leaf)) {
+    throw "WildStar client launch helper was not found: $wildStarClientLaunchScript"
+}
+
+. $wildStarClientLaunchScript
+
+$ExplicitClientArgumentsOverrideRequested = Test-WildStarClientArgumentOverrideRequested -BoundParameters $PSBoundParameters
 
 $GameDatabases = [ordered]@{
     Auth       = 'nexus_forever_auth'
@@ -122,9 +143,9 @@ $GameDatabases = [ordered]@{
 }
 
 $LocalAccountRoleIds = [ordered]@{
-    Player        = 1u
-    GameMaster    = 2u
-    Administrator = 3u
+    Player        = 1
+    GameMaster    = 2
+    Administrator = 3
 }
 
 function Get-LocalLoginAccounts {
@@ -1063,6 +1084,7 @@ function Write-ClientConnectorConfig {
         [string] $ClientDirectory,
         [string] $HostName,
         [string] $Language,
+        [int] $RealmDataCenterId = 6,
         [string[]] $ExtraArguments = @()
     )
 
@@ -1070,63 +1092,11 @@ function Write-ClientConnectorConfig {
     [pscustomobject]@{
         HostName       = $HostName
         Language       = $Language
+        RealmDataCenterId = $RealmDataCenterId
         ExtraArguments = @($ExtraArguments | Where-Object { ![string]::IsNullOrWhiteSpace($_) })
     } | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $configPath -Encoding utf8
 
     (Resolve-Path -LiteralPath $configPath).Path
-}
-
-function Get-ConfiguredClientArguments {
-    param([string] $ClientDirectory)
-
-    if ([string]::IsNullOrWhiteSpace($ClientDirectory)) {
-        return @()
-    }
-
-    $configPath = Join-Path $ClientDirectory 'config.json'
-    if (!(Test-Path -LiteralPath $configPath -PathType Leaf)) {
-        return @()
-    }
-
-    try {
-        $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json -ErrorAction Stop
-    }
-    catch {
-        Write-Warning "Failed to read staged client arguments from $configPath. $($_.Exception.Message)"
-        return @()
-    }
-
-    if (($null -eq $config) -or ($null -eq $config.ExtraArguments)) {
-        return @()
-    }
-
-    @($config.ExtraArguments | Where-Object { ![string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
-}
-
-function Get-RequestedClientArguments {
-    $effectiveArguments = @($ClientArguments | Where-Object { ![string]::IsNullOrWhiteSpace($_) })
-
-    if ($EnableClientConsole) {
-        $effectiveArguments += '-Console'
-    }
-
-    @($effectiveArguments | Select-Object -Unique)
-}
-
-function Get-EffectiveClientArguments {
-    param([string] $ClientDirectory)
-
-    $requestedArguments = @(Get-RequestedClientArguments)
-    if ($ExplicitClientArgumentsOverrideRequested) {
-        return $requestedArguments
-    }
-
-    $configuredArguments = @(Get-ConfiguredClientArguments -ClientDirectory $ClientDirectory)
-    if ($configuredArguments.Count -gt 0) {
-        return $configuredArguments
-    }
-
-    return $requestedArguments
 }
 
 function Start-WildStarClient {
@@ -1146,11 +1116,23 @@ function Start-WildStarClient {
     }
 
     $clientDirectoryPath = Split-Path -Parent $ExecutablePath
-    $effectiveClientArguments = @(Get-EffectiveClientArguments -ClientDirectory $clientDirectoryPath)
+    $effectiveClientArguments = @(Get-WildStarEffectiveClientArguments `
+        -ClientDirectory $clientDirectoryPath `
+        -ClientArguments $ClientArguments `
+        -EnableClientConsole:$EnableClientConsole `
+        -EnableClientLogging:$EnableClientLogging `
+        -ClientLogLevel $ClientLogLevel `
+        -ClientLogStdout:$ClientLogStdout `
+        -ClientLogDir $ClientLogDir `
+        -ExplicitOverrideRequested $ExplicitClientArgumentsOverrideRequested)
     $sharedHost = [string]::Equals($resolvedPatcherHost, $AuthHost, [System.StringComparison]::OrdinalIgnoreCase)
 
     if ((-not $ExplicitClientArgumentsOverrideRequested) -and ($effectiveClientArguments.Count -gt 0)) {
         Write-Info "Reusing staged client arguments: $($effectiveClientArguments -join ' ')"
+    }
+
+    if ($effectiveClientArguments -contains '-logFile') {
+        Write-WildStarClientLoggingHint -ClientDirectory $clientDirectoryPath
     }
 
     if ($sharedHost) {
@@ -1161,7 +1143,7 @@ function Start-WildStarClient {
     }
 
     if ($clientConnectorExecutable -and $sharedHost) {
-        $configPath = Write-ClientConnectorConfig -ClientDirectory $clientDirectoryPath -HostName $AuthHost -Language $ClientLanguage -ExtraArguments $effectiveClientArguments
+        $configPath = Write-ClientConnectorConfig -ClientDirectory $clientDirectoryPath -HostName $AuthHost -Language $ClientLanguage -RealmDataCenterId $RealmDataCenterId -ExtraArguments $effectiveClientArguments
         $clientConnectorParameters = @{
             FilePath         = $clientConnectorExecutable
             WorkingDirectory = $clientDirectoryPath
@@ -1198,7 +1180,7 @@ function Start-WildStarClient {
         '/lang', $ClientLanguage,
         '/patcher', $resolvedPatcherHost,
         '/SettingsKey', 'WildStar',
-        '/realmDataCenterId', '9'
+        '/realmDataCenterId', $RealmDataCenterId.ToString()
     )
     $arguments += $effectiveClientArguments
 

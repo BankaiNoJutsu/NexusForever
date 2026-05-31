@@ -1347,13 +1347,17 @@ concrete runtime surface.
     $raidEventTargets | Set-Content -Path (Join-Path $bundleDirectory 'lws-110-117-raid-event-targets.md') -Encoding UTF8
 }
 
+$clientLogRoot = if (![string]::IsNullOrWhiteSpace($ClientDirectory)) { Split-Path -Parent $ClientDirectory } else { '' }
 $tailScript = @"
 `$RepoRoot = '$RepoRoot'
+`$ClientLogRoot = '$clientLogRoot'
 Get-Content -Wait -Tail 200 (Join-Path `$RepoRoot '.nexusforever-runtime\logs\NexusForever_World.stdout.log')
 # Additional useful tails:
 # Get-Content -Wait -Tail 200 (Join-Path `$RepoRoot 'Source\NexusForever.WorldServer\bin\Debug\net10.0\logs\NexusForever.WorldServer_*.log')
 # Get-Content -Wait -Tail 200 (Join-Path `$RepoRoot '.nexusforever-runtime\logs\NexusForever_Group.stdout.log')
 # Get-Content -Wait -Tail 200 (Join-Path `$RepoRoot '.nexusforever-runtime\logs\NexusForever_Friendship.stdout.log')
+# if (![string]::IsNullOrWhiteSpace(`$ClientLogRoot)) { Get-Content -Wait -Tail 200 (Join-Path `$ClientLogRoot 'Logs\*.txt') }
+# if (![string]::IsNullOrWhiteSpace(`$ClientLogRoot)) { Get-Content -Wait -Tail 200 (Join-Path `$ClientLogRoot 'Errors\WildStar64*.log') }
 "@
 $tailScript | Set-Content -Path (Join-Path $bundleDirectory 'Tail-BlockerEvidenceLogs.ps1') -Encoding UTF8
 
@@ -1366,6 +1370,7 @@ param(
 `$ErrorActionPreference = 'Stop'
 `$logsDirectory = Join-Path `$BundleDirectory 'logs'
 New-Item -ItemType Directory -Force -Path `$logsDirectory | Out-Null
+`$ClientLogRoot = '$clientLogRoot'
 
 `$logPatterns = @(
     '.nexusforever-runtime\logs\NexusForever_World.stdout.log',
@@ -1381,12 +1386,22 @@ foreach (`$pattern in `$logPatterns) {
         }
 }
 
+if (![string]::IsNullOrWhiteSpace(`$ClientLogRoot)) {
+    foreach (`$pattern in @('Logs\*.txt', 'Errors\WildStar64*.log')) {
+        Get-ChildItem -Path (Join-Path `$ClientLogRoot `$pattern) -ErrorAction SilentlyContinue |
+            ForEach-Object {
+                Copy-Item -LiteralPath `$_.FullName -Destination (Join-Path `$logsDirectory `$_.Name) -Force
+            }
+    }
+}
+
 Write-Host "Collected logs into `$logsDirectory"
 "@
 $collectScript | Set-Content -Path (Join-Path $bundleDirectory 'Collect-BlockerEvidenceBundle.ps1') -Encoding UTF8
 
-Write-Host 'Starting blocker evidence harness (Trace logging, client console enabled).' -ForegroundColor Cyan
+Write-Host 'Starting blocker evidence harness (Trace server logging, client console and CLog enabled).' -ForegroundColor Cyan
 Write-Host "Plan: Decomp/Analysis/BLOCKER_EVIDENCE_PLAN.md" -ForegroundColor DarkGray
+Write-Host "Client logging: Decomp/Analysis/CLIENT_LOGGING.md" -ForegroundColor DarkGray
 Write-Host "Evidence bundle: $bundleDirectory" -ForegroundColor Green
 
 if ($CreateBundleOnly) {
@@ -1396,6 +1411,7 @@ if ($CreateBundleOnly) {
         -RepoRoot $RepoRoot `
         -ClientDirectory $ClientDirectory `
         -EnableClientConsole `
+        -EnableClientLogging `
         -LogLevel $LogLevel `
         -PromptForRootPassword:$PromptForRootPassword `
         -SkipServerLaunch:$SkipServerLaunch `
@@ -1408,6 +1424,11 @@ Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot '.nexusforever-r
 Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot 'Source\NexusForever.WorldServer\bin\Debug\net10.0\logs\NexusForever.WorldServer_*.log')"
 Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot '.nexusforever-runtime\logs\NexusForever_Group.stdout.log')"
 Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $RepoRoot '.nexusforever-runtime\logs\NexusForever_Friendship.stdout.log')"
+if (![string]::IsNullOrWhiteSpace($ClientDirectory)) {
+    $clientRoot = Split-Path -Parent $ClientDirectory
+    Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $clientRoot 'Logs\*.txt')"
+    Write-Host "  Get-Content -Wait -Tail 200 $(Join-Path $clientRoot 'Errors\WildStar64*.log')"
+}
 Write-Host ''
 Write-Host 'Bundle helpers:' -ForegroundColor Yellow
 Write-Host "  $(Join-Path $bundleDirectory 'Tail-BlockerEvidenceLogs.ps1')"
