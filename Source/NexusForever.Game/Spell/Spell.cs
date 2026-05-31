@@ -11,6 +11,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Combat.CrowdControl;
 using NexusForever.Game.Static.Entity.Movement.Command.State;
+using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
@@ -40,12 +41,14 @@ namespace NexusForever.Game.Spell
         public ISpellParameters Parameters { get; }
         public uint CastingId { get; }
         public bool IsCasting => status == SpellStatus.Casting;
+        public bool BlocksCasting => status == SpellStatus.Casting || (status == SpellStatus.Executing && awaitingInitialImpact);
         public bool IsFinished => status == SpellStatus.Finished;
 
         public IUnitEntity Caster { get; }
 
         private SpellStatus status;
         private bool cancelled;
+        private bool awaitingInitialImpact;
 
         private readonly List<ISpellTargetInfo> targets = new();
         private readonly List<ITelegraph> telegraphs = new();
@@ -304,7 +307,10 @@ namespace NexusForever.Game.Spell
                 return CastResult.Ok;
 
             bool allowsDeadTargets = (validTargetMask & ValidTargetDeadMask) != 0u;
-            bool allowsLivingTargets = (validTargetMask & ~ValidTargetDeadMask) != 0u;
+            bool allowsLivingTargets = (validTargetMask & ~(ValidTargetDeadMask | ValidTargetObjectMask)) != 0u;
+
+            if (!allowsDeadTargets && !allowsLivingTargets)
+                return CastResult.TargetUnknown;
 
             if (!target.IsAlive && !allowsDeadTargets)
                 return CastResult.TargetCannotBeDead;
@@ -421,6 +427,99 @@ namespace NexusForever.Game.Spell
                 || Parameters.SpellInfo.TargetPersistencePrerequisites != null
                 || effect.Entry.PrerequisiteIdCasterPersistence != 0u
                 || effect.Entry.PrerequisiteIdTargetPersistence != 0u;
+        }
+
+        private bool MeetsApplyPrerequisites(SpellEffectInterpretation effect, IWorldEntity target)
+        {
+            return MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdCasterApply), Caster)
+                && MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdTargetApply), target);
+        }
+
+        private static PrerequisiteEntry GetPrerequisite(uint prerequisiteId)
+        {
+            return prerequisiteId == 0u ? null : GameTableManager.Instance.Prerequisite.GetEntry(prerequisiteId);
+        }
+
+        internal static bool MeetsApplyPrerequisite(PrerequisiteEntry prerequisite, IWorldEntity entity)
+        {
+            if (prerequisite == null)
+                return true;
+
+            if (TryEvaluateCreatureDifficultyPrerequisite(prerequisite, entity, out bool result))
+                return result;
+
+            if (entity is not IPlayer player)
+                return true;
+
+            return PrerequisiteManager.Instance.Meets(player, prerequisite.Id);
+        }
+
+        private static bool TryEvaluateCreatureDifficultyPrerequisite(PrerequisiteEntry prerequisite, IWorldEntity entity, out bool result)
+        {
+            result = false;
+
+            if (prerequisite.PrerequisiteTypeId == null)
+                return false;
+
+            if (prerequisite.PrerequisiteTypeId.Any(t => t != PrerequisiteType.None && t != PrerequisiteType.CreatureDifficulty))
+                return false;
+
+            uint creatureDifficultyId = entity?.CreatureInfo?.DifficultyEntry?.Id ?? entity?.CreatureEntry?.Creature2DifficultyId ?? 0u;
+            if (creatureDifficultyId == 0u)
+            {
+                result = true;
+                return true;
+            }
+
+            result = prerequisite.Flags switch
+            {
+                EvaluationMode.EvaluateAND => EvaluateCreatureDifficultyAnd(prerequisite, creatureDifficultyId),
+                EvaluationMode.EvaluateOR  => EvaluateCreatureDifficultyOr(prerequisite, creatureDifficultyId),
+                _                          => false
+            };
+            return true;
+        }
+
+        private static bool EvaluateCreatureDifficultyAnd(PrerequisiteEntry prerequisite, uint creatureDifficultyId)
+        {
+            for (int i = 0; i < prerequisite.PrerequisiteTypeId.Length; i++)
+            {
+                if (prerequisite.PrerequisiteTypeId[i] == PrerequisiteType.None)
+                    continue;
+
+                if (!ComparePrerequisiteValue(creatureDifficultyId, prerequisite.PrerequisiteComparisonId[i], prerequisite.ObjectId[i]))
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static bool EvaluateCreatureDifficultyOr(PrerequisiteEntry prerequisite, uint creatureDifficultyId)
+        {
+            for (int i = 0; i < prerequisite.PrerequisiteTypeId.Length; i++)
+            {
+                if (prerequisite.PrerequisiteTypeId[i] == PrerequisiteType.None)
+                    continue;
+
+                if (ComparePrerequisiteValue(creatureDifficultyId, prerequisite.PrerequisiteComparisonId[i], prerequisite.ObjectId[i]))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool ComparePrerequisiteValue(uint currentValue, PrerequisiteComparison comparison, uint expectedValue)
+        {
+            return comparison switch
+            {
+                PrerequisiteComparison.Equal              => currentValue == expectedValue,
+                PrerequisiteComparison.NotEqual           => currentValue != expectedValue,
+                PrerequisiteComparison.GreaterThanOrEqual => currentValue >= expectedValue,
+                PrerequisiteComparison.GreaterThan        => currentValue > expectedValue,
+                PrerequisiteComparison.LessThanOrEqual    => currentValue <= expectedValue,
+                PrerequisiteComparison.LessThan           => currentValue < expectedValue,
+                _                                         => false
+            };
         }
 
         private bool MeetsPersistencePrerequisites(SpellEffectInterpretation effect, IWorldEntity target)
@@ -701,7 +800,7 @@ namespace NexusForever.Game.Spell
         /// </summary>
         public void CancelCast(CastResult result)
         {
-            if (status != SpellStatus.Casting)
+            if (!BlocksCasting)
                 throw new InvalidOperationException();
 
             SpellRuntimeEvidenceCollector.RecordCancellation(this, result);
@@ -785,9 +884,6 @@ namespace NexusForever.Game.Spell
             if (Caster is IPlayer player)
                 if (Parameters.SpellInfo.Entry.SpellCoolDown != 0u)
                     player.SpellManager.SetSpellCooldown(Parameters.SpellInfo.Entry.Id, Parameters.SpellInfo.Entry.SpellCoolDown / 1000d);
-
-            if (Caster is not IPlayer && Parameters.SpellInfo.Telegraphs.Count != 0)
-                InitialiseTelegraphs();
 
             SelectTargets();
             scriptCollection.Invoke<ISpellScript>(s => s.OnExecute(this, targets.AsReadOnly()));
@@ -1046,6 +1142,7 @@ namespace NexusForever.Game.Spell
                 ExecuteEffect(effect);
             }
 
+            awaitingInitialImpact = scheduledEffects;
             SendSpellGo(!scheduledEffects);
         }
 
@@ -1094,9 +1191,14 @@ namespace NexusForever.Game.Spell
 
         private bool ExecuteEffect(SpellEffectInterpretation effect)
         {
+            SpellEffectTargetFlags effectTargetFlags = (SpellEffectTargetFlags)effect.Entry.TargetFlags;
+            if ((effectTargetFlags & SpellEffectTargetFlags.Telegraph) != 0)
+                RefreshTelegraphTargets();
+
             // select targets for effect
             List<ISpellTargetInfo> effectTargets = targets
-                .Where(t => (t.Flags & (SpellEffectTargetFlags)effect.Entry.TargetFlags) != 0)
+                .Where(t => (t.Flags & effectTargetFlags) != 0)
+                .Where(t => IsEffectTargetStillValid(effectTargetFlags, t))
                 .ToList();
 
             SpellEffectDelegate handler = GlobalSpellManager.Instance.GetEffectHandler((SpellEffectType)effect.Entry.EffectType);
@@ -1113,6 +1215,9 @@ namespace NexusForever.Game.Spell
             foreach (SpellTargetInfo effectTarget in effectTargets)
             {
                 if (terminatedPersistentEffects.Contains((effectTarget.Entity.Guid, effect.Entry.Id)))
+                    continue;
+
+                if (!MeetsApplyPrerequisites(effect, effectTarget.Entity))
                     continue;
 
                 var info = new SpellTargetInfo.SpellTargetEffectInfo(effectId, effect.Entry);
@@ -1214,6 +1319,26 @@ namespace NexusForever.Game.Spell
             }
 
             return executed;
+        }
+
+        private void RefreshTelegraphTargets()
+        {
+            foreach (IUnitEntity entity in SelectTelegraphTargets())
+                AddTarget(SpellEffectTargetFlags.Telegraph, entity);
+        }
+
+        internal bool IsEffectTargetStillValid(SpellEffectTargetFlags effectTargetFlags, ISpellTargetInfo targetInfo)
+        {
+            if ((effectTargetFlags & SpellEffectTargetFlags.Telegraph) == 0)
+                return true;
+
+            if ((targetInfo.Flags & SpellEffectTargetFlags.Telegraph) == 0)
+                return true;
+
+            if (targetInfo.Entity is not IUnitEntity unitTarget)
+                return false;
+
+            return telegraphs.Any(t => t.InsideTelegraph(unitTarget.Position, unitTarget.HitRadius));
         }
 
         private bool ExecuteWorldEntityEffect(SpellEffectInterpretation effect, IWorldEntity target, ISpellTargetEffectInfo info)
@@ -1781,6 +1906,9 @@ namespace NexusForever.Game.Spell
         {
             List<PendingSpellGoEffect> pendingEffects = pendingSpellGoEffects.ToList();
             pendingSpellGoEffects.Clear();
+            if (pendingEffects.Count != 0 || sendEmpty)
+                awaitingInitialImpact = false;
+
             if (pendingEffects.Count == 0 && !sendEmpty)
                 return;
 

@@ -12,7 +12,7 @@
         AchievementState            = 7, // Achievement requirement not met
         ItemProficiency             = 8, // Item proficiency requirement not met
         EpisodeState                = 9, // Episode requirement not met
-        Gender                      = 10, // Gender requirement not met
+        Gender                      = 10, // Gender requirement not met - client enum PrerequisiteComp_Sex
         OtherPrerequisite           = 11, // Other requirement not met
         DeadState                   = 12, // Player death state not correct
         ItemEquipped                = 13, // Item equipment requirement not met
@@ -57,8 +57,8 @@
         Path                        = 52, // You do not meet the player path requirement
         PathEpisode                 = 53, // You do not meet the player path episode requirement
         PlayerPathMission           = 54, // You do not meet the player path mission requirement
-        Unknown55                   = 55, // Requirements not met
-        Unknown56                   = 56, // Requirements not met
+        Currency                    = 55, // Requirements not met - ObjectId is CurrencyType id, value is required amount
+        CreatureDifficultyRank56    = 56, // Requirements not met - Value is Creature2Difficulty.rankValue
         // 57 is unused in PrerequisiteType.tbl
         // 58 is unused in PrerequisiteType.tbl
         Spell59                     = 59, // Spell requirements not met
@@ -79,7 +79,7 @@
         ChallengeLocked             = 74, // The specified challenge is locked
         // 75 is unused in PrerequisiteType.tbl
         CreatureState               = 76, // Requirements not met - ObjectId is often Creature2 id, value is unit state index
-        Unknown77                   = 77, // Requirements not met
+        Unknown77                   = 77, // Requirements not met - Often AND'd with Unknown48/QuestObjective47, InCombat, or UnderSpell
         MovementMode                = 78, // Invalid movement mode
         UnderForcedMovement         = 79, // Not under forced movement
         HealthRequirement           = 80, // You do not meet the health requirements
@@ -108,7 +108,7 @@
         SpellEffect103              = 103, // Spell effect requirements not met
         SpellEffect104              = 104, // Spell effect requirements not met
         SpellEffect105              = 105, // Spell effect requirements not met
-        Unknown106                  = 106, // Requirements not met
+        Spell106                    = 106, // Requirements not met - Value is Spell4 id when non-zero
         QuestObjective7             = 107, // Quest object requirement not met
         /// <summary>
         /// Checks to see if a PositionalRequirement Entry is met.
@@ -175,7 +175,7 @@
         LiveEvent167                = 167, // Live event requirement not met
         LiveEventCount              = 168, // Live event count requirement not correct
         LiveEvent169                = 169, // Live event requirement not met
-        Unknown170                  = 170, // Requirements not met
+        GameFormula170              = 170, // Requirements not met - value0 is GameFormula id (wildstar_client rows 1029/1031/1050; not achievement-only)
         Unknown171                  = 171, // Requirements not met
         Unknown172                  = 172, // Requirements not met
         ItemTradeSkill              = 173, // Item tradeskill requirement not met
@@ -184,8 +184,8 @@
         ChallengeObject             = 176, // Challenge object requirement not met
         TrueLevel                   = 177, // True level requirement not met
         Item7                       = 178, // Item of type Equipped?
-        Unknown179                  = 179, // Requirements not met
-        Unknown180                  = 180, // Requirements not met
+        CreatureDifficulty          = 179, // Requirements not met - ObjectId is Creature2Difficulty id (spell apply path)
+        CreatureDifficultyRank      = 180, // Requirements not met - Value is Creature2Difficulty.rankValue
         // 181 is unused in PrerequisiteType.tbl
         HouseOwnership              = 182, // Housing ownership requirement not met
         Guild                       = 183, // Guild requirement not met
@@ -198,7 +198,7 @@
         PetFlair                    = 190, // Pet flair requirement not met
         Spell191                    = 191, // Spell requirement not met
         Unknown192                  = 192, // Exist in PrerequisiteType.tbl but does not have a description
-        Unknown193                  = 193, // Requirement not met
+        Unknown193                  = 193, // Requirement not met - Rare entitlement-style gate (value 53 seen once)
         MountUsage                  = 194, // Ground mounts cannot be used in this area
         HoverboardUsage             = 195, // Hoverboard mounts cannot be used in this area
         Racial                      = 196, // Racial requirement not met
@@ -249,9 +249,9 @@
         Unknown241                  = 241, // Exist in PrerequisiteType.tbl but does not have a description
         LiveEvent242                = 242, // Live event not complete
         Faction243                  = 243, // Faction requirement not met
-        Unknown244                  = 244, // Exist in PrerequisiteType.tbl but does not have a description
+        Item244                     = 244, // Requirements not met - ObjectId is Item2 id
         Unknown245                  = 245, // Exist in PrerequisiteType.tbl but does not have a description
-        Inventory                   = 246, // Inventory requirement not met - AccountItemClaimed?
+        Inventory                   = 246, // Inventory requirement not met - client case 0xf6 via manager +0x130; value0 is usually Item2 id
         // 247 is unused in PrerequisiteType.tbl
         Unknown248                  = 248, // Exist in PrerequisiteType.tbl but does not have a description
         // 249 is unused in PrerequisiteType.tbl
@@ -274,7 +274,7 @@
         Unknown266                  = 266, // Exist in PrerequisiteType.tbl but does not have a description
         Unknown267                  = 267, // Exist in PrerequisiteType.tbl but does not have a description
         Unknown268                  = 268, // Exist in PrerequisiteType.tbl but does not have a description
-        RapidTransport              = 269, // Exist in PrerequisiteType.tbl but does not have a description
+        RapidTransport              = 269, // Requirements not met - client case 0x10d via manager +0xd0; objectId0 is rapid-transport node id
         LoyaltyRewards              = 270, // Loyalty requirement not met
         Unknown271                  = 271, // Exist in PrerequisiteType.tbl but does not have a description
         Unknown272                  = 272, // Exist in PrerequisiteType.tbl but does not have a description
@@ -282,7 +282,7 @@
         // 274 is unused in PrerequisiteType.tbl
         Unknown275                  = 275, // Exist in PrerequisiteType.tbl but does not have a description
         OutOfBounds                 = 276, // You're out of bounds
-        Unknown277                  = 277, // You cannot do that right now
+        QuestObjective47Both        = 277, // You cannot do that right now - client case 0x115 requires caster and target to pass QuestObjective47 (+0x2f8) checks
         Unknown278                  = 278, // Requirements not met
         Spell279                    = 279, // Spell requirement not met
         Spell280                    = 280, // Spell requirement not met
@@ -297,7 +297,7 @@
         Unknown289                  = 289, // Exist in PrerequisiteType.tbl but does not have a description
         Unknown290                  = 290, // Exist in PrerequisiteType.tbl but does not have a description
         Unknown291                  = 291, // Exist in PrerequisiteType.tbl but does not have a description
-        Unknown292                  = 292, // Exist in PrerequisiteType.tbl but does not have a description - Primal Matrix ?
+        PrimalMatrixNode            = 292, // Requirements not met - objectId is PrimalMatrixNode.tbl id; value0 is allocation threshold (always 1 in client rows)
         Unknown293                  = 293, // Exist in PrerequisiteType.tbl but does not have a description
         Unknown294                  = 294, // Exist in PrerequisiteType.tbl but does not have a description
         Unknown295                  = 295  // Requirements not met           

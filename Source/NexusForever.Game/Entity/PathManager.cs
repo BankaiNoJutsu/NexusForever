@@ -241,6 +241,10 @@ namespace NexusForever.Game.Entity
             if (rootZone == null)
                 return false;
 
+            if (GameTableManager.Instance.PathEpisode?.Entries == null
+                || GameTableManager.Instance.PathMission?.Entries == null)
+                return false;
+
             PathEpisodeEntry pathEpisode = GameTableManager.Instance.PathEpisode.Entries
                 .FirstOrDefault(e => e.WorldId == worldId
                     && e.WorldZoneId == rootZone.Id

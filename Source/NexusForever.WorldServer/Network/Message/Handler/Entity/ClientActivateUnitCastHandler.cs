@@ -67,6 +67,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             if (IsTutorialHoverboardActivationEntity(entity))
                 log.Debug($"Tutorial hoverboard activate-cast attempt: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, busy={entity.IsBusy}.");
 
+            if (ActivateUnitCombatHelper.TryHandleHostileActivation(session, entity))
+                return;
+
             if (ActivationInteractionGuards.TryRejectBusyTarget(session, entity))
             {
                 if (IsTutorialHoverboardActivationEntity(entity))
@@ -161,6 +164,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
             CastResult mountCastResult = TryCastTutorialHoverboardMount(session, clientRequestSource);
             log.Debug($"Tutorial hoverboard projector activate-cast bypassed blocked activate spell: player={session.Player.Guid}, entity={entity.Guid}, spell4Id={spell4Id}, castResult={castResult}, mountCastResult={mountCastResult}.");
+            if (mountCastResult != CastResult.Ok)
+            {
+                entity.OnActivateFail(session.Player);
+                return true;
+            }
+
             CompleteActivation(session, entity, invokeActivateCast: false);
             return true;
         }

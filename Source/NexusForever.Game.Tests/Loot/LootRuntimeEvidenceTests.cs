@@ -146,19 +146,8 @@ public class LootRuntimeEvidenceTests
             Assert.Equal(1, root.GetProperty("DeliveredItemCount").GetInt32());
             Assert.Equal(JsonValueKind.Null, root.GetProperty("NotifyPacket").ValueKind);
             Assert.Empty(root.GetProperty("Items").EnumerateArray().ToArray());
-            Assert.Collection(session.EncryptedMessages,
-                message =>
-                {
-                    var floater = Assert.IsType<ServerGenericFloaterString>(message);
-                    Assert.Equal("+5 Credits", floater.Text);
-                },
-                message =>
-                {
-                    var chat = Assert.IsType<ServerChat>(message);
-                    Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
-                    Assert.Equal("You receive 5 Credits.", chat.Text);
-                },
-                message => Assert.IsType<ServerLootRemove>(message));
+            object message = Assert.Single(session.EncryptedMessages);
+            Assert.IsType<ServerLootRemove>(message);
         }
         finally
         {
@@ -324,6 +313,8 @@ public class LootRuntimeEvidenceTests
 
         public IAccount Account => null;
         public IPlayer Player { get; set; }
+    public bool HasSentCharacterListPackets { get; set; }
+    public bool HasSentPregameAccountPackets { get; set; }
         public List<CharacterModel> Characters { get; } = [];
         public bool? IsQueued { get; set; }
         public bool CanProcessIncomingPackets { get; set; }

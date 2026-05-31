@@ -5,6 +5,7 @@ using NexusForever.Game.Spell;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Static;
 using NLog;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Entity
@@ -45,6 +46,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             if (IsTutorialHoverboardActivationEntity(entity))
                 log.Debug($"Tutorial hoverboard activate attempt: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, busy={entity.IsBusy}.");
 
+            if (ActivateUnitCombatHelper.TryHandleHostileActivation(session, entity))
+            {
+                tradeManager.Cancel(session.Player);
+                return;
+            }
+
             if (ActivationInteractionGuards.TryRejectBusyTarget(session, entity))
             {
                 if (IsTutorialHoverboardActivationEntity(entity))
@@ -59,7 +66,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 return;
             }
 
-            TryCastTutorialHoverboardMount(session, entity, nameof(ClientActivateUnit));
+            if (!TryCastTutorialHoverboardMount(session, entity, nameof(ClientActivateUnit)))
+            {
+                entity.OnActivateFail(session.Player);
+                return;
+            }
 
             entity.OnActivate(session.Player);
             tradeManager.Cancel(session.Player);
@@ -76,10 +87,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             return entity.CreatureId is TutorialHoverboardProjectorCreatureId or TutorialHoverboardFinishCreatureId;
         }
 
-        private static void TryCastTutorialHoverboardMount(IWorldSession session, IWorldEntity entity, string clientRequestSource)
+        private static bool TryCastTutorialHoverboardMount(IWorldSession session, IWorldEntity entity, string clientRequestSource)
         {
             if (entity.CreatureId != TutorialHoverboardProjectorCreatureId)
-                return;
+                return true;
 
             var mountSpellParameters = new SpellParameters
             {
@@ -92,6 +103,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
             var castResult = session.Player.TryCastSpell(TutorialHoverboardMountSpellId, mountSpellParameters);
             log.Debug($"Tutorial hoverboard direct activate mount cast: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, castResult={castResult}.");
+            return castResult == CastResult.Ok;
         }
 
         private static bool TryRecoverTutorialActivationTarget(IWorldSession session, uint targetId, out IWorldEntity entity, string opcodeName)

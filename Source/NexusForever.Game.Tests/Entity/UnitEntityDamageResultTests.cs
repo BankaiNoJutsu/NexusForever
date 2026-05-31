@@ -160,18 +160,79 @@ public class UnitEntityDamageResultTests
         Assert.Equal(expected, UnitEntity.CalculateHealthOverkill(healthBefore, adjustedDamage, killedTarget));
     }
 
-    [Fact]
-    public void AddCCState_Interrupt_CancelsActiveCastingSpells()
+    [Theory]
+    [InlineData(CCState.Interrupt)]
+    [InlineData(CCState.Knockdown)]
+    public void AddCCState_WhenStateInterruptsActiveCasting_CancelsActiveCastingSpells(CCState state)
     {
         TestUnitEntity unit = new();
         ISpell spell = RecordingDispatchProxy<ISpell>.Create(out RecordingDispatchProxy<ISpell> spellProxy);
         spellProxy.SetProperty(nameof(ISpell.IsCasting), true);
+        spellProxy.SetProperty(nameof(ISpell.BlocksCasting), true);
         AddPendingSpell(unit, spell);
 
-        unit.AddCCState(CCState.Interrupt, effectId: 10u, spell4Id: 20u, castingId: 30u);
+        unit.AddCCState(state, effectId: 10u, spell4Id: 20u, castingId: 30u);
 
         RecordingDispatchProxy<ISpell>.Invocation cancel = Assert.Single(spellProxy.GetInvocations(nameof(ISpell.CancelCast)));
         Assert.Equal(CastResult.SpellInterrupted, cancel.Arguments[0]);
+    }
+
+    [Fact]
+    public void AddCCState_Knockdown_CancelsAwaitingImpactSpells()
+    {
+        TestUnitEntity unit = new();
+        ISpell spell = RecordingDispatchProxy<ISpell>.Create(out RecordingDispatchProxy<ISpell> spellProxy);
+        spellProxy.SetProperty(nameof(ISpell.IsCasting), false);
+        spellProxy.SetProperty(nameof(ISpell.BlocksCasting), true);
+        AddPendingSpell(unit, spell);
+
+        unit.AddCCState(CCState.Knockdown, effectId: 10u, spell4Id: 20u, castingId: 30u);
+
+        RecordingDispatchProxy<ISpell>.Invocation cancel = Assert.Single(spellProxy.GetInvocations(nameof(ISpell.CancelCast)));
+        Assert.Equal(CastResult.SpellInterrupted, cancel.Arguments[0]);
+    }
+
+    [Fact]
+    public void CheckActiveCastSlot_WhenActiveCastPending_ReturnsAlreadyCasting()
+    {
+        TestUnitEntity unit = new();
+        ISpell spell = RecordingDispatchProxy<ISpell>.Create(out RecordingDispatchProxy<ISpell> spellProxy);
+        spellProxy.SetProperty(nameof(ISpell.BlocksCasting), true);
+        AddPendingSpell(unit, spell);
+
+        CastResult result = unit.CheckActiveCastSlot(new SpellParameters());
+
+        Assert.Equal(CastResult.SpellAlreadyCasting, result);
+    }
+
+    [Fact]
+    public void CheckActiveCastSlot_WhenNestedSpellCastsDuringActiveCast_AllowsCast()
+    {
+        TestUnitEntity unit = new();
+        ISpell spell = RecordingDispatchProxy<ISpell>.Create(out RecordingDispatchProxy<ISpell> spellProxy);
+        spellProxy.SetProperty(nameof(ISpell.BlocksCasting), true);
+        AddPendingSpell(unit, spell);
+
+        ISpellInfo parentSpellInfo = RecordingDispatchProxy<ISpellInfo>.Create(out _);
+        CastResult result = unit.CheckActiveCastSlot(new SpellParameters
+        {
+            ParentSpellInfo = parentSpellInfo
+        });
+
+        Assert.Equal(CastResult.Ok, result);
+    }
+
+    [Fact]
+    public void CheckActiveCastSlot_WhenPendingSpellDoesNotBlockCasting_AllowsCast()
+    {
+        TestUnitEntity unit = new();
+        ISpell spell = RecordingDispatchProxy<ISpell>.Create(out RecordingDispatchProxy<ISpell> spellProxy);
+        spellProxy.SetProperty(nameof(ISpell.BlocksCasting), false);
+        AddPendingSpell(unit, spell);
+
+        CastResult result = unit.CheckActiveCastSlot(new SpellParameters());
+
+        Assert.Equal(CastResult.Ok, result);
     }
 
     private static IDamageDescription CreateDamage(uint adjustedDamage, uint shieldAbsorbAmount = 0u)

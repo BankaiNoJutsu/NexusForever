@@ -38,6 +38,8 @@ namespace NexusForever.Game.Spell
 {
     public static class SpellHandler
     {
+        private const uint RelentlessStrikesTelegraphSpell4Id = 70033u;
+        private const uint RelentlessStrikesAddCellSpell4Id = 53865u;
         private const uint VitalModifierSentinel = 2147483647u;
         private const uint VitalModifierMaxConservativeFlatAmount = 100000000u;
         private const uint ItemVisualSlotPacketMax = 0x7Fu;
@@ -1426,6 +1428,13 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.Proxy)]
         public static void HandleEffectProxy(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
+            SpellEffectProxySemantics proxy = SpellEffectInterpreter.Interpret(info).Proxy;
+            if (ShouldRouteProxyToOriginalCaster(spell, proxy))
+            {
+                HandleProxySpell(spell, spell.Caster, spell.Caster, info, proxy);
+                return;
+            }
+
             HandleProxySpell(spell, target, target, info);
         }
 
@@ -1486,6 +1495,11 @@ namespace NexusForever.Game.Spell
         private static void HandleProxySpell(ISpell spell, IUnitEntity proxyCaster, IWorldEntity target, ISpellTargetEffectInfo info)
         {
             SpellEffectProxySemantics proxy = SpellEffectInterpreter.Interpret(info).Proxy;
+            HandleProxySpell(spell, proxyCaster, target, info, proxy);
+        }
+
+        private static void HandleProxySpell(ISpell spell, IUnitEntity proxyCaster, IWorldEntity target, ISpellTargetEffectInfo info, SpellEffectProxySemantics proxy)
+        {
             if (proxy == null || proxy.Spell4Id == 0u)
                 return;
 
@@ -1499,6 +1513,13 @@ namespace NexusForever.Game.Spell
                 ClientContextToken     = spell.Parameters.ClientContextToken,
                 ClientRequestSource    = spell.Parameters.ClientRequestSource
             });
+        }
+
+        private static bool ShouldRouteProxyToOriginalCaster(ISpell spell, SpellEffectProxySemantics proxy)
+        {
+            return spell.Parameters.SpellInfo.Entry.Id == RelentlessStrikesTelegraphSpell4Id
+                && proxy?.Spell4Id == RelentlessStrikesAddCellSpell4Id
+                && spell.Caster is IPlayer;
         }
 
         [SpellEffectHandler(SpellEffectType.DespawnUnit)]
@@ -2437,7 +2458,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            uint spell4Id = ResolveSpell4Id(cooldown.Spell4Id, spell.Parameters.SpellInfo.Entry.Id);
+            uint spell4Id = ResolveSpell4Id(cooldown.Spell4Id);
             if (spell4Id == 0u)
             {
                 SpellEffectDiagnostics.TraceModifySpellCooldown(spell, target, cooldown, "none", 0u, 0d, 0d, "no-concrete-spell4-target");

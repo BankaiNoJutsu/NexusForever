@@ -297,6 +297,8 @@ public class TransportHandlerTests
     {
         public IAccount Account => null;
         public IPlayer Player { get; set; }
+        public bool HasSentCharacterListPackets { get; set; }
+        public bool HasSentPregameAccountPackets { get; set; }
         public List<CharacterModel> Characters { get; } = [];
         public bool? IsQueued { get; set; }
         public bool CanProcessIncomingPackets { get; set; }

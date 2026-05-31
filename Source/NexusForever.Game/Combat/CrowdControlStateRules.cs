@@ -47,6 +47,22 @@ namespace NexusForever.Game.Combat.CrowdControl
             };
         }
 
+        public static bool InterruptsActiveCasting(CCState state)
+        {
+            return state is CCState.Interrupt
+                or CCState.Stun
+                or CCState.Sleep
+                or CCState.Fear
+                or CCState.Hold
+                or CCState.Knockdown
+                or CCState.Polymorph
+                or CCState.Disable
+                or CCState.Daze
+                or CCState.Subdue
+                or CCState.DisableCinematic
+                or CCState.AbilityRestriction;
+        }
+
         public static bool HasClientMovementBlock(uint activeMask)
         {
             return (activeMask & ClientMovementBlockMask) != 0u;

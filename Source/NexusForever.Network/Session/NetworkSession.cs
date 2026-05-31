@@ -177,7 +177,16 @@ namespace NexusForever.Network.Session
         {
             try
             {
-                socket.Send(data, 0, data.Length, SocketFlags.None);
+                int offset = 0;
+                while (offset < data.Length)
+                {
+                    int sent = socket.Send(data, offset, data.Length - offset, SocketFlags.None);
+                    if (sent <= 0)
+                        throw new SocketException((int)SocketError.ConnectionReset);
+
+                    offset += sent;
+                }
+
                 return true;
             }
             catch (SocketException e) when (e.SocketErrorCode is SocketError.ConnectionAborted or SocketError.ConnectionReset or SocketError.Shutdown)

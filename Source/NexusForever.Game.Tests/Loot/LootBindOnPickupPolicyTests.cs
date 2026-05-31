@@ -86,12 +86,7 @@ public class LootBindOnPickupPolicyTests
                 sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
             Assert.Collection(sessionCalls,
                 call => Assert.IsType<ServerLootBindOnPickup>(call.Arguments[0]),
-                call => Assert.IsType<ServerLootGrant>(call.Arguments[0]),
-                call =>
-                {
-                    var chat = Assert.IsType<ServerChat>(call.Arguments[0]);
-                    AssertStaticItemLootChat(chat, BindOnPickupItemId, "You receive [I].");
-                });
+                call => Assert.IsType<ServerLootGrant>(call.Arguments[0]));
         }
         finally
         {
@@ -121,20 +116,6 @@ public class LootBindOnPickupPolicyTests
         {
             LegacyServiceProvider.Provider = previousProvider;
         }
-    }
-
-    private static void AssertStaticItemLootChat(ServerChat chat, uint itemId, string expectedText)
-    {
-        Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
-        Assert.Equal(expectedText, chat.Text);
-
-        ChatFormat format = Assert.Single(chat.Formats);
-        Assert.Equal(ChatFormatType.ItemId, format.Type);
-        Assert.Equal(12, format.StartIndex);
-        Assert.Equal(15, format.StopIndex);
-
-        var itemFormat = Assert.IsType<ChatFormatItemId>(format.Model);
-        Assert.Equal(itemId, itemFormat.Item2Id);
     }
 
     private static LootInstance CreateLootInstance(IPlayer player)

@@ -4,6 +4,7 @@ using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Packet;
@@ -16,6 +17,7 @@ using NexusForever.WorldServer.Network.Message.Handler.Misc;
 
 namespace NexusForever.Game.Tests.Network;
 
+[Collection(LegacyServiceProviderCollection.Name)]
 public class GameSessionHeartbeatTests
 {
     [Fact]
@@ -98,6 +100,24 @@ public class GameSessionHeartbeatTests
         }
     }
 
+    [Fact]
+    public void ReadBody_StatePacketWithOpaquePayload_ConsumesPayload()
+    {
+        byte[] payload = [0x01, 0x02, 0x03, 0x04];
+        ClientGamePacket packet = BuildPacket(GameMessageOpcode.State, payload);
+
+        using var reader = new ClientGamePacketReader();
+        reader.Initialise(packet, null);
+
+        Assert.Equal(GameMessageOpcode.State, reader.ReadHeader());
+
+        var message = new State();
+        uint remaining = reader.ReadBody(message);
+
+        Assert.Equal(0u, remaining);
+        Assert.Equal(payload, message.Payload);
+    }
+
     private static MessageManager CreateMessageManager(Type messageType, Type handlerType)
     {
         var messageManager = new MessageManager(NullLogger<MessageManager>.Instance);
@@ -106,7 +126,7 @@ public class GameSessionHeartbeatTests
         return messageManager;
     }
 
-    private static ClientGamePacket BuildPacket(GameMessageOpcode opcode)
+    private static ClientGamePacket BuildPacket(GameMessageOpcode opcode, byte[] payload = null)
     {
         byte[] data;
         using (var stream = new MemoryStream())
@@ -114,6 +134,8 @@ public class GameSessionHeartbeatTests
             using (var writer = new GamePacketWriter(stream))
             {
                 writer.Write((uint)opcode, 16);
+                if (payload != null)
+                    writer.WriteBytes(payload);
                 writer.FlushBits();
             }
 
@@ -149,6 +171,8 @@ public class GameSessionHeartbeatTests
     {
         public IAccount Account { get; } = null!;
         public IPlayer Player { get; set; }
+        public bool HasSentCharacterListPackets { get; set; }
+        public bool HasSentPregameAccountPackets { get; set; }
         public List<CharacterModel> Characters { get; } = [];
         public bool? IsQueued { get; set; }
 

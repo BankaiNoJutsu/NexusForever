@@ -82,11 +82,6 @@ public class LootInstanceDeliveryTests
                     Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
                     Assert.Equal(StaticItemId, grant.LootItem.ItemId);
                     Assert.Equal(3u, grant.LootItem.Amount);
-                },
-                call =>
-                {
-                    var chat = Assert.IsType<ServerChat>(call.Arguments[0]);
-                    AssertStaticItemLootChat(chat, StaticItemId, "You receive [I] x3.");
                 });
         }
         finally
@@ -96,7 +91,7 @@ public class LootInstanceDeliveryTests
     }
 
     [Fact]
-    public void GiveLoot_Cash_SendsLootFloaterAndChatFeedback()
+    public void GiveLoot_Cash_SendsLootGrant()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
@@ -128,28 +123,14 @@ public class LootInstanceDeliveryTests
             Assert.True((bool)currencyCall.Arguments[2]);
 
             IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            Assert.Collection(sessionCalls,
-                call =>
-                {
-                    var grant = Assert.IsType<ServerLootGrant>(call.Arguments[0]);
-                    Assert.Equal(99u, grant.OwnerUnitId);
-                    Assert.Equal(4242u, grant.LooterUnitId);
-                    Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
-                    Assert.Equal(LootItemType.Cash, grant.LootItem.Type);
-                    Assert.Equal((uint)CurrencyType.Credits, grant.LootItem.ItemId);
-                    Assert.Equal(17u, grant.LootItem.Amount);
-                },
-                call =>
-                {
-                    var floater = Assert.IsType<ServerGenericFloaterString>(call.Arguments[0]);
-                    Assert.Equal("+17 Credits", floater.Text);
-                },
-                call =>
-                {
-                    var chat = Assert.IsType<ServerChat>(call.Arguments[0]);
-                    Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
-                    Assert.Equal("You receive 17 Credits.", chat.Text);
-                });
+            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
+            var grant = Assert.IsType<ServerLootGrant>(sessionCall.Arguments[0]);
+            Assert.Equal(99u, grant.OwnerUnitId);
+            Assert.Equal(4242u, grant.LooterUnitId);
+            Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
+            Assert.Equal(LootItemType.Cash, grant.LootItem.Type);
+            Assert.Equal((uint)CurrencyType.Credits, grant.LootItem.ItemId);
+            Assert.Equal(17u, grant.LootItem.Amount);
         }
         finally
         {
@@ -206,20 +187,6 @@ public class LootInstanceDeliveryTests
         {
             LegacyServiceProvider.Provider = previousProvider;
         }
-    }
-
-    private static void AssertStaticItemLootChat(ServerChat chat, uint itemId, string expectedText)
-    {
-        Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
-        Assert.Equal(expectedText, chat.Text);
-
-        ChatFormat format = Assert.Single(chat.Formats);
-        Assert.Equal(ChatFormatType.ItemId, format.Type);
-        Assert.Equal(12, format.StartIndex);
-        Assert.Equal(15, format.StopIndex);
-
-        var itemFormat = Assert.IsType<ChatFormatItemId>(format.Model);
-        Assert.Equal(itemId, itemFormat.Item2Id);
     }
 
     private static IServiceProvider BuildProvider(IItemInfo itemInfo, VirtualItemEntry virtualItem = null)

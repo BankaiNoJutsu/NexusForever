@@ -9,6 +9,7 @@ using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Account;
 using NexusForever.Game.Pvp;
+using NexusForever.Game.Storefront;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Message;
 using NexusForever.Network.Message.Model;
@@ -21,6 +22,8 @@ namespace NexusForever.WorldServer.Network
     {
         public IAccount Account { get; private set; }
         public IPlayer Player { get; set; }
+        public bool HasSentCharacterListPackets { get; set; }
+        public bool HasSentPregameAccountPackets { get; set; }
 
         // this really needs to go away
         public List<CharacterModel> Characters { get; } = new();
@@ -104,6 +107,8 @@ namespace NexusForever.WorldServer.Network
             // We check that Account isn't null because AuthServer pings World to check if online
             if (Account != null)
                 loginQueueManager.OnDisconnect(this);
+
+            GlobalStorefrontManager.Instance.ClearCatalogDeliveryState(Id, Account?.Id ?? 0u);
         }
 
         public override void Update(double lastTick)

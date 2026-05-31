@@ -1,5 +1,6 @@
 using System.Numerics;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Entity.Movement.AntiTamper;
 using NexusForever.Game.Abstract.Entity.Movement.Command.Mode;
@@ -101,6 +102,34 @@ public class MovementManagerTests
         Assert.Empty(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPositionPath)));
         Assert.Empty(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPositionMultiSpline)));
         Assert.Empty(harness.PositionProxy.GetInvocations(nameof(IPositionCommandGroup.SetPositionProjectile)));
+    }
+
+    [Fact]
+    public void ServerScaleCommands_AreAppliedWhenClientControlled()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create();
+        harness.Manager.ServerControl = false;
+
+        harness.Manager.SetScaleKeys([0u, 1000u], [1.3f, 1f]);
+
+        RecordingDispatchProxy<IScaleCommandGroup>.Invocation scaleInvocation = Assert.Single(harness.ScaleProxy.GetInvocations(nameof(IScaleCommandGroup.SetScaleKeys)));
+        Assert.Equal([0u, 1000u], Assert.IsType<List<uint>>(scaleInvocation.Arguments[0]));
+        Assert.Equal([1.3f, 1f], Assert.IsType<List<float>>(scaleInvocation.Arguments[1]));
+    }
+
+    [Fact]
+    public void BroadcastNetworkEntityCommands_WithClientControlledScaleCommand_IncludesSelf()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create(ownerGuid: 101u);
+        harness.Manager.ServerControl = false;
+
+        harness.Manager.SetScale(1.3f);
+        harness.ScaleProxy.SetProperty(nameof(IScaleCommandGroup.IsDirty), true);
+
+        harness.Manager.Update(0.016d);
+
+        RecordingDispatchProxy<IUnitEntity>.Invocation enqueue = Assert.Single(harness.OwnerProxy.GetInvocations(nameof(IWorldEntity.EnqueueToVisible)));
+        Assert.True(Assert.IsType<bool>(enqueue.Arguments[1]));
     }
 
     [Fact]
@@ -305,8 +334,10 @@ public class MovementManagerTests
         public RecordingDispatchProxy<IPositionCommandGroup> PositionProxy { get; }
         public RecordingDispatchProxy<IVelocityCommandGroup> VelocityProxy { get; }
         public RecordingDispatchProxy<IMoveCommandGroup> MoveProxy { get; }
+        public RecordingDispatchProxy<IScaleCommandGroup> ScaleProxy { get; }
         public RecordingDispatchProxy<IStateCommandGroup> StateProxy { get; }
         public RecordingDispatchProxy<IClientMovementCommandValidator> ValidatorProxy { get; }
+        public RecordingDispatchProxy<IUnitEntity> OwnerProxy { get; }
 
         private MovementManagerHarness(
             MovementManager manager,
@@ -314,16 +345,20 @@ public class MovementManagerTests
             RecordingDispatchProxy<IPositionCommandGroup> positionProxy,
             RecordingDispatchProxy<IVelocityCommandGroup> velocityProxy,
             RecordingDispatchProxy<IMoveCommandGroup> moveProxy,
+            RecordingDispatchProxy<IScaleCommandGroup> scaleProxy,
             RecordingDispatchProxy<IStateCommandGroup> stateProxy,
-            RecordingDispatchProxy<IClientMovementCommandValidator> validatorProxy)
+            RecordingDispatchProxy<IClientMovementCommandValidator> validatorProxy,
+            RecordingDispatchProxy<IUnitEntity> ownerProxy)
         {
             Manager        = manager;
             TimeProxy      = timeProxy;
             PositionProxy  = positionProxy;
             VelocityProxy  = velocityProxy;
             MoveProxy      = moveProxy;
+            ScaleProxy     = scaleProxy;
             StateProxy     = stateProxy;
             ValidatorProxy = validatorProxy;
+            OwnerProxy     = ownerProxy;
         }
 
         public static MovementManagerHarness Create(uint activeCCStateMask = 0u, uint ownerGuid = 0u)
@@ -334,13 +369,15 @@ public class MovementManagerTests
             IVelocityCommandGroup velocityGroup = RecordingDispatchProxy<IVelocityCommandGroup>.Create(out RecordingDispatchProxy<IVelocityCommandGroup> velocityProxy);
             IMoveCommandGroup moveGroup = RecordingDispatchProxy<IMoveCommandGroup>.Create(out RecordingDispatchProxy<IMoveCommandGroup> moveProxy);
             IRotationCommandGroup rotationGroup = RecordingDispatchProxy<IRotationCommandGroup>.Create(out _);
-            IScaleCommandGroup scaleGroup = RecordingDispatchProxy<IScaleCommandGroup>.Create(out _);
+            IScaleCommandGroup scaleGroup = RecordingDispatchProxy<IScaleCommandGroup>.Create(out RecordingDispatchProxy<IScaleCommandGroup> scaleProxy);
             IStateCommandGroup stateGroup = RecordingDispatchProxy<IStateCommandGroup>.Create(out RecordingDispatchProxy<IStateCommandGroup> stateProxy);
             IModeCommandGroup modeGroup = RecordingDispatchProxy<IModeCommandGroup>.Create(out _);
             IClientMovementCommandValidator validator = RecordingDispatchProxy<IClientMovementCommandValidator>.Create(out RecordingDispatchProxy<IClientMovementCommandValidator> validatorProxy);
             IUnitEntity owner = RecordingDispatchProxy<IUnitEntity>.Create(out RecordingDispatchProxy<IUnitEntity> ownerProxy);
+            IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
 
             ownerProxy.SetProperty(nameof(IUnitEntity.Guid), ownerGuid);
+            ownerProxy.SetProperty(nameof(IUnitEntity.Map), map);
             ownerProxy.SetProperty(nameof(IUnitEntity.ActiveCCStateMask), activeCCStateMask);
             ownerProxy.SetProperty(nameof(IUnitEntity.Position), Vector3.Zero);
 
@@ -358,7 +395,7 @@ public class MovementManagerTests
 
             manager.Initialise(owner);
 
-            return new MovementManagerHarness(manager, timeProxy, positionProxy, velocityProxy, moveProxy, stateProxy, validatorProxy);
+            return new MovementManagerHarness(manager, timeProxy, positionProxy, velocityProxy, moveProxy, scaleProxy, stateProxy, validatorProxy, ownerProxy);
         }
     }
 }

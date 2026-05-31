@@ -38,6 +38,8 @@ using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Account.Inventory;
+using NexusForever.Game.Storefront;
 using NexusForever.Game.Static.Guild;
 using NexusForever.Game.Static.Option;
 using NexusForever.Game.Static.Pvp;
@@ -1045,6 +1047,12 @@ namespace NexusForever.Game.Entity
             }).FireAndForgetAsync();
         }
 
+        private void SendDeferredInWorldStorefrontCatalog()
+        {
+            StorePurchaseHistoryManager.SendPurchaseHistory(Account);
+            GlobalStorefrontManager.Instance.SendBootstrapCatalogPacketsIfNeeded(Session, Account.Id);
+        }
+
         private void SendPacketsAfterAddToMap()
         {
             DateTime start = DateTime.UtcNow;
@@ -1141,6 +1149,12 @@ namespace NexusForever.Game.Entity
                 PhasesIPerceive = 1,
                 PhasesThatPerceiveMe = 1
             });
+
+            // Do not send 0988/098B/0987 in the same enqueue pass as ServerPlayerCreate and the rest of the
+            // login burst; the client can drop or mis-apply store payloads while applying create data.
+            Session.Events.EnqueueEvent(new PredicateEvent(
+                () => true,
+                SendDeferredInWorldStorefrontCatalog));
 
             log.Trace($"Player {Name} took {(DateTime.UtcNow - start).TotalMilliseconds}ms to send packets after add to map.");
         }

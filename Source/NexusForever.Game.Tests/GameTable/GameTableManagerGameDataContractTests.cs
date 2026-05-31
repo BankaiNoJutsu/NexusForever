@@ -10,6 +10,7 @@ public class GameTableManagerGameDataContractTests
     [InlineData(nameof(GameTableManager.ArchiveArticle), typeof(ArchiveArticleEntry), "ArchiveArticle.tbl")]
     [InlineData(nameof(GameTableManager.ArchiveEntry), typeof(ArchiveEntryEntry), "ArchiveEntry.tbl")]
     [InlineData(nameof(GameTableManager.ArchiveEntryUnlockRule), typeof(ArchiveEntryUnlockRuleEntry), "ArchiveEntryUnlockRule.tbl")]
+    [InlineData(nameof(GameTableManager.DailyLoginReward), typeof(DailyLoginRewardEntry), "DailyLoginReward.tbl")]
     [InlineData(nameof(GameTableManager.HousingContributionInfo), typeof(HousingContributionInfoEntry), "HousingContributionInfo.tbl")]
     [InlineData(nameof(GameTableManager.ItemRandomStat), typeof(ItemRandomStatEntry), "ItemRandomStat.tbl")]
     [InlineData(nameof(GameTableManager.ItemRandomStatGroup), typeof(ItemRandomStatGroupEntry), "ItemRandomStatGroup.tbl")]

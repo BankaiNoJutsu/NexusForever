@@ -182,6 +182,8 @@ namespace NexusForever.GameTable
         public GameTable<CustomerSurveyEntry> CustomerSurvey { get; private set; }
         public GameTable<CustomizationParameterEntry> CustomizationParameter { get; private set; }
         public GameTable<CustomizationParameterMapEntry> CustomizationParameterMap { get; private set; }
+
+        [GameData]
         public GameTable<DailyLoginRewardEntry> DailyLoginReward { get; private set; }
 
         [GameData]
@@ -400,12 +402,15 @@ namespace NexusForever.GameTable
         public GameTable<ModelSequenceByWeaponEntry> ModelSequenceByWeapon { get; private set; }
         public GameTable<ModelSequenceTransitionEntry> ModelSequenceTransition { get; private set; }
         public GameTable<ModelSkinFXEntry> ModelSkinFX { get; private set; }
+        [GameData]
         public GameTable<PathEpisodeEntry> PathEpisode { get; private set; }
         public GameTable<PathExplorerActivateEntry> PathExplorerActivate { get; private set; }
         public GameTable<PathExplorerAreaEntry> PathExplorerArea { get; private set; }
         public GameTable<PathExplorerDoorEntry> PathExplorerDoor { get; private set; }
         public GameTable<PathExplorerDoorEntranceEntry> PathExplorerDoorEntrance { get; private set; }
+        [GameData]
         public GameTable<PathExplorerNodeEntry> PathExplorerNode { get; private set; }
+        [GameData]
         public GameTable<PathExplorerPowerMapEntry> PathExplorerPowerMap { get; private set; }
         public GameTable<PathExplorerScavengerClueEntry> PathExplorerScavengerClue { get; private set; }
         public GameTable<PathExplorerScavengerHuntEntry> PathExplorerScavengerHunt { get; private set; }
@@ -413,6 +418,7 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<PathLevelEntry> PathLevel { get; private set; }
 
+        [GameData]
         public GameTable<PathMissionEntry> PathMission { get; private set; }
 
         [GameData]
@@ -423,19 +429,24 @@ namespace NexusForever.GameTable
         public GameTable<PathScientistExperimentationEntry> PathScientistExperimentation { get; private set; }
         public GameTable<PathScientistExperimentationPatternEntry> PathScientistExperimentationPattern { get; private set; }
         public GameTable<PathScientistFieldStudyEntry> PathScientistFieldStudy { get; private set; }
+        [GameData]
         public GameTable<PathScientistScanBotProfileEntry> PathScientistScanBotProfile { get; private set; }
         public GameTable<PathScientistSpecimenSurveyEntry> PathScientistSpecimenSurvey { get; private set; }
+        [GameData]
         public GameTable<PathSettlerHubEntry> PathSettlerHub { get; private set; }
         public GameTable<PathSettlerImprovementEntry> PathSettlerImprovement { get; private set; }
+        [GameData]
         public GameTable<PathSettlerImprovementGroupEntry> PathSettlerImprovementGroup { get; private set; }
         public GameTable<PathSettlerInfrastructureEntry> PathSettlerInfrastructure { get; private set; }
         public GameTable<PathSettlerMayorEntry> PathSettlerMayor { get; private set; }
         public GameTable<PathSettlerSheriffEntry> PathSettlerSheriff { get; private set; }
         public GameTable<PathSoldierActivateEntry> PathSoldierActivate { get; private set; }
+        [GameData]
         public GameTable<PathSoldierAssassinateEntry> PathSoldierAssassinate { get; private set; }
         public GameTable<PathSoldierEventEntry> PathSoldierEvent { get; private set; }
         public GameTable<PathSoldierEventWaveEntry> PathSoldierEventWave { get; private set; }
         public GameTable<PathSoldierSWATEntry> PathSoldierSWAT { get; private set; }
+        [GameData]
         public GameTable<PathSoldierTowerDefenseEntry> PathSoldierTowerDefense { get; private set; }
         public GameTable<PeriodicQuestGroupEntry> PeriodicQuestGroup { get; private set; }
         public GameTable<PeriodicQuestSetEntry> PeriodicQuestSet { get; private set; }

@@ -80,16 +80,8 @@ public class GlobalLootManagerTests
         Assert.Single(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
 
         var sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-        Assert.Equal(3, sessionCalls.Count);
-
-        var floater = Assert.IsType<ServerGenericFloaterString>(sessionCalls[0].Arguments[0]);
-        Assert.Equal("+75 Omnibit", floater.Text);
-
-        var chat = Assert.IsType<ServerChat>(sessionCalls[1].Arguments[0]);
-        Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
-        Assert.Equal("You receive 75 Omnibit.", chat.Text);
-
-        var notify = Assert.IsType<ServerLootNotify>(sessionCalls[2].Arguments[0]);
+        RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
+        var notify = Assert.IsType<ServerLootNotify>(sessionCall.Arguments[0]);
         Assert.Equal(99u, notify.OwnerUnitId);
         Assert.Equal(123u, notify.ParentUnitId);
         Assert.True(notify.Explosion);
@@ -148,23 +140,8 @@ public class GlobalLootManagerTests
         Assert.Single(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
 
         var sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-        Assert.Equal(5, sessionCalls.Count);
-
-        var accountFloater = Assert.IsType<ServerGenericFloaterString>(sessionCalls[0].Arguments[0]);
-        Assert.Equal("+75 Omnibit", accountFloater.Text);
-
-        var accountChat = Assert.IsType<ServerChat>(sessionCalls[1].Arguments[0]);
-        Assert.Equal(ChatChannelType.Loot, accountChat.Channel.ChatChannelId);
-        Assert.Equal("You receive 75 Omnibit.", accountChat.Text);
-
-        var cashFloater = Assert.IsType<ServerGenericFloaterString>(sessionCalls[2].Arguments[0]);
-        Assert.Equal("+17 Credits", cashFloater.Text);
-
-        var cashChat = Assert.IsType<ServerChat>(sessionCalls[3].Arguments[0]);
-        Assert.Equal(ChatChannelType.Loot, cashChat.Channel.ChatChannelId);
-        Assert.Equal("You receive 17 Credits.", cashChat.Text);
-
-        var notify = Assert.IsType<ServerLootNotify>(sessionCalls[4].Arguments[0]);
+        RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
+        var notify = Assert.IsType<ServerLootNotify>(sessionCall.Arguments[0]);
         Assert.Equal(99u, notify.OwnerUnitId);
         Assert.Equal(123u, notify.ParentUnitId);
         Assert.True(notify.Explosion);

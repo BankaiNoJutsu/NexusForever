@@ -14,6 +14,8 @@ using NexusForever.Script.Instance.Dungeon.StormtalonsLair.Script;
 using NexusForever.Script.Instance.Raid.Datascape.Script;
 using NexusForever.Script.Instance.Raid.GeneticArchives.Script;
 using NexusForever.Script.Instance.Raid.RedMoonTerror.Script;
+using NexusForever.Script.Main.AI;
+using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 using DatascapeObjective = NexusForever.Script.Instance.Raid.Datascape.PublicEventObjective;
 using GeneticObjective = NexusForever.Script.Instance.Raid.GeneticArchives.PublicEventObjective;
@@ -89,6 +91,57 @@ public class PublicEventObjectiveCreditEntityScriptTests
             i => i.Arguments.Length == 2);
         Assert.Equal(expectedObjectiveId, (uint)update.Arguments[0]);
         Assert.Equal(1, (int)update.Arguments[1]);
+    }
+
+    [Theory]
+    [MemberData(nameof(ObjectiveCreditScripts))]
+    public void ObjectiveCreditScripts_RequireScriptNameFilter(
+        Func<IFactory<ISpellParameters>, IGameTableManager, PublicEventObjectiveCreditEntityScript> createScript,
+        uint expectedObjectiveId)
+    {
+        _ = expectedObjectiveId;
+
+        PublicEventObjectiveCreditEntityScript script = createScript(CreateSpellParametersFactory(), RecordingDispatchProxy<IGameTableManager>.Create(out _));
+        ScriptFilterScriptNameAttribute attribute = script.GetType().GetCustomAttribute<ScriptFilterScriptNameAttribute>();
+
+        Assert.NotNull(attribute);
+        Assert.False(string.IsNullOrWhiteSpace(attribute.ScriptName));
+    }
+
+    [Theory]
+    [MemberData(nameof(ObjectiveCreditScripts))]
+    public void ObjectiveCreditScripts_DoNotInheritCombatAI(
+        Func<IFactory<ISpellParameters>, IGameTableManager, PublicEventObjectiveCreditEntityScript> createScript,
+        uint expectedObjectiveId)
+    {
+        _ = expectedObjectiveId;
+
+        PublicEventObjectiveCreditEntityScript script = createScript(CreateSpellParametersFactory(), RecordingDispatchProxy<IGameTableManager>.Create(out _));
+
+        Assert.False(typeof(CombatAI).IsAssignableFrom(script.GetType()));
+    }
+
+    [Theory]
+    [MemberData(nameof(ObjectiveCreditScripts))]
+    public void ObjectiveCreditScripts_OnlyMatchExplicitScriptNameSearch(
+        Func<IFactory<ISpellParameters>, IGameTableManager, PublicEventObjectiveCreditEntityScript> createScript,
+        uint expectedObjectiveId)
+    {
+        _ = expectedObjectiveId;
+
+        PublicEventObjectiveCreditEntityScript script = createScript(CreateSpellParametersFactory(), RecordingDispatchProxy<IGameTableManager>.Create(out _));
+        ScriptFilterParameters parameters = new(RecordingDispatchProxy<IServiceProvider>.Create(out _));
+        parameters.Initialise(script.GetType());
+
+        IScriptFilterSearch unnamedSearch = new ScriptFilterSearch()
+            .FilterByScriptType<IOwnedScript<ICreatureEntity>>()
+            .FilterByCreatureId(1u);
+        Assert.False(new ScriptFilterMatch().Match(unnamedSearch, parameters));
+
+        IScriptFilterSearch namedSearch = new ScriptFilterSearch()
+            .FilterByScriptType<IOwnedScript<ICreatureEntity>>()
+            .FilterByScriptNames([parameters.ScriptName]);
+        Assert.True(new ScriptFilterMatch().Match(namedSearch, parameters));
     }
 
     [Theory]

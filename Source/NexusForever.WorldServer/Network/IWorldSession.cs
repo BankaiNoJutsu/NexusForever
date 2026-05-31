@@ -12,6 +12,14 @@ namespace NexusForever.WorldServer.Network
         IAccount Account { get; }
         IPlayer Player { get; set; }
 
+        bool HasSentCharacterListPackets { get; set; }
+
+        /// <summary>
+        /// True after pregame account packets (currency, unlocks, entitlements, tier) are sent during character list setup.
+        /// Retail can open the storefront before the async <see cref="ServerCharacterList"/> finishes loading.
+        /// </summary>
+        bool HasSentPregameAccountPackets { get; set; }
+
         List<CharacterModel> Characters { get; }
 
         /// <summary>

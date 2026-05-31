@@ -5,6 +5,7 @@ using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Challenges;
 using NexusForever.Game.Combat;
+using NexusForever.Game.Combat.CrowdControl;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Spell;
@@ -1246,7 +1247,7 @@ namespace NexusForever.Game.Entity
                 CastingId = castingId
             };
 
-            if (state == CCState.Interrupt)
+            if (CrowdControlStateRules.InterruptsActiveCasting(state))
                 CancelCastingSpells(CastResult.SpellInterrupted);
         }
 
@@ -1939,6 +1940,10 @@ namespace NexusForever.Game.Entity
                 return CastResult.SpellRemoved;
             }
 
+            CastResult activeCastResult = CheckActiveCastSlot(parameters);
+            if (activeCastResult != CastResult.Ok)
+                return activeCastResult;
+
             if (parameters.UserInitiatedSpellCast)
             {
                 if (this is IPlayer player)
@@ -1959,6 +1964,19 @@ namespace NexusForever.Game.Entity
 
             pendingSpells.Add(spell);
             return CastResult.Ok;
+        }
+
+        internal CastResult CheckActiveCastSlot(ISpellParameters parameters)
+        {
+            if (parameters == null)
+                throw new ArgumentNullException();
+
+            if (parameters.ParentSpellInfo != null)
+                return CastResult.Ok;
+
+            return pendingSpells.Any(s => s.BlocksCasting)
+                ? CastResult.SpellAlreadyCasting
+                : CastResult.Ok;
         }
 
         private static bool ShouldCancelActiveTrade(ISpellParameters parameters)
@@ -1990,7 +2008,7 @@ namespace NexusForever.Game.Entity
         private void CancelCastingSpells(CastResult result)
         {
             foreach (ISpell spell in pendingSpells)
-                if (spell.IsCasting)
+                if (spell.BlocksCasting)
                     spell.CancelCast(result);
         }
 

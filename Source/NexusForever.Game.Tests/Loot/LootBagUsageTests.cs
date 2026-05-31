@@ -154,19 +154,8 @@ public class LootBagUsageTests
             RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall = achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)).First();
             Assert.Same(player, achievementCall.Arguments[0]);
 
-            RecordingDispatchProxy<IGameSession>.Invocation floaterCall = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .First(i => i.Arguments[0] is ServerGenericFloaterString);
-            var floater = Assert.IsType<ServerGenericFloaterString>(floaterCall.Arguments[0]);
-            Assert.Equal("+5 Omnibit", floater.Text);
-
-            RecordingDispatchProxy<IGameSession>.Invocation chatCall = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .First(i => i.Arguments[0] is ServerChat);
-            var chat = Assert.IsType<ServerChat>(chatCall.Arguments[0]);
-            Assert.Equal(ChatChannelType.Loot, chat.Channel.ChatChannelId);
-            Assert.Equal("You receive 5 Omnibit.", chat.Text);
-
             RecordingDispatchProxy<IGameSession>.Invocation sessionCall = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .First(i => i.Arguments[0] is ServerLootNotify);
+                .Single();
             var notify = Assert.IsType<ServerLootNotify>(sessionCall.Arguments[0]);
             Assert.True(notify.Explosion);
             var singleLootItem = Assert.Single(notify.LootItems);
