@@ -94,7 +94,7 @@ namespace NexusForever.StsServer.Network.Message.Handler
                 AuthType   = 0,
                 LocationId = "",
                 UserId     = session.Account.Email,
-                UserCenter = 0,
+                UserCenter = GetUserCenter(session.Account),
                 UserName   = session.Account.Email,
                 AccessMask = 1L,
                 Aliases    = { session.Account.Email }
@@ -102,6 +102,30 @@ namespace NexusForever.StsServer.Network.Message.Handler
             AddRoleIds(response.RoleIds, session.Account);
 
             session.EnqueueMessageOk(response);
+        }
+
+        [MessageHandler("/Auth/GetUserInfo", SessionState.None)]
+        public static void HandleGetUserInfo(StsSession session, AuthGetUserInfoMessage getUserInfo)
+        {
+            EnqueueAuthUserInfo(session, getUserInfo.UserId);
+        }
+
+        [MessageHandler("/Auth/GetMyUserInfo", SessionState.None)]
+        public static void HandleGetMyUserInfo(StsSession session, AuthGetMyUserInfoMessage getMyUserInfo)
+        {
+            EnqueueAuthUserInfo(session, getMyUserInfo.UserId);
+        }
+
+        [MessageHandler("/Auth/PageVerifiedIps", SessionState.None)]
+        public static void HandlePageVerifiedIps(StsSession session, AuthPageVerifiedIpsMessage pageVerifiedIps)
+        {
+            session.EnqueueMessageOk(new AuthPageVerifiedIpsResponse());
+        }
+
+        [MessageHandler("/Auth/UnregisterVerifiedIp", SessionState.None)]
+        public static void HandleUnregisterVerifiedIp(StsSession session, AuthUnregisterVerifiedIpMessage unregisterVerifiedIp)
+        {
+            session.EnqueueMessageOk(new EmptyStsResponse());
         }
 
         [MessageHandler("/Auth/RequestGameToken", SessionState.None)]
@@ -165,11 +189,59 @@ namespace NexusForever.StsServer.Network.Message.Handler
                 LoginName     = account.Email,
                 UserId        = account.Email,
                 UserName      = account.Email,
-                UserCenter    = 0
+                UserCenter    = GetUserCenter(account)
             };
             AddRoleIds(response.RoleIds, account);
 
             session.EnqueueMessageOk(response);
+        }
+
+        private static void EnqueueAuthUserInfo(StsSession session, string requestedIdentity)
+        {
+            if (session.Account != null)
+            {
+                EnqueueAuthUserInfo(session, session.Account, requestedIdentity);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(requestedIdentity))
+            {
+                session.EnqueueMessageError(new ServerErrorMessage((int)ErrorCode.InvalidAccountNameOrPassword));
+                return;
+            }
+
+            session.Events.EnqueueEvent(new TaskGenericEvent<AccountModel>(
+                DatabaseManager.Instance.GetDatabase<AuthDatabase>().GetAccountByEmailAsync(requestedIdentity),
+                account =>
+            {
+                if (account == null)
+                {
+                    session.EnqueueMessageError(new ServerErrorMessage((int)ErrorCode.InvalidAccountNameOrPassword));
+                    return;
+                }
+
+                EnqueueAuthUserInfo(session, account, requestedIdentity);
+            }));
+        }
+
+        private static void EnqueueAuthUserInfo(StsSession session, AccountModel account, string requestedIdentity)
+        {
+            if (!string.IsNullOrWhiteSpace(requestedIdentity) &&
+                !string.Equals(requestedIdentity, account.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                session.EnqueueMessageError(new ServerErrorMessage((int)ErrorCode.InvalidAccountNameOrPassword));
+                return;
+            }
+
+            session.EnqueueMessageOk(new AuthUserInfoResponse
+            {
+                UserId     = account.Email,
+                UserCenter = GetUserCenter(account),
+                UserName   = account.Email,
+                LoginName  = account.Email,
+                UserStatus = 0,
+                Created    = GetCreatedUtc(account)
+            });
         }
 
         private static bool GameTokenMatches(string storedToken, string token)
@@ -215,6 +287,17 @@ namespace NexusForever.StsServer.Network.Message.Handler
         {
             foreach (AccountRoleModel accountRole in account.AccountRole)
                 roleIds.Add(accountRole.RoleId);
+        }
+
+        private static uint GetUserCenter(AccountModel account)
+        {
+            return account.Id == 0u ? 1u : account.Id;
+        }
+
+        private static string GetCreatedUtc(AccountModel account)
+        {
+            DateTime createTime = account.CreateTime == default ? DateTime.UtcNow : account.CreateTime;
+            return createTime.ToUniversalTime().ToString("O");
         }
     }
 }
