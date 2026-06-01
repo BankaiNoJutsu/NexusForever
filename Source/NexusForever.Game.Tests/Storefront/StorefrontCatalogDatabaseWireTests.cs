@@ -154,15 +154,7 @@ public class StorefrontCatalogDatabaseWireTests
 
         foreach (StoreOfferItemPriceModel price in model.StoreOfferItemPrice.OrderBy(price => price.CurrencyId))
         {
-            offer.CurrencyData.Add(new ServerStoreOffers.OfferGroup.Offer.OfferCurrencyData
-            {
-                CurrencyId            = price.CurrencyId,
-                Price                 = price.Price,
-                DiscountType          = (DiscountType)price.DiscountType,
-                DiscountValue         = price.DiscountValue,
-                DiscountTimeRemaining = price.DiscountTimeRemaining,
-                TimeSinceExpiry       = price.Expiry != 0 ? -price.Expiry : -1995405795L
-            });
+            offer.CurrencyData.Add(new OfferItemPrice(price).Build());
         }
 
         foreach (StoreOfferItemDataModel itemData in model.StoreOfferItemData

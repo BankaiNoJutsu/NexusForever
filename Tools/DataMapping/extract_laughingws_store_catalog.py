@@ -32,6 +32,26 @@ GUID_OFFSET_RE = re.compile(r"^@GUID\s*\+\s*(\d+)$", re.IGNORECASE)
 BASE_WIP_STORE_ID = 2_120_000_000
 SOURCE_STRIDE = 1_000
 TYPE0_ACCOUNT_ITEM_MAX = 0x7FFF
+FEATURED_CATEGORY_ID = "76"
+
+# WIP/GUESSED: the stock client appears to filter store offers with unmet
+# AccountItem prerequisites before Lua builds category grids. Keep Featured
+# populated with existing no-prerequisite offers so the default store view has
+# useful content without relying on banner loosedata.
+FEATURED_CATEGORY_BACKFILL_ROWS: tuple[tuple[str, str, str, str], ...] = (
+    ("2808", FEATURED_CATEGORY_ID, "13", "1"),  # Character Boost Bundle
+    ("2807", FEATURED_CATEGORY_ID, "14", "1"),  # AMP & Ability Bundle
+    ("3312", FEATURED_CATEGORY_ID, "15", "1"),  # Ho Ho Ho Mobile (Green)
+    ("3315", FEATURED_CATEGORY_ID, "16", "1"),  # Ho Ho Ho Mobile (Blue)
+    ("3318", FEATURED_CATEGORY_ID, "17", "1"),  # Ho Ho Ho Mobile (Gold)
+    ("1727", FEATURED_CATEGORY_ID, "18", "1"),  # Ghastly Skeletal Warpig
+    ("3332", FEATURED_CATEGORY_ID, "19", "1"),  # Cheer Gear Costume
+    ("3223", FEATURED_CATEGORY_ID, "20", "1"),  # Metal Maniac Costume
+    ("3125", FEATURED_CATEGORY_ID, "21", "1"),  # Deep Diver Diving Suit
+    ("3123", FEATURED_CATEGORY_ID, "22", "1"),  # Surfboard Sampler Pack
+    ("3124", FEATURED_CATEGORY_ID, "23", "1"),  # Alien Decor Pack
+    ("3209", FEATURED_CATEGORY_ID, "24", "1"),  # Fancy Pants Decor Pack
+)
 
 LEGACY_TABLE_ALIASES = {
     "store_offer_category": "store_offer_group_category",
@@ -307,6 +327,21 @@ def prune_invalid_rows(
             del rows[key]
 
 
+def normalise_active_store_price_expiry(
+    tables: OrderedDict[str, OrderedDict[tuple[str, ...], dict[str, str]]],
+) -> None:
+    # The runtime emits this scalar unchanged: <= 0 is active, > 0 is expired.
+    # LaughingWS source rows are seeded as currently active catalog rows.
+    for row in tables["store_offer_item_price"].values():
+        try:
+            expiry = int(row["expiry"])
+        except ValueError:
+            continue
+
+        if expiry > 0:
+            row["expiry"] = str(-expiry)
+
+
 def parse_rows(
     source_sql: str,
     source_index: int = 0,
@@ -343,6 +378,7 @@ def parse_rows(
             tables[spec.name][key] = row_by_column
 
     prune_invalid_rows(tables, skipped_by_reason)
+    normalise_active_store_price_expiry(tables)
     return tables
 
 
@@ -388,6 +424,27 @@ def merge_tables(
 ) -> None:
     for table_name, rows in source.items():
         target[table_name].update(rows)
+
+
+def apply_featured_category_backfill(
+    tables: OrderedDict[str, OrderedDict[tuple[str, ...], dict[str, str]]],
+) -> None:
+    offer_groups = tables["store_offer_group"]
+    category_rows = tables["store_offer_group_category"]
+    for group_id, category_id, index, visible in FEATURED_CATEGORY_BACKFILL_ROWS:
+        if (group_id,) not in offer_groups:
+            continue
+
+        key = (group_id, category_id)
+        if key in category_rows:
+            continue
+
+        category_rows[key] = {
+            "id": group_id,
+            "categoryId": category_id,
+            "index": index,
+            "visible": visible,
+        }
 
 
 def render_seed(
@@ -495,6 +552,8 @@ def main() -> int:
                 skipped_by_reason,
             ),
         )
+
+    apply_featured_category_backfill(tables)
 
     output_sql = args.output_sql.resolve()
     output_sql.parent.mkdir(parents=True, exist_ok=True)

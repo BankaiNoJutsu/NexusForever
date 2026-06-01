@@ -98,12 +98,47 @@ namespace NexusForever.Game.Storefront
         private void BuildNetworkPackets()
         {
             serverStoreCategoryCache = BuildStoreCategoryPacketCache(storeCategories.Values);
+            Dictionary<uint, int> categoryOrderLookup = serverStoreCategoryCache
+                .Select((category, index) => (CategoryId: category.CategoryId, Index: index))
+                .ToDictionary(category => category.CategoryId, category => category.Index);
+
             serverStoreOfferGroupCache = offerGroups.Values
-                .OrderBy(offerGroup => offerGroup.Id)
-                .Select(offerGroup => offerGroup.Build())
+                .Select(offerGroup => new
+                {
+                    OfferGroup = offerGroup,
+                    SortKey    = GetOfferGroupSortKey(offerGroup, categoryOrderLookup)
+                })
+                .OrderBy(entry => entry.SortKey.CategoryOrder)
+                .ThenBy(entry => entry.SortKey.CategoryIndex)
+                .ThenBy(entry => entry.OfferGroup.Id)
+                .Select(entry => entry.OfferGroup.Build())
                 .ToImmutableList();
 
             ValidateCachedStoreOfferBatches();
+        }
+
+        private static (int CategoryOrder, uint CategoryIndex) GetOfferGroupSortKey(
+            IOfferGroup offerGroup,
+            IReadOnlyDictionary<uint, int> categoryOrderLookup)
+        {
+            int selectedCategoryOrder = int.MaxValue;
+            uint selectedCategoryIndex = uint.MaxValue;
+
+            foreach (IOfferGroupCategory category in offerGroup.Categories)
+            {
+                int categoryOrder = categoryOrderLookup.TryGetValue(category.Id, out int order)
+                    ? order
+                    : int.MaxValue;
+                if (categoryOrder > selectedCategoryOrder)
+                    continue;
+                if (categoryOrder == selectedCategoryOrder && category.Index >= selectedCategoryIndex)
+                    continue;
+
+                selectedCategoryOrder = categoryOrder;
+                selectedCategoryIndex = category.Index;
+            }
+
+            return (selectedCategoryOrder, selectedCategoryIndex);
         }
 
         private void ValidateCachedStoreCategoriesPacket()

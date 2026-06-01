@@ -46,7 +46,9 @@ namespace NexusForever.Game.Storefront
                 DiscountType          = DiscountType,
                 DiscountValue         = DiscountValue,
                 DiscountTimeRemaining = DiscountTimeRemaining,
-                TimeSinceExpiry       = Expiry != 0 ? -Expiry : -1995405795L
+                // The database stores the retail time-since-expiry scalar as emitted.
+                // Negative or zero values are active; positive values are expired.
+                TimeSinceExpiry       = Expiry
             };
         }
     }

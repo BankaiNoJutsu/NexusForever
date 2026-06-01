@@ -72,6 +72,27 @@ public class StorefrontCatalogTests
         Assert.Empty(group.Build().Offers);
     }
 
+    [Theory]
+    [InlineData(0L)]
+    [InlineData(1995405795L)]
+    [InlineData(-1749028660L)]
+    [InlineData(-1024494699L)]
+    [InlineData(-1016071787L)]
+    public void OfferItemPrice_BuildEmitsExpiryWireValueAsStored(long databaseExpiry)
+    {
+        var price = new OfferItemPrice(new StoreOfferItemPriceModel
+        {
+            Id         = 100u,
+            CurrencyId = (byte)AccountCurrencyType.Protobuck,
+            Price      = 10f,
+            Expiry     = databaseExpiry
+        });
+
+        ServerStoreOffers.OfferGroup.Offer.OfferCurrencyData currencyData = price.Build();
+
+        Assert.Equal(databaseExpiry, currencyData.TimeSinceExpiry);
+    }
+
     [Fact]
     public void SendStoreOffers_SendsStoreOffersInLiveSizedBatches()
     {
@@ -303,6 +324,51 @@ public class StorefrontCatalogTests
         Assert.Equal(26u, categoryCache[0].ParentCategoryId);
         Assert.Equal(26u, categoryCache[1].ParentCategoryId);
         Assert.Equal(27u, categoryCache[2].ParentCategoryId);
+    }
+
+    [Fact]
+    public void BuildNetworkPackets_OrdersOfferGroupsByCategoryTreeThenCategoryIndex()
+    {
+        var manager = new GlobalStorefrontManager();
+        SetPrivateField(manager, "storeCategories", ImmutableDictionary<uint, ICategory>.Empty
+            .Add(76u, BuildCategory(76u, 26u, "Featured", 1u))
+            .Add(50u, BuildCategory(50u, 26u, "Limited Time", 4u)));
+
+        IOfferGroup[] groups =
+        [
+            BuildOfferGroup(1678u, 76u, 6u),
+            BuildOfferGroup(1680u, 76u, 5u),
+            BuildOfferGroup(2428u, 76u, 2u),
+            BuildOfferGroup(2718u, 76u, 4u),
+            BuildOfferGroup(2783u, 76u, 30u),
+            BuildOfferGroup(2987u, 76u, 9u),
+            BuildOfferGroup(3343u, 76u, 12u),
+            BuildOfferGroup(2091u, 76u, 10u),
+            BuildOfferGroup(100u, 50u, 1u)
+        ];
+        SetPrivateField(manager, "offerGroups", groups.ToImmutableDictionary(group => group.Id));
+
+        typeof(GlobalStorefrontManager)
+            .GetMethod("BuildNetworkPackets", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(manager, null);
+
+        var offerGroupCache = (ImmutableList<ServerStoreOffers.OfferGroup>)typeof(GlobalStorefrontManager)
+            .GetField("serverStoreOfferGroupCache", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(manager)!;
+
+        Assert.Equal(
+        [
+            2428u,
+            2718u,
+            1680u,
+            1678u,
+            2987u,
+            2091u,
+            3343u,
+            2783u,
+            100u
+        ],
+            offerGroupCache.Select(offerGroup => offerGroup.Id));
     }
 
     [Fact]
@@ -781,6 +847,52 @@ public class StorefrontCatalogTests
         FieldInfo field = instance.GetType()
             .GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
         field.SetValue(instance, value);
+    }
+
+    private static Category BuildCategory(uint id, uint parentId, string name, uint index)
+    {
+        return new Category(new StoreCategoryModel
+        {
+            Id          = id,
+            ParentId    = parentId,
+            Name        = name,
+            Description = name,
+            Index       = index,
+            Visible     = 1
+        });
+    }
+
+    private static IOfferGroup BuildOfferGroup(uint id, uint categoryId, uint categoryIndex)
+    {
+        return new OfferGroup(new StoreOfferGroupModel
+        {
+            Id          = id,
+            Name        = $"Group {id}",
+            Description = $"Group {id}",
+            Visible     = 1,
+            StoreOfferGroupCategory =
+            [
+                new StoreOfferGroupCategoryModel
+                {
+                    Id         = id,
+                    CategoryId = categoryId,
+                    Index      = (byte)categoryIndex,
+                    Visible    = 1
+                }
+            ],
+            StoreOfferItem =
+            [
+                new StoreOfferItemModel
+                {
+                    Id                      = id,
+                    GroupId                 = id,
+                    Name                    = $"Offer {id}",
+                    Description             = $"Offer {id}",
+                    RetailCatalogWireScalar = RetailStoreOfferWireConstants.CatalogWireScalarBits,
+                    Visible                 = 1
+                }
+            ]
+        });
     }
 
     [Fact]

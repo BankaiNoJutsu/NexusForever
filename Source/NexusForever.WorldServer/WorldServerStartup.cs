@@ -24,6 +24,7 @@ namespace NexusForever.WorldServer
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider)
         {
+            app.UseMiddleware<StorefrontBannerMiddleware>();
             app.UseStaticFiles();
             app.UseWebSockets(new WebSocketOptions
             {
