@@ -1,19 +1,19 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-Rebuilds Auth, World, and runtime script assemblies, reuses the rest of the local runtime, and launches WildStar.
+Stops running NexusForever processes, rebuilds the local runtime, and launches WildStar.
 
 .DESCRIPTION
-Use this for the fast local auth/world edit loop after the repo has already been
+Use this for the fast local edit loop after the repo has already been
 initialized once. The script:
 
 * rebuilds NexusForever.AuthServer, NexusForever.WorldServer, and runtime script assemblies loaded by WorldServer
-* kills any running NexusForever.AuthServer and NexusForever.WorldServer processes before rebuilding
-* reuses other running local server processes and starts any missing ones
+* kills any running NexusForever.* processes before rebuilding
+* starts the local standalone server processes
 * launches the WildStar client through the existing local launcher flow only when the client is not already running
 
 .EXAMPLE
-.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1 -ClientDirectory "D:\Games\WildStar"
+.\Tools\Setup\Restart-NexusForeverLocal.ps1 -ClientDirectory "D:\Games\WildStar"
 #>
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '')]
@@ -57,6 +57,9 @@ param(
     [string] $AuthHost = '127.0.0.1',
     [string] $PatcherHost = '',
     [int] $RealmDataCenterId = 6,
+    [ValidateSet('None', 'LooseData', 'HostsRedirect', 'Both')]
+    [string] $StoreBannerMode = 'LooseData',
+    [switch] $SkipLocalStoreBannerData,
     [int] $WaitTimeoutSeconds = 120,
 
     [string] $MySqlExe = 'mysql',
@@ -98,6 +101,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+if (($StoreBannerMode -eq 'HostsRedirect' -or $StoreBannerMode -eq 'Both') -and !$PSBoundParameters.ContainsKey('RealmDataCenterId')) {
+    $RealmDataCenterId = 9
+}
+
 function Write-Section {
     param([string] $Message)
 
@@ -124,24 +131,6 @@ function Invoke-DotNet {
     }
 }
 
-function Get-RunningProcessesByPath {
-    param([string] $ExecutablePath)
-
-    $processName = [System.IO.Path]::GetFileName($ExecutablePath)
-    $runningProcessIds = @(Get-CimInstance Win32_Process -Filter "Name = '$processName'" -ErrorAction SilentlyContinue | Where-Object {
-        $_.ExecutablePath -and [string]::Equals($_.ExecutablePath, $ExecutablePath, [System.StringComparison]::OrdinalIgnoreCase)
-    } | Select-Object -ExpandProperty ProcessId)
-
-    $runningProcesses = foreach ($processId in $runningProcessIds) {
-        $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
-        if ($process) {
-            $process
-        }
-    }
-
-    @($runningProcesses)
-}
-
 function Get-RunningWildStarProcesses {
     $runningProcessIds = @(
         Get-CimInstance Win32_Process -Filter "Name = 'WildStar64.exe' OR Name = 'WildStar32.exe'" -ErrorAction SilentlyContinue |
@@ -158,19 +147,48 @@ function Get-RunningWildStarProcesses {
     @($runningProcesses)
 }
 
-function Stop-RunningProcessByPath {
-    param(
-        [string] $ExecutablePath,
-        [string] $DisplayName
+function Get-RunningNexusForeverProcesses {
+    $runningProcessInfos = @(
+        Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like 'NexusForever.*.exe' } |
+        Sort-Object Name, ProcessId
     )
 
-    foreach ($process in @(Get-RunningProcessesByPath -ExecutablePath $ExecutablePath)) {
-        Write-Info "Stopping existing $DisplayName process $($process.Id)"
-        Stop-Process -Id $process.Id -Force -ErrorAction Stop
+    $runningProcesses = foreach ($processInfo in $runningProcessInfos) {
+        $process = Get-Process -Id $processInfo.ProcessId -ErrorAction SilentlyContinue
+        if ($process) {
+            [pscustomobject]@{
+                Name           = $processInfo.Name
+                ProcessId      = $processInfo.ProcessId
+                ExecutablePath = $processInfo.ExecutablePath
+                Process        = $process
+            }
+        }
+    }
+
+    @($runningProcesses)
+}
+
+function Stop-RunningNexusForeverProcesses {
+    $runningProcesses = @(Get-RunningNexusForeverProcesses)
+    if ($runningProcesses.Count -eq 0) {
+        Write-Info 'No running NexusForever.* processes found.'
+        return
+    }
+
+    foreach ($entry in $runningProcesses) {
+        if ([string]::IsNullOrWhiteSpace($entry.ExecutablePath)) {
+            Write-Info "Stopping existing $($entry.Name) process $($entry.ProcessId)"
+        }
+        else {
+            Write-Info "Stopping existing $($entry.Name) process $($entry.ProcessId): $($entry.ExecutablePath)"
+        }
+
+        Stop-Process -Id $entry.ProcessId -Force -ErrorAction Stop
 
         $deadline = [DateTime]::UtcNow.AddSeconds(10)
         while ([DateTime]::UtcNow -lt $deadline) {
-            if (!(Get-Process -Id $process.Id -ErrorAction SilentlyContinue)) {
+            if (!(Get-Process -Id $entry.ProcessId -ErrorAction SilentlyContinue)) {
                 break
             }
 
@@ -203,12 +221,8 @@ if (!(Get-Command dotnet -ErrorAction SilentlyContinue)) {
     throw 'Required command ''dotnet'' was not found. Install the .NET SDK required by this repository.'
 }
 
-$authServerExecutable = Join-Path $RepoRoot "Source\NexusForever.AuthServer\bin\$Configuration\$TargetFramework\NexusForever.AuthServer.exe"
-$worldServerExecutable = Join-Path $RepoRoot "Source\NexusForever.WorldServer\bin\$Configuration\$TargetFramework\NexusForever.WorldServer.exe"
-
 Write-Section 'Process restart prep'
-Stop-RunningProcessByPath -ExecutablePath $authServerExecutable -DisplayName 'NexusForever Auth'
-Stop-RunningProcessByPath -ExecutablePath $worldServerExecutable -DisplayName 'NexusForever World'
+Stop-RunningNexusForeverProcesses
 
 Write-Section 'Build'
 Invoke-ProjectBuild -ProjectPath (Join-Path $RepoRoot 'Source\NexusForever.AuthServer\NexusForever.AuthServer.csproj')
@@ -245,6 +259,8 @@ $launcherParameters = @{
     ClientLanguage                      = $ClientLanguage
     AuthHost                            = $AuthHost
     RealmDataCenterId                   = $RealmDataCenterId
+    StoreBannerMode                     = $StoreBannerMode
+    SkipLocalStoreBannerData            = $SkipLocalStoreBannerData
     WaitTimeoutSeconds                  = $WaitTimeoutSeconds
     MySqlExe                            = $MySqlExe
     MySqlHost                           = $MySqlHost
@@ -267,7 +283,6 @@ $launcherParameters = @{
     AdministratorAccountUsername        = $AdministratorAccountUsername
     AdministratorAccountPassword        = $AdministratorAccountPassword
     SkipSetup                           = $true
-    RestartAuthWorldOnly                = $true
 }
 
 if ($PSBoundParameters.ContainsKey('ClientArguments')) {

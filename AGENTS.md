@@ -106,10 +106,10 @@ Start the full local standalone flow:
 .\Tools\Setup\Start-NexusForeverLocal.ps1 -ClientDirectory "D:\Games\WildStar" -PromptForRootPassword
 ```
 
-After the first setup, restart only auth/world for a faster local loop:
+After the first setup, restart the local NexusForever stack for a faster local loop:
 
 ```powershell
-.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1 -ClientDirectory "D:\Games\WildStar" -PromptForRootPassword
+.\Tools\Setup\Restart-NexusForeverLocal.ps1 -ClientDirectory "D:\Games\WildStar" -PromptForRootPassword
 ```
 
 Run the Aspire app host:

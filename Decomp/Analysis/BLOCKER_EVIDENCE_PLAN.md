@@ -110,7 +110,7 @@ early-finish reward negative cases for the raid/event-instance proof passes.
 Or invoke the setup script directly:
 
 ```powershell
-.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1 `
+.\Tools\Setup\Restart-NexusForeverLocal.ps1 `
   -ClientDirectory "I:\WildStar" `
   -EnableClientConsole `
   -EnableClientLogging `

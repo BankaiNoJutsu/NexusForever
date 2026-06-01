@@ -18,10 +18,10 @@ Enable the in-game dev console and verbose client file logging in one launch:
   -PromptForRootPassword
 ```
 
-Fast auth/world restart loop with the same client flags:
+Fast local restart loop with the same client flags:
 
 ```powershell
-.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1 `
+.\Tools\Setup\Restart-NexusForeverLocal.ps1 `
   -ClientDirectory "I:\WildStar" `
   -EnableClientConsole `
   -EnableClientLogging `
@@ -208,4 +208,4 @@ Strings: `Decomp/Analysis/exports/WildStar64.exe/strings.csv` around
 
 Setup integration: `Tools/Setup/WildStarClientLaunch.ps1`,
 `Tools/Setup/Start-NexusForeverLocal.ps1`,
-`Tools/Setup/Restart-NexusForeverAuthWorldLocal.ps1`.
+`Tools/Setup/Restart-NexusForeverLocal.ps1`.

@@ -54,21 +54,21 @@ From the repository root:
 ```
 
 For the faster local edit loop after the repo has already been initialized once,
-use the auth/world restart wrapper instead of the full setup path:
+use the local restart wrapper instead of the full setup path:
 
 ```powershell
-.\Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1 `
+.\Tools\Setup\Restart-NexusForeverLocal.ps1 `
   -ClientDirectory "D:\Games\WildStar" `
   -PromptForRootPassword
 ```
 
-That wrapper rebuilds `NexusForever.AuthServer`, `NexusForever.WorldServer`,
-and the runtime script assemblies loaded by WorldServer, restarts only those
-two processes if they are already running, reuses the other local server
-processes when possible, and then launches the client through the same
-runtime-prep flow.
+That wrapper stops any running `NexusForever.*` process, rebuilds
+`NexusForever.AuthServer`, `NexusForever.WorldServer`, and the runtime script
+assemblies loaded by WorldServer, then launches the full local standalone stack
+through the same runtime-prep flow. It skips launching the client when WildStar
+is already running.
 
-If you want the same reuse behavior from the base launcher, pass
+If you want auth/world-only restart behavior from the base launcher, pass
 `-RestartAuthWorldOnly`. When you pass `-RestartExistingServers:$false`
 without that switch, the base launcher now keeps already-running local server
 processes and only starts the ones that are missing.
@@ -138,7 +138,7 @@ between `CLog`, `DebugLogService`, and `Errors\` crash logs are documented in
 
 `-ClientArguments '-Console'` still works as a generic extra argument path, but
 `-EnableClientConsole` is the preferred dedicated switch for this case.
-Later local launcher and auth/world restart runs now reuse the already staged
+Later local launcher and local restart runs now reuse the already staged
 client `ExtraArguments` by default, so once you have enabled the client console
 you do not need to repeat `-EnableClientConsole` unless you want to replace the
 staged client arguments explicitly.
@@ -199,6 +199,24 @@ the staged `NexusForever.ClientConnector` flow and the direct `WildStar64.exe`
 fallback now use the same `-RealmDataCenterId` parameter so the two local
 launch routes stay aligned. Override it only when you intentionally need a
 different extracted client table row.
+
+Storefront banners need a reachable `StoreBannerDataUrlTemplate` from
+`RealmDataCenter.tbl`. For stock retail clients, use
+`-StoreBannerMode HostsRedirect`: the launcher uses `RealmDataCenterId 9` when
+no explicit ID is supplied, configures WorldServer to also listen on port 80,
+and adds a Windows hosts entry mapping `static.wildstar-online.com` to
+`127.0.0.1` so the existing retail banner URL resolves locally. This mode must
+run from an elevated PowerShell session. For custom-files client builds, use
+`-StoreBannerMode LooseData` to stage a loose
+`Data\DB\RealmDataCenter.tbl` override pointing at
+`http://localhost:5000/banners/`. Pass `-StoreBannerMode None` to disable local
+banner setup.
+
+Example stock-client banner launch:
+
+```powershell
+.\Tools\Setup\Start-NexusForeverLocal.ps1 -ClientDirectory "D:\Games\WildStar" -StoreBannerMode HostsRedirect -PromptForRootPassword
+```
 
 When the client still fails in a way the server logs do not explain, check the
 retail client's `Logs\*.txt` CLog files and `Errors\WildStar64*.log` reports

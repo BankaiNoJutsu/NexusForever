@@ -1,10 +1,10 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-Starts the local auth/world stack for blocker evidence passes with Trace logging.
+Starts the local NexusForever stack for blocker evidence passes with Trace logging.
 
 .DESCRIPTION
-Thin wrapper around Restart-NexusForeverAuthWorldLocal.ps1 that applies the defaults
+Thin wrapper around Restart-NexusForeverLocal.ps1 that applies the defaults
 from Decomp/Analysis/BLOCKER_EVIDENCE_PLAN.md and prints log-tail commands for the
 evidence bundle workflow.
 
@@ -46,7 +46,7 @@ param(
     [switch] $SkipClientLaunch
 )
 
-$restartScript = Join-Path $RepoRoot 'Tools\Setup\Restart-NexusForeverAuthWorldLocal.ps1'
+$restartScript = Join-Path $RepoRoot 'Tools\Setup\Restart-NexusForeverLocal.ps1'
 if (-not (Test-Path -LiteralPath $restartScript)) {
     throw "Restart script not found: $restartScript"
 }

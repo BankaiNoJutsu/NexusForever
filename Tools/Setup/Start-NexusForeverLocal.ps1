@@ -83,6 +83,9 @@ param(
     [string] $AuthHost = '127.0.0.1',
     [string] $PatcherHost = '',
     [int] $RealmDataCenterId = 6,
+    [ValidateSet('None', 'LooseData', 'HostsRedirect', 'Both')]
+    [string] $StoreBannerMode = 'LooseData',
+    [switch] $SkipLocalStoreBannerData,
     [int] $WaitTimeoutSeconds = 120,
 
     [string] $MySqlExe = 'mysql',
@@ -192,6 +195,14 @@ function Write-LocalAccountSummary {
     foreach ($account in Get-LocalLoginAccounts) {
         Write-Host ("  {0} / {1} ({2}, roleId={3})" -f $account.UserName, $account.Password, $account.RoleName, $account.RoleId) -ForegroundColor Green
     }
+}
+
+function Test-StoreBannerHostsRedirectEnabled {
+    $StoreBannerMode -eq 'HostsRedirect' -or $StoreBannerMode -eq 'Both'
+}
+
+function Test-StoreBannerLooseDataEnabled {
+    !$SkipLocalStoreBannerData -and ($StoreBannerMode -eq 'LooseData' -or $StoreBannerMode -eq 'Both')
 }
 
 $RuntimeConfigs = @(
@@ -615,7 +626,13 @@ function Update-RuntimeConfigFiles {
                 $json.API.Character.Host = $characterApiUrl
             }
             'NexusForever.WorldServer' {
-                $json.Urls = 'http://0.0.0.0:5000'
+                $json.Urls = if (Test-StoreBannerHostsRedirectEnabled) {
+                    'http://0.0.0.0:5000;http://0.0.0.0:80'
+                }
+                else {
+                    'http://0.0.0.0:5000'
+                }
+
                 $json.Network.Host = '0.0.0.0'
                 $json.Network.Port = 24000
                 $json.GameTable.GameTablePath = $GameTablePath
@@ -1067,6 +1084,10 @@ function Wait-ForRuntimeReadiness {
     Wait-ForTcpEndpoint -Name 'Account API' -Address '127.0.0.1' -Port 4001 -TimeoutSeconds $WaitTimeoutSeconds -Processes $Processes
     Wait-ForTcpEndpoint -Name 'Character API' -Address '127.0.0.1' -Port 4000 -TimeoutSeconds $WaitTimeoutSeconds -Processes $Processes
     Wait-ForTcpEndpoint -Name 'World server' -Address '127.0.0.1' -Port 24000 -TimeoutSeconds $WaitTimeoutSeconds -Processes $Processes
+    if (Test-StoreBannerHostsRedirectEnabled) {
+        Wait-ForTcpEndpoint -Name 'Store banner web endpoint' -Address '127.0.0.1' -Port 80 -TimeoutSeconds $WaitTimeoutSeconds -Processes $Processes
+    }
+
     Assert-ProcessesAlive -Processes $Processes
 }
 
@@ -1078,6 +1099,50 @@ function Test-CurrentProcessElevated {
     catch {
         $false
     }
+}
+
+function Enable-StoreBannerHostsRedirect {
+    $hostName = 'static.wildstar-online.com'
+    $hostsPath = Join-Path $env:SystemRoot 'System32\drivers\etc\hosts'
+
+    if (!(Test-CurrentProcessElevated)) {
+        throw "Store banner hosts redirect needs an elevated PowerShell session so $hostsPath can map $hostName to 127.0.0.1. Re-run as Administrator, or use -StoreBannerMode LooseData with a custom-files client."
+    }
+
+    if (!(Test-Path -LiteralPath $hostsPath -PathType Leaf)) {
+        throw "Windows hosts file was not found at $hostsPath."
+    }
+
+    $escapedHostName = [regex]::Escape($hostName)
+    $lines = @(Get-Content -LiteralPath $hostsPath)
+    $activeHostLines = @($lines | Where-Object {
+        $_ -notmatch '^\s*#' -and $_ -match "(?i)(^|\s)$escapedHostName(\s|$)"
+    })
+
+    $localHostLines = @($activeHostLines | Where-Object {
+        $_ -match '^\s*(127\.0\.0\.1|::1)\s+'
+    })
+    if ($localHostLines.Count -gt 0) {
+        Write-Info "Store banner host $hostName already resolves locally in $hostsPath"
+        return
+    }
+
+    if ($activeHostLines.Count -gt 0) {
+        throw "The hosts file already maps $hostName to a non-local address. Update $hostsPath so it maps to 127.0.0.1 before using -StoreBannerMode HostsRedirect."
+    }
+
+    Add-Content -LiteralPath $hostsPath -Value ''
+    Add-Content -LiteralPath $hostsPath -Value '# NexusForever local storefront banners'
+    Add-Content -LiteralPath $hostsPath -Value "127.0.0.1`t$hostName"
+
+    try {
+        & ipconfig /flushdns | Out-Null
+    }
+    catch {
+        Write-Warning "Failed to flush DNS cache after updating $hostsPath. $($_.Exception.Message)"
+    }
+
+    Write-Info "Mapped $hostName to 127.0.0.1 for stock-client storefront banners."
 }
 
 function Get-ClientConnectorExecutablePath {
@@ -1127,6 +1192,172 @@ function Write-ClientConnectorConfig {
     } | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $configPath -Encoding utf8
 
     (Resolve-Path -LiteralPath $configPath).Path
+}
+
+function Get-NullTerminatedUnicodeBytes {
+    param([string] $Value)
+
+    [Text.Encoding]::Unicode.GetBytes($Value + [char]0)
+}
+
+function Find-BytePattern {
+    param(
+        [byte[]] $Bytes,
+        [byte[]] $Pattern,
+        [int] $Start,
+        [int] $End
+    )
+
+    if ($Pattern.Length -eq 0 -or $Start -lt 0 -or $End -gt $Bytes.Length -or $Start -ge $End) {
+        return -1
+    }
+
+    $lastStart = $End - $Pattern.Length
+    for ($i = $Start; $i -le $lastStart; $i++) {
+        $matched = $true
+        for ($j = 0; $j -lt $Pattern.Length; $j++) {
+            if ($Bytes[$i + $j] -ne $Pattern[$j]) {
+                $matched = $false
+                break
+            }
+        }
+
+        if ($matched) {
+            return $i
+        }
+    }
+
+    -1
+}
+
+function Set-UInt32LittleEndian {
+    param(
+        [byte[]] $Bytes,
+        [int] $Offset,
+        [uint32] $Value
+    )
+
+    [BitConverter]::GetBytes($Value).CopyTo($Bytes, $Offset)
+}
+
+function Update-RealmDataCenterStoreBannerUrl {
+    param(
+        [byte[]] $Bytes,
+        [int] $RealmDataCenterId,
+        [string] $StoreBannerUrl
+    )
+
+    $signature = [BitConverter]::ToUInt32($Bytes, 0)
+    if ($signature -ne 0x4454424C) {
+        throw 'RealmDataCenter.tbl has an invalid DBLT signature.'
+    }
+
+    $headerSize = 96
+    $recordSize = [int][BitConverter]::ToUInt64($Bytes, 24)
+    $recordCount = [int][BitConverter]::ToUInt64($Bytes, 48)
+    $totalRecordSize = [int][BitConverter]::ToUInt64($Bytes, 56)
+    $recordOffset = [int][BitConverter]::ToUInt64($Bytes, 64)
+    $recordBase = $headerSize + $recordOffset
+    $recordAreaSize = $recordSize * $recordCount
+    $stringTableBase = $recordBase + $recordAreaSize
+    $stringTableEnd = $stringTableBase + ($totalRecordSize - $recordAreaSize)
+
+    if ($recordSize -ne 96) {
+        throw "RealmDataCenter.tbl has unexpected record size $recordSize."
+    }
+
+    $localUrlBytes = Get-NullTerminatedUnicodeBytes -Value $StoreBannerUrl
+    $existingUrls = @(
+        'http://static.dev.wildstar-online.com/banners/',
+        'http://static.qa.wildstar-online.com/banners/',
+        'http://static.wildstar-online.com/banners/'
+    )
+
+    $storeBannerOffset = $null
+    foreach ($existingUrl in $existingUrls) {
+        $existingUrlBytes = Get-NullTerminatedUnicodeBytes -Value $existingUrl
+        $matchOffset = Find-BytePattern -Bytes $Bytes -Pattern $existingUrlBytes -Start $stringTableBase -End $stringTableEnd
+        if ($matchOffset -lt 0) {
+            continue
+        }
+
+        if ($localUrlBytes.Length -gt $existingUrlBytes.Length) {
+            throw "Local storefront banner URL is longer than the existing RealmDataCenter URL slot: $existingUrl"
+        }
+
+        [Array]::Clear($Bytes, $matchOffset, $existingUrlBytes.Length)
+        $localUrlBytes.CopyTo($Bytes, $matchOffset)
+
+        if ($null -eq $storeBannerOffset) {
+            $storeBannerOffset = [uint32]($matchOffset - $stringTableBase + $recordAreaSize)
+        }
+    }
+
+    if ($null -eq $storeBannerOffset) {
+        throw 'No known StoreBannerDataUrlTemplate string was found in RealmDataCenter.tbl.'
+    }
+
+    $storeBannerFieldOffset = 84
+    $rowOffset = -1
+    for ($i = 0; $i -lt $recordCount; $i++) {
+        $candidateOffset = $recordBase + $recordSize * $i
+        $id = [BitConverter]::ToUInt32($Bytes, $candidateOffset)
+        if ($id -eq [uint32]$RealmDataCenterId) {
+            $rowOffset = $candidateOffset
+            break
+        }
+    }
+
+    if ($rowOffset -lt 0) {
+        throw "RealmDataCenter.tbl does not contain row $RealmDataCenterId."
+    }
+
+    Set-UInt32LittleEndian -Bytes $Bytes -Offset ($rowOffset + $storeBannerFieldOffset) -Value 0
+    Set-UInt32LittleEndian -Bytes $Bytes -Offset ($rowOffset + $storeBannerFieldOffset + 4) -Value $storeBannerOffset
+    Set-UInt32LittleEndian -Bytes $Bytes -Offset ($rowOffset + $storeBannerFieldOffset + 8) -Value 0
+}
+
+function Write-LocalStoreBannerDataOverride {
+    param(
+        [string] $ClientExecutablePath,
+        [string] $TableDirectory,
+        [int] $RealmDataCenterId
+    )
+
+    $sourceTablePath = Join-Path $TableDirectory 'RealmDataCenter.tbl'
+    if (!(Test-Path -LiteralPath $sourceTablePath -PathType Leaf)) {
+        Write-Warning "RealmDataCenter.tbl was not found at $sourceTablePath; local store banner data will not be staged."
+        return
+    }
+
+    $clientExecutableDirectory = Split-Path -Parent $ClientExecutablePath
+    $clientRoot = Split-Path -Parent $clientExecutableDirectory
+    $clientDirectoryName = Split-Path -Leaf $clientExecutableDirectory
+    if ($clientDirectoryName -ine 'Client64' -and $clientDirectoryName -ine 'Client32') {
+        $clientRoot = $clientExecutableDirectory
+    }
+
+    $bytes = [IO.File]::ReadAllBytes($sourceTablePath)
+    Update-RealmDataCenterStoreBannerUrl `
+        -Bytes $bytes `
+        -RealmDataCenterId $RealmDataCenterId `
+        -StoreBannerUrl 'http://localhost:5000/banners/'
+
+    $targets = @(
+        (Join-Path $clientRoot 'Data\RealmDataCenter.tbl'),
+        (Join-Path $clientRoot 'Data\DB\RealmDataCenter.tbl')
+    )
+
+    foreach ($target in $targets) {
+        $targetDirectory = Split-Path -Parent $target
+        if (!(Test-Path -LiteralPath $targetDirectory -PathType Container)) {
+            New-Item -ItemType Directory -Path $targetDirectory -Force | Out-Null
+        }
+
+        [IO.File]::WriteAllBytes($target, $bytes)
+    }
+
+    Write-Info "Staged local storefront banner RealmDataCenter override under $clientRoot\Data (custom-files client builds load this loose table)."
 }
 
 function Start-WildStarClient {
@@ -1220,6 +1451,11 @@ function Start-WildStarClient {
 
 $RepoRoot = Get-AbsolutePath -Path $RepoRoot
 
+if (Test-StoreBannerHostsRedirectEnabled -and !$PSBoundParameters.ContainsKey('RealmDataCenterId')) {
+    $RealmDataCenterId = 9
+    Write-Info 'Using RealmDataCenterId 9 because -StoreBannerMode HostsRedirect uses the stock client retail banner URL.'
+}
+
 $dependencyBootstrap = Resolve-NexusSetupDependencies `
     -RepoRoot $RepoRoot `
     -DependencyMode $DependencyMode `
@@ -1267,6 +1503,11 @@ $assetInfo = Initialize-GameAssets
 Write-Section 'Runtime configuration'
 Update-RuntimeConfigFiles -GameTablePath $assetInfo.TablePath -MapPath $assetInfo.MapPath
 
+if (Test-StoreBannerHostsRedirectEnabled -and !$SkipClientLaunch) {
+    Write-Section 'Store banner redirect'
+    Enable-StoreBannerHostsRedirect
+}
+
 Invoke-AccountSeeder
 
 $startedProcesses = @()
@@ -1287,6 +1528,13 @@ if (!$SkipClientLaunch) {
     }
     else {
         $resolvedClientExecutable = Resolve-ClientExecutablePath
+        if (Test-StoreBannerLooseDataEnabled) {
+            Write-LocalStoreBannerDataOverride `
+                -ClientExecutablePath $resolvedClientExecutable `
+                -TableDirectory $assetInfo.TablePath `
+                -RealmDataCenterId $RealmDataCenterId
+        }
+
         Start-WildStarClient -ExecutablePath $resolvedClientExecutable
     }
 }
