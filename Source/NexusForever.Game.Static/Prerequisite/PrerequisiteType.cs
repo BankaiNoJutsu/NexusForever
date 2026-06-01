@@ -65,7 +65,7 @@
         SpellTierOnTarget             = 60, // Spell tier requirement on target not met - client case 0x3c calls FUN_14046a110 on target param_2[1]; objectId0 is Spell4 id; value0 is tier rank
         PathMissionCount            = 61, // Path mission count is incorrect 
         ScanCreature                = 62, // Unable to scan this creature - Probably HasScannedCreature
-        Unknown63                   = 63, // Requirements not met
+        Unknown63                   = 63, // Requirements not met - client case 0x3f via manager +0x78 points to _purecall 1407db510; unimplemented client handler
         PathTypeLevel               = 64, // Requirements not met - ObjectId is path type, value is minimum path level for that path
         Deprecated65                = 65, // Marked as DEPRECATED
         Deprecated66                = 66, // Marked as DEPRECATED
@@ -133,7 +133,7 @@
         Challenge125                = 125, // Challenge requirement not met
         PathHoldout                 = 126, // Path holdout requirement not met
         PathHoldoutPlayer           = 127, // Path holdout requirement for player not met
-        Faction128                  = 128, // Faction requirement not met
+        Faction128                  = 128, // Faction requirement not met - client case 0x80 via Prerequisite_CheckFaction 14049c720 (+0x68); entity+0x118 faction component then PlayerFactionService_IsFactionOrAncestor 1407176b0 on value0 faction id; 6 tbl rows
         ActiveSpellEffectOnUnit       = 129, // Spell requirement not met - client case 0x81 inline walk of entity+0x15c8 active spell effects; SpellService compare on value0 via DAT_140c65b70+0x38
         ActiveSpellEffectOnTarget     = 130, // Spell requirement not met - client case 0x82 calls FUN_140469a70 on caster with target param_2[1]+8 Spell4 filter and value0 compare
         Level131                    = 131, // Level requirement not met
@@ -177,13 +177,13 @@
         LiveEvent169                = 169, // Live event requirement not met
         GameFormula                   = 170, // Requirements not met - value0 is GameFormula.tbl id (client case 0xaa via manager +0x90)
         Unknown171                  = 171, // Requirements not met
-        Unknown172                  = 172, // Requirements not met
-        ItemTradeSkill              = 173, // Item tradeskill requirement not met
-        Unknown174                  = 174, // Item requirement not met
+        HealthScaled                  = 172, // Health requirement not met - client case 0xac inline: Entity_GetHealthScaleFactor 14047a940(entity) * *(float*)(entity+0xd08+0x8c) via PrerequisiteManager_ApplyComparison; fallback Creature2_GetRowByUnitId 14022d500(*(entity+0xd8)) when +0xd08 absent
+        ItemTradeSkill              = 173, // Item tradeskill requirement not met - handler table[173] Prerequisite_CheckItemTradeSkill 1404a1790: NPC types 0x14/0x17; TradeSkill_CheckItemTradeskillRequirement 1403c16e0(item2Id)
+        ItemTradeSkillKnown         = 174, // Known tradeskill recipe requirement not met - handler table[174] Prerequisite_CheckItemTradeSkillKnown 1404a17e0: NPC types 0x14/0x17; TradeSkill_ClientHasKnownItem2Id 1403b91d0 binary-searches player known-recipe list
         TradeSkill                  = 175, // Tradeskill requirement not met
         ChallengeObject             = 176, // Challenge object requirement not met
         TrueLevel                   = 177, // True level requirement not met
-        Unknown178                  = 178, // Item of type Equipped?
+        Unknown178                  = 178, // Blocked rename - handler table[178] 1404a1890 matches target entity id (+8) to local player then Progress_GetTrackedScalar 1403fa980(1,objectId); not ItemEquipped (vtable +0x140 is destructor stub)
         CreatureDifficulty          = 179, // Requirements not met - ObjectId is Creature2Difficulty id (spell apply path)
         CreatureDifficultyRank      = 180, // Requirements not met - Value is Creature2Difficulty.rankValue
         // 181 is unused in PrerequisiteType.tbl

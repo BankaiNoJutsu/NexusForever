@@ -1,12 +1,22 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Game.Entity;
+using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Prerequisite;
+using NexusForever.GameTable;
 
 namespace NexusForever.Game.Prerequisite.Check
 {
     [PrerequisiteCheck(PrerequisiteType.ItemMicrochip)]
     public class PrerequisiteCheckItemMicrochip : IPrerequisiteCheck
     {
+        private readonly IGameTableManager gameTableManager;
+
+        public PrerequisiteCheckItemMicrochip(IGameTableManager gameTableManager = null)
+        {
+            this.gameTableManager = gameTableManager;
+        }
+
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
             if (parameters.Item == null)
@@ -14,25 +24,16 @@ namespace NexusForever.Game.Prerequisite.Check
 
             if (objectId == 0)
             {
-                // Retail rows 10610/10685 keep objectId0=0 with value0=1/2; treat as microchip count gate.
-                uint count = (uint)parameters.Item.MicrochipIds.Count;
-                return comparison switch
-                {
-                    PrerequisiteComparison.Equal              => count == value,
-                    PrerequisiteComparison.NotEqual           => count != value,
-                    PrerequisiteComparison.GreaterThanOrEqual => count >= value,
-                    PrerequisiteComparison.GreaterThan        => count > value,
-                    PrerequisiteComparison.LessThanOrEqual    => count <= value,
-                    PrerequisiteComparison.LessThan           => count < value,
-                    _                                         => false
-                };
+                // Retail rows 10610/10685 keep objectId0=0 with value0=1/2.
+                uint count = GetCountForObjectIdZero(parameters.Item);
+                return PrerequisiteCompare.Compare(comparison, count, value);
             }
 
-            uint mask = MapMicrochipIdToBit(objectId);
+            uint mask = ItemRuneSocketTypes.MapSocketTypeIdToBit(objectId);
             if (mask == 0)
                 return false;
 
-            uint slotMask = BuildMicrochipSlotMask(parameters.Item.MicrochipIds);
+            uint slotMask = ItemRuneSocketMaskBuilder.BuildAllowedSocketMask(parameters.Item, gameTableManager);
             bool present = (slotMask & mask) != 0;
 
             return comparison switch
@@ -43,28 +44,19 @@ namespace NexusForever.Game.Prerequisite.Check
             };
         }
 
-        private static uint BuildMicrochipSlotMask(IList<uint> microchipIds)
+        private static uint GetCountForObjectIdZero(IItem item)
         {
-            uint slotMask = 0;
-            foreach (uint microchipId in microchipIds)
-                slotMask |= MapMicrochipIdToBit(microchipId);
+            if (item.MicrochipIds.Count > 0)
+                return (uint)item.MicrochipIds.Count;
 
-            return slotMask;
-        }
-
-        private static uint MapMicrochipIdToBit(uint microchipTypeId)
-        {
-            return microchipTypeId switch
+            uint installedRunes = 0;
+            foreach (ItemRuneSlot slot in item.RuneSlots)
             {
-                7  => 1,
-                8  => 2,
-                9  => 4,
-                10 => 8,
-                11 => 0x10,
-                12 => 0x20,
-                13 => 0x40,
-                _  => 0
-            };
+                if (slot.RuneItem2Id != 0u)
+                    installedRunes++;
+            }
+
+            return installedRunes;
         }
     }
 }

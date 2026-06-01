@@ -317,6 +317,10 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<ItemRandomStatGroupEntry> ItemRandomStatGroup { get; private set; }
         public GameTable<ItemRuneInstanceEntry> ItemRuneInstance { get; private set; }
+
+        [GameData]
+        public GameTable<ItemRuneSlotRandomizationEntry> ItemRuneSlotRandomization { get; private set; }
+
         public GameTable<ItemSetEntry> ItemSet { get; private set; }
         public GameTable<ItemSetBonusEntry> ItemSetBonus { get; private set; }
 

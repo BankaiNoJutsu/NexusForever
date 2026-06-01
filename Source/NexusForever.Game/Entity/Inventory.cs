@@ -3,6 +3,7 @@ using System.Diagnostics;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Quest;
 using NexusForever.Game.RealmBank;
 using NexusForever.Game.Static.Achievement;
@@ -382,6 +383,14 @@ namespace NexusForever.Game.Entity
 
                 if (!item.Info.IsEquippableIntoSlot((EquippedItem)bagIndex))
                     return GenericError.ItemNotValidForSlot;
+
+                if (item.RuneSlots.Count == 0)
+                    ItemRuneSlotInitializer.ApplyDefaultSockets(item);
+
+                uint equipPrerequisiteId = item.Info.Entry.PrerequisiteId;
+                if (equipPrerequisiteId != 0u && player != null
+                    && !PrerequisiteEvaluation.Meets(player, equipPrerequisiteId, item))
+                    return GenericError.ItemEquipPrereqFailed;
 
                 GenericError? bagCapacityError = CanApplyBagCapacityChangeForMove(item, dstItem, location, bagIndex);
                 if (bagCapacityError.HasValue)

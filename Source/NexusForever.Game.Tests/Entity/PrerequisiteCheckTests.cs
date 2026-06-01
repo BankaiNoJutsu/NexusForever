@@ -1,17 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract.Challenges;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Prerequisite.Check;
+using NexusForever.Game.Static.Crafting;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PlayerPath;
 using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Tests.TestSupport;
-using NexusForever.GameTable.Model;
+using NexusForever.GameTable.Static;
 
 namespace NexusForever.Game.Tests.Entity;
 
@@ -241,11 +246,49 @@ public class PrerequisiteCheckTests
         IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
         itemProxy.SetProperty(nameof(IItem.Info), itemInfo);
         itemProxy.SetProperty(nameof(IItem.MicrochipIds), new List<uint>());
+        itemProxy.SetProperty(nameof(IItem.RuneSlots), new List<ItemRuneSlot>());
 
         var check = new PrerequisiteCheckItemSpecial();
         bool result = check.Meets(player, comparison, 0u, 0u, new PrerequisiteParameters { Item = item });
 
         Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void ItemSpecial_TreatsRuneSlotsAsSpecialPresence()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IItemInfo itemInfo = RecordingDispatchProxy<IItemInfo>.Create(out var itemInfoProxy);
+        itemInfoProxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { ItemSpecialId00 = 0 });
+
+        IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
+        itemProxy.SetProperty(nameof(IItem.Info), itemInfo);
+        itemProxy.SetProperty(nameof(IItem.MicrochipIds), new List<uint>());
+        itemProxy.SetProperty(nameof(IItem.RuneSlots), new List<ItemRuneSlot> { new(RuneType.Water) });
+
+        var check = new PrerequisiteCheckItemSpecial();
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 0u, new PrerequisiteParameters { Item = item }));
+    }
+
+    [Fact]
+    public void ItemSpecial_UsesItemRuneInstanceTemplateWhenSlotsEmpty()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
+        IItemInfo info = RecordingDispatchProxy<IItemInfo>.Create(out var infoProxy);
+        infoProxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry
+        {
+            ItemSpecialId00    = 0,
+            ItemRuneInstanceId = 2u,
+        });
+        itemProxy.SetProperty(nameof(IItem.Info), info);
+        itemProxy.SetProperty(nameof(IItem.MicrochipIds), new List<uint>());
+        itemProxy.SetProperty(nameof(IItem.RuneSlots), new List<ItemRuneSlot>());
+
+        IGameTableManager tables = CreateItemRuneInstanceTablesForPrereq();
+        var check = new PrerequisiteCheckItemSpecial(tables);
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 0u, new PrerequisiteParameters { Item = item }));
     }
 
     [Fact]
@@ -263,16 +306,200 @@ public class PrerequisiteCheckTests
     }
 
     [Fact]
-    public void ItemMicrochip_SocketType_UsesClientBitmaskMapping()
+    public void ItemMicrochip_SocketType_UsesRuneSlotTypeBitmask()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
         IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
-        itemProxy.SetProperty(nameof(IItem.MicrochipIds), new List<uint> { 10 });
+        itemProxy.SetProperty(nameof(IItem.MicrochipIds), new List<uint>());
+        itemProxy.SetProperty(nameof(IItem.RuneSlots), new List<ItemRuneSlot>
+        {
+            new(RuneType.Fire, 0u)
+        });
 
         var check = new PrerequisiteCheckItemMicrochip();
         var parameters = new PrerequisiteParameters { Item = item };
 
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 10u, parameters));
-        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 0u, 7u, parameters));
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, (uint)RuneType.Fire, parameters));
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 0u, (uint)RuneType.Air, parameters));
+    }
+
+    [Fact]
+    public void ItemMicrochip_SocketType_FallsBackToItemRuneInstanceTemplate()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
+        IItemInfo info = RecordingDispatchProxy<IItemInfo>.Create(out var infoProxy);
+        infoProxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { ItemRuneInstanceId = 2u });
+        itemProxy.SetProperty(nameof(IItem.Info), info);
+        itemProxy.SetProperty(nameof(IItem.MicrochipIds), new List<uint>());
+        itemProxy.SetProperty(nameof(IItem.RuneSlots), new List<ItemRuneSlot>());
+
+        IGameTableManager tables = CreateItemRuneInstanceTablesForPrereq();
+        var check = new PrerequisiteCheckItemMicrochip(tables);
+        var parameters = new PrerequisiteParameters { Item = item };
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, (uint)RuneType.Air, parameters));
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 0u, (uint)RuneType.Water, parameters));
+    }
+
+    [Fact]
+    public void ItemMicrochip_ObjectIdZero_PrefersInstalledRuneCountWhenNoWireMicrochips()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
+        itemProxy.SetProperty(nameof(IItem.MicrochipIds), new List<uint>());
+        itemProxy.SetProperty(nameof(IItem.RuneSlots), new List<ItemRuneSlot>
+        {
+            new(RuneType.Fire, 100u),
+            new(RuneType.Water, 0u)
+        });
+
+        var check = new PrerequisiteCheckItemMicrochip();
+        var parameters = new PrerequisiteParameters { Item = item };
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 0u, parameters));
+    }
+
+    [Fact]
+    public void Item2Id_ComparesEvaluatedItemTemplateId()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IItemInfo itemInfo = RecordingDispatchProxy<IItemInfo>.Create(out var itemInfoProxy);
+        itemInfoProxy.SetProperty(nameof(IItemInfo.Id), 12345u);
+
+        IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
+        itemProxy.SetProperty(nameof(IItem.Info), itemInfo);
+
+        var check = new PrerequisiteCheckItem2Id();
+        var parameters = new PrerequisiteParameters { Item = item };
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 12345u, parameters));
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 0u, 999u, parameters));
+    }
+
+    [Fact]
+    public void ItemLevel_ComparesRequiredLevel()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IItemInfo itemInfo = RecordingDispatchProxy<IItemInfo>.Create(out var itemInfoProxy);
+        itemInfoProxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { RequiredLevel = 50 });
+
+        IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
+        itemProxy.SetProperty(nameof(IItem.Info), itemInfo);
+
+        var check = new PrerequisiteCheckItemLevel();
+        var parameters = new PrerequisiteParameters { Item = item };
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 50u, 0u, parameters));
+        Assert.True(check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 40u, 0u, parameters));
+    }
+
+    [Fact]
+    public void ItemStatId_ComparesTemplateItemStatId()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IItemInfo itemInfo = RecordingDispatchProxy<IItemInfo>.Create(out var itemInfoProxy);
+        itemInfoProxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { ItemStatId = 42u });
+
+        IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
+        itemProxy.SetProperty(nameof(IItem.Info), itemInfo);
+
+        var check = new PrerequisiteCheckItemStatId();
+        var parameters = new PrerequisiteParameters { Item = item };
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 42u, 0u, parameters));
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 99u, 0u, parameters));
+    }
+
+    [Fact]
+    public void AppliedItemStatId_ComparesResolvedStatEntryId()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IItemInfo itemInfo = RecordingDispatchProxy<IItemInfo>.Create(out var itemInfoProxy);
+        itemInfoProxy.SetProperty(nameof(IItemInfo.StatEntry), new ItemStatEntry { Id = 77u });
+
+        IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
+        itemProxy.SetProperty(nameof(IItem.Info), itemInfo);
+
+        var check = new PrerequisiteCheckAppliedItemStatId();
+        var parameters = new PrerequisiteParameters { Item = item };
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 77u, parameters));
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 0u, 78u, parameters));
+    }
+
+    [Fact]
+    public void ItemStatData_ComparesFirstStandardStatDataSlot()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IItemInfo itemInfo = RecordingDispatchProxy<IItemInfo>.Create(out var itemInfoProxy);
+        itemInfoProxy.SetProperty(nameof(IItemInfo.StatEntry), new ItemStatEntry
+        {
+            ItemStatTypeEnum = [ItemStatType.Standard, ItemStatType.None],
+            ItemStatData     = [9001u, 0u]
+        });
+
+        IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
+        itemProxy.SetProperty(nameof(IItem.Info), itemInfo);
+
+        var check = new PrerequisiteCheckItemStatData();
+        var parameters = new PrerequisiteParameters { Item = item };
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 9001u, 0u, parameters));
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 1u, 0u, parameters));
+    }
+
+    private static IGameTableManager CreateItemRuneInstanceTablesForPrereq()
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
+        proxy.SetProperty(nameof(IGameTableManager.ItemRuneInstance), CreateGameTable(new ItemRuneInstanceEntry
+        {
+            Id                    = 2u,
+            DefinedSocketCount    = 1u,
+            DefinedSocketType00   = 7u,
+        }));
+        return tables;
+    }
+
+    private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
+    {
+        var table = (GameTable<T>)RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
+        SetAutoProperty(table, nameof(GameTable<T>.Entries), entries);
+        SetPrivateField(table, "header", new GameTableHeader
+        {
+            MaxId = entries.Length == 0 ? 0u : entries.Max(GetEntryId) + 1u
+        });
+        SetPrivateField(table, "lookup", BuildLookup(entries));
+        return table;
+    }
+
+    private static int[] BuildLookup<T>(IReadOnlyList<T> entries)
+    {
+        if (entries.Count == 0)
+            return [];
+
+        int[] lookup = Enumerable.Repeat(-1, (int)(entries.Max(GetEntryId) + 1u)).ToArray();
+        for (int i = 0; i < entries.Count; i++)
+            lookup[GetEntryId(entries[i])] = i;
+
+        return lookup;
+    }
+
+    private static uint GetEntryId<T>(T entry)
+    {
+        FieldInfo idField = typeof(T).GetField("Id", BindingFlags.Public | BindingFlags.Instance);
+        return idField == null ? 0u : (uint)idField.GetValue(entry)!;
+    }
+
+    private static void SetAutoProperty<T>(T target, string propertyName, object value)
+    {
+        PropertyInfo property = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+        property?.SetValue(target, value);
+    }
+
+    private static void SetPrivateField<T>(T target, string fieldName, object value)
+    {
+        FieldInfo field = typeof(T).GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+        field?.SetValue(target, value);
     }
 }

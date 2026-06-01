@@ -2254,6 +2254,16 @@ namespace NexusForever.Database.Character
                     .HasColumnType("tinyint(1)")
                     .HasDefaultValue(false);
 
+                entity.Property(e => e.MicrochipIds)
+                    .HasColumnName("microchipIds")
+                    .HasColumnType("varchar(128)")
+                    .HasDefaultValue(string.Empty);
+
+                entity.Property(e => e.RuneSlots)
+                    .HasColumnName("runeSlots")
+                    .HasColumnType("varchar(256)")
+                    .HasDefaultValue(string.Empty);
+
                 entity.Property(e => e.StackCount)
                     .HasColumnName("stackCount")
                     .HasColumnType("int(10) unsigned")

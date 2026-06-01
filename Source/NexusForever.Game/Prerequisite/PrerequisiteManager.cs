@@ -99,6 +99,9 @@ namespace NexusForever.Game.Prerequisite
 
         private bool Meets(IPlayer player, PrerequisiteType type, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
+            if (PrerequisiteItemTypes.RequiresItemContext(type) && parameters?.Item == null)
+                log.LogTrace("Prerequisite {Type} expects item-eval context but IPrerequisiteParameters.Item is null.", type);
+
             IPrerequisiteCheck handler = serviceProvider.GetKeyedService<IPrerequisiteCheck>(type);
             if (handler == null)
             {

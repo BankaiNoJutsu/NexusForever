@@ -59,6 +59,8 @@ public class PrerequisiteTypeNamingTests
     [InlineData(140, nameof(PrerequisiteType.ItemRolledPropertyValue))]
     [InlineData(191, nameof(PrerequisiteType.PetEntitySpell4))]
     [InlineData(275, nameof(PrerequisiteType.DoesNotOwnAccountItem))]
+    [InlineData(172, nameof(PrerequisiteType.HealthScaled))]
+    [InlineData(174, nameof(PrerequisiteType.ItemTradeSkillKnown))]
     public void EvidenceBackedRenames_KeepStableTableIds(int tableId, string expectedName)
     {
         Assert.Equal((PrerequisiteType)tableId, Enum.Parse<PrerequisiteType>(expectedName));

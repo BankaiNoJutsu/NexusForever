@@ -29,7 +29,9 @@ namespace NexusForever.Game.Entity
             Charges            = 0x0040,
             Durability         = 0x0080,
             ExpirationTimeLeft = 0x0100,
-            Soulbound          = 0x0200
+            Soulbound          = 0x0200,
+            MicrochipIds       = 0x0400,
+            RuneSlots          = 0x0800
         }
 
         public uint Id => Info?.Id ?? SpellEntry.Id;
@@ -124,6 +126,8 @@ namespace NexusForever.Game.Entity
 
         public IList<uint> MicrochipIds { get; } = new List<uint>();
 
+        public IList<ItemRuneSlot> RuneSlots { get; } = new List<ItemRuneSlot>();
+
         public uint ExpirationTimeLeft
         {
             get => expirationTimeLeft;
@@ -184,6 +188,9 @@ namespace NexusForever.Game.Entity
             else
                 SpellEntry = GameTableManager.Instance.Spell4Base.GetEntry(model.ItemId);
 
+            ItemMicrochipIdsCodec.DeserializeInto(model.MicrochipIds, MicrochipIds);
+            ItemRuneSlotsCodec.DeserializeInto(model.RuneSlots, RuneSlots);
+
             saveMask = ItemSaveMask.None;
         }
 
@@ -203,6 +210,8 @@ namespace NexusForever.Game.Entity
             expirationTimeLeft = GetInitialExpirationTimeLeft(info);
             soulbound        = false;
             Info             = info;
+
+            ItemRuneSlotInitializer.ApplyDefaultSockets(this);
 
             saveMask         = ItemSaveMask.Create;
         }
@@ -240,6 +249,11 @@ namespace NexusForever.Game.Entity
             Soulbound = true;
         }
 
+        public void TouchRuneSlots()
+        {
+            saveMask |= ItemSaveMask.RuneSlots;
+        }
+
         public void Save(CharacterContext context)
         {
             if (saveMask == ItemSaveMask.None)
@@ -265,7 +279,9 @@ namespace NexusForever.Game.Entity
                     Charges            = Charges,
                     Durability         = Durability,
                     ExpirationTimeLeft = ExpirationTimeLeft,
-                    Soulbound          = Soulbound
+                    Soulbound          = Soulbound,
+                    MicrochipIds       = ItemMicrochipIdsCodec.Serialize(MicrochipIds),
+                    RuneSlots          = ItemRuneSlotsCodec.Serialize(RuneSlots)
                 });
             }
             else if ((saveMask & ItemSaveMask.Delete) != 0)
@@ -327,6 +343,11 @@ namespace NexusForever.Game.Entity
                     model.Soulbound = Soulbound;
                     entity.Property(p => p.Soulbound).IsModified = true;
                 }
+                model.MicrochipIds = ItemMicrochipIdsCodec.Serialize(MicrochipIds);
+                entity.Property(p => p.MicrochipIds).IsModified = true;
+
+                model.RuneSlots = ItemRuneSlotsCodec.Serialize(RuneSlots);
+                entity.Property(p => p.RuneSlots).IsModified = true;
             }
 
             saveMask = ItemSaveMask.None;
@@ -357,8 +378,7 @@ namespace NexusForever.Game.Entity
                 }
             };
 
-            foreach (uint microchipId in MicrochipIds)
-                networkItem.Microchips.Add(microchipId);
+            ItemRuneNetworkWire.Populate(networkItem, RuneSlots, MicrochipIds);
 
             return networkItem;
         }

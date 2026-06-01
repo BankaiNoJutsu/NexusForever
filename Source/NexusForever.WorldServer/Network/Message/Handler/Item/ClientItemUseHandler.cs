@@ -1,6 +1,5 @@
 ﻿using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Abstract.Prerequisite;
-using NexusForever.Shared;
+using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -17,17 +16,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
         #region Dependency Injection
 
         private readonly IGameTableManager gameTableManager;
-        private readonly IPrerequisiteManager prerequisiteManager;
-        private readonly IFactory<IPrerequisiteParameters> prerequisiteParametersFactory;
 
-        public ClientItemUseHandler(
-            IGameTableManager gameTableManager,
-            IPrerequisiteManager prerequisiteManager,
-            IFactory<IPrerequisiteParameters> prerequisiteParametersFactory)
+        public ClientItemUseHandler(IGameTableManager gameTableManager)
         {
-            this.gameTableManager               = gameTableManager;
-            this.prerequisiteManager            = prerequisiteManager;
-            this.prerequisiteParametersFactory  = prerequisiteParametersFactory;
+            this.gameTableManager = gameTableManager;
         }
 
         #endregion
@@ -46,9 +38,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             {
                 if (itemSpecial.PrerequisiteIdGeneric00 > 0)
                 {
-                    IPrerequisiteParameters prerequisiteParameters = prerequisiteParametersFactory.Resolve();
-                    prerequisiteParameters.Item = item;
-                    if (!prerequisiteManager.Meets(session.Player, itemSpecial.PrerequisiteIdGeneric00, prerequisiteParameters))
+                    if (!PrerequisiteEvaluation.Meets(session.Player, itemSpecial.PrerequisiteIdGeneric00, item))
                     {
                         session.Player.SendGenericError(GenericError.UnlockItemFailed);
                         return;

@@ -26,9 +26,19 @@ namespace NexusForever.Game.Abstract.Entity
         bool Soulbound { get; }
 
         /// <summary>
-        /// Socketed microchip item ids (client item-eval +0x114 bitmask is derived from socket types 7-0xd).
+        /// Socketed microchip item ids from the shared-item wire array (3-bit count).
         /// </summary>
         IList<uint> MicrochipIds { get; }
+
+        /// <summary>
+        /// Rune/sigil slots (client item-eval +0x388/+0x518; prerequisite type 139 +0x114 uses <see cref="ItemRuneSlot.Type"/> 7-0xd).
+        /// </summary>
+        IList<ItemRuneSlot> RuneSlots { get; }
+
+        /// <summary>
+        /// Mark rune-slot state dirty for the next database save.
+        /// </summary>
+        void TouchRuneSlots();
 
         /// <summary>
         /// Permanently bind this item to its current owner.
