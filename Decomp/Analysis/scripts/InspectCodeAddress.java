@@ -32,71 +32,93 @@ public class InspectCodeAddress extends GhidraScript {
             return;
         }
 
-        Address target = toAddr(stripHexPrefix(args[0]));
-        if (target == null) {
-            printerr("Could not resolve address: " + args[0]);
-            return;
+        int instructionCount = 16;
+        int addressCount = args.length;
+        if (args.length > 1) {
+            try {
+                int maybeCount = Integer.parseInt(args[args.length - 1]);
+                if (maybeCount > 0 && maybeCount <= 4096) {
+                    instructionCount = maybeCount;
+                    addressCount = args.length - 1;
+                }
+            }
+            catch (NumberFormatException ignored) {
+                // Every arg is an address.
+            }
         }
 
-        int instructionCount = args.length > 1 ? Integer.parseInt(args[1]) : 16;
         Listing listing = currentProgram.getListing();
         FunctionManager functionManager = currentProgram.getFunctionManager();
+        DecompInterface decompiler = null;
 
-        Function function = functionManager.getFunctionAt(target);
-        if (function == null) {
-            function = functionManager.getFunctionContaining(target);
-        }
+        for (int argIndex = 0; argIndex < addressCount; argIndex++) {
+            if (addressCount > 1) {
+                println("==== " + args[argIndex] + " ====");
+            }
 
-        println("target=" + target);
-        println("functionAtOrContaining=" + describe(function));
-        println("functionBefore=" + describe(findFunctionBefore(listing, target)));
-        println("functionAfter=" + describe(findFunctionAfter(listing, target)));
+            Address target = toAddr(stripHexPrefix(args[argIndex]));
+            if (target == null) {
+                printerr("Could not resolve address: " + args[argIndex]);
+                continue;
+            }
 
-        if (function != null) {
-            DecompInterface decompiler = setUpDecompiler();
-            try {
-                if (!decompiler.openProgram(currentProgram)) {
-                    printerr("Could not open program in decompiler: " + decompiler.getLastMessage());
-                    return;
+            Function function = functionManager.getFunctionAt(target);
+            if (function == null) {
+                function = functionManager.getFunctionContaining(target);
+            }
+
+            println("target=" + target);
+            println("functionAtOrContaining=" + describe(function));
+            println("functionBefore=" + describe(findFunctionBefore(listing, target)));
+            println("functionAfter=" + describe(findFunctionAfter(listing, target)));
+
+            if (function != null) {
+                if (decompiler == null) {
+                    decompiler = setUpDecompiler();
+                    if (!decompiler.openProgram(currentProgram)) {
+                        printerr("Could not open program in decompiler: " + decompiler.getLastMessage());
+                        return;
+                    }
                 }
 
                 DecompileResults results = decompiler.decompileFunction(function, 120, monitor);
                 if (!results.decompileCompleted() || results.getDecompiledFunction() == null) {
                     printerr("Decompile failed: " + results.getErrorMessage());
-                    return;
+                    continue;
                 }
 
                 println(results.getDecompiledFunction().getC());
+                continue;
             }
-            finally {
-                decompiler.dispose();
+
+            Instruction instruction = listing.getInstructionAt(target);
+            if (instruction == null) {
+                instruction = listing.getInstructionContaining(target);
             }
-            return;
-        }
 
-        Instruction instruction = listing.getInstructionAt(target);
-        if (instruction == null) {
-            instruction = listing.getInstructionContaining(target);
-        }
-
-        if (instruction == null) {
-            DisassembleCommand command = new DisassembleCommand(target, null, true);
-            if (command.applyTo(currentProgram, monitor)) {
-                instruction = listing.getInstructionAt(target);
-                if (instruction == null) {
-                    instruction = listing.getInstructionContaining(target);
+            if (instruction == null) {
+                DisassembleCommand command = new DisassembleCommand(target, null, true);
+                if (command.applyTo(currentProgram, monitor)) {
+                    instruction = listing.getInstructionAt(target);
+                    if (instruction == null) {
+                        instruction = listing.getInstructionContaining(target);
+                    }
                 }
             }
+
+            if (instruction == null) {
+                printerr("No instruction found at or containing target.");
+                continue;
+            }
+
+            for (int i = 0; i < instructionCount && instruction != null; i++) {
+                println(String.format("%s: %s", instruction.getAddress(), instruction));
+                instruction = instruction.getNext();
+            }
         }
 
-        if (instruction == null) {
-            printerr("No instruction found at or containing target.");
-            return;
-        }
-
-        for (int i = 0; i < instructionCount && instruction != null; i++) {
-            println(String.format("%s: %s", instruction.getAddress(), instruction));
-            instruction = instruction.getNext();
+        if (decompiler != null) {
+            decompiler.dispose();
         }
     }
 

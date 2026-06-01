@@ -65,10 +65,38 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 | `PrerequisiteType.PetEntitySpell4` (191) | NF `PrerequisiteCheckPetEntitySpell4` | Client case `0xbf`; vanity-pet summon proxy until `entity+0x1600` wrapper id is mapped |
 | `PrerequisiteType.ItemRolledPropertyValue` (was `Unknown140`) | renamed pass 19 | `1404a0e80` + `14040e610` Property slot ids at `+0x94..+0xcc`; zero `Prerequisite.tbl` rows |
 | `PrerequisiteType.ItemSpecial` (138) | NF handler pass 21 | `1404a0dd0` +0x114/+0x118; zero tbl rows typed 138 |
-| `PrerequisiteType.ItemMicrochip` (139) | NF handler pass 21 | `1404a0e10` + `14049bdc0`; 2 tbl rows objectId0=0 count via value0 |
+| `PrerequisiteType.ItemMicrochip` (139) | NF handler pass 21/24 | `1404a0e10` + `14049bdc0`; objectId0 7–0xd = `RuneType` socket bitmask via `IItem.RuneSlots`; wire `Microchips[]` separate |
+| Augment microchip **install** opcode | pass 44/46 mapped (replication + partial patch) | **Client C2S install** = `0x085B` only. Wire **`Microchips[]`** on **full add** via `SharedItem_ReadPayload` → `140569c90` → `14056aa20`. **Existing-slot microchip-only patch** = `1403b8540` (caller PE `0x1403eef8a`, cluster `0x1403eed00`) — **player opcode still blocked** (pass 47: **not** `0x046F` guild bank) |
+| Partial inventory slot field apply | pass 46 correlated | PE cluster `0x1403eed00`–`0x1403ef100` per-field patches on **player bag**; distinct from `0x0111` and from **`0x046F`/`0x047A` guild bank** |
+| `ServerGuildBankInventoryAdd_ReadPayload` | pass 47–48 mapped | `140092580` = **`0x046F`** @ `14006c290`; apply `GuildBank_ApplyInventoryAdd` `14057d190`; apply-table cell **`140e1a760`** |
+| `ServerGuildBankTabInventory_ReadPayload` | pass 47–48 mapped | `140092470` = **`0x047A`**; apply `GuildBank_ApplyTabInventoryRows` `14057cdc0`; apply-table cell **`140e1a718`** |
+| Partial inventory field-apply gap | pass 48 inspect | Cluster **`0x1403eed00`**; microchip case **`0x1403eef8a`→`1403b8540`**; inspect fragments in cache; **not** spell jumptable `0x1403f1344`; opcode still blocked |
+| `Prerequisite_CheckFaction` | pass 47 mapped | Type **128** case `0x80` @ `+0x68` → `14049c720` + `PlayerFactionService_IsFactionOrAncestor` `1407176b0` |
+| `ItemAdded` native subscribers | pass 44 mapped | Only dispatcher `1403b8060` in `string_xrefs`; Lua ClientEvent paths + `140409330` case **9** `uItem` refresh; no additional labeled C++ subscriber in export cache |
+| `Game.ItemData.GetDetailedInfo` | pass 45 mapped | `140417de0` PE registration at `.data` `0x140c58c10` with string `GetDetailedInfo`; builds `tPrimary`/`tCompare` (not `GetRuneSlots`) |
+| Tooltip `tRunes` | pass 45 mapped | `140673ab0` reuses `140673b80` for tooltip context; distinct Lua key from `GetRuneSlots` / `GetDetailedInfo` |
+| `PrerequisiteType.ItemMicrochip` objectId0=0 | pass 45 rejected on client | `1404a0e10` bitmask-only; rows 10610/10685 need NF count proxy until alternate client handler found |
+| ItemSpecial row `+0x10` → item-eval `+0x114` | pass 35 correlated + rejected | SQL `spell4IdOnEquip`; augment rows hold Spell4 FK (81886+). Do not use as socket mask except rare values ⊆ socket-bit set (only id 3694=4 in reference DB) |
+| Category **177** fusion-tier `item2TypeId` | pass 36 correlated | Types **515/516/530/563** (and empty **514/517**) map to `RuneType.Fusion` via `item2TypeId ≥ 502`; elemental band **340–345** unchanged (base **333**) |
+| `Item.Build` sparse `Glyphs[]` | pass 37 implemented | `ItemRuneNetworkWire` emits one glyph id per `RuneSlots` index (0 = empty); wire→`itemData+0x518` producer still blocked |
+| Wire → shared-runtime | pass 39 mapped | `SharedItemRuntime_ApplyParseBuffer` 140411b60: glyphs `parse+0x88` → runtime `+0x8f`; microchips via `ItemEval_ApplyItemSpecialToEval` → runtime `+0x20` (Inspect-only via 1403deff0) |
+| Wire → entity inventory item | pass 40 mapped | `InventoryItem_ApplySharedItemPayload` 140569c90: glyphs `parse+0x88` → entity `+0xbc`; microchips `parse+0x78` → entity `+0x98`; compact sockets via `InventoryItem_RefreshItemState` entity `+0x60` |
+| Entity item → item-eval | pass 41 mapped | `InventoryItem_RefreshItemState` 14056a430 → `ItemEval_ApplyItemSpecialToEval` with entity `+0xbc`/`+0x98`/`+0x60` |
+| Entity `+0xbc` → shared-runtime `[0x8f]` | pass 42 mapped | `ItemEval_CommitRuneDataFromLinkedEntity` 140413520 on `ItemEval_CommitPendingRuneData` 140412ad0 reads `(*runtime)[0]+0xbc` |
+| Entity `+0x60` → runtime socket fields | pass 42 mapped | Same commit copies entity `+0x60` compact bytes into runtime `+0x5d` region (GetRuneSlots `+0x388` proxy via `+0x71` index) |
+| GetRuneSlots `+0x544` / `[0xa9]` gates | pass 43 mapped | Scratch-context indices alias embedded shared-runtime `+0x4a4` / `[0x95]`; filled by `ItemEval_SyncFromItemDataUserdata` `140410680` from Lua `Game.ItemData` userdata (`140417660` + `140410300`), not separate parent-only writers |
+| Entity item → Game.ItemData | blocked (narrowed) | No direct entity→userdata writer; live `GetRuneSlots` reads userdata native blob synced via `140410680`; entity glyphs reach userdata through eval commit `140413520` + Lua refresh (`ItemAdded` / case 9), not `ItemModified`→`itemData` |
+| Slot update → shared runtime | pass 41 mapped | `Inventory_ApplySlotUpdateAndDispatchItemAdded` 1403b8380 → slot `Entity_GetIndexedSlotEntry` + `ItemEval_CommitPendingRuneData` + `ItemAdded` |
+| Wire → item-eval | pass 38 mapped | `ItemEval_SyncFromSharedItem` 140410300 copies runtime `+0x20`/`+0x158` into item-eval; `itemData+0x388`/`+0x518` writer still blocked |
+| `FUN_14040f320` | `ItemRuneType_ToCompactSocketId` | RuneType 7–13 → compact 1–7 for `0x0859` `IsNotFusion` (`14051ed80`) |
 | `PrerequisiteType.Unknown92`–`93` | `ActiveSpellTargetMechanic` / `Spell4EffectCategoryOnUnit` | Client cases `0x5c`/`0x5d` on active spell-effect list |
 | `PrerequisiteType.Unknown280` | `SpellTierOnCasterAndTarget` | Client case `0x118` requires caster **and** target to pass SpellTier helper `FUN_1404a4f60` |
 | `PrerequisiteType.Unknown77` | `QuestObjectiveOnTarget` | Client case `0x4d` (+0x548) passes target context; `objectId0` is QuestObjective id |
+| `PrerequisiteType.Unknown172` | `HealthScaled` | Client case `0xac` inline: `Entity_GetHealthScaleFactor` `14047a940` * health `+0xd08+0x8c`; fallback `Creature2_GetRowByUnitId` `14022d500` on `+0xd8` |
+| `PrerequisiteType.Unknown174` | `ItemTradeSkillKnown` | `PrerequisiteTypeHandlerTable[174]` → `Prerequisite_CheckItemTradeSkillKnown` `1404a17e0` → `TradeSkill_ClientHasKnownItem2Id` `1403b91d0` (known-recipe list binary search); NPC types `0x14`/`0x17` |
+| `PrerequisiteType.ItemTradeSkill` (173) | enriched | Same table path `1404a1790` → `TradeSkill_CheckItemTradeskillRequirement` `1403c16e0` |
+| `PrerequisiteType.Unknown178` | blocked | Table handler `1404a1890` = entity-id match + `Progress_GetTrackedScalar` `1403fa980`; reject tbl “Equipped” hint |
+| Prerequisite handler evidence | pass 49 | Use **`DAT_140b66870` / `PrerequisiteTypeHandlerTable[typeId]`** for handler bodies; **`PTR_FUN_140b67740` vtable slots** often disagree (destructor/UI) — do not rename from vtable PE pointer alone |
 | `AchievementEntry.Value` | `RequiredProgress` | Achievement progress runtime |
 | `Quest2Entry.FactionLevelCompPreq*` | `FactionLevelRequireAtMostPreq*` | Quest prerequisite comparison semantics |
 | `RewardRotationModifierEntry.Value` | `ModifierValue` | Reward rotation schedule builder |

@@ -11,7 +11,7 @@ Multiple failure modes were investigated across client launch, world packet orde
 
 | Layer | Cause | Fix | Proof |
 | --- | --- | --- | --- |
-| **Client launch** | Local launcher hardcoded `realmDataCenterId 9` (retail NA row with dead `StoreBannerDataUrlTemplate`) | Configurable `RealmDataCenterId`, default **`6`** (localhost row, empty banner URL) | Client log `malformed store banner data: 80072ee7`; `RealmDataCenter.tbl.sql` rows 4 vs 6 |
+| **Client launch / banners** | Local launcher hardcoded `realmDataCenterId 9` (retail NA row with dead `StoreBannerDataUrlTemplate`); row `6` avoids the dead host but leaves `RequestBanners()` with no feed | Configurable `RealmDataCenterId`, default **`6`**; stock-client `-StoreBannerMode HostsRedirect` uses row **`9`** plus hosts/DNS redirect; custom-files clients can use the loose `RealmDataCenter.tbl` override | Client log `malformed store banner data: 80072ee7`; `RealmDataCenter.tbl.sql` rows 4 vs 6; packed `Storefront.lua` `SetupFeatured()` one-banner fallback |
 | **World server (catalog timing)** | Catalog deferred to a later event tick after `082D`; client tied `StoreCatalogReady` to the request response | Send catalog synchronously in `SendCatalogResponse`; gate only when pregame packets or player loading are not ready | World log showed `(catalog deferred)` then catalog packets one tick later |
 | **World server (0989 loop)** | `0x0989` plus full catalog on bootstrap/store hooks made the client spam `0x082D`; repeat `082D` responses also sent `0x0989` | `0x082D` always answered with `0x0988`→`0x098B`→`0x0987` only; never prepend `0x0989` on `HandleCatalogRequest` | World log showed many `082D` bursts per store open |
 | **World server (timing)** | Post-login dirty/duplicate catalog lifecycle invalidated or confused the pregame catalog; store open sent rotation index 0 before `082D` catalog finished | Send one deferred clean in-world bootstrap after `ServerPlayerCreate` without `0x0989`; send catalog before rotation index 0 packets on store open | Decompile: `0x0987` dispatches `StoreCatalogReady`/`StoreLinksRefresh`; post-patch live log confirms in-world replay after prior pregame delivery |
@@ -50,12 +50,13 @@ The storefront UI surfaces this as the generic **Catalogue Unavailable** path ev
 - `Source/NexusForever.ClientConnector/Program.cs` — builds `/realmDataCenterId {id}` from config (fallback `6` if unset/invalid).
 - `Tools/Setup/Start-NexusForeverLocal.ps1` — `-RealmDataCenterId` parameter (default **`6`**), written into staged `Client64\config.json` and direct `WildStar64.exe` fallback argv.
 
-Operational notes: `Tools/Setup/README.md` documents the parameter and the banner URL mismatch. After `dotnet build` for ClientConnector, restage the connector into the WildStar `Client64` folder and ensure `config.json` contains `"RealmDataCenterId": 6` before the next launch.
+Operational notes: `Tools/Setup/README.md` documents the parameter, banner URL mismatch, stock-client hosts redirect, and local loose-table override. After `dotnet build` for ClientConnector, restage the connector into the WildStar `Client64` folder and ensure `config.json` contains the intended `RealmDataCenterId` before the next launch. The restored local banner feed is served by `NexusForever.WorldServer` at `/banners/data.json`; stock clients need `-StoreBannerMode HostsRedirect` so row 9's `http://static.wildstar-online.com/banners/` URL resolves locally, while custom-files clients can load the staged `Data\DB\RealmDataCenter.tbl` override and request `http://localhost:5000/banners/`.
 
 ### Falsification test
 
-1. Launch with default local setup (`RealmDataCenterId 6`): store/account inventory should open without banner fetch errors.
-2. Launch with `-RealmDataCenterId 9`: should reproduce `malformed store banner data: 80072ee7` and catalogue failure (only use when intentionally testing retail row behavior).
+1. Launch stock client with `-StoreBannerMode HostsRedirect`: store/account inventory should open without banner fetch errors and should request the local `/banners/data.json` feed through `static.wildstar-online.com`.
+2. Launch custom-files client with `-StoreBannerMode LooseData`: store/account inventory should open without banner fetch errors and should request `http://localhost:5000/banners/data.json`.
+3. Launch with `-RealmDataCenterId 9 -StoreBannerMode None`: should reproduce `malformed store banner data: 80072ee7` and catalogue fallback (only use when intentionally testing retail row behavior).
 
 ---
 
@@ -135,8 +136,8 @@ powershell -NoProfile -Command "& { $null = [System.Management.Automation.Langua
 
 ### Runtime
 
-1. Restart auth/world (`Restart-NexusForeverAuthWorldLocal.ps1` or full `Start-NexusForeverLocal.ps1`).
-2. **Exit any running WildStar process**; restage ClientConnector + `Client64\config.json` with `RealmDataCenterId: 6`.
+1. Restart the local stack (`Restart-NexusForeverLocal.ps1` or full `Start-NexusForeverLocal.ps1`).
+2. **Exit any running WildStar process**; for stock clients launch with `-StoreBannerMode HostsRedirect` and verify `Client64\config.json` uses `RealmDataCenterId: 9`. For custom-files clients, `-StoreBannerMode LooseData` can keep `RealmDataCenterId: 6`.
 3. Open store from character select and in-world; confirm no `malformed store banner data` in `Errors\WildStar64*.log`.
 4. World log: catalog should start soon after `082D` with `pregameAccountPacketsSent=True`, without waiting for `ServerCharacterList`.
 
@@ -252,7 +253,7 @@ So “Catalogue Unavailable” means: **the client never reached a stable `Store
 | **P0** | **`0x0989` dirty without reload** — login sent only `StoreCatalogUpdated`, invalidating char-select catalog until a late `082D` | World log line ~4727–4728: `notifying in-world catalog dirty` + `0989`, no `0988` in that burst | **Fixed in source** — no dirty notify; post-`ServerPlayerCreate` bootstrap sends full `0988`→`098B`→`0987` without `0989` |
 | **P0** | **`0x0989` + catalog on `082D` loop** — server answered `082D` with `0989` when catalog already delivered → client spammed `082D` → UI freeze / blur | Many `082D` lines per store open in earlier session | **Fixed** — `HandleCatalogRequest` never prepends `0989` |
 | **P1** | **Wire parse desync** on `0x0988` / `0x098B` (`Malformed` `<2440>` / `<2443>`) | Client logs 2026-05-30; Ghidra 32-bit currency, composite price arrays; local DB scan 2026-05-31 loaded 348 groups / 478 offers with no wire-limit violations | **Fixed for current DB/code** (`ServerStoreCurrencyPackageRow`, `WriteRetailComposite*`, startup `RetailStore*WireReader`, `Tools/StorefrontWireValidate --scan-db`) |
-| **P1** | **Banner fetch** — `realmDataCenterId 9` → dead `storeBannerDataUrlTemplate` → `malformed store banner data: 80072ee7` | Client + `RealmDataCenter.tbl.sql` | **Fixed** for local (`RealmDataCenterId: 6` in `config.json`) |
+| **P1** | **Banner fetch** — `realmDataCenterId 9` → dead `storeBannerDataUrlTemplate` → `malformed store banner data: 80072ee7`; `realmDataCenterId 6` → no feed and one fallback splash banner | Client + `RealmDataCenter.tbl.sql` + packed `Storefront.lua` | **Fixed** for stock clients through `-StoreBannerMode HostsRedirect`; restored for custom-files clients through local `/banners/data.json` + loose `RealmDataCenter.tbl` |
 | **P2** | **STS `operation 20021` / native STS crash** — `IStsUniTxn EStsConnErr 42` appeared in earlier runs; latest run crashes in `StsConnLib64.MT` after catalog delivery | Client log `Using NCPlatform address ... 127.0.0.1:6600`; tx id `0x15` maps to Auth `KeyData` and Presence `Reversed` depending on service; native parsers require non-empty identity data and non-zero `UserCenter` | **Implemented in source** — harden Auth user-info/login-finish/token replies and Presence login/user-info/no-op replies; make STS file logging deploy reliably |
 | **P3** | **Catalog in the login burst** — full catalog emitted while the client was still applying `ServerPlayerCreate` could be dropped or mis-applied | Earlier live log showed post-create catalog/dirty traffic inside the login packet burst | **Fixed in source** — deferred world bootstrap runs one event tick later and omits `0x0989` |
 
@@ -286,12 +287,14 @@ sequenceDiagram
 - Fresh post-relaunch failure after that delivery was explained by category semantics: source emitted visible root tabs with `ParentCategoryId=0`, but native `GetCategoryTree()` roots under hidden parent id `26`.
 - Failure is therefore **client state / category semantics**, not “empty DB” or “handler never runs”.
 
+2026-06-01 follow-up after the store became browsable: the category tree and banner loaded, but the Featured grid showed only Battlesworn and Mounts showed no products. Server diagnostics and SQL proved the world still sent Mounts (`31`) with 72 visible offer groups / 140 offer rows, plus Ground Mounts (`33`) and Hoverboards (`32`). The surviving Battlesworn row was the clue: `OfferItemPrice.Build()` negated every non-zero `store_offer_item_price.expiry`, so imported negative LaughingWS active-window values such as `-1016071787` were emitted as positive expired scalars. Retail semantics are modeled as the DB storing the wire value directly: `expiry <= 0` is currently active and `expiry > 0` is expired. The LaughingWS seed and local DB were normalized so all current catalog rows are active (`1995405795` source rows became `-1995405795`), while runtime now emits the stored value unchanged so deliberately positive rows can expire as retail did.
+
 ## Remediation plan (to browse store + account inventory reliably)
 
 ### Phase 0 — Deploy and verify (required)
 
 1. Restart auth/world after building `NexusForever.WorldServer` (confirm log line `sending in-world bootstrap catalog ... after prior catalog delivery so the in-world UI receives StoreCatalogReady` when character-select catalog already completed).
-2. Full exit WildStar; confirm `I:\WildStar\Client64\config.json` has `"RealmDataCenterId": 6`.
+2. Full exit WildStar; for stock clients confirm `I:\WildStar\Client64\config.json` has `"RealmDataCenterId": 9` when using `-StoreBannerMode HostsRedirect`.
 3. One store open; grep world log for:
    - `sending catalog before reward rotation index 0`
    - one deferred post-create catalog replay, then one catalog response per explicit store open.
@@ -421,6 +424,7 @@ Post-patch live pass (`NexusForever.WorldServer_20260531_32628.log`) reached the
 | Item | State |
 | --- | --- |
 | Configurable local `RealmDataCenterId` (default 6) | **Implemented** |
+| Stock-client banner redirect mode | **Implemented** |
 | Pregame-gated catalog response (no player/char-list gate) | **Implemented** |
 | No initial `0x0989` on `HandleCatalogRequest` | **Implemented** |
 | Post-create in-world ready replay after pregame delivery | **Implemented** |

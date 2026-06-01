@@ -157,9 +157,9 @@ namespace NexusForever.Network.Message
         ServerAppearanceAuxByte         = 0x0143, // 1-byte appearance cluster aux
         ClientCharacterAppearanceChange = 0x0144,
         ServerCharacterAppearanceResult = 0x0145,
-        ServerItemDelete                = 0x0148,
+        ServerItemDelete                = 0x0148, // native reader ServerItemDelete_ReadPayload 14008d9c0: uint64 guid + 6-bit ItemUpdateReason
         ClientItemDelete                = 0x0149,
-        ServerAbilityRemove             = 0x014A,
+        ServerAbilityRemove             = 0x014A, // native reader ServerAbilityRemove_ReadPayload 14008da10: 9-bit + uint32 (not item wire)
         ServerCharacterRenameResult     = 0x014B,
         ClientRepairItemVendor          = 0x014C, // repair item/all vendor request; zero item branch carries total repair cost
         ServerLootAuxByte               = 0x014D, // native 14006c290 binds 0x014D size 1 to ServerEmpty_ReadPayload; apply consumer still unmapped; also referenced by Movement_UpdateAndSendFallStateOpcodes (unrelated send path)
@@ -210,7 +210,7 @@ namespace NexusForever.Network.Message
         ClientSpendAttributePoints      = 0x017C,
         ClientItemSplit                 = 0x017D,
         ClientSpellToggleCast           = 0x017E,
-        ServerItemStackCountUpdate      = 0x017F,
+        ServerItemStackCountUpdate      = 0x017F, // native reader ServerItemStackCountUpdate_ReadPayload 14007fd50: uint64 guid + uint32 count + 6-bit reason
         ClientItemMove                  = 0x0182,
         ServerItemUnlockUInt32Flag      = 0x0183, // uint32 + flag item-unlock aux
         ClientItemMoveFromSupplySatchel = 0x0184,
@@ -511,7 +511,7 @@ namespace NexusForever.Network.Message
         ServerGroupUpdatePlayerRealm    = 0x0467,
         ServerGroupMemberDetailUpdate    = 0x0468, // native reader 140084280 is group id + target identity + uint32 count + counted uint64 array; current model remains provisional
         ServerGroupPositionUpdate       = 0x0469,
-        ServerGuildBankInventoryAdd     = 0x046F,
+        ServerGuildBankInventoryAdd     = 0x046F, // native reader ServerGuildBankInventoryAdd_ReadPayload 140092580 size 0xB8; apply GuildBank_ApplyInventoryAdd 14057d190; apply-table DATA cell 140e1a760
         ServerGuildBankInventoryRemove  = 0x0470,
         ClientGuildBankTransaction      = 0x0471,
         ClientGuildBankTransaction2     = 0x0473,
@@ -519,7 +519,7 @@ namespace NexusForever.Network.Message
         ClientGuildBankTabOpen          = 0x0477,
         ServerGuildBankTabCount         = 0x0478,
         ServerGuildBankTabRename        = 0x0479,
-        ServerGuildBankTabInventory     = 0x047A,
+        ServerGuildBankTabInventory     = 0x047A, // native reader ServerGuildBankTabInventory_ReadPayload 140092470 size 0x20; apply GuildBank_ApplyTabInventoryRows 14057cdc0; apply-table DATA cell 140e1a718
         ServerGuildClassification       = 0x0480,
         ClientGuildRegister             = 0x0481,
         ServerGuildEventLogChange       = 0x0487,
@@ -629,7 +629,7 @@ namespace NexusForever.Network.Message
         ServerMailItemDeprecation       = 0x0566,
         ServerItemSwapAux               = 0x0567, // native 1400a48d0 reads one ItemDragDrop row; paired ServerItemSwap @ 0x0568 reads two rows via 1400a4840
         ServerItemSwap                  = 0x0568,
-        ServerItemMove                  = 0x0569,
+        ServerItemMove                  = 0x0569, // native reader ServerItemMove_ReadPayload 1400a47f0: two uint64 drag fields
         ServerItemError                 = 0x056A,
         ServerOptionAuxPayload          = 0x056B, // 0x20-byte options cluster aux
         ServerOptionAuxPayloadLarge     = 0x056C, // 0x28-byte options cluster aux

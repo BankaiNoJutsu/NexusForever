@@ -326,6 +326,30 @@ WildStar64.exe,1404aacb0,ActionSet_ValidateRequestedChanges,Validates a 12-entry
 WildStar64.exe,1404acfa0,FlightPath_SendPurchaseRequest,Builds and sends opcode 0x00FF flight-path purchase payload from validated route data.
 WildStar64.exe,1404ad9b0,FlightPath_IsNodeUnlockedOrAvailable,Checks the loaded flight-path node tree at manager+0x110 for a TaxiNode id; absent nodes fall through static node flags or the taxi prerequisite helper with mode 1.
 WildStar64.exe,1404ada70,RapidTransport_IsNodeUsableForPlayer,Checks rapid-transport node type/faction/static flags and then falls through to the taxi prerequisite helper with mode 2.
+WildStar64.exe,140241160,ClientDB_RegisterTaxiNode,Lazy-loads DB\TaxiNode.tbl into DAT_140c64968 with table name L"TaxiNode".
+WildStar64.exe,1402415a0,ClientDB_RegisterTaxiRoute,Lazy-loads DB\TaxiRoute.tbl into DAT_140c63ac0 with table name L"TaxiRoute".
+WildStar64.exe,1402413c0,TaxiNode_GetEntryById,Returns the TaxiNode table row for a node id via DAT_140c64968 or the injected ClientDB callback.
+WildStar64.exe,140241370,TaxiNode_GetRowCount,Returns the TaxiNode table row count after ensuring ClientDB_RegisterTaxiNode succeeded.
+WildStar64.exe,140241420,TaxiNode_GetRowByIndex,Returns the TaxiNode table row pointer for a zero-based table index.
+WildStar64.exe,1404af6b0,TaxiNode_MeetsPrerequisite,Checks TaxiNode row fields +0x8/+0x20 so player level meets AutoUnlockLevel for flight-path (mode 1) or rapid-transport (mode 2).
+WildStar64.exe,1404adc50,RapidTransport_BuildPrimaryCost,Builds monCostRapidTransport Game.Money using GameFormula 0x51b and either service-token or distance pricing branches.
+WildStar64.exe,1404af440,RapidTransport_BuildServiceTokenCost,Computes the service-token rapid-transport price from TaxiNode tier + GameFormula 0x51e.
+WildStar64.exe,1404af1e0,RapidTransport_BuildDistanceCost,Computes the credit rapid-transport price from TaxiNode tier, distance, and GameFormula 0x51e/0x3b8.
+WildStar64.exe,1404af650,FlightPath_FindRouteListByDestinationNode,Looks up the route list head in taxi-manager tree at +0xf0 keyed by destination TaxiNode id.
+WildStar64.exe,1404806a0,TaxiRoute_GetEntryById,Returns the TaxiRoute row pointer from the taxi-manager route index tree at +0x10.
+WildStar64.exe,1404af5f0,RapidTransport_GetContextForNode,Returns the per-node rapid-transport context object from taxi-manager tree at +0x30.
+WildStar64.exe,1404ad250,FlightPath_SendPurchaseFromUnlockContext,Sends opcode 0x00FF from an unlock-context object when the destination node and route list validate.
+WildStar64.exe,1404ad310,FlightPath_ValidateMultiHopRoute,Validates a multi-hop TaxiRoute chain stays in one world and accumulates route ids for purchase.
+WildStar64.exe,1404ad660,FlightPath_BuildPurchaseRouteChain,DFS-builds a purchasable TaxiRoute chain using FlightPath_IsNodeUnlockedOrAvailable and FlightPath_NodePassesFactionGate.
+WildStar64.exe,1404adb70,FlightPath_NodePassesFactionGate,Checks TaxiNode faction/type on the manager node tree at +0x10 against the local player faction.
+WildStar64.exe,1404ae270,TaxiManager_BuildIndexesFromTables,Walks all TaxiNode and TaxiRoute rows and builds the manager lookup trees used by map UI and purchases.
+WildStar64.exe,1404ac000,TaxiManager_InitializeIndexes,Initializes taxi-manager per-world node indexes after TaxiManager_BuildIndexesFromTables.
+WildStar64.exe,1404abf70,TaxiManager_Destroy,Frees taxi-manager lookup trees including the unlocked-node tree at +0x110.
+WildStar64.exe,1404aea90,TaxiManager_ClearRouteTrees,Destructor helper that clears route and node lookup trees on the taxi manager object.
+WildStar64.exe,1404ae170,FlightPath_ComputeHopCost,Computes per-hop flight-path credit cost from route tier and GameFormula 0x3b8.
+WildStar64.exe,1404ae1f0,FlightPath_RouteChangesWorld,Returns whether a TaxiRoute source and destination resolve to different world ids.
+WildStar64.exe,1404ade10,RapidTransport_HasBothCostBranches,Returns whether both rapid-transport pricing branches from GameFormula 0x51b produce non-zero costs.
+WildStar64.exe,1404adf20,RapidTransport_PlayerCanAffordCost,Checks whether the player can afford a built rapid-transport Game.Money cost object.
 WildStar64.exe,1404d9450,CSIKey_HandlePress,Handles the context-sensitive interaction key by gating on local busy state, dispatching the named CSIKeyPressed event when the active object consumes the press, routing stored CSI action kinds through a local switch table, and falling back to Interaction_AttemptTargetAction for the stored target path.
 WildStar64.exe,1404dafb0,ClientPlayerMovementSpeedUpdate_SendAndDispatch,Builds and sends opcode 0x063B ClientPlayerMovementSpeedUpdate with the supplied uint32 value, then dispatches the matching PlayerMovementSpeedUpdate named event through the scene event sink.
 WildStar64.exe,1404e7f60,Lua_RegisterAccountEntitlementEnums,Registers account currency/operation and entitlement Lua enums.
@@ -354,7 +378,7 @@ WildStar64.exe,14059acb0,Tradeskill_SendClientTradeskillResetTalents,Sends world
 WildStar64.exe,14059b7c0,Crafting_SendClientCraftingAdditive,Sends world opcode 0x084A ClientCraftingAdditive with crafting station unit id plus additive and catalyst Item2 ids.
 WildStar64.exe,1405926a0,Crafting_GetStationServiceKeyForSchematic,Maps a TradeskillSchematic2 row to station service key 0x4F for runecrafting (TradeSkillId 22), 0x57 for tier-zero Flags bit 0x04 schematics, and 0x2C otherwise.
 WildStar64.exe,1405e6140,Crafting_GetProfessionModifierValue,Returns the effective tradeskill modifier float for a CraftingModifierType index using base GameTable data plus active additive modifiers (multiplier when modifier mode is 3).
-WildStar64.exe,14059d250,RuneCrafting_SendClientRuneInstall,Sends world opcode 0x085B ClientCraftingRuneInstall with target item guid, rune item count, and rune Item2 id array.
+WildStar64.exe,14059d250,RuneCrafting_SendClientRuneInstall,Sends world opcode 0x085B ClientCraftingRuneInstall with target item guid, rune item count, and rune Item2 id array; FUN_14056afb0 failure emits GenericError 0x70 before send.
 WildStar64.exe,1405a5b90,Entity_LookupSpellWrapperInBST,Performs BST lower_bound lookup for a spell wrapper by spell4 ID on a given entity. param_1=entity_ptr, param_2=spell4_id. Reads BST root at entity+0x7d18. BST node layout: +0x10=left child, +0x18=right child, +0x20=key (spell4_id uint), +0x28=value (spell_wrapper ptr). Returns spell_wrapper ptr on exact match, 0 if not found. Called by SpellService_ResolveSpellWrapper when target is local player or current target.
 WildStar64.exe,1405a8a40,QuestRuntime_FindObjectiveNodeById,Hashes a quest-objective id into the DAT_140c65b80 store and returns the current runtime node when present.
 WildStar64.exe,1405bbc70,BuffManager_RegisterEntityBuffRecord,Registers a client buff record under its local record id and target entity id, merges it into the per-entity bucket, and dispatches BuffAdded.
@@ -1643,8 +1667,6 @@ WildStar64.exe,14023f7e0,FUN_14023f7e0,Consumer dispatch candidate — may route
 WildStar64.exe,14023fc20,FUN_14023fc20,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140240060,FUN_140240060,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,1402408e0,FUN_1402408e0,Consumer dispatch candidate — may route server→client packets.
-WildStar64.exe,140241160,FUN_140241160,Consumer dispatch candidate — may route server→client packets.
-WildStar64.exe,1402415a0,FUN_1402415a0,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,1402419e0,FUN_1402419e0,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140242ae0,FUN_140242ae0,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140242f20,FUN_140242f20,Consumer dispatch candidate — may route server→client packets.
@@ -1838,7 +1860,9 @@ WildStar64.exe,140084390,ServerGroupInviteReceived_ReadPayload,Server opcode 0x0
 WildStar64.exe,1400843f0,ServerGroupRequestJoinResponse_ReadPayload,Server opcode 0x0424 reader: group id followed by a GroupMember payload.
 WildStar64.exe,1400844f0,ServerGroupJoin_ReadPayload,Server opcode 0x0427 reader: target player identity followed by a nested Group payload.
 WildStar64.exe,1400841d0,ServerGroupUpdatePlayerRealm_ReadPayload,Server opcode 0x0467 reader: group id target identity realm/world/map/phase refresh via the shared group realm-tail helper plus one synced-to-group flag.
-WildStar64.exe,14008c0d0,SharedItem_ReadPayload,Reads the shared server item payload used by item-add and player-create packets including random glyph data microchip/glyph arrays and effective item level.
+WildStar64.exe,14008c0d0,SharedItem_ReadPayload,Reads shared item wire into parse buffer: microchip count +0x74 (3-bit) array +0x78; glyph count +0x80 (4-bit) array +0x88; then rolled-stat identities at +0x90.
+WildStar64.exe,14008c9010,SharedItemParseBuffer_CopyHeader,Copy ctor: parse-buffer header through +0xc4 into 200-byte vtable object PTR_FUN_1409b1570; does not copy +0x74/+0x80 heap microchip/glyph arrays.
+WildStar64.exe,14008c91c0,SharedItemParseBuffer_AllocateCopy,Allocates 200-byte parse-buffer wrapper and calls SharedItemParseBuffer_CopyHeader.
 WildStar64.exe,14008cee0,ServerPlayerCreate_ReadPayload,Reads server opcode 0x025E player-create payload including counted shared item rows.
 WildStar64.exe,140090840,FUN_140090840,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,1400962d0,FUN_1400962d0,Consumer dispatch candidate — may route server→client packets.
@@ -1851,10 +1875,62 @@ WildStar64.exe,14076c830,Matching_QueueDispatchFromUi,Matching queue UI dispatch
 WildStar64.exe,1400eff50,Lua_RegisterCodeEnumValue,Adds one named integer value to the Lua enum table currently on the stack; used by item-data enums including CodeEnumRuneType.
 WildStar64.exe,140413a20,Lua_RegisterItemDataBindings,Registers Game.ItemData Lua bindings plus CodeEnumItemType CodeEnumItemQuality CodeEnumRuneType and CodeEnumLootItemType.
 WildStar64.exe,14008cda0,ServerItemAdd_ReadPayload,Reads server opcode 0x0111 as one shared item payload followed by a 6-bit item-add reason.
+WildStar64.exe,140569a60,InventoryItem_Construct,Constructs 0x140-byte entity inventory item vtable PTR_LAB_140b6c7b0; used before InventoryItem_ApplySharedItemPayload.
+WildStar64.exe,140569d30,InventoryItem_ApplyCoreFromParseBuffer,Copies SharedItem parse-buffer core fields (item2 id stack charges guid rolled-stat prelude) onto entity item +0x40.. before rune apply helpers.
+WildStar64.exe,140569c90,InventoryItem_ApplySharedItemPayload,Live inventory bridge: after ApplyCoreFromParseBuffer calls ApplyMicrochipsFromWire/GlyphsFromWire/RolledStatsFromWire when parse+0x74/+0x80/+0x90 gates set.
+WildStar64.exe,14056aa20,InventoryItem_ApplyMicrochipsFromWire,Copies wire Microchips[] from parse buffer into entity item +0x98 region; RefreshItemState then ItemModified.
+WildStar64.exe,14056aba0,InventoryItem_ApplyGlyphsFromWire,memcpy wire Glyphs[] into entity item +0xbc (count +0xb8); RefreshItemState then ItemModified.
+WildStar64.exe,14056ac90,InventoryItem_ApplyRolledStatsFromWire,Copies parse+0x98 rolled-stat rows (16 bytes each) into entity item +0x128 heap; ItemModified without RefreshItemState.
+WildStar64.exe,14056a430,InventoryItem_RefreshItemState,Rebuilds entity item eval-side blobs and packs compact socket-type bytes into the 16-byte buffer at entity +0x60 from +0xdc bitfields.
+WildStar64.exe,1403b77d0,Inventory_AddOrUpdateFromSharedPayload,Inventory add/update handler: allocates InventoryItem_Construct then InventoryItem_ApplySharedItemPayload on SharedItem parse rows (bag add ServerItemAdd path).
+WildStar64.exe,1403b8540,Inventory_UpdateItemMicrochipsFromWire,Existing-slot patch: Entity_GetIndexedSlotEntry via 1403acbb0 then InventoryItem_ApplyMicrochipsFromWire; single PE caller 0x1403eef8a in partial field-apply cluster 0x1403eed00.
+WildStar64.exe,140092580,ServerGuildBankInventoryAdd_ReadPayload,Network_RegisterServerOpcode 0x046F size 0xB8: Identity 0xe + uint64 then SharedItem_ReadPayload at +0x10; apply GuildBank_ApplyInventoryAdd 14057d190.
+WildStar64.exe,140092470,ServerGuildBankTabInventory_ReadPayload,Network_RegisterServerOpcode 0x047A size 0x20: Identity 0xe + uint64 + 9-bit tab index + uint32 count then counted SharedItem rows; apply GuildBank_ApplyTabInventoryRows 14057cdc0.
+WildStar64.exe,14007fd50,ServerItemStackCountUpdate_ReadPayload,Network_RegisterServerOpcode 0x017F size 0x10: uint64 item guid + uint32 stack count + 6-bit ItemUpdateReason.
+WildStar64.exe,14008d9c0,ServerItemDelete_ReadPayload,Network_RegisterServerOpcode 0x0148 size 0x10: uint64 item guid + 6-bit ItemUpdateReason.
+WildStar64.exe,14008da10,ServerAbilityRemove_ReadPayload,Network_RegisterServerOpcode 0x014A size 0x8: 9-bit field + 32-bit field (not item delete).
+WildStar64.exe,1400a47f0,ServerItemMove_ReadPayload,Network_RegisterServerOpcode 0x0569 size 0x10: two consecutive uint64 fields (item drag/move pair).
+WildStar64.exe,14057cdc0,GuildBank_ApplyTabInventoryRows,Apply consumer for 0x047A: walks counted SharedItem rows on guild tab param_2+0x18 via InventoryItem_ApplySharedItemPayload 140569c90; ClientEvent GuildBankTab/GuildResult. Apply-table DATA cell 140e1a718 (RVA 0x57cdc0; FindDataReferences pass 48).
+WildStar64.exe,14057d190,GuildBank_ApplyInventoryAdd,Apply consumer for 0x046F: single SharedItem row into guild tab slot hash table then GuildBank_DispatchItemAddedClientEvent 1404277d0. Apply-table DATA cell 140e1a760 (RVA 0x57d190; FindDataReferences pass 48).
+WildStar64.exe,1404277d0,GuildBank_DispatchItemAddedClientEvent,ClientEvent GuildBankItem with tab/slot indices after guild-bank slot insert.
+WildStar64.exe,14049c720,Prerequisite_CheckFaction,Prerequisite type 128 Faction128 handler (+0x68): entity+0x118 faction component then PlayerFactionService_IsFactionOrAncestor 1407176b0 on value0 faction id.
+WildStar64.exe,140717160,PlayerFactionService_GetActiveRecord,Lookup active player faction record by id in DAT_140c665d0 service table.
+WildStar64.exe,1407176b0,PlayerFactionService_IsFactionOrAncestor,Returns whether param_2 faction id matches active record or parent chain on faction record +0x8.
+WildStar64.exe,1403b85a0,Inventory_UpdateItemSocketBitsFromWire,Slot update: writes entity +0xdc/+0xe0 socket bitfields then InventoryItem_RefreshItemState and ItemModified.
+WildStar64.exe,140412ad0,ItemEval_CommitPendingRuneData,Commits pending rune/microchip/glyph state on shared-item runtime: pending +0xb4 block, linked-entity +0xbc glyphs into [0x8f], entity +0x60 sockets into +0x5d.
+WildStar64.exe,140413520,ItemEval_CommitRuneDataFromLinkedEntity,Default ItemEval_CommitPendingRuneData path: copies entity+0xbc installed glyph Item2 ids into sharedRuntime[0x8f] and entity+0x60 compact sockets into runtime +0x5d fields.
+WildStar64.exe,140412690,ItemEval_CopyPendingGlyphBlock,Copies shared-runtime staging buffer +0xb4 into committed glyph block +0x158 (0x90 bytes) when param_3!=0 during commit.
+WildStar64.exe,1403b8060,Inventory_DispatchItemAddedNamedEvent,Dispatches ItemAdded when shared runtime has item2 link; ItemEval_CreateFromSharedItem for select loot/craft channel reasons only.
+WildStar64.exe,140409330,Inventory_ClientEventDispatch,Client inventory event hub; case 9 resolves entity ItemEval_CommitPendingRuneData then ItemEval_CreateFromSharedItem and Lua uItem; case 8 uses SharedItemRuntime_ApplyCompactPayload.
+WildStar64.exe,1404111e0,SharedItemRuntime_CopyIdentityFields,Copies identity block from compact payload into shared-runtime +0x418; used by inventory event case 0xb.
+WildStar64.exe,1404112e0,SharedItemRuntime_ApplyCompactPayload,Promotes compact shared-item struct into runtime: glyphs at param_2+0x50/+0x58 to runtime+0x8f; sibling layout to ApplyParseBuffer without +0x74/+0x80 offsets.
+WildStar64.exe,140411b60,SharedItemRuntime_ApplyParseBuffer,Promotes 0xa8 SharedItem_ReadPayload row into runtime: wire microchips +0x74/+0x78 through ItemEval_ApplyItemSpecialToEval into +0x20; wire glyphs +0x80/+0x88 memcpy to +0x8f.
+WildStar64.exe,140415bb0,Lua_CreateGameItemDataFromItemEval,Allocates Game.ItemData userdata and ItemEval_SyncFromSharedItem(eval,1) for tooltip/inspect tables.
+WildStar64.exe,1403deff0,Inspect_ApplySharedItemPayloadList,Inspect handler: foreach 0xa8 parse row call SharedItemRuntime_ApplyParseBuffer then build Lua item tables; dispatches Inspect ClientEvent.
+WildStar64.exe,1403b8380,Inventory_ApplySlotUpdateAndDispatchItemAdded,Inventory slot change: Entity_GetIndexedSlotEntry shared-runtime commit ItemEval_CommitPendingRuneData and Inventory_DispatchItemAddedNamedEvent.
 WildStar64.exe,140417570,Lua_GameItemData_IsRuneData,Implements Game.ItemData isRuneData by resolving the item-data userdata and testing the native rune-data marker.
 WildStar64.exe,14041b8d0,Lua_GameItemData_GetRuneSlots,Implements Game.ItemData GetRuneSlots by building the rune-slot Lua table for static item data or live item instances.
 WildStar64.exe,14066e000,ItemData_BuildRuneSlotsLuaTable,Creates the Lua table returned by GetRuneSlots and delegates rune-slot field and row population.
+WildStar64.exe,14066dc40,ItemData_InitGetRuneSlotsContext,Initializes GetRuneSlots scratch context from Lua state: sets context[0] and embeds SharedItemRuntime_Reset at context+0xa0 (param_1+0x14).
+WildStar64.exe,14066e4c0,ItemData_BuildItemSetBonusMaps,Prepares item-set bonus red-black maps on GetRuneSlots context (+0x58/+0x78) from context+0x1f8 when +0x53c; called before live arRuneSlots loop.
+WildStar64.exe,140410680,ItemEval_SyncFromItemDataUserdata,Syncs embedded shared-runtime from a Lua stack index: unpacks Game.ItemData userdata via Lua_TryUnpackGameItemDataUserdata then ItemEval_SyncFromSharedItem; used by GetRuneSlots live self path.
+WildStar64.exe,14066e1e0,ItemData_PrepareRuneSlotContext,Sets GetRuneSlots/compare scratch context mode at +0x98 then calls ItemData_SyncEmbeddedRuntime; invoked from ItemData_BuildRuneSlotsLuaTable before AddRuneSlotsLuaFields.
+WildStar64.exe,14066e410,ItemData_SyncEmbeddedRuntime,When scratch context param_1[1]!=0 resets embedded runtime at context+0x14 and calls ItemEval_SyncFromItemDataUserdata with Lua state *param_1[0]; success gate reads embedded item2 link and overlay +0x544/+0xa8 fields.
+WildStar64.exe,14066dd50,ItemData_BuildRuneCompareLuaRoot,Builds tPrimary/tCompare tooltip Lua tables via ItemData_BuildRuneCompareLuaSide; shares GetRuneSlots scratch context init.
+WildStar64.exe,14066de30,ItemData_BuildRuneCompareLuaSide,Populates one side (tPrimary or tCompare) of rune tooltip compare tables using the same context prep as GetRuneSlots.
+WildStar64.exe,140417de0,Lua_GameItemData_GetDetailedInfo,Game.ItemData.GetDetailedInfo: scratch init 14066dc40 then ItemData_BuildRuneCompareLuaRoot; emits tPrimary/tCompare for inspect/compare UI. PE .data registration at 0x140c58c10 (string GetDetailedInfo 140af8cc0).
+WildStar64.exe,14041b190,Lua_GameItemData_GetSetBonuses,Game.ItemData.GetSetBonuses Lua method; registered adjacent to GetDetailedInfo at 0x140c58c00.
+WildStar64.exe,1406f26c0,Lua_RegisterTooltipLib,Registers global Tooltip table (GetItemTooltipForm etc. at PTR_s_GetItemTooltipForm_140b725a0) and TooltipGenerateType constants; not the GetDetailedInfo producer.
+WildStar64.exe,140673ab0,ItemData_AddRuneSlotsToTooltip,Tooltip helper: calls ItemData_AddRuneSlotsLuaFields and inserts result as Lua tRunes when context flag 0x8 set in ItemData_PopulateTooltipContext.
+WildStar64.exe,140674210,ItemData_AddAllowedRuneTypesToTooltip,Tooltip helper: builds arRuneTypes from item-eval +0x10c allowed-socket mask via ItemRuneSlotType_ToRuneType.
+WildStar64.exe,14066e6d0,ItemData_PopulateTooltipContext,Fan-out tooltip Lua builder for one item-data scratch context side; gates on context+0xc flags (craft/trade/item/quest/etc.) after ItemData_SyncEmbeddedRuntime.
+WildStar64.exe,1406d1c40,BagWindow_ItemCompareSortCallback,Bag sort/compare callback; invokes Lua BagWindowItemCompare via FUN_1400f2ad0 with two item userdata pointers.
 WildStar64.exe,140673b80,ItemData_AddRuneSlotsLuaFields,Adds nMaximum nAbsoluteMax nMinimum and arRuneSlots to the GetRuneSlots Lua table from static ItemRuneInstance data or live item-instance rune state.
+WildStar64.exe,1403b7d40,Inventory_RefreshSlotItemFromUpdate,Resolves slot entity item and refreshes spell/inventory bookkeeping after a shared-item slot update (caller 1403b8380).
+WildStar64.exe,1403b7e80,Inventory_RemoveAbilitySlotItem,Removes ability-bar slot item during opcode-4 slot update before re-adding via Inventory_AddOrUpdateFromSharedPayload.
+WildStar64.exe,140417660,Lua_TryUnpackGameItemDataUserdata,Attempts to read Game.ItemData userdata from a Lua stack index for ItemEval property sync helpers.
+WildStar64.exe,1404123f0,ItemEval_AttachSharedRuntime,Replaces item-eval shared-runtime pointer and optionally calls ItemEval_CommitPendingRuneData.
+WildStar64.exe,1407b5730,ClientEvent_RegisterFromTemplate,Builds ClientEvent registration path strings from templates and registers handlers (string_xrefs include ItemModified).
 WildStar64.exe,140677950,ItemData_AddRuneSlotLuaRow,Builds one GetRuneSlots arRuneSlots entry including eElement bDisabled and installed itemRune-derived details.
 WildStar64.exe,140514660,ItemRuneSlotType_ToRuneType,Maps compact live rune slot type bytes 1..7 to CodeEnumRuneType values Air..Fusion.
 WildStar64.exe,14020df20,ClientDB_GetItemRuneInstance,Looks up the ItemRuneInstance row used for static/default rune slot data.
@@ -2553,6 +2629,11 @@ WildStar64.exe,1405f68f0,Inventory_CountItemOnUnitBags,Walks unit bag trees and 
 WildStar64.exe,1401ed460,AccountItemLookup_GetByItem2Id,Resolves account Item2 ownership/bind record via BindPoint table or account-item service fallback.
 WildStar64.exe,14079ee60,ClientEntityLookup_FindByIdentity,Binary-searches client entity lookup table by entity id and 64-bit identity pair; returns index hit/miss.
 WildStar64.exe,14049d240,Prerequisite_CheckDoesNotOwnAccountItemOnCharacter,Prerequisite type 246 handler (+0x130): FUN_1403ac590 inventory lookup mode 0x707 for account Item2 id in value0.
+WildStar64.exe,1403b91d0,TradeSkill_ClientHasKnownItem2Id,Binary-searches player known-tradeskill item2 id list (tier bucket from item2 row +0x17c); used by Prerequisite_CheckItemTradeSkillKnown type 174.
+WildStar64.exe,1403c16e0,TradeSkill_CheckItemTradeskillRequirement,Resolves item2 row and checks tradeskill tier gate via tradeskill service; used by Prerequisite_CheckItemTradeSkill type 173.
+WildStar64.exe,1404a1790,Prerequisite_CheckItemTradeSkill,Prerequisite type 173 handler at PrerequisiteTypeHandlerTable[173]: NPC types 0x14/0x17 gate then TradeSkill_CheckItemTradeskillRequirement.
+WildStar64.exe,1404a17e0,Prerequisite_CheckItemTradeSkillKnown,Prerequisite type 174 handler at PrerequisiteTypeHandlerTable[174]: NPC types 0x14/0x17 gate then TradeSkill_ClientHasKnownItem2Id.
+WildStar64.exe,1404a1890,Prerequisite_CheckProgressTrackOnMatchingEntity,Prerequisite type 178 handler at PrerequisiteTypeHandlerTable[178]: requires target entity id match local player then Progress_GetTrackedScalar 1403fa980 before ApplyComparison.
 WildStar64.exe,14049ca70,Prerequisite_CheckOwnsAccountItem,Prerequisite type 244 handler (+0xc0): on NPC entity types 0x14/0x17 checks account Item2 ownership via FUN_1401ed460 using current row objectId from eval context.
 WildStar64.exe,14049e900,Prerequisite_CheckTargetEntityLookupHit,Prerequisite type 106 handler (+0x318): resolves target entity identity (+0x1a0) through FUN_14079ee60 against client entity lookup table DAT_140c65898+0x6c50.
 WildStar64.exe,1404a0650,Prerequisite_CheckQuestObjectiveOnTarget,Prerequisite type 77 handler (+0x548): evaluates QuestObjective id against caster or target via quest-objective manager lookups.
@@ -2578,6 +2659,24 @@ WildStar64.exe,1403d2d60,Prerequisite_InfrastructureLookupById,Lookup in DAT_140
 WildStar64.exe,1404a0150,Prerequisite_CheckInfrastructureState,Prerequisite type 148 handler (+0x4e8): FUN_1403d2d60 infrastructure lookup then value0 vs state +0x10.
 WildStar64.exe,1404a0e10,Prerequisite_CheckItemMicrochip,Prerequisite type 139 handler (+0x5f8): item-eval +0x114 bitmask via Prerequisite_MapMicrochipIdToBit 14049bdc0(objectId0); 2 tbl rows keep objectId0=0.
 WildStar64.exe,14049bdc0,Prerequisite_MapMicrochipIdToBit,Maps ItemMicrochip objectId0 7-0xd to bit 1/2/4/8/10/20/40; id 0 returns 0.
+WildStar64.exe,1403cc530,Player_SendGenericError,Localized GenericError dispatcher; case 0x70 uses string id 0xad113 (NF CraftMicrochipInvalidSocket).
+WildStar64.exe,14056afb0,RuneInstall_ValidateBeforeSend,Pre-send gate for 0x085B: FUN_1403b4710 inventory checks then FUN_14040f1b0 socket match; zero => FUN_1403cc530(DAT_140c65898,0x70) in RuneCrafting_SendClientRuneInstall 14059d250.
+WildStar64.exe,14040fae0,SharedItemRuntime_Reset,Zero/init shared-item runtime object; same microchip +0x20 (0x138) and glyph +0x158 (400) layout as item-eval.
+WildStar64.exe,14040fc60,ItemEval_CreateFromSharedItem,Init item-eval then ItemEval_SyncFromSharedItem(sharedRuntime,1).
+WildStar64.exe,140410300,ItemEval_SyncFromSharedItem,Copies shared-item runtime into item-eval: microchip block glyph block and +0x5d tail; optional ItemEval_CommitPendingRuneData when param_3 set.
+WildStar64.exe,140412570,ItemEval_CopyMicrochipBlock,memcpy 0x138 bytes shared+0x20 to eval+0x20; sets eval count at +0x498.
+WildStar64.exe,140412690,ItemEval_CopyGlyphBlockPartial,Partial 0x90-byte glyph block copy into eval+0x158 used from ItemEval_CommitPendingRuneData path.
+WildStar64.exe,140412800,ItemEval_CopyGlyphBlock,memcpy up to 400 bytes shared+0x158 to eval+0x158; sets eval count at +0x49c.
+WildStar64.exe,140412900,ItemEval_CopyRuneTailDwords,Copies four dwords at shared+0x5d to eval+0x5d (+0x2ec/+0x2f4).
+WildStar64.exe,140412ad0,ItemEval_CommitPendingRuneData,Post-sync commit: may recopy microchip bytes from eval[1]+8; dispatches item-eval refresh helper.
+WildStar64.exe,14040e460,ItemEval_BuildAugmentRandomSocketMask,Builds item-eval +0x10c augment allowed-socket mask from ItemRuneSlotRandomization row +0x30 ORs; defaults +0x10c to 0x7f when no roll vector; separate from +0x114 ItemSpecial path.
+WildStar64.exe,14040fa40,ItemSpecial_LookupByContext,Hash lookup then ClientDB_GetItemSpecial (14020ebe0) for ItemEval_ApplyItemSpecialToEval when item2 ItemSpecialId path active.
+WildStar64.exe,14040c310,ItemEval_ApplyItemSpecialToEval,Copies ItemSpecial row +0x10/+0xc into item-eval +0x114/+0x118 when both zero; SQL maps +0x10 to Spell4IdOnEquip (usually Spell4 FK not socket mask). Error 0x95 when already set.
+WildStar64.exe,14040f320,ItemRuneType_ToCompactSocketId,Maps native RuneType 7–13 to compact socket id 1–7; used by RuneCrafting_SendClientRuneSlotAdd 14051ed80 for 0x0859 IsNotFusion flag.
+WildStar64.exe,14040f2b0,ItemRuneSlotType_ToClientSocketBit,Maps compact socket-type byte 1–7 to client socket bitmask 1/2/4/8/10/20/40 (same as ItemRuneSocketTypes.MapRuneTypeToBit); used by RuneInstall_ValidateRuneMatchesSocket.
+WildStar64.exe,14040f1b0,RuneInstall_ValidateRuneMatchesSocket,Gear item-eval +0x114 allowed-socket mask AND ItemRuneSlotType_ToClientSocketBit(target slot type from install array); Fusion socket bit 0x40 always passes; glyph item-eval gates in outer if only (no glyph-type compare in body). NF adds glyph RuneType == socket RuneType from tbl bands.
+WildStar64.exe,1403b4710,RuneInstall_ValidateInventoryStacks,Inventory stack presence gate for rune install; returns zero when requested rune Item2 is not available.
+WildStar64.exe,1405c8130,LocalizedError_ApplyNotificationStyle,Notification float styling when code at param_3[2]==0x70; display path after Player_SendGenericError — not the error dispatcher.
 WildStar64.exe,14049e730,Prerequisite_CheckMountVehicleType,Prerequisite type 90 handler (+0x2c0): mount subobject at entity+0xf00 unit-type filter (types 3-5).
 WildStar64.exe,1404a0d00,Prerequisite_CheckItemStatData,Prerequisite type 133 handler (+0x5c8): item eval +0x140 vs value0.
 WildStar64.exe,1404a0d30,Prerequisite_CheckItemStatId,Prerequisite type 134 handler (+0x5d0): item eval +0x148 vs value0.
@@ -2599,6 +2698,8 @@ WildStar64.exe,1404a14d0,Prerequisite_CheckPetFlair,Prerequisite type 190 handle
 WildStar64.exe,14039df50,Player_GetActiveVanityPetEntity,Returns local player vanity pet entity via Entity_ResolveById when pet type is 3 and valid.
 WildStar64.exe,1404695e0,Prerequisite_ResolveSpellOnPetEntity,Inline helper for prerequisite type 191 case 0xbf: SpellService resolve loop on player/pet entity+0x1600.
 WildStar64.exe,14049ebf0,Prerequisite_CheckWarplotCirclePerk,Prerequisite type 188 handler (+0x340): circle guild type 3 perk bitmask; fallback DAT_140c65b98+400.
+WildStar64.exe,14047a940,Entity_GetHealthScaleFactor,Returns health scale multiplier for prerequisite type 172 case 0xac: mount/pet/creature-aware factor from entity+0xcc0 and Creature2 row +0x70/+0x74; product with health component +0x8c compared via PrerequisiteManager_ApplyComparison.
+WildStar64.exe,14022d500,Creature2_GetRowByUnitId,Resolves Creature2 table row by unit id (entity+0xd8); prerequisite type 172 fallback when entity+0xd08 health component is null.
 WildStar64.exe,14046a110,Prerequisite_GetSpellTierOnTargetUnit,Reads spell tier rank for Spell4 id on a target unit id; used by type 60 case 0x3c.
 Houston64.exe,1400f8a40,ClientDB_RegisterSpell4Prerequisites,Registers client DB table loader for DB\Spell4Prerequisites.tbl; table path string xref at 140789478.
 Houston64.exe,1400f8e80,ClientDB_RegisterSpell4Reagent,Registers client DB table loader for DB\Spell4Reagent.tbl; table path string xref at 1407895c0.
