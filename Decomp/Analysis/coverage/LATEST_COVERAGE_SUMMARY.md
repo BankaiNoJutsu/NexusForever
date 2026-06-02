@@ -6,13 +6,13 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `Houston64.exe` | 25129 | 31.39% | 100% | 0 | 1597 | 6.36% |
 | `StsConnLib64.MT.dll` | 4522 | 8.31% | 100% | 0 | 864 | 19.11% |
-| `WildStar64.exe` | 25021 | 7.38% | 100% | 0 | 3599 | 0.02% |
+| `WildStar64.exe` | 25044 | 7.74% | 100.01% | 0 | 3688 | 0.2% |
 
 ## Full Function Backlog
 
 | Scope | Functions | Named | Selected | Unselected | Selected % |
 | --- | --- | --- | --- | --- | --- |
-| Default targets | 54672 | 10112 | 6060 | 48612 | 11.08% |
+| Default targets | 54695 | 10204 | 6149 | 48546 | 11.24% |
 
 ## Opcode Coverage
 
@@ -41,6 +41,6 @@ None.
 Generated artifacts:
 
 - ``Decomp/Analysis/coverage/LATEST_COVERAGE_SUMMARY.md``
-- ``Decomp/Analysis/logs/runs/pass48_case_3eef8a/LATEST_COVERAGE_SUMMARY.json``
+- ``Decomp/Analysis/logs/LATEST_COVERAGE_SUMMARY.json``
 - ``Decomp/Analysis/coverage/export_coverage_inventory.csv``
 - ``Decomp/Analysis/coverage/opcode_coverage_inventory.csv``

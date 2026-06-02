@@ -5,9 +5,57 @@ Use the evidence ladder from `CONTINUATION_GUIDE.md`: Observed -> Correlated -> 
 
 **Inventory (2026-05-23):** ~761 `Unknown*` token matches in 176 `Source/**/*.cs` files (ripgrep); ~147 distinct symbol names; ~205 enum members (64 in `PrerequisiteType` alone).
 
+## Initiative status — ACTIVE (2026-06-02 pass 100)
+
+Pass 100 corrected handler-table[5] mislabel (`14049d470` is orphan entity-id list walk; live type 5 Reputation uses inline `entity+0x118` + `1404a2010`). Labeled `PrerequisiteManager_ApplyComparisonFloat` @ `1404a2010`.
+
 ## Initiative status — ACTIVE (2026-05-23 resume)
 
 Decomp pass 130 added group stat-block layout mapping and retail catalog wire scalar names. Ghidra shared project was lock-blocked; used cached `140607490.fragment.c` and retail SQL.
+
+## Current roadmap buckets (2026-06-02)
+
+This tracker intentionally separates names that are safe to use from names that
+must stay opaque until another evidence source appears.
+
+### Implemented in the active prerequisite / diagnostic slice
+
+- Mapped `PrerequisiteType` names with conservative NF checks:
+  `AccountCurrencyAmount`, `CREDDPendingOrderState`, `PetOrEsperPetEntity`,
+  `PathMissionChecklistItemComplete`, `HousingResidenceLoaded`,
+  `HousingNeighborResidence`, `DailyLoginDaysTotal`,
+  `DailyLoginRewardsAvailable`, `SpellTierUnlocked`, and the account-item /
+  spell / path helper names listed below.
+- Structural client packet names backed by row serializers:
+  `ClientAccountRealmData`, `ClientRealmListRealmRow`, and
+  `ClientRealmListMessageRow`. Their standalone send/consumer events remain
+  blocked, so handlers stay diagnostic-only.
+
+### Deliberately blocked / keep opaque
+
+- No-op or `_purecall` prerequisite dispatch slots: `Unknown48`, `Unknown142`,
+  `Unknown189`, `Unknown192`, `Unknown193`, `Unknown203`, `Unknown222`,
+  `Unknown259`, `Unknown271`, `Unknown272`, `Unknown278`, `Unknown283`,
+  `Unknown285`, and `Unknown294`.
+- Duplicate-body aliases without a semantic owner: `Unknown223`, `Unknown240`,
+  `Unknown245`, `Unknown286`, `Unknown289`, `Unknown290`, and `Unknown291`.
+- Diagnostic predicates with blocked field owner: `Unknown267`, `Unknown260`,
+  and `Unknown295`.
+- Broad static/table placeholders such as `Stat.Unknown*`,
+  `InventoryLocation.Unknown*`, `UserTextFlags.Unknown*`, and generic packet
+  tails remain out of scope until consumer evidence proves names.
+
+### Next evidence targets
+
+- Runtime producer backlog: F-025 entity-stat aux, map-tracked-unit producer,
+  F-004 neighborhood entry/list, F-008 crafting discovery / complex-craft /
+  `0x084B` / `0x0855`, and F-031 retail Fortune weights.
+- Packet `ValueN` fields: follow `ENTITY_AUX_DECODE_ROADMAP.md` one opcode
+  cluster at a time; do not rename or emit from shape adjacency alone.
+- Client diagnostics still needing a gameplay send-site or live sniff:
+  `Client0x011B`, `Client0x011D`, `Client0x012D`, `Client0x0550`,
+  `Client0x062A`, `Client0x0634`, `Client0x0701`, `Client0x07E3`, and
+  `Client0x0928`.
 
 ## Initiative status — prior closure note
 
@@ -15,7 +63,7 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 
 **In scope:** packet/account/storefront/pending-item/achievement/quest-objective placeholders touched by the 2026-05 decomp passes, plus correlated group stat-block packets (`0x0436` / `0x0468`).
 
-**Out of scope (do not bulk-rename):** `PrerequisiteType.UnknownNNN` (64 members), generic `Network.World` packet tails and `Server0x*` unresolved rows, item wire offset names (`Unknown44`, …), `Stat` / `InventoryLocation` enums, table-backed `Game.Static` ids without client strings, and cosmetic renames (`Field6`, `PurchaseField0`, housing `Unknown0` without semantics).
+**Out of scope (do not bulk-rename):** remaining `PrerequisiteType.UnknownNNN` members, generic `Network.World` packet tails and `Server0x*` unresolved rows, item wire offset names (`Unknown44`, …), `Stat` / `InventoryLocation` enums, table-backed `Game.Static` ids without client strings, and cosmetic renames (`Field6`, `PurchaseField0`, housing `Unknown0` without semantics).
 
 **Re-open criteria:** new Ghidra consumer for a blocked offset, live capture with non-zero blocked wire fields, or NF runtime proof tying `QuestObjectiveType` / prerequisite id to behavior.
 
@@ -94,9 +142,54 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 | `PrerequisiteType.Unknown77` | `QuestObjectiveOnTarget` | Client case `0x4d` (+0x548) passes target context; `objectId0` is QuestObjective id |
 | `PrerequisiteType.Unknown172` | `HealthScaled` | Client case `0xac` inline: `Entity_GetHealthScaleFactor` `14047a940` * health `+0xd08+0x8c`; fallback `Creature2_GetRowByUnitId` `14022d500` on `+0xd8` |
 | `PrerequisiteType.Unknown174` | `ItemTradeSkillKnown` | `PrerequisiteTypeHandlerTable[174]` → `Prerequisite_CheckItemTradeSkillKnown` `1404a17e0` → `TradeSkill_ClientHasKnownItem2Id` `1403b91d0` (known-recipe list binary search); NPC types `0x14`/`0x17` |
-| `PrerequisiteType.ItemTradeSkill` (173) | enriched | Same table path `1404a1790` → `TradeSkill_CheckItemTradeskillRequirement` `1403c16e0` |
-| `PrerequisiteType.Unknown178` | blocked | Table handler `1404a1890` = entity-id match + `Progress_GetTrackedScalar` `1403fa980`; reject tbl “Equipped” hint |
-| Prerequisite handler evidence | pass 49 | Use **`DAT_140b66870` / `PrerequisiteTypeHandlerTable[typeId]`** for handler bodies; **`PTR_FUN_140b67740` vtable slots** often disagree (destructor/UI) — do not rename from vtable PE pointer alone |
+| `PrerequisiteType.ItemTradeSkill` (173) | NF `PrerequisiteCheckItemTradeSkill` | Handler table `1404a1790` → `TradeSkill_CheckItemTradeskillRequirement` `1403c16e0`; tier rank from `TradeskillTier` + `GetTradeskillXp` |
+| `PrerequisiteType.ItemTradeSkillKnown` (174) | NF `PrerequisiteCheckItemTradeSkillKnown` | Handler table `1404a17e0` → `TradeSkill_ClientHasKnownItem2Id` `1403b91d0`; `HasLearnedSchematic` on schematics referencing Item2 |
+| `PrerequisiteType.Unknown178` | `ProgressTrackOnMatchingEntity` | Handler table[178] `1404a1890` + `Progress_GetTrackedScalar` `1403fa980`; NF uses challenge completion count when `objectId0` is a `Challenge.tbl` id (track table `+0x8010` still blocked) |
+| `PrerequisiteType.TradeSkill` (175) | NF `PrerequisiteCheckTradeSkill` | Handler table stub; NF tier rank via `HasTradeskill` + `TradeskillTier` |
+| `PrerequisiteType.ChallengeObject` (176) | NF `PrerequisiteCheckChallengeObject` | Handler table stub; NF `IsChallengeActivated` for `Challenge.tbl` id |
+| `PrerequisiteType.TrueLevel` (177) | NF `PrerequisiteCheckPlayerGlobalTreeLookup` | Handler `1404a1830` + `1403d407b`; enum name unverified — rename blocked |
+| `PrerequisiteType.CreatureDifficultyRank` (180) | NF `PrerequisiteCheckCreatureDifficultyRank` | Handler table stub; NF `RankValue` on target difficulty row |
+| `PrerequisiteType.CreatureDifficulty` (179) | NF `PrerequisiteCheckCreatureDifficulty` | Spell path + NF manager; handler table[179] `1404a18f0` is PrimalMatrix lookup `1404d6a60` (documented mismatch) |
+| `PrerequisiteType.PrimalMatrixNode` (292) | NF stub `PrerequisiteCheckPrimalMatrixNode` | Live vtable `+0x6c8`; handler table `_purecall`; allocation runtime blocked |
+| `PrerequisiteType.LiveEventCount` (168) | `AccountItemCount` | Handler table[168] `Prerequisite_CheckAccountItemCount` `1404a1620` → `AccountItem_CountOwnedByItem2Id` `1403d2140`; live case `0xa8` still vtable `+0x5a0` |
+| `PrerequisiteType.LiveEvent169` (169) | `AccountItemCountCompared` | Handler table[169] `Prerequisite_CheckAccountItemCountCompared` `1404a1670`; NF `PrerequisiteCheckAccountItemCountCompared` |
+| `PrerequisiteType.Unknown171` (171) | `DailyLoginDaysTotal` | Handler table[171] reads accountItemList+0x180 = DailyLogin Value0; NF `GetDailyLoginDaysTotal()` |
+| `PrerequisiteType.Unknown96` | `EvalContextFloatByObjectId` | Handler table[96] `Prerequisite_CheckEvalContextFloatByObjectId` `14049f810`; active eval-context list key `+0x20`, float `+0x28`; NF item stat eval proxy |
+| `PrerequisiteType.Unknown97`-`Unknown99` | `AccountItemListItem2CountNpc97` / `AccountItemListItem2CountNpc98` / `AccountItemListItem2CountNpc99` | Handler table entries `14049f8c0` / `14049f990` / `14049f9d0`; NPC type gate then `AccountItemList_WalkItem2IdMatch`; numeric suffix retained because no finer native distinction is proven |
+| `PrerequisiteType.Unknown100`-`Unknown101` | `AccountItemListItem2Count100` / `AccountItemListItem2Count101` | Handler table entries `14049fa80` / `14049fac0`; same account Item2 row walk without NPC gate; numeric suffix retained because no finer native distinction is proven |
+| `PrerequisiteType.Unknown223` | no enum rename | Raw PE vtable `PTR_FUN_140b67740+0x438` -> `14049f8c0`; same NPC-gated account Item2 row-count handler as type 97, but no semantic owner beyond duplicate-body alias |
+| `PrerequisiteType.Unknown233` | `SpellTierUnlocked` | Live vtable `+0x1a8` -> `Prerequisite_CheckSpellTierUnlocked` `14049d820`; `objectId0` Spell4 row, compares ability-book tier data to Spell4.tierIndex, ignores `value0`, Equal/NotEqual only |
+| `PrerequisiteType.Unknown240` | no enum rename | Raw PE vtable `+0x2e8` -> `Prerequisite_CheckCurrency` `14049e7e0`; `objectId` currency id, `value` amount, but no semantic owner beyond duplicate-body alias |
+| `PrerequisiteType.Unknown241` | `HousingResidenceLoaded` | Live vtable `+0x638` -> `Prerequisite_CheckHousingResidenceLoaded` `1404a11e0`; NPC gate then Equal/NotEqual on active housing TargetResidence identity at world client `+0x7500/+0x7508` |
+| `PrerequisiteType.Unknown186` | `HousingNeighborResidence` | Live vtable `+0x628` -> `Prerequisite_CheckHousingNeighborResidence_Table186` `1404a10e0`; NPC gate then Equal/NotEqual on current housing residence identity presence in cached neighbor map. Only retail row `17536` pairs `HouseOwnership` with type 186 for housing seed/relic/active-prop gates. |
+| `PrerequisiteType.Unknown245` | no enum rename | Raw PE vtable `+0x698` -> `Prerequisite_CheckItemTradeSkill` `1404a1790`; NPC-gated Item2 tradeskill tier requirement, but no semantic owner beyond duplicate-body alias |
+| `PrerequisiteType.Unknown286` | no enum rename | Raw PE vtable `+0x688` -> `Prerequisite_CheckDailyLoginDaysTotal` `1404a1710`; accountItemList+0x180, but no semantic owner beyond duplicate-body alias |
+| `PrerequisiteType.Unknown287` | `DailyLoginRewardsAvailable` | Raw PE vtable `+0x690` -> `Prerequisite_CheckDailyLoginRewardsAvailable` `1404a1750`; accountItemList+0x184 |
+| `PrerequisiteType.Unknown289` | no enum rename | Raw PE vtable `+0x3d0` -> `Prerequisite_CheckMount` `14049f0c0`; duplicate of type 84 body without proven finer semantic owner |
+| `PrerequisiteType.Unknown290` | no enum rename | Raw PE vtable `+0x3a8` -> `Prerequisite_CheckUnderForcedMovement` `14049efa0`; duplicate of type 79 body without proven finer semantic owner |
+| `PrerequisiteType.Unknown291` | no enum rename | Raw PE vtable `+0x6c0` -> `Prerequisite_CheckProgressTrackOnMatchingEntity` `1404a1890`; duplicate of type 178 body without proven finer semantic owner |
+| `PrerequisiteType.Unknown293` | `AccountCurrencyAmount` | `InspectCodeAddress` at `14049d3a0`: for `objectId0 <= 18` reads `DAT_140c635f0+0x15d0+0xd0+objectId0*8`, otherwise compares zero, then `ApplyComparison`; account-item add/remove/update writers `140006000`/`140004c40`/`140005600` prove `+0xd0` slots are `AccountItem.accountCurrencyEnum` balances; row 44322 uses objectId0=15 Crimson Essence, value0=5000 |
+| `PrerequisiteType.Unknown266` | `PetOrEsperPetEntity` | Corrected mapping: live case `0x10a` uses decimal vtable operand `200` (`+0xc8`) -> `14049cae0`; instruction window reads entity `+0x80`, subtracts `0x18`, and accepts values `0x18`/`0x19`, which NF `EntityType` maps to `Pet`/`EsperPet`. This is not matching/PvP candidate `14049e300`. |
+| `PrerequisiteType.Unknown268` | `CREDDPendingOrderState` | Live case `0x10c` vtable `+0x3c8` -> `Prerequisite_CheckCREDDPendingOrderState_Table268` `14049f090`; compares `DAT_140c635f0+0x1708` CREDD pending-order flag to `objectId0`. Row `38851` is `NotEqual objectId0=1` and gates `creature2.prerequisiteIdVisibility` for CREDD Exchange NPCs in Thayd/Illium and the MTX Protostar consultant. |
+| `PrerequisiteType.Unknown159` | `PositionalRequirementBetweenCasterAndTarget` | Client case `0x9f` dispatches vtable `+0x1e0` -> `14049d940`; body resolves `PositionalRequirement` from `objectId0`, computes angular cone using row `AngleCenter`/`AngleRange`, checks caster-vs-target bearing, and swaps facing source when row `Flags & 1`; retail row 6117 uses objectId0=6 (`AngleCenter=0`, `AngleRange=300`, `Flags=0`). |
+| `PrerequisiteType.Unknown63` | `IsLocalPlayerEntity` | Client case `0x3f` dispatches vtable `+0x78` -> raw `14049c7b0`; body compares evaluated entity `+8` identity to `DAT_140c65898+0x78` local-player entity `+8`, supports Equal/NotEqual only, and retail rows 3977/22213 are used by `VisualEffect.prerequisiteId` local-vs-nonlocal gates. |
+| `PrerequisiteType.PublicEventParticipant166` (166) | `LiveEventTreeLookup` | Handler table[166] `1404a1580` → LiveEventTree_LookupByObjectId 1404a7f50; NF requires NPC target + LiveEvent row (progress proxy 0) |
+| `PrerequisiteType.LiveEvent167` (167) | `LiveEventWorldFactionBranch` | Handler table[167] `1404a15d0` → 1404a80b0 + LiveEvent_GetWorldFactionField 1404a8430 (world 0xa6/0xa7 = Dominion/Exile fields +0x68/+0x88) |
+| `PrerequisiteType.GameFormula` (170) live path | `Prerequisite_CheckEntitySetCountAt7188` @ 14049c880 | Counts NPC entities in player global +0x7188 set; distinct from tbl formula-id and handler-table +0x110 paths |
+| `PrerequisiteType.HealthScaled` (172) | NF `PrerequisiteCheckHealthScaled` | Live case `0xac` inline scaled health; NF uses raw `IWorldEntity.Health` proxy; handler table[172] = `accountItemList+0x184` daily-login rewards |
+| `PrerequisiteType.Unknown220` | `PathMissionChecklistItemComplete` | Live case `0xdc` vtable `+0x498` -> `Prerequisite_CheckPathMissionChecklistItemComplete_Table220` `14049fe80`; NF proxy checks completed missions as complete and otherwise tests persisted path mission `ProgressData` bit `value` for `value < 32`; per-type checklist/clue ownership remains blocked. |
+| `PrerequisiteType.Unknown48` | no enum rename | Two retail rows: `10846` pairs `QuestObjectiveOnTarget` with type 48 but is unreferenced; `20451` is NotEqual zero and is referenced by `Spell4Effects.prerequisiteIdCasterPersistence` on dungeon raid-wipe timer spell 47945 effects. Live case `0x30` calls vtable `+0x1e8`, but that slot resolves to no-op stub `140001ba0`; semantic owner blocked. |
+| `PrerequisiteType.Unknown142` | no enum rename | 9 retail rows; references are Spell4Effects caster/target apply gates for deprecated Spellslinger variants and Dangerous Game. Live case `0x8e` passes eval-context `param_2[4]` to vtable `+0x170`, but that slot resolves to no-op stub `140001ba0`; eval-context slot meaning remains blocked. |
+| `Client0x0928` | blocked | Shared wire with `ClientPetSetStance` (`0x068E`); no gameplay PE send site (registration batch `1400a8524` only) |
+| `PrerequisiteType.Unknown189` (189) | no enum rename | Orphan label `Prerequisite_CheckPathSettlerHubBuildProgress` (`1404a01e0`) reads record+0x60, but live case `0xbd` dispatches a no-op stub and handler table[189] is `_purecall`; NF prerequisite handler removed until dispatch proof exists |
+| `PrerequisiteType.Unknown192` (192) | no enum rename | Orphan label `Prerequisite_CheckPathSettlerHubContributionProgress` (`1404a0260`) reads record+0x68, but live case `0xc0` dispatches a no-op stub and handler table[192] is `_purecall`; NF prerequisite handler removed until dispatch proof exists |
+| `PrerequisiteType.Unknown193` (193) | no enum rename | Orphan label `Prerequisite_CheckPathSettlerHubProgressPercent` (`1404a02e0`) reads record+0x64, but live case `0xc1` dispatches a no-op stub and handler table[193] is `_purecall`; NF prerequisite handler removed until dispatch proof exists |
+| `accountItemList+0x110` (type 170 handler table) | blocked | `1404a16c0` compares scalar vs `value0`; `140022192` uses +0x108/+0x110; NF `GetAccountInventoryItemCount()` row-count proxy only |
+| `PrerequisiteTypeHandlerTable` base | `0x140b67870` (not `0x140b66870`) | PE pointer scan for `1404a1620` / type **168** slot; pass 52 correction |
+| `Client0x003D` | `ClientAccountRealmData` | `ClientAccountRealmData_WritePayload` @ `1400aba70` = one `AccountRealmData` row; nested in `ClientRealmListRealmRow`; standalone send blocked |
+| `Client0x0760` | `ClientRealmListRealmRow` | `Client0x0760_WritePayload` @ `1400abd30` + `ServerRealmList` realm row serializer; send-site still blocked |
+| `Client0x0762` | `ClientRealmListMessageRow` | `Client0x0762_WritePayload` @ `1400ac410` + `ServerRealmList` message row serializer; send-site still blocked |
+| Prerequisite handler evidence | pass 49/86 | Use **`0x140b67870` / `PrerequisiteTypeHandlerTable[typeId]`** for handler bodies; **`PTR_FUN_140b67740` vtable slots** often disagree (destructor/UI) — do not rename from vtable PE pointer alone |
 | `AchievementEntry.Value` | `RequiredProgress` | Achievement progress runtime |
 | `Quest2Entry.FactionLevelCompPreq*` | `FactionLevelRequireAtMostPreq*` | Quest prerequisite comparison semantics |
 | `RewardRotationModifierEntry.Value` | `ModifierValue` | Reward rotation schedule builder |
@@ -157,12 +250,32 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 | `GroupMemberStatSlot.Value` | Five-row ushort in stat block; per-row semantics blocked |
 | `GroupCharacter.Unknown10` | `uint32` after mentoring (`+0x50`); no labeled consumer |
 | `QuestObjectiveType.Unknown27` / `Unknown29` | No localization / single-digit table counts; no NF runtime handler |
+| `PathMissionChecklistItemComplete` exact checklist runtime | Enum/check implemented with an NF proxy; exact per-path-type `+0x50` checklist/clue ownership remains blocked until path mission runtime state is modeled beyond completed-mission and persisted `ProgressData` bits. |
+| `PrerequisiteType.Unknown260` | One retail row `36343` nests `OtherPrerequisite` -> row `17536` (`HouseOwnership` + `HousingNeighborResidence`) and type 260 Equal with `objectId1=12` (`HousingPlugItem` row flags `2`), but no imported `wildstar_client` prerequisite reference column points at row `36343`. Live case `0x104` vtable `+0x640` -> `1404a1220` ignores row object/value and resolves active housing plot/plug state through `HousingPlotInfo`, current/default `HousingPlugItem`, plug flags `0x08`/`0x20`, and active residence fields `+0x60/+0x64` vs state value `5`; state semantic remains unmapped, so no enum rename. |
+| Matching/rating candidate `14049e300` | Rejected as type 266: live prerequisite case `0x10a` uses decimal vtable operand `200` (`+0xc8`) -> `14049cae0`, not `+0x200`. `14049e300` remains orphan/unassigned until a caller or slot proves ownership. |
+| `PrerequisiteType.ScanCreature` native path | Enum name remains table/text-backed, but stale labels were rejected: handler table[62] `14049e9a0` is `Prerequisite_CheckEntityLookupFlagBit1_Table62`, not a scientist checklist walk; live case `0x3e` dispatches vtable `+0x4a8` -> raw `14049ff30`, which has scan-looking target bitmask fields but no safe semantic label yet. |
+| `PrerequisiteType.Unknown267` | No enum rename: live case `0x10b` vtable `+0x320` -> diagnostic body `Prerequisite_CheckEntityLookupFlagBit1_Table62` `14049e9a0` (same body as mislabeled handler table[62]); bit-1 semantics at `*(DAT_140c65898+0x6c50)+8` still blocked — not `ScanCreature`. |
+| `Prerequisite_CheckScanCreature_LiveCase3E` (`14049ff30`) | Pass 88: live type 62 case `0x3e` vtable `+0x4a8`; target-unit scan bitmask predicate documented; NF still uses datacube-only `PrerequisiteCheckScanCreature`. |
+| `PrerequisiteType.HousingNeighborResidence` (186) | Pass 95: `PrerequisiteCheckHousingNeighborResidence` proxies neighbor presence on player residence; native visit-context map membership still blocked. |
+| `Prerequisite_CheckHousingPlotPlugState_Table260` (`1404a1220`) | Pass 95: diagnostic label for type 260 live body; enum rename still blocked. |
+| `PrerequisiteType.Unknown144` | No `wildstar_client.prerequisite` rows found and live `PrerequisiteManager_EvaluateTypeSlot` skips case `0x90` (`0x8f` -> vtable `+0x3a0`, `0x91` -> inline Equal true). Handler table[144] `1404a0b70` is labelled only as `Prerequisite_CheckLiveEventStateEqualsOne_Table144`: it looks up `objectId` through `PublicEventService_GetLiveEventById` and tests runtime record `+0x1d0 == 1`, but reachability and field meaning are blocked, so no enum rename. |
+| Handler table[5] `14049d470` | Renamed pass 100 to `Prerequisite_CheckEntityIdInEvalContextList_Table5Orphan` — walks eval-context `+0x2b8` list; **not** live type 5. Live `Reputation` = case `0x5` inline `entity+0x118` vtable `+0x20` + `PrerequisiteManager_ApplyComparisonFloat` `1404a2010`. |
+| `PrerequisiteType.Unknown203` | Rows exist, but live case `0xcb` dispatches vtable `+0x348` -> `140001ba0` no-op stub; no semantic owner is proven. |
+| `PrerequisiteType.Unknown222` | Rows `9470`/`9472` exist, but live case `0xde` dispatches vtable `+0x380` -> `140001ba0` no-op stub; no semantic owner is proven. |
+| `PrerequisiteType.Unknown259` | Rows `39430`/`39431`/`39799`/`39800` use objectId0 `38923`/`38924`, but live case `0x103` dispatches vtable `+0x530` -> `140001ba0` no-op stub; no semantic owner is proven. |
+| `PrerequisiteType.Unknown271` | Rows exist, but live case `0x10f` dispatches vtable `+0x178` -> `140001ba0` no-op stub; no semantic owner is proven. |
+| `PrerequisiteType.Unknown272` | No retail rows found and live case `0x110` dispatches vtable `+0x180` -> `140001ba0` no-op stub; no semantic owner is proven. |
+| `PrerequisiteType.Unknown278` | One row (`40531`, Equal `objectId0=1`, `value0=1`) is referenced by `Spell4.prerequisiteIdAoeTarget` on `[TEST] Origin/Target Prereqs - PBAE - Tier 3` (`Spell4` 84203). Live case `0x116` calls vtable `+0x300` on caster and target, but that slot resolves to no-op stub `140001ba0`; no semantic owner is proven. |
+| `PrerequisiteType.Unknown283` | No retail rows found and live case `0x11b` dispatches vtable `+0x6a8` -> `140001ba0` no-op stub; no semantic owner is proven. |
+| `PrerequisiteType.Unknown285` | Rows `41892`/`43208` exist, but live case `0x11d` dispatches vtable `+0x6b0` -> `140001ba0` no-op stub; no semantic owner is proven. |
+| `PrerequisiteType.Unknown294` | One row (`44546`) is unreferenced in every `wildstar_client` column containing `prerequisite`; it uses `NotEqual` with all ids/values zero. Live case `0x126` dispatches vtable `+0x6d0` -> `140001ba0` no-op stub, and handler table[294] is `_purecall`; no semantic rename. |
+| `PrerequisiteType.Unknown295` | Pass 98: `PrerequisiteCheckUnknown295` proxies live case `0x127` (NotEqual + evaluated entity present). Row `44550` still unreferenced; enum rename blocked. |
 
 ## Blocked buckets (do not rename without new evidence)
 
 | Bucket | Count | Notes |
 |--------|------:|-------|
-| `PrerequisiteType.UnknownNNN` | 64 | Table ids + generic failure strings only — **out of scope** |
+| `PrerequisiteType.UnknownNNN` | remaining | Table ids + generic failure strings only — **out of scope** |
 | `Network.World` packet tails | ~400 refs | Many `Server0xNNNN` shapes decoded but event semantics open — **out of scope** |
 | `Stat.Unknown*`, `InventoryLocation.Unknown*` | ~15 | No client stat/location enum strings |
 | `EntityCreateFlag.Unknown08` | 1 | Used in cinematics; no label |
@@ -195,8 +308,9 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 
 | Opcode | Structure | Evidence | Blocker |
 |--------|-----------|----------|---------|
-| `Client0x0760` | `RealmInfo` row | `Client0x0760_WritePayload` @ `1400abd30`; field order mirrors `ServerRealmList` realm entries | Native send-site or consumer event before semantic rename |
-| `Client0x0762` | `NetworkMessage` row | `Client0x0762_WritePayload` @ `1400ac410`; field order mirrors `ServerRealmList` message entries | Native send-site or consumer event before semantic rename |
+| `Client0x011B` / `Client0x011D` / `Client0x012D` | empty / `uint32` / wide string | Pass 94 comparison scan: native registration is confirmed at `Network_RegisterServerOpcode_0351` (`14006c290`) with `0x011B` -> zero-payload writer `140001ba0`, `0x011D` -> `ClientUInt32_ReadPayload` / `ClientTradeskillResetTalents_WritePayload`, and `0x012D` -> `ClientSuggest_WritePayload`. Non-registration hits are rejected: `0x011B`/`0x011D` in `LuaLexer_ReadNextToken`/parser functions are Lua token ids, `Movement_UpdateAndSendFallStateOpcodes` uses `GameFormula_GetEntryById(0x11B)`, and `SpellCast_SendClientCastSpellOrPosition` returns `CastResult.IllegalSpellCast` (`0x011D`) rather than sending opcode `0x011D`. | Gameplay sender/consumer or live sniff before semantic rename |
+| `Client0x0550` / `0x062A` / `0x0634` / `0x07E3` | `uint32` via `14007d010` | Pass 58 PE: sole `mov eax` each in `ClientWorldOpcodeRegister_MovementSpline` (`1400a824e`/`82b6`/`872c`/`8282`); **not** `0x05D5` (gameplay sends `140075918`/`14076ab61`) | Indirect send rail or live sniff before semantic rename |
+| `Client0x0701` | 2-bit + `uint32` | `Network_RegisterServerOpcode_0351` @ `14006c290`; writer `1400a69d0`; sole `mov eax,0x701` @ `140079e05` (harness only) | Gameplay sender/consumer before rename |
 
 ## Verification (initiative closure)
 

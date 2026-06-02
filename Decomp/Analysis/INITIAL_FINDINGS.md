@@ -14014,14 +14014,14 @@ One-hundred-thirtieth placeholder-rename resume pass (2026-05-23):
 One-hundred-thirty-first pending gift UI and group handler correction (2026-05-23):
 
 - `InspectCodeAddresses` on `1400a9b20`, `140005bf0`, `140519260`, `1406031d0` (user run;
-  manifest `selected.count=0` ÔøΩ output in fragment cache / prior exports).
+  manifest `selected.count=0` ù output in fragment cache / prior exports).
 - `PendingAccountItemGroup_ReadPayload` @ `1400a9b20`: `u64` @ `+0x10` after `AccountItemId`;
   `FUN_14006c090` @ `+0x08` reads 32-bit item id; wide string @ `+0x18`; `TargetAccountId` @ `+0x38`.
 - `AccountPendingItemGroupCache_InsertFromPayload` @ `140005bf0`: `plVar12[2] = param_2[2]` (wire
   `+0x10`); grouped dedupe keys on `Id` / group string only.
 - `AccountItemUi_GiftSelectedPendingItemGroup` @ `140519260`: loads pending row, passes
   `cacheRow+0x38` wide string to gift senders; account gift uses UI `param_1+0x38` target account;
-  character gift uses UI `param_1+0x40` identity ÔøΩ **does not read cache slot `[2]`**. `Unknown2`
+  character gift uses UI `param_1+0x40` identity ù **does not read cache slot `[2]`**. `Unknown2`
   stays blocked; NF continues emitting `0`.
 - **Label fix:** `1406031d0` decompile dispatches `Group_MemberPromoted` from `param_2[2]`/`[3]`;
   it does **not** call `Group_CopyMemberStatBlockFromPayload`. Roster stat refresh uses
@@ -14967,7 +14967,7 @@ One-hundred-fifty-second entity-command runtime-envelope pass:
   `MovementManager.HandleClientEntityCommands` consumes opcode `0x0637`
   (`ClientEntityCommand`) as `Time + command count + repeated command ids and
   payloads`.
-- Source comments now replace the older generic ÔøΩbidirectional?ÔøΩ note on the
+- Source comments now replace the older generic ùbidirectional?ù note on the
   opcode enum and add matching runtime-boundary summaries to the client/server
   packet models. No client-native decompile label is implied here.
 - Focused protocol coverage now pins one simple `SetTime` command through both
@@ -15248,8 +15248,8 @@ Quest log / tutorial Codex classification follow-up (2026-05-25):
   10 quests carrying bit `0x800000`, all 10 lacked `EpisodeQuest` rows but only
   8 were fully zero-classified; outliers `10604` and `10605` still carry nonzero
   quest categories. The stronger durable boundary for Rider's Reef is therefore
-  ÔøΩunclassified in `Quest2`/`EpisodeQuest`ÔøΩ, not merely ÔøΩflagged with
-  `0x800000`ÔøΩ.
+  ùunclassified in `Quest2`/`EpisodeQuest`ù, not merely ùflagged with
+  `0x800000`ù.
 - Net result: blank Codex browse rows for the Rider's Reef starter/follow-up
   chain are a stock client data/UI limitation. Server-side fixes can keep those
   quests active, tracked, and objective-synced, but cannot make them browseable
@@ -16687,7 +16687,7 @@ Client opcode discovery loop pass 9 (2026-05-29):
   plus CharacterScreenLib `InitiatePTRCharacterCopy` @ `1409edc80`. **`ClientPtrCopy`
   (`0x06E8`)** remains separate with unresolved managed wire shape.
 - `Client0x07B6` sender `1403f42e0` is sole `0x7B6` send site (addon/module walk);
-  no semantic rename yet. `Client0x00C8` has registration onlyÔøΩno dedicated send
+  no semantic rename yet. `Client0x00C8` has registration onlyùno dedicated send
   helper in export cache; do not alias to queue-leave beyond shared `MatchType` wire.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo`
@@ -16770,7 +16770,7 @@ Client opcode discovery loop pass 13 (2026-05-29):
 - ClientICCommChannelJoin_WritePayload 1400877a0 and ClientICCommMessage_WritePayload 1400875e0:
   TraceFunctionCallers show registration-only refs (same as cycle 12).
 - send_helper_filter_0550 / send_helper_filter_62a on Network_SendOpcodePayloadHelper: no call-site
-  instruction window contained 0x550 or 0x62A ÔøΩ opcodes do not use direct helper immediates.
+  instruction window contained 0x550 or 0x62A ù opcodes do not use direct helper immediates.
 - MatchingReplacement_SendStartLookingForReplacements 14076aa30: callers trace shows two vtable
   DATA refs only (indirect UI dispatch table).
 - ClientSuggest family: AccountItem_SendOpcodePayloadHelper 1400161d0 rail relabeled (0x0233/0x07C6);
@@ -16786,16 +16786,16 @@ Client opcode discovery loop pass 13 (2026-05-29):
 
 Client opcode discovery loop pass 14 (2026-05-29):
 
-- Parallel subagent slice: matching UI cluster decompile (14076a9f0ÔøΩ14076ac30), AccountItem rail
+- Parallel subagent slice: matching UI cluster decompile (14076a9f0ù14076ac30), AccountItem rail
   filter for ClientSuggest 0x012D/0x063E, ICComm vtable send path, and 062A/0634 cluster ruling.
 - InspectCodeAddress 14076a9f0: sends 0x05DA via Network_SendOpcodePayloadHelper when
   *(DAT_140c65b98+0x10c)==0x10; label promoted Matching_SendMatchLeave.
 - InspectCodeAddress 14076ac30: map lookup + flag gate then sends 0x0606; label promoted
   Matching_SendTransferIntoMatch.
 - Matching UI cluster sends 0x05D5/0x0602/0x05DA/0x0606 only; decomp cache has no 0x062A/0x0634
-  anywhere ÔøΩ LFR/replacement cluster ruled out for those opcodes.
+  anywhere ù LFR/replacement cluster ruled out for those opcodes.
 - AccountItem_SendOpcodePayloadHelper 1400161d0 TraceFunctionCallers filters 0x12D and 0x63E:
-  31 refs listed, zero matching instruction windows ÔøΩ AccountItem rail ruled out for ClientSuggest
+  31 refs listed, zero matching instruction windows ù AccountItem rail ruled out for ClientSuggest
   siblings 0x012D/0x063E.
 - ICComm 0x0550 hypothesis weakened: opcode not in ICComm registration table 14006c290; lives in
   movement block 1400a8190; send uses DAT_140c65808 vtable+0x108 via Network_SendMessageById path.
@@ -16811,12 +16811,12 @@ Client opcode discovery loop pass 15 (2026-05-29):
 - Parallel subagent slice: ICComm 0x0550 hypothesis closure, ClientSuggest 0x012D/0x063E rail
   hunt, 062A/0634 vtable dispatch targets, ServerMatching0x05CF + Client0x00C8 follow-up.
 - send_helper_filter_12d / send_helper_filter_63e on Network_SendOpcodePayloadHelper 1403f4900:
-  348 callers each, zero matching instruction windows with 0x12D or 0x63E ÔøΩ world send rail ruled
+  348 callers each, zero matching instruction windows with 0x12D or 0x63E ù world send rail ruled
   out for ClientSuggest siblings (same pattern as 0x0550/0x062A).
 - InspectCodeAddress 14076c830: Matching_QueueDispatchFromUi sends 0x05EF/0x05F3/0x05F8/0x05F9 via
   Network_SendOpcodePayloadHelper with map/role payload building and match-state gates; does not
   reference 0x062A/0x0634.
-- TraceFunctionCallers 140081f00 (ServerMatchingAverageWaitTimeUpdate reader): 6 refs ÔøΩ registration
+- TraceFunctionCallers 140081f00 (ServerMatchingAverageWaitTimeUpdate reader): 6 refs ù registration
   DATA plus ServerFortuneRewards_ReadPayload loop call; no direct UI outbound chain to 062A/0634 yet.
 - ICComm-as-0x0550 hypothesis dead: opcode in movement registration 1400a8190 not ICComm 14006c290.
 - Client0x062A/0634, Client0x012D/063E, ServerMatching0x05CF, Client0x00C8: sender/handler still blocked.
@@ -16860,13 +16860,13 @@ Client opcode discovery loop pass 16 (2026-05-29):
 
 - Parallel subagent slice: 062A/0634 vtable/serializer probes, ClientSuggest 012D/063E
   accountitem010 rail, Client0x0550 indirect send chain, ServerMatching0x05CF + Client0x00C8 follow-up.
-- accountitem010_filter_12d/_63e on FUN_140016010: 9 refs, zero filter windows ÔøΩ sibling helper
+- accountitem010_filter_12d/_63e on FUN_140016010: 9 refs, zero filter windows ù sibling helper
   ruled out for ClientSuggest opcodes.
-- InspectCodeAddress 140016010: relabeled AccountItem_SendViaNetworkMessageId ÔøΩ sends via
+- InspectCodeAddress 140016010: relabeled AccountItem_SendViaNetworkMessageId ù sends via
   DAT_140c65808 vtable+0x108 using message ids ClientPackedWorld 0x038C and ClientEncrypted 0x0244
   (account-item take/gift, daily login, storefront callers); not 0x012D/0x063E.
 - cycle16_callers_14007dc80: callers FUN_14007dd40 and FUN_14007e070 only; relabeled
-  ClientCompoundTradeskillUInt32_WriteCluster ÔøΩ compound serializer at object+0x30/+0x38/+0x58.
+  ClientCompoundTradeskillUInt32_WriteCluster ù compound serializer at object+0x30/+0x38/+0x58.
 - FindPointerInData 14007d010: 8 .data table pointers (140c1ec38..140c1f168), no gameplay caller.
 - FindOpcodeComparisons 0x62A/0x634 in movement block: registration-only at 1400a82b6/1400a872c.
 - DumpNearbyData 140b76488: matching UI vtable lists known senders 14076a9f0/14076aa30/14076abb0/
@@ -16882,18 +16882,18 @@ Client opcode discovery loop pass 17 (2026-05-29):
 
 - Parallel subagent slice: matching vtable stub inspect, Client0x0550 serializer upward walk,
   MatchType 0x00C8/0x05B5/0x05B6 send filters, ServerMatching0x05CF handler recovery.
-- InspectCodeAddress 14076b770: MatchingUi_BuildRoleSelectionTable ÔøΩ Lua role table builder only.
-- InspectCodeAddress 14076b940: MatchingUi_BuildGameTypeSelectionTable ÔøΩ MatchingGameType iteration
-  via FUN_140214e00; no Network_SendOpcodePayloadHelper ÔøΩ not 062A/0634/05B5 sender.
+- InspectCodeAddress 14076b770: MatchingUi_BuildRoleSelectionTable ù Lua role table builder only.
+- InspectCodeAddress 14076b940: MatchingUi_BuildGameTypeSelectionTable ù MatchingGameType iteration
+  via FUN_140214e00; no Network_SendOpcodePayloadHelper ù not 062A/0634/05B5 sender.
 - send_helper_filter_05b5/_05b6 on Network_SendOpcodePayloadHelper 1403f4900: zero matching
   windows (same indirect-send pattern as 0x012D/0x062A).
-- TraceFunctionCallers 14007dd40: refs are registration DATA only ÔøΩ bound to server opcode 0x06EA
+- TraceFunctionCallers 14007dd40: refs are registration DATA only ù bound to server opcode 0x06EA
   in Network_RegisterServerOpcode_0351; relabeled ServerPtrCharacterCopyQueued_WritePayloadCluster;
   compound chain is 0x06EA wire path not Client0x0550 outbound sender.
-- TraceFunctionCallers 1403355e0 filter 550: 4 refs, zero 0x550 windows ÔøΩ message-id serialize
+- TraceFunctionCallers 1403355e0 filter 550: 4 refs, zero 0x550 windows ù message-id serialize
   path still blocked for 0x0550.
 - FindOpcodeComparisons 0x05CF in 140765000-140770000: total_matches=0; InspectCodeAddress
-  1407655c0 is Lua/fortune table builder ÔøΩ not 0x05CF handler.
+  1407655c0 is Lua/fortune table builder ù not 0x05CF handler.
 - Client0x0550/062A/0634, Client0x012D/063E, Client0x00C8, ServerMatching0x05CF: still blocked.
 - Next: TraceFunctionCallers 140332920 (caller of 1403355e0); FindPointerInData 14008a150;
   inspect 14076bd30; live sniff F-010 for 05CF/00C8/062A/0634.
@@ -16906,19 +16906,19 @@ Client opcode discovery loop pass 18 (2026-05-29):
 - Parallel subagent slice: message-id dispatch chain for Client0x0550, MatchType sender hunt
   (FindPointerInData 14008a150), matching vtable tail stubs, ServerMatching0x05CF global handler scan.
 - TraceFunctionCallers 140332920: 4 vtable DATA refs only; relabeled Network_SerialiseBufferedMessageById
-  ÔøΩ resolves metadata via vtable+0x130 then Network_SerialiseResolvedMessage (indirect rail for
+  ù resolves metadata via vtable+0x130 then Network_SerialiseResolvedMessage (indirect rail for
   blocked opcodes 0x0550/0x062A/0x0634/0x05B5).
-- FindPointerInData 14008a150 (MatchType writer): matches=0 ÔøΩ writer referenced only via registration
+- FindPointerInData 14008a150 (MatchType writer): matches=0 ù writer referenced only via registration
   LEA rows, not .data pointers.
 - send_helper_filter_05b5 on Network_SendMessageById 140332580: 4 refs, zero 0x5B5 windows.
-- InspectCodeAddress 14076b6e0: inline vtable slot MatchingUi_VtableMatchStateEligibilityGate ÔøΩ match
+- InspectCodeAddress 14076b6e0: inline vtable slot MatchingUi_VtableMatchStateEligibilityGate ù match
   state bool only.
-- InspectCodeAddress 14076bd30: MatchingUi_BuildPenaltyDurationTable ÔøΩ Lua penalty UI, no send.
+- InspectCodeAddress 14076bd30: MatchingUi_BuildPenaltyDurationTable ù Lua penalty UI, no send.
 - FindOpcodeComparisons 0x05CF global: single registration hit at 140075a13 only; InspectCodeAddress
   140765b00 is Lua table builder sibling to rejected 1407655c0 ? not 0x05CF handler.
 - Matching UI vtable at 140b76488 fully swept: known senders + Lua/eligibility stubs only.
 - Client0x0550/062A/0634, Client0x012D/063E, Client0x00C8/0x05B5/0x05B6, ServerMatching0x05CF: still
-  blocked on static evidence ÔøΩ live sniff F-010 recommended.
+  blocked on static evidence ù live sniff F-010 recommended.
 - Next: WorldSocket socket+0x14b0 handler-node recovery for 0x05CF; DumpNearbyData 140b648b8 vtable
   owner of 140332920; FindCallsToTarget 14008a150; positive-control inspect 14059acb0.
 - Verification:
@@ -16929,18 +16929,18 @@ Client opcode discovery loop pass 19 (2026-05-29):
 
 - Parallel subagent slice: WorldSocket handler recovery plan for 0x05CF, message-id vtable owner
   dump, FindCallsToTarget on MatchType writer, positive control 14059acb0, 062A/0634 static exhaustion.
-- FindCallsToTarget 14008a150 (ClientMatchType_WritePayload): total_calls_found=0 ÔøΩ confirms
+- FindCallsToTarget 14008a150 (ClientMatchType_WritePayload): total_calls_found=0 ù confirms
   registration/vtable-only indirect path for 0x00C8/0x05B5/0x05B6.
 - InspectCodeAddress 14059acb0: positive control Tradeskill_SendClientTradeskillResetTalents sends
-  0x0858 via Network_SendOpcodePayloadHelper(DAT_140c65898) ÔøΩ contrast with blocked opcodes on
+  0x0858 via Network_SendOpcodePayloadHelper(DAT_140c65898) ù contrast with blocked opcodes on
   message-id virtual rail.
-- DumpNearbyData 140b648b8: WorldSocket message-dispatch vtable ÔøΩ slot -3 Network_SendMessageById
+- DumpNearbyData 140b648b8: WorldSocket message-dispatch vtable ù slot -3 Network_SendMessageById
   140332580, slot +0 Network_SerialiseBufferedMessageById 140332920, slot +20
   NetworkSocket_SelectDispatch 140339820; explains DATA-only caller traces (infrastructure vtable,
   not gameplay UI).
 - sendmsg filters 0x62A/0x634 on Network_SendMessageById: 4 refs, zero windows (same as 0x05B5).
 - FindOpcodeComparisons 0x05CA/0x05CC/0x05CF in reader cluster: registration-only for all three;
-  no handler switch found ÔøΩ 0x05CF handler recovery must use WorldSocket+0x14b0 vtable+0x58 playbook.
+  no handler switch found ù 0x05CF handler recovery must use WorldSocket+0x14b0 vtable+0x58 playbook.
 - Client0x062A/0x0634: static sender discovery exhausted; escalate to F-010 live sniff with payload
   correlation vs 0x05D5/0x0602/0x0628/0x05EF-0x05F9.
 - Next: WorldSocket+0x14b0 handler-node recovery (FindImmediateInstructions 0x14b0, InspectCodeAddress
@@ -16954,10 +16954,10 @@ Client opcode discovery loop pass 20 (2026-05-29):
 - Priority A WorldSocket+0x14b0 handler recovery for ServerMatching0x05CF per ENTITY_AUX_DECODE_ROADMAP.md.
 - InspectCodeAddress 140014f10 reconfirms apply path: deserialize via DAT_140c65808 vtable+0x100, AccountInventory/Storefront fast paths, then handler chain `(**(code **)(*plVar21 + 0x58))(plVar21, conn, opcode, parsedPayload)` walking `*(socket+0x14b0)` nodes at +0x20.
 - FindImmediateInstructions 0x14b0: totalMatches=37; splice cluster at 140356a30, 14035c650, 140369f30, 14036a460, 14036a980, 14036b8d0 plus WorldSocket filter/apply readers.
-- InspectCodeAddress 140369f30: splices spatial-grid unit nodes into parent+0x14b0 (+0x13c0 sibling list); counter object uses base vtable PTR_FUN_140b787c0 whose slot+11 (+0x58) is default stub 14001b000 ÔøΩ unit-handler family, not opcode-specific matching consumer.
-- FindVtableSlotReferences slot 11 target Loot_HandleLootGrant 1403db050: matches=0 ÔøΩ confirms loot fast-path is not linked-list vtable+0x58 handler (roadmap negative control).
+- InspectCodeAddress 140369f30: splices spatial-grid unit nodes into parent+0x14b0 (+0x13c0 sibling list); counter object uses base vtable PTR_FUN_140b787c0 whose slot+11 (+0x58) is default stub 14001b000 ù unit-handler family, not opcode-specific matching consumer.
+- FindVtableSlotReferences slot 11 target Loot_HandleLootGrant 1403db050: matches=0 ù confirms loot fast-path is not linked-list vtable+0x58 handler (roadmap negative control).
 - FindOpcodeComparisons 0x05CF/0x05CA/0x05CC global: total_matches=2 (registration-only 0x05CF @140075a13, 0x05CA @140075c90; no 0x05CC cmp anywhere in scan).
-- FindOpcodeComparisons same trio in 1405c000-1405d000 matching-manager range: total_matches=0 ÔøΩ handlers likely use non-CMP dispatch (parsed-object tag / switch table).
+- FindOpcodeComparisons same trio in 1405c000-1405d000 matching-manager range: total_matches=0 ù handlers likely use non-CMP dispatch (parsed-object tag / switch table).
 - FindDataReferences DAT_140c65b98: total_refs=64; FUN_1405bedf0 lazy-inits matching-manager singleton (0x238 alloc, ctor 1405bee80, reset 1405c2f20 sets +0x10c=0x10).
 - Client0x062A/0x0634: static sender path remains exhausted (pass 19); no new client send probes queued.
 - Next: recover inserted handler-node vtables whose +0x58 bodies dispatch matching opcodes without immediate CMP; F-010 sniff for 0x05CF vs 0x05CA/0x05CC during match-ready window.
@@ -16968,15 +16968,15 @@ Client opcode discovery loop pass 20 (2026-05-29):
 Client opcode discovery loop pass 21 (2026-05-29):
 
 - Priority: recover ServerMatching0x05CF consumer via matching-manager apply dispatch table (not WorldSocket CMP path).
-- FindDataReferences on known apply fn 1405c39f0 (0x05CA MatchingGameReady): single .rdata cell 140e1e60c ÔøΩ confirms table-driven apply pointers with zero direct CALL sites.
+- FindDataReferences on known apply fn 1405c39f0 (0x05CA MatchingGameReady): single .rdata cell 140e1e60c ù confirms table-driven apply pointers with zero direct CALL sites.
 - TraceFunctionCallers 1405c39f0/1405c41c0: references=1 each, caller=<none> type=DATA only (indirect dispatch).
 - Matching-manager apply table cells mapped (FindDataReferences batch):
   140e1e228=1405c0760, 140e1e288=1405c0ad0, 140e1e294=1405c0b80, 140e1e2b8=1405c0e00, 140e1e2c4=1405c0e90,
   140e1e5a0=1405c3500 (client 0x05C8 sender), 140e1e60c=1405c39f0, 140e1e618=1405c3af0, 140e1e630=1405c3c90,
   140e1e63c=1405c3d30, 140e1e648=1405c3e40, 140e1e660=1405c4140 (MatchJoined), 140e1e66c=1405c41c0, 140e1e690=1405c4690.
-- InspectCodeAddress 1405c39f0: writes manager+0xa8/+0xac/+0xb4 and dispatches MatchingGameReady ÔøΩ positive control for 0x05CA apply shape.
-- InspectCodeAddress 1405c41c0: silent `*(manager+0xa0) = *payload` (+ optional sub-object+0x98); no ClientEvent ÔøΩ tentative ServerMatching0x05CF consumer (correlated, not opcode-index proven).
-- InspectCodeAddress 1405c3500: confirms outbound client 0x05C8 sender + MatchingCancelPendingGame ÔøΩ not 0x05CF inbound.
+- InspectCodeAddress 1405c39f0: writes manager+0xa8/+0xac/+0xb4 and dispatches MatchingGameReady ù positive control for 0x05CA apply shape.
+- InspectCodeAddress 1405c41c0: silent `*(manager+0xa0) = *payload` (+ optional sub-object+0x98); no ClientEvent ù tentative ServerMatching0x05CF consumer (correlated, not opcode-index proven).
+- InspectCodeAddress 1405c3500: confirms outbound client 0x05C8 sender + MatchingCancelPendingGame ù not 0x05CF inbound.
 - FindDataReferences ServerUInt32_LocalReadThunk 140099110: registration-only (4 hits in Network_RegisterServerOpcode_0351); shared with 0x085D.
 - Registration block (selected_decompiled.c): 0x05CF -> reader 140099110 size 4; 0x05CA -> reader 140099700 size 0xc; apply linkage is via table not registration tuple.
 - ServerMatching0x05CF: correlated apply candidate at 1405c41c0; still blocked for rename/emit until opcode-to-cell index recovered or F-010 confirms field semantics at manager+0xa0.
@@ -17027,15 +17027,15 @@ Client opcode discovery loop pass 23 (2026-05-29):
   FindPointerInData 140e1e228=0 matches;
   FindImmediateInstructions 0x140e1e228=0 matches.
   Apply linkage remains purely indirect via computed table index (not a direct LEA of table base).
-- InspectCodeAddress 1400807f0 (shared reader for 0x05B0/0x05CC/0x05F1): MOV R8D,0x1 then JMP 14006c090 ÔøΩ proves one-byte read surface despite registration size 4.
-- Zero-payload apply cluster (1405c1850/1405c2440/1405c24a0/1405c21d0) take manager only; likely selected by one-flag opcode routing without passing payload into apply ÔøΩ candidate shape for 0x05B0/0x05CC/0x05F1 but opcode-to-cell index still unproven.
+- InspectCodeAddress 1400807f0 (shared reader for 0x05B0/0x05CC/0x05F1): MOV R8D,0x1 then JMP 14006c090 ù proves one-byte read surface despite registration size 4.
+- Zero-payload apply cluster (1405c1850/1405c2440/1405c24a0/1405c21d0) take manager only; likely selected by one-flag opcode routing without passing payload into apply ù candidate shape for 0x05B0/0x05CC/0x05F1 but opcode-to-cell index still unproven.
 - ServerMatching0x05CF: still correlated-only at 1405c41c0 (manager+0xa0 write + FUN_1400a8020); no second witness.
 - ServerMatchingMatchParticipantCountUpdate 0x05CC: reader surface confirmed one byte; apply cell among zero-payload / one-flag candidates still blocked.
 - Next: finish batch sweep for remaining 1405c* apply fns; recover computed index walker (likely via registration-table slot parallel to apply table); F-010 sniff for 0x05CF/0x05CC during match-ready.
 Client opcode discovery loop pass 24 (2026-05-29):
 
 - Question: can the `ServerRewardPropertySet` (`0x092C`) structural placeholder be
-  strengthened from cached client reader evidence without adding runtime behaviorÔøΩ
+  strengthened from cached client reader evidence without adding runtime behaviorù
 - Mapped client readers:
   `ServerRewardPropertySet_ReadPayload` @ `140097800` reads an 8-bit property
   count, allocates `count * 0x20`, and calls `RewardPropertySetEntry_ReadPayload`
@@ -17059,30 +17059,30 @@ Client opcode discovery loop pass 25 (2026-05-29):
 
 - Question: pivot from matching-manager apply sweeps to unmapped quest/public-event/loot
   opcode readers and apply consumers.
-- **ServerPublicEventStart (`0x0112`)** ÔøΩ mapped reader + apply:
+- **ServerPublicEventStart (`0x0112`)** ù mapped reader + apply:
   registration binds size `0x48` to `ServerPublicEventStart_ReadPayload` @ `14007b620`
   (not the single-objective `0x0132` reader). Decompile shows u14 event id, u14 team,
   u32 elapsed, bool busy, counted `0x58` objective rows via
   `ServerPublicEventObjectiveUpdate_ReadPayload`, counted u32 location ids, u32 reward
-  type, three u32 thresholds, u14 world socket ÔøΩ matches emulator
+  type, three u32 thresholds, u14 world socket ù matches emulator
   `ServerPublicEventStart`. Apply consumer `PublicEventStart_ApplyParsedPayload` @
   `1405f2ae0` (apply-table cell `140e215ac`) materializes live event/objective state and
   dispatches `PublicEventStart` / optional `PublicEventObjectiveJoinedMessage`
   ClientEvents. Secondary map consumer `PublicEventMap_DispatchStartOrClear` @
   `140496b10` dispatches `PublicEventStart` vs `PublicEventCleared` from a two-u32
   payload after map lookup.
-- **Quest cluster (`0x035C`/`0x035F`/`0x0361`)** ÔøΩ mapped reader/apply pairs except Lua:
-  `ServerQuestInit_ReadPayload` @ `14008f2d0` ÔøΩ apply `QuestRuntime_HandleQuestInit`
+- **Quest cluster (`0x035C`/`0x035F`/`0x0361`)** ù mapped reader/apply pairs except Lua:
+  `ServerQuestInit_ReadPayload` @ `14008f2d0` ù apply `QuestRuntime_HandleQuestInit`
   @ `1405fb350` (cell `140e22158`). Shared reader
   `ServerQuestStateOrObjective_ReadPayload` @ `14008f100` (u15 + u32 + u32) serves both
-  `0x035C` and `0x0361`; apply cells `140e22188` ÔøΩ
+  `0x035C` and `0x0361`; apply cells `140e22188` ù
   `QuestRuntime_HandleQuestStateChange` @ `1405fb670` (state transition via
   `QuestRuntime_ApplyQuestStateTransition` @ `1405fbdc0`, dispatches
-  `ContractStateChanged` on contract objectives) and `140e221ac` ÔøΩ
+  `ContractStateChanged` on contract objectives) and `140e221ac` ù
   `QuestRuntime_UpdateObjectiveStateAndDispatch` @ `1405fb830` (dispatches
   `QuestObjectiveUpdated` / `ContractObjectiveUpdated`). Opcode-to-cell index proof
   still blocked (DATA-only refs, no table walker).
-- **ServerQuestLuaEvent (`0x0359`)** ÔøΩ reader mapped, apply blocked:
+- **ServerQuestLuaEvent (`0x0359`)** ù reader mapped, apply blocked:
   `ServerQuestLuaEvent_ReadPayload` @ `14008f530` reads u14 event id, u32 arg count,
   per-arg u32 type + typed payload via `PTR` table @ `140c1eb98` (Int=
   `ServerUInt32_ReadPayload`, String=`FUN_140080e80`, Unit=`FUN_140096f30`, Bool=
@@ -17090,13 +17090,13 @@ Client opcode discovery loop pass 25 (2026-05-29):
   `ServerUInt15_ReadPayload`). `LuaEvent` string hits (`FUN_140211ce0`/`FUN_140212000`)
   are ClientDB `DB\LuaEvent.tbl` loaders, not packet apply. Apply consumer and script
   dispatch path remain unmapped.
-- **Loot aux (`0x014D`, `0x089F`)** ÔøΩ reader only:
-  `0x014D` size 1 ÔøΩ `ServerEmpty_ReadPayload` (zero-byte surface; also referenced by
+- **Loot aux (`0x014D`, `0x089F`)** ù reader only:
+  `0x014D` size 1 ù `ServerEmpty_ReadPayload` (zero-byte surface; also referenced by
   unrelated movement send path). `0x089F` size 4 ? `ServerUInt32_ReadPayload` (likely
   loot unit id). No apply-table cells or loot-tree mutators labeled for standalone
   `CanLoot` scalar updates; full-row `CanLoot` still ingested via
   `Loot_IngestServerLootNotify` @ `1405fe2f0`.
-- **Still unmapped PE apply cluster:** `0x0132`ÔøΩ`0x013B`, `0x06F1`ÔøΩ`0x06F9` have
+- **Still unmapped PE apply cluster:** `0x0132`ù`0x013B`, `0x06F1`ù`0x06F9` have
   readers under `14007b*` / `14007c*` but most apply consumers beyond `0x0112` remain
   unlabeled; `0x0132` reader has registration + nested call from `0x0112` reader only.
 - Next: recover quest/PE apply-table walker (parallel to matching `140e1e228` blocker);
@@ -17294,9 +17294,9 @@ Prerequisite semantic rename pass (2026-05-31, pass 4):
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`.
 
-Prerequisite semantic rename pass (2026-05-31, pass 5 ‚Äî naming policy):
+Prerequisite semantic rename pass (2026-05-31, pass 5 ù naming policy):
 
-- Reverted lazy `{Category}{TypeId}` placeholders (`Spell279`, `Item244`, `Spell50`, ‚Ä¶) back to
+- Reverted lazy `{Category}{TypeId}` placeholders (`Spell279`, `Item244`, `Spell50`, ù) back to
   `UnknownNNN` unless dispatch/table evidence supports a **behavior** name.
 - Added dispatch-backed names (not numeric placeholders):
   - `Unknown50` -> `UnderSpellOnTarget` (case `0x32`, `FUN_1404699f0` on target `param_2[1]`)
@@ -17317,7 +17317,7 @@ Prerequisite semantic rename pass (2026-05-31, pass 6):
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`.
 
-Prerequisite semantic rename pass (2026-05-31, pass 7 ‚Äî vtable recovery):
+Prerequisite semantic rename pass (2026-05-31, pass 7 ù vtable recovery):
 
 - Recovered `PrerequisiteManager` vtable base `PTR_FUN_140b67740` from `PrerequisiteManager_Initialise` (`14049be30`) and read slot targets directly from `Decomp/Client64/WildStar64.exe`.
 - Mapped handlers:
@@ -17329,7 +17329,7 @@ Prerequisite semantic rename pass (2026-05-31, pass 7 ‚Äî vtable recovery):
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`.
 
-Prerequisite semantic rename pass (2026-05-31, pass 8 ‚Äî Ghidra inspect + helper decompile):
+Prerequisite semantic rename pass (2026-05-31, pass 8 ù Ghidra inspect + helper decompile):
 
 - Ghidra `InspectCodeAddress` retry succeeded individually for `1404a0cb0` and `1404a1e10` (multi-address batch failed; fragments already present in selected cache).
 - Clarified non-handler: `1404a1e10` is `PrerequisiteManager_EvaluateWithDebugLog` (PASS/FAIL trace wrapper around `1404a1ca0`), not a PrerequisiteType slot.
@@ -17342,7 +17342,7 @@ Prerequisite semantic rename pass (2026-05-31, pass 8 ‚Äî Ghidra inspect + helpe
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`.
 
-Prerequisite semantic rename pass (2026-05-31, pass 9 ‚Äî types 129/130 + guild/action-set confirmation):
+Prerequisite semantic rename pass (2026-05-31, pass 9 ù types 129/130 + guild/action-set confirmation):
 
 - PE-correct vtable reads from `PTR_FUN_140b67740` confirm handler entry points including mid-function thunks at `14049e9e0` / `14049ea30` / `14049d6d0` (Ghidra lists these as `<none>` at function entry; disasm still valid).
 - Mapped inline / helper behavior from `PrerequisiteManager_EvaluateTypeSlot` (`1404a2100`) exports:
@@ -17354,25 +17354,25 @@ Prerequisite semantic rename pass (2026-05-31, pass 9 ‚Äî types 129/130 + guild/
 - Renamed:
   - `Unknown129` -> `ActiveSpellEffectOnUnit`
   - `Unknown130` -> `ActiveSpellEffectOnTarget`
-- Still `UnknownNNN`: types `48`, `142` (vtable stubs `140001ba0`), bulk numeric placeholders `Unknown89`‚Äì`101`, item placeholders `Unknown133`‚Äì`136`, etc.
+- Still `UnknownNNN`: types `48`, `142` (vtable stubs `140001ba0`), bulk numeric placeholders `Unknown89`ù`101`, item placeholders `Unknown133`ù`136`, etc.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo` (**27/27 passed**).
 
-Prerequisite semantic rename pass (2026-05-31, pass 10 ‚Äî cooldown nodes, unit type, pet match):
+Prerequisite semantic rename pass (2026-05-31, pass 10 ù cooldown nodes, unit type, pet match):
 
 - Mapped `entity+0x15d0` prerequisite family (shares `CooldownNode_GetRemainingMs` evidence in `14045e3d0`):
   - type `102` case `0x66` -> `FUN_1404a4fe0` (cooldown-node id via vtable `+0x30`)
   - type `103` case `0x67` -> `FUN_14046a190` (node id + target `+8` filter via vtable `+0x20`)
   - type `104` case `0x68` -> `FUN_14046a210` (node id membership in SpellService set from `+0x40`)
   - type `105` case `0x69` -> inline node walk; vtable `+0x38` equals `value0`
-- Renamed: `Unknown82` -> `UnitEntityType` (`14049c5b0` @ +0x48; entity `+0x80`), `Unknown89` -> `PetMatchTarget` (`14049d4f0` @ +0x160), `Unknown102`‚Äì`105` -> cooldown-node / effect-type names above.
+- Renamed: `Unknown82` -> `UnitEntityType` (`14049c5b0` @ +0x48; entity `+0x80`), `Unknown89` -> `PetMatchTarget` (`14049d4f0` @ +0x160), `Unknown102`ù`105` -> cooldown-node / effect-type names above.
 - Confirmed `InfrastructureState` handler `1404a0150` @ +0x4e8 (comment only).
 - Mapped item gates without rename: types `133`/`134` compare entity `+0x140` / `+0x148` via `1404a0d00` / `1404a0d30` mid-function thunks.
-- New stub blockers (vtable `140001ba0`): types `96`‚Äì`101` (+0x1b0..+0x1d8), type `278` (+0x300 dual caster/target dispatch).
+- New stub blockers (vtable `140001ba0`): types `96`ù`101` (+0x1b0..+0x1d8), type `278` (+0x300 dual caster/target dispatch).
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo` (**33/33 passed**).
 
-Prerequisite semantic rename pass (2026-05-31, pass 11 ‚Äî item eval + spell mechanic gates):
+Prerequisite semantic rename pass (2026-05-31, pass 11 ù item eval + spell mechanic gates):
 
 - Item prerequisite family uses eval-context item pointers (`param_2[2]`/`param_2[3]`), not caster unit directly:
   - `133`/`134`/`135` -> `1404a0d00`/`1404a0d30`/`1404a0d60` compare cached item-instance fields `+0x140`/`+0x148`/`+0x144` (load path `1408ea170`)
@@ -17380,33 +17380,33 @@ Prerequisite semantic rename pass (2026-05-31, pass 11 ‚Äî item eval + spell mec
   - `138`/`139`/`140` -> `1404a0dd0`/`1404a0e10`/`1404a0e80` special-slot, microchip bitmask, and `+0x94` dword-array scans
 - Renamed: `Unknown133` -> `ItemStatData`, `Unknown134` -> `ItemStatId`, `Unknown136` -> `Item2Id`, `Unknown92` -> `ActiveSpellTargetMechanic`, `Unknown93` -> `Spell4EffectCategoryOnUnit`.
 - Evidence comments only: `Unknown90` mount gate (`14049e730`), `Unknown135` short field `+0x144`, `ItemSpecial`/`ItemMicrochip`/`Unknown140` handlers confirmed.
-- Still `UnknownNNN`: `Unknown135`, `Unknown140`, bulk `Unknown96`‚Äì`101`, `Unknown278`, etc.
+- Still `UnknownNNN`: `Unknown135`, `Unknown140`, bulk `Unknown96`ù`101`, `Unknown278`, etc.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo` (blocked: `NexusForever.WorldServer` pid 36608 file-lock during build; `NexusForever.Game.Static` compile succeeded).
 
-Prerequisite semantic rename pass (2026-05-31, pass 12 ‚Äî mount gate, applied stat id, stub confirm):
+Prerequisite semantic rename pass (2026-05-31, pass 12 ù mount gate, applied stat id, stub confirm):
 
 - Ghidra `InspectCodeAddress` fragments: `1404a0d60`, `14049e730`, `1404a0e80` (dispatch `1404a2100` cases `0x87`/`0x5a`/`0x8c` unchanged).
-- Type `90` (`14049e730` @ +0x2c0): walks mount subobject `entity+0xf00`, filters unit types `3`‚Äì`5` at `+0x80`; nine standalone `Prerequisite.tbl` rows (mostly comparison-only).
+- Type `90` (`14049e730` @ +0x2c0): walks mount subobject `entity+0xf00`, filters unit types `3`ù`5` at `+0x80`; nine standalone `Prerequisite.tbl` rows (mostly comparison-only).
 - Type `135` (`1404a0d60` @ +0x5d8): compares item-eval `param_2[2]+0x144` to `objectId0`; **all 31 rows** use `objectId0` values that are `ItemStat.Id` (distinct from type `134` `ItemStatId` at `+0x148` from Item2 template); short cached by `1408ea170` `psVar5[0x12]`.
-- Type `140` (`1404a0e80` @ +0x600): scans 15 dword ids at `+0x94`, on match compares float at `+0xd0+index*4` to `value1`; **zero** `Prerequisite.tbl` rows ‚Äî keep `Unknown140`.
-- Stub confirm (vtable `140001ba0` xor/ret): types `96`‚Äì`101` (+0x1b0..+0x1d8), type `278` (+0x300 dual caster/target).
-- Opcode trace (blocked consumers): `0x0550`/`0x062A`/`0x0634` share `ClientUInt32_ReadPayload` `14007d000` / `ClientTradeskillResetTalents_WritePayload` `14007d010`; indirect send rail `Network_SerialiseBufferedMessageById` `140332920` ‚Äî payload semantics still unmapped.
+- Type `140` (`1404a0e80` @ +0x600): scans 15 dword ids at `+0x94`, on match compares float at `+0xd0+index*4` to `value1`; **zero** `Prerequisite.tbl` rows ù keep `Unknown140`.
+- Stub confirm (vtable `140001ba0` xor/ret): types `96`ù`101` (+0x1b0..+0x1d8), type `278` (+0x300 dual caster/target).
+- Opcode trace (blocked consumers): `0x0550`/`0x062A`/`0x0634` share `ClientUInt32_ReadPayload` `14007d000` / `ClientTradeskillResetTalents_WritePayload` `14007d010`; indirect send rail `Network_SerialiseBufferedMessageById` `140332920` ù payload semantics still unmapped.
 - Renamed: `Unknown90` -> `MountVehicleType`, `Unknown135` -> `AppliedItemStatId`.
-- Still `UnknownNNN`: `Unknown140`, `Unknown96`‚Äì`101`, `Unknown278`, etc.
+- Still `UnknownNNN`: `Unknown140`, `Unknown96`ù`101`, `Unknown278`, etc.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo` (**40/40 passed**; initial run blocked by `NexusForever.WorldServer` pid 36608 file-lock; `NexusForever.Game.Static` compile succeeded).
 
-Prerequisite semantic rename pass (2026-05-31, pass 13 ‚Äî stub inventory, warplot/perk handlers, type 193 progress gate):
+Prerequisite semantic rename pass (2026-05-31, pass 13 ù stub inventory, warplot/perk handlers, type 193 progress gate):
 
 - Confirmed **no rename** for type `140`: `Prerequisite_CheckItemDwordArray0x94` (`1404a0e80`) scans 15 item-eval dwords at `+0x94` with float compare at `+0xd0`; still **zero** `Prerequisite.tbl` rows.
-- Client stub block with surviving tbl rows (handler `140001ba0`): types `48` (1 row), `96`‚Äì`101` (1‚Äì4 rows each), `142` (9 rows), `189` (6 rows, case `0xbd` +0x2d8), `278` (1 row, dual +0x300).
+- Client stub block with surviving tbl rows (handler `140001ba0`): types `48` (1 row), `96`ù`101` (1ù4 rows each), `142` (9 rows), `189` (6 rows, case `0xbd` +0x2d8), `278` (1 row, dual +0x300).
 - Handler evidence comments (no enum rename): type `188` `WarplotPermission` -> `14049ebf0` (+0x340, circle guild type 3 perk bitmask); type `193` -> `1404a02e0` (+0x2e0, `FUN_140432960` + percent at `record+100`); type `191` case `0xbf` -> inline `FUN_1404695e0` spell resolve on pet/player `entity+0x1600`.
 - Opcodes `0x0550`/`0x062A`/`0x0634`: still shared one-uint32 read/write only (`14007d000`/`14007d010`); consumer semantics blocked.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo` (**40/40 passed**).
 
-Prerequisite semantic rename pass (2026-05-31, pass 14 ‚Äî type 193 stub correction, PetEntitySpell4, PetFlair handler):
+Prerequisite semantic rename pass (2026-05-31, pass 14 ù type 193 stub correction, PetEntitySpell4, PetFlair handler):
 
 - **Corrected type `193` wiring:** `PrerequisiteManager_EvaluateTypeSlot` case `0xc1` calls manager vtable `+0x2e0` -> static stub `140001ba0` (always false). `Prerequisite_CheckPathSettlerHubProgressPercentOrphan` (`1404a02e0`) has **zero** direct calls; would use `FUN_140432960` on `DAT_140c65960` (tree populated from `PathSettlerHub` in `1404931c0`). All **12** `Prerequisite.tbl` rows use `objectId0=0`. Keep `Unknown193`.
 - Renamed `Unknown191` -> `PetEntitySpell4`: case `0xbf` inline `Prerequisite_ResolveSpellOnPetEntity` (`1404695e0`) SpellService resolve on player/pet `entity+0x1600`; localized failure `409063` ("Spell requirement not met").
@@ -17416,7 +17416,7 @@ Prerequisite semantic rename pass (2026-05-31, pass 14 ‚Äî type 193 stub correct
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`
 
-Prerequisite / opcode pass (2026-05-31, pass 15 ‚Äî stub cluster 189/192/193, Settler orphan helpers, NF gaps):
+Prerequisite / opcode pass (2026-05-31, pass 15 ù stub cluster 189/192/193, Settler orphan helpers, NF gaps):
 
 - **Client stub cluster (live dispatch -> `140001ba0`):** type `189` case `0xbd` `+0x2d8`, type `192` `0xc0` `+0x630`, type `193` `0xc1` `+0x2e0`. Contrast type `148` `InfrastructureState`: case `0x94` `+0x4e8` -> live `Prerequisite_CheckInfrastructureState` (`1404a0150`, `FUN_1403d2d60` lookup).
 - **PathSettler orphan percent trio (no direct calls, `DAT_140c65960` / `PathSettlerHub` init `1404931c0`):** `1404a01e0` (inner `+4`, progress `+0x60`), `1404a0260` (inner `+0xc`, `+0x68`), `1404a02e0` (inner `+8`, `+100`). Not wired to cases `0xbd`/`0xc1`; do not rename `Unknown189`/`Unknown193` without dispatch proof.
@@ -17424,53 +17424,53 @@ Prerequisite / opcode pass (2026-05-31, pass 15 ‚Äî stub cluster 189/192/193, Se
 - **Type `192` tbl (3 rows):** always `QuestState(6)` `NotEqual` + `Quest2` `7109`/`7115` AND type `192` `comparison=2` `value0=3` (second clause stubbed client-side).
 - **Type `140`:** `Prerequisite_CheckItemDwordArray0x94` scans 15 dwords at item-eval `+0x94`, float at `+0xd0+index*4`; still **zero** `Prerequisite.tbl` rows.
 - **Opcodes `0x0550` / `0x062A` / `0x07E3`:** registered together in `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) as **4-byte** `ClientUInt32_ReadPayload` / `ClientTradeskillResetTalents_WritePayload` (`14007d000`/`14007d010`); **not** ICComm table `14006c290`. Sender semantics still blocked (`Network_SerialiseBufferedMessageById` message-id rail; no `0x550` immediate in filtered traces per prior passes).
-- **NF server parity gaps:** `PrerequisiteManager` has no keyed handlers for `PetEntitySpell4` (191), `Unknown189`, `Unknown192`, `Unknown193`, or `InfrastructureState` (148) ‚Äî logs `Unhandled PrerequisiteType` and returns false. `PetFlair` (190) **is** implemented (`PrerequisiteCheckPetFlair`).
+- **NF server parity gaps:** `PrerequisiteManager` has no keyed handlers for `PetEntitySpell4` (191), `Unknown189`, `Unknown192`, `Unknown193`, or `InfrastructureState` (148) ù logs `Unhandled PrerequisiteType` and returns false. `PetFlair` (190) **is** implemented (`PrerequisiteCheckPetFlair`).
 
-Prerequisite / NF parity pass (2026-05-31, pass 16 ‚Äî InfrastructureState 148):
+Prerequisite / NF parity pass (2026-05-31, pass 16 ù InfrastructureState 148):
 
 - **Type `148` tbl correlation:** `objectId0` is `PathSettlerInfrastructure.Id` (89 prerequisite rows); `value0` is `SettlerInfrastructureState` (`0` Inactive / `1` Building / `2` Built). Retail SQL shows exactly **one** `PathMission` row per infrastructure id with `pathMissionTypeEnum == 21` (`0x15`) and matching `objectId` (e.g. infra `2` -> mission `1382`).
 - **Client handler:** `Prerequisite_CheckInfrastructureState` (`1404a0150`) compares `value0` to runtime `+0x10` via `Prerequisite_InfrastructureLookupById` (`1403d2d60`) on `DAT_140c65960+0x10` tree.
-- **NF implementation:** `PathManager.GetSettlerInfrastructureState` derives state from the paired type-`21` mission (`Inactive` / `Building` / `Built` from mission runtime); `PrerequisiteCheckInfrastructureState` registered for comparisons `1`‚Äì`6`.
+- **NF implementation:** `PathManager.GetSettlerInfrastructureState` derives state from the paired type-`21` mission (`Inactive` / `Building` / `Built` from mission runtime); `PrerequisiteCheckInfrastructureState` registered for comparisons `1`ù`6`.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`
 
-Prerequisite / NF parity pass (2026-05-31, pass 17 ‚Äî PetEntitySpell4 191):
+Prerequisite / NF parity pass (2026-05-31, pass 17 ù PetEntitySpell4 191):
 
 - **Type `191` client:** case `0xbf` uses `param_3[1]` only (`Equal`/`NotEqual`); `SpellService_LookupSpellWrapperByWrapperId` (`140561c30`) on `entity+0x1600`, then `FUN_14039df50` vanity pet + `Prerequisite_ResolveSpellOnPetEntity` (`1404695e0`). Retail `Prerequisite.tbl` keeps `objectId0=0` (11 rows); `value0` is not consumed by dispatch.
-- **NF implementation:** `PrerequisiteCheckPetEntitySpell4` ‚Äî proxy: active summoned vanity pet visible (`VanityPetGuid` + `GetVisible<IPetEntity>`). Does not model spell-wrapper id at `entity+0x1600` until pet spell runtime is mapped.
+- **NF implementation:** `PrerequisiteCheckPetEntitySpell4` ù proxy: active summoned vanity pet visible (`VanityPetGuid` + `GetVisible<IPetEntity>`). Does not model spell-wrapper id at `entity+0x1600` until pet spell runtime is mapped.
 - **Still unhandled on NF:** `Unknown189/192/193` (client stubs).
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`
 
-Prerequisite / opcode pass (2026-05-31, pass 18 ‚Äî type 140 item-eval layout, opcode name-table closure):
+Prerequisite / opcode pass (2026-05-31, pass 18 ù type 140 item-eval layout, opcode name-table closure):
 
-- **Type `140` (no rename):** `Prerequisite_CheckItemDwordArray0x94` (`1404a0e80`) still has **zero** `Prerequisite.tbl` rows. Item-eval context `param_2` (same pointer family as types `136`‚Äì`139` at `param_2[3]` in dispatch) carries **15** dword slots at `+0x94..+0xcc` and paired floats at `+0xd0+index*4` (15 slots); copy ctor `FUN_1408f3150` mirrors that layout from a generation-side source struct. `objectId0` is a per-slot id match; `value1` is compared to the paired float (cast to uint for `ApplyComparison`). This is **not** `ItemBudget.tbl` (5 template floats via `Item2.itemBudgetId`) nor static `ItemStat.tbl` (5 enum/data pairs); it is runtime rolled-stat storage on the item instance used by random-stat generation (`FUN_1408f2590` touches related `+0xd0` byte flags on an inner struct). Keep `Unknown140` until a tbl row or enum-id correlation names the slot ids.
-- **Opcodes `0x0550` / `0x062A` / `0x0634` (still blocked):** `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) sets `DAT_140c65828 = &DAT_140c1f210` and `DAT_140c1e564 = 0xd2f`. The same global backs `Network_SendMessageById` / `FUN_140335f10` name lookup (`+8` string) and `FUN_140335ec0` metadata (`+0` dword). **Static PE** entries at `(id-3)*0x10` for `0x550`/`0x62a`/`0x634` are **null** (no compile-time name strings); prior RVA misread of `DAT_140c65828` as the table base is corrected ‚Äî it is a pointer assigned at registration. Wire remains shared 4-byte uint32 (`14007d000`/`14007d010`). Semantic owner still blocked (no direct `0x550` send sites; message-id rail only).
+- **Type `140` (no rename):** `Prerequisite_CheckItemDwordArray0x94` (`1404a0e80`) still has **zero** `Prerequisite.tbl` rows. Item-eval context `param_2` (same pointer family as types `136`ù`139` at `param_2[3]` in dispatch) carries **15** dword slots at `+0x94..+0xcc` and paired floats at `+0xd0+index*4` (15 slots); copy ctor `FUN_1408f3150` mirrors that layout from a generation-side source struct. `objectId0` is a per-slot id match; `value1` is compared to the paired float (cast to uint for `ApplyComparison`). This is **not** `ItemBudget.tbl` (5 template floats via `Item2.itemBudgetId`) nor static `ItemStat.tbl` (5 enum/data pairs); it is runtime rolled-stat storage on the item instance used by random-stat generation (`FUN_1408f2590` touches related `+0xd0` byte flags on an inner struct). Keep `Unknown140` until a tbl row or enum-id correlation names the slot ids.
+- **Opcodes `0x0550` / `0x062A` / `0x0634` (still blocked):** `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) sets `DAT_140c65828 = &DAT_140c1f210` and `DAT_140c1e564 = 0xd2f`. The same global backs `Network_SendMessageById` / `FUN_140335f10` name lookup (`+8` string) and `FUN_140335ec0` metadata (`+0` dword). **Static PE** entries at `(id-3)*0x10` for `0x550`/`0x62a`/`0x634` are **null** (no compile-time name strings); prior RVA misread of `DAT_140c65828` as the table base is corrected ù it is a pointer assigned at registration. Wire remains shared 4-byte uint32 (`14007d000`/`14007d010`). Semantic owner still blocked (no direct `0x550` send sites; message-id rail only).
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo` (**65/65 passed**).
 
-Prerequisite semantic rename pass (2026-05-31, pass 19 ‚Äî ItemRolledPropertyValue 140):
+Prerequisite semantic rename pass (2026-05-31, pass 19 ù ItemRolledPropertyValue 140):
 
 - **Renamed `Unknown140` -> `ItemRolledPropertyValue`:** dispatch case `0x8c` -> `Prerequisite_CheckItemDwordArray0x94` (`1404a0e80`) matches item-eval writer `ItemEval_ApplyRolledPropertyDelta` (`14040e610`): **15** slots at `+0x94..+0xcc` hold `Property` ids (`0x29` = ShieldCapacityMax, `0xaf`/`0xb0`/`0xb2` = shield mitigation/regen/reboot, `0xc5` = empty slot), magnitudes at `+0xd0+index*4`. Shield roll batch `14040dbf0` calls the writer. Still **zero** `Prerequisite.tbl` rows (rename from handler + cross-function id witnesses, not tbl text).
 - **NF:** no handler yet (no retail rows; item-eval context not modeled on `IPrerequisiteParameters`).
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`
 
-Prerequisite / NF parity pass (2026-05-31, pass 20 ‚Äî ItemRolledPropertyValue handler, item context, PetEntitySpell4):
+Prerequisite / NF parity pass (2026-05-31, pass 20 ù ItemRolledPropertyValue handler, item context, PetEntitySpell4):
 
 - **NF `ItemRolledPropertyValue` (140):** `PrerequisiteCheckItemRolledPropertyValue` registered; requires `IPrerequisiteParameters.Item`. Proxy compares `IItemInfo.Properties` magnitudes using client float-bit compare + missing-slot fallbacks from `1404a0e80`. `ClientItemUseHandler` passes the used `IItem` for `ItemSpecial.PrerequisiteIdGeneric00`.
-- **NF `PetEntitySpell4` (191):** tightened proxy ‚Äî visible vanity pet plus `SpellManager.GetPets().Count > 0` when `objectId0=0`; non-zero `objectId0` checks spell-book ownership.
+- **NF `PetEntitySpell4` (191):** tightened proxy ù visible vanity pet plus `SpellManager.GetPets().Count > 0` when `objectId0=0`; non-zero `objectId0` checks spell-book ownership.
 - **ItemMicrochip (139):** NF handler added pass 21; persistence added pass 22.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`
 
-Prerequisite / NF parity pass (2026-05-31, pass 21 ‚Äî ItemSpecial/ItemMicrochip, IItem.MicrochipIds):
+Prerequisite / NF parity pass (2026-05-31, pass 21 ù ItemSpecial/ItemMicrochip, IItem.MicrochipIds):
 
-- **NF `ItemSpecial` (138):** `PrerequisiteCheckItemSpecial` ‚Äî proxy `ItemSpecialId00 != 0` or microchips present; zero `Prerequisite.tbl` rows typed 138.
-- **NF `ItemMicrochip` (139):** `PrerequisiteCheckItemMicrochip` ‚Äî `objectId0=0` compares `IItem.MicrochipIds.Count` to `value0` (retail rows 10610/10685); `objectId0` 7-0xd uses `Prerequisite_MapMicrochipIdToBit` mask over socket-type ids stored in `MicrochipIds` (until item2‚Üísocket-type mapping exists, list entries are treated as socket type enums).
+- **NF `ItemSpecial` (138):** `PrerequisiteCheckItemSpecial` ù proxy `ItemSpecialId00 != 0` or microchips present; zero `Prerequisite.tbl` rows typed 138.
+- **NF `ItemMicrochip` (139):** `PrerequisiteCheckItemMicrochip` ù `objectId0=0` compares `IItem.MicrochipIds.Count` to `value0` (retail rows 10610/10685); `objectId0` 7-0xd uses `Prerequisite_MapMicrochipIdToBit` mask over socket-type ids stored in `MicrochipIds` (until item2?socket-type mapping exists, list entries are treated as socket type enums).
 - **`IItem.MicrochipIds`:** in-memory list wired to network `Item.Microchips` in `Build()`; superseded by pass 22 DB column.
 
-Prerequisite / item persistence pass (2026-05-31, pass 22 ‚Äî Item.MicrochipIds DB, Item2Id/ItemLevel handlers):
+Prerequisite / item persistence pass (2026-05-31, pass 22 ù Item.MicrochipIds DB, Item2Id/ItemLevel handlers):
 
 - **Persistence:** `item.microchipIds` varchar(128) migration `20260531120000_ItemMicrochipIds`; `ItemMicrochipIdsCodec` serializes `IItem.MicrochipIds` on load/save.
 - **NF handlers:** `PrerequisiteCheckItem2Id` (136) compares `IItem.Info.Id` to `objectId0`; `PrerequisiteCheckItemLevel` (137) compares `RequiredLevel` to `value0` (client item-eval `+0x4` proxy).
@@ -17478,297 +17478,576 @@ Prerequisite / item persistence pass (2026-05-31, pass 22 ‚Äî Item.MicrochipIds 
 - Verification:
   `dotnet build Source\NexusForever.Database.Character\NexusForever.Database.Character.csproj` and prerequisite tests.
 
-Prerequisite / guild-bank opcodes + Faction128 handler (2026-05-31, pass 47 ‚Äî `Network_RegisterServerOpcode` `14006c290`):
+Prerequisite / guild-bank opcodes + Faction128 handler (2026-05-31, pass 47 ù `Network_RegisterServerOpcode` `14006c290`):
 
 - **Mapped (opcode registration, not generic names):**
-  - **`0x046F` `ServerGuildBankInventoryAdd`** ‚Üí reader **`ServerGuildBankInventoryAdd_ReadPayload` (`140092580`)**, registered size **`0xB8`**, apply **`GuildBank_ApplyInventoryAdd` (`14057d190`)** ‚Üí `ClientEvent` **`GuildBankItem`** via **`GuildBank_DispatchItemAddedClientEvent` (`1404277d0`)**.
-  - **`0x047A` `ServerGuildBankTabInventory`** ‚Üí reader **`ServerGuildBankTabInventory_ReadPayload` (`140092470`)**, registered size **`0x20`** (+ heap `SharedItem` rows), apply **`GuildBank_ApplyTabInventoryRows` (`14057cdc0`)** ‚Üí `InventoryItem_ApplySharedItemPayload` (`140569c90`) per row (same microchip/glyph path as bag add).
+  - **`0x046F` `ServerGuildBankInventoryAdd`** ? reader **`ServerGuildBankInventoryAdd_ReadPayload` (`140092580`)**, registered size **`0xB8`**, apply **`GuildBank_ApplyInventoryAdd` (`14057d190`)** ? `ClientEvent` **`GuildBankItem`** via **`GuildBank_DispatchItemAddedClientEvent` (`1404277d0`)**.
+  - **`0x047A` `ServerGuildBankTabInventory`** ? reader **`ServerGuildBankTabInventory_ReadPayload` (`140092470`)**, registered size **`0x20`** (+ heap `SharedItem` rows), apply **`GuildBank_ApplyTabInventoryRows` (`14057cdc0`)** ? `InventoryItem_ApplySharedItemPayload` (`140569c90`) per row (same microchip/glyph path as bag add).
 - **Mapped (item cluster readers on same registrar):**
-  - **`0x0148` `ServerItemDelete`** ‚Üí **`ServerItemDelete_ReadPayload` (`14008d9c0`)**: uint64 guid + 6-bit reason.
-  - **`0x017F` `ServerItemStackCountUpdate`** ‚Üí **`ServerItemStackCountUpdate_ReadPayload` (`14007fd50`)**: uint64 + uint32 count + 6-bit reason.
-  - **`0x014A` `ServerAbilityRemove`** ‚Üí **`ServerAbilityRemove_ReadPayload` (`14008da10`)**: 9-bit + uint32 (ability bar, **not** item delete).
-  - **`0x0569` `ServerItemMove`** ‚Üí **`ServerItemMove_ReadPayload` (`1400a47f0`)**: two uint64 fields.
-- **Mapped (prerequisite type 128):** case **`0x80`** ‚Üí vtable **`+0x68`** ‚Üí **`Prerequisite_CheckFaction` (`14049c720`)**; uses entity faction component at **`+0x118`** then **`PlayerFactionService_IsFactionOrAncestor` (`1407176b0`)** on **`value0`** faction id (**6** `Prerequisite.tbl` rows). NF enum already **`Faction128`**.
+  - **`0x0148` `ServerItemDelete`** ? **`ServerItemDelete_ReadPayload` (`14008d9c0`)**: uint64 guid + 6-bit reason.
+  - **`0x017F` `ServerItemStackCountUpdate`** ? **`ServerItemStackCountUpdate_ReadPayload` (`14007fd50`)**: uint64 + uint32 count + 6-bit reason.
+  - **`0x014A` `ServerAbilityRemove`** ? **`ServerAbilityRemove_ReadPayload` (`14008da10`)**: 9-bit + uint32 (ability bar, **not** item delete).
+  - **`0x0569` `ServerItemMove`** ? **`ServerItemMove_ReadPayload` (`1400a47f0`)**: two uint64 fields.
+- **Mapped (prerequisite type 128):** case **`0x80`** ? vtable **`+0x68`** ? **`Prerequisite_CheckFaction` (`14049c720`)**; uses entity faction component at **`+0x118`** then **`PlayerFactionService_IsFactionOrAncestor` (`1407176b0`)** on **`value0`** faction id (**6** `Prerequisite.tbl` rows). NF enum already **`Faction128`**.
 - **Pass 46 correction:** **`140092580` / `140092470` are guild-bank packets**, not a mystery player-inventory partial-update opcode. Player bag **field-only** patch cluster (`Inventory_UpdateItemMicrochipsFromWire` @ **`0x1403eef8a`**) remains **opcode-unmapped**.
 - Verification: `14006c290.fragment.c`, fragments `140092580`, `140092470`, `14057cdc0`, `14057d190`, `14049c720`, `1407176b0`; `GameMessageOpcode.cs` comments.
 
-Prerequisite / partial slot field apply + `1403b8540` caller (2026-05-31, pass 46 ‚Äî PE `.text` scan + reader shapes):
+Prerequisite / partial slot field apply + `1403b8540` caller (2026-05-31, pass 46 ù PE `.text` scan + reader shapes):
 
-- **Mapped (`Inventory_UpdateItemMicrochipsFromWire` caller):** full-binary PE `.text` scan (not present in `selected_call_edges.csv`) shows a **single direct `CALL`** to **`1403b8540`** from **`0x1403eef8a`**. Sibling **`0x1403eef78` ‚Üí `Inventory_UpdateItemSocketBitsFromWire` (`1403b85a0`)** writes entity `+0xb0`/`+0xdc`/`+0xe0` then `ItemModified` without calling `InventoryItem_ApplyGlyphsFromWire`.
-- **Correlated (partial field-apply cluster):** the same **`0x1403eed00`‚Äì`0x1403ef100`** region also reaches **`Inventory_ApplySlotUpdateAndDispatchItemAdded` (`1403b8380`)**, **`Inventory_RefreshSlotItemFromUpdate` (`1403b7d40`)**, **`InventoryItem_ApplyRolledStatsFromWire` (`14056ac90`)**, **`InventoryItem_ApplyGlyphsFromWire` (`14056aba0`)**, and **`ClientEvent_DispatchNamedEvent`** ‚Äî i.e. **field-by-field patches on an existing bag slot entity**, distinct from full add **`ServerItemAdd` (`0x0111`) ‚Üí `Inventory_AddOrUpdateFromSharedPayload` (`1403b77d0`) ‚Üí `InventoryItem_ApplySharedItemPayload` (`140569c90`)**.
+- **Mapped (`Inventory_UpdateItemMicrochipsFromWire` caller):** full-binary PE `.text` scan (not present in `selected_call_edges.csv`) shows a **single direct `CALL`** to **`1403b8540`** from **`0x1403eef8a`**. Sibling **`0x1403eef78` ? `Inventory_UpdateItemSocketBitsFromWire` (`1403b85a0`)** writes entity `+0xb0`/`+0xdc`/`+0xe0` then `ItemModified` without calling `InventoryItem_ApplyGlyphsFromWire`.
+- **Correlated (partial field-apply cluster):** the same **`0x1403eed00`ù`0x1403ef100`** region also reaches **`Inventory_ApplySlotUpdateAndDispatchItemAdded` (`1403b8380`)**, **`Inventory_RefreshSlotItemFromUpdate` (`1403b7d40`)**, **`InventoryItem_ApplyRolledStatsFromWire` (`14056ac90`)**, **`InventoryItem_ApplyGlyphsFromWire` (`14056aba0`)**, and **`ClientEvent_DispatchNamedEvent`** ù i.e. **field-by-field patches on an existing bag slot entity**, distinct from full add **`ServerItemAdd` (`0x0111`) ? `Inventory_AddOrUpdateFromSharedPayload` (`1403b77d0`) ? `InventoryItem_ApplySharedItemPayload` (`140569c90`)**.
 - **Mapped (`1403b8540` / `1403b85a0` bodies):** both resolve the slot entity via **`FUN_1403acbb0(inventory+0xa0, itemGuid)`** then patch one facet (`14056aa20` microchips vs direct glyph-tail dwords + `14056a430`).
 - **Mapped (`SharedItem_ReadPayload` caller inventory from export cache):**
 
   | Call site | Reader | Shape |
   |-----------|--------|-------|
-  | `14008cdc5` | `ServerItemAdd_ReadPayload` (`14008cda0`) | one `SharedItem` + 6-bit reason ‚Äî **`0x0111`** |
-  | `14008cf7d` | `ServerPlayerCreate_ReadPayload` (`14008cee0`) | counted `0xb0` rows each ending in `SharedItem` ‚Äî **`0x025E`** |
+  | `14008cdc5` | `ServerItemAdd_ReadPayload` (`14008cda0`) | one `SharedItem` + 6-bit reason ù **`0x0111`** |
+  | `14008cf7d` | `ServerPlayerCreate_ReadPayload` (`14008cee0`) | counted `0xb0` rows each ending in `SharedItem` ù **`0x025E`** |
   | `14008f974` | `FUN_14008f8d0` | unlabeled; also calls `SharedItem` |
   | `140092544` | `ServerInventorySharedItemList_ReadPayload` (`140092470`) | `0xe` + uint64 + 9-bit + **counted** `SharedItem[]` |
   | `1400925de` | `ServerInventorySharedItemRow_ReadPayload` (`140092580`) | `0xe` + uint64 + **one** `SharedItem` @ `+0x10` |
 
 - **Pass 47 correction:** **`140092580`/`140092470`** are **`0x046F`/`0x047A` guild-bank** readers (see pass 47), **not** the player partial-field patch path.
-- **Correlated (player bag only):** **`Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`)** caller PE **`0x1403eef8a`** in cluster **`0x1403eed00`** ‚Äî opcode/apply table cell still unmapped.
+- **Correlated (player bag only):** **`Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`)** caller PE **`0x1403eef8a`** in cluster **`0x1403eed00`** ù opcode/apply table cell still unmapped.
 - **Export gap:** Ghidra `functions.csv` has **no contiguous function** for **`0x1403ec783`..`0x1403f378f`**; pass **48** added **inspect-only** fragments for **`0x1403eed00`** / **`0x1403eef8a`** (see pass 48). Headless **`CreateFunction`** on the whole gap fails (overlapping epilogue **`0x1403f1320`**).
-- **SQL (type 339):** `wildstar_client.item2` **78089** ‚Üí `item2TypeId` **339**, `Item2CategoryId` **177** (orphan below elemental **340‚Äì345** band); local **`itemruneslotrandomization`** table is **empty** (0 rows).
-- **Still blocked:** **player-bag** partial field-apply **opcode** + apply-table cell (distinct from **`0x046F`/`0x047A` guild bank**, pass 47‚Äì48); gap **index walker** into case stubs; Lua **`ItemAdded` subscriber** bodies; durable client proof for **`Prerequisite.tbl` rows 10610/10685**.
-- Verification: `selected_call_edges.csv`, fragments `1403b8540`, `1403b85a0`, `140092580`, `140092470`, `14008cda0`; PE `.text` scan on `Decomp/Client64/WildStar64.exe` (local copy has a non-standard section table in this checkout ‚Äî treat PE call-site results as **session-correlated**, re-verify when a clean client binary is mounted).
+- **SQL (type 339):** `wildstar_client.item2` **78089** ? `item2TypeId` **339**, `Item2CategoryId` **177** (orphan below elemental **340ù345** band); local **`itemruneslotrandomization`** table is **empty** (0 rows).
+- **Still blocked:** **player-bag** partial field-apply **opcode** + apply-table cell (distinct from **`0x046F`/`0x047A` guild bank**, pass 47ù48); gap **index walker** into case stubs; Lua **`ItemAdded` subscriber** bodies; durable client proof for **`Prerequisite.tbl` rows 10610/10685**.
+- Verification: `selected_call_edges.csv`, fragments `1403b8540`, `1403b85a0`, `140092580`, `140092470`, `14008cda0`; PE `.text` scan on `Decomp/Client64/WildStar64.exe` (local copy has a non-standard section table in this checkout ù treat PE call-site results as **session-correlated**, re-verify when a clean client binary is mounted).
 
-Prerequisite / opcode pass (2026-06-01, pass 48 ‚Äî type 172 health scale, vtable recovery negatives):
+Prerequisite / opcode pass (2026-06-01, pass 48 ù type 172 health scale, vtable recovery negatives):
 
-- **Renamed `Unknown172` ‚Üí `HealthScaled`:** `PrerequisiteManager_EvaluateTypeSlot` case **`0xac`** (type **172**) is **inline** (not a vtable slot). When `entity+0xd08` is set, client compares **`Entity_GetHealthScaleFactor` (`14047a940`) * `*(float*)(healthComponent+0x8c)`** through `PrerequisiteManager_ApplyComparison` (`1404a2010`). When `+0xd08` is null, it resolves **`Creature2_GetRowByUnitId` (`14022d500`)** from **`*(entity+0xd8)`** before applying the comparison. `14047a940` walks mount/pet/creature context (`entity+0xcc0`, `entity+0xb8`, Creature2 **`+0x70`/`+0x74`** tier floats) and multiplies by an inner health component factor at **`+0x18`**.
-- **Rejected rename (client `_purecall`):** type **63** case **`0x3f`** ‚Üí vtable **`+0x78`** ‚Üí **`1407db510`** (`_purecall` in PE export metadata). Do not invent a behavior name.
-- **Rejected rename (vtable points at non-check code):** PE reads at `PTR_FUN_140b67740` still land in destructors/UI for several slots when Ghidra decompiles at the raw pointer ‚Äî e.g. type **159** `+0x1e0` ‚Üí `1404bec00`, type **174** `+0x618` ‚Üí `1404c10e0`, type **222** `+0x380` ‚Üí `140627670` (`GetCursorPos`/`ScreenToClient`), type **223** `+0x438` ‚Üí `1404c57d0` (movement scalar). Mid-function **thunk** recovery is still required before renaming **171/178/222/223/233** (type **174** resolved via handler table in pass 49).
-- **Mapped (guild-bank apply-table cells, pass 48):** `FindDataReferences` on apply consumers (not `FindPointerInData` ‚Äî cells store **RVA** slots, not full VA):
-  - **`0x046F`** ‚Üí **`GuildBank_ApplyInventoryAdd` (`14057d190`)** at DATA **`0x140e1a760`** (dword **`0x0057d190`**).
-  - **`0x047A`** ‚Üí **`GuildBank_ApplyTabInventoryRows` (`14057cdc0`)** at DATA **`0x140e1a718`** (dword **`0x0057cdc0`**).
-  - Parallel registration pointers also at **`0x140be87a8` / `0x140be8808`** (tab) and **`0x140be8774` / `0x140be87a8`** (add). Opcode registration unchanged: **`Network_RegisterServerOpcode_0351` (`14006c290`)** lines **`0x47a` / `0x46f`** ‚Üí readers **`140092470` / `140092580`** (see pass 47).
-- **Mapped (partial field-apply gap cluster, pass 48 Ghidra inspect):** addresses **`0x1403eed00`‚Äì`0x1403ef100`** sit in Ghidra gap **`0x1403ec783`..`0x1403f378f`** (between **`Entity_ExecuteSpellEffectHighRange` (`1403ec6a0`)** and **`FUN_1403f3790`**). They are **not** entries in the spell **`0x1403f1344`** jumptable (PE scan: **`0x1403ee268`** = effect **0x07F6**, **`0x1403ee403`** = **0x0818**; **`0x1403eef8a` / `0x1403eed00`** absent). Case stubs share epilogue **`0x1403f1320`** (`RET` at **`0x1403f1341`**):
+- **Renamed `Unknown172` ? `HealthScaled`:** `PrerequisiteManager_EvaluateTypeSlot` case **`0xac`** (type **172**) is **inline** (not a vtable slot). When `entity+0xd08` is set, client compares **`Entity_GetHealthScaleFactor` (`14047a940`) * `*(float*)(healthComponent+0x8c)`** through `PrerequisiteManager_ApplyComparison` (`1404a2010`). When `+0xd08` is null, it resolves **`Creature2_GetRowByUnitId` (`14022d500`)** from **`*(entity+0xd8)`** before applying the comparison. `14047a940` walks mount/pet/creature context (`entity+0xcc0`, `entity+0xb8`, Creature2 **`+0x70`/`+0x74`** tier floats) and multiplies by an inner health component factor at **`+0x18`**.
+- **Rejected rename (client `_purecall`):** type **63** case **`0x3f`** ? vtable **`+0x78`** ? **`1407db510`** (`_purecall` in PE export metadata). Do not invent a behavior name.
+- **Rejected rename (vtable points at non-check code):** PE reads at `PTR_FUN_140b67740` still land in destructors/UI for several slots when Ghidra decompiles at the raw pointer ù e.g. type **159** `+0x1e0` ? `1404bec00`, type **174** `+0x618` ? `1404c10e0`, type **222** `+0x380` ? `140627670` (`GetCursorPos`/`ScreenToClient`), type **223** `+0x438` ? `1404c57d0` (movement scalar). Mid-function **thunk** recovery is still required before renaming **171/178/222/223/233** (type **174** resolved via handler table in pass 49).
+- **Mapped (guild-bank apply-table cells, pass 48):** `FindDataReferences` on apply consumers (not `FindPointerInData` ù cells store **RVA** slots, not full VA):
+  - **`0x046F`** ? **`GuildBank_ApplyInventoryAdd` (`14057d190`)** at DATA **`0x140e1a760`** (dword **`0x0057d190`**).
+  - **`0x047A`** ? **`GuildBank_ApplyTabInventoryRows` (`14057cdc0`)** at DATA **`0x140e1a718`** (dword **`0x0057cdc0`**).
+  - Parallel registration pointers also at **`0x140be87a8` / `0x140be8808`** (tab) and **`0x140be8774` / `0x140be87a8`** (add). Opcode registration unchanged: **`Network_RegisterServerOpcode_0351` (`14006c290`)** lines **`0x47a` / `0x46f`** ? readers **`140092470` / `140092580`** (see pass 47).
+- **Mapped (partial field-apply gap cluster, pass 48 Ghidra inspect):** addresses **`0x1403eed00`ù`0x1403ef100`** sit in Ghidra gap **`0x1403ec783`..`0x1403f378f`** (between **`Entity_ExecuteSpellEffectHighRange` (`1403ec6a0`)** and **`FUN_1403f3790`**). They are **not** entries in the spell **`0x1403f1344`** jumptable (PE scan: **`0x1403ee268`** = effect **0x07F6**, **`0x1403ee403`** = **0x0818**; **`0x1403eef8a` / `0x1403eed00`** absent). Case stubs share epilogue **`0x1403f1320`** (`RET` at **`0x1403f1341`**):
   - **`0x1403eef8a`:** `CALL Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`); `JMP 0x1403f1320`.
   - **`0x1403eed00`:** `MOV EAX,[0x140c65b80]`; `CALL 0x1405fb830`; `JMP 0x1403f1320`.
   - Evidence fragments: `selected_decompiled_cache/.../1403eef8a.fragment.c`, `1403eed00.fragment.c` (inspect-only; whole-gap `CreateFunction` fails on overlapping flow).
-- **Opcodes (still blocked):** `Client0x0550` / `0x062A` / `0x0634` / `0x07E3` remain **4-byte uint32** diagnostics with **null** compile-time name slots in `DAT_140c1f210`. **Player bag partial field-apply** still has **no** `Network_RegisterServerOpcode` row and **no** `.data` apply cell ‚Äî only the gap case stub above. **Apply-table index walker** for guild cells **`0x140e1a718` / `0x140e1a760`** also still blocked.
+- **Opcodes (still blocked):** `Client0x0550` / `0x062A` / `0x0634` / `0x07E3` remain **4-byte uint32** diagnostics with **null** compile-time name slots in `DAT_140c1f210`. **Player bag partial field-apply** still has **no** `Network_RegisterServerOpcode` row and **no** `.data` apply cell ù only the gap case stub above. **Apply-table index walker** for guild cells **`0x140e1a718` / `0x140e1a760`** also still blocked.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`;
   Ghidra logs `Decomp/Analysis/logs/runs/pass48_{inspect_3eed00,inspect_3eef8a,opcode_46f,dataref_57d190,dataref_57cdc0}/`.
 
-Prerequisite / opcode pass (2026-06-01, pass 49 ‚Äî handler table + type 174):
+Prerequisite / opcode pass (2026-06-01, pass 49 ù handler table + type 174):
 
-- **Mapped `PrerequisiteTypeHandlerTable` @ `0x140b66870`:** Ghidra labels the region `PTR__purecall_140b66870`, but PE QWORDs at **`table[typeId]`** hold the real prerequisite check thunks (e.g. type **13** ‚Üí `14049d760`, **173** ‚Üí `1404a1790`, **174** ‚Üí `1404a17e0`, **172** ‚Üí `1404a1750`). Use this table for handler-body evidence. **`PrerequisiteManager_EvaluateTypeSlot` (`1404a2100`)** still dispatches many types through **`PTR_FUN_140b67740` vtable offsets** that often point at destructors/UI (`+0x618` for type **174** ‚Üí `1404c10e0`, `+0x130` for type **246** ‚Üí `1404bdc40`); slots **244‚Äì248** in the handler table are `_purecall` while live checks may use different wiring ‚Äî correlate each type before renaming.
-- **Renamed `Unknown174` ‚Üí `ItemTradeSkillKnown`:** `table[174]` ‚Üí `Prerequisite_CheckItemTradeSkillKnown` (`1404a17e0`) gates NPC entity types **`0x14`/`0x17`**, then `TradeSkill_ClientHasKnownItem2Id` (`1403b91d0`) binary-searches the player known-tradeskill **item2** list (tier bucket from item row **`+0x17c`**).
-- **Enriched type 173 `ItemTradeSkill`:** `table[173]` ‚Üí `Prerequisite_CheckItemTradeSkill` (`1404a1790`) ‚Üí `TradeSkill_CheckItemTradeskillRequirement` (`1403c16e0`) on the same NPC gate.
-- **Rejected rename type 178:** `table[178]` ‚Üí `Prerequisite_CheckProgressTrackOnMatchingEntity` (`1404a1890`) requires target **`*(entity+8)`** == local player entity id, then `Progress_GetTrackedScalar` (`1403fa980`, mode **1**) before `PrerequisiteManager_ApplyComparison`; not an equip-slot check.
+- **Mapped `PrerequisiteTypeHandlerTable` @ `0x140b66870`:** Ghidra labels the region `PTR__purecall_140b66870`, but PE QWORDs at **`table[typeId]`** hold the real prerequisite check thunks (e.g. type **13** ? `14049d760`, **173** ? `1404a1790`, **174** ? `1404a17e0`, **172** ? `1404a1750`). Use this table for handler-body evidence. **`PrerequisiteManager_EvaluateTypeSlot` (`1404a2100`)** still dispatches many types through **`PTR_FUN_140b67740` vtable offsets** that often point at destructors/UI (`+0x618` for type **174** ? `1404c10e0`, `+0x130` for type **246** ? `1404bdc40`); slots **244ù248** in the handler table are `_purecall` while live checks may use different wiring ù correlate each type before renaming.
+- **Renamed `Unknown174` ? `ItemTradeSkillKnown`:** `table[174]` ? `Prerequisite_CheckItemTradeSkillKnown` (`1404a17e0`) gates NPC entity types **`0x14`/`0x17`**, then `TradeSkill_ClientHasKnownItem2Id` (`1403b91d0`) binary-searches the player known-tradeskill **item2** list (tier bucket from item row **`+0x17c`**).
+- **Enriched type 173 `ItemTradeSkill`:** `table[173]` ? `Prerequisite_CheckItemTradeSkill` (`1404a1790`) ? `TradeSkill_CheckItemTradeskillRequirement` (`1403c16e0`) on the same NPC gate.
+- **Rejected rename type 178:** `table[178]` ? `Prerequisite_CheckProgressTrackOnMatchingEntity` (`1404a1890`) requires target **`*(entity+8)`** == local player entity id, then `Progress_GetTrackedScalar` (`1403fa980`, mode **1**) before `PrerequisiteManager_ApplyComparison`; not an equip-slot check.
 - **Tooling:** `InspectCodeAddress.java` now treats **all script args as addresses** unless the **last** arg is a small integer instruction count (fixes batch Ghidra runs that passed `args[1]` as an RVA).
 - **Still blocked:** opcodes `Client0x0550`/`0x062A`/`0x0634`/`0x07E3`; player-bag partial field-apply opcode for `1403b8540`; types **171/178/222/223/233** behavior names; type **246** dispatch vs `table[0]`/`table[246]`/`vtable+0x130` mismatch.
 - Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests"`.
 
-Prerequisite / GetDetailedInfo registration + tooltip tRunes (2026-05-31, pass 45 ‚Äî PE `.data` proof):
+Prerequisite / opcode pass (2026-06-01, pass 53 ù LiveEvent 166/167, DailyLoginDaysTotal 171):
 
-- **Mapped (`140417de0` Lua name):** PE scan of `WildStar64.exe` shows a single pointer to `140417de0` at **`.data` `0x140c58c10`**, paired with the method name string **`GetDetailedInfo`** (`140af8cc0`). Neighbor rows in the same `Game.ItemData` extension table: **`GetSetBonuses` ‚Üí `14041b190`** (`0x140c58c00`), **`HasRestockingFee` ‚Üí `140419b30`** (`0x140c58c20`). Relabel **`Lua_GameItemData_GetDetailedInfo`** (was speculative `BuildRuneCompareTables`); it still calls `ItemData_BuildRuneCompareLuaRoot` (`14066dd50`) and emits **`tPrimary`/`tCompare`** for side-by-side item inspection, not `arRuneSlots`.
-- **Rejected:** registration on global **`Tooltip.GetItemTooltipForm`** (`Lua_RegisterTooltipLib` `1406f26c0`, table `PTR_s_GetItemTooltipForm_140b725a0`) ‚Äî that table points at **`1406dcea0`** for form builders, not `140417de0`.
+- **Renamed `PublicEventParticipant166`/`LiveEvent167` ? `LiveEventTreeLookup`/`LiveEventWorldFactionBranch`:** handler table[166]/[167] call `LiveEventTree_LookupByObjectId` (`1404a7f50`, entity+0x3f8) and `LiveEventTree_LookupWithWorldBranch` (`1404a80b0`, entity+0x438) + `LiveEvent_GetWorldFactionField` (`1404a8430`, world **0xa6/0xa7** ? record+0x68/+0x88). NF live-event runtime not implemented.
+- **Renamed `AccountItemListScalar180` ? `DailyLoginDaysTotal` (171):** PE maps accountItemList+**0x180** to `DailyLoginUpdate_HandleServer096E` Value0 and `DailyLogin_DayTimerCallback` inc; NF `PrerequisiteCheckDailyLoginDaysTotal` uses `IAccountInventoryManager.GetDailyLoginDaysTotal()`. accountItemList+**0x184** = rewardsAvailable (handler table[172], live path still HealthScaled).
+- **Still blocked:** accountItemList+**0x110** (type 170 handler-table scalar); live-event NF handlers 166/167; stub **189/192/193**; diagnostic opcodes `Client0x0550`/`0x062A`/`0x0634`/`0x07E3`.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 55 ù PathSettler NF progress proxies, accountItemList+0x110 API):
+
+- **PathSettler types 189/192/193 NF handlers:** `PathManager` tracks improvement-group tier/bundle from build-tier acks; `GetSettlerHubBuildProgressPercent` / `GetSettlerHubContributionProgressPercent` / `GetSettlerHubOverallProgressPercent` proxy client record fields `+0x60`/`+0x68`/`+0x64` via hub mission progress and stored build status. Live client dispatch still stub `140001ba0`; orphan bodies remain unwired.
+- **Labeled `PathSettlerHub_LookupByObjectId` (`140432960`)** and **`AccountItemList_WalkCachedRowsByType` (`140022192`)** ù latter walks `+0x108`/`+0x110` when list type id is `0x12`.
+- **`IAccountInventoryManager.GetAccountInventoryItemCount()`** returns cached inventory row count (NF proxy for `accountItemList+0x110`; **not** wired into type **170** `GameFormula` handler ù tbl vs handler-table param semantics still split).
+- **Type 170 triple path documented:** tbl `GameFormula` id (`PrerequisiteCheckGameFormula`), handler table `+0x110` scalar, live vtable `+0x90` `Prerequisite_CheckEntitySetCountAt7188` (`14049c880`) entity-set walk on player global `+0x7188`.
+- **Still blocked:** wire live vtable stubs `0xbd`/`0xc0`/`0xc1` to orphan bodies; durable Settler hub runtime fields at client `+0x60/+0x68/+0x64`; diagnostic opcodes `Client0x0550`/`0x062A`/`0x0634`/`0x07E3` sender semantics.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-02, pass 88 - type 62 live scan path PE map, type 267 alias):
+
+- **Type 62 live path mapped:** `PrerequisiteManager` case `0x3e` dispatches vtable `+0x4a8` -> `Prerequisite_CheckScanCreature_LiveCase3E` (`14049ff30`). With a target unit (`r9`), native code requires non-zero scan mode at `+0x3754`, a scan subobject at `+0x18` with non-zero `+0x188`/`+0x1c8`, then compares checklist bitmask at `+0x3750` to `value0` (Equal/NotEqual). NF `PrerequisiteCheckScanCreature` remains datacube-progress-backed only.
+- **Type 267 diagnostic body:** `Unknown267` remains unrenamed. Live case `0x10b` vtable `+0x320` -> same body as mislabeled handler table[62] `Prerequisite_CheckEntityLookupFlagBit1_Table62` (`14049e9a0`); **not** a `ScanCreature` alias. Flag semantics still blocked.
+- **Prior passes acknowledged:** types **96ù101** renamed (`EvalContextFloatByObjectId`, `AccountItemListItem2Count*`), **63** `IsLocalPlayerEntity`, **159** positional cone, **241** housing residence, **233** spell tier unlock, **293** account currency, **266** pet/esper entity; stale `PathScientist_CheckCreatureScanState` @ `1405faf9c` label removed in favor of `PathScientist_RemoveScanStateById` @ `1405faf00`.
+- **Still blocked:** generic scanbot scan-result client opcode; wiring native `+0x3750` bitmask checks into NF unit state; `EntityLookupFlagBit1` meaning; diagnostic opcode senders `0x0550`/`0x062A`/`0x0634`.
+- Verification: **432 passed** (filtered prerequisite/path suite).
+
+Prerequisite / opcode pass (2026-06-01, pass 80 - type 96 eval-list correction):
+
+- **PE correction (type 96 vs 97+):** handler table[96] `14049f810` is **only** the eval-context linked-list float compare (global eval pointer, list at `+0x70`, node `+0x20` key, float at `+0x28`, `140642a00`); account-item walks start at table[97] `14049f8c0` with NPC `0x14`/`0x17` gates ù pass 78 account-row proxy on type 96 was mis-attributed.
+- **NF:** `PrerequisiteEvalListHelper` + `PrerequisiteCheckEvalContextFloatByObjectId` proxy via `IPrerequisiteParameters.Item` stat rows (`ItemStatType` key / type-4 float slot); returns false without item eval context (no client global eval list on server).
+- **Still blocked:** generic scanbot scan-result client opcode; client global eval-context list outside item parameters; diagnostic opcode senders `0x0550`/`0x062A`/`0x0634`.
+- Verification: **383 passed** (filtered prerequisite/path suite).
+
+Prerequisite / opcode pass (2026-06-01, pass 79 - scientist scan checklist bitmasks):
+
+- **Superseded by pass 86:** earlier PE notes tied table[62] `14049e9a0` to a PathScientist checklist walk; focused inspection rejected that. `14049e9a0` is now `Prerequisite_CheckEntityLookupFlagBit1_Table62`, and live type 62 remains blocked at raw `14049ff30`.
+- **NF:** `character_datacube.Progress` for `DatacubeType.ScientistCreatureScan` stores OR-able checklist bits (`PathScientistScanHelper`); `PrerequisiteCheckScanCreature` checks per-bit when `ChecklistCount > 1`, else full mask.
+- **Still blocked:** client scan-result packet ? server persistence outside scripts; type 96 eval-list float (`1404a54ec`); diagnostic opcode senders.
+- Verification: **381 passed** (filtered prerequisite/path suite).
+
+Prerequisite / opcode pass (2026-06-01, pass 78 - scientist scan credit, type 96 account branch):
+
+- **Scientist scan runtime:** `NorthernWildsScientistPathMissionScripts.OnActivateSuccess` now calls `MarkScientistCreatureScanned` before `CompleteMission` so prerequisite type **62** credit persists even when the mission row is already complete.
+- **Type 96 refinement:** live path `14049f870` uses `Prerequisite_WalkAccountItemNodesByItem2` (`1404a53cc`, `accountItemList+0x98`); NF `PrerequisiteCheckEvalContextFloatByObjectId` switched from `CountOwnedByItem2Id` to `CountAccountRowsByItem2Id` (eval-list `1404a54ec` float path still blocked).
+- **Still blocked:** native type-62 scan path at raw `14049ff30`; generic scanbot scan-result packet; diagnostic opcode senders `0x0550`/`0x062A`/`0x0634`.
+- Verification: **377 passed** (filtered prerequisite/path suite).
+
+Prerequisite / opcode pass (2026-06-01, pass 77 - type 96 live body, ScanCreature note):
+
+- **Type 96 PE split:** handler table[96] `14049f810` is xor/ret stub; live body `14049f820` calls `Prerequisite_WalkEvalListByObjectId` (`1404a54ec`); alternate path `14049f870` calls `Prerequisite_WalkAccountItemNodesByItem2` (`1404a53cc`).
+- **NF handler:** `PrerequisiteCheckEvalContextFloatByObjectId` proxies via `AccountItemOwnedCount.CountOwnedByItem2Id` (eval-list float branch still blocked).
+- **Type 62 unchanged:** `PrerequisiteCheckScanCreature` + datacube persistence; native live scan path at raw `14049ff30` still not modeled.
+- **Still blocked:** type 96 float eval-list compare; diagnostic opcode senders `0x0550`/`0x062A`/`0x0634`.
+- Verification: **377 passed** (filtered prerequisite/path suite).
+
+Prerequisite / opcode pass (2026-06-01, pass 76 - account-item list cluster 96-101):
+
+- **PE correction (types 100-101):** handler table entries call `AccountItemList_WalkItem2IdMatch` (`140497d9c`, node `+0x20` Item2 id), **not** `accountItemList+0x110` row count; pass 75 `GetAccountInventoryItemCount` proxy reverted.
+- **NF handlers:** types **97-99** `PrerequisiteCheckAccountItemListItem2CountNpc` (`CountAccountRowsByItem2Id` + NPC gate); **100-101** `PrerequisiteCheckAccountItemListItem2Count` (same count, no gate); type **96** trace stub (`1404a54ec`/`1404a53cc` eval-list walks).
+- **Labeled** `Prerequisite_WalkEvalListByObjectId` (`1404a54ec`), `Prerequisite_WalkAccountItemNodesByItem2` (`1404a53cc`).
+- **Still blocked:** type 96 eval-list semantics; type 62 scientist checklist; diagnostic opcode senders.
+- Verification: **375 passed** (filtered prerequisite/path suite).
+
+Prerequisite / opcode pass (2026-06-01, pass 75 - scientist scan persistence, types 100-101):
+
+- **Scientist scan persistence:** `DatacubeType.ScientistCreatureScan` (3) stores `PathScientistCreatureInfo.Id` in `character_datacube` via `DatacubeManager.AddScientistCreatureScan`; `PathManager` hydrates from completed missions and saves with character datacube rows (not sent on `SendInitialPackets`).
+- **NF handlers:** `Unknown100`/`Unknown101` via `PrerequisiteCheckAccountInventoryRowCount` (`GetAccountInventoryItemCount` vs `value0`); dual `[PrerequisiteCheck]` on one class registered via `AllowMultiple` + `GetCustomAttributes` in `AddGamePrerequisite`.
+- **PE correction:** handler table[96-101] are live thunks (`14049f810`ù`14049fac0`), not `140001ba0` vtable stubs alone.
+- **Still blocked:** types 96-99 bodies; checklist bitmasks on type 62; diagnostic opcode senders.
+- Verification: **374 passed** (filtered suite: PrerequisiteTypeNamingTests, PrerequisiteCheckTests, PacketPlaceholderNamingTests, ClientDiagnosticPacketShapeTests, PathSettlerBuildHandlerTests, PathManagerTests).
+
+Prerequisite / opcode pass (2026-06-01, pass 74 - InTriggerVolume/Waypoint/ScanCreature unblock):
+
+- **NF handlers:** `InTriggerVolume` (27) via `WorldLocation2` horizontal+vertical containment (`WorldLocationPrerequisiteHelper`); `Waypoint` (46) via shared `PositionalPrerequisiteHelper` / `PositionalRequirement` rows; `ScanCreature` (62) via `IPathManager.HasScannedScientistCreature` (hydrates from script-backed mission completions + `MarkScientistCreatureScanned`).
+- **`PathManager`** tracks scientist scan credit in-memory; maps missions 42/160/648 ? creature-info ids 34/130/128.
+- **Refactored** `PrerequisiteCheckPositionalRequirement` to shared angular helper.
+- **Still blocked:** TriggerVolume2 ids distinct from WorldLocation2; scientist checklist bitmasks; diagnostic opcode senders; table[80] live stub.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 73 - WrongSpellMechanic 81, ScanCreature PE label):
+
+- **NF handler:** `WrongSpellMechanic` (81) reuses `SpellPrerequisiteHelper.HasActiveSpellTargetMechanic` (same overlap probe as type 92; prerequisite rows use comparison to express forbidden vs required mechanics).
+- **Superseded by pass 86:** handler table[62] `14049e9a0` is not scan evidence; source labels now use `Prerequisite_CheckEntityLookupFlagBit1_Table62`. `ScanCreature` remains NF progress-backed while live type 62 is blocked at raw `14049ff30`.
+- **Handler table file offset** for PE dumps: `0xb66870` + `slot*8` (RVA `0xb67870` in image).
+- **Still blocked:** scientist scan checklist / `PathScientistCreatureInfo` progress; diagnostic opcode senders `0x0550`/`0x062A`/`0x0634`.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 72 - ActiveSpellTargetMechanic/Spell4EffectCategory 92-93):
+
+- **Corrected handler table[93]** to **`14049f690`** (pass 70/71 docs wrongly reused table[92] `14049f5b0`).
+- **NF handlers:** `ActiveSpellTargetMechanic` (92) via `Spell4TargetMechanicsEntry.Flags` on active persistent spells; `Spell4EffectCategoryOnUnit` (93) via `Spell4EffectGroupList` membership for `value0` effect-group id on persistent lifetime effects.
+- **Labeled** `Prerequisite_CheckSpell4EffectCategoryOnUnit` (`1403d6f1c`) and table[93] (`14049f690`).
+- **Still blocked:** per-effect runtime fields at client `+0x70/+0xf8`; table[92] mid-thunk vs vtable `14049d5b0` split; diagnostic opcodes.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 71 - SpellTier/UnderSpell/ActiveSpellEffect 50/59-60/129-130/279-280):
+
+- **NF handlers:** `SpellTier` (59), `SpellTierOnTarget` (60), `UnderSpellOnTarget` (50), `ActiveSpellEffectOnUnit` (129), `ActiveSpellEffectOnTarget` (130), `UnderSpellOnCasterAndTarget` (279), `SpellTierOnCasterAndTarget` (280) via `SpellPrerequisiteHelper` + `UnitEntity.HasActiveSpell4`.
+- **Replaced** legacy `PrerequisiteCheckSpellObj` (incorrect spell-book check on type 129).
+- **Labeled table[59]/[60]/[129]/[130]** (`14049e820` ù `1404a0590`).
+- **Still blocked:** per-effect SpellService compare at `entity+0x15c8`; target-specific active-effect linkage on type 130; diagnostic opcodes.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 70 - spell cooldown/effect cluster 93/102-106):
+
+- **Handler table labeled [93]/[102-106]** (`14049f5b0` ù `14049fd80`); live helpers remain `1404a4fe0` / `14046a190` / `14046a210` / `14049e900`.
+- **NF handlers:** `SpellCooldownNodeOnUnit` / `OnTarget` / `InServiceSet` via `SpellManager` cooldown-node + spell-book proxies; `SpellEffectTypeOnUnit` via persistent `Spell` lifetime effects; `TargetEntityLookupHit` via `Map.GetEntity`; `Spell4EffectCategoryOnUnit` trace stub.
+- **`Spell.PrerequisiteSupport`**, `UnitEntity.HasActiveSpellEffectType`, `SpellManager.HasActiveCoolDownNode` / `KnowsSpellReferencingCoolDownNode`.
+- **Still blocked:** client `entity+0x15d0` cooldown-node list semantics; effect-category fields; per-node target linkage on type 103.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 69 - Datacube/Volume 218/219, path/pet/quest spell cluster):
+
+- **Handler table[218-221]** all point to shared stub **`1407db510`** (not per-type bodies); NF implements **218 Datacube** / **219 Volume** via `IDatacubeManager` progress bitmasks (`SimpleEntity.OnActivateCast` semantics: `(Progress & value) == value`).
+- **NF handlers:** `PathTypeLevel` (64), `PathLevel` (91), `PetMatchTarget` (89), `QuestObjective6` (94); trace stubs: `ScanCreature` (62), `ActiveSpellTargetMechanic` (92).
+- **Labeled table[89]/[91]/[92]/[94]** and `Prerequisite_HandlerStub_Purecall` (`1407db510`).
+- **Still blocked:** live datacube manager offset on client entity; scientist scan persistence; active spell-effect mechanic flag walk.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 68 - movement/mount cluster 78-88/90, Distance RVA fix):
+
+- **Handler table PE dump** (`0x140b67870`): labeled types **78-88** and **90**; corrected type **95 Distance** body to **`14049f770`** (pass 67 doc had wrong `14049f1f0`).
+- **NF handlers:** `MovementMode`, `UnderForcedMovement` (ServerControl proxy), `HealthRequirement` (health percent), `Vehicle`/`Mount`/`Taxi` (platform `EntityType`), `Jump`/`Moving` (`StateFlags` + velocity/move), `Pet` (vanity pet), `MountVehicleType` (platform type while mounted); `WrongSpellMechanic` trace stub; table[80] remains client stub `140001ba0`.
+- **`MovementPrerequisiteHelper`** for platform entity/type resolution via `PlatformGuid`.
+- **Still blocked:** spell-mechanic overlap (81); client `entity+0x640` mode byte vs `ModeType`; forced-movement bit semantics; Datacube/Volume **218/219**.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 67 - phase/time/distance/challenge-tier, PrerequisiteType.cs PE sync):
+
+- **`PrerequisiteType.cs` bulk comment sync:** passes 63ù66 NF handlers (faction/reputation/currency/items/guild/housing/health/zone/combat/entity-type/quest/random/Faction128/etc.) now carry handler-table or live-vtable addresses and NF handler names inline on enum members.
+- **NF handlers:** `InPhase` (`PublicEventPhase` on target); `CanSeePhase` (player vs target phase match); `TimeOfDay` (`InGameTimePrerequisiteHelper` mirrors `SendInGameTime`); `Distance` (floor 3D distance player?target); `ChallengeTier` (`GetCompletionCount` tier proxy); `InTriggerVolume` / `Waypoint` trace stubs.
+- **Labeled handler table[24]/[25]/[27]/[29]/[46]/[70]/[95]** (`14049db50` ù `14049f1f0`).
+- **Still blocked:** trigger-volume membership; waypoint direction; movement/mount cluster **78ù88**; Datacube **218/219**; diagnostic opcodes.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 66 - Faction128, RandomPercent, quest objectives, CreatureState):
+
+- **NF handlers:** `Faction128` via `FactionPrerequisiteHelper` + `IFactionNode.GetAscendant`; `RandomPercent` (0ù99 roll); `IsObjectiveActive` (`IQuestManager.IsActiveObjectiveId`); `QuestObjective` (active-quest objective complete); `CreatureState` (`IUnitEntity.HasUnitState`); `WarplotPermission` trace stub (live `14049ebf0`, table[188] `_purecall`).
+- **Labeled handler table[37]/[43]/[68]/[76]**; type **128** live body at `14049c720` (table[128] stub `140001ba0`).
+- **Still blocked:** Datacube/Volume **218/219**; movement/mount cluster **78ù88**; diagnostic opcodes; live-event NPC trees; guild/warplot perk bitmasks.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 65 - Currency/Guild cluster, faction/reputation, item checks, housing):
+
+- **Labeled handler table[4]/[5]/[13]/[14]/[51]/[55]/[182]** and documented **live vtable** guild bodies at `14049e9e0`/`14049ea30`/`14049eae0` (handler table slots **183ù185** at `1404a5240`/`1404a5440`/`_purecall` ù use live vtable witnesses for NF).
+- **NF handlers:** `Currency`, `ItemQuantity`, `Faction` (type 4), `Reputation`, `ItemEquipped`, `ItemOnCharacter`, `Guild`, `Guild2`, `HouseOwnership`; `GuildPerk` trace stub until `UnlockedPerks` exists on server guild state.
+- **Still blocked:** guild perk bitmask runtime; handler-table garbage at `1404a5240`; diagnostic opcodes; live-event NPC trees; Datacube/Volume **218/219** stubs.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 64 - InCombat/IsCreature/IsPlayer/DeadState/IsGroupLeader/ActionSetSpell/UnitEntityType):
+
+- **Labeled handler table[28]/[38]/[39]/[42]/[82]:** `Prerequisite_CheckInCombat` (`14049dcb0`), `Prerequisite_CheckIsCreature` (`14049e3a0`), `Prerequisite_CheckIsPlayer` (`14049e3f0`), `Prerequisite_CheckIsGroupLeader` (`14049e540`), `Prerequisite_CheckUnitEntityType` (`14049f010`).
+- **ActionSetSpell / table[12] split:** `14049d6d0` body is 12-slot action-bar Spell4 search (live case `0xdd`, type **221**); handler table slot **[12]** (`DeadState`) is the same pointer ù NF `PrerequisiteCheckDeadState` uses `IsAlive` scalar until a separate dead-state witness exists; `PrerequisiteCheckActionSetSpell` walks all `IActionSet` shortcuts.
+- **NF handlers:** `PrerequisiteCheckInCombat`, `IsCreature`, `IsPlayer`, `IsGroupLeader` (`IGroupStateManager` + `GroupLootState.Leader`), `UnitEntityType` (`EntityType` proxy for client `entity+0x80`).
+- **Still blocked:** Guild 183ù185 perk runtime; client `entity+0x80` unit-type ids vs `EntityType`; diagnostic opcode senders; live-event NPC trees.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 63 - Health 40, ZoneExplored 41, PathSettler NF parity note):
+
+- **Labeled handler table[40]/[41]:** `Prerequisite_CheckHealth` (`14049e440`) uses integer `PrerequisiteManager_ApplyComparison` (`1404a2090`); `Prerequisite_CheckZoneExplored` (`14049e490`) computes zone-map explored percent via manager vtable then float comparison at `1404a2010` (same helper as type **172** `HealthScaled`).
+- **NF handlers:** `PrerequisiteCheckHealth` compares raw `IWorldEntity.Health` on target or player; `PrerequisiteCheckZoneExplored` compares `IZoneMapManager.GetMapZoneExploredPercent` for `objectId0` MapZone id (floored 0ù100, matches `ZoneMap.GetExploredPercent` test witness).
+- **PathSettler 189/192/193:** pass 55 NF handlers remain wired through `PathManager` percent APIs; live client `EvaluateTypeSlot` cases `0xbd`/`0xc0`/`0xc1` still stub `140001ba0` ù no rename change this pass.
+- **Still blocked:** live-event NPC tree progress; diagnostic opcode senders (`Network_SerialiseBufferedMessageById` rail); PathSettler vtable ? orphan bodies; Primal Matrix type **292** runtime.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 62 - CreatureDifficulty 179 NF handler, handler-table 179/292 correction, HealthScaled percent):
+
+- **NF `PrerequisiteCheckCreatureDifficulty` (179):** compares target `Creature2Difficulty` id to `objectId0` for `PrerequisiteManager` rows (spell apply path unchanged). PE shows handler table[179] `1404a18f0` calls `PrimalMatrix_LookupAllocatedNode` `1404d6a60` ù **not** the difficulty compare; documented enum/handler mismatch.
+- **NF `PrerequisiteCheckPrimalMatrixNode` (292):** trace stub until node allocation runtime exists; live case `0x124` uses vtable `+0x6c8`, handler table[292] `_purecall`.
+- **`HealthScaled` (172):** NF now compares **health percent** (`Health*100/MaxHealth`) until `Entity_GetHealthScaleFactor` float path is modeled.
+- **Live-event:** fixed `LiveEventPrerequisiteProgress` docs; faction branch still returns **0** (NPC record fields blocked) but reads player `Map.Entry.Id` for world `0xa6/0xa7` gate.
+- **Still blocked:** live-event NPC tree progress; diagnostic opcode senders; PathSettler vtable; Primal Matrix allocation runtime for type 292.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 61 - TradeSkill 175, ChallengeObject 176, TrueLevel/177 proxy, CreatureDifficultyRank 180):
+
+- **NF `PrerequisiteCheckTradeSkill` (175):** `objectId0` = `TradeskillType`; compares `TradeskillTier` rank from `GetTradeskillXp` (handler table stub; live dispatch still blocked).
+- **NF `PrerequisiteCheckChallengeObject` (176):** `objectId0` = `Challenge.tbl` id; compares activated state via new `IChallengeManager.IsChallengeActivated`.
+- **NF `PrerequisiteCheckPlayerGlobalTreeLookup` (177):** maps to enum `TrueLevel` (name unverified); NPC gate + `PlayerGlobalTreePrerequisiteHelper` presence proxy (challenge activated or prior completion) until client global `+0x6300` tree is modeled.
+- **NF `PrerequisiteCheckCreatureDifficultyRank` (180):** compares target `Creature2Difficulty.RankValue` to `value0` (optional `objectId0` filters difficulty id); complements spell-side type **179** handling in `Spell.cs`.
+- **Still blocked:** live-event NPC trees; diagnostic opcode senders; PathSettler vtable; exact client global `+0x6300` semantics; handler table[179] at `1404a18f0` (target-match + `1404d6a60` cluster ù not wired to enum `CreatureDifficulty` yet).
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 60 - ProgressTrack 178, live-event presence, handler 177 map):
+
+- **NF `PrerequisiteCheckProgressTrackOnMatchingEntity` (178):** requires target entity id to match local player (`1404a1890`); `ProgressTrackPrerequisiteHelper` proxies `Progress_GetTrackedScalar` trackType **1** ù returns `ChallengeManager.GetCompletionCount` when `objectId0` is a valid `Challenge.tbl` id (partial proxy until client `DAT_140c65898+0x8010` track table is mapped).
+- **LiveEvent type 166:** client `LiveEventTree_LookupByObjectId` (`1404a7f50`) returns **1** on NPC `entity+0x3f8` hit (presence, not a progress scalar); NF `GetTreeLookupPresence` stays **0** until NPC trees exist.
+- **Handler table[175]/[176]:** `_purecall` stub `140001ba0` ù no NF handler. **Slot [177]** (`1404a1830`) is live: NPC gate then tree lookup at player global `+0x6300` via `PlayerGlobal_LookupObjectIdInTree` `1403d407b`; enum `TrueLevel` still unverified (do not rename from tbl hint alone).
+- **Still blocked:** live-event faction branch record fields; diagnostic opcode senders; PathSettler live vtable; full progress-track table semantics beyond challenge-id proxy.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 59 - ItemTradeSkill 173/174 NF handlers):
+
+- **NF `PrerequisiteCheckItemTradeSkill` (173):** mirrors handler table[173] `Prerequisite_CheckItemTradeSkill` (`1404a1790`) NPC gate + `TradeSkill_CheckItemTradeskillRequirement` (`1403c16e0`) tier compare; resolves tradeskill from schematic rows referencing `objectId0` Item2 id, compares player `TradeskillTier.Tier` rank from `GetTradeskillXp` (proxy until item2 `+0x17c` tier bucket is mapped).
+- **NF `PrerequisiteCheckItemTradeSkillKnown` (174):** mirrors handler table[174] `Prerequisite_CheckItemTradeSkillKnown` (`1404a17e0`) + `TradeSkill_ClientHasKnownItem2Id` (`1403b91d0`); `HasLearnedSchematic` on any schematic referencing the Item2 id.
+- **Shared `PrerequisiteNpcTargetContext`** extracted for vendor/NPC target gates (types 166/167/173/174).
+- **Still blocked:** live-event NPC tree progress; diagnostic opcode senders; PathSettler live vtable wiring; exact client known-recipe list vs schematic-output correlation.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 58 - diagnostic uint32 cluster vs 0x05D5 PE witness separation):
+
+- **PE `mov eax,imm32` scan (WildStar64.exe):** shared-writer diagnostic cluster **`0x0550`/`0x062A`/`0x0634`/`0x07E3`** each has **one** immediate in `ClientWorldOpcodeRegister_MovementSpline` (`1400a824e` / `1400a82b6` / `1400a872c` / `1400a8282`) - registration batch only. **`0x05D5`** has **two** gameplay sends (`140075918`, `14076ab61`) via `MatchingReplacement_SendStartLookingForReplacements` (`14076aa30`); same `ClientTradeskillResetTalents_WritePayload` (`14007d010`) but **not** the diagnostic placeholders.
+- **`Client0x0701` registration clarified:** bound in `Network_RegisterServerOpcode_0351` (`14006c290`), **not** movement-spline registrar `1400a8190`. Sole `mov eax,0x701` @ `140079e05` is registration harness (batch with `0x0942`/`0x0602`), not a proven gameplay sender.
+- **Source alignment:** `GameMessageOpcode` enum comments and `ClientUnresolvedDiagnosticPackets` summaries updated; no wire/handler behavior change.
+- **Still blocked:** diagnostic cluster senders (indirect `Network_SerialiseBufferedMessageById` rail); `Client0x0701` semantics; NPC live-event progress; PathSettler live vtable to orphan bodies.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 57 ù HealthScaled NF handler, Client0x0928 sender closure, handler-table 172 label):
+
+- **NF `PrerequisiteCheckHealthScaled` (172):** proxy compares `IWorldEntity.Health` on target or player (client live path uses `Entity_GetHealthScaleFactor` * health component `+0x8c` float ù scale factor not modeled). Handler table[172] `Prerequisite_CheckDailyLoginRewardsAvailable` (`1404a1750`) reads `accountItemList+0x184` and is a separate dead path from live case `0xac`.
+- **`Client0x0928` sender blocked:** shared `ClientUInt32UInt5_WritePayload` (`1400898b0`) with `ClientPetSetStance` (`0x068E`, sends @ `140070cc4` / `14050a31d`); opcode `0x928` appears only in registration batch @ `1400a8524` inside `ClientWorldOpcodeRegister_MovementSpline` ù do not rename to pet stance without a second gameplay witness.
+- **Still blocked:** NPC live-event runtime progress; PathSettler live vtable ? orphan bodies; diagnostic opcodes `Client0x0550`/`0x062A`/`0x0634`/`0x07E3` senders; `Client0x0701` semantics.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 56 ù LiveEvent 166/167 NF proxies, GameFormula type 170 triple path):
+
+- **LiveEvent types 166/167 NF handlers:** handler table[166]/[167] are live thunks `Prerequisite_CheckLiveEventTreeLookup` (`1404a1580`) and `Prerequisite_CheckLiveEventWorldFactionBranch` (`1404a15d0`) ù not `_purecall`. NF `PrerequisiteCheckLiveEventTreeLookup` / `PrerequisiteCheckLiveEventWorldFactionBranch` require NPC `parameters.Target`, valid `LiveEvent.tbl` row for `objectId0`, and compare faction-branch progress (proxy **0** until NPC `+0x3f8/+0x438` trees exist). `LiveEvent_GetWorldFactionField` (`1404a8430`) maps world **0xa6/0xa7** to Dominion/Exile fields at record **+0x68/+0x88** (same ids as `Faction` enum).
+- **Type 170 `GameFormula` triple path documented:** tbl `value0` = formula id (`PrerequisiteCheckGameFormula`); handler table `+0x110` scalar; live vtable `+0x90` `Prerequisite_CheckEntitySetCountAt7188` (`14049c880`) counts entities in player global `+0x7188` matching `objectId0` ù **not** `GameFormula_GetEntry`.
+- **Still blocked:** NPC live-event runtime progress; wire PathSettler vtable stubs to orphan bodies; diagnostic opcodes `Client0x0550`/`0x062A`/`0x0634`/`0x07E3`; `Client0x0701` sender semantics (batch harness @ `140079e05` only).
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 54 ù PathSettler 189/192/193, live-event stubs, accountItemList+0x110):
+
+- **Superseded rename decision for `Unknown189`/`Unknown192`/`Unknown193`:** pass 54 mapped useful orphan helper bodies (`1404a01e0`/`1404a0260`/`1404a02e0`) and row-shape correlations, but the later certainty audit keeps the enum ids unknown because live `PrerequisiteManager_EvaluateTypeSlot` cases `0xbd`/`0xc0`/`0xc1` still route to `140001ba0` stubs and handler table slots **189/192/193** are `_purecall` (`0x1407db510`).
+- **NF handler boundary:** the active prerequisite handlers for 189/192/193 were removed in the certainty correction; unhandled/false behavior matches the live stub boundary until dispatch proof exists. Live-event tree stubs remain diagnostic-only until runtime progress is mapped.
+- **Type 170 `accountItemList+0x110` (still blocked for rename/merge):** handler table[170] `Prerequisite_CheckAccountItemListScalarAt110` (`1404a16c0`) compares `[list+0x110]` to **`value0`** after NPC gate; `1400221ae` treats `+0x108`/`+0x110` as pointer/count for cache iteration; **not** written by `DailyLoginUpdate_HandleServer096E` (`140005540`, only `+0x180`ù`+0x18c`/`+0x1e0`). Keep enum **`GameFormula`** and NF `PrerequisiteCheckGameFormula` on tbl formula-id semantics only.
+- **Daily login API:** `IAccountInventoryManager.GetDailyLoginRewardsAvailable()` mirrors client `accountItemList+0x184` (handler table[172]; live case `0xac` remains inline `HealthScaled`).
+- **Still blocked:** wire live dispatch for types **189/192/193** to orphan bodies; `accountItemList+0x110` NF field; diagnostic opcodes `Client0x0550`/`0x062A`/`0x0634`/`0x07E3`.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 52 ù handler-table base fix, AccountItemListScalar180, GameFormula handler):
+
+- **Corrected `PrerequisiteTypeHandlerTable` base to `0x140b67870`:** prior passes used `0x140b66870` (off by `0x1000`); PE pointer scan for `1404a1620` lands at `table[168]`. Slots **244/246/248** in this table are `_purecall` (`0x1407db510`), not the live vtable handlers at `+0xc0`/`+0x130`/`+0x5c0`.
+- **Renamed `Unknown171` ? `AccountItemListScalar180`:** handler table[171] `Prerequisite_CheckAccountItemListScalarAt180` (`1404a1710`) reads `accountItemList+0x180` after NPC types `0x14`/`0x17` gate; live case `0xab` uses vtable `+0x510` @ `1404a03c0`.
+- **Clarified type 170 split:** enum `GameFormula` keeps tbl-backed name (`value0` = formula id); handler table[170] is `AccountItemListScalarAt110` (`+0x110`); live vtable `+0x90` @ `14049c880` is an entity-set walk on player global `+0x7188`, **not** `GameFormula_GetEntry`.
+- **NF handlers:** `PrerequisiteCheckGameFormula` compares `GameFormula.Dataint0` vs `objectId0`; `PrerequisiteCheckAccountItemListScalar180` stub until `+0x180` field is mapped.
+- **Still blocked:** map `accountItemList+0x110/+0x180/+0x184` to NF account state; types **166/167** rename; stub **189/192/193**; diagnostic opcodes `Client0x0550`/`0x062A`/`0x0634`/`0x07E3`.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 51 ù AccountItemCount 168/169, ClientAccountRealmData, NF handlers):
+
+- **Renamed `LiveEventCount`/`LiveEvent169` ? `AccountItemCount`/`AccountItemCountCompared`:** handler table[168]/[169] `Prerequisite_CheckAccountItemCount` / `Prerequisite_CheckAccountItemCountCompared` call `AccountItem_CountOwnedByItem2Id` (`1403d2140`) then (169 only) `ApplyComparison`. NF `AccountItemOwnedCount` mirrors player inventory + account-item rows capped by `Item2.MaxStackCount`. Live `EvaluateTypeSlot` cases `0xa8`/`0xa9` still route to UI vtable `+0x5a0`/`+0x5a8`, not these handler pointers.
+- **NF handlers:** `PrerequisiteCheckAccountItemCount`, `PrerequisiteCheckAccountItemCountCompared`, `PrerequisiteCheckProgressTrackOnMatchingEntity` (target must match player; progress scalar blocked until track storage exists).
+- **Renamed opcode `Client0x003D` ? `ClientAccountRealmData`:** writer `ClientAccountRealmData_WritePayload` (`1400aba70`) serialises one `RealmInfo.AccountRealmData` row; nested inside `ClientRealmListRealmRow`. Standalone send/consumer still blocked.
+- **Still blocked:** type **171** live `0xab`; **GameFormula** live vtable `+0x90` naming; diagnostic opcodes `Client0x0550`/`0x062A`/`0x0634`/`0x07E3`; stub types **189/192/193**; types **222/223/233** `_purecall` in handler table.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests" -v minimal --nologo`
+
+Prerequisite / opcode pass (2026-06-01, pass 50 ù ProgressTrackOnMatchingEntity, realm-list row opcodes, handler-table 168ù172):
+
+- **Renamed `Unknown178` ? `ProgressTrackOnMatchingEntity`:** handler table[178] `Prerequisite_CheckProgressTrackOnMatchingEntity` (`1404a1890`) requires target `*(entity+8)` == local player entity id, then `Progress_GetTrackedScalar` (`1403fa980`, mode **1**, `objectId0`) before `PrerequisiteManager_ApplyComparison`. Rejects misleading `PrerequisiteType.tbl` ùEquippedù hint; NF progress-track runtime not implemented yet.
+- **Labeled `Progress_GetTrackedScalar` (`1403fa980`):** walks `DAT_140c65898+0x8010` track-id table, world lookup, returns `min(cap, progress)`.
+- **Handler-table cluster 168ù172 (account-item list on `DAT_140c635f0+0x15d0`):** `AccountItem_CountOwnedByItem2Id` (`1403d2140`) sums Item2 ownership across player `+0x7f58` and `accountItemList+0x98` capped by Item2 `+0x4`. Table entries `1404a1620`/`1404a1670` (types **168**/**169**), `1404a16c0`/`1404a1710`/`1404a1750` read scalars at `+0x110`/`+0x180`/`+0x184`. **Live `PrerequisiteManager_EvaluateTypeSlot` paths differ:** case `0xa8`/`0xa9` ? vtable `+0x5a0`/`+0x5a8` (`1404c5df0`/`1404c5f90`, UI-heavy), case `0xaa` ? GameFormula `+0x90`, case `0xac` ? inline `HealthScaled`. Do **not** rename enum `LiveEventCount`/`LiveEvent169` from handler-table evidence alone.
+- **Renamed opcodes (structural, paired with `ServerRealmList`):** `Client0x0760` ? `ClientRealmListRealmRow`, `Client0x0762` ? `ClientRealmListMessageRow`; packet models/handlers/tests updated. Native send/consumer events still blocked.
+- **Still blocked:** types **171**/`Unknown171` live `0xab` owner; `Client0x0550`/`0x062A`/`0x0634`/`0x07E3` senders; player-bag partial field-apply opcode for `1403b8540`.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests" -v minimal --nologo`
+
+Prerequisite / GetDetailedInfo registration + tooltip tRunes (2026-05-31, pass 45 ù PE `.data` proof):
+
+- **Mapped (`140417de0` Lua name):** PE scan of `WildStar64.exe` shows a single pointer to `140417de0` at **`.data` `0x140c58c10`**, paired with the method name string **`GetDetailedInfo`** (`140af8cc0`). Neighbor rows in the same `Game.ItemData` extension table: **`GetSetBonuses` ? `14041b190`** (`0x140c58c00`), **`HasRestockingFee` ? `140419b30`** (`0x140c58c20`). Relabel **`Lua_GameItemData_GetDetailedInfo`** (was speculative `BuildRuneCompareTables`); it still calls `ItemData_BuildRuneCompareLuaRoot` (`14066dd50`) and emits **`tPrimary`/`tCompare`** for side-by-side item inspection, not `arRuneSlots`.
+- **Rejected:** registration on global **`Tooltip.GetItemTooltipForm`** (`Lua_RegisterTooltipLib` `1406f26c0`, table `PTR_s_GetItemTooltipForm_140b725a0`) ù that table points at **`1406dcea0`** for form builders, not `140417de0`.
 - **Mapped (tooltip rune export key):** `ItemData_AddRuneSlotsToTooltip` (`140673ab0`) calls the same **`ItemData_AddRuneSlotsLuaFields` (`140673b80`)** as `GetRuneSlots`, but inserts the Lua table as **`tRunes`** when context flag **`param_1+0xc` & 8** via `ItemData_PopulateTooltipContext` (`14066e6d0`). `ItemData_AddAllowedRuneTypesToTooltip` (`140674210`) adds **`arRuneTypes`** from eval **`+0x10c`** mask.
-- **Mapped (`ItemMicrochip` / type 139):** `Prerequisite_DispatchByType` case **`0x8b`** ‚Üí vtable **`+0x5f8`** ‚Üí `Prerequisite_CheckItemMicrochip` (`1404a0e10`). Handler **only** tests `(item-eval+0x114 & Prerequisite_MapMicrochipIdToBit(objectId0))`; **`objectId0=0` ‚Üí bit 0 ‚Üí always false** on client. Retail rows **10610/10685** remain an **NF approximation** (count / installed-rune fallback), not proven client behavior.
+- **Mapped (`ItemMicrochip` / type 139):** `Prerequisite_DispatchByType` case **`0x8b`** ? vtable **`+0x5f8`** ? `Prerequisite_CheckItemMicrochip` (`1404a0e10`). Handler **only** tests `(item-eval+0x114 & Prerequisite_MapMicrochipIdToBit(objectId0))`; **`objectId0=0` ? bit 0 ? always false** on client. Retail rows **10610/10685** remain an **NF approximation** (count / installed-rune fallback), not proven client behavior.
 - **Pass 46:** `1403b8540` caller = **`0x1403eef8a`** (PE `.text` scan; partial slot field-apply cluster @ `0x1403eed00`); see pass 46.
-- **Still blocked:** opcode for **`140092580`** ‚Üí partial apply; Lua `ItemAdded` subscribers; category **177** type **339** client semantics (SQL: item **78089** only).
+- **Still blocked:** opcode for **`140092580`** ? partial apply; Lua `ItemAdded` subscribers; category **177** type **339** client semantics (SQL: item **78089** only).
 - Verification: PE pointer scan `Decomp/Client64/WildStar64.exe`; fragments `140673ab0`, `140417de0`, `1404a2100`, `1404a0e10`.
 
-Prerequisite / ItemAdded hub, microchip wire apply, compare tooltip (2026-05-31, pass 44 ‚Äî xref closure):
+Prerequisite / ItemAdded hub, microchip wire apply, compare tooltip (2026-05-31, pass 44 ù xref closure):
 
-- **Mapped (`ItemAdded` dispatch):** `string_xrefs.csv` / `selected_xrefs.csv` show **one** native code reference to the `"ItemAdded"` string: `Inventory_DispatchItemAddedNamedEvent` (`1403b8060`) ‚Üí `ClientEvent_DispatchNamedEvent(..., "ItemAdded", &DAT_140b00d20)`. No other C++ callee in the export cache registers or handles that name statically; UI listeners are **Lua ClientEvent paths** (registered via `ClientEvent_RegisterFromTemplate` `1407b5730` and related), not additional labeled native subscribers.
-- **Mapped (parallel native refresh paths):** bag slot promotion still refreshes Lua through **`Inventory_ClientEventDispatch` (`140409330`) case 9** ‚Äî `Entity_GetIndexedSlotEntry` ‚Üí `ItemEval_CommitPendingRuneData` ‚Üí `ItemEval_CreateFromSharedItem` ‚Üí `FUN_14040b3a0(..., L"uItem", ...)`. Entity rune applies dispatch **`ItemModified`** from `InventoryItem_ApplyMicrochipsFromWire` / `ApplyGlyphsFromWire` / `ApplyRolledStatsFromWire` (`14056aa20`, `14056aba0`, `14056ac90`) with the **entity item** pointer, not `Game.ItemData`.
-- **Mapped (microchip wire consumer, not C2S install):** `Microchips[]` enters the client through **`SharedItem_ReadPayload` (`14008c0d0`) parse `+0x74`/`+0x78`**, then **`InventoryItem_ApplySharedItemPayload` (`140569c90`)** ‚Üí **`InventoryItem_ApplyMicrochipsFromWire` (`14056aa20`)** ‚Üí entity `+0x98`. This is the **server item-replication** path (same hub as `Glyphs[]` at `parse+0x80`). **`Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`)** is a **microchip-only existing-slot patch** around `14056aa20`; caller **`0x1403eef8a`** (pass 46 PE scan, absent from `selected_call_edges`) ‚Äî not a separate C2S install opcode.
-- **Reaffirmed (pass 27‚Äì28):** client world opcodes **`0x0859`‚Äì`0x085C`** are rune-slot add/clear/**glyph install** (`0x085B` `RuneCrafting_SendClientRuneInstall` `14059d250`)/reroll only; **`0x085B` pre-check** `RuneInstall_ValidateRuneMatchesSocket` (`14040f1b0`) tests gear eval **`+0x114`** mask vs install-array slot type (`14040f2b0`); **`GenericError 0x70`** is emitted on failed **`0x085B`** validation, not on a distinct microchip-install packet. NF name `CraftMicrochipInvalidSocket` is a localized label for that glyph socket mismatch.
+- **Mapped (`ItemAdded` dispatch):** `string_xrefs.csv` / `selected_xrefs.csv` show **one** native code reference to the `"ItemAdded"` string: `Inventory_DispatchItemAddedNamedEvent` (`1403b8060`) ? `ClientEvent_DispatchNamedEvent(..., "ItemAdded", &DAT_140b00d20)`. No other C++ callee in the export cache registers or handles that name statically; UI listeners are **Lua ClientEvent paths** (registered via `ClientEvent_RegisterFromTemplate` `1407b5730` and related), not additional labeled native subscribers.
+- **Mapped (parallel native refresh paths):** bag slot promotion still refreshes Lua through **`Inventory_ClientEventDispatch` (`140409330`) case 9** ù `Entity_GetIndexedSlotEntry` ? `ItemEval_CommitPendingRuneData` ? `ItemEval_CreateFromSharedItem` ? `FUN_14040b3a0(..., L"uItem", ...)`. Entity rune applies dispatch **`ItemModified`** from `InventoryItem_ApplyMicrochipsFromWire` / `ApplyGlyphsFromWire` / `ApplyRolledStatsFromWire` (`14056aa20`, `14056aba0`, `14056ac90`) with the **entity item** pointer, not `Game.ItemData`.
+- **Mapped (microchip wire consumer, not C2S install):** `Microchips[]` enters the client through **`SharedItem_ReadPayload` (`14008c0d0`) parse `+0x74`/`+0x78`**, then **`InventoryItem_ApplySharedItemPayload` (`140569c90`)** ? **`InventoryItem_ApplyMicrochipsFromWire` (`14056aa20`)** ? entity `+0x98`. This is the **server item-replication** path (same hub as `Glyphs[]` at `parse+0x80`). **`Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`)** is a **microchip-only existing-slot patch** around `14056aa20`; caller **`0x1403eef8a`** (pass 46 PE scan, absent from `selected_call_edges`) ù not a separate C2S install opcode.
+- **Reaffirmed (pass 27ù28):** client world opcodes **`0x0859`ù`0x085C`** are rune-slot add/clear/**glyph install** (`0x085B` `RuneCrafting_SendClientRuneInstall` `14059d250`)/reroll only; **`0x085B` pre-check** `RuneInstall_ValidateRuneMatchesSocket` (`14040f1b0`) tests gear eval **`+0x114`** mask vs install-array slot type (`14040f2b0`); **`GenericError 0x70`** is emitted on failed **`0x085B`** validation, not on a distinct microchip-install packet. NF name `CraftMicrochipInvalidSocket` is a localized label for that glyph socket mismatch.
 - **Pass 45:** `140417de0` is **`Game.ItemData.GetDetailedInfo`** (PE `.data` registration), not `Tooltip.GetItemTooltipForm`; still emits **`tPrimary`/`tCompare`** via `14066dd50`/`14066de30`. Bag sort uses Lua **`BagWindowItemCompare`** (`1406d1c40`) separately.
-- **Client vs NF note:** native `Prerequisite_CheckItemMicrochip` (`1404a0e10`) always AND-tests **`item-eval+0x114`** with `Prerequisite_MapMicrochipIdToBit` (`14049bdc0`); **`objectId0=0` yields mask 0** (always false). Retail rows **10610/10685** (`objectId0=0`, `value0=1/2`) are approximated in NF by **microchip count / installed-rune count** ‚Äî not yet proven on the client handler body.
+- **Client vs NF note:** native `Prerequisite_CheckItemMicrochip` (`1404a0e10`) always AND-tests **`item-eval+0x114`** with `Prerequisite_MapMicrochipIdToBit` (`14049bdc0`); **`objectId0=0` yields mask 0** (always false). Retail rows **10610/10685** (`objectId0=0`, `value0=1/2`) are approximated in NF by **microchip count / installed-rune count** ù not yet proven on the client handler body.
 - **Pass 45:** `140417de0` = **`GetDetailedInfo`** on extended `Game.ItemData` table (`0x140c58c10`); tooltip runes use **`tRunes`** via `140673ab0`.
 - **Pass 46:** `1403b8540` caller mapped @ **`0x1403eef8a`**; partial field-apply cluster documented.
 - **Still blocked:** Lua **`ItemAdded` subscriber** script bodies; opcode/apply for **`140092580`**; category **177** type **339** (item **78089** in SQL only).
 - Verification: `string_xrefs.csv`, `selected_xrefs.csv`, fragments `1403b8060`, `140409330`, `140569c90`, `14059d250`, `14040f1b0`; NF wire unchanged.
 
-Prerequisite / GetRuneSlots Lua-self bridge + context overlay (2026-05-31, pass 43 ‚Äî `ItemData_SyncEmbeddedRuntime`, `ItemEval_SyncFromItemDataUserdata`):
+Prerequisite / GetRuneSlots Lua-self bridge + context overlay (2026-05-31, pass 43 ù `ItemData_SyncEmbeddedRuntime`, `ItemEval_SyncFromItemDataUserdata`):
 
-- **Mapped (live `self` path):** `ItemData_BuildRuneSlotsLuaTable` (`14066e000`) calls `ItemData_PrepareRuneSlotContext` (`14066e1e0`, mode `param_2` ‚Üí context `+0x98`) then `ItemData_SyncEmbeddedRuntime` (`14066e410`). When context `param_1[1]!=0`, sync resets embedded shared-runtime (`ItemEval_SyncFromSharedItem` `140410300` on `context+0x14`) and calls **`ItemEval_SyncFromItemDataUserdata` (`140410680`)** with **Lua state `*context[0]`** (from `ItemData_InitGetRuneSlotsContext` `14066dc40`) and stack index `2` or `1` depending on `context+0x98`. `410680` resolves **`Game.ItemData` userdata** via `Lua_TryUnpackGameItemDataUserdata` (`140417660`) and copies the native blob with `ItemEval_SyncFromSharedItem` (`140410300`) ‚Äî this is how **`GetRuneSlots` on a live bag/equipped item** reads installed glyphs and compact sockets without a separate `Game.ItemData` memcpy from entity `+0xbc`.
+- **Mapped (live `self` path):** `ItemData_BuildRuneSlotsLuaTable` (`14066e000`) calls `ItemData_PrepareRuneSlotContext` (`14066e1e0`, mode `param_2` ? context `+0x98`) then `ItemData_SyncEmbeddedRuntime` (`14066e410`). When context `param_1[1]!=0`, sync resets embedded shared-runtime (`ItemEval_SyncFromSharedItem` `140410300` on `context+0x14`) and calls **`ItemEval_SyncFromItemDataUserdata` (`140410680`)** with **Lua state `*context[0]`** (from `ItemData_InitGetRuneSlotsContext` `14066dc40`) and stack index `2` or `1` depending on `context+0x98`. `410680` resolves **`Game.ItemData` userdata** via `Lua_TryUnpackGameItemDataUserdata` (`140417660`) and copies the native blob with `ItemEval_SyncFromSharedItem` (`140410300`) ù this is how **`GetRuneSlots` on a live bag/equipped item** reads installed glyphs and compact sockets without a separate `Game.ItemData` memcpy from entity `+0xbc`.
 - **Mapped (context overlay, not separate parent fields):** scratch context embeds the 0x4c0 shared-runtime at **`context+0xa0` (`param_1+0x14`)**. Indices used by `ItemData_AddRuneSlotsLuaFields` (`140673b80`) are **parent-relative aliases** into that blob:
   - `param_1[0xa9]` (`+0x548`) = embedded **`[0x95]`** glyph-count / installed-id gate (set by `410300` from userdata `[0x95]`).
   - `param_1+0x518` = embedded **`[0x8f..0x92]`** installed rune Item2 ids (byte `+0x478`).
-  - `param_1+0x71` byte index ‚Üí embedded socket-type bytes at **`+0x2e8`** (parent `+0x388`).
+  - `param_1+0x71` byte index ? embedded socket-type bytes at **`+0x2e8`** (parent `+0x388`).
   - **`+0x544`** = embedded **`+0x4a4`** rune-tail / `isRuneData` marker region (same field `Lua_GameItemData_IsRuneData` `140417570` tests on userdata; populated by `ItemEval_CopyRuneTailDwords` `140412900` during `410300`).
 - **Mapped (static fallback unchanged):** when live gates fail, `673b80` still uses `param_1[0x15]` Item2 + `ClientDB_GetItemRuneInstance` for template `arRuneSlots` rows.
-- **Pass 45:** `FUN_140417de0` is **`Game.ItemData.GetDetailedInfo`** (`.data` pair at `0x140c58c10`); calls `14066dd50` ‚Üí `14066de30` for **`tPrimary`/`tCompare`**. Standard `GetRuneSlots` remains `14041b8d0` only (`140413a20` table).
-- **Rejected (`+0x544` writers on unrelated objects):** `FUN_1400c44b0` copies scroll/layout ints at `+0x544`; `FUN_14031ee60` toggles `+0x544` on world/zone render state ‚Äî **not** item rune context.
+- **Pass 45:** `FUN_140417de0` is **`Game.ItemData.GetDetailedInfo`** (`.data` pair at `0x140c58c10`); calls `14066dd50` ? `14066de30` for **`tPrimary`/`tCompare`**. Standard `GetRuneSlots` remains `14041b8d0` only (`140413a20` table).
+- **Rejected (`+0x544` writers on unrelated objects):** `FUN_1400c44b0` copies scroll/layout ints at `+0x544`; `FUN_14031ee60` toggles `+0x544` on world/zone render state ù **not** item rune context.
 - **Pass 44:** `ItemAdded` has a single native dispatcher (`1403b8060`); `Microchips[]` is applied on **server item replication** (`569c90`/`56aa20`), not a separate client install opcode (see pass 44).
 - **Pass 46:** `1403b8540` caller @ **`0x1403eef8a`**; see partial apply cluster.
-- **Still blocked:** Lua **`ItemAdded` subscriber** bodies; opcode for **`140092580`** partial path; category **177** type **339**; durable NF DB bridge for live rune fields (client path is userdata sync, not entity‚Üí`Game.ItemData` direct write).
+- **Still blocked:** Lua **`ItemAdded` subscriber** bodies; opcode for **`140092580`** partial path; category **177** type **339**; durable NF DB bridge for live rune fields (client path is userdata sync, not entity?`Game.ItemData` direct write).
 - Verification: fragments `14066e000`, `14066e410`, `140410680`, `140417660`, `140410300`, `140673b80`; NF wire unchanged.
 
-Prerequisite / entity `+0xbc` ‚Üí shared-runtime `[0x8f]` commit (2026-05-31, pass 42 ‚Äî `ItemEval_CommitPendingRuneData`):
+Prerequisite / entity `+0xbc` ? shared-runtime `[0x8f]` commit (2026-05-31, pass 42 ù `ItemEval_CommitPendingRuneData`):
 
 - **Mapped (glyph bridge):** `ItemEval_CommitPendingRuneData` (`140412ad0`) dispatches pending-rune commits; default path `ItemEval_CommitRuneDataFromLinkedEntity` (`140413520`) reads installed glyph Item2 ids from **`(*sharedRuntime)[0] + 0xbc`** (entity inventory item base + glyph array) when `sharedRuntime[0x2a]` (glyph count) is non-zero, and writes up to eight dwords into **`sharedRuntime[0x8f..0x92]`** (byte `+0x478`, same field `GetRuneSlots` reads at context `+0x518`).
-- **Mapped (socket bridge):** same function copies compact socket-type dwords from **`entity+0x60`** into shared-runtime `+0x5d` / `+0x2ec` fields (`param_1[0x5d]` region) when `entity+0x60` is allocated ‚Äî aligns with `InventoryItem_RefreshItemState` packing at entity `+0x60`.
-- **Mapped (pending glyph block):** `ItemEval_CopyPendingGlyphBlock` (`140412690`) promotes staging buffer **`sharedRuntime+0xb4` ‚Üí `+0x158`** (400-byte glyph/eval block) during commit; wire/compact paths also fill `[0x8f]` directly (`SharedItemRuntime_ApplyParseBuffer` `140411b60`, `SharedItemRuntime_ApplyCompactPayload` `1404112e0`).
-- **Mapped (end-to-end slot update):** `Inventory_ApplySlotUpdateAndDispatchItemAdded` (`1403b8380`) ‚Üí `Inventory_AddOrUpdateFromSharedPayload` (`140569c90` on entity) ‚Üí slot shared-runtime attach ‚Üí **`ItemEval_CommitPendingRuneData`** ‚Üí `Inventory_DispatchItemAddedNamedEvent` (`1403b8060`, **`ItemAdded`** only; then `ItemEval_CreateFromSharedItem` `14040fc60` for loot/craft channel cases).
-- **Mapped (inventory Lua hub):** `Inventory_ClientEventDispatch` (`140409330`) case **9** repeats slot-runtime commit + `ItemEval_CreateFromSharedItem` ‚Üí Lua `uItem` refresh (parallel to `ItemAdded`, not gated on `ItemModified`).
+- **Mapped (socket bridge):** same function copies compact socket-type dwords from **`entity+0x60`** into shared-runtime `+0x5d` / `+0x2ec` fields (`param_1[0x5d]` region) when `entity+0x60` is allocated ù aligns with `InventoryItem_RefreshItemState` packing at entity `+0x60`.
+- **Mapped (pending glyph block):** `ItemEval_CopyPendingGlyphBlock` (`140412690`) promotes staging buffer **`sharedRuntime+0xb4` ? `+0x158`** (400-byte glyph/eval block) during commit; wire/compact paths also fill `[0x8f]` directly (`SharedItemRuntime_ApplyParseBuffer` `140411b60`, `SharedItemRuntime_ApplyCompactPayload` `1404112e0`).
+- **Mapped (end-to-end slot update):** `Inventory_ApplySlotUpdateAndDispatchItemAdded` (`1403b8380`) ? `Inventory_AddOrUpdateFromSharedPayload` (`140569c90` on entity) ? slot shared-runtime attach ? **`ItemEval_CommitPendingRuneData`** ? `Inventory_DispatchItemAddedNamedEvent` (`1403b8060`, **`ItemAdded`** only; then `ItemEval_CreateFromSharedItem` `14040fc60` for loot/craft channel cases).
+- **Mapped (inventory Lua hub):** `Inventory_ClientEventDispatch` (`140409330`) case **9** repeats slot-runtime commit + `ItemEval_CreateFromSharedItem` ? Lua `uItem` refresh (parallel to `ItemAdded`, not gated on `ItemModified`).
 - **Pass 43:** `param_1[0xa9]` / `+0x544` on GetRuneSlots context are **embedded-runtime overlays** filled by `ItemEval_SyncFromItemDataUserdata` (`140410680`) from Lua `self` userdata, not separate scratch-only writers (see pass 43 section).
 - **Still blocked:** **`ItemAdded` subscriber** bodies outside fragment cache; augment `Microchips[]` install mutator.
 - Verification: fragments `140412ad0`, `140413520`, `1403b8380`, `1403b8060`, `140409330`; NF wire unchanged.
 
-Prerequisite / entity item ‚Üí item-eval ‚Üí GetRuneSlots (2026-05-31, pass 41 ‚Äî `RefreshItemState`, slot commit, offset map):
+Prerequisite / entity item ? item-eval ? GetRuneSlots (2026-05-31, pass 41 ù `RefreshItemState`, slot commit, offset map):
 
 - **Mapped:** `InventoryItem_RefreshItemState` (`14056a430`) passes **entity** rune state into `ItemEval_ApplyItemSpecialToEval` (`14040c310`): glyph count/array `entity+0xb8` / `+0xbc`, microchip block `entity+0x98`, compact socket bytes `entity+0x60` (`local_138`). This is the post-`569c90` commit path, not a `Game.ItemData` writer.
-- **Mapped:** `Inventory_ApplySlotUpdateAndDispatchItemAdded` (`1403b8380`) on non-ability slot updates calls `Inventory_RefreshSlotItemFromUpdate` (`1403b7d40`), `Inventory_AddOrUpdateFromSharedPayload` (`1403b77d0`), then loads the slot **shared-item runtime** via `Entity_GetIndexedSlotEntry`, `ItemEval_CommitPendingRuneData` (`140412ad0`), and `Inventory_DispatchItemAddedNamedEvent` (`1403b8060`) ‚Äî links bag slot runtime to the same eval/rune commit hub as pass 38.
-- **Rejected:** `ItemModified` ‚Üí `itemData+0x388` / `+0x518` ‚Äî dispatch sites (`14056aa20`, `14056aba0`, `1403b85a0`) pass the **entity inventory item** pointer; no fragment-cache callee copies into `Game.ItemData`. `FUN_1407b5730` only builds/register ClientEvent path strings (ends with `ItemModified` template), not a rune refresh handler.
-- **Mapped (GetRuneSlots layout):** `ItemData_InitGetRuneSlotsContext` (`14066dc40`) builds the `GetRuneSlots` scratch context; embedded shared-runtime at context `+0xa0` (`param_1+0x14`). Live reads in `ItemData_AddRuneSlotsLuaFields` (`140673b80`): socket-type bytes at context `+0x388` (`param_1+0x71` byte index), installed Item2 ids at context `+0x518` when `param_1[0xa9]!=0` ‚Äî same embedded runtime field as index `[0x8f]` (byte `+0x478` within the 0x4c0 blob), distinct from entity `+0xbc`.
-- **Relabel:** `FUN_14066e4c0` is **item-set bonus map prep** for `GetRuneSlots` (walks `param_1+0x1f8` when `+0x53c`), not wire‚Üíruntime promotion.
+- **Mapped:** `Inventory_ApplySlotUpdateAndDispatchItemAdded` (`1403b8380`) on non-ability slot updates calls `Inventory_RefreshSlotItemFromUpdate` (`1403b7d40`), `Inventory_AddOrUpdateFromSharedPayload` (`1403b77d0`), then loads the slot **shared-item runtime** via `Entity_GetIndexedSlotEntry`, `ItemEval_CommitPendingRuneData` (`140412ad0`), and `Inventory_DispatchItemAddedNamedEvent` (`1403b8060`) ù links bag slot runtime to the same eval/rune commit hub as pass 38.
+- **Rejected:** `ItemModified` ? `itemData+0x388` / `+0x518` ù dispatch sites (`14056aa20`, `14056aba0`, `1403b85a0`) pass the **entity inventory item** pointer; no fragment-cache callee copies into `Game.ItemData`. `FUN_1407b5730` only builds/register ClientEvent path strings (ends with `ItemModified` template), not a rune refresh handler.
+- **Mapped (GetRuneSlots layout):** `ItemData_InitGetRuneSlotsContext` (`14066dc40`) builds the `GetRuneSlots` scratch context; embedded shared-runtime at context `+0xa0` (`param_1+0x14`). Live reads in `ItemData_AddRuneSlotsLuaFields` (`140673b80`): socket-type bytes at context `+0x388` (`param_1+0x71` byte index), installed Item2 ids at context `+0x518` when `param_1[0xa9]!=0` ù same embedded runtime field as index `[0x8f]` (byte `+0x478` within the 0x4c0 blob), distinct from entity `+0xbc`.
+- **Relabel:** `FUN_14066e4c0` is **item-set bonus map prep** for `GetRuneSlots` (walks `param_1+0x1f8` when `+0x53c`), not wire?runtime promotion.
 - **Correlated:** `Inventory_RefreshSlotItemFromUpdate` (`1403b7d40`) / `Inventory_RemoveAbilitySlotItem` (`1403b7e80`) are slot refresh/remove helpers called from `1403b8380` (ability-remove vs normal-update branches); neither calls `InventoryItem_ApplyGlyphsFromWire`.
-- **Pass 43:** `+0x544` / `[0xa9]` gates are embedded `+0x4a4` / `[0x95]` populated via `410680`‚Üí`410300` from `Game.ItemData` userdata (overlay indices on scratch context).
+- **Pass 43:** `+0x544` / `[0xa9]` gates are embedded `+0x4a4` / `[0x95]` populated via `410680`?`410300` from `Game.ItemData` userdata (overlay indices on scratch context).
 - **Still blocked:** `ItemAdded` subscriber bodies; augment `Microchips[]` install mutator.
 - Verification: fragments `14056a430`, `1403b8380`, `140673b80`, `14066dc40`; NF wire unchanged.
 
-Prerequisite / rune wire ‚Üí entity inventory item (2026-05-31, pass 40 ‚Äî `InventoryItem_ApplySharedItemPayload`):
+Prerequisite / rune wire ? entity inventory item (2026-05-31, pass 40 ù `InventoryItem_ApplySharedItemPayload`):
 
-- **Mapped:** `InventoryItem_ApplySharedItemPayload` (`140569c90`) is the **live inventory** parse-buffer ‚Üí **entity item** bridge (0x140-byte object from `InventoryItem_Construct` `140569a60`). After `InventoryItem_ApplyCoreFromParseBuffer` (`140569d30`), it gates on the same `SharedItem_ReadPayload` fields as pass 38‚Äì39:
-  - `parse+0x74` / `+0x78` ‚Üí `InventoryItem_ApplyMicrochipsFromWire` (`14056aa20`) copies uint32 wire ids into entity `+0x98..` (count `+0x94`, header `+0x90`), pads unused slots with `0x3f800000`, sets dirty `+0x124`.
-  - `parse+0x80` / `+0x88` ‚Üí `InventoryItem_ApplyGlyphsFromWire` (`14056aba0`) `memcpy` installed rune Item2 ids to entity `+0xbc` (count `+0xb8`, tail `+0xdc`).
-  - `parse+0x90` / `+0x98` ‚Üí `InventoryItem_ApplyRolledStatsFromWire` (`14056ac90`) copies 16-byte rolled-stat rows to entity `+0x128`.
-- **Mapped:** each apply path calls `InventoryItem_RefreshItemState` (`14056a430`) before `ItemModified`; refresh packs compact socket-type bytes into the 16-byte blob at entity `+0x60` from `entity+0xdc` (3-bit fields) and related tail fields ‚Äî **separate object/layout** from `Game.ItemData+0x388`.
-- **Mapped (callers):** `Inventory_AddOrUpdateFromSharedPayload` (`1403b77d0`) allocates entity item + `140569c90` on normal bag add (incl. post‚Äì`ServerItemAdd` inventory paths); guild bag helpers `14057cdc0` / `14057d190` reuse the same apply; `Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`) calls `14056aa20` on an existing slot entity.
+- **Mapped:** `InventoryItem_ApplySharedItemPayload` (`140569c90`) is the **live inventory** parse-buffer ? **entity item** bridge (0x140-byte object from `InventoryItem_Construct` `140569a60`). After `InventoryItem_ApplyCoreFromParseBuffer` (`140569d30`), it gates on the same `SharedItem_ReadPayload` fields as pass 38ù39:
+  - `parse+0x74` / `+0x78` ? `InventoryItem_ApplyMicrochipsFromWire` (`14056aa20`) copies uint32 wire ids into entity `+0x98..` (count `+0x94`, header `+0x90`), pads unused slots with `0x3f800000`, sets dirty `+0x124`.
+  - `parse+0x80` / `+0x88` ? `InventoryItem_ApplyGlyphsFromWire` (`14056aba0`) `memcpy` installed rune Item2 ids to entity `+0xbc` (count `+0xb8`, tail `+0xdc`).
+  - `parse+0x90` / `+0x98` ? `InventoryItem_ApplyRolledStatsFromWire` (`14056ac90`) copies 16-byte rolled-stat rows to entity `+0x128`.
+- **Mapped:** each apply path calls `InventoryItem_RefreshItemState` (`14056a430`) before `ItemModified`; refresh packs compact socket-type bytes into the 16-byte blob at entity `+0x60` from `entity+0xdc` (3-bit fields) and related tail fields ù **separate object/layout** from `Game.ItemData+0x388`.
+- **Mapped (callers):** `Inventory_AddOrUpdateFromSharedPayload` (`1403b77d0`) allocates entity item + `140569c90` on normal bag add (incl. postù`ServerItemAdd` inventory paths); guild bag helpers `14057cdc0` / `14057d190` reuse the same apply; `Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`) calls `14056aa20` on an existing slot entity.
 - **Correction vs pass 39:** `SharedItemRuntime_ApplyParseBuffer` (`140411b60`) is **Inspect-only** (`Inspect_ApplySharedItemPayloadList` `1403deff0`). Server **0x0111** inventory promotion uses **`140569c90` on entity items** (glyphs at `+0xbc`, not shared-runtime `+0x8f`).
-- **Pass 43:** `ItemData_SyncEmbeddedRuntime` (`14066e410`) calls `ItemEval_SyncFromItemDataUserdata` (`140410680`) with Lua `self` to copy userdata native rune fields into embedded runtime; entity `+0xbc` still reaches installed ids only after eval commit (`140413520`, pass 42), not a direct entity‚Üí`Game.ItemData` writer.
-- **Still blocked (see pass 41):** no `ItemModified` ‚Üí `Game.ItemData` bridge; entity `+0xbc` ‚Üí item-eval path is via `14056a430` instead.
+- **Pass 43:** `ItemData_SyncEmbeddedRuntime` (`14066e410`) calls `ItemEval_SyncFromItemDataUserdata` (`140410680`) with Lua `self` to copy userdata native rune fields into embedded runtime; entity `+0xbc` still reaches installed ids only after eval commit (`140413520`, pass 42), not a direct entity?`Game.ItemData` writer.
+- **Still blocked (see pass 41):** no `ItemModified` ? `Game.ItemData` bridge; entity `+0xbc` ? item-eval path is via `14056a430` instead.
 - Verification: decomp fragments `140569c90`, `14056aa20`, `14056aba0`, `14056a430`, `1403b77d0`; NF wire unchanged (`ItemRuneNetworkWire`).
 
-Prerequisite / rune wire ‚Üí shared-runtime promotion (2026-05-31, pass 39 ‚Äî `SharedItemRuntime_ApplyParseBuffer`):
+Prerequisite / rune wire ? shared-runtime promotion (2026-05-31, pass 39 ù `SharedItemRuntime_ApplyParseBuffer`):
 
-- **Mapped:** `SharedItemRuntime_ApplyParseBuffer` (`140411b60`) is the parse-buffer ‚Üí shared-item-runtime bridge (0xa8-byte rows from `SharedItem_ReadPayload`). Gate checks `parse+0x74` microchip count / `parse+0x80` glyph count.
-- **Mapped (glyphs):** `memcpy(runtime+0x8f, parse+0x88, count*4)` when `parse+0x80` ‚â§ 8 ‚Äî installed rune Item2 ids at shared-runtime `+0x8f..+0x92` (matches NF `Glyphs[]`).
+- **Mapped:** `SharedItemRuntime_ApplyParseBuffer` (`140411b60`) is the parse-buffer ? shared-item-runtime bridge (0xa8-byte rows from `SharedItem_ReadPayload`). Gate checks `parse+0x74` microchip count / `parse+0x80` glyph count.
+- **Mapped (glyphs):** `memcpy(runtime+0x8f, parse+0x88, count*4)` when `parse+0x80` ? 8 ù installed rune Item2 ids at shared-runtime `+0x8f..+0x92` (matches NF `Glyphs[]`).
 - **Mapped (microchips):** `parse+0x74` count and `parse+0x78` pointer are fed into the `ItemEval_ApplyItemSpecialToEval` (`14040c310`) apply context; resulting `local_1c8` block is copied into runtime `+0x20` (`0x138` bytes, count field `runtime+0x93`). Wire microchips are **not** stored as a parallel uint32 array on the runtime object.
-- **Mapped (caller):** `Inspect_ApplySharedItemPayloadList` (`1403deff0`) walks counted parse-buffer rows (`param_2+2` stride `0xa8`), calls `SharedItemRuntime_ApplyParseBuffer`, then `ItemEval_CreateFromSharedItem` + `Lua_CreateGameItemDataFromItemEval` (`140415bb0`) for Inspect UI ‚Äî **not** the main bag `ServerItemAdd` path (see pass 40 `140569c90`).
+- **Mapped (caller):** `Inspect_ApplySharedItemPayloadList` (`1403deff0`) walks counted parse-buffer rows (`param_2+2` stride `0xa8`), calls `SharedItemRuntime_ApplyParseBuffer`, then `ItemEval_CreateFromSharedItem` + `Lua_CreateGameItemDataFromItemEval` (`140415bb0`) for Inspect UI ù **not** the main bag `ServerItemAdd` path (see pass 40 `140569c90`).
 - **Correlated:** `SharedItemRuntime_ApplyCompactPayload` (`1404112e0`) is the compact-layout sibling (glyph array at `param_2+0x50` / `+0x58`); used from `Inventory_ClientEventDispatch` (`140409330`) case **8** only.
-- **Correlated:** entity slot updates (`Inventory_ApplySlotUpdateAndDispatchItemAdded` `1403b8380`) refresh slot shared-runtime + `ItemEval_CommitPendingRuneData` + `Inventory_DispatchItemAddedNamedEvent` ‚Äî still no `itemData+0x388` writer.
-- **Still blocked:** shared-runtime / item-eval ‚Üí live `itemData+0x388` socket-byte array and `itemData+0x518` installed-rune ids (read path only in `ItemData_AddRuneSlotsLuaFields`); augment microchip mutator.
+- **Correlated:** entity slot updates (`Inventory_ApplySlotUpdateAndDispatchItemAdded` `1403b8380`) refresh slot shared-runtime + `ItemEval_CommitPendingRuneData` + `Inventory_DispatchItemAddedNamedEvent` ù still no `itemData+0x388` writer.
+- **Still blocked:** shared-runtime / item-eval ? live `itemData+0x388` socket-byte array and `itemData+0x518` installed-rune ids (read path only in `ItemData_AddRuneSlotsLuaFields`); augment microchip mutator.
 
-Prerequisite / rune wire ‚Üí item-eval bridge (2026-05-31, pass 38 ‚Äî SharedItem parse buffer, eval copy, ItemAdded hub):
+Prerequisite / rune wire ? item-eval bridge (2026-05-31, pass 38 ù SharedItem parse buffer, eval copy, ItemAdded hub):
 
 - **Mapped:** `SharedItem_ReadPayload` (`14008c0d0`) writes parse-buffer `+0x74` (3-bit microchip count), heap array at `+0x78`, `+0x80` (4-bit glyph count), array at `+0x88` (see fragment; matches NF `Item.Microchips` / `Item.Glyphs`).
-- **Mapped:** shared-item runtime and item-eval share the same rune blocks ‚Äî `SharedItemRuntime_Reset` (`14040fae0`) and `ItemEval_CreateFromSharedItem` (`14040fc60`) init `+0x20` (0x138-byte microchip block, count `+0x498`) and `+0x158` (up to 400-byte glyph block, count `+0x49c`).
-- **Mapped:** `ItemEval_SyncFromSharedItem` (`140410300`) copies runtime ‚Üí eval via `ItemEval_CopyMicrochipBlock` (`140412570`, shared `+0x20`), `ItemEval_CopyGlyphBlock` (`140412800`, shared `+0x158`), `ItemEval_CopyRuneTailDwords` (`140412900`, shared `+0x5d`); calls `ItemEval_CommitPendingRuneData` (`140412ad0`) when `param_3 != 0`.
-- **Correlated:** `Inventory_ClientEventDispatch` (`140409330`) case **9** resolves inventory entity, runs `ItemEval_CommitPendingRuneData`, then `ItemEval_CreateFromSharedItem` ‚Üí Lua `uItem`; `Inventory_DispatchItemAddedNamedEvent` (`1403b8060`) dispatches `ItemAdded` and also builds item-eval for listeners.
-- **Correlated:** `SharedItemParseBuffer_CopyHeader` (`1408c9010`) / `SharedItemParseBuffer_AllocateCopy` (`1408c91c0`) copy only the parse-buffer header through `+0xc4` into a 200-byte vtable object ‚Äî **not** the `+0x74`/`+0x80` heap arrays; full parse-buffer ‚Üí runtime promotion caller still unlabeled.
+- **Mapped:** shared-item runtime and item-eval share the same rune blocks ù `SharedItemRuntime_Reset` (`14040fae0`) and `ItemEval_CreateFromSharedItem` (`14040fc60`) init `+0x20` (0x138-byte microchip block, count `+0x498`) and `+0x158` (up to 400-byte glyph block, count `+0x49c`).
+- **Mapped:** `ItemEval_SyncFromSharedItem` (`140410300`) copies runtime ? eval via `ItemEval_CopyMicrochipBlock` (`140412570`, shared `+0x20`), `ItemEval_CopyGlyphBlock` (`140412800`, shared `+0x158`), `ItemEval_CopyRuneTailDwords` (`140412900`, shared `+0x5d`); calls `ItemEval_CommitPendingRuneData` (`140412ad0`) when `param_3 != 0`.
+- **Correlated:** `Inventory_ClientEventDispatch` (`140409330`) case **9** resolves inventory entity, runs `ItemEval_CommitPendingRuneData`, then `ItemEval_CreateFromSharedItem` ? Lua `uItem`; `Inventory_DispatchItemAddedNamedEvent` (`1403b8060`) dispatches `ItemAdded` and also builds item-eval for listeners.
+- **Correlated:** `SharedItemParseBuffer_CopyHeader` (`1408c9010`) / `SharedItemParseBuffer_AllocateCopy` (`1408c91c0`) copy only the parse-buffer header through `+0xc4` into a 200-byte vtable object ù **not** the `+0x74`/`+0x80` heap arrays; full parse-buffer ? runtime promotion caller still unlabeled.
 - **Mapped (read path):** `ItemData_AddRuneSlotsLuaFields` (`140673b80`) reads socket-type bytes at `itemData+0x388` via `(param_1+0x71)` byte index and installed Item2 at `itemData+0x518+index*4` when `param_1[0xa9] != 0`.
-- **Still blocked:** item-eval or shared-runtime ‚Üí `itemData+0x388` / `+0x518` writer (install path remains `0x085B` for glyphs); augment `Microchips[]` mutator; category **177** type **339**.
+- **Still blocked:** item-eval or shared-runtime ? `itemData+0x388` / `+0x518` writer (install path remains `0x085B` for glyphs); augment `Microchips[]` mutator; category **177** type **339**.
 - Verification: decomp fragments `14008c0d0`, `140410300`, `140673b80`; NF wire unchanged (`ItemRuneNetworkWire`).
 
-Prerequisite / rune wire + Lua contract (2026-05-31, pass 37 ‚Äî Glyphs index alignment, compact socket id label):
+Prerequisite / rune wire + Lua contract (2026-05-31, pass 37 ù Glyphs index alignment, compact socket id label):
 
-- **Mapped:** `ItemData_AddRuneSlotsLuaFields` (`140673b80`) walks slot index `i`, reads compact socket byte at `itemData+0x388+i`, installed rune Item2 at `itemData+0x518+i*4` ‚Äî parallel per-slot arrays.
-- **Mapped:** `ItemRuneType_ToCompactSocketId` (`14040f320`) maps native `RuneType` **7‚Äì13** ‚Üí compact **1‚Äì7** for `RuneCrafting_SendClientRuneSlotAdd` (`14051ed80`) `IsNotFusion` bit on opcode **0x0859**.
+- **Mapped:** `ItemData_AddRuneSlotsLuaFields` (`140673b80`) walks slot index `i`, reads compact socket byte at `itemData+0x388+i`, installed rune Item2 at `itemData+0x518+i*4` ù parallel per-slot arrays.
+- **Mapped:** `ItemRuneType_ToCompactSocketId` (`14040f320`) maps native `RuneType` **7ù13** ? compact **1ù7** for `RuneCrafting_SendClientRuneSlotAdd` (`14051ed80`) `IsNotFusion` bit on opcode **0x0859**.
 - **NF:** `ItemRuneNetworkWire.Populate` emits `Glyphs[]` with one entry per `IItem.RuneSlots` index (includes **0** for empty slots); `Microchips[]` still from persisted `IItem.MicrochipIds` only.
-- **Rejected:** `GetMicrochipInfo` / `GetGlyphInfo` ‚Äî not registered on `Game.ItemData` string table (`140af8c40`..`140af8cf8` lists `GetRuneSlots` only); AddOn Studio names are not durable client labels.
+- **Rejected:** `GetMicrochipInfo` / `GetGlyphInfo` ù not registered on `Game.ItemData` string table (`140af8c40`..`140af8cf8` lists `GetRuneSlots` only); AddOn Studio names are not durable client labels.
 - **Still blocked:** client producer that unpacks wire `Microchips[]`/`Glyphs[]` into `itemData+0x388`/`+0x518`; augment microchip install mutator; category **177** type **339** (single item **78089**, no special).
-- Verification: `dotnet test ‚Ä¶ --filter ItemRuneSocket`
+- Verification: `dotnet test ù --filter ItemRuneSocket`
 
-Prerequisite / category 177 fusion glyph band (2026-05-31, pass 36 ‚Äî wildstar_client type inventory):
+Prerequisite / category 177 fusion glyph band (2026-05-31, pass 36 ù wildstar_client type inventory):
 
-- **Correlated (`wildstar_client.item2type` / `item2`):** category **177** has elemental types **340‚Äì345** (base **333**, Air..Life) plus fusion-tier types **515** (8 items), **516** (22), **530** (5), **563** (4); empty placeholders **514** / **517**; orphan **339** (1 item, below elemental band).
-- **Fusion mapping:** populated high types satisfy `item2TypeId - 13` with bases **502**, **503**, **517**, **550** (all ‚â• **502**). NF treats `item2TypeId ‚â• 502` in category **177** as `RuneType.Fusion` (tier-specific bases blocked without client TBL).
+- **Correlated (`wildstar_client.item2type` / `item2`):** category **177** has elemental types **340ù345** (base **333**, Air..Life) plus fusion-tier types **515** (8 items), **516** (22), **530** (5), **563** (4); empty placeholders **514** / **517**; orphan **339** (1 item, below elemental band).
+- **Fusion mapping:** populated high types satisfy `item2TypeId - 13` with bases **502**, **503**, **517**, **550** (all ? **502**). NF treats `item2TypeId ? 502` in category **177** as `RuneType.Fusion` (tier-specific bases blocked without client TBL).
 - **NF:** `ItemRuneGlyphTypes.Category177FusionTypeIdMin` + branch in `TryGetRuneTypeFromRunecraftingGlyph`.
 - **Still blocked:** augment `Microchips[]` install sender; type **339** semantics; `GetMicrochipInfo` Lua native not labeled.
-- Verification: `dotnet test ‚Ä¶ --filter ItemRuneSocket`
+- Verification: `dotnet test ù --filter ItemRuneSocket`
 
-Prerequisite / ItemSpecial +0x10 field correlation (2026-05-31, pass 35 ‚Äî reject spell FK as socket mask):
+Prerequisite / ItemSpecial +0x10 field correlation (2026-05-31, pass 35 ù reject spell FK as socket mask):
 
-- **Correlated:** client `ItemSpecial` row layout matches NF `ItemSpecialEntry` field order (`140444240` validates `+0x4` Prerequisite, `+0x10` Spell4-on-equip FK, `+0xc` Spell4-on-activate). `ItemEval_ApplyItemSpecialToEval` (`14040c310`) copies **`+0x10` ‚Üí item-eval `+0x114`** and **`+0xc` ‚Üí `+0x118`**.
-- **Rejected:** treating `spell4IdOnEquip` as socket bitmask ‚Äî augment glyph specials (e.g. id **9261**) store **81886** (Spell4 FK). Only **1 / 6035** rows have `spell4IdOnEquip ‚â§ 127` in socket-bit set (id **3694** = **4** Earth bit).
-- **NF:** `ItemRuneSocketMaskBuilder.TryGetSocketMaskFromItemSpecial` merges `Spell4IdOnEquip` only when value ‚äÜ `{1,2,4,8,0x10,0x20,0x40}`; primary mask remains `ItemRuneInstance` + `IItem.RuneSlots`.
+- **Correlated:** client `ItemSpecial` row layout matches NF `ItemSpecialEntry` field order (`140444240` validates `+0x4` Prerequisite, `+0x10` Spell4-on-equip FK, `+0xc` Spell4-on-activate). `ItemEval_ApplyItemSpecialToEval` (`14040c310`) copies **`+0x10` ? item-eval `+0x114`** and **`+0xc` ? `+0x118`**.
+- **Rejected:** treating `spell4IdOnEquip` as socket bitmask ù augment glyph specials (e.g. id **9261**) store **81886** (Spell4 FK). Only **1 / 6035** rows have `spell4IdOnEquip ? 127` in socket-bit set (id **3694** = **4** Earth bit).
+- **NF:** `ItemRuneSocketMaskBuilder.TryGetSocketMaskFromItemSpecial` merges `Spell4IdOnEquip` only when value ? `{1,2,4,8,0x10,0x20,0x40}`; primary mask remains `ItemRuneInstance` + `IItem.RuneSlots`.
 - **Still blocked:** augment `Microchips[]` install sender; `itemruneslotrandomization` still empty locally.
-- Verification: `dotnet test ‚Ä¶ --filter ItemRuneSocket`
+- Verification: `dotnet test ù --filter ItemRuneSocket`
 
-Prerequisite / ItemSpecial tbl + mask union (2026-05-31, pass 34 ‚Äî SQL schema closure, NF union mask):
+Prerequisite / ItemSpecial tbl + mask union (2026-05-31, pass 34 ù SQL schema closure, NF union mask):
 
-- **Correlated (`wildstar_client`):** `itemspecial` MySQL import exposes only `prerequisiteIdGeneric00`, `localizedTextIdName`, `spell4IdOnEquip`, `spell4IdOnActivate` ‚Äî matches NF `ItemSpecialEntry`. Client `ItemEval_ApplyItemSpecialToEval` (`14040c310`) copies row offsets **`+0x10` ‚Üí item-eval `+0x114`** and **`+0xc` ‚Üí `+0x118`**, but those offsets are **not** present in the reference SQL (likely extra client TBL fields or runtime wrapper ‚Äî **do not** map `spell4IdOnEquip` to socket mask; id `3694` has `spell4IdOnEquip=4` as a real spell FK).
+- **Correlated (`wildstar_client`):** `itemspecial` MySQL import exposes only `prerequisiteIdGeneric00`, `localizedTextIdName`, `spell4IdOnEquip`, `spell4IdOnActivate` ù matches NF `ItemSpecialEntry`. Client `ItemEval_ApplyItemSpecialToEval` (`14040c310`) copies row offsets **`+0x10` ? item-eval `+0x114`** and **`+0xc` ? `+0x118`**, but those offsets are **not** present in the reference SQL (likely extra client TBL fields or runtime wrapper ù **do not** map `spell4IdOnEquip` to socket mask; id `3694` has `spell4IdOnEquip=4` as a real spell FK).
 - **`itemruneslotrandomization`:** table exists locally with **zero rows**; augment `+0x10c` path (`14040e460`) remains blocked for NF simulation.
 - **NF:** `ItemRuneSocketMaskBuilder.BuildAllowedSocketMask` now **unions** `ItemRuneInstance` template bits with live `IItem.RuneSlots` (covers added fusion sockets via `0x0859`). `PrerequisiteCheckItemSpecial` uses mask / microchips / non-empty `ItemSpecial` tbl row as `+0x114/+0x118` presence proxy.
 - **Still blocked:** wire `Microchips[]` install mutator (no labeled client sender; separate from `0x085B` `Glyphs[]`); client ItemSpecial `+0x10` socket-mask field.
-- Verification: `dotnet test ‚Ä¶ --filter ItemRuneSocket|ItemMicrochip|ItemSpecial`
+- Verification: `dotnet test ù --filter ItemRuneSocket|ItemMicrochip|ItemSpecial`
 
-Prerequisite / item-eval socket mask (2026-05-31, pass 33 ‚Äî `+0x114` builder + augment `+0x10c` split):
+Prerequisite / item-eval socket mask (2026-05-31, pass 33 ù `+0x114` builder + augment `+0x10c` split):
 
 - **Mapped:** client item-eval has two socket-bitmask fields:
-  - **`+0x114`** ‚Äî read by `Prerequisite_CheckItemMicrochip` (`1404a0e10`) and `RuneInstall_ValidateRuneMatchesSocket` (`14040f1b0`); seeded from **ItemSpecial** apply (`14040c310` copies ItemSpecial row `+0x10` into `+0x114` when both `+0x114/+0x118` are zero).
-  - **`+0x10c`** ‚Äî built by `ItemEval_BuildAugmentRandomSocketMask` (`14040e460`) from **ItemRuneSlotRandomization** row `+0x30` ORs (defaults `0x7f` when no roll vector); Lua `arRuneTypes` uses `+0x10c` (`140674210`).
-- **NF:** `ItemRuneSocketMaskBuilder.BuildAllowedSocketMask` ‚Äî OR of `IItem.RuneSlots[].Type`, else OR of `ItemRuneInstance.DefinedSocketType00..07` (template proxy for `+0x114` until ItemSpecial runtime fields exist). Used by `ItemRuneInstallValidator` and `PrerequisiteCheckItemMicrochip`.
+  - **`+0x114`** ù read by `Prerequisite_CheckItemMicrochip` (`1404a0e10`) and `RuneInstall_ValidateRuneMatchesSocket` (`14040f1b0`); seeded from **ItemSpecial** apply (`14040c310` copies ItemSpecial row `+0x10` into `+0x114` when both `+0x114/+0x118` are zero).
+  - **`+0x10c`** ù built by `ItemEval_BuildAugmentRandomSocketMask` (`14040e460`) from **ItemRuneSlotRandomization** row `+0x30` ORs (defaults `0x7f` when no roll vector); Lua `arRuneTypes` uses `+0x10c` (`140674210`).
+- **NF:** `ItemRuneSocketMaskBuilder.BuildAllowedSocketMask` ù OR of `IItem.RuneSlots[].Type`, else OR of `ItemRuneInstance.DefinedSocketType00..07` (template proxy for `+0x114` until ItemSpecial runtime fields exist). Used by `ItemRuneInstallValidator` and `PrerequisiteCheckItemMicrochip`.
 - **Still blocked:** wire `Microchips[]` install mutator; augment `+0x10c` from `ItemRuneSlotRandomization` rolls; ItemSpecial tbl field at client `+0x10` not mapped on `ItemSpecialEntry`.
 - Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~ItemRuneSocketTests|FullyQualifiedName~ItemMicrochip"`
 
-Prerequisite / rune socket validation (2026-05-31, pass 32 ‚Äî `14040f1b0` export + NF parity fix):
+Prerequisite / rune socket validation (2026-05-31, pass 32 ù `14040f1b0` export + NF parity fix):
 
-- **Exported:** `RuneInstall_ValidateRuneMatchesSocket` (`14040f1b0`) in `selected_decompiled_cache` ‚Ä¶ `14040f1b0.fragment.c`; called from `RuneInstall_ValidateBeforeSend` (`14056afb0`) after `RuneInstall_ValidateInventoryStacks` (`1403b4710`).
+- **Exported:** `RuneInstall_ValidateRuneMatchesSocket` (`14040f1b0`) in `selected_decompiled_cache` ù `14040f1b0.fragment.c`; called from `RuneInstall_ValidateBeforeSend` (`14056afb0`) after `RuneInstall_ValidateInventoryStacks` (`1403b4710`).
 - **Client body:** reads gear item-eval `+0x114` allowed-socket mask; maps **target slot type** via `ItemRuneSlotType_ToClientSocketBit` (`14040f2b0`); Fusion socket bit `0x40` bypasses mask; does **not** compare glyph item2 type in the decompiled body.
-- **NF:** `ItemRuneInstallValidator.ValidateRuneMatchesSocket` ‚Äî Fusion socket accepts any runecrafting glyph; non-Fusion requires `glyphType == socketType` (tbl bands) **and** `(allowedMask & slotBit) != 0` where `allowedMask` is OR of `IItem.RuneSlots[].Type` (proxy for `+0x114` until template field mapped).
-- **Still blocked:** augment `Microchips[]` install mutator; gear template `+0x114` without slot OR proxy (partially addressed pass 34‚Äì35).
-- Verification: `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj`; `dotnet test ‚Ä¶ --filter ItemRuneSocket` (stop running WorldServer if `MSB3027` DLL lock).
+- **NF:** `ItemRuneInstallValidator.ValidateRuneMatchesSocket` ù Fusion socket accepts any runecrafting glyph; non-Fusion requires `glyphType == socketType` (tbl bands) **and** `(allowedMask & slotBit) != 0` where `allowedMask` is OR of `IItem.RuneSlots[].Type` (proxy for `+0x114` until template field mapped).
+- **Still blocked:** augment `Microchips[]` install mutator; gear template `+0x114` without slot OR proxy (partially addressed pass 34ù35).
+- Verification: `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj`; `dotnet test ù --filter ItemRuneSocket` (stop running WorldServer if `MSB3027` DLL lock).
 
-Prerequisite / runecrafting glyph bands (2026-05-31, pass 31 ‚Äî categories 175/176/177 + duplicate rune):
+Prerequisite / runecrafting glyph bands (2026-05-31, pass 31 ù categories 175/176/177 + duplicate rune):
 
-- **Correlated (wildstar_client):** runecrafting `Item2Category` bands map `item2TypeId - base` ‚Üí `RuneType` 7‚Äì13:
-  - cat **176** base **412**, types **419‚Äì424** (Air..Life)
-  - cat **175** base **345**, types **352‚Äì358** (Air..Fusion)
-  - cat **177** base **333**, types **340‚Äì345** (Air..Life); fusion-tier types **‚â•502** (`515+` in reference DB) ‚Üí Fusion (pass 36)
-- **NF:** `ItemRuneGlyphTypes.TryGetRuneTypeFromRunecraftingGlyph`; `ValidateNoDuplicateInstalls` ‚Üí `TradeskillResult.DuplicateRune` (sigil result only).
+- **Correlated (wildstar_client):** runecrafting `Item2Category` bands map `item2TypeId - base` ? `RuneType` 7ù13:
+  - cat **176** base **412**, types **419ù424** (Air..Life)
+  - cat **175** base **345**, types **352ù358** (Air..Fusion)
+  - cat **177** base **333**, types **340ù345** (Air..Life); fusion-tier types **?502** (`515+` in reference DB) ? Fusion (pass 36)
+- **NF:** `ItemRuneGlyphTypes.TryGetRuneTypeFromRunecraftingGlyph`; `ValidateNoDuplicateInstalls` ? `TradeskillResult.DuplicateRune` (sigil result only).
 - Verification: `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj`
 
-Prerequisite / sigil socket-type correlation (2026-05-31, pass 30 ‚Äî wildstar_client tbl + NF match):
+Prerequisite / sigil socket-type correlation (2026-05-31, pass 30 ù wildstar_client tbl + NF match):
 
-- **Correlated:** `wildstar_client.Item2` category **176** (`tradeSkillId=22` runecrafting) uses `item2TypeId` **419‚Äì424** for sigils; `item2TypeId - 412` yields native `RuneType` **7‚Äì12** (Air..Life). NF `ItemRuneGlyphTypes` + `ItemRuneInstallValidator.ValidateRuneMatchesSocket` enforce socket type before `InstallRunes` mutates `RuneSlots`.
+- **Correlated:** `wildstar_client.Item2` category **176** (`tradeSkillId=22` runecrafting) uses `item2TypeId` **419ù424** for sigils; `item2TypeId - 412` yields native `RuneType` **7ù12** (Air..Life). NF `ItemRuneGlyphTypes` + `ItemRuneInstallValidator.ValidateRuneMatchesSocket` enforce socket type before `InstallRunes` mutates `RuneSlots`.
 - **Still blocked:** `RuneInstall_ValidateRuneMatchesSocket` (`14040f1b0`) decompile export; Fusion (13) and categories **175/177** glyph type ids; wire `Microchips[]` install.
 - Verification:
   `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj`
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter ItemRuneSocket`
 
-Prerequisite / rune install layout validation (2026-05-31, pass 29 ‚Äî default sockets + GenericError mapping):
+Prerequisite / rune install layout validation (2026-05-31, pass 29 ù default sockets + GenericError mapping):
 
-- **NF:** `ItemRuneInstallValidator.ValidateInstallTargets` seeds `ItemRuneInstance` sockets via `ItemRuneSlotInitializer` before count checks; `InstallRunes` uses it. `SendInstallFailure` maps `MissingRune` ‚Üí `ItemBadId` (`0x6`, client `FUN_1400b5df0` miss) and `InvalidSlot` ‚Üí `CraftMicrochipInvalidSocket` (`0x70`).
-- **Labels (inventory only):** `RuneInstall_ValidateInventoryStacks` `1403b4710`; `RuneInstall_ValidateRuneMatchesSocket` `14040f1b0` reserved ‚Äî **no fragment export yet**.
-- **Still blocked:** glyph Item2 ‚Üî socket `RuneType` rules inside `14040f1b0`; wire `Microchips[]` gameplay writer.
+- **NF:** `ItemRuneInstallValidator.ValidateInstallTargets` seeds `ItemRuneInstance` sockets via `ItemRuneSlotInitializer` before count checks; `InstallRunes` uses it. `SendInstallFailure` maps `MissingRune` ? `ItemBadId` (`0x6`, client `FUN_1400b5df0` miss) and `InvalidSlot` ? `CraftMicrochipInvalidSocket` (`0x70`).
+- **Labels (inventory only):** `RuneInstall_ValidateInventoryStacks` `1403b4710`; `RuneInstall_ValidateRuneMatchesSocket` `14040f1b0` reserved ù **no fragment export yet**.
+- **Still blocked:** glyph Item2 ? socket `RuneType` rules inside `14040f1b0`; wire `Microchips[]` gameplay writer.
 - Verification:
   `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj`
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter ItemRuneSocket`
 
-Prerequisite / rune install error correlation (2026-05-31, pass 28 ‚Äî `0x70` tied to `0x085B` pre-send validation):
+Prerequisite / rune install error correlation (2026-05-31, pass 28 ù `0x70` tied to `0x085B` pre-send validation):
 
 - **Mapped:** `RuneCrafting_SendClientRuneInstall` (`14059d250`) calls `RuneInstall_ValidateBeforeSend` (`14056afb0`); on zero it invokes `Player_SendGenericError` (`1403cc530`) with code **`0x70`** (NF `CraftMicrochipInvalidSocket`) **before** `Network_SendOpcodePayloadHelper(..., 0x85b, ...)`.
 - **NF:** `CraftingRuneRequestHelper.SendInstallFailure` emits `CraftMicrochipInvalidSocket` when `InstallRunes` returns `TradeskillResult.InvalidSlot` (socket/count mismatch proxy).
 - **Still separate:** wire `Microchips[]` at shared-item `+0x74` vs `Glyphs[]` at `+0x80`; NF populates `Glyphs` from `IItem.RuneSlots` only; `IItem.MicrochipIds` persistence has no install mutator.
-- **Still blocked:** `FUN_14040f1b0` socket‚Üîitem2 rules; `GetMicrochipInfo` not in fragment cache; full `RuneInstall_ValidateBeforeSend` parity beyond slot count.
+- **Still blocked:** `FUN_14040f1b0` socket?item2 rules; `GetMicrochipInfo` not in fragment cache; full `RuneInstall_ValidateBeforeSend` parity beyond slot count.
 - Verification:
   `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj`
   `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj` (stop running WorldServer if DLL locked)
 
-Prerequisite / microchip opcode hunt (2026-05-31, pass 27 ‚Äî blocked install sender, error 0x70 UI path):
+Prerequisite / microchip opcode hunt (2026-05-31, pass 27 ù blocked install sender, error 0x70 UI path):
 
 - **Decomp search:** `SharedItem_ReadPayload` (`14008c0d0`) reads wire `Microchips[]` (3-bit count @ struct `+0x74`) and `Glyphs[]` (4-bit count @ `+0x80`); no separate labeled client **install** sender in `function_labels.csv`.
-- **Opcode gap:** client world opcodes `0x0859`‚Äì`0x085C` are rune/sigil only (`ClientCraftingRune*`); next client ids are server-only `0x085D`‚Äì`0x085F` then `0x0860+` ‚Äî **no room** for a distinct microchip-install opcode in the runecrafting cluster.
+- **Opcode gap:** client world opcodes `0x0859`ù`0x085C` are rune/sigil only (`ClientCraftingRune*`); next client ids are server-only `0x085D`ù`0x085F` then `0x0860+` ù **no room** for a distinct microchip-install opcode in the runecrafting cluster.
 - **`GenericError.CraftMicrochipInvalidSocket` (0x70):** pass 28 maps the **sender** to `Player_SendGenericError` (`1403cc530`) on failed `0x085B` pre-validation; `LocalizedError_ApplyNotificationStyle` (`1405c8130`) is display-only. Wire `Microchips[]` install path remains unmapped.
-- **NF:** `PrerequisiteItemTypes` + trace when item-eval prerequisites (types `133`‚Äì`140`, `138`‚Äì`139`, `145`‚Äì`146`) run without `IPrerequisiteParameters.Item`.
+- **NF:** `PrerequisiteItemTypes` + trace when item-eval prerequisites (types `133`ù`140`, `138`ù`139`, `145`ù`146`) run without `IPrerequisiteParameters.Item`.
 - **Still blocked:** live sniff of augment socketing; `GetMicrochipInfo` Lua native not yet labeled; populate `Microchips[]` from gameplay.
 - Verification:
   `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj`
 
-Prerequisite / item equip pass (2026-05-31, pass 26 ‚Äî equip prereq + lazy socket seed, tbl 10610/10685):
+Prerequisite / item equip pass (2026-05-31, pass 26 ù equip prereq + lazy socket seed, tbl 10610/10685):
 
 - **`PrerequisiteEvaluation.Meets(player, id, item)`:** shared item-eval context helper used by `ClientItemUseHandler` and `Inventory.CanMoveItem` equip path.
 - **Equip gate:** `Item2.PrerequisiteId` checked when moving to `InventoryLocation.Equipped`; failure returns `GenericError.ItemEquipPrereqFailed` (0x90).
 - **Lazy socket seed:** on first equip attempt, `ItemRuneSlotInitializer.ApplyDefaultSockets` runs when `RuneSlots` is empty (does not mutate DB-loaded items until equip).
-- **Retail `Prerequisite.tbl`:** ids **10610** / **10685** are type **139** `ItemMicrochip`, `objectId0=0`, `value0=2` / `1`, comparison **Equal** ‚Äî installed rune/sigil count (or wire `Microchips[]` when present).
+- **Retail `Prerequisite.tbl`:** ids **10610** / **10685** are type **139** `ItemMicrochip`, `objectId0=0`, `value0=2` / `1`, comparison **Equal** ù installed rune/sigil count (or wire `Microchips[]` when present).
 - **Microchip install opcode:** still unmapped in `function_labels.csv`; `CraftMicrochipInvalidSocket` (0x70) only on `GenericError` enum.
 - Verification:
   `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj` and prerequisite tests.
 
-Prerequisite / item rune pass (2026-05-31, pass 25 ‚Äî default sockets, shared rune type mapping, ItemRuneSlotRandomization table):
+Prerequisite / item rune pass (2026-05-31, pass 25 ù default sockets, shared rune type mapping, ItemRuneSlotRandomization table):
 
-- **`ItemRuneSocketTypes`:** shared compact/full socket id ‚Üí `RuneType` + prerequisite bitmask (`ItemRuneSlotType_ToRuneType` / `Prerequisite_MapMicrochipIdToBit`).
+- **`ItemRuneSocketTypes`:** shared compact/full socket id ? `RuneType` + prerequisite bitmask (`ItemRuneSlotType_ToRuneType` / `Prerequisite_MapMicrochipIdToBit`).
 - **`ItemRuneSlotInitializer`:** new items seed `IItem.RuneSlots` from `ItemRuneInstance.DefinedSocketCount` + `DefinedSocketType00..07` (skips type `0`; retail instance `2` = count `2`, type `7` = Air).
-- **`ItemRuneSlotRandomization.tbl`:** registered on `GameTableManager` (client table exists; local SQL dump has **zero** rows ‚Äî cannot map augment item2 ‚Üí type yet).
+- **`ItemRuneSlotRandomization.tbl`:** registered on `GameTableManager` (client table exists; local SQL dump has **zero** rows ù cannot map augment item2 ? type yet).
 - **`ItemSpecial` (138):** proxy also treats non-empty `RuneSlots` as satisfying `+0x114/+0x118` presence gate.
 - **Still blocked:** wire `Microchips[]` install opcode; augment rows in empty `ItemRuneSlotRandomization`; per-instance rolled stats.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~ItemRuneSocketTests" -v minimal --nologo`
 
-Prerequisite / item rune persistence pass (2026-05-31, pass 24 ‚Äî rune slots on IItem, ItemMicrochip bitmask fix):
+Prerequisite / item rune persistence pass (2026-05-31, pass 24 ù rune slots on IItem, ItemMicrochip bitmask fix):
 
-- **Evidence correction:** `Prerequisite_CheckItemMicrochip` (`1404a0e10`) `objectId0` **7‚Äì0xd** map through `Prerequisite_MapMicrochipIdToBit` (`14049bdc0`) to the same values as `RuneType` / `CodeEnumRuneType` (Air=7 ‚Ä¶ Fusion=13), not wire `Microchips[]` item2 ids. Client item-eval `+0x114` is a socket-**type** bitmask; installed sigils use `+0x518` / shared-item `Glyphs[]`.
+- **Evidence correction:** `Prerequisite_CheckItemMicrochip` (`1404a0e10`) `objectId0` **7ù0xd** map through `Prerequisite_MapMicrochipIdToBit` (`14049bdc0`) to the same values as `RuneType` / `CodeEnumRuneType` (Air=7 ù Fusion=13), not wire `Microchips[]` item2 ids. Client item-eval `+0x114` is a socket-**type** bitmask; installed sigils use `+0x518` / shared-item `Glyphs[]`.
 - **NF `IItem.RuneSlots`:** persisted `item.runeSlots` varchar(256) migration `20260531224115_ItemMicrochipIdsAndRuneSlots`; `ItemRuneSlotsCodec` (`type:runeItem2Id` CSV); `ClientCraftingRune*` handlers mutate item state (removed in-memory `runeSlotsByItemGuid` dict) and send `ServerItemAdd` refresh with `Glyphs` populated on `Item.Build()`.
-- **NF `ItemMicrochip` (139):** `objectId0=0` uses wire `MicrochipIds` when present, else installed rune count; `objectId0` 7‚Äì0xd uses `RuneSlots[].Type` bitmask.
+- **NF `ItemMicrochip` (139):** `objectId0=0` uses wire `MicrochipIds` when present, else installed rune count; `objectId0` 7ù0xd uses `RuneSlots[].Type` bitmask.
 - **Still blocked:** augment microchip install opcode (wire `Microchips[]` separate from rune/sigil flow); augment rows in empty `ItemRuneSlotRandomization.tbl`; per-instance item-eval `+0x140`/`+0x94` caches.
 - Verification:
   `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj` and prerequisite tests.
 
-Prerequisite / NF parity pass (2026-05-31, pass 23 ‚Äî ItemStatData/ItemStatId/AppliedItemStatId handlers):
+Prerequisite / NF parity pass (2026-05-31, pass 23 ù ItemStatData/ItemStatId/AppliedItemStatId handlers):
 
 - **NF `ItemStatId` (134):** `PrerequisiteCheckItemStatId` compares `Item2.ItemStatId` to `value0` (client item-eval `+0x148` proxy).
 - **NF `AppliedItemStatId` (135):** `PrerequisiteCheckAppliedItemStatId` compares resolved `ItemStat.Id` to `objectId0` (client `+0x144` proxy; all 31 tbl rows use `ItemStat.Id`).
 - **NF `ItemStatData` (133):** `PrerequisiteCheckItemStatData` compares first `ItemStatType.Standard` `ItemStatData[]` slot to `value0` (client `+0x140` proxy until per-instance item-eval cache exists).
-- **Still blocked:** microchip install gameplay (no world handler mutates `IItem.MicrochipIds` yet); `ItemRuneSlotRandomization.tbl` not loaded in `GameTableManager` for item2‚Üí`MicrochipTypeEnum` mapping; per-instance rolled stats at item-eval `+0x94`/`+0xd0`.
+- **Still blocked:** microchip install gameplay (no world handler mutates `IItem.MicrochipIds` yet); `ItemRuneSlotRandomization.tbl` not loaded in `GameTableManager` for item2?`MicrochipTypeEnum` mapping; per-instance rolled stats at item-eval `+0x94`/`+0xd0`.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`
 
@@ -17778,3 +18057,157 @@ Storefront `CatalogUnavailable` native category-tree root pass (2026-05-31):
 - **Server bug:** `GlobalStorefrontManager.BuildStoreCategories` had omitted hidden category `26` and rebased its visible children to parent `0`. That produced a clean `0x0988` / `0x098B` / `0x0987` catalog on the wire, but Lua saw `StorefrontLib.GetCategoryTree()` return an empty table and raised local `CodeEnumStoreError.CatalogUnavailable`.
 - **NF implementation:** visible `store_category` rows now preserve their original `parentId` while hidden rows remain omitted. Live patched world log `NexusForever.WorldServer_20260531_42692.log` sent root tabs as `76->26`, `50->26`, `132->26`, `212->26`, `27->26`, etc. at character select, in-world bootstrap, and reward-rotation store open.
 - **Verification:** focused store/account/fortune tests passed (`42/42`), `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo` passed, and the latest client log `WildStar64_16042_DAN_260531_233611.txt` has no `Catalogue`, `Malformed`, `2440`, `2443`, STS, banner, or store error hits after launch. Live retrieve/purchase clicks are still action-gated.
+
+Prerequisite / opcode pass (2026-06-02, pass 80 - type 96-101 evidence-backed names and opcode block audit):
+
+- Type 96: Unknown96 renamed to EvalContextFloatByObjectId; handler table[96] Prerequisite_CheckEvalContextFloatByObjectId (14049f810) loads active eval context and compares linked-list float +0x28 for objectId key +0x20. NF proxy remains PrerequisiteEvalListHelper through item eval stats.
+- Types 97-99: Unknown97-Unknown99 renamed to AccountItemListItem2CountNpc97 / 98 / 99; handler table entries 14049f8c0, 14049f990, 14049f9d0 gate NPC entity types 0x14/0x17 before AccountItemList_WalkItem2IdMatch (140497d9c). Numeric suffixes retained because the native bodies prove the account-item/NPC family but not a finer semantic split.
+- Types 100-101: Unknown100-Unknown101 renamed to AccountItemListItem2Count100 / 101; handler table entries 14049fa80, 14049fac0 use the same account Item2 row walk without the NPC gate. Numeric suffixes retained for the same evidence reason.
+- Label hygiene: removed the duplicate 14049f8c0 label and kept one stable table[97] name; AccountItemList_WalkItem2IdMatch notes now cover prerequisite types 97-101.
+- Opcode audit: remaining generic opcodes Server0x0015, Client0x00C8, Client0x00ED, Client0x011B, Client0x011D, Client0x012D, Client0x0550, Client0x062A, Client0x0634, Client0x063E, Client0x0701, Client0x07E3, and Client0x0928 still lack two-witness semantic owners. Server0x0015 shares a wire reader shape with ServerMatchingAverageWaitTimeUpdate (0x0628) but lacks matching runtime semantics; ServerMatching0x05CF remains blocked with only tentative apply-candidate correlation at 1405c41c0; Client0x0928 shares a writer body with ClientPetSetStance but only has registration-batch evidence.
+- Verification: dotnet test Source\\NexusForever.Game.Tests\\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests" -v minimal --nologo passed 329/329; run_ghidra_analysis.ps1 export-only applied WildStar64 labels (2096 applied, 18 created; pre-existing 3 missing / 4 duplicate-row warnings) and refreshed functions.csv; Get-DecompCoverageSnapshot.ps1 regenerated coverage inventory (1056 total opcodes).
+Prerequisite alias pass (2026-06-02, pass 81 - exact live-vtable aliases and blocked near misses):
+
+- Exact aliases mapped: live manager vtable `PTR_FUN_140b67740` proves these unknown prerequisite ids dispatch to already-mapped handler bodies: type 223 -> `Prerequisite_CheckAccountItemListItem2CountNpc97` (`14049f8c0`), type 240 -> `Prerequisite_CheckCurrency` (`14049e7e0`), type 245 -> `Prerequisite_CheckItemTradeSkill` (`1404a1790`), type 286 -> `Prerequisite_CheckDailyLoginDaysTotal` (`1404a1710`), type 287 -> `Prerequisite_CheckDailyLoginRewardsAvailable` (`1404a1750`), type 289 -> `Prerequisite_CheckMount` (`14049f0c0`), type 290 -> `Prerequisite_CheckUnderForcedMovement` (`14049efa0`), and type 291 -> `Prerequisite_CheckProgressTrackOnMatchingEntity` (`1404a1890`).
+- Naming rule corrected after certainty audit: duplicate-body aliases stay `Unknown223`, `Unknown240`, `Unknown245`, `Unknown286`, `Unknown289`, `Unknown290`, and `Unknown291` until a finer semantic owner is proven. Type 287 has a unique proven body, so `DailyLoginRewardsAvailable` is safe without a suffix.
+- Type 220 status superseded by pass 93: live case `0xdc` vtable `+0x498` calls `PathMissionRuntime_FindById(DAT_140c65970, objectId)` and then runtime vtable `+0x50(value)`. Pass 93 maps `+0x50` through Lua PathMission checklist/clue users and renames the enum to `PathMissionChecklistItemComplete`.
+- Stub / no-rename aliases at this pass: live types 222, 259, 271, 278, 285, and 294 dispatch to stub `140001ba0`; type 267 has only a diagnostic bit-1 body, and type 260 has a non-stub housing plot/plug body with state semantics still blocked. Later passes superseded the old type 266, 268, and 293 status.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests" -v minimal --nologo` passed 340/340; WildStar64 export-only Ghidra refresh succeeded; `Get-DecompCoverageSnapshot.ps1` regenerated coverage inventory with 1056 total opcodes.
+Prerequisite housing residence pass (2026-06-02, pass 82 - type 241 exact body map):
+
+- Type 241: Unknown241 renamed to HousingResidenceLoaded. Live vtable `PTR_FUN_140b67740+0x638` points to `Prerequisite_CheckHousingResidenceLoaded` (`1404a11e0`): NPC target gate (entity types `0x14`/`0x17`) then Equal/NotEqual on active housing TargetResidence identity at world-client `+0x7500/+0x7508`. `HousingBasicsUpdated` writer `1403cd6d0` stores the same identity fields, and `Housing_SendClientCommunityPlacement` (`1404b6b90`) serializes them as TargetResidence.
+- NF proxy: `PrerequisiteCheckHousingResidenceLoaded` uses `player.ResidenceManager.Residence != null` and preserves the native value-ignored Equal/NotEqual behavior; no objectId/value semantics were invented.
+- Still blocked from this body pass: type 260 is housing/plug related but the exact housing plug state value is not mapped; type 266 reads a matching/PvP rating helper with index 0, but the exact rating bucket is not proven.
+Prerequisite spell-tier unlock pass (2026-06-02, pass 83 - type 233 exact Spell4 tier-index map):
+
+- Type 233: Unknown233 renamed to SpellTierUnlocked. Live vtable `PTR_FUN_140b67740+0x1a8` points to `Prerequisite_CheckSpellTierUnlocked` (`14049d820`): local-player gate, resolve `objectId0` Spell4 row, compare current ability-book tier data against the resolved Spell4 `tierIndex`, ignore `value0`, and support only Equal/NotEqual. Retail `Prerequisite.tbl` rows point at tiered Spell4 rows such as Mending Banner / Mending Probes / Protection Probes tiers 1-9.
+- Helper label: `SpellBook_GetActionSetTierSpell4Id` (`1403bad30`) walks the ability-book action-set tier wrapper tree (`world client +0xaa8`) and returns the selected Spell4 id for the action-set byte. Type 233 uses it when one of the resolved Spell4 fields at `+0x198..+0x1a8` equals `6`; the enum name remains about the proven outward predicate, not the helper internals.
+- NF proxy: `PrerequisiteCheckSpellTierUnlocked` uses `Spell4Entry.TierIndex` and `ISpellManager.GetSpellTier(baseSpell)`, preserving the native value-ignored Equal/NotEqual behavior. No value0 or broader spell-affordability semantics were invented.
+- Verification: focused prerequisite/placeholder test filter passed 353/353; WildStar64 export-only refresh succeeded; `Get-DecompCoverageSnapshot.ps1` regenerated coverage inventory with 1056 total opcodes.
+Prerequisite account-currency pass (2026-06-02, pass 84 - type 293 account currency amount):
+
+- Type 293: Unknown293 renamed to AccountCurrencyAmount. `InspectCodeAddress` at `14049d3a0` shows case `0x125` reading `DAT_140c635f0+0x15d0+0xd0+objectId0*8` only when `objectId0 <= 18`, comparing zero for higher ids, clamping the slot to uint32, and jumping to `PrerequisiteManager_ApplyComparison` (`1404a2090`) with `value0`.
+- Slot proof: account-item add/remove/update bodies `140006000`, `140004c40`, and `140005600` update/store the same `+0xd0 + accountCurrencyEnum*8` slots from `AccountItem.accountCurrencyEnum`; type-293 row 44322 uses objectId0=15 and value0=5000, and AccountCurrencyType 15 is Crimson Essence.
+- NF proxy: `PrerequisiteCheckAccountCurrencyAmount` reads `IAccountCurrencyManager.GetCurrencyAmount((AccountCurrencyType)objectId0)` only for client slot ids `<= 18`, compares zero above that, and preserves native uint32 clamping before comparison. This is account currency, not character `CurrencyType` 55/240 and not entitlement count 226/273.
+- Still blocked: type 260 housing plug state (`1404a1220`) until state value 5 and flag branches are named; matching/PvP candidate `14049e300` remains orphan/unassigned until a live prerequisite slot or caller proves ownership.
+Prerequisite correction pass (2026-06-02, pass 85 - type 266 pet entity):
+
+- Corrected the prior type 266 hypothesis: live case `0x10a` in `PrerequisiteManager_EvaluateTypeSlot` uses decimal vtable operand `200`, which is vtable `+0xc8`, not `+0x200`.
+- Type 266: Unknown266 renamed to PetOrEsperPetEntity. `DumpNearbyData` resolves `PTR_FUN_140b67740+0xc8` to `14049cae0`; `InspectCodeAddress` shows the body reading entity `+0x80`, subtracting `0x18`, and accepting native entity ids `0x18`/`0x19`. NF `EntityType` maps these to `Pet` and `EsperPet`.
+- Rejected mapping: `14049e300` is not proven as type 266 and remains an orphan matching/PvP scalar candidate until a caller or vtable slot proves ownership. No enum rename should be based on it.
+- NF proxy: `PrerequisiteCheckPetOrEsperPetEntity` compares the target entity kind as a boolean and uses normal prerequisite comparison semantics, matching the native Equal/NotEqual boolean path.
+
+Prerequisite positional / scan-label correction pass (2026-06-02, pass 86 - type 159 implemented; type 62/267 stale label rejected):
+
+- Type 159: Unknown159 renamed to PositionalRequirementBetweenCasterAndTarget. Client case 0x9f in PrerequisiteManager_EvaluateTypeSlot dispatches vtable +0x1e0 to 14049d940; the body resolves PositionalRequirement by objectId0, computes row AngleCenter/AngleRange as an angular cone, compares the caster/target bearing using yaw and positions, and swaps facing source when Flags & 1 is set.
+- Retail row witness: prerequisite 6117 uses type 159 Equal objectId0=6, and PositionalRequirement row 6 has AngleCenter=0, AngleRange=300, Flags=0.
+- NF proxy: PrerequisiteCheckPositionalRequirementBetweenCasterAndTarget reuses PositionalPrerequisiteHelper with caster/target entity selection and native missing-input NotEqual behavior.
+- Label correction: handler table[62] at 0x140b67870 resolves to 14049e9a0, but InspectCodeAddress shows that body only returns bit 1 from the uint at *(DAT_140c65898+0x6c50)+8. The old Prerequisite_CheckScanCreature_Table62 / PathScientist_CheckCreatureScanState checklist evidence was rejected and replaced with the blocked diagnostic label Prerequisite_CheckEntityLookupFlagBit1_Table62.
+- Type 62 remains ScanCreature only as a table/text-backed NF progress proxy. The live dispatcher case 0x3e calls vtable +0x4a8 -> raw 14049ff30; that body has target bitmask fields and may be scan-related, but it is not mapped enough for a function label or enum rename.
+- Type 267 is not a ScanCreature alias: live case 0x10b calls vtable +0x320 -> 14049e9a0, the same entity-lookup flag-bit predicate. The flag semantics are blocked, so Unknown267 remains unnamed.
+- Type 186 was blocked in this pass; superseded by pass 90, which proved the hash as the cached housing-neighbor residence map and renamed the enum to HousingNeighborResidence.
+- Verification: focused Ghidra InspectCodeAddress runs confirmed corrected labels for 14049e9a0 and 1405faf00; final prerequisite naming/check filter passed 292/292 after the type 63 handler was added.
+Prerequisite local-player visual-effect pass (2026-06-02, pass 87 - type 63 local player entity gate):
+
+- Type 63: Unknown63 renamed to IsLocalPlayerEntity. Client case 0x3f in PrerequisiteManager_EvaluateTypeSlot dispatches vtable +0x78 to raw 14049c7b0; Ghidra has no function entry at that address, but the instruction window compares the evaluated entity identity at +8 with the client local-player entity pointer DAT_140c65898+0x78 identity at +8.
+- Native comparison behavior: when the local-player pointer is missing, Equal is false and NotEqual is true; when present, Equal returns identity match, NotEqual returns inverse, and other comparison modes return false.
+- Retail row witness: Prerequisite rows 3977 (Equal) and 22213 (NotEqual) are referenced only by VisualEffect.prerequisiteId in the local reference DB, matching a local-vs-nonlocal visual-effect gate rather than a server gameplay stat check.
+- NF proxy: PrerequisiteCheckIsLocalPlayerEntity treats the session player as the local client entity and supports only Equal/NotEqual. It does not invent target semantics because native case 0x3f passes the evaluated entity slot, not the target slot.
+- Verification: dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests" -v minimal --nologo passed 292/292; focused Ghidra InspectCodeAddress runs confirmed corrected labels for 14049e9a0 and 1405faf00.
+Prerequisite blocked-name pass (2026-06-02, pass 88 - types 144/294/295 rejected for rename):
+
+- Type 144 remains `Unknown144`: the reference `wildstar_client.prerequisite` table has no rows for type 144, and live `PrerequisiteManager_EvaluateTypeSlot` skips case `0x90` entirely (case `0x8f` dispatches vtable `+0x3a0`; case `0x91` is the next branch and returns true only for Equal). Handler table[144] at `0x140b67870 + 144*8` points to `1404a0b70`, which looks up `objectId` through `PublicEventService_GetLiveEventById` and supports Equal/NotEqual on runtime record `+0x1d0 == 1`; because that path is not reached by the live dispatcher and `+0x1d0` is not named, the enum was not renamed.
+- Label added: `Prerequisite_CheckLiveEventStateEqualsOne_Table144` at `1404a0b70`. This is intentionally diagnostic: it records the alternate handler-table behavior without claiming a semantic enum name.
+- Type 294 remains `Unknown294`: row 44546 is the only row found (`NotEqual`, all ids/values zero) and is unreferenced by any `wildstar_client` column containing `prerequisite`; live case `0x126` dispatches vtable `+0x6d0 -> 140001ba0` no-op stub, and handler table[294] is `_purecall`.
+- Type 295 remains `Unknown295`: row 44550 is the only row found (`NotEqual value0=18`, paired with `ActiveSpellEffectOnUnit` id 292) and is also unreferenced by any `wildstar_client` column containing `prerequisite`; live case `0x127` ignores `value0` and returns true only when the evaluated entity exists and comparison is NotEqual.
+- Result: no enum/source behavior rename was made for 144/294/295; all three are now explicitly blocked with rediscoverable dispatcher, handler-table, and retail-row evidence.
+- Verification: focused WildStar64 export applied the new label (unctions.csv row 1404a0b70), selected_reasons_summary.csv records the label reason outside the 200-function decompile cutoff, and post-label InspectCodeAddress shows unctionAtOrContaining=Prerequisite_CheckLiveEventStateEqualsOne_Table144@1404a0b70 with the live-event +0x1d0 == 1 body. git diff --check on touched files returned no whitespace errors (line-ending warnings only).
+Prerequisite certainty audit pass (2026-06-02, pass 89 - type 268 promoted, stale vehicle label corrected):
+
+- Answer to the rename-certainty check: not every existing rename/comment was safe as written. The previous `Prerequisite_CheckVehicle` label on `14049f090` was stale; type 83's live vtable slot `+0xe0` actually points to `14049cbb0`, while type 268's live case `0x10c` vtable slot `+0x3c8` points to `14049f090`.
+- Corrected labels: `Prerequisite_CheckVehicleCreature_Table83` at `14049cbb0` and `Prerequisite_CheckCREDDPendingOrderState_Table268` at `14049f090`. The type 83 body resolves the vehicle entity from context `+0xc0`, compares the resolved vehicle `Creature2` id to `objectId0` when nonzero, and treats `value0 == uint max` as the optional context-value ignore case. Retail type 83 rows reference vehicle Creature2 ids such as `12221` Imperium Speeder, `24295` Darkspur Hoverbike, `28319` Exile Battle Suit, and `29427` Dominion Battle Suit.
+- Type 268 is now `CREDDPendingOrderState`: the body compares `DAT_140c635f0+0x1708` to `objectId0`, and existing CREDD evidence identifies that field as `creddPendingOrderFlag`. Retail row `38851` uses `NotEqual objectId0=1` and is referenced by `creature2.prerequisiteIdVisibility` for the Thayd/Illium CREDD Exchange managers and an MTX Protostar Store Consultant, matching a visibility gate when no CREDD order is pending.
+- The same late-cluster pass rejected semantic enum renames for `Unknown203`, `Unknown222`, `Unknown259`, `Unknown271`, `Unknown272`, `Unknown283`, and `Unknown285`: their retail rows are absent or sparse, and live cases `0xcb`, `0xde`, `0x103`, `0x10f`, `0x110`, `0x11b`, and `0x11d` all dispatch to no-op vtable slots (`140001ba0`). These now remain named `Unknown*` with explicit blocked comments instead of generic placeholder text.
+- Implementation boundary: no CREDD prerequisite handler was added. The mapped client state is account/CREDD runtime state, and NexusForever's current prerequisite check surface has no safe injected pending-order state source in this pass.
+- Verification: focused WildStar64 export applied both corrected labels; `functions.csv` contains `Prerequisite_CheckVehicleCreature_Table83@14049cbb0` and `Prerequisite_CheckCREDDPendingOrderState_Table268@14049f090`, and `InspectCodeAddresses` confirmed both function names and bodies. `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo` passed 101/101. `git diff --check` on touched files returned no whitespace errors (line-ending warnings only).Prerequisite housing neighbor pass (2026-06-02, pass 90 - type 186 current residence neighbor gate):
+
+- Type 186: Unknown186 renamed to HousingNeighborResidence. Live case 0xba dispatches vtable +0x628 to Prerequisite_CheckHousingNeighborResidence_Table186 (1404a10e0): NPC/interactable gate (entity types 0x14/0x17), resolve the current housing residence/plot identity through the active residence list, then Equal/NotEqual on whether that identity is present in the cached housing neighbor map.
+- Neighbor-map proof: Housing_HandleNeighborUpdate (1404bb790) uses the same DAT_140c659f0 +0x1d0/+0x1d8 hash map and hash/comparer at +0x1e0/+0x1e8 for ServerHousingNeighborUpdate (0x0519) add/remove/permission-refresh actions. Housing_CachedNeighborEntry_ConstructFromRow (1404b4d50) copies the target residence identity and permission into the cached neighbor entry, proving the map owner is the housing neighbor cache rather than an unrelated garden or plot-state table.
+- Retail row witness: prerequisite 17536 is the only type-186 row; it pairs HouseOwnership Equal with type 186 Equal and is referenced by housing plant-seed Spell4 caster-cast rows plus housing relic/active-prop/visibility Creature2 gates. The enum name is intentionally about the proven residence-neighbor predicate, not the garden/harvest consumers.
+- Implementation boundary: no prerequisite check handler was added. NexusForever does not currently pass the client selected/visited residence identity through prerequisite evaluation, so server behavior remains blocked until that residence context is available.
+
+Prerequisite alias certainty audit (2026-06-02, pass 91 - duplicate-body aliases downgraded):
+
+- Downgraded enum aliases that were only exact duplicate-body mappings, not proven semantic names: `AccountItemListItem2CountNpc223` -> `Unknown223`, `Currency240` -> `Unknown240`, `ItemTradeSkill245` -> `Unknown245`, `DailyLoginDaysTotal286` -> `Unknown286`, `Mount289` -> `Unknown289`, `UnderForcedMovement290` -> `Unknown290`, and `ProgressTrackOnMatchingEntity291` -> `Unknown291`.
+- Downgraded `EntityLookupFlagBit1_267` -> `Unknown267`: live case `0x10b` still maps to diagnostic bit-1 body `14049e9a0`, but the bit owner and gameplay meaning remain blocked.
+- Implementation wiring still handles the duplicate-body cases through their `UnknownNNN` enum ids where NF already has a mapped proxy; durable comments keep the handler address and alias evidence without claiming a final semantic rename.
+- Retained proven semantic renames such as `SpellTierUnlocked`, `HousingResidenceLoaded`, `HousingNeighborResidence`, `CREDDPendingOrderState`, `AccountCurrencyAmount`, and `PetOrEsperPetEntity` because their bodies are backed by table rows, fields, or caller/consumer evidence beyond a duplicate handler pointer.
+Prerequisite housing plot/plug pass (2026-06-02, pass 92 - type 260 remains blocked):
+
+- Type 260 remains `Unknown260`. The only retail row is `36343`: slot 0 `OtherPrerequisite` Equal row `17536` (`HouseOwnership` + `HousingNeighborResidence`), slot 1 type 260 Equal with `objectId1=12`, slot 2 None.
+- `objectId1=12` resolves to `HousingPlugItem.ID=12` (flags `2`, `housingPlotTypeId=2`, `housingFeatureTypeFlags=3`, `housingBuildId=2`), not a `HousingPlotInfo` row. A full scan of imported `wildstar_client` columns whose names contain `prerequisite` found no references to prerequisite row `36343` outside the row itself.
+- Live case `0x104` dispatches vtable `+0x640` to raw body `1404a1220`. The body requires an NPC/interactable target, resolves current active housing plot/residence context from `param_4+0x172c`, returns true if the resolved residence identity matches target `+0x1a8`, otherwise resolves current/default `HousingPlugItem` and checks plug flags `0x08`/`0x20` against active residence fields `+0x60/+0x64` being equal to literal state `5`.
+- Because the row appears orphaned, row object/value are ignored by the handler, and state value `5` plus active residence fields `+0x60/+0x64` are not semantically named, type 260 is mapped-only with an explicit blocker. No enum or function rename was added.
+Prerequisite path mission checklist pass (2026-06-02, pass 93 - type 220 checklist item complete):
+
+- Type 220 renamed from `Unknown220` to `PathMissionChecklistItemComplete`. Live `PrerequisiteManager` case `0xdc` dispatches vtable `+0x498` to `Prerequisite_CheckPathMissionChecklistItemComplete_Table220` (`14049fe80`): require evaluated entity context and `DAT_140c65970`, resolve `PathMissionRuntime_FindById(DAT_140c65970, objectId0)`, then return Equal/NotEqual on the runtime vtable `+0x50(value0)` predicate.
+- The `+0x50` predicate is now mapped as checklist/clue item completion, not a generic path mission state. Evidence: `Lua_PathMission_GetScientistSpecimenSurvey` (`14067d9a0`) and `Lua_PathMission_GetSettlerMayorInfo` (`14067fe10`) write `bIsCompleted` / `bIsComplete` from `vtable+0x50(index)`; `Lua_PathMission_GetExplorerNodeInfo` (`14067e870`) writes `bIsCompleted` from `vtable+0x50(nodeId)`; `Lua_PathMission_GetExplorerClueStatus` (`14067f0e0`) returns the same predicate for explorer clue id; `PathMission_ShowChecklistHintArrow` (`140571400`) refuses to show a checklist hint when `vtable+0x50(index)` is already true.
+- Retail rows: 43 type-220 rows use PathMission ids such as `1675`, `1686`, `2362`, `2456`, `2457`, `3158`, `3209`, and `3242`, with `value0` ranges `0..6` or clue/item ids depending mission type. References are concrete: `visualeffect.prerequisiteId` uses 29 of these rows, `creature2.prerequisiteIdVisibility` uses 5, `creature2.prerequisiteIdAnimState` uses 3, and `creature2.prerequisiteIdPriority00` uses 2.
+- NF implementation remains blocked: the emulator has path mission completion/progress state, but not the client's per-checklist/clue item completion semantics across explorer/scientist/settler mission types. The enum and client label are mapped; behavior should stay diagnostic/blocked until that state exists.
+
+Prerequisite / opcode pass (2026-06-02, pass 95 - HousingNeighborResidence NF proxy, scientist opcode gap):
+
+- **Type 186 implementation:** `PrerequisiteCheckHousingNeighborResidence` proxies the native NPC-gated neighbor-map predicate with "player residence has at least one neighbor with permission > 0". Full native membership test against the active visited residence identity (`param_4+0x172c` vs cached map) remains blocked until prerequisite evaluation carries housing visit context.
+- **Type 260 label only:** `Prerequisite_CheckHousingPlotPlugState_Table260` (`1404a1220`) documented in `function_labels.csv`; enum stays `Unknown260` per pass 92 (orphan row `36343`, state value `5` unnamed).
+- **Scientist scan opcode gap:** PE has no `mov r8d`/`mov eax` registration witness for client opcode `0x0668` between `ServerPathScientistExperimentationInvoke` (`0x0667`) and `ServerPathScientistScanbotState` (`0x0669`); generic scanbot scan-result client packet remains unmapped.
+- **Still blocked:** per-checklist `PathMissionChecklistItemComplete` runtime (`+0x50`); `CREDDPendingOrderState` account pending-order injection; diagnostic senders `0x0550`/`0x062A`/`0x0634`.
+- Verification: **440 passed** (filtered prerequisite/path suite).
+
+Prerequisite / opcode pass (2026-06-02, pass 98 - type 295 entity gate, scientist opcode cluster inventory):
+
+- **Type 295 `Unknown295`:** live `PrerequisiteManager` case `0x127` returns true only when the evaluated entity pointer is non-null and comparison is `NotEqual` (`value0` ignored). `PrerequisiteCheckUnknown295` proxies via `IPrerequisiteParameters.Target is IUnitEntity`. Enum rename blocked (row `44550` unreferenced; only tbl pairing with type 292).
+- **Scientist path opcode cluster (PE registration @ `14006c290` / `ClientWorldOpcodeRegister_MovementSpline` `1400a8190`):** inventoried `0x0667` `ServerPathScientistExperimentationInvoke`, `0x0669` `ServerPathScientistScanbotState`, `0x066A` `ClientPathMissionAttemptScientistExperimentation`, `0x066C`ù`0x066F` settler build cluster, `0x068C` `ClientPathScientistSetScannerName`. **No dword `div` registration witness for client opcode `0x0668`** in either table ù scan-result is likely server-driven via `ServerPathScientistAddCreatureInfoToCreature` (`0x08B2`) / `ServerPathScientistUnitScanParameters` (`0x08B3`) plus NF scripts, not a missing `0x0668` C2S packet alone.
+- **Still blocked:** generic scanbot minigame C2S semantics; `Client0x0550`/`0x062A`/`0x0634` senders; `Unknown260` plug state `5`; per-type path mission `+0x50` beyond pass 96 proxy.
+- Verification: **442 passed** (filtered prerequisite/path suite; +4 tests for type 295).
+
+Prerequisite pass (2026-06-02, pass 96 - type 220/268 NF proxies):
+
+- **Type 220 `PathMissionChecklistItemComplete`:** `PrerequisiteCheckPathMissionChecklistItemComplete` + `IPathManager.TryIsPathMissionChecklistItemComplete`. Native `objectId` = PathMission id, `value` = checklist/clue index for vtable `+0x50`. NF returns complete when mission `Completed`/`Complete`; else tests `ProgressData` bit `value` when `value < 32`. Unknown missions: Equal false, NotEqual true (matches `14049fe80`). Explorer/scientist/settler per-type `+0x50` semantics remain blocked.
+- **Type 268 `CREDDPendingOrderState`:** `IAccount.GetCREDDPendingOrderState` queries `AuthDatabase.AccountHasCREDDOrder` (flag `1` = any open `AccountCREDDOrder`). `PrerequisiteCheckCREDDPendingOrderState` compares flag to `objectId` via `PrerequisiteCompare` (row `38851` NotEqual `objectId0=1`). In-memory-only orders before DB persist and multi-value flag semantics remain blocked.
+- No new PE labels (handlers already labeled in pass 89/93).
+- Verification: **448 passed** (filtered prerequisite/path suite; +8 tests for types 220/268).
+
+Prerequisite / opcode pass (2026-06-02, pass 94 - 0x011B/0x011D/0x012D rejected for semantic rename):
+- Target question: do unresolved client opcodes `0x011B`, `0x011D`, or `0x012D` have enough non-registration evidence for meaningful names?
+- Ghidra `FindOpcodeComparisons` over `0x011B`/`0x011D`/`0x012D` found 25 hits. The only network registration hits are in `Network_RegisterServerOpcode_0351` (`14006c290`): `0x012D` -> `ClientSuggest_WritePayload` (`14007ae80`), `0x011D` -> `ClientUInt32_ReadPayload` / `ClientTradeskillResetTalents_WritePayload` (`14007d000`/`14007d010`), and `0x011B` -> zero-payload `ClientCraftingAbandon_WritePayload` (`140001ba0`).
+- Rejected false leads: `0x011B`/`0x011D` in `LuaLexer_ReadNextToken` (`140063bb0`) and parser functions are Lua token ids, not network opcodes; `Movement_UpdateAndSendFallStateOpcodes` (`1403a25c0`) uses `GameFormula_GetEntryById(0x11B)`; `SpellCast_SendClientCastSpellOrPosition` (`14039a040`) returns `CastResult.IllegalSpellCast` (`0x011D`) before any opcode send and still only sends `0x009A`/`0x009B` in the mapped spell-cast path.
+- Label cleanup: replaced misleading generic packet-dispatch labels around the Lua parser block with `LuaLexer_ReadQuotedStringToken` (`140063700`), `LuaLexer_ReadNextToken` (`140063bb0`), `LuaParser_FinaliseTableConstructorField` (`140066140`), and `LuaParser_ParseTableConstructor` (`140066b10`).
+- Result: `Client0x011B`, `Client0x011D`, and `Client0x012D` remain numeric diagnostic names. No opcode rename or handler behavior change is justified until a gameplay sender/consumer or live sniff proves semantics.
+Prerequisite certainty correction pass (2026-06-02, pass 97 - orphan PathSettler prerequisite enum names demoted):
+
+- Demoted `PathSettlerHubBuildProgress`/`PathSettlerHubContributionProgress`/`PathSettlerHubProgressPercent` back to `Unknown189`/`Unknown192`/`Unknown193`. The orphan helper labels remain useful native evidence, but they do not prove enum ownership because live cases `0xbd`/`0xc0`/`0xc1` dispatch no-op stubs and handler table slots are `_purecall`.
+- Removed the NF prerequisite check registrations for 189/192/193 and the tests that asserted those proxy comparisons. This restores the previous unhandled/false prerequisite boundary instead of implementing behavior from a dead-path helper.
+- Added a naming test bucket that locks the rule: orphan helper candidates stay `UnknownNNN` until live dispatch, caller, runtime, or table-consumer evidence proves a semantic owner.
+- Structural opcode names `ClientAccountRealmData`, `ClientRealmListRealmRow`, and `ClientRealmListMessageRow` were left in place as row-shape names, not final event semantics; their comments and tracker still mark standalone send/consumer paths as blocked.
+Prerequisite no-op slot pass (2026-06-02, pass 98 - types 142 and 278 remain unknown):
+
+- Type 142 remains `Unknown142`. Reference DB rows are 9102, 9360, 11031, 11035, 11386, 11843, 15356, 37328, and 37482 with values 0-3. A full `wildstar_client` prerequisite-column scan finds references only in `Spell4Effects.prerequisiteIdCasterApply` (effects 78608/78609/78612/78613) and `Spell4Effects.prerequisiteIdTargetApply` (effects 74071/74072/221010/221012); these are deprecated Spellslinger variants and `Gadget - Dangerous Game - Tier 1`.
+- Native dispatch: `InspectCodeAddresses.java 1404a2100` confirms live case `0x8e` calls manager vtable `+0x170` with `(int)param_2[4]`, `param_3[1]`, and `param_3[3]`. `DumpNearbyData.java 140b678b0 6` resolves vtable `+0x170` to shared no-op stub `140001ba0` (`ClientCraftingAbandon_WritePayload`). The eval-context slot meaning is not proven, so no semantic enum rename or NF handler is justified.
+- Type 278 remains `Unknown278`. Its only row is 40531 (`Equal objectId0=1 value0=1`), referenced by `Spell4.prerequisiteIdAoeTarget` on `[TEST] Origin/Target Prereqs - PBAE - Tier 3` (`Spell4` 84203). `InspectCodeAddresses.java 1404a2100` confirms case `0x116` calls vtable `+0x300` on caster and target; `DumpNearbyData.java 140b67a40 4` resolves that slot to the same no-op stub `140001ba0`.
+- Added naming coverage for 142 and 278 as no-op-slot candidates that must remain `UnknownNNN` until a non-stub handler, caller, live sniff, or stronger runtime witness proves semantics.
+Prerequisite no-op slot pass (2026-06-02, pass 99 - type 48 remains unknown):
+
+- Type 48 remains `Unknown48`. Reference DB rows are 10846 (`flags=1`, slot0 `QuestObjectiveOnTarget` Equal zero, slot1 type 48 Equal zero) and 20451 (type 48 NotEqual zero). A full `wildstar_client` prerequisite-column scan found references only to row 20451 via `Spell4Effects.prerequisiteIdCasterPersistence` on effects 112746, 112748, 112749, 112751, and 112753.
+- The referenced effects all belong to `[Dungeon] Generic 500% Damage Bonus - Raid Wipe Timer - Tier 1` (`Spell4` 47945). They pair caster-persistence row 20451 with target-persistence row 903 (`InCombat` Equal zero), which is useful spell-context evidence but not a semantic name for type 48.
+- Native dispatch remains blocked: `InspectCodeAddresses.java 1404a2100` shows case `0x30` calling manager vtable `+0x1e8` with `*param_2` and `param_3[1]`; `DumpNearbyData.java 140b67928 5` resolves that slot to shared no-op stub `140001ba0`. No enum rename or NF handler is justified without a non-stub/live witness.
+- Added type 48 to the no-op-slot naming test bucket so it stays `Unknown48` until a real handler, live sniff, or stronger runtime owner is proven.
+
+Prerequisite / opcode pass (2026-06-02, pass 100 ó type 5 live Reputation path vs handler-table orphan):
+
+- **Type 5 `Reputation` enum kept:** `InspectCodeAddress` on `PrerequisiteManager_EvaluateTypeSlot` (`1404a2100`) shows **live case `0x5`** reads `*(entity+0x118)` faction component, calls vtable **`+0x20`** with `objectId0` faction id, then **`PrerequisiteManager_ApplyComparisonFloat` (`1404a2010`)** with comparison mode in `param_3[1]`. NF `PrerequisiteCheckReputation` proxy remains valid.
+- **Corrected mislabel at `14049d470`:** `DumpNearbyData` + `TraceFunctionCallers` show handler **table[5]** at `140b67898` points here with **only a DATA reference** (no code callers). Decompile body walks `param_4+0x2b8`/`+0x2c0` int list vs `*(int*)(param_2+8)` ó **not** reputation. Renamed to **`Prerequisite_CheckEntityIdInEvalContextList_Table5Orphan`** (diagnostic; no enum rename).
+- **Labeled `PrerequisiteManager_ApplyComparisonFloat` (`1404a2010`)** ó float compare helper used by live type **5** and type **172** `HealthScaled`; integer path stays **`PrerequisiteManager_ApplyComparison` (`1404a2090`)**.
+- **Scientist scan opcode gap (unchanged, inventory reaffirmed):** PE still has **no `0x0668`** registration between `0x0667` and `0x0669`; scan credit remains server-driven (`ServerPathScientistAddCreatureInfoToCreature` `0x08B2` / `ServerPathScientistUnitScanParameters` `0x08B3`) plus NF scripts.
+- **Still blocked:** semantic name for eval-context `+0x2b8` list; `Unknown260` housing plug state `5`; diagnostic senders `Client0x0550`/`0x062A`/`0x0634`; duplicate-body aliases `Unknown223`/`240`/`286`/`289`/`290`/`291` (live vtable owners differ from handler-table bodies).
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests" -v minimal --nologo`
