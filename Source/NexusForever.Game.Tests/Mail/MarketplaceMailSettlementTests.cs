@@ -3,9 +3,11 @@ using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using NexusForever.Database.Character.Model;
 using NexusForever.Game;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Marketplace;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Mail;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
@@ -63,6 +65,29 @@ public class MarketplaceMailSettlementTests
 
         Assert.Equal(SenderType.CommodityAuction, packet.SenderType);
         Assert.Equal(ContentType.AuctionExpired, packet.ContentType);
+    }
+
+    [Fact]
+    public void MailItem_Build_ReportsRemainingExpiryDays()
+    {
+        using ServiceProviderScope scope = UseGameTableProvider();
+
+        MailItem mail = new(new CharacterMailModel
+        {
+            Id               = 101ul,
+            RecipientId      = 100ul,
+            SenderType       = (byte)SenderType.Creature,
+            CreatureId       = 42u,
+            Subject          = "Old mail",
+            Message          = "Almost expired",
+            CurrencyType     = (byte)CurrencyType.Credits,
+            DeliveryTime     = (byte)DeliverySpeed.Instant,
+            CreateTime       = DateTime.UtcNow.AddDays(-29.5d)
+        });
+
+        ServerMailAvailable.Mail packet = mail.Build();
+
+        Assert.InRange(packet.ExpiryTimeInDays, 0.45f, 0.5f);
     }
 
     [Fact]

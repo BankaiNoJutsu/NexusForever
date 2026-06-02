@@ -364,7 +364,7 @@ namespace NexusForever.Game.Mail
                 CurrencySentType     = 0,
                 CurrencySentAmount   = !IsCashOnDelivery && !HasPaidOrCollectedCurrency ? CurrencyAmount : 0,
                 CostOnDeliveryAmount = IsCashOnDelivery && !HasPaidOrCollectedCurrency ? CurrencyAmount : 0,
-                ExpiryTimeInDays     = ExpiryTime,
+                ExpiryTimeInDays     = GetRemainingExpiryTimeInDays(),
                 ContentType          = ContentType,
                 Flags                = Flags,
                 Sender               = new NetworkIdentity
@@ -378,6 +378,19 @@ namespace NexusForever.Game.Mail
                 serverMailItem.Attachments.Add(attachment.Build());
 
             return serverMailItem;
+        }
+
+        private float GetRemainingExpiryTimeInDays()
+        {
+            float expiryTime = ExpiryTime;
+            if (expiryTime <= 0f)
+                return 0f;
+
+            DateTime createUtc = CreateTime.Kind == DateTimeKind.Utc
+                ? CreateTime
+                : CreateTime.ToUniversalTime();
+            double remainingDays = createUtc.AddDays(expiryTime).Subtract(DateTime.UtcNow).TotalDays;
+            return (float)Math.Max(0d, remainingDays);
         }
 
         public IEnumerator<IMailAttachment> GetEnumerator()
