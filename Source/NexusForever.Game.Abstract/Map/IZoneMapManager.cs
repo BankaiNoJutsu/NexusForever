@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using NexusForever.Database.Character;
 using NexusForever.Game.Abstract.Entity;
 
@@ -18,5 +18,10 @@ namespace NexusForever.Game.Abstract.Map
         /// Invoked when <see cref="IPlayer"/> moves to a new zone.
         /// </summary>
         void OnZoneUpdate();
+
+        /// <summary>
+        /// Returns floored explored percent (0–100) for a <see cref="MapZoneEntry"/> id, or 0 when no hex data exists.
+        /// </summary>
+        byte GetMapZoneExploredPercent(ushort mapZoneId);
     }
 }

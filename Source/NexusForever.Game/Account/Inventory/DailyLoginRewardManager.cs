@@ -95,6 +95,18 @@ namespace NexusForever.Game.Account.Inventory
             return AccountOperationResult.Ok;
         }
 
+        public uint GetLoginDaysTotal()
+        {
+            RefreshDayCounters();
+            return loginDaysTotal;
+        }
+
+        public uint GetRewardsAvailable()
+        {
+            RefreshDayCounters();
+            return rewardsAvailable;
+        }
+
         private void RefreshDayCounters()
         {
             DateTime now = DateTime.UtcNow;

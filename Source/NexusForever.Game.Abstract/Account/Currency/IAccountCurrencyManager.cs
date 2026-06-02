@@ -6,6 +6,11 @@ namespace NexusForever.Game.Abstract.Account.Currency
     public interface IAccountCurrencyManager : IDatabaseAuth
     {
         /// <summary>
+        /// Returns the current amount of a supplied account currency type.
+        /// </summary>
+        ulong GetCurrencyAmount(AccountCurrencyType currencyType);
+
+        /// <summary>
         /// Returns whether the Account has enough of the currency to afford the amount.
         /// </summary>
         bool CanAfford(AccountCurrencyType currencyType, ulong amount);

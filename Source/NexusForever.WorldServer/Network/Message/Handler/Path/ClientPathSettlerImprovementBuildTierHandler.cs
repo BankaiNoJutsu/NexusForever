@@ -34,7 +34,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Path
 
             PathSettlerImprovementGroupEntry improvementGroup = gameTableManager.PathSettlerImprovementGroup.GetEntry(buildTier.PathSettlerImprovementGroupId);
             if (improvementGroup != null)
+            {
                 SendSettlerBuildAcknowledgement(player, improvementGroup, buildTier.BuildTier);
+                player.PathManager.ApplySettlerImprovementGroupStatus(
+                    buildTier.PathSettlerImprovementGroupId,
+                    (int)buildTier.BuildTier,
+                    improvementGroup.DurationPerBundleMs == 0u ? 0u : 1u);
+            }
 
             player.PathManager.CompleteMissionBySettlerImprovementGroupId(buildTier.PathSettlerImprovementGroupId);
         }

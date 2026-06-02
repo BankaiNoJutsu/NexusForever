@@ -161,6 +161,8 @@ public class ClientRewardUpdateRequestClaimTests
         public AccountTier AccountTier => default;
         public IGameSession Session => null;
 
+        public uint GetCREDDPendingOrderState() => 0u;
+
         public void AttachGrantManager(IAccountRewardRotationGrantManager grantManager)
         {
             RewardRotationGrantManager = grantManager;

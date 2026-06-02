@@ -14,6 +14,7 @@ using NexusForever.Game.Entity;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
+using DatacubeType = NexusForever.Game.Static.Entity.DatacubeType;
 using NexusForever.Game.Static.PlayerPath;
 using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Static.Reputation;
@@ -230,6 +231,140 @@ public class PathManagerTests
             ]);
 
         Assert.True(manager.IsMissionComplete(35));
+    }
+
+    [Fact]
+    public void Constructor_WithCompletedScientistScanMission_HydratesScanCredit()
+    {
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out _,
+            out _,
+            out _,
+            out _,
+            out _,
+            pathMissionModels:
+            [
+                new CharacterPathMissionModel
+                {
+                    Id            = 42ul,
+                    PathMissionId = 42,
+                    PathEpisodeId = 1,
+                    State         = (byte)PathMissionState.Complete,
+                    Completed     = 1,
+                    ProgressCount = 1
+                }
+            ]);
+
+        Assert.True(manager.HasScannedScientistCreature(34u));
+    }
+
+    [Fact]
+    public void MarkScientistCreatureScanned_PersistsViaDatacubeManager()
+    {
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out IPlayer player,
+            out _,
+            out _,
+            out _,
+            out _);
+
+        manager.MarkScientistCreatureScanned(130u);
+        Assert.True(manager.HasScannedScientistCreature(130u));
+
+        using CharacterContext context = CreateCharacterContext();
+        player.DatacubeManager.Save(context);
+
+        EntityEntry<CharacterDatacubeModel> entry = Assert.Single(
+            context.ChangeTracker.Entries<CharacterDatacubeModel>());
+        Assert.Equal((byte)DatacubeType.ScientistCreatureScan, entry.Entity.Type);
+        Assert.Equal(130, entry.Entity.Datacube);
+        Assert.Equal(1u, entry.Entity.Progress);
+    }
+
+    [Fact]
+    public void DatacubeManager_SendInitialPackets_ReplaysVolumeArchivesAndSkipsScientistScanState()
+    {
+        _ = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out IPlayer player,
+            out _,
+            out RecordingDispatchProxy<IGameSession> sessionProxy,
+            out _,
+            out _,
+            datacubeModels:
+            [
+                new CharacterDatacubeModel
+                {
+                    Id       = 42ul,
+                    Datacube = 11,
+                    Type     = (byte)DatacubeType.Chronicle,
+                    Progress = 2u
+                },
+                new CharacterDatacubeModel
+                {
+                    Id       = 42ul,
+                    Datacube = 12,
+                    Type     = (byte)DatacubeType.Journal,
+                    Progress = 4u
+                },
+                new CharacterDatacubeModel
+                {
+                    Id       = 42ul,
+                    Datacube = 130,
+                    Type     = (byte)DatacubeType.ScientistCreatureScan,
+                    Progress = 1u
+                }
+            ]);
+
+        player.DatacubeManager.SendInitialPackets();
+
+        RecordingDispatchProxy<IGameSession>.Invocation sessionCall =
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var update = Assert.IsType<NexusForever.Network.World.Message.Model.ServerDatacubeUpdateList>(
+            sessionCall.Arguments[0]);
+        Assert.Empty(update.DatacubeData);
+        Assert.Equal([11, 12], update.DatacubeVolumeData.Select(d => d.DatacubeId).ToArray());
+        Assert.Equal([2u, 4u], update.DatacubeVolumeData.Select(d => d.Progress).ToArray());
+    }
+
+    [Fact]
+    public void CompleteMission_MarksMappedScientistScanCreatureInfo()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Scientist, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [new PathMissionEntry { Id = 42u, PathEpisodeId = 1u }]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Scientist,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out _,
+                out _,
+                out _);
+
+            Assert.True(manager.CompleteMission(42));
+            Assert.True(manager.HasScannedScientistCreature(34u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
     }
 
     [Fact]
@@ -2298,6 +2433,100 @@ public class PathManagerTests
     }
 
     [Fact]
+    public void GetSettlerHubBuildProgressPercent_UsesHubMissionProgressAndStoredTier()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [
+                new PathMissionEntry
+                {
+                    Id = 650u,
+                    PathEpisodeId = 82u,
+                    PathTypeEnum = (uint)Path.Settler,
+                    PathMissionTypeEnum = 0x0013u,
+                    ObjectId = 46u
+                }
+            ],
+            settlerImprovementGroups:
+            [
+                new PathSettlerImprovementGroupEntry { Id = 11u, PathSettlerHubId = 46u, MaxBundleCount = 4u }
+            ],
+            settlerHubs:
+            [
+                new PathSettlerHubEntry { Id = 46u, MissionCount = 2u }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Settler,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out _,
+                out _,
+                out _);
+            manager.ActivateMissions(82, new Dictionary<ushort, uint> { [650] = 0 });
+            manager.CompleteMissionBySettlerImprovementGroupId(11u);
+
+            Assert.Equal(50u, manager.GetSettlerHubBuildProgressPercent(46u));
+
+            manager.ApplySettlerImprovementGroupStatus(11u, tier: 4, bundleCount: 1u);
+            Assert.Equal(100u, manager.GetSettlerHubBuildProgressPercent(11u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void GetSettlerHubContributionProgressPercent_UsesBundleCountOverMaxBundles()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            [
+                new PathLevelEntry { Id = 1u, PathTypeEnum = (uint)Path.Settler, PathLevel = 1u, PathXP = 0u }
+            ],
+            [],
+            [],
+            settlerImprovementGroups:
+            [
+                new PathSettlerImprovementGroupEntry { Id = 11u, PathSettlerHubId = 46u, MaxBundleCount = 4u }
+            ],
+            settlerHubs:
+            [
+                new PathSettlerHubEntry { Id = 46u, MissionCount = 1u }
+            ]);
+
+        try
+        {
+            PathManager manager = CreateManager(
+                Path.Settler,
+                totalXp: 0u,
+                levelRewarded: 1,
+                out _,
+                out _,
+                out _,
+                out _,
+                out _);
+
+            manager.ApplySettlerImprovementGroupStatus(11u, tier: 1, bundleCount: 2u);
+
+            Assert.Equal(50u, manager.GetSettlerHubContributionProgressPercent(11u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void CompleteMissionBySettlerImprovementGroupId_WithPersistedPartialHubProgress_CompletesAfterReload()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -2612,7 +2841,8 @@ public class PathManagerTests
         out RecordingDispatchProxy<IGameSession> sessionProxy,
         out RecordingDispatchProxy<ICharacterAchievementManager> achievementManagerProxy,
         out RecordingDispatchProxy<IInventory> inventoryProxy,
-        IEnumerable<CharacterPathMissionModel> pathMissionModels = null)
+        IEnumerable<CharacterPathMissionModel> pathMissionModels = null,
+        IEnumerable<CharacterDatacubeModel> datacubeModels = null)
     {
         player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
@@ -2626,7 +2856,7 @@ public class PathManagerTests
         playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
         playerProxy.SetProperty("Faction1", Faction.Exile);
 
-        var manager = new PathManager(player, new CharacterModel
+        var characterModel = new CharacterModel
         {
             Id = 42ul,
             Path =
@@ -2640,8 +2870,14 @@ public class PathManagerTests
                     LevelRewarded = levelRewarded
                 }
             ],
-            PathMission = pathMissionModels?.ToList() ?? []
-        });
+            PathMission = pathMissionModels?.ToList() ?? [],
+            Datacube    = datacubeModels?.ToList() ?? []
+        };
+
+        var datacubeManager = new DatacubeManager(player, characterModel);
+        playerProxy.SetProperty(nameof(IPlayer.DatacubeManager), datacubeManager);
+
+        var manager = new PathManager(player, characterModel);
         playerProxy.SetProperty(nameof(IPlayer.PathManager), manager);
 
         return manager;

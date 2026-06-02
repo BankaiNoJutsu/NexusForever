@@ -20,6 +20,21 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         void AddDatacubeVolume(ushort id, uint progress);
 
+        /// <summary>
+        /// Records scientist path scan credit for <see cref="GameTable.Model.PathScientistCreatureInfoEntry.Id"/>.
+        /// </summary>
+        void AddScientistCreatureScan(ushort pathScientistCreatureInfoId);
+
+        /// <summary>
+        /// Returns whether scientist scan credit exists for the supplied creature-info id.
+        /// </summary>
+        bool HasScientistCreatureScan(ushort pathScientistCreatureInfoId);
+
+        /// <summary>
+        /// Returns persisted checklist progress bits for the supplied creature-info id.
+        /// </summary>
+        uint GetScientistCreatureScanProgress(ushort pathScientistCreatureInfoId);
+
         void SendInitialPackets();
         void SendDatacube(IDatacube datacube);
         void SendDatacubeVolume(IDatacube volume);

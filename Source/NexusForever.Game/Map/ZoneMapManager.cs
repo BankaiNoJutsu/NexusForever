@@ -61,6 +61,14 @@ namespace NexusForever.Game.Map
                 zoneMap.Send();
         }
 
+        public byte GetMapZoneExploredPercent(ushort mapZoneId)
+        {
+            if (!zoneMaps.TryGetValue(mapZoneId, out IZoneMap zoneMap))
+                return 0;
+
+            return (byte)zoneMap.GetExploredPercent();
+        }
+
         /// <summary>
         /// Invoked when <see cref="IPlayer"/> moves to a new <see cref="Vector3"/>.
         /// </summary>

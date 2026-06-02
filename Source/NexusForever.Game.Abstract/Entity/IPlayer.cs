@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using System.Threading.Tasks;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Character;
@@ -197,6 +197,7 @@ namespace NexusForever.Game.Abstract.Entity
         void ResetAttributePoints();
         void SendAttributePoints();
         bool HasTradeskill(TradeskillType tradeskillId);
+        uint GetTradeskillXp(TradeskillType tradeskillId);
         bool LearnTradeskill(TradeskillType toLearnTradeskillId, TradeskillType toDropTradeskillId);
         uint AddTradeskillXp(TradeskillType tradeskillId, uint amount);
         uint AddTradeskillXpForTier(uint tradeskillTierId, uint amount);

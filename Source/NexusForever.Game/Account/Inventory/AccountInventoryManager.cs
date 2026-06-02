@@ -394,6 +394,21 @@ namespace NexusForever.Game.Account.Inventory
             return dailyLoginRewardManager?.TryClaimReward() ?? AccountOperationResult.GenericFail;
         }
 
+        public uint GetDailyLoginDaysTotal()
+        {
+            return dailyLoginRewardManager?.GetLoginDaysTotal() ?? 0u;
+        }
+
+        public uint GetDailyLoginRewardsAvailable()
+        {
+            return dailyLoginRewardManager?.GetRewardsAvailable() ?? 0u;
+        }
+
+        public uint GetAccountInventoryItemCount()
+        {
+            return (uint)items.Count;
+        }
+
         public void SendInventory()
         {
             log.LogInformation("StorefrontCatalogDiagnostics account {AccountId}: ServerAccountItems rows={InventoryItemCount} inventory=[{InventoryItems}].",

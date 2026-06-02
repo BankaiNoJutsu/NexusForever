@@ -1,8 +1,8 @@
-﻿using NexusForever.Game.Static.Prerequisite;
+using NexusForever.Game.Static.Prerequisite;
 
 namespace NexusForever.Game.Prerequisite
 {
-    [AttributeUsage(AttributeTargets.Class)]
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class PrerequisiteCheckAttribute : Attribute
     {
         public PrerequisiteType Type { get; }

@@ -97,9 +97,48 @@ namespace NexusForever.Game.Abstract.Entity
         bool IsMissionComplete(uint pathMissionId);
 
         /// <summary>
+        /// Returns whether the player has scan credit for <see cref="GameTable.Model.PathScientistCreatureInfoEntry.Id"/>.
+        /// </summary>
+        bool HasScannedScientistCreature(uint pathScientistCreatureInfoId);
+
+        /// <summary>
+        /// Records scientist scan credit for <see cref="GameTable.Model.PathScientistCreatureInfoEntry.Id"/>.
+        /// </summary>
+        void MarkScientistCreatureScanned(uint pathScientistCreatureInfoId);
+
+        /// <summary>
         /// Returns settler infrastructure progress for <see cref="GameTable.Model.PathSettlerInfrastructureEntry.Id"/>.
         /// </summary>
         SettlerInfrastructureState GetSettlerInfrastructureState(uint pathSettlerInfrastructureId);
+
+        /// <summary>
+        /// Records settler improvement-group build status from server build packets.
+        /// </summary>
+        void ApplySettlerImprovementGroupStatus(uint pathSettlerImprovementGroupId, int tier, uint bundleCount);
+
+        /// <summary>
+        /// Returns build progress percent for a <see cref="GameTable.Model.PathSettlerHubEntry.Id"/> or
+        /// <see cref="GameTable.Model.PathSettlerImprovementGroupEntry.Id"/> (client record+0x60 proxy).
+        /// </summary>
+        uint GetSettlerHubBuildProgressPercent(uint pathSettlerHubOrImprovementGroupId);
+
+        /// <summary>
+        /// Returns contribution progress percent for a hub or improvement group (client record+0x68 proxy).
+        /// </summary>
+        uint GetSettlerHubContributionProgressPercent(uint pathSettlerHubOrImprovementGroupId);
+
+        /// <summary>
+        /// Returns overall settler hub progress percent when prerequisite rows use objectId0=0 (client record+0x64 proxy).
+        /// </summary>
+        uint GetSettlerHubOverallProgressPercent();
+
+        /// <summary>
+        /// Returns whether a path mission checklist/clue item is complete.
+        /// </summary>
+        /// <returns>
+        /// False when the mission is unknown or inactive; otherwise sets <paramref name="isComplete"/>.
+        /// </returns>
+        bool TryIsPathMissionChecklistItemComplete(ushort pathMissionId, uint checklistIndex, out bool isComplete);
 
         void SendInitialPackets();
         void SendSetUnitPathTypePacket();

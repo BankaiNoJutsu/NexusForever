@@ -24,5 +24,8 @@ namespace NexusForever.Game.Abstract.Account.Inventory
         void SendCooldowns();
         void SendDailyLoginUpdate();
         AccountOperationResult ClaimDailyLoginReward();
+        uint GetDailyLoginDaysTotal();
+        uint GetDailyLoginRewardsAvailable();
+        uint GetAccountInventoryItemCount();
     }
 }

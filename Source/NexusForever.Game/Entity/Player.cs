@@ -1876,6 +1876,11 @@ namespace NexusForever.Game.Entity
             return tradeskills.TryGetValue(tradeskillId, out TradeskillState tradeskill) && tradeskill.IsActive != 0u;
         }
 
+        public uint GetTradeskillXp(TradeskillType tradeskillId)
+        {
+            return tradeskills.TryGetValue(tradeskillId, out TradeskillState tradeskill) ? tradeskill.TradeskillXp : 0u;
+        }
+
         public bool LearnTradeskill(TradeskillType toLearnTradeskillId, TradeskillType toDropTradeskillId)
         {
             if (toDropTradeskillId != 0

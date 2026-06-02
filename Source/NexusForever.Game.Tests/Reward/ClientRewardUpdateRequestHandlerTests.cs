@@ -409,6 +409,8 @@ public class ClientRewardUpdateRequestHandlerTests
         public AccountTier AccountTier => default;
         public IGameSession Session => null;
 
+        public uint GetCREDDPendingOrderState() => 0u;
+
         public void Initialise(AccountModel model, IGameSession session)
         {
         }

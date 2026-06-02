@@ -33,6 +33,11 @@ namespace NexusForever.Game.Abstract.Account
         IGameSession Session { get; }
 
         /// <summary>
+        /// Returns the client CREDD pending-order flag at account <c>+0x1708</c> (0 = none, 1 = open order).
+        /// </summary>
+        uint GetCREDDPendingOrderState();
+
+        /// <summary>
         /// Initialise <see cref="IAccount"/> with supplied  database model and <see cref="IGameSession"/>.
         /// </summary>
         void Initialise(AccountModel model, IGameSession session);

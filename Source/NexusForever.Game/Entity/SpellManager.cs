@@ -520,5 +520,48 @@ namespace NexusForever.Game.Entity
                 BonusPower = bonusAmpPower
             });
         }
+
+        /// <summary>
+        /// Returns whether any active spell cooldown references the supplied <see cref="SpellCoolDownEntry"/> id.
+        /// Proxy for client prerequisite cooldown-node list at entity <c>+0x15d0</c>.
+        /// </summary>
+        internal bool HasActiveCoolDownNode(uint spellCoolDownId, IGameTableManager gameTableManager)
+        {
+            foreach ((uint spell4Id, double remaining) in spellCooldowns)
+            {
+                if (remaining <= 0d)
+                    continue;
+
+                Spell4Entry entry = gameTableManager.Spell4.GetEntry(spell4Id);
+                if (entry != null && ReferencesCoolDownNode(entry, spellCoolDownId))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns whether the player knows a spell that references the supplied cooldown-node id.
+        /// Proxy for client SpellService set membership (type 104).
+        /// </summary>
+        internal bool KnowsSpellReferencingCoolDownNode(uint spellCoolDownId, IGameTableManager gameTableManager)
+        {
+            foreach (ICharacterSpell characterSpell in spells.Values)
+            {
+                Spell4Entry entry = characterSpell.SpellInfo.Entry;
+                if (ReferencesCoolDownNode(entry, spellCoolDownId))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool ReferencesCoolDownNode(Spell4Entry entry, uint spellCoolDownId)
+        {
+            return entry.SpellCoolDownIdGlobal == spellCoolDownId
+                || entry.SpellCoolDownId00 == spellCoolDownId
+                || entry.SpellCoolDownId01 == spellCoolDownId
+                || entry.SpellCoolDownId02 == spellCoolDownId;
+        }
     }
 }

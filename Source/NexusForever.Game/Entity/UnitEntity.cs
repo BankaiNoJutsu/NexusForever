@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using NexusForever.Game.Abstract.Combat;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
@@ -2047,6 +2047,62 @@ namespace NexusForever.Game.Entity
         public ISpell GetActiveSpell(Func<ISpell, bool> func)
         {
             return pendingSpells.FirstOrDefault(func);
+        }
+
+        internal bool HasActiveSpellEffectType(SpellEffectType effectType)
+        {
+            foreach (ISpell spell in pendingSpells)
+            {
+                if (spell is NexusForever.Game.Spell.Spell concrete
+                    && !concrete.IsFinished
+                    && concrete.HasPersistentEffectOfType(effectType))
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal bool HasActiveSpellEffectGroup(uint effectGroupId, IGameTableManager gameTableManager)
+        {
+            if (effectGroupId == 0u)
+                return false;
+
+            foreach (ISpell spell in pendingSpells)
+            {
+                if (spell is NexusForever.Game.Spell.Spell concrete
+                    && !concrete.IsFinished
+                    && concrete.HasPersistentEffectInEffectGroup(effectGroupId, gameTableManager))
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal bool HasActiveSpellTargetMechanic(uint mechanicFlags)
+        {
+            if (mechanicFlags == 0u)
+                return false;
+
+            foreach (ISpell spell in pendingSpells)
+            {
+                if (spell is NexusForever.Game.Spell.Spell concrete
+                    && !concrete.IsFinished
+                    && concrete.HasPersistentTargetMechanicFlags(mechanicFlags))
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal bool HasActiveSpell4(uint spell4Id)
+        {
+            if (spell4Id == 0u)
+                return false;
+
+            if (HasTrackedSpellState(spell4Id))
+                return true;
+
+            return GetActiveSpell(spell => !spell.IsFinished && spell.Parameters.SpellInfo.Entry.Id == spell4Id) != null;
         }
 
         /// <summary>

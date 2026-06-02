@@ -24,5 +24,10 @@ namespace NexusForever.Game.Abstract.Challenges
         /// Returns the number of recorded completions for the supplied challenge.
         /// </summary>
         uint GetCompletionCount(ushort challengeId);
+
+        /// <summary>
+        /// Returns whether the supplied challenge is currently activated on this character.
+        /// </summary>
+        bool IsChallengeActivated(ushort challengeId);
     }
 }

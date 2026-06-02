@@ -28,6 +28,7 @@ namespace NexusForever.Game.Entity
         private const uint ExplorerPowerMapMissionType = 0x0012;
         private const uint SettlerHubMissionType = 0x0013;
         private const uint SettlerInfrastructureMissionType = 0x0015;
+        private const uint SettlerImprovementMaxTier = 4u;
         private const uint PathMissionCompletionXpGameFormulaId = 0x017Au;
         private const uint DefaultMissionCompletionXp = 50u;
 
@@ -35,6 +36,7 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<Path, IPathEntry> paths = new();
         private readonly Dictionary<ushort, PathMissionRuntimeState> pathMissions = [];
         private readonly HashSet<ushort> activatedEpisodes = [];
+        private readonly Dictionary<uint, SettlerImprovementGroupRuntimeStatus> settlerImprovementGroupStatus = new();
 
         /// <summary>
         /// Create a new <see cref="IPathManager"/> from <see cref="IPlayer"/> database model.
@@ -57,7 +59,39 @@ namespace NexusForever.Game.Entity
                     activatedEpisodes.Add(state.EpisodeId);
             }
 
+            HydrateScientistScanStateFromCompletedMissions();
             Validate();
+        }
+
+        private void HydrateScientistScanStateFromCompletedMissions()
+        {
+            foreach (KeyValuePair<ushort, uint> mapping in PathScientistPrerequisiteHelper.MissionToCreatureInfoId)
+            {
+                if (IsMissionComplete(mapping.Key))
+                    MarkScientistCreatureScanned(mapping.Value);
+            }
+        }
+
+        private void TryMarkScientistScanFromMission(ushort pathMissionId)
+        {
+            if (PathScientistPrerequisiteHelper.MissionToCreatureInfoId.TryGetValue(pathMissionId, out uint creatureInfoId))
+                MarkScientistCreatureScanned(creatureInfoId);
+        }
+
+        public bool HasScannedScientistCreature(uint pathScientistCreatureInfoId)
+        {
+            if (pathScientistCreatureInfoId == 0u || pathScientistCreatureInfoId > ushort.MaxValue)
+                return false;
+
+            return player.DatacubeManager.HasScientistCreatureScan((ushort)pathScientistCreatureInfoId);
+        }
+
+        public void MarkScientistCreatureScanned(uint pathScientistCreatureInfoId)
+        {
+            if (pathScientistCreatureInfoId == 0u || pathScientistCreatureInfoId > ushort.MaxValue)
+                return;
+
+            player.DatacubeManager.AddScientistCreatureScan((ushort)pathScientistCreatureInfoId);
         }
 
         private void Validate()
@@ -308,6 +342,7 @@ namespace NexusForever.Game.Entity
                 AddXp(xp);
 
             GrantMissionRewards(pathMissionId);
+            TryMarkScientistScanFromMission(pathMissionId);
 
             return true;
         }
@@ -556,6 +591,25 @@ namespace NexusForever.Game.Entity
                 && state.Completed;
         }
 
+        public bool TryIsPathMissionChecklistItemComplete(ushort pathMissionId, uint checklistIndex, out bool isComplete)
+        {
+            isComplete = false;
+            if (!pathMissions.TryGetValue(pathMissionId, out PathMissionRuntimeState state))
+                return false;
+
+            if (state.Completed || state.State == PathMissionState.Complete)
+            {
+                isComplete = true;
+                return true;
+            }
+
+            if (checklistIndex >= 32)
+                return true;
+
+            isComplete = (state.ProgressData & (1u << (int)checklistIndex)) != 0;
+            return true;
+        }
+
         public SettlerInfrastructureState GetSettlerInfrastructureState(uint pathSettlerInfrastructureId)
         {
             if (GameTableManager.Instance.PathSettlerInfrastructure?.GetEntry(pathSettlerInfrastructureId) == null
@@ -581,6 +635,129 @@ namespace NexusForever.Game.Entity
 
             return SettlerInfrastructureState.Inactive;
         }
+
+        public void ApplySettlerImprovementGroupStatus(uint pathSettlerImprovementGroupId, int tier, uint bundleCount)
+        {
+            if (pathSettlerImprovementGroupId == 0u)
+                return;
+
+            settlerImprovementGroupStatus[pathSettlerImprovementGroupId] = new SettlerImprovementGroupRuntimeStatus(tier, bundleCount);
+        }
+
+        public uint GetSettlerHubBuildProgressPercent(uint pathSettlerHubOrImprovementGroupId)
+        {
+            uint hubId = ResolveSettlerHubId(pathSettlerHubOrImprovementGroupId);
+            if (hubId == 0u)
+                return 0u;
+
+            uint missionPercent = GetSettlerHubMissionProgressPercent(hubId);
+            if (pathSettlerHubOrImprovementGroupId != hubId
+                && settlerImprovementGroupStatus.TryGetValue(pathSettlerHubOrImprovementGroupId, out SettlerImprovementGroupRuntimeStatus status))
+            {
+                uint tierPercent = PercentFromTier(status.Tier);
+                return Math.Max(missionPercent, tierPercent);
+            }
+
+            return missionPercent;
+        }
+
+        public uint GetSettlerHubContributionProgressPercent(uint pathSettlerHubOrImprovementGroupId)
+        {
+            uint improvementGroupId = ResolveSettlerImprovementGroupId(pathSettlerHubOrImprovementGroupId);
+            if (improvementGroupId != 0u
+                && settlerImprovementGroupStatus.TryGetValue(improvementGroupId, out SettlerImprovementGroupRuntimeStatus status))
+            {
+                PathSettlerImprovementGroupEntry group = GameTableManager.Instance.PathSettlerImprovementGroup.GetEntry(improvementGroupId);
+                if (group != null && group.MaxBundleCount > 0u)
+                    return Math.Min(100u, status.BundleCount * 100u / group.MaxBundleCount);
+            }
+
+            uint hubId = ResolveSettlerHubId(pathSettlerHubOrImprovementGroupId);
+            return hubId != 0u ? GetSettlerHubMissionProgressPercent(hubId) : 0u;
+        }
+
+        public uint GetSettlerHubOverallProgressPercent()
+        {
+            if (settlerImprovementGroupStatus.Count > 0)
+            {
+                uint total = 0u;
+                foreach (KeyValuePair<uint, SettlerImprovementGroupRuntimeStatus> entry in settlerImprovementGroupStatus)
+                {
+                    total += GetSettlerHubBuildProgressPercent(entry.Key);
+                }
+
+                return total / (uint)settlerImprovementGroupStatus.Count;
+            }
+
+            uint maxPercent = 0u;
+            HashSet<uint> hubIds = [];
+            if (GameTableManager.Instance.PathSettlerHub?.Entries != null)
+            {
+                foreach (PathSettlerHubEntry hub in GameTableManager.Instance.PathSettlerHub.Entries)
+                    hubIds.Add(hub.Id);
+            }
+
+            foreach (uint hubId in hubIds)
+                maxPercent = Math.Max(maxPercent, GetSettlerHubMissionProgressPercent(hubId));
+
+            return maxPercent;
+        }
+
+        private uint GetSettlerHubMissionProgressPercent(uint pathSettlerHubId)
+        {
+            PathSettlerHubEntry hub = GameTableManager.Instance.PathSettlerHub.GetEntry(pathSettlerHubId);
+            if (hub == null)
+                return 0u;
+
+            uint requiredCount = Math.Max(hub.MissionCount, 1u);
+            foreach (PathMissionRuntimeState state in pathMissions.Values)
+            {
+                PathMissionEntry mission = GameTableManager.Instance.PathMission.GetEntry(state.MissionId);
+                if (mission == null
+                    || mission.PathTypeEnum != (uint)Path.Settler
+                    || mission.PathMissionTypeEnum != SettlerHubMissionType
+                    || mission.ObjectId != pathSettlerHubId)
+                {
+                    continue;
+                }
+
+                return Math.Min(100u, state.ProgressCount * 100u / requiredCount);
+            }
+
+            return 0u;
+        }
+
+        private static uint ResolveSettlerHubId(uint objectId)
+        {
+            if (objectId == 0u)
+                return 0u;
+
+            if (GameTableManager.Instance.PathSettlerHub.GetEntry(objectId) != null)
+                return objectId;
+
+            PathSettlerImprovementGroupEntry group = GameTableManager.Instance.PathSettlerImprovementGroup.GetEntry(objectId);
+            return group?.PathSettlerHubId ?? 0u;
+        }
+
+        private static uint ResolveSettlerImprovementGroupId(uint objectId)
+        {
+            if (objectId == 0u)
+                return 0u;
+
+            return GameTableManager.Instance.PathSettlerImprovementGroup.GetEntry(objectId) != null
+                ? objectId
+                : 0u;
+        }
+
+        private static uint PercentFromTier(int tier)
+        {
+            if (tier <= 0)
+                return 0u;
+
+            return Math.Min(100u, (uint)tier * 100u / SettlerImprovementMaxTier);
+        }
+
+        private readonly record struct SettlerImprovementGroupRuntimeStatus(int Tier, uint BundleCount);
 
         /// <summary>
         /// Get the current <see cref="Path"/> level for the <see cref="IPlayer"/>.

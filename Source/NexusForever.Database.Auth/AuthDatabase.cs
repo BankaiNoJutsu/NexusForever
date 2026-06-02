@@ -323,6 +323,12 @@ namespace NexusForever.Database.Auth
             return context.AccountCREDDOrder.AsNoTracking().ToList();
         }
 
+        public bool AccountHasCREDDOrder(uint accountId)
+        {
+            using var context = new AuthContext(config);
+            return context.AccountCREDDOrder.AsNoTracking().Any(o => o.AccountId == accountId);
+        }
+
         public List<AccountCREDDHistoryModel> GetCREDDHistory(uint accountId, int maxRows)
         {
             using var context = new AuthContext(config);

@@ -1,4 +1,5 @@
-﻿using NexusForever.Database.Auth;
+﻿using NexusForever.Database;
+using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Costume;
@@ -41,6 +42,20 @@ namespace NexusForever.Game.Account
         public AccountTier AccountTier => RbacManager.HasPermission(Permission.Signature) ? AccountTier.Signature : AccountTier.Basic;
 
         public IGameSession Session { get; private set; }
+
+        /// <inheritdoc/>
+        public uint GetCREDDPendingOrderState()
+        {
+            try
+            {
+                AuthDatabase authDatabase = DatabaseManager.Instance?.GetDatabase<AuthDatabase>();
+                return authDatabase != null && authDatabase.AccountHasCREDDOrder(Id) ? 1u : 0u;
+            }
+            catch (InvalidOperationException)
+            {
+                return 0u;
+            }
+        }
 
         /// <summary>
         /// Initialise <see cref="IAccount"/> with supplied  database model and <see cref="IGameSession"/>.

@@ -278,6 +278,8 @@ public class CharacterListManagerTests
         public AccountTier AccountTier => AccountTier.Signature;
         public IGameSession Session { get; }
 
+        public uint GetCREDDPendingOrderState() => 0u;
+
         public void Initialise(AccountModel model, IGameSession session)
         {
         }
@@ -292,6 +294,11 @@ public class CharacterListManagerTests
         public bool CanAfford(AccountCurrencyType currencyType, ulong amount)
         {
             return true;
+        }
+
+        public ulong GetCurrencyAmount(AccountCurrencyType currencyType)
+        {
+            return 0ul;
         }
 
         public void CurrencyAddAmount(AccountCurrencyType currencyType, ulong amount, ulong reason = 0)

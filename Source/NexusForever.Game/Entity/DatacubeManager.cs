@@ -1,9 +1,12 @@
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Shared;
 
 namespace NexusForever.Game.Entity
 {
@@ -91,14 +94,66 @@ namespace NexusForever.Game.Entity
             SendDatacubeVolume(datacube);
         }
 
+        public void AddScientistCreatureScan(ushort pathScientistCreatureInfoId)
+        {
+            if (pathScientistCreatureInfoId == 0u)
+                return;
+
+            uint completionMask = 1u;
+            IGameTableManager gameTableManager = LegacyServiceProvider.Provider?.GetService<IGameTableManager>();
+            if (gameTableManager?.PathScientistCreatureInfo != null)
+            {
+                PathScientistCreatureInfoEntry entry = gameTableManager.PathScientistCreatureInfo.GetEntry(pathScientistCreatureInfoId);
+                completionMask = PathScientistScanHelper.GetCompletionMask(entry);
+            }
+
+            uint hash = DatacubeHash(pathScientistCreatureInfoId, DatacubeType.ScientistCreatureScan);
+            if (datacubes.TryGetValue(hash, out IDatacube existing))
+            {
+                existing.Progress |= completionMask;
+                return;
+            }
+
+            datacubes.Add(hash, new Datacube(player, pathScientistCreatureInfoId, DatacubeType.ScientistCreatureScan, completionMask));
+        }
+
+        public bool HasScientistCreatureScan(ushort pathScientistCreatureInfoId)
+        {
+            if (pathScientistCreatureInfoId == 0u)
+                return false;
+
+            uint progress = GetScientistCreatureScanProgress(pathScientistCreatureInfoId);
+            if (progress == 0u)
+                return false;
+
+            IGameTableManager gameTableManager = LegacyServiceProvider.Provider?.GetService<IGameTableManager>();
+            if (gameTableManager?.PathScientistCreatureInfo == null)
+                return true;
+
+            PathScientistCreatureInfoEntry entry = gameTableManager.PathScientistCreatureInfo.GetEntry(pathScientistCreatureInfoId);
+            return PathScientistScanHelper.IsFullyScanned(progress, entry);
+        }
+
+        public uint GetScientistCreatureScanProgress(ushort pathScientistCreatureInfoId)
+        {
+            if (pathScientistCreatureInfoId == 0u)
+                return 0u;
+
+            uint hash = DatacubeHash(pathScientistCreatureInfoId, DatacubeType.ScientistCreatureScan);
+            return datacubes.TryGetValue(hash, out IDatacube datacube) ? datacube.Progress : 0u;
+        }
+
         public void SendInitialPackets()
         {
             var datacubeUpdateList = new ServerDatacubeUpdateList();
             foreach (IDatacube datacube in datacubes.Values)
             {
+                if (datacube.Type == DatacubeType.ScientistCreatureScan)
+                    continue;
+
                 if (datacube.Type == DatacubeType.Datacube)
                     datacubeUpdateList.DatacubeData.Add(datacube.Build());
-                else
+                else if (datacube.Type is DatacubeType.Chronicle or DatacubeType.Journal)
                     datacubeUpdateList.DatacubeVolumeData.Add(datacube.Build());
             }
 

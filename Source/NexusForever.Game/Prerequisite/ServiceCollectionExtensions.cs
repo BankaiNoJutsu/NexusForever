@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Shared;
@@ -15,11 +15,9 @@ namespace NexusForever.Game.Prerequisite
 
             foreach (Type type in Assembly.GetExecutingAssembly().GetTypes())
             {
-                PrerequisiteCheckAttribute attribute = type.GetCustomAttribute<PrerequisiteCheckAttribute>();
-                if (attribute == null)
-                    continue;
-
-                sc.AddKeyedTransient(typeof(IPrerequisiteCheck), attribute.Type, type);
+                IEnumerable<PrerequisiteCheckAttribute> attributes = type.GetCustomAttributes<PrerequisiteCheckAttribute>();
+                foreach (PrerequisiteCheckAttribute attribute in attributes)
+                    sc.AddKeyedTransient(typeof(IPrerequisiteCheck), attribute.Type, type);
             }
         }
     }

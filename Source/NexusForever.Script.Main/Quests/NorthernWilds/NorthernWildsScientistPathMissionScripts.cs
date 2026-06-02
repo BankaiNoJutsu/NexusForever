@@ -43,6 +43,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             if (activator.Path != Path.Scientist)
                 return;
 
+            activator.PathManager.MarkScientistCreatureScanned(PathScientistCreatureInfoId);
             activator.PathManager.CompleteMission(PathMissionId);
         }
     }

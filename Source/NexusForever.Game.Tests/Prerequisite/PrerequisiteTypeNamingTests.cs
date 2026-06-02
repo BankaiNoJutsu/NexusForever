@@ -55,13 +55,106 @@ public class PrerequisiteTypeNamingTests
     [InlineData(134, nameof(PrerequisiteType.ItemStatId))]
     [InlineData(136, nameof(PrerequisiteType.Item2Id))]
     [InlineData(90, nameof(PrerequisiteType.MountVehicleType))]
+    [InlineData(96, nameof(PrerequisiteType.EvalContextFloatByObjectId))]
+    [InlineData(97, nameof(PrerequisiteType.AccountItemListItem2CountNpc97))]
+    [InlineData(98, nameof(PrerequisiteType.AccountItemListItem2CountNpc98))]
+    [InlineData(99, nameof(PrerequisiteType.AccountItemListItem2CountNpc99))]
+    [InlineData(100, nameof(PrerequisiteType.AccountItemListItem2Count100))]
+    [InlineData(101, nameof(PrerequisiteType.AccountItemListItem2Count101))]
+    [InlineData(233, nameof(PrerequisiteType.SpellTierUnlocked))]
+    [InlineData(241, nameof(PrerequisiteType.HousingResidenceLoaded))]
     [InlineData(135, nameof(PrerequisiteType.AppliedItemStatId))]
     [InlineData(140, nameof(PrerequisiteType.ItemRolledPropertyValue))]
     [InlineData(191, nameof(PrerequisiteType.PetEntitySpell4))]
     [InlineData(275, nameof(PrerequisiteType.DoesNotOwnAccountItem))]
     [InlineData(172, nameof(PrerequisiteType.HealthScaled))]
+    [InlineData(173, nameof(PrerequisiteType.ItemTradeSkill))]
     [InlineData(174, nameof(PrerequisiteType.ItemTradeSkillKnown))]
+    [InlineData(175, nameof(PrerequisiteType.TradeSkill))]
+    [InlineData(176, nameof(PrerequisiteType.ChallengeObject))]
+    [InlineData(177, nameof(PrerequisiteType.TrueLevel))]
+    [InlineData(168, nameof(PrerequisiteType.AccountItemCount))]
+    [InlineData(169, nameof(PrerequisiteType.AccountItemCountCompared))]
+    [InlineData(166, nameof(PrerequisiteType.LiveEventTreeLookup))]
+    [InlineData(167, nameof(PrerequisiteType.LiveEventWorldFactionBranch))]
+    [InlineData(171, nameof(PrerequisiteType.DailyLoginDaysTotal))]
+    [InlineData(287, nameof(PrerequisiteType.DailyLoginRewardsAvailable))]
+    [InlineData(178, nameof(PrerequisiteType.ProgressTrackOnMatchingEntity))]
+    [InlineData(293, nameof(PrerequisiteType.AccountCurrencyAmount))]
+    [InlineData(266, nameof(PrerequisiteType.PetOrEsperPetEntity))]
+    [InlineData(159, nameof(PrerequisiteType.PositionalRequirementBetweenCasterAndTarget))]
+    [InlineData(40, nameof(PrerequisiteType.Health))]
+    [InlineData(41, nameof(PrerequisiteType.ZoneExplored))]
+    [InlineData(12, nameof(PrerequisiteType.DeadState))]
+    [InlineData(28, nameof(PrerequisiteType.InCombat))]
+    [InlineData(38, nameof(PrerequisiteType.IsCreature))]
+    [InlineData(39, nameof(PrerequisiteType.IsPlayer))]
+    [InlineData(42, nameof(PrerequisiteType.IsGroupLeader))]
+    [InlineData(220, nameof(PrerequisiteType.PathMissionChecklistItemComplete))]
+    [InlineData(221, nameof(PrerequisiteType.ActionSetSpell))]
+    [InlineData(4, nameof(PrerequisiteType.Faction))]
+    [InlineData(5, nameof(PrerequisiteType.Reputation))]
+    [InlineData(13, nameof(PrerequisiteType.ItemEquipped))]
+    [InlineData(14, nameof(PrerequisiteType.ItemOnCharacter))]
+    [InlineData(51, nameof(PrerequisiteType.ItemQuantity))]
+    [InlineData(182, nameof(PrerequisiteType.HouseOwnership))]
+    [InlineData(186, nameof(PrerequisiteType.HousingNeighborResidence))]
+    [InlineData(183, nameof(PrerequisiteType.Guild))]
+    [InlineData(184, nameof(PrerequisiteType.Guild2))]
+    [InlineData(185, nameof(PrerequisiteType.GuildPerk))]
+    [InlineData(37, nameof(PrerequisiteType.RandomPercent))]
+    [InlineData(43, nameof(PrerequisiteType.IsObjectiveActive))]
+    [InlineData(68, nameof(PrerequisiteType.QuestObjective))]
+    [InlineData(128, nameof(PrerequisiteType.Faction128))]
+    [InlineData(188, nameof(PrerequisiteType.WarplotPermission))]
+    [InlineData(63, nameof(PrerequisiteType.IsLocalPlayerEntity))]
+    [InlineData(268, nameof(PrerequisiteType.CREDDPendingOrderState))]
     public void EvidenceBackedRenames_KeepStableTableIds(int tableId, string expectedName)
+    {
+        Assert.Equal((PrerequisiteType)tableId, Enum.Parse<PrerequisiteType>(expectedName));
+        Assert.Equal(expectedName, Enum.GetName((PrerequisiteType)tableId));
+    }
+
+    [Theory]
+    [InlineData(223, nameof(PrerequisiteType.Unknown223))]
+    [InlineData(240, nameof(PrerequisiteType.Unknown240))]
+    [InlineData(245, nameof(PrerequisiteType.Unknown245))]
+    [InlineData(267, nameof(PrerequisiteType.Unknown267))]
+    [InlineData(286, nameof(PrerequisiteType.Unknown286))]
+    [InlineData(289, nameof(PrerequisiteType.Unknown289))]
+    [InlineData(290, nameof(PrerequisiteType.Unknown290))]
+    [InlineData(291, nameof(PrerequisiteType.Unknown291))]
+    public void DuplicateBodyAliases_RemainUnknownUntilSemanticOwnerIsProven(int tableId, string expectedName)
+    {
+        Assert.Equal((PrerequisiteType)tableId, Enum.Parse<PrerequisiteType>(expectedName));
+        Assert.Equal(expectedName, Enum.GetName((PrerequisiteType)tableId));
+    }
+
+    [Theory]
+    [InlineData(189, nameof(PrerequisiteType.Unknown189))]
+    [InlineData(192, nameof(PrerequisiteType.Unknown192))]
+    [InlineData(193, nameof(PrerequisiteType.Unknown193))]
+    public void OrphanHelperCandidates_RemainUnknownUntilLiveDispatchIsProven(int tableId, string expectedName)
+    {
+        Assert.Equal((PrerequisiteType)tableId, Enum.Parse<PrerequisiteType>(expectedName));
+        Assert.Equal(expectedName, Enum.GetName((PrerequisiteType)tableId));
+    }
+
+    [Theory]
+    [InlineData(48, nameof(PrerequisiteType.Unknown48))]
+    [InlineData(142, nameof(PrerequisiteType.Unknown142))]
+    [InlineData(278, nameof(PrerequisiteType.Unknown278))]
+    public void NoOpSlotCandidates_RemainUnknownUntilNonStubHandlerIsProven(int tableId, string expectedName)
+    {
+        Assert.Equal((PrerequisiteType)tableId, Enum.Parse<PrerequisiteType>(expectedName));
+        Assert.Equal(expectedName, Enum.GetName((PrerequisiteType)tableId));
+    }
+
+    [Theory]
+    [InlineData(260, nameof(PrerequisiteType.Unknown260))]
+    [InlineData(267, nameof(PrerequisiteType.Unknown267))]
+    [InlineData(295, nameof(PrerequisiteType.Unknown295))]
+    public void DiagnosticFieldOwnerCandidates_RemainUnknownUntilSemanticOwnerIsProven(int tableId, string expectedName)
     {
         Assert.Equal((PrerequisiteType)tableId, Enum.Parse<PrerequisiteType>(expectedName));
         Assert.Equal(expectedName, Enum.GetName((PrerequisiteType)tableId));
