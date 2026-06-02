@@ -4,19 +4,19 @@ using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Misc
 {
-    public class Client0x003DHandler : IMessageHandler<IWorldSession, Client0x003D>
+    public class ClientAccountRealmDataHandler : IMessageHandler<IWorldSession, ClientAccountRealmData>
     {
-        private readonly ILogger<Client0x003DHandler> log;
+        private readonly ILogger<ClientAccountRealmDataHandler> log;
 
-        public Client0x003DHandler(ILogger<Client0x003DHandler> log)
+        public ClientAccountRealmDataHandler(ILogger<ClientAccountRealmDataHandler> log)
         {
             this.log = log;
         }
 
-        public void HandleMessage(IWorldSession session, Client0x003D message)
+        public void HandleMessage(IWorldSession session, ClientAccountRealmData message)
         {
             log.LogDebug("Captured unresolved client opcode {Opcode} from player {PlayerGuid}: realmId {RealmId}, characterCount {CharacterCount}, lastPlayedCharacter {LastPlayedCharacter}, lastPlayedTime {LastPlayedTime}.",
-                nameof(Client0x003D), session.Player?.Guid, message.RealmId, message.CharacterCount,
+                nameof(ClientAccountRealmData), session.Player?.Guid, message.RealmId, message.CharacterCount,
                 message.LastPlayedCharacter, message.LastPlayedTime);
         }
     }
@@ -177,34 +177,34 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
         }
     }
 
-    public class Client0x0760Handler : IMessageHandler<IWorldSession, Client0x0760>
+    public class ClientRealmListRealmRowHandler : IMessageHandler<IWorldSession, ClientRealmListRealmRow>
     {
-        private readonly ILogger<Client0x0760Handler> log;
+        private readonly ILogger<ClientRealmListRealmRowHandler> log;
 
-        public Client0x0760Handler(ILogger<Client0x0760Handler> log)
+        public ClientRealmListRealmRowHandler(ILogger<ClientRealmListRealmRowHandler> log)
         {
             this.log = log;
         }
 
-        public void HandleMessage(IWorldSession session, Client0x0760 message)
+        public void HandleMessage(IWorldSession session, ClientRealmListRealmRow message)
         {
-            log.LogDebug("Client0x0760: player={PlayerGuid} realmId={RealmId} realmName={RealmName}.",
+            log.LogDebug("ClientRealmListRealmRow: player={PlayerGuid} realmId={RealmId} realmName={RealmName}.",
                 session.Player?.Guid, message.Realm.RealmId, message.Realm.RealmName);
         }
     }
 
-    public class Client0x0762Handler : IMessageHandler<IWorldSession, Client0x0762>
+    public class ClientRealmListMessageRowHandler : IMessageHandler<IWorldSession, ClientRealmListMessageRow>
     {
-        private readonly ILogger<Client0x0762Handler> log;
+        private readonly ILogger<ClientRealmListMessageRowHandler> log;
 
-        public Client0x0762Handler(ILogger<Client0x0762Handler> log)
+        public ClientRealmListMessageRowHandler(ILogger<ClientRealmListMessageRowHandler> log)
         {
             this.log = log;
         }
 
-        public void HandleMessage(IWorldSession session, Client0x0762 message)
+        public void HandleMessage(IWorldSession session, ClientRealmListMessageRow message)
         {
-            log.LogDebug("Client0x0762: player={PlayerGuid} index={Index} messageCount={MessageCount}.",
+            log.LogDebug("ClientRealmListMessageRow: player={PlayerGuid} index={Index} messageCount={MessageCount}.",
                 session.Player?.Guid, message.MessageRow.Index, message.MessageRow.Messages.Count);
         }
     }

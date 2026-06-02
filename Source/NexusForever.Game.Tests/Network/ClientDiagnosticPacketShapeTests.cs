@@ -12,7 +12,7 @@ namespace NexusForever.Game.Tests.Network;
 public class ClientDiagnosticPacketShapeTests
 {
     [Fact]
-    public void Client0x003D_ReadsMappedStructuredPayload()
+    public void ClientAccountRealmData_ReadsMappedStructuredPayload()
     {
         byte[] packetData = WritePacket(writer =>
         {
@@ -23,7 +23,7 @@ public class ClientDiagnosticPacketShapeTests
         });
 
         using var reader = new GamePacketReader(new MemoryStream(packetData));
-        var packet = new Client0x003D();
+        var packet = new ClientAccountRealmData();
 
         packet.Read(reader);
 
@@ -226,7 +226,7 @@ public class ClientDiagnosticPacketShapeTests
     }
 
     [Fact]
-    public void Client0x0760_ReadsServerRealmListRealmRowShape()
+    public void ClientRealmListRealmRow_ReadsServerRealmListRealmRowShape()
     {
         var realm = new RealmInfo
         {
@@ -255,7 +255,7 @@ public class ClientDiagnosticPacketShapeTests
         byte[] packetData = WritePacket(realm.Write);
 
         using var reader = new GamePacketReader(new MemoryStream(packetData));
-        var packet = new Client0x0760();
+        var packet = new ClientRealmListRealmRow();
         packet.Read(reader);
 
         Assert.Equal(realm.RealmId, packet.Realm.RealmId);
@@ -278,7 +278,7 @@ public class ClientDiagnosticPacketShapeTests
     }
 
     [Fact]
-    public void Client0x0762_ReadsServerRealmListMessageRowShape()
+    public void ClientRealmListMessageRow_ReadsServerRealmListMessageRowShape()
     {
         var messageRow = new NetworkMessage
         {
@@ -289,7 +289,7 @@ public class ClientDiagnosticPacketShapeTests
         byte[] packetData = WritePacket(messageRow.Write);
 
         using var reader = new GamePacketReader(new MemoryStream(packetData));
-        var packet = new Client0x0762();
+        var packet = new ClientRealmListMessageRow();
         packet.Read(reader);
 
         Assert.Equal(messageRow.Index, packet.MessageRow.Index);

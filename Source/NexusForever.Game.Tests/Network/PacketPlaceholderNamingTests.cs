@@ -36,6 +36,27 @@ public class PacketPlaceholderNamingTests
     }
 
     [Theory]
+    [InlineData(0x003D, nameof(GameMessageOpcode.ClientAccountRealmData), nameof(ClientAccountRealmData))]
+    [InlineData(0x0760, nameof(GameMessageOpcode.ClientRealmListRealmRow), nameof(ClientRealmListRealmRow))]
+    [InlineData(0x0762, nameof(GameMessageOpcode.ClientRealmListMessageRow), nameof(ClientRealmListMessageRow))]
+    public void ClientRealmListRows_UseServerRealmListStructuralNames(ushort opcode, string expectedOpcodeName, string expectedTypeName)
+    {
+        Assert.Equal(opcode, (ushort)Enum.Parse<GameMessageOpcode>(expectedOpcodeName));
+        Assert.Equal(expectedOpcodeName, Enum.GetName(Enum.Parse<GameMessageOpcode>(expectedOpcodeName)));
+
+        Type packetType = expectedTypeName switch
+        {
+            nameof(ClientAccountRealmData) => typeof(ClientAccountRealmData),
+            nameof(ClientRealmListRealmRow) => typeof(ClientRealmListRealmRow),
+            nameof(ClientRealmListMessageRow) => typeof(ClientRealmListMessageRow),
+            _ => throw new ArgumentOutOfRangeException(nameof(expectedTypeName))
+        };
+
+        var attribute = Assert.IsType<MessageAttribute>(Attribute.GetCustomAttribute(packetType, typeof(MessageAttribute)));
+        Assert.Equal(Enum.Parse<GameMessageOpcode>(expectedOpcodeName), attribute.Opcode);
+    }
+
+    [Theory]
     [InlineData((byte)11, true)]
     [InlineData((byte)19, true)]
     [InlineData((byte)7, false)]
