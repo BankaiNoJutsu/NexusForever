@@ -15,7 +15,7 @@ namespace NexusForever.Game.Tests.Group;
 public class GroupStateManagerTests
 {
     [Fact]
-    public void UpdateGroup_PreservesHarvestLootRule()
+    public void UpdateGroup_PreservesHarvestLootState()
     {
         var manager = new GroupStateManager();
         GroupLootState group = BuildGroup(HarvestLootRule.RoundRobin);
@@ -24,10 +24,11 @@ public class GroupStateManagerTests
 
         Assert.True(manager.TryGetGroup(group.GroupId, out GroupLootState stored));
         Assert.Equal(HarvestLootRule.RoundRobin, stored.HarvestRule);
+        Assert.Equal(GroupFlags.Raid, stored.Flags);
     }
 
     [Fact]
-    public void WithoutMember_PreservesHarvestLootRule()
+    public void WithoutMember_PreservesGroupLootState()
     {
         GroupLootState group = BuildGroup(HarvestLootRule.FirstTagger);
 
@@ -38,15 +39,17 @@ public class GroupStateManagerTests
         });
 
         Assert.Equal(HarvestLootRule.FirstTagger, updated.HarvestRule);
+        Assert.Equal(GroupFlags.Raid, updated.Flags);
         Assert.Single(updated.Members);
     }
 
     [Fact]
-    public void ToGroupLootState_PreservesHarvestLootRule()
+    public void ToGroupLootState_PreservesGroupLootState()
     {
         var group = new InternalGroup
         {
             Id               = 77ul,
+            Flags            = GroupFlags.Raid,
             NormalRule       = LootRule.NeedBeforeGreed,
             ThresholdRule    = LootRule.Master,
             ThresholdQuality = LootThreshold.Superb,
@@ -73,6 +76,7 @@ public class GroupStateManagerTests
         GroupLootState state = group.ToGroupLootState();
 
         Assert.Equal(HarvestLootRule.RoundRobin, state.HarvestRule);
+        Assert.Equal(GroupFlags.Raid, state.Flags);
     }
 
     [Fact]
@@ -134,6 +138,7 @@ public class GroupStateManagerTests
             ThresholdRule    = LootRule.Master,
             ThresholdQuality = LootThreshold.Excellent,
             HarvestRule      = harvestRule,
+            Flags            = GroupFlags.Raid,
             Leader           = leader,
             Members =
             [

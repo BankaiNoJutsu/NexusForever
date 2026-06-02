@@ -36,6 +36,7 @@ namespace NexusForever.Game.Group
                 ThresholdRule    = group.ThresholdRule,
                 ThresholdQuality = group.ThresholdQuality,
                 HarvestRule      = group.HarvestRule,
+                Flags            = group.Flags,
                 Leader           = group.Leader,
                 Members          = group.Members
                     .OrderBy(m => m.GroupIndex)

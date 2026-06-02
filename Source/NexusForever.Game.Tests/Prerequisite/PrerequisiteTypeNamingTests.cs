@@ -66,7 +66,6 @@ public class PrerequisiteTypeNamingTests
     [InlineData(135, nameof(PrerequisiteType.AppliedItemStatId))]
     [InlineData(140, nameof(PrerequisiteType.ItemRolledPropertyValue))]
     [InlineData(191, nameof(PrerequisiteType.PetEntitySpell4))]
-    [InlineData(275, nameof(PrerequisiteType.DoesNotOwnAccountItem))]
     [InlineData(172, nameof(PrerequisiteType.HealthScaled))]
     [InlineData(173, nameof(PrerequisiteType.ItemTradeSkill))]
     [InlineData(174, nameof(PrerequisiteType.ItemTradeSkillKnown))]
@@ -108,7 +107,9 @@ public class PrerequisiteTypeNamingTests
     [InlineData(128, nameof(PrerequisiteType.Faction128))]
     [InlineData(188, nameof(PrerequisiteType.WarplotPermission))]
     [InlineData(63, nameof(PrerequisiteType.IsLocalPlayerEntity))]
+    [InlineData(267, nameof(PrerequisiteType.GroupIsRaid))]
     [InlineData(268, nameof(PrerequisiteType.CREDDPendingOrderState))]
+    [InlineData(295, nameof(PrerequisiteType.EvaluatedEntityPresent))]
     public void EvidenceBackedRenames_KeepStableTableIds(int tableId, string expectedName)
     {
         Assert.Equal((PrerequisiteType)tableId, Enum.Parse<PrerequisiteType>(expectedName));
@@ -119,7 +120,7 @@ public class PrerequisiteTypeNamingTests
     [InlineData(223, nameof(PrerequisiteType.Unknown223))]
     [InlineData(240, nameof(PrerequisiteType.Unknown240))]
     [InlineData(245, nameof(PrerequisiteType.Unknown245))]
-    [InlineData(267, nameof(PrerequisiteType.Unknown267))]
+    [InlineData(275, nameof(PrerequisiteType.Unknown275))]
     [InlineData(286, nameof(PrerequisiteType.Unknown286))]
     [InlineData(289, nameof(PrerequisiteType.Unknown289))]
     [InlineData(290, nameof(PrerequisiteType.Unknown290))]
@@ -141,9 +142,25 @@ public class PrerequisiteTypeNamingTests
     }
 
     [Theory]
+    [InlineData(144, nameof(PrerequisiteType.Unknown144))]
+    public void SkippedLiveDispatcherCandidates_RemainUnknownUntilReachabilityIsProven(int tableId, string expectedName)
+    {
+        Assert.Equal((PrerequisiteType)tableId, Enum.Parse<PrerequisiteType>(expectedName));
+        Assert.Equal(expectedName, Enum.GetName((PrerequisiteType)tableId));
+    }
+
+    [Theory]
     [InlineData(48, nameof(PrerequisiteType.Unknown48))]
     [InlineData(142, nameof(PrerequisiteType.Unknown142))]
+    [InlineData(203, nameof(PrerequisiteType.Unknown203))]
+    [InlineData(222, nameof(PrerequisiteType.Unknown222))]
+    [InlineData(259, nameof(PrerequisiteType.Unknown259))]
+    [InlineData(271, nameof(PrerequisiteType.Unknown271))]
+    [InlineData(272, nameof(PrerequisiteType.Unknown272))]
     [InlineData(278, nameof(PrerequisiteType.Unknown278))]
+    [InlineData(283, nameof(PrerequisiteType.Unknown283))]
+    [InlineData(285, nameof(PrerequisiteType.Unknown285))]
+    [InlineData(294, nameof(PrerequisiteType.Unknown294))]
     public void NoOpSlotCandidates_RemainUnknownUntilNonStubHandlerIsProven(int tableId, string expectedName)
     {
         Assert.Equal((PrerequisiteType)tableId, Enum.Parse<PrerequisiteType>(expectedName));
@@ -152,8 +169,6 @@ public class PrerequisiteTypeNamingTests
 
     [Theory]
     [InlineData(260, nameof(PrerequisiteType.Unknown260))]
-    [InlineData(267, nameof(PrerequisiteType.Unknown267))]
-    [InlineData(295, nameof(PrerequisiteType.Unknown295))]
     public void DiagnosticFieldOwnerCandidates_RemainUnknownUntilSemanticOwnerIsProven(int tableId, string expectedName)
     {
         Assert.Equal((PrerequisiteType)tableId, Enum.Parse<PrerequisiteType>(expectedName));

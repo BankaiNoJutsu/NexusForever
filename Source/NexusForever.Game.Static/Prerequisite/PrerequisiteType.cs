@@ -249,9 +249,9 @@
         HousingResidenceLoaded      = 241, // Exists without description - live case 0xf1 vtable +0x638 -> Prerequisite_CheckHousingResidenceLoaded 1404a11e0; NPC gate + active housing TargetResidence identity at world client +0x7500/+0x7508
         LiveEvent242                = 242, // Live event not complete
         Faction243                  = 243, // Faction requirement not met
-        OwnsAccountItem               = 244, // Requirements not met - client case 0xf4 via Prerequisite_CheckOwnsAccountItem 14049ca70; objectId0 is account Item2 id; FUN_1401ed460 bind-point lookup; NPC entity types 0x14/0x17 only
+        OwnsAccountItem               = 244, // Requirements not met - one retail row Equal with objectId0 Item2 id; client case 0xf4 vtable +0xc0 (raw 0x140b67800 -> 14049ca70) Prerequisite_CheckOwnsAccountItem; FUN_1401ed460 account Item2 lookup; NPC entity types 0x14/0x17 only
         Unknown245                  = 245, // Exists without description - live case 0xf5 vtable +0x698 -> Prerequisite_CheckItemTradeSkill 1404a1790; NPC gate + item2 tradeskill tier requirement; duplicate-body alias, no semantic rename
-        DoesNotOwnAccountItemOnCharacter = 246, // Requirements not met - value0 is account Item2 id; all rows use NotEqual; client case 0xf6 via Prerequisite_CheckDoesNotOwnAccountItemOnCharacter 14049d240 (+0x130; FUN_1403ac590 mode 0x707)
+        DoesNotOwnAccountItemOnCharacter = 246, // Requirements not met - 53 retail rows all NotEqual with value0 Item2 id; client case 0xf6 vtable +0x130 (raw 0x140b67870 -> 14049d240) Prerequisite_CheckDoesNotOwnAccountItemOnCharacter; FUN_1403ac590 mode 0x707
         // 247 is unused in PrerequisiteType.tbl
         NpcInventoryItemCount         = 248, // Requirements not met - client case 0xf8 via Prerequisite_CheckNpcInventoryItemCount 1404a0cb0; objectId0 is Item2 id; FUN_1405f68f0 counts item in NPC bags (type 0x1c) on entity types 0x14/0x17
         // 249 is unused in PrerequisiteType.tbl
@@ -265,14 +265,14 @@
         // 257 is unused in PrerequisiteType.tbl
         // 258 is unused in PrerequisiteType.tbl
         Unknown259                  = 259, // Exist in PrerequisiteType.tbl but does not have a description - four rows use objectId0 38923/38924, but live case 0x103 dispatches vtable +0x530 no-op stub; no semantic rename
-        Unknown260                  = 260, // Requirements not met - one orphan row 36343 nests HousingNeighborResidence and objectId1=12 HousingPlugItem, but live case 0x104 ignores object/value and checks active housing plot/plug flags 0x08/0x20 against state 5; state semantic blocked, no rename
+        Unknown260                  = 260, // Requirements not met - one orphan row 36343 nests HousingNeighborResidence and objectId1=12 HousingPlugItem, but live case 0x104 ignores object/value and checks active housing plot/plug flags 0x08/0x20 against state 5; state 5 correlates to HousingBuildComplete, active residence fields/use-site blocked
         Personal2V2ArenaRating261   = 261, // Personal arena 2v2 rating requirement not met
         Personal3V3ArenaRating262   = 262, // Personal arena 3v3 rating requirement not met
         Personal5V5ArenaRating263   = 263, // Personal arena 5v5 rating requirement not met
         Battlegrounds264            = 264, // Battlegrounds requirement not met
         Warplots265                 = 265, // Warplots requirement not met
-        PetOrEsperPetEntity        = 266, // Exists without description - client case 0x10a vtable +0xc8 -> 14049cae0 checks entity type 0x18/0x19 (Pet/EsperPet)
-        Unknown267                  = 267, // Requirements not met - live case 0x10b vtable +0x320 -> Prerequisite_CheckEntityLookupFlagBit1_Table62 14049e9a0 (bit 1 of *(DAT_140c65898+0x6c50)+8); semantic blocked; not ScanCreature
+        PetOrEsperPetEntity        = 266, // Exists without description - client case 0x10a vtable +0xc8 -> Prerequisite_CheckPetOrEsperPetEntity 14049cae0: entity+0x80 minus 0x18 in {0,1} (native 0x18/0x19 Pet/EsperPet)
+        GroupIsRaid                 = 267, // Requirements not met - live case 0x10b vtable +0x320 -> Prerequisite_CheckGroupIsRaid_Table62AndLive267 14049e9a0; compares GroupFlags.Raid bit from current group context flags; retail rows use NotEqual 0 against that bit
         CREDDPendingOrderState      = 268, // Exists without description - live case 0x10c vtable +0x3c8 Prerequisite_CheckCREDDPendingOrderState_Table268 14049f090; compares CREDD pending-order flag to objectId0; row 38851 gates CREDD exchange NPC visibility with NotEqual objectId0=1
         RapidTransport              = 269, // Requirements not met - client case 0x10d via manager +0xd0; objectId0 is rapid-transport node id
         LoyaltyRewards              = 270, // Loyalty requirement not met
@@ -280,7 +280,7 @@
         Unknown272                  = 272, // Exist in PrerequisiteType.tbl but does not have a description - no retail rows found; live case 0x110 dispatches vtable +0x180 no-op stub; no semantic rename
         EntitlementCount            = 273, // Entitlement count requirement not met
         // 274 is unused in PrerequisiteType.tbl
-        DoesNotOwnAccountItem         = 275, // Requirements not met - objectId0 is account Item2 id; all 277 rows use NotEqual and join accountitem.item2Id; client case 0x113 via manager +0x6a0
+        Unknown275                  = 275, // Requirements not met - row shape uses objectId0 account Item2 ids/all NotEqual, but live case 0x113 dispatches vtable +0x6a0 -> Prerequisite_CheckItemTradeSkillKnown 1404a17e0; duplicate-body alias, no semantic rename
         OutOfBounds                 = 276, // You're out of bounds
         QuestObjective47OnCasterAndTarget = 277, // You cannot do that right now - client case 0x115 requires caster and target to pass QuestObjective47 (+0x2f8)
         Unknown278                  = 278, // Requirements not met - one tbl row referenced by Spell4.prerequisiteIdAoeTarget on test spell 84203; live case 0x116 calls vtable +0x300 on caster and target, but that slot is no-op stub 140001ba0, so no semantic rename
@@ -300,6 +300,6 @@
         PrimalMatrixNode            = 292, // Requirements not met - objectId is PrimalMatrixNode.tbl id; value0 is allocation threshold (always 1 in client rows); live case 0x124 vtable +0x6c8; handler table[292] _purecall; PrimalMatrix_LookupAllocatedNode 1404d6a60 is wired at handler table[179] 1404a18f0 only
         AccountCurrencyAmount       = 293, // Exists without description - client case 0x125 at 14049d3a0 reads accountItemList+0xd0+objectId0*8 AccountCurrencyType amount (objectId0=15 Crimson Essence row) then ApplyComparison vs value0
         Unknown294                  = 294, // Exist in PrerequisiteType.tbl but does not have a description - one unreferenced row 44546 (NotEqual, all ids/values zero); live case 0x126 vtable +0x6d0 and handler table[294] are no-op/_purecall
-        Unknown295                  = 295  // Requirements not met - live case 0x127 NotEqual when evaluated entity exists (value0 ignored); NF PrerequisiteCheckUnknown295; row 44550 unreferenced
+        EvaluatedEntityPresent      = 295  // Requirements not met - live case 0x127 returns true only for NotEqual when evaluated entity exists (value0 ignored); row 44550 target-apply gate on Engineer Portable Black Hole Large Pull; NF checks IPrerequisiteParameters.Target
     }
 }

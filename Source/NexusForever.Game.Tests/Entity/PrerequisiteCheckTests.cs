@@ -31,6 +31,7 @@ using NexusForever.GameTable;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Entity.Movement.Command.Mode;
 using NexusForever.Game.Static.Entity.Movement.Command.State;
+using NexusForever.Game.Static.Group;
 using NexusForever.Game.Static.PlayerPath;
 using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Tests.TestSupport;
@@ -963,6 +964,49 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters()));
     }
 
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, 1u, GroupFlags.Raid, true)]
+    [InlineData(PrerequisiteComparison.Equal, 1u, GroupFlags.None, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, GroupFlags.Raid, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, GroupFlags.None, false)]
+    public void GroupIsRaid_ComparesCurrentGroupRaidFlag(PrerequisiteComparison comparison, uint value, GroupFlags flags, bool expected)
+    {
+        var leader = new Identity { RealmId = 1, Id = 2ul };
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Identity), leader);
+        playerProxy.SetProperty(nameof(IPlayer.GroupAssociation), 99ul);
+
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out var groupProxy);
+        groupProxy.SetMethodHandler(nameof(IGroupStateManager.TryGetGroup), args =>
+        {
+            args[1] = new GroupLootState
+            {
+                GroupId = (ulong)args[0],
+                Flags   = flags,
+                Leader  = leader
+            };
+            return true;
+        });
+
+        var check = new PrerequisiteCheckGroupIsRaid(groupStateManager);
+
+        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters()));
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, 0u, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, false)]
+    public void GroupIsRaid_TreatsMissingGroupAsNonRaid(PrerequisiteComparison comparison, uint value, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.GroupAssociation), 0ul);
+
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var check = new PrerequisiteCheckGroupIsRaid(groupStateManager);
+
+        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters()));
+    }
+
     [Fact]
     public void UnitEntityType_ComparesEntityTypeEnum()
     {
@@ -1207,11 +1251,11 @@ public class PrerequisiteCheckTests
     }
 
     [Fact]
-    public void Unknown295_ReturnsTrueForNotEqualWhenTargetEntityPresent()
+    public void EvaluatedEntityPresent_ReturnsTrueForNotEqualWhenTargetEntityPresent()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
         IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out _);
-        var check = new PrerequisiteCheckUnknown295();
+        var check = new PrerequisiteCheckEvaluatedEntityPresent();
 
         bool result = check.Meets(
             player,
@@ -1226,10 +1270,10 @@ public class PrerequisiteCheckTests
     [Theory]
     [InlineData(PrerequisiteComparison.Equal)]
     [InlineData(PrerequisiteComparison.GreaterThan)]
-    public void Unknown295_ReturnsFalseForNonNotEqualOrMissingTarget(PrerequisiteComparison comparison)
+    public void EvaluatedEntityPresent_ReturnsFalseForNonNotEqualOrMissingTarget(PrerequisiteComparison comparison)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
-        var check = new PrerequisiteCheckUnknown295();
+        var check = new PrerequisiteCheckEvaluatedEntityPresent();
         var parameters = new PrerequisiteParameters();
 
         Assert.False(check.Meets(player, comparison, value: 18u, objectId: 0u, parameters));
