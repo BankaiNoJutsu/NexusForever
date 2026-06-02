@@ -57,6 +57,41 @@ public class PacketPlaceholderNamingTests
     }
 
     [Theory]
+    [InlineData(0x011B, nameof(GameMessageOpcode.Client0x011B), nameof(Client0x011B))]
+    [InlineData(0x011D, nameof(GameMessageOpcode.Client0x011D), nameof(Client0x011D))]
+    [InlineData(0x012D, nameof(GameMessageOpcode.Client0x012D), nameof(Client0x012D))]
+    [InlineData(0x0550, nameof(GameMessageOpcode.Client0x0550), nameof(Client0x0550))]
+    [InlineData(0x062A, nameof(GameMessageOpcode.Client0x062A), nameof(Client0x062A))]
+    [InlineData(0x0634, nameof(GameMessageOpcode.Client0x0634), nameof(Client0x0634))]
+    [InlineData(0x0701, nameof(GameMessageOpcode.Client0x0701), nameof(Client0x0701))]
+    [InlineData(0x07E3, nameof(GameMessageOpcode.Client0x07E3), nameof(Client0x07E3))]
+    [InlineData(0x0928, nameof(GameMessageOpcode.Client0x0928), nameof(Client0x0928))]
+    public void RegistrationOnlyDiagnosticClientPackets_RemainNumericUntilSemanticOwnerIsProven(ushort opcode, string expectedOpcodeName, string expectedTypeName)
+    {
+        Assert.Equal(opcode, (ushort)Enum.Parse<GameMessageOpcode>(expectedOpcodeName));
+        Assert.Equal(expectedOpcodeName, Enum.GetName(Enum.Parse<GameMessageOpcode>(expectedOpcodeName)));
+
+        Type packetType = expectedTypeName switch
+        {
+            nameof(Client0x011B) => typeof(Client0x011B),
+            nameof(Client0x011D) => typeof(Client0x011D),
+            nameof(Client0x012D) => typeof(Client0x012D),
+            nameof(Client0x0550) => typeof(Client0x0550),
+            nameof(Client0x062A) => typeof(Client0x062A),
+            nameof(Client0x0634) => typeof(Client0x0634),
+            nameof(Client0x0701) => typeof(Client0x0701),
+            nameof(Client0x07E3) => typeof(Client0x07E3),
+            nameof(Client0x0928) => typeof(Client0x0928),
+            _ => throw new ArgumentOutOfRangeException(nameof(expectedTypeName))
+        };
+
+        Assert.Equal(expectedTypeName, packetType.Name);
+
+        var attribute = Assert.IsType<MessageAttribute>(Attribute.GetCustomAttribute(packetType, typeof(MessageAttribute)));
+        Assert.Equal(Enum.Parse<GameMessageOpcode>(expectedOpcodeName), attribute.Opcode);
+    }
+
+    [Theory]
     [InlineData((byte)11, true)]
     [InlineData((byte)19, true)]
     [InlineData((byte)7, false)]

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
@@ -26,11 +28,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
         private readonly IFortuneRewardPool fortuneRewardPool;
         private readonly IRealmContext realmContext;
         private readonly IDatabaseManager databaseManager;
+        private readonly ILogger<FortuneSessionManager> log;
         private readonly Dictionary<uint, FortuneSession> sessions = [];
         private readonly object sync = new();
 
         public FortuneSessionManager(IFortuneRewardPool fortuneRewardPool, IRealmContext realmContext)
-            : this(fortuneRewardPool, realmContext, null)
+            : this(fortuneRewardPool, realmContext, null, NullLogger<FortuneSessionManager>.Instance)
         {
         }
 
@@ -38,15 +41,27 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             IFortuneRewardPool fortuneRewardPool,
             IRealmContext realmContext,
             IDatabaseManager databaseManager)
+            : this(fortuneRewardPool, realmContext, databaseManager, NullLogger<FortuneSessionManager>.Instance)
+        {
+        }
+
+        public FortuneSessionManager(
+            IFortuneRewardPool fortuneRewardPool,
+            IRealmContext realmContext,
+            IDatabaseManager databaseManager,
+            ILogger<FortuneSessionManager> log)
         {
             this.fortuneRewardPool = fortuneRewardPool;
             this.realmContext       = realmContext;
             this.databaseManager    = databaseManager;
+            this.log                = log;
         }
 
         public void SendStatus(IWorldSession session)
         {
-            session.EnqueueMessageEncrypted(BuildRewards());
+            ServerFortuneRewards rewards = BuildRewards();
+            LogRewardCatalogProbabilities(rewards);
+            session.EnqueueMessageEncrypted(rewards);
             session.EnqueueMessageEncrypted(BuildCards(GetSession(session)));
         }
 
@@ -204,6 +219,29 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 Item2IdRewards          = catalog.Item2IdRewards.ToList(),
                 RewardItemProbabilities = catalog.RewardItemProbabilities.ToList()
             };
+        }
+
+        private void LogRewardCatalogProbabilities(ServerFortuneRewards rewards)
+        {
+            if (!log.IsEnabled(LogLevel.Debug) || rewards.Item2IdRewards.Count == 0)
+                return;
+
+            log.LogDebug(
+                "Fortune rewards catalog itemCount={ItemCount} (emulator rarity-tier weights; retail per-item weights blocked)",
+                rewards.Item2IdRewards.Count);
+
+            int sampleCount = Math.Min(rewards.Item2IdRewards.Count, 8);
+            for (int i = 0; i < sampleCount; i++)
+            {
+                float probability = i < rewards.RewardItemProbabilities.Count
+                    ? rewards.RewardItemProbabilities[i]
+                    : 0f;
+                log.LogDebug(
+                    "Fortune rewards sample[{Index}] item2Id={Item2Id} probability={Probability}",
+                    i,
+                    rewards.Item2IdRewards[i],
+                    probability);
+            }
         }
 
         private static ServerFortuneCards BuildCards(FortuneSession fortuneSession)

@@ -363,6 +363,38 @@ public class EntityAuxiliaryPacketShapeTests
         }
     }
 
+    [Fact]
+    public void MapTrackedUnitUpdateDisablePair_RoundTripDistinctTrackedUnitIds()
+    {
+        const uint activeTrackedUnitId = 0xA0B0C0D0u;
+        const uint retiredTrackedUnitId = 0xD0C0B0A0u;
+        const uint trackingSlotId = 0x3FFu;
+
+        byte[] updatePayload = WritePacket(new ServerMapTrackedUnitUpdate
+        {
+            TrackedUnitId  = activeTrackedUnitId,
+            Position       = new Vector3(10f, 20f, 30f),
+            TrackingSlotId = trackingSlotId,
+        });
+
+        byte[] disablePayload = WritePacket(new ServerMapTrackedUnitDisable
+        {
+            TrackedUnitId = retiredTrackedUnitId,
+        });
+
+        using (var updateReader = CreateReader(updatePayload))
+        {
+            Assert.Equal(activeTrackedUnitId, updateReader.ReadUInt());
+            Assert.Equal(10f, updateReader.ReadSingle());
+            Assert.Equal(20f, updateReader.ReadSingle());
+            Assert.Equal(30f, updateReader.ReadSingle());
+            Assert.Equal(trackingSlotId, updateReader.ReadUInt(15u));
+        }
+
+        using (var disableReader = CreateReader(disablePayload))
+            Assert.Equal(retiredTrackedUnitId, disableReader.ReadUInt());
+    }
+
     private static GamePacketReader CreateReader(byte[] data)
     {
         return new GamePacketReader(new MemoryStream(data));

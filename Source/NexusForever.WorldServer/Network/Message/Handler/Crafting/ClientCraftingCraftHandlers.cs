@@ -41,6 +41,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         public void HandleMessage(IWorldSession session, ClientCraftingSimpleCraft craft)
         {
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
+            CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
 
             if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, 1u, craft.CraftingStationUnitId, out string reason))
             {
@@ -77,6 +78,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         public void HandleMessage(IWorldSession session, ClientCraftingComplexCraft craft)
         {
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
+            CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
             CraftingCraftRequestHelper.ValidateItem(gameTableManager, craft.PowerCoreItem2Id);
 
             if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, 1u, craft.CraftingStationUnitId, out string reason, craft.PowerCoreItem2Id))
@@ -114,6 +116,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         public void HandleMessage(IWorldSession session, ClientCraftingCraftItem craft)
         {
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
+            CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
             CraftingCraftRequestHelper.ValidateItem(gameTableManager, craft.CatalystItem2Id);
 
             if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, craft.SchematicCount, craft.CraftingStationUnitId, out string reason, craft.CatalystItem2Id))
@@ -151,6 +154,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         public void HandleMessage(IWorldSession session, ClientCraftingCraftItemAutoCraft craft)
         {
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
+            CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
 
             if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, schematic, craft.SchematicCount, craft.CraftingStationUnitId, out string reason))
             {
@@ -189,6 +193,36 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
             if (gameTableManager.Item.GetEntry(item2Id) == null)
                 throw new InvalidPacketValueException();
+        }
+
+        /// <summary>
+        /// Logs when a schematic resolves to a native station service key whose descriptive name remains blocked.
+        /// Does not change validation or emit behavior.
+        /// </summary>
+        public static void LogBlockedStationServiceKeyDiagnostic(
+            ILogger logger,
+            TradeskillSchematic2Entry schematic,
+            uint craftingStationUnitId)
+        {
+            uint serviceKey = CraftingStationServiceKey.GetForSchematic(schematic.TradeSkillId, schematic.Tier, schematic.Flags);
+            if (!IsBlockedStationServiceKey(serviceKey))
+                return;
+
+            logger.LogDebug(
+                "Crafting station service key {ServiceKey} (native name blocked) schematic {SchematicId} tradeSkill {TradeSkillId} tier {Tier} flags {Flags} station {StationUnitId}.",
+                serviceKey,
+                schematic.Id,
+                schematic.TradeSkillId,
+                schematic.Tier,
+                schematic.Flags,
+                craftingStationUnitId);
+        }
+
+        private static bool IsBlockedStationServiceKey(uint serviceKey)
+        {
+            return serviceKey == CraftingStationServiceKey.DefaultSchematic
+                || serviceKey == CraftingStationServiceKey.RunecraftingTradeSkill
+                || serviceKey == CraftingStationServiceKey.TierZeroFlaggedSchematic;
         }
 
         public static bool TryCompleteFixedRecipe(

@@ -3,6 +3,7 @@ namespace NexusForever.Game.Static.Crafting
     /// <summary>
     /// Client context-tree service key ids resolved by <c>Crafting_GetStationServiceKeyForSchematic</c> (0x1405926a0).
     /// The native names for these service keys are still unmapped; keep them diagnostic.
+    /// Crafting aux opcodes <c>0x084B</c>/<c>0855</c> emit intent remains blocked (see <c>ServerCraftingAux*</c> models).
     /// </summary>
     public static class CraftingStationServiceKey
     {

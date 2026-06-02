@@ -539,14 +539,14 @@ public class HousingPacketShapeTests
     {
         return new ServerHousingNeighborhoodEntry
         {
-            NeighborhoodId = 0x0102030405060708ul,
-            RealmId0       = 0x1234,
-            RealmId1       = 0x2345,
-            Value0         = 0x1112131415161718ul,
-            Name           = "Neighborhood",
-            Value1         = 0x21222324u,
-            Value2         = 0x31323334u,
-            Value3         = 0x41424344u
+            NeighborhoodId                      = 0x0102030405060708ul,
+            RealmId0                            = 0x1234,
+            RealmId1                            = 0x2345,
+            NeighborhoodWireUInt64_AfterRealmIds = 0x1112131415161718ul,
+            Name                                = "Neighborhood",
+            NeighborhoodWireUInt32_0            = 0x21222324u,
+            NeighborhoodWireUInt32_1            = 0x31323334u,
+            NeighborhoodWireUInt32_2            = 0x41424344u
         };
     }
 
