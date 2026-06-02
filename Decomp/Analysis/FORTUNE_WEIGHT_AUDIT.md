@@ -1,6 +1,6 @@
 # F-031 Madame Fay Weight Audit
 
-Status date: 2026-05-26
+Status date: 2026-06-02 (runtime blocker tranche reaffirmed)
 
 ## Scope
 
@@ -177,6 +177,12 @@ Result: `17` passed, `0` failed, `0` skipped. The normal project output path was
 locked by a running local `NexusForever.WorldServer`, so the verification used an
 isolated local output directory. The build emitted unrelated existing warnings in
 `NexusForever.Script.Main` and `TutorialStartFlowTests`.
+
+## Runtime blocker tranche (2026-06-02)
+
+- `ServerFortuneRewards` wire fields were already named (`Item2IdRewards`, `RewardItemProbabilities`); no guessed per-item weights added.
+- `FortuneSessionManager.SendStatus` logs up to eight catalog `(item2Id, probability)` pairs at **Debug** when enabled; roll logic unchanged.
+- Unblock still requires retail `ServerFortuneRewards` capture or storefront rotation dump (`f031-fortune-playthrough` harness bundle).
 
 ## Closure State
 

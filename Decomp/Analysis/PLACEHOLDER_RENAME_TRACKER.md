@@ -5,11 +5,107 @@ Use the evidence ladder from `CONTINUATION_GUIDE.md`: Observed -> Correlated -> 
 
 **Inventory (2026-05-23):** ~761 `Unknown*` token matches in 176 `Source/**/*.cs` files (ripgrep); ~147 distinct symbol names; ~205 enum members (64 in `PrerequisiteType` alone).
 
-## Initiative status — ACTIVE (2026-06-02 pass 100)
+## Initiative status - ACTIVE (2026-06-02 pass 114)
+
+Pass 114 renamed `Unknown267` to `GroupIsRaid`. Native case `0x10b`
+dispatches vtable `+0x320` to `14049e9a0`, which returns bit 1 from the current
+group context flags at `*(DAT_140c65898+0x6c50)+8`; NexusForever maps that bit
+as `GroupFlags.Raid`, and the retail rows use `NotEqual 0` against that raid
+bit. `Unknown260` stays unnamed: state `5` correlates with
+`HousingBuildComplete`, but active residence fields `+0x60/+0x64` and
+row/use-site reachability remain blocked.
+
+## Initiative status - ACTIVE (2026-06-02 pass 113)
+
+Pass 113 renamed `Unknown295` to `EvaluatedEntityPresent`. Native case `0x127`
+is inline and checks only that the evaluated entity pointer is present when the
+comparison is `NotEqual`; retail row `44550` is a target-apply gate on Engineer
+Portable Black Hole Large Pull, and NF already proxies the same target presence.
+
+## Initiative status - ACTIVE (2026-06-02 pass 112)
+
+Pass 112 closed all duplicate-body aliases as known-but-not-renamed prerequisite
+ids: `Unknown223`, `Unknown240`, `Unknown245`, `Unknown275`, `Unknown286`,
+`Unknown289`, `Unknown290`, and `Unknown291`. They remain `UnknownNNN` because
+the live body is mapped but no distinct semantic enum owner is proven.
+
+## Initiative status - ACTIVE (2026-06-02 pass 111)
+
+Pass 111 closed `Unknown144` as an unreachable/skipped dispatcher candidate:
+no retail prerequisite rows, no external refs, no live case `0x90`, and only a
+diagnostic handler-table body (`1404a0b70`) that the live dispatcher does not
+reach.
+
+## Initiative status - ACTIVE (2026-06-02 pass 110)
+
+Pass 110 closed the path-settler orphan helper ids `Unknown189`, `Unknown192`,
+and `Unknown193` as rejected semantic enum candidates. Their helper bodies stay
+labelled for native runtime study, but live prerequisite dispatch reaches
+`140001ba0`, handler-table slots are `_purecall`, and no direct caller proves
+enum ownership.
+
+## Initiative status - ACTIVE (2026-06-02 pass 109)
+
+Pass 109 closed the content-referenced no-op prerequisite ids as rejected
+semantic candidates: `Unknown48`, `Unknown142`, `Unknown203`, `Unknown271`,
+`Unknown278`, and `Unknown285`. Their retail references remain documented in
+`PREREQUISITE_UNKNOWN_CLOSURE_MATRIX.md`, but live dispatch reaches
+`140001ba0` (`return 0`), so these are disabled/dead/test gates unless future
+evidence proves a non-stub predicate path.
+
+## Initiative status - ACTIVE (2026-06-02 pass 108)
+
+Pass 108 closed the first five no-row/no-ref no-op prerequisite ids as rejected
+semantic candidates: `Unknown222`, `Unknown259`, `Unknown272`, `Unknown283`,
+and `Unknown294`. They retain `UnknownNNN` enum names for table-id stability,
+but no longer need rename work unless new evidence proves a non-stub live path.
+
+## Initiative status - ACTIVE (2026-06-02 pass 107)
+
+Pass 107 created `PREREQUISITE_UNKNOWN_CLOSURE_MATRIX.md` for the 26 remaining
+`PrerequisiteType.UnknownNNN` ids. The matrix combines enum/test buckets,
+retail prerequisite rows, cross-table prerequisite references, live dispatcher
+cases, raw PE vtable targets, and handler-table targets. It also corrected the
+guardrail classification for `Unknown267`: this was a diagnostic field-owner
+candidate (`14049e9a0` bit-1 predicate), not a duplicate-body alias.
+
+## Initiative status - ACTIVE (2026-06-02 pass 106)
+
+Pass 106 audited the account-item prerequisite names after the type 275
+demotion. Raw PE reads prove live vtable `0x140b67800` (`+0xc0`) points to
+`Prerequisite_CheckOwnsAccountItem` (`14049ca70`) for type 244 and
+`0x140b67870` (`+0x130`) points to
+`Prerequisite_CheckDoesNotOwnAccountItemOnCharacter` (`14049d240`) for type
+246. Retail `wildstar_client.prerequisite` rows also line up: type 244 has one
+`Equal` row with `objectId0` matching `Item2`, and type 246 has 53 `NotEqual`
+rows whose `value0` values all match `Item2`. Names stay mapped; no handler was
+added because account-item ownership state is still a runtime implementation
+boundary.
+
+## Initiative status - ACTIVE (2026-06-02 pass 105)
+
+Pass 105 demoted prerequisite type 275 back to `Unknown275`: row-shape evidence
+looked like account-item ownership, but live case `0x113` dispatches vtable
+`+0x6a0` to `Prerequisite_CheckItemTradeSkillKnown` (`1404a17e0`). Treat it as
+a duplicate-body alias until a distinct semantic owner is proven.
+
+## Initiative status - ACTIVE (2026-06-02 pass 104)
+
+Pass 104 added packet naming guardrails for registration-only diagnostic client
+opcodes (`Client0x011B`, `Client0x011D`, `Client0x012D`, `Client0x0550`,
+`Client0x062A`, `Client0x0634`, `Client0x0701`, `Client0x07E3`, and
+`Client0x0928`). Their wire shapes remain mapped, but semantic renames stay
+blocked until gameplay sender/consumer evidence or live sniffs prove owners.
+
+## Initiative status - ACTIVE (2026-06-02 pass 101)
+
+Pass 101: PE registration for entity-stat/threat triplet opcodes (`0x0889`/`0x0908`/`0x090A` -> `ServerSpellUInt32TripletListRow_ReadPayload` @ `140080bf0`); labeled `Prerequisite_CheckPetOrEsperPetEntity` @ `14049cae0` (type 266). No enum renames for blocked stubs/aliases.
+
+## Initiative status - ACTIVE (2026-06-02 pass 100)
 
 Pass 100 corrected handler-table[5] mislabel (`14049d470` is orphan entity-id list walk; live type 5 Reputation uses inline `entity+0x118` + `1404a2010`). Labeled `PrerequisiteManager_ApplyComparisonFloat` @ `1404a2010`.
 
-## Initiative status — ACTIVE (2026-05-23 resume)
+## Initiative status - ACTIVE (2026-05-23 resume)
 
 Decomp pass 130 added group stat-block layout mapping and retail catalog wire scalar names. Ghidra shared project was lock-blocked; used cached `140607490.fragment.c` and retail SQL.
 
@@ -38,18 +134,32 @@ must stay opaque until another evidence source appears.
   `Unknown259`, `Unknown271`, `Unknown272`, `Unknown278`, `Unknown283`,
   `Unknown285`, and `Unknown294`.
 - Duplicate-body aliases without a semantic owner: `Unknown223`, `Unknown240`,
-  `Unknown245`, `Unknown286`, `Unknown289`, `Unknown290`, and `Unknown291`.
-- Diagnostic predicates with blocked field owner: `Unknown267`, `Unknown260`,
-  and `Unknown295`.
+  `Unknown245`, `Unknown275`, `Unknown286`, `Unknown289`, `Unknown290`, and
+  `Unknown291`.
+- Diagnostic predicates with blocked field owner: `Unknown260`.
 - Broad static/table placeholders such as `Stat.Unknown*`,
   `InventoryLocation.Unknown*`, `UserTextFlags.Unknown*`, and generic packet
   tails remain out of scope until consumer evidence proves names.
 
+### Runtime blocker field-mapping tranche (2026-06-02)
+
+| Area | Status | Code / notes |
+| --- | --- | --- |
+| F-025 map-tracked (`0x0849`/`0x0848`) | **Mapped**; producer **Blocked** | `TrackingSlotId` XML; `TrackingSlotHelper` (table lookup, no emit); RE: native producer / handler-node path |
+| F-004 neighborhood (`0x0501`/`0x0506`) | **Mapped**; emit **Blocked** | `NeighborhoodWireUInt64_*` / `NeighborhoodWireUInt32_*`; RE pass: no `ClientHousing*` in `0x0502`-`0x0509`, apply via DATA slots @ `140bd97b0`/`140e0ec28` -> `Housing_HandleNeighborhoodList`; not `0x052C`->`0x0526` |
+| F-025 entity-stat aux (`0x0889`..`0x093E`) | **Mapped**; emit **Blocked** | `ValueN` retained; per-opcode XML + apply gate documented |
+| F-008 crafting aux (`0x084B`/`0x0855`) | **Mapped**; emit **Blocked** | `ValueN` / `FloatValue*` retained; service keys diagnostic |
+| F-031 Fortune weights | **Mapped**; retail weights **Blocked** | `FORTUNE_WEIGHT_AUDIT.md`; debug catalog probability sample log |
+
+Harness bundles (when available): `f025-map-tracked-unit`, `f031-fortune-playthrough` via `Start-BlockerEvidenceHarness.ps1`.
+
 ### Next evidence targets
 
-- Runtime producer backlog: F-025 entity-stat aux, map-tracked-unit producer,
-  F-004 neighborhood entry/list, F-008 crafting discovery / complex-craft /
-  `0x084B` / `0x0855`, and F-031 retail Fortune weights.
+- Per-opcode entity-stat aux `vtable+0x58` apply handlers (see `ENTITY_AUX_DECODE_ROADMAP.md`).
+- Map-tracked producer: live sniff for `TrackedUnitId` allocation + `TrackingSlotId` selection rule.
+- Housing `0x0506`: server-push trigger (live sniff / realm data); registration @ `140077730`; Houston64 has no world-opcode `0x506` enqueue in Ghidra scan (MFC dialog ids only).
+- Crafting `0x084B`/`0x0855` emit sites from native craft-finish path.
+- Retail `ServerFortuneRewards.RewardItemProbabilities` capture for Madame Fay rotation.
 - Packet `ValueN` fields: follow `ENTITY_AUX_DECODE_ROADMAP.md` one opcode
   cluster at a time; do not rename or emit from shape adjacency alone.
 - Client diagnostics still needing a gameplay send-site or live sniff:
@@ -57,13 +167,13 @@ must stay opaque until another evidence source appears.
   `Client0x062A`, `Client0x0634`, `Client0x0701`, `Client0x07E3`, and
   `Client0x0928`.
 
-## Initiative status — prior closure note
+## Initiative status - prior closure note
 
 The 2026-05-23 closure pass marked the first tranche complete. Every in-scope placeholder was either **renamed with evidence** (below) or **explicitly blocked / out of scope** with Ghidra or runtime negative evidence. Remaining `Unknown*` in `Source/**` are intentional until a future pass adds per-field proof.
 
 **In scope:** packet/account/storefront/pending-item/achievement/quest-objective placeholders touched by the 2026-05 decomp passes, plus correlated group stat-block packets (`0x0436` / `0x0468`).
 
-**Out of scope (do not bulk-rename):** remaining `PrerequisiteType.UnknownNNN` members, generic `Network.World` packet tails and `Server0x*` unresolved rows, item wire offset names (`Unknown44`, …), `Stat` / `InventoryLocation` enums, table-backed `Game.Static` ids without client strings, and cosmetic renames (`Field6`, `PurchaseField0`, housing `Unknown0` without semantics).
+**Out of scope (do not bulk-rename):** remaining `PrerequisiteType.UnknownNNN` members, generic `Network.World` packet tails and `Server0x*` unresolved rows, item wire offset names (`Unknown44`, ...), `Stat` / `InventoryLocation` enums, table-backed `Game.Static` ids without client strings, and cosmetic renames (`Field6`, `PurchaseField0`, housing `Unknown0` without semantics).
 
 **Re-open criteria:** new Ghidra consumer for a blocked offset, live capture with non-zero blocked wire fields, or NF runtime proof tying `QuestObjectiveType` / prerequisite id to behavior.
 
@@ -84,74 +194,74 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 | Group stat block | `StatBlockPrefix17`, `GroupMemberId`, `GroupMemberStatSlot` | `Group_CopyMemberStatBlockFromPayload` @ `140607490`; `GROUP_MEMBER_STAT_BLOCK.md` |
 | Store catalog offer tail | `RetailCatalogWireScalar`, `RetailCatalogWireByte` | `RetailStoreOfferWireConstants.CatalogWireScalarBits`; retail `field_6`/`field_7`; not consumed in Apply @ `14044b750` |
 | `AuctionInfo.UnknownArray` | `MicrochipIds` | NF marketplace persistence + shared `Item.Microchips` 3-bit wire array |
-| `ServerMatchingListPlayersQueuedForMap.QueuedPlayerInfo.Unknown30`–`Unknown38` | `PrimeLevel`, `IsParty`, `Roles` | `MatchingQueuedPlayerInfo_ReadPayload` @ `140098500`; correlates with `ClientMatchingQueue_WritePayload` @ `140098a70` and `MatchingQueueJoinQueueData_ReadPayload` @ `1400989d0` |
+| `ServerMatchingListPlayersQueuedForMap.QueuedPlayerInfo.Unknown30`-`Unknown38` | `PrimeLevel`, `IsParty`, `Roles` | `MatchingQueuedPlayerInfo_ReadPayload` @ `140098500`; correlates with `ClientMatchingQueue_WritePayload` @ `140098a70` and `MatchingQueueJoinQueueData_ReadPayload` @ `1400989d0` |
 | `ServerMatchingListPlayersQueuedForMap.QueuedPlayerInfo.Unknown3C` | `TrailingUInt32_0x3C` | `MatchingQueuedPlayerInfo_ReadPayload` @ `140098500`; uint32 wire confirmed, semantics blocked |
 | `ServerSpellCastTargetReport.UnknownStructure0` / `unknownStructure0` | `TargetReportRow` / `TargetReportRows` | Partial row map (`CasterId` known); tail fields blocked |
 | `PrerequisiteType.Spell221` / `Unknown269` | `ActionSetSpell` / `RapidTransport` | Table ids 221/269; client dispatch @ `1404a2100` cases `0xdd` / `0x10d` |
 | `PrerequisiteType.Unknown170` | `GameFormula` | `value0` is `gameformula.id`; client case `0xaa` @ `1404a2100` (+0x90) |
 | `PrerequisiteType.Unknown277` | `QuestObjective47OnCasterAndTarget` | Client case `0x115` requires caster **and** target to pass QuestObjective47 handler (+0x2f8) |
 | `PrerequisiteType.Unknown292` | `PrimalMatrixNode` | `objectId0` matches `primalmatrixnode.id`; client case `0x124` (+0x6c8) |
-| `PrerequisiteType.Unknown275` | `DoesNotOwnAccountItem` | All rows `NotEqual` and join `accountitem.item2Id`; client case `0x113` (+0x6a0) |
-| `PrerequisiteType.Inventory` | `DoesNotOwnAccountItemOnCharacter` | All rows `NotEqual`; `value0` is account `item2.id`; client case `0xf6` (+0x130) |
+| `PrerequisiteType.Unknown275` | no enum rename | Row-shape evidence uses `NotEqual` and `accountitem.item2Id`, but live case `0x113` dispatches vtable `+0x6a0` -> `Prerequisite_CheckItemTradeSkillKnown` (`1404a17e0`); duplicate-body alias, semantic owner blocked |
+| `PrerequisiteType.Inventory` | `DoesNotOwnAccountItemOnCharacter` | 53 rows all `NotEqual`; every `value0` matches `item2.id`; client case `0xf6` vtable `+0x130` raw slot `0x140b67870` -> `14049d240` |
 | `PrerequisiteType.Unknown50` | `UnderSpellOnTarget` | Client case `0x32` calls `FUN_1404699f0` on target `param_2[1]`; `value0` is Spell4 id |
 | `PrerequisiteType.Unknown59` | `SpellTier` | `objectId0` is Spell4 id; `value0` is tier rank; client case `0x3b` via `FUN_1404a4f60` |
 | `PrerequisiteType.Unknown60` | `SpellTierOnTarget` | Client case `0x3c` calls `FUN_14046a110` on target `param_2[1]`; same row shape as `SpellTier` |
 | `PrerequisiteType.Unknown56` | `DifficultyRankSlotAssigned` | Client case `0x38` checks populated pointer at `entity+0x2d8 + value0*0x10` when `value0 < 0x1c` |
 | `PrerequisiteType.Unknown106` | `TargetEntityLookupHit` | Client `14049e900` (+0x318) resolves target identity `+0x1a0` via `FUN_14079ee60` |
-| `PrerequisiteType.Unknown244` | `OwnsAccountItem` | Client `14049ca70` (+0xc0) checks account Item2 ownership on NPC types `0x14`/`0x17` |
+| `PrerequisiteType.Unknown244` | `OwnsAccountItem` | One row `Equal` with `objectId0` matching `item2.id`; client case `0xf4` vtable `+0xc0` raw slot `0x140b67800` -> `14049ca70`; NPC types `0x14`/`0x17` |
 | `PrerequisiteType.Unknown248` | `NpcInventoryItemCount` | Client `1404a0cb0` (+0x5c0) counts Item2 id on NPC via `1405f68f0` bag walk |
 | `PrerequisiteType.Unknown279` | `UnderSpellOnCasterAndTarget` | Client case `0x117` requires caster **and** target to pass UnderSpell helper `FUN_1404a4ec0` |
 | `PrerequisiteType.Unknown129` | `ActiveSpellEffectOnUnit` | Client case `0x81` inline walk of `entity+0x15c8` with SpellService compare on `value0` |
 | `PrerequisiteType.Unknown130` | `ActiveSpellEffectOnTarget` | Client case `0x82` calls `FUN_140469a70` on caster with target `+8` Spell4 filter |
 | `PrerequisiteType.Unknown82` | `UnitEntityType` | Client case `0x52` via `14049c5b0` (+0x48); entity `+0x80` unit type id vs `value0` |
 | `PrerequisiteType.Unknown89` | `PetMatchTarget` | Client case `0x59` via `14049d4f0` (+0x160); pet lookup id match caster vs target |
-| `PrerequisiteType.Unknown102`–`105` | `SpellCooldownNodeOnUnit` / `OnTarget` / `InServiceSet` / `SpellEffectTypeOnUnit` | Client cases `0x66`–`0x69` walk `entity+0x15d0` cooldown-node list |
-| `PrerequisiteType.Unknown133`–`136` | `ItemStatData` / `ItemStatId` / `AppliedItemStatId` / `Item2Id` | Item eval handlers `1404a0d00`–`1404a0d90`; type `135` `objectId0` = `ItemStat.Id` @ `+0x144` |
+| `PrerequisiteType.Unknown102`-`105` | `SpellCooldownNodeOnUnit` / `OnTarget` / `InServiceSet` / `SpellEffectTypeOnUnit` | Client cases `0x66`-`0x69` walk `entity+0x15d0` cooldown-node list |
+| `PrerequisiteType.Unknown133`-`136` | `ItemStatData` / `ItemStatId` / `AppliedItemStatId` / `Item2Id` | Item eval handlers `1404a0d00`-`1404a0d90`; type `135` `objectId0` = `ItemStat.Id` @ `+0x144` |
 | `PrerequisiteType.Unknown90` | `MountVehicleType` | Client `14049e730` (+0x2c0) mount subobject unit-type gate |
 | `PrerequisiteType.Unknown191` | `PetEntitySpell4` | Client case `0xbf` inline `Prerequisite_ResolveSpellOnPetEntity` @ `1404695e0` on player/pet `entity+0x1600` |
 | `PrerequisiteType.InfrastructureState` (148) | NF `PrerequisiteCheckInfrastructureState` | Client `1404a0150`; retail pairs `PathSettlerInfrastructure.Id` with `PathMission` type `21` (`0x15`) |
 | `PrerequisiteType.PetEntitySpell4` (191) | NF `PrerequisiteCheckPetEntitySpell4` | Client case `0xbf`; vanity-pet summon proxy until `entity+0x1600` wrapper id is mapped |
 | `PrerequisiteType.ItemRolledPropertyValue` (was `Unknown140`) | renamed pass 19 | `1404a0e80` + `14040e610` Property slot ids at `+0x94..+0xcc`; zero `Prerequisite.tbl` rows |
 | `PrerequisiteType.ItemSpecial` (138) | NF handler pass 21 | `1404a0dd0` +0x114/+0x118; zero tbl rows typed 138 |
-| `PrerequisiteType.ItemMicrochip` (139) | NF handler pass 21/24 | `1404a0e10` + `14049bdc0`; objectId0 7–0xd = `RuneType` socket bitmask via `IItem.RuneSlots`; wire `Microchips[]` separate |
-| Augment microchip **install** opcode | pass 44/46 mapped (replication + partial patch) | **Client C2S install** = `0x085B` only. Wire **`Microchips[]`** on **full add** via `SharedItem_ReadPayload` → `140569c90` → `14056aa20`. **Existing-slot microchip-only patch** = `1403b8540` (caller PE `0x1403eef8a`, cluster `0x1403eed00`) — **player opcode still blocked** (pass 47: **not** `0x046F` guild bank) |
-| Partial inventory slot field apply | pass 46 correlated | PE cluster `0x1403eed00`–`0x1403ef100` per-field patches on **player bag**; distinct from `0x0111` and from **`0x046F`/`0x047A` guild bank** |
-| `ServerGuildBankInventoryAdd_ReadPayload` | pass 47–48 mapped | `140092580` = **`0x046F`** @ `14006c290`; apply `GuildBank_ApplyInventoryAdd` `14057d190`; apply-table cell **`140e1a760`** |
-| `ServerGuildBankTabInventory_ReadPayload` | pass 47–48 mapped | `140092470` = **`0x047A`**; apply `GuildBank_ApplyTabInventoryRows` `14057cdc0`; apply-table cell **`140e1a718`** |
-| Partial inventory field-apply gap | pass 48 inspect | Cluster **`0x1403eed00`**; microchip case **`0x1403eef8a`→`1403b8540`**; inspect fragments in cache; **not** spell jumptable `0x1403f1344`; opcode still blocked |
-| `Prerequisite_CheckFaction` | pass 47 mapped | Type **128** case `0x80` @ `+0x68` → `14049c720` + `PlayerFactionService_IsFactionOrAncestor` `1407176b0` |
+| `PrerequisiteType.ItemMicrochip` (139) | NF handler pass 21/24 | `1404a0e10` + `14049bdc0`; objectId0 7-0xd = `RuneType` socket bitmask via `IItem.RuneSlots`; wire `Microchips[]` separate |
+| Augment microchip **install** opcode | pass 44/46 mapped (replication + partial patch) | **Client C2S install** = `0x085B` only. Wire **`Microchips[]`** on **full add** via `SharedItem_ReadPayload` -> `140569c90` -> `14056aa20`. **Existing-slot microchip-only patch** = `1403b8540` (caller PE `0x1403eef8a`, cluster `0x1403eed00`) - **player opcode still blocked** (pass 47: **not** `0x046F` guild bank) |
+| Partial inventory slot field apply | pass 46 correlated | PE cluster `0x1403eed00`-`0x1403ef100` per-field patches on **player bag**; distinct from `0x0111` and from **`0x046F`/`0x047A` guild bank** |
+| `ServerGuildBankInventoryAdd_ReadPayload` | pass 47-48 mapped | `140092580` = **`0x046F`** @ `14006c290`; apply `GuildBank_ApplyInventoryAdd` `14057d190`; apply-table cell **`140e1a760`** |
+| `ServerGuildBankTabInventory_ReadPayload` | pass 47-48 mapped | `140092470` = **`0x047A`**; apply `GuildBank_ApplyTabInventoryRows` `14057cdc0`; apply-table cell **`140e1a718`** |
+| Partial inventory field-apply gap | pass 48 inspect | Cluster **`0x1403eed00`**; microchip case **`0x1403eef8a`->`1403b8540`**; inspect fragments in cache; **not** spell jumptable `0x1403f1344`; opcode still blocked |
+| `Prerequisite_CheckFaction` | pass 47 mapped | Type **128** case `0x80` @ `+0x68` -> `14049c720` + `PlayerFactionService_IsFactionOrAncestor` `1407176b0` |
 | `ItemAdded` native subscribers | pass 44 mapped | Only dispatcher `1403b8060` in `string_xrefs`; Lua ClientEvent paths + `140409330` case **9** `uItem` refresh; no additional labeled C++ subscriber in export cache |
 | `Game.ItemData.GetDetailedInfo` | pass 45 mapped | `140417de0` PE registration at `.data` `0x140c58c10` with string `GetDetailedInfo`; builds `tPrimary`/`tCompare` (not `GetRuneSlots`) |
 | Tooltip `tRunes` | pass 45 mapped | `140673ab0` reuses `140673b80` for tooltip context; distinct Lua key from `GetRuneSlots` / `GetDetailedInfo` |
 | `PrerequisiteType.ItemMicrochip` objectId0=0 | pass 45 rejected on client | `1404a0e10` bitmask-only; rows 10610/10685 need NF count proxy until alternate client handler found |
-| ItemSpecial row `+0x10` → item-eval `+0x114` | pass 35 correlated + rejected | SQL `spell4IdOnEquip`; augment rows hold Spell4 FK (81886+). Do not use as socket mask except rare values ⊆ socket-bit set (only id 3694=4 in reference DB) |
-| Category **177** fusion-tier `item2TypeId` | pass 36 correlated | Types **515/516/530/563** (and empty **514/517**) map to `RuneType.Fusion` via `item2TypeId ≥ 502`; elemental band **340–345** unchanged (base **333**) |
-| `Item.Build` sparse `Glyphs[]` | pass 37 implemented | `ItemRuneNetworkWire` emits one glyph id per `RuneSlots` index (0 = empty); wire→`itemData+0x518` producer still blocked |
-| Wire → shared-runtime | pass 39 mapped | `SharedItemRuntime_ApplyParseBuffer` 140411b60: glyphs `parse+0x88` → runtime `+0x8f`; microchips via `ItemEval_ApplyItemSpecialToEval` → runtime `+0x20` (Inspect-only via 1403deff0) |
-| Wire → entity inventory item | pass 40 mapped | `InventoryItem_ApplySharedItemPayload` 140569c90: glyphs `parse+0x88` → entity `+0xbc`; microchips `parse+0x78` → entity `+0x98`; compact sockets via `InventoryItem_RefreshItemState` entity `+0x60` |
-| Entity item → item-eval | pass 41 mapped | `InventoryItem_RefreshItemState` 14056a430 → `ItemEval_ApplyItemSpecialToEval` with entity `+0xbc`/`+0x98`/`+0x60` |
-| Entity `+0xbc` → shared-runtime `[0x8f]` | pass 42 mapped | `ItemEval_CommitRuneDataFromLinkedEntity` 140413520 on `ItemEval_CommitPendingRuneData` 140412ad0 reads `(*runtime)[0]+0xbc` |
-| Entity `+0x60` → runtime socket fields | pass 42 mapped | Same commit copies entity `+0x60` compact bytes into runtime `+0x5d` region (GetRuneSlots `+0x388` proxy via `+0x71` index) |
+| ItemSpecial row `+0x10` -> item-eval `+0x114` | pass 35 correlated + rejected | SQL `spell4IdOnEquip`; augment rows hold Spell4 FK (81886+). Do not use as socket mask except rare values subset socket-bit set (only id 3694=4 in reference DB) |
+| Category **177** fusion-tier `item2TypeId` | pass 36 correlated | Types **515/516/530/563** (and empty **514/517**) map to `RuneType.Fusion` via `item2TypeId >= 502`; elemental band **340-345** unchanged (base **333**) |
+| `Item.Build` sparse `Glyphs[]` | pass 37 implemented | `ItemRuneNetworkWire` emits one glyph id per `RuneSlots` index (0 = empty); wire->`itemData+0x518` producer still blocked |
+| Wire -> shared-runtime | pass 39 mapped | `SharedItemRuntime_ApplyParseBuffer` 140411b60: glyphs `parse+0x88` -> runtime `+0x8f`; microchips via `ItemEval_ApplyItemSpecialToEval` -> runtime `+0x20` (Inspect-only via 1403deff0) |
+| Wire -> entity inventory item | pass 40 mapped | `InventoryItem_ApplySharedItemPayload` 140569c90: glyphs `parse+0x88` -> entity `+0xbc`; microchips `parse+0x78` -> entity `+0x98`; compact sockets via `InventoryItem_RefreshItemState` entity `+0x60` |
+| Entity item -> item-eval | pass 41 mapped | `InventoryItem_RefreshItemState` 14056a430 -> `ItemEval_ApplyItemSpecialToEval` with entity `+0xbc`/`+0x98`/`+0x60` |
+| Entity `+0xbc` -> shared-runtime `[0x8f]` | pass 42 mapped | `ItemEval_CommitRuneDataFromLinkedEntity` 140413520 on `ItemEval_CommitPendingRuneData` 140412ad0 reads `(*runtime)[0]+0xbc` |
+| Entity `+0x60` -> runtime socket fields | pass 42 mapped | Same commit copies entity `+0x60` compact bytes into runtime `+0x5d` region (GetRuneSlots `+0x388` proxy via `+0x71` index) |
 | GetRuneSlots `+0x544` / `[0xa9]` gates | pass 43 mapped | Scratch-context indices alias embedded shared-runtime `+0x4a4` / `[0x95]`; filled by `ItemEval_SyncFromItemDataUserdata` `140410680` from Lua `Game.ItemData` userdata (`140417660` + `140410300`), not separate parent-only writers |
-| Entity item → Game.ItemData | blocked (narrowed) | No direct entity→userdata writer; live `GetRuneSlots` reads userdata native blob synced via `140410680`; entity glyphs reach userdata through eval commit `140413520` + Lua refresh (`ItemAdded` / case 9), not `ItemModified`→`itemData` |
-| Slot update → shared runtime | pass 41 mapped | `Inventory_ApplySlotUpdateAndDispatchItemAdded` 1403b8380 → slot `Entity_GetIndexedSlotEntry` + `ItemEval_CommitPendingRuneData` + `ItemAdded` |
-| Wire → item-eval | pass 38 mapped | `ItemEval_SyncFromSharedItem` 140410300 copies runtime `+0x20`/`+0x158` into item-eval; `itemData+0x388`/`+0x518` writer still blocked |
-| `FUN_14040f320` | `ItemRuneType_ToCompactSocketId` | RuneType 7–13 → compact 1–7 for `0x0859` `IsNotFusion` (`14051ed80`) |
-| `PrerequisiteType.Unknown92`–`93` | `ActiveSpellTargetMechanic` / `Spell4EffectCategoryOnUnit` | Client cases `0x5c`/`0x5d` on active spell-effect list |
+| Entity item -> Game.ItemData | blocked (narrowed) | No direct entity->userdata writer; live `GetRuneSlots` reads userdata native blob synced via `140410680`; entity glyphs reach userdata through eval commit `140413520` + Lua refresh (`ItemAdded` / case 9), not `ItemModified`->`itemData` |
+| Slot update -> shared runtime | pass 41 mapped | `Inventory_ApplySlotUpdateAndDispatchItemAdded` 1403b8380 -> slot `Entity_GetIndexedSlotEntry` + `ItemEval_CommitPendingRuneData` + `ItemAdded` |
+| Wire -> item-eval | pass 38 mapped | `ItemEval_SyncFromSharedItem` 140410300 copies runtime `+0x20`/`+0x158` into item-eval; `itemData+0x388`/`+0x518` writer still blocked |
+| `FUN_14040f320` | `ItemRuneType_ToCompactSocketId` | RuneType 7-13 -> compact 1-7 for `0x0859` `IsNotFusion` (`14051ed80`) |
+| `PrerequisiteType.Unknown92`-`93` | `ActiveSpellTargetMechanic` / `Spell4EffectCategoryOnUnit` | Client cases `0x5c`/`0x5d` on active spell-effect list |
 | `PrerequisiteType.Unknown280` | `SpellTierOnCasterAndTarget` | Client case `0x118` requires caster **and** target to pass SpellTier helper `FUN_1404a4f60` |
 | `PrerequisiteType.Unknown77` | `QuestObjectiveOnTarget` | Client case `0x4d` (+0x548) passes target context; `objectId0` is QuestObjective id |
 | `PrerequisiteType.Unknown172` | `HealthScaled` | Client case `0xac` inline: `Entity_GetHealthScaleFactor` `14047a940` * health `+0xd08+0x8c`; fallback `Creature2_GetRowByUnitId` `14022d500` on `+0xd8` |
-| `PrerequisiteType.Unknown174` | `ItemTradeSkillKnown` | `PrerequisiteTypeHandlerTable[174]` → `Prerequisite_CheckItemTradeSkillKnown` `1404a17e0` → `TradeSkill_ClientHasKnownItem2Id` `1403b91d0` (known-recipe list binary search); NPC types `0x14`/`0x17` |
-| `PrerequisiteType.ItemTradeSkill` (173) | NF `PrerequisiteCheckItemTradeSkill` | Handler table `1404a1790` → `TradeSkill_CheckItemTradeskillRequirement` `1403c16e0`; tier rank from `TradeskillTier` + `GetTradeskillXp` |
-| `PrerequisiteType.ItemTradeSkillKnown` (174) | NF `PrerequisiteCheckItemTradeSkillKnown` | Handler table `1404a17e0` → `TradeSkill_ClientHasKnownItem2Id` `1403b91d0`; `HasLearnedSchematic` on schematics referencing Item2 |
+| `PrerequisiteType.Unknown174` | `ItemTradeSkillKnown` | `PrerequisiteTypeHandlerTable[174]` -> `Prerequisite_CheckItemTradeSkillKnown` `1404a17e0` -> `TradeSkill_ClientHasKnownItem2Id` `1403b91d0` (known-recipe list binary search); NPC types `0x14`/`0x17` |
+| `PrerequisiteType.ItemTradeSkill` (173) | NF `PrerequisiteCheckItemTradeSkill` | Handler table `1404a1790` -> `TradeSkill_CheckItemTradeskillRequirement` `1403c16e0`; tier rank from `TradeskillTier` + `GetTradeskillXp` |
+| `PrerequisiteType.ItemTradeSkillKnown` (174) | NF `PrerequisiteCheckItemTradeSkillKnown` | Handler table `1404a17e0` -> `TradeSkill_ClientHasKnownItem2Id` `1403b91d0`; `HasLearnedSchematic` on schematics referencing Item2 |
 | `PrerequisiteType.Unknown178` | `ProgressTrackOnMatchingEntity` | Handler table[178] `1404a1890` + `Progress_GetTrackedScalar` `1403fa980`; NF uses challenge completion count when `objectId0` is a `Challenge.tbl` id (track table `+0x8010` still blocked) |
 | `PrerequisiteType.TradeSkill` (175) | NF `PrerequisiteCheckTradeSkill` | Handler table stub; NF tier rank via `HasTradeskill` + `TradeskillTier` |
 | `PrerequisiteType.ChallengeObject` (176) | NF `PrerequisiteCheckChallengeObject` | Handler table stub; NF `IsChallengeActivated` for `Challenge.tbl` id |
-| `PrerequisiteType.TrueLevel` (177) | NF `PrerequisiteCheckPlayerGlobalTreeLookup` | Handler `1404a1830` + `1403d407b`; enum name unverified — rename blocked |
+| `PrerequisiteType.TrueLevel` (177) | NF `PrerequisiteCheckPlayerGlobalTreeLookup` | Handler `1404a1830` + `1403d407b`; enum name unverified - rename blocked |
 | `PrerequisiteType.CreatureDifficultyRank` (180) | NF `PrerequisiteCheckCreatureDifficultyRank` | Handler table stub; NF `RankValue` on target difficulty row |
 | `PrerequisiteType.CreatureDifficulty` (179) | NF `PrerequisiteCheckCreatureDifficulty` | Spell path + NF manager; handler table[179] `1404a18f0` is PrimalMatrix lookup `1404d6a60` (documented mismatch) |
 | `PrerequisiteType.PrimalMatrixNode` (292) | NF stub `PrerequisiteCheckPrimalMatrixNode` | Live vtable `+0x6c8`; handler table `_purecall`; allocation runtime blocked |
-| `PrerequisiteType.LiveEventCount` (168) | `AccountItemCount` | Handler table[168] `Prerequisite_CheckAccountItemCount` `1404a1620` → `AccountItem_CountOwnedByItem2Id` `1403d2140`; live case `0xa8` still vtable `+0x5a0` |
+| `PrerequisiteType.LiveEventCount` (168) | `AccountItemCount` | Handler table[168] `Prerequisite_CheckAccountItemCount` `1404a1620` -> `AccountItem_CountOwnedByItem2Id` `1403d2140`; live case `0xa8` still vtable `+0x5a0` |
 | `PrerequisiteType.LiveEvent169` (169) | `AccountItemCountCompared` | Handler table[169] `Prerequisite_CheckAccountItemCountCompared` `1404a1670`; NF `PrerequisiteCheckAccountItemCountCompared` |
 | `PrerequisiteType.Unknown171` (171) | `DailyLoginDaysTotal` | Handler table[171] reads accountItemList+0x180 = DailyLogin Value0; NF `GetDailyLoginDaysTotal()` |
 | `PrerequisiteType.Unknown96` | `EvalContextFloatByObjectId` | Handler table[96] `Prerequisite_CheckEvalContextFloatByObjectId` `14049f810`; active eval-context list key `+0x20`, float `+0x28`; NF item stat eval proxy |
@@ -163,6 +273,7 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 | `PrerequisiteType.Unknown241` | `HousingResidenceLoaded` | Live vtable `+0x638` -> `Prerequisite_CheckHousingResidenceLoaded` `1404a11e0`; NPC gate then Equal/NotEqual on active housing TargetResidence identity at world client `+0x7500/+0x7508` |
 | `PrerequisiteType.Unknown186` | `HousingNeighborResidence` | Live vtable `+0x628` -> `Prerequisite_CheckHousingNeighborResidence_Table186` `1404a10e0`; NPC gate then Equal/NotEqual on current housing residence identity presence in cached neighbor map. Only retail row `17536` pairs `HouseOwnership` with type 186 for housing seed/relic/active-prop gates. |
 | `PrerequisiteType.Unknown245` | no enum rename | Raw PE vtable `+0x698` -> `Prerequisite_CheckItemTradeSkill` `1404a1790`; NPC-gated Item2 tradeskill tier requirement, but no semantic owner beyond duplicate-body alias |
+| `PrerequisiteType.Unknown275` | no enum rename | Raw PE vtable `+0x6a0` -> `Prerequisite_CheckItemTradeSkillKnown` `1404a17e0`; row object ids correlate with AccountItem Item2 rows, but live semantics duplicate the known tradeskill item2 predicate |
 | `PrerequisiteType.Unknown286` | no enum rename | Raw PE vtable `+0x688` -> `Prerequisite_CheckDailyLoginDaysTotal` `1404a1710`; accountItemList+0x180, but no semantic owner beyond duplicate-body alias |
 | `PrerequisiteType.Unknown287` | `DailyLoginRewardsAvailable` | Raw PE vtable `+0x690` -> `Prerequisite_CheckDailyLoginRewardsAvailable` `1404a1750`; accountItemList+0x184 |
 | `PrerequisiteType.Unknown289` | no enum rename | Raw PE vtable `+0x3d0` -> `Prerequisite_CheckMount` `14049f0c0`; duplicate of type 84 body without proven finer semantic owner |
@@ -173,8 +284,8 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 | `PrerequisiteType.Unknown268` | `CREDDPendingOrderState` | Live case `0x10c` vtable `+0x3c8` -> `Prerequisite_CheckCREDDPendingOrderState_Table268` `14049f090`; compares `DAT_140c635f0+0x1708` CREDD pending-order flag to `objectId0`. Row `38851` is `NotEqual objectId0=1` and gates `creature2.prerequisiteIdVisibility` for CREDD Exchange NPCs in Thayd/Illium and the MTX Protostar consultant. |
 | `PrerequisiteType.Unknown159` | `PositionalRequirementBetweenCasterAndTarget` | Client case `0x9f` dispatches vtable `+0x1e0` -> `14049d940`; body resolves `PositionalRequirement` from `objectId0`, computes angular cone using row `AngleCenter`/`AngleRange`, checks caster-vs-target bearing, and swaps facing source when row `Flags & 1`; retail row 6117 uses objectId0=6 (`AngleCenter=0`, `AngleRange=300`, `Flags=0`). |
 | `PrerequisiteType.Unknown63` | `IsLocalPlayerEntity` | Client case `0x3f` dispatches vtable `+0x78` -> raw `14049c7b0`; body compares evaluated entity `+8` identity to `DAT_140c65898+0x78` local-player entity `+8`, supports Equal/NotEqual only, and retail rows 3977/22213 are used by `VisualEffect.prerequisiteId` local-vs-nonlocal gates. |
-| `PrerequisiteType.PublicEventParticipant166` (166) | `LiveEventTreeLookup` | Handler table[166] `1404a1580` → LiveEventTree_LookupByObjectId 1404a7f50; NF requires NPC target + LiveEvent row (progress proxy 0) |
-| `PrerequisiteType.LiveEvent167` (167) | `LiveEventWorldFactionBranch` | Handler table[167] `1404a15d0` → 1404a80b0 + LiveEvent_GetWorldFactionField 1404a8430 (world 0xa6/0xa7 = Dominion/Exile fields +0x68/+0x88) |
+| `PrerequisiteType.PublicEventParticipant166` (166) | `LiveEventTreeLookup` | Handler table[166] `1404a1580` -> LiveEventTree_LookupByObjectId 1404a7f50; NF requires NPC target + LiveEvent row (progress proxy 0) |
+| `PrerequisiteType.LiveEvent167` (167) | `LiveEventWorldFactionBranch` | Handler table[167] `1404a15d0` -> 1404a80b0 + LiveEvent_GetWorldFactionField 1404a8430 (world 0xa6/0xa7 = Dominion/Exile fields +0x68/+0x88) |
 | `PrerequisiteType.GameFormula` (170) live path | `Prerequisite_CheckEntitySetCountAt7188` @ 14049c880 | Counts NPC entities in player global +0x7188 set; distinct from tbl formula-id and handler-table +0x110 paths |
 | `PrerequisiteType.HealthScaled` (172) | NF `PrerequisiteCheckHealthScaled` | Live case `0xac` inline scaled health; NF uses raw `IWorldEntity.Health` proxy; handler table[172] = `accountItemList+0x184` daily-login rewards |
 | `PrerequisiteType.Unknown220` | `PathMissionChecklistItemComplete` | Live case `0xdc` vtable `+0x498` -> `Prerequisite_CheckPathMissionChecklistItemComplete_Table220` `14049fe80`; NF proxy checks completed missions as complete and otherwise tests persisted path mission `ProgressData` bit `value` for `value < 32`; per-type checklist/clue ownership remains blocked. |
@@ -189,16 +300,16 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 | `Client0x003D` | `ClientAccountRealmData` | `ClientAccountRealmData_WritePayload` @ `1400aba70` = one `AccountRealmData` row; nested in `ClientRealmListRealmRow`; standalone send blocked |
 | `Client0x0760` | `ClientRealmListRealmRow` | `Client0x0760_WritePayload` @ `1400abd30` + `ServerRealmList` realm row serializer; send-site still blocked |
 | `Client0x0762` | `ClientRealmListMessageRow` | `Client0x0762_WritePayload` @ `1400ac410` + `ServerRealmList` message row serializer; send-site still blocked |
-| Prerequisite handler evidence | pass 49/86 | Use **`0x140b67870` / `PrerequisiteTypeHandlerTable[typeId]`** for handler bodies; **`PTR_FUN_140b67740` vtable slots** often disagree (destructor/UI) — do not rename from vtable PE pointer alone |
+| Prerequisite handler evidence | pass 49/86/106 | Use **`0x140b67870` / `PrerequisiteTypeHandlerTable[typeId]`** for handler-table bodies, but correlate with the live `PrerequisiteManager_EvaluateTypeSlot` case and row data before renaming. Type 244/246 names are retained because pass 106 proved both live vtable slots and retail row semantics; do not rename from pointer evidence alone. |
 | `AchievementEntry.Value` | `RequiredProgress` | Achievement progress runtime |
 | `Quest2Entry.FactionLevelCompPreq*` | `FactionLevelRequireAtMostPreq*` | Quest prerequisite comparison semantics |
 | `RewardRotationModifierEntry.Value` | `ModifierValue` | Reward rotation schedule builder |
 | Reputation packets `Value` | `ReputationDelta` / `ReputationAmount` | Packet shape tests |
 | `GroupCharacter.UnknownStruct1` | `PrimeLevelInfo` / `PrimeLevels` | `MatchingPrimeLevelInfo_ReadPayload` @ `1400ad150` |
-| `GroupCharacter.Unknown11`–`Unknown22` | `Health` … `HealingAbsorbMax` (packed `ushort` vitals) | `GroupCharacter_ReadPayload` @ `140082420` `+0x54`..`+0x6a`; same set as `ServerGroupMemberStatUpdate` |
+| `GroupCharacter.Unknown11`-`Unknown22` | `Health` ... `HealingAbsorbMax` (packed `ushort` vitals) | `GroupCharacter_ReadPayload` @ `140082420` `+0x54`..`+0x6a`; same set as `ServerGroupMemberStatUpdate` |
 | `GroupCharacter.Unknown28`/`Unknown29` | `PhaseFlags1` / `PhaseFlags2` | Parsed `+0x94`/`+0x98`; matches `ServerGroupMemberStatUpdate` @ `140083d30` |
 | Spell damage `UnknownStructure3` | `TrailingStructure` / `TrailingStructures` | `SpellDamageDescription_ReadPayload` @ `1400946c0`; row reader `SpellDamageTrailingRow_ReadPayload` @ `1400945e0` (seven damage uint32s + 3-bit tail; row consumer blocked) |
-| `TrailingStructure.Unknown0`–`Unknown7` | `RawDamage` … `GlanceAmount`, `DamageType` (3-bit) | Same field widths as parent `DamageDescription` via `SpellDamageTrailingRow_ReadPayload` @ `1400945e0`; per-row gameplay use blocked |
+| `TrailingStructure.Unknown0`-`Unknown7` | `RawDamage` ... `GlanceAmount`, `DamageType` (3-bit) | Same field widths as parent `DamageDescription` via `SpellDamageTrailingRow_ReadPayload` @ `1400945e0`; per-row gameplay use blocked |
 | `ServerSpellEffectNestedTargets` placeholders | `ServerUniqueId`, `Spell4EffectId`, `TargetId`, `DamageDescriptions` | Reader @ `140095810`; shared damage row @ `1400946c0`; structural diff vs `0x07F6` (`ServerSpellEffectDamage_ReadPayload` @ `140095910`) |
 | `0x07F6` post-parse consumer | `SpellWrapper_ApplyServerEffectDamage` @ `1405a5800`, `SpellWrapper_DispatchEffectDamageCombatLog` @ `14053f3f0` | Via `Entity_ExecuteSpellEffectHighRange` jump case `1403ee268`; combat-log primary row only; trailing rows still blocked |
 | `ServerP2PTradeUpdateItem` unknown tail | `RandomCircuitData`, `RandomGlyphData`, `ThresholdData`, `WorldRequirement_Item2Id`, `Item2IdMicrochip[5]` | Client opcode `0x018E` read `FUN_1400aa2b0` @ `1400aa2b0`, write `FUN_1400aa030` @ `1400aa030`; same tail as mail `ServerMailAvailable.Attachment` minus charges and eight glyph slots |
@@ -241,25 +352,25 @@ Account route adds after shared payload: `AccountPurchaseExtensionId` (u32 at st
 
 Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `RetailCatalogWireByte` for the documented passthrough.
 
-## Blocked — per-field (closed without rename)
+## Blocked - per-field (closed without rename)
 
 | Symbol | Evidence summary |
 |--------|------------------|
-| `PendingAccountItemGroup.Unknown2` | Wire `+0x10`; cache `[2]` @ `140005bf0`; lookup by `Id` only @ `140007810`; gift UI @ `140519260` uses group string at cache `+0x38` and UI target fields — not slot `[2]` |
+| `PendingAccountItemGroup.Unknown2` | Wire `+0x10`; cache `[2]` @ `140005bf0`; lookup by `Id` only @ `140007810`; gift UI @ `140519260` uses group string at cache `+0x38` and UI target fields - not slot `[2]` |
 | `GroupCharacter.StatBlockPrefix17` | 17-bit prefix at parsed `+0x1c` in stat block; copied to client `+0x98`; gameplay meaning blocked |
 | `GroupMemberStatSlot.Value` | Five-row ushort in stat block; per-row semantics blocked |
 | `GroupCharacter.Unknown10` | `uint32` after mentoring (`+0x50`); no labeled consumer |
 | `QuestObjectiveType.Unknown27` / `Unknown29` | No localization / single-digit table counts; no NF runtime handler |
 | `PathMissionChecklistItemComplete` exact checklist runtime | Enum/check implemented with an NF proxy; exact per-path-type `+0x50` checklist/clue ownership remains blocked until path mission runtime state is modeled beyond completed-mission and persisted `ProgressData` bits. |
-| `PrerequisiteType.Unknown260` | One retail row `36343` nests `OtherPrerequisite` -> row `17536` (`HouseOwnership` + `HousingNeighborResidence`) and type 260 Equal with `objectId1=12` (`HousingPlugItem` row flags `2`), but no imported `wildstar_client` prerequisite reference column points at row `36343`. Live case `0x104` vtable `+0x640` -> `1404a1220` ignores row object/value and resolves active housing plot/plug state through `HousingPlotInfo`, current/default `HousingPlugItem`, plug flags `0x08`/`0x20`, and active residence fields `+0x60/+0x64` vs state value `5`; state semantic remains unmapped, so no enum rename. |
+| `PrerequisiteType.Unknown260` | One retail row `36343` nests `OtherPrerequisite` -> row `17536` (`HouseOwnership` + `HousingNeighborResidence`) and type 260 Equal with `objectId1=12` (`HousingPlugItem` row flags `2`), but no imported `wildstar_client` prerequisite reference column points at row `36343`. Live case `0x104` vtable `+0x640` -> `1404a1220` ignores row object/value and resolves active housing plot/plug state through `HousingPlotInfo`, current/default `HousingPlugItem`, plug flags `0x08`/`0x20`, and active residence fields `+0x60/+0x64` vs state value `5`. State `5` correlates to native `HousingBuildComplete`, but the active residence fields and row/use-site reachability remain unnamed, so no enum rename. |
 | Matching/rating candidate `14049e300` | Rejected as type 266: live prerequisite case `0x10a` uses decimal vtable operand `200` (`+0xc8`) -> `14049cae0`, not `+0x200`. `14049e300` remains orphan/unassigned until a caller or slot proves ownership. |
-| `PrerequisiteType.ScanCreature` native path | Enum name remains table/text-backed, but stale labels were rejected: handler table[62] `14049e9a0` is `Prerequisite_CheckEntityLookupFlagBit1_Table62`, not a scientist checklist walk; live case `0x3e` dispatches vtable `+0x4a8` -> raw `14049ff30`, which has scan-looking target bitmask fields but no safe semantic label yet. |
-| `PrerequisiteType.Unknown267` | No enum rename: live case `0x10b` vtable `+0x320` -> diagnostic body `Prerequisite_CheckEntityLookupFlagBit1_Table62` `14049e9a0` (same body as mislabeled handler table[62]); bit-1 semantics at `*(DAT_140c65898+0x6c50)+8` still blocked — not `ScanCreature`. |
+| `PrerequisiteType.ScanCreature` native path | Enum name remains table/text-backed, but stale labels were rejected: handler table[62] `14049e9a0` is now labelled `Prerequisite_CheckGroupIsRaid_Table62AndLive267`, not a scientist checklist walk; live case `0x3e` dispatches vtable `+0x4a8` -> raw `14049ff30`, which has scan-looking target bitmask fields but no safe semantic label yet. |
+| `PrerequisiteType.GroupIsRaid` | Renamed from `Unknown267` in pass 114: live case `0x10b` vtable `+0x320` -> `Prerequisite_CheckGroupIsRaid_Table62AndLive267` `14049e9a0`; bit 1 at `*(DAT_140c65898+0x6c50)+8` maps to `GroupFlags.Raid`, and retail rows use `NotEqual 0` against that raid bit. |
 | `Prerequisite_CheckScanCreature_LiveCase3E` (`14049ff30`) | Pass 88: live type 62 case `0x3e` vtable `+0x4a8`; target-unit scan bitmask predicate documented; NF still uses datacube-only `PrerequisiteCheckScanCreature`. |
 | `PrerequisiteType.HousingNeighborResidence` (186) | Pass 95: `PrerequisiteCheckHousingNeighborResidence` proxies neighbor presence on player residence; native visit-context map membership still blocked. |
 | `Prerequisite_CheckHousingPlotPlugState_Table260` (`1404a1220`) | Pass 95: diagnostic label for type 260 live body; enum rename still blocked. |
 | `PrerequisiteType.Unknown144` | No `wildstar_client.prerequisite` rows found and live `PrerequisiteManager_EvaluateTypeSlot` skips case `0x90` (`0x8f` -> vtable `+0x3a0`, `0x91` -> inline Equal true). Handler table[144] `1404a0b70` is labelled only as `Prerequisite_CheckLiveEventStateEqualsOne_Table144`: it looks up `objectId` through `PublicEventService_GetLiveEventById` and tests runtime record `+0x1d0 == 1`, but reachability and field meaning are blocked, so no enum rename. |
-| Handler table[5] `14049d470` | Renamed pass 100 to `Prerequisite_CheckEntityIdInEvalContextList_Table5Orphan` — walks eval-context `+0x2b8` list; **not** live type 5. Live `Reputation` = case `0x5` inline `entity+0x118` vtable `+0x20` + `PrerequisiteManager_ApplyComparisonFloat` `1404a2010`. |
+| Handler table[5] `14049d470` | Renamed pass 100 to `Prerequisite_CheckEntityIdInEvalContextList_Table5Orphan` - walks eval-context `+0x2b8` list; **not** live type 5. Live `Reputation` = case `0x5` inline `entity+0x118` vtable `+0x20` + `PrerequisiteManager_ApplyComparisonFloat` `1404a2010`. |
 | `PrerequisiteType.Unknown203` | Rows exist, but live case `0xcb` dispatches vtable `+0x348` -> `140001ba0` no-op stub; no semantic owner is proven. |
 | `PrerequisiteType.Unknown222` | Rows `9470`/`9472` exist, but live case `0xde` dispatches vtable `+0x380` -> `140001ba0` no-op stub; no semantic owner is proven. |
 | `PrerequisiteType.Unknown259` | Rows `39430`/`39431`/`39799`/`39800` use objectId0 `38923`/`38924`, but live case `0x103` dispatches vtable `+0x530` -> `140001ba0` no-op stub; no semantic owner is proven. |
@@ -269,14 +380,14 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 | `PrerequisiteType.Unknown283` | No retail rows found and live case `0x11b` dispatches vtable `+0x6a8` -> `140001ba0` no-op stub; no semantic owner is proven. |
 | `PrerequisiteType.Unknown285` | Rows `41892`/`43208` exist, but live case `0x11d` dispatches vtable `+0x6b0` -> `140001ba0` no-op stub; no semantic owner is proven. |
 | `PrerequisiteType.Unknown294` | One row (`44546`) is unreferenced in every `wildstar_client` column containing `prerequisite`; it uses `NotEqual` with all ids/values zero. Live case `0x126` dispatches vtable `+0x6d0` -> `140001ba0` no-op stub, and handler table[294] is `_purecall`; no semantic rename. |
-| `PrerequisiteType.Unknown295` | Pass 98: `PrerequisiteCheckUnknown295` proxies live case `0x127` (NotEqual + evaluated entity present). Row `44550` still unreferenced; enum rename blocked. |
+| `PrerequisiteType.EvaluatedEntityPresent` | Renamed from `Unknown295` in pass 113: live case `0x127` inline NotEqual + evaluated entity present, value0 ignored; row `44550` is target-apply gate on Engineer Portable Black Hole Large Pull. |
 
 ## Blocked buckets (do not rename without new evidence)
 
 | Bucket | Count | Notes |
 |--------|------:|-------|
-| `PrerequisiteType.UnknownNNN` | remaining | Table ids + generic failure strings only — **out of scope** |
-| `Network.World` packet tails | ~400 refs | Many `Server0xNNNN` shapes decoded but event semantics open — **out of scope** |
+| `PrerequisiteType.UnknownNNN` | remaining | Table ids + generic failure strings only - **out of scope** |
+| `Network.World` packet tails | ~400 refs | Many `Server0xNNNN` shapes decoded but event semantics open - **out of scope** |
 | `Stat.Unknown*`, `InventoryLocation.Unknown*` | ~15 | No client stat/location enum strings |
 | `EntityCreateFlag.Unknown08` | 1 | Used in cinematics; no label |
 | Marketplace `AuctionInfo.Unknown2` | 1 | No consumer label |
@@ -297,12 +408,12 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 | `+0x48` | `HasTargetPlayerIdentity` | Wire u64; NF emits `0`/`1` |
 | after | `TargetIdentity` | Second identity in 0x60 struct |
 
-## Deferred (future passes — not part of closed initiative)
+## Deferred (future passes - not part of closed initiative)
 
-1. `PendingAccountItemGroup.Unknown2` — live `0x0979` capture with non-zero `+0x10`, or Lua/UI reading cache `[2]`.
-2. `ServerStoreOffers.Offer.Unknown6`/`Unknown7` — any client path outside catalog Apply that consumes `+0x28/+0x30` (purchase history @ `14044c540` uses a different row layout).
-3. `0x082A` purchase `[3]` 14-bit — live sniff vs `AccountCurrencyType` if handlers diverge from retail.
-4. Group roster tail — decompile consumer for `GroupCharacter.Unknown10` (`uint32` @ parsed `+0x50` after mentoring).
+1. `PendingAccountItemGroup.Unknown2` - live `0x0979` capture with non-zero `+0x10`, or Lua/UI reading cache `[2]`.
+2. `ServerStoreOffers.Offer.Unknown6`/`Unknown7` - any client path outside catalog Apply that consumes `+0x28/+0x30` (purchase history @ `14044c540` uses a different row layout).
+3. `0x082A` purchase `[3]` 14-bit - live sniff vs `AccountCurrencyType` if handlers diverge from retail.
+4. Group roster tail - decompile consumer for `GroupCharacter.Unknown10` (`uint32` @ parsed `+0x50` after mentoring).
 
 ## Deferred - structurally mapped packet opcodes
 

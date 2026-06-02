@@ -1263,6 +1263,7 @@ WildStar64.exe,14008bf00,ServerHousingVendorListRow_ReadPayload,Reads one housin
 WildStar64.exe,14009d760,ClientHousingDecorUpdate_WritePayload,Serialises opcode 0x050B as a 3-bit operation, uint32 count, count DecorInfo rows, then count trailing 1-bit flags.
 WildStar64.exe,1404b89a0,Housing_BuildDecorUpdateRow,Fills a ClientHousingDecorUpdate DecorInfo row from cached residence decor state and selected target residence data before opcode 0x050B senders.
 WildStar64.exe,14009cbe0,ServerHousingNeighborhoodEntry_ReadPayload,Reads opcode 0x0501 and shared 0x0506 row entries as one uint64 two 14-bit fields another uint64 a wide string and three uint32 fields.
+WildStar64.exe,140077730,Network_RegisterServerOpcode_0506,Registers server opcode 0x0506 with 0x10-byte reader ServerHousingNeighborhoodList_ReadPayload@14009ebf0 in Network_RegisterServerOpcode_0351 block at 140077712.
 WildStar64.exe,14009ebf0,ServerHousingNeighborhoodList_ReadPayload,Reads opcode 0x0506 as one 14-bit realm field then a uint32 count and count 0x30-byte ServerHousingNeighborhoodEntry rows.
 WildStar64.exe,1404ba4f0,Housing_HandleNeighborhoodList,Consumes opcode 0x0506 neighborhood-list rows into the housing neighborhood cache and dispatches HousingNeighborhoodRecieved.
 WildStar64.exe,14009ecc0,ServerHousingNeighbors_ReadPayload,Reads opcode 0x0507 as a uint32 count then allocates 0x28-byte rows parsed by ServerHousingNeighbors_Row_ReadPayload.
@@ -1909,7 +1910,7 @@ WildStar64.exe,14049ed20,Prerequisite_CheckChallengeTier,Prerequisite type 70 ha
 WildStar64.exe,14049ef70,Prerequisite_CheckMovementMode,Prerequisite type 78 handler table[78]: movement mode byte at entity+0x640 then integer ApplyComparison.
 WildStar64.exe,14049efa0,Prerequisite_CheckUnderForcedMovement,Prerequisite type 79 handler table[79] and live type 290 vtable +0x3a8: forced-movement flag at entity+0x640 then compare.
 WildStar64.exe,14049efc0,Prerequisite_CheckWrongSpellMechanic,Prerequisite type 81 handler table[81]: active spell target-mechanic overlap scan (entity+0x80 type 0x14/0x17 filter) via 14048c88c/14048c96c.
-WildStar64.exe,14049e9a0,Prerequisite_CheckEntityLookupFlagBit1_Table62,Prerequisite handler table[62] @ 0x140b67870 and live type 267 vtable +0x320: returns bit 1 from uint at *(DAT_140c65898+0x6c50)+8; semantic blocked; not scan-creature checklist evidence.
+WildStar64.exe,14049e9a0,Prerequisite_CheckGroupIsRaid_Table62AndLive267,Prerequisite handler table[62] @ 0x140b67870 and live type 267 vtable +0x320: returns GroupFlags.Raid bit (1 << 1) from current group context flags at *(DAT_140c65898+0x6c50)+8; not scan-creature checklist evidence.
 WildStar64.exe,14049ff30,Prerequisite_CheckScanCreature_LiveCase3E,Prerequisite live type 62 case 0x3e vtable +0x4a8: target unit scan gate (+0x3754, subobject +0x18 with +0x188/+0x1c8) then bitmask at +0x3750 vs value0 Equal/NotEqual; NF uses datacube progress only.
 WildStar64.exe,1404a1220,Prerequisite_CheckHousingPlotPlugState_Table260,Prerequisite type 260 live case 0x104 vtable +0x640: NPC gate; active housing plot plug flags 0x08/0x20 vs residence +0x60/+0x64 state 5; ignores row objectId/value; orphan row 36343.
 WildStar64.exe,1405faf00,PathScientist_RemoveScanStateById,Walks path-scientist state list at param4+8, removes state type 4 rows whose id at +0x18 matches param_2, clears active state param3+8, and refreshes via 1405fa640; not prerequisite type 62 evidence.
@@ -2042,6 +2043,10 @@ WildStar64.exe,1405f4040,PublicEventObjectiveLocationAdded_ApplyPair,Resolves li
 WildStar64.exe,1405f5010,PublicEventPacketApply_DispatchByMode,Apply-table router at cell 140e21948: switches on payload mode 0-3 and calls live-event or live-objective vtable slots +0x138/+0x140/+0x148/+0x150.
 WildStar64.exe,1405f50f0,PublicEventPacketApply_DispatchExtendedMode,Apply-table router at cell 140e21954: modes 2-3 call live-objective vtable +0x160/+0x168 with extra payload fields.
 WildStar64.exe,1405f5170,PublicEventVoteInitiate_Apply,Apply consumer at cell 140e21960: enqueues PublicEventVote rows and dispatches PublicEventInitiateVote when queue was empty.
+WildStar64.exe,140bd97b0,HousingNeighborhoodList_ApplyDispatchSlot_DataRef,Server opcode 0x0506 apply-table DATA pointer to Housing_HandleNeighborhoodList@1404ba4f0; TraceFunctionCallers shows no direct CALL sites.
+WildStar64.exe,140bd97c0,HousingNeighborhoodList_ApplyDispatchSlot_DataRef_Alt,Second apply-table DATA pointer to Housing_HandleNeighborhoodList@1404ba4f0 in cluster at 140bd97b0.
+WildStar64.exe,140e0ec28,HousingNeighborhoodList_ApplyDispatchSlot_DataRef_Table,Third apply-table DATA pointer to Housing_HandleNeighborhoodList@1404ba4f0 (table region 140e0ec28).
+WildStar64.exe,140e037ec,MapTrackedUnitUpdate_ApplyDispatchSlot_DataRef,Server opcode 0x0849 apply-table DATA pointer to MapTrackedUnitUpdate_ApplyAndDispatch@1403f4170; no direct CALL xrefs.
 Houston64.exe,140329da4,ClientToScreen,Promoted from Ghidra export functions.csv with evidence-backed name ClientToScreen.
 Houston64.exe,14032b4e4,ProcessMouseMove,Promoted from Ghidra export functions.csv with evidence-backed name ProcessMouseMove.
 Houston64.exe,140356a30,ProcessCommand,Promoted from Ghidra export functions.csv with evidence-backed name ProcessCommand.
@@ -2681,11 +2686,11 @@ WildStar64.exe,1404a0cb0,Prerequisite_CheckNpcInventoryItemCount,Prerequisite ty
 WildStar64.exe,1405f68f0,Inventory_CountItemOnUnitBags,Walks unit bag trees and sums stack counts for Item2 id where container slot type equals 0x1c.
 WildStar64.exe,1401ed460,AccountItemLookup_GetByItem2Id,Resolves account Item2 ownership/bind record via BindPoint table or account-item service fallback.
 WildStar64.exe,14079ee60,ClientEntityLookup_FindByIdentity,Binary-searches client entity lookup table by entity id and 64-bit identity pair; returns index hit/miss.
-WildStar64.exe,14049d240,Prerequisite_CheckDoesNotOwnAccountItemOnCharacter,Prerequisite type 246 handler (+0x130): FUN_1403ac590 inventory lookup mode 0x707 for account Item2 id in value0.
-WildStar64.exe,1403b91d0,TradeSkill_ClientHasKnownItem2Id,Binary-searches player known-tradeskill item2 id list (tier bucket from item2 row +0x17c); used by Prerequisite_CheckItemTradeSkillKnown type 174.
+WildStar64.exe,14049d240,Prerequisite_CheckDoesNotOwnAccountItemOnCharacter,Prerequisite type 246 live vtable slot 0x140b67870 (+0x130): FUN_1403ac590 inventory lookup mode 0x707 for value0 Item2 id; 53 retail rows all NotEqual.
+WildStar64.exe,1403b91d0,TradeSkill_ClientHasKnownItem2Id,Binary-searches player known-tradeskill item2 id list (tier bucket from item2 row +0x17c); used by Prerequisite_CheckItemTradeSkillKnown type 174 and live type 275 duplicate-body alias.
 WildStar64.exe,1403c16e0,TradeSkill_CheckItemTradeskillRequirement,Resolves item2 row and checks tradeskill tier gate via tradeskill service; used by Prerequisite_CheckItemTradeSkill type 173.
 WildStar64.exe,1404a1790,Prerequisite_CheckItemTradeSkill,Prerequisite type 173 handler table[173] and live type 245 vtable +0x698: NPC types 0x14/0x17 gate then TradeSkill_CheckItemTradeskillRequirement.
-WildStar64.exe,1404a17e0,Prerequisite_CheckItemTradeSkillKnown,Prerequisite type 174 handler at PrerequisiteTypeHandlerTable[174]: NPC types 0x14/0x17 gate then TradeSkill_ClientHasKnownItem2Id.
+WildStar64.exe,1404a17e0,Prerequisite_CheckItemTradeSkillKnown,Prerequisite type 174 handler at PrerequisiteTypeHandlerTable[174] and live type 275 vtable +0x6a0 duplicate body: NPC types 0x14/0x17 gate then TradeSkill_ClientHasKnownItem2Id.
 WildStar64.exe,1404a1890,Prerequisite_CheckProgressTrackOnMatchingEntity,Prerequisite type 178 handler table[178] and live type 291 vtable +0x6c0: requires target entity id match local player then Progress_GetTrackedScalar 1403fa980 before ApplyComparison.
 WildStar64.exe,1403fa980,Progress_GetTrackedScalar,Returns capped progress scalar for track id param_2; walks DAT_140c65898+0x8010 track table then world lookup; used by Prerequisite_CheckProgressTrackOnMatchingEntity type 178.
 WildStar64.exe,1404a1830,Prerequisite_CheckPlayerGlobalTreeLookup177,Prerequisite type 177 handler table[177]: NPC types 0x14/0x17 gate then PlayerGlobal_LookupObjectIdInTree 1403d407b on player global+0x6300; enum TrueLevel unverified.
@@ -2705,7 +2710,7 @@ WildStar64.exe,1404a80b0,LiveEventTree_LookupWithWorldBranch,Walks live-event tr
 WildStar64.exe,1404a8430,LiveEvent_GetWorldFactionField,Selects live-event progress field by current world id 0xa6 (166) -> record+0x68 or 0xa7 (167) -> record+0x88.
 WildStar64.exe,1404a1710,Prerequisite_CheckDailyLoginDaysTotal,Prerequisite type 171 handler table[171] and live type 286 vtable +0x688: accountItemList+0x180 (DailyLogin Value0 / loginDaysTotal) vs prerequisite value; DailyLoginUpdate_HandleServer096E 140005540 and DailyLogin_DayTimerCallback 140006890.
 WildStar64.exe,1404a1750,Prerequisite_CheckDailyLoginRewardsAvailable,Prerequisite handler table[172] and live type 287 vtable +0x690: accountItemList+0x184 (DailyLogin rewardsAvailable); live case 0xac uses inline HealthScaled at PrerequisiteManager_EvaluateTypeSlot not this pointer.
-WildStar64.exe,14049ca70,Prerequisite_CheckOwnsAccountItem,Prerequisite type 244 handler (+0xc0): on NPC entity types 0x14/0x17 checks account Item2 ownership via FUN_1401ed460 using current row objectId from eval context.
+WildStar64.exe,14049ca70,Prerequisite_CheckOwnsAccountItem,Prerequisite type 244 live vtable slot 0x140b67800 (+0xc0): on NPC entity types 0x14/0x17 checks account Item2 ownership via FUN_1401ed460; retail row 30314 is Equal objectId0 Item2 id.
 WildStar64.exe,14049e900,Prerequisite_CheckTargetEntityLookupHit,Prerequisite type 106 handler (+0x318): resolves target entity identity (+0x1a0) through FUN_14079ee60 against client entity lookup table DAT_140c65898+0x6c50.
 WildStar64.exe,1404a0650,Prerequisite_CheckQuestObjectiveOnTarget,Prerequisite type 77 handler (+0x548): evaluates QuestObjective id against caster or target via quest-objective manager lookups.
 WildStar64.exe,14049be30,PrerequisiteManager_Initialise,Initialises prerequisite manager vtable and evaluation tables used by spell/quest/object gates.
@@ -2888,3 +2893,9 @@ WildStar64.exe,1407f8018,__initconout,Export selection anchors: import:KERNEL32.
 WildStar64.exe,1407db510,_purecall,Export selection anchors: string:path@140af8110 || string:path@140af8138
 WildStar64.exe,1407f00f0,FID_conflict:__crtMessageBoxA,Export selection anchors: string:message@140963a68
 WildStar64.exe,14049fe80,Prerequisite_CheckPathMissionChecklistItemComplete_Table220,Prerequisite live type 220 case 0xdc vtable +0x498: PathMissionRuntime_FindById(objectId0) then Equal/NotEqual on runtime vtable +0x50(value0); Lua PathMission checklist/clue methods expose +0x50 as bIsComplete/bIsCompleted.
+WildStar64.exe,14049cae0,Prerequisite_CheckPetOrEsperPetEntity,Prerequisite live type 266 case 0x10a vtable +0xc8: entity+0x80 minus 0x18 in {0,1} (native 0x18/0x19 Pet/EsperPet); comparison mode param_3[1] Equal/NotEqual only.
+WildStar64.exe,140075082,Network_RegisterServerOpcode_08F4,Registers server opcode 0x08F4 with 0xC-byte reader ServerEntityStatUInt32UInt5UInt32_ReadPayload @140097620 in Network_RegisterServerOpcode_0351 @14006c290.
+WildStar64.exe,1400751a3,Network_RegisterServerOpcode_0908,Registers server opcode 0x0908 ServerEntityTargetUnit with 0xC-byte reader ServerSpellUInt32TripletListRow_ReadPayload @140080bf0.
+WildStar64.exe,1400751d4,Network_RegisterServerOpcode_090A,Registers server opcode 0x090A ServerEntityThreatUpdate with 0xC-byte reader ServerSpellUInt32TripletListRow_ReadPayload @140080bf0.
+WildStar64.exe,140075236,Network_RegisterServerOpcode_08CC,Registers server opcode 0x08CC with 0x10-byte reader ServerUInt32WideString_ReadPayload @1400980f0.
+WildStar64.exe,140078cb0,Network_RegisterServerOpcode_0889,Registers server opcode 0x0889 ServerEntityStatUInt32Triplet with 0xC-byte reader ServerSpellUInt32TripletListRow_ReadPayload @140080bf0.
