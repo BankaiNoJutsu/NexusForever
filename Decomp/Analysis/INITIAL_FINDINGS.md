@@ -18802,3 +18802,59 @@ Store mount account-inventory follow-up (2026-06-03 - target identity flag):
   `dotnet test I:\GIT\NexusForever\artifacts\prerequisite-test-bin\NexusForever.Game.Tests.dll --filter "FullyQualifiedName~Account.Inventory" -v minimal --nologo`
   and passed `56/56`. The default output path remains blocked while the local
   `NexusForever.WorldServer` process holds its `bin\Debug\net10.0` DLLs.
+
+Krakal opcode-branch audit (2026-06-04 - transport/inventory conflicts):
+- Scope: compared `krakal/transport` and `krakal/inventory` opcode names against
+  current WildStar64 client registration fragments, cached reader fragments, and
+  durable labels. No NexusForever runtime code was changed in this pass.
+- Transport `0x0186..0x0188`:
+  `Network_RegisterServerOpcode_0351` registers `0x0186` to local reader slot
+  `14007a530` (known 14-bit scalar from the 2026-06-02 inspect pass), `0x0187`
+  to `ServerEmpty_ReadPayload` (`14007d8e0`), and `0x0188` to
+  `ServerFlightPathUpdate_ReadPayload` (`14008eaa0`). Krakal's transport packet
+  shapes are wire-compatible for all three (`14-bit node id`, empty, and counted
+  uint32 list), and the `0x0188` flight-path list semantics are mapped. The
+  exact `AllowedNodeAdd` / `AllowedNodesClear` delta semantics for `0x0186` and
+  `0x0187` remain correlated but not verified because the post-read taxi-manager
+  apply path/event is still unmapped.
+- Inventory `0x00CA`:
+  registration binds `0x00CA` to `ServerHousingResidenceKeyedUpdate_ReadPayload`
+  (`14008de20`), one uint64 plus one uint32, inside the early housing privacy /
+  instance cluster. Krakal's `ServerItemCharges` has a compatible bit shape but
+  the opcode ownership is rejected for build 16042 until a non-housing consumer
+  or live capture proves otherwise.
+- Inventory `0x01A7` / `0x01A8`:
+  registration binds `0x01A7` to `14008ef80` (`uint64 + uint32`) and `0x01A8`
+  to the shared `14008de20` (`uint64 + uint32`). Native
+  `ServerItemDurabilityUpdate_ReadPayload` (`1403b9690`) is real and applies an
+  item identity plus a 32-bit durability value, but current xrefs found only
+  `.pdata` unwind metadata and string/call evidence, not an opcode/apply-table
+  link to `0x01A7`. Treat krakal `ServerItemDurability` and `ServerItemDyteData`
+  as plausible item concepts with unverified opcode ownership; do not rename or
+  emit until the apply table, live sniff, or native consumer path is mapped.
+- Inventory `0x056B..0x056D`:
+  registration binds `0x056B` to reader `1400a3ce0` (uint64, uint64, uint32,
+  uint64), `0x056C` to reader `1400a3d50` (three uint64 fields, 18-bit scalar,
+  3-bit count, counted uint32 array), and `0x056D` to reader `1400a3e40`
+  (uint64, uint32, 4-bit count, counted uint32 array). The `0x056B` shape
+  exactly matches krakal's `ServerItemModdableData` writer order
+  (`ItemGuid`, packed `ItemThresholds`, packed `RuneSlots`, packed
+  `CraftStats`). The `0x056D` shape exactly matches krakal's
+  `ServerItemGlyphs` writer order (`ItemGuid`, random glyph data, 4-bit count,
+  counted glyph Item2 ids). The `0x056C` native shape also matches the mapped
+  microchip apply path offsets used by `Inventory_UpdateItemMicrochipsFromWire`
+  (`1403b8540`), but krakal's `ServerItemMicrochips` implementation is not
+  wire-compatible as written: it writes `MakerCharacterId` as 32 bits and a
+  4-bit count, while the native reader consumes a second full uint64 field and
+  a 3-bit count. Current `ServerOptionAuxPayload*` names are therefore likely
+  semantic misnames for `0x056B..0x056D`; fix them in a source pass with focused
+  packet-shape tests before enabling any producer behavior.
+
+Krakal opcode-branch audit source follow-up (2026-06-04 - inventory 0x056B..0x056D names):
+- Promoted only the mapped inventory trio from placeholder option-aux names to
+  `ServerItemModdableData` (`0x056B`), `ServerItemMicrochips` (`0x056C`), and
+  `ServerItemGlyphs` (`0x056D`). The `0x056C` model keeps the native-safe
+  second `uint64` maker field and 3-bit microchip count rather than copying
+  krakal's 32-bit maker / 4-bit count writer.
+- Updated `function_labels.csv` for readers `1400a3ce0`, `1400a3d50`, and
+  `1400a3e40`; no runtime producer or item mutation behavior was enabled.

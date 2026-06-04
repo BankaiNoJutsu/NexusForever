@@ -118,9 +118,9 @@ WildStar64.exe,14006c120,NetworkBitReader_ReadUInt64,Reads one 64-bit value from
 WildStar64.exe,14006c1c0,NetworkBitReader_ReadUInt32Fast,Reads one 32-bit value from the packet bitstream into a uint32 destination with fast-path segment handling and NetworkBitReader_ReadBitsAcrossSegments fallback.
 WildStar64.exe,1400a4840,ServerItemSwap_ReadPayload,Reads server opcode 0x0568 as two consecutive ItemDragDrop rows of two uint64 fields each inside the registered 0x20-byte object.
 WildStar64.exe,1400a48d0,ServerItemSwapAux_ReadPayload,Reads server opcode 0x0567 as one ItemDragDrop row of two uint64 fields inside the registered 0x10-byte object.
-WildStar64.exe,1400a3ce0,ServerOptionAuxPayload_ReadPayload,Reads server opcode 0x056B as uint64, uint64, uint32, and uint64 fields; options/keybind producer semantics remain blocked.
-WildStar64.exe,1400a3d50,ServerOptionAuxPayloadLarge_ReadPayload,Reads server opcode 0x056C as three uint64 fields, one 18-bit field, a 3-bit count, and a counted uint32 array; options/keybind producer semantics remain blocked.
-WildStar64.exe,1400a3e40,ServerOptionAuxPayloadMedium_ReadPayload,Reads server opcode 0x056D as uint64, uint32, a 4-bit count, and a counted uint32 array; options/keybind producer semantics remain blocked.
+WildStar64.exe,1400a3ce0,ServerItemModdableData_ReadPayload,Reads server opcode 0x056B as item guid threshold data random glyph data and random circuit data.
+WildStar64.exe,1400a3d50,ServerItemMicrochips_ReadPayload,Reads server opcode 0x056C as item guid maker character id random circuit data 18-bit power-core item id 3-bit count and counted microchip item ids.
+WildStar64.exe,1400a3e40,ServerItemGlyphs_ReadPayload,Reads server opcode 0x056D as item guid random glyph data 4-bit count and counted glyph item ids.
 WildStar64.exe,14008ff20,ServerVehicleEmbarkAux_ReadPayload,Reads server opcode 0x01B2 as one flag, one 2-bit field, one uint64 field, and two uint32 fields inside the registered 0x10-byte object.
 WildStar64.exe,1400a4920,ServerLootItemUpdate_ReadPayload,Parses server opcode 0x08A0 as one LootItem payload: loot id, type, item id, amount, CanLoot, RequiresRoll, OnlyMasterLootable, Explosion, Granted, roll time, random circuit/glyph data, item quality, and master-loot identity rows.
 WildStar64.exe,1400a53c0,ClientCraftingRuneSlotAdd_WritePayload,Serialises world opcode 0x0859 payload as a 64-bit item guid, 1-bit non-fusion flag, and 5-bit RuneType.

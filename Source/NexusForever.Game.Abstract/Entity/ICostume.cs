@@ -10,7 +10,7 @@ namespace NexusForever.Game.Abstract.Entity
     {
         ulong Owner { get; }
         byte Index { get; }
-        uint Mask { get; set; }
+        uint VisibilityMask { get; set; }
 
         /// <summary>
         /// Return <see cref="ICostumeItem"/> at supplied index.

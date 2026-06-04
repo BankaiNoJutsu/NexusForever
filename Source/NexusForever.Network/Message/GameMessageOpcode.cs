@@ -191,7 +191,7 @@ namespace NexusForever.Network.Message
         ServerAbilityPoints             = 0x0169,
         ClientNonSpellActionSetChanges  = 0x016A,
         ServerActionSetDualUInt32Lists  = 0x016B, // uint32 pair + counted uint32 lists; reader FUN_14008dc30
-        ServerShowActionBar             = 0x016C,
+        ServerActionBarSet              = 0x016C,
         ServerActionSetUInt16           = 0x016D, // 16-bit scalar; reader LAB_14008ed80
         ServerActionSetUInt32           = 0x016E, // uint32 scalar; reader ServerUInt32_ReadPayload
         ClientSetStance                 = 0x016F,
@@ -631,9 +631,9 @@ namespace NexusForever.Network.Message
         ServerItemSwap                  = 0x0568,
         ServerItemMove                  = 0x0569, // native reader ServerItemMove_ReadPayload 1400a47f0: two uint64 drag fields
         ServerItemError                 = 0x056A,
-        ServerOptionAuxPayload          = 0x056B, // uint64 + uint64 + uint32 + uint64; reader 1400a3ce0
-        ServerOptionAuxPayloadLarge     = 0x056C, // three uint64 + 18-bit + 3-bit count + counted uint32 array; reader 1400a3d50
-        ServerOptionAuxPayloadMedium    = 0x056D, // uint64 + uint32 + 4-bit count + counted uint32 array; reader 1400a3e40
+        ServerItemModdableData          = 0x056B, // uint64 item guid + uint64 threshold data + uint32 random glyph data + uint64 random circuit data; reader 1400a3ce0
+        ServerItemMicrochips            = 0x056C, // uint64 item guid + uint64 maker character id + uint64 random circuit data + 18-bit power core item id + 3-bit microchip list; reader 1400a3d50
+        ServerItemGlyphs                = 0x056D, // uint64 item guid + uint32 random glyph data + 4-bit glyph list; reader 1400a3e40
         BiInputKeySet                   = 0x056F,
         ClientRequestInputKeySet        = 0x0570,
         ClientSetInputKeySet            = 0x0571,

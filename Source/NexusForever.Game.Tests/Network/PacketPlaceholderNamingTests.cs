@@ -926,54 +926,54 @@ public class PacketPlaceholderNamingTests
             Assert.Equal(itemSwapStream.Length, itemSwapStream.Position);
         }
 
-        using (var optionStream = new MemoryStream(WritePacket(new ServerOptionAuxPayload
+        using (var itemModdableDataStream = new MemoryStream(WritePacket(new ServerItemModdableData
         {
-            Value0 = 0x0102030405060708ul,
-            Value1 = 0x1112131415161718ul,
-            Value2 = 0x21222324u,
-            Value3 = 0x3132333435363738ul
+            ItemGuid          = 0x0102030405060708ul,
+            ThresholdData     = 0x1112131415161718ul,
+            RandomGlyphData   = 0x21222324u,
+            RandomCircuitData = 0x3132333435363738ul
         })))
-        using (var optionReader = new GamePacketReader(optionStream))
+        using (var itemModdableDataReader = new GamePacketReader(itemModdableDataStream))
         {
-            Assert.Equal(0x0102030405060708ul, optionReader.ReadULong());
-            Assert.Equal(0x1112131415161718ul, optionReader.ReadULong());
-            Assert.Equal(0x21222324u, optionReader.ReadUInt());
-            Assert.Equal(0x3132333435363738ul, optionReader.ReadULong());
-            Assert.Equal(optionStream.Length, optionStream.Position);
+            Assert.Equal(0x0102030405060708ul, itemModdableDataReader.ReadULong());
+            Assert.Equal(0x1112131415161718ul, itemModdableDataReader.ReadULong());
+            Assert.Equal(0x21222324u, itemModdableDataReader.ReadUInt());
+            Assert.Equal(0x3132333435363738ul, itemModdableDataReader.ReadULong());
+            Assert.Equal(itemModdableDataStream.Length, itemModdableDataStream.Position);
         }
 
-        using (var optionLargeStream = new MemoryStream(WritePacket(new ServerOptionAuxPayloadLarge
+        using (var itemMicrochipsStream = new MemoryStream(WritePacket(new ServerItemMicrochips
         {
-            Value0      = 0x4142434445464748ul,
-            Value1      = 0x5152535455565758ul,
-            Value2      = 0x6162636465666768ul,
-            UInt18Value = 0x23456u,
-            Values      = { 0x01020304u, 0x05060708u }
+            ItemGuid          = 0x4142434445464748ul,
+            MakerCharacterId  = 0x5152535455565758ul,
+            RandomCircuitData = 0x6162636465666768ul,
+            PowerCoreItem2Id  = 0x23456u,
+            MicrochipItem2Ids = { 0x01020304u, 0x05060708u }
         })))
-        using (var optionLargeReader = new GamePacketReader(optionLargeStream))
+        using (var itemMicrochipsReader = new GamePacketReader(itemMicrochipsStream))
         {
-            Assert.Equal(0x4142434445464748ul, optionLargeReader.ReadULong());
-            Assert.Equal(0x5152535455565758ul, optionLargeReader.ReadULong());
-            Assert.Equal(0x6162636465666768ul, optionLargeReader.ReadULong());
-            Assert.Equal(0x23456u, optionLargeReader.ReadUInt(18u));
-            Assert.Equal((byte)2, optionLargeReader.ReadByte(3u));
-            Assert.Equal(new uint[] { 0x01020304u, 0x05060708u }, optionLargeReader.ReadRetailCompositeUInt32Array(2));
-            Assert.Equal(optionLargeStream.Length, optionLargeStream.Position);
+            Assert.Equal(0x4142434445464748ul, itemMicrochipsReader.ReadULong());
+            Assert.Equal(0x5152535455565758ul, itemMicrochipsReader.ReadULong());
+            Assert.Equal(0x6162636465666768ul, itemMicrochipsReader.ReadULong());
+            Assert.Equal(0x23456u, itemMicrochipsReader.ReadUInt(18u));
+            Assert.Equal((byte)2, itemMicrochipsReader.ReadByte(3u));
+            Assert.Equal(new uint[] { 0x01020304u, 0x05060708u }, itemMicrochipsReader.ReadRetailCompositeUInt32Array(2));
+            Assert.Equal(itemMicrochipsStream.Length, itemMicrochipsStream.Position);
         }
 
-        using (var optionMediumStream = new MemoryStream(WritePacket(new ServerOptionAuxPayloadMedium
+        using (var itemGlyphsStream = new MemoryStream(WritePacket(new ServerItemGlyphs
         {
-            Value0 = 0x7172737475767778ul,
-            Value1 = 0x81828384u,
-            Values = { 0x11121314u, 0x21222324u, 0x31323334u }
+            ItemGuid        = 0x7172737475767778ul,
+            RandomGlyphData = 0x81828384u,
+            GlyphItem2Ids   = { 0x11121314u, 0x21222324u, 0x31323334u }
         })))
-        using (var optionMediumReader = new GamePacketReader(optionMediumStream))
+        using (var itemGlyphsReader = new GamePacketReader(itemGlyphsStream))
         {
-            Assert.Equal(0x7172737475767778ul, optionMediumReader.ReadULong());
-            Assert.Equal(0x81828384u, optionMediumReader.ReadUInt());
-            Assert.Equal((byte)3, optionMediumReader.ReadByte(4u));
-            Assert.Equal(new uint[] { 0x11121314u, 0x21222324u, 0x31323334u }, optionMediumReader.ReadRetailCompositeUInt32Array(3));
-            Assert.Equal(optionMediumStream.Length, optionMediumStream.Position);
+            Assert.Equal(0x7172737475767778ul, itemGlyphsReader.ReadULong());
+            Assert.Equal(0x81828384u, itemGlyphsReader.ReadUInt());
+            Assert.Equal((byte)3, itemGlyphsReader.ReadByte(4u));
+            Assert.Equal(new uint[] { 0x11121314u, 0x21222324u, 0x31323334u }, itemGlyphsReader.ReadRetailCompositeUInt32Array(3));
+            Assert.Equal(itemGlyphsStream.Length, itemGlyphsStream.Position);
         }
 
         using (var vehicleEmbarkStream = new MemoryStream(WritePacket(new ServerVehicleEmbarkAux

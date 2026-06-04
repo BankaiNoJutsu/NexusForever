@@ -117,6 +117,22 @@ public class ActionSetPacketShapeTests
     }
 
     [Fact]
+    public void ServerActionBarSet_WritesShortcutSetShortcutSetIdAndAssociatedUnit()
+    {
+        byte[] packetData = WritePacket(new ServerActionBarSet
+        {
+            ShortcutSet            = ShortcutSet.FloatingDynamicSpellBar,
+            ActionBarShortcutSetId = 0x1234,
+            AssociatedUnitId       = 0x89ABCDEFu
+        });
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(ShortcutSet.FloatingDynamicSpellBar, reader.ReadEnum<ShortcutSet>(4u));
+        Assert.Equal(0x1234u, reader.ReadUInt(14u));
+        Assert.Equal(0x89ABCDEFu, reader.ReadUInt());
+    }
+
+    [Fact]
     public void ServerAmpRespecResult_WritesSpecIndicesThenResults()
     {
         var packet = new ServerAmpRespecResult

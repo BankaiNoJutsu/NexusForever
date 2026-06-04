@@ -1,3 +1,4 @@
+using NexusForever.Game.Static.Costume;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.GenericUnlock;
 using NexusForever.Network;
@@ -5,6 +6,7 @@ using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.GenericUnlock;
 using NexusForever.Network.World.Message.Static;
+using NetworkCostume = NexusForever.Network.World.Message.Model.Shared.Costume;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
@@ -123,6 +125,60 @@ public class AccountUnlockPacketShapeTests
             Assert.Equal(2u, reader.ReadUInt());
             Assert.Equal(101u, reader.ReadUInt());
             Assert.Equal(202u, reader.ReadUInt());
+        }
+    }
+
+    [Fact]
+    public void CostumeSaveAndNetworkCostume_UseTypeVisibilityMaskItem2IdsAndUnsignedDyeData()
+    {
+        byte[] saveData = WritePacket(writer =>
+        {
+            writer.Write(2);
+            writer.Write(CostumeType.Personal, 2u);
+            writer.Write(0x0102030405060708ul);
+            for (int i = 0; i < NetworkCostume.MaxCostumeItems; i++)
+            {
+                writer.Write((uint)(0x1000 + i), 18u);
+                writer.Write((uint)(0x2000 + i));
+                writer.Write((uint)(0x3000 + i));
+                writer.Write((uint)(0x4000 + i));
+            }
+            writer.Write(0x7Fu);
+            writer.Write(true);
+        });
+
+        using (var reader = new GamePacketReader(new MemoryStream(saveData)))
+        {
+            var packet = new ClientCostumeSave();
+            packet.Read(reader);
+
+            Assert.Equal(2, packet.Index);
+            Assert.Equal(CostumeType.Personal, packet.Type);
+            Assert.Equal(0x0102030405060708ul, packet.ResidenceId);
+            Assert.Equal(0x7Fu, packet.VisibilityMask);
+            Assert.True(packet.Token);
+            Assert.Equal(0x1000u, packet.Items[0].ItemId);
+            Assert.Equal(0x2000u, packet.Items[0].Dyes[0]);
+        }
+
+        byte[] costumeData = WritePacket(new NetworkCostume
+        {
+            Index          = 2u,
+            Type           = CostumeType.Mannequin,
+            VisibilityMask = 0x7Fu,
+            Item2Ids       = [1u, 2u, 3u, 4u, 5u, 6u, 7u],
+            DyeData        = [0xFFFFFFFFu, 2u, 3u, 4u, 5u, 6u, 7u]
+        });
+
+        using (var reader = new GamePacketReader(new MemoryStream(costumeData)))
+        {
+            Assert.Equal(2u, reader.ReadUInt());
+            Assert.Equal(0x7Fu, reader.ReadUInt());
+            Assert.Equal(CostumeType.Mannequin, reader.ReadEnum<CostumeType>(2u));
+            Assert.Equal(1u, reader.ReadUInt());
+            for (int i = 0; i < NetworkCostume.MaxCostumeItems - 1; i++)
+                reader.ReadUInt();
+            Assert.Equal(0xFFFFFFFFu, reader.ReadUInt());
         }
     }
 

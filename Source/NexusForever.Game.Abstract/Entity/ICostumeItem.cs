@@ -10,7 +10,7 @@ namespace NexusForever.Game.Abstract.Entity
         IItemInfo ItemInfo { get; }
         uint? ItemId { get; set; }
         ushort? DisplayId { get; }
-        int DyeData { get; set; }
+        uint DyeData { get; set; }
 
         /// <summary>
         /// Get <see cref="IItemVisual"/> for <see cref="ICostumeItem"/>.

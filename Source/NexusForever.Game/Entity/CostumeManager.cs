@@ -2,6 +2,7 @@
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Static.Costume;
 using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -114,7 +115,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void SaveCostume(ClientCostumeSave costumeSave)
         {
-            if (costumeSave.MannequinIndex != 0)
+            if (costumeSave.Type != CostumeType.Personal)
             {
                 SendCostumeSaveResult(CostumeSaveResult.InvalidMannequinIndex);
                 return;
@@ -196,7 +197,7 @@ namespace NexusForever.Game.Entity
                     player.AddVisual(item);
 
             SendCostume(costume);
-            SendCostumeSaveResult(CostumeSaveResult.Saved, costumeSave.Index, costumeSave.MannequinIndex);
+            SendCostumeSaveResult(CostumeSaveResult.Saved, costumeSave.Index, costumeSave.Type);
         }
 
         /// <summary>
@@ -244,15 +245,15 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
-        /// Send <see cref="ServerCostumeSave"/> with supplied <see cref="CostumeSaveResult"/> and optional index and mannequin index.
+        /// Send <see cref="ServerCostumeSave"/> with supplied <see cref="CostumeSaveResult"/> and optional index and costume type.
         /// </summary>
-        private void SendCostumeSaveResult(CostumeSaveResult result, int index = 0, byte mannequinIndex = 0)
+        private void SendCostumeSaveResult(CostumeSaveResult result, int index = 0, CostumeType type = CostumeType.Personal)
         {
             player.Session.EnqueueMessageEncrypted(new ServerCostumeSave
             {
-                Index          = index,
-                Result         = result,
-                MannequinIndex = mannequinIndex
+                Index  = index,
+                Result = result,
+                Type   = type
             });
         }
     }

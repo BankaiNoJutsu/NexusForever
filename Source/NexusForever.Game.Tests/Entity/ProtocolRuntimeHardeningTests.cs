@@ -66,20 +66,20 @@ public class ProtocolRuntimeHardeningTests
     }
 
     [Fact]
-    public void SharedItem_WriteUsesUnknown88CountForUnknown88Payload()
+    public void SharedItem_WriteUsesTradingPartnerCountForTradingPartnerPayload()
     {
         var item = new SharedItem
         {
             LocationData = new ItemLocation(),
-            Unknown58 =
+            SellPrices =
             [
-                new SharedItem.UnknownStructure(),
-                new SharedItem.UnknownStructure()
+                new SharedItem.PriceInfo(),
+                new SharedItem.PriceInfo()
             ]
         };
         item.Glyphs.Add(123u);
-        item.Unknown88.Add(new SharedItem.UnknownStructure2());
-        item.Unknown88.Add(new SharedItem.UnknownStructure2());
+        item.TimeLimitedTradingPartners.Add(new SharedItem.TradingPartnerInfo());
+        item.TimeLimitedTradingPartners.Add(new SharedItem.TradingPartnerInfo());
 
         byte[] packetData = WriteItemPacket(item);
 

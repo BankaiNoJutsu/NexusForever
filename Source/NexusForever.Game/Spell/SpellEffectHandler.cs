@@ -1862,7 +1862,7 @@ namespace NexusForever.Game.Spell
 
             const ShortcutSet shortcutSet = ShortcutSet.FloatingSpellBar;
             uint associatedUnitId = target.Guid != 0u ? target.Guid : player.Guid;
-            player.Session.EnqueueMessageEncrypted(new ServerShowActionBar
+            player.Session.EnqueueMessageEncrypted(new ServerActionBarSet
             {
                 ShortcutSet            = shortcutSet,
                 ActionBarShortcutSetId = (ushort)actionBarSet.ActionBarShortcutSetId,
@@ -3116,7 +3116,7 @@ namespace NexusForever.Game.Spell
                 slot,
                 (ushort)itemVisualSwap.DisplayId,
                 (ushort)itemVisualSwap.ColourSetId,
-                unchecked((int)itemVisualSwap.DyeData));
+                itemVisualSwap.DyeData);
 
             if (info.Entry.DurationTime > 0u)
                 target.AddItemVisualSwap(info.EffectId, spell.Parameters.SpellInfo.Entry.Id, spell.CastingId, previousVisuals);

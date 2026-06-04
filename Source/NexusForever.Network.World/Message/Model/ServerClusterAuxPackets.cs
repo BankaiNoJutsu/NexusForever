@@ -80,90 +80,87 @@ namespace NexusForever.Network.World.Message.Model
         }
     }
 
-    // Options / keybind cluster (ClientOptions 0x012B)
-    [Message(GameMessageOpcode.ServerOptionAuxPayload)]
-    public class ServerOptionAuxPayload : IWritable
+    [Message(GameMessageOpcode.ServerItemModdableData)]
+    public class ServerItemModdableData : IWritable
     {
         /// <summary>
-        /// Client reader <c>ServerOptionAuxPayload_ReadPayload</c>
-        /// (<c>1400a3ce0</c>) reads two uint64 fields, one uint32 field,
-        /// and one trailing uint64 field. Options/keybind producer semantics
-        /// remain blocked.
+        /// Client reader <c>ServerItemModdableData_ReadPayload</c>
+        /// (<c>1400a3ce0</c>) reads item guid, threshold data, random glyph
+        /// data, and random circuit data. Producer timing remains blocked.
         /// </summary>
-        public ulong Value0 { get; set; }
+        public ulong ItemGuid { get; set; }
 
-        public ulong Value1 { get; set; }
+        public ulong ThresholdData { get; set; }
 
-        public uint Value2 { get; set; }
+        public uint RandomGlyphData { get; set; }
 
-        public ulong Value3 { get; set; }
+        public ulong RandomCircuitData { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Value0);
-            writer.Write(Value1);
-            writer.Write(Value2);
-            writer.Write(Value3);
+            writer.Write(ItemGuid);
+            writer.Write(ThresholdData);
+            writer.Write(RandomGlyphData);
+            writer.Write(RandomCircuitData);
         }
     }
 
-    [Message(GameMessageOpcode.ServerOptionAuxPayloadLarge)]
-    public class ServerOptionAuxPayloadLarge : IWritable
+    [Message(GameMessageOpcode.ServerItemMicrochips)]
+    public class ServerItemMicrochips : IWritable
     {
         /// <summary>
-        /// Client reader <c>ServerOptionAuxPayloadLarge_ReadPayload</c>
-        /// (<c>1400a3d50</c>) reads three uint64 fields, one 18-bit field,
-        /// a 3-bit row count, and a counted uint32 array.
-        /// Options/keybind producer semantics remain blocked.
+        /// Client reader <c>ServerItemMicrochips_ReadPayload</c>
+        /// (<c>1400a3d50</c>) reads item guid, maker character id, random
+        /// circuit data, an 18-bit power-core item id, a 3-bit count, and
+        /// counted microchip item ids. Producer timing remains blocked.
         /// </summary>
-        public ulong Value0 { get; set; }
+        public ulong ItemGuid { get; set; }
 
-        public ulong Value1 { get; set; }
+        public ulong MakerCharacterId { get; set; }
 
-        public ulong Value2 { get; set; }
+        public ulong RandomCircuitData { get; set; }
 
-        public uint UInt18Value { get; set; }
+        public uint PowerCoreItem2Id { get; set; }
 
-        public List<uint> Values { get; } = [];
+        public List<uint> MicrochipItem2Ids { get; } = [];
 
         public void Write(GamePacketWriter writer)
         {
-            if (Values.Count > 0x7)
-                throw new InvalidOperationException("Option aux large value count exceeds the 3-bit wire limit.");
+            if (MicrochipItem2Ids.Count > 0x7)
+                throw new InvalidOperationException("Item microchip count exceeds the 3-bit wire limit.");
 
-            writer.Write(Value0);
-            writer.Write(Value1);
-            writer.Write(Value2);
-            writer.Write(UInt18Value, 18u);
-            writer.Write((byte)Values.Count, 3u);
-            writer.WriteRetailCompositeUInt32Array(Values.ToArray());
+            writer.Write(ItemGuid);
+            writer.Write(MakerCharacterId);
+            writer.Write(RandomCircuitData);
+            writer.Write(PowerCoreItem2Id, 18u);
+            writer.Write((byte)MicrochipItem2Ids.Count, 3u);
+            writer.WriteRetailCompositeUInt32Array(MicrochipItem2Ids.ToArray());
         }
     }
 
-    [Message(GameMessageOpcode.ServerOptionAuxPayloadMedium)]
-    public class ServerOptionAuxPayloadMedium : IWritable
+    [Message(GameMessageOpcode.ServerItemGlyphs)]
+    public class ServerItemGlyphs : IWritable
     {
         /// <summary>
-        /// Client reader <c>ServerOptionAuxPayloadMedium_ReadPayload</c>
-        /// (<c>1400a3e40</c>) reads one uint64 field, one uint32 field,
-        /// a 4-bit row count, and a counted uint32 array.
-        /// Options/keybind producer semantics remain blocked.
+        /// Client reader <c>ServerItemGlyphs_ReadPayload</c>
+        /// (<c>1400a3e40</c>) reads item guid, random glyph data, a 4-bit
+        /// count, and counted glyph item ids. Producer timing remains blocked.
         /// </summary>
-        public ulong Value0 { get; set; }
+        public ulong ItemGuid { get; set; }
 
-        public uint Value1 { get; set; }
+        public uint RandomGlyphData { get; set; }
 
-        public List<uint> Values { get; } = [];
+        public List<uint> GlyphItem2Ids { get; } = [];
 
         public void Write(GamePacketWriter writer)
         {
-            if (Values.Count > 0xF)
-                throw new InvalidOperationException("Option aux medium value count exceeds the 4-bit wire limit.");
+            if (GlyphItem2Ids.Count > 0xF)
+                throw new InvalidOperationException("Item glyph count exceeds the 4-bit wire limit.");
 
-            writer.Write(Value0);
-            writer.Write(Value1);
-            writer.Write((byte)Values.Count, 4u);
-            writer.WriteRetailCompositeUInt32Array(Values.ToArray());
+            writer.Write(ItemGuid);
+            writer.Write(RandomGlyphData);
+            writer.Write((byte)GlyphItem2Ids.Count, 4u);
+            writer.WriteRetailCompositeUInt32Array(GlyphItem2Ids.ToArray());
         }
     }
 

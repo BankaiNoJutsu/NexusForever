@@ -271,17 +271,17 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue((byte)0)
                         .HasColumnName("slot");
 
-                    b.Property<int>("DyeData")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int(10)")
-                        .HasDefaultValue(0)
-                        .HasColumnName("dyeData");
-
-                    b.Property<uint>("ItemId")
+                    b.Property<uint>("DyeData")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
-                        .HasColumnName("itemId");
+                        .HasColumnName("dyeData");
+
+                    b.Property<uint>("Item2Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("item2Id");
 
                     b.HasKey("Id", "Index", "Slot")
                         .HasName("PRIMARY");
@@ -302,11 +302,11 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue((byte)0)
                         .HasColumnName("index");
 
-                    b.Property<uint>("Mask")
+                    b.Property<uint>("VisibilityMask")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int(10) unsigned")
                         .HasDefaultValue(0u)
-                        .HasColumnName("mask");
+                        .HasColumnName("visibilityMask");
 
                     b.Property<DateTime>("Timestamp")
                         .ValueGeneratedOnAddOrUpdate()

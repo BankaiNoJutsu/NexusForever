@@ -53,6 +53,7 @@ namespace NexusForever.Network.World.Message.Model.Abilities
     }
 
     // Client reader ServerUInt32_ReadPayload (FUN_14006c290 registration 0x016E).
+    // krakal/abilities-part2 labels this as ServerAbilityTierPointsBonus, but producer semantics remain unverified here.
     [Message(GameMessageOpcode.ServerActionSetUInt32)]
     public class ServerActionSetUInt32 : IWritable
     {

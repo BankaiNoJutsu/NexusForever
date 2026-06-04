@@ -364,8 +364,8 @@ namespace NexusForever.Game.Entity
 
             var networkItem = new NetworkItem
             {
-                Guid         = Guid,
-                ItemId       = Id,
+                ItemGuid     = Guid,
+                Item2Id      = Id,
                 LocationData = new ItemLocation
                 {
                     Location = Location,
@@ -375,10 +375,10 @@ namespace NexusForever.Game.Entity
                 Charges    = Charges,
                 Durability = Durability,
                 ExpirationTimeLeft = ExpirationTimeLeft,
-                Unknown58  = new NetworkItem.UnknownStructure[2]
+                SellPrices  = new NetworkItem.PriceInfo[2]
                 {
-                    new NetworkItem.UnknownStructure(),
-                    new NetworkItem.UnknownStructure()
+                    new NetworkItem.PriceInfo(),
+                    new NetworkItem.PriceInfo()
                 }
             };
 
