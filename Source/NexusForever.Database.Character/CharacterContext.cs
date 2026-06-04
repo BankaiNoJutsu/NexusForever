@@ -219,6 +219,11 @@ namespace NexusForever.Database.Character
                     .HasColumnType("datetime")
                     .HasDefaultValueSql("current_timestamp()");
 
+                entity.Property(e => e.PvpFlagDisableUntilUtc)
+                    .HasColumnName("pvpFlagDisableUntilUtc")
+                    .HasColumnType("datetime")
+                    .HasDefaultValue(null);
+
                 entity.Property(e => e.Race)
                     .HasColumnName("race")
                     .HasColumnType("tinyint(3) unsigned")
@@ -1241,6 +1246,11 @@ namespace NexusForever.Database.Character
                 entity.Property(e => e.CreatureId)
                     .HasColumnName("creatureId")
                     .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.ContentType)
+                    .HasColumnName("contentType")
+                    .HasColumnType("tinyint(8) unsigned")
                     .HasDefaultValue(0);
 
                 entity.Property(e => e.CurrencyAmount)

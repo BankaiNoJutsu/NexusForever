@@ -567,6 +567,11 @@ namespace NexusForever.Database.Auth
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0u);
 
+                entity.Property(e => e.LastClaimedLoginDay)
+                    .HasColumnName("lastClaimedLoginDay")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0u);
+
                 entity.Property(e => e.LastRewardItemKey)
                     .HasColumnName("lastRewardItemKey")
                     .HasColumnType("int(10) unsigned")

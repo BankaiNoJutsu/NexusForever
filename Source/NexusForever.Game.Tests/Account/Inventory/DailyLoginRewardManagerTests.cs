@@ -21,6 +21,8 @@ public class DailyLoginRewardManagerTests
     [Fact]
     public void SendDailyLoginUpdate_EmitsLastClaimedLoginDayInsteadOfLastRewardItemKey()
     {
+        using LegacyServiceProviderScope _ = UseDailyLoginRewards(CreateDailyRewards(10u));
+
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
         IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
         accountProxy.SetProperty(nameof(IAccount.Session), session);
@@ -53,52 +55,142 @@ public class DailyLoginRewardManagerTests
     [Fact]
     public void TryClaimReward_ClaimsNextUnclaimedLoginDay()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        GameTableManager gameTableManager = CreateGameTableManager(
+        using LegacyServiceProviderScope _ = UseDailyLoginRewards(
             new DailyLoginRewardEntry { Id = 1u, LoginDay = 1u, RewardObjectValue = 101u },
             new DailyLoginRewardEntry { Id = 2u, LoginDay = 2u, RewardObjectValue = 102u },
             new DailyLoginRewardEntry { Id = 3u, LoginDay = 3u, RewardObjectValue = 103u });
-        using ServiceProvider provider = new ServiceCollection()
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
-        LegacyServiceProvider.Provider = provider;
 
-        try
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IAccountInventoryManager inventory = RecordingDispatchProxy<IAccountInventoryManager>.Create(out RecordingDispatchProxy<IAccountInventoryManager> inventoryProxy);
+        inventoryProxy.SetMethodReturn(nameof(IAccountInventoryManager.CanAddItem), true);
+
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.Session), session);
+        accountProxy.SetProperty(nameof(IAccount.InventoryManager), inventory);
+
+        var manager = new DailyLoginRewardManager(account, new AccountModel
         {
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
-            IAccountInventoryManager inventory = RecordingDispatchProxy<IAccountInventoryManager>.Create(out RecordingDispatchProxy<IAccountInventoryManager> inventoryProxy);
-            inventoryProxy.SetMethodReturn(nameof(IAccountInventoryManager.CanAddItem), true);
-
-            IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
-            accountProxy.SetProperty(nameof(IAccount.Session), session);
-            accountProxy.SetProperty(nameof(IAccount.InventoryManager), inventory);
-
-            var manager = new DailyLoginRewardManager(account, new AccountModel
+            AccountDailyLogin = new AccountDailyLoginModel
             {
-                AccountDailyLogin = new AccountDailyLoginModel
-                {
-                    LoginDaysTotal      = 3u,
-                    RewardsAvailable    = 3u,
-                    LastDayIncrementUtc = DateTime.UtcNow
-                }
-            });
+                LoginDaysTotal      = 3u,
+                RewardsAvailable    = 3u,
+                LastDayIncrementUtc = DateTime.UtcNow
+            }
+        });
 
-            AccountOperationResult result = manager.TryClaimReward();
+        AccountOperationResult result = manager.TryClaimReward();
 
-            Assert.Equal(AccountOperationResult.Ok, result);
-            RecordingDispatchProxy<IAccountInventoryManager>.Invocation addInvocation =
-                Assert.Single(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
-            Assert.Equal(101u, addInvocation.Arguments[0]);
+        Assert.Equal(AccountOperationResult.Ok, result);
+        RecordingDispatchProxy<IAccountInventoryManager>.Invocation addInvocation =
+            Assert.Single(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
+        Assert.Equal(101u, addInvocation.Arguments[0]);
 
-            RecordingDispatchProxy<IGameSession>.Invocation packetInvocation =
-                Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
-            var packet = Assert.IsType<ServerDailyLoginUpdate>(packetInvocation.Arguments[0]);
-            Assert.Equal(1u, packet.Value2);
-        }
-        finally
+        RecordingDispatchProxy<IGameSession>.Invocation packetInvocation =
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var packet = Assert.IsType<ServerDailyLoginUpdate>(packetInvocation.Arguments[0]);
+        Assert.Equal(1u, packet.Value2);
+    }
+
+    [Fact]
+    public void TryClaimReward_UsesPersistedClaimedDayWhenAvailableCountIsStale()
+    {
+        using LegacyServiceProviderScope _ = UseDailyLoginRewards(
+            new DailyLoginRewardEntry { Id = 1u, LoginDay = 1u, RewardObjectValue = 101u },
+            new DailyLoginRewardEntry { Id = 2u, LoginDay = 2u, RewardObjectValue = 102u },
+            new DailyLoginRewardEntry { Id = 3u, LoginDay = 3u, RewardObjectValue = 103u },
+            new DailyLoginRewardEntry { Id = 4u, LoginDay = 4u, RewardObjectValue = 104u });
+
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IAccountInventoryManager inventory = RecordingDispatchProxy<IAccountInventoryManager>.Create(out RecordingDispatchProxy<IAccountInventoryManager> inventoryProxy);
+        inventoryProxy.SetMethodReturn(nameof(IAccountInventoryManager.CanAddItem), true);
+
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.Session), session);
+        accountProxy.SetProperty(nameof(IAccount.InventoryManager), inventory);
+
+        var manager = new DailyLoginRewardManager(account, new AccountModel
         {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+            AccountDailyLogin = new AccountDailyLoginModel
+            {
+                LoginDaysTotal        = 4u,
+                RewardsAvailable      = 4u,
+                LastClaimedLoginDay   = 3u,
+                LastDayIncrementUtc   = DateTime.UtcNow
+            }
+        });
+
+        AccountOperationResult result = manager.TryClaimReward();
+
+        Assert.Equal(AccountOperationResult.Ok, result);
+        RecordingDispatchProxy<IAccountInventoryManager>.Invocation addInvocation =
+            Assert.Single(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
+        Assert.Equal(104u, addInvocation.Arguments[0]);
+
+        RecordingDispatchProxy<IGameSession>.Invocation packetInvocation =
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var packet = Assert.IsType<ServerDailyLoginUpdate>(packetInvocation.Arguments[0]);
+        Assert.Equal(0u, packet.Value1);
+        Assert.Equal(4u, packet.Value2);
+    }
+
+    [Fact]
+    public void SendDailyLoginUpdate_DoesNotMakeFinalClaimedRewardAvailableAfterScheduleEnd()
+    {
+        using LegacyServiceProviderScope _ = UseDailyLoginRewards(
+            new DailyLoginRewardEntry { Id = 1u, LoginDay = 1u, RewardObjectValue = 101u },
+            new DailyLoginRewardEntry { Id = 2u, LoginDay = 2u, RewardObjectValue = 102u });
+
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.Session), session);
+
+        var manager = new DailyLoginRewardManager(account, new AccountModel
+        {
+            AccountDailyLogin = new AccountDailyLoginModel
+            {
+                LoginDaysTotal        = 2u,
+                RewardsAvailable      = 0u,
+                LastClaimedLoginDay   = 2u,
+                LastDayIncrementUtc   = DateTime.UtcNow.AddDays(-1d)
+            }
+        });
+
+        manager.SendDailyLoginUpdate();
+
+        RecordingDispatchProxy<IGameSession>.Invocation invocation =
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var packet = Assert.IsType<ServerDailyLoginUpdate>(invocation.Arguments[0]);
+        Assert.Equal(3u, packet.Value0);
+        Assert.Equal(0u, packet.Value1);
+        Assert.Equal(2u, packet.Value2);
+    }
+
+    [Fact]
+    public void TryClaimReward_DoesNotRepeatFinalConfiguredRewardAfterAdditionalLoginDay()
+    {
+        using LegacyServiceProviderScope _ = UseDailyLoginRewards(
+            new DailyLoginRewardEntry { Id = 1u, LoginDay = 1u, RewardObjectValue = 101u },
+            new DailyLoginRewardEntry { Id = 2u, LoginDay = 2u, RewardObjectValue = 102u });
+
+        IAccountInventoryManager inventory = RecordingDispatchProxy<IAccountInventoryManager>.Create(out RecordingDispatchProxy<IAccountInventoryManager> inventoryProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.InventoryManager), inventory);
+
+        var manager = new DailyLoginRewardManager(account, new AccountModel
+        {
+            AccountDailyLogin = new AccountDailyLoginModel
+            {
+                LoginDaysTotal        = 2u,
+                RewardsAvailable      = 0u,
+                LastClaimedLoginDay   = 2u,
+                LastDayIncrementUtc   = DateTime.UtcNow.AddDays(-1d)
+            }
+        });
+
+        AccountOperationResult result = manager.TryClaimReward();
+
+        Assert.Equal(AccountOperationResult.AlreadyClaimed, result);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
     }
 
     private static GameTableManager CreateGameTableManager(params DailyLoginRewardEntry[] dailyLoginRewards)
@@ -120,5 +212,43 @@ public class DailyLoginRewardManagerTests
         FieldInfo backingField = instance.GetType()
             .GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!;
         backingField.SetValue(instance, value);
+    }
+
+    private static DailyLoginRewardEntry[] CreateDailyRewards(uint count)
+    {
+        return Enumerable.Range(1, (int)count)
+            .Select(i => new DailyLoginRewardEntry
+            {
+                Id                = (uint)i,
+                LoginDay          = (uint)i,
+                RewardObjectValue = 100u + (uint)i
+            })
+            .ToArray();
+    }
+
+    private static LegacyServiceProviderScope UseDailyLoginRewards(params DailyLoginRewardEntry[] dailyLoginRewards)
+    {
+        return new LegacyServiceProviderScope(CreateGameTableManager(dailyLoginRewards));
+    }
+
+    private sealed class LegacyServiceProviderScope : IDisposable
+    {
+        private readonly IServiceProvider previousProvider;
+        private readonly ServiceProvider provider;
+
+        public LegacyServiceProviderScope(GameTableManager gameTableManager)
+        {
+            previousProvider = LegacyServiceProvider.Provider;
+            provider = new ServiceCollection()
+                .AddSingleton(gameTableManager)
+                .BuildServiceProvider();
+            LegacyServiceProvider.Provider = provider;
+        }
+
+        public void Dispose()
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+            provider.Dispose();
+        }
     }
 }

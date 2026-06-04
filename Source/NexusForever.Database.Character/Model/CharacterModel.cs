@@ -33,6 +33,7 @@ namespace NexusForever.Database.Character.Model
         public bool SharedChallengeEnabled { get; set; }
         public bool DisableOtherPlayersCombatLogs { get; set; }
         public ushort CombatLogDisableFlags { get; set; }
+        public DateTime? PvpFlagDisableUntilUtc { get; set; }
         public byte InnateIndex { get; set; }
         public uint TimePlayedTotal { get; set; }
         public uint TimePlayedLevel { get; set; }

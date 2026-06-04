@@ -1014,6 +1014,12 @@ namespace NexusForever.Database.Character.Migrations
                         .HasDefaultValue(0u)
                         .HasColumnName("creatureId");
 
+                    b.Property<byte>("ContentType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(8) unsigned")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("contentType");
+
                     b.Property<ulong>("CurrencyAmount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20) unsigned")
@@ -1279,6 +1285,10 @@ namespace NexusForever.Database.Character.Migrations
                         .HasColumnType("datetime")
                         .HasColumnName("pathActivatedTimestamp")
                         .HasDefaultValueSql("current_timestamp()");
+
+                    b.Property<DateTime?>("PvpFlagDisableUntilUtc")
+                        .HasColumnType("datetime")
+                        .HasColumnName("pvpFlagDisableUntilUtc");
 
                     b.Property<byte>("Race")
                         .ValueGeneratedOnAdd()

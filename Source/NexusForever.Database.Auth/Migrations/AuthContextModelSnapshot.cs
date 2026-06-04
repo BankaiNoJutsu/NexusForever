@@ -17,10 +17,121 @@ namespace NexusForever.Database.Auth.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.4")
+                .HasAnnotation("ProductVersion", "9.0.16")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountCREDDHistoryModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
+
+                    b.Property<uint>("AccountId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("accountId");
+
+                    b.Property<ulong>("CounterpartyCharacterId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("counterpartyCharacterId");
+
+                    b.Property<ushort>("CounterpartyRealmId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasDefaultValue((ushort)0)
+                        .HasColumnName("counterpartyRealmId");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("createdUtc")
+                        .HasDefaultValueSql("current_timestamp()");
+
+                    b.Property<ulong>("CreditAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("creditAmount");
+
+                    b.Property<ulong>("IdentityCharacterId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("identityCharacterId");
+
+                    b.Property<ushort>("IdentityRealmId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasDefaultValue((ushort)0)
+                        .HasColumnName("identityRealmId");
+
+                    b.Property<bool>("IsInitiator")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("isInitiator");
+
+                    b.Property<uint>("Operation")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("operation");
+
+                    b.HasKey("Id")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("account_credd_history", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountCREDDOrderModel", b =>
+                {
+                    b.Property<ulong>("OrderId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("orderId");
+
+                    b.Property<uint>("AccountId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("accountId");
+
+                    b.Property<ulong>("CharacterId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("characterId");
+
+                    b.Property<ulong>("CreditAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("creditAmount");
+
+                    b.Property<bool>("IsBuyOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("isBuyOrder");
+
+                    b.Property<ushort>("RealmId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasDefaultValue((ushort)0)
+                        .HasColumnName("realmId");
+
+                    b.HasKey("OrderId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("account_credd_order", (string)null);
+                });
 
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountCostumeUnlockModel", b =>
                 {
@@ -74,6 +185,62 @@ namespace NexusForever.Database.Auth.Migrations
                     b.ToTable("account_currency", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountDailyLoginModel", b =>
+                {
+                    b.Property<uint>("Id")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("LastClaimUtc")
+                        .HasColumnType("datetime")
+                        .HasColumnName("lastClaimUtc");
+
+                    b.Property<uint>("LastClaimedLoginDay")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("lastClaimedLoginDay");
+
+                    b.Property<DateTime?>("LastDayIncrementUtc")
+                        .HasColumnType("datetime")
+                        .HasColumnName("lastDayIncrementUtc");
+
+                    b.Property<uint>("LastRewardItemKey")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("lastRewardItemKey");
+
+                    b.Property<uint>("LoginDaysTotal")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("loginDaysTotal");
+
+                    b.Property<uint>("PremiumKeyStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("premiumKeyStatus");
+
+                    b.Property<uint>("RewardsAvailable")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("rewardsAvailable");
+
+                    b.Property<uint>("SecondsUntilNextKey")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("secondsUntilNextKey");
+
+                    b.HasKey("Id")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("account_daily_login", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountEntitlementModel", b =>
                 {
                     b.Property<uint>("Id")
@@ -118,6 +285,90 @@ namespace NexusForever.Database.Auth.Migrations
                         .HasName("PRIMARY");
 
                     b.ToTable("account_external_reference", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountFortuneSessionModel", b =>
+                {
+                    b.Property<uint>("Id")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<uint>("Card0AccountItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("card0AccountItemId");
+
+                    b.Property<bool>("Card0Flipped")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("card0Flipped");
+
+                    b.Property<bool>("Card0Granted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("card0Granted");
+
+                    b.Property<byte>("Card0Rarity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("card0Rarity");
+
+                    b.Property<uint>("Card1AccountItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("card1AccountItemId");
+
+                    b.Property<bool>("Card1Flipped")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("card1Flipped");
+
+                    b.Property<bool>("Card1Granted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("card1Granted");
+
+                    b.Property<byte>("Card1Rarity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("card1Rarity");
+
+                    b.Property<uint>("Card2AccountItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("card2AccountItemId");
+
+                    b.Property<bool>("Card2Flipped")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("card2Flipped");
+
+                    b.Property<bool>("Card2Granted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("card2Granted");
+
+                    b.Property<byte>("Card2Rarity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("card2Rarity");
+
+                    b.HasKey("Id")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("account_fortune_session", (string)null);
                 });
 
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountGenericUnlockModel", b =>
@@ -178,6 +429,12 @@ namespace NexusForever.Database.Auth.Migrations
                         .HasColumnName("createTime")
                         .HasDefaultValueSql("current_timestamp()");
 
+                    b.Property<bool>("HasTargetPlayerIdentity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("unknown1");
+
                     b.Property<ulong>("TargetCharacterId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint(20) unsigned")
@@ -189,12 +446,6 @@ namespace NexusForever.Database.Auth.Migrations
                         .HasColumnType("smallint(5) unsigned")
                         .HasDefaultValue((ushort)0)
                         .HasColumnName("targetRealmId");
-
-                    b.Property<bool>("HasTargetPlayerIdentity")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("tinyint(1)")
-                        .HasDefaultValue(false)
-                        .HasColumnName("unknown1");
 
                     b.HasKey("Id", "InventoryId")
                         .HasName("PRIMARY");
@@ -388,6 +639,87 @@ namespace NexusForever.Database.Auth.Migrations
                     b.ToTable("account", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountPendingItemModel", b =>
+                {
+                    b.Property<uint>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("id");
+
+                    b.Property<ulong>("PendingItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("pendingItemId");
+
+                    b.Property<uint>("AccountItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("accountItemId");
+
+                    b.Property<byte>("ClaimState")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("claimState");
+
+                    b.Property<DateTime>("CreateTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("createTime")
+                        .HasDefaultValueSql("current_timestamp()");
+
+                    b.Property<string>("GroupName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(128)")
+                        .HasDefaultValue("")
+                        .HasColumnName("groupName");
+
+                    b.Property<bool>("HasTargetPlayerIdentity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("unknown1");
+
+                    b.Property<uint>("SenderAccountId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("senderAccountId");
+
+                    b.Property<ulong>("SenderCharacterId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("senderCharacterId");
+
+                    b.Property<ushort>("SenderRealmId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasDefaultValue((ushort)0)
+                        .HasColumnName("senderRealmId");
+
+                    b.Property<ulong>("TargetCharacterId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("targetCharacterId");
+
+                    b.Property<ushort>("TargetRealmId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasDefaultValue((ushort)0)
+                        .HasColumnName("targetRealmId");
+
+                    b.HasKey("Id", "PendingItemId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("account_pending_item", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountPermissionModel", b =>
                 {
                     b.Property<uint>("Id")
@@ -409,6 +741,56 @@ namespace NexusForever.Database.Auth.Migrations
                     b.ToTable("account_permission", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountRewardRotationGrantModel", b =>
+                {
+                    b.Property<uint>("AccountId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("accountId");
+
+                    b.Property<uint>("RewardRotationIndex")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("rewardRotationIndex");
+
+                    b.Property<uint>("ContentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("contentId");
+
+                    b.Property<uint>("RewardKeyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("rewardKeyId");
+
+                    b.Property<byte>("RewardType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("rewardType");
+
+                    b.Property<uint>("GrantFlags")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("grantFlags");
+
+                    b.Property<DateTime>("GrantedUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("grantedUtc")
+                        .HasDefaultValueSql("current_timestamp()");
+
+                    b.HasKey("AccountId", "RewardRotationIndex", "ContentId", "RewardKeyId", "RewardType")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("account_reward_rotation_grant", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountRoleModel", b =>
                 {
                     b.Property<uint>("Id")
@@ -428,6 +810,50 @@ namespace NexusForever.Database.Auth.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("account_role", (string)null);
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountStorePurchaseHistoryModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<uint>("AccountId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("accountId");
+
+                    b.Property<ushort>("CurrencyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasDefaultValue((ushort)0)
+                        .HasColumnName("currencyId");
+
+                    b.Property<uint>("OfferId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("offerId");
+
+                    b.Property<ulong>("Price")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(0ul)
+                        .HasColumnName("price");
+
+                    b.Property<DateTime>("PurchasedUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("purchasedUtc")
+                        .HasDefaultValueSql("current_timestamp()");
+
+                    b.HasKey("Id")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("AccountId");
+
+                    b.ToTable("account_store_purchase_history", (string)null);
                 });
 
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountSuspensionModel", b =>
@@ -1316,6 +1742,18 @@ namespace NexusForever.Database.Auth.Migrations
                     b.Navigation("Account");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountDailyLoginModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Auth.Model.AccountModel", "Account")
+                        .WithOne("AccountDailyLogin")
+                        .HasForeignKey("NexusForever.Database.Auth.Model.AccountDailyLoginModel", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__account_daily_login_id__account_id");
+
+                    b.Navigation("Account");
+                });
+
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountEntitlementModel", b =>
                 {
                     b.HasOne("NexusForever.Database.Auth.Model.AccountModel", "Account")
@@ -1336,6 +1774,18 @@ namespace NexusForever.Database.Auth.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK__account_external_reference_id__account_id");
+
+                    b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountFortuneSessionModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Auth.Model.AccountModel", "Account")
+                        .WithOne("AccountFortuneSession")
+                        .HasForeignKey("NexusForever.Database.Auth.Model.AccountFortuneSessionModel", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__account_fortune_session_id__account_id");
 
                     b.Navigation("Account");
                 });
@@ -1388,6 +1838,18 @@ namespace NexusForever.Database.Auth.Migrations
                     b.Navigation("Account");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountPendingItemModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Auth.Model.AccountModel", "Account")
+                        .WithMany("AccountPendingItem")
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__account_pending_item_id__account_id");
+
+                    b.Navigation("Account");
+                });
+
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountPermissionModel", b =>
                 {
                     b.HasOne("NexusForever.Database.Auth.Model.AccountModel", "Account")
@@ -1409,6 +1871,18 @@ namespace NexusForever.Database.Auth.Migrations
                     b.Navigation("Permission");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountRewardRotationGrantModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Auth.Model.AccountModel", "Account")
+                        .WithMany("AccountRewardRotationGrant")
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__account_reward_rotation_grant_accountId__account_id");
+
+                    b.Navigation("Account");
+                });
+
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountRoleModel", b =>
                 {
                     b.HasOne("NexusForever.Database.Auth.Model.AccountModel", "Account")
@@ -1428,6 +1902,18 @@ namespace NexusForever.Database.Auth.Migrations
                     b.Navigation("Account");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountStorePurchaseHistoryModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Auth.Model.AccountModel", "Account")
+                        .WithMany("AccountStorePurchaseHistory")
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__account_store_purchase_history_accountId__account_id");
+
+                    b.Navigation("Account");
                 });
 
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountSuspensionModel", b =>
@@ -1469,9 +1955,13 @@ namespace NexusForever.Database.Auth.Migrations
 
                     b.Navigation("AccountCurrency");
 
+                    b.Navigation("AccountDailyLogin");
+
                     b.Navigation("AccountEntitlement");
 
                     b.Navigation("AccountExternalReference");
+
+                    b.Navigation("AccountFortuneSession");
 
                     b.Navigation("AccountGenericUnlock");
 
@@ -1481,9 +1971,15 @@ namespace NexusForever.Database.Auth.Migrations
 
                     b.Navigation("AccountKeybinding");
 
+                    b.Navigation("AccountPendingItem");
+
                     b.Navigation("AccountPermission");
 
+                    b.Navigation("AccountRewardRotationGrant");
+
                     b.Navigation("AccountRole");
+
+                    b.Navigation("AccountStorePurchaseHistory");
 
                     b.Navigation("AccountSuspension");
                 });

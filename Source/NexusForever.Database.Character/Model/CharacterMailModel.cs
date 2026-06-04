@@ -8,6 +8,7 @@ namespace NexusForever.Database.Character.Model
         public ulong Id { get; set; }
         public ulong RecipientId { get; set; }
         public byte SenderType { get; set; }
+        public byte ContentType { get; set; }
         public ulong SenderId { get; set; }
         public string Subject { get; set; }
         public string Message { get; set; }

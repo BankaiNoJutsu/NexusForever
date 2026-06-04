@@ -7,6 +7,7 @@ namespace NexusForever.Database.Auth.Model
         public uint Id { get; set; }
         public uint LoginDaysTotal { get; set; }
         public uint RewardsAvailable { get; set; }
+        public uint LastClaimedLoginDay { get; set; }
         public uint LastRewardItemKey { get; set; }
         public uint PremiumKeyStatus { get; set; }
         public uint SecondsUntilNextKey { get; set; }
