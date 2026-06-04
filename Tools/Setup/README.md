@@ -316,6 +316,14 @@ Reference dump databases:
 - `jabbithole` from `jabbithole_mysql\*.sql`
 - `wildstar_client` from `wildstar_client_mysql\*.sql`
 
+Runtime auth data:
+
+- `Tools\Setup\sql\runtime_auth_seed.sql` is imported into
+  `nexus_forever_auth` after EF migrations and local account creation. It keeps
+  local auth state compatible with current runtime expectations; currently it
+  clears transient Fortune sessions so stale pre-guard card rows cannot crash
+  Madame Fay's Fortune page on load.
+
 Promoted runtime world data:
 
 - `Tools\DataMapping\sql\runtime_world_seed.sql` is imported into

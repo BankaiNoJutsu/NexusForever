@@ -13,6 +13,7 @@ server guide:
 * copy default server configuration files
 * build the solution and run EF Core migrations
 * create or verify the local player, gm, and admin login accounts
+* import the checked-in runtime auth seed SQL into nexus_forever_auth
 * import the NexusForever.WorldDatabase SQL files into nexus_forever_world
 * import the checked-in DataMapping runtime world seed SQL
 * optionally configure RabbitMQ and start the standalone server processes
@@ -42,6 +43,10 @@ WIP small world, WIP instance entity, WIP live event, WIP Skyplot housing, store
 catalog, and quest loot seeds, are imported after it when present. Pass
 -SkipRuntimeWorldSeedImport to skip these runtime seeds, or
 -RuntimeWorldSeedPath to use a different primary seed file.
+
+The setup also imports Tools\Setup\sql\runtime_auth_seed.sql into
+nexus_forever_auth after account creation. That seed is intentionally separate
+from DataMapping world seeds and contains only local auth cleanup/state rows.
 
 The split folders jabbithole_mysql and wildstar_client_mysql are preferred over
 the older all_jabbithole_mysql.sql and all_wildstar_client_mysql.sql files. The
@@ -1780,6 +1785,24 @@ function Get-LaughingWsOwnedEntityRangeCleanupSql {
     ) -join [Environment]::NewLine
 }
 
+function Import-RuntimeAuthSeedSqlFiles {
+    $runtimeAuthSeedPath = Join-Path $RepoRoot 'Tools\Setup\sql\runtime_auth_seed.sql'
+    if (!(Test-Path -LiteralPath $runtimeAuthSeedPath -PathType Leaf)) {
+        Write-Info "Runtime auth seed SQL does not exist; skipping auth seed import: $runtimeAuthSeedPath"
+        return
+    }
+
+    $sessionTableExists = Invoke-MySqlScalar -Sql "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = $(Quote-MySqlString $GameDatabases.Auth) AND table_name = 'account_fortune_session';"
+    if ([int] $sessionTableExists -eq 0) {
+        Write-Warning "Skipping runtime auth seed import because account_fortune_session does not exist in $($GameDatabases.Auth). Run migrations first."
+        return
+    }
+
+    $file = Get-Item -LiteralPath $runtimeAuthSeedPath
+    Write-Info "Importing runtime auth seed $($file.FullName)"
+    Invoke-MySql -Arguments (Get-MySqlArguments -Database $GameDatabases.Auth) -InputFile $file.FullName
+}
+
 function Import-RuntimeWorldSeedSqlFiles {
     Import-RuntimeWorldSeedSqlFile `
         -SeedPath $RuntimeWorldSeedPath `
@@ -2074,6 +2097,9 @@ if (!$SkipMigrations) {
 }
 
 Invoke-AccountSeeder
+
+Write-Section 'Runtime auth seed import'
+Import-RuntimeAuthSeedSqlFiles
 
 if (!$SkipWorldDatabaseImport) {
     Write-Section 'Official world database import'

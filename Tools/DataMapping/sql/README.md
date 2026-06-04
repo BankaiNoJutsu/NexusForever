@@ -30,6 +30,10 @@ present. Use
 `-SkipRuntimeWorldSeedImport` to skip these runtime seed overlays, or
 `-RuntimeWorldSeedPath` to point setup at a different primary seed.
 
+Auth-database seed/cleanup SQL is intentionally kept outside this world-data
+folder. `Tools\Setup\sql\runtime_auth_seed.sql` is imported into
+`nexus_forever_auth` by setup after migrations and local account creation.
+
 `laughingws_map_entrance_seed.sql` is generated from LaughingWS map SQL by
 keeping only `map_entrance` rows missing from the official world database:
 
@@ -203,6 +207,11 @@ After an authoring import is verified, refresh the checked-in runtime seed:
 ```powershell
 python Tools\DataMapping\export_runtime_world_seed.py
 ```
+
+The exporter intentionally excludes deterministic LaughingWS overlay entity ID
+ranges. Keep those rows in the separate `laughingws_*_seed.sql` files so a
+primary DataMapping seed refresh cannot absorb or delete overlay-owned data
+when setup imports unchanged overlay seeds.
 
 Creature-backed imports only use rows whose creature bridge is one of:
 

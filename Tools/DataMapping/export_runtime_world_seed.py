@@ -19,6 +19,14 @@ from typing import Optional, Sequence
 DEFAULT_MYSQL = r"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 ENTITY_ID_BASE = 1_000_000_000
 ENTITY_ID_MAX = 1_999_999_999
+LAUGHINGWS_ENTITY_ID_RANGES = [
+    (1_100_000_000, 1_100_099_999),
+    (1_100_100_000, 1_100_199_999),
+    (1_100_200_000, 1_100_299_999),
+    (1_100_300_000, 1_100_399_999),
+    (2_000_000_000, 2_099_999_999),
+    (2_100_000_000, 2_147_483_647),
+]
 CUSTOM_TABLES = [
     "creature_loot",
     "loot_group",
@@ -104,6 +112,20 @@ def comma_ids(ids: Sequence[str]) -> str:
     return ",".join(ids)
 
 
+def exclude_laughingws_ranges_sql(column: str) -> str:
+    return " AND ".join(
+        f"NOT ({column} BETWEEN {start} AND {end})"
+        for start, end in LAUGHINGWS_ENTITY_ID_RANGES
+    )
+
+
+def primary_entity_range_sql(column: str) -> str:
+    return (
+        f"{column} BETWEEN {ENTITY_ID_BASE} AND {ENTITY_ID_MAX}"
+        f" AND {exclude_laughingws_ranges_sql(column)}"
+    )
+
+
 def table_create_sql(args: argparse.Namespace, table_name: str) -> str:
     apply_sql = args.apply_sql.read_text(encoding="utf-8")
     pattern = re.compile(
@@ -158,11 +180,12 @@ START TRANSACTION;
 
 def write_cleanup(handle, vendor_ids: Sequence[str]) -> None:
     vendor_id_list = comma_ids(vendor_ids)
+    primary_entity_filter = primary_entity_range_sql("id")
     handle.write(
         f"""
 DELETE FROM entity_loot
 WHERE comment LIKE 'DataMapping %'
-   OR id BETWEEN {ENTITY_ID_BASE} AND {ENTITY_ID_MAX};
+   OR ({primary_entity_filter});
 
 DELETE FROM item_loot
 WHERE comment LIKE 'DataMapping %';
@@ -178,10 +201,10 @@ WHERE comment LIKE 'DataMapping %';
 DELETE FROM creature_loot;
 
 DELETE FROM entity_stats
-WHERE id BETWEEN {ENTITY_ID_BASE} AND {ENTITY_ID_MAX};
+WHERE {primary_entity_filter};
 
 DELETE FROM entity
-WHERE id BETWEEN {ENTITY_ID_BASE} AND {ENTITY_ID_MAX};
+WHERE {primary_entity_filter};
 
 DELETE FROM entity_vendor_item
 WHERE id IN ({vendor_id_list});
@@ -227,15 +250,17 @@ def dump_table(args: argparse.Namespace, table: str, where: str) -> str:
 
 
 def write_data(handle, args: argparse.Namespace) -> None:
+    primary_entity_filter = primary_entity_range_sql("id")
+    non_laughingws_filter = exclude_laughingws_ranges_sql("id")
     table_filters = [
-        ("entity", f"id BETWEEN {ENTITY_ID_BASE} AND {ENTITY_ID_MAX}"),
-        ("entity_stats", f"id BETWEEN {ENTITY_ID_BASE} AND {ENTITY_ID_MAX}"),
-        ("entity_vendor", "1=1"),
-        ("entity_vendor_category", "1=1"),
-        ("entity_vendor_item", "1=1"),
+        ("entity", primary_entity_filter),
+        ("entity_stats", primary_entity_filter),
+        ("entity_vendor", non_laughingws_filter),
+        ("entity_vendor_category", non_laughingws_filter),
+        ("entity_vendor_item", non_laughingws_filter),
         ("creature_loot", "1=1"),
         ("loot_group", "comment LIKE 'DataMapping %'"),
-        ("entity_loot", f"comment LIKE 'DataMapping %' OR id BETWEEN {ENTITY_ID_BASE} AND {ENTITY_ID_MAX}"),
+        ("entity_loot", f"comment LIKE 'DataMapping %' OR ({primary_entity_filter})"),
         ("item_loot", "comment LIKE 'DataMapping %'"),
         ("loot_item", "id IN (SELECT id FROM loot_group WHERE comment LIKE 'DataMapping %')"),
         ("creature_info_property", "`property` IN (7, 41)"),
@@ -247,6 +272,7 @@ def write_data(handle, args: argparse.Namespace) -> None:
 
 
 def write_footer(handle) -> None:
+    primary_entity_filter = primary_entity_range_sql("id")
     handle.write(
         f"""
 COMMIT;
@@ -255,10 +281,10 @@ SET FOREIGN_KEY_CHECKS = @NF_OLD_FOREIGN_KEY_CHECKS;
 
 SELECT 'runtime_seed_entity_spawns' AS table_name, COUNT(*) AS row_count
 FROM entity
-WHERE id BETWEEN {ENTITY_ID_BASE} AND {ENTITY_ID_MAX}
+WHERE {primary_entity_filter}
 UNION ALL SELECT 'runtime_seed_entity_spawn_stats', COUNT(*)
 FROM entity_stats
-WHERE id BETWEEN {ENTITY_ID_BASE} AND {ENTITY_ID_MAX}
+WHERE {primary_entity_filter}
 UNION ALL SELECT 'entity_vendor', COUNT(*) FROM entity_vendor
 UNION ALL SELECT 'entity_vendor_category', COUNT(*) FROM entity_vendor_category
 UNION ALL SELECT 'entity_vendor_item', COUNT(*) FROM entity_vendor_item
@@ -312,7 +338,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not args.apply_sql.exists():
         raise FileNotFoundError(args.apply_sql)
 
-    vendor_ids = mysql_scalar_list(args, "SELECT id FROM entity_vendor ORDER BY id;")
+    vendor_ids = mysql_scalar_list(
+        args,
+        f"SELECT id FROM entity_vendor WHERE {exclude_laughingws_ranges_sql('id')} ORDER BY id;",
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8", newline="\n") as handle:
         write_header(handle, args)
