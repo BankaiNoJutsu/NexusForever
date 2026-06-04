@@ -1144,8 +1144,18 @@ namespace NexusForever.Game.Entity
             if (item.Info.Entry.MaxCharges == 0 && item.Info.Entry.MaxStackCount == 1)
                 return true;
 
-            if (item.Charges <= 0 && item.Info.Entry.MaxCharges > 1 || item.StackCount <= 0 && item.Info.Entry.MaxStackCount > 1)
+            if (item.Info.Entry.MaxStackCount > 1)
+            {
+                if (item.StackCount <= 0)
+                    return false;
+
+                if (item.Info.Entry.MaxCharges > 0 && item.Charges == 0)
+                    item.Charges = item.Info.Entry.MaxCharges;
+            }
+            else if (item.Info.Entry.MaxCharges > 0 && item.Charges <= 0)
+            {
                 return false;
+            }
 
             player.AchievementManager.CheckAchievements(player, AchievementType.ItemConsume, item.Id);
 
@@ -1155,7 +1165,8 @@ namespace NexusForever.Game.Entity
             if (item.Info.Entry.MaxStackCount > 1 && item.StackCount > 0)
                 ItemStackCountUpdate(item, item.StackCount - 1);
 
-            if (item.StackCount == 0 && item.Info.Entry.MaxStackCount > 1 || item.Charges == 0 && item.Info.Entry.MaxCharges > 0)
+            if (item.StackCount == 0 && item.Info.Entry.MaxStackCount > 1
+                || item.Charges == 0 && item.Info.Entry.MaxCharges > 0 && item.Info.Entry.MaxStackCount <= 1)
             {
                 ItemDelete(new ItemLocation
                 {

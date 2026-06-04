@@ -66,7 +66,7 @@ namespace NexusForever.Game.Account.Inventory
             Id            = model.InventoryId;
             AccountItemId = model.AccountItemId;
             claimState    = (AccountItemClaimState)model.ClaimState;
-            hasTargetPlayerIdentity = model.HasTargetPlayerIdentity;
+            hasTargetPlayerIdentity = model.HasTargetPlayerIdentity || model.TargetCharacterId != 0ul;
 
             TargetPlayerIdentity.RealmId = model.TargetRealmId;
             TargetPlayerIdentity.Id      = model.TargetCharacterId;
@@ -75,7 +75,9 @@ namespace NexusForever.Game.Account.Inventory
             if (Entry == null)
                 throw new ArgumentException($"Account item {AccountItemId} does not exist!");
 
-            saveMask = AccountInventorySaveMask.None;
+            saveMask = hasTargetPlayerIdentity == model.HasTargetPlayerIdentity
+                ? AccountInventorySaveMask.None
+                : AccountInventorySaveMask.Update;
         }
 
         public AccountInventoryItem(IAccount account, ulong id, uint accountItemId, NetworkIdentity targetPlayerIdentity, AccountItemClaimState claimState, bool hasTargetPlayerIdentity)
@@ -85,7 +87,7 @@ namespace NexusForever.Game.Account.Inventory
             Id            = id;
             AccountItemId = accountItemId;
             this.claimState = claimState;
-            this.hasTargetPlayerIdentity = hasTargetPlayerIdentity;
+            this.hasTargetPlayerIdentity = hasTargetPlayerIdentity || targetPlayerIdentity?.Id != 0ul;
 
             if (targetPlayerIdentity != null)
             {

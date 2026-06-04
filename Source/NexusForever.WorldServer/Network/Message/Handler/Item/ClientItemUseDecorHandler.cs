@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Housing;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
@@ -31,8 +32,34 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             if (entry == null)
                 throw new InvalidPacketValueException();
 
-            if (session.Player.Inventory.ItemUse(item))
-                session.Player.ResidenceManager.DecorCreate(entry);
+            if (!CanUseItem(item))
+                return;
+
+            try
+            {
+                if (session.Player.ResidenceManager.GetOrCreateResidence() == null)
+                    return;
+            }
+            catch (HousingException)
+            {
+                return;
+            }
+
+            if (!session.Player.Inventory.ItemUse(item))
+                return;
+
+            session.Player.ResidenceManager.DecorCreate(entry);
+        }
+
+        private static bool CanUseItem(IItem item)
+        {
+            if (item.Info.Entry.MaxCharges == 0 && item.Info.Entry.MaxStackCount == 1)
+                return true;
+
+            if (item.Charges <= 0 && item.Info.Entry.MaxCharges > 1)
+                return false;
+
+            return item.StackCount > 0 || item.Info.Entry.MaxStackCount <= 1;
         }
     }
 }

@@ -81,11 +81,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         public void HandleMessage(IWorldSession session, ClientCraftingRuneSlotAdd runeSlotAdd)
         {
             IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotAdd.ItemGuid);
-            CraftingRuneRequestHelper.ValidateRuneType(runeSlotAdd.Type);
+            RuneType type = CraftingRuneRequestHelper.NormalizeRuneType(runeSlotAdd.Type);
 
-            TradeskillResult result = CraftingRuneRequestHelper.AddRuneSlot(item, runeSlotAdd.Type);
-            log.LogDebug("Processed rune slot add request from player {PlayerGuid}: item {ItemGuid}, isNotFusion {IsNotFusion}, type {RuneType}, result {Result}.",
-                session.Player?.Guid, runeSlotAdd.ItemGuid, runeSlotAdd.IsNotFusion, runeSlotAdd.Type, result);
+            TradeskillResult result = CraftingRuneRequestHelper.AddRuneSlot(item, type);
+            log.LogDebug("Processed rune slot add request from player {PlayerGuid}: item {ItemGuid}, isNotFusion {IsNotFusion}, rawType {RawRuneType}, type {RuneType}, result {Result}.",
+                session.Player?.Guid, runeSlotAdd.ItemGuid, runeSlotAdd.IsNotFusion, runeSlotAdd.Type, type, result);
             CraftingRuneRequestHelper.SendSigilResult(session, result);
             if (result == TradeskillResult.Success)
                 CraftingRuneRequestHelper.SendItemRefresh(session, item);
@@ -158,11 +158,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         public void HandleMessage(IWorldSession session, ClientCraftingRuneSlotReroll runeSlotReroll)
         {
             IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotReroll.ItemGuid);
-            CraftingRuneRequestHelper.ValidateRuneType(runeSlotReroll.Type);
+            RuneType type = CraftingRuneRequestHelper.NormalizeRuneType(runeSlotReroll.Type, compactFirst: true);
 
-            TradeskillResult result = CraftingRuneRequestHelper.RerollRuneSlot(item, runeSlotReroll.SlotIndex, runeSlotReroll.Type);
-            log.LogDebug("Processed rune slot reroll request from player {PlayerGuid}: item {ItemGuid}, slot {SlotIndex}, type {RuneType}, result {Result}.",
-                session.Player?.Guid, runeSlotReroll.ItemGuid, runeSlotReroll.SlotIndex, runeSlotReroll.Type, result);
+            TradeskillResult result = CraftingRuneRequestHelper.RerollRuneSlot(item, runeSlotReroll.SlotIndex, type);
+            log.LogDebug("Processed rune slot reroll request from player {PlayerGuid}: item {ItemGuid}, slot {SlotIndex}, rawType {RawRuneType}, type {RuneType}, result {Result}.",
+                session.Player?.Guid, runeSlotReroll.ItemGuid, runeSlotReroll.SlotIndex, runeSlotReroll.Type, type, result);
             CraftingRuneRequestHelper.SendSigilResult(session, result);
             if (result == TradeskillResult.Success)
                 CraftingRuneRequestHelper.SendItemRefresh(session, item);
@@ -214,10 +214,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             return item;
         }
 
-        public static void ValidateRuneType(RuneType type)
+        public static RuneType NormalizeRuneType(RuneType type, bool compactFirst = false)
         {
-            if (!Enum.IsDefined(type))
-                throw new InvalidPacketValueException();
+            uint value = (uint)type;
+            if (compactFirst && value >= 1u && value <= 7u)
+                return (RuneType)(value + 6u);
+
+            if (ItemRuneSocketTypes.TryToRuneType(value, out RuneType normalized))
+                return normalized;
+
+            throw new InvalidPacketValueException();
         }
 
         public static void SendSigilResult(IWorldSession session, TradeskillResult result)

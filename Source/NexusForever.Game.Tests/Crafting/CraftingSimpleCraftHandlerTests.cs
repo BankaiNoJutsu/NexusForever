@@ -145,6 +145,26 @@ public class CraftingSimpleCraftHandlerTests
     }
 
     [Fact]
+    public void ComplexCraft_WithCraftStatsAndChargeCounts_DoesNotEmitBlockedCurrentCraftOrAuxPackets()
+    {
+        IWorldSession session = CreateSession(
+            satchelMaterialAmount: 2,
+            out RecordingDispatchProxy<IInventory> _,
+            out RecordingDispatchProxy<ISupplySatchelManager> _,
+            out RecordingDispatchProxy<ICharacterAchievementManager> _,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out IItemInfo outputInfo);
+        ClientCraftingComplexCraftHandler handler = CreateComplexHandler(outputInfo);
+
+        handler.HandleMessage(session, CreateComplexRequest(SchematicId));
+
+        Assert.Single(GetMessages<ServerCraftingFinish>(sessionProxy));
+        Assert.Empty(GetMessages<ServerCraftingCurrentCraft>(sessionProxy));
+        Assert.Empty(GetMessages<ServerCraftingAuxFourUInt32FloatUInt32>(sessionProxy));
+        Assert.Empty(GetMessages<ServerCraftingAuxUInt32AndTwoFloats>(sessionProxy));
+    }
+
+    [Fact]
     public void SimpleCraft_MissingMaterial_SendsFailureWithoutOutput()
     {
         IWorldSession session = CreateSession(

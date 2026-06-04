@@ -9,7 +9,10 @@ namespace NexusForever.Game.Entity
     {
         public static void ApplyDefaultSockets(IItem item, IGameTableManager gameTableManager = null)
         {
-            if (item.Info == null || item.RuneSlots.Count > 0)
+            if (item.Info == null)
+                return;
+
+            if (item.RuneSlots.Count > 0)
                 return;
 
             uint instanceId = item.Info.Entry.ItemRuneInstanceId;
@@ -17,6 +20,9 @@ namespace NexusForever.Game.Entity
                 return;
 
             IGameTableManager tables = gameTableManager ?? GameTableManager.Instance;
+            if (tables.ItemRuneInstance == null)
+                return;
+
             ItemRuneInstanceEntry instance = tables.ItemRuneInstance.GetEntry(instanceId);
             if (instance == null || instance.DefinedSocketCount == 0u)
                 return;

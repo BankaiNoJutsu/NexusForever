@@ -53,5 +53,10 @@ namespace NexusForever.Game.Prerequisite
 
             return count;
         }
+
+        public static bool IsItem2OnCharacter(IPlayer player, uint item2Id)
+        {
+            return (player.Inventory?.GetItemCount(item2Id) ?? 0u) > 0u;
+        }
     }
 }

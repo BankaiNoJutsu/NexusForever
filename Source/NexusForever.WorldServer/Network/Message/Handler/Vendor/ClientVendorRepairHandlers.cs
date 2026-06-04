@@ -15,20 +15,27 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
     public class ClientRepairVendorStatusRequestHandler : IMessageHandler<IWorldSession, ClientRepairVendorStatusRequest>
     {
         private readonly ILogger<ClientRepairVendorStatusRequestHandler> log;
+        private readonly IBuybackManager buybackManager;
 
-        public ClientRepairVendorStatusRequestHandler(ILogger<ClientRepairVendorStatusRequestHandler> log)
+        public ClientRepairVendorStatusRequestHandler(
+            ILogger<ClientRepairVendorStatusRequestHandler> log,
+            IBuybackManager buybackManager)
         {
             this.log = log;
+            this.buybackManager = buybackManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientRepairVendorStatusRequest _)
         {
-            if (session.Player.SelectedVendorInfo != null)
+            if (session.Player.SelectedVendorInfo == null)
+            {
+                log.LogDebug("Rejecting sell-junk vendor request from player {PlayerGuid}: no selected vendor.",
+                    session.Player.Guid);
+                session.Player.SendGenericError(GenericError.VendorNoVendor);
                 return;
+            }
 
-            log.LogDebug("Rejecting repair-vendor status request from player {PlayerGuid}: no selected repair vendor.",
-                session.Player.Guid);
-            session.Player.SendGenericError(GenericError.VendorNoVendor);
+            VendorSellHelper.SellJunk(session.Player, buybackManager);
         }
     }
 

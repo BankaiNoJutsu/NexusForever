@@ -44,6 +44,29 @@ public class ItemRuneSocketTests
     }
 
     [Fact]
+    public void ApplyDefaultSockets_BrutalRunicShouldersSeedsDefinedSocketOnly()
+    {
+        IGameTableManager tables = CreateItemRuneInstanceTables();
+        IItem item = CreateItemWithRuneInstance(139u, 84804u);
+
+        ItemRuneSlotInitializer.ApplyDefaultSockets(item, tables);
+
+        Assert.Single(item.RuneSlots);
+        Assert.Equal(RuneType.Life, item.RuneSlots[0].Type);
+    }
+
+    [Fact]
+    public void ApplyDefaultSockets_MissingItemRuneInstanceTable_DoesNotThrow()
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out _);
+        IItem item = CreateItemWithRuneInstance(2u);
+
+        ItemRuneSlotInitializer.ApplyDefaultSockets(item, tables);
+
+        Assert.Empty(item.RuneSlots);
+    }
+
+    [Fact]
     public void TryGetRuneTypeFromSigilItem2Type_MapsCategory176Glyphs()
     {
         Assert.True(ItemRuneGlyphTypes.TryGetRuneTypeFromSigilItem2Type(419u, out RuneType air));
@@ -54,10 +77,20 @@ public class ItemRuneSocketTests
     }
 
     [Theory]
-    [InlineData(ItemRuneGlyphTypes.Category175Id, 352u, RuneType.Air)]
+    [InlineData(ItemRuneGlyphTypes.Category175Id, 352u, RuneType.Fire)]
+    [InlineData(ItemRuneGlyphTypes.Category175Id, 353u, RuneType.Water)]
+    [InlineData(ItemRuneGlyphTypes.Category175Id, 354u, RuneType.Earth)]
+    [InlineData(ItemRuneGlyphTypes.Category175Id, 355u, RuneType.Air)]
+    [InlineData(ItemRuneGlyphTypes.Category175Id, 356u, RuneType.Life)]
+    [InlineData(ItemRuneGlyphTypes.Category175Id, 357u, RuneType.Logic)]
     [InlineData(ItemRuneGlyphTypes.Category175Id, 358u, RuneType.Fusion)]
-    [InlineData(ItemRuneGlyphTypes.Category177Id, 340u, RuneType.Air)]
-    [InlineData(ItemRuneGlyphTypes.Category177Id, 345u, RuneType.Life)]
+    [InlineData(ItemRuneGlyphTypes.Category177Id, 339u, RuneType.Fire)]
+    [InlineData(ItemRuneGlyphTypes.Category177Id, 340u, RuneType.Water)]
+    [InlineData(ItemRuneGlyphTypes.Category177Id, 341u, RuneType.Earth)]
+    [InlineData(ItemRuneGlyphTypes.Category177Id, 342u, RuneType.Air)]
+    [InlineData(ItemRuneGlyphTypes.Category177Id, 343u, RuneType.Life)]
+    [InlineData(ItemRuneGlyphTypes.Category177Id, 344u, RuneType.Logic)]
+    [InlineData(ItemRuneGlyphTypes.Category177Id, 345u, RuneType.Fusion)]
     [InlineData(ItemRuneGlyphTypes.Category177Id, 515u, RuneType.Fusion)]
     [InlineData(ItemRuneGlyphTypes.Category177Id, 516u, RuneType.Fusion)]
     [InlineData(ItemRuneGlyphTypes.Category177Id, 530u, RuneType.Fusion)]
@@ -74,6 +107,17 @@ public class ItemRuneSocketTests
 
         IItem item = CreateGearWithSocket(RuneType.Water);
         TradeskillResult result = ItemRuneInstallValidator.ValidateRuneMatchesSocket(tables, item, RuneType.Water, 900u);
+
+        Assert.Equal(TradeskillResult.Success, result);
+    }
+
+    [Fact]
+    public void ValidateRuneMatchesSocket_AcceptsBeginnerLifeRuneType()
+    {
+        IGameTableManager tables = CreateRunecraftingGlyphTables(84956u, 356u, ItemRuneGlyphTypes.Category175Id);
+
+        IItem item = CreateGearWithSocket(RuneType.Life);
+        TradeskillResult result = ItemRuneInstallValidator.ValidateRuneMatchesSocket(tables, item, RuneType.Life, 84956u);
 
         Assert.Equal(TradeskillResult.Success, result);
     }
@@ -148,6 +192,17 @@ public class ItemRuneSocketTests
     }
 
     [Fact]
+    public void BuildAllowedSocketMask_MissingItemRuneInstanceTable_DoesNotThrow()
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out _);
+        IItem item = CreateItemWithRuneInstance(2u);
+
+        uint mask = ItemRuneSocketMaskBuilder.BuildAllowedSocketMask(item, tables);
+
+        Assert.Equal(0u, mask);
+    }
+
+    [Fact]
     public void BuildAllowedSocketMask_IgnoresItemSpecialSpellFkValues()
     {
         IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
@@ -188,19 +243,52 @@ public class ItemRuneSocketTests
     }
 
     [Fact]
-    public void PopulateNetworkItem_EmitsIndexAlignedGlyphsIncludingEmptySlots()
+    public void PopulateNetworkItem_EmitsCircuitMarkerSocketTypesAndIndexAlignedGlyphs()
     {
         var networkItem = new NetworkItem();
         var slots = new List<ItemRuneSlot>
         {
             new(RuneType.Air) { RuneItem2Id = 100u },
             new(RuneType.Water),
+            new(RuneType.Fusion) { RuneItem2Id = 200u },
         };
 
-        ItemRuneNetworkWire.Populate(networkItem, slots, []);
+        ItemRuneNetworkWire.Populate(networkItem, slots, [], definedSocketCount: 3u);
 
-        Assert.Equal([100u, 0u], networkItem.Glyphs);
+        uint expectedRandomGlyphData = (1u << 7) | (2u << 10) | (7u << 13);
+        Assert.Equal(1ul << 56, networkItem.RandomCircuitData);
+        Assert.Equal(expectedRandomGlyphData, networkItem.RandomGlyphData);
+        Assert.Equal([100u, 0u, 200u], networkItem.Glyphs);
         Assert.Empty(networkItem.Microchips);
+    }
+
+    [Fact]
+    public void PopulateNetworkItem_PacksAddedSlotCountInRandomGlyphData()
+    {
+        var networkItem = new NetworkItem();
+        var slots = new List<ItemRuneSlot>
+        {
+            new(RuneType.Life),
+            new(RuneType.Fire),
+        };
+
+        ItemRuneNetworkWire.Populate(networkItem, slots, [], definedSocketCount: 1u);
+
+        uint expectedRandomGlyphData = 1u | (6u << 7) | (4u << 10);
+        Assert.Equal(1ul << 56, networkItem.RandomCircuitData);
+        Assert.Equal(expectedRandomGlyphData, networkItem.RandomGlyphData);
+    }
+
+    [Fact]
+    public void PopulateNetworkItem_EmptySocketsDoNotEmitCircuitMarker()
+    {
+        var networkItem = new NetworkItem();
+
+        ItemRuneNetworkWire.Populate(networkItem, [], [], definedSocketCount: 0u);
+
+        Assert.Equal(0ul, networkItem.RandomCircuitData);
+        Assert.Equal(0u, networkItem.RandomGlyphData);
+        Assert.Empty(networkItem.Glyphs);
     }
 
     [Fact]
@@ -224,18 +312,18 @@ public class ItemRuneSocketTests
         Assert.Equal(TradeskillResult.InvalidSlot, result);
     }
 
-    private static IGameTableManager CreateRunecraftingGlyphTables(uint runeItem2Id, uint runeItem2TypeId)
+    private static IGameTableManager CreateRunecraftingGlyphTables(uint runeItem2Id, uint runeItem2TypeId, uint item2CategoryId = ItemRuneGlyphTypes.Category176Id)
     {
         IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
         proxy.SetProperty(nameof(IGameTableManager.Item), CreateGameTable(new Item2Entry
         {
             Id              = runeItem2Id,
             Item2TypeId     = runeItem2TypeId,
-            Item2CategoryId = ItemRuneGlyphTypes.Category176Id,
+            Item2CategoryId = item2CategoryId,
         }));
         proxy.SetProperty(nameof(IGameTableManager.Item2Category), CreateGameTable(new Item2CategoryEntry
         {
-            Id           = ItemRuneGlyphTypes.Category176Id,
+            Id           = item2CategoryId,
             TradeSkillId = ItemRuneGlyphTypes.RunecraftingTradeSkillId,
         }));
         return tables;
@@ -265,11 +353,16 @@ public class ItemRuneSocketTests
         return item;
     }
 
-    private static IItem CreateItemWithRuneInstance(uint instanceId)
+    private static IItem CreateItemWithRuneInstance(uint instanceId, uint itemId = 0u)
     {
         IItem item = RecordingDispatchProxy<IItem>.Create(out RecordingDispatchProxy<IItem> itemProxy);
         IItemInfo info = RecordingDispatchProxy<IItemInfo>.Create(out RecordingDispatchProxy<IItemInfo> infoProxy);
-        infoProxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { ItemRuneInstanceId = instanceId });
+        infoProxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry
+        {
+            Id                 = itemId,
+            ItemRuneInstanceId = instanceId
+        });
+        itemProxy.SetProperty(nameof(IItem.Id), itemId);
         itemProxy.SetProperty(nameof(IItem.Info), info);
         itemProxy.SetProperty(nameof(IItem.RuneSlots), new List<ItemRuneSlot>());
         return item;
@@ -283,6 +376,11 @@ public class ItemRuneSocketTests
             Id                    = 2u,
             DefinedSocketCount    = 1u,
             DefinedSocketType00   = 7u,
+        }, new ItemRuneInstanceEntry
+        {
+            Id                    = 139u,
+            DefinedSocketCount    = 1u,
+            DefinedSocketType00   = 12u,
         }));
         return tables;
     }

@@ -178,7 +178,6 @@ namespace NexusForever.Game.Entity
             bagIndex         = 0u;
             PreviousBagIndex = 0u;
             stackCount       = model.StackCount;
-            charges          = model.Charges;
             durability       = model.Durability;
             expirationTimeLeft = model.ExpirationTimeLeft;
             soulbound        = model.Soulbound;
@@ -187,6 +186,8 @@ namespace NexusForever.Game.Entity
                 Info = ItemManager.Instance.GetItemInfo(model.ItemId);
             else
                 SpellEntry = GameTableManager.Instance.Spell4Base.GetEntry(model.ItemId);
+
+            charges = GetInitialCharges(Info, stackCount, model.Charges);
 
             ItemMicrochipIdsCodec.DeserializeInto(model.MicrochipIds, MicrochipIds);
             ItemRuneSlotsCodec.DeserializeInto(model.RuneSlots, RuneSlots);
@@ -205,11 +206,11 @@ namespace NexusForever.Game.Entity
             PreviousLocation = InventoryLocation.None;
             bagIndex         = 0u;
             stackCount       = count;
-            charges          = initialCharges;
             durability       = 1.0f;
             expirationTimeLeft = GetInitialExpirationTimeLeft(info);
             soulbound        = false;
             Info             = info;
+            charges          = GetInitialCharges(Info, stackCount, initialCharges);
 
             ItemRuneSlotInitializer.ApplyDefaultSockets(this);
 
@@ -358,6 +359,9 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public NetworkItem Build()
         {
+            EnsureInitialCharges();
+            ItemRuneSlotInitializer.ApplyDefaultSockets(this);
+
             var networkItem = new NetworkItem
             {
                 Guid         = Guid,
@@ -378,7 +382,7 @@ namespace NexusForever.Game.Entity
                 }
             };
 
-            ItemRuneNetworkWire.Populate(networkItem, RuneSlots, MicrochipIds);
+            ItemRuneNetworkWire.Populate(networkItem, this);
 
             return networkItem;
         }
@@ -406,6 +410,23 @@ namespace NexusForever.Game.Entity
 
             ulong seconds = (ulong)info.Entry.ExpirationTimeMinutes * 60ul;
             return seconds > uint.MaxValue ? uint.MaxValue : (uint)seconds;
+        }
+
+        private static uint GetInitialCharges(IItemInfo info, uint stackCount, uint initialCharges)
+        {
+            if (initialCharges != 0u || stackCount == 0u || info?.Entry?.MaxCharges is null or 0u)
+                return initialCharges;
+
+            return info.Entry.MaxCharges;
+        }
+
+        private void EnsureInitialCharges()
+        {
+            if (charges != 0u || stackCount == 0u || Info?.Entry?.MaxCharges is null or 0u)
+                return;
+
+            charges = Info.Entry.MaxCharges;
+            saveMask |= ItemSaveMask.Charges;
         }
     }
 }

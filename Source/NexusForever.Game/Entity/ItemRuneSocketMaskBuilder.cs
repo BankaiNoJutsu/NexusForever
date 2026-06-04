@@ -18,8 +18,11 @@ namespace NexusForever.Game.Entity
             if (item.Info != null && item.Info.Entry.ItemRuneInstanceId != 0u)
             {
                 IGameTableManager tables = gameTableManager ?? GameTableManager.Instance;
-                ItemRuneInstanceEntry instance = tables.ItemRuneInstance.GetEntry(item.Info.Entry.ItemRuneInstanceId);
-                mask |= BuildFromItemRuneInstance(instance);
+                if (tables.ItemRuneInstance != null)
+                {
+                    ItemRuneInstanceEntry instance = tables.ItemRuneInstance.GetEntry(item.Info.Entry.ItemRuneInstanceId);
+                    mask |= BuildFromItemRuneInstance(instance);
+                }
             }
 
             mask |= BuildFromRuneSlots(item.RuneSlots);
@@ -95,4 +98,4 @@ namespace NexusForever.Game.Entity
         }
     }
 }
-
+

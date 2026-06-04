@@ -76,6 +76,25 @@ public class PrerequisiteCheckTests
     }
 
     [Theory]
+    [InlineData(PrerequisiteComparison.Equal, 3460u, true)]
+    [InlineData(PrerequisiteComparison.Equal, 1537u, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 3460u, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 1537u, true)]
+    public void WorldRequirement_ComparesAgainstCurrentMapWorldId(PrerequisiteComparison comparison, uint requiredWorldId, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+        mapProxy.SetProperty(nameof(IBaseMap.Entry), new WorldEntry { Id = 3460u });
+        playerProxy.SetProperty(nameof(IPlayer.Map), map);
+
+        var check = new PrerequisiteCheckWorldRequirement();
+
+        bool result = check.Meets(player, comparison, value: 0u, objectId: requiredWorldId, new PrerequisiteParameters());
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
     [InlineData(PrerequisiteComparison.Equal, 2u, true)]
     [InlineData(PrerequisiteComparison.Equal, 1u, false)]
     [InlineData(PrerequisiteComparison.NotEqual, 2u, false)]
@@ -1292,6 +1311,62 @@ public class PrerequisiteCheckTests
         Assert.False(NexusForever.Game.Spell.Spell.Spell4EffectGroupListContainsGroupId(entry, 99u));
     }
 
+    [Fact]
+    public void Spell4GroupListContainsGroupId_MatchesListSlot()
+    {
+        var entry = new Spell4GroupListEntry
+        {
+            Id             = 1378u,
+            SpellGroupId00 = 576u
+        };
+
+        Assert.True(NexusForever.Game.Spell.Spell.Spell4GroupListContainsGroupId(entry, 576u));
+        Assert.False(NexusForever.Game.Spell.Spell.Spell4GroupListContainsGroupId(entry, 556u));
+    }
+
+    [Fact]
+    public void Spell4GroupListsOverlap_MatchesSharedGroupSlot()
+    {
+        var rentalUnlockList = new Spell4GroupListEntry
+        {
+            Id             = 1378u,
+            SpellGroupId00 = 576u
+        };
+
+        var rentalSummonList = new Spell4GroupListEntry
+        {
+            Id             = 9001u,
+            SpellGroupId03 = 576u
+        };
+
+        var unrelatedList = new Spell4GroupListEntry
+        {
+            Id             = 9002u,
+            SpellGroupId00 = 346u
+        };
+
+        Assert.True(NexusForever.Game.Spell.Spell.Spell4GroupListsOverlap(rentalUnlockList, rentalSummonList));
+        Assert.False(NexusForever.Game.Spell.Spell.Spell4GroupListsOverlap(unrelatedList, rentalSummonList));
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, true, true)]
+    [InlineData(PrerequisiteComparison.Equal, false, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, true, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, false, true)]
+    public void ActiveSpellEffectOnUnit_UsesTrackedSpellStateFallback(PrerequisiteComparison comparison, bool active, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetMethodReturn(nameof(IPlayer.HasTrackedSpellState), active);
+
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out _);
+        var check = new PrerequisiteCheckActiveSpellEffectOnUnit(NullLogger<PrerequisiteCheckActiveSpellEffectOnUnit>.Instance, tables);
+
+        bool result = check.Meets(player, comparison, value: 77357u, objectId: 0u, new PrerequisiteParameters());
+
+        Assert.Equal(expected, result);
+    }
+
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 5u, false)]
     [InlineData(PrerequisiteComparison.NotEqual, 5u, true)]
@@ -1554,6 +1629,51 @@ public class PrerequisiteCheckTests
         bool result = check.Meets(player, comparison, required, objectId: 500u, new PrerequisiteParameters());
 
         Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, 1u, false)]
+    [InlineData(PrerequisiteComparison.Equal, 1u, true)]
+    [InlineData(PrerequisiteComparison.Equal, 0u, false)]
+    public void DoesNotOwnAccountItemOnCharacter_ComparesCharacterItem2FromValue(
+        PrerequisiteComparison comparison,
+        uint characterItemCount,
+        bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IInventory inventory = RecordingDispatchProxy<IInventory>.Create(out var inventoryProxy);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.GetItemCount), characterItemCount);
+        playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
+
+        var check = new PrerequisiteCheckDoesNotOwnAccountItemOnCharacter();
+        bool result = check.Meets(player, comparison, value: 92102u, objectId: 0u, new PrerequisiteParameters());
+
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void DoesNotOwnAccountItemOnCharacter_DoesNotCountAccountInventoryRow()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IInventory inventory = RecordingDispatchProxy<IInventory>.Create(out var inventoryProxy);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.GetItemCount), 0u);
+        playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
+
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
+        IAccountInventoryManager accountInventory = RecordingDispatchProxy<IAccountInventoryManager>.Create(out var accountInventoryProxy);
+        IAccountInventoryItem accountItem = RecordingDispatchProxy<IAccountInventoryItem>.Create(out var accountItemProxy);
+        accountItemProxy.SetProperty(nameof(IAccountInventoryItem.Entry), new AccountItemEntry { Item2Id = 92102u });
+        accountInventoryProxy.SetMethodHandler(
+            nameof(IEnumerable<IAccountInventoryItem>.GetEnumerator),
+            _ => new List<IAccountInventoryItem> { accountItem }.GetEnumerator());
+        accountProxy.SetProperty(nameof(IAccount.InventoryManager), accountInventory);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+
+        var check = new PrerequisiteCheckDoesNotOwnAccountItemOnCharacter();
+        bool result = check.Meets(player, PrerequisiteComparison.NotEqual, value: 92102u, objectId: 0u, new PrerequisiteParameters());
+
+        Assert.True(result);
     }
 
     [Theory]

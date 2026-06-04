@@ -43,14 +43,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             }
 
             StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
-                purchase.OfferId, purchase.CurrencyId,
+                purchase.OfferId, purchase.PaymentCurrencySlot, purchase.CurrencyId,
                 accountItemIds =>
                 {
                     log.LogInformation("StorefrontCatalogDiagnostics storefront character purchase delivery player={PlayerGuid} account={AccountId} itemCount={AccountItemCount} items=[{AccountItems}].",
                         session.Player?.Guid, session.Account?.Id, accountItemIds.Count, string.Join(",", accountItemIds));
                     NetworkIdentity targetPlayerIdentity = StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session);
                     foreach (uint accountItemId in accountItemIds)
-                        session.Account.InventoryManager.AddItem(accountItemId, targetPlayerIdentity);
+                        session.Account.InventoryManager.AddItem(accountItemId, targetPlayerIdentity, hasTargetPlayerIdentity: targetPlayerIdentity.Id != 0ul);
 
                     StorefrontPurchaseHelper.SendCharacterPurchaseSuccess(session);
                 },
@@ -101,7 +101,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                     return;
 
                 StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
-                    purchase.OfferId, purchase.CurrencyId,
+                    purchase.OfferId, purchase.PaymentCurrencySlot, purchase.CurrencyId,
                     accountItemIds =>
                     {
                         log.LogInformation("StorefrontCatalogDiagnostics storefront account gift delivery player={PlayerGuid} account={AccountId} recipientAccount={RecipientAccountId} online={IsOnline} itemCount={AccountItemCount} items=[{AccountItems}].",
@@ -114,7 +114,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             }
 
             StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
-                purchase.OfferId, purchase.CurrencyId,
+                purchase.OfferId, purchase.PaymentCurrencySlot, purchase.CurrencyId,
                 accountItemIds =>
                 {
                     log.LogInformation("StorefrontCatalogDiagnostics storefront account purchase delivery player={PlayerGuid} account={AccountId} itemCount={AccountItemCount} items=[{AccountItems}].",
@@ -189,12 +189,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             IGlobalStorefrontManager globalStorefrontManager,
             ILogger log,
             uint offerId,
+            byte paymentCurrencySlot,
             ushort currencyId,
             Action<IReadOnlyList<uint>> deliverItems,
             string purchaseScope)
         {
-            log.LogInformation("StorefrontCatalogDiagnostics storefront {PurchaseScope} purchase validate player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId}.",
-                purchaseScope, session.Player?.Guid, session.Account?.Id, offerId, currencyId);
+            log.LogInformation("StorefrontCatalogDiagnostics storefront {PurchaseScope} purchase validate player={PlayerGuid} account={AccountId} offer={OfferId} paymentCurrencySlot={PaymentCurrencySlot} currency={CurrencyId}.",
+                purchaseScope, session.Player?.Guid, session.Account?.Id, offerId, paymentCurrencySlot, currencyId);
 
             if (session.Player == null)
             {
@@ -229,11 +230,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 return;
             }
 
-            var accountCurrencyType = (AccountCurrencyType)currencyId;
-            if (!Enum.IsDefined(typeof(AccountCurrencyType), accountCurrencyType))
+            if (!TryResolvePurchaseCurrency(paymentCurrencySlot, currencyId, out AccountCurrencyType accountCurrencyType, out ushort resolvedCurrencyId))
             {
-                log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: invalid currency {CurrencyId} for offer {OfferId}.",
-                    purchaseScope, session.Player.Guid, currencyId, offerId);
+                log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: invalid payment currency slot {PaymentCurrencySlot} and currency {CurrencyId} for offer {OfferId}.",
+                    purchaseScope, session.Player.Guid, paymentCurrencySlot, currencyId, offerId);
                 SendFailure(session, StoreError.InvalidPrice);
                 return;
             }
@@ -241,8 +241,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             IOfferItemPrice price = offerItem.GetPriceDataForCurrency(accountCurrencyType);
             if (price == null)
             {
-                log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: offer {OfferId} has no price for currency {CurrencyId}.",
-                    purchaseScope, session.Player.Guid, offerId, currencyId);
+                log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: offer {OfferId} has no price for resolved currency {ResolvedCurrencyId} (slot {PaymentCurrencySlot}, currency {CurrencyId}).",
+                    purchaseScope, session.Player.Guid, offerId, resolvedCurrencyId, paymentCurrencySlot, currencyId);
                 SendFailure(session, StoreError.InvalidPrice);
                 return;
             }
@@ -266,7 +266,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             if (chargeAmount > 0ul && !session.Account.CurrencyManager.CanAfford(accountCurrencyType, chargeAmount))
             {
                 log.LogDebug("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: insufficient currency {CurrencyId}, price {Price}.",
-                    purchaseScope, session.Player.Guid, currencyId, chargeAmount);
+                    purchaseScope, session.Player.Guid, resolvedCurrencyId, chargeAmount);
                 SendFailure(session, StoreError.CannotUseOffer);
                 return;
             }
@@ -276,13 +276,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
             deliverItems(accountItemIds);
 
-            StorePurchaseHistoryManager.RecordPurchase(session.Account.Id, offerId, currencyId, chargeAmount);
+            StorePurchaseHistoryManager.RecordPurchase(session.Account.Id, offerId, resolvedCurrencyId, chargeAmount);
 
             log.LogInformation("StorefrontCatalogDiagnostics storefront {PurchaseScope} purchase completed player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId} price={Price} accountItems={AccountItemCount}.",
-                purchaseScope, session.Player.Guid, session.Account.Id, offerId, currencyId, chargeAmount, accountItemIds.Count);
+                purchaseScope, session.Player.Guid, session.Account.Id, offerId, resolvedCurrencyId, chargeAmount, accountItemIds.Count);
 
             log.LogDebug("Completed storefront {PurchaseScope} purchase for player {PlayerGuid}: offer {OfferId}, currency {CurrencyId}, price {Price}, account items {AccountItemCount}.",
-                purchaseScope, session.Player.Guid, offerId, currencyId, chargeAmount, accountItemIds.Count);
+                purchaseScope, session.Player.Guid, offerId, resolvedCurrencyId, chargeAmount, accountItemIds.Count);
         }
 
         public static bool IsCurrentOrEmptyTarget(IWorldSession session, NetworkIdentity identity)
@@ -350,6 +350,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
             chargeAmount = (ulong)roundedPrice;
             return true;
+        }
+
+        private static bool TryResolvePurchaseCurrency(byte paymentCurrencySlot, ushort currencyId, out AccountCurrencyType accountCurrencyType, out ushort resolvedCurrencyId)
+        {
+            resolvedCurrencyId = paymentCurrencySlot != 0
+                ? paymentCurrencySlot
+                : currencyId;
+            accountCurrencyType = (AccountCurrencyType)resolvedCurrencyId;
+
+            return Enum.IsDefined(typeof(AccountCurrencyType), accountCurrencyType);
         }
 
         private static bool TryBuildAccountItemList(
