@@ -43,7 +43,26 @@ public class TutorialCombatMineEntityScriptTests
         Assert.Single(GetVisibleMessages<ServerSpellStart>(harness.OwnerProxy));
         Assert.Single(GetVisibleMessages<ServerSpellGo>(harness.OwnerProxy));
         Assert.Single(GetVisibleMessages<ServerSpellFinish>(harness.OwnerProxy));
+        AssertNoBlockedSpellFollowups(harness.OwnerProxy);
         Assert.Single(harness.OwnerProxy.GetInvocations(nameof(IWorldEntity.RemoveBusy)));
+    }
+
+    private static void AssertNoBlockedSpellFollowups(RecordingDispatchProxy<ISimpleCollidableEntity> ownerProxy)
+    {
+        Assert.Empty(GetVisibleMessages<ServerSpellCastTargetUnit>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellEffectDamage>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellCastTargetUnit2>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellEffectNestedTargets>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellCastTargetStatus>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellCastTargetReport>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellCastPositionSync>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellCastTargetList>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellThresholdClear>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellThresholdSpell4>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellThresholdStart>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellThresholdUpdate>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellWrapperNodeRemove>(ownerProxy));
+        Assert.Empty(GetVisibleMessages<ServerSpellWrapperTierEntry>(ownerProxy));
     }
 
     private static MineHarness CreateHarness(uint castTimeMs)

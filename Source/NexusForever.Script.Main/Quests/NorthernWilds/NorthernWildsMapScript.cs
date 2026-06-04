@@ -53,8 +53,49 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             }
         }
 
+        private sealed class MatchAllPlayerSearchCheck : ISearchCheck<IPlayer>
+        {
+            public bool CheckEntity(IPlayer entity)
+            {
+                return true;
+            }
+        }
+
+        private sealed class LoftiteCrystalCollectionSearchCheck : ISearchCheck<IWorldEntity>
+        {
+            private readonly IPlayer player;
+
+            public LoftiteCrystalCollectionSearchCheck(IPlayer player)
+            {
+                this.player = player;
+            }
+
+            public bool CheckEntity(IWorldEntity entity)
+            {
+                if (entity is not ICreatureEntity crystal)
+                    return false;
+
+                if (crystal.CreatureId != Q3486LoftiteCrystalId || crystal.Health == 0u)
+                    return false;
+
+                Vector3 delta = crystal.Position - player.Position;
+                if (MathF.Abs(delta.Y) > MathF.Max(Q3486LoftiteCrystalFallbackVerticalRange, crystal.HitRadius))
+                    return false;
+
+                float horizontalDistanceSquared = delta.X * delta.X + delta.Z * delta.Z;
+                float horizontalRange = MathF.Max(
+                    Q3486LoftiteCrystalCollector.CollectionRange,
+                    player.HitRadius * 0.5f + crystal.HitRadius * 0.5f + Q3486LoftiteCrystalFallbackHorizontalPadding);
+
+                return horizontalDistanceSquared <= horizontalRange * horizontalRange;
+            }
+        }
+
         private const uint Q3486LoftiteCrystalId = 11205u;
         private const uint Q3486LoftiteCrystalWL = 7807u;
+        private const float Q3486LoftiteCrystalFallbackSearchRange = 20f;
+        private const float Q3486LoftiteCrystalFallbackHorizontalPadding = 1.5f;
+        private const float Q3486LoftiteCrystalFallbackVerticalRange = 25f;
 
         private const uint Q3667ControlPanelId = 11194u;
         private const uint Q3667ControlPanelWL = 7778u;
@@ -107,6 +148,8 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             })
         };
 
+        private static readonly MatchAllPlayerSearchCheck matchAllPlayers = new();
+
         private readonly IEntityFactory entityFactory;
         private readonly IGameTableManager gameTableManager;
         private readonly ICinematicFactory cinematicFactory;
@@ -117,6 +160,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         private bool entitiesSpawned;
         private IPublicEvent dominionUltrabotPublicEvent;
         private readonly HashSet<ulong> dominionUltrabotParticipants = [];
+        private readonly HashSet<uint> q3486CollectedCrystalGuids = [];
 
         public NorthernWildsMapScript(
             ILogger<NorthernWildsMapScript> log,
@@ -139,7 +183,10 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
             EnsureDominionUltrabotEvent();
         }
 
-        public void Update(double lastTick) { }
+        public void Update(double lastTick)
+        {
+            TryCollectEmpoweredTowerCrystals();
+        }
 
         public void OnAddToMap(IGridEntity entity)
         {
@@ -156,6 +203,9 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         {
             if (entity is IPlayer player)
                 TryLeaveDominionUltrabotEvent(player);
+
+            if (entity is IWorldEntity worldEntity && worldEntity.CreatureId == Q3486LoftiteCrystalId)
+                q3486CollectedCrystalGuids.Remove(worldEntity.Guid);
         }
 
         public void OnEnterZone(IWorldEntity entity, uint zone)
@@ -182,6 +232,46 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
             storyBuilder.SendServerStoryPanelShow(player, Q3486ArrivedAtTowerStoryPanel);
             player.QuestManager.ObjectiveUpdate(Q3486ArrivedAtTowerObjective, 1u);
+        }
+
+        private void TryCollectEmpoweredTowerCrystals()
+        {
+            if (owner == null)
+                return;
+
+            foreach (IPlayer player in owner.Search(Vector3.Zero, null, matchAllPlayers).ToList())
+                TryCollectEmpoweredTowerCrystal(player);
+        }
+
+        private void TryCollectEmpoweredTowerCrystal(IPlayer player)
+        {
+            if (player.Zone?.Id != Q3486ArrivedAtTowerZoneId)
+                return;
+
+            if (player.QuestManager.GetQuestState(Q3486EmpoweredTowerQuest) != QuestState.Accepted)
+                return;
+
+            foreach (ICreatureEntity crystal in owner
+                .Search(player.Position, Q3486LoftiteCrystalFallbackSearchRange, new LoftiteCrystalCollectionSearchCheck(player))
+                .OfType<ICreatureEntity>()
+                .OrderBy(crystal => HorizontalDistanceSquared(player.Position, crystal.Position))
+                .ToList())
+            {
+                if (!q3486CollectedCrystalGuids.Add(crystal.Guid))
+                    continue;
+
+                if (Q3486LoftiteCrystalCollector.TryCollect(player, crystal))
+                    return;
+
+                q3486CollectedCrystalGuids.Remove(crystal.Guid);
+            }
+        }
+
+        private static float HorizontalDistanceSquared(Vector3 a, Vector3 b)
+        {
+            float x = a.X - b.X;
+            float z = a.Z - b.Z;
+            return x * x + z * z;
         }
 
         private void TryQueueIntroCinematic(IPlayer player)

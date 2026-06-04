@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract.Cinematic;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Abstract.Story;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
@@ -37,7 +38,8 @@ public class NorthernWildsQuestChainTests
     {
         IQuest owner = CreateQuest(3486, new Dictionary<ushort, QuestState?>(), out List<ushort> grantedQuests, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
         ICinematicFactory cinematicFactory = CreateCinematicFactory(out ICinematicBase cinematic, out _);
-        var script = new Q3486EmpoweredTowerQuestScript(cinematicFactory);
+        IStoryBuilder storyBuilder = RecordingDispatchProxy<IStoryBuilder>.Create(out _);
+        var script = new Q3486EmpoweredTowerQuestScript(cinematicFactory, storyBuilder);
 
         script.OnLoad(owner);
         script.OnQuestStateChange(QuestState.Completed, QuestState.Accepted);
@@ -55,11 +57,61 @@ public class NorthernWildsQuestChainTests
     }
 
     [Fact]
+    public void Q3486_OnAcceptedInTowerZone_ShowsStoryPanelAndCreditsArrival()
+    {
+        IQuest owner = CreateQuest(
+            3486,
+            new Dictionary<ushort, QuestState?>(),
+            out _,
+            out RecordingDispatchProxy<IQuestManager> questManagerProxy,
+            new WorldZoneEntry { Id = 729u });
+        ICinematicFactory cinematicFactory = CreateCinematicFactory(out _, out _);
+        IStoryBuilder storyBuilder = RecordingDispatchProxy<IStoryBuilder>.Create(out RecordingDispatchProxy<IStoryBuilder> storyBuilderProxy);
+        var script = new Q3486EmpoweredTowerQuestScript(cinematicFactory, storyBuilder);
+
+        script.OnLoad(owner);
+        script.OnQuestStateChange(QuestState.Accepted, QuestState.Mentioned);
+
+        RecordingDispatchProxy<IStoryBuilder>.Invocation storyPanel = Assert.Single(
+            storyBuilderProxy.GetInvocations(nameof(IStoryBuilder.SendServerStoryPanelShow)));
+        Assert.Same(owner.Player, storyPanel.Arguments[0]);
+        Assert.Equal(1575u, storyPanel.Arguments[1]);
+
+        RecordingDispatchProxy<IQuestManager>.Invocation objectiveUpdate = Assert.Single(
+            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(4987u, objectiveUpdate.Arguments[0]);
+        Assert.Equal(1u, objectiveUpdate.Arguments[1]);
+    }
+
+    [Fact]
+    public void Q3486_OnAcceptedOutsideTowerZone_DoesNotCreditArrival()
+    {
+        IQuest owner = CreateQuest(
+            3486,
+            new Dictionary<ushort, QuestState?>(),
+            out _,
+            out RecordingDispatchProxy<IQuestManager> questManagerProxy,
+            new WorldZoneEntry { Id = 602u });
+        ICinematicFactory cinematicFactory = CreateCinematicFactory(out _, out _);
+        IStoryBuilder storyBuilder = RecordingDispatchProxy<IStoryBuilder>.Create(out RecordingDispatchProxy<IStoryBuilder> storyBuilderProxy);
+        var script = new Q3486EmpoweredTowerQuestScript(cinematicFactory, storyBuilder);
+
+        script.OnLoad(owner);
+        script.OnQuestStateChange(QuestState.Accepted, QuestState.Mentioned);
+
+        Assert.Empty(storyBuilderProxy.GetInvocations(nameof(IStoryBuilder.SendServerStoryPanelShow)));
+        Assert.Empty(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+    }
+
+    [Fact]
     public void Q3673_OnAchieved_QueuesCinematicWithoutGrantingFollowUp()
     {
         IQuest owner = CreateQuest(3673, new Dictionary<ushort, QuestState?>(), out List<ushort> grantedQuests, out _);
         ICinematicFactory cinematicFactory = CreateCinematicFactory(out ICinematicBase cinematic, out _);
-        var script = new Q3673ContactWithThaydQuestScript(cinematicFactory, CreateGlobalQuestManager());
+        var script = new Q3673ContactWithThaydQuestScript(
+            cinematicFactory,
+            NullLogger<Q3673ContactWithThaydQuestScript>.Instance,
+            CreateGlobalQuestManager());
 
         script.OnLoad(owner);
         script.OnQuestStateChange(QuestState.Achieved, QuestState.Accepted);
@@ -76,7 +128,10 @@ public class NorthernWildsQuestChainTests
     {
         IQuest owner = CreateQuest(3673, new Dictionary<ushort, QuestState?>(), out List<ushort> grantedQuests, out _);
         ICinematicFactory cinematicFactory = CreateCinematicFactory(out _, out _);
-        var script = new Q3673ContactWithThaydQuestScript(cinematicFactory, CreateGlobalQuestManager());
+        var script = new Q3673ContactWithThaydQuestScript(
+            cinematicFactory,
+            NullLogger<Q3673ContactWithThaydQuestScript>.Instance,
+            CreateGlobalQuestManager());
 
         script.OnLoad(owner);
         script.OnQuestStateChange(QuestState.Completed, QuestState.Achieved);
@@ -123,7 +178,8 @@ public class NorthernWildsQuestChainTests
         ushort questId,
         IReadOnlyDictionary<ushort, QuestState?> questStates,
         out List<ushort> grantedQuests,
-        out RecordingDispatchProxy<IQuestManager> questManagerProxy)
+        out RecordingDispatchProxy<IQuestManager> questManagerProxy,
+        WorldZoneEntry zone = null)
     {
         grantedQuests = [];
         List<ushort> capturedGrantedQuests = grantedQuests;
@@ -147,6 +203,8 @@ public class NorthernWildsQuestChainTests
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
         playerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
         playerProxy.SetProperty(nameof(IPlayer.CinematicManager), cinematicManager);
+        if (zone != null)
+            playerProxy.SetProperty(nameof(IPlayer.Zone), zone);
 
         IQuest quest = RecordingDispatchProxy<IQuest>.Create(out RecordingDispatchProxy<IQuest> questProxy);
         questProxy.SetProperty(nameof(IQuest.Id), questId);

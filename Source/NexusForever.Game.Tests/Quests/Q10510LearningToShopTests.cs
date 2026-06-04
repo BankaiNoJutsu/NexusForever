@@ -47,6 +47,40 @@ public class Q10510LearningToShopTests
         Assert.Empty(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
     }
 
+    [Fact]
+    public void Update_WhenSmartShopperRewardArrivesAfterAccept_CreditsObjective()
+    {
+        Q10510LearningToShopQuestScript script = CreateScript(
+            hasItem: true,
+            hasTitle: false,
+            out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+
+        script.Update(0.1d);
+
+        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(
+            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(SmartShopperObjective, update.Arguments[0]);
+        Assert.Equal(1u, update.Arguments[1]);
+    }
+
+    [Fact]
+    public void Update_WhenObjectiveAlreadyComplete_DoesNotCheckOrCreditObjective()
+    {
+        Q10510LearningToShopQuestScript script = CreateScript(
+            hasItem: true,
+            hasTitle: true,
+            out RecordingDispatchProxy<IQuestManager> questManagerProxy,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<ITitleManager> titleManagerProxy,
+            objectiveActive: false);
+
+        script.Update(0.1d);
+
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.HasItemCount)));
+        Assert.Empty(titleManagerProxy.GetInvocations(nameof(ITitleManager.HasTitle)));
+        Assert.Empty(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+    }
+
     [Theory]
     [InlineData(QuestState.Completed)]
     [InlineData(QuestState.Botched)]
@@ -84,7 +118,9 @@ public class Q10510LearningToShopTests
         bool hasTitle,
         out RecordingDispatchProxy<IQuestManager> questManagerProxy,
         out RecordingDispatchProxy<IInventory> inventoryProxy,
-        out RecordingDispatchProxy<ITitleManager> titleManagerProxy)
+        out RecordingDispatchProxy<ITitleManager> titleManagerProxy,
+        bool objectiveActive = true,
+        QuestState questState = QuestState.Accepted)
     {
         IInventory inventory = RecordingDispatchProxy<IInventory>.Create(out inventoryProxy);
         inventoryProxy.SetMethodHandler(nameof(IInventory.HasItemCount), args =>
@@ -102,6 +138,11 @@ public class Q10510LearningToShopTests
         });
 
         IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out questManagerProxy);
+        questManagerProxy.SetMethodHandler(nameof(IQuestManager.IsActiveObjectiveId), args =>
+        {
+            Assert.Equal(SmartShopperObjective, args[0]);
+            return objectiveActive;
+        });
 
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
@@ -110,6 +151,7 @@ public class Q10510LearningToShopTests
 
         IQuest quest = RecordingDispatchProxy<IQuest>.Create(out RecordingDispatchProxy<IQuest> questProxy);
         questProxy.SetProperty(nameof(IQuest.Player), player);
+        questProxy.SetProperty(nameof(IQuest.State), questState);
 
         var script = new Q10510LearningToShopQuestScript();
         script.OnLoad(quest);

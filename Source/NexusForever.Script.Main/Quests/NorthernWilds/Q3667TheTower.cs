@@ -28,7 +28,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
     public class Q3667ControlPanelEntityScript : IWorldEntityScript, IOwnedScript<ICreatureEntity>
     {
         private const ushort QuestTheTower  = 3667;
-        // Objective 4770 verified against Quest2.tbl: ActivateEntity type, single-shot.
+        // Objective 4770 is QuestObjective type 5 (ActivateEntity) for creature 11194 and appears in Quest2 row 3667.
         private const uint QObjTerminal     = 4770u;
 
         private ICreatureEntity owner;

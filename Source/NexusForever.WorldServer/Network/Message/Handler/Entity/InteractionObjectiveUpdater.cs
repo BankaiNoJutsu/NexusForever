@@ -23,12 +23,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         private const uint TutorialCombatMineHardCreatureId = 73668u;
         private const ushort ExileCombatQuestId = 10518;
         private const ushort DominionCombatQuestId = 10524;
+        private const uint ShellshockDominionCannonCreatureId = 11251u;
         private static readonly TimeSpan tutorialCombatProjectorRecoveryDelay = TimeSpan.FromMilliseconds(9000d);
         private static readonly HashSet<uint> tutorialCombatMineCreatureIds =
         [
             TutorialCombatMineEasyCreatureId,
             TutorialCombatMineMediumCreatureId,
             TutorialCombatMineHardCreatureId
+        ];
+        // Q3487 cannon checklist credit is script-owned; avoid generic activate-cast SucceedCSI/TalkTo attempts.
+        private static readonly HashSet<uint> scriptHandledActivateCastCreatureIds =
+        [
+            ShellshockDominionCannonCreatureId
         ];
 
         private static readonly Dictionary<(ushort QuestId, uint CreatureId), TutorialMineObjectiveCredit> tutorialCombatMineObjectiveCredits = new()
@@ -59,17 +65,21 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             player.RecordStarterTutorialDepartureTerminal(entity.CreatureId);
 
             bool handledStarterTutorialCombatMine = TryUpdateStarterTutorialCombatMineObjective(player, entity);
+            bool suppressGenericActivateCastObjectives = !includeActivateEntity && scriptHandledActivateCastCreatureIds.Contains(entity.CreatureId);
 
-            if (includeActivateEntity && !handledStarterTutorialCombatMine)
-                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateEntity, entity.CreatureId, 1u);
+            if (!suppressGenericActivateCastObjectives)
+            {
+                if (includeActivateEntity && !handledStarterTutorialCombatMine)
+                    player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateEntity, entity.CreatureId, 1u);
 
-            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.SucceedCSI, entity.CreatureId, 1u);
-            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkTo, entity.CreatureId, 1u);
+                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.SucceedCSI, entity.CreatureId, 1u);
+                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkTo, entity.CreatureId, 1u);
 
-            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkToTargetGroup, entity.CreatureId, 1u);
-            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroup, entity.CreatureId, 1u);
-            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroupChecklist, entity.CreatureId, entity.QuestChecklistIdx);
-            player.QuestManager.ObjectiveUpdate(QuestObjectiveType.GatheResource, entity.CreatureId, 1u);
+                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkToTargetGroup, entity.CreatureId, 1u);
+                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroup, entity.CreatureId, 1u);
+                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroupChecklist, entity.CreatureId, entity.QuestChecklistIdx);
+                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.GatheResource, entity.CreatureId, 1u);
+            }
 
             player.SyncStarterTutorialEntityVisibility();
             player.TryRecoverStarterTutorialQuestProgression();

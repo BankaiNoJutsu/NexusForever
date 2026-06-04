@@ -427,6 +427,153 @@ public class QuestTests
         }
     }
 
+    [Theory]
+    [InlineData(0, 84804u, 84805u)]
+    [InlineData(1, 84804u, 84805u)]
+    [InlineData(2, 84805u, 84804u)]
+    [InlineData(201, 84805u, 84804u)]
+    [InlineData(19268, 84804u, 84805u)]
+    public void QuestComplete_SelectableRewardSelection_GrantsSelectedReward(
+        ushort rewardSelection,
+        uint selectedItemId,
+        uint unselectedItemId)
+    {
+        const ushort questId = 9002;
+        const uint requiredItemId = 84956u;
+        const uint firstSelectableItemId = 84804u;
+        const uint secondSelectableItemId = 84805u;
+
+        IQuestInfo questInfo = CreateQuestInfo(
+            questId,
+            new Quest2RewardEntry
+            {
+                Id                 = 100u,
+                Quest2Id           = questId,
+                Quest2RewardTypeId = (uint)QuestRewardType.Item,
+                ObjectId           = requiredItemId,
+                ObjectAmount       = 1u
+            },
+            new Quest2RewardEntry
+            {
+                Id                 = 200u,
+                Quest2Id           = questId,
+                Quest2RewardTypeId = (uint)QuestRewardType.Item,
+                ObjectId           = firstSelectableItemId,
+                ObjectAmount       = 1u,
+                Flags              = 1u
+            },
+            new Quest2RewardEntry
+            {
+                Id                 = 201u,
+                Quest2Id           = questId,
+                Quest2RewardTypeId = (uint)QuestRewardType.Item,
+                ObjectId           = secondSelectableItemId,
+                ObjectAmount       = 1u,
+                Flags              = 1u
+            });
+        IPlayer player = CreateQuestRewardPlayer(
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out _,
+            visibleReceiverIds: ImmutableHashSet.Create(74812u));
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+            new Dictionary<ushort, IQuestInfo>
+            {
+                [questId] = questInfo
+            },
+            new Dictionary<ushort, ImmutableList<uint>>
+            {
+                [questId] = ImmutableList.Create(74812u)
+            });
+
+        try
+        {
+            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+            var manager = new QuestManager(player, new CharacterModel());
+            AddActiveQuest(manager, quest);
+
+            manager.QuestComplete(questId, rewardSelection, communicator: false);
+
+            IReadOnlyList<RecordingDispatchProxy<IInventory>.Invocation> itemGrants =
+                inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate));
+            Assert.Equal(2, itemGrants.Count);
+            Assert.Contains(itemGrants, invocation => (uint)invocation.Arguments[1] == requiredItemId);
+            Assert.Contains(itemGrants, invocation => (uint)invocation.Arguments[1] == selectedItemId);
+            Assert.DoesNotContain(itemGrants, invocation => (uint)invocation.Arguments[1] == unselectedItemId);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void QuestComplete_InvalidSelectableReward_DoesNotGrantRequiredReward()
+    {
+        const ushort questId = 9002;
+        const uint requiredItemId = 84956u;
+        const uint firstSelectableItemId = 84804u;
+        const uint secondSelectableItemId = 84805u;
+
+        IQuestInfo questInfo = CreateQuestInfo(
+            questId,
+            new Quest2RewardEntry
+            {
+                Id                 = 100u,
+                Quest2Id           = questId,
+                Quest2RewardTypeId = (uint)QuestRewardType.Item,
+                ObjectId           = requiredItemId,
+                ObjectAmount       = 1u
+            },
+            new Quest2RewardEntry
+            {
+                Id                 = 200u,
+                Quest2Id           = questId,
+                Quest2RewardTypeId = (uint)QuestRewardType.Item,
+                ObjectId           = firstSelectableItemId,
+                ObjectAmount       = 1u,
+                Flags              = 1u
+            },
+            new Quest2RewardEntry
+            {
+                Id                 = 201u,
+                Quest2Id           = questId,
+                Quest2RewardTypeId = (uint)QuestRewardType.Item,
+                ObjectId           = secondSelectableItemId,
+                ObjectAmount       = 1u,
+                Flags              = 1u
+            });
+        IPlayer player = CreateQuestRewardPlayer(
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out _,
+            visibleReceiverIds: ImmutableHashSet.Create(74812u));
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildQuestCompleteProvider(
+            new Dictionary<ushort, IQuestInfo>
+            {
+                [questId] = questInfo
+            },
+            new Dictionary<ushort, ImmutableList<uint>>
+            {
+                [questId] = ImmutableList.Create(74812u)
+            });
+
+        try
+        {
+            IQuest quest = CreateQuest(questId, questInfo, QuestState.Achieved);
+            var manager = new QuestManager(player, new CharacterModel());
+            AddActiveQuest(manager, quest);
+
+            Assert.Throws<QuestException>(() => manager.QuestComplete(questId, reward: 9999, communicator: false));
+
+            Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     [Fact]
     public void ObjectiveUpdate_WhenQuestIsCompleted_DoesNotRevertToAchieved()
     {

@@ -49,6 +49,17 @@ public class InteractionObjectiveUpdaterTests
     }
 
     [Fact]
+    public void UpdateActivateSuccessObjectives_Q3487CannonActivateCast_SuppressesGenericObjectiveUpdates()
+    {
+        IPlayer player = CreatePlayer(out RecordingDispatchProxy<IQuestManager> questProxy);
+        IWorldEntity entity = CreateEntity(creatureId: 11251u, questChecklistIdx: 3);
+
+        InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(player, entity, assetManager: null, includeActivateEntity: false);
+
+        Assert.Empty(GetTypedObjectiveUpdates(questProxy));
+    }
+
+    [Fact]
     public void UpdateActivateSuccessObjectives_DepartureTerminal_RecordsTerminalSelection()
     {
         IPlayer player = CreatePlayer(

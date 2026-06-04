@@ -20,15 +20,28 @@ namespace NexusForever.Script.Main.Quests
             this.owner = owner;
         }
 
+        public void Update(double lastTick)
+        {
+            TryCreditSmartShopperObjective(owner.State);
+        }
+
         public void OnQuestStateChange(QuestState newState, QuestState oldState)
         {
-            if (newState < QuestState.Completed)
-            {
-                IPlayer player = owner.Player;
-                // WIP/GUESSED: Questing-and-more proves the active-state item/title snapshot, but exact retail refresh timing is not live-smoked.
-                if (player.Inventory.HasItemCount(ItemTitleSmartShopper, 1u) || player.TitleManager.HasTitle(TitleSmartShopper))
-                    player.QuestManager.ObjectiveUpdate(QObjPurchaseSmartShopper, 1u);
-            }
+            TryCreditSmartShopperObjective(newState);
+        }
+
+        private void TryCreditSmartShopperObjective(QuestState state)
+        {
+            if (state is not (QuestState.Accepted or QuestState.Achieved))
+                return;
+
+            IPlayer player = owner.Player;
+            if (player.QuestManager.IsActiveObjectiveId(QObjPurchaseSmartShopper) != true)
+                return;
+
+            // WIP/GUESSED: Questing-and-more proves the active-state item/title snapshot, but exact retail refresh timing is not live-smoked.
+            if (player.Inventory.HasItemCount(ItemTitleSmartShopper, 1u) || player.TitleManager.HasTitle(TitleSmartShopper))
+                player.QuestManager.ObjectiveUpdate(QObjPurchaseSmartShopper, 1u);
         }
     }
 }

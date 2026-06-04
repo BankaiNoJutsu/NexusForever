@@ -782,18 +782,14 @@ namespace NexusForever.Game.Entity
 
         private void RewardQuest(IQuestInfo info, ushort reward)
         {
+            Quest2RewardEntry selectedReward = GetSelectedQuestReward(info, reward);
+
             // Handle all Rewards that are not chosen
             foreach (Quest2RewardEntry rewardEntry in info.Rewards.Values.Where(x => x.Flags == 0))
                 RewardQuest(rewardEntry);
 
-            // Handle any chosen rewards
-            if (reward != 0)
-            {
-                if (!info.Rewards.TryGetValue(reward, out Quest2RewardEntry entry))
-                    throw new QuestException($"Player {player.CharacterId} tried to complete quest {info.Entry.Id} with invalid reward!");
-
-                RewardQuest(entry);
-            }
+            if (selectedReward != null)
+                RewardQuest(selectedReward);
 
             uint experience = info.GetRewardExperience();
             if (experience != 0u)
@@ -802,6 +798,46 @@ namespace NexusForever.Game.Entity
             uint money = info.GetRewardMoney();
             if (money != 0u)
                 player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, money);
+        }
+
+        private Quest2RewardEntry GetSelectedQuestReward(IQuestInfo info, ushort reward)
+        {
+            List<Quest2RewardEntry> selectableRewards = info.Rewards.Values
+                .Where(x => x.Flags != 0)
+                .OrderBy(x => x.Id)
+                .ToList();
+
+            if (selectableRewards.Count == 0)
+            {
+                if (reward != 0)
+                    throw new QuestException($"Player {player.CharacterId} tried to complete quest {info.Entry.Id} with invalid reward!");
+
+                return null;
+            }
+
+            if (info.Rewards.TryGetValue(reward, out Quest2RewardEntry entry))
+            {
+                if (entry.Flags == 0)
+                    throw new QuestException($"Player {player.CharacterId} tried to complete quest {info.Entry.Id} with invalid reward!");
+
+                return entry;
+            }
+
+            // Retail sends a 15-bit selection value. Some reward panes pass the
+            // selected item id through that field, so high Item2 ids arrive as
+            // their low 15 bits.
+            Quest2RewardEntry objectReward = selectableRewards.FirstOrDefault(x =>
+                x.ObjectId == reward || (x.ObjectId & 0x7FFFu) == reward);
+            if (objectReward != null)
+                return objectReward;
+
+            if (reward == 0)
+                return selectableRewards[0];
+
+            if (reward <= selectableRewards.Count)
+                return selectableRewards[reward - 1];
+
+            throw new QuestException($"Player {player.CharacterId} tried to complete quest {info.Entry.Id} with invalid reward!");
         }
 
         private void RewardQuest(Quest2RewardEntry entry)
