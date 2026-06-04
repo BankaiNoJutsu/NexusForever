@@ -244,9 +244,6 @@ namespace NexusForever.Game.Account.Inventory
 
         public AccountOperationResult TakeItem(IPlayer player, ulong id)
         {
-            if (player == null)
-                return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.NoCharacter);
-
             if (!items.TryGetValue(id, out IAccountInventoryItem item))
                 return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.InvalidInventoryItem);
 
@@ -256,10 +253,22 @@ namespace NexusForever.Game.Account.Inventory
             if (!IsTargetPlayer(player, item.TargetPlayerIdentity))
                 return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.NoCharacter);
 
-            if (item.Entry.PrerequisiteId != 0u && !PrerequisiteManager.Instance.Meets(player, item.Entry.PrerequisiteId))
+            bool directAccountGrant = IsImmediateAccountGrant(item.Entry);
+            if (directAccountGrant && HasAccountItemFlag(item.Entry, AccountItemFlag.MultiClaim))
+                return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.NoCharacter);
+
+            if (!directAccountGrant && player != null && item.Entry.PrerequisiteId != 0u && !PrerequisiteManager.Instance.Meets(player, item.Entry.PrerequisiteId))
                 return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.Prereq);
 
-            if (!TryBuildGrantPlan(player, item.Entry, out List<IAccountItemGrant> grants, out GenericError error))
+            if (player == null && !directAccountGrant)
+                return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.NoCharacter);
+
+            List<IAccountItemGrant> grants;
+            GenericError error;
+            bool builtGrantPlan = directAccountGrant
+                ? TryBuildImmediateAccountGrantPlan(item, out grants, out error)
+                : TryBuildGrantPlan(player, item.Entry, out grants, out error);
+            if (!builtGrantPlan)
                 return SendAccountOperationResult(AccountOperation.TakeItem, ToAccountOperationResult(error));
 
             uint cooldownGroupId = item.Entry.AccountItemCooldownGroupId;
@@ -719,6 +728,9 @@ namespace NexusForever.Game.Account.Inventory
             if (targetPlayerIdentity == null || targetPlayerIdentity.Id == 0ul)
                 return true;
 
+            if (player == null)
+                return false;
+
             return targetPlayerIdentity.Id == player.Identity.Id &&
                 (targetPlayerIdentity.RealmId == 0u || targetPlayerIdentity.RealmId == player.Identity.RealmId);
         }
@@ -817,6 +829,62 @@ namespace NexusForever.Game.Account.Inventory
             return true;
         }
 
+        private bool TryBuildImmediateAccountGrantPlan(IAccountInventoryItem item, out List<IAccountItemGrant> grants, out GenericError error)
+        {
+            grants = [];
+            error  = GenericError.Ok;
+
+            if (item.ClaimState != AccountItemClaimState.CanClaim)
+            {
+                error = GenericError.Params;
+                return false;
+            }
+
+            if (item.HasTargetPlayerIdentity || item.TargetPlayerIdentity?.Id != 0ul)
+            {
+                error = GenericError.Params;
+                return false;
+            }
+
+            AccountItemEntry entry = item.Entry;
+            if (!IsImmediateAccountGrant(entry))
+            {
+                error = GenericError.Params;
+                return false;
+            }
+
+            if (HasAccountItemFlag(entry, AccountItemFlag.MultiClaim))
+            {
+                error = GenericError.Params;
+                return false;
+            }
+
+            if (entry.AccountCurrencyEnum != 0u && !TryAddAccountCurrencyGrant(entry, grants, out error))
+                return false;
+
+            if (entry.EntitlementId != 0u && !TryAddImmediateAccountEntitlementGrant(account, entry, grants, out error))
+                return false;
+
+            if (grants.Count == 0)
+            {
+                error = GenericError.ItemBadStaticData;
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsImmediateAccountGrant(AccountItemEntry entry)
+        {
+            if (entry == null)
+                return false;
+
+            if (entry.Item2Id != 0u || entry.GenericUnlockSetId != 0u || entry.InstantEventEnum != 0u || entry.AccountItemCooldownGroupId != 0u)
+                return false;
+
+            return entry.AccountCurrencyEnum != 0u || entry.EntitlementId != 0u;
+        }
+
         private static bool TryAddItemGrant(IPlayer player, uint item2Id, List<IAccountItemGrant> grants, out GenericError error)
         {
             error = GenericError.Ok;
@@ -907,6 +975,48 @@ namespace NexusForever.Game.Account.Inventory
             return true;
         }
 
+        private static bool TryAddImmediateAccountEntitlementGrant(IAccount account, AccountItemEntry entry, List<IAccountItemGrant> grants, out GenericError error)
+        {
+            error = GenericError.Ok;
+
+            EntitlementEntry entitlementEntry = GameTableManager.Instance.Entitlement.GetEntry(entry.EntitlementId);
+            if (entitlementEntry == null)
+            {
+                error = GenericError.ItemBadStaticData;
+                return false;
+            }
+
+            var entitlementFlags = (EntitlementFlags)entitlementEntry.Flags;
+            if (entitlementFlags.HasFlag(EntitlementFlags.Disabled) || entitlementFlags.HasFlag(EntitlementFlags.Character))
+            {
+                error = GenericError.MissingEntitlement;
+                return false;
+            }
+
+            if (entry.EntitlementCount == 0u || entry.EntitlementCount > int.MaxValue)
+            {
+                error = GenericError.ItemBadStaticData;
+                return false;
+            }
+
+            var entitlementType = (EntitlementType)entitlementEntry.Id;
+            if (!Enum.IsDefined(typeof(EntitlementType), entitlementType))
+            {
+                error = GenericError.ItemBadStaticData;
+                return false;
+            }
+
+            uint currentAmount = account.EntitlementManager.GetEntitlement(entitlementType)?.Amount ?? 0u;
+            if (currentAmount + (ulong)entry.EntitlementCount > entitlementEntry.MaxCount)
+            {
+                error = GenericError.AccountItemMaxEntitlementCount;
+                return false;
+            }
+
+            grants.Add(new EntitlementGrant(entitlementType, (int)entry.EntitlementCount, false));
+            return true;
+        }
+
         private static bool TryAddGenericUnlockGrants(IPlayer player, uint genericUnlockSetId, List<IAccountItemGrant> grants, out GenericError error)
         {
             error = GenericError.Ok;
@@ -967,7 +1077,8 @@ namespace NexusForever.Game.Account.Inventory
             public void Apply(IAccount account, IPlayer player)
             {
                 account.CurrencyManager.CurrencyAddAmount(CurrencyType, Amount);
-                AccountCurrencyAchievementUpdater.Update(player, CurrencyType, Amount);
+                if (player != null)
+                    AccountCurrencyAchievementUpdater.Update(player, CurrencyType, Amount);
             }
         }
 

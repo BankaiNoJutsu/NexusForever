@@ -49,6 +49,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             }
 
             StorePurchaseHistoryManager.RecordPurchase(session.Account.Id, purchase.PackageId, currencyId: 0, price: 0ul);
+            StorefrontPurchaseHelper.PersistAccount(session, log);
             log.LogInformation("StorefrontCatalogDiagnostics virtual-currency package purchase completed player={PlayerGuid} account={AccountId} package={PackageId}.",
                 session.Player?.Guid, session.Account.Id, purchase.PackageId);
             log.LogDebug("Completed virtual-currency package purchase for account {AccountId}: package {PackageId}.",

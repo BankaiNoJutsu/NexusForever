@@ -285,7 +285,10 @@ open.
 Catalog, purchase, account currency charge, claim/return, pending item groups,
 daily login, coupon redemption, VC packages, wallet updates, purchase history,
 privilege restriction, purchase-velocity gate (10/hr), CREDD redeem (1000:1).
-54 focused packet tests. All `0969..0991` opcodes mapped.
+68 focused packet/account tests. All `0969..0991` opcodes mapped.
+Account-inventory direct account grants now apply entitlement/currency changes
+immediately from character select or in world, including character-slot unlock
+items whose prerequisite rows encode the account entitlement cap.
 The `LaughingWS/Questing-and-more` account/storefront slice is superseded by
 the current implementation: its useful account inventory, cooldown, operation
 result, account-tier, catalog, purchase, and purchase-history surfaces are

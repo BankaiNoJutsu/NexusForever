@@ -2,16 +2,21 @@ using Microsoft.Extensions.Logging;
 using NexusForever.Game.Static.Account;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.WorldServer.Network.Message.Handler.Character;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Account
 {
     public class ClientAccountItemTakeHandler : IMessageHandler<IWorldSession, ClientAccountItemTake>
     {
         private readonly ILogger<ClientAccountItemTakeHandler> log;
+        private readonly ICharacterListManager characterListManager;
 
-        public ClientAccountItemTakeHandler(ILogger<ClientAccountItemTakeHandler> log)
+        public ClientAccountItemTakeHandler(
+            ILogger<ClientAccountItemTakeHandler> log,
+            ICharacterListManager characterListManager)
         {
-            this.log = log;
+            this.log                  = log;
+            this.characterListManager = characterListManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientAccountItemTake accountItemTake)
@@ -24,7 +29,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             log.LogInformation("StorefrontCatalogDiagnostics account item take result player={PlayerGuid} account={AccountId} inventoryId={InventoryId} result={Result}.",
                 session.Player?.Guid, session.Account?.Id, accountItemTake.Id, result);
 
-            if (result != AccountOperationResult.Ok)
+            if (result == AccountOperationResult.Ok)
+            {
+                StorefrontPurchaseHelper.PersistAccount(session, log);
+
+                if (session.Player == null)
+                    characterListManager.SendCharacterListPackets(session);
+            }
+            else
             {
                 log.LogDebug("Rejecting account item take from player {PlayerGuid}: account inventory id {InventoryId}, result {Result}.",
                     session.Player?.Guid, accountItemTake.Id, result);
