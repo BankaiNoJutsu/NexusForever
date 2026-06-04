@@ -1,4 +1,5 @@
 using System.Numerics;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Combat;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
@@ -25,6 +26,7 @@ using NexusForever.Network.World.Combat;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script.Template;
+using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
 using NexusForever.Shared.Game;
 
@@ -332,6 +334,14 @@ namespace NexusForever.Game.Entity
                 HandleStatUpdate(lastTick);
                 statUpdateTimer.Reset();
             }
+        }
+
+        public override void OnRemoveFromMap()
+        {
+            if (this is INonPlayerEntity && Guid != 0u)
+                RemoveLootForOwner();
+
+            base.OnRemoveFromMap();
         }
 
         private void HandleProcCooldowns(double lastTick)
@@ -2078,6 +2088,22 @@ namespace NexusForever.Game.Entity
             return false;
         }
 
+        internal bool HasActiveSpellMatchingSpell4Group(Spell4GroupListEntry requestedGroupList, IGameTableManager gameTableManager)
+        {
+            if (requestedGroupList == null || gameTableManager == null)
+                return false;
+
+            foreach (ISpell spell in pendingSpells)
+            {
+                if (spell is NexusForever.Game.Spell.Spell concrete
+                    && !concrete.IsFinished
+                    && concrete.HasPersistentSpellGroupOverlap(requestedGroupList, gameTableManager))
+                    return true;
+            }
+
+            return false;
+        }
+
         internal bool HasActiveSpellTargetMechanic(uint mechanicFlags)
         {
             if (mechanicFlags == 0u)
@@ -2479,9 +2505,15 @@ namespace NexusForever.Game.Entity
 
         private void Respawn()
         {
+            RemoveLootForOwner();
             Health = MaxHealth;
             Shield = MaxShieldCapacity;
             DeathState = null;
+        }
+
+        private void RemoveLootForOwner()
+        {
+            LegacyServiceProvider.Provider?.GetService<GlobalLootManager>()?.RemoveLootForOwner(Guid);
         }
 
         /// <summary>

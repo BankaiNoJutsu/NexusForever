@@ -51,7 +51,7 @@ public class FortunePacketShapeTests
     {
         var message = new ServerFortuneCardUpdate
         {
-            Unknown = true,
+            HasUpdate = true,
             Operation = FortuneOperation.Reset,
             CardFlipped = [false, true, false]
         };

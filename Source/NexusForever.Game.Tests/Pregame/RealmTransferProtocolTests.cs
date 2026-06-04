@@ -9,6 +9,7 @@ using NexusForever.Game.Abstract.Server;
 using NexusForever.Game.Static.Pregame;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network;
+using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Static;
@@ -97,6 +98,37 @@ public class RealmTransferProtocolTests
             NullLogger<ClientInitiatePTRCharacterCopyHandler>.Instance);
 
         handler.HandleMessage(session, CreateInitiatePtrCharacterCopy(0xAABBCCDDEEFF0011ul));
+    }
+
+    [Fact]
+    public void ClientPtrCopy_ReadsMappedEmptyPayload()
+    {
+        using var reader = new GamePacketReader(new MemoryStream(Array.Empty<byte>()));
+        var packet = new ClientPtrCopy();
+
+        packet.Read(reader);
+
+        Assert.Equal(0u, reader.BytesRemaining);
+    }
+
+    [Fact]
+    public void ClientPtrCopyHandler_StaysDiagnosticOnlyUntilHandoffMapped()
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        var handler = new ClientPtrCopyHandler(
+            NullLogger<ClientPtrCopyHandler>.Instance);
+
+        handler.HandleMessage(session, new ClientPtrCopy());
+
+        Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+    }
+
+    [Fact]
+    public void ServerPtrCharacterCopyQueued_WritesMappedEmptyPayload()
+    {
+        byte[] packetData = WritePacket(new ServerPtrCharacterCopyQueued());
+
+        Assert.Empty(packetData);
     }
 
     [Fact]
@@ -219,7 +251,7 @@ public class RealmTransferProtocolTests
         return stream.ToArray();
     }
 
-    private static byte[] WritePacket(ServerTransferDestinationRealmList message)
+    private static byte[] WritePacket(IWritable message)
     {
         using var stream = new MemoryStream();
         using var writer = new GamePacketWriter(stream);

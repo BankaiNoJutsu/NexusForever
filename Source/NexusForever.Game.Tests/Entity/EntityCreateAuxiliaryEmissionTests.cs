@@ -6,6 +6,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Network.World.Message.Model.Entity;
 
 namespace NexusForever.Game.Tests.Entity;
@@ -27,6 +28,25 @@ public class EntityCreateAuxiliaryEmissionTests
         Assert.IsType<ServerEntityCreateAuxBitPackedRowList>(packets[2]);
         Assert.IsType<ServerEntityCreateAuxSingleBitPackedRow>(packets[3]);
         Assert.IsType<ServerEntityCreateAuxScalarList>(packets[4]);
+    }
+
+    [Fact]
+    public void BuildPreCreatePackets_DoesNotEmitBlockedEntityStatOrMapTrackedPackets()
+    {
+        using ServiceProvider provider = EntityCreatePacketTests.BuildProvider();
+        IEntityFactory entityFactory = provider.GetRequiredService<IEntityFactory>();
+        IWorldEntity entity = entityFactory.CreateWorldEntity(EntityType.WorldUnit);
+
+        IReadOnlyList<IWritable> packets = entity.BuildEntityCreateAuxPackets();
+
+        Assert.DoesNotContain(packets, packet => packet is ServerEntityStatUInt32Triplet);
+        Assert.DoesNotContain(packets, packet => packet is ServerEntityStatUInt32WideString);
+        Assert.DoesNotContain(packets, packet => packet is ServerEntityStatUInt32UInt5UInt32);
+        Assert.DoesNotContain(packets, packet => packet is ServerEntityStatUInt32UInt14UInt18WideString);
+        Assert.DoesNotContain(packets, packet => packet is ServerEntityStatUInt32UInt5Pair);
+        Assert.DoesNotContain(packets, packet => packet is ServerEntityStatTwoUInt32UInt64);
+        Assert.DoesNotContain(packets, packet => packet is ServerMapTrackedUnitUpdate);
+        Assert.DoesNotContain(packets, packet => packet is ServerMapTrackedUnitDisable);
     }
 
     [Fact]

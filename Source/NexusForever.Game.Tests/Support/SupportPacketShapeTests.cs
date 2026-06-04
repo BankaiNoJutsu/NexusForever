@@ -1,7 +1,6 @@
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Network.World.Message.Model.Pregame;
 using NexusForever.Network.World.Message.Model.Support;
 
 namespace NexusForever.Game.Tests.Support;
@@ -113,6 +112,7 @@ public class SupportPacketShapeTests
         Assert.Equal(0x90A0B0C0u, reader.ReadUInt());
         Assert.Equal(0xDEADBEEFu, reader.ReadUInt());
         Assert.Equal(0xCAFEBABEu, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt(27u));
     }
 
     [Fact]
@@ -205,19 +205,6 @@ public class SupportPacketShapeTests
         Assert.Equal(5u, reader.ReadUInt());
         Assert.Equal(6u, reader.ReadUInt());
         Assert.Equal(0xA0B0C0D0u, reader.ReadUInt());
-    }
-
-    [Fact]
-    public void ServerRealmAuxUInt32TripletList_WritesCountedRows()
-    {
-        var packet = new ServerRealmAuxUInt32TripletList();
-        packet.Rows.Add(new ServerSpellUInt32TripletListRow { Value0 = 1u, Value1 = 2u, Value2 = 3u });
-
-        using var reader = CreateReader(WritePacket(packet));
-        Assert.Equal(1u, reader.ReadUInt());
-        Assert.Equal(1u, reader.ReadUInt());
-        Assert.Equal(2u, reader.ReadUInt());
-        Assert.Equal(3u, reader.ReadUInt());
     }
 
     private static GamePacketReader CreateReader(byte[] packetData)

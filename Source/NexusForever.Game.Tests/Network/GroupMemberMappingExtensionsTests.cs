@@ -60,8 +60,5 @@ public class GroupMemberMappingExtensionsTests
         Assert.Equal(3, roster.GroupMemberId);
         Assert.Equal(4f, roster.InterruptArmor);
         Assert.Equal(8f, roster.InterruptArmorMax);
-
-        ServerGroupMemberDetailUpdate detail = member.ToNetworkGroupMemberDetailUpdate(99ul);
-        Assert.Equal(3, detail.GroupMemberId);
     }
 }

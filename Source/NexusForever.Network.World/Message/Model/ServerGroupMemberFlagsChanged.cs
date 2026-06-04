@@ -11,7 +11,7 @@ namespace NexusForever.Network.World.Message.Model
     public class ServerGroupMemberFlagsChanged : IWritable
     {
         public ulong GroupId { get; set; }
-        public uint MemberIndex { get; set; } //< Not sure
+        public uint MemberIndex { get; set; }
         public Identity TargetedPlayer { get; set; } = new();
         public GroupMemberInfoFlags ChangedFlags { get; set; }
         public bool IsFromPromotion { get; set; }

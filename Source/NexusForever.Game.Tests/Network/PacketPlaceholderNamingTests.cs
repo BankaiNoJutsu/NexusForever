@@ -758,10 +758,22 @@ public class PacketPlaceholderNamingTests
     }
 
     [Fact]
-    public void ServerRealmTransferDestinationsAux_WritePreservesRawPayload()
+    public void ServerRealmTransferDestinationsAux_WriteSerializesMappedEnvelope()
     {
-        byte[] payload = [0x04, 0x03, 0x02, 0x01, 0x03, 0x00, 0x00, 0x00, 0xAA, 0xBB, 0xCC, 0xDD, 0x11, 0x22, 0x33, 0x44];
-        Assert.Equal(payload, WritePacket(new ServerRealmTransferDestinationsAux(payload)));
+        byte[] payload = [0xAA, 0xBB, 0xCC, 0xDD];
+        byte[] packetData = WritePacket(new ServerRealmTransferDestinationsAux
+        {
+            Value = 0x01020304u,
+            Data  = payload
+        });
+
+        using var stream = new MemoryStream(packetData);
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        Assert.Equal((uint)payload.Length, reader.ReadUInt());
+        Assert.Equal(payload, reader.ReadBytes((uint)payload.Length));
+        Assert.Equal(stream.Length, stream.Position);
     }
 
     [Fact]
@@ -782,18 +794,122 @@ public class PacketPlaceholderNamingTests
     [Fact]
     public void ClusterAuxPackets_WriteRepresentativeReaderBackedShapes()
     {
-        Assert.Equal(new byte[] { 0xAB }, WritePacket(new ServerItemContextActionAck([0xAB])));
-        byte[] supplySatchelPayload = [0x2A, 0x04, 0x03, 0x02, 0x01, 0xDD, 0xCC, 0xBB];
-        Assert.Equal(supplySatchelPayload, WritePacket(new ServerSupplySatchelAux(supplySatchelPayload)));
-        Assert.Equal(0x20, WritePacket(new ServerChatAuxPayload()).Length);
+        Assert.Empty(WritePacket(new ServerItemContextActionAck()));
+        Assert.Empty(WritePacket(new ServerDatacubeAuxEmpty()));
+        Assert.Empty(WritePacket(new ServerDuelAuxEmpty()));
+        Assert.Empty(WritePacket(new ServerResurrectionAuxEmpty()));
+        Assert.Empty(WritePacket(new ServerAppearanceAuxEmpty()));
+        Assert.Empty(WritePacket(new ServerLootAuxEmpty()));
+        Assert.Empty(WritePacket(new ServerPathMissionAuxEmpty()));
+        Assert.Empty(WritePacket(new ServerEntitySelectAuxEmpty()));
 
-        byte[] costumePayload =
-        [
-            0x34, 0x12, 0x04, 0x03, 0x02, 0x01, 0x08, 0x07,
-            0x06, 0x05, 0x0C, 0x0B, 0x0A, 0x09, 0x01, 0x00,
-            0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80
-        ];
-        Assert.Equal(costumePayload, WritePacket(new ServerCostumeItemAux(costumePayload)));
+        using (var pathScientistStream = new MemoryStream(WritePacket(new ServerPathScientistAuxUInt32(0x01020304u))))
+        using (var pathScientistReader = new GamePacketReader(pathScientistStream))
+        {
+            Assert.Equal(0x01020304u, pathScientistReader.ReadUInt());
+            Assert.Equal(pathScientistStream.Length, pathScientistStream.Position);
+        }
+
+        using (var entitySelectStream = new MemoryStream(WritePacket(new ServerEntitySelectAuxUInt14(0x1234u))))
+        using (var entitySelectReader = new GamePacketReader(entitySelectStream))
+        {
+            Assert.Equal(0x1234u, entitySelectReader.ReadUInt(14u));
+            Assert.Equal(entitySelectStream.Length, entitySelectStream.Position);
+        }
+
+        using (var instanceResetStream = new MemoryStream(WritePacket(new ServerInstanceResetAux
+        {
+            UInt4Value = 0xAu,
+            Value      = 0x01020304u
+        })))
+        using (var instanceResetReader = new GamePacketReader(instanceResetStream))
+        {
+            Assert.Equal(0xAu, instanceResetReader.ReadUInt(4u));
+            Assert.Equal(0x01020304u, instanceResetReader.ReadUInt());
+            Assert.Equal(instanceResetStream.Length, instanceResetStream.Position);
+        }
+
+        using (var reputationStream = new MemoryStream(WritePacket(new ServerReputationAuxUInt32(0x05060708u))))
+        using (var reputationReader = new GamePacketReader(reputationStream))
+        {
+            Assert.Equal(0x05060708u, reputationReader.ReadUInt());
+            Assert.Equal(reputationStream.Length, reputationStream.Position);
+        }
+
+        using (var reputationUInt64UInt32Stream = new MemoryStream(WritePacket(new ServerReputationAuxUInt64UInt32
+        {
+            Value0 = 0x0102030405060708ul,
+            Value1 = 0x090A0B0Cu
+        })))
+        using (var reputationUInt64UInt32Reader = new GamePacketReader(reputationUInt64UInt32Stream))
+        {
+            Assert.Equal(0x0102030405060708ul, reputationUInt64UInt32Reader.ReadULong());
+            Assert.Equal(0x090A0B0Cu, reputationUInt64UInt32Reader.ReadUInt());
+            Assert.Equal(reputationUInt64UInt32Stream.Length, reputationUInt64UInt32Stream.Position);
+        }
+
+        using (var reputationUInt64UInt32AltStream = new MemoryStream(WritePacket(new ServerReputationAuxUInt64UInt32Alt
+        {
+            Value0 = 0x1112131415161718ul,
+            Value1 = 0x191A1B1Cu
+        })))
+        using (var reputationUInt64UInt32AltReader = new GamePacketReader(reputationUInt64UInt32AltStream))
+        {
+            Assert.Equal(0x1112131415161718ul, reputationUInt64UInt32AltReader.ReadULong());
+            Assert.Equal(0x191A1B1Cu, reputationUInt64UInt32AltReader.ReadUInt());
+            Assert.Equal(reputationUInt64UInt32AltStream.Length, reputationUInt64UInt32AltStream.Position);
+        }
+
+        using (var reputationUInt14UInt32Stream = new MemoryStream(WritePacket(new ServerReputationAuxUInt14UInt32
+        {
+            Value0 = 0x1234u,
+            Value1 = 0x1D1E1F20u
+        })))
+        using (var reputationUInt14UInt32Reader = new GamePacketReader(reputationUInt14UInt32Stream))
+        {
+            Assert.Equal(0x1234u, reputationUInt14UInt32Reader.ReadUInt(14u));
+            Assert.Equal(0x1D1E1F20u, reputationUInt14UInt32Reader.ReadUInt());
+            Assert.Equal(reputationUInt14UInt32Stream.Length, reputationUInt14UInt32Stream.Position);
+        }
+
+        using (var timeOfDayStream = new MemoryStream(WritePacket(new ServerTimeOfDayAuxUInt32(0x090A0B0Cu))))
+        using (var timeOfDayReader = new GamePacketReader(timeOfDayStream))
+        {
+            Assert.Equal(0x090A0B0Cu, timeOfDayReader.ReadUInt());
+            Assert.Equal(timeOfDayStream.Length, timeOfDayStream.Position);
+        }
+
+        using (var supplySatchelStream = new MemoryStream(WritePacket(new ServerSupplySatchelAux
+        {
+            UInt6Value = 0x2Au,
+            Value      = 0x01020304u
+        })))
+        using (var supplySatchelReader = new GamePacketReader(supplySatchelStream))
+        {
+            Assert.Equal(0x2Au, supplySatchelReader.ReadUInt(6u));
+            Assert.Equal(0x01020304u, supplySatchelReader.ReadUInt());
+            Assert.Equal(supplySatchelStream.Length, supplySatchelStream.Position);
+        }
+
+        using (var costumeStream = new MemoryStream(WritePacket(new ServerCostumeItemAux
+        {
+            UInt14Value = 0x1234u,
+            Value0      = 0x01020304u,
+            Value1      = 0x05060708u,
+            Value2      = 0x090A0B0Cu,
+            Flag0       = true,
+            Flag1       = false
+        })))
+        using (var costumeReader = new GamePacketReader(costumeStream))
+        {
+            Assert.Equal(0x1234u, costumeReader.ReadUInt(14u));
+            Assert.Equal(0x01020304u, costumeReader.ReadUInt());
+            Assert.Equal(0x05060708u, costumeReader.ReadUInt());
+            Assert.Equal(0x090A0B0Cu, costumeReader.ReadUInt());
+            Assert.True(costumeReader.ReadBit());
+            Assert.False(costumeReader.ReadBit());
+            Assert.Equal(costumeStream.Length, costumeStream.Position);
+        }
 
         using (var itemSwapStream = new MemoryStream(WritePacket(new ServerItemSwapAux
         {
@@ -810,29 +926,242 @@ public class PacketPlaceholderNamingTests
             Assert.Equal(itemSwapStream.Length, itemSwapStream.Position);
         }
 
-        byte[] vehicleEmbarkPayload =
-        [
-            0x01, 0x02, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03,
-            0x02, 0x01, 0x0C, 0x0B, 0x0A, 0x09, 0x10, 0x0F
-        ];
-        Assert.Equal(vehicleEmbarkPayload, WritePacket(new ServerVehicleEmbarkAux(vehicleEmbarkPayload)));
+        using (var optionStream = new MemoryStream(WritePacket(new ServerOptionAuxPayload
+        {
+            Value0 = 0x0102030405060708ul,
+            Value1 = 0x1112131415161718ul,
+            Value2 = 0x21222324u,
+            Value3 = 0x3132333435363738ul
+        })))
+        using (var optionReader = new GamePacketReader(optionStream))
+        {
+            Assert.Equal(0x0102030405060708ul, optionReader.ReadULong());
+            Assert.Equal(0x1112131415161718ul, optionReader.ReadULong());
+            Assert.Equal(0x21222324u, optionReader.ReadUInt());
+            Assert.Equal(0x3132333435363738ul, optionReader.ReadULong());
+            Assert.Equal(optionStream.Length, optionStream.Position);
+        }
 
-        using var stream = new MemoryStream(WritePacket(new ServerRecruitmentAuxFourUInt32
+        using (var optionLargeStream = new MemoryStream(WritePacket(new ServerOptionAuxPayloadLarge
+        {
+            Value0      = 0x4142434445464748ul,
+            Value1      = 0x5152535455565758ul,
+            Value2      = 0x6162636465666768ul,
+            UInt18Value = 0x23456u,
+            Values      = { 0x01020304u, 0x05060708u }
+        })))
+        using (var optionLargeReader = new GamePacketReader(optionLargeStream))
+        {
+            Assert.Equal(0x4142434445464748ul, optionLargeReader.ReadULong());
+            Assert.Equal(0x5152535455565758ul, optionLargeReader.ReadULong());
+            Assert.Equal(0x6162636465666768ul, optionLargeReader.ReadULong());
+            Assert.Equal(0x23456u, optionLargeReader.ReadUInt(18u));
+            Assert.Equal((byte)2, optionLargeReader.ReadByte(3u));
+            Assert.Equal(new uint[] { 0x01020304u, 0x05060708u }, optionLargeReader.ReadRetailCompositeUInt32Array(2));
+            Assert.Equal(optionLargeStream.Length, optionLargeStream.Position);
+        }
+
+        using (var optionMediumStream = new MemoryStream(WritePacket(new ServerOptionAuxPayloadMedium
+        {
+            Value0 = 0x7172737475767778ul,
+            Value1 = 0x81828384u,
+            Values = { 0x11121314u, 0x21222324u, 0x31323334u }
+        })))
+        using (var optionMediumReader = new GamePacketReader(optionMediumStream))
+        {
+            Assert.Equal(0x7172737475767778ul, optionMediumReader.ReadULong());
+            Assert.Equal(0x81828384u, optionMediumReader.ReadUInt());
+            Assert.Equal((byte)3, optionMediumReader.ReadByte(4u));
+            Assert.Equal(new uint[] { 0x11121314u, 0x21222324u, 0x31323334u }, optionMediumReader.ReadRetailCompositeUInt32Array(3));
+            Assert.Equal(optionMediumStream.Length, optionMediumStream.Position);
+        }
+
+        using (var vehicleEmbarkStream = new MemoryStream(WritePacket(new ServerVehicleEmbarkAux
+        {
+            Flag       = true,
+            UInt2Value = 0x2u,
+            Value0     = 0x0102030405060708ul,
+            Value1     = 0x090A0B0Cu,
+            Value2     = 0x0D0E0F10u
+        })))
+        using (var vehicleEmbarkReader = new GamePacketReader(vehicleEmbarkStream))
+        {
+            Assert.True(vehicleEmbarkReader.ReadBit());
+            Assert.Equal(0x2u, vehicleEmbarkReader.ReadUInt(2u));
+            Assert.Equal(0x0102030405060708ul, vehicleEmbarkReader.ReadULong());
+            Assert.Equal(0x090A0B0Cu, vehicleEmbarkReader.ReadUInt());
+            Assert.Equal(0x0D0E0F10u, vehicleEmbarkReader.ReadUInt());
+            Assert.Equal(vehicleEmbarkStream.Length, vehicleEmbarkStream.Position);
+        }
+
+        using (var chatBulkStream = new MemoryStream(WritePacket(new ServerChatAuxBulk
+        {
+            Row = new ServerChatAuxRow
+            {
+                Value0  = 0x0102,
+                Value1  = 0x0304,
+                Payload = new ServerChatAuxRow.BoolPayload(2) { Value = true }
+            }
+        })))
+        using (var chatBulkReader = new GamePacketReader(chatBulkStream))
+        {
+            AssertChatAuxRowHeader(chatBulkReader, 2u, 0x0102, 0x0304);
+            Assert.True(chatBulkReader.ReadBit());
+            Assert.Equal(chatBulkStream.Length, chatBulkStream.Position);
+        }
+
+        var chatPayload = new ServerChatAuxPayload
+        {
+            Text  = "chat-payload",
+            Flag  = true,
+            Value = 0x1234
+        };
+        chatPayload.Rows.Add(new ServerChatAuxRow
+        {
+            Value0  = 0x0506,
+            Value1  = 0x0708,
+            Payload = new ServerChatAuxRow.UInt32Payload(7) { Value = 0x11121314u }
+        });
+
+        using (var chatPayloadStream = new MemoryStream(WritePacket(chatPayload)))
+        using (var chatPayloadReader = new GamePacketReader(chatPayloadStream))
+        {
+            Assert.Equal("chat-payload", chatPayloadReader.ReadWideString());
+            Assert.Equal(1u, chatPayloadReader.ReadUInt(5u));
+            AssertChatAuxRowHeader(chatPayloadReader, 7u, 0x0506, 0x0708);
+            Assert.Equal(0x11121314u, chatPayloadReader.ReadUInt());
+            Assert.True(chatPayloadReader.ReadBit());
+            Assert.Equal(0x1234u, chatPayloadReader.ReadUInt(16u));
+            Assert.Equal(chatPayloadStream.Length, chatPayloadStream.Position);
+        }
+
+        var chatPayloadAlt = new ServerChatAuxPayloadAlt
+        {
+            Text  = "chat-payload-alt",
+            Value = 0x5678
+        };
+        chatPayloadAlt.Rows.Add(new ServerChatAuxRow
+        {
+            Value0  = 0x090A,
+            Value1  = 0x0B0C,
+            Payload = new ServerChatAuxRow.UInt14TwoUInt32Payload
+            {
+                UInt14Value = 0x1234u,
+                Value1      = 0x21222324u,
+                Value2      = 0x25262728u
+            }
+        });
+
+        using (var chatPayloadAltStream = new MemoryStream(WritePacket(chatPayloadAlt)))
+        using (var chatPayloadAltReader = new GamePacketReader(chatPayloadAltStream))
+        {
+            Assert.Equal("chat-payload-alt", chatPayloadAltReader.ReadWideString());
+            Assert.Equal(1u, chatPayloadAltReader.ReadUInt(5u));
+            AssertChatAuxRowHeader(chatPayloadAltReader, 10u, 0x090A, 0x0B0C);
+            Assert.Equal(0x1234u, chatPayloadAltReader.ReadUInt(14u));
+            Assert.Equal(0x21222324u, chatPayloadAltReader.ReadUInt());
+            Assert.Equal(0x25262728u, chatPayloadAltReader.ReadUInt());
+            Assert.Equal(0x5678u, chatPayloadAltReader.ReadUInt(16u));
+            Assert.Equal(chatPayloadAltStream.Length, chatPayloadAltStream.Position);
+        }
+
+        var chatNotification = new ServerChatAuxNotification();
+        var chatNotificationRow = new ServerChatAuxNotification.Row
+        {
+            Value0      = 0x01020304u,
+            UInt14Value = 0x1234u,
+            Value2      = 0x1112131415161718ul,
+            Value3      = 0x21222324u,
+            Value4      = 0x25262728u,
+            Value5      = 0x2A
+        };
+        chatNotificationRow.SubRows.Add(new ServerChatAuxNotification.SubRow
+        {
+            UInt5Value = 0x1Bu,
+            Value1     = 0x31323334u,
+            Value2     = 0x35363738u
+        });
+        chatNotification.Rows.Add(chatNotificationRow);
+
+        using (var chatNotificationStream = new MemoryStream(WritePacket(chatNotification)))
+        using (var chatNotificationReader = new GamePacketReader(chatNotificationStream))
+        {
+            Assert.Equal((byte)1, chatNotificationReader.ReadByte());
+            Assert.Equal(0x01020304u, chatNotificationReader.ReadUInt());
+            Assert.Equal(0x1234u, chatNotificationReader.ReadUInt(14u));
+            Assert.Equal(0x1112131415161718ul, chatNotificationReader.ReadULong());
+            Assert.Equal(0x21222324u, chatNotificationReader.ReadUInt());
+            Assert.Equal(0x25262728u, chatNotificationReader.ReadUInt());
+            Assert.Equal((byte)0x2A, chatNotificationReader.ReadByte());
+            Assert.Equal((byte)1, chatNotificationReader.ReadByte());
+            Assert.Equal(0x1Bu, chatNotificationReader.ReadUInt(5u));
+            Assert.Equal(0x31323334u, chatNotificationReader.ReadUInt());
+            Assert.Equal(0x35363738u, chatNotificationReader.ReadUInt());
+            Assert.Equal(chatNotificationStream.Length, chatNotificationStream.Position);
+        }
+
+        using (var storyCommunicatorStream = new MemoryStream(WritePacket(new ServerStoryCommunicatorAux
         {
             Value0 = 0x01020304u,
             Value1 = 0x05060708u,
             Value2 = 0x090A0B0Cu,
-            Value3 = 0x0D0E0F10u
+            Value3 = 0x0D0E0F10u,
+            Value4 = 0x11121314u,
+            Value5 = 0x1516
+        })))
+        using (var storyCommunicatorReader = new GamePacketReader(storyCommunicatorStream))
+        {
+            Assert.Equal(0x01020304u, storyCommunicatorReader.ReadUInt());
+            Assert.Equal(0x05060708u, storyCommunicatorReader.ReadUInt());
+            Assert.Equal(0x090A0B0Cu, storyCommunicatorReader.ReadUInt());
+            Assert.Equal(0x0D0E0F10u, storyCommunicatorReader.ReadUInt());
+            Assert.Equal(0x11121314u, storyCommunicatorReader.ReadUInt());
+            Assert.Equal(0x1516u, storyCommunicatorReader.ReadUInt(16u));
+            Assert.Equal(storyCommunicatorStream.Length, storyCommunicatorStream.Position);
+        }
+
+        using var stream = new MemoryStream(WritePacket(new ServerRecruitmentAuxUInt32List
+        {
+            Values = { 0x01020304u, 0x05060708u, 0x090A0B0Cu, 0x0D0E0F10u }
         }));
         using var reader = new GamePacketReader(stream);
 
-        Assert.Equal(0x01020304u, reader.ReadUInt());
-        Assert.Equal(0x05060708u, reader.ReadUInt());
-        Assert.Equal(0x090A0B0Cu, reader.ReadUInt());
-        Assert.Equal(0x0D0E0F10u, reader.ReadUInt());
+        Assert.Equal(4u, reader.ReadUInt());
+        Assert.Equal(new uint[] { 0x01020304u, 0x05060708u, 0x090A0B0Cu, 0x0D0E0F10u }, reader.ReadRetailCompositeUInt32Array(4));
         Assert.Equal(stream.Length, stream.Position);
 
-        using var publicEventStream = new MemoryStream(WritePacket(new ServerPublicEventAuxRaw
+        using var auctionPostStream = new MemoryStream(WritePacket(new ServerAuctionPostAux
+        {
+            Values = { 0x01020304u, 0x05060708u },
+            Data   = [0xAA, 0xBB],
+            Value  = 0x0C0D0E0Fu
+        }));
+        using var auctionPostReader = new GamePacketReader(auctionPostStream);
+
+        Assert.Equal(2u, auctionPostReader.ReadUInt());
+        Assert.Equal(new uint[] { 0x01020304u, 0x05060708u }, auctionPostReader.ReadRetailCompositeUInt32Array(2));
+        Assert.Equal(new byte[] { 0xAA, 0xBB }, auctionPostReader.ReadRetailCompositeByteSpan(2));
+        Assert.Equal(0x0C0D0E0Fu, auctionPostReader.ReadUInt());
+        Assert.Equal(auctionPostStream.Length, auctionPostStream.Position);
+
+        using var auctionsByFilterStream = new MemoryStream(WritePacket(new ServerAuctionsByFilterAux
+        {
+            UInt14Value = 0x1234u,
+            Value1      = 0x11121314u,
+            Value2      = 0x21222324u,
+            Value3      = 0x31323334u,
+            Flag        = true
+        }));
+        using var auctionsByFilterReader = new GamePacketReader(auctionsByFilterStream);
+
+        Assert.Equal(0x1234u, auctionsByFilterReader.ReadUInt(14u));
+        Assert.Equal(0x11121314u, auctionsByFilterReader.ReadUInt());
+        Assert.Equal(0x21222324u, auctionsByFilterReader.ReadUInt());
+        Assert.Equal(0x31323334u, auctionsByFilterReader.ReadUInt());
+        Assert.True(auctionsByFilterReader.ReadBit());
+        Assert.Equal(auctionsByFilterStream.Length, auctionsByFilterStream.Position);
+
+        using var publicEventStream = new MemoryStream(WritePacket(new ServerPublicEventAux
         {
             Value = 0x11223344u,
             Values = [0x01020304u, 0x05060708u]
@@ -855,6 +1184,130 @@ public class PacketPlaceholderNamingTests
         Assert.Equal(0x1234u, voteReader.ReadUInt(15u));
         Assert.True(voteReader.ReadBit());
         Assert.Equal(voteStream.Length, voteStream.Position);
+    }
+
+    [Fact]
+    public void ServerChatAuxRows_WriteSerializesMappedVariantTable()
+    {
+        var packet = new ServerChatAuxPayloadAlt
+        {
+            Text  = "variant-table",
+            Value = 0xBEEF
+        };
+        packet.Rows.Add(new ServerChatAuxRow
+        {
+            Value0  = 0x0101,
+            Value1  = 0x0202,
+            Payload = new ServerChatAuxRow.BoolPayload(0) { Value = true }
+        });
+        packet.Rows.Add(new ServerChatAuxRow
+        {
+            Value0  = 0x0303,
+            Value1  = 0x0404,
+            Payload = new ServerChatAuxRow.BoolPayload(3) { Value = false }
+        });
+        packet.Rows.Add(new ServerChatAuxRow
+        {
+            Value0  = 0x0505,
+            Value1  = 0x0606,
+            Payload = new ServerChatAuxRow.UInt32Payload(1) { Value = 0x01020304u }
+        });
+        packet.Rows.Add(new ServerChatAuxRow
+        {
+            Value0  = 0x0707,
+            Value1  = 0x0808,
+            Payload = new ServerChatAuxRow.UInt18Payload { Value = 0x23456u }
+        });
+        packet.Rows.Add(new ServerChatAuxRow
+        {
+            Value0  = 0x0909,
+            Value1  = 0x0A0A,
+            Payload = new ServerChatAuxRow.UInt15Payload { Value = 0x2345u }
+        });
+        packet.Rows.Add(new ServerChatAuxRow
+        {
+            Value0  = 0x0B0B,
+            Value1  = 0x0C0C,
+            Payload = new ServerChatAuxRow.UInt14Payload { Value = 0x1234u }
+        });
+        packet.Rows.Add(new ServerChatAuxRow
+        {
+            Value0  = 0x0D0D,
+            Value1  = 0x0E0E,
+            Payload = new ServerChatAuxRow.UInt64Payload { Value = 0x0102030405060708ul }
+        });
+        packet.Rows.Add(new ServerChatAuxRow
+        {
+            Value0  = 0x0F0F,
+            Value1  = 0x1010,
+            Payload = new ServerChatAuxRow.UInt32Payload(11) { Value = 0x11121314u }
+        });
+
+        var complex = new ServerChatAuxRow.ComplexPayload
+        {
+            Value0       = 0x2122232425262728ul,
+            UInt18Value1 = 0x12345u,
+            Value2       = 0x3132333435363738ul,
+            Value3       = 0x4142434445464748ul,
+            Value4       = 0x51525354u,
+            Value5       = 0x6162636465666768ul,
+            Value6       = 0x71727374u,
+            Value7       = 0x81828384u,
+            Value8       = 0x8A,
+            UInt18Value9 = 0x23456u
+        };
+        complex.Values10.Add(0x91929394u);
+        complex.Values10.Add(0xA1A2A3A4u);
+        complex.Values11.Add(0xB1B2B3B4u);
+
+        packet.Rows.Add(new ServerChatAuxRow
+        {
+            Value0  = 0x1111,
+            Value1  = 0x1212,
+            Payload = complex
+        });
+
+        using var stream = new MemoryStream(WritePacket(packet));
+        using var reader = new GamePacketReader(stream);
+
+        Assert.Equal("variant-table", reader.ReadWideString());
+        Assert.Equal(9u, reader.ReadUInt(5u));
+
+        AssertChatAuxRowHeader(reader, 0u, 0x0101, 0x0202);
+        Assert.True(reader.ReadBit());
+        AssertChatAuxRowHeader(reader, 3u, 0x0303, 0x0404);
+        Assert.False(reader.ReadBit());
+        AssertChatAuxRowHeader(reader, 1u, 0x0505, 0x0606);
+        Assert.Equal(0x01020304u, reader.ReadUInt());
+        AssertChatAuxRowHeader(reader, 4u, 0x0707, 0x0808);
+        Assert.Equal(0x23456u, reader.ReadUInt(18u));
+        AssertChatAuxRowHeader(reader, 5u, 0x0909, 0x0A0A);
+        Assert.Equal(0x2345u, reader.ReadUInt(15u));
+        AssertChatAuxRowHeader(reader, 6u, 0x0B0B, 0x0C0C);
+        Assert.Equal(0x1234u, reader.ReadUInt(14u));
+        AssertChatAuxRowHeader(reader, 9u, 0x0D0D, 0x0E0E);
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        AssertChatAuxRowHeader(reader, 11u, 0x0F0F, 0x1010);
+        Assert.Equal(0x11121314u, reader.ReadUInt());
+
+        AssertChatAuxRowHeader(reader, 8u, 0x1111, 0x1212);
+        Assert.Equal(0x2122232425262728ul, reader.ReadULong());
+        Assert.Equal(0x12345u, reader.ReadUInt(18u));
+        Assert.Equal(0x3132333435363738ul, reader.ReadULong());
+        Assert.Equal(0x4142434445464748ul, reader.ReadULong());
+        Assert.Equal(0x51525354u, reader.ReadUInt());
+        Assert.Equal(0x6162636465666768ul, reader.ReadULong());
+        Assert.Equal(0x71727374u, reader.ReadUInt());
+        Assert.Equal(0x81828384u, reader.ReadUInt());
+        Assert.Equal((byte)0x8A, reader.ReadByte());
+        Assert.Equal(0x23456u, reader.ReadUInt(18u));
+        Assert.Equal(2u, reader.ReadUInt(3u));
+        Assert.Equal(new uint[] { 0x91929394u, 0xA1A2A3A4u }, reader.ReadRetailCompositeUInt32Array(2));
+        Assert.Equal(1u, reader.ReadUInt(4u));
+        Assert.Equal(new uint[] { 0xB1B2B3B4u }, reader.ReadRetailCompositeUInt32Array(1));
+
+        Assert.Equal(0xBEEFu, reader.ReadUInt(16u));
+        Assert.Equal(stream.Length, stream.Position);
     }
 
     [Fact]
@@ -2031,6 +2484,13 @@ public class PacketPlaceholderNamingTests
     {
         Assert.Equal(tokenReplacementValue, reader.ReadUInt());
         Assert.Equal(tokenName, reader.ReadString());
+    }
+
+    private static void AssertChatAuxRowHeader(GamePacketReader reader, uint variant, ushort value0, ushort value1)
+    {
+        Assert.Equal(variant, reader.ReadUInt(4u));
+        Assert.Equal(value0, reader.ReadUShort());
+        Assert.Equal(value1, reader.ReadUShort());
     }
 
     private static byte[] WritePacket(IWritable message)

@@ -56,4 +56,18 @@ namespace NexusForever.Network.World.Message.Model.Shared
             writer.Write(Value2);
         }
     }
+
+    /// <summary>
+    /// Counted list of three-uint32 rows.
+    /// </summary>
+    public class ServerUInt32TripletListPayload : IWritable
+    {
+        public List<ServerUInt32Triplet> Rows { get; } = [];
+
+        public void Write(GamePacketWriter writer)
+        {
+            writer.Write((uint)Rows.Count);
+            Rows.ForEach(r => r.Write(writer));
+        }
+    }
 }

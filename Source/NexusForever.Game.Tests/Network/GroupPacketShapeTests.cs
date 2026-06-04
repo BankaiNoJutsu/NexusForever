@@ -17,11 +17,11 @@ public class GroupPacketShapeTests
             { new ServerGroupKickResult(), 0x0C },
             { new ServerGroupLootRuleValidationResult(), 0x18 },
             { new ServerGroupRosterUpdate(), 0x60 },
-            { new ServerGroupMemberRoleChange(), 0x28 },
+            { new ServerGroupIdentityListAndUInt32Array(), 0x10 },
             { new ServerGroupReadyCheckStatusUpdate(), 0x38 },
             { new ServerGroupRequestJoinWindow(), 0x20 },
             { new ServerQuestShareResult(), 0x10 },
-            { new ServerGroupMemberDetailUpdate(), 0x28 },
+            { new ServerGroupTargetIdentityPrimeLevelList(), 0x16 },
             { new ServerRaidQueueStatus(), 0x1A }
         };
     }
@@ -85,27 +85,75 @@ public class GroupPacketShapeTests
     }
 
     [Fact]
-    public void ServerGroupMemberRoleChange_WritesMappedFields()
+    public void ServerGroupMemberFlagsChanged_WritesMappedFields()
     {
-        var packet = new ServerGroupMemberRoleChange
+        var packet = new ServerGroupMemberFlagsChanged
         {
-            GroupId        = 0x0102030405060708ul,
-            MemberIndex    = 0x090A0B0Cu,
-            TargetedPlayer = new Identity { RealmId = 1, Id = 202ul },
-            ChangedFlags   = GroupMemberInfoFlags.Healer,
-            IsFromPromotion = false
+            GroupId         = 0x0102030405060708ul,
+            MemberIndex     = 0x090A0B0Cu,
+            TargetedPlayer  = new Identity { RealmId = 2, Id = 303ul },
+            ChangedFlags    = GroupMemberInfoFlags.Tank | GroupMemberInfoFlags.CanMark,
+            IsFromPromotion = true
         };
 
         byte[] packetData = WritePacket(packet.Write);
 
-        Assert.Equal(0x28, packetData.Length);
         using var reader = new GamePacketReader(new MemoryStream(packetData));
         Assert.Equal(0x0102030405060708ul, reader.ReadULong());
         Assert.Equal(0x090A0B0Cu, reader.ReadUInt());
+        Assert.Equal(2, reader.ReadUShort(14u));
+        Assert.Equal(303ul, reader.ReadULong());
+        Assert.Equal((uint)(GroupMemberInfoFlags.Tank | GroupMemberInfoFlags.CanMark), reader.ReadUInt());
+        Assert.True(reader.ReadBit());
+    }
+
+    [Fact]
+    public void ServerGroupIdentityListAndUInt32Array_WritesMappedFields()
+    {
+        var packet = new ServerGroupIdentityListAndUInt32Array
+        {
+            GroupId      = 0x0102030405060708ul,
+            LeadingValue = 0x090A0B0Cu
+        };
+        packet.MemberIdentities.Add(new Identity { RealmId = 1, Id = 202ul });
+        packet.Values.Add((uint)GroupMemberInfoFlags.Healer);
+
+        byte[] packetData = WritePacket(packet.Write);
+
+        Assert.Equal(0x1E, packetData.Length);
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        Assert.Equal(0x090A0B0Cu, reader.ReadUInt());
+        Assert.Equal(1u, reader.ReadUInt());
         Assert.Equal(1, reader.ReadUShort(14u));
         Assert.Equal(202ul, reader.ReadULong());
-        Assert.Equal((uint)GroupMemberInfoFlags.Healer, reader.ReadUInt());
-        Assert.False(reader.ReadBit());
+        Assert.Equal([(uint)GroupMemberInfoFlags.Healer], reader.ReadRetailCompositeUInt32Array(1));
+    }
+
+    [Fact]
+    public void ServerGroupTargetIdentityPrimeLevelList_WritesMappedFields()
+    {
+        var packet = new ServerGroupTargetIdentityPrimeLevelList
+        {
+            GroupId      = 0x0102030405060708ul,
+            TargetPlayer = new Identity { RealmId = 2, Id = 303ul }
+        };
+        packet.PrimeLevels.Add(new PrimeLevelInfo
+        {
+            WorldId            = 0x1234,
+            PrimeLevelAchieved = 0x5678
+        });
+
+        byte[] packetData = WritePacket(packet.Write);
+
+        Assert.Equal(0x1A, packetData.Length);
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        Assert.Equal(2, reader.ReadUShort(14u));
+        Assert.Equal(303ul, reader.ReadULong());
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(0x1234, reader.ReadUShort(15u));
+        Assert.Equal(0x5678, reader.ReadUShort());
     }
 
     [Fact]

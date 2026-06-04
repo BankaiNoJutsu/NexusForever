@@ -31,6 +31,8 @@ public class FortuneSessionManagerTests
         FortuneRewardCatalog catalog = rewardPool.GetRewardCatalog();
         Assert.Equal(catalog.Item2IdRewards, rewards.Item2IdRewards);
         Assert.Equal(catalog.RewardItemProbabilities, rewards.RewardItemProbabilities);
+        Assert.Empty(rewards.MoneyRewards);
+        Assert.Empty(rewards.RewardMoneyProbabilities);
 
         ServerFortuneCards cards = Assert.IsType<ServerFortuneCards>(messages[1]);
         Assert.Equal(FortuneOperation.Reset, cards.Operation);

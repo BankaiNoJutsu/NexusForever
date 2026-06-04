@@ -76,11 +76,11 @@ public class SpellBroadcastPacketShapeTests
     }
 
     [Fact]
-    public void ServerSpellWrapperTierEntry_WritesSlotAndTierEntry()
+    public void ServerSpellWrapperTierEntry_WritesWrapperIdAndTierEntry()
     {
         var packet = new ServerSpellWrapperTierEntry
         {
-            SlotOrIndex = 0x33u,
+            SpellWrapperId = 0x33u,
             TierEntry = new ServerSpellList.TierEntry
             {
                 Spell4Id = 0x40u,
