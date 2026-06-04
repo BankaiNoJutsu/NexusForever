@@ -29,6 +29,7 @@ namespace NexusForever.Game.Loot
 
         private readonly Dictionary<ulong, uint> looterGuids = [];
         private readonly Dictionary<uint, LootInstanceItem> lootItems = [];
+        private readonly Dictionary<ulong, string> lastLootNotifyFingerprintsByLooter = [];
 
         private readonly UpdateTimer expiryTimer = new(1800d);
 
@@ -85,7 +86,7 @@ namespace NexusForever.Game.Loot
             return item;
         }
 
-        public void SendLootNotify(IPlayer player, bool includeGrantedItems = false)
+        public void SendLootNotify(IPlayer player, bool includeGrantedItems = false, bool suppressIfUnchanged = false)
         {
             List<NetworkLootItem> networkLootItems = [];
             List<LootPacketDiagnostics.NotifyItemState> diagnosticItems = [];
@@ -115,6 +116,7 @@ namespace NexusForever.Game.Loot
 
             if (networkLootItems.Count == 0)
             {
+                lastLootNotifyFingerprintsByLooter.Remove(player.CharacterId);
                 LootPacketDiagnostics.TraceLootNotifySuppressed(
                     player.CharacterId,
                     OwnerUnitId,
@@ -130,6 +132,16 @@ namespace NexusForever.Game.Loot
                     lootItems.Count,
                     lootItems.Values.Count(item => item.Delivered));
                 SendLootRemove(player);
+                return;
+            }
+
+            string notifyFingerprint = BuildLootNotifyFingerprint(includeGrantedItems, networkLootItems);
+            if (suppressIfUnchanged
+                && lastLootNotifyFingerprintsByLooter.TryGetValue(player.CharacterId, out string lastNotifyFingerprint)
+                && lastNotifyFingerprint == notifyFingerprint)
+            {
+                log.Trace("Suppressed duplicate loot notify for player {CharacterId}, ownerUnit={OwnerUnitId}, includeGrantedItems={IncludeGrantedItems}.",
+                    player.CharacterId, OwnerUnitId, includeGrantedItems);
                 return;
             }
 
@@ -150,6 +162,28 @@ namespace NexusForever.Game.Loot
             };
             LootRuntimeEvidenceCollector.RecordNotifyIfArmed(player, notify, includeGrantedItems, diagnosticItems);
             player.Session.EnqueueMessageEncrypted(notify);
+            lastLootNotifyFingerprintsByLooter[player.CharacterId] = notifyFingerprint;
+        }
+
+        private static string BuildLootNotifyFingerprint(bool includeGrantedItems, IEnumerable<NetworkLootItem> networkLootItems)
+        {
+            IEnumerable<string> itemFingerprints = networkLootItems
+                .OrderBy(item => item.LootUnitId)
+                .ThenBy(item => item.Type)
+                .ThenBy(item => item.ItemId)
+                .Select(BuildLootNotifyItemFingerprint);
+
+            return $"{includeGrantedItems}:{string.Join("|", itemFingerprints)}";
+        }
+
+        private static string BuildLootNotifyItemFingerprint(NetworkLootItem item)
+        {
+            string masterList = string.Join(",", item.MasterList
+                .OrderBy(identity => identity.RealmId)
+                .ThenBy(identity => identity.Id)
+                .Select(identity => $"{identity.RealmId}/{identity.Id}"));
+
+            return $"{item.LootUnitId}:{(uint)item.Type}:{item.ItemId}:{item.Amount}:{(item.CanLoot ? 1 : 0)}:{(item.RequiresRoll ? 1 : 0)}:{(item.OnlyMasterLootable ? 1 : 0)}:{(item.Explosion ? 1 : 0)}:{(item.Granted ? 1 : 0)}:{item.RandomCircuitData}:{item.RandomGlyphData}:{item.ItemQuality2Id}:{masterList}";
         }
 
         public bool DeliverAllLoot(IPlayer player, bool sendAsGrant = false)
@@ -179,6 +213,7 @@ namespace NexusForever.Game.Loot
 
         public void SendLootRemove(IPlayer player)
         {
+            lastLootNotifyFingerprintsByLooter.Remove(player.CharacterId);
             player.Session.EnqueueMessageEncrypted(new ServerLootRemove
             {
                 OwnerUnitId = OwnerUnitId

@@ -440,6 +440,144 @@ public class GlobalLootManagerTests
     }
 
     [Fact]
+    public void SendLootNotify_DuplicateRequestAfterInitialNotify_DoesNotReplayFullNotify()
+    {
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var manager = new GlobalLootManager(groupStateManager);
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = new ServiceCollection()
+            .AddSingleton(manager)
+            .BuildServiceProvider();
+
+        try
+        {
+            IPlayer player = CreatePlayer(out _, out _, out _, out var sessionProxy);
+            var lootInstance = new LootInstance(
+                ownerUnitId: player.Guid,
+                looterIds: new Dictionary<ulong, uint> { [player.CharacterId] = player.Guid },
+                looterType: LooterType.Player,
+                lootEntityType: LootEntityType.Creature);
+            lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 12u);
+            AddLootInstance(manager, lootInstance);
+
+            lootInstance.SendLootNotify(player);
+            manager.SendLootNotify(player, player.Guid);
+            manager.SendLootNotify(player, player.Guid);
+
+            RecordingDispatchProxy<IGameSession>.Invocation sessionCall =
+                Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+            var notify = Assert.IsType<ServerLootNotify>(sessionCall.Arguments[0]);
+            Assert.Equal(player.Guid, notify.OwnerUnitId);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void SendLootNotify_WhenNoMatchingActiveLoot_SendsRemoveForRequestedOwner()
+    {
+        const uint ownerUnitId = 9191u;
+
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var manager = new GlobalLootManager(groupStateManager);
+        IPlayer player = CreatePlayer(out _, out _, out _, out var sessionProxy);
+
+        manager.SendLootNotify(player, ownerUnitId);
+
+        RecordingDispatchProxy<IGameSession>.Invocation sessionCall =
+            Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+        var remove = Assert.IsType<ServerLootRemove>(sessionCall.Arguments[0]);
+        Assert.Equal(ownerUnitId, remove.OwnerUnitId);
+    }
+
+    [Fact]
+    public void SendLootNotifyForVisibleOwner_ForcesNotifyAfterInitialNotify()
+    {
+        const uint ownerUnitId = 9292u;
+
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var manager = new GlobalLootManager(groupStateManager);
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = new ServiceCollection()
+            .AddSingleton(manager)
+            .BuildServiceProvider();
+
+        try
+        {
+            IPlayer player = CreatePlayer(out _, out _, out _, out var sessionProxy);
+            IWorldEntity owner = RecordingDispatchProxy<IWorldEntity>.Create(out var ownerProxy);
+            ownerProxy.SetProperty(nameof(IWorldEntity.Guid), ownerUnitId);
+            var lootInstance = new LootInstance(
+                ownerUnitId: ownerUnitId,
+                looterIds: new Dictionary<ulong, uint> { [player.CharacterId] = player.Guid },
+                looterType: LooterType.Player,
+                lootEntityType: LootEntityType.Creature);
+            lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 12u);
+            AddLootInstance(manager, lootInstance);
+
+            lootInstance.SendLootNotify(player);
+            manager.SendLootNotifyForVisibleOwner(player, owner);
+
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls =
+                sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+            Assert.Equal(2, sessionCalls.Count);
+            Assert.All(sessionCalls, sessionCall =>
+            {
+                var notify = Assert.IsType<ServerLootNotify>(sessionCall.Arguments[0]);
+                Assert.Equal(ownerUnitId, notify.OwnerUnitId);
+            });
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void GiveRandomOmnibitKillReward_GrantsCurrencyWithoutExplosionNotify()
+    {
+        const uint ownerUnitId = 9393u;
+
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var manager = new GlobalLootManager(groupStateManager);
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = new ServiceCollection()
+            .AddSingleton(manager)
+            .BuildServiceProvider();
+
+        try
+        {
+            IPlayer player = CreatePlayer(out var accountCurrencyProxy, out var achievementProxy, out var sessionProxy);
+
+            GlobalLootManager.GiveRandomOmnibitKillReward(player, 29u, ownerUnitId);
+
+            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall =
+                Assert.Single(accountCurrencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(AccountCurrencyType.Omnibit, currencyCall.Arguments[0]);
+            Assert.Equal(29ul, currencyCall.Arguments[1]);
+
+            Assert.Single(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls =
+                sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
+            var grant = Assert.IsType<ServerLootGrant>(sessionCall.Arguments[0]);
+            Assert.Equal(ownerUnitId, grant.OwnerUnitId);
+            Assert.Equal(LootItemType.AccountCurrency, grant.LootItem.Type);
+            Assert.Equal((uint)AccountCurrencyType.Omnibit, grant.LootItem.ItemId);
+            Assert.Equal(29u, grant.LootItem.Amount);
+            Assert.False(grant.LootItem.Explosion);
+            Assert.False(grant.LootItem.Granted);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void GiveGeneratedLoot_AccountCurrencyWithGrantedNotify_SendsGrantedExplosionNotifyThenRemoveFromParentSource()
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);

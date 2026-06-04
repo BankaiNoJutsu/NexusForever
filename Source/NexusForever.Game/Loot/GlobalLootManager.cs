@@ -21,6 +21,7 @@ using NexusForever.Shared;
 using NexusForever.Shared.Game;
 using NLog;
 using NetworkItemLocation = NexusForever.Network.World.Message.Model.Shared.ItemLocation;
+using ServerLootRemovePacket = NexusForever.Network.World.Message.Model.Loot.ServerLootRemove;
 
 namespace NexusForever.Game.Loot
 {
@@ -723,7 +724,12 @@ namespace NexusForever.Game.Loot
             int maxExclusive = Math.Max(OMNIBIT_KILL_MIN_AMOUNT + 1, OMNIBIT_KILL_MAX_BASE_AMOUNT + (int)player.Level);
             uint amount = (uint)Random.Shared.Next(OMNIBIT_KILL_MIN_AMOUNT, maxExclusive);
             log.Trace($"Random omnibit kill reward rolled for player {player.CharacterId}, ownerUnit={ownerUnitId}, amount={amount}.");
-            GiveLoot(player, AccountCurrencyType.Omnibit, amount, ownerUnitId);
+            GiveRandomOmnibitKillReward(player, amount, ownerUnitId);
+        }
+
+        internal static void GiveRandomOmnibitKillReward(IPlayer player, uint amount, uint ownerUnitId)
+        {
+            GiveImmediateLoot(player, LootItemType.AccountCurrency, (uint)AccountCurrencyType.Omnibit, amount, ownerUnitId);
         }
 
         private static void TryAddLootItem(LootInstance lootInstance, LootItem item, uint count, string source)
@@ -896,15 +902,33 @@ namespace NexusForever.Game.Loot
 
         public void SendLootNotify(IPlayer looter, uint ownerUnitId)
         {
+            SendLootNotify(looter, ownerUnitId, suppressIfUnchanged: true, sendRemoveWhenEmpty: true);
+        }
+
+        private void SendLootNotify(IPlayer looter, uint ownerUnitId, bool suppressIfUnchanged, bool sendRemoveWhenEmpty)
+        {
             List<LootInstance> matchingInstances = GetLootInstancesForOwner(ownerUnitId)
                 .Where(i => i.HasLooter(looter.CharacterId) && !i.HasExpired)
                 .ToList();
             log.Trace($"Loot notify lookup for player {looter.CharacterId}, ownerUnit={ownerUnitId}: matchingInstances={matchingInstances.Count}.");
+            if (matchingInstances.Count == 0)
+            {
+                if (sendRemoveWhenEmpty)
+                {
+                    log.Trace($"Loot notify request found no matching active loot for player {looter.CharacterId}, ownerUnit={ownerUnitId}; sending remove.");
+                    looter.Session.EnqueueMessageEncrypted(new ServerLootRemovePacket
+                    {
+                        OwnerUnitId = ownerUnitId
+                    });
+                }
+
+                return;
+            }
 
             foreach (LootInstance lootInstance in matchingInstances)
             {
                 log.Trace($"Sending loot notify for player {looter.CharacterId}, ownerUnit={ownerUnitId}, items=[{FormatLootInstanceItems(lootInstance)}].");
-                lootInstance.SendLootNotify(looter);
+                lootInstance.SendLootNotify(looter, suppressIfUnchanged: suppressIfUnchanged);
             }
         }
 
@@ -913,7 +937,7 @@ namespace NexusForever.Game.Loot
             if (looter == null || owner == null)
                 return;
 
-            SendLootNotify(looter, owner.Guid);
+            SendLootNotify(looter, owner.Guid, suppressIfUnchanged: false, sendRemoveWhenEmpty: false);
         }
 
         public bool TryGetLootRuntimeSnapshot(IPlayer looter, uint ownerUnitId, out LootRuntimeSnapshot snapshot)
