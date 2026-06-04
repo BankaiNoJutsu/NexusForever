@@ -238,7 +238,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
 
             MarketplaceRequestHelper.SendEnabledStatus(session);
 
-            GenericError result = MarketplaceRequestHelper.PostCommodityOrder(session, sellOrderSubmit.Order, out CommodityOrder postedOrder);
+            GenericError result = MarketplaceRequestHelper.PostCommodityOrder(session, sellOrderSubmit.Order, itemManager, out CommodityOrder postedOrder);
             log.LogDebug("Processed commodity order request from player {PlayerGuid}: item {Item2Id}, quantity {Quantity}, buy order {IsBuyOrder}, result {Result}.",
                 session.Player?.Guid, sellOrderSubmit.Order.Item2Id, sellOrderSubmit.Order.Quantity, sellOrderSubmit.Order.IsBuyOrder, result);
             session.EnqueueMessageEncrypted(new ServerCommodityOrderResult
@@ -270,7 +270,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
 
             MarketplaceRequestHelper.SendEnabledStatus(session);
 
-            GenericError result = MarketplaceRequestHelper.CancelCommodityOrder(session, orderCancel.CommodityOrderId, orderCancel.Item2Id, orderCancel.IsBuyOrder, out CommodityOrder cancelledOrder);
+            GenericError result = MarketplaceRequestHelper.CancelCommodityOrder(session, orderCancel.CommodityOrderId, orderCancel.Item2Id, orderCancel.IsBuyOrder, itemManager, out CommodityOrder cancelledOrder);
             log.LogDebug("Processed commodity order cancel request from player {PlayerGuid}: order {CommodityOrderId}, item {Item2Id}, buy order {IsBuyOrder}, result {Result}.",
                 session.Player?.Guid, orderCancel.CommodityOrderId, orderCancel.Item2Id, orderCancel.IsBuyOrder, result);
 
@@ -318,11 +318,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
         public static GenericError CancelAuction(IWorldSession session, ulong auctionId, uint item2Id, out AuctionInfo auction) =>
             Marketplace.CancelAuction(session.Player, auctionId, item2Id, out auction);
 
-        public static GenericError PostCommodityOrder(IWorldSession session, CommodityOrder order, out CommodityOrder postedOrder) =>
-            Marketplace.PostCommodityOrder(session.Player, order, out postedOrder);
+        public static GenericError PostCommodityOrder(IWorldSession session, CommodityOrder order, IItemManager itemManager, out CommodityOrder postedOrder) =>
+            Marketplace.PostCommodityOrder(session.Player, order, out postedOrder, itemManager);
 
-        public static GenericError CancelCommodityOrder(IWorldSession session, ulong orderId, uint item2Id, bool isBuyOrder, out CommodityOrder cancelledOrder) =>
-            Marketplace.CancelCommodityOrder(session.Player, orderId, item2Id, isBuyOrder, out cancelledOrder);
+        public static GenericError CancelCommodityOrder(IWorldSession session, ulong orderId, uint item2Id, bool isBuyOrder, IItemManager itemManager, out CommodityOrder cancelledOrder) =>
+            Marketplace.CancelCommodityOrder(session.Player, orderId, item2Id, isBuyOrder, out cancelledOrder, itemManager);
 
         public static void ValidateAuctionSearch(IGameTableManager gameTableManager, IItemManager itemManager, ClientAuctionsByFilterRequest request) =>
             Marketplace.ValidateAuctionSearch(gameTableManager, itemManager, request);

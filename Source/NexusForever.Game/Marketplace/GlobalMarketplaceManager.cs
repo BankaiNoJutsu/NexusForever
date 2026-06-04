@@ -34,6 +34,7 @@ namespace NexusForever.Game.Marketplace
         private readonly object syncRoot = new();
         private readonly List<MarketplaceAuction> auctions = [];
         private readonly List<MarketplaceCommodityOrder> commodityOrders = [];
+        private readonly Dictionary<uint, CommodityOrderBook> commodityOrderBooks = [];
         private ulong nextAuctionId = 1ul;
         private ulong nextCommodityOrderId = 1ul;
         private double expirationCheckTimer;
@@ -54,6 +55,7 @@ namespace NexusForever.Game.Marketplace
             {
                 auctions.Clear();
                 commodityOrders.Clear();
+                commodityOrderBooks.Clear();
 
                 foreach (MarketplaceAuctionModel model in database.GetMarketplaceAuctions())
                 {
@@ -71,9 +73,13 @@ namespace NexusForever.Game.Marketplace
                     });
                 }
 
+                GameTableManager gameTableManager = LegacyServiceProvider.Provider?.GetService<GameTableManager>();
                 foreach (MarketplaceCommodityOrderModel model in database.GetMarketplaceCommodityOrders())
                 {
-                    commodityOrders.Add(new MarketplaceCommodityOrder
+                    if (!IsValidPersistedCommodityOrder(model, gameTableManager))
+                        continue;
+
+                    AddCommodityOrder(new MarketplaceCommodityOrder
                     {
                         OwnerCharacterId = model.OwnerCharacterId,
                         Order            = ToCommodityOrder(model)
@@ -158,12 +164,14 @@ namespace NexusForever.Game.Marketplace
                 };
                 List<MarketplaceAuction> sortedList = sorted.ToList();
 
-                int skip = checked((int)(request.Page * AuctionPageSize));
-                List<AuctionInfo> page = sortedList
-                    .Skip(skip)
-                    .Take((int)AuctionPageSize)
-                    .Select(a => CloneAuction(a.Auction, a.ExpiresAtUtc))
-                    .ToList();
+                ulong skip = (ulong)request.Page * AuctionPageSize;
+                List<AuctionInfo> page = skip > int.MaxValue
+                    ? []
+                    : sortedList
+                        .Skip((int)skip)
+                        .Take((int)AuctionPageSize)
+                        .Select(a => CloneAuction(a.Auction, a.ExpiresAtUtc))
+                        .ToList();
 
                 return new ServerAuctionSearchResults
                 {
@@ -176,16 +184,18 @@ namespace NexusForever.Game.Marketplace
 
         public GenericError PostAuction(IPlayer player, IItem item, ulong minimumBid, ulong buyoutPrice, out AuctionInfo auction)
         {
-            auction = new AuctionInfo
-            {
-                Item2Id     = item.Id,
-                Quantity    = item.StackCount,
-                MinimumBid  = minimumBid,
-                BuyoutPrice = buyoutPrice
-            };
+            auction = new AuctionInfo();
 
-            if (player == null)
+            if (player == null || item?.Info == null)
                 return GenericError.Params;
+
+            auction.Item2Id     = item.Id;
+            auction.Quantity    = item.StackCount;
+            auction.MinimumBid  = minimumBid;
+            auction.BuyoutPrice = buyoutPrice;
+
+            if (!CanPostAuctionItem(player, item))
+                return GenericError.AuctionCannotFillOrder;
 
             lock (syncRoot)
             {
@@ -208,7 +218,14 @@ namespace NexusForever.Game.Marketplace
                     ExpiresAtUtc = expiresAtUtc
                 };
                 auctions.Add(record);
-                PersistAuctionInsert(record);
+                if (!PersistAuctionInsert(record))
+                {
+                    auctions.Remove(record);
+                    RestoreRemovedAuctionItem(player, item);
+                    if (auction.AuctionId + 1ul == nextAuctionId)
+                        nextAuctionId--;
+                    return GenericError.DbFailure;
+                }
             }
 
             return GenericError.Ok;
@@ -255,40 +272,88 @@ namespace NexusForever.Game.Marketplace
                     return GenericError.Params;
                 }
 
-                if (!player.CurrencyManager.CanAfford(CurrencyType.Credits, acceptedAmount))
+                ulong previousBidderId = record.Auction.TopBidderCharacterId;
+                ulong previousBid      = record.Auction.CurrentBid;
+                ulong amountToCharge   = previousBidderId == player.CharacterId ? acceptedAmount - previousBid : acceptedAmount;
+                if (!player.CurrencyManager.CanAfford(CurrencyType.Credits, amountToCharge))
                 {
                     auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
                     return GenericError.VendorNotEnoughCash;
                 }
 
-                bool canDeliverBuyoutToInventory = !isBuyout
-                    || player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
-                if (isBuyout && !canDeliverBuyoutToInventory && !MarketplaceMailDelivery.IsAvailable)
+                if (isBuyout && !CanDeliverAuctionItemToCharacter(player.CharacterId, record.Item, player))
                 {
                     auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
                     return GenericError.ItemInventoryFull;
                 }
 
-                ulong previousBidderId = record.Auction.TopBidderCharacterId;
-                ulong previousBid      = record.Auction.CurrentBid;
-                RefundTopBidder(record);
-                player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, acceptedAmount);
+                ulong originalBid = record.Auction.CurrentBid;
+                ulong originalTopBidderId = record.Auction.TopBidderCharacterId;
                 record.Auction.CurrentBid           = acceptedAmount;
                 record.Auction.TopBidderCharacterId = player.CharacterId;
 
-                if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
-                    NotifyOutbid(previousBidderId, CloneAuction(record.Auction, record.ExpiresAtUtc));
-
                 if (isBuyout)
                 {
-                    auctions.Remove(record);
                     AuctionInfo wonAuction = CloneAuction(record.Auction, record.ExpiresAtUtc);
-                    CompleteAuctionSale(record, player.CharacterId, acceptedAmount, wonAuction, player);
-                    PersistAuctionDelete(record, record.Item);
+                    bool deliverToInventory = player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
+                    if (deliverToInventory)
+                    {
+                        ulong? previousItemCharacterId = record.Item.CharacterId;
+                        record.Item.CharacterId = player.CharacterId;
+                        if (!PersistAuctionDelete(record))
+                        {
+                            record.Item.CharacterId = previousItemCharacterId;
+                            record.Auction.CurrentBid           = originalBid;
+                            record.Auction.TopBidderCharacterId = originalTopBidderId;
+                            auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
+                            return GenericError.DbFailure;
+                        }
+
+                        if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
+                            CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
+
+                        player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, amountToCharge);
+                        player.Inventory.AddItem(record.Item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
+                        PaySeller(record, acceptedAmount);
+                        NotifyAuctionWon(player, wonAuction);
+                        auctions.Remove(record);
+                    }
+                    else
+                    {
+                        if (!CompleteAuctionSale(record, player.CharacterId, acceptedAmount, wonAuction, player, true, out bool persistedAuctionDelete))
+                        {
+                            record.Auction.CurrentBid           = originalBid;
+                            record.Auction.TopBidderCharacterId = originalTopBidderId;
+                            auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
+                            return GenericError.ItemInventoryFull;
+                        }
+
+                        if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
+                            CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
+
+                        player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, amountToCharge);
+                        auctions.Remove(record);
+                        if (!persistedAuctionDelete)
+                            PersistAuctionDelete(record);
+                    }
                 }
                 else
                 {
-                    PersistAuctionUpdate(record);
+                    player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, amountToCharge);
+                    if (!PersistAuctionUpdate(record))
+                    {
+                        record.Auction.CurrentBid           = originalBid;
+                        record.Auction.TopBidderCharacterId = originalTopBidderId;
+                        player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, amountToCharge);
+                        auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
+                        return GenericError.DbFailure;
+                    }
+
+                    if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
+                    {
+                        CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
+                        NotifyOutbid(previousBidderId, CloneAuction(record.Auction, record.ExpiresAtUtc));
+                    }
                 }
 
                 auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
@@ -321,11 +386,28 @@ namespace NexusForever.Game.Marketplace
                 if (!canReturnToInventory && !MarketplaceMailDelivery.IsAvailable)
                     return GenericError.ItemInventoryFull;
 
+                ulong? previousItemCharacterId = record.Item.CharacterId;
                 record.Item.CharacterId = player.CharacterId;
-                if (!canReturnToInventory
-                    && !MarketplaceMailDelivery.TrySendItemAuctionReturnMail(player.CharacterId, record.Item))
+                bool persistedAuctionDelete = false;
+                if (canReturnToInventory)
                 {
+                    if (!PersistAuctionDelete(record))
+                    {
+                        record.Item.CharacterId = previousItemCharacterId;
+                        return GenericError.DbFailure;
+                    }
+                }
+                else if (!MarketplaceMailDelivery.TrySendItemAuctionReturnMail(
+                    player.CharacterId,
+                    record.Item,
+                    context => RemoveAuctionModel(context, record)))
+                {
+                    record.Item.CharacterId = previousItemCharacterId;
                     return GenericError.ItemInventoryFull;
+                }
+                else
+                {
+                    persistedAuctionDelete = true;
                 }
 
                 auctions.Remove(record);
@@ -333,13 +415,13 @@ namespace NexusForever.Game.Marketplace
 
                 if (canReturnToInventory)
                     player.Inventory.AddItem(record.Item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
-
-                PersistAuctionDelete(record, record.Item);
+                else if (!persistedAuctionDelete)
+                    PersistAuctionDelete(record);
                 return GenericError.Ok;
             }
         }
 
-        public GenericError PostCommodityOrder(IPlayer player, CommodityOrder order, out CommodityOrder postedOrder)
+        public GenericError PostCommodityOrder(IPlayer player, CommodityOrder order, out CommodityOrder postedOrder, IItemManager itemManager = null)
         {
             postedOrder = CloneOrder(order);
             if (player == null)
@@ -347,11 +429,15 @@ namespace NexusForever.Game.Marketplace
 
             lock (syncRoot)
             {
-                int maxOrders = order.IsBuyOrder
-                    ? MarketplaceAccountLimits.GetMaxCommodityBuyOrders(player)
-                    : MarketplaceAccountLimits.GetMaxCommoditySellOrders(player);
-                if (CountOwnedCommodityOrders(player.CharacterId, order.IsBuyOrder) >= maxOrders)
-                    return GenericError.AuctionTooManyOrders;
+                bool forceImmediate = order.ForceImmediate;
+                if (!forceImmediate)
+                {
+                    int maxOrders = order.IsBuyOrder
+                        ? MarketplaceAccountLimits.GetMaxCommodityBuyOrders(player)
+                        : MarketplaceAccountLimits.GetMaxCommoditySellOrders(player);
+                    if (CountOwnedCommodityOrders(player.CharacterId, order.IsBuyOrder) >= maxOrders)
+                        return GenericError.AuctionTooManyOrders;
+                }
 
                 if (order.IsBuyOrder)
                 {
@@ -365,6 +451,17 @@ namespace NexusForever.Game.Marketplace
                     if (!player.Inventory.HasItemCount(order.Item2Id, order.Quantity))
                         return GenericError.ItemBadId;
 
+                    uint unmatchedSellQuantity = forceImmediate
+                        ? GetImmediateCommoditySellUnmatchedQuantity(order, itemManager)
+                        : order.Quantity;
+                    if (forceImmediate
+                        && unmatchedSellQuantity != 0u
+                        && !CanDeliverCommodityItemsToInventory(player, order.Item2Id, unmatchedSellQuantity, itemManager)
+                        && !MarketplaceMailDelivery.IsAvailable)
+                    {
+                        return GenericError.ItemInventoryFull;
+                    }
+
                     player.Inventory.ItemDelete(order.Item2Id, order.Quantity, ItemUpdateReason.Auction);
                 }
 
@@ -377,15 +474,39 @@ namespace NexusForever.Game.Marketplace
                     OwnerCharacterId = player.CharacterId,
                     Order            = CloneOrder(postedOrder)
                 };
-                commodityOrders.Add(record);
-                PersistCommodityOrderInsert(record);
-                TryMatchCommodityOrder(record);
+
+                if (!forceImmediate)
+                {
+                    AddCommodityOrder(record);
+                    if (!PersistCommodityOrderInsert(record))
+                    {
+                        RemoveCommodityOrderRecord(record);
+                        if (postedOrder.CommodityOrderId + 1ul == nextCommodityOrderId)
+                            nextCommodityOrderId--;
+
+                        if (order.IsBuyOrder)
+                            player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, order.Price);
+                        else
+                            player.Inventory.ItemCreate(InventoryLocation.Inventory, order.Item2Id, order.Quantity, ItemUpdateReason.Auction);
+
+                        return GenericError.DbFailure;
+                    }
+                }
+
+                TryMatchCommodityOrder(record, itemManager);
+
+                if (forceImmediate)
+                {
+                    GenericError immediateResult = FinaliseImmediateCommodityOrder(player, record, itemManager);
+                    postedOrder = CloneOrder(record.Order);
+                    return immediateResult;
+                }
             }
 
             return GenericError.Ok;
         }
 
-        public GenericError CancelCommodityOrder(IPlayer player, ulong orderId, uint item2Id, bool isBuyOrder, out CommodityOrder cancelledOrder)
+        public GenericError CancelCommodityOrder(IPlayer player, ulong orderId, uint item2Id, bool isBuyOrder, out CommodityOrder cancelledOrder, IItemManager itemManager = null)
         {
             cancelledOrder = new CommodityOrder
             {
@@ -410,26 +531,29 @@ namespace NexusForever.Game.Marketplace
                 cancelledOrder = CloneOrder(record.Order);
 
                 bool returnByMail = !record.Order.IsBuyOrder
-                    && player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) == 0u;
+                    && !CanDeliverCommodityItemsToInventory(player, record.Order.Item2Id, record.Order.Quantity, itemManager);
                 if (returnByMail)
                 {
                     if (!MarketplaceMailDelivery.IsAvailable
                         || !MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
                             player.CharacterId,
                             record.Order.Item2Id,
-                            record.Order.Quantity))
+                            record.Order.Quantity,
+                            context => RemoveCommodityOrderModel(context, record)))
                     {
                         return GenericError.ItemInventoryFull;
                     }
                 }
 
-                commodityOrders.Remove(record);
+                if (!returnByMail && !PersistCommodityOrderDelete(record))
+                    return GenericError.DbFailure;
+
+                RemoveCommodityOrderRecord(record);
                 if (record.Order.IsBuyOrder)
                     player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, record.Order.Price);
                 else if (!returnByMail)
                     player.Inventory.ItemCreate(InventoryLocation.Inventory, record.Order.Item2Id, record.Order.Quantity, ItemUpdateReason.Auction);
 
-                PersistCommodityOrderDelete(record);
                 return GenericError.Ok;
             }
         }
@@ -469,6 +593,9 @@ namespace NexusForever.Game.Marketplace
             if (selectorCount > 1u || request.Filters.Count > MaxAuctionFilters)
                 throw new InvalidPacketValueException();
 
+            if (request.AuctionSort == AuctionSort.Property)
+                throw new InvalidPacketValueException();
+
             foreach (IAuctionFilter filter in request.Filters)
                 ValidateAuctionFilter(filter);
         }
@@ -486,6 +613,14 @@ namespace NexusForever.Game.Marketplace
                 throw new InvalidPacketValueException();
 
             return item;
+        }
+
+        private static bool CanPostAuctionItem(IPlayer player, IItem item)
+        {
+            return item.CharacterId == player.CharacterId
+                && item.Location == InventoryLocation.Inventory
+                && !item.Soulbound
+                && !item.Info.IsEquippableBag();
         }
 
         public void ValidateCommodityOrder(IGameTableManager gameTableManager, IItemManager itemManager, CommodityOrder order)
@@ -523,9 +658,9 @@ namespace NexusForever.Game.Marketplace
                 throw new InvalidPacketValueException();
         }
 
-        private static void PersistAuctionInsert(MarketplaceAuction record)
+        private static bool PersistAuctionInsert(MarketplaceAuction record)
         {
-            Persist(context =>
+            return Persist(context =>
             {
                 if (record.Item is Item item)
                     item.Save(context);
@@ -534,18 +669,18 @@ namespace NexusForever.Game.Marketplace
             });
         }
 
-        private static void PersistAuctionUpdate(MarketplaceAuction record)
+        private static bool PersistAuctionUpdate(MarketplaceAuction record)
         {
-            Persist(context =>
+            return Persist(context =>
             {
                 MarketplaceAuctionModel model = context.MarketplaceAuction.Single(a => a.Id == record.Auction.AuctionId);
                 ApplyAuctionModel(model, record.Auction, record.ExpiresAtUtc);
             });
         }
 
-        private static void PersistCommodityOrderUpdate(MarketplaceCommodityOrder record)
+        private static bool PersistCommodityOrderUpdate(MarketplaceCommodityOrder record)
         {
-            Persist(context =>
+            return Persist(context =>
             {
                 MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
                     .Single(o => o.Id == record.Order.CommodityOrderId);
@@ -555,45 +690,104 @@ namespace NexusForever.Game.Marketplace
             });
         }
 
-        private static void PersistAuctionDelete(MarketplaceAuction record, IItem item)
+        private static bool PersistCommodityOrderUpdate(MarketplaceCommodityOrder record, bool alreadyPersisted)
         {
-            Persist(context =>
-            {
-                MarketplaceAuctionModel model = context.MarketplaceAuction.SingleOrDefault(a => a.Id == record.Auction.AuctionId);
-                if (model != null)
-                    context.MarketplaceAuction.Remove(model);
+            return alreadyPersisted || PersistCommodityOrderUpdate(record);
+        }
 
-                if (item is Item itemEntity)
-                    itemEntity.Save(context);
+        private void PersistCommodityFillOrderChanges(
+            CharacterContext context,
+            MarketplaceCommodityOrder buyOrder,
+            uint buyRemainingQuantity,
+            ulong buyRemainingPrice,
+            MarketplaceCommodityOrder sellOrder,
+            uint sellRemainingQuantity,
+            ulong sellRemainingPrice)
+        {
+            PersistCommodityFillOrderChange(context, buyOrder, buyRemainingQuantity, buyRemainingPrice);
+            PersistCommodityFillOrderChange(context, sellOrder, sellRemainingQuantity, sellRemainingPrice);
+        }
+
+        private void PersistCommodityFillOrderChange(
+            CharacterContext context,
+            MarketplaceCommodityOrder record,
+            uint remainingQuantity,
+            ulong remainingPrice)
+        {
+            if (!IsRestingCommodityOrder(record))
+                return;
+
+            if (remainingQuantity == 0u)
+            {
+                RemoveCommodityOrderModel(context, record);
+                return;
+            }
+
+            MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
+                .Single(o => o.Id == record.Order.CommodityOrderId);
+            model.Quantity     = remainingQuantity;
+            model.Price        = remainingPrice;
+            model.PricePerUnit = record.Order.PricePerUnit;
+        }
+
+        private static bool PersistAuctionDelete(MarketplaceAuction record)
+        {
+            return Persist(context =>
+            {
+                RemoveAuctionModel(context, record);
+                SaveSettledAuctionItem(context, record.Item);
             });
         }
 
-        private static void PersistCommodityOrderInsert(MarketplaceCommodityOrder record)
+        private static void RemoveAuctionModel(CharacterContext context, MarketplaceAuction record)
         {
-            Persist(context => context.MarketplaceCommodityOrder.Add(ToCommodityOrderModel(record)));
+            MarketplaceAuctionModel model = context.MarketplaceAuction.SingleOrDefault(a => a.Id == record.Auction.AuctionId);
+            if (model != null)
+                context.MarketplaceAuction.Remove(model);
         }
 
-        private static void PersistCommodityOrderDelete(MarketplaceCommodityOrder record)
+        private static void SaveSettledAuctionItem(CharacterContext context, IItem item)
         {
-            Persist(context =>
-            {
-                MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
-                    .SingleOrDefault(o => o.Id == record.Order.CommodityOrderId);
-                if (model != null)
-                    context.MarketplaceCommodityOrder.Remove(model);
-            });
+            item?.Save(context);
         }
 
-        private static void Persist(Action<CharacterContext> action)
+        private static bool PersistCommodityOrderInsert(MarketplaceCommodityOrder record)
+        {
+            return Persist(context => context.MarketplaceCommodityOrder.Add(ToCommodityOrderModel(record)));
+        }
+
+        private static bool PersistCommodityOrderDelete(MarketplaceCommodityOrder record)
+        {
+            return Persist(context => RemoveCommodityOrderModel(context, record));
+        }
+
+        private static void RemoveCommodityOrderModel(CharacterContext context, MarketplaceCommodityOrder record)
+        {
+            MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
+                .SingleOrDefault(o => o.Id == record.Order.CommodityOrderId);
+            if (model != null)
+                context.MarketplaceCommodityOrder.Remove(model);
+        }
+
+        private static bool Persist(Action<CharacterContext> action)
         {
             CharacterDatabase database = TryGetCharacterDatabase();
             if (database == null)
             {
                 log.Warn("GlobalMarketplaceManager.Persist skipped: CharacterDatabase is null. In-memory state may diverge from database.");
-                return;
+                return true;
             }
 
-            database.Save(action).ConfigureAwait(false).GetAwaiter().GetResult();
+            try
+            {
+                database.Save(action).ConfigureAwait(false).GetAwaiter().GetResult();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex, "GlobalMarketplaceManager.Persist failed. Rolling back in-memory marketplace mutation where possible.");
+                return false;
+            }
         }
 
         private static CharacterDatabase TryGetCharacterDatabase()
@@ -692,6 +886,59 @@ namespace NexusForever.Game.Marketplace
             };
         }
 
+        private static bool IsValidPersistedCommodityOrder(MarketplaceCommodityOrderModel model, GameTableManager gameTableManager = null)
+        {
+            string reason = GetInvalidPersistedCommodityOrderReason(model, gameTableManager);
+            if (reason == null)
+                return true;
+
+            log.Warn("GlobalMarketplaceManager.Initialise skipping commodity order id={0}: {1}.",
+                model?.Id ?? 0ul,
+                reason);
+            return false;
+        }
+
+        private static string GetInvalidPersistedCommodityOrderReason(MarketplaceCommodityOrderModel model, GameTableManager gameTableManager)
+        {
+            if (model == null)
+                return "model is null";
+
+            if (model.Id == 0ul)
+                return "order id is zero";
+
+            if (model.OwnerCharacterId == 0ul)
+                return "owner character id is zero";
+
+            if (model.Item2Id == 0u)
+                return "item id is zero";
+
+            if (gameTableManager?.Item != null && gameTableManager.Item.GetEntry(model.Item2Id) == null)
+                return $"item id {model.Item2Id} is missing from Item2";
+
+            if (model.Quantity == 0u)
+                return "quantity is zero";
+
+            if (model.PricePerUnit == 0ul)
+                return "price per unit is zero";
+
+            if (model.Price == 0ul)
+                return "price is zero";
+
+            if (model.ForceImmediate)
+                return "ForceImmediate orders must not be persisted";
+
+            if (!TryComputeCommodityEscrowPrice(model.PricePerUnit, model.Quantity, out ulong expectedPrice))
+                return "price overflows quantity escrow";
+
+            if (model.Price != expectedPrice)
+                return $"price {model.Price} does not match pricePerUnit * quantity {expectedPrice}";
+
+            if (model.ListTime != 0ul && model.ExpirationTime != 0ul && model.ExpirationTime <= model.ListTime)
+                return "expiration time is not after list time";
+
+            return null;
+        }
+
         // AuctionInfo.MicrochipIds matches the shared-item 3-bit microchip id array that sits beside the circuit/glyph payload.
         private static string SerializeMicrochipIds(List<uint> microchipIds)
         {
@@ -712,7 +959,7 @@ namespace NexusForever.Game.Marketplace
                     .Select(v => uint.Parse(v, CultureInfo.InvariantCulture))
                     .ToList();
             }
-            catch (FormatException ex)
+            catch (Exception ex) when (ex is FormatException or OverflowException)
             {
                 log.Error(ex, "GlobalMarketplaceManager.DeserializeMicrochipIds failed to parse corrupt DB value '{0}'. Returning empty array.",
                     value.Length > 200 ? value[..200] + "..." : value);
@@ -779,19 +1026,48 @@ namespace NexusForever.Game.Marketplace
 
         private void ExpireAuction(MarketplaceAuction record)
         {
-            auctions.Remove(record);
             AuctionInfo auctionSnapshot = CloneAuction(record.Auction, record.ExpiresAtUtc);
+            bool persistedDelete = false;
 
             if (record.Auction.TopBidderCharacterId != 0ul && record.Auction.CurrentBid != 0ul)
             {
                 ulong winningBidderId = record.Auction.TopBidderCharacterId;
                 IPlayer winningBidder = PlayerManager.Instance.GetPlayer(winningBidderId);
-                CompleteAuctionSale(record, winningBidderId, record.Auction.CurrentBid, auctionSnapshot, winningBidder);
+                if (winningBidder != null && winningBidder.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u)
+                {
+                    ulong? previousItemCharacterId = record.Item.CharacterId;
+                    record.Item.CharacterId = winningBidderId;
+                    if (!PersistAuctionDelete(record))
+                    {
+                        record.Item.CharacterId = previousItemCharacterId;
+                        return;
+                    }
+
+                    winningBidder.Inventory.AddItem(record.Item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
+                    PaySeller(record, record.Auction.CurrentBid);
+                    NotifyAuctionWon(winningBidder, auctionSnapshot);
+                    persistedDelete = true;
+                }
+                else if (!CompleteAuctionSale(record, winningBidderId, record.Auction.CurrentBid, auctionSnapshot, winningBidder, true, out bool persistedMailDelete))
+                {
+                    return;
+                }
+                else
+                {
+                    persistedDelete = persistedMailDelete;
+                }
             }
             else
-                ReturnExpiredAuctionToOwner(record, auctionSnapshot);
+            {
+                if (!ReturnExpiredAuctionToOwner(record, auctionSnapshot, true, out bool persistedReturnDelete))
+                    return;
 
-            PersistAuctionDelete(record, record.Item);
+                persistedDelete = persistedReturnDelete;
+            }
+
+            auctions.Remove(record);
+            if (!persistedDelete)
+                PersistAuctionDelete(record);
         }
 
         private void ProcessExpiredCommodityOrders()
@@ -811,17 +1087,47 @@ namespace NexusForever.Game.Marketplace
 
         private void ExpireCommodityOrder(MarketplaceCommodityOrder record)
         {
-            commodityOrders.Remove(record);
-
             IPlayer owner = PlayerManager.Instance.GetPlayer(record.OwnerCharacterId);
+            bool directBuyRefund = record.Order.IsBuyOrder && owner != null;
+            bool directSellReturn = !record.Order.IsBuyOrder
+                && CanDeliverCommodityItemsToInventory(owner, record.Order.Item2Id, record.Order.Quantity, null);
+            if (directBuyRefund || directSellReturn)
+            {
+                if (!PersistCommodityOrderDelete(record))
+                    return;
+
+                RemoveCommodityOrderRecord(record);
+                if (directBuyRefund)
+                    owner.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, record.Order.Price);
+                else
+                    owner.Inventory.ItemCreate(InventoryLocation.Inventory, record.Order.Item2Id, record.Order.Quantity, ItemUpdateReason.Auction);
+
+                owner.Session?.EnqueueMessageEncrypted(new ServerCommodityAuctionRemoved
+                {
+                    OrderRemoved = CloneOrder(record.Order),
+                    Type         = AuctionEventType.Expire
+                });
+                return;
+            }
+
             if (record.Order.IsBuyOrder)
             {
                 CreditCharacter(record.OwnerCharacterId, CurrencyType.Credits, record.Order.Price);
             }
             else
             {
-                DeliverCommodityItems(record.OwnerCharacterId, record.Order.Item2Id, record.Order.Quantity);
+                if (!MarketplaceMailDelivery.IsAvailable
+                    || !MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
+                        record.OwnerCharacterId,
+                        record.Order.Item2Id,
+                        record.Order.Quantity,
+                        context => RemoveCommodityOrderModel(context, record)))
+                {
+                    return;
+                }
             }
+
+            RemoveCommodityOrderRecord(record);
 
             owner?.Session.EnqueueMessageEncrypted(new ServerCommodityAuctionRemoved
             {
@@ -829,57 +1135,129 @@ namespace NexusForever.Game.Marketplace
                 Type         = AuctionEventType.Expire
             });
 
-            PersistCommodityOrderDelete(record);
+            if (record.Order.IsBuyOrder)
+                PersistCommodityOrderDelete(record);
         }
 
-        private void CompleteAuctionSale(
+        private bool CompleteAuctionSale(
             MarketplaceAuction record,
             ulong buyerCharacterId,
             ulong saleAmount,
             AuctionInfo auctionSnapshot,
-            IPlayer buyer = null)
+            IPlayer buyer,
+            bool persistAuctionDeleteWithMail,
+            out bool persistedAuctionDelete)
         {
+            persistedAuctionDelete = false;
             if (buyerCharacterId == 0ul)
-                return;
+                return false;
+
+            ulong? previousCharacterId = record.Item.CharacterId;
+            record.Item.CharacterId = buyerCharacterId;
+            bool deliverToInventory = buyer != null
+                && buyer.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
+            bool delivered = deliverToInventory
+                ? TryDeliverAuctionItemToCharacter(buyerCharacterId, record.Item, buyer, MarketplaceMailDelivery.TrySendItemAuctionWonMail)
+                : persistAuctionDeleteWithMail
+                    ? MarketplaceMailDelivery.TrySendItemAuctionWonMail(
+                        buyerCharacterId,
+                        record.Item,
+                        context => RemoveAuctionModel(context, record))
+                    : TryDeliverAuctionItemToCharacter(buyerCharacterId, record.Item, buyer, MarketplaceMailDelivery.TrySendItemAuctionWonMail);
+            if (!delivered)
+            {
+                record.Item.CharacterId = previousCharacterId;
+                return false;
+            }
+            persistedAuctionDelete = !deliverToInventory && persistAuctionDeleteWithMail;
 
             PaySeller(record, saleAmount);
-            record.Item.CharacterId = buyerCharacterId;
-
-            if (buyer != null && buyer.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u)
-                buyer.Inventory.AddItem(record.Item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
-            else
-                DeliverAuctionItemToCharacter(buyerCharacterId, record.Item, MarketplaceMailDelivery.TrySendItemAuctionWonMail);
-
             NotifyAuctionWon(buyer, auctionSnapshot);
+            return true;
         }
 
-        private static void ReturnExpiredAuctionToOwner(MarketplaceAuction record, AuctionInfo auctionSnapshot)
+        private static bool ReturnExpiredAuctionToOwner(
+            MarketplaceAuction record,
+            AuctionInfo auctionSnapshot,
+            bool persistAuctionDeleteWithMail,
+            out bool persistedAuctionDelete)
         {
+            persistedAuctionDelete = false;
+            ulong? previousCharacterId = record.Item.CharacterId;
             record.Item.CharacterId = record.Auction.OwnerCharacterId;
-            DeliverAuctionItemToCharacter(record.Auction.OwnerCharacterId, record.Item, MarketplaceMailDelivery.TrySendItemAuctionReturnMail);
-
             IPlayer owner = PlayerManager.Instance.GetPlayer(record.Auction.OwnerCharacterId);
+            bool deliverToInventory = owner != null
+                && owner.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
+            bool delivered = deliverToInventory
+                ? TryDeliverAuctionItemToCharacter(record.Auction.OwnerCharacterId, record.Item, owner, MarketplaceMailDelivery.TrySendItemAuctionReturnMail)
+                : persistAuctionDeleteWithMail
+                    ? MarketplaceMailDelivery.TrySendItemAuctionReturnMail(
+                        record.Auction.OwnerCharacterId,
+                        record.Item,
+                        context => RemoveAuctionModel(context, record))
+                    : TryDeliverAuctionItemToCharacter(record.Auction.OwnerCharacterId, record.Item, null, MarketplaceMailDelivery.TrySendItemAuctionReturnMail);
+            if (!delivered)
+            {
+                record.Item.CharacterId = previousCharacterId;
+                return false;
+            }
+            persistedAuctionDelete = !deliverToInventory && persistAuctionDeleteWithMail;
+
             owner?.Session.EnqueueMessageEncrypted(new ServerAuctionExpired
             {
                 Auction = auctionSnapshot
             });
+            return true;
         }
 
-        private static void DeliverAuctionItemToCharacter(
+        private static bool CanDeliverAuctionItemToCharacter(ulong characterId, IItem item, IPlayer player = null)
+        {
+            if (characterId == 0ul || item == null)
+                return false;
+
+            if (player != null && player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u)
+                return true;
+
+            return MarketplaceMailDelivery.IsAvailable;
+        }
+
+        private static bool TryDeliverAuctionItemToCharacter(
             ulong characterId,
             IItem item,
             Func<ulong, IItem, bool> mailDelivery = null)
         {
+            return TryDeliverAuctionItemToCharacter(characterId, item, PlayerManager.Instance.GetPlayer(characterId), mailDelivery);
+        }
+
+        private static bool TryDeliverAuctionItemToCharacter(
+            ulong characterId,
+            IItem item,
+            IPlayer player,
+            Func<ulong, IItem, bool> mailDelivery = null)
+        {
             mailDelivery ??= MarketplaceMailDelivery.TrySendItemAuctionWonMail;
 
-            IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
+            if (characterId == 0ul || item == null)
+                return false;
+
             if (player != null && player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u)
             {
                 player.Inventory.AddItem(item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
-                return;
+                return true;
             }
 
-            mailDelivery(characterId, item);
+            return MarketplaceMailDelivery.IsAvailable
+                && mailDelivery(characterId, item);
+        }
+
+        private static void RestoreRemovedAuctionItem(IPlayer player, IItem item)
+        {
+            if (player == null || item == null)
+                return;
+
+            item.CharacterId = player.CharacterId;
+            if (item.Location == InventoryLocation.None)
+                player.Inventory.AddItem(item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
         }
 
         private static void NotifyAuctionWon(IPlayer winner, AuctionInfo auction)
@@ -936,24 +1314,106 @@ namespace NexusForever.Game.Marketplace
             TryGetCharacterDatabase()?.CreditCharacterCurrency(characterId, (byte)currencyType, amount);
         }
 
-        /// <summary>
-        /// Attempts to match an incoming commodity order against all opposite-side orders.
-        /// </summary>
-        /// <remarks>
-        /// NOTE: This performs a full scan over all opposite orders for every new post,
-        /// resulting in O(n²) behaviour under load. A deeper refactor (e.g. price-indexed
-        /// order book) is needed to bring this to O(log n) per match.
-        /// </remarks>
-        private void TryMatchCommodityOrder(MarketplaceCommodityOrder incoming)
+        private void AddCommodityOrder(MarketplaceCommodityOrder record)
         {
-            IEnumerable<MarketplaceCommodityOrder> candidates = commodityOrders
-                .Where(o => o.Order.Item2Id == incoming.Order.Item2Id && o.Order.IsBuyOrder != incoming.Order.IsBuyOrder);
+            commodityOrders.Add(record);
 
-            candidates = incoming.Order.IsBuyOrder
-                ? candidates.OrderBy(o => o.Order.PricePerUnit)
-                : candidates.OrderByDescending(o => o.Order.PricePerUnit);
+            if (!commodityOrderBooks.TryGetValue(record.Order.Item2Id, out CommodityOrderBook book))
+            {
+                book = new CommodityOrderBook();
+                commodityOrderBooks.Add(record.Order.Item2Id, book);
+            }
 
-            foreach (MarketplaceCommodityOrder opposite in candidates.ToList())
+            SortedDictionary<ulong, List<MarketplaceCommodityOrder>> priceLevels = record.Order.IsBuyOrder
+                ? book.BuyOrders
+                : book.SellOrders;
+            if (!priceLevels.TryGetValue(record.Order.PricePerUnit, out List<MarketplaceCommodityOrder> ordersAtPrice))
+            {
+                ordersAtPrice = [];
+                priceLevels.Add(record.Order.PricePerUnit, ordersAtPrice);
+            }
+            ordersAtPrice.Add(record);
+        }
+
+        private bool RemoveCommodityOrderRecord(MarketplaceCommodityOrder record)
+        {
+            if (!commodityOrders.Remove(record))
+                return false;
+
+            if (commodityOrderBooks.TryGetValue(record.Order.Item2Id, out CommodityOrderBook book))
+            {
+                SortedDictionary<ulong, List<MarketplaceCommodityOrder>> priceLevels = record.Order.IsBuyOrder
+                    ? book.BuyOrders
+                    : book.SellOrders;
+                RemoveCommodityOrderFromPriceLevel(priceLevels, record);
+                if (book.IsEmpty)
+                    commodityOrderBooks.Remove(record.Order.Item2Id);
+            }
+
+            return true;
+        }
+
+        private static void RemoveCommodityOrderFromPriceLevel(
+            SortedDictionary<ulong, List<MarketplaceCommodityOrder>> priceLevels,
+            MarketplaceCommodityOrder record)
+        {
+            if (!priceLevels.TryGetValue(record.Order.PricePerUnit, out List<MarketplaceCommodityOrder> ordersAtPrice))
+                return;
+
+            ordersAtPrice.Remove(record);
+            if (ordersAtPrice.Count == 0)
+                priceLevels.Remove(record.Order.PricePerUnit);
+        }
+
+        private List<MarketplaceCommodityOrder> GetOppositeCommodityOrderCandidates(MarketplaceCommodityOrder incoming)
+        {
+            if (!commodityOrderBooks.TryGetValue(incoming.Order.Item2Id, out CommodityOrderBook book))
+                return [];
+
+            return incoming.Order.IsBuyOrder
+                ? GetSellCommodityOrderCandidates(book, incoming.Order.PricePerUnit)
+                : GetBuyCommodityOrderCandidates(book, incoming.Order.PricePerUnit);
+        }
+
+        private static List<MarketplaceCommodityOrder> GetSellCommodityOrderCandidates(CommodityOrderBook book, ulong maxPricePerUnit)
+        {
+            List<MarketplaceCommodityOrder> candidates = [];
+            foreach (KeyValuePair<ulong, List<MarketplaceCommodityOrder>> priceLevel in book.SellOrders)
+            {
+                if (priceLevel.Key > maxPricePerUnit)
+                    break;
+
+                candidates.AddRange(priceLevel.Value);
+            }
+
+            return candidates;
+        }
+
+        private List<MarketplaceCommodityOrder> GetBuyCommodityOrderCandidates(uint item2Id, ulong minPricePerUnit)
+        {
+            if (!commodityOrderBooks.TryGetValue(item2Id, out CommodityOrderBook book))
+                return [];
+
+            return GetBuyCommodityOrderCandidates(book, minPricePerUnit);
+        }
+
+        private static List<MarketplaceCommodityOrder> GetBuyCommodityOrderCandidates(CommodityOrderBook book, ulong minPricePerUnit)
+        {
+            List<MarketplaceCommodityOrder> candidates = [];
+            foreach (KeyValuePair<ulong, List<MarketplaceCommodityOrder>> priceLevel in book.BuyOrders.Reverse())
+            {
+                if (priceLevel.Key < minPricePerUnit)
+                    break;
+
+                candidates.AddRange(priceLevel.Value);
+            }
+
+            return candidates;
+        }
+
+        private void TryMatchCommodityOrder(MarketplaceCommodityOrder incoming, IItemManager itemManager)
+        {
+            foreach (MarketplaceCommodityOrder opposite in GetOppositeCommodityOrderCandidates(incoming))
             {
                 if (incoming.Order.Quantity == 0u || opposite.Order.Quantity == 0u)
                     continue;
@@ -974,52 +1434,198 @@ namespace NexusForever.Game.Marketplace
                 ulong unitPrice = sellOrder.Order.PricePerUnit;
                 ulong proceeds  = unitPrice * fillQuantity;
 
+                ulong buyEscrowBefore     = buyOrder.Order.Price;
+                uint buyRemainingQuantity = buyOrder.Order.Quantity - fillQuantity;
+                uint sellRemainingQuantity = sellOrder.Order.Quantity - fillQuantity;
+                ulong buyEscrowAfter      = buyOrder.Order.PricePerUnit * buyRemainingQuantity;
+                ulong paidAmount          = proceeds;
+                ulong sellEscrowAfter     = sellOrder.Order.PricePerUnit * sellRemainingQuantity;
+
+                bool persistedOrderChangesWithMail = false;
+                if (!TryDeliverCommodityItems(
+                    buyOrder.OwnerCharacterId,
+                    sellOrder.Order.Item2Id,
+                    fillQuantity,
+                    itemManager,
+                    context => PersistCommodityFillOrderChanges(
+                        context,
+                        buyOrder,
+                        buyRemainingQuantity,
+                        buyEscrowAfter,
+                        sellOrder,
+                        sellRemainingQuantity,
+                        sellEscrowAfter),
+                    out persistedOrderChangesWithMail))
+                {
+                    continue;
+                }
+
                 CreditCharacter(sellOrder.OwnerCharacterId, CurrencyType.Credits, MarketplaceTransactionFee.CalculateCommoditySellerProceeds(proceeds));
-                DeliverCommodityItems(buyOrder.OwnerCharacterId, sellOrder.Order.Item2Id, fillQuantity);
 
-                ulong buyPriceBefore = buyOrder.Order.Price;
-                buyOrder.Order.Quantity  -= fillQuantity;
-                sellOrder.Order.Quantity -= fillQuantity;
-                buyOrder.Order.Price     = buyOrder.Order.PricePerUnit * buyOrder.Order.Quantity;
-                sellOrder.Order.Price    = sellOrder.Order.PricePerUnit * sellOrder.Order.Quantity;
+                buyOrder.Order.Quantity  = buyRemainingQuantity;
+                sellOrder.Order.Quantity = sellRemainingQuantity;
+                buyOrder.Order.Price     = buyEscrowAfter;
+                sellOrder.Order.Price    = sellEscrowAfter;
 
-                if (buyPriceBefore > buyOrder.Order.Price)
-                    CreditCharacter(buyOrder.OwnerCharacterId, CurrencyType.Credits, buyPriceBefore - buyOrder.Order.Price);
+                ulong retainedAmount = paidAmount + buyEscrowAfter;
+                if (buyEscrowBefore > retainedAmount)
+                    CreditCharacter(buyOrder.OwnerCharacterId, CurrencyType.Credits, buyEscrowBefore - retainedAmount);
 
                 NotifyCommodityPartialFill(buyOrder, AuctionEventType.Fill);
                 NotifyCommodityPartialFill(sellOrder, AuctionEventType.Fill);
 
                 if (buyOrder.Order.Quantity == 0u)
-                    RemoveCommodityOrder(buyOrder);
-                else
-                    PersistCommodityOrderUpdate(buyOrder);
+                    RemoveCommodityOrder(buyOrder, persistedOrderChangesWithMail);
+                else if (IsRestingCommodityOrder(buyOrder))
+                    PersistCommodityOrderUpdate(buyOrder, persistedOrderChangesWithMail);
 
                 if (sellOrder.Order.Quantity == 0u)
-                    RemoveCommodityOrder(sellOrder);
-                else
-                    PersistCommodityOrderUpdate(sellOrder);
+                    RemoveCommodityOrder(sellOrder, persistedOrderChangesWithMail);
+                else if (IsRestingCommodityOrder(sellOrder))
+                    PersistCommodityOrderUpdate(sellOrder, persistedOrderChangesWithMail);
             }
         }
 
-        private static void DeliverCommodityItems(ulong characterId, uint item2Id, uint quantity)
+        private uint GetImmediateCommoditySellUnmatchedQuantity(CommodityOrder order, IItemManager itemManager)
         {
-            if (quantity == 0u)
-                return;
+            uint remainingQuantity = order.Quantity;
 
-            IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
-            if (player != null && player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u)
+            foreach (MarketplaceCommodityOrder candidate in GetBuyCommodityOrderCandidates(order.Item2Id, order.PricePerUnit))
             {
-                player.Inventory.ItemCreate(InventoryLocation.Inventory, item2Id, quantity, ItemUpdateReason.Auction);
-                return;
+                if (remainingQuantity == 0u)
+                    break;
+
+                if (candidate.Order.PricePerUnit < order.PricePerUnit)
+                    continue;
+
+                uint fillQuantity = Math.Min(remainingQuantity, candidate.Order.Quantity);
+                if (!CanDeliverCommodityItemsToCharacter(candidate.OwnerCharacterId, order.Item2Id, fillQuantity, itemManager))
+                    continue;
+
+                remainingQuantity -= fillQuantity;
             }
 
-            MarketplaceMailDelivery.TrySendCommodityAuctionFillMail(characterId, item2Id, quantity);
+            return remainingQuantity;
+        }
+
+        private static GenericError FinaliseImmediateCommodityOrder(IPlayer player, MarketplaceCommodityOrder record, IItemManager itemManager)
+        {
+            if (record.Order.Quantity == 0u)
+                return GenericError.Ok;
+
+            if (record.Order.IsBuyOrder)
+            {
+                player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, record.Order.Price);
+                ClearCommodityOrderRemainder(record.Order);
+                return GenericError.Ok;
+            }
+
+            if (CanDeliverCommodityItemsToInventory(player, record.Order.Item2Id, record.Order.Quantity, itemManager))
+            {
+                player.Inventory.ItemCreate(InventoryLocation.Inventory, record.Order.Item2Id, record.Order.Quantity, ItemUpdateReason.Auction);
+                ClearCommodityOrderRemainder(record.Order);
+                return GenericError.Ok;
+            }
+
+            if (MarketplaceMailDelivery.IsAvailable
+                && MarketplaceMailDelivery.TrySendCommodityAuctionReturnMail(
+                    player.CharacterId,
+                    record.Order.Item2Id,
+                    record.Order.Quantity))
+            {
+                ClearCommodityOrderRemainder(record.Order);
+                return GenericError.Ok;
+            }
+
+            return GenericError.ItemInventoryFull;
+        }
+
+        private static void ClearCommodityOrderRemainder(CommodityOrder order)
+        {
+            order.Quantity = 0u;
+            order.Price    = 0ul;
+        }
+
+        private static bool TryDeliverCommodityItems(ulong characterId, uint item2Id, uint quantity, IItemManager itemManager)
+        {
+            return TryDeliverCommodityItems(characterId, item2Id, quantity, itemManager, null, out _);
+        }
+
+        private static bool TryDeliverCommodityItems(
+            ulong characterId,
+            uint item2Id,
+            uint quantity,
+            IItemManager itemManager,
+            Action<CharacterContext> additionalMailSaveAction,
+            out bool persistedAdditionalMailSaveAction)
+        {
+            if (quantity == 0u)
+            {
+                persistedAdditionalMailSaveAction = false;
+                return true;
+            }
+
+            IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
+            if (CanDeliverCommodityItemsToInventory(player, item2Id, quantity, itemManager))
+            {
+                player.Inventory.ItemCreate(InventoryLocation.Inventory, item2Id, quantity, ItemUpdateReason.Auction);
+                persistedAdditionalMailSaveAction = false;
+                return true;
+            }
+
+            bool deliveredByMail = MarketplaceMailDelivery.IsAvailable
+                && MarketplaceMailDelivery.TrySendCommodityAuctionFillMail(
+                    characterId,
+                    item2Id,
+                    quantity,
+                    additionalMailSaveAction);
+            persistedAdditionalMailSaveAction = deliveredByMail && additionalMailSaveAction != null;
+            return deliveredByMail;
+        }
+
+        private static bool CanDeliverCommodityItemsToCharacter(ulong characterId, uint item2Id, uint quantity, IItemManager itemManager)
+        {
+            if (quantity == 0u)
+                return true;
+
+            IPlayer player = PlayerManager.Instance.GetPlayer(characterId);
+            return CanDeliverCommodityItemsToInventory(player, item2Id, quantity, itemManager)
+                || MarketplaceMailDelivery.IsAvailable;
+        }
+
+        private static bool CanDeliverCommodityItemsToInventory(IPlayer player, uint item2Id, uint quantity, IItemManager itemManager)
+        {
+            if (player == null)
+                return false;
+
+            if (quantity == 0u)
+                return true;
+
+            uint maxStackCount = itemManager?.GetItemInfo(item2Id)?.Entry?.MaxStackCount ?? 1u;
+            if (maxStackCount == 0u)
+                maxStackCount = 1u;
+
+            uint requiredSlots = (uint)(((ulong)quantity + maxStackCount - 1ul) / maxStackCount);
+            return player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) >= requiredSlots;
         }
 
         private void RemoveCommodityOrder(MarketplaceCommodityOrder record)
         {
-            commodityOrders.Remove(record);
-            PersistCommodityOrderDelete(record);
+            RemoveCommodityOrder(record, false);
+        }
+
+        private void RemoveCommodityOrder(MarketplaceCommodityOrder record, bool alreadyPersisted)
+        {
+            if (RemoveCommodityOrderRecord(record))
+            {
+                if (!alreadyPersisted)
+                    PersistCommodityOrderDelete(record);
+            }
+        }
+
+        private bool IsRestingCommodityOrder(MarketplaceCommodityOrder record)
+        {
+            return commodityOrders.Contains(record);
         }
 
         private static void NotifyCommodityPartialFill(MarketplaceCommodityOrder record, AuctionEventType type)
@@ -1119,9 +1725,10 @@ namespace NexusForever.Game.Marketplace
                     throw new InvalidPacketValueException();
                 case BuyoutMaxAuctionFilter buyout when buyout.BuyoutPrice == 0ul:
                     throw new InvalidPacketValueException();
-                case PropertyMinAuctionFilter property when float.IsNaN(property.Minimum) || float.IsInfinity(property.Minimum):
-                    throw new InvalidPacketValueException();
-                case PropertyMaxAuctionFilter property when float.IsNaN(property.Maximum) || float.IsInfinity(property.Maximum):
+                case PropertyMinAuctionFilter:
+                case PropertyMaxAuctionFilter:
+                case RuneSlotAuctionFilter:
+                case EquippableByAuctionFilter:
                     throw new InvalidPacketValueException();
             }
         }
@@ -1131,6 +1738,13 @@ namespace NexusForever.Game.Marketplace
             public AuctionInfo Auction { get; set; }
             public IItem Item { get; init; }
             public ulong ExpiresAtUtc { get; init; }
+        }
+
+        private sealed class CommodityOrderBook
+        {
+            public SortedDictionary<ulong, List<MarketplaceCommodityOrder>> BuyOrders { get; } = [];
+            public SortedDictionary<ulong, List<MarketplaceCommodityOrder>> SellOrders { get; } = [];
+            public bool IsEmpty => BuyOrders.Count == 0 && SellOrders.Count == 0;
         }
 
         private sealed class MarketplaceCommodityOrder

@@ -74,12 +74,12 @@ public class MarketplaceAccountLimitsTests
             IItemInfo itemInfo = CreateItemInfo();
             for (int i = 0; i < 3; i++)
             {
-                IItem item = CreateItem(itemInfo, ItemGuid + (ulong)i);
+                IItem item = CreateItem(itemInfo, ItemGuid + (ulong)i, player.CharacterId);
                 GenericError result = manager.PostAuction(player, item, 10ul, 20ul, out _);
                 Assert.Equal(GenericError.Ok, result);
             }
 
-            IItem fourthItem = CreateItem(itemInfo, ItemGuid + 3ul);
+            IItem fourthItem = CreateItem(itemInfo, ItemGuid + 3ul, player.CharacterId);
             GenericError blocked = manager.PostAuction(player, fourthItem, 10ul, 20ul, out _);
             Assert.Equal(GenericError.AuctionTooManyOrders, blocked);
         }
@@ -169,12 +169,15 @@ public class MarketplaceAccountLimitsTests
         ((System.Collections.IList)commodityField.GetValue(manager)!).Clear();
     }
 
-    private static IItem CreateItem(IItemInfo itemInfo, ulong guid)
+    private static IItem CreateItem(IItemInfo itemInfo, ulong guid, ulong ownerCharacterId)
     {
         IItem item = RecordingDispatchProxy<IItem>.Create(out RecordingDispatchProxy<IItem> itemProxy);
         itemProxy.SetProperty(nameof(IItem.Id), itemInfo.Id);
         itemProxy.SetProperty(nameof(IItem.Guid), guid);
+        itemProxy.SetProperty(nameof(IItem.CharacterId), ownerCharacterId);
+        itemProxy.SetProperty(nameof(IItem.Location), InventoryLocation.Inventory);
         itemProxy.SetProperty(nameof(IItem.StackCount), 1u);
+        itemProxy.SetProperty(nameof(IItem.Soulbound), false);
         itemProxy.SetProperty(nameof(IItem.Info), itemInfo);
         return item;
     }

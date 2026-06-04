@@ -11,6 +11,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Account;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Tests.TestSupport;
@@ -20,7 +21,9 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Chat;
 using NexusForever.Network.World.Message.Model.Loot;
+using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Model.Story;
+using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Loot;
@@ -154,9 +157,9 @@ public class LootBagUsageTests
             RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall = achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)).First();
             Assert.Same(player, achievementCall.Arguments[0]);
 
-            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Single();
-            var notify = Assert.IsType<ServerLootNotify>(sessionCall.Arguments[0]);
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+            Assert.Equal(2, sessionCalls.Count);
+            var notify = Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
             Assert.True(notify.Explosion);
             var singleLootItem = Assert.Single(notify.LootItems);
             Assert.All(notify.LootItems, lootItem =>
@@ -167,6 +170,126 @@ public class LootBagUsageTests
             });
             Assert.Equal(5u, singleLootItem.Amount);
             Assert.Equal(5u, notify.LootItems.Sum(lootItem => lootItem.Amount));
+
+            var remove = Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
+            Assert.Equal(player.Guid, remove.OwnerUnitId);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void TryUseLootBag_SingleStackNoChargeReward_DeletesItemAndGrantsLoot()
+    {
+        GlobalLootManager manager = CreateLootManager(CreateItemLootGroup(
+            new LootItemModel
+            {
+                Id          = 220000000006,
+                Type        = (uint)LootItemType.AccountCurrency,
+                StaticId    = (uint)AccountCurrencyType.Omnibit,
+                Probability = 100f,
+                MinCount    = 5u,
+                MaxCount    = 5u
+            }));
+
+        IPlayer player = CreatePlayer(out var inventoryProxy, out var currencyProxy, out _, out _);
+        IItem item = CreateLootBagItem(maxStackCount: 1u, maxCharges: 0u, bagIndex: 7u);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.ItemUse), true);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.ItemDelete), item);
+
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable(
+            new AccountCurrencyTypeEntry
+            {
+                Id = (uint)AccountCurrencyType.Omnibit
+            }));
+
+        try
+        {
+            bool result = manager.TryUseLootBag(player, item, out string reason);
+
+            Assert.True(result);
+            Assert.Equal(string.Empty, reason);
+
+            RecordingDispatchProxy<IInventory>.Invocation itemUseCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+            Assert.Same(item, itemUseCall.Arguments[0]);
+
+            RecordingDispatchProxy<IInventory>.Invocation itemDeleteCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+            ItemLocation location = Assert.IsType<ItemLocation>(itemDeleteCall.Arguments[0]);
+            Assert.Equal(InventoryLocation.Inventory, location.Location);
+            Assert.Equal(7u, location.BagIndex);
+            Assert.Equal(ItemUpdateReason.ConsumeCharge, itemDeleteCall.Arguments[1]);
+
+            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(AccountCurrencyType.Omnibit, currencyCall.Arguments[0]);
+            Assert.Equal(5ul, currencyCall.Arguments[1]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void TryUseLootBag_ServiceTokenReward_ConsumesItemAndGrantsLoot()
+    {
+        GlobalLootManager manager = CreateLootManager(CreateItemLootGroup(
+            new LootItemModel
+            {
+                Id          = 220000000005,
+                Type        = (uint)LootItemType.AccountCurrency,
+                StaticId    = (uint)AccountCurrencyType.ServiceToken,
+                Probability = 100f,
+                MinCount    = 140u,
+                MaxCount    = 140u
+            }));
+
+        IPlayer player = CreatePlayer(out var inventoryProxy, out var currencyProxy, out var achievementProxy, out var sessionProxy);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.ItemUse), true);
+        IItem item = CreateLootBagItem();
+
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable(
+            new AccountCurrencyTypeEntry
+            {
+                Id = (uint)AccountCurrencyType.ServiceToken
+            }));
+
+        try
+        {
+            bool result = manager.TryUseLootBag(player, item, out string reason);
+
+            Assert.True(result);
+            Assert.Equal(string.Empty, reason);
+
+            RecordingDispatchProxy<IInventory>.Invocation itemUseCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+            Assert.Same(item, itemUseCall.Arguments[0]);
+
+            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(AccountCurrencyType.ServiceToken, currencyCall.Arguments[0]);
+            Assert.Equal(140ul, currencyCall.Arguments[1]);
+
+            RecordingDispatchProxy<ICharacterAchievementManager>.Invocation achievementCall = achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)).First();
+            Assert.Same(player, achievementCall.Arguments[0]);
+
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+            Assert.Equal(2, sessionCalls.Count);
+            var notify = Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
+            Assert.True(notify.Explosion);
+            var singleLootItem = Assert.Single(notify.LootItems);
+            Assert.All(notify.LootItems, lootItem =>
+            {
+                Assert.True(lootItem.Granted);
+                Assert.Equal(LootItemType.AccountCurrency, lootItem.Type);
+                Assert.Equal((uint)AccountCurrencyType.ServiceToken, lootItem.ItemId);
+            });
+            Assert.Equal(140u, singleLootItem.Amount);
+            Assert.Equal(140u, notify.LootItems.Sum(lootItem => lootItem.Amount));
+
+            var remove = Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
+            Assert.Equal(player.Guid, remove.OwnerUnitId);
         }
         finally
         {
@@ -293,16 +416,20 @@ public class LootBagUsageTests
         }, loadChildren: false);
     }
 
-    private static IItem CreateLootBagItem()
+    private static IItem CreateLootBagItem(uint maxStackCount = 0u, uint maxCharges = 0u, InventoryLocation location = InventoryLocation.Inventory, uint bagIndex = 0u)
     {
         IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
         IItemInfo itemInfo = RecordingDispatchProxy<IItemInfo>.Create(out var itemInfoProxy);
         itemInfoProxy.SetProperty(nameof(IItemInfo.Entry), new GameTable.Model.Item2Entry
         {
-            Id = LootBagItemId
+            Id            = LootBagItemId,
+            MaxStackCount = maxStackCount,
+            MaxCharges    = maxCharges
         });
 
         itemProxy.SetProperty(nameof(IItem.Info), itemInfo);
+        itemProxy.SetProperty(nameof(IItem.Location), location);
+        itemProxy.SetProperty(nameof(IItem.BagIndex), bagIndex);
         return item;
     }
 

@@ -343,15 +343,49 @@ public class MailManagerDeliveryTests
         Assert.Equal(GenericError.MailCannotReturn, result.Result);
     }
 
-    private static IMailItem CreateReadyMail(ulong id)
+    [Fact]
+    public void ReturnMail_NonPlayerSenderReturnsCannotReturnWithoutMoving()
     {
-        return CreateReadyMail(id, out _);
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 99ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+
+        var manager = new MailManager(player, new CharacterModel());
+        IMailItem mail = CreateReadyMail(758ul, SenderType.ItemAuction, 0ul, out RecordingDispatchProxy<IMailItem> mailProxy);
+        mailProxy.SetProperty(nameof(IMailItem.Flags), MailFlag.None);
+        GetAvailableMail(manager).Add(mail.Id, mail);
+
+        manager.ReturnMail(758ul);
+
+        Assert.Same(mail, Assert.Single(GetAvailableMail(manager).Values));
+        Assert.Empty(GetOutgoingMail(manager));
+        Assert.Empty(mailProxy.GetInvocations(nameof(IMailItem.ReturnMail)));
+        Assert.Empty(GetEncryptedMessages(sessionProxy).OfType<ServerMailUnavailable>());
+        ServerMailResult result = GetEncryptedMessages(sessionProxy)
+            .OfType<ServerMailResult>()
+            .Single();
+        Assert.Equal(MailResultAction.Send, result.Action);
+        Assert.Equal(758ul, result.MailId);
+        Assert.Equal(GenericError.MailCannotReturn, result.Result);
+    }
+
+    private static IMailItem CreateReadyMail(ulong id, SenderType senderType = SenderType.Player, ulong senderId = 200ul)
+    {
+        return CreateReadyMail(id, senderType, senderId, out _);
     }
 
     private static IMailItem CreateReadyMail(ulong id, out RecordingDispatchProxy<IMailItem> mailProxy)
     {
+        return CreateReadyMail(id, SenderType.Player, 200ul, out mailProxy);
+    }
+
+    private static IMailItem CreateReadyMail(ulong id, SenderType senderType, ulong senderId, out RecordingDispatchProxy<IMailItem> mailProxy)
+    {
         IMailItem mail = RecordingDispatchProxy<IMailItem>.Create(out mailProxy);
         mailProxy.SetProperty(nameof(IMailItem.Id), id);
+        mailProxy.SetProperty(nameof(IMailItem.SenderType), senderType);
+        mailProxy.SetProperty(nameof(IMailItem.SenderId), senderId);
         mailProxy.SetProperty(nameof(IMailItem.CreateTime), DateTime.UtcNow);
         mailProxy.SetProperty(nameof(IMailItem.ExpiryTime), 0f);
         mailProxy.SetMethodReturn(nameof(IMailItem.IsReadyToDeliver), true);

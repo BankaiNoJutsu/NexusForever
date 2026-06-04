@@ -64,10 +64,18 @@ namespace NexusForever.Game.Loot
             Amount   = count;
         }
 
-        public void AddToAmount(uint amount)
+        public bool TryAddToAmount(uint amount)
         {
             log.Trace($"Loot item amount merge: ownerUnit={OwnerUnitId}, lootUnitId={Id}, type={Type}, staticId={StaticId}, previousAmount={Amount}, addedAmount={amount}.");
-            Amount += amount;
+            ulong mergedAmount = (ulong)Amount + amount;
+            if (mergedAmount > uint.MaxValue)
+            {
+                log.Warn($"Loot item amount merge rejected because it would overflow: ownerUnit={OwnerUnitId}, lootUnitId={Id}, type={Type}, staticId={StaticId}, previousAmount={Amount}, addedAmount={amount}.");
+                return false;
+            }
+
+            Amount = (uint)mergedAmount;
+            return true;
         }
 
         public void SetWinner(IPlayer player)

@@ -112,7 +112,10 @@ public class MarketplaceOwnedListHandlerTests
         IItem item = RecordingDispatchProxy<IItem>.Create(out RecordingDispatchProxy<IItem> itemProxy);
         itemProxy.SetProperty(nameof(IItem.Id), ItemId);
         itemProxy.SetProperty(nameof(IItem.Guid), ItemGuid);
+        itemProxy.SetProperty(nameof(IItem.CharacterId), CharacterId);
+        itemProxy.SetProperty(nameof(IItem.Location), InventoryLocation.Inventory);
         itemProxy.SetProperty(nameof(IItem.StackCount), 1u);
+        itemProxy.SetProperty(nameof(IItem.Soulbound), false);
         itemProxy.SetProperty(nameof(IItem.Info), itemInfo);
         return item;
     }

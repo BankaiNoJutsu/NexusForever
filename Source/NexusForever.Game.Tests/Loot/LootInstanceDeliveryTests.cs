@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
+using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Chat;
 using NexusForever.Game.Static.Entity;
@@ -131,6 +132,95 @@ public class LootInstanceDeliveryTests
             Assert.Equal(LootItemType.Cash, grant.LootItem.Type);
             Assert.Equal((uint)CurrencyType.Credits, grant.LootItem.ItemId);
             Assert.Equal(17u, grant.LootItem.Amount);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void DeliverAllLoot_MixedSuccessAndFailure_ReturnsFalseAndKeepsFailedItemRetryable()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
+
+        try
+        {
+            var inventory = new TestInventory(0u);
+            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+            ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out var currencyProxy);
+            IPlayer player = TestPlayerBuilder.Create()
+                .WithInventory(inventory)
+                .WithCurrencyManager(currencyManager)
+                .WithSession(session)
+                .WithCharacterId(42ul)
+                .WithGuid(4242u)
+                .Build();
+            var lootInstance = new LootInstance(
+                ownerUnitId: 99u,
+                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+                looterType: LooterType.Player,
+                lootEntityType: LootEntityType.Creature);
+
+            LootInstanceItem cash = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 17u);
+            LootInstanceItem staticItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
+
+            bool delivered = lootInstance.DeliverAllLoot(player);
+
+            Assert.False(delivered);
+            Assert.True(cash.Delivered);
+            Assert.False(staticItem.Delivered);
+
+            RecordingDispatchProxy<ICurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(CurrencyType.Credits, currencyCall.Arguments[0]);
+            Assert.Equal(17ul, currencyCall.Arguments[1]);
+
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
+            var error = Assert.IsType<ServerItemError>(sessionCall.Arguments[0]);
+            Assert.Equal(GenericError.ItemInventoryFull, error.ErrorCode);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void GiveGeneratedLoot_WithGrantedNotify_WhenPartiallyDelivered_DoesNotSendGrantedNotify()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var manager = new GlobalLootManager(groupStateManager);
+        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
+
+        try
+        {
+            var inventory = new TestInventory(0u);
+            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+            ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out var currencyProxy);
+            IPlayer player = TestPlayerBuilder.Create()
+                .WithInventory(inventory)
+                .WithCurrencyManager(currencyManager)
+                .WithSession(session)
+                .WithCharacterId(42ul)
+                .WithGuid(4242u)
+                .Build();
+
+            manager.GiveGeneratedLoot(player, [
+                new GeneratedLootItem(LootItemType.Cash, (uint)CurrencyType.Credits, 17u),
+                new GeneratedLootItem(LootItemType.StaticItem, StaticItemId, 1u)
+            ], ownerUnitId: 99u, sendGrantedNotify: true);
+
+            RecordingDispatchProxy<ICurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(CurrencyType.Credits, currencyCall.Arguments[0]);
+            Assert.Equal(17ul, currencyCall.Arguments[1]);
+
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
+            var error = Assert.IsType<ServerItemError>(sessionCall.Arguments[0]);
+            Assert.Equal(GenericError.ItemInventoryFull, error.ErrorCode);
         }
         finally
         {

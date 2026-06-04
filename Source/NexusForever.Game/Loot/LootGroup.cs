@@ -74,7 +74,13 @@ namespace NexusForever.Game.Loot
             return conditionType switch
             {
                 LootConditionType.None                 => true,
-                LootConditionType.QuestObjectiveActive => player.QuestManager.IsActiveObjectiveId(condition),
+                LootConditionType.IsClass              => player != null && (uint)player.Class == condition,
+                LootConditionType.IsRace               => player != null && (uint)player.Race == condition,
+                LootConditionType.IsLevel              => player != null && player.Level == condition,
+                LootConditionType.IsLessThanLevel      => player != null && player.Level < condition,
+                LootConditionType.IsMoreThanLevel      => player != null && player.Level > condition,
+                LootConditionType.QuestObjectiveActive => player?.QuestManager != null && player.QuestManager.IsActiveObjectiveId(condition),
+                LootConditionType.IsFaction            => player != null && (uint)player.Faction1 == condition,
                 _                                      => true
             };
         }

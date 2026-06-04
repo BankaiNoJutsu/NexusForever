@@ -54,6 +54,23 @@ public class MailItemTransactionTests
     }
 
     [Fact]
+    public void ReturnMail_NonPlayerSender_ThrowsWithoutMutation()
+    {
+        MailItem mailItem = new(MailModel(
+            id: 4ul,
+            recipientId: 100ul,
+            senderId: 0ul,
+            subject: "Expired auction",
+            senderType: SenderType.ItemAuction));
+
+        Assert.Throws<InvalidOperationException>(() => mailItem.ReturnMail());
+
+        Assert.Equal(100ul, mailItem.RecipientId);
+        Assert.Equal("Expired auction", mailItem.Subject);
+        Assert.Equal(MailFlag.None, mailItem.Flags);
+    }
+
+    [Fact]
     public void AttachmentDelete_Save_EnqueuesDeletedAttachmentOnly()
     {
         MailItem mailItem = new(MailModel(id: 3ul));
@@ -76,13 +93,14 @@ public class MailItemTransactionTests
         ulong id = 1ul,
         ulong recipientId = 100ul,
         ulong senderId = 200ul,
-        string subject = "Subject")
+        string subject = "Subject",
+        SenderType senderType = SenderType.Player)
     {
         return new CharacterMailModel
         {
             Id                         = id,
             RecipientId                = recipientId,
-            SenderType                 = (byte)SenderType.Player,
+            SenderType                 = (byte)senderType,
             SenderId                   = senderId,
             Subject                    = subject,
             Message                    = "Message",

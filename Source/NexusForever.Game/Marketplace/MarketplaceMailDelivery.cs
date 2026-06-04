@@ -6,6 +6,7 @@ using NexusForever.Game.Entity;
 using NexusForever.Game.Mail;
 using NexusForever.Game.Static.Mail;
 using NexusForever.Shared;
+using NLog;
 
 namespace NexusForever.Game.Marketplace
 {
@@ -14,6 +15,8 @@ namespace NexusForever.Game.Marketplace
     /// </summary>
     internal static class MarketplaceMailDelivery
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
         private const string ItemAuctionReturnSubject = "Auction House";
         private const string ItemAuctionReturnBody    = "Your listing has expired. The attached item has been returned.";
         private const string ItemAuctionWonSubject    = "Auction House";
@@ -40,6 +43,25 @@ namespace NexusForever.Game.Marketplace
                 item);
         }
 
+        public static bool TrySendItemAuctionReturnMail(
+            ulong recipientCharacterId,
+            IItem item,
+            Action<CharacterContext> additionalSaveAction)
+        {
+            if (item == null)
+                return false;
+
+            return TrySendMail(
+                recipientCharacterId,
+                SenderType.ItemAuction,
+                ContentType.AuctionExpired,
+                ItemAuctionReturnSubject,
+                ItemAuctionReturnBody,
+                0ul,
+                additionalSaveAction,
+                item);
+        }
+
         public static bool TrySendItemAuctionWonMail(ulong recipientCharacterId, IItem item)
         {
             if (item == null)
@@ -55,7 +77,35 @@ namespace NexusForever.Game.Marketplace
                 item);
         }
 
+        public static bool TrySendItemAuctionWonMail(
+            ulong recipientCharacterId,
+            IItem item,
+            Action<CharacterContext> additionalSaveAction)
+        {
+            if (item == null)
+                return false;
+
+            return TrySendMail(
+                recipientCharacterId,
+                SenderType.ItemAuction,
+                ContentType.AuctionWon,
+                ItemAuctionWonSubject,
+                ItemAuctionWonBody,
+                0ul,
+                additionalSaveAction,
+                item);
+        }
+
         public static bool TrySendCommodityAuctionFillMail(ulong recipientCharacterId, uint item2Id, uint quantity)
+        {
+            return TrySendCommodityAuctionFillMail(recipientCharacterId, item2Id, quantity, null);
+        }
+
+        public static bool TrySendCommodityAuctionFillMail(
+            ulong recipientCharacterId,
+            uint item2Id,
+            uint quantity,
+            Action<CharacterContext> additionalSaveAction)
         {
             if (quantity == 0u)
                 return false;
@@ -72,6 +122,7 @@ namespace NexusForever.Game.Marketplace
                 CommodityFillSubject,
                 CommodityFillBody,
                 0ul,
+                additionalSaveAction,
                 item);
         }
 
@@ -120,6 +171,15 @@ namespace NexusForever.Game.Marketplace
 
         public static bool TrySendCommodityAuctionReturnMail(ulong recipientCharacterId, uint item2Id, uint quantity)
         {
+            return TrySendCommodityAuctionReturnMail(recipientCharacterId, item2Id, quantity, null);
+        }
+
+        public static bool TrySendCommodityAuctionReturnMail(
+            ulong recipientCharacterId,
+            uint item2Id,
+            uint quantity,
+            Action<CharacterContext> additionalSaveAction)
+        {
             if (quantity == 0u)
                 return false;
 
@@ -135,6 +195,7 @@ namespace NexusForever.Game.Marketplace
                 CommodityReturnSubject,
                 CommodityReturnBody,
                 0ul,
+                additionalSaveAction,
                 item);
         }
 
@@ -145,6 +206,27 @@ namespace NexusForever.Game.Marketplace
             string subject,
             string body,
             ulong credits,
+            params IItem[] items)
+        {
+            return TrySendMail(
+                recipientCharacterId,
+                senderType,
+                contentType,
+                subject,
+                body,
+                credits,
+                null,
+                items);
+        }
+
+        private static bool TrySendMail(
+            ulong recipientCharacterId,
+            SenderType senderType,
+            ContentType contentType,
+            string subject,
+            string body,
+            ulong credits,
+            Action<CharacterContext> additionalSaveAction,
             params IItem[] items)
         {
             CharacterDatabase database = TryGetCharacterDatabase();
@@ -172,27 +254,52 @@ namespace NexusForever.Game.Marketplace
                 parameters.Body    = body;
             }
 
-            var mail = new MailItem(parameters);
-
-            uint index = 0;
-            foreach (IItem item in items)
+            List<(IItem Item, ulong? CharacterId)> itemSnapshots = [];
+            try
             {
-                if (item == null)
-                    continue;
+                var mail = new MailItem(parameters);
 
-                item.CharacterId = recipientCharacterId;
-                mail.AttachmentAdd(new MailAttachment(mail.Id, index++, item));
+                uint index = 0;
+                foreach (IItem item in items)
+                {
+                    if (item == null)
+                        continue;
+
+                    itemSnapshots.Add((item, item.CharacterId));
+                    item.CharacterId = recipientCharacterId;
+                    mail.AttachmentAdd(new MailAttachment(mail.Id, index++, item));
+                }
+
+                PersistMail(database, recipientCharacterId, mail, items, additionalSaveAction);
             }
+            catch (Exception ex)
+            {
+                foreach ((IItem item, ulong? characterId) in itemSnapshots)
+                    item.CharacterId = characterId;
 
-            PersistMail(database, recipientCharacterId, mail, items);
+                log.Error(ex, "MarketplaceMailDelivery failed to persist marketplace mail for recipient {0}.", recipientCharacterId);
+                return false;
+            }
 
             return true;
         }
 
         private static void PersistMail(CharacterDatabase database, ulong recipientCharacterId, MailItem mail, IEnumerable<IItem> items)
         {
+            PersistMail(database, recipientCharacterId, mail, items, null);
+        }
+
+        private static void PersistMail(
+            CharacterDatabase database,
+            ulong recipientCharacterId,
+            MailItem mail,
+            IEnumerable<IItem> items,
+            Action<CharacterContext> additionalSaveAction)
+        {
             database.Save(context =>
             {
+                additionalSaveAction?.Invoke(context);
+
                 mail.Save(context);
 
                 foreach (IItem item in items)

@@ -33,6 +33,35 @@ public class LootInstanceResolutionTests
     private const ushort RealmId = (ushort)1;
 
     [Fact]
+    public void AddLootItem_DuplicateAmountOverflow_DoesNotWrapExistingAmount()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
+
+        try
+        {
+            TestPlayer looter = CreatePlayer(characterId: 42ul, guid: 4242u, accountId: 1001u, slotsRemaining: 1u);
+            LootInstance lootInstance = CreateLootInstance(looter);
+
+            LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 10u);
+            LootInstanceItem mergedItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 5u);
+
+            Assert.Same(lootItem, mergedItem);
+            Assert.Equal(15u, lootItem.Amount);
+
+            LootInstanceItem overflowAttempt = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, uint.MaxValue);
+
+            Assert.Same(lootItem, overflowAttempt);
+            Assert.Equal(15u, lootItem.Amount);
+            Assert.Single(lootInstance);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void RollWinnerOffline_RemainsLootableForWinnerWhenTheyReturn()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -50,10 +79,23 @@ public class LootInstanceResolutionTests
             LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
             lootItem.ConfigureRoll([winner.Identity, loser.Identity]);
 
-            Assert.True(lootInstance.RollLoot(winner.Player, lootItem.Id, LootRollAction.Need));
+            IReadOnlyList<object> loserFirstRollMessages = CaptureSessionMessages(
+                loser.SessionProxy,
+                () => Assert.True(lootInstance.RollLoot(winner.Player, lootItem.Id, LootRollAction.Need)));
+            Assert.Contains(loserFirstRollMessages, message => message is ServerLootRoll);
+            Assert.Contains(loserFirstRollMessages, message => message is ServerLootItemUpdate update
+                && update.LootItem.LootUnitId == lootItem.Id
+                && update.LootItem.RequiresRoll);
 
             PlayerManager.Instance.RemovePlayer(winner.Player);
-            Assert.True(lootInstance.RollLoot(loser.Player, lootItem.Id, LootRollAction.Pass));
+            IReadOnlyList<object> loserFinalRollMessages = CaptureSessionMessages(
+                loser.SessionProxy,
+                () => Assert.True(lootInstance.RollLoot(loser.Player, lootItem.Id, LootRollAction.Pass)));
+            Assert.Contains(loserFinalRollMessages, message => message is ServerLootRoll);
+            Assert.Contains(loserFinalRollMessages, message => message is ServerLootWinner);
+            Assert.Contains(loserFinalRollMessages, message => message is ServerLootItemUpdate update
+                && update.LootItem.LootUnitId == lootItem.Id
+                && !update.LootItem.RequiresRoll);
 
             Assert.False(lootItem.Delivered);
             Assert.True(lootItem.CanLoot(winner.CharacterId));
@@ -71,9 +113,64 @@ public class LootInstanceResolutionTests
             Assert.False(networkItem.RequiresRoll);
             Assert.False(networkItem.OnlyMasterLootable);
 
-            Assert.True(lootInstance.GiveLoot(winner.Player, lootItem.Id));
+            IReadOnlyList<object> loserDeliveryMessages = CaptureSessionMessages(
+                loser.SessionProxy,
+                () => Assert.True(lootInstance.GiveLoot(winner.Player, lootItem.Id)));
+            Assert.Contains(loserDeliveryMessages, message => message is ServerLootItemUpdate update
+                && update.LootItem.LootUnitId == lootItem.Id);
+            Assert.Contains(loserDeliveryMessages, message => message is ServerLootNotification notification
+                && notification.LootUnitId == lootItem.Id
+                && notification.LooterUnitId == winner.Guid);
             Assert.True(lootItem.Delivered);
             Assert.Single(winner.Inventory.CreatedItems);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void RollAllPasses_MarksDeliveredWithoutGrantingItem()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
+
+        try
+        {
+            TestPlayer first = CreatePlayer(characterId: 44ul, guid: 4444u, accountId: 1101u, slotsRemaining: 1u);
+            TestPlayer second = CreatePlayer(characterId: 45ul, guid: 4545u, accountId: 1102u, slotsRemaining: 1u);
+
+            PlayerManager.Instance.AddPlayer(first.Player);
+            PlayerManager.Instance.AddPlayer(second.Player);
+
+            LootInstance lootInstance = CreateLootInstance(first, second);
+            LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
+            lootItem.ConfigureRoll([first.Identity, second.Identity]);
+
+            Assert.True(lootInstance.RollLoot(first.Player, lootItem.Id, LootRollAction.Pass));
+            IReadOnlyList<object> finalMessages = CaptureSessionMessages(
+                first.SessionProxy,
+                () => Assert.True(lootInstance.RollLoot(second.Player, lootItem.Id, LootRollAction.Pass)));
+
+            ServerLootWinner winner = Assert.Single(finalMessages.OfType<ServerLootWinner>());
+            Assert.Equal(lootItem.Id, winner.LootUnitId);
+            Assert.Equal(0u, winner.WinningRoll.Value);
+            Assert.Equal(0ul, winner.WinningRoll.Identity.Id);
+            Assert.Equal(2, winner.OtherRolls.Count);
+            Assert.All(winner.OtherRolls, roll => Assert.Equal(0u, roll.Value));
+
+            Assert.Contains(finalMessages, message => message is ServerLootItemUpdate update
+                && update.LootItem.LootUnitId == lootItem.Id
+                && !update.LootItem.RequiresRoll);
+            Assert.Contains(finalMessages, message => message is ServerLootRemove remove
+                && remove.OwnerUnitId == lootInstance.OwnerUnitId);
+            Assert.DoesNotContain(finalMessages, message => message is ServerLootGrant or ServerLootNotification);
+            Assert.True(lootItem.Delivered);
+            Assert.False(lootItem.CanLoot(first.CharacterId));
+            Assert.False(lootItem.CanLoot(second.CharacterId));
+            Assert.Empty(first.Inventory.CreatedItems);
+            Assert.Empty(second.Inventory.CreatedItems);
         }
         finally
         {
@@ -102,7 +199,22 @@ public class LootInstanceResolutionTests
                 [master.Identity, assignee.Identity],
                 [master.Identity, assignee.Identity]);
 
+            int masterMessageCount = GetEncryptedMessageCount(master.SessionProxy);
+            int assigneeMessageCount = GetEncryptedMessageCount(assignee.SessionProxy);
             Assert.True(lootInstance.AssignMasterLoot(master.Player, lootItem.Id, assignee.Identity));
+
+            IReadOnlyList<object> masterAssignMessages = GetEncryptedMessages(master.SessionProxy, masterMessageCount);
+            Assert.Contains(masterAssignMessages, message => message is ServerLootWinner);
+            Assert.Contains(masterAssignMessages, message => message is ServerLootItemUpdate update
+                && update.LootItem.LootUnitId == lootItem.Id
+                && !update.LootItem.OnlyMasterLootable);
+
+            IReadOnlyList<object> assigneeAssignMessages = GetEncryptedMessages(assignee.SessionProxy, assigneeMessageCount);
+            Assert.Contains(assigneeAssignMessages, message => message is ServerLootWinner);
+            Assert.Contains(assigneeAssignMessages, message => message is ServerLootItemUpdate update
+                && update.LootItem.LootUnitId == lootItem.Id
+                && !update.LootItem.OnlyMasterLootable);
+            Assert.Contains(assigneeAssignMessages, message => message is ServerItemError);
             Assert.False(lootItem.Delivered);
             Assert.True(lootItem.CanLoot(assignee.CharacterId));
             Assert.False(lootItem.CanLoot(master.CharacterId));
@@ -129,6 +241,43 @@ public class LootInstanceResolutionTests
         }
     }
 
+    [Fact]
+    public void AssignMasterLoot_OfflineAssigneeRejectsWithoutResolvingWinner()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
+
+        try
+        {
+            TestPlayer master = CreatePlayer(characterId: 62ul, guid: 6262u, accountId: 3001u, slotsRemaining: 1u);
+            TestPlayer assignee = CreatePlayer(characterId: 63ul, guid: 6363u, accountId: 3002u, slotsRemaining: 1u);
+
+            PlayerManager.Instance.AddPlayer(master.Player);
+
+            LootInstance lootInstance = CreateLootInstance(master, assignee);
+            LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
+            lootItem.ConfigureMaster(
+                [master.Identity],
+                [master.Identity, assignee.Identity],
+                [master.Identity, assignee.Identity]);
+
+            int masterMessageCount = GetEncryptedMessageCount(master.SessionProxy);
+            Assert.False(lootInstance.AssignMasterLoot(master.Player, lootItem.Id, assignee.Identity));
+
+            Assert.Empty(GetEncryptedMessages(master.SessionProxy, masterMessageCount));
+            Assert.False(lootItem.Delivered);
+            Assert.Equal(0ul, lootItem.WinnerCharacterId);
+            Assert.Equal(0u, lootItem.WinnerGuid);
+            Assert.True(lootItem.OnlyMasterLootable);
+            Assert.False(lootItem.CanLoot(assignee.CharacterId));
+            Assert.False(lootItem.CanLoot(master.CharacterId));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     private static LootInstance CreateLootInstance(params TestPlayer[] players)
     {
         return new LootInstance(
@@ -142,12 +291,37 @@ public class LootInstanceResolutionTests
         RecordingDispatchProxy<IGameSession> sessionProxy,
         Action action)
     {
-        int beforeCount = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+        int beforeCount = GetEncryptedMessageCount(sessionProxy);
         action();
 
         return Assert.Single(sessionProxy
             .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
             .Skip(beforeCount));
+    }
+
+    private static IReadOnlyList<object> CaptureSessionMessages(
+        RecordingDispatchProxy<IGameSession> sessionProxy,
+        Action action)
+    {
+        int beforeCount = GetEncryptedMessageCount(sessionProxy);
+        action();
+        return GetEncryptedMessages(sessionProxy, beforeCount);
+    }
+
+    private static int GetEncryptedMessageCount(RecordingDispatchProxy<IGameSession> sessionProxy)
+    {
+        return sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count;
+    }
+
+    private static IReadOnlyList<object> GetEncryptedMessages(
+        RecordingDispatchProxy<IGameSession> sessionProxy,
+        int beforeCount)
+    {
+        return sessionProxy
+            .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Skip(beforeCount)
+            .Select(invocation => invocation.Arguments[0])
+            .ToList();
     }
 
     private static IServiceProvider BuildProvider(IItemInfo itemInfo)
@@ -174,6 +348,7 @@ public class LootInstanceResolutionTests
         return new ServiceCollection()
             .AddSingleton(lootManager)
             .AddSingleton(playerManager)
+            .AddSingleton<IPlayerManager>(playerManager)
             .AddSingleton(itemManager)
             .AddSingleton(gameTableManager)
             .AddSingleton(realmContext)

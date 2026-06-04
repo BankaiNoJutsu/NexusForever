@@ -106,7 +106,7 @@ namespace NexusForever.Game.Mail
             Id                         = model.Id;
             recipientId                = model.RecipientId;
             SenderType                 = (SenderType)model.SenderType;
-            ContentType                = ResolveContentType(SenderType);
+            ContentType                = ResolveContentType(SenderType, model.ContentType);
             SenderId                   = model.SenderId;
             Subject                    = model.Subject;
             Message                    = model.Message;
@@ -189,6 +189,7 @@ namespace NexusForever.Game.Mail
                         Id                         = Id,
                         RecipientId                = RecipientId,
                         SenderType                 = (byte)SenderType,
+                        ContentType                = (byte)ContentType,
                         SenderId                   = SenderId,
                         Subject                    = Subject,
                         Message                    = Message,
@@ -293,6 +294,9 @@ namespace NexusForever.Game.Mail
         /// </summary>
         public void ReturnMail()
         {
+            if (SenderId == 0ul || SenderType != SenderType.Player && SenderType != SenderType.GM)
+                throw new InvalidOperationException("Mail has no player sender to return to.");
+
             RecipientId = SenderId;
             Subject = $"Returned: {Subject}";
             MarkAsNotReturnable();
@@ -338,8 +342,11 @@ namespace NexusForever.Game.Mail
             deletedAttachments.Add(mailAttachment);
         }
 
-        private static ContentType ResolveContentType(SenderType senderType)
+        private static ContentType ResolveContentType(SenderType senderType, byte storedContentType = 0)
         {
+            if (storedContentType != 0)
+                return (ContentType)storedContentType;
+
             return senderType switch
             {
                 SenderType.ItemAuction     => ContentType.AuctionWon,

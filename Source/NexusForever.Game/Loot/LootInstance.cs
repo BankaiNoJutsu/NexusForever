@@ -25,6 +25,7 @@ namespace NexusForever.Game.Loot
         public bool Explosion { get; set; }
 
         public bool HasExpired => expiryTimer.HasElapsed || lootItems.Values.All(i => i.Delivered);
+        public IReadOnlyCollection<ulong> LooterCharacterIds => looterGuids.Keys;
 
         private readonly Dictionary<ulong, uint> looterGuids = [];
         private readonly Dictionary<uint, LootInstanceItem> lootItems = [];
@@ -65,7 +66,9 @@ namespace NexusForever.Game.Loot
             LootInstanceItem existingItem = lootItems.Values.SingleOrDefault(i => i.StaticId == staticId && i.Type == type && !i.Delivered);
             if (existingItem != null)
             {
-                existingItem.AddToAmount(count);
+                if (!existingItem.TryAddToAmount(count))
+                    log.Warn($"Duplicate loot item amount merge skipped: ownerUnit={OwnerUnitId}, lootUnitId={existingItem.Id}, type={type}, staticId={staticId}, existingAmount={existingItem.Amount}, addedAmount={count}.");
+
                 return existingItem;
             }
 
@@ -171,7 +174,7 @@ namespace NexusForever.Game.Loot
                 log.Warn("DeliverAllLoot for owner {OwnerUnitId}, player {PlayerId}: {FailedCount} item(s) failed to deliver.",
                     OwnerUnitId, player.CharacterId, failedCount);
 
-            return deliveredAny;
+            return deliveredAny && failedCount == 0;
         }
 
         public void SendLootRemove(IPlayer player)
@@ -268,17 +271,17 @@ namespace NexusForever.Game.Loot
             if (!looterGuids.TryGetValue(assignee.Id, out uint assigneeGuid))
                 return false;
 
-            item.ResolveAssignedWinner(assignee, assigneeGuid);
-            BroadcastToAudience(item, item.BuildAssignedWinnerMessage(assignee));
-            BroadcastLootItemUpdate(item);
-
             IPlayer assigneePlayer = TryGetPlayer(assignee);
             if (assigneePlayer == null)
             {
                 log.Warn("Master loot assignment for loot unit {LootUnitId} on owner {OwnerUnitId}: assignee {AssigneeId} is offline; item remains on corpse.",
                     lootInstanceItemId, OwnerUnitId, assignee.Id);
-                return true;
+                return false;
             }
+
+            item.ResolveAssignedWinner(assignee, assigneeGuid);
+            BroadcastToAudience(item, item.BuildAssignedWinnerMessage(assignee));
+            BroadcastLootItemUpdate(item);
 
             bool delivered = item.DeliverItem(assigneePlayer);
             if (delivered)

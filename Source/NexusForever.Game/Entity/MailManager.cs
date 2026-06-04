@@ -424,6 +424,9 @@ namespace NexusForever.Game.Entity
                 if ((mailItem.Flags & MailFlag.NotReturnable) != 0)
                     return GenericError.MailCannotReturn;
 
+                if (!CanReturnToSender(mailItem))
+                    return GenericError.MailCannotReturn;
+
                 return GenericError.Ok;
             }
 
@@ -444,6 +447,12 @@ namespace NexusForever.Game.Entity
                 MailId = mailId,
                 Result = result
             });
+        }
+
+        private static bool CanReturnToSender(IMailItem mailItem)
+        {
+            return mailItem.SenderId != 0ul
+                && (mailItem.SenderType == SenderType.Player || mailItem.SenderType == SenderType.GM);
         }
 
         /// <summary>
