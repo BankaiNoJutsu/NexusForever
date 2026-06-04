@@ -411,11 +411,21 @@ function Set-NexusLogLevel {
     }
 
     $content = Get-Content -LiteralPath $nlogPath -Raw
-    $updated = $content -replace '(?<=<variable\s+name="minLogLevel"\s+)value="[^"]*"', "value=""$Level"""
-    if ($updated -eq $content -and $Level -ne 'Trace') {
+    $variableMatch = [regex]::Match($content, '(<variable\b(?=[^>]*\bname="minLogLevel")[^>]*\bvalue=")([^"]*)(")')
+    if (!$variableMatch.Success) {
         Write-Warning "Could not update minLogLevel variable in $nlogPath. The variable tag may be missing."
         return
     }
+
+    $currentLevel = $variableMatch.Groups[2].Value
+    if ($currentLevel -eq $Level) {
+        Write-Info "Log level already $Level in $nlogPath"
+        return
+    }
+
+    $updated = $content.Substring(0, $variableMatch.Groups[2].Index) +
+        $Level +
+        $content.Substring($variableMatch.Groups[2].Index + $variableMatch.Groups[2].Length)
 
     Set-Content -LiteralPath $nlogPath -Value $updated -Encoding utf8
     Write-Info "Set log level to $Level in $nlogPath"
