@@ -18,8 +18,11 @@ import java.util.Map;
 
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
+import ghidra.program.model.symbol.Symbol;
+import ghidra.program.model.symbol.SymbolTable;
 import ghidra.program.model.symbol.SourceType;
 
 public class ApplyNexusForeverLabels extends GhidraScript {
@@ -44,8 +47,10 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 
 		String programName = currentProgram.getName();
 		FunctionManager functionManager = currentProgram.getFunctionManager();
+		SymbolTable symbolTable = currentProgram.getSymbolTable();
 		int applied = 0;
 		int created = 0;
+		int localLabels = 0;
 		int skipped = 0;
 		int missing = 0;
 		int duplicates = 0;
@@ -88,6 +93,7 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 				}
 
 				Function function = functionManager.getFunctionAt(address);
+				boolean isFunctionEntry = function != null;
 				if (function == null) {
 					function = functionManager.getFunctionContaining(address);
 				}
@@ -95,6 +101,7 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 					function = createFunction(address, name);
 					if (function != null) {
 						created++;
+						isFunctionEntry = true;
 					}
 				}
 
@@ -104,18 +111,40 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 					continue;
 				}
 
-				if (!function.getName().equals(name)) {
-					function.setName(name, SourceType.USER_DEFINED);
+				if (isFunctionEntry) {
+					if (!function.getName().equals(name)) {
+						function.setName(name, SourceType.USER_DEFINED);
+					}
+				}
+				else {
+					Symbol existingSymbol = symbolTable.getPrimarySymbol(address);
+					if (existingSymbol == null || !existingSymbol.getName().equals(name)) {
+						symbolTable.createLabel(address, name, SourceType.USER_DEFINED);
+					}
+					localLabels++;
 				}
 
 				String commentText = joinCsvRemainder(parts, 3);
 				if (!commentText.isEmpty()) {
-					String existingComment = function.getComment();
 					String comment = "NexusForever: " + commentText;
-					if (existingComment == null ||
-						existingComment.trim().isEmpty() ||
-						existingComment.startsWith("NexusForever: ")) {
-						function.setComment(comment);
+					if (isFunctionEntry) {
+						String existingComment = function.getComment();
+						if (existingComment == null ||
+							existingComment.trim().isEmpty() ||
+							existingComment.startsWith("NexusForever: ")) {
+							function.setComment(comment);
+						}
+					}
+					else {
+						CodeUnit codeUnit = currentProgram.getListing().getCodeUnitAt(address);
+						if (codeUnit != null) {
+							String existingComment = codeUnit.getComment(CodeUnit.PRE_COMMENT);
+							if (existingComment == null ||
+								existingComment.trim().isEmpty() ||
+								existingComment.startsWith("NexusForever: ")) {
+								codeUnit.setComment(CodeUnit.PRE_COMMENT, comment);
+							}
+						}
 					}
 				}
 
@@ -124,7 +153,7 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 		}
 
 		println("Applied NexusForever labels for " + programName + ": applied=" + applied +
-			", created=" + created + ", skipped=" + skipped + ", missing=" + missing +
+			", created=" + created + ", localLabels=" + localLabels + ", skipped=" + skipped + ", missing=" + missing +
 			", duplicateRows=" + duplicates);
 	}
 

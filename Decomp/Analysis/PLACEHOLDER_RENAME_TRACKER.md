@@ -5,6 +5,69 @@ Use the evidence ladder from `CONTINUATION_GUIDE.md`: Observed -> Correlated -> 
 
 **Inventory (2026-05-23):** ~761 `Unknown*` token matches in 176 `Source/**/*.cs` files (ripgrep); ~147 distinct symbol names; ~205 enum members (64 in `PrerequisiteType` alone).
 
+## Initiative status - ACTIVE (2026-06-04 pass 119)
+
+Pass 119 tightened the F-004 housing neighborhood boundary. Packet placeholder
+coverage now pins `ServerHousingNeighborhoodEntry` (`0x0501`) /
+`ServerHousingNeighborhoodList` (`0x0506`) as mapped wire shapes with
+`NeighborhoodWireUInt64_AfterRealmIds` and `NeighborhoodWireUInt32_0..2`
+retained until producer/backing-store proof exists. The guard explicitly rejects
+renaming/synthesizing row fields from `HousingNeighborhoodInfo.tbl` table-column
+names such as `BaseCost`, `MaxPopulation`, or `HousingMapInfoIdPrimary`.
+Runtime emits remain blocked until a live housing UI/realm-login sniff or native
+server-push path proves `0x0506` ordering and row backing. Focused housing /
+placeholder verification passed 106/106.
+
+## Initiative status - ACTIVE (2026-06-04 pass 118)
+
+Pass 118 tightened the F-025 map-tracked-unit boundary. Packet naming coverage
+now pins `ServerMapTrackedUnitUpdate.TrackingSlotId` as the 15-bit
+`TrackingSlot.tbl` row id and rejects a direct `PublicEventObjectiveId` packet
+field. `TrackingSlotHelperTests` now cover duplicate rows sharing
+`PublicEventObjectiveId = 5010` and guard that the helper does not expose an
+objective-only `TrackingSlotIdForPublicEventObjective` selector. Runtime emits
+for `0x0849` / `0x0848` remain blocked until tracked-unit id allocation,
+update cadence, disable lifetime, and slot selection are proven by a native
+send site or accepted live public-event marker capture. Focused verification
+passed 97/97.
+
+## Initiative status - ACTIVE (2026-06-04 pass 117)
+
+Pass 117 classified the F-025 entity-stat auxiliary payload fields as
+intentional neutral names, not missed renames. Current source audit finds
+`ServerEntityStatUInt32Triplet`, `ServerEntityStatUInt32WideString`,
+`ServerEntityStatUInt32UInt5UInt32`,
+`ServerEntityStatUInt32UInt14UInt18WideString`,
+`ServerEntityStatUInt32UInt5Pair`, and `ServerEntityStatTwoUInt32UInt64` only
+in opcode/model definitions and focused tests; runtime stat sends still use
+`ServerEntityStatUpdateFloat` / `ServerEntityStatUpdateInteger`. Packet naming
+coverage now pins the neutral `Value*` / shared `Value` / `Text` fields until a
+per-opcode `WorldSocket+0x15b0` apply handler, apply-table classification, or
+live sniff/order witness proves field semantics and emit timing. Focused
+verification passed 91/91.
+
+## Initiative status - ACTIVE (2026-06-04 pass 116)
+
+Pass 116 classified `ServerRaidQueueStatus.Unknown0..4` as intentional neutral
+F-010 tails. Native `ServerRaidQueueStatus_ReadPayload` (`14008bf80`) maps the
+wire order as `uint64`, 15-bit `uint32`, `uint64`, `uint32`, `uint32`, and
+helper `14008c010` only proves count-plus-array framing over 0x20-byte rows.
+NexusForever emits zero-value compatibility state after `ServerRaidInfoResponse`;
+non-zero queue position/status semantics remain blocked. Packet and naming
+coverage now pin the fields as neutral until a live non-zero `0x0718` capture,
+client consumer/apply handler, or apply-table owner proves names.
+
+## Initiative status - ACTIVE (2026-06-04 pass 115)
+
+Pass 115 classified marketplace `AuctionInfo.Unknown2` as a blocked tail, not a
+safe semantic rename. Source audit shows the field is a 32-bit value at the end
+of `AuctionInfo`, persists through `marketplace_auction.unknown2`, and is cloned
+or loaded through `GlobalMarketplaceManager`, but new auctions leave it at zero
+and no current `Game` / `WorldServer` consumer or producer writes a non-zero
+semantic value. Packet coverage now pins the field as round-tripped wire state
+only. Keep the neutral name until a native marketplace auction row consumer,
+retail capture with non-zero value, or client UI/Lua reader proves ownership.
+
 ## Initiative status - ACTIVE (2026-06-02 pass 114)
 
 Pass 114 renamed `Unknown267` to `GroupIsRaid`. Native case `0x10b`
@@ -96,10 +159,19 @@ opcodes (`Client0x011B`, `Client0x011D`, `Client0x012D`, `Client0x0550`,
 `Client0x062A`, `Client0x0634`, `Client0x0701`, `Client0x07E3`, and
 `Client0x0928`). Their wire shapes remain mapped, but semantic renames stay
 blocked until gameplay sender/consumer evidence or live sniffs prove owners.
+The 2026-06-04 F-002 handler guard extends the runtime boundary: the unresolved
+diagnostic handler family is test-pinned as log-only with no plaintext or
+encrypted server emit; focused diagnostic coverage passed 90/90.
 
 ## Initiative status - ACTIVE (2026-06-02 pass 101)
 
 Pass 101: PE registration for entity-stat/threat triplet opcodes (`0x0889`/`0x0908`/`0x090A` -> `ServerSpellUInt32TripletListRow_ReadPayload` @ `140080bf0`); labeled `Prerequisite_CheckPetOrEsperPetEntity` @ `14049cae0` (type 266). No enum renames for blocked stubs/aliases.
+
+Pass 102 adjunct (2026-06-04): rejected stale native label `FUN_140939650` as an
+F-025 packet consumer candidate. Cached export evidence shows viewport/grid
+global recalculation with label-only xrefs, not a `WorldSocket+0x15b0`
+handler/apply node. Entity-stat aux `ValueN` fields and `0x08A8` flags remain
+blocked.
 
 ## Initiative status - ACTIVE (2026-06-02 pass 100)
 
@@ -145,11 +217,11 @@ must stay opaque until another evidence source appears.
 
 | Area | Status | Code / notes |
 | --- | --- | --- |
-| F-025 map-tracked (`0x0849`/`0x0848`) | **Mapped**; producer **Blocked** | `TrackingSlotId` XML; `TrackingSlotHelper` (table lookup, no emit); RE: native producer / handler-node path |
-| F-004 neighborhood (`0x0501`/`0x0506`) | **Mapped**; emit **Blocked** | `NeighborhoodWireUInt64_*` / `NeighborhoodWireUInt32_*`; RE pass: no `ClientHousing*` in `0x0502`-`0x0509`, apply via DATA slots @ `140bd97b0`/`140e0ec28` -> `Housing_HandleNeighborhoodList`; not `0x052C`->`0x0526` |
-| F-025 entity-stat aux (`0x0889`..`0x093E`) | **Mapped**; emit **Blocked** | `ValueN` retained; per-opcode XML + apply gate documented |
+| F-025 map-tracked (`0x0849`/`0x0848`) | **Mapped**; lookup/selection guard **Implemented**; producer **Blocked** | `TrackingSlotId` XML; `TrackingSlotHelper` (null-guarded one-way table lookup, no emit, no objective-only reverse selector); RE: native producer / handler-node path |
+| F-004 neighborhood (`0x0501`/`0x0506`) | **Mapped**; table loader labelled; emit **Blocked** | `NeighborhoodWireUInt64_*` / `NeighborhoodWireUInt32_*`; pass 119 guards against `HousingNeighborhoodInfo.tbl` column-name synthesis; RE pass: no `ClientHousing*` in `0x0502`-`0x0509`, apply via DATA slots @ `140bd97b0`/`140e0ec28` -> `Housing_HandleNeighborhoodList`; WildStar64 `ClientDB_RegisterHousingNeighborhoodInfo` @ `140205900` proves table loader only; not `0x052C`->`0x0526`; 2026-06-04 Ghidra MCP recheck also ruled out adjacent `0x052B`, `0x04B1`, and `0x052F` community/visit senders; separate WIP magic value `0x190000000000000A` was removed from `ServerHousingProperties.Residence.NeighbourhoodId` |
+| F-025 entity-stat aux (`0x0889`..`0x093E`) | **Mapped**; emit **Blocked** | `ValueN` retained; per-opcode XML + apply gate documented; pass 117 pins neutral names with packet placeholder coverage |
 | F-008 crafting aux (`0x084B`/`0x0855`) | **Mapped**; emit **Blocked** | `ValueN` / `FloatValue*` retained; service keys diagnostic |
-| F-031 Fortune weights | **Mapped**; retail weights **Blocked** | `FORTUNE_WEIGHT_AUDIT.md`; debug catalog probability sample log |
+| F-031 Fortune weights | **Mapped**; retail weights/rotation **Blocked**; reset code **Renamed**; F-007 `RewardRotation*` source **Rejected** | `ServerFortuneReset.ResetCode`; `FORTUNE_WEIGHT_AUDIT.md`; debug catalog probability sample log |
 
 Harness bundles (when available): `f025-map-tracked-unit`, `f031-fortune-playthrough` via `Start-BlockerEvidenceHarness.ps1`.
 
@@ -157,9 +229,11 @@ Harness bundles (when available): `f025-map-tracked-unit`, `f031-fortune-playthr
 
 - Per-opcode entity-stat aux `vtable+0x58` apply handlers (see `ENTITY_AUX_DECODE_ROADMAP.md`).
 - Map-tracked producer: live sniff for `TrackedUnitId` allocation + `TrackingSlotId` selection rule.
-- Housing `0x0506`: server-push trigger (live sniff / realm data); registration @ `140077730`; Houston64 has no world-opcode `0x506` enqueue in Ghidra scan (MFC dialog ids only).
+- Housing `0x0506`: server-push trigger (live sniff / realm data); registration @ `140077730`; WildStar64 `HousingNeighborhoodInfo.tbl` table loader @ `140205900` is mapped but does not prove row backing; Houston64 has no world-opcode `0x506` enqueue in Ghidra scan (MFC dialog ids only); observed `RequestJoinNeighborhood`/`RequestLeaveNeighborhood` strings have no usable current xref.
 - Crafting `0x084B`/`0x0855` emit sites from native craft-finish path.
-- Retail `ServerFortuneRewards.RewardItemProbabilities` capture for Madame Fay rotation.
+- Retail `ServerFortuneRewards.RewardItemProbabilities` capture for Madame Fay
+  rotation or storefront-server catalog dump; F-007 `RewardRotation*` schedules
+  are rejected as Fortune active-rotation evidence.
 - Packet `ValueN` fields: follow `ENTITY_AUX_DECODE_ROADMAP.md` one opcode
   cluster at a time; do not rename or emit from shape adjacency alone.
 - Client diagnostics still needing a gameplay send-site or live sniff:
@@ -196,6 +270,7 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 | `AuctionInfo.UnknownArray` | `MicrochipIds` | NF marketplace persistence + shared `Item.Microchips` 3-bit wire array |
 | `ServerMatchingListPlayersQueuedForMap.QueuedPlayerInfo.Unknown30`-`Unknown38` | `PrimeLevel`, `IsParty`, `Roles` | `MatchingQueuedPlayerInfo_ReadPayload` @ `140098500`; correlates with `ClientMatchingQueue_WritePayload` @ `140098a70` and `MatchingQueueJoinQueueData_ReadPayload` @ `1400989d0` |
 | `ServerMatchingListPlayersQueuedForMap.QueuedPlayerInfo.Unknown3C` | `TrailingUInt32_0x3C` | `MatchingQueuedPlayerInfo_ReadPayload` @ `140098500`; uint32 wire confirmed, semantics blocked |
+| `ServerMatching0x05CF` | keep numeric | `ServerUInt32_LocalReadThunk` @ `140099110` proves one `uint32`; `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0` / table cell `140e1e66c` is only a correlated apply candidate until opcode-to-cell index or live sniff proves the semantic owner |
 | `ServerSpellCastTargetReport.UnknownStructure0` / `unknownStructure0` | `TargetReportRow` / `TargetReportRows` | Partial row map (`CasterId` known); tail fields blocked |
 | `PrerequisiteType.Spell221` / `Unknown269` | `ActionSetSpell` / `RapidTransport` | Table ids 221/269; client dispatch @ `1404a2100` cases `0xdd` / `0x10d` |
 | `PrerequisiteType.Unknown170` | `GameFormula` | `value0` is `gameformula.id`; client case `0xaa` @ `1404a2100` (+0x90) |
@@ -304,6 +379,7 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 | `AchievementEntry.Value` | `RequiredProgress` | Achievement progress runtime |
 | `Quest2Entry.FactionLevelCompPreq*` | `FactionLevelRequireAtMostPreq*` | Quest prerequisite comparison semantics |
 | `RewardRotationModifierEntry.Value` | `ModifierValue` | Reward rotation schedule builder |
+| `ServerRewardRotationContentContext.UInt0`/`UInt1`/`UInt3`/`Flag` | **Keep neutral** | 2026-06-04 Ghidra MCP: `0x07CD` reader `14008fcb0` maps field order and `Reward_SendRewardUpdateRequest` `140636ba0` maps request-throttle slots, but no static apply helper links the row fields to slot assignment or flag semantics. Rename only after retail capture or dynamic dispatch proof. |
 | Reputation packets `Value` | `ReputationDelta` / `ReputationAmount` | Packet shape tests |
 | `GroupCharacter.UnknownStruct1` | `PrimeLevelInfo` / `PrimeLevels` | `MatchingPrimeLevelInfo_ReadPayload` @ `1400ad150` |
 | `GroupCharacter.Unknown11`-`Unknown22` | `Health` ... `HealingAbsorbMax` (packed `ushort` vitals) | `GroupCharacter_ReadPayload` @ `140082420` `+0x54`..`+0x6a`; same set as `ServerGroupMemberStatUpdate` |
@@ -360,6 +436,7 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 | `GroupCharacter.StatBlockPrefix17` | 17-bit prefix at parsed `+0x1c` in stat block; copied to client `+0x98`; gameplay meaning blocked |
 | `GroupMemberStatSlot.Value` | Five-row ushort in stat block; per-row semantics blocked |
 | `GroupCharacter.Unknown10` | `uint32` after mentoring (`+0x50`); no labeled consumer |
+| `ServerRaidQueueStatus.Unknown0`-`Unknown4` | Native row reader `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` proves `uint64 + 15-bit uint32 + uint64 + uint32 + uint32`, and helper `14008c010` proves count-plus-array framing only. `GroupPacketShapeTests` pins non-zero wire order, but no client consumer or live non-zero payload proves queue-position semantics, so no field rename. |
 | `QuestObjectiveType.Unknown27` / `Unknown29` | No localization / single-digit table counts; no NF runtime handler |
 | `PathMissionChecklistItemComplete` exact checklist runtime | Enum/check implemented with an NF proxy; exact per-path-type `+0x50` checklist/clue ownership remains blocked until path mission runtime state is modeled beyond completed-mission and persisted `ProgressData` bits. |
 | `PrerequisiteType.Unknown260` | One retail row `36343` nests `OtherPrerequisite` -> row `17536` (`HouseOwnership` + `HousingNeighborResidence`) and type 260 Equal with `objectId1=12` (`HousingPlugItem` row flags `2`), but no imported `wildstar_client` prerequisite reference column points at row `36343`. Live case `0x104` vtable `+0x640` -> `1404a1220` ignores row object/value and resolves active housing plot/plug state through `HousingPlotInfo`, current/default `HousingPlugItem`, plug flags `0x08`/`0x20`, and active residence fields `+0x60/+0x64` vs state value `5`. State `5` correlates to native `HousingBuildComplete`, but the active residence fields and row/use-site reachability remain unnamed, so no enum rename. |
@@ -390,7 +467,8 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 | `Network.World` packet tails | ~400 refs | Many `Server0xNNNN` shapes decoded but event semantics open - **out of scope** |
 | `Stat.Unknown*`, `InventoryLocation.Unknown*` | ~15 | No client stat/location enum strings |
 | `EntityCreateFlag.Unknown08` | 1 | Used in cinematics; no label |
-| Marketplace `AuctionInfo.Unknown2` | 1 | No consumer label |
+| Marketplace `AuctionInfo.Unknown2` | 1 | **Blocked tail.** 2026-06-04 source audit: 32-bit final `AuctionInfo` field, persisted as `marketplace_auction.unknown2`, cloned/loaded for preservation, default-zero on newly posted NF auctions, and no current `Game`/`WorldServer` semantic producer or consumer. Packet coverage pins round-trip only. |
+| F-010 `ServerRaidQueueStatus.Unknown0..4` | 5 | **Blocked tails.** Native row reader `14008bf80` proves wire order only; helper `14008c010` proves count-plus-array framing only. NF emits all-zero compatibility state from raid-info; non-zero queue semantics need capture/consumer proof before semantic names. |
 | Item packet offset names (`Unknown44`, etc.) | many | Layout known, semantics not |
 
 ## Mapped - `PendingAccountItemGroup` (`0x0976` / `0x0979`) - detail reference
@@ -414,13 +492,15 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 2. `ServerStoreOffers.Offer.Unknown6`/`Unknown7` - any client path outside catalog Apply that consumes `+0x28/+0x30` (purchase history @ `14044c540` uses a different row layout).
 3. `0x082A` purchase `[3]` 14-bit - live sniff vs `AccountCurrencyType` if handlers diverge from retail.
 4. Group roster tail - decompile consumer for `GroupCharacter.Unknown10` (`uint32` @ parsed `+0x50` after mentoring).
+5. Marketplace `AuctionInfo.Unknown2` - native auction row consumer, retail capture with a non-zero final uint32, or client UI/Lua reader proving the field owner.
+6. `ServerRaidQueueStatus.Unknown0..4` - live non-zero `0x0718` capture, client consumer/apply handler, or apply-table owner proving queue position/status fields.
 
 ## Deferred - structurally mapped packet opcodes
 
 | Opcode | Structure | Evidence | Blocker |
 |--------|-----------|----------|---------|
 | `Client0x011B` / `Client0x011D` / `Client0x012D` | empty / `uint32` / wide string | Pass 94 comparison scan: native registration is confirmed at `Network_RegisterServerOpcode_0351` (`14006c290`) with `0x011B` -> zero-payload writer `140001ba0`, `0x011D` -> `ClientUInt32_ReadPayload` / `ClientTradeskillResetTalents_WritePayload`, and `0x012D` -> `ClientSuggest_WritePayload`. Non-registration hits are rejected: `0x011B`/`0x011D` in `LuaLexer_ReadNextToken`/parser functions are Lua token ids, `Movement_UpdateAndSendFallStateOpcodes` uses `GameFormula_GetEntryById(0x11B)`, and `SpellCast_SendClientCastSpellOrPosition` returns `CastResult.IllegalSpellCast` (`0x011D`) rather than sending opcode `0x011D`. | Gameplay sender/consumer or live sniff before semantic rename |
-| `Client0x0550` / `0x062A` / `0x0634` / `0x07E3` | `uint32` via `14007d010` | Pass 58 PE: sole `mov eax` each in `ClientWorldOpcodeRegister_MovementSpline` (`1400a824e`/`82b6`/`872c`/`8282`); **not** `0x05D5` (gameplay sends `140075918`/`14076ab61`) | Indirect send rail or live sniff before semantic rename |
+| `Client0x0550` / `0x062A` / `0x0634` / `0x07E3` | `uint32` via `14007d010` | Pass 58 PE: sole `mov eax` each in `ClientWorldOpcodeRegister_MovementSpline` (`1400a824e`/`82b6`/`872c`/`8282`); **not** `0x05D5` (gameplay sends `140075918`/`14076ab61`); `0x062A`/`0x0634` handlers are test-pinned log-only | Indirect send rail or live sniff before semantic rename |
 | `Client0x0701` | 2-bit + `uint32` | `Network_RegisterServerOpcode_0351` @ `14006c290`; writer `1400a69d0`; sole `mov eax,0x701` @ `140079e05` (harness only) | Gameplay sender/consumer before rename |
 
 ## Verification (initiative closure)

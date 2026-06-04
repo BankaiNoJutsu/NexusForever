@@ -1,6 +1,6 @@
 # NexusForever Feature Restoration - Current Status
 
-Last updated: 2026-06-03 (option/keybind aux packet contracts for `0x056B`, `0x056C`, and `0x056D`, marketplace aux packet contracts for `0x06DF` and `0x07D5`, chat aux row/envelope packet contracts for `0x01B8`, `0x01C1`, and `0x01C4`, plus story/recruitment boundary packet contracts for `0x074A` and `0x077E`; ported useful LaughingWS branch scripts/data overlays, quest-loot/store/catalog/WIP-Dust-Stalker-quest-instance/WIP-live-event/Skyplot-housing overlays, settler build acknowledgements, active Settler hub build-count progress, WIP current-zone path episode activation with optional PathMission prerequisite filtering, active-path object-id completion guard, active Soldier assassinate kill progress with decompile-mapped ProgressCount, branch-informed active-only node/explore-zone/power-map-validated Explorer progress completion, PathMission and PathMissionType achievement credit, client-mapped GameFormula 0x017a path XP fallback for known completed path missions without configured XP, and unflagged PathRewardType.Mission grants for known completed path missions, branch starter-zone/map-only hooks, Shade's Eve/Infestation/Fragment Zero/Gauntlet/Ruins of Kel Voreth/Stormtalon's Lair/Skullcano/Initialization Core Y-83/Red Moon Terror/Genetic Archives/Sanctuary of the Swordmaiden/Datascape/Protogames/Space Madness/Evil from the Ether event/map chains, WIP-guessed Coldblood Citadel, Ruins of Kel Voreth, Sanctuary of the Swordmaiden, Skullcano, and Stormtalon's Lair optional-objective rolls, Space Madness/Gauntlet/Infestation/Protogames Academy/Fragment Zero/Shade's Eve/Red Moon Terror/Genetic Archives/Datascape/Ruins of Kel Voreth/Skullcano/Initialization Core Y-83/Sanctuary/Evil from the Ether/Cryo-Plex/War of the Wilds trigger objective/message/teleport/PvP scripts and phase broadcasts, SQL-backed boss objective-credit hooks including WIP Red Moon Terror Laveka credit, Skullcano and Sanctuary WIP route scaffolding, remaining map-only bindings plus WIP entry/boss/phase/cinematic-hook scaffolds for Deep Space, Rage Logic, Ultimate Protogames dungeon/raid, Protostar SuperMall, Journey into OMNICore-1, Fragment Zero, Infestation, Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet, narrow branch spell-script hooks for Marauder Mine/Pulse Blast, and the client-table-backed Exo-Lab 22 range teleporter; focused branch/path/event tests 552/552, focused instance/public-event tests 436/436, focused map-only entry/boss/phase/cinematic-hook scaffold tests 22/22, focused event/trigger cinematic-hook tests 155/155, focused PvP/adventure branch tests 25/25, focused Evil from the Ether tests 12/12, focused Coldblood Citadel tests 10/10, focused Ruins of Kel Voreth tests 16/16, focused Sanctuary of the Swordmaiden tests 38/38, focused Skullcano tests 34/34, focused Stormtalon's Lair tests 19/19, focused Protogames Academy trigger tests 25/25, focused Fragment Zero trigger tests 13/13, focused Gauntlet trigger tests 16/16, focused Infestation trigger tests 9/9, focused Datascape/objective-credit tests 102/102, path-progress tests 36/36, focused transporter tests 49/49, plus branch spell tests 11/11; F-004/F-009/F-024 remain partial)
+Last updated: 2026-06-04 (F-005 direct commodity fill order-mutation persistence gate and multi-order price-priority fill coverage; option/keybind aux packet contracts for `0x056B`, `0x056C`, and `0x056D`, marketplace aux packet contracts for `0x06DF` and `0x07D5`, chat aux row/envelope packet contracts for `0x01B8`, `0x01C1`, and `0x01C4`, plus story/recruitment boundary packet contracts for `0x074A` and `0x077E`; ported useful LaughingWS branch scripts/data overlays, quest-loot/store/catalog/WIP-Dust-Stalker-quest-instance/WIP-live-event/Skyplot-housing overlays, settler build acknowledgements, active Settler hub build-count progress, WIP current-zone path episode activation with optional PathMission prerequisite filtering, active-path object-id completion guard, active Soldier assassinate kill progress with decompile-mapped ProgressCount, branch-informed active-only node/explore-zone/power-map-validated Explorer progress completion, PathMission and PathMissionType achievement credit, client-mapped GameFormula 0x017a path XP fallback for known completed path missions without configured XP, and unflagged PathRewardType.Mission grants for known completed path missions, branch starter-zone/map-only hooks, Shade's Eve/Infestation/Fragment Zero/Gauntlet/Ruins of Kel Voreth/Stormtalon's Lair/Skullcano/Initialization Core Y-83/Red Moon Terror/Genetic Archives/Sanctuary of the Swordmaiden/Datascape/Protogames/Space Madness/Evil from the Ether event/map chains, WIP-guessed Coldblood Citadel, Ruins of Kel Voreth, Sanctuary of the Swordmaiden, Skullcano, and Stormtalon's Lair optional-objective rolls, Space Madness/Gauntlet/Infestation/Protogames Academy/Fragment Zero/Shade's Eve/Red Moon Terror/Genetic Archives/Datascape/Ruins of Kel Voreth/Skullcano/Initialization Core Y-83/Sanctuary/Evil from the Ether/Cryo-Plex/War of the Wilds trigger objective/message/teleport/PvP scripts and phase broadcasts, SQL-backed boss objective-credit hooks including WIP Red Moon Terror Laveka credit, Skullcano and Sanctuary WIP route scaffolding, remaining map-only bindings plus WIP entry/boss/phase/cinematic-hook scaffolds for Deep Space, Rage Logic, Ultimate Protogames dungeon/raid, Protostar SuperMall, Journey into OMNICore-1, Fragment Zero, Infestation, Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet, narrow branch spell-script hooks for Marauder Mine/Pulse Blast, and the client-table-backed Exo-Lab 22 range teleporter; focused branch/path/event tests 552/552, focused instance/public-event tests 436/436, focused map-only entry/boss/phase/cinematic-hook scaffold tests 22/22, focused event/trigger cinematic-hook tests 155/155, focused PvP/adventure branch tests 25/25, focused Evil from the Ether tests 12/12, focused Coldblood Citadel tests 10/10, focused Ruins of Kel Voreth tests 16/16, focused Sanctuary of the Swordmaiden tests 38/38, focused Skullcano tests 34/34, focused Stormtalon's Lair tests 19/19, focused Protogames Academy trigger tests 25/25, focused Fragment Zero trigger tests 13/13, focused Gauntlet trigger tests 16/16, focused Infestation trigger tests 9/9, focused Datascape/objective-credit tests 102/102, path-progress tests 36/36, focused transporter tests 49/49, plus branch spell tests 11/11; F-004/F-009/F-024 remain partial)
 
 Maintained from `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, focused trackers
 (`MATCHING_IMPLEMENTATION_STATUS.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`), and
@@ -26,7 +26,7 @@ of truth for feature-area completion.
 | **LaughingWS blocker tracking (2026-05-27)** | Evidence harness added; broad new-zone/sandbox/arkship/Rider's Reef rows remain blocked or rejected where proof is missing; Dungeon Chase hidden SMC item `86919` rejected for current seeds because the world store model and type-`0` storefront transport cannot represent it |
 | **Dust Stalker Q4516 review (2026-05-27)** | Boss Xagg and bridge-control data remain WIP/GUESSED; self-destruct and exit-panel behavior are blocked pending a harness smoke bundle rather than inferred from source-only SQL |
 | **Arcterra/Palaver source-only review (2026-05-27)** | Arcterra Caretaker, Coldblood portal, and Palaver Ish'amel rows stay WIP/GUESSED pending placement, portal target, interaction, and quest smoke proof |
-| **Crafting review (2026-05-23)** | Speculative discovery, station, and charge mutations rejected; fixed-recipe success remains evidence-backed |
+| **Crafting review (2026-06-04)** | Aux emit remains blocked; fixed-recipe success, additive modifier state, and durable rune bridge are evidence-backed |
 | **Ghidra decomp evidence (2026-05-23 pass 3)** | Consumer dispatch found at WorldSocket_ProcessServerMessage; entity-create aux verified emitted by EntityCreateAuxiliaryPacketBuilder; 44,991 xrefs created |
 | **Addon corpus audit (2026-05-23)** | 876 addons scanned; map tracked/threat/crafting/housing strings confirmed, but only threat list is already implementation-backed |
 
@@ -131,22 +131,29 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
   - Sends opcode 0x084A with station unit ID + additive/catalyst Item2 IDs.
   - Validates additive count and schematic match.
   - Native sender requires a non-zero station unit before emitting 0x084A; server additive handling now rejects zero, unknown, or non-station unit ids.
+  - 2026-06-04 focused coverage pins the NF additive bridge as state-only: a valid station records additive/catalyst Item2 modifiers for the next fixed-recipe craft, `ClientCraftingAbandon` clears that state, and neither path emits blocked `ServerCraftingCurrentCraft`, `0x084B`, or `0x0855` packets.
 
 - **`Lua_RegisterItemDataBindings`** (0x140413a20):
   - Registers `CodeEnumRuneType` through `Lua_RegisterCodeEnumValue` (0x1400eff50).
   - Native rune values are pinned as `Air=7`, `Water=8`, `Earth=9`, `Fire=10`, `Logic=11`, `Life=12`, `Fusion=13`, matching `RuneType`.
   - `Lua_GameItemData_GetRuneSlots` (0x14041b8d0) now maps through `ItemData_AddRuneSlotsLuaFields` (0x140673b80): live item data reads slot type bytes at `itemData+0x388`, converts compact values 1..7 through `ItemRuneSlotType_ToRuneType` (0x140514660), and reads installed rune Item2 ids at `itemData+0x518 + index*4`.
-  - This closes the rune-type enum question and narrows durable rune state. Persistence/network mutation remains blocked until the producer bridge from shared item `RandomGlyphData`/`Glyphs` into those live offsets and database-owned item fields is mapped.
+  - This closes the rune-type enum question and the durable rune item bridge: `item.runeSlots`, `ItemRuneSlotsCodec`, `ItemRuneNetworkWire`, `RandomGlyphData`/`Glyphs`, and migration `20260531224115_ItemMicrochipIdsAndRuneSlots` now preserve socket types and installed rune Item2 ids. A 2026-06-04 taxonomy cleanup rejects a distinct client microchip-install mutator: client install is mapped to `0x085B` (`RuneCrafting_SendClientRuneInstall`), while the separate `ServerItemMicrochips` (`0x056C`) / `Inventory_UpdateItemMicrochipsFromWire` patch path remains server-side and producer-blocked.
+  - 2026-06-04 Ghidra MCP recheck: `ServerCraftingAuxFourUInt32FloatUInt32_ReadPayload` (0x1400a3af0) reads `0x084B` as four `uint32` values, one `float`, then one `uint32`; `ServerUInt32AndTwoFloats_ReadPayload` (0x140081df0) reads `0x0855` as one `uint32` and two `float` values. `Crafting_HandleServerCraftingFinish` (0x1405e6690) and `Crafting_HandleServerCraftingCurrentCraft` (0x1405e6830) prove finish/current-craft consumers only, so aux enqueue intent remains blocked.
 
 ### Housing - Neighbor Lua Table (F-004)
 - **`Housing_BuildNeighborLuaTable`** (0x1404b4e40):
   - Builds per-neighbor Lua row with fields: `nId`, `nClassId`, `nPathId`, `fLastOnline`, `strRealmName`, `strCharacterName`, `strWorldZone`, `nLevel`, `nFactionId`, `ePermissionNeighbor`.
   - Called when building neighbor Lua rows for `ServerHousingNeighbors` (0x0507) / `Housing_HandleNeighborUpdate` paths (`FUN_1406f9fe0`, `FUN_140735cc0`); **not** called from `Housing_HandleNeighborhoodList` (0x0506).
   - Addon scan confirmed NeighborNotes uses `ICCommLib.JoinChannel("NeighborShare")` for peer-to-peer share/search data, so that addon does not unblock the server neighborhood trigger path.
+- **`ClientDB_RegisterHousingNeighborhoodInfo`** (WildStar64 `0x140205900`) is now durably labelled from the `DB\HousingNeighborhoodInfo.tbl` / `HousingNeighborhoodInfo` loader path. This proves the world client has the table metadata, but it still does **not** map table columns to `0x0506` row fields or prove a server send trigger.
+- A 2026-06-04 packet-placeholder guard now keeps the `0x0501` row tail as
+  `NeighborhoodWireUInt64_AfterRealmIds` / `NeighborhoodWireUInt32_0..2` and
+  rejects `HousingNeighborhoodInfo.tbl` column-name synthesis (`BaseCost`,
+  `MaxPopulation`, `HousingMapInfoIdPrimary`) until row backing is proven.
 
 ### Map Tracked Unit / Threat Addon Follow-up
 - Map addon evidence (`GuardZoneMap`, `LUI_ZoneMap`, `RavenMap`) confirms Lua consumers for `MapTrackedUnitUpdate`, `MapTrackedUnitDisable`, and `GetMapTrackedUnitData(id)`, but the server opcodes are `0x0849`/`0x0848`; `0x0264` is the unrelated `ServerEntityCreateAuxScalarList`.
-- Producer behavior remains blocked for map tracked units: tracked-unit id allocation, update cadence, disable lifetime, and `TrackingSlotId` selection are not proven.
+- Producer behavior remains blocked for map tracked units: tracked-unit id allocation, update cadence, disable lifetime, and `TrackingSlotId` selection are not proven. A 2026-06-04 Ghidra MCP recheck reconfirmed only the client cache update/remove plus Lua enumeration chain, and read-only `TrackingSlot` data has duplicate objective groups (`5010`, `5138`), rejecting objective-only slot selection. Focused source/test passes added a null-table guard, packet naming guard, and duplicate-objective selection guard for `TrackingSlotHelper`; it remains one-way table lookup only.
 - Threat addon evidence confirms `TargetThreatListUpdated` is a real UI event; this is already backed by mapped `ServerEntityThreatListUpdate` (`0x0909`) and `ThreatManager.BroadcastThreatList()`.
 
 ### Remaining Decomp Targets
@@ -155,7 +162,9 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
 - **Item context action / Pet stance** (F-026): `0x00B7` native empty reader is
   mapped; item-context producer/consumer semantics and pet-stance consumer
   addresses remain unknown.
-- **ServerRaidQueueStatus** (F-010): reader `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` mapped; zero-value compatibility emit exists from raid-info; non-zero queue semantics still blocked.
+- **ServerRaidQueueStatus** (F-010): reader `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` mapped; helper `14008c010` is only a count-plus-array structural reader; zero-value compatibility emit exists from raid-info and non-zero wire order is test-pinned; non-zero queue semantics still blocked.
+- **ServerMatching0x05CF** (F-010): raw `uint32` reader `ServerUInt32_LocalReadThunk` @ `140099110` mapped; candidate apply helper `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0` remains correlated only until an opcode-to-table-cell index or live `0x05CF` witness proves manager `+0xa0` semantics.
+- **Client0x062A/0634** (F-010): shared `uint32` reader/writer `14007d000`/`14007d010` mapped and handlers are log-only/test-pinned; sender/intent remains blocked until a native send site or live queue UI sniff appears.
 
 ### F-001 - STS Token Crypto - BLOCKED
 Token crypto handshake, external-account edge routes, and optional envelope
@@ -163,13 +172,17 @@ fields remain blocked until crypto/token semantics are mapped safely.
 
 ### F-002 - Client Diagnostic Opcodes - DIAGNOSTIC
 17 models with diagnostic handlers exist. Every packet's wire shape is pinned
-by focused tests. Client request intent and server response behavior unknown.
-Needs Ghidra decomp of client writer functions by feature cluster.
+by focused tests. A 2026-06-04 guard now pins the unresolved diagnostic handler
+family as log-only with no plaintext or encrypted server emit; focused
+diagnostic coverage passed 90/90. Client request intent and server response
+behavior remain unknown. Needs Ghidra decomp of client writer functions by
+feature cluster.
 
 ### F-003 - Server Unresolved Output Opcodes - STRUCTURALLY CLOSED
 0 `Server0xNNNN` enum/model placeholders remain in `Source/`. All 699 server
-opcodes have named models, with 62 shape-mapped aux/spell packets still gated
-behind consumer or producer evidence before any production emitters are added.
+opcodes have named models. Of the 62 shape-mapped aux/spell packets with neutral
+fields, 12 have controlled entity-create or selected housing emit paths and 50
+remain gated behind consumer or producer evidence before production emission.
 Named-but-partial packets remain tracked in their feature rows.
 Eight native size-1 aux registrations now use empty wire models instead of
 raw byte payloads: `0x00B7`, `0x00DF`, `0x00EE`, `0x0101`, `0x0143`,
@@ -198,6 +211,10 @@ the residence entrance teleport path while
 unauthorized visitors still receive `Visit_Private`. Decor create now validates
 colour shift, scale, and non-crate plot position before currency debit,
 achievement update, or `DecorCreate`; focused housing coverage passed 93/93.
+A 2026-06-04 F-004 closure removed the WIP hardcoded
+`ServerHousingProperties.Residence.NeighbourhoodId` value; property rows now use
+the residence `GuildOwnerId` when present and `0` otherwise, with focused
+housing coverage passing 32/32.
 
 **Branch housing script port:** The useful housing scripts from
 `LaughingWS/NexusForever` branch `Questing-and-more` are now in
@@ -214,7 +231,19 @@ line for the latest combined count.
 **Blocked:** `ServerHousingNeighborhoodEntry` (0x0501) and
 `ServerHousingNeighborhoodList` (0x0506) - packet models exist but nobody
 sends them. Unknown client request trigger (not accessible via addon API).
-`NeighbourhoodId` in `ServerHousingBasics` hardcoded to 0.
+The old tracker note that a hardcoded neighborhood property blocks this packet
+cluster is stale: `ServerHousingProperties.Residence.NeighbourhoodId` is a
+separate property row and now uses the residence `GuildOwnerId` when present and
+`0` otherwise. A 2026-06-04 Ghidra MCP recheck reconfirmed only the client cache
+consumer and ruled out adjacent community placement, plot reservation, and visit
+senders (`0x052B`, guild-operation `0x04B1`, `0x052F`) as the missing `0x0506`
+trigger. A later 2026-06-04 export pass labelled WildStar64
+`ClientDB_RegisterHousingNeighborhoodInfo` (`0x140205900`), confirming the table
+loader only; row backing and send timing remain blocked.
+Focused tracker-cleanup verification passed 27/27 against housing packet shapes,
+residence-session non-emission, and the three residence neighborhood property
+cases; pass 119 housing/placeholder guard coverage passed 106/106 and keeps the
+row tail wire-named until producer/backing proof exists.
 
 ### F-005 - Marketplace / Auction / Commodity / CREDD - COMPLETE
 **All 15 client messages have complete handlers.** Auction post/search/buyout/bid,
@@ -223,6 +252,8 @@ DB persistence for auctions, commodity orders, CREDD orders, CREDD history.
 Slot limits: Free 3 / Signature 30. Offline marketplace credits via mail.
 Server aux packet contracts `0x06DF` and `0x07D5` are reader-mapped and
 packet-covered; their marketplace producer/consumer semantics remain blocked.
+The 2026-06-04 MCP/export recheck found only registration call-site/data xrefs
+for those aux readers, not a static apply path, producer, or emit timing proof.
 Unsupported auction property min/max, rune-slot, equippable-by filters, and
 property sort are rejected at validation instead of accepted and silently
 ignored; retail stat/rune/equippable filtering remains unmapped.
@@ -274,6 +305,12 @@ Commodity fill mail now composes buyer mail creation, purchased-item save, and
 resting buy/sell order update/delete in one character DB save when a match must
 deliver purchased items by mail; composed save failure leaves the match unfilled
 and keeps resting commodity orders active.
+Direct commodity fills now persist the resting buy/sell order update/delete
+before online inventory delivery, seller credit, buyer price-improvement refund,
+or fill notifications; save failure leaves the match unfilled, refunds the
+force-immediate buyer's escrow, and keeps the resting order active. A focused
+multi-order direct buy test now pins price-priority split fills and the
+price-improvement refund across two sell orders.
 Commodity matching now uses per-item/per-side price indexes for opposite-side
 candidate selection and immediate sell preflight, preserving price-priority
 behavior while avoiding full commodity-list scans for every match attempt.
@@ -285,10 +322,11 @@ open.
 Catalog, purchase, account currency charge, claim/return, pending item groups,
 daily login, coupon redemption, VC packages, wallet updates, purchase history,
 privilege restriction, purchase-velocity gate (10/hr), CREDD redeem (1000:1).
-68 focused packet/account tests. All `0969..0991` opcodes mapped.
-Account-inventory direct account grants now apply entitlement/currency changes
-immediately from character select or in world, including character-slot unlock
-items whose prerequisite rows encode the account entitlement cap.
+70 focused packet/account tests. All `0969..0991` opcodes mapped.
+Character-select direct account purchases now apply entitlement/currency changes
+immediately and refresh the character list; in-world account-inventory direct
+grants now handle targeted character rows and enforce character-slot cap
+prerequisites through entitlement max-count.
 The `LaughingWS/Questing-and-more` account/storefront slice is superseded by
 the current implementation: its useful account inventory, cooldown, operation
 result, account-tier, catalog, purchase, and purchase-history surfaces are
@@ -302,25 +340,48 @@ Game-table refresh emits (`0x07CA` schedule, `0x07CD`/`0x07D3` content context),
 claim path via `ClientRewardUpdateRequest`, and non-empty `0x07C8` entry-state on
 refresh/claim are implemented with focused tests.
 
+2026-06-04 Ghidra MCP recheck: `0x07CD` still registers only
+`ServerRewardRotationContentContext_ReadPayload` (`14008fcb0`) with no static
+apply handler; `Reward_SendRewardUpdateRequest` (`140636ba0`) sends only the
+content-type index through `0x07CC` and reads manager throttle slots at
+`+0x150/+0x158/+0x160`. This maps the request-throttle correlation but not the
+server context apply assignment.
+`RewardRotationRuntimeEvidenceTests` now pins the generated evidence artifact's
+blocker text for the missing `0x07CD` apply helper and blocked `Flag` /
+throttle-slot assignment, so capture bundles preserve the mapped-only boundary.
+
 **Blocked:** per-content authoritative reward mapping precision, `0x07CD` apply/`Flag`
-consumer semantics, and full schedule filter parity (player level/difficulty).
+consumer semantics, dynamic throttle-slot assignment, and full schedule filter parity
+(player level/difficulty). Next evidence source is a retail `0x07CD` capture or
+dynamic breakpoint on the runtime apply dispatch.
 
 ### F-008 - Crafting / Tradeskill - PARTIAL (12/12 handlers functional)
 **All 12 client handlers complete** with proper request/response cycles.
 Fixed-recipe crafting, supply satchel, tradeskill lifecycle, schematic
-learning, profession modifiers, rune slot management, rune fusion (add,
+learning, profession modifiers, additive state/abandon clearing, rune slot management, rune fusion (add,
 clear, install, reroll - all 4 operations send `ServerTradeskillSigilResult`).
 
 **Remaining gaps:**
 - Complex craft stats (CraftStats, ApSpSplitDelta, ChargeCounts discarded)
 - Discovery attempt coordinate packing, hot/cold emit timing, and unlock mutation remain blocked; validate with an F-008 live capture before enabling non-success discovery results
 - Crafting station request semantics are implemented; native service-key names remain diagnostic-only
-- 0x084B/0x0855 emit intent (corrected 24-byte and 12-byte payload shapes modeled, never sent)
-- Rune item data semantics
+- 0x084B/0x0855 emit intent (corrected 24-byte and 12-byte payload shapes modeled, never sent; 2026-06-04 Ghidra MCP recheck found reader/registration evidence only)
+- Non-success sigil result rules and server-side `ServerItemMicrochips` (`0x056C`)
+  patch producer precision
+  (microchip taxonomy cleanup verification passed 149/149)
 
-### F-009 - Rapid Transport / Taxi / Flight Path - PARTIAL (blocked)
-Pricing/request validation partial. Service-token bypass, route state, taxi
-embark/completion, charge/teleport rules incomplete. Needs decomp.
+### F-009 - Rapid Transport / Taxi / Flight Path - PARTIAL (route-table fix verified; blockers remain)
+Pricing/request validation is partial. The 2026-06-04 taxi/rapid-transport
+capture proved live `ClientRapidTransport` (`0x0141`) requests for taxi nodes
+`89`/`88` plus `ClientFlightPathPurchase` (`0x00FF`) route chains
+`[236]`, `[124]`, `[124, 121]`, `[8, 114]`, and `[8]`; the failure root cause
+was `TaxiRoute.tbl` not being loaded. `TaxiRoute` is now `[GameData]`, the
+rapid/taxi handlers reject cleanly when `TaxiRoute`, `TaxiNode`, or
+`WorldLocation2` tables are unavailable, and focused handler tests cover
+captured table-backed route charging, rapid-transport spell cast context, and
+flight-path destination teleport. Service-token bypass, global route-state
+snapshots, taxi embark/completion timing, broader charge/teleport parity, and
+vehicle deployable/passenger semantics remain blocked by live/native evidence.
 `ServerVehicleEmbarkAux` (`0x01B2`) now uses its mapped client-reader shape
 (`flag`, 2-bit value, `uint64`, two `uint32` fields) instead of a fixed raw
 payload. Field semantics and runtime producer timing remain blocked.
@@ -367,7 +428,14 @@ for pending/cleared state.
 - `ClientMatchingMatchInitiateLookingForReplacementsHandler` / `ClientMatchingStopLookingForReplacementsHandler` validate in-progress match membership and native role mask `0..2`; they do not start a server replacement queue
 - Removed the unsupported replacement anchor queue/merge runtime; addon and sender
   evidence prove the UI/event boundary, not server producer timing or merge rules
-- `ServerRaidQueueStatus` (0x0718) emitted alongside `ServerRaidInfoResponse` as zero-value compatibility state
+- `ServerRaidQueueStatus` (0x0718) emitted alongside `ServerRaidInfoResponse` as zero-value compatibility state; non-zero wire order is covered by `GroupPacketShapeTests`, but field semantics remain neutral
+- `ServerMatching0x05CF` remains a raw `uint32` packet only: reader `140099110`
+  is mapped, and `MatchingManager_ApplyManagerUInt32Field0xA0` (`1405c41c0`,
+  table cell `140e1e66c`) is only a correlated apply candidate until the
+  opcode-to-cell index or live packet witness is proven
+- `Client0x062A`/`Client0x0634` remain numeric diagnostic packets; focused
+  handler tests now pin both as log-only with no queue/raid-state emit until a
+  native sender or live sniff proves their semantics
 - Matching leave/cleanup lifecycle hardening now snapshots queue collections and
   match-team members before removal mutates the underlying dictionaries; focused
   matching tests passed 90/90.
@@ -384,9 +452,13 @@ for pending/cleared state.
 - 0x0461 ServerQuestShareResult [ok]
 - 0x0468 ServerGroupTargetIdentityPrimeLevelList [ok; producer semantics blocked, stale stat/detail emit removed]
 
-**Blocked:** exact `ServerRaidQueueStatus` queue-position semantics and timing;
+**Blocked:** exact `ServerRaidQueueStatus` queue-position semantics and timing
+(native `14008c010` only proves a count-plus-array reader over 0x20-byte rows);
 replacement queue fill still needs live accept/teleport smoke and multi-slot
-role-fill verification.
+role-fill verification; `ServerMatching0x05CF` still needs either the matching
+apply-table walker tying `0x05CF` to cell `140e1e66c` or a live match-ready /
+queue-state sniff that explains manager field `+0xa0`; `Client0x062A`/`0634`
+still need a native sender or live sniff before semantic rename or mutation.
 
 ### F-011 - Guild / Recruitment / War Party - PARTIAL (blocked)
 Guild handlers and recruitment output models exist. Bank transactions, perks,
@@ -1168,11 +1240,28 @@ Threat list via `ThreatManager.BroadcastThreatList()`.
 
 **Blocked:** 6 entity-stat auxiliary opcodes (0x0889, 0x08CC, 0x08F4, 0x0939,
 0x093D, 0x093E) - wire shapes modeled, Ghidra reader labels exist and
-field-level decomp verified against C# models. No production emit sites in
-`NexusForever.Game` / `WorldServer` (packet-shape tests only).
+registration anchors now exist for all six after the 2026-06-04
+`FindImmediateInstructions` pass added `0x0939`/`0x093D`/`0x093E`; field-level
+decomp verified against C# models. No production emit sites in
+`NexusForever.Game` / `WorldServer` (packet-shape tests only); the 2026-06-04
+source audit found only regular `ServerEntityStatUpdateFloat`/`Integer`
+runtime sends, not `ServerEntityStat*` aux constructors outside tests/models.
+Pass 117 adds a packet-placeholder guard for the six neutral aux field sets
+(`Value*` / shared `Value` / `Text`) and passed focused placeholder/entity aux
+coverage `91/91`.
+The stale native label `FUN_140939650` is now rejected as an aux consumer
+candidate because the cached fragment is zero-argument viewport/grid global
+math with label-only xrefs, not a socket/opcode/payload apply handler.
 Consumer-handler dispatch semantics and map-tracked-unit producer timing remain
 blocked (indirect calls through the function pointer registration table and no
-server-side tracked-id/TrackingSlot selection proof).
+server-side tracked-id/TrackingSlot selection proof). A 2026-06-04 focused
+Ghidra MCP pass reconfirmed `0x0849`/`0x0848` as client cache update/remove
+consumers only; duplicate `TrackingSlot.PublicEventObjectiveId` groups reject
+objective-only slot selection. Pass 118 adds a packet naming guard plus a
+duplicate-objective helper guard so no objective-only reverse selector is
+available. `TrackingSlotHelper` now has a focused
+null-table guard and tests for 15-bit id masking/objective lookup, but no
+producer or reverse selector.
 
 ### F-026 - Items / Unlocks / Costumes / Pets / Titles - PARTIAL
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock
@@ -1554,7 +1643,7 @@ destinations/results, `TransferFlag` semantics, `0x03EF` payload contents,
 PTR queue producer timing, copy mutation, new realm notices, and optional
 realm-message/admin packets remain incomplete.
 
-### F-031 - Fortune Minigame - COMPLETE
+### F-031 - Fortune Minigame - EMULATOR IMPLEMENTED / RETAIL WEIGHTS BLOCKED
 4 handlers functional, session persistence code path via `account_fortune_session`,
 reward payouts with account item grants, card flip state tracking.
 Weighted emulator rarity-tier pool + `ServerFortuneRewards.RewardItemProbabilities`
@@ -1563,6 +1652,43 @@ reads server floats and shows `fProbability = value * 100`; native evidence
 2026-05-23). Native chain follow-up on 2026-06-02 maps `socket+0x15a8`
 `FortuneNode_ApplyServerFortunePackets` to server opcodes `0x03CF`-`0x03D2`
 and names `ServerFortuneCardUpdate.HasUpdate`.
+Focused Fortune session tests now guard that runtime flip updates preserve
+`HasUpdate=true`, matching `Fortune_ApplyCardUpdate`'s early-return behavior
+when the leading bool is false. Payout coverage now also pins that flipped-card
+account-item grants carry the current character target identity and explicitly
+set the account-inventory `hasTargetPlayerIdentity` flag.
+2026-06-04 live local UI logs showed storefront/reward-rotation refreshes but no
+Fortune notify/start packets before a chest drag onto the pedestal; reward
+rotation index `0` now keeps the existing storefront-catalog ordering and sends
+Fortune status/cards through `IFortuneSessionManager` so the UI has a
+current/reset Fortune state before chest placement.
+Follow-up live logs showed `ClientFortuneStart` reached the server, then reset
+because account `1` had no spendable Fortune Coin (`AccountCurrencyType=5`) row
+and only claimable Fortune Coin account-item bundles. `FortuneSessionManager.Start`
+now auto-claims a matching `CanClaim` Fortune Coin account item before
+re-checking and debiting the one-coin start cost.
+A subsequent live client crash after the deal persisted cards `3215`, `166`,
+and `26`; local `wildstar_client.accountitem` data showed `166` and `26` are
+entitlement-only rows with `item2Id=0`. The crash address maps to
+`0x14078A28B` inside `FUN_14078a1a0`, which `Fortune_ApplyCards` calls for each
+displayed card and which dereferences the resolved card display object at
+`+0x158` without a null guard. `FortuneRewardPool` now deals only item-backed
+rows (`Item2Id != 0`) so `ServerFortuneCards` does not send non-displayable
+account rewards into the native card UI, and `FortuneSessionManager` discards
+stored sessions containing non-displayable card ids before sending page-load
+status. `Tools/Setup/sql/runtime_auth_seed.sql` now clears transient stored
+Fortune sessions during local setup so stale pre-guard card rows do not survive
+fresh seed/import flows.
+2026-06-04 Ghidra MCP recheck reconfirmed `Fortune_ApplyRewards` only copies
+server-provided item/money probability arrays into UI state; it does not expose
+an active rotation source. The same pass maps `Fortune_ApplyReset` value `3` to
+the click-empty reset path, so `ServerFortuneReset.Unknown` is now
+`ResetCode`.
+F-007 `RewardRotation*` table/packet labels are now explicitly rejected as
+Madame Fay active-rotation evidence: they explain the separate
+reward-rotation/storefront schedule surface and bootstrap ordering, while
+Fortune catalog probabilities still enter the UI only through
+`ServerFortuneRewards`.
 `Decomp/Analysis/FORTUNE_WEIGHT_AUDIT.md` verifies the local
 catalog/table state, current Fortune tests, and the rejection of the
 `Questing-and-more` branch's old hardcoded gacha handler as non-evidence for
@@ -1579,6 +1705,8 @@ exact weights still require a real retail/catalog evidence bundle. Focused
 `AccountItem.tbl`/`Item2.tbl` rows so the mapped item2 probability catalog stays
 separate from Fortune Coin/non-item account rewards and current picker-only
 account rewards remain guarded without promoting retail rotation parity.
+Focused Fortune/reward-rotation boundary coverage passed 32/32 after the
+false-source cleanup.
 
 ### F-032 - Leaderboards - COMPLETE
 Real database-backed pipeline (NOT empty stub). `DatabaseLeaderboardStore`
@@ -1625,15 +1753,16 @@ and others) stay in their `F-00x` sections and in
 | `TryCompleteFixedRecipe(chargeCounts:)` / `CalculateTotalCharges()` | **False.** Complex craft logs `ChargeCounts` but calls `TryCompleteFixedRecipe` without applying them. |
 | `ClientItemContextAction` delegates to `ClientItemUse` | **False.** Handler validates/logs; `SelectedBranch` stays diagnostic-only. |
 | LFR `SetInProgress` + server queue integration | **False.** `0x05D5`/`0x0602` are validation/logging only; replacement backfill was removed per evidence rollback. |
-| `ServerRaidQueueStatus` never sent | **Partially false.** Emitted with raid-info as zero-value compatibility; queue-position semantics remain blocked. |
+| `ServerRaidQueueStatus` never sent | **Partially false.** Emitted with raid-info as zero-value compatibility and non-zero wire order is test-pinned; queue-position semantics remain blocked. |
+| Source TODO/FIXME/NotImplemented search proves unfinished production code | **False after 2026-06-04 audit.** Scoped C# searches now leave no production TODO/FIXME/NotImplemented markers. Remaining hits are test doubles, explicit unsupported guardrails, WIP content docs, or blocked tracker entries with named evidence gates. |
 
-| # | Feature | Gap | Evidence status (2026-06-02) | Blocker |
+| # | Feature | Gap | Evidence status (latest) | Blocker |
 |---|---------|-----|------------------------------|---------|
-| 1 | F-025 | Entity-stat aux: 0x0889, 0x08CC, 0x08F4, 0x0939, 0x093D, 0x093E | **Mapped** (wire + XML); no production emit | Per-opcode `vtable+0x58` apply handler or sniff order |
-| 2 | F-025 | Map-tracked-unit producer timing and TrackingSlot selection | **Mapped** consumer chain (`TrackingSlot.tbl`); **Blocked** producer | Ghidra: native server send site for `0x0849`/`0x0848` (not in client C2S graph); `TrackingSlotHelper` for table lookup only |
-| 3 | F-004 | NeighborhoodEntry/List (0x0501/0x0506) | **Mapped** row fields (`NeighborhoodWireUInt*`); **Blocked** NF emit | Ghidra: client C2S opcode before `Housing_HandleNeighborhoodList` @ `1404ba4f0`; no `Housing_SendClient*` label for `0x0506` trigger yet |
-| 4 | F-008 | Discovery/station/complex-craft semantics and 0x084B/0x0855 emit intent | **Mapped** aux wire; discovery mutations disabled; service keys `0x2C`/`0x4F`/`0x57` diagnostic | Native emit path + live capture before enqueue |
-| 5 | F-031 | Per-item retail Madame Fay weights | **Mapped** catalog transport; emulator `RewardRarity` tiers audited | Retail `ServerFortuneRewards` capture or storefront rotation dump (`FORTUNE_WEIGHT_AUDIT.md`) |
+| 1 | F-025 | Entity-stat aux: 0x0889, 0x08CC, 0x08F4, 0x0939, 0x093D, 0x093E | **Mapped** (wire + XML); no production emit; 2026-06-04 immediate scans added durable registration anchors for `0x0939`/`0x093D`/`0x093E` and still found registration/reader evidence only; 2026-06-04 source audit found no `ServerEntityStat*` aux constructors outside tests/models; stale candidate `FUN_140939650` rejected as viewport/grid global math rather than a packet consumer; focused aux/visual/tracking slice passed `28/28`; pass 117 placeholder guard keeps neutral aux field names until semantic proof and passed `91/91` | Per-opcode `vtable+0x58` apply handler, apply-table classification, or sniff order |
+| 2 | F-025 | Map-tracked-unit producer timing and TrackingSlot selection | **Mapped** consumer chain (`TrackingSlot.tbl`); **Implemented** lookup/selection guard tests; **Blocked** producer; Ghidra MCP recheck 2026-06-04 found client cache update/remove only and duplicate objective groups reject objective-only slot selection; pass 118 guard coverage passed `97/97` | Native server send site or public-event marker sniff for `0x0849`/`0x0848`; `TrackingSlotHelper` remains one-way table lookup only |
+| 3 | F-004 | NeighborhoodEntry/List (0x0501/0x0506) | **Mapped** row fields (`NeighborhoodWireUInt*`); **Blocked** NF emit; Ghidra MCP recheck 2026-06-04 confirmed consumer-only cache apply and rejected adjacent community/visit senders; 2026-06-04 runtime cleanup removed the unrelated hardcoded `ServerHousingProperties.Residence.NeighbourhoodId` placeholder; pass 119 rejects `HousingNeighborhoodInfo.tbl` column-name synthesis and focused guard coverage passed `106/106` | Live housing UI/realm-login sniff or native server-push path before `Housing_HandleNeighborhoodList` @ `1404ba4f0`; no `Housing_SendClient*` label for `0x0506` trigger yet |
+| 4 | F-008 | Discovery/station/complex-craft semantics and 0x084B/0x0855 emit intent | **Mapped** aux wire; 2026-06-04 Ghidra MCP recheck found registration/readers and finish/current-craft consumers only; discovery mutations disabled; service keys `0x2C`/`0x4F`/`0x57` diagnostic; durable rune bridge implemented; distinct C2S microchip-install mutator rejected because client install is `0x085B` while `0x056C` is a server item patch | Native aux/current-craft producer path or live crafting capture for enqueue/timing, discovery unlock/hot-cold proof, non-success sigil rules, and `ServerItemMicrochips` (`0x056C`) producer timing |
+| 5 | F-031 | Per-item retail Madame Fay weights and active rotation | **Mapped** catalog transport; emulator `RewardRarity` tiers audited; 2026-06-04 Ghidra MCP recheck found no active-rotation source, renamed `ServerFortuneReset.ResetCode`, and payout grants now target the current character identity; F-007 `RewardRotation*` labels rejected as Fortune active-rotation evidence | Retail `ServerFortuneRewards` capture or storefront-server catalog dump (`FORTUNE_WEIGHT_AUDIT.md`) |
 
 ---
 
@@ -1672,7 +1801,7 @@ candidate labels are reviewed individually.
 ### Next Decomp Targets (not yet labeled)
 | Address | Hypothesized Role |
 |---------|-------------------|
-| 0x14008bf80 | ServerRaidQueueStatus (0x0718) reader (emit exists; semantics blocked) |
+| 0x14008bf80 / 0x14008c010 | ServerRaidQueueStatus (0x0718) row reader plus count-array helper (emit exists; wire order covered; semantics blocked) |
 | ~0x1404dbxxx | Crafting complex craft stat consumer (`0x084B`/`0x0855`) |
 | ~0x140095xxx | Entity auxiliary 0x025F-0264 registration block |
 | ~0x140097xxx | Entity auxiliary 0x0889-093E registration block |

@@ -1,6 +1,6 @@
 # Entity / Cluster Aux Opcode Decode Roadmap
 
-Updated: 2026-06-03 (F-025 pre-create guard test added; entity-stat and map-tracked producers remain blocked)
+Updated: 2026-06-04 (master closure workboard added; cached export/Ghidra MCP rechecks keep entity-stat and map-tracked producers blocked)
 
 Tracks decompile progress to unblock **field semantics** and **runtime emitters** for the
 shape-mapped server-output clusters that replaced `Server0xNNNN` placeholders.
@@ -167,6 +167,144 @@ WorldSocket chain catalog refresh (2026-06-03):
   entity-stat aux; runtime emission still needs a new linked-list consumer or live sniff/order
   witness.
 
+Cached export recheck (2026-06-04):
+
+- Rechecked the current `WildStar64.exe` export top-level CSV/C artifacts without touching
+  generated caches: `selected_decompiled.c`, `functions.csv`, `selected_reasons_summary.csv`,
+  `selected_xrefs.csv`, `selected_call_edges.csv`, `function_pointer_families.csv`, and
+  `function_pointer_family_slots.csv`.
+- Entity-stat opcode searches for `0x0889`, `0x08CC`, `0x08F4`, `0x0939`, `0x093D`, and
+  `0x093E` still resolve to registration/reader evidence, not a nontrivial producer or
+  per-opcode apply handler.
+- `WorldSocket_ProcessServerMessage` (`140014f10`) still deserializes the payload, runs known
+  account/storefront fast paths, then walks the native `WorldSocket+0x15b0` handler list via
+  `node+0x20` and `vtable+0x58`; the named persistent node families remain diagnostic,
+  console/options, or Fortune.
+- Result: no NexusForever production emitter is safe to add for the entity-stat aux cluster.
+  The next evidence source remains a new nontrivial `WorldSocket+0x15b0` handler-node family,
+  a per-opcode apply-table/data-ref classification, or a live sniff/order witness.
+
+F-025 false-lead cleanup (2026-06-04):
+
+- Rejected stale label candidate `FUN_140939650` as a server-packet consumer. The cached
+  fragment at `exports/WildStar64.exe/selected_decompiled.c:200460` has no
+  packet/opcode/payload arguments and only recalculates floating-point viewport/grid globals
+  (`DAT_140c79a*`, `_DAT_140c79b*`) from display-scale globals. `selected_xrefs.csv` has only
+  the self label xref for `140939650`, and the selected call-edge rows are intra-function
+  jumps created by the decompiler, not callers.
+- Result: do not use `140939650` as a `WorldSocket+0x15b0` or aux apply-candidate anchor.
+  Entity-stat aux emitters and map-tracked producers remain blocked on the same evidence gate:
+  a nontrivial socket handler-node family, a per-opcode apply table/data-ref classification,
+  or an accepted live sniff/order witness.
+
+Entity-stat registration-anchor pass (2026-06-04):
+
+- `FindImmediateInstructions` rechecked the unlabeled entity-stat opcodes against the current
+  `WildStar64.exe` Ghidra project. The real registration literals in
+  `Network_RegisterServerOpcode_0351` (`14006c290`) are:
+  - `0x093D` at `140074cda`, registering size `0x10` with
+    `ServerEntityStatUInt32UInt5Pair_ReadPayload` (`140097690`).
+  - `0x0939` at `140074fb9`, registering size `0x18` with
+    `ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload` (`140097ee0`).
+  - `0x093E` at `14007501b`, registering size `0x10` with
+    `ServerEntityStatTwoUInt32UInt64_ReadPayload` (`140097f70`).
+- Non-registration immediate hits for those values are GameFormula lookups or object offsets,
+  not packet producers or apply consumers. `ghidra-mcp` was unavailable for this pass, so the
+  evidence source is the repeatable headless helper output in
+  `WildStar64.NexusForeverClient64_WildStar64.FindImmediateInstructions.ghidra.log`.
+- Tooling correction: `ApplyNexusForeverLabels.java` now applies labels inside an existing
+  function as local labels/comments instead of renaming or splitting the containing function.
+  The follow-up force + export-only refresh leaves `14006c290` named
+  `Network_RegisterServerOpcode_0351` while preserving call-site anchors.
+- Result: the six entity-stat aux opcodes now have durable reader and registration anchors;
+  runtime emission remains blocked on a per-opcode `vtable+0x58` apply handler, apply-table
+  classification, or live sniff/order witness.
+
+Entity-stat production-emitter source audit (2026-06-04):
+
+- `rg` over `Source` found `ServerEntityStatUInt32Triplet`, `ServerEntityStatUInt32WideString`,
+  `ServerEntityStatUInt32UInt5UInt32`, `ServerEntityStatUInt32UInt14UInt18WideString`,
+  `ServerEntityStatUInt32UInt5Pair`, and `ServerEntityStatTwoUInt32UInt64` only in opcode/model
+  definitions and focused tests. Runtime production sends are limited to regular
+  `ServerEntityStatUpdateFloat` / `ServerEntityStatUpdateInteger` in `WorldEntity`.
+- Result: the current NexusForever source tree has no production emitter for the six entity-stat
+  aux opcodes. The old matrix wording that all 62 shape-mapped aux/spell packets had no
+  emitters was a tracker ghost gap; entity-create and selected housing paths account for the
+  proven 12/62 controlled emitters, while this F-025 entity-stat cluster remains in the 50
+  blocked emitters.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~EntityAuxiliaryPacketShapeTests|FullyQualifiedName~EntityCreateAuxiliaryEmissionTests"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f025-entity-aux-audit\`
+  passed `19/19`.
+
+Entity-stat placeholder-name guard (2026-06-04 pass 117):
+
+- Re-ran the current source audit for the six entity-stat aux model names. The
+  only hits remain opcode/model definitions and focused tests; production stat
+  sends still use regular `ServerEntityStatUpdateFloat` / `ServerEntityStatUpdateInteger`.
+- `PacketPlaceholderNamingTests.ServerEntityStatAuxFieldsRemainNeutralUntilApplyHandlersAreProven`
+  now pins the neutral `Value*` fields and the shared `Value` / `Text` payload names
+  for `0x0889`, `0x08CC`, `0x08F4`, `0x0939`, `0x093D`, and `0x093E`.
+- Result: no semantic rename or runtime emitter is safe yet. The blocker remains a
+  per-opcode `WorldSocket+0x15b0` `vtable+0x58` apply handler, apply-table
+  classification, or live sniff/order witness.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~EntityAuxiliaryPacketShapeTests|FullyQualifiedName~EntityCreateAuxiliaryEmissionTests"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f025-entity-stat-placeholder-guard\`
+  passed `91/91`.
+
+Map-tracked unit producer recheck (2026-06-04):
+
+- Direct Ghidra MCP decompile of `ServerMapTrackedUnitUpdate_ReadPayload` (`1400a6c10`),
+  `MapTrackedUnitUpdate_ApplyAndDispatch` (`1403f4170`),
+  `MapTrackedUnitDisable_ApplyAndDispatch` (`1403f4200`),
+  `ClientEvent_MapTrackedUnitUpdate_Dispatch` (`140430f80`),
+  `Lua_GameLib_GetMapTrackedUnitData` (`140511c80`),
+  `Lua_PublicEvent_GetTrackedUnits` (`14068adb0`), and
+  `Lua_PublicEventObjective_GetTrackedUnits` (`140690500`) reconfirmed the current
+  client-side chain only.
+- The update reader stores tracked-unit id, three position components, and payload
+  `+0x10` into the client tracked-unit cache before dispatching `MapTrackedUnitUpdate`;
+  disable removes cached tracked-unit state and dispatches `MapTrackedUnitDisable`.
+- `GameLib.GetMapTrackedUnitData` accepts a `TrackingSlot` row id and returns label/icon
+  UI data. `Game.PublicEvent.GetTrackedUnits` and `Game.PublicEventObjective.GetTrackedUnits`
+  enumerate client-maintained tracked-unit collections; they do not expose server allocation
+  or send timing.
+- Read-only DataMapping evidence from `client_source_trackingslot_map.csv` shows duplicate
+  `PublicEventObjectiveId` groups (`5010` has 20 rows, `5138` has 16 rows), so objective-only
+  slot selection is explicitly rejected.
+- Result: no NexusForever production emitter is safe to add for `0x0849`/`0x0848`.
+  A focused source/test pass added a null-table guard to `TrackingSlotHelper`
+  and tests for the one-way 15-bit `TrackingSlotId` lookup, but did not add a
+  producer or objective-to-slot selector.
+  The next evidence source remains a native server send site, a live public-event marker
+  capture, or another source that proves tracked-unit id allocation, update cadence, disable
+  lifetime, and slot selection.
+
+Map-tracked unit selection guard (2026-06-04 pass 118):
+
+- Current source still has no production emitter for `ServerMapTrackedUnitUpdate`
+  (`0x0849`) or `ServerMapTrackedUnitDisable` (`0x0848`) outside packet-shape
+  tests and the pre-create negative guard.
+- `PacketPlaceholderNamingTests.ServerMapTrackedUnitUpdate_UsesTrackingSlotIdUntilProducerSelectionIsProven`
+  now pins the packet field as `TrackingSlotId` and rejects a direct
+  `PublicEventObjectiveId` property.
+- `TrackingSlotHelperTests.TrackingSlotHelper_DoesNotSelectSlotFromObjectiveOnlyWhenRowsShareObjective`
+  uses duplicate `TrackingSlot` rows for `PublicEventObjectiveId = 5010` and
+  guards that `TrackingSlotHelper` remains slot-to-objective lookup only, without
+  exposing an objective-only `TrackingSlotIdForPublicEventObjective` selector.
+- Result: objective-only slot selection remains rejected, and no runtime producer
+  is safe. The blocker is unchanged: native send site or accepted public-event
+  marker capture proving tracked-unit id allocation, update cadence, disable
+  lifetime, and `TrackingSlotId` selection.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~TrackingSlotHelperTests|FullyQualifiedName~EntityAuxiliaryPacketShapeTests|FullyQualifiedName~EntityCreateAuxiliaryEmissionTests|FullyQualifiedName~PacketPlaceholderNamingTests"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f025-map-tracked-selection-guard\`
+  passed `97/97`.
+
 Callback table @ `140b55100` (installed at socket `+0x100`):
 
 | Index | Offset | Value | Notes |
@@ -225,9 +363,12 @@ Safe always: packet-shape tests, enum/model names, registration notes in `GameMe
    replay-only, or both; correlate with `ServerEntityCreate` (`0x0262`) send order via sniff.
 3. **Entity-stat aux cluster** - Map consumers for `0x0889` / `0x08CC` / `0x08F4` / `0x0939`
    / `0x093D` / `0x093E` separately despite shared readers.
-4. **Cluster aux bands** - One band per session (chat `0x01B8`..., item/options `0x056B`..., etc.)
+4. **Map-tracked unit producer** - Find native send-site or live public-event marker capture
+   for `0x0849`/`0x0848`; do not synthesize from `TrackingSlot.PublicEventObjectiveId` because
+   duplicate objective groups disprove objective-only slot selection.
+5. **Cluster aux bands** - One band per session (chat `0x01B8`..., item/options `0x056B`..., etc.)
    using the same dispatch discovery approach.
-5. **Spell aux** - Follow `SPELL_BROADCAST_ROADMAP.md`; map row semantics for
+6. **Spell aux** - Follow `SPELL_BROADCAST_ROADMAP.md`; map row semantics for
    `ServerSpellUInt32TripletList` before emit.
 
 ## Tooling

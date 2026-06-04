@@ -328,6 +328,8 @@ WildStar64.exe,1404694a0,EntityBuffRecord_PruneEmptyWrapperNodes,When the matche
 WildStar64.exe,140499a20,GalacticArchive_ApplyUnlockMaskAndDispatchEvents,Updates the local Galactic Archive unlock mask, dispatching GalacticArchiveRefresh plus GalacticArchiveArticleAdded and GalacticArchiveEntryAdded for newly unlocked bits.
 WildStar64.exe,1404aacb0,ActionSet_ValidateRequestedChanges,Validates a 12-entry action-set request and returns a LimitedActionSetResult.
 WildStar64.exe,1404acfa0,FlightPath_SendPurchaseRequest,Builds and sends opcode 0x00FF flight-path purchase payload from validated route data.
+WildStar64.exe,1404accf0,FlightPath_ApplyAllowedNodeSnapshot,Native taxi helper: clears the taxi-manager unlocked-node tree at +0x108/+0x110 then walks a counted uint32 TaxiNode id array and inserts allowed nodes; opcode ownership not proven.
+WildStar64.exe,1404aceb0,FlightPath_ApplyAllowedNodeAdd,Native taxi helper: validates one TaxiNode id and inserts it into the taxi-manager unlocked-node tree at +0x108/+0x110; opcode ownership not proven.
 WildStar64.exe,1404ad9b0,FlightPath_IsNodeUnlockedOrAvailable,Checks the loaded flight-path node tree at manager+0x110 for a TaxiNode id; absent nodes fall through static node flags or the taxi prerequisite helper with mode 1.
 WildStar64.exe,1404ada70,RapidTransport_IsNodeUsableForPlayer,Checks rapid-transport node type/faction/static flags and then falls through to the taxi prerequisite helper with mode 2.
 WildStar64.exe,140241160,ClientDB_RegisterTaxiNode,Lazy-loads DB\TaxiNode.tbl into DAT_140c64968 with table name L"TaxiNode".
@@ -1269,6 +1271,8 @@ WildStar64.exe,14008d430,ServerReputationUInt14UInt32_ReadPayload,Reads one 14-b
 WildStar64.exe,14008ef80,ServerReputationAuxUInt64UInt32_ReadPayload,Reads reputation follow-up aux opcode 0x01A7 as one uint64 field plus one uint32 field; producer semantics unresolved.
 WildStar64.exe,14008fe80,ServerAuctionsByFilterAux_ReadPayload,Reads opcode 0x07D5 as one 14-bit value, three uint32 fields, and one flag; auction filter semantics remain blocked.
 WildStar64.exe,140090090,ServerAuctionPostAux_ReadPayload,Reads opcode 0x06DF as uint32 count, counted uint32 array, counted byte array of the same count, and trailing uint32; auction producer semantics remain blocked.
+WildStar64.exe,14007335d,Network_RegisterServerOpcode_07D5,Registration call site for server opcode 0x07D5 using reader ServerAuctionsByFilterAux_ReadPayload @14008fe80; MCP xrefs found registration/data refs only so producer and consumer semantics remain blocked.
+WildStar64.exe,140073421,Network_RegisterServerOpcode_06DF,Registration call site for server opcode 0x06DF using reader ServerAuctionPostAux_ReadPayload @140090090; MCP xrefs found registration/data refs only so producer and consumer semantics remain blocked.
 WildStar64.exe,14007c3a0,ServerUInt15_ReadPayload,Shared scalar reader registered for opcodes 0x00CC ServerHousingResidenceUInt15 and 0x00CD ServerHousingResidenceUInt15Alt; reads one 15-bit field.
 WildStar64.exe,14008de70,ServerHousingBasicsFollowup_ReadPayload,Reads opcode 0x0110 as uint32, 18-bit field, uint32, and 8-bit field in the housing-basics cluster; field semantics unresolved.
 WildStar64.exe,14008e610,ServerHousingBasics_ReadPayload,Reads opcode 0x010E ServerHousingBasics as two uint64 fields followed by one 32-bit privacy/status flags field.
@@ -1775,7 +1779,7 @@ WildStar64.exe,140204800,FUN_140204800,Consumer dispatch candidate — may route
 WildStar64.exe,140204c40,FUN_140204c40,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140205080,FUN_140205080,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,1402054c0,FUN_1402054c0,Consumer dispatch candidate — may route server→client packets.
-WildStar64.exe,140205900,FUN_140205900,Consumer dispatch candidate — may route server→client packets.
+WildStar64.exe,140205900,ClientDB_RegisterHousingNeighborhoodInfo,Registers the WildStar64 client DB loader for DB\HousingNeighborhoodInfo.tbl; table presence does not prove 0x0506 producer/backing fields.
 WildStar64.exe,140205d40,FUN_140205d40,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140206180,FUN_140206180,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,1402065c0,FUN_1402065c0,Consumer dispatch candidate — may route server→client packets.
@@ -1852,7 +1856,7 @@ WildStar64.exe,140449b10,FUN_140449b10,Consumer dispatch candidate — may route
 WildStar64.exe,14052ad50,FUN_14052ad50,Inspected body is coordinate-to-grid integer math; no packet reader/writer evidence. Exact UI/layout subsystem remains blocked.
 WildStar64.exe,14052bd40,FUN_14052bd40,Inspected body mutates viewport/UI layout state and calls rendering/layout helpers; no packet reader/writer evidence. Exact subsystem remains blocked.
 WildStar64.exe,140771b60,FUN_140771b60,Consumer dispatch candidate — may route server→client packets.
-WildStar64.exe,140939650,FUN_140939650,Consumer dispatch candidate — may route server→client packets.
+WildStar64.exe,140939650,FUN_140939650,Rejected as server-packet consumer candidate: cached fragment has no packet/opcode args and only recalculates viewport/grid globals; label-only xrefs.
 WildStar64.exe,14093a870,FUN_14093a870,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,14093b0c0,FUN_14093b0c0,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,14093b8b0,FUN_14093b8b0,Consumer dispatch candidate — may route server→client packets.
@@ -2943,3 +2947,6 @@ WildStar64.exe,1400751a3,Network_RegisterServerOpcode_0908,Registers server opco
 WildStar64.exe,1400751d4,Network_RegisterServerOpcode_090A,Registers server opcode 0x090A ServerEntityThreatUpdate with 0xC-byte reader ServerSpellUInt32TripletListRow_ReadPayload @140080bf0.
 WildStar64.exe,140075236,Network_RegisterServerOpcode_08CC,Registers server opcode 0x08CC with 0x10-byte reader ServerUInt32WideString_ReadPayload @1400980f0.
 WildStar64.exe,140078cb0,Network_RegisterServerOpcode_0889,Registers server opcode 0x0889 ServerEntityStatUInt32Triplet with 0xC-byte reader ServerSpellUInt32TripletListRow_ReadPayload @140080bf0.
+WildStar64.exe,140074fb9,Network_RegisterServerOpcode_0939,Registers server opcode 0x0939 with 0x18-byte reader ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload @140097ee0; immediate scan found other 0x0939 hits are non-registration offsets/formulas.
+WildStar64.exe,140074cda,Network_RegisterServerOpcode_093D,Registers server opcode 0x093D with 0x10-byte reader ServerEntityStatUInt32UInt5Pair_ReadPayload @140097690; immediate scan found other 0x093D hits are non-registration formulas.
+WildStar64.exe,14007501b,Network_RegisterServerOpcode_093E,Registers server opcode 0x093E with 0x10-byte reader ServerEntityStatTwoUInt32UInt64_ReadPayload @140097f70; immediate scan found other 0x093E hits are non-registration formulas.

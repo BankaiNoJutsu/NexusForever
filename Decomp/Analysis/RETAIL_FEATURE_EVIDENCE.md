@@ -187,7 +187,7 @@ Box purchasers before **29 Sep 2015** retained **12** character slots, **6** cos
 | F-007 | Reward rotation | **180-day** daily login (Drop 6); 9+1 reward rhythm; unclaimed until login | Opcode-named “rotation” vs login calendar | `0x07CD` apply / `Flag` consumer |
 | F-008 | Crafting | Tech tree, schematics, circuit/coordinate crafting | Discovery rolls, durable rune data/result rules | `ServerCraftingAuxFourUInt32FloatUInt32` / `ServerCraftingAuxUInt32AndTwoFloats` emit semantics |
 | F-009 | Transport | Taxi, transmat recall, mounts, service tokens | Flight-path purchase rules | Vehicle seat / deployable modes |
-| F-010 | Group / queue / raid | Attunement; loot rules; deserter (cross-activity queue rules); **requeue** when instance finished; votekick rules | Fake-tank LFG anecdotes | Most `Server0x0414+` field effects |
+| F-010 | Group / queue / raid | Attunement; loot rules; deserter (cross-activity queue rules); **requeue** when instance finished; votekick rules | Fake-tank LFG anecdotes | Most `Server0x0414+` field effects; non-zero `ServerRaidQueueStatus` meaning |
 | F-011 | Guild / war party | Warplots: 40v40; **10 online + 10 queued** to match; boss tokens | Guild bank, holomark perks | Recruitment subscription timing |
 | F-012 | ICComm / chat | Circles, guild/zone/party/**/com** community channels | ICComm = Global/Group/Guild (decomp) | Entitlement / throttle / persistence |
 | F-013 | Mail | COD; tiered fees; inbox **expiry countdown** (days); guest `Mail_GuestAccount` error; VIP attachment gate | Hybrid/Signature trading unlock | Delete-state parity across reload |
@@ -421,7 +421,7 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 ### Need confirmation
 
 - Transaction fee **2% or 5 silver minimum**; listings up to **200** items. **S3** [Gaming By The Numbers](https://gamingbythenumbers.com/blog/how-to-make-money-in-wildstar/)
-- Large commodity orders stack and move price when absorbed. **S2** [Gamepressure](https://www.gamepressure.com/wildstar/auctions-and-credd/zb6489)
+- Large commodity orders stack and move price when absorbed. **S2** [Gamepressure](https://www.gamepressure.com/wildstar/auctions-and-credd/zb6489); NexusForever now has direct multi-order immediate-buy coverage for price-priority split fills and price-improvement refunds, but exact retail partial-stack presentation still needs capture.
 - AH/CX **shut down briefly** before F2P (Sept 2015) for retune (also **S2** [Massively OP](https://massivelyop.com/2015/09/21/wildstar-shuts-down-the-auction-house-before-the-free-to-play-switch/))
 - **Nexian Cartel** blog: which item categories listed on AH vs commodity exchange (community economics, not Carbine doc). **S3** Nexian Cartel
 - Unused CREDD expires after **~3 months** without active subscription. **S2** [PC Gamer](https://www.pcgamer.com/wildstars-credd-exchange-launches-allowing-players-to-buy-extra-time-with-in-game-cash/)
@@ -429,7 +429,7 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 
 ### Not sure
 
-- Persistent order book storage, offline seller settlement, partial fill/cancel precision.
+- Exact offline seller settlement transaction boundaries and retail partial-stack/cancel presentation precision. Emulator persistent auction/commodity order storage and guarded direct/mail fill/cancel paths are source/test-backed.
 - Non-empty `ServerCREDDExchangeInfoResults` row layout at runtime.
 
 ---
@@ -478,7 +478,8 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 ### Not sure
 
 - Per-content authoritative reward mapping and `Flag` bit on apply.
-- Account grant persistence for rotation entry-state.
+- Account grant persistence for rotation entry-state is implemented in NF, but
+  retail claim/delivery evidence is still needed before claiming parity.
 
 ---
 
@@ -554,7 +555,13 @@ High-confidence additions from the second pass. Per-row sections below repeat on
 ### Not sure
 
 - Queue replacement/vote flows, raid saved lock IDs, cross-realm group data.
-- `Client0x062A` / `0634` client signaling.
+- `ServerMatching0x05CF` payload semantics; native evidence has only a raw
+  `uint32` reader and a correlated apply candidate at `1405c41c0`.
+- `Client0x062A` / `0634` client signaling; emulator handlers are log-only
+  and test-pinned, but sender/intent is still unknown.
+- `ServerRaidQueueStatus` non-zero field semantics; native `14008bf80`
+  and helper `14008c010` prove row/list layout, and tests pin wire order, but
+  no live non-zero payload or consumer has been found.
 - Semantics of `ServerGroup*` provisional packets.
 
 ---

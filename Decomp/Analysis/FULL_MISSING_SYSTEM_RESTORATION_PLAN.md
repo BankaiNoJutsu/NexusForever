@@ -1,6 +1,6 @@
 # NexusForever Full Missing-System Restoration Plan
 
-Saved: 2026-06-03
+Saved: 2026-06-04
 
 This plan is the durable goal document for closing all server-side feature,
 game-system, spell, content, protocol, and parity gaps tracked by
@@ -117,11 +117,12 @@ Items:
    storefront gaps: `0x026A` owned-order tail, `0x0986`/`0x098F` live emit
    proof, non-zero `096A..096C` leading-field producers, unsupported offer
    item effects, and coupon native sender label.
-3. `F-007`: map `0x07CD` apply/flag consumer behavior, finish reward delivery
-   after claim, and implement level/difficulty/content schedule filters.
+3. `F-007`: capture or dynamically break on `0x07CD` apply/flag consumer behavior
+   before naming the content-context `UInt*` fields, finish reward delivery after
+   claim, and implement level/difficulty/content schedule filters.
 4. `F-008`: implement discovery rolls/unlocks, complex/random output parity,
-   material-source precision, durable rune item data bridge, and non-success
-   sigil result rules only after proof.
+   material-source precision, non-success sigil/microchip mutator precision,
+   and aux emit behavior only after proof.
 5. `F-031`: keep current Fortune rarity-tier emulator pool, but capture retail
    `ServerFortuneRewards` or storefront rotation evidence before replacing
    per-item weights.
@@ -396,6 +397,103 @@ Use `Decomp/Analysis/ENTITY_AUX_DECODE_ROADMAP.md` as the pass tracker.
 
 ## Progress Log
 
+2026-06-04 - F-007 reward rotation `0x07CD` mapped-only recheck:
+
+- Result: `Mapped only / Blocked` for `ServerRewardRotationContentContext`
+  apply semantics; no runtime packet behavior changed.
+- Ghidra MCP rechecked `ServerRewardRotationContentContext_ReadPayload`
+  (`14008fcb0`), `ServerRewardRotationContentContextArray_ReadPayload`
+  (`14008fdc0`), `RewardRotation_ManagerInit` (`140635840`),
+  `Reward_SendRewardUpdateRequest` (`140636ba0`),
+  `RewardRotation_GetLoadedScheduleForContent` (`140636c40`), and the Lua
+  request/getter callbacks (`1407091e0`, `140709210`, `140709370`).
+- `0x07CD` still registers only the row reader and no static apply handler.
+  `Reward_SendRewardUpdateRequest` sends `0x07CC` with only the content-type
+  index and reads request-throttle slots at `manager + 0x150/+0x158/+0x160`.
+  This maps the throttle correlation but not the server context row assignment.
+- Kept `ServerRewardRotationContentContext.UInt0`/`UInt1`/`UInt3`/`Flag`
+  neutral and updated comments/trackers to require a retail `0x07CD` capture or
+  dynamic apply-dispatch breakpoint before renaming or changing flag behavior.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~RewardRotation|FullyQualifiedName~RewardUpdate|FullyQualifiedName~RewardProperty" -v minimal --nologo -m:1 -p:UseSharedCompilation=false -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f007-reward\`
+  passed 55/55.
+
+2026-06-04 - F-004 housing neighborhood Ghidra MCP recheck:
+
+- Result: `Blocked` for F-004 `ServerHousingNeighborhoodEntry` (`0x0501`) and
+  `ServerHousingNeighborhoodList` (`0x0506`) production emitters; no runtime
+  behavior changed.
+- Direct Ghidra MCP decompile rechecked `ServerHousingNeighborhoodEntry_ReadPayload`
+  (`14009cbe0`), `ServerHousingNeighborhoodList_ReadPayload` (`14009ebf0`), and
+  `Housing_HandleNeighborhoodList` (`1404ba4f0`). The consumer still clears the
+  client neighborhood cache, copies `0x30` rows, duplicates the row name string,
+  and dispatches `HousingNeighborhoodRecieved`.
+- Adjacent native senders were rechecked and rejected as the missing trigger:
+  `Housing_SendClientVisitResidenceIdentity` (`1405b2390`) sends `0x052F`,
+  `Housing_SendClientCommunityPlacement` (`1404b6b90`) sends `0x052B`, and
+  `Housing_SendClientCommunityPlotReservation` (`14057fe90`) sends guild-operation
+  `0x04B1`.
+- `RequestJoinNeighborhood()` / `RequestLeaveNeighborhood()` strings remain
+  observed-only because the current exports provide no usable xref. `HousingNeighborhoodInfo.tbl`
+  has client metadata but no verified mapping to the packet row tail fields.
+- Implementation gate remains a live housing UI/realm-login sniff or native
+  server-push path proving `0x0506` ordering plus backing data for
+  `NeighborhoodId`, both 14-bit realm fields, the second uint64, name, and the
+  three trailing uint32 fields.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build --filter "FullyQualifiedName~HousingPacketShapeTests|FullyQualifiedName~HousingAuxiliaryPacketEmitterTests" -v minimal --nologo`
+  passed 24/24.
+
+2026-06-04 - F-025 map-tracked unit producer Ghidra MCP recheck:
+
+- Result: `Blocked` for F-025 map-tracked unit production emitters; no runtime
+  behavior changed.
+- Direct Ghidra MCP decompile rechecked `ServerMapTrackedUnitUpdate_ReadPayload`
+  (`1400a6c10`), `MapTrackedUnitUpdate_ApplyAndDispatch` (`1403f4170`),
+  `MapTrackedUnitDisable_ApplyAndDispatch` (`1403f4200`),
+  `ClientEvent_MapTrackedUnitUpdate_Dispatch` (`140430f80`),
+  `Lua_GameLib_GetMapTrackedUnitData` (`140511c80`),
+  `Lua_PublicEvent_GetTrackedUnits` (`14068adb0`), and
+  `Lua_PublicEventObjective_GetTrackedUnits` (`140690500`).
+- The decompile confirms client cache update/remove plus Lua enumeration only:
+  no server tracked-unit id allocation, update cadence, disable lifetime, or
+  `TrackingSlotId` selection rule was exposed.
+- Read-only `TrackingSlot` DataMapping evidence shows duplicate objective
+  groups (`PublicEventObjectiveId` `5010` has 20 rows; `5138` has 16 rows), so
+  objective-only slot selection is rejected.
+- Implementation gate remains a native server send site, accepted live
+  public-event marker capture, or equivalent evidence proving id allocation,
+  cadence, disable lifetime, and slot selection.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build --filter "FullyQualifiedName~EntityAuxiliaryPacketShapeTests|FullyQualifiedName~EntityCreateAuxiliaryEmissionTests" -v minimal --nologo`
+  passed 19/19.
+
+2026-06-04 - master closure workboard + F-025 entity-stat cached export recheck:
+
+- Result: `Blocked` for F-025 entity-stat aux production emitters; no runtime
+  behavior changed.
+- Added `FULL_MISSING_SYSTEM_CLOSURE_WORKBOARD.md` as the master routing board
+  for feature rows `F-001` through `F-036`, consolidated runtime blockers,
+  diagnostic client opcodes, shape-mapped aux/spell packets, WIP-guessed
+  content, placeholder names, TODO/FIXME/NotImplemented inventory, and
+  ghost-gap reconciliation.
+- Rechecked the current `WildStar64.exe` cached export artifacts for
+  `0x0889`, `0x08CC`, `0x08F4`, `0x0939`, `0x093D`, and `0x093E`. The hits
+  still resolve to registration/reader evidence and known `WorldSocket+0x15b0`
+  chain walkers; no new nontrivial `vtable+0x58` apply handler or producer
+  witness was found.
+- `ENTITY_AUX_DECODE_ROADMAP.md` now records the 2026-06-04 cached-export
+  recheck and keeps the implementation gate closed until a per-opcode apply
+  handler, new handler-node family, apply-table/data-ref classification, or
+  live sniff/order witness exists.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~EntityAuxiliaryPacketShapeTests|FullyQualifiedName~EntityCreateAuxiliaryEmissionTests" -v minimal --nologo`
+  and the same command with an isolated `BaseOutputPath` were blocked by the
+  running `NexusForever.WorldServer` process holding default WorldServer output
+  DLLs. The no-build focused gate
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-build --filter "FullyQualifiedName~EntityAuxiliaryPacketShapeTests|FullyQualifiedName~EntityCreateAuxiliaryEmissionTests" -v minimal --nologo`
+  passed 19/19.
+
 2026-06-02 - F-025 first pass:
 
 - Result: `Mapped only` / false leads rejected. Entity-stat aux remains blocked
@@ -615,6 +713,13 @@ Use `Decomp/Analysis/ENTITY_AUX_DECODE_ROADMAP.md` as the pass tracker.
 - `0x07D5` (`ServerAuctionsByFilterAux`) is registered with reader
   `14008fe80`, which consumes one 14-bit value, three `uint32` fields, and one
   flag.
+- 2026-06-04 MCP/export recheck: `0x06DF` has only data xref `140dcf0e8`
+  and registration call-site refs `140073421`/`140073433`; `0x07D5` has only
+  data xref `140dcf0ac` and registration call-site refs
+  `14007335d`/`14007336f`. The registration rows in
+  `selected_decompiled_cache/functions/.../14006c290.fragment.c` bind
+  `0x06DF` to size `0x20` and `0x07D5` to size `0x14`, with no static apply
+  callback, producer xref, or emit timing proof found.
 - Remaining blocker: auction-post and auction-filter producer/consumer
   semantics remain unmapped; do not emit these packets from marketplace runtime
   paths until a client apply path, live sniff, or server producer witness proves
@@ -1141,6 +1246,30 @@ Use `Decomp/Analysis/ENTITY_AUX_DECODE_ROADMAP.md` as the pass tracker.
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false --filter "FullyQualifiedName~CraftingSimpleCraftHandlerTests|FullyQualifiedName~CraftingPacketShapeTests|FullyQualifiedName~CraftingDiscoveryEvaluatorTests|FullyQualifiedName~CraftingAdditiveHandlerTests|FullyQualifiedName~CraftingLootIdCraftHandlerTests"`
   passed 45/45.
 
+2026-06-04 - F-008 crafting aux/rune bridge recheck:
+
+- Result: mixed closure. `0x084B` and `0x0855` remain `Mapped / Blocked`;
+  durable rune socket/install persistence is `Implemented`.
+- Ghidra MCP rechecked `ServerCraftingAuxFourUInt32FloatUInt32_ReadPayload`
+  (0x1400a3af0), `ServerUInt32AndTwoFloats_ReadPayload` (0x140081df0),
+  `Crafting_HandleServerCraftingFinish` (0x1405e6690), and
+  `Crafting_HandleServerCraftingCurrentCraft` (0x1405e6830). The aux opcodes
+  still have reader/registration evidence only; the finish/current-craft
+  handlers do not prove an enqueue site or field semantics.
+- NF source now closes the stale durable-rune bridge blocker through
+  `item.runeSlots`, `ItemRuneSlotsCodec`, `ItemRuneNetworkWire`,
+  `RandomGlyphData`/`Glyphs`, and migration
+  `20260531224115_ItemMicrochipIdsAndRuneSlots`. The remaining rune blockers
+  are non-success sigil result precision and any separate microchip install
+  mutator that is not already covered by persisted microchip ids.
+- Added `ItemRuneSocketTests.RuneSlotsCodec_RoundTripsSlotTypesAndInstalledRuneItemIds`
+  so installed rune Item2 ids and slot types stay pinned through the durable
+  codec.
+- Verification: default `dotnet test` hit a local `NexusForever.WorldServer`
+  DLL lock (PID 48388), so the focused run used an isolated output path:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~Crafting|FullyQualifiedName~ItemRuneSocketTests" -v minimal --nologo -m:1 -p:UseSharedCompilation=false -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f008-rune\`
+  passed 95/95.
+
 2026-06-03 - F-010 immediate sprint guard:
 
 - Result: `Implemented` evidence-boundary guard only. No replacement backfill,
@@ -1195,7 +1324,28 @@ Combined immediate-sprint guard verification:
   probability arrays, and active rotation context before changing emulator
   rarity-tier weights.
 - Verification:
-  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false --filter "FullyQualifiedName~Fortune"`
+ `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false --filter "FullyQualifiedName~Fortune"`
+  passed 20/20.
+
+2026-06-04 - F-031 Fortune reset-code / active-rotation recheck:
+
+- Result: mixed closure. `ServerFortuneReset.Unknown` is now
+  `ServerFortuneReset.ResetCode`; exact Madame Fay per-item weights and active
+  rotation remain `Mapped / Blocked`.
+- Ghidra MCP rechecked `Fortune_ApplyRewards` (0x1407292a0),
+  `Fortune_ApplyReset` (0x1407291f0), `FortunesLib_GetFortunesLootList`
+  (0x140766370), `ServerFortuneRewards_ReadPayload` (0x140081f60), and the
+  `FortuneNode_ApplyServerFortunePackets` dispatch node (0x1404d60f0).
+  Rewards are still client-side application of server-provided item/money arrays
+  plus parallel probabilities; no native active-rotation source was found.
+- `Fortune_ApplyReset` maps reset code `3` to the click-empty reset path, so NF
+  renamed the packet field and the session-manager/test constants from reset
+  value to reset code without changing behavior.
+- Remaining blocker: retail `ServerFortuneRewards` capture or storefront-server
+  catalog dump with active account-item ids, weights/probabilities, and any
+  money rows before replacing rarity-tier emulator weights.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~Fortune" -v minimal --nologo -m:1 -p:UseSharedCompilation=false -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f031-fortune\`
   passed 20/20.
 
 2026-06-03 - F-023 Rider's Reef smoke harness preset:

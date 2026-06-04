@@ -341,15 +341,15 @@ Rules:
   and per-character path reward history. Add EF models/migrations only after the
   schema is proven against current save/load behavior. Partial implementation:
   `character_path_mission` now persists active/completed mission state and
-  replays unfinished episodes on initial packets; object-id state, reward
-  history, and negative reload/path/faction/zone proof remain open.
-  Runtime progress (2026-05-28): persisted active mission replay is now guarded
-  by the current active path plus table-backed mission/episode, faction,
-  prerequisite, and packet-width checks. Different-path, missing-episode, and
-  mismatched-episode-path persisted missions no longer replay on login or
-  suppress the current path's zone activation for the same episode id. Focused
-  `PathManagerTests` passed `49/49`; object-id state, reward history, broader
-  zone/reload negatives, and exact replay ordering remain open.
+  hydrates it on login without replaying unfinished episodes on initial packets;
+  object-id state, reward history, and negative reload/path/faction/zone proof
+  remain open. Runtime progress (2026-06-04): live crash proof showed
+  persisted multi-episode login replay can crash `OnPlayerPathRefresh`, so
+  persisted rows no longer pre-mark episodes active or suppress current-zone
+  activation for the same episode id. Focused path/pregame/world-entry tests
+  passed `214/214`, followed by three clean local client logins; object-id
+  state, reward history, broader zone/reload negatives, and exact activation
+  ordering remain open.
 - [ ] LWS-061 Path reward precision: map path XP/reward evidence, item counts,
   and unflagged `PathRewardType.Mission` grants. The WIP `30` XP fallback was
   replaced where evidence is exact: client `Lua_PathMission_GetRewardXp` reads
@@ -362,15 +362,13 @@ Rules:
   mission prerequisite filtering, faction filtering, and replay/completion
   rules through table data plus client smoke. Partial implementation: local
   tests cover table-backed faction/prerequisite filters plus completed-mission
-  no-replay and persisted-active no-duplicate activation; client smoke and exact
-  transition ordering remain open.
-  Runtime progress (2026-05-28): persisted active replay now has focused
-  negative coverage for different-path, wrong-faction, unmet simple
-  path-prerequisite, missing-episode, and mismatched-episode-path missions.
-  Constructor-time replay filtering can evaluate simple path prerequisites
-  before `player.PathManager` is assigned, while client-smoked filtering
-  semantics, exact replay/completion ordering, and broader path/zone reload
-  transitions remain open. Focused `PathManagerTests` passed `49/49`.
+  no-replay and persisted-active current-zone activation; broader client smoke
+  and exact transition ordering remain open.
+  Runtime progress (2026-06-04): login no longer replays persisted active
+  episodes after a local `OnPlayerPathRefresh` crash was correlated with three
+  persisted episode groups sent after `ClientEnteredWorld`. Persisted rows still
+  hydrate durable state, while guarded current-zone activation handles runtime
+  episode packets. Focused path/pregame/world-entry tests passed `214/214`.
 - [ ] LWS-063 Settler hub state: map and implement durable built-group,
   resource, avenue, and hub progress state. Verify reload persistence and
   rejection paths. Partial implementation: Settler_Hub mission progress now

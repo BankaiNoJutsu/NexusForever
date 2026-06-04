@@ -156,6 +156,14 @@ because the current branch still lacks enough evidence or backing state:
   --nologo -p:UseSharedCompilation=false
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\blocked-final-2\`
   succeeded with `0 Warning(s)` and `0 Error(s)`.
-- `rg -n "\bTODO\b" Source` returns no source TODO markers. The broader
-  branch-review pattern still reports intentional `partial` declarations,
-  diagnostic `Blocked*` names, and explicit unsupported boundaries listed above.
+- 2026-06-04 scoped recheck: `rg -n "\bTODO\b|\bFIXME\b|NotImplemented|NotImplementedException" Source -g "*.cs"`
+  returns only test doubles with deliberate `NotImplementedException` guards after
+  the Ruins of Kel Voreth WIP-guessed faction-routing comment was rewritten to
+  remove its stale `TODO` marker. Production source has no active TODO/FIXME or
+  NotImplemented marker.
+- 2026-06-04 scoped recheck: `rg -n "throw new NotSupportedException" Source -g "*.cs"`
+  reports production guardrails only: unsupported database provider selection,
+  unsupported packet-source-generator field/string encodings, and the
+  `PositionMultiSplineCommand` mixed-spline-type invariant. Test-project hits are
+  deliberately unreachable fixture members. These are explicit unsupported
+  boundaries, not unimplemented feature claims.

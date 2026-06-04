@@ -17,31 +17,30 @@ verification in the current test suite.
 Partially implemented with blockers. `PathManager` now persists active and
 completed mission state through `character_path_mission`, including mission id,
 episode id, state, completion flag, `ProgressCount`, `ProgressData`, and
-configured XP. Login construction restores completed mission status, and initial
-path packets replay unfinished persisted episode state through the existing
+configured XP. Login construction restores mission state into server memory, but
+initial path packets no longer replay unfinished persisted episode state through
 `ServerPathSetCurrentEpisode`, `ServerPathEpisodeProgress`, and
-`ServerPathMissionActivate` messages. EF migration
+`ServerPathMissionActivate`; the 2026-06-04 client crash evidence showed that
+multi-episode replay can crash `OnPlayerPathRefresh`. EF migration
 `20260527191317_CharacterPathMissionState` adds the character-owned table.
-Replay is now guarded by the current active path plus table-backed mission and
-episode rows: unfinished persisted missions are replayed only when the mission
-still matches the saved episode, the saved episode still exists as a
-`PathEpisode` row for the active path, and the mission still passes faction,
-prerequisite, and packet id-width gates. A persisted mission from a different
-path no longer replays on login and no longer suppresses the current path's
-zone-activation packets for the same episode id. Orphaned persisted missions
-with no matching `PathEpisode`, or an episode row for a different path, also no
-longer replay.
+Runtime activation remains guarded by the current active path plus table-backed
+mission and episode rows during current-zone activation. Persisted missions no
+longer suppress the current path's zone-activation packets for the same episode
+id, and login no longer emits orphaned or stale persisted episode groups.
 
 Still blocked pending stronger proof:
 
 - object-id state after logout/reload;
 - reward-history behavior for already-granted path rewards;
-- broader negative cases for zone, character reload, and exact replay ordering.
+- broader negative cases for zone, character reload, and exact current-zone
+  activation ordering.
 
 Focused verification:
 
 - `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PathManagerTests" -v minimal --nologo` passed `49/49`.
 - `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo` passed `1805/1805`.
+- 2026-06-04 local crash follow-up passed a focused path/pregame/world-entry
+  slice `214/214` and three fresh client logins without new access violations.
 
 ## LWS-061 Path Reward Precision
 
@@ -79,22 +78,20 @@ XP remains blocked pending stronger table or packet evidence.
 Partially implemented with blockers. `TryActivateCurrentZoneEpisode` uses
 table-backed current world/root zone, active path, faction, prerequisite, and
 id-width filters before sending episode and mission packets. Current regression
-coverage also proves two reload sequencing guards: completed persisted missions
-do not replay active episode packets, and an unfinished persisted active episode
-suppresses duplicate activation packets on zone re-entry. The 2026-05-28
-follow-up adds persisted-replay negative coverage for different path, wrong
-faction, and unmet simple path prerequisites; `PathManager` also evaluates those
-simple path prerequisites safely during construction before the player-owned
-manager reference is assigned. The same replay path now rejects orphaned active
-mission rows whose saved episode no longer exists in `PathEpisode`, and saved
-episodes whose `PathTypeEnum` no longer matches the active path. This is still a
-useful WIP path surface, not full retail sequencing.
+coverage also proves login does not replay completed or unfinished persisted
+episode packets, and an unfinished persisted active episode no longer suppresses
+current-zone activation packets on zone entry. The 2026-05-28 follow-up added
+negative coverage for different path, wrong faction, unmet simple path
+prerequisites, missing episodes, and mismatched episode paths; after the
+2026-06-04 crash proof, those rows remain durable state only until the guarded
+current-zone activation path selects an episode. This is still a useful WIP path
+surface, not full retail sequencing.
 
 Still required proof:
 
 - current-zone activation timing;
 - client-smoked prerequisite and faction filtering semantics;
-- exact replay/completion ordering;
+- exact activation/completion ordering;
 - broader reload behavior after path and zone changes.
 
 Focused verification:

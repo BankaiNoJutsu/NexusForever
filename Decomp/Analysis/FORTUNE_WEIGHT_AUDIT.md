@@ -1,6 +1,6 @@
 # F-031 Madame Fay Weight Audit
 
-Status date: 2026-06-02 (runtime blocker tranche reaffirmed)
+Status date: 2026-06-04 (reset-code naming closure; retail weights still blocked)
 
 ## Scope
 
@@ -70,10 +70,24 @@ payout, screenshot, packet capture, or observed `RewardItemProbabilities` value.
 - `ServerFortuneCards_ReadPayload` (`1400a0b10`, opcode `0x03D1`) reads the
   operation, three rarity values, three account-item ids, and three flipped
   flags.
+- 2026-06-04 Ghidra MCP recheck: `Fortune_ApplyRewards` (`1407292a0`) copies
+  server-provided item/money reward arrays plus parallel probabilities into
+  Fortune UI state and exposes no active-rotation source. `Fortune_ApplyReset`
+  (`1407291f0`) maps the 3-bit `ServerFortuneReset` value `3` to the
+  click-empty reset path; NexusForever now names this field `ResetCode`.
+- 2026-06-04 false-source cleanup: F-007 `RewardRotation*` table/packet labels
+  (`ClientDB_RegisterRewardRotationContent`/`Item`/`Essence`/`Modifier`,
+  `Lua_GameLib_BuildRewardRotations`, `RewardRotation_BuildLuaRotationRewards`,
+  and `ServerRewardRotationContentContext` `0x07CD`/`0x07D3`) map the separate
+  reward-rotation/storefront schedule surface. They do not feed
+  `Fortune_ApplyRewards`, `FortunesLib_GetFortunesLootList`, or
+  `IFortuneRewardPool`, so they are rejected as Madame Fay active-rotation
+  evidence.
 - Current Fortune tests cover packet wire shape, catalog probability forwarding
   from `IFortuneRewardPool`, Fortune coin debit, three-card dealing, card flip
-  state, account-item grant calls, account-scoped in-memory state, restart
-  reset behavior, and invalid-flip resets.
+  state, `ServerFortuneCardUpdate.HasUpdate` on runtime flip updates,
+  account-item grant calls with current-character target identity, account-scoped
+  in-memory state, restart reset behavior, and invalid-flip resets.
 
 ## Current Emulator Probability Shape
 
@@ -169,14 +183,13 @@ Focused tests:
 ```powershell
 dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj `
   --filter "FullyQualifiedName~Fortune" `
-  -p:OutDir=I:\GIT\NexusForever\.nexusforever-runtime\build\fortune-audit-outdir\ `
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f031-fortune-target\ `
   -p:UseSharedCompilation=false -m:1 -v minimal --nologo
 ```
 
-Result: `17` passed, `0` failed, `0` skipped. The normal project output path was
+Result: `20` passed, `0` failed, `0` skipped. The normal project output path was
 locked by a running local `NexusForever.WorldServer`, so the verification used an
-isolated local output directory. The build emitted unrelated existing warnings in
-`NexusForever.Script.Main` and `TutorialStartFlowTests`.
+isolated local output directory.
 
 ## Runtime blocker tranche (2026-06-02)
 
@@ -186,6 +199,13 @@ isolated local output directory. The build emitted unrelated existing warnings i
   now guards the runtime emitter boundary: `ServerFortuneRewards` forwards the
   mapped item/probability catalog and keeps money reward/probability arrays
   empty until retail/catalog evidence proves those producers.
+- `FortuneSessionManagerTests.FlipCard_AfterStartGrantsAccountItemAndUpdatesSelectedCard`
+  and account-scope coverage now guard that emitted `ServerFortuneCardUpdate`
+  messages keep `HasUpdate=true`; native `Fortune_ApplyCardUpdate`
+  (`1407290a0`) ignores operation/card flags when this leading bool is false.
+- The same payout test now pins the account-inventory grant target boundary:
+  Fortune passes the current realm/character identity and sets
+  `hasTargetPlayerIdentity` when awarding the flipped card's account item.
 - Unblock still requires retail `ServerFortuneRewards` capture or storefront rotation dump (`f031-fortune-playthrough` harness bundle).
 
 ## Closure State
@@ -225,3 +245,30 @@ non-item account rewards out of the advertised display catalog.
 current picker-only handling for entitlement/generic-unlock account rewards
 without treating those rows as mapped retail item probabilities. Exact
 per-item weights and active rotations remain blocked.
+
+Runtime-boundary update (2026-06-04): `ServerFortuneReset.Unknown` was renamed
+to `ResetCode` after the native `Fortune_ApplyReset` consumer confirmed code
+`3` drives the click-empty reset path. A same-pass `Fortune_ApplyRewards`
+recheck found only client-side cache application of server-provided reward and
+probability arrays, so active rotation and exact retail weights remain blocked
+on a retail `ServerFortuneRewards` capture or storefront-server catalog dump.
+Fortune payout grants now explicitly target the current character identity in
+the account-inventory API, matching the already-built `BuildTargetIdentity`
+boundary without widening card selection or reward weights.
+Focused `FullyQualifiedName~Fortune` verification passed 20/20 with isolated
+output at `artifacts/testbin/f031-fortune-target`.
+
+Reward-rotation false-source cleanup (2026-06-04): the F-007 reward-rotation
+surface is a rejected source for F-031 active Madame Fay rotation. Native labels
+for the reward-rotation DB tables, `Lua_GameLib_BuildRewardRotations`,
+`RewardRotation_BuildLuaRotationRewards`, and the `0x07CD`/`0x07D3`
+content-context packets explain GameLib/matchmaking reward schedule refreshes
+and the storefront bootstrap ordering that can precede Fortune status. They do
+not explain Fortune catalog selection or probabilities, which still enter the
+UI only through `ServerFortuneRewards` -> `Fortune_ApplyRewards` ->
+`FortunesLib_GetFortunesLootList`. This changes no runtime behavior and keeps
+retail active rotation blocked on a real `ServerFortuneRewards` capture,
+storefront-server catalog dump, or native/server artifact that produces that
+packet family. Focused boundary verification passed 32/32:
+`FullyQualifiedName~Fortune|FullyQualifiedName~RewardRotationRuntimeEvidenceTests|FullyQualifiedName~ClientRewardUpdateRequestHandlerTests`
+with isolated output at `artifacts/testbin/f031-fortune-rewardrotation-falsesource/`.

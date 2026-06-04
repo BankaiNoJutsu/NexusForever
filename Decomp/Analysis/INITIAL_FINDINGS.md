@@ -7204,6 +7204,20 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   emit grant rows when needed. `0x07CD` `UInt0`/`UInt1`/`UInt3` are populated
   with correlated throttle defaults from `FUN_140635840` (`manager + 0x150 +
   index * 0x14`, 1000 ms); the dedicated apply helper and `Flag` bit remain blocked.
+  2026-06-04 Ghidra MCP recheck kept this gap mapped-only: the `0x07CD`
+  registration in `Network_RegisterServerOpcode_0351` still passes only
+  `ServerRewardRotationContentContext_ReadPayload` (`14008fcb0`) and a null
+  static handler, while `Reward_SendRewardUpdateRequest` (`140636ba0`) sends
+  opcode `0x07CC` with only the content-type index and reads throttle slots at
+  `manager + 0x150/+0x158/+0x160`. `RewardRotation_GetLoadedScheduleForContent`
+  (`140636c40`) and the Lua callbacks (`1407091e0`, `140709210`, `140709370`)
+  prove refresh-by-index and loaded-schedule lookup, not `0x07CD` field
+  application. Do not rename `UInt0`/`UInt1`/`UInt3` or set `Flag` from static
+  adjacency; next evidence is a retail `0x07CD` capture or dynamic breakpoint on
+  the runtime apply dispatch. `RewardRotationRuntimeEvidenceTests` now guards
+  that generated evidence artifacts preserve this exact `0x07CD` apply-helper /
+  `Flag` / throttle-slot blocker text; focused `FullyQualifiedName~RewardRotation`
+  verification passed 46/46 with isolated output.
 - Taxi unlock persistence blocker:
   Type `101` achievements (`4714`/`4715`, `Making Connections`) remain
   mapped-only. The client can receive an authoritative unlocked flight-path
@@ -15868,14 +15882,15 @@ LWS-060 path mission persistence implementation pass (2026-05-27):
   `ProgressCount`, `ProgressData`, and configured XP.
 - `Source/NexusForever.Game/Entity/PathManager.cs` now loads those rows during
   construction, restores completed mission status, saves modified runtime
-  states through the character save path, and replays unfinished active episode
-  state on initial path packets through `ServerPathSetCurrentEpisode`,
-  `ServerPathEpisodeProgress`, and `ServerPathMissionActivate`. This does not
-  claim exact retail replay ordering.
+  states through the character save path, and, after the 2026-06-04 client
+  crash follow-up, keeps unfinished active episode rows as durable state instead
+  of replaying them on initial path packets. Current-zone activation is the
+  guarded runtime packet surface for `ServerPathSetCurrentEpisode`,
+  `ServerPathEpisodeProgress`, and `ServerPathMissionActivate`.
 - Remaining blockers: active path object-id persistence, per-character path
   reward-history persistence, and negative reload/path/faction/zone transition
   proof. LWS-062 follow-up tests cover completed-mission no-replay and
-  persisted-active no-duplicate zone activation. LWS-063 follow-up coverage
+  persisted-active current-zone activation after reload. LWS-063 follow-up coverage
   proves partial Settler_Hub mission progress can reload and complete after the
   next accepted build-tier request, while built-group identity, resource costs,
   avenue totals, and failure result packets remain blocked. Verification passed
@@ -18578,6 +18593,16 @@ Prerequisite / opcode pass (2026-06-02, pass 100 - type 5 live Reputation path v
 Prerequisite / opcode pass (2026-06-02, pass 101 - entity-stat triplet registration + type 266 label):
 
 - **Corrected `0x0889` reader evidence:** `Network_RegisterServerOpcode_0351` (`14006c290`) registers **`0x0889`** at **`140078cb0`** with **12-byte** reader **`ServerSpellUInt32TripletListRow_ReadPayload` (`140080bf0`)**, not `ServerEntityStatUInt32UInt5UInt32_ReadPayload` (`140097620`, used by **`0x08F4`** @ `140075082`). Same triplet reader is shared with **`0x0908` ServerEntityTargetUnit** (`1400751a3`) and **`0x090A` ServerEntityThreatUpdate** (`1400751d4`). **`0x08CC`** uses **`ServerUInt32WideString_ReadPayload`** @ `140075236`.
+- **2026-06-04 entity-stat registration anchor extension:** headless
+  `FindImmediateInstructions` confirmed the remaining entity-stat registration
+  literals in `Network_RegisterServerOpcode_0351`: **`0x093D`** at
+  `140074cda` with reader `ServerEntityStatUInt32UInt5Pair_ReadPayload`
+  (`140097690`), **`0x0939`** at `140074fb9` with reader
+  `ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload` (`140097ee0`),
+  and **`0x093E`** at `14007501b` with reader
+  `ServerEntityStatTwoUInt32UInt64_ReadPayload` (`140097f70`). Other immediate
+  hits for `0x0939`/`0x093D`/`0x093E` were GameFormula lookups or object
+  offsets, not producers or apply consumers.
 - **Labeled `Prerequisite_CheckPetOrEsperPetEntity` (`14049cae0`):** live type **266** case **`0x10a`** vtable **`+0xc8`**; disasm reads **`entity+0x80`**, subtracts **`0x18`**, accepts native **`0x18`/`0x19`** (NF `Pet`/`EsperPet`). Enum name already **`PetOrEsperPetEntity`**; NF handler still absent.
 - **Still blocked:** per-opcode `vtable+0x58` apply for `0x0889` cluster; semantic field names; diagnostic senders `Client0x0550`/`0x062A`/`0x0634`; no-op/stub prerequisite slots; duplicate-body enum aliases (`Unknown223`/`240`/...).
 Prerequisite naming guardrail pass (2026-06-02, pass 102 - documented no-op slots locked in tests):
@@ -18717,6 +18742,122 @@ Full missing-system restoration pass (2026-06-02 - F-025/F-031 Fortune chain cla
 - `Fortune_ApplyCardUpdate` returns without applying the operation/card flags when the first payload bool is false. NexusForever renamed `ServerFortuneCardUpdate.Unknown` to `HasUpdate`; packet shape is unchanged.
 - Result: small F-031 naming closure implemented; F-025 entity-stat aux remains blocked because this nontrivial native `WorldSocket+0x15b0` node is Fortune, not aux.
 
+F-031 Fortune reset-code and active-rotation recheck (2026-06-04):
+
+- **Implemented naming closure**: direct Ghidra MCP decompile of
+  `Fortune_ApplyReset` (`1407291f0`) shows the 3-bit `ServerFortuneReset`
+  payload value `3` driving the click-empty reset path when the Fortune UI is in
+  the relevant state. NexusForever renamed `ServerFortuneReset.Unknown` to
+  `ResetCode`; behavior and packet width are unchanged. Focused Fortune
+  verification passed 20/20 with isolated output.
+- **Mapped / still blocked for weights and rotation**: `Fortune_ApplyRewards`
+  (`1407292a0`) copies server-provided item/money reward arrays and parallel
+  probability floats into Fortune UI state; `FortunesLib_GetFortunesLootList`
+  (`140766370`) still reads cached item rows and exposes `fProbability =
+  serverFloat * 100`. This recheck found no active-rotation source, no per-item
+  retail weight table, and no server/catalog producer evidence.
+- **Implemented payout-target boundary**: NF now passes the current
+  realm/character identity to `IAccountInventoryManager.AddItem` with
+  `hasTargetPlayerIdentity` set when a flipped Fortune card awards an account
+  item. This uses the existing `BuildTargetIdentity` boundary and changes no
+  card selection or probability behavior.
+- **Blocked evidence source**: retail `ServerFortuneRewards` packet capture or
+  storefront-server catalog dump that contains a known active Madame Fay
+  rotation, account-item ids, probabilities/weights, and any money rows.
+
+F-031 Fortune UI bootstrap follow-up (2026-06-04):
+
+- **Observed local symptom**: live WorldServer log
+  `NexusForever.WorldServer_20260604_48432.log` showed the client opening
+  storefront/reward-rotation surfaces and sending `ClientRewardUpdateRequest`
+  indices `2, 4, 3, 6, 5, 1, 0`, but no `ClientFortuneNotifyGame`,
+  `ClientFortuneNotifyStorefront`, or `ClientFortuneStart` packets before the
+  user dragged a Fortune chest onto the pedestal. That left the existing Fortune
+  start/flip handlers unreachable from this UI path.
+- **Implemented emulator bootstrap fix**: `ClientRewardUpdateRequestHandler`
+  now keeps the existing reward-rotation index `0` catalog-first ordering, then
+  calls `IFortuneSessionManager.SendStatus(session)` before reward-rotation
+  placeholder packets. This reuses the current Fortune reward/card status path
+  instead of widening card selection, payouts, probabilities, or active rotation
+  semantics.
+- **Verification**: focused reward/Fortune coverage passed 27/27 with isolated
+  output path `artifacts/testbin/f031-fortune-bootstrap/`; a WorldServer build
+  also passed with isolated output path `artifacts/build/f031-fortune-bootstrap/`.
+
+F-031 Fortune start affordability follow-up (2026-06-04):
+
+- **Observed local symptom**: after the bootstrap fix, live WorldServer log
+  `NexusForever.WorldServer_20260604_24644.log` showed repeated
+  `ClientFortuneStart` packets followed immediately by `ServerFortuneReset`.
+  The live auth DB for account `1` had account-currency rows for `6` and `9`
+  only, while `account_inventory` contained many `CanClaim` account-item rows
+  for the purchased Fortune Coin bundles. The start gate was therefore checking
+  spendable `AccountCurrencyType.FortuneCoin` (`5`) before the claimable bundle
+  was converted into account currency.
+- **Implemented emulator UX fix**: `FortuneSessionManager.Start` now auto-claims
+  a matching `CanClaim` account item whose `AccountItem` row grants Fortune Coin,
+  then re-checks the real currency balance and debits the normal one-coin start
+  cost. No card selection, payout, reward probability, or active rotation
+  behavior changed.
+- **Verification**: WorldServer build passed with isolated output path
+  `artifacts/build/f031-fortune-autoclaim/`. The focused test project is
+  currently blocked by unrelated dirty `ActionSetSaveRequestTests.cs`
+  constructor drift before the Fortune tests compile.
+
+F-031 Fortune dealt-card crash follow-up (2026-06-04):
+
+- **Observed local symptom**: after the auto-claim path allowed the chest drop to
+  deal cards, the 16042 client raised an access violation reading
+  `0x0000000000000158` at runtime address `0x00007FF79D68A28B`. The live
+  `account_fortune_session` row for account `1` persisted dealt account-item ids
+  `3215`, `166`, and `26`.
+- **Data evidence**: local `wildstar_client.accountitem` showed `3215` is
+  item-backed (`item2Id=85875`), while `166` and `26` are entitlement-only rows
+  with `item2Id=0`.
+- **Client evidence**: using the existing WildStar64 base mapping, the crash maps
+  to `0x14078A28B` inside `FUN_14078a1a0`. `Fortune_ApplyCards`
+  (`140728dc0`) and `Fortune_ApplyCardUpdate` (`1407290a0`) call this helper for
+  each displayed card after resolving the dealt `AccountItem`. The helper stores
+  card display state and then reads `*(param_3 + 0x158)` without a null guard;
+  entitlement-only rewards can leave that resolved display object null, matching
+  the observed read at `0x158`.
+- **Implemented emulator safety fix**: `FortuneRewardPool` now treats
+  `Item2Id != 0` as the card-displayable candidate boundary, excluding
+  entitlement/unlock-only account rewards from dealt `ServerFortuneCards` until
+  retail evidence maps a card-safe non-item payload. `FortuneSessionManager`
+  also discards stored sessions containing non-displayable cards before page-load
+  status, and local setup imports `Tools/Setup/sql/runtime_auth_seed.sql` to
+  clear stale transient Fortune sessions during seed/import flows.
+- **Verification**: focused `FortuneRewardPoolTests` passed 4/4 with isolated
+  output path `artifacts/testbin/f031-fortune-item-cards/`; WorldServer build
+  passed with isolated output path `artifacts/build/f031-fortune-item-cards-world/`.
+
+F-031 RewardRotation false-source cleanup (2026-06-04):
+
+- **Target question**: whether F-007 `RewardRotation*` tables, Lua builders, or
+  `0x07CD`/`0x07D3` content-context packets can prove Madame Fay active
+  Fortune rotation.
+- **Rejected source**: `ClientDB_RegisterRewardRotationContent`/`Item`/`Essence`/
+  `Modifier`, `Lua_GameLib_BuildRewardRotations`, and
+  `RewardRotation_BuildLuaRotationRewards` explain the separate
+  reward-rotation/storefront schedule surface. `Reward_SendRewardUpdateRequest`
+  (`140636ba0`) still sends only a reward-rotation content-type index through
+  `0x07CC`, and `ServerRewardRotationContentContext_ReadPayload` (`14008fcb0`)
+  remains F-007 content-context evidence.
+- **Mapped Fortune boundary remains unchanged**: `ClientFortuneNotifyStorefront`
+  and the reward-rotation index `0` bootstrap path only ensure storefront
+  catalog/status ordering before Fortune status. Fortune catalog probabilities
+  still enter the UI through `ServerFortuneRewards` (`0x03D2`) ->
+  `Fortune_ApplyRewards` (`1407292a0`) -> `FortunesLib_GetFortunesLootList`
+  (`140766370`), with current NF values supplied by `IFortuneRewardPool`.
+- **Disposition**: Rejected as F-031 active-rotation evidence. Exact retail
+  weights and active rotation remain blocked on a retail `ServerFortuneRewards`
+  capture, storefront-server catalog dump, or native/server producer artifact
+  for the Fortune packet family.
+- **Verification**: focused Fortune/reward-rotation boundary coverage passed
+  32/32 with isolated output at
+  `artifacts/testbin/f031-fortune-rewardrotation-falsesource/`.
+
 Full missing-system restoration pass (2026-06-03 - marketplace aux packet contracts):
 - Implemented packet-contract closure only for marketplace aux opcodes. No auction,
   commodity, CREDD, or marketplace runtime emit path was enabled.
@@ -18727,6 +18868,13 @@ Full missing-system restoration pass (2026-06-03 - marketplace aux packet contra
 - The same registration cluster binds `0x07D5` (`ServerAuctionsByFilterAux`) to
   reader `14008fe80`, which consumes one 14-bit value, three `uint32` fields,
   and one flag.
+- 2026-06-04 MCP/export recheck: `0x06DF` has only data xref `140dcf0e8`
+  and registration call-site refs `140073421`/`140073433`; `0x07D5` has only
+  data xref `140dcf0ac` and registration call-site refs
+  `14007335d`/`14007336f`. The registration rows in
+  `selected_decompiled_cache/functions/.../14006c290.fragment.c` bind
+  `0x06DF` to size `0x20` and `0x07D5` to size `0x14`, with no static apply
+  callback, producer xref, or emit timing proof found.
 - NexusForever now exposes typed reader-backed packet models and focused
   packet-shape coverage for both opcodes. Auction-post and auction-filter
   producer/consumer semantics remain blocked until a client apply path, live
@@ -18858,3 +19006,631 @@ Krakal opcode-branch audit source follow-up (2026-06-04 - inventory 0x056B..0x05
   krakal's 32-bit maker / 4-bit count writer.
 - Updated `function_labels.csv` for readers `1400a3ce0`, `1400a3d50`, and
   `1400a3e40`; no runtime producer or item mutation behavior was enabled.
+
+Krakal opcode-branch Ghidra follow-up (2026-06-04 - remaining transport/inventory paths):
+- Registration evidence:
+  `Decomp/Analysis/exports/WildStar64.exe/selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5/14006c290.fragment.c`
+  registers `0x00CA` as size `0x10` with
+  `ServerHousingResidenceKeyedUpdate_ReadPayload` (`14008de20`) near the
+  housing cluster, registers `0x0188` as size `0x10` with
+  `ServerFlightPathUpdate_ReadPayload` (`14008eaa0`), `0x0186` as size `4` with
+  the one-14-bit scalar reader at `14007a530`, `0x0187` as size `1` with
+  `ServerEmpty_ReadPayload` (`14007d8e0`), `0x01A7` as size `0x10` with
+  `ServerReputationAuxUInt64UInt32_ReadPayload` (`14008ef80`), and `0x01A8`
+  as size `0x10` with `ServerHousingResidenceKeyedUpdate_ReadPayload`
+  (`14008de20`).
+- Transport apply helper evidence:
+  `DAT_140c659d0` is the taxi-manager singleton used by flight-path and
+  rapid-transport checks. MCP decompile maps `1404accf0` as
+  `FlightPath_ApplyAllowedNodeSnapshot`: it clears the manager unlocked-node
+  tree at `+0x108/+0x110`, walks a counted uint32 TaxiNode id array matching
+  the `0x0188` reader shape, validates node and faction gates, and reinserts
+  allowed nodes. `1404aceb0` is `FlightPath_ApplyAllowedNodeAdd`: it validates
+  one TaxiNode id and inserts it into the same unlocked-node tree. Follow-up
+  xref audit corrected the earlier apply-table hypothesis: `1404accf0` has
+  only `140e0ddd0` plus `140bd8950` / `140bd8960` data refs, and `1404aceb0`
+  has only `140e0ddf4` plus `140bd8974` / `140bd8988` data refs. The
+  `140bd89xx` rows parse as EH/unwind/runtime metadata and the `140e0ddxx`
+  refs are `.pdata`, so these refs are not semantic opcode dispatch proof.
+- Handler-chain proof attempt:
+  `WorldSocket_ProcessServerMessage` (`140014f10`, decompiled at `140014f2a`)
+  falls back to the `+0x15b0` native world-socket handler chain and calls each
+  node's vtable `+0x58` apply slot after parsing. The persistent fortune node
+  (`WorldSocketPersistentNode15A8_Ctor`, apply function
+  `FortuneNode_ApplyServerFortunePackets` at `1404d60f0`) is the current proof
+  template because it switches on `0x03CF..0x03D2` and calls semantic apply
+  helpers. No selected/static node decoded in this pass switched on
+  `0x0186`, `0x0187`, `0x0188`, `0x00CA`, `0x01A7`, or `0x01A8`, and no
+  chain xref to the taxi or item helpers was found. The inline Java script path
+  was attempted after setting `GHIDRA_MCP_ALLOW_SCRIPTS=1`, but the current
+  Ghidra/MCP provider throws
+  `GhidraPlaceholderBundle cannot be cast to GhidraSourceBundle`; MCP
+  primitives and local export scans were used instead.
+- Exact immediate searches:
+  exact `MOV EDX,0x0186`, `MOV EDX,0x0187`, `MOV EDX,0x0188`, and
+  `MOV EDX,0x01A7` forms remain registration-only in the current Ghidra
+  program. `0x00CA` has one extra immediate use in `FUN_140037220`, but that
+  path calls `FUN_1400a78b0(0x2ff05,0xca)` in a UI/message-selection path, not
+  network opcode dispatch. `0x01A8` has extra exact immediate uses in
+  `FUN_1408d2890` / `FUN_1408ea770`, but those are object/audio factory paths
+  around `Init.bnk`, not packet ownership evidence.
+- Opcode verdicts:
+  `0x0186` is correlated only: native has a matching single-node taxi add
+  helper, but the opcode-to-helper link is still missing. `0x0187` is adjacency
+  only: empty wire shape is verified, but no clear-only taxi apply function was
+  proven. `0x0188` is mapped at the reader/helper-shape level as a counted
+  uint32 flight-path snapshot/update; krakal's `AllowedNodeAddList` name has a
+  matching wire shape but the "add list" semantics are not proven. `0x00CA`
+  remains rejected as `ServerItemCharges` because native registration keeps it
+  in the housing/privacy keyed-update cluster and the `ItemCharges` string at
+  `140ab7d58` has no refs. `0x01A7` remains ambiguous: the real
+  `ServerItemDurabilityUpdate_ReadPayload` (`1403b9690`) writes item durability
+  and dispatches `ItemDurabilityUpdate`, but it has only metadata/string refs
+  and no opcode link. `0x01A8` remains ambiguous: dye strings such as
+  `SetItemDye`, `GetAvailableDyeChannel`, and `bDyeChannel*` resolve to UI/API
+  or table surfaces, not to the opcode.
+- Proof still needed:
+  static confirmation requires decoding a concrete world-socket handler-chain
+  node whose vtable `+0x58` switch/call path handles one of these opcodes and
+  reaches the candidate taxi/item/dye/housing helper. Live confirmation would
+  break on `WorldSocket_ProcessServerMessage` plus `1404accf0`, `1404aceb0`,
+  `1403b9690`, and the taxi-tree clear helper when `RCX == DAT_140c659d0+0x108`,
+  then record the current opcode, payload, call stack, and changed client state
+  while receiving/sniffing the target packets.
+
+Krakal opcode-branch evidence push (2026-06-04 - remaining transport/inventory static lanes):
+- Socket-chain coverage:
+  direct Ghidra MCP `search_instructions` for operand `0x15b0` found 65 textual
+  matches, but the socket-owned references reduce to the already mapped
+  constructor/copy-init/destructor/walkers plus appenders:
+  `WorldSocket_Ctor` (`14000a4ef`, `14000a9cc`),
+  `WorldSocket_DestroyRuntimeNodes` (`140012c3a`, `140012c50`,
+  `140012c86`), chain walkers `140013ca0`, `140013cd0`, `140013d00`,
+  `140014070`, `1400149a0`, and appenders `140015ec0`, `1400163d0`,
+  `140016560`, `1400166a0`. No new `WorldSocket+0x15b0` appender was found.
+- Direct vtable reads:
+  `PTR_FUN_140b55430`, `PTR_FUN_140b55540`, and `PTR_FUN_140b558c0` all have
+  `vtable+0x50` and `vtable+0x58` resolving to `14001d310` success/no-op style
+  handlers. `PTR_FUN_140b690f0` has `vtable+0x50` resolving to `14001d310` and
+  `vtable+0x58` resolving to `FortuneNode_ApplyServerFortunePackets`
+  (`1404d60f0`). This confirms the persistent socket-chain surface still has
+  only the fortune semantic consumer, not the target transport/item opcodes.
+- Static call graph:
+  `analyze_call_graph` with `path` mode reports no path from
+  `WorldSocket_ProcessServerMessage` (`140014f10`) to
+  `FlightPath_ApplyAllowedNodeSnapshot` (`1404accf0`),
+  `FlightPath_ApplyAllowedNodeAdd` (`1404aceb0`), or
+  `ServerItemDurabilityUpdate_ReadPayload` (`1403b9690`). Follow-up xrefs are
+  still metadata-only for those helpers (`1404accf0`: `140e0ddd0`,
+  `140bd8950`, `140bd8960`; `1404aceb0`: `140e0ddf4`, `140bd8974`,
+  `140bd8988`; `1403b9690`: `140e00b64`).
+- Exact opcode-literal scan:
+  exact `MOV EDX,0x0186`, `MOV EDX,0x0187`, `MOV EDX,0x0188`, and
+  `MOV EDX,0x01A7` remain registration-only. Focused `CMP` searches for those
+  literals found only structure offsets or larger constants, not exact opcode
+  consumers.
+- `0x00CA` false leads:
+  exact non-registration uses are not packet consumers. `FUN_140037220` remains
+  a UI/message-selection path. `FUN_1401e2910` and `FUN_1401e6bf0` use
+  `< 0xca` as a material/visual id bound while collecting small row-id arrays.
+  `ServerReader_0x67f50` has the same kind of visual/material loop at
+  `140468716`: it loads `EDX` from a row array, accepts nonzero values below
+  `0xca`, and calls a render/attachment vtable slot, not a network opcode
+  handler.
+- `0x01A8` false leads:
+  exact non-registration immediates are not packet consumers.
+  `ServerReader_0x68830` uses `0x1a8` as the Win32 `DISPLAY_DEVICEA` struct
+  size (`cb`) while enumerating display devices; `FUN_140279e20` and
+  `FUN_140279ed0` allocate 0x1a8-byte local objects; `FUN_1408d2890` and
+  `FUN_1408ea770` are object/audio-style factory lookups. None reaches dye or
+  world-message dispatch.
+- Result:
+  mapped-only / blocked. The strongest static lanes available in the current
+  open Ghidra program now fail to prove krakal ownership for `0x0186`,
+  `0x0187`, `0x0188`, `0x00CA`, `0x01A7`, or `0x01A8`. Remaining proof likely
+  needs either a not-yet-selected runtime-indirect callback target, a working
+  custom Ghidra script pass over indirect vtable writes, or live breakpoint/sniff
+  evidence that records opcode, payload, call stack, and changed client state.
+
+F-025 map-tracked producer Ghidra MCP recheck (2026-06-04):
+
+- **Mapped / still blocked**: direct Ghidra MCP decompile reconfirmed
+  `ServerMapTrackedUnitUpdate_ReadPayload` (`1400a6c10`),
+  `MapTrackedUnitUpdate_ApplyAndDispatch` (`1403f4170`),
+  `MapTrackedUnitDisable_ApplyAndDispatch` (`1403f4200`),
+  `ClientEvent_MapTrackedUnitUpdate_Dispatch` (`140430f80`),
+  `Lua_GameLib_GetMapTrackedUnitData` (`140511c80`),
+  `Lua_PublicEvent_GetTrackedUnits` (`14068adb0`), and
+  `Lua_PublicEventObjective_GetTrackedUnits` (`140690500`) as a client-side
+  tracked-unit cache/update/remove and Lua enumeration surface only.
+- **Rejected**: objective-only `TrackingSlot` selection. Read-only DataMapping
+  evidence from `client_source_trackingslot_map.csv` shows duplicate objective
+  groups: `PublicEventObjectiveId` `5010` has 20 rows and `5138` has 16 rows.
+- **Implemented guard**: `TrackingSlotHelper` now null-guards missing
+  `TrackingSlot` tables and focused tests cover zero-id short-circuit, 15-bit
+  mask, and one-way `TrackingSlot.tbl` -> `PublicEventObjectiveId` lookup.
+- **Blocked**: NexusForever must not emit `ServerMapTrackedUnitUpdate`
+  (`0x0849`) or `ServerMapTrackedUnitDisable` (`0x0848`) until a native server
+  send site, accepted live public-event marker capture, or equivalent evidence
+  proves tracked-unit id allocation, update cadence, disable lifetime, and
+  `TrackingSlotId` selection.
+
+F-004 housing neighborhood Ghidra MCP recheck (2026-06-04):
+
+- **Mapped / still blocked**: direct Ghidra MCP decompile reconfirmed
+  `ServerHousingNeighborhoodEntry_ReadPayload` (`14009cbe0`),
+  `ServerHousingNeighborhoodList_ReadPayload` (`14009ebf0`), and
+  `Housing_HandleNeighborhoodList` (`1404ba4f0`). The list consumer clears the
+  client neighborhood cache at `DAT_140c659f0+0x110`, copies `0x30` rows,
+  duplicates each row name string, and dispatches `HousingNeighborhoodRecieved`.
+- **Rejected adjacent triggers**: `Housing_SendClientVisitResidenceIdentity`
+  (`1405b2390`) sends `0x052F`; `Housing_SendClientCommunityPlacement`
+  (`1404b6b90`) sends `0x052B`; `Housing_SendClientCommunityPlotReservation`
+  (`14057fe90`) sends guild-operation `0x04B1`. These flows do not request or
+  explain `0x0506`.
+- **Observed only**: `RequestJoinNeighborhood()` / `RequestLeaveNeighborhood()`
+  strings exist in the export, but current string/xref data does not connect
+  them to a function or opcode. `HousingNeighborhoodInfo.tbl` metadata is also
+  insufficient to rename the packet row tail or synthesize list contents.
+- **Mapped table loader**: WildStar64 `ClientDB_RegisterHousingNeighborhoodInfo`
+  (`140205900`) now durably labels the `DB\HousingNeighborhoodInfo.tbl` loader.
+  Verified artifacts: `functions.csv`, `selected_decompiled.c`, fragment
+  metadata, and `function_label_inventory.csv`. This proves table availability
+  in the world client, not the `0x0506` row backing source or producer trigger.
+- **Implemented WIP placeholder removal**: `Residence.Build()` no longer emits
+  the hardcoded `0x190000000000000A` value for
+  `ServerHousingProperties.Residence.NeighbourhoodId`; property rows now emit
+  `Residence.GuildOwnerId` when present and `0` otherwise. Focused coverage:
+  `ResidenceTests`, `HousingAuxiliaryPacketEmitterTests`, and
+  `HousingPacketShapeTests` passed 32/32 with output path
+  `artifacts/testbin/f004-housing-neighborhood-rerun2/`.
+- **Blocked**: NexusForever must not emit `ServerHousingNeighborhoodEntry`
+  (`0x0501`) or `ServerHousingNeighborhoodList` (`0x0506`) until a live housing
+  UI/realm-login sniff or native server-push path proves send timing and backing
+  data for `NeighborhoodId`, both 14-bit realm fields, the second uint64, name,
+  and the three trailing uint32 fields.
+
+F-004 housing neighborhood tracker-disagreement cleanup (2026-06-04):
+
+- **Rejected stale blocker**: current NexusForever source disproves the older
+  tracker wording that a hardcoded neighborhood property blocks the `0x0501` /
+  `0x0506` packet cluster. `Residence.Build()` emits
+  `ServerHousingProperties.Residence.NeighbourhoodId` from `Residence.GuildOwnerId`
+  when present and `0` otherwise, and focused residence tests already cover
+  personal, community, and community-child rows. That property field is separate
+  from the neighborhood-list producer.
+- **Mapped / still blocked**: cached export evidence remains reader/consumer and
+  table-loader only: `ServerHousingNeighborhoodEntry_ReadPayload`
+  (`14009cbe0`), `ServerHousingNeighborhoodList_ReadPayload` (`14009ebf0`),
+  `Housing_HandleNeighborhoodList` (`1404ba4f0`), and
+  `ClientDB_RegisterHousingNeighborhoodInfo` (`140205900`). This is not enough
+  to synthesize rows from `HousingNeighborhoodInfo.tbl` or residence-session
+  state.
+- **Disposition**: no runtime emitter or field rename is safe. The next evidence
+  source is still a live housing UI/realm-login sniff or native server-push path
+  before `Housing_HandleNeighborhoodList`.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~HousingPacketShapeTests|FullyQualifiedName~HousingAuxiliaryPacketEmitterTests|FullyQualifiedName~Build_ForPersonalResidence|FullyQualifiedName~Build_ForCommunityResidence|FullyQualifiedName~Build_ForCommunityChildResidence"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f004-neighborhood-disagreement\`
+  passed `27/27`.
+
+F-008 crafting aux and rune bridge recheck (2026-06-04):
+
+- **Mapped / still blocked for aux emit**: direct Ghidra MCP recheck confirmed
+  `ServerCraftingAuxFourUInt32FloatUInt32_ReadPayload` (`1400a3af0`) reads
+  `0x084B` as four `uint32` values, one `float`, then one `uint32`;
+  `ServerUInt32AndTwoFloats_ReadPayload` (`140081df0`) reads `0x0855` as one
+  `uint32` plus two `float` values. `Crafting_HandleServerCraftingFinish`
+  (`1405e6690`) and `Crafting_HandleServerCraftingCurrentCraft` (`1405e6830`)
+  are consumer/context paths only in this pass and do not prove an enqueue site
+  or semantic names for the aux fields.
+- **Implemented / verified in NF source**: the durable rune bridge is no longer
+  blocked. `item.runeSlots`, `ItemRuneSlotsCodec`, `ItemRuneNetworkWire`,
+  `RandomGlyphData`/`Glyphs`, and migration
+  `20260531224115_ItemMicrochipIdsAndRuneSlots` preserve socket types and
+  installed rune Item2 ids; `ClientCraftingRune*` handlers mutate persisted
+  item rune state and refresh clients through `ServerItemAdd`. Focused
+  crafting/rune/additive verification passed 96/96 with an isolated test output
+  path.
+- **Implemented / verified in NF tests**: additive/catalyst crafting modifiers
+  remain a server-side state bridge only. `ClientCraftingAdditive` with a valid
+  non-zero station records modifier Item2 ids for the next fixed-recipe craft,
+  `ClientCraftingAbandon` clears them, and focused tests assert neither path
+  emits `ServerCraftingCurrentCraft` (`0x0854`) or the modeled-only aux packets
+  `0x084B`/`0x0855`.
+- **Blocked**: discovery unlock/hot-cold mutation, `ServerCraftingCurrentCraft`
+  cadence, `0x084B`/`0x0855` aux enqueue intent, non-success sigil result
+  precision, and `ServerItemMicrochips` (`0x056C`) producer timing still need
+  live crafting/item-replication capture or a native producer path before server
+  behavior is widened.
+
+F-008 microchip install taxonomy cleanup (2026-06-04):
+
+- **Rejected stale blocker**: current label/export evidence does not support a
+  distinct client microchip-install mutator. `RuneCrafting_SendClientRuneInstall`
+  (`14059d250`) sends `0x085B`, and `ClientCraftingRuneInstall_WritePayload`
+  (`1400a5900`) serializes the item guid plus rune Item2 id array. The client
+  pre-send failure path for `GenericError.CraftMicrochipInvalidSocket` (`0x70`)
+  is tied to this same `0x085B` route, not a separate C2S opcode.
+- **Still blocked / narrowed**: `ServerItemMicrochips_ReadPayload` (`1400a3d50`)
+  maps server opcode `0x056C`, and `Inventory_UpdateItemMicrochipsFromWire`
+  (`1403b8540`) is an existing-slot server-side item patch/update path. That
+  producer timing remains blocked; do not synthesize `0x056C` from rune install
+  requests until a native producer or live item-replication capture proves it.
+- **Disposition**: durable rune install stays implemented through `0x085B` and
+  `IItem.RuneSlots`; the extra C2S microchip-install hypothesis is Rejected;
+  `0x056C` remains Mapped / Blocked.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~CraftingRuneHandlerTests|FullyQualifiedName~ItemRuneSocketTests|FullyQualifiedName~CraftingPacketShapeTests|FullyQualifiedName~PacketPlaceholderNamingTests"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f008-microchip-taxonomy\`
+  passed `149/149`.
+
+Thayd teleport path-mission replay crash fix (2026-06-04):
+
+- **Observed / correlated**: two live Thayd teleports reached client `CW 51
+  4084.988525 -777.642578 -2133.616699`, then the WildStar client access
+  violated. The latest screenshot address `00007FF79D2D7BD9` maps, using the
+  same run's `WildStar64` base evidence, to Ghidra `1403d7bd9`, inside the
+  already-labelled `PathMissionRuntime_FindById` (`1403d7bc0`). The earlier
+  crash at `00007FF79D5EDC40` remains less specific without an exception stack.
+- **Server evidence**: latest world log `NexusForever.WorldServer_20260604_9924.log`
+  shows map 51 did load: the player was added to map 51 at the Thayd
+  coordinates and the server later saw only a client `ConnectionReset`. The same
+  packet burst sent `ServerPathSetCurrentEpisode`, `ServerPathEpisodeProgress`,
+  and `ServerPathMissionActivate` once during zone entry, then sent
+  `ServerPathInitialise` and replayed two active episodes, including the newly
+  activated Thayd episode again. Local DB evidence for character 30 showed active
+  mission rows `3146` and `3148` in `PathEpisodeId=451`; client tables map
+  episode 451 to world 51 / zone 122. This makes duplicate client runtime
+  insertion/replay the strongest explanation for the AV in
+  `PathMissionRuntime_FindById`.
+- **Implemented / verified**: `PathManager` now separates persisted replay
+  episodes from runtime-activated episodes. `SendInitialPackets()` replays only
+  episodes loaded from character persistence, so a current-zone path episode
+  activated earlier in the same add-to-map sequence is not sent a second time.
+  Focused verification passed:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --filter FullyQualifiedName~PathManagerTests -v minimal --nologo -m:1`
+  (`56/56`). A prior test run failed only because the live `NexusForever.WorldServer`
+  process locked the debug output DLLs.
+
+Illium teleport path replay follow-up (2026-06-04):
+
+- **Observed / correlated**: the opcode-six Thayd proof bundle had no debugger
+  `WSMSG` / `READ` / `HIT` log yet, and exact server log searches found the
+  target opcodes `0x0186`, `0x0187`, `0x0188`, `0x00CA`, `0x01A7`, and `0x01A8`
+  only in message registration lines, not live sends. The same run did capture
+  `!teleport name Illium` at `2026-06-04 16:57:56 UTC`: the server changed the
+  player to map `22`, then sent `ServerPathInitialise` followed by two persisted
+  `ServerPathSetCurrentEpisode` / `ServerPathEpisodeProgress` /
+  `ServerPathMissionActivate` groups. The client reached `CW 22 -2671.983154
+  -885.451965 -1268.360718`, then access-violated at
+  `00007FF79D2D7BD9`; the client crash log names the failing function
+  `OnPlayerPathRefresh`, with the same Ghidra `1403d7bd9`
+  `PathMissionRuntime_FindById` address as the Thayd crash. A client relaunch and
+  retry reached Illium, so the map was loadable and stale path client state is
+  the strongest explanation.
+- **Implemented / verified**: persisted path episode replay is now consumed after
+  the first `SendInitialPackets()` call in a session. This preserves login
+  reconstruction while preventing stale active episode replays on later world
+  changes. Focused verification passed with an isolated output path:
+  `dotnet test .\Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --filter FullyQualifiedName~PathManagerTests -v minimal --nologo -m:1
+  /p:OutDir=I:\GIT\NexusForever\artifacts\pathmanager-test-bin\`
+  (`57/57`).
+
+Pregame login path replay suppression (2026-06-04):
+
+- **Observed / correlated**: after the pregame/static-entity fixes, character
+  `30` (`Joy Ner`) still intermittently crashed after the loading progress bar
+  reached the end. The latest crash dump
+  `WildStar64.16042.AccessViolation.00007FF79D2D7BE2...220508` reports
+  `OnPlayerPathRefresh`, read address `0xFFFFFFFFFFFFFFFF`; the module offset
+  maps to Ghidra `1403d7be2`, inside `PathMissionRuntime_FindById`
+  (`1403d7bc0`). Local character DB state had active Soldier path rows in three
+  persisted episodes: `8`, `256`, and `451`; client `pathepisode` rows map
+  those to `426/35`, `51/248`, and `51/122`. The pre-fix world log sent
+  `ServerPlayerEnteredWorld`, then `ServerPathInitialise`, then three
+  `ServerPathSetCurrentEpisode` / `ServerPathEpisodeProgress` /
+  `ServerPathMissionActivate` groups in the same post-`ClientEnteredWorld`
+  burst. A first login survived and the second crashed at the same timestamp as
+  that path burst, so persisted multi-episode replay on login is the current
+  strongest cause.
+- **Implemented / verified**: `PathManager` still hydrates and saves
+  `character_path_mission` state, but persisted active rows no longer pre-mark
+  episodes as active and `SendInitialPackets()` no longer replays persisted
+  episode/progress/activate groups. Current-zone activation remains the only
+  runtime path activation surface during world entry. Focused regression
+  verification passed `214/214` with the path, pregame, entity-create,
+  storefront, quest, and world-entry ordering slice. The rebuilt local stack
+  then completed three fresh client boots for character `30`
+  (`WildStar64_16042_DAN_260605_001612.txt`, `_001728.txt`, `_001843.txt`):
+  each logged `IC 51` followed by `acew`, the world log showed only one
+  current-zone path activation group after `ServerPathInitialise`, and no new
+  access-violation files appeared after the known `00:05:10` local crash dump.
+
+F-010 ServerMatching0x05CF tracker reconciliation (2026-06-04):
+
+- **Target question**: Does `ServerMatching0x05CF` have enough evidence to
+  rename or emit, or only enough to reconcile the matching tracker with the
+  later apply-table findings?
+- **Evidence state**: Correlated / Blocked. `ServerUInt32_LocalReadThunk`
+  (`140099110`) still proves only the raw 32-bit reader shared with
+  `ServerTradeskillSigilResult`. The durable label
+  `MatchingManager_ApplyManagerUInt32Field0xA0` (`1405c41c0`, table cell
+  `140e1e66c`) is a candidate one-uint32 matching-manager apply path that writes
+  the payload to manager `+0xa0` and refreshes UI state, but no opcode-to-cell
+  index or live packet witness ties that cell uniquely to opcode `0x05CF`.
+- **Disposition**: No runtime emitter, semantic rename, or field-name promotion
+  is safe. `MATCHING_IMPLEMENTATION_STATUS.md`, `CURRENT_STATUS.md`,
+  `MISSING_FEATURE_MATRIX.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`, and the
+  master closure workboard now consistently describe `0x05CF` as mapped wire /
+  correlated apply candidate / blocked semantics.
+- **Next evidence source**: recover the matching apply-table walker that maps
+  opcode `0x05CF` to table cell `140e1e66c`, or capture live `0x05CF` alongside
+  `0x05CA` / `0x05CC` during match-ready, participant-count, or queue-state UI
+  transitions.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --filter "FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~PacketPlaceholderNamingTests"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f010-matching-05cf\`
+  passed `98/98`.
+
+F-010 Client0x062A/Client0x0634 diagnostic boundary (2026-06-04):
+
+- **Target question**: Can `Client0x062A` / `Client0x0634` safely drive matching
+  or queue state, or must they remain diagnostic until sender semantics are
+  proven?
+- **Evidence state**: Mapped wire / Blocked semantics. Both opcodes still bind
+  to shared `ClientUInt32_ReadPayload` / `ClientTradeskillResetTalents_WritePayload`
+  (`14007d000` / `14007d010`), and prior PE/immediate/UI-cluster probes found
+  registration-only hits for `0x062A` / `0x0634` while proving separate gameplay
+  sends for replacement `0x05D5`.
+- **Implemented guard**: `ClientUnresolvedDiagnosticHandlerTests` now pins
+  `Client0x062AHandler` and `Client0x0634Handler` as log-only boundaries with
+  no queue or raid-state emit through `EnqueueMessageEncrypted`.
+- **Blocked**: semantic rename or mutation still needs a native sender path or
+  live queue/matching UI sniff tying payload values to a feature action.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --filter "FullyQualifiedName~ClientUnresolvedDiagnosticHandlerTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientRaidInfoRequestHandlerTests"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f010-diagnostics\`
+  passed `93/93`.
+
+F-002 diagnostic handler no-emit guard (2026-06-04):
+
+- **Target question**: Are the remaining diagnostic client opcode handlers only
+  observability boundaries, or can any of them safely emit server state from the
+  current evidence?
+- **Evidence state**: Mapped wire / Blocked semantics. The packet-shape tests
+  cover the scalar/string/structured payloads, but native sender or server
+  consumer evidence is still missing for `ClientAccountRealmData`, `Client0x00C8`,
+  `Client0x00ED`, `Client0x011B`, `Client0x011D`, `Client0x012D`,
+  `Client0x0550`, `Client0x062A`, `Client0x0634`, `Client0x063E`,
+  `Client0x0701`, `ClientRealmListRealmRow`, `ClientRealmListMessageRow`,
+  `ClientAddonModuleList`, `Client0x07E3`, and `Client0x0928`.
+- **Implemented guard**: `ClientUnresolvedDiagnosticHandlerTests` now invokes the
+  unresolved diagnostic handler family and asserts no plaintext or encrypted
+  server messages are enqueued. `ClientRealmTransfer` stays outside this guard
+  because it is a separately named compatibility handler that intentionally
+  responds with `ServerRealmTransferResult`.
+- **Blocked**: semantic rename or mutation still needs native sender/consumer
+  proof or a live sniff for the specific opcode cluster.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~ClientUnresolvedDiagnosticHandlerTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PacketPlaceholderNamingTests"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f002-diagnostic-noemit\`
+  passed `90/90`.
+
+Krakal opcode local packet-evidence pass (2026-06-04):
+
+- **Capture setup**: Wireshark `dumpcap` captured loopback traffic on interface
+  `11` with capture filter `tcp port 24000 or tcp port 23115 or tcp port 6600`.
+  The closed pcap is
+  `artifacts/packet_evidence/20260604-krakal-opcode-live-capture/krakal-opcode-live-round2.pcapng`
+  (`1,285,244` bytes). A server-side decrypted JSONL recorder was enabled for
+  the contested opcodes plus correlation packets, writing
+  `artifacts/packet_evidence/20260604-krakal-opcode-live-capture/server-decrypted/20260604-174254-packet-evidence-snapshot.jsonl`.
+- **Commands/actions run**: reconnect/login, then `!teleport name Thayd`,
+  `!currency character list`, `!currency character add Credits 1000000`,
+  two `!rep update 166 1` commands, `!item lookup dye 10`,
+  `!item lookup repair 10`, `!item add 29004 1 1`, `!item add 12181 1 1`,
+  and `!character save`.
+- **Observed decoded server packets**: the decrypted server evidence contains
+  94 records total: `ServerChat` (`0x01C8`) x40,
+  `ServerItemAdd` (`0x0111`) x44, `ServerReputationUpdate` (`0x01A5`) x2,
+  `ServerAccountCurrencyGrant` (`0x0967`) x6, and
+  `ServerAccountCurrencySet` (`0x0966`) x2. The pcap conversation summary
+  confirms active localhost world traffic during the same pass, including the
+  main `127.0.0.1:* <-> 127.0.0.1:24000` world stream.
+- **Negative evidence / disposition**: no decoded sends appeared for contested
+  krakal opcodes `0x0186`, `0x0187`, `0x0188`, `0x00CA`, `0x01A7`, `0x01A8`,
+  `0x056B`, `0x056C`, or `0x056D` during these command-driven actions. This
+  proves the screenshot/command path exercises normal chat, currency,
+  reputation, and full-item-add updates, but it does **not** prove krakal's
+  conflicting semantic names for the contested aux opcodes. Keep `0x00CA`,
+  `0x01A7`, and `0x01A8` blocked; keep `0x0186`/`0x0187` correlated only; and
+  keep `0x056B`/`0x056C`/`0x056D` as reader-mapped item aux contracts without
+  producer timing.
+- **Verification**: packet recorder code compiled with
+  `dotnet build Source\NexusForever.Network\NexusForever.Network.csproj
+  --no-restore -v minimal --nologo` and a scratch world-server build:
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj
+  --no-restore -v minimal --nologo
+  -p:OutDir=I:\GIT\NexusForever\artifacts\build\worldserver-packet-evidence\`.
+
+Taxi / rapid transport live packet-evidence pass (2026-06-04):
+
+- **Capture setup**: a second Wireshark `dumpcap` loopback capture used the same
+  local-port filter while the packet recorder stayed enabled. The closed pcap is
+  `artifacts/packet_evidence/20260604-taxi-rapid-transport/taxi-rapid-transport.pcapng`
+  (`160,572` bytes), with active world traffic on
+  `127.0.0.1:64577 <-> 127.0.0.1:24000` for 1128 frames / 117 kB over
+  143.6366 seconds. The server-decrypted delta snapshot is
+  `artifacts/packet_evidence/20260604-taxi-rapid-transport/taxi-rapid-transport-server-decrypted-delta.jsonl`.
+- **Observed client actions**: the client entered the rapid transport and taxi
+  UI paths. Runtime logs captured `ClientRapidTransport` (`0x0141`) with
+  `TaxiNode=89, ContextToken=5` and `TaxiNode=88, ContextToken=6`, plus repeated
+  `ClientFlightPathPurchase` (`0x00FF`) requests for route chains including
+  `[236]`, `[124]`, `[124, 121]`, `[8, 114]`, and `[8]`. The taxi-map screenshot
+  showing Woodhaven/Celestion at price 10 credits lines up with these
+  `ClientFlightPathPurchase` clicks.
+- **Failure root cause**: each taxi purchase reached
+  `ClientFlightPathPurchaseHandler.ResolveRoutes(...)` and threw a
+  `NullReferenceException` at the server `TaxiRoute` table access. Rapid
+  transport similarly reached `ResolveRapidTransportRoute(...)` before route
+  resolution failed. Source audit showed `TaxiNode` was marked `[GameData]`, but
+  `TaxiRoute` was not, so the server could render node-backed map state while
+  lacking the route table required to execute clicks.
+- **Implemented / verified**: `TaxiRoute.tbl` is now loaded by the runtime
+  `GameTableManager`, and the rapid/taxi handlers reject cleanly if route, node,
+  or world-location tables are unavailable instead of throwing. Focused
+  verification passed:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --filter FullyQualifiedName~TransportHandlerTests -v minimal --nologo -m:1
+  -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\transport-capture-fix\`
+  (`8/8`).
+- **Closure sync / verification rerun**: F-009 status trackers now record the
+  `TaxiRoute.tbl` load and captured table-backed route branches as implemented
+  while keeping service-token bypass, global route state, taxi embark/completion,
+  passenger/seat modes, and deployable vehicle semantics blocked. Focused
+  verification passed:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~TransportHandlerTests|FullyQualifiedName~TransportPacketShapeTests|FullyQualifiedName~WorldLocationTeleporterEntityScriptTests"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f009-transport-route\`
+  (`66/66`).
+- **Negative evidence / disposition**: the decrypted delta contained only one
+  `ServerChat` (`0x01C8`) record and no contested server sends for
+  `0x0186`, `0x0187`, `0x0188`, `0x00CA`, `0x01A7`, `0x01A8`, `0x056B`,
+  `0x056C`, or `0x056D`. This pass proves the incoming transport opcodes and a
+  safe server-side data/exception fix, but it still does not prove krakal's
+  `0x0186` / `0x0187` semantic renames or any new flight-node producer timing.
+
+F-010 ServerRaidQueueStatus non-zero wire-order guard (2026-06-04):
+
+- **Target question**: Can non-zero `ServerRaidQueueStatus` fields be named or
+  emitted from queue state, or is the evidence still limited to row layout?
+- **Evidence state**: Mapped wire / Blocked semantics. `ServerRaidQueueStatus_ReadPayload`
+  @ `14008bf80` proves row fields `uint64 + 15-bit uint32 + uint64 + uint32 +
+  uint32` at native object offsets `0`, `8`, `0x10`, `0x18`, and `0x1c`.
+  Adjacent helper `14008c010` reads a 32-bit count, allocates `count * 0x20`,
+  and invokes the row reader for each 0x20-byte row. That proves possible
+  count-plus-array framing, but not field meaning or runtime ownership.
+- **Current behavior**: NexusForever emits one zero-value compatibility
+  `ServerRaidQueueStatus` after `ServerRaidInfoResponse` and keeps all fields
+  neutral as `Unknown*`.
+- **Implemented guard**: `GroupPacketShapeTests` now pins the non-zero write
+  order and 15-bit second field without assigning queue/game-type semantics.
+- **Blocked**: Need a live non-zero `0x0718` payload or a client consumer/apply
+  mapping that explains the row fields before renaming fields or emitting
+  queue-position state.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~GroupPacketShapeTests"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f010-raid-queue\`
+  passed `20/20`.
+
+F-025 entity-stat aux emitter source audit / ghost-gap correction (2026-06-04):
+
+- **Target question**: Can any entity-stat aux production emitter be enabled for
+  `0x0889`, `0x08CC`, `0x08F4`, `0x0939`, `0x093D`, or `0x093E` from current
+  NexusForever source or cached native evidence?
+- **Evidence state**: Mapped wire / Blocked emit. The packet models and focused
+  tests cover the six wire shapes, and the current native/export evidence still
+  resolves to reader and registration anchors only. `rg` over `Source` found
+  the six `ServerEntityStat*` aux model names only in opcode/model definitions
+  and focused tests; production stat sends are the regular
+  `ServerEntityStatUpdateFloat` / `ServerEntityStatUpdateInteger` paths in
+  `WorldEntity`, not the blocked aux cluster.
+- **Disposition**: No runtime emitter or semantic rename is safe. The F-003
+  summary in `MISSING_FEATURE_MATRIX.md` was corrected from the ghost-gap claim
+  that all 62 shape-mapped aux/spell packets have no production emitter: the
+  current tracked split is 12/62 controlled emitters (entity-create plus
+  selected housing basics) and 50/62 still blocked, with the six F-025
+  entity-stat aux opcodes still blocked.
+- **Next evidence source**: a per-opcode `WorldSocket+0x15b0` apply handler
+  (`vtable+0x58`), apply-table classification, or live sniff/order witness.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~EntityAuxiliaryPacketShapeTests|FullyQualifiedName~EntityCreateAuxiliaryEmissionTests"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f025-entity-aux-audit\`
+  passed `19/19`.
+
+F-025 dispatch-candidate false-lead cleanup (2026-06-04):
+
+- **Target question**: Is `FUN_140939650` a viable server-packet consumer/apply
+  candidate for the F-025 entity-stat aux or map-tracked-unit cluster?
+- **Rejected**: cached export evidence disproves the packet-consumer hypothesis.
+  `exports/WildStar64.exe/selected_decompiled.c:200460` / fragment
+  `selected_decompiled_cache/.../140939650.fragment.c` show a zero-argument
+  function that recalculates floating-point viewport/grid globals
+  (`DAT_140c79a*`, `_DAT_140c79b*`) from display-scale globals. It has no
+  opcode, parsed-payload, socket, or `vtable+0x58` handler signature.
+  `selected_xrefs.csv` has only the label xref for `140939650`; selected
+  call-edge rows are intra-function jumps from the decompiler output, not real
+  callers.
+- **Disposition**: updated `function_labels.csv` and
+  `ENTITY_AUX_DECODE_ROADMAP.md` to keep `140939650` out of future
+  `WorldSocket+0x15b0`/aux apply-candidate searches. No runtime emitter,
+  semantic rename, or packet behavior changed.
+- **Remaining blocker**: entity-stat aux emitters still need a per-opcode
+  socket apply handler, apply-table/data-ref classification, or live sniff/order
+  witness. Map-tracked producers still need native send-site or public-event
+  marker capture proof for tracked-unit id allocation, update cadence, disable
+  lifetime, and `TrackingSlotId` selection.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore --filter "FullyQualifiedName~EntityAuxiliaryPacketShapeTests|FullyQualifiedName~EntityCreateAuxiliaryEmissionTests|FullyQualifiedName~TrackingSlotHelperTests|FullyQualifiedName~EntityVisualPacketShapeTests"
+  -v minimal --nologo -m:1 -p:UseSharedCompilation=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f025-aux-falselead\`
+  passed `28/28`.
+Marketplace auction placeholder closure (2026-06-04):
+- Classified `AuctionInfo.Unknown2` as mapped wire / blocked semantic name. Source audit shows it is the final 32-bit field in `AuctionInfo`, persists through `marketplace_auction.unknown2`, and is cloned/loaded by `GlobalMarketplaceManager` for preservation. Newly posted NF auctions leave it at zero, and no current `Game` / `WorldServer` code writes or consumes a non-zero semantic value.
+- Packet coverage now asserts the field round-trips as wire state in `MarketplacePacketShapeTests.AuctionInfo_ReadWriteRoundTripsMicrochipIdsAndBlockedTail`. Keep the neutral name until a native marketplace auction row consumer, non-zero retail capture, or client UI/Lua reader proves field ownership.
+
+F-010 raid queue placeholder closure (2026-06-04):
+- Classified `ServerRaidQueueStatus.Unknown0..4` as mapped wire / blocked semantic names. Native `ServerRaidQueueStatus_ReadPayload` (`14008bf80`) proves the row order `uint64`, 15-bit `uint32`, `uint64`, `uint32`, `uint32`; helper `14008c010` proves only count-plus-array framing over 0x20-byte rows.
+- NexusForever currently emits all-zero compatibility state after `ServerRaidInfoResponse`; non-zero queue position/status semantics remain blocked. `PacketPlaceholderNamingTests.ServerRaidQueueStatus_TailsRemainNeutralUntilNonZeroSemanticsAreProven` now guards against speculative renames until a live non-zero `0x0718` capture, client consumer/apply handler, or apply-table owner proves the field meanings.
+
+F-025 entity-stat aux placeholder guard (2026-06-04):
+- Target question: do `0x0889`, `0x08CC`, `0x08F4`, `0x0939`, `0x093D`, or `0x093E` have enough current source/native evidence to rename fields or enable production emits?
+- Current source audit still finds `ServerEntityStatUInt32Triplet`, `ServerEntityStatUInt32WideString`, `ServerEntityStatUInt32UInt5UInt32`, `ServerEntityStatUInt32UInt14UInt18WideString`, `ServerEntityStatUInt32UInt5Pair`, and `ServerEntityStatTwoUInt32UInt64` only in opcode/model definitions and focused tests. Runtime stat sends remain the regular `ServerEntityStatUpdateFloat` / `ServerEntityStatUpdateInteger` paths in `WorldEntity`.
+- Disposition: mapped wire / blocked semantics. `PacketPlaceholderNamingTests.ServerEntityStatAuxFieldsRemainNeutralUntilApplyHandlersAreProven` now guards the neutral `Value*` / shared `Value` / `Text` names until a per-opcode `WorldSocket+0x15b0` `vtable+0x58` apply handler, apply-table classification, or live sniff/order witness proves field names and emit timing. Focused placeholder/entity aux coverage passed 91/91.
+
+F-025 map-tracked-unit selection guard (2026-06-04):
+- Target question: can NexusForever choose `TrackingSlotId` or emit `ServerMapTrackedUnitUpdate` (`0x0849`) / `ServerMapTrackedUnitDisable` (`0x0848`) from current evidence?
+- Current evidence remains mapped consumer / blocked producer. Packet models and native labels prove the client caches `TrackedUnitId`, XYZ, and a 15-bit `TrackingSlotId`, then Lua resolves that slot id through `GameLib.GetMapTrackedUnitData`; they do not prove server-side tracked-unit allocation, update cadence, disable lifetime, or slot selection.
+- Implemented guard: `PacketPlaceholderNamingTests.ServerMapTrackedUnitUpdate_UsesTrackingSlotIdUntilProducerSelectionIsProven` pins the packet field as `TrackingSlotId` and rejects a direct `PublicEventObjectiveId` field. `TrackingSlotHelperTests.TrackingSlotHelper_DoesNotSelectSlotFromObjectiveOnlyWhenRowsShareObjective` uses duplicate rows with `PublicEventObjectiveId = 5010` and guards that the helper exposes no objective-only `TrackingSlotIdForPublicEventObjective` selector.
+- Disposition: objective-only slot selection remains rejected, and no runtime emitter is safe. Next evidence source is a native server send site or accepted live public-event marker capture proving tracked-unit id allocation, update cadence, disable lifetime, and `TrackingSlotId` selection. Focused map-tracked/placeholder/entity aux coverage passed 97/97.
+
+F-025 Taxi/EsperPet create-packet branch correction (2026-06-04):
+- Target question: why does the client log `Malformed Packet:
+  unPackFromStreamFn failure : <610` and then `unknown 260` during local world
+  51 entry?
+- Evidence: `ServerEntityCreate_ReadPayload` (`WildStar64.exe` `140096fa0`)
+  dispatches entity-model readers through the `EntityType` table rooted at
+  `140c1ea30`. Reading the local client binary's pointer table maps
+  `EntityType.Taxi` (`9`) to branch reader `140096750`, which reads
+  `CreatureId` as 18 bits, `UnitVehicleId` as 14 bits, then a 3-bit passenger
+  count and passenger rows. It does not read an owner id. A trace-enabled live
+  pass reproduced the client error immediately after `entity=260`,
+  `type=Taxi`, `creature=69653`, matching the client's `unknown 260` line.
+- Correction: the earlier `140096b50` branch is `EntityType.Pet` (`24`) and
+  includes the trailing wide string. `EntityType.EsperPet` (`25`) maps to
+  `140096be0`, which reads `CreatureId` as 18 bits, `OwnerId` as 32 bits, and
+  `OwnerDisplayItemId` as 15 bits with no trailing string.
+- Implemented: `TaxiEntityModel` no longer writes an extra owner id before the
+  passenger count, and `EsperPetEntityModel` no longer writes the Pet-only
+  trailing name. `EntityCreatePacketTests` now guards both branch shapes.
+- Verification: pending focused test/live rerun.

@@ -1,6 +1,6 @@
 # Evidence Plan To Close Remaining NexusForever Blockers
 
-Status date: 2026-05-25 (aligned with `CURRENT_STATUS.md` F-031 audit pass)
+Status date: 2026-06-04 (aligned with current F-008/F-031 blocker rechecks)
 
 Use `I:\WildStar` build 16042, GM accounts, Trace server logs, client screenshots/video, and existing evidence collectors to turn each blocker into one of three states: **implementable now**, **diagnostic-only**, or **still retail/native blocked**. Server logs are first-class evidence, but they only prove current emulator/client interaction; retail producer semantics still need native/decompile, packet captures, or old retail logs.
 
@@ -10,15 +10,15 @@ External cross-checks confirm only project/client context, not blocker semantics
 
 | ID | Emulator-parity implemented | Diagnostic-only | Still blocked |
 | --- | --- | --- | --- |
-| F-008 Crafting | Fixed-recipe craft, station/tradeskill mismatch rejection, additive zero-station rejection, LootId delivery, packet-shape pins | — | Discovery rolls, service-key `0x2C/0x4F/0x57` meanings, durable rune DB bridge, `0x084B`/`0x0855` emit |
-| F-009 Transport | Rapid transport route resolve, credit/cooldown rejection branches, flight-path purchase validation | — | Service-token bypass, global route state, taxi embark/completion, deployable vehicles |
-| F-010 Group/matching | Replacement `0x05D5`/`0x0602` validation+logging, zero `ServerRaidQueueStatus` with raid-info, flexible roles, deserter persistence | `Client0x062A`/`Client0x0634` value logging | Replacement backfill/merge, non-zero raid queue semantics |
+| F-008 Crafting | Fixed-recipe craft, station/tradeskill mismatch rejection, additive zero-station rejection, LootId delivery, durable rune item bridge (`item.runeSlots`, `ItemRuneSlotsCodec`, `ItemRuneNetworkWire`), packet-shape pins; C2S rune install mapped to `0x085B` | Service-key numeric logging, complex `CraftStats`/`ChargeCounts`, and `0x084B`/`0x0855`/`0x056C` wire models only | Discovery rolls/unlock mutation, service-key `0x2C`/`0x4F`/`0x57` names, current-craft cadence, `0x084B`/`0x0855` emit intent, non-success sigil precision, `ServerItemMicrochips` (`0x056C`) producer timing |
+| F-009 Transport | `TaxiRoute.tbl` runtime loading, clean route/node/location table rejection, rapid transport route resolve, credit/cooldown rejection branches, captured table-backed rapid route debit/cast context, and contiguous flight-path purchase charge/teleport validation | — | Service-token bypass, global route state, taxi embark/completion, broader charge/teleport parity, passenger/seat modes, deployable vehicles |
+| F-010 Group/matching | Replacement `0x05D5`/`0x0602` validation+logging, zero `ServerRaidQueueStatus` with raid-info plus non-zero wire-order guard, flexible roles, deserter persistence, `Client0x062A`/`Client0x0634` log-only handler guards, `ServerMatching0x05CF` raw `uint32` shape plus correlated apply candidate | `Client0x062A`/`Client0x0634` value logging only until native sender/live UI context is proven; `ServerMatching0x05CF` remains diagnostic/mapped-only until the apply-table index or live payload context is proven; `ServerRaidQueueStatus` helper `14008c010` proves count-plus-array framing only | Replacement backfill/merge, non-zero raid queue semantics, `0x05CF` field/apply semantics, `Client0x062A`/`Client0x0634` sender intent |
 | F-011 Guild | Holomark update handler + guild manager paths exist | — | Bank economy, perks, recruitment parity, warplot semantics |
 | F-012 ICComm | Join/message validation, transient membership | — | Entitlement gating, persistent-channel restore |
 | F-015 Duel/PvP | Duel leash/cancel-warning/disconnect and PvP toggle-off cooldown persistence are implemented/test-pinned | — | Observer/reward parity |
 | F-016..F-020 Spells | Per-family fixtures where captured | `!spell procunsupported` etc. | Uncaptured effect families |
 | F-021 LAS | Preflight checks where mapped | — | `UpdateSpellInProgress`, async transaction semantics |
-| F-031 Fortune | Coin cost, emulator rarity-tier pool, UI probability transport, `account_fortune_session` persistence code path | Local catalog/table audit only (`FORTUNE_WEIGHT_AUDIT.md`); no live Fortune play artifact found | Per-item retail Madame Fay weights and active rotation catalog |
+| F-031 Fortune | Coin cost, emulator rarity-tier pool, UI probability transport, `account_fortune_session` persistence code path | Local catalog/table audit only (`FORTUNE_WEIGHT_AUDIT.md`); F-007 `RewardRotation*` schedules rejected as Fortune active-rotation evidence; no live Fortune play artifact found | Per-item retail Madame Fay weights and active rotation catalog |
 
 A blocker is **closed** only when the evidence bundle, implementation, tests, and tracker note agree. Anything proven only by current emulator logs but not by retail/native producer semantics is **emulator-parity implemented**, not **retail-parity proven**.
 
@@ -154,16 +154,37 @@ Baseline commands for every pass:
 
 An evidence bundle is accepted only when it has: exact command/action transcript, matching server log lines with player/request ids, client-visible result, negative/rejection case, and JSON artifact where a collector exists.
 
+For opcode-level packet passes, prefer server-decrypted evidence over pcap-only
+interpretation. Start the target server with:
+
+```powershell
+$env:NEXUSFOREVER_PACKET_EVIDENCE = '1'
+$env:NEXUSFOREVER_PACKET_EVIDENCE_DIR = 'I:\GIT\NexusForever\artifacts\packet_evidence\<pass-name>\server-decrypted'
+$env:NEXUSFOREVER_PACKET_EVIDENCE_OPCODES = '0x0186,0x0187,0x0188,0x00CA,0x01A7,0x01A8,0x056B,0x056C,0x056D'
+```
+
+The recorder writes plaintext opcode/body JSONL records before outbound
+encryption and after inbound decryption. Pair it with Wireshark/dumpcap on the
+local ports for timing and TCP correlation, but use the server-decrypted JSONL
+as the opcode source of truth.
+
+For F-009 transport passes, include the client transport opcodes in the recorder
+filter too:
+
+```powershell
+$env:NEXUSFOREVER_PACKET_EVIDENCE_OPCODES = '0x00FF,0x0141,0x0186,0x0187,0x0188'
+```
+
 ## Blocker passes
 
 **F-010 Group/Raid/Matching: implementable for empty/status diagnostics, still blocked for non-zero queue semantics.**
-Open raid and queue UI, request raid info, start/stop replacement search if an in-progress match can be created. Capture logs for `ClientRaidInfoRequest`, `ServerRaidQueueStatus`, `ClientMatchingMatchInitiateLookingForReplacements`, `ClientMatchingStopLookingForReplacements`, and diagnostics `Client0x062A`/`Client0x0634`. Implement only observed empty-status/validation behavior; keep non-zero queue position/backfill merge lifecycle blocked.
+Open raid and queue UI, request raid info, start/stop replacement search if an in-progress match can be created. Capture logs for `ClientRaidInfoRequest`, `ServerRaidQueueStatus`, `ServerMatching0x05CF` if it appears, `ClientMatchingMatchInitiateLookingForReplacements`, `ClientMatchingStopLookingForReplacements`, and diagnostics `Client0x062A`/`Client0x0634`. Implement only observed empty-status/validation behavior; keep non-zero queue position, `0x05CF` field semantics, and backfill merge lifecycle blocked until a live non-zero payload or client consumer proves meaning.
 
 **F-009 Rapid Transport/Flight: implement captured route behavior, keep global route-state/service-token blocked.**
 At city hubs, run `!spell capturenext`, use rapid transport/taxi/flight UI, then inspect `artifacts\verify\spell-evidence`. Required logs: taxi node, context token, route id, source/destination, price, credit debit, spell id, accept/reject reason. Implement route(s) and rejection branches proven by logs; do not infer route unlock tables or service-token bypass.
 
-**F-008 Crafting/Rune discovery: station request semantics closed; keep discovery thresholds and service-key names blocked.**
-Station request branches are covered by native sender evidence and focused tests: simple/complex/autocraft can carry zero station ids, while additive requires a non-zero station before `0x084A`. For the next pass, teleport to crafting hubs, use station UI, `!item lookup <name> 25`, `!item add <itemId> <qty>`, then craft complex/random outputs and failed cases. Capture logs for station unit id, schematic id, material ids, craft type, completion/rejection reason, hot/cold UI state, and any current-craft/finish packets. Implement only behavior proven by logs or producer decomp. Discovery roll thresholds, `CraftStats`/`ChargeCounts` semantics, service-key names `0x2C/0x4F/0x57`, and durable rune item DB bridge remain blocked without producer/native evidence.
+**F-008 Crafting/Rune discovery: station request semantics and durable rune bridge closed; keep discovery, service-key names, and aux emit blocked.**
+Station request branches are covered by native sender evidence and focused tests: simple/complex/autocraft can carry zero station ids, while additive requires a non-zero station before `0x084A`. The durable rune item bridge is implemented through `item.runeSlots`, `ItemRuneSlotsCodec`, `ItemRuneNetworkWire`, `RandomGlyphData`/`Glyphs`, and migration `20260531224115_ItemMicrochipIdsAndRuneSlots`, with focused rune tests covering socket/install round trips. Current evidence rejects a distinct client microchip-install mutator: client rune install is `0x085B` (`RuneCrafting_SendClientRuneInstall`), while `ServerItemMicrochips` (`0x056C`) and `Inventory_UpdateItemMicrochipsFromWire` are server-side item patch/update evidence with blocked producer timing. For the next live pass, teleport to crafting hubs, use station UI, `!item lookup <name> 25`, `!item add <itemId> <qty>`, then craft complex/random outputs and failed cases. Capture logs for station unit id, schematic id, material ids, craft type, completion/rejection reason, hot/cold UI state, and any current-craft/finish packets. Implement only behavior proven by logs or producer decomp. Discovery roll thresholds/unlock mutation, `CraftStats`/`ChargeCounts` semantics beyond diagnostics, service-key names `0x2C`/`0x4F`/`0x57`, current-craft cadence, `0x084B`/`0x0855` emit intent, non-success sigil precision, and `0x056C` server-side microchip patch timing remain blocked without producer/native/live evidence.
 
 **F-011 Guild bank/perks/holomarks: implement observable persistence/logged packet handling only.**
 Client 1: `!guild register Guild NFEvidence`; client 2: `!guild join Guild NFEvidence`. Exercise holomark changes, guild bank tab open, item/money deposits, recruitment subscribe/details, and reload after `!character save`. Use logs for bank/recruitment handlers and screenshots before/after reload. Implement holomark persistence or logged response-shape fixes if proven; keep bank economy, perk effects, recruitment parity, and warplot semantics blocked.
@@ -181,7 +202,7 @@ For each target spell: `!spell inspect4 <spell4Id>`, `!spell capture4 <spell4Id>
 Use `!spell add <spell4BaseId> [tier]`, `!spell resetcooldown`, then change LAS slots, tiers, spec, and AMP state in normal, dead, combat, and PvP states. Capture UI result and any server logs. `UpdateSpellInProgress` and async transaction semantics remain blocked unless a real in-progress transition is observed.
 
 **F-031 Madame Fay/Fortune: local tests validate session/payout boundaries and UI probability transport; per-item retail weights remain blocked.**
-Use Fortune UI with enough `FortuneCoin`/account currency, capture logs and screenshots for cost/result/session behavior, reload persistence (`account_fortune_session`), and displayed `fProbability` values. Emulator now sends `ServerFortuneRewards.RewardItemProbabilities` from rarity-tier weights; `FORTUNE_WEIGHT_AUDIT.md` confirms `AccountItem.tbl` has no weight column and no local live Fortune play artifact was found. Exact per-account-item retail weights still need retail `ServerFortuneRewards` capture or storefront-server catalog evidence.
+Use Fortune UI with enough `FortuneCoin`/account currency, capture logs and screenshots for cost/result/session behavior, reload persistence (`account_fortune_session`), and displayed `fProbability` values. Emulator now sends `ServerFortuneRewards.RewardItemProbabilities` from rarity-tier weights; `FORTUNE_WEIGHT_AUDIT.md` confirms `AccountItem.tbl` has no weight column, F-007 `RewardRotation*` schedules are rejected as Fortune active-rotation evidence, and no local live Fortune play artifact was found. Exact per-account-item retail weights still need retail `ServerFortuneRewards` capture or storefront-server catalog evidence.
 
 Harness shortcut:
 
