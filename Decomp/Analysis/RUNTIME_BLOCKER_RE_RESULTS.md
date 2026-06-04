@@ -1,6 +1,6 @@
 # Runtime blocker RE pass results
 
-Updated: 2026-06-02 (continuation pass)
+Updated: 2026-06-03 (F-004/F-025 boundary guards recorded)
 
 Companion to [RUNTIME_BLOCKER_RE_PLAN.md](RUNTIME_BLOCKER_RE_PLAN.md). Policy: **no** diagnostic emitters or `WorldConfig` flags; NF production paths only after **Verified**.
 
@@ -46,6 +46,9 @@ Focused tests: `HousingPacketShapeTests` + `EntityAuxiliaryPacketShapeTests` + `
 
 - Packet models and shape tests remain **Mapped**.
 - **No** `ServerHousingNeighborhoodList` production emitter (blocked).
+- `HousingAuxiliaryPacketEmitterTests.BuildResidenceSessionPackets_DoesNotEmitBlockedNeighborhoodListPackets`
+  guards the current residence-session aux boundary so `0x0501`/`0x0506` are
+  not silently promoted without producer-trigger evidence.
 - **Next:** live sniff (housing UI open / realm login) for `0x0506` ordering; map row `NeighborhoodId` + tail fields to `HousingNeighborhoodInfo.tbl` + persisted realm data.
 
 ---
@@ -92,6 +95,10 @@ Focused tests: `HousingPacketShapeTests` + `EntityAuxiliaryPacketShapeTests` + `
 
 - Fields remain `ValueN` / `FloatValue*`; craft handlers log blocked station service keys at Debug (`0x2C`/`0x4F`/`0x57`).
 - **No** aux emit.
+- `CraftingSimpleCraftHandlerTests.ComplexCraft_WithCraftStatsAndChargeCounts_DoesNotEmitBlockedCurrentCraftOrAuxPackets`
+  guards the fixed-recipe complex-craft path so `0x0854`, `0x084B`, and
+  `0x0855` stay modeled-only until current-craft cadence or aux enqueue evidence
+  is verified.
 
 ---
 

@@ -182,6 +182,10 @@ isolated local output directory. The build emitted unrelated existing warnings i
 
 - `ServerFortuneRewards` wire fields were already named (`Item2IdRewards`, `RewardItemProbabilities`); no guessed per-item weights added.
 - `FortuneSessionManager.SendStatus` logs up to eight catalog `(item2Id, probability)` pairs at **Debug** when enabled; roll logic unchanged.
+- `FortuneSessionManagerTests.SendStatus_WithNoSessionSendsRewardCatalogAndResetCards`
+  now guards the runtime emitter boundary: `ServerFortuneRewards` forwards the
+  mapped item/probability catalog and keeps money reward/probability arrays
+  empty until retail/catalog evidence proves those producers.
 - Unblock still requires retail `ServerFortuneRewards` capture or storefront rotation dump (`f031-fortune-playthrough` harness bundle).
 
 ## Closure State

@@ -3,7 +3,9 @@
 Client copier: `Group_CopyMemberStatBlockFromPayload` @ `140607490`
 Known direct caller in the current fragment cache: `Group_HandleMemberRemove_ReadPayload` @ `140603380`. `Group_HandleMemberAdd_ReadPayload` @ `1406031d0` is a separate promote path and has not been proven to call this copier.
 
-NexusForever models: `ServerGroupMemberStatUpdate`, `ServerGroupRosterUpdate`, `ServerGroupMemberDetailUpdate` (prefix only).
+NexusForever models: `ServerGroupMemberStatUpdate` and `ServerGroupRosterUpdate`.
+`0x0468` is now tracked separately as `ServerGroupTargetIdentityPrimeLevelList`
+and is not a stat/detail prefix packet.
 
 **2026-05-23:** WorldServer `GroupMemberMappingExtensions` now maps `InterruptArmor`/`InterruptArmorMax` from group-server `GroupCharacter.InterruptArmour*` and `GroupMemberId` from `GroupIndex`. Raid-frame addons use client unit stats; this fixes NF-emitted `0x0466` gaps for IA bars when group-server stats are authoritative.
 

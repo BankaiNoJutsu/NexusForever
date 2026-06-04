@@ -934,10 +934,11 @@ Spell broadcast registration follow-up from this pass:
 - `140095fb0` validates `0x0817` as one 18-bit `Spell4Id` plus one trailing
   byte, matching the current `ServerSpellEventByte` model.
 - `140095e60` shows that `0x0818` reads one 32-bit leading field and then one
-  `ServerSpellList_ReadTierEntry` structure at `+0x8`, so the current
-  `ServerSpellTargetInfo` placeholder is now structurally conflicted.
+  `ServerSpellList_ReadTierEntry` structure at `+0x8`, which made the old
+  `ServerSpellTargetInfo` placeholder structurally conflicted in this pass.
+  Later dispatcher evidence resolves the leading field as `SpellWrapperId`.
 - `TraceFunctionCallers` on `ServerSpellList_ReadTierEntry` (`140094aa0`) now
-  shows `ServerOpcode0818_ReadLeadingUInt32AndTierEntry` as a direct caller
+  shows `ServerOpcode0818_ReadSpellWrapperIdAndTierEntry` as a direct caller
   alongside `ServerSpellList_ReadSpellEntry`, which ties `0x0818` into the
   spell-list tier/state helper family rather than the current `TargetInfo`
   helper assumption.
@@ -999,20 +1000,18 @@ Spell broadcast registration follow-up from this pass:
   than `TargetInfo`.
 - `1406089a0`, the sink underneath that path, stores or clears raw object
   pointers by the supplied `uint32` index inside an indexed pointer array and
-  maintains sorted side lists from the same key. Because `140608c60` is only
-  called from the subtype-`4` branch, the leading `0x0818` `uint32` now looks
-  more like a slot or index candidate than a casting id.
+  maintains sorted side lists from the same key. This was a useful
+  ability-book bulk-row false lead; later dispatcher evidence superseded the
+  slot/index interpretation for the leading `0x0818` packet field.
 - The richer `140569c90 -> 140569d30` constructor chain is now a ruled-out
   false lead for `0x0818`. `TraceFunctionCallers` and direct decompile show the
   same helpers are also used by guild-bank tab loaders `14057cdc0` and
   `14057d190`, so that object materializer is reusable client infrastructure,
   not packet-specific spell-tier evidence.
-- This is the strongest current-client post-parse consumer candidate for
-  `0x0818` found so far. It still does not prove a direct
-  `0x0818 -> AbilityBook_ApplySingleTierEntryDelta` call and the leading
-  32-bit field from `140095e60` remains unexplained, but it narrows `0x0818`
-  away from `TargetInfo` and toward a single-entry ability-book or spellbook
-  delta.
+- This was the strongest current-client post-parse consumer candidate for
+  `0x0818` in that pass. Later dispatcher evidence moved the leading field to
+  `SpellWrapperId` and narrowed the packet away from `TargetInfo` and away from
+  a direct single-entry ability-book or spellbook delta.
 - A second independent repo-side source now aligns with the client mapping for
   `0x0814`, `0x0816`, and `0x0817`: the historical compare snapshot under
   `.nexusforever-runtime/compare-kirmmin-latest` defines
@@ -3710,14 +3709,14 @@ Sixty-fifth duel/PvP state follow-up implemented from this pass:
   now also open the player-vs-player attack gate without making non-duel players
   attackable.
 - `ClientPvpToggleFlags` now updates a player-local `PvPFlag`, broadcasts
-  `ServerUnitPvpStateChange`, and clears the client cooldown on immediate
-  disable. This intentionally remains a simple session/runtime flag: persisted
-  PvP preference, cooldown countdown semantics, forced-map PvP, and wider PvP
-  combat rules are still blocked pending stronger client/server state evidence.
+  `ServerUnitPvpStateChange`, and uses a pending toggle-off cooldown. Active
+  pending cooldowns persist through `character.pvpFlagDisableUntilUtc` and
+  reload with the remaining timer; forced-map PvP and wider PvP combat rules are
+  still blocked pending stronger client/server state evidence.
 - Remaining bounded uncertainty: the local client request and basic response
   flow is implemented, but observer-wide duel broadcasts, duel-area leash and
-  leave warnings, exact countdown duration, PvP cooldown persistence, cross-map
-  cleanup rules, duel-specific reward/stat side effects, and forced PvP realm
+  leave warnings, exact countdown duration, cross-map cleanup rules,
+  duel-specific reward/stat side effects, and forced PvP realm
   behavior remain open. The new guide row calls this out so future passes can
   target those exact state gaps instead of re-mapping the request packets.
 - Verification: `dotnet build
@@ -5613,16 +5612,21 @@ One-hundred-fifth mapped small client request pass:
   dash-cast success handling. `Vendor_SendClientRepairItemVendor` (`1403c28f0`)
   and `Vendor_SendClientRepairAllItemsVendor` (`1403c2a20`) share opcode
   `0x014C` as a three-64-bit repair request, with the repair-all branch using a
-  zero item identity and a calculated total cost. `Lua_GameLib_IsRepairVendor`
-  (`14050ce40`) sends zero-byte `0x0167`. `GenericMap_SendClientNodeRequestOrChoose`
+  zero item identity and a calculated total cost. `Lua_GameLib_SellJunkToVendor`
+  (`14050ce40`) validates the selected vendor target and sends empty `0x0167`,
+  while `Lua_GameLib_IsRepairVendor` (`14050ce90`) returns whether the target
+  exposes repair-vendor state. `GenericMap_SendClientNodeRequestOrChoose`
   (`1404d1e40`) sends `0x07CF` only when the requested generic-map node is not
   locally available; the node id matches the existing 14-bit generic-map packet
   encoding.
 - NexusForever implementation:
   WorldServer now handles `ClientConvertResource`, `ClientDashCast`,
-  `ClientRepairItemVendor`, and `ClientRepairVendorStatusRequest` as parsed
-  diagnostic-only requests. Resource conversion validates that the conversion id
-  exists before logging the unsupported path. `ClientGenericMapNodeRequest` now
+  `ClientRepairItemVendor`, and `ClientRepairVendorStatusRequest`. Opcode
+  `0x0167` is retained under its historical model name but now sells all
+  backpack stacks in client item category `94` (junk), matching the stock
+  `Vendor.lua` `SellJunkToVendor()` path. Resource conversion validates that
+  the conversion id exists before logging the unsupported path.
+  `ClientGenericMapNodeRequest` now
   parses a 14-bit node id and responds with `ServerGenericMapNode` for known
   nodes, while unknown ids are logged and ignored. `ClientGenericMapNodeChosen`
   now has a conservative unsupported handler so the already-modeled client
@@ -6122,12 +6126,13 @@ One-hundred-fourteenth group stat and realm refresh pass:
   `FUN_140084030` is opcode `0x0469` and matches `ServerGroupPositionUpdate`:
   group id, 15-bit world id, counted identity array, counted raw position
   triplets, and parallel world-zone-id and flag arrays.
-- Blocker:
-  opcode `0x0468` (`FUN_140084280`) does not match the current
-  `ServerGroupMemberDetailUpdate` model. The native reader takes group id,
-  target identity, a counted array of 64-bit values, and no stat-prefix or
-  health/path fields. Leave `0x0468` blocked pending a consumer/call-site pass
-  before changing the managed model or renaming the reader.
+- 2026-06-03 correction:
+  opcode `0x0468` (`FUN_140084280`) does not match the old
+  `ServerGroupMemberDetailUpdate` stat/detail model. The native reader takes
+  group id, target identity, and counted `MatchingPrimeLevelInfo` rows through
+  helper `FUN_1400ad150` (15-bit world id plus 16-bit prime level). The managed
+  packet is now `ServerGroupTargetIdentityPrimeLevelList`; producer ownership
+  and timing remain blocked, and the stale stat/detail runtime emit was removed.
 
 One-hundred-fifteenth group member flag pass:
 
@@ -6135,11 +6140,13 @@ One-hundred-fifteenth group member flag pass:
   `FUN_1400838c0` is opcode `0x0437` and matches
   `ServerGroupMemberFlagsChanged`: group id, member index, target identity,
   32-bit changed flags, and one trailing bit.
-- Blocker:
-  opcode `0x0438` (`FUN_140083990`) does not match the current
-  `ServerGroupMemberRoleChange` model. The native reader takes group id, a
-  leading uint32, a counted identity array, and a parallel uint32 array rather
-  than a single identity/flags payload.
+- 2026-06-03 correction:
+  opcode `0x0438` (`FUN_140083990`) does not match the old
+  `ServerGroupMemberRoleChange` single-member model. The managed packet is now
+  `ServerGroupIdentityListAndUInt32Array`, matching group id, a leading uint32,
+  a counted identity array, and a parallel uint32 array. The current flag-change
+  bridge still uses provisional value semantics until the retail consumer path
+  is mapped.
 
 One-hundred-sixteenth provisional group array pass:
 
@@ -6148,12 +6155,13 @@ One-hundred-sixteenth provisional group array pass:
   shape-based names rather than semantic packet names. `0x0438` is
   `ServerGroupIdentityListAndUInt32Array_ReadPayload`: group id, one leading
   uint32, a counted identity array, and a parallel uint32 array. `0x0468` is
-  `ServerGroupTargetIdentityUInt64List_ReadPayload`: group id, target identity,
-  uint32 count, and a counted uint64 array.
+  `ServerGroupTargetIdentityPrimeLevelList_ReadPayload`: group id, target
+  identity, uint32 count, and counted `MatchingPrimeLevelInfo` rows.
 - NexusForever code comments:
-  opcode and model comments now point at those native readers, and the current
-  `GroupMemberFlagsUpdatedHandler` send path is explicitly marked provisional so
-  the runtime WIP surface does not look evidence-backed.
+  opcode and model comments now point at those native readers, the current
+  `GroupMemberFlagsUpdatedHandler` send path is explicitly marked provisional,
+  and `GroupMemberStatsUpdatedHandler` no longer emits the old `0x0468`
+  stat/detail payload.
 
 One-hundred-twelfth housing plug update pass:
 
@@ -9636,7 +9644,7 @@ Return value semantics:
 | `0x153` (339) | Client?Server | ResetSingleInstance | `{instanceId:uint32}` |
 | `0x15d` (349) | Client?Server | LootRoll | `{rollId:uint32, lootId:uint32, rollType:uint32}` (rollType: 0=greed,1=need,2=pass) |
 | `0x163` (355) | Client?Server | SetInstanceSettings | `{instanceId:uint32, difficultyId:uint32, levelScaling:uint64}` |
-| `0x167` (359) | Client?Server | IsRepairVendorQuery | `{0:byte}` |
+| `0x167` (359) | Client?Server | SellJunkToVendor | `{}` |
 | `0x170` (368) | Client?Server | SetCharacterFlags | `{flags:uint32}` |
 | `0x173` (371) | Client?Server | TogglePvpFlags | `{enabled:uint32}` |
 | `0xd2` (210) | Client?Server | ConfirmInstanceSettings | `{instanceId:uint32}` |
@@ -11626,8 +11634,8 @@ PvP duel lifecycle boundary follow-up:
 - Active defeat is covered for `ServerDuelResult(Defeated)` and the current
   achievement boundary: both participants receive `DuelParticipate`, while the
   winner also receives `DuelWin`.
-- Observer broadcasts, leash/warning state, PvP cooldown persistence,
-  forced-map PvP, rewards/stats, and exact cancel/result parity remain blocked
+- Observer broadcasts, leash/warning state, forced-map PvP, rewards/stats, and
+  exact cancel/result parity remain blocked
   until client-reader, sniff, or manual runtime evidence maps those flows.
 - Verification: `dotnet test
   Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter
@@ -11744,7 +11752,13 @@ Entity/item/support/realm/Fortune protocol boundary follow-up:
 - `F-026`: `AccountItemHandlerTests` now pin `ClientItemGenericUnlockHandler`
   lifecycle boundaries for missing unlock set, missing unlock entry, all
   entries already unlocked, and partial unlock sets. The partial case consumes
-  the item once and grants only missing entries. Broader item aux packets,
+  the item once and grants only missing entries. `ClientItemUseHandlerTests` now
+  pin normal activated-item consume ordering: failed casts and empty stacks do
+  not consume, while successful casts consume only after `TryCastSpell` returns
+  `CastResult.Ok`. `ClientItemUseDecorHandlerTests` now pin decor item-use
+  consume ordering: blocked residence access and empty stacks do not consume,
+  consume failure does not create decor, and successful use resolves residence
+  before consuming and creating decor. Broader item aux packets,
   costume/pet/generic-unlock deltas, and persistence parity remain blocked.
 - `F-028`: `Survey.cs` now reads the mapped survey context/object field as a
   32-bit unsigned value instead of calling the 16-bit reader with a 32-bit
@@ -12817,8 +12831,10 @@ Housing early-cluster opcode naming (`0x00CB..0x00D1`, `0x010D`, `0x0110`, 2026-
   `ServerHousingBasicsEmpty`, and `ServerHousingBasicsFollowup`.
 - Consumer intent and emit sites remain blocked; `PacketPlaceholderNamingTests` housing cluster
   coverage was updated to the new type names.
-- Corrected `Server0x077E` enum comment: it is a 16-byte fixed payload between recruitment and
-  pet despawn, not `ServerFlightPathUpdate_ReadPayload` (`0x0188`).
+- Superseded note: `Server0x077E` was previously treated as a fixed 16-byte
+  payload between recruitment and pet despawn. The 2026-06-03 registration
+  follow-up maps it to the shared `ServerFlightPathUpdate_ReadPayload`
+  count-plus-uint32-list reader.
 
 Spell broadcast opcode naming (`0x0814..0x0819`, 2026-05-23):
 
@@ -12878,7 +12894,7 @@ Spell runtime, entities, content, progression workstream (`F-016`..`F-036`, 2026
 | F-023 NPE / Rider's Reef | Mapped-only | Tutorial scripts under `Script.Main/Tutorial`; recent reef/departure fixes per matrix | Manual client smoke required (`I:\WildStar`); login-world smoke reported working | Quest acceptance/kill loops, rewards, respawn, CSI, hoverboard/projector, final terminal - no automated pass in CI |
 | F-024 World 3404 | Partial | `Script.Instance/Expedition/EvilFromTheEther`, staged map/import | `EvilFromTheEtherEventScriptTests`, `EvilFromTheEtherTriggerScriptTests` | Manual expedition smoke; PE `781`; doors/interactables/teleports/phases; unsupported spell blockers in live play |
 | F-025 Entity create/update/phasing/CSI | Partial | `ServerEntityCreate` world-placement path, busy/interaction gates | `EntityCreatePacketTests` | Remaining create/update substructures `025F..0264`; deferred action queues; CSI/current-target; phase visibility; `0889/08CC/08F4/0939/093D/093E` |
-| F-026 Items/unlocks/costumes/pets | Partial | Inventory, generic unlock handler, costume/pet/title managers (parts) | `AccountItemHandlerTests` (generic unlock lifecycle) | Item swap/error aux `00B7/0183/019A/037F/0567`; satchel precision; costume forget; unlock list deltas |
+| F-026 Items/unlocks/costumes/pets | Partial | Inventory, generic unlock handler, normal `ClientItemUse` consume-after-success guard, decor item-use residence/consume guard, costume/pet/title managers (parts) | `AccountItemHandlerTests` (generic unlock lifecycle), `ClientItemUseHandlerTests`, `ClientItemUseDecorHandlerTests` | Item swap/error aux `00B7/0183/019A/037F/0567`; satchel precision; costume forget; unlock list deltas |
 | F-029 Client DB / DataMapping | Partial | `GameTableManager` default init includes `ZoneCompletion.tbl` and archive tables; DataMapping tooling | `GameTableManagerGameDataContractTests` | Case-by-case staging promotion; EF placeholder renames; migration proof per table |
 | F-034 Datacubes/archive | Partial | `DatacubeManager`, `GalacticArchiveManager`, login init packets; `ArchiveArticleIdInteractUnlock` on `SimpleEntity` | `SimpleEntityArchiveUnlockTests`, `GalacticArchiveUnlockRuleTests`, `PlayerTradeskillArchiveTests` | Archive-link parent/child auth; full journal/datacube progression; path-mission rule parity |
 | F-035 Achievements / realm-firsts | Partial | Character/guild/global managers, init/update packets, many updaters | `AchievementProgressTests`, `GuildAchievementManagerTests`, `RealmFirstAchievementPacketTests`, `ClientSteamAchievementsTests` (diagnostic-only ingest) | Full trigger coverage; Steam payload grammar ? achievement-id map; exact realm-first broadcast semantics |
@@ -13952,9 +13968,11 @@ F-010 group/raid/queue cluster opcode mapping (2026-05-22):
   `GroupPacketShapeTests`; trailing zero padding preserves retail payload lengths
   where mapped fields are shorter than the documented fixed sizes.
 - Runtime emitters: kick and loot-rule validation results route through
-  `GroupActionResultHandler`; role changes emit `ServerGroupMemberRoleChange`;
-  join requests emit `ServerGroupRequestJoinWindow`; stat refresh also emits
-  roster/detail packets; quest share responses emit `ServerQuestShareResult`.
+  `GroupActionResultHandler`; role changes emit the provisional
+  `ServerGroupIdentityListAndUInt32Array` bridge; join requests emit
+  `ServerGroupRequestJoinWindow`; stat refresh emits stat/roster packets but no
+  longer emits the old `0x0468` detail payload; quest share responses emit
+  `ServerQuestShareResult`.
 - `Client0x062A/0634` remain single-`uint32` diagnostic models; native sender
   semantics are still blocked.
 - `ServerRaidQueueStatus` is mapped structurally but has no live queue emitter yet.
@@ -14005,27 +14023,26 @@ Entity/cluster aux decompile follow-up (2026-05-23, consumer discovery):
   callback table `PTR_LAB_140b55100` at socket `+0x100` with filter `140014d30` @ `+0x08` and
   apply `140014f10` @ `+0x10`. Flow: `DAT_140c65808` `vtable+0x100` deserialize -> optional
   `AccountInventory_HandleServer0966To0980` / storefront fast paths -> linked handlers at
-  `socket+0x14b0` via `vtable+0x58(handler, conn, opcode, parsedPayload)`. Pre-filter uses
-  `vtable+0x50` in `WorldSocket_FilterServerMessageHandlers` @ `140014d30`. Example list
-  insertion: `WorldZone_InsertUnitHandlerIntoList` @ `140356a30`. See
+  callback-view `+0x14b0` / native `WorldSocket+0x15b0` via
+  `vtable+0x58(handler, conn, opcode, parsedPayload)`. Pre-filter uses
+  `vtable+0x50` in `WorldSocket_FilterServerMessageHandlers` @ `140014d30`. The socket-chain
+  insertion source is still unmapped. See
   `ENTITY_AUX_DECODE_ROADMAP.md` for the table and blocked next step (per-handler `+0x58`
   opcode maps for `0x025F`-`0x0264` and the **62** aux packets).
-- Follow-up decomp on `WorldZone_InsertUnitHandlerIntoList` sharpens that anchor: the helper
-  does **not** insert the zone/world object itself. It walks visible-unit node lists rooted at
-  `param_1+0x1488` plus local spatial-bucket families and splices each `plVar4` node into
-  `param_1+0x14b0` with back-links at `plVar4+0x450`; a sibling family is inserted into
-  `param_1+0x13c0` with back-links at `plVar4+0x4d0`. The sole direct caller `FUN_14036dd50`
-  is therefore a zone/world update method, not the message-consumer family.
+- Follow-up decomp rejects the `WorldZone_InsertUnitHandlerIntoList` anchor for socket-consumer
+  recovery. The helper walks visible-unit node lists rooted at `param_1+0x1488` plus local
+  spatial-bucket families and splices each `plVar4` node into a zone/world-owned
+  `param_1+0x14b0` list with back-links at `plVar4+0x450`; a sibling family is inserted into
+  `param_1+0x13c0` with back-links at `plVar4+0x4d0`. This is not the `WorldSocket`
+  opcode-handler chain, whose nodes advance via `node+0x20`.
 - `FindPointerInData` on `14036dd50` hit `.rdata` cell `140b65a10`, but the adjacent code cell
   `14036dd30` is only a tiny getter (`this+0x12b0 -> *(ptr+0x18)`), which falsifies the
   tempting assumption that the caller's recovered vtable is the live `+0x50` / `+0x58`
-  handler table. Next passes should recover the inserted `plVar4` node vtables themselves,
-  not keep chasing the caller vtable or already named loot-consumer bodies.
-- A `FindImmediateInstructions` scan for `0x14b0` now gives the concrete sibling-method set for
-  that recovery: `14035c650`, `140369f30`, `14036a460`, `14036a980`, and `14036b8d0` all splice
-  or unlink the same `+0x450` / `+0x458` node family around `param_1+0x1488` and
-  `param_1+0x14b0`, reinforcing that the next anchor is the inserted node vtables, not the
-  zone-owner vtable.
+  handler table.
+- A `FindImmediateInstructions` scan for `0x14b0` gives the sibling spatial-method set:
+  `14035c650`, `140369f30`, `14036a460`, `14036a980`, and `14036b8d0` all splice or unlink
+  the same `+0x450` / `+0x458` node family around `param_1+0x1488` and `param_1+0x14b0`.
+  Treat this as a spatial false lead, not a per-opcode consumer-family entry point.
 
 One-hundred-twenty-ninth placeholder-rename initiative closure (2026-05-23):
 
@@ -14036,8 +14053,9 @@ One-hundred-twenty-ninth placeholder-rename initiative closure (2026-05-23):
 - **Implemented this initiative:** achievement progress fields; four quest objective
   types; account item `HasTargetPlayerIdentity`; storefront purchase/account extension
   fields; pending-group `SenderAccountId` / `TargetAccountId` / wire
-  `HasTargetPlayerIdentity`; account currency grant tail; group stat-block packet models
-  (`0x0436` / `0x0468` / related) with shape tests.
+  `HasTargetPlayerIdentity`; account currency grant tail; group stat-block packet
+  models (`0x0436` / `0x0466` / related) with shape tests, plus the corrected
+  structural `0x0438` and `0x0468` group aux packet models.
 - **Blocked with negative evidence (keep `Unknown*`):** `PendingAccountItemGroup.Unknown2`;
   `ServerStoreOffers.Offer.Unknown6`/`Unknown7`; group `Unk1` / `GroupCharacter.Unknown4`
   and full roster tail (`Unknown10+`); `QuestObjectiveType.Unknown27`/`Unknown29`.
@@ -14279,13 +14297,13 @@ One-hundred-eighteenth matching role-selection registration pass:
   mapped for opcode `0x051F`.
 - That reused reader remains structurally simple and already proven: target
   residence identity plus one uint32 community plot reservation index, with
-  `0xffffffff` as the observed no-reservation sentinel. This falsifies the
-  current `ServerMatchingGroupMemberRoleSelection` source model as retail-backed
-  packet naming or shape.
+  `0xffffffff` as the observed no-reservation sentinel. This falsifies a
+  standalone matching-role reader, but a later packet-shape pass proved the
+  managed `ServerMatchingGroupMemberRoleSelection` wrapper is a byte-for-byte
+  structural fit for the shared identity-plus-uint32 wire.
 - No runtime behavior change was made in this pass. NexusForever now marks
-  opcode `0x0600` and `ServerMatchingGroupMemberRoleSelection` as provisional so
-  the code points directly at the native contradiction instead of implying a
-  verified matching-role packet.
+  opcode `0x0600` and `ServerMatchingGroupMemberRoleSelection` as a mapped
+  structural wrapper with matching-specific trailing-value semantics blocked.
 - Verification:
   `dotnet build Source\NexusForever.Network.World\NexusForever.Network.World.csproj
   --no-restore -v minimal --nologo` succeeded.
@@ -16331,7 +16349,7 @@ Public-event aux packet-shape pass (2026-05-27):
 
 - `ServerPublicEventAux_ReadPayload` (`WildStar64.exe` `14007b930`, opcode
   `0x0139`) reads a uint32 value, a 5-bit count, and counted uint32 values.
-  NexusForever now exposes this as diagnostic `ServerPublicEventAuxRaw.Value`
+  NexusForever now exposes this as diagnostic `ServerPublicEventAux.Value`
   plus `Values` instead of an opaque fixed 16-byte payload. Producer semantics
   remain blocked because the same cluster is referenced around public-event
   map/objective/bomb status surfaces.
@@ -16947,12 +16965,301 @@ Client opcode discovery loop pass 17 (2026-05-29):
   path still blocked for 0x0550.
 - FindOpcodeComparisons 0x05CF in 140765000-140770000: total_matches=0; InspectCodeAddress
   1407655c0 is Lua/fortune table builder - not 0x05CF handler.
+
+Full missing-system restoration pass (2026-06-02 - F-030 PTR copy packet boundary):
+
+- `ServerPtrCharacterCopyQueued` (`0x06EA`) remains mapped to client consumer
+  `ServerPtrCharacterCopyQueued_DispatchLuaEvent` (`140020ea0`), which fires Lua
+  `PTRCharacterCopyQueued` (`1409ed738`), but no safe server producer timing or
+  copy-state mutation has been recovered.
+- NexusForever now has focused pregame tests pinning `ClientPtrCopy` (`0x06E8`)
+  and `ServerPtrCharacterCopyQueued` (`0x06EA`) as empty payloads and verifying
+  `ClientPtrCopyHandler` stays diagnostic-only until the handoff is mapped.
+- Tracker correction: F-030 is partial, not complete; remaining blocker is
+  producer timing and handoff semantics rather than client consumer identity.
+
+Full missing-system restoration pass (2026-06-02 - F-030 realm-transfer destinations aux envelope):
+
+- Re-aligned current source with pass 29 evidence for
+  `ServerRealmTransferDestinationsAux` (`0x03EF`): the model now writes the
+  native reader envelope (`Value`, byte count, counted raw bytes) instead of a
+  fixed opaque `0x10` payload.
+- Payload contents and producer semantics remain blocked, so no
+  realm-transfer/account-gift runtime emit path was enabled.
+
+Full missing-system restoration pass (2026-06-02 - F-009 vehicle embark aux packet contract):
+
+- Re-aligned current source with pass 30 evidence for `ServerVehicleEmbarkAux`
+  (`0x01B2`): native reader `ServerVehicleEmbarkAux_ReadPayload` (`14008ff20`)
+  reads one flag, one 2-bit value, one `uint64`, and two `uint32` fields.
+- NexusForever now writes that field shape directly with neutral field names
+  instead of preserving an opaque fixed raw payload. Vehicle/passenger
+  semantics and producer timing remain blocked.
 - Client0x0550/062A/0634, Client0x012D/063E, Client0x00C8, ServerMatching0x05CF: still blocked.
 - Next: TraceFunctionCallers 140332920 (caller of 1403355e0); FindPointerInData 14008a150;
   inspect 14076bd30; live sniff F-010 for 05CF/00C8/062A/0634.
 - Verification:
   dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
   should pass after this pass.
+
+Full missing-system restoration pass (2026-06-02 - F-026 item aux packet contracts):
+
+- Re-aligned current source with pass 27/28 evidence for `ServerCostumeItemAux`
+  (`0x037F`) and `ServerSupplySatchelAux` (`0x019A`). `0x037F` now writes the
+  direct native reader shape from `ServerCostumeItemAux_ReadPayload`
+  (`1400874a0`): one 14-bit value, three `uint32` fields, and two flags.
+  `0x019A` now writes the shared reader shape from
+  `MatchingQueueResultWaitTime_ReadPayload` (`14007fcf0`): one 6-bit value and
+  one `uint32`.
+- Runtime producer/consumer semantics remain blocked for both packets; no item,
+  supply-satchel, costume, or emote emit path was enabled.
+
+Full missing-system restoration pass (2026-06-02 - size-1 aux empty packet contracts):
+
+- Corrected seven size-1 native registrations that use `ServerEmpty_ReadPayload`
+  (`14007d8e0`) to emit no wire fields rather than one raw byte:
+  `0x00DF`, `0x00EE`, `0x0101`, `0x0143`, `0x014D`, `0x0160`, and `0x0187`.
+- Managed opcode/model names now use `...Empty` for these rows. The registered
+  object size remains a client allocation detail, not a packet byte. Datacube,
+  duel, resurrection, appearance, loot, path-mission, and entity-select producer
+  semantics remain feature-owned and blocked until separate consumer evidence is
+  mapped.
+
+Full missing-system restoration pass (2026-06-03 - item context and instance-reset aux packet contracts):
+
+- Native registration block `Network_RegisterServerOpcode_0351` (`14006c290`)
+  wires `0x00B7` to shared `ServerEmpty_ReadPayload` (`14007d8e0`) with a
+  size-1 allocation slot. NexusForever now treats
+  `ServerItemContextActionAck` as a zero-field packet; the item-context
+  producer/consumer reason remains blocked.
+- The same registration block wires `0x0157` to
+  `ServerInstanceResetAux_ReadPayload` (`14008e030`) with an 8-byte allocation
+  slot. The reader null-checks the payload object, then reads one 4-bit value
+  and one `uint32`; NexusForever now models that wire shape while keeping
+  instance-reset semantics diagnostic-only.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --filter "FullyQualifiedName~PacketPlaceholderNamingTests" -v minimal
+  --nologo` passed 70/70, full
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  -v minimal --nologo` passed 2483/2483, and
+  `InspectCodeAddress` confirmed
+  `functionAtOrContaining=ServerInstanceResetAux_ReadPayload@14008e030`.
+
+Full missing-system restoration pass (2026-06-03 - F-026 item-use consume ordering):
+
+- Result: `Implemented` source-backed R3-L1 correction. No native labels or
+  packet contracts changed in this pass.
+- `ClientItemUseHandler` now mirrors the existing `Inventory.ItemUse`
+  consumability preflight for normal activated items, passes the client context
+  token/evidence capture into `TryCastSpell`, and consumes the item only when
+  the cast returns `CastResult.Ok`.
+- `ClientItemUseHandlerTests` pin failed-cast/no-consume, successful
+  cast-before-consume ordering, and empty-stack no-cast/no-consume behavior.
+- Remaining blocker: item-context/aux producer semantics remain blocked pending
+  separate evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~ClientItemUseHandlerTests|FullyQualifiedName~ClientItemUseLootBagHandlerTests|FullyQualifiedName~LootBagUsageTests|FullyQualifiedName~SupportStuckHandlerTests|FullyQualifiedName~ClientActivateUnitCastHandlerTests" -v minimal --nologo`
+  passed 25/25, and full
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo`
+  passed 2489/2489.
+
+Full missing-system restoration pass (2026-06-03 - F-026 decor item-use consume ordering):
+
+- Result: `Implemented` source-backed R3-L2 correction. No native labels,
+  packet contracts, item-context behavior, or unlock lifecycle semantics changed
+  in this pass.
+- `ClientItemUseDecorHandler` now preflights normal stack/charge availability,
+  resolves/creates the player's residence before consuming, catches
+  `HousingException` before item mutation, and calls `DecorCreate` only after
+  `Inventory.ItemUse` succeeds.
+- `ClientItemUseDecorHandlerTests` pin blocked-residence/no-consume,
+  empty-stack no residence/consume/decor, consume-failure/no-decor, and
+  successful residence-before-consume-before-decor ordering.
+- Remaining blocker: broader item/error aux producer semantics, item eligibility
+  precision, and account/character unlock deltas remain blocked by separate
+  F-026 evidence gates.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~ClientItemUseDecorHandlerTests" -v minimal --nologo`
+  passed 4/4, broader
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~ClientItemUseDecorHandlerTests|FullyQualifiedName~ClientItemUseHandlerTests|FullyQualifiedName~ClientHousingNeighborHandlerTests|FullyQualifiedName~ResidenceManagerTests|FullyQualifiedName~ResidenceTests" -v minimal --nologo`
+  passed 22/22, and full
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo`
+  passed 2493/2493.
+
+Full missing-system restoration pass (2026-06-03 - F-013 mail return sender guard / R3-M7):
+
+- Result: `Implemented` source-backed R3-M7 correction. No native labels or mail
+  packet contracts changed in this pass.
+- `MailManager.ReturnMail` now rejects available mail whose sender is not a
+  player/GM with a non-zero `SenderId`, returning `ServerMailResult(Send,
+  MailCannotReturn)` without removing the mail, queueing outgoing mail, calling
+  `IMailItem.ReturnMail`, or sending `ServerMailUnavailable`.
+- `MailItem.ReturnMail` enforces the same invariant and throws before changing
+  `RecipientId`, subject, or flags when the mail has no player/GM sender.
+- `MailManagerDeliveryTests` pin non-player marketplace sender rejection, and
+  `MailItemTransactionTests` pin the direct model no-mutation invariant.
+- Remaining blocker: broader marketplace/offline settlement atomicity remains
+  blocked under R3-M4/R3-M5 and F-005/F-013 evidence gates.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~MailManagerDeliveryTests|FullyQualifiedName~MailItemTransactionTests|FullyQualifiedName~MarketplaceMailSettlementTests" -v minimal --nologo`
+  passed 21/21, and full
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo`
+  passed 2495/2495.
+
+Full missing-system restoration pass (2026-06-03 - F-005/F-013 marketplace settlement delivery guards / R3-M4/R3-M5):
+
+- Result: `Implemented` source-backed delivery-failure guard. No native labels,
+  packet contracts, CREDD behavior, marketplace aux producer semantics, or mail
+  result packet contracts changed in this pass.
+- `GlobalMarketplaceManager` now checks item delivery before destructive
+  order/seller-credit mutations for auction expiry, commodity sell-order expiry,
+  commodity cross-match fill, and commodity sell-order cancel where the item
+  must return to an owner/buyer.
+- Auction and commodity item delivery helpers now return `bool`, restore
+  temporary item ownership on failed delivery, and gate mail fallback on
+  `MarketplaceMailDelivery.IsAvailable` so no-mail test contexts leave
+  listings/orders active instead of deleting state.
+- Commodity in-inventory delivery uses max-stack empty-slot preflight from the
+  handler-provided `IItemManager`. This is intentionally conservative and does
+  not yet model exact retail partial-stack routing.
+- Remaining blocker: broader marketplace DB transaction/save atomicity, exact
+  commodity multi-order partial-fill/partial-stack semantics, and marketplace
+  mail content persistence remain separate F-005/F-013 work.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests" -v minimal --nologo`
+  passed 15/15, broader
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests|FullyQualifiedName~MarketplaceOwnedListHandlerTests|FullyQualifiedName~MarketplaceMailSettlementTests" -v minimal --nologo`
+  passed 21/21, and full
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo`
+  passed 2502/2502.
+
+Full missing-system restoration pass (2026-06-03 - F-005 marketplace persisted microchip overflow guard / #13):
+
+- Result: `Implemented` source-backed corrupt-row guard. No native labels,
+  packet contracts, CREDD behavior, marketplace aux producer semantics, or item
+  microchip gameplay semantics changed in this pass.
+- Current source names the stale backlog `UnknownArray` field as
+  `MicrochipIds`; `GlobalMarketplaceManager.DeserializeMicrochipIds` now treats
+  both `FormatException` and `OverflowException` from persisted DB text as
+  corrupt input, logs the value, and returns an empty list rather than throwing
+  during marketplace auction load.
+- Remaining blocker: this does not change broader marketplace row validation
+  for persisted commodity orders (R3-M9), DB transaction/save atomicity, or item
+  microchip install gameplay.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests" -v minimal --nologo`
+  passed 16/16, broader
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests|FullyQualifiedName~MarketplaceOwnedListHandlerTests|FullyQualifiedName~MarketplaceMailSettlementTests" -v minimal --nologo`
+  passed 22/22, and full
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo`
+  passed 2503/2503.
+
+Full missing-system restoration pass (2026-06-03 - F-005 auction search page overflow guard / R3-M8):
+
+- Result: `Implemented` source-backed paging guard. No native labels, packet
+  contracts, auction filter semantics, sort semantics, or marketplace aux
+  producer semantics changed in this pass.
+- `GlobalMarketplaceManager.SearchAuctions` now computes the requested skip as
+  `ulong` and returns an empty page when the skip exceeds the `int` boundary
+  required by `Enumerable.Skip`, preventing huge client `Page` values from
+  throwing through the handler.
+- `MarketplaceAuctionHandlerTests.SearchAuctions_HugePage_ReturnsEmptyPageWithoutOverflow`
+  pins `uint.MaxValue` paging with an empty result and echoed `CurrentPage`.
+- Remaining blocker: accepted property/rune/equippable filters, property sort,
+  persistent listing/search storage, and marketplace producer semantics remain
+  separate F-005 work.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests" -v minimal --nologo`
+  passed 17/17, broader
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests|FullyQualifiedName~MarketplaceOwnedListHandlerTests|FullyQualifiedName~MarketplaceMailSettlementTests" -v minimal --nologo`
+  passed 23/23, and full
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo`
+  passed 2504/2504.
+
+Full missing-system restoration pass (2026-06-02 - scalar aux packet contracts):
+
+- `InspectCodeAddress` on local reader slot `14007a530` showed the null guard
+  followed by `FUN_14006c090(..., 0xe)`, proving `ServerEntitySelectAuxUInt32`
+  (`0x0186`) was misnamed and should be a 14-bit scalar. NexusForever now names
+  it `ServerEntitySelectAuxUInt14`.
+- `InspectCodeAddress` on local reader slot `140080c60` showed the null guard
+  followed by a jump to `14006c1c0`; the `14006c1c0` fragment reads one
+  `uint32` with fast-path segment handling and `NetworkBitReader_ReadBitsAcrossSegments`
+  fallback. `ServerReputationAuxUInt32` (`0x01A6`) and
+  `ServerTimeOfDayAuxUInt32` (`0x0846`) now use direct uint32 scalar models.
+- `ServerPathScientistAuxUInt32` (`0x0181`) already binds to
+  `ServerUInt32_ReadPayload` (`14007ab50`) and now also uses a direct uint32
+  scalar model. Producer semantics remain blocked for all four packets.
+
+Full missing-system restoration pass (2026-06-02 - reputation aux packet contracts):
+
+- `Network_RegisterServerOpcode_0351` fragment `14006c290` registers `0x01A7`
+  as size `0x10` with reader `14008ef80`, `0x01A8` as size `0x10` with
+  `ServerHousingResidenceKeyedUpdate_ReadPayload` (`14008de20`), and `0x01A9`
+  as size `0x8` with reader `14008d430`.
+- `14008ef80` reads one `uint64` through `NetworkBitReader_ReadUInt64`, then
+  one `uint32` through `NetworkBitReader_ReadUInt32Fast`; labeled
+  `ServerReputationAuxUInt64UInt32_ReadPayload`.
+- `14008d430` reads one 14-bit value then one `uint32`; it is also called from
+  the large `ServerReputationUpdate` parser for counted rows. Labeled
+  `ServerReputationUInt14UInt32_ReadPayload`. NexusForever now names `0x01A9`
+  `ServerReputationAuxUInt14UInt32` instead of the misleading
+  `ServerReputationAuxUInt64`.
+- NexusForever now writes typed shapes for `0x01A7`, `0x01A8`, and `0x01A9`.
+  Reputation/path-XP producer semantics remain blocked.
+
+Full missing-system restoration pass (2026-06-02 - F-012 chat aux notification packet contract):
+
+- `Network_RegisterServerOpcode_0351` fragment `14006c290` registers
+  `ServerChatAuxNotification` (`0x01EF`) with reader `1400a0890`.
+- `1400a0890` reads one 8-bit row count, allocates counted `0x30` in-memory
+  rows, then calls `1400a06d0` for each row. `1400a06d0` reads `uint32`,
+  a 14-bit value, `uint64`, two `uint32` fields, two 8-bit fields, then a
+  counted subrow list whose rows are a 5-bit value plus two `uint32` fields.
+  Durable labels added: `ServerChatAuxNotification_ReadPayload` and
+  `ServerChatAuxNotificationRow_ReadPayload`.
+- NexusForever now writes that `0x01EF` shape directly. `0x01B8`, `0x01C1`,
+  and `0x01C4` were left for the next `PTR_LAB_140c1ec90` variant-table pass;
+  no chat/cinematic runtime producer was enabled.
+
+Full missing-system restoration pass (2026-06-03 - F-012 chat aux row/envelope packet contract):
+
+- `PTR_LAB_140c1ec90` is the `0x01B8` chat row read dispatch table and
+  `PTR_LAB_140c1ec30` is the writer sibling. `ServerChatAuxRow_ReadPayload`
+  (`140085ca0`) reads a 4-bit variant, two `uint16` header fields, then
+  dispatches the variant payload; `ServerChatAuxRow_WritePayload`
+  (`140085af0`) mirrors that order.
+- Variant table: `0/2/3` use one-bit read/write code spans at `1400853f0` and
+  `140085340`; `1/7/11` use the shared `ServerUInt32_ReadPayload`; `4` uses
+  the shared 18-bit scalar reader/writer;
+  `5` uses a 15-bit scalar reader/writer; `6` uses the local 14-bit scalar
+  reader/writer; `8` uses `ServerChatAuxRowComplex_ReadPayload` (`140085790`)
+  and writer `140085510`; `9` uses `ServerUInt64_ReadPayload`; `10` uses
+  `ServerChatAuxRowUInt14TwoUInt32_ReadPayload` (`140085a60`) and writer
+  `140085970`.
+- Envelope readers are now mapped: `ServerChatAuxPayload_ReadPayload`
+  (`140086410`) reads wide string, 5-bit row count, rows, bool footer, and
+  `uint16` footer; `ServerChatAuxPayloadAlt_ReadPayload` (`140085fe0`) reads
+  wide string, 5-bit row count, rows, and `uint16` footer.
+- NexusForever now writes typed packet contracts for `0x01B8`, `0x01C1`, and
+  `0x01C4`, with focused tests covering all mapped row variants. Runtime
+  producer/consumer semantics remain blocked.
+
+Full missing-system restoration pass (2026-06-03 - story/recruitment boundary packet contracts):
+
+- `Network_RegisterServerOpcode_0351` (`14006c290`) registers
+  `ServerStoryCommunicatorAux` (`0x074A`) with reader `140080c80` and size
+  `0x18`. The reader consumes five `uint32` fields and one trailing `uint16`
+  field; NexusForever now writes that shape directly with neutral field names.
+- The same registration block binds `0x077E` to
+  `ServerFlightPathUpdate_ReadPayload` (`14008eaa0`), not a fixed four-uint32
+  payload. That shared reader consumes a `uint32` count and then a counted
+  raw `uint32` array via `FUN_140337160`; NexusForever now names the packet
+  `ServerRecruitmentAuxUInt32List` and writes the count/list contract.
+- Focused `PacketPlaceholderNamingTests` coverage reads both packets back
+  through `GamePacketReader`. Story communicator and recruitment/pet producer
+  semantics remain blocked.
 
 Client opcode discovery loop pass 18 (2026-05-29):
 
@@ -16972,7 +17279,7 @@ Client opcode discovery loop pass 18 (2026-05-29):
 - Matching UI vtable at 140b76488 fully swept: known senders + Lua/eligibility stubs only.
 - Client0x0550/062A/0634, Client0x012D/063E, Client0x00C8/0x05B5/0x05B6, ServerMatching0x05CF: still
   blocked on static evidence - live sniff F-010 recommended.
-- Next: WorldSocket socket+0x14b0 handler-node recovery for 0x05CF; DumpNearbyData 140b648b8 vtable
+- Next: WorldSocket callback-view `+0x14b0` / native `+0x15b0` handler-node recovery for 0x05CF; DumpNearbyData 140b648b8 vtable
   owner of 140332920; FindCallsToTarget 14008a150; positive-control inspect 14059acb0.
 - Verification:
   dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
@@ -16993,10 +17300,10 @@ Client opcode discovery loop pass 19 (2026-05-29):
   not gameplay UI).
 - sendmsg filters 0x62A/0x634 on Network_SendMessageById: 4 refs, zero windows (same as 0x05B5).
 - FindOpcodeComparisons 0x05CA/0x05CC/0x05CF in reader cluster: registration-only for all three;
-  no handler switch found - 0x05CF handler recovery must use WorldSocket+0x14b0 vtable+0x58 playbook.
+  no handler switch found - 0x05CF handler recovery must use the callback-view +0x14b0 / native WorldSocket+0x15b0 vtable+0x58 playbook.
 - Client0x062A/0x0634: static sender discovery exhausted; escalate to F-010 live sniff with payload
   correlation vs 0x05D5/0x0602/0x0628/0x05EF-0x05F9.
-- Next: WorldSocket+0x14b0 handler-node recovery (FindImmediateInstructions 0x14b0, InspectCodeAddress
+- Next: callback-view +0x14b0 / native WorldSocket+0x15b0 handler-node recovery (FindImmediateInstructions 0x15b0, InspectCodeAddress
   140014f10); FindDataReferences on vtable cells; F-010 matching sniff bundle.
 - Verification:
   dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
@@ -17004,8 +17311,8 @@ Client opcode discovery loop pass 19 (2026-05-29):
 
 Client opcode discovery loop pass 20 (2026-05-29):
 
-- Priority A WorldSocket+0x14b0 handler recovery for ServerMatching0x05CF per ENTITY_AUX_DECODE_ROADMAP.md.
-- InspectCodeAddress 140014f10 reconfirms apply path: deserialize via DAT_140c65808 vtable+0x100, AccountInventory/Storefront fast paths, then handler chain `(**(code **)(*plVar21 + 0x58))(plVar21, conn, opcode, parsedPayload)` walking `*(socket+0x14b0)` nodes at +0x20.
+- Priority A callback-view +0x14b0 / native WorldSocket+0x15b0 handler recovery for ServerMatching0x05CF per ENTITY_AUX_DECODE_ROADMAP.md.
+- InspectCodeAddress 140014f10 reconfirms apply path: deserialize via DAT_140c65808 vtable+0x100, AccountInventory/Storefront fast paths, then handler chain `(**(code **)(*plVar21 + 0x58))(plVar21, conn, opcode, parsedPayload)` walking callback-view `+0x14b0` / native `WorldSocket+0x15b0` nodes at +0x20.
 - FindImmediateInstructions 0x14b0: totalMatches=37; splice cluster at 140356a30, 14035c650, 140369f30, 14036a460, 14036a980, 14036b8d0 plus WorldSocket filter/apply readers.
 - InspectCodeAddress 140369f30: splices spatial-grid unit nodes into parent+0x14b0 (+0x13c0 sibling list); counter object uses base vtable PTR_FUN_140b787c0 whose slot+11 (+0x58) is default stub 14001b000 - unit-handler family, not opcode-specific matching consumer.
 - FindVtableSlotReferences slot 11 target Loot_HandleLootGrant 1403db050: matches=0 - confirms loot fast-path is not linked-list vtable+0x58 handler (roadmap negative control).
@@ -17013,7 +17320,7 @@ Client opcode discovery loop pass 20 (2026-05-29):
 - FindOpcodeComparisons same trio in 1405c000-1405d000 matching-manager range: total_matches=0 - handlers likely use non-CMP dispatch (parsed-object tag / switch table).
 - FindDataReferences DAT_140c65b98: total_refs=64; FUN_1405bedf0 lazy-inits matching-manager singleton (0x238 alloc, ctor 1405bee80, reset 1405c2f20 sets +0x10c=0x10).
 - Client0x062A/0x0634: static sender path remains exhausted (pass 19); no new client send probes queued.
-- Next: recover inserted handler-node vtables whose +0x58 bodies dispatch matching opcodes without immediate CMP; F-010 sniff for 0x05CF vs 0x05CA/0x05CC during match-ready window.
+- Next: recover socket-owned callback-view `+0x14b0` / native `WorldSocket+0x15b0` handler-chain consumers whose nodes advance at `+0x20`; ignore the later-proven spatial `WorldZone_*` `+0x450` list. F-010 sniff for 0x05CF vs 0x05CA/0x05CC during match-ready window.
 - Verification:
   dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo
   should pass after this pass.
@@ -17563,7 +17870,7 @@ Prerequisite / partial slot field apply + `1403b8540` caller (2026-05-31, pass 4
 - **Pass 47 correction:** **`140092580`/`140092470`** are **`0x046F`/`0x047A` guild-bank** readers (see pass 47), **not** the player partial-field patch path.
 - **Correlated (player bag only):** **`Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`)** caller PE **`0x1403eef8a`** in cluster **`0x1403eed00`** - opcode/apply table cell still unmapped.
 - **Export gap:** Ghidra `functions.csv` has **no contiguous function** for **`0x1403ec783`..`0x1403f378f`**; pass **48** added **inspect-only** fragments for **`0x1403eed00`** / **`0x1403eef8a`** (see pass 48). Headless **`CreateFunction`** on the whole gap fails (overlapping epilogue **`0x1403f1320`**).
-- **SQL (type 339):** `wildstar_client.item2` **78089** ? `item2TypeId` **339**, `Item2CategoryId` **177** (orphan below elemental **340-345** band); local **`itemruneslotrandomization`** table is **empty** (0 rows).
+- **SQL (type 339, corrected 2026-06-04):** `wildstar_client.item2` **78089** ? `item2TypeId` **339**, `Item2CategoryId` **177**; later `item2type`/localized-name evidence maps it as category-177 **Fire** (`Sign of Fire`), not an orphan below the elemental band. Local **`itemruneslotrandomization`** table is **empty** (0 rows).
 - **Still blocked:** **player-bag** partial field-apply **opcode** + apply-table cell (distinct from **`0x046F`/`0x047A` guild bank**, pass 47-48); gap **index walker** into case stubs; Lua **`ItemAdded` subscriber** bodies; durable client proof for **`Prerequisite.tbl` rows 10610/10685**.
 - Verification: `selected_call_edges.csv`, fragments `1403b8540`, `1403b85a0`, `140092580`, `140092470`, `14008cda0`; PE `.text` scan on `Decomp/Client64/WildStar64.exe` (local copy has a non-standard section table in this checkout - treat PE call-site results as **session-correlated**, re-verify when a clean client binary is mounted).
 
@@ -17974,17 +18281,20 @@ Prerequisite / rune wire + Lua contract (2026-05-31, pass 37 - Glyphs index alig
 
 - **Mapped:** `ItemData_AddRuneSlotsLuaFields` (`140673b80`) walks slot index `i`, reads compact socket byte at `itemData+0x388+i`, installed rune Item2 at `itemData+0x518+i*4` - parallel per-slot arrays.
 - **Mapped:** `ItemRuneType_ToCompactSocketId` (`14040f320`) maps native `RuneType` **7-13** ? compact **1-7** for `RuneCrafting_SendClientRuneSlotAdd` (`14051ed80`) `IsNotFusion` bit on opcode **0x0859**.
-- **NF:** `ItemRuneNetworkWire.Populate` emits `Glyphs[]` with one entry per `IItem.RuneSlots` index (includes **0** for empty slots); `Microchips[]` still from persisted `IItem.MicrochipIds` only.
+- **NF:** `ItemRuneNetworkWire.Populate` emits `RandomGlyphData` compact socket-type bytes (native `RuneType` 7-13 => compact 1-7, packed in 3-bit fields starting at bit 7) and `Glyphs[]` with one entry per `IItem.RuneSlots` index (includes **0** for empty slots); `Microchips[]` still from persisted `IItem.MicrochipIds` only.
+- **Observed / fixed (2026-06-04 live):** starter shoulders `Item2=84804` (`Brutal Runic Shoulders`) use `ItemRuneInstance=139` (`definedSocketCount=1`, Life, `socketCountMax=0`), while the client-visible maximum is 2 from item-type fallback. Clicking **Add new rune slot** still crashed before opcode `0x0859` with `Function: BuildAddSlotOptions`, faulting at `WildStar64+0x5a2350` (`0x1405a2350`) reading `0x9`. Root cause: `InventoryItem_ApplyGlyphsFromWire` (`14056aba0`) stores `RandomGlyphData` at entity `+0xdc` and `InventoryItem_RefreshItemState` (`14056a430`) decodes socket bytes to entity `+0x60`, but `ItemEval_CommitRuneDataFromLinkedEntity` (`140413520`) clears the eval/runtime socket tail (`+0x4a4` false) when the random-circuit object at entity `+0x58` has count `< 1`; zero `RandomCircuitData` on armor creates that zero-count object. `RandomGlyphData` low bits (`tail+9`, bits 0..2) are the added-slot count used by `ItemData_ComputeRuneSlotCounts` / `BuildAddSlotOptions`, while bits 7+ remain compact socket types. NF now emits a one-entry circuit presence marker (`RandomCircuitData = 1 << 56`) for socket-bearing items, packs added-slot count in `RandomGlyphData` bits 0..2, and removed the starter-specific two-slot padding guard.
+- **Observed / fixed (2026-06-04 live):** after the crash fix, `0x085C` reroll reached NF but disconnected the session with `InvalidPacketValueException` in `ClientCraftingRuneSlotRerollHandler` `ValidateRuneType` because the client sent compact socket ids (`1..7`) instead of native `RuneType` ids (`7..13`). NF now normalizes reroll compact ids with compact precedence (`7` => Fusion); add-slot keeps full-id precedence because `RuneCrafting_SendClientRuneSlotAdd` stages the raw `RuneType` and only derives the `IsNotFusion` bit through `ItemRuneType_ToCompactSocketId`.
+- **Observed / fixed (2026-06-04 live):** installing the awarded `Beginner's Life Rune: Health` failed with `CraftMicrochipInvalidSocket` because `Item2=84956` is category **175**, type **356**, and the old arithmetic category-175 mapper classified type 356 as `Logic` instead of `Life`. `wildstar_client.item2` / `item2type` evidence maps category 175 as **352 Fire, 353 Water, 354 Earth, 355 Air, 356 Life, 357 Logic, 358 Fusion** and category 177 signs as **339 Fire, 340 Water, 341 Earth, 342 Air, 343 Life, 344 Logic, 345 Fusion**. NF now maps both categories explicitly; category 177 type **339** (`Item2=78089`, `Sign of Fire`) is no longer treated as blocked/orphan.
 - **Rejected:** `GetMicrochipInfo` / `GetGlyphInfo` - not registered on `Game.ItemData` string table (`140af8c40`..`140af8cf8` lists `GetRuneSlots` only); AddOn Studio names are not durable client labels.
-- **Still blocked:** client producer that unpacks wire `Microchips[]`/`Glyphs[]` into `itemData+0x388`/`+0x518`; augment microchip install mutator; category **177** type **339** (single item **78089**, no special).
-- Verification: `dotnet test - --filter ItemRuneSocket`
+- **Still blocked:** client producer that unpacks wire `Microchips[]`/`Glyphs[]` into `itemData+0x388`/`+0x518`; augment microchip install mutator.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~CraftingRuneHandlerTests|FullyQualifiedName~ItemRuneSocketTests"`; isolated `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj`.
 
 Prerequisite / category 177 fusion glyph band (2026-05-31, pass 36 - wildstar_client type inventory):
 
-- **Correlated (`wildstar_client.item2type` / `item2`):** category **177** has elemental types **340-345** (base **333**, Air..Life) plus fusion-tier types **515** (8 items), **516** (22), **530** (5), **563** (4); empty placeholders **514** / **517**; orphan **339** (1 item, below elemental band).
+- **Correlated (`wildstar_client.item2type` / `item2`):** category **177** has sign types **339-345** (`339` Fire, `340` Water, `341` Earth, `342` Air, `343` Life, `344` Logic, `345` Fusion) plus fusion-tier types **515** (8 items), **516** (22), **530** (5), **563** (4); empty placeholders **514** / **517**.
 - **Fusion mapping:** populated high types satisfy `item2TypeId - 13` with bases **502**, **503**, **517**, **550** (all ? **502**). NF treats `item2TypeId ? 502` in category **177** as `RuneType.Fusion` (tier-specific bases blocked without client TBL).
 - **NF:** `ItemRuneGlyphTypes.Category177FusionTypeIdMin` + branch in `TryGetRuneTypeFromRunecraftingGlyph`.
-- **Still blocked:** augment `Microchips[]` install sender; type **339** semantics; `GetMicrochipInfo` Lua native not labeled.
+- **Still blocked:** augment `Microchips[]` install sender; `GetMicrochipInfo` Lua native not labeled.
 - Verification: `dotnet test - --filter ItemRuneSocket`
 
 Prerequisite / ItemSpecial +0x10 field correlation (2026-05-31, pass 35 - reject spell FK as socket mask):
@@ -18331,3 +18641,164 @@ Prerequisite semantic closure pass (2026-06-02, pass 114 - type 267 GroupIsRaid;
 - Preserved `GroupFlags` through `GroupLootState`, `GroupStateManager.UpdateGroup`, and `GroupLootStateMappingExtensions.ToGroupLootState` so the prerequisite check can read the internal group snapshot rather than inventing separate state.
 - `Unknown260` remains mapped-only/blocked. State `5` now correlates with native `HousingBuildComplete` paths, but the active residence fields `+0x60/+0x64` and reachable row/use-site semantics remain unnamed, so no meaningful enum name is safe yet.
 - Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~GroupStateManagerTests|FullyQualifiedName~GroupFlagHandlerTests" -v minimal --nologo` passed (330/330).
+
+Loot crash-guard closure pass (2026-06-03 - D-L7 non-looter boundary):
+- No new native loot labels were needed. Source inspection showed the remaining
+  handler-facing crash path was server-side: `GlobalLootManager` resolved a
+  loot instance by owner/item, then called `LootInstance.GiveLoot`, `RollLoot`,
+  or `AssignMasterLoot`, whose invariant checks throw when the requester is not
+  a tracked looter.
+- `GlobalLootManager` now checks `LootInstance.HasLooter` immediately after
+  resolution and logs/returns for non-looter collect, roll, and master-loot
+  assignment attempts. The `LootInstance` invariant throws are retained for
+  internal misuse.
+- `GlobalLootManagerTests.LootRequestBoundaries_NonLooterReturnsWithoutThrowing`
+  pins the boundary by seeding an active loot instance, driving all three public
+  request methods with an outsider whose unit id matches the owner, and
+  asserting no exception, no delivery, and no session packet.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~GlobalLootManagerTests|FullyQualifiedName~LootRequestHandlerTests|FullyQualifiedName~LootInstanceResolutionTests" -v minimal --nologo` passed (13/13).
+
+Loot offline master-loot correction pass (2026-06-03):
+- No new native labels were needed. This pass corrected a server-side source
+  contradiction recorded in the code-review backlog: the tracker claimed
+  offline master-loot assignees returned `false`, but current `LootInstance`
+  resolved/broadcast the winner first, then logged the offline assignee and
+  returned `true`.
+- `LootInstance.AssignMasterLoot` now checks `TryGetPlayer(assignee)` before
+  `ResolveAssignedWinner`, `ServerLootWinner`, or `ServerLootItemUpdate`. When
+  the assignee is offline it logs and returns `false`, leaving
+  `OnlyMasterLootable`, `WinnerCharacterId=0`, and `WinnerGuid=0`.
+- `LootInstanceResolutionTests.AssignMasterLoot_OfflineAssigneeRejectsWithoutResolvingWinner`
+  pins the no-mutation boundary, while
+  `AssignMasterLoot_DeferredDeliveryLeavesResolvedLootForAssignee` continues
+  to cover the online bag-full deferred-delivery path.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~LootInstanceResolutionTests" -v minimal --nologo` passed (3/3).
+
+Loot sync tracker correction pass (2026-06-03 - D-L2 test-backed):
+- No new native labels were added. Existing evidence already maps
+  `ServerLootItemUpdate_ReadPayload` (`WildStar64.exe:1400a4920`) as the same
+  full `LootItem` row consumed through `ServerLootNotify` and `ServerLootGrant`.
+- Source inspection showed the old D-L2 backlog row was stale:
+  `LootInstance.BroadcastLootItemUpdate` is called after roll selection,
+  roll finalisation, master assignment, successful delivery, and offline/deferred
+  winner resolution paths. `BroadcastLootNotification` likewise runs after
+  successful delivery to remote looters, and empty/expired corpse cleanup uses
+  all-looter remove broadcasts.
+- `LootInstanceResolutionTests` now registers the provider-backed
+  `IPlayerManager` used by `LootInstance.TryGetPlayer` and asserts
+  `ServerLootItemUpdate` packets for roll, finalise, master-assign, and
+  deferred-delivery paths plus `ServerLootNotification` feedback for the
+  non-winning looter.
+- Remaining blockers are unchanged: bind-on-pickup confirmation policy, exact
+  roll/master eligibility semantics, standalone `ServerLootCanLoot` timing, and
+  exact retail loot chat/floater formatting still need live/client evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~LootInstanceResolutionTests" -v minimal --nologo`
+  passed `2/2`.
+
+Full missing-system restoration pass (2026-06-02 - F-025 entity-stat aux socket-chain false leads):
+- Rejected `FUN_140001a50` as an entity aux or socket handler anchor. `Apollo_RegisterActorFixedWindow` (`1400016d0`) registers it as the `Apollo.ActorFixedWindow` constructor; the installed `PTR_FUN_140b54e10` family is an interior refcount/destructor vtable, not an opcode consumer table.
+- Reclassified the `WorldZone_* +0x14b0` cluster (`140356a30`, `14035c650`, `140369f30`, `14036a460`, `14036a980`, `14036b8d0`) as spatial/visibility maintenance. These helpers splice nodes with `+0x450/+0x458` backlinks and are distinct from `WorldSocket_ProcessServerMessage`, whose handler chain advances at `node+0x20` and applies via vtable `+0x58`.
+- `FindImmediateInstructions 0x14b0` returned 37 matches and did not reveal the network handler-chain insertion source because the native chain head is not `WorldSocket+0x14b0`. Non-socket candidates inspected in this pass were spatial, world, formula/cache, or UI helpers.
+- `FindOpcodeComparisons` for entity-stat aux opcodes `0x0889`, `0x08CC`, `0x08F4`, `0x0939`, `0x093D`, and `0x093E` found actual opcode literals only in `Network_RegisterServerOpcode_0351` (`14006c290`). Other apparent hits were GameFormula ids or structure offsets.
+- Result: mapped-only / rejected false leads. Entity-stat aux remains blocked for runtime emission until a nontrivial socket-owned handler node or a live-sniff producer/consumer witness maps per-opcode semantics.
+
+Full missing-system restoration pass (2026-06-02 - F-025 WorldSocket native chain correction):
+- Corrected the socket-chain offset. `WorldSocket_FilterServerMessageHandlers` (`140014d30`) and `WorldSocket_ProcessServerMessage` (`140014f10`) run from the callback-table subobject installed at native `WorldSocket+0x100`; their decompiled `param_1+0x14b0` chain is native `WorldSocket+0x15b0`.
+- `FindImmediateInstructions 0x15b0` returned 33 matches and mapped the socket-owned chain lifecycle: `WorldSocket_Ctor` initializes the native `+0x15b0` head, `140012c10` tears it down, `140013ca0`/`140013cd0`/`140013d00`/`140014070`/`1400149a0` walk it for lifecycle/render/window dispatch, and `WorldSocket_ProcessServerMessage` still uses node `vtable+0x58` for post-read packet apply.
+- Native chain node layout: `node+0x18` is the backlink pointer-to-link and `node+0x20` is next. `socket+0x15b8` / `socket+0x15c0` track active or pending chain state during iteration.
+- Mapped appenders: `140015ec0` allocates/appends diagnostic message nodes with `PTR_FUN_140b55540`; `1400163d0` toggles the persistent console node at `socket+0x1598` with `PTR_FUN_140b55430`; `140016560` and `1400166a0` append/trigger options and addons through the persistent `socket+0x15a0` node with `PTR_FUN_140b558c0`; `socket+0x15a8` is built by `1404d56b0` with `PTR_FUN_140b690f0` and is classified in the follow-up as Fortune.
+- Slot-table result: diagnostic, console, and options/addons node families have filter/apply-style slots returning `1` through `14001d310`, so they do not consume aux packets. The `socket+0x15a8` family has a nontrivial apply-style slot (`1404d60f0`) for Fortune opcodes `0x03CF`-`0x03D2`, not aux.
+- Result: mapped-only. Entity-stat aux remains blocked; next pass should classify `PTR_FUN_140b690f0` / `1404d60f0` and any other nontrivial native `WorldSocket+0x15b0` apply nodes before widening NexusForever emitters.
+
+Full missing-system restoration pass (2026-06-02 - F-025/F-031 Fortune chain classification):
+- Classified `PTR_FUN_140b690f0` / `socket+0x15a8` as the Fortune consumer family. `FortuneNode_ApplyServerFortunePackets` (`1404d60f0`) dispatches `ServerFortuneCardUpdate` (`0x03CF`), `ServerFortuneReset` (`0x03D0`), `ServerFortuneCards` (`0x03D1`), and `ServerFortuneRewards` (`0x03D2`) into the Fortune UI state object at node `+0xC8`.
+- Labeled sub-consumers: `Fortune_ApplyCardUpdate` (`1407290a0`), `Fortune_ApplyReset` (`1407291f0`), `Fortune_ApplyCards` (`140728dc0`), and `Fortune_ApplyRewards` (`1407292a0`).
+- `Fortune_ApplyCardUpdate` returns without applying the operation/card flags when the first payload bool is false. NexusForever renamed `ServerFortuneCardUpdate.Unknown` to `HasUpdate`; packet shape is unchanged.
+- Result: small F-031 naming closure implemented; F-025 entity-stat aux remains blocked because this nontrivial native `WorldSocket+0x15b0` node is Fortune, not aux.
+
+Full missing-system restoration pass (2026-06-03 - marketplace aux packet contracts):
+- Implemented packet-contract closure only for marketplace aux opcodes. No auction,
+  commodity, CREDD, or marketplace runtime emit path was enabled.
+- `Network_RegisterServerOpcode_0351` (`14006c290`) registers `0x06DF`
+  (`ServerAuctionPostAux`) with reader `140090090`, which consumes a `uint32`
+  count, a counted `uint32` array, a counted byte array using the same count,
+  and one trailing `uint32` field.
+- The same registration cluster binds `0x07D5` (`ServerAuctionsByFilterAux`) to
+  reader `14008fe80`, which consumes one 14-bit value, three `uint32` fields,
+  and one flag.
+- NexusForever now exposes typed reader-backed packet models and focused
+  packet-shape coverage for both opcodes. Auction-post and auction-filter
+  producer/consumer semantics remain blocked until a client apply path, live
+  sniff, or server producer witness proves field meanings and emit timing.
+
+Full missing-system restoration pass (2026-06-03 - option/keybind aux packet contracts):
+- Implemented packet-contract closure only for option/keybind-adjacent aux
+  opcodes. No option, keybinding, item, or unlock runtime emit path was enabled.
+- `Network_RegisterServerOpcode_0351` (`14006c290`) registers `0x056B`
+  (`ServerOptionAuxPayload`) with reader `1400a3ce0`, which consumes two
+  `uint64` fields, one `uint32` field, and one trailing `uint64` field.
+- The same registration cluster binds `0x056C`
+  (`ServerOptionAuxPayloadLarge`) to reader `1400a3d50`, which consumes three
+  `uint64` fields, one 18-bit field, a 3-bit count, and a counted `uint32`
+  array.
+- `0x056D` (`ServerOptionAuxPayloadMedium`) uses reader `1400a3e40`, which
+  consumes one `uint64` field, one `uint32` field, a 4-bit count, and a counted
+  `uint32` array.
+- NexusForever now exposes typed neutral packet models and focused packet-shape
+  coverage for all three opcodes. Exact option readback, item/options producer
+  timing, and field semantics remain blocked until a client apply path, live
+  sniff, or producer witness proves ownership.
+- Verification: focused `PacketPlaceholderNamingTests` passed `70/70`; full
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo`
+  passed `2483/2483`; Ghidra `InspectCodeAddress` confirmed all three labels.
+
+Temporary rental mount prerequisite pass (2026-06-03 - type 129 active-effect compare):
+- Existing native labels still back prerequisite type `129` as an active
+  spell-effect check: `Prerequisite_CheckActiveSpellEffectOnUnit_Table129`
+  (`WildStar64.exe:1404a0540`) and live case `0x81` in
+  `PrerequisiteManager_EvaluateTypeSlot` walk the unit active-effect list and
+  feed `value0` into SpellService comparison.
+- Client table evidence for the starter rental mounts links license item
+  `49979` (`Equivar (Provisionary) License`) through unlock spell `77503` to
+  summon spell `77504`; the summon prerequisite `36098` requires type `129`
+  with `value0=77357`. Dominion unlock `77357` and Exile unlock `77503` share
+  `Spell4GroupList 1378` / `SpellGroup 576`, so NexusForever now treats the
+  native SpellService comparison as exact Spell4 or same Spell4-group overlap.
+- Implemented duration tracking for no-op `UnlockMount` / `Fluff` effects so
+  two-hour rental unlock spells remain visible to prerequisite active-effect
+  checks. Remaining uncertainty: the exact SpellService compare implementation
+  behind the native vtable call is still not independently labeled.
+
+Store mount account-inventory follow-up (2026-06-03 - target identity flag):
+- Local `wildstar_client` evidence shows permanent store mounts are normal
+  account items with `item2Id` license rewards. Example account item `2770`
+  maps to item `92102`, activation spell `87912`, `UnlockMount` effect
+  `dataBits00=87911`, and summon Spell4 base `62973`.
+- The live local auth DB had account inventory row `41` on account `1`
+  targeted to character `30` (`Joy Ner`) for account item `2770`, but its
+  persisted target-present flag was `false`. NexusForever now normalizes loaded
+  account-inventory rows with a non-zero target character id to
+  `HasTargetPlayerIdentity=true`, and character storefront purchases explicitly
+  set that flag when adding targeted account inventory.
+- A later live claim attempt reached `ClientAccountItemTake` for inventory rows
+  `41`-`44` but returned `ServerAccountOperationResult` `TakeItem` / `Prereq`
+  because prerequisite type `246`
+  (`DoesNotOwnAccountItemOnCharacter`) had no keyed NexusForever handler. The
+  relevant `Prerequisite.tbl` rows use `NotEqual` with `value1` as the license
+  `Item2` id (`92102`-`92105`), while mount/flair ownership is checked by the
+  neighboring `SpellBaseId` / `PetFlair` slot. NexusForever now compares the
+  value Item2 id against character inventory only, leaving the account-inventory
+  row out of the check so a purchased account item does not block its own
+  retrieval.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~PrerequisiteCheckTests|FullyQualifiedName~PrerequisiteTypeNamingTests" -m:1 -nr:false -v minimal --nologo /p:BuildInParallel=false /p:UseSharedCompilation=false /p:OutDir=I:\GIT\NexusForever\artifacts\prerequisite-test-bin\`
+  passed `336/336`, including the new type `246` handler coverage. A first
+  attempt without single-node/no-shared-compiler settings hit a transient
+  compiler file lock in `obj`.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~Account.Inventory" -v minimal --nologo /p:OutDir=I:\GIT\NexusForever\artifacts\account-inventory-test-bin\`
+  previously passed `56/56`; after the type `246` handler change, the same
+  filter was re-run against the freshly built isolated test assembly with
+  `dotnet test I:\GIT\NexusForever\artifacts\prerequisite-test-bin\NexusForever.Game.Tests.dll --filter "FullyQualifiedName~Account.Inventory" -v minimal --nologo`
+  and passed `56/56`. The default output path remains blocked while the local
+  `NexusForever.WorldServer` process holds its `bin\Debug\net10.0` DLLs.

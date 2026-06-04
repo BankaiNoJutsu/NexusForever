@@ -1,6 +1,6 @@
 # NexusForever Feature Restoration - Current Status
 
-Last updated: 2026-06-02 (ported useful LaughingWS branch scripts/data overlays, quest-loot/store/catalog/WIP-Dust-Stalker-quest-instance/WIP-live-event/Skyplot-housing overlays, settler build acknowledgements, active Settler hub build-count progress, WIP current-zone path episode activation with optional PathMission prerequisite filtering, active-path object-id completion guard, active Soldier assassinate kill progress with decompile-mapped ProgressCount, branch-informed active-only node/explore-zone/power-map-validated Explorer progress completion, PathMission and PathMissionType achievement credit, client-mapped GameFormula 0x017a path XP fallback for known completed path missions without configured XP, and unflagged PathRewardType.Mission grants for known completed path missions, branch starter-zone/map-only hooks, Shade's Eve/Infestation/Fragment Zero/Gauntlet/Ruins of Kel Voreth/Stormtalon's Lair/Skullcano/Initialization Core Y-83/Red Moon Terror/Genetic Archives/Sanctuary of the Swordmaiden/Datascape/Protogames/Space Madness/Evil from the Ether event/map chains, WIP-guessed Coldblood Citadel, Ruins of Kel Voreth, Sanctuary of the Swordmaiden, Skullcano, and Stormtalon's Lair optional-objective rolls, Space Madness/Gauntlet/Infestation/Protogames Academy/Fragment Zero/Shade's Eve/Red Moon Terror/Genetic Archives/Datascape/Ruins of Kel Voreth/Skullcano/Initialization Core Y-83/Sanctuary/Evil from the Ether/Cryo-Plex/War of the Wilds trigger objective/message/teleport/PvP scripts and phase broadcasts, SQL-backed boss objective-credit hooks including WIP Red Moon Terror Laveka credit, Skullcano and Sanctuary WIP route scaffolding, remaining map-only bindings plus WIP entry/boss/phase/cinematic-hook scaffolds for Deep Space, Rage Logic, Ultimate Protogames dungeon/raid, Protostar SuperMall, Journey into OMNICore-1, Fragment Zero, Infestation, Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet, narrow branch spell-script hooks for Marauder Mine/Pulse Blast, and the client-table-backed Exo-Lab 22 range teleporter; focused branch/path/event tests 552/552, focused instance/public-event tests 436/436, focused map-only entry/boss/phase/cinematic-hook scaffold tests 22/22, focused event/trigger cinematic-hook tests 155/155, focused PvP/adventure branch tests 25/25, focused Evil from the Ether tests 12/12, focused Coldblood Citadel tests 10/10, focused Ruins of Kel Voreth tests 16/16, focused Sanctuary of the Swordmaiden tests 38/38, focused Skullcano tests 34/34, focused Stormtalon's Lair tests 19/19, focused Protogames Academy trigger tests 25/25, focused Fragment Zero trigger tests 13/13, focused Gauntlet trigger tests 16/16, focused Infestation trigger tests 9/9, focused Datascape/objective-credit tests 102/102, path-progress tests 36/36, focused transporter tests 49/49, plus branch spell tests 11/11; F-004/F-009/F-024 remain partial)
+Last updated: 2026-06-03 (option/keybind aux packet contracts for `0x056B`, `0x056C`, and `0x056D`, marketplace aux packet contracts for `0x06DF` and `0x07D5`, chat aux row/envelope packet contracts for `0x01B8`, `0x01C1`, and `0x01C4`, plus story/recruitment boundary packet contracts for `0x074A` and `0x077E`; ported useful LaughingWS branch scripts/data overlays, quest-loot/store/catalog/WIP-Dust-Stalker-quest-instance/WIP-live-event/Skyplot-housing overlays, settler build acknowledgements, active Settler hub build-count progress, WIP current-zone path episode activation with optional PathMission prerequisite filtering, active-path object-id completion guard, active Soldier assassinate kill progress with decompile-mapped ProgressCount, branch-informed active-only node/explore-zone/power-map-validated Explorer progress completion, PathMission and PathMissionType achievement credit, client-mapped GameFormula 0x017a path XP fallback for known completed path missions without configured XP, and unflagged PathRewardType.Mission grants for known completed path missions, branch starter-zone/map-only hooks, Shade's Eve/Infestation/Fragment Zero/Gauntlet/Ruins of Kel Voreth/Stormtalon's Lair/Skullcano/Initialization Core Y-83/Red Moon Terror/Genetic Archives/Sanctuary of the Swordmaiden/Datascape/Protogames/Space Madness/Evil from the Ether event/map chains, WIP-guessed Coldblood Citadel, Ruins of Kel Voreth, Sanctuary of the Swordmaiden, Skullcano, and Stormtalon's Lair optional-objective rolls, Space Madness/Gauntlet/Infestation/Protogames Academy/Fragment Zero/Shade's Eve/Red Moon Terror/Genetic Archives/Datascape/Ruins of Kel Voreth/Skullcano/Initialization Core Y-83/Sanctuary/Evil from the Ether/Cryo-Plex/War of the Wilds trigger objective/message/teleport/PvP scripts and phase broadcasts, SQL-backed boss objective-credit hooks including WIP Red Moon Terror Laveka credit, Skullcano and Sanctuary WIP route scaffolding, remaining map-only bindings plus WIP entry/boss/phase/cinematic-hook scaffolds for Deep Space, Rage Logic, Ultimate Protogames dungeon/raid, Protostar SuperMall, Journey into OMNICore-1, Fragment Zero, Infestation, Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet, narrow branch spell-script hooks for Marauder Mine/Pulse Blast, and the client-table-backed Exo-Lab 22 range teleporter; focused branch/path/event tests 552/552, focused instance/public-event tests 436/436, focused map-only entry/boss/phase/cinematic-hook scaffold tests 22/22, focused event/trigger cinematic-hook tests 155/155, focused PvP/adventure branch tests 25/25, focused Evil from the Ether tests 12/12, focused Coldblood Citadel tests 10/10, focused Ruins of Kel Voreth tests 16/16, focused Sanctuary of the Swordmaiden tests 38/38, focused Skullcano tests 34/34, focused Stormtalon's Lair tests 19/19, focused Protogames Academy trigger tests 25/25, focused Fragment Zero trigger tests 13/13, focused Gauntlet trigger tests 16/16, focused Infestation trigger tests 9/9, focused Datascape/objective-credit tests 102/102, path-progress tests 36/36, focused transporter tests 49/49, plus branch spell tests 11/11; F-004/F-009/F-024 remain partial)
 
 Maintained from `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, focused trackers
 (`MATCHING_IMPLEMENTATION_STATUS.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`), and
@@ -14,13 +14,13 @@ of truth for feature-area completion.
 | Metric | Value |
 |--------|-------|
 | Total feature areas | 36 (`F-001`..`F-036`; matrix rows `F-016`..`F-020` are five spell-runtime rows) |
-| Fully complete | 16 (sections marked **COMPLETE** below) |
-| Partial (real handlers/state exist; retail parity incomplete) | 14 |
+| Fully complete | 15 (sections marked **COMPLETE** below) |
+| Partial (real handlers/state exist; retail parity incomplete) | 15 |
 | Blocked / diagnostic / structural-only | 3 (`F-001` blocked, `F-002` diagnostic, `F-003` structurally closed) |
 | Consolidated runtime gaps (emit/producer proof) | 5 rows in **Remaining Blocked Items** |
 | Related trackers | `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`, `MATCHING_IMPLEMENTATION_STATUS.md`, `ENTITY_AUX_DECODE_ROADMAP.md`, `BLOCKER_EVIDENCE_PLAN.md` |
 | Build | 0 errors, 0 warnings |
-| Tests | 1036 passed, 0 failed, 0 skipped |
+| Tests | 2504 passed, 0 failed, 0 skipped |
 | Handlers surveyed | 200+ |
 | Stubs found | 0 |
 | **LaughingWS blocker tracking (2026-05-27)** | Evidence harness added; broad new-zone/sandbox/arkship/Rider's Reef rows remain blocked or rejected where proof is missing; Dungeon Chase hidden SMC item `86919` rejected for current seeds because the world store model and type-`0` storefront transport cannot represent it |
@@ -62,15 +62,17 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
 |---|------|-----|
 | 4 | Group loot solo fallback | Group context now created when sameMapMembers > 1 even if all out of range. |
 | 5 | Killer force-added out of range | Removed force-add block; eligibility logic handles it naturally now. |
-| 6 | AssignMasterLoot offline winner | Returns false + warning when assignee is offline. |
+| 6 | AssignMasterLoot offline winner | Returns false + warning before winner resolution/broadcast when assignee is offline. |
 | 7 | FinaliseRoll offline winner | Logs and keeps the item assigned for deferred delivery if the winner reconnects before corpse expiry. |
-| 11 | DeliverAllLoot partial success | Added `failedCount` tracking and warning log. |
+| 11 | DeliverAllLoot partial success | Mixed delivery now reports incomplete success, preserves delivered rows, keeps failed rows retryable, and suppresses complete generated granted-notify. |
 | 18 | Duel "leash" comment | Corrected to "inter-duelist distance limit" (matches code checking 120m between players). |
 | 19 | Cancel/timeout sets winner/loser | `ServerDuelResult` now sends 0/0 for Cancelled and DeclinedRequest reasons. |
 | 20 | No disconnect hook | `OnPlayerDisconnect` added to `IDuelManager` + `DuelManager`; called from `WorldSession.OnDisconnect`. |
-| 21 | MemberIndex never set | `ServerGroupMemberFlagsChanged` and `ServerGroupMemberRoleChange` now set `MemberIndex` from `GroupIndex`. |
+| 21 | MemberIndex never set | `ServerGroupMemberFlagsChanged` now sets `MemberIndex` from `GroupIndex`; opcode `0x0438` was corrected to the native `ServerGroupIdentityListAndUInt32Array` shape, with the provisional leading value still sourced from `GroupIndex` pending consumer proof. |
 | 22 | Ready-check clear stale UI | `HasReadyCheckFlags` guard removed; `ServerGroupReadyCheckStatusUpdate` sent unconditionally. |
-| 26 | Housing edit mode stub | Now validates residence permission via `CanModifyResidence`; server ack/state semantics remain unmapped. |
+| 24 | Group flag fan-out packet allocation | `GroupMemberFlagsUpdatedHandler` now builds one immutable role/flag packet and one ready-check packet per update, then enqueues them to online members. |
+| 25 | Shared group fan-out helper | Added `GroupMemberFanoutHelper` for online-member broadcast resolution across internal group handlers. |
+| 26 | Housing edit mode stub | Now validates residence permission via `CanModifyResidence` and records per-player server edit state on the residence map; ack/broadcast packet semantics remain unmapped. |
 | 27 | TargetPlayerIdentity ignored | Now resolved via `GetResidenceByOwner` + permission check, matching sibling handlers. |
 | 28 | Cannon no quest 3487 gate | `OnActivateSuccess` now checks `GetQuestState(3487) == Accepted` before crediting objective. |
 | 29 | Map spawn fallback missing | `NorthernWildsMapScript` now spawns cannon (11251) + ultrabot (12526) with DB fallback checks. |
@@ -84,27 +86,29 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
 | # | Item | Fix |
 |---|------|-----|
 | 12 | DB null no-op silent divergence | Added `log.Warn` in `Initialise()` and `Persist()` when DB context is null. |
-| 13 | Corrupt DB row crashes startup | Wrapped `uint.Parse` in try-catch; logs error and skips corrupt row. |
+| 13 | Corrupt DB row crashes startup | Marketplace auction microchip-id parsing now logs corrupt format/overflow values and returns an empty array instead of throwing during startup load. |
 | 14 | SearchAuctions materializes all | Restructured: filter, sort, page via Skip/Take, then CloneAuction only for current page. |
-| 15 | O(n^2) commodity matching | Added XML doc documenting O(n^2) with note about price-indexed refactor. |
+| 15 | O(n^2) commodity matching | Added per-item/per-side price indexes for commodity match candidate selection and immediate sell preflight. |
 | 16 | Persist deadlock risk | Changed `.GetAwaiter().GetResult()` to `.ConfigureAwait(false).GetAwaiter().GetResult()`. |
 | 17 | Null item skipped silently | Added `log.Debug` when skipping auctions with `model.Item == null`. |
-| 32 | Field-level tests for 0x034F | Added `ServerSupportUInt32AndFlags_WritesValueFlagsAndPadding()` test. |
-| 33 | Test placement | Left in SupportPacketShapeTests - no dedicated realm shape test file. |
+| 32 | Field-level tests for 0x034F / 0x034C | Added `ServerSupportUInt32AndFlags_WritesValueFlagsAndPadding()` and explicit `ServerSupportUInt5AndSixUInt32` 27-bit padding consume coverage. |
+| 33 | Test placement | Moved `ServerRealmAuxUInt32TripletList` coverage to dedicated `RealmAuxPacketShapeTests`. |
+| 34 | Consolidate triplet row types | `ServerSpellUInt32TripletListRow` now inherits the shared `ServerUInt32Triplet` writer. |
+| 35 | Consolidate counted triplet lists | Spell `0x080F`/`0x0810` and realm aux `0x05A1` packets now reuse `ServerUInt32TripletListPayload`. |
 | 36 | Server0x08CC duplication | Inherits from `ServerUInt32WideStringPayload`, removing ~10 lines of duplicated code. |
 | 37 | RowCount property confusing | Added XML doc: "for diagnostic / log use only." |
 | 39 | lootInstances no lock | Added XML doc documenting world-thread-only mutation assumption. |
-| 40 | NextLootId unsynchronized | Added XML doc documenting world-tick-only allocation assumption. |
+| 40 | NextLootId unsynchronized | `GlobalLootManager.NextLootId` now allocates atomically with `Interlocked.Increment`, preserves the high-bit loot-unit id range, and never returns zero. |
 | 42 | Quest script xUnit tests | Created `QuestScriptConstructionTests.cs` with DI smoke test for FollowUpQuestScript<T>. |
+| 9 | Delivered loot instance sweep | Fully delivered loot instances are now removed from the manager immediately after final collect/vacuum/roll/master resolution. |
+| 8 | Active loot lookup scans | Owner-unit and looter indexes now back notify, runtime snapshot, collect/roll/master lookup, and vacuum paths. |
 
-### P2 - Deferred (7 items)
+### P2 - Deferred
 
 | # | Item | Reason |
 |---|------|--------|
-| 8-9 | Loot linear scans + tick walks | Performance optimization; needs profiling. |
+| 8 | Active loot tick walk | Timing-wheel/shard optimization needs profiling after owner/looter indexing and #9 immediate cleanup. |
 | 10 | Duplicate aggregation logic | Refactor deferred. |
-| 34 | Consolidate triplet row types | Refactor deferred; significant refactor across spell/crafting/realm. |
-| 35 | Consolidate counted triplet lists | Refactor deferred; coupled with #34. |
 | 38 | Opcode/docs naming drift | Documentation polish deferred. |
 
 ## Ghidra Decomp Evidence (2026-05-23, 2400-function run)
@@ -148,7 +152,9 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
 ### Remaining Decomp Targets
 - **Entity aux consumers** (F-025): Need `Network_RegisterServerOpcode_0351` (0x14006c290, 56KB) to map opcodes to consumer handlers.
 - **PvP cooldown consumer** (F-015): Consumer for `ServerPvpCooldownUpdate`; address unknown.
-- **Item context action / Pet stance** (F-026): Consumer addresses unknown.
+- **Item context action / Pet stance** (F-026): `0x00B7` native empty reader is
+  mapped; item-context producer/consumer semantics and pet-stance consumer
+  addresses remain unknown.
 - **ServerRaidQueueStatus** (F-010): reader `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` mapped; zero-value compatibility emit exists from raid-info; non-zero queue semantics still blocked.
 
 ### F-001 - STS Token Crypto - BLOCKED
@@ -165,6 +171,20 @@ Needs Ghidra decomp of client writer functions by feature cluster.
 opcodes have named models, with 62 shape-mapped aux/spell packets still gated
 behind consumer or producer evidence before any production emitters are added.
 Named-but-partial packets remain tracked in their feature rows.
+Eight native size-1 aux registrations now use empty wire models instead of
+raw byte payloads: `0x00B7`, `0x00DF`, `0x00EE`, `0x0101`, `0x0143`,
+`0x014D`, `0x0160`, and `0x0187`. Their feature-owned producer semantics
+remain blocked.
+Scalar aux wrappers are also tightened where the native readers are proven:
+`0x0181`, `0x01A6`, and `0x0846` now write direct `uint32` payloads, while
+`0x0186` is corrected from a raw 4-byte placeholder to a 14-bit scalar.
+The adjacent reputation/path-XP aux wrappers are narrowed from raw byte arrays:
+`0x01A7` and `0x01A8` now write `uint64 + uint32`, while `0x01A9` now writes
+`uint14 + uint32`. Producer semantics for `0x01A6` through `0x01A9` remain
+blocked.
+The story/recruitment boundary packets are also narrowed: `0x074A` now writes
+five `uint32` fields plus one `uint16`, and `0x077E` now writes the native
+count-plus-uint32-list shape shared with `ServerFlightPathUpdate`.
 
 ### F-004 - Housing - PARTIAL (21/22 handlers complete)
 **Implemented:** Residence create (level-14 gate), neighbor persistence,
@@ -172,7 +192,12 @@ harvest splitting, direct visits, community rename/placement/privacy/removal,
 return handler, vendor list, decor/plug/remodel/flags delegation.
 
 **Fixed this pass:** `ClientHousingEditModeHandler` - was empty-body stub,
-now validates residence map + logs.
+now validates residence map, records per-player server edit state, and logs the
+toggle. Private residence visits now allow owners/authorized modifiers through
+the residence entrance teleport path while
+unauthorized visitors still receive `Visit_Private`. Decor create now validates
+colour shift, scale, and non-crate plot position before currency debit,
+achievement update, or `DecorCreate`; focused housing coverage passed 93/93.
 
 **Branch housing script port:** The useful housing scripts from
 `LaughingWS/NexusForever` branch `Questing-and-more` are now in
@@ -196,9 +221,65 @@ sends them. Unknown client request trigger (not accessible via addon API).
 commodity post/cancel/buy/sell matching, CREDD exchange/history/redeem.
 DB persistence for auctions, commodity orders, CREDD orders, CREDD history.
 Slot limits: Free 3 / Signature 30. Offline marketplace credits via mail.
+Server aux packet contracts `0x06DF` and `0x07D5` are reader-mapped and
+packet-covered; their marketplace producer/consumer semantics remain blocked.
+Unsupported auction property min/max, rune-slot, equippable-by filters, and
+property sort are rejected at validation instead of accepted and silently
+ignored; retail stat/rune/equippable filtering remains unmapped.
 
 **Fixed this pass:** Commodity order expiration - `ProcessExpiredCommodityOrders()`
 scans every 1s, refunds/returns expired orders, sends `ServerCommodityAuctionRemoved`.
+Marketplace settlement delivery-failure guards now keep auction/commodity records
+active when item delivery cannot be made. Commodity sell cancel/fill uses
+conservative stack-slot capacity preflight plus mail fallback success before
+mutation; auction expiry/buyout waits for delivery success before seller credit
+and order removal. `ForceImmediate` commodity orders now match without becoming
+resting orders, skip the active-order cap, and refund/return unmatched remainder
+immediately; partial commodity fill refunds now exclude the filled purchase cost.
+Persisted commodity rows now validate id, owner, Item2, quantity, escrow,
+legacy `ForceImmediate`, and list/expiration ordering before load, skipping
+corrupt rows before they can refund or deliver. Marketplace mail content type is
+now persisted in `character_mail.contentType`, preserving auction expired/return
+semantics after reload while legacy rows still fall back to sender type. Auction
+search paging now handles huge client page values by returning an empty page
+instead of overflowing. Settled auction delete persistence saves the moved item
+state instead of deleting the item row. Auction/commodity insert DB failures now
+roll back transient listing/order/item/escrow state, auction bid update DB
+failure restores the prior bid and refunds the bidder, and marketplace mail save
+failures restore attached item owner state before reporting delivery failure.
+Online-inventory auction buyout now persists the auction delete and moved item
+state before buyer debit, seller credit, winner notification, auction removal,
+or inventory delivery; delete-save failure returns `DbFailure` and leaves the
+auction active. Online-inventory auction cancel now likewise persists the
+auction delete plus returned item state before bidder refund, inventory return,
+or auction removal; delete-save failure returns `DbFailure` and leaves the
+auction active. Online-inventory auction expiration now persists the auction
+delete plus moved item state before direct winner inventory delivery, seller
+credit, winner notification, or auction removal; delete-save failure leaves the
+auction active. Direct commodity buy/sell cancels now persist the order delete
+before escrow refund or inventory item recreation, so delete-save failure
+returns `DbFailure` and leaves the commodity order active. Direct commodity
+expiration likewise persists the order delete before online escrow refund,
+inventory item recreation, removal notification, or order removal.
+Auction won/return mail settlement now composes mail creation, attached item
+save, and auction row deletion in one character DB save for buyout, cancel, and
+expiration mail delivery; composed save failure restores attached item owner
+state and leaves the settlement uncommitted.
+Commodity sell-order return mail for cancel/expiration now composes mail
+creation, returned-item save, and commodity order deletion in one character DB
+save; expiration fallback uses commodity return mail content instead of the
+fill-mail path, and composed save failure leaves the order active without a
+removal notification.
+Commodity fill mail now composes buyer mail creation, purchased-item save, and
+resting buy/sell order update/delete in one character DB save when a match must
+deliver purchased items by mail; composed save failure leaves the match unfilled
+and keeps resting commodity orders active.
+Commodity matching now uses per-item/per-side price indexes for opposite-side
+candidate selection and immediate sell preflight, preserving price-priority
+behavior while avoiding full commodity-list scans for every match attempt.
+Remaining final settlement DB transaction/save atomicity across offline auction
+or commodity rows, item state, and online/offline currency persistence remains
+open.
 
 ### F-006 - Storefront / Account Inventory - COMPLETE
 Catalog, purchase, account currency charge, claim/return, pending item groups,
@@ -237,6 +318,12 @@ clear, install, reroll - all 4 operations send `ServerTradeskillSigilResult`).
 ### F-009 - Rapid Transport / Taxi / Flight Path - PARTIAL (blocked)
 Pricing/request validation partial. Service-token bypass, route state, taxi
 embark/completion, charge/teleport rules incomplete. Needs decomp.
+`ServerVehicleEmbarkAux` (`0x01B2`) now uses its mapped client-reader shape
+(`flag`, 2-bit value, `uint64`, two `uint32` fields) instead of a fixed raw
+payload. Field semantics and runtime producer timing remain blocked.
+`ServerRecruitmentAuxUInt32List` (`0x077E`) now matches the shared
+`ServerFlightPathUpdate_ReadPayload` count-plus-uint32-list shape; flight/taxi
+alias semantics and emit timing remain blocked.
 
 **Branch transporter port:** The useful table-backed transporter catalogue from
 `LaughingWS/NexusForever` branch `Questing-and-more` is now consolidated in
@@ -260,14 +347,27 @@ transporter tests passed 49/49. The branch housing return pad remains
 superseded by current housing return handling.
 
 ### F-010 - Group / Raid / Matching - PARTIAL (replacement backfill remains blocked)
-All 13 group client handlers, 15 internal group handlers, 14 matching handlers,
+All 13 group client handlers, 16 internal group handlers, 14 matching handlers,
 raid info, quest share, instance settings - all fully functional.
+Group instance difficulty now routes through the group server with leader-only
+runtime group-state mutation, online member `InstanceDifficulty` sync, and
+`ServerGroupInstanceDifficultyResponse` fan-out. Internal group broadcast handlers
+now use a shared online-member fan-out helper, and group flag updates reuse one
+immutable role/flag packet plus one ready-check packet per update; group-focused
+tests passed 158/158.
+Ready-check pending state is intentionally sent as a single `Pending`
+member-flag update after in-memory ready/has-set-ready clears, and the world
+handler always emits `ServerGroupReadyCheckStatusUpdate` including status `0`
+for pending/cleared state.
 
 **Validation/logging only (not full LFR backfill):**
 - `ClientMatchingMatchInitiateLookingForReplacementsHandler` / `ClientMatchingStopLookingForReplacementsHandler` validate in-progress match membership and native role mask `0..2`; they do not start a server replacement queue
 - Removed the unsupported replacement anchor queue/merge runtime; addon and sender
   evidence prove the UI/event boundary, not server producer timing or merge rules
 - `ServerRaidQueueStatus` (0x0718) emitted alongside `ServerRaidInfoResponse` as zero-value compatibility state
+- Matching leave/cleanup lifecycle hardening now snapshots queue collections and
+  match-team members before removal mutates the underlying dictionaries; focused
+  matching tests passed 90/90.
 
 **Ghidra decomp confirmed:** All 6 group reader functions decompiled.
 9 of 10 unresolved opcodes already correctly wired:
@@ -275,11 +375,11 @@ raid info, quest share, instance settings - all fully functional.
 - 0x042A ServerGroupKickResult [ok]
 - 0x0431 ServerGroupLootRuleValidationResult [ok]
 - 0x0436 ServerGroupRosterUpdate [ok]
-- 0x0438 ServerGroupMemberRoleChange [ok]
+- 0x0438 ServerGroupIdentityListAndUInt32Array [ok; producer semantics provisional]
 - 0x0441 ServerGroupReadyCheckStatusUpdate [ok]
 - 0x045A ServerGroupRequestJoinWindow [ok]
 - 0x0461 ServerQuestShareResult [ok]
-- 0x0468 ServerGroupMemberDetailUpdate [ok]
+- 0x0468 ServerGroupTargetIdentityPrimeLevelList [ok; producer semantics blocked, stale stat/detail emit removed]
 
 **Blocked:** exact `ServerRaidQueueStatus` queue-position semantics and timing;
 replacement queue fill still needs live accept/teleport smoke and multi-slot
@@ -289,19 +389,51 @@ role-fill verification.
 Guild handlers and recruitment output models exist. Bank transactions, perks,
 holomarks, standards, recruitment subscriptions, boss-token inventory,
 warplot plug state incomplete. Needs decomp.
+The nearby `0x077E` packet contract is now mapped as a counted uint32 list
+rather than a fixed four-field payload; recruitment/pet producer semantics
+remain blocked.
 
 ### F-012 - ICComm / Chat / Friendship - PARTIAL (blocked)
 Transient membership, offline cleanup, directed/ordered delivery. Entitlement
 checks, persistent channels, throttling, auto-response persistence incomplete.
 Needs decomp.
+Group/guild ICComm transient channels now revalidate scoped affiliation on send
+and update, removing stale senders/recipients before delivery; focused ICComm
+tests passed 8/8.
+Chat aux packet contracts are now mapped and typed for `0x01B8`, `0x01C1`,
+`0x01C4`, and `0x01EF`: `0x01B8` writes the 4-bit variant chat row from
+`140085ca0`, `0x01C1`/`0x01C4` write the wide-string plus 5-bit counted-row
+envelopes from `140086410`/`140085fe0`, and `0x01EF` writes the counted
+notification rows from `1400a0890`. Chat/cinematic producer semantics and
+runtime emit conditions remain blocked.
 
 ### F-013 - Mail - COMPLETE
 Cash collection, return, attachment deletion, delayed pending-mail promotion,
 COD sender settlement, delete result/unavailable signaling, expiration sweep.
+Returns now require a real player/GM sender id before moving mail to outgoing;
+system/marketplace/zero-sender mail returns report `MailCannotReturn` without
+mutating the available mail item, and `MailItem.ReturnMail` enforces the same
+invariant.
+Marketplace item-delivery fallback is now gated on mail service availability so
+auction/commodity state remains uncommitted when neither inventory nor mail can
+receive the item; marketplace mail content type now persists across reload via
+`character_mail.contentType`; marketplace mail save failures restore attached
+item owner state before reporting delivery failure; auction return/won mail and
+commodity return/fill mail can compose marketplace row mutations with the mail
+save; final marketplace DB transaction/save parity remains under F-005.
 
 ### F-014 - Loot - COMPLETE
 Basic delivery, group roll/master-loot runtime, roll/assign/result packets,
 `ServerLootNotify` ingestion, `ServerLootBindOnPickup`, `ServerLootWinner`.
+`LootInstanceResolutionTests` now pin runtime `ServerLootItemUpdate` refresh
+packets after roll/finalise/master/deferred delivery plus remote
+`ServerLootNotification` feedback. `GlobalLootManager` also rejects non-looter
+collect/roll/master-assignment requests before the lower-level `LootInstance`
+invariant calls, closing the handler-facing D-L7 crash guard. Corpse group
+loot now keeps group context for same-map multi-member groups while filtering
+tracked looters, eligible recipients, and master-loot candidates to players
+within `LOOT_RANGE`; out-of-range same-map members no longer receive unusable
+loot UI.
 **Improved this pass:** Loot expiry/cleanup in GlobalLootManager + LootInstance;
 account-currency granted notifies now use one real reward row instead of split
 fake shower rows, generated granted-notify rewards now batch all actual
@@ -329,9 +461,21 @@ virtual-item loot.
 - `DuelLeashTimeout = 15s` - auto-cancels duel
 - `ServerDuelLeftArea` sent when out of range
 - `ServerDuelCancelWarning` sent on re-entry
+Cancelled and declined duel results now emit zero winner/loser unit ids, and
+active player disconnects are routed through `DuelManager.OnPlayerDisconnect`
+from `WorldSession.OnDisconnect`; focused PvP tests pin both boundaries.
 
-PvP cooldown timer (`ServerPvpCooldownUpdate`) sent on flag toggle off
-with `RetailCertainRules.PvpFlagCooldownMs`.
+PvP toggle-off now starts a player-owned pending cooldown with
+`ServerPvpCooldownUpdate` and `RetailCertainRules.PvpFlagCooldownMs`, keeping
+`PvPFlag.Enabled` active until the timer expires and then sending
+`ServerPvpCooldownClear`. Pending toggle-off cooldowns now persist through
+`character.pvpFlagDisableUntilUtc`, reload as `PvPFlag.Enabled` with the
+remaining timer, resend `ServerPvpCooldownUpdate` on login, and clear the
+stored expiry on cancel or expiration; focused PvP cooldown coverage is 14/14.
+Open-world player-vs-player attackability remains deliberately active-duel-only
+through `Player.CanAttack` and `DuelManager.AreDueling`; instanced PvP match
+combat is a separate content-map/match path. Broader non-duel open-world PvP
+rules remain blocked pending retail proof.
 
 **Cryo-Plex branch harvest:** arena map/event/sub-event IDs from the
 LaughingWS branch are now wired using the existing Slaughterdome arena runtime
@@ -351,6 +495,12 @@ need proof before behavior work.
 Damage/heal/shields/vitals, stack groups/buffs/CC/movement, procs, summons,
 RavelSignal. Many families conservative or partial. Work family-by-family
 with fixture captures. Most blocked on decomp.
+**Spell wrapper packet naming pass:** `ServerSpellWrapperTierEntry` (`0x0818`)
+now names its leading `uint32` `SpellWrapperId`, matching dispatcher
+`1403ee403 -> SpellService_LookupSpellWrapperByWrapperId ->
+SpellWrapper_ApplyEntityVariantTierEntryAndBroadcast`. Wire shape is unchanged;
+production emission remains blocked pending wrapper lifecycle sniff evidence
+and selector-tail semantic correlation.
 **Branch trap/spell ports:** Bramble trap (`27768`) now follows the useful
 branch behavior: failed activation casts penalty spell `46051`; successful
 activation removes tracked state from that spell and destroys the trap.
@@ -1024,14 +1174,45 @@ server-side tracked-id/TrackingSlot selection proof).
 ### F-026 - Items / Unlocks / Costumes / Pets / Titles - PARTIAL
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock
 lifecycle tested. Costume forget/unlock parity exists.
+Normal `ClientItemUse` spell activation now preflights empty stack/charges and
+consumes only after `TryCastSpell` returns `CastResult.Ok`; failed/dead/disabled
+casts are covered by `ClientItemUseHandlerTests` and no longer delete the
+activated consumable. Decor item-use now preflights empty stack/charges and
+residence access before consuming, catches housing access failures before
+mutation, and creates decor only after `Inventory.ItemUse` succeeds; this is
+covered by `ClientItemUseDecorHandlerTests`.
+Treasure item use now consumes category/type `94/200` items with table-backed
+character currency payloads before granting currency, covering `Cache of
+Corroded Coins` (`50806`) from both `ClientItemUse` and item context-action
+paths. Stackable charged consumables now repair zero stored charges before item
+packets are built and before cast/consume, covering `Basic Medishot` (`14838`)
+without making non-stackable charge items free to use. Starter loot-bag seed
+coverage now includes `Nexus Survival Kit` (`83615`) with the retail-evidence
+starter supply set and `Protostar's Revolutionary Rucksack 1-10`
+(`80875`-`80884`) as consumable loot bags. Rucksack 1 keeps the
+patch-note-backed faction starter mount licenses (`Equivar (Provisionary)
+License` for Exile, `Velocirex (Provisionary) License` for Dominion), rucksacks
+1-9 grant the next rucksack, and all ten include a WIP-inferred one-item PvP
+gear roll from the matching client Mk I-X item block (`82720`-`83311`) because
+the original server-side container relation is absent from the current
+Jabbithole/DataMapping imports.
+`ServerSupplySatchelAux` (`0x019A`) now uses the shared mapped reader shape
+(`6-bit value`, `uint32`) and `ServerCostumeItemAux` (`0x037F`) now uses its
+direct mapped reader shape (`14-bit value`, three `uint32` fields, two flags)
+instead of fixed raw payloads. Nearby option/keybind aux packets `0x056B`,
+`0x056C`, and `0x056D` now use direct reader-backed field shapes instead of
+fixed raw payloads. Producer/consumer semantics for those aux packets remain
+blocked.
 
-**Blocked:** `ClientItemContextActionHandler` validates/logs the item but keeps
-`SelectedBranch` diagnostic-only until right-click branch semantics are mapped.
-Pet stance behavior remains limited to the existing pet stance state.
+**Blocked:** `ClientItemContextActionHandler` still keeps `SelectedBranch`
+diagnostic-only for non-use item actions until right-click branch semantics are
+mapped. Pet stance behavior remains limited to the existing pet stance state.
 
 ### F-027 - Options / Keybindings - COMPLETE
 6 handlers, account+character keybinding split, casting options, combat
-log preferences. Zero stubs.
+log preferences. Zero stubs. Nearby server aux packet contracts `0x056B`,
+`0x056C`, and `0x056D` are packet-covered, but exact client-facing option
+readback/initialisation semantics remain blocked.
 
 ### F-028 - Support / Reports / Surveys / Stuck - COMPLETE
 5 support handlers + stuck handler. Stuck cooldowns: RecallBind 30m,
@@ -1354,10 +1535,21 @@ disable blocks. `verify_safe_world_imports.sql` now has expected-count mismatch
 metrics for every promoted LaughingWS overlay slice, not only the largest WIP
 entity seeds.
 
-### F-030 - Realm / Character Select/List/Transfer - COMPLETE
+### F-030 - Realm / Character Select/List/Transfer - PARTIAL
 Character list/select works. Realm transfer returns compatibility list.
 Current-realm select ignored for client safety. Offline target returns
-ServerDown.
+ServerDown; online transfer returns conservative `Internal` until handoff is
+implemented. `ClientInitiatePTRCharacterCopy` (`0x06E7`) carries selected
+character id, `ClientPtrCopy` (`0x06E8`) is a mapped native size-1 empty
+payload, and `ServerPtrCharacterCopyQueued` (`0x06EA`) is a mapped empty
+payload whose native consumer `140020ea0` fires Lua `PTRCharacterCopyQueued`.
+`ServerRealmTransferDestinationsAux` (`0x03EF`) now uses its mapped reader
+envelope (`uint32` plus counted raw bytes) instead of a fixed raw 0x10 payload.
+Focused PTR packet tests pin both empty shapes and verify `ClientPtrCopyHandler`
+does not emit queue notices until handoff timing is mapped. Real transfer
+destinations/results, `TransferFlag` semantics, `0x03EF` payload contents,
+PTR queue producer timing, copy mutation, new realm notices, and optional
+realm-message/admin packets remain incomplete.
 
 ### F-031 - Fortune Minigame - COMPLETE
 4 handlers functional, session persistence code path via `account_fortune_session`,
@@ -1365,7 +1557,10 @@ reward payouts with account item grants, card flip state tracking.
 Weighted emulator rarity-tier pool + `ServerFortuneRewards.RewardItemProbabilities`
 match the mapped retail client UI transport (`FortunesLib.GetFortunesLootList`
 reads server floats and shows `fProbability = value * 100`; native evidence
-2026-05-23). `Decomp/Analysis/FORTUNE_WEIGHT_AUDIT.md` verifies the local
+2026-05-23). Native chain follow-up on 2026-06-02 maps `socket+0x15a8`
+`FortuneNode_ApplyServerFortunePackets` to server opcodes `0x03CF`-`0x03D2`
+and names `ServerFortuneCardUpdate.HasUpdate`.
+`Decomp/Analysis/FORTUNE_WEIGHT_AUDIT.md` verifies the local
 catalog/table state, current Fortune tests, and the rejection of the
 `Questing-and-more` branch's old hardcoded gacha handler as non-evidence for
 retail weights/rotation.

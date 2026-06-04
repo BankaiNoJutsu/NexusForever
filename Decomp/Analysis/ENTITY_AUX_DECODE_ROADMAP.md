@@ -1,6 +1,6 @@
 # Entity / Cluster Aux Opcode Decode Roadmap
 
-Updated: 2026-05-23 (third pass: entity-create emit marked implemented in ladder table)
+Updated: 2026-06-03 (F-025 pre-create guard test added; entity-stat and map-tracked producers remain blocked)
 
 Tracks decompile progress to unblock **field semantics** and **runtime emitters** for the
 shape-mapped server-output clusters that replaced `Server0xNNNN` placeholders.
@@ -65,23 +65,107 @@ There is **no** direct `Loot_Handle*` / `AccountItemAddToCache_HandleServer096A`
 in the xref graph. Consumers are reached through the **indirect** live dispatch path below,
 not through static calls to the reader.
 
-## Live server-message dispatch (mapped 2026-05-23)
+## Live server-message dispatch (mapped 2026-05-23; native chain corrected 2026-06-02)
 
 | Stage | Address | Label | Role |
 | --- | --- | --- | --- |
-| Socket ctor | `14000a490` | `WorldSocket_Ctor` | Sets `object+0x100` -> callback table `PTR_LAB_140b55100` @ `140b55100`. |
-| Filter phase | `140014d30` | `WorldSocket_FilterServerMessageHandlers` | Walks `*(socket+0x14b0)` linked list; each node `vtable+0x50(handler, conn, messageCategory)`. |
+| Socket ctor | `14000a490` | `WorldSocket_Ctor` | Sets `object+0x100` -> callback table `PTR_LAB_140b55100` @ `140b55100`; initializes native handler-chain head at `object+0x15b0`. |
+| Filter phase | `140014d30` | `WorldSocket_FilterServerMessageHandlers` | Receives callback-table subobject (`WorldSocket+0x100`) and walks `*(callbackView+0x14b0)` == native `*(WorldSocket+0x15b0)`; each node `vtable+0x50(handler, conn, messageCategory)`. |
 | Deserialize | `DAT_140c65808` | (network service) | `vtable+0x100` builds parsed payload pointer (`local_e0`) from opcode + raw buffer. |
 | Fast paths | `140003fb0`, `140452670`, storefront | `AccountInventory_HandleServer0966To0980`, ... | Run before handler chain when enabled (`socket+0x14d0`, globals). |
-| Apply phase | `140014f10` | `WorldSocket_ProcessServerMessage` | Walks same `socket+0x14b0` list; each node `vtable+0x58(handler, conn, opcode, parsedPayload)`. Returns `<0` error, `0` handled, `>0` try next. |
-| Handler registration | `140356a30` | `WorldZone_InsertUnitHandlerIntoList` | Example head-insert into `parent+0x14b0` for visible units (not opcode-specific). |
+| Apply phase | `140014f10` | `WorldSocket_ProcessServerMessage` | Walks the same callback-view `+0x14b0` / native `WorldSocket+0x15b0` list; each node `vtable+0x58(handler, conn, opcode, parsedPayload)`. Returns `<0` error, `0` handled, `>0` try next. |
+| Spatial false lead | `140356a30` cluster | `WorldZone_*Spatial*` helpers | Uses a different `+0x14b0` owner/list shape: nodes backlink at `+0x450` / `+0x458` and `vtable+0x50` supplies spatial bounds. Not the native `WorldSocket+0x15b0` opcode-handler chain, whose next pointer is `node+0x20`. |
 
-Focused follow-up on `WorldZone_InsertUnitHandlerIntoList` changes the next anchor:
+Focused follow-up on the `WorldZone_*` `+0x14b0` cluster rejects that anchor:
 
 - `InspectCodeAddresses` on `140356a30` shows the helper does **not** insert the zone/world object itself. It walks visible-unit node lists rooted at `param_1+0x1488` plus the local spatial-bucket families and splices each `plVar4` node into `param_1+0x14b0` with back-links at `plVar4+0x450`; a sibling family is inserted into `param_1+0x13c0` with back-links at `plVar4+0x4d0`.
 - The sole direct caller `FUN_14036dd50` is therefore the owning zone/world update method, not the handler consumer family. `FindPointerInData` on `14036dd50` hit `.rdata` cell `140b65a10`, but the adjacent code cell `14036dd30` is only a tiny getter from `this+0x12b0`; do **not** treat that recovered vtable as the `+0x50` / `+0x58` handler table.
 - A `FindImmediateInstructions` scan for `0x14b0` also surfaced sibling zone methods `14035c650`, `140369f30`, `14036a460`, `14036a980`, and `14036b8d0`, each splicing or unlinking the same `+0x450` / `+0x458` node family around `param_1+0x1488` and `param_1+0x14b0`.
-- Practical consequence: the next pass should recover the inserted `plVar4` node vtables themselves, using that sibling method cluster as the concrete next-address set, not keep chasing the caller's own vtable or already named loot consumer bodies.
+- Practical consequence: stop treating that sibling method cluster as a `WorldSocket` handler-node source. The live socket chain is proven at `WorldSocket_FilterServerMessageHandlers` / `WorldSocket_ProcessServerMessage` as callback-view `+0x14b0` / native `WorldSocket+0x15b0`, where nodes advance via `node+0x20` and slot `+0x50` / `+0x58` receives connection/message arguments.
+
+Full-restoration first pass (2026-06-02):
+
+- `FindImmediateInstructions 0x14b0` returned 37 matches. The only live network readers remain
+  `WorldSocket_FilterServerMessageHandlers` (`140014d30`) and `WorldSocket_ProcessServerMessage`
+  (`140014f10`). The other inspected hits were spatial/world/UI helpers and do not reveal the
+  network handler-chain insertion source.
+- The inspected `0x14b0` spatial/grid family functions (`14035c650`, `140369f30`, `14036a460`,
+  `14036a980`, `14036b8d0`) are enumeration/splice helpers, not per-opcode payload consumers.
+- `FUN_140001a50` was rejected as an aux/socket anchor. It is registered from
+  `Apollo_RegisterActorFixedWindow` (`1400016d0`) as the `Apollo.ActorFixedWindow`
+  constructor, allocates a `0x430`-byte window object, calls base window init
+  `FUN_1400c5920`, and installs an interior refcount/destructor vtable
+  `PTR_FUN_140b54e10`.
+- `FindOpcodeComparisons` over entity-stat aux opcodes `0x0889`, `0x08CC`, `0x08F4`,
+  `0x0939`, `0x093D`, and `0x093E` found actual opcode literals only in the registration
+  function (`14006c290`). Other apparent hits were GameFormula ids or structure offsets, not
+  producer/consumer semantics.
+- Result: entity-stat aux remains blocked; no NexusForever runtime emitter should be widened
+  from this pass.
+
+WorldSocket native chain correction (2026-06-02):
+
+- `WorldSocket_FilterServerMessageHandlers` and `WorldSocket_ProcessServerMessage` are reached
+  through the callback table installed at native `WorldSocket+0x100`. Their decompiled
+  `param_1+0x14b0` field is therefore native `WorldSocket+0x15b0`, not native
+  `WorldSocket+0x14b0`.
+- A fresh `FindImmediateInstructions 0x15b0` pass returned 33 matches. The socket-owned hits
+  map ctor initialization, teardown, update/render walkers, and append/toggle helpers around
+  native chain head `+0x15b0`, active node `+0x15b8`, and pending/removal state `+0x15c0`.
+- Native chain node layout is `node+0x18` backlink pointer-to-link and `node+0x20` next.
+  Filter and apply dispatch still use node `vtable+0x50` and `vtable+0x58`.
+- Mapped appenders:
+  - `140015ec0` allocates a diagnostic message/log node with `PTR_FUN_140b55540` and appends it
+    to native `WorldSocket+0x15b0`; it is called from `WorldSocket_LogZoneMessageById` and
+    error paths inside `WorldSocket_ProcessServerMessage`.
+  - `1400163d0` toggles the persistent console node at native `socket+0x1598`; constructor
+    `14002a220` installs `PTR_FUN_140b55430`.
+  - `140016560` and `1400166a0` append or trigger the persistent options/addons node at native
+    `socket+0x15a0`; constructor `140042370` installs `PTR_FUN_140b558c0`.
+  - `socket+0x15a8` is a larger persistent node built by `1404d56b0` with
+    `PTR_FUN_140b690f0`; follow-up classified its nontrivial apply slot as the Fortune packet
+    consumer family.
+- Slot-table result: `PTR_FUN_140b55540`, `PTR_FUN_140b55430`, and `PTR_FUN_140b558c0` have
+  filter/apply-style slots that return `1` via `14001d310`, so those nodes do not consume aux
+  packets. The installed options pointer `PTR_FUN_140b558c0` sits inside family block
+  `140b558b0`; its `vtable+0x50`/`+0x58` slots are `140b55910`/`140b55918`, both
+  `WorldSocketChain_ReturnOne`.
+- `PTR_FUN_140b690f0` sits inside family block `140b690c0`; its `vtable+0x50`
+  slot is `14001d310` and its `vtable+0x58` apply-style slot `1404d60f0` consumes Fortune
+  opcodes `0x03CF`-`0x03D2`, not entity-stat aux.
+- Result: entity-stat aux remains blocked for runtime emission. The next evidence target is a
+  nontrivial `WorldSocket+0x15b0` node `vtable+0x58` consumer or a live sniff/order witness for
+  each blocked aux opcode.
+
+Fortune chain classification follow-up (2026-06-02):
+
+- `FortuneNode_ApplyServerFortunePackets` (`1404d60f0`) is the `PTR_FUN_140b690f0`
+  apply-style slot. It dispatches `ServerFortuneCardUpdate` (`0x03CF`),
+  `ServerFortuneReset` (`0x03D0`), `ServerFortuneCards` (`0x03D1`), and
+  `ServerFortuneRewards` (`0x03D2`) into the Fortune UI state object at node `+0xC8`.
+- `Fortune_ApplyCardUpdate` (`1407290a0`) returns without applying the operation/card flags
+  when the first payload bool is false. NexusForever renamed that field from `Unknown` to
+  `HasUpdate`; the wire shape is unchanged.
+- Result: the `socket+0x15a8` family is a proven Fortune consumer and should not be revisited
+  as an entity-stat aux candidate.
+
+WorldSocket chain catalog refresh (2026-06-03):
+
+- Rechecked `FindImmediateInstructions 0x15b0` and the cached `WorldSocket` decompile fragments
+  after the full export pass. Socket-owned hits still resolve to ctor/copy-init, teardown,
+  update/render/window walkers, `WorldSocket_AppendDiagnosticMessageNode`, console toggle,
+  options/addons append/trigger helpers, and the `socket+0x15a8` Fortune family.
+- `140012780` is not a new inserted handler-node source. The function-pointer family table
+  places it on the `WorldSocket` object vtable (`PTR_FUN_140b55120` slot `+0x08`), and its
+  `0x15b0` hit is part of the object runtime-init/splice path around
+  `WorldSocket_InitPersistentRuntimeNodes`, not a separate aux consumer family.
+- Other cached `0x15b0` hits such as `140357620`, `1403638c0`, `140393280`, `1404a1370`,
+  and `140658610` are same-offset fields on non-socket owners or rendering/world helpers, not
+  the native `WorldSocket+0x15b0` packet-handler chain.
+- `InspectCodeAddresses 140042370 1404d56b0 1404d60f0` reconfirmed the installed vtable
+  pointers and Fortune `+0x58` dispatch. Result: static chain discovery remains exhausted for
+  entity-stat aux; runtime emission still needs a new linked-list consumer or live sniff/order
+  witness.
 
 Callback table @ `140b55100` (installed at socket `+0x100`):
 
@@ -122,17 +206,21 @@ Production emitters are **partial** (2026-05-23):
 | Spell aux | 9 | — | **Blocked** (client threshold handlers mapped; server threshold runtime not wired) |
 
 Do **not** widen the remaining **50** packets until per-opcode `vtable+0x58` consumers or sniff order is mapped.
+`EntityCreateAuxiliaryEmissionTests.BuildPreCreatePackets_DoesNotEmitBlockedEntityStatOrMapTrackedPackets`
+now guards the current pre-create boundary so `BuildEntityCreateAuxPackets()` cannot
+silently grow entity-stat aux or map-tracked-unit emits without evidence-backed
+test changes.
 
 Safe always: packet-shape tests, enum/model names, registration notes in `GameMessageOpcode.cs`.
 
 ## Next decompile passes (priority)
 
-1. **Inserted handler-node `vtable+0x58` implementers** - Start from the node families that
-   `WorldZone_InsertUnitHandlerIntoList` actually splices into `param_1+0x14b0` / `param_1+0x13c0`
-   (`plVar4` with back-links at `+0x450` / `+0x4d0`), then recover their vtables and catalog
-   the `+0x58` opcode switches. Do not anchor on the direct caller `14036dd50` again. Use
-   `FindPointerInData.java`, `DumpNearbyData.java`, and targeted `InspectCodeAddress(es).java`
-   passes once a concrete node-family method is found.
+1. **WorldSocket native chain vtable catalog** - Continue from the corrected callback-view
+   `+0x14b0` / native `WorldSocket+0x15b0` chain. Catalog inserted node families and focus on
+   nontrivial slot `+0x50` filters and slot `+0x58` apply implementers for aux opcodes. Do not
+   anchor on the `WorldZone_*` spatial list (`node+0x450` backlinks) or `FUN_140001a50` again.
+   Search for dynamically allocated nodes not covered by the diagnostic/console/options/Fortune
+   families and use live sniff/order witnesses when static chain discovery stays exhausted.
 2. **Entity-create aux consumer** - Prove whether `0x025F`-`0x0264` are live packets,
    replay-only, or both; correlate with `ServerEntityCreate` (`0x0262`) send order via sniff.
 3. **Entity-stat aux cluster** - Map consumers for `0x0889` / `0x08CC` / `0x08F4` / `0x0939`
@@ -169,4 +257,6 @@ skip unreadable regions).
 
 - `rg Server0x` over `Source/` -> **0** (placeholder elimination)
 - `EntityAuxiliaryPacketShapeTests` + `PacketPlaceholderNamingTests` -> wire shapes
+- `EntityCreateAuxiliaryEmissionTests` -> entity-create pre-create boundary, including no
+  entity-stat aux / map-tracked-unit emission without producer proof
 - Production emitter grep -> **62** types with tests-only instantiation

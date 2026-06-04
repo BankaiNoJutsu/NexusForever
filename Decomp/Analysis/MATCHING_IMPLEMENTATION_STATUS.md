@@ -1,6 +1,6 @@
 # Matching Implementation Status
 
-Status date: 2026-05-23
+Status date: 2026-06-03
 
 This tracker closes matching work only when a surface is one of:
 
@@ -14,7 +14,9 @@ Generated exports, logs, and client binaries remain local artifacts. Add durable
 
 | Surface | Status | Runtime notes | Verification |
 | --- | --- | --- | --- |
-| Queue leave/requeue hardening | Implemented + verified | Missing queue state no longer throws on normal leave/remove paths; all-queue leave snapshots the queue list before mutation. | Focused matching tests passed `31/31`. |
+| Group instance difficulty authority | Implemented + verified | `ClientGroupSetInstanceDifficulty` now routes through the group server; only the leader can update runtime group `InstanceDifficulty`, and the world update handler syncs cached group state plus online members before broadcasting `ServerGroupInstanceDifficultyResponse`. | `GroupInstanceDifficultyHandlerTests`; group-focused tests passed `155/155`; WorldServer and GroupServer builds passed. |
+| Queue leave/requeue hardening | Implemented + verified | Missing queue state no longer throws on normal leave/remove paths; exposed queue collections are snapshots so all-queue leave/requeue status paths cannot enumerate a live dictionary while removal mutates it. | `MatchingCharacterStatusTests`; focused matching tests passed `90/90`. |
+| Match cleanup member removal | Implemented + verified | `MatchCleanup()` snapshots each team's member list before calling `MatchLeave`, so cleanup can remove members from the same team collection without invalidating enumeration. | `MatchCleanupSnapshotTests`; focused matching tests passed `90/90`. |
 | Role-check UI status | Implemented + verified | `ServerMatchingQueueStatus.ReadyMatchType` now comes from `IMatchingManager.GetReadyMatchType` and updates when role checks are created/removed. | `MatchingCharacterStatusTests`. |
 | Match-ready response counts | Implemented + verified | Match-ready packets use pending/accepted proposal response counters instead of raw member counts. | `MatchProposalTeamTests`; existing proposal tests in focused slice. |
 | Deserter UI packet | Implemented + verified | Deserter sync now emits `ServerMatchingPenaltyUpdated` with per-match-type PvE/PvP remaining times instead of unrelated kick cooldown packets. | `MatchingDeserterManagerTests`. |
@@ -22,7 +24,7 @@ Generated exports, logs, and client binaries remain local artifacts. Add durable
 | Queue-left UI sync | Implemented + verified | Authoritative queue removal now emits `ServerMatchingLeftQueue` before the refreshed `ServerMatchingQueueStatus`. | `MatchingCharacterStatusTests`. |
 | Flexible role selection | Implemented + verified | The old `1 tank / 1 healer / 3 DPS` reducer was removed. Dungeon/adventure role validation now preserves each player's selected role mask and rejects `Role.None` or undefined role bits; full groups are not rejected solely for non-trinity composition. | `MatchingRoleEnforcerTests`. |
 | Raid queue packet neutralization | Implemented + verified | `ServerRaidQueueStatus` keeps the compatibility zero emission from raid-info, but speculative queue/game-type field names were reverted to neutral `Unknown*` fields after the client reader only proved wire widths. | `GroupPacketShapeTests`; build compile. |
-| Replacement role-mask guard | Implemented + verified | `ClientMatchingMatchInitiateLookingForReplacements` and `ClientMatchingStopLookingForReplacements` validate in-progress match membership; initiate accepts only native-emitted role bits `0..2` (`0x07`, locally `Tank/Healer/DPS`) and both handlers log without starting a server backfill queue. | `MatchingLookingForReplacementsValidationTests`. |
+| Replacement role-mask guard | Implemented + verified | `ClientMatchingMatchInitiateLookingForReplacements` and `ClientMatchingStopLookingForReplacements` validate in-progress match membership; initiate accepts only native-emitted role bits `0..2` (`0x07`, locally `Tank/Healer/DPS`) and both handlers log without starting a server backfill queue or emitting blocked replacement/status packets. | `MatchingLookingForReplacementsValidationTests`. |
 | Average wait UI (`0x0628`) | Implemented + verified | `ServerMatchingAverageWaitTimeUpdate` emitted on queue join, after non-solo pop samples queue time, and on login for active queues; EasyMatchMaker listens via `MatchingAverageWaitTimeUpdated`. | `MatchingAverageWaitTimeTests`; addon corpus `ADDON_CORPUS_EVIDENCE.md`. |
 | Warplot surrender winner | Implemented + build-covered | Surrender completion records the surrendering team and awards victory to the opposite team. | Covered by focused matching build; direct match-state test still needs a heavier PvP match fixture. |
 | Vote rejection packets | Implemented + build-covered | Failed vote-kick/surrender initiate/cast paths now return the matching vote failure packet unless the personal cooldown packet is more specific. | Covered by focused matching build; packet-sequence fixture is still a useful follow-up. |
@@ -34,6 +36,32 @@ dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-r
 ```
 
 Result: passed `50/50`.
+
+Latest replacement-boundary verification (2026-06-03):
+
+```powershell
+dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false --filter "FullyQualifiedName~MatchingLookingForReplacementsValidationTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~ClientRaidInfoRequestHandlerTests"
+```
+
+Result: passed `40/40` after MSBuild retried a transient locked testhost DLL.
+
+Latest matching lifecycle hardening verification (2026-06-03):
+
+```powershell
+dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~Matching" -v minimal --nologo
+```
+
+Result: passed `90/90`.
+
+Latest group instance-difficulty authority verification (2026-06-03):
+
+```powershell
+dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~Group" -v minimal --nologo
+dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo
+dotnet build Source\NexusForever.Server.GroupServer\NexusForever.Server.GroupServer.csproj --no-restore -v minimal --nologo
+```
+
+Results: group-focused tests passed `155/155`; both builds succeeded with `0` warnings and `0` errors.
 
 Prior packet/evidence refresh verification:
 

@@ -15,7 +15,7 @@ External cross-checks confirm only project/client context, not blocker semantics
 | F-010 Group/matching | Replacement `0x05D5`/`0x0602` validation+logging, zero `ServerRaidQueueStatus` with raid-info, flexible roles, deserter persistence | `Client0x062A`/`Client0x0634` value logging | Replacement backfill/merge, non-zero raid queue semantics |
 | F-011 Guild | Holomark update handler + guild manager paths exist | — | Bank economy, perks, recruitment parity, warplot semantics |
 | F-012 ICComm | Join/message validation, transient membership | — | Entitlement gating, persistent-channel restore |
-| F-015 Duel/PvP | Duel leash/cancel-warning/disconnect; PvP cooldown emit on flag off | — | Observer/reward parity |
+| F-015 Duel/PvP | Duel leash/cancel-warning/disconnect and PvP toggle-off cooldown persistence are implemented/test-pinned | — | Observer/reward parity |
 | F-016..F-020 Spells | Per-family fixtures where captured | `!spell procunsupported` etc. | Uncaptured effect families |
 | F-021 LAS | Preflight checks where mapped | — | `UpdateSpellInProgress`, async transaction semantics |
 | F-031 Fortune | Coin cost, emulator rarity-tier pool, UI probability transport, `account_fortune_session` persistence code path | Local catalog/table audit only (`FORTUNE_WEIGHT_AUDIT.md`); no live Fortune play artifact found | Per-item retail Madame Fay weights and active rotation catalog |
