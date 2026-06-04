@@ -36,6 +36,7 @@ namespace NexusForever.Game.Map.Instance
         public override float? VisionRange { get; protected set; } = null;
 
         private readonly Dictionary<ulong, IResidence> residences = new();
+        private readonly Dictionary<ulong, ulong> editModeResidences = new();
 
         #region Dependency Injection
 
@@ -106,6 +107,7 @@ namespace NexusForever.Game.Map.Instance
         private void RemoveResidence(IResidence residence)
         {
             residences.Remove(residence.Id);
+            ClearEditMode(residence);
             residence.Map = null;
 
             foreach (IPlot plot in residence.GetPlots()
@@ -150,6 +152,14 @@ namespace NexusForever.Game.Map.Instance
                 ActionBarShortcutSetId = 1553,
                 AssociatedUnitId       = player.Guid
             });
+        }
+
+        protected override void RemoveEntity(IGridEntity entity)
+        {
+            if (entity is IPlayer player)
+                ClearEditMode(player);
+
+            base.RemoveEntity(entity);
         }
 
         protected override void OnUnload()
@@ -607,6 +617,50 @@ namespace NexusForever.Game.Map.Instance
             return RetailHousingHarvestGrant.TryHarvestPlug(harvester, residence, plot, plugEntity.PlugEntry, gameTableManager);
         }
 
+        public void SetEditMode(IPlayer player, IResidence residence, bool enabled)
+        {
+            if (player == null
+                || residence == null
+                || !residences.TryGetValue(residence.Id, out IResidence loadedResidence)
+                || !loadedResidence.CanModifyResidence(player))
+                throw new InvalidPacketValueException();
+
+            if (enabled)
+                editModeResidences[player.CharacterId] = loadedResidence.Id;
+            else
+                ClearEditMode(player);
+        }
+
+        public bool TryGetEditModeResidence(IPlayer player, out IResidence residence)
+        {
+            residence = null;
+            if (player == null || !editModeResidences.TryGetValue(player.CharacterId, out ulong residenceId))
+                return false;
+
+            if (residences.TryGetValue(residenceId, out residence))
+                return true;
+
+            editModeResidences.Remove(player.CharacterId);
+            return false;
+        }
+
+        public void ClearEditMode(IPlayer player)
+        {
+            if (player == null)
+                return;
+
+            editModeResidences.Remove(player.CharacterId);
+        }
+
+        private void ClearEditMode(IResidence residence)
+        {
+            foreach (ulong characterId in editModeResidences
+                .Where(p => p.Value == residence.Id)
+                .Select(p => p.Key)
+                .ToList())
+                editModeResidences.Remove(characterId);
+        }
+
         private HousingResult PlugRemove(IPlot plot)
         {
             if (plot.PlugItemEntry == null)
@@ -658,14 +712,18 @@ namespace NexusForever.Game.Map.Instance
             if (colourShiftId == decor.ColourShiftId)
                 return;
 
+            ValidateDecorColourShift(colourShiftId);
+            decor.ColourShiftId = colourShiftId;
+        }
+
+        private void ValidateDecorColourShift(ushort colourShiftId)
+        {
             if (colourShiftId != 0u)
             {
                 ColorShiftEntry colourEntry = gameTableManager.ColorShift.GetEntry(colourShiftId);
                 if (colourEntry == null)
                     throw new InvalidPacketValueException();
             }
-
-            decor.ColourShiftId = colourShiftId;
         }
 
         private void DecorCreate(IResidence residence, IPlayer player, DecorInfo update)
@@ -680,25 +738,34 @@ namespace NexusForever.Game.Map.Instance
                 return;
             }
 
+            CurrencyType? currencyType = null;
             if (entry.CostCurrencyTypeId != 0u && entry.Cost != 0u)
             {
                 if (entry.CostCurrencyTypeId > int.MaxValue
                     || !Enum.IsDefined(typeof(CurrencyType), (int)entry.CostCurrencyTypeId))
                     throw new InvalidPacketValueException();
 
-                CurrencyType currencyType = (CurrencyType)entry.CostCurrencyTypeId;
-                if (!player.CurrencyManager.CanAfford(currencyType, entry.Cost))
+                currencyType = (CurrencyType)entry.CostCurrencyTypeId;
+                if (!player.CurrencyManager.CanAfford(currencyType.Value, entry.Cost))
                 {
                     SendHousingResult(player, residence.Id, HousingResult.Decor_CannotAfford);
                     return;
                 }
+            }
 
-                player.CurrencyManager.CurrencySubtractAmount(currencyType, entry.Cost);
+            HousingResult result = ValidateDecorCreate(residence, update);
+            if (result != HousingResult.Success)
+            {
+                SendHousingResult(player, residence.Id, result);
+                return;
             }
 
             IDecor decor = residence.DecorCreate(entry);
-            if (entry.CostCurrencyTypeId != 0u && entry.Cost != 0u)
+            if (currencyType.HasValue)
+            {
+                player.CurrencyManager.CurrencySubtractAmount(currencyType.Value, entry.Cost);
                 player.AchievementManager.CheckAchievements(player, AchievementType.HousingDecorPurchase, 0u);
+            }
 
             decor.Type = update.DecorType;
             decor.DecorData = update.DecorData;
@@ -729,6 +796,20 @@ namespace NexusForever.Game.Map.Instance
                      decor.Build()
                 }
             });
+        }
+
+        private HousingResult ValidateDecorCreate(IResidence residence, DecorInfo update)
+        {
+            if (update.Scale < 0f)
+                throw new InvalidPacketValueException();
+
+            ValidateDecorColourShift(update.ColourShiftId);
+
+            if (update.DecorType != DecorType.Crate
+                && !IsValidPlotForPosition(residence, update))
+                return HousingResult.Decor_InvalidPosition;
+
+            return HousingResult.Success;
         }
 
         private void DecorMove(IResidence residence, IPlayer player, DecorInfo update)

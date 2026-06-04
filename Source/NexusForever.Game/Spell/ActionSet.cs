@@ -50,6 +50,7 @@ namespace NexusForever.Game.Spell
         private readonly Dictionary<UILocation, IActionSetShortcut> actions = new();
         private readonly Dictionary<ushort, IActionSetAmp> amps = new();
 
+        private readonly IPlayer player;
         private ActionSetSaveMask saveMask;
 
         /// <summary>
@@ -57,6 +58,7 @@ namespace NexusForever.Game.Spell
         /// </summary>
         public ActionSet(byte index, IPlayer player)
         {
+            this.player = player;
             Owner      = player.CharacterId;
             Index      = index;
             TierPoints = MaxTierPoints;
@@ -154,6 +156,7 @@ namespace NexusForever.Game.Spell
                 actions.Add(location, new ActionSetShortcut(this, location, type, objectId, tier));
 
             saveMask |= ActionSetSaveMask.ActionSetActions;
+            player.RequestSave();
 
             log.Trace($"Added shortcut {type} {objectId} at {location} to action set {Index}.");
         }
@@ -193,6 +196,7 @@ namespace NexusForever.Game.Spell
 
             shortcut.Tier = tier;
             saveMask |= ActionSetSaveMask.ActionSetActions;
+            player.RequestSave();
         }
 
         /// <summary>
@@ -219,6 +223,8 @@ namespace NexusForever.Game.Spell
                 shortcut.EnqueueDelete(true);
                 saveMask |= ActionSetSaveMask.ActionSetActions;
             }
+
+            player.RequestSave();
 
             log.Trace($"Removed shortcut {shortcut.ShortcutType} {shortcut.ObjectId} at {location} from action set {Index}.");
         }
@@ -258,6 +264,7 @@ namespace NexusForever.Game.Spell
                 amps.Add(id, new ActionSetAmp(this, entry, true));
 
             saveMask |= ActionSetSaveMask.ActionSetAmps;
+            player.RequestSave();
 
             log.Trace($"Added AMP {id} to action set {Index}.");
         }
@@ -339,6 +346,8 @@ namespace NexusForever.Game.Spell
                 amp.EnqueueDelete(true);
                 saveMask |= ActionSetSaveMask.ActionSetAmps;
             }
+
+            player.RequestSave();
 
             log.Trace($"Removed AMP {amp.Entry.Id} from action set {Index}.");
         }

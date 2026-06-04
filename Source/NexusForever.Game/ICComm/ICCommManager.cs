@@ -88,6 +88,14 @@ namespace NexusForever.Game.ICComm
                     return ICCommMessageResult.NotInChannel;
                 }
 
+                if (!IsChannelMemberCurrent(channel, player))
+                {
+                    RemoveMembership(player.Guid, channel.Id);
+                    return ICCommMessageResult.NotInChannel;
+                }
+
+                PruneStaleMembers(channel);
+
                 recipients = GetRecipients(channel, player, recipientName);
                 if (!string.IsNullOrWhiteSpace(recipientName) && recipients.Count == 0)
                     return ICCommMessageResult.NotInChannel;
@@ -138,7 +146,7 @@ namespace NexusForever.Game.ICComm
                 foreach (ICCommChannel channel in channelsById.Values.ToArray())
                 {
                     foreach (IPlayer member in channel.Members.Values.ToArray())
-                        if (!member.InWorld)
+                        if (!IsChannelMemberCurrent(channel, member))
                             RemoveMembership(member.Guid, channel.Id);
                 }
             }
@@ -182,6 +190,31 @@ namespace NexusForever.Game.ICComm
                 default:
                     return ICCommJoinResult.BadName;
             }
+        }
+
+        private static bool IsChannelMemberCurrent(ICCommChannel channel, IPlayer player)
+        {
+            if (player == null || !player.InWorld)
+                return false;
+
+            switch (channel.Type)
+            {
+                case ICCommChannelType.Global:
+                    return true;
+                case ICCommChannelType.Group:
+                    return player.GroupAssociation == channel.ScopeId;
+                case ICCommChannelType.Guild:
+                    return player.GuildManager?.Guild?.Id == channel.ScopeId;
+                default:
+                    return false;
+            }
+        }
+
+        private void PruneStaleMembers(ICCommChannel channel)
+        {
+            foreach (IPlayer member in channel.Members.Values.ToArray())
+                if (!IsChannelMemberCurrent(channel, member))
+                    RemoveMembership(member.Guid, channel.Id);
         }
 
         private static string NormaliseDisplayName(string name)

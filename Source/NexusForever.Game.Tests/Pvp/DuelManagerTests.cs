@@ -75,6 +75,49 @@ public class DuelManagerTests
     }
 
     [Fact]
+    public void PendingChallenge_DeclineEmitsResultWithoutWinnerOrLoser()
+    {
+        var manager = new DuelManager();
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+        IPlayer challenger = CreatePlayer(101u, map, out RecordingDispatchProxy<IGameSession> challengerSessionProxy, out _);
+        IPlayer opponent = CreatePlayer(202u, map, out RecordingDispatchProxy<IGameSession> opponentSessionProxy, out _);
+
+        Assert.Null(manager.Initiate(challenger, opponent));
+
+        Assert.True(manager.Decline(opponent));
+
+        ServerDuelResult result = Assert.Single(GetMessages<ServerDuelResult>(challengerSessionProxy));
+        Assert.Equal(0u, result.WinnerUnitId);
+        Assert.Equal(0u, result.LoserUnitId);
+        Assert.Equal(DuelFinishReason.DeclinedRequest, result.Reason);
+        Assert.Single(GetMessages<ServerDuelResult>(opponentSessionProxy));
+        Assert.False(manager.AreDueling(challenger, opponent));
+    }
+
+    [Fact]
+    public void ActiveDisconnectCancelsDuelWithoutWinnerOrLoser()
+    {
+        var manager = new DuelManager();
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+        IPlayer challenger = CreatePlayer(101u, map, out RecordingDispatchProxy<IGameSession> challengerSessionProxy, out _);
+        IPlayer opponent = CreatePlayer(202u, map, out RecordingDispatchProxy<IGameSession> opponentSessionProxy, out _);
+
+        Assert.Null(manager.Initiate(challenger, opponent));
+        Assert.Null(manager.Accept(opponent));
+        manager.Update(3d);
+
+        manager.OnPlayerDisconnect(opponent);
+
+        ServerDuelResult result = Assert.Single(GetMessages<ServerDuelResult>(challengerSessionProxy));
+        Assert.Equal(0u, result.WinnerUnitId);
+        Assert.Equal(0u, result.LoserUnitId);
+        Assert.Equal(DuelFinishReason.DuelCancelled, result.Reason);
+        Assert.Single(GetMessages<ServerDuelResult>(opponentSessionProxy));
+        Assert.False(manager.AreDueling(challenger, opponent));
+        Assert.False(manager.TryFinishDefeat(opponent, challenger));
+    }
+
+    [Fact]
     public void ActiveDefeat_EmitsResultAndUpdatesDuelAchievements()
     {
         var manager = new DuelManager();

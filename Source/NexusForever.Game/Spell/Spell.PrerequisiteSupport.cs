@@ -58,6 +58,18 @@ namespace NexusForever.Game.Spell
             return false;
         }
 
+        internal bool HasPersistentSpellGroupOverlap(Spell4GroupListEntry requestedGroupList, IGameTableManager gameTableManager)
+        {
+            if (requestedGroupList == null
+                || gameTableManager == null
+                || gameTableManager.Spell4GroupList == null
+                || lifetimeEvents.Count == 0)
+                return false;
+
+            Spell4GroupListEntry activeGroupList = gameTableManager.Spell4GroupList.GetEntry(Parameters.SpellInfo.Entry.Spell4GroupListId);
+            return Spell4GroupListsOverlap(activeGroupList, requestedGroupList);
+        }
+
         internal bool HasPersistentTargetMechanicFlags(uint requiredFlags)
         {
             if (requiredFlags == 0u)
@@ -78,6 +90,40 @@ namespace NexusForever.Game.Spell
                     continue;
 
                 if ((uint)field.GetValue(entry) == groupId)
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal static bool Spell4GroupListContainsGroupId(Spell4GroupListEntry entry, uint groupId)
+        {
+            if (entry == null || groupId == 0u)
+                return false;
+
+            foreach (FieldInfo field in typeof(Spell4GroupListEntry).GetFields(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (!field.Name.StartsWith("SpellGroupId", System.StringComparison.Ordinal))
+                    continue;
+
+                if ((uint)field.GetValue(entry) == groupId)
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal static bool Spell4GroupListsOverlap(Spell4GroupListEntry active, Spell4GroupListEntry requested)
+        {
+            if (active == null || requested == null)
+                return false;
+
+            foreach (FieldInfo field in typeof(Spell4GroupListEntry).GetFields(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (!field.Name.StartsWith("SpellGroupId", System.StringComparison.Ordinal))
+                    continue;
+
+                if (Spell4GroupListContainsGroupId(active, (uint)field.GetValue(requested)))
                     return true;
             }
 

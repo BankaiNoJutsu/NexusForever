@@ -20,4 +20,13 @@ public class HousingAuxiliaryPacketEmitterTests
         Assert.IsType<ServerHousingBasicsEmpty>(packets[5]);
         Assert.IsType<ServerHousingBasicsFollowup>(packets[6]);
     }
+
+    [Fact]
+    public void BuildResidenceSessionPackets_DoesNotEmitBlockedNeighborhoodListPackets()
+    {
+        IReadOnlyList<IWritable> packets = HousingAuxiliaryPacketEmitter.BuildResidenceSessionPackets(0x0102030405060708ul);
+
+        Assert.DoesNotContain(packets, packet => packet is ServerHousingNeighborhoodEntry);
+        Assert.DoesNotContain(packets, packet => packet is ServerHousingNeighborhoodList);
+    }
 }

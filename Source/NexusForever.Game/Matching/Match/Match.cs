@@ -168,7 +168,7 @@ namespace NexusForever.Game.Matching.Match
 
             foreach (IMatchTeam matchTeam in GetTeams())
             {
-                foreach (IMatchTeamMember matchTeamMember in matchTeam.GetMembers())
+                foreach (IMatchTeamMember matchTeamMember in matchTeam.GetMembers().ToList())
                 {
                     log.LogTrace($"Removing member {matchTeamMember.Identity} from match {Guid} due to cleanup.");
 

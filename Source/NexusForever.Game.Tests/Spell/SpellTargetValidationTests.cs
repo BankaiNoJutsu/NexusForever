@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Tests.TestSupport;
@@ -55,6 +56,34 @@ public class SpellTargetValidationTests
             var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
 
             Assert.Equal(expected, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", target));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CheckPrimaryTargetValidMask_AllowsObjectOnlyBitForSimpleEntityTargets()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider();
+
+        try
+        {
+            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _);
+            IUnitEntity target = CreateUnit(2002u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> targetProxy);
+            targetProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.Simple);
+            targetProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
+
+            var parameters = new NexusForever.Game.Spell.SpellParameters
+            {
+                SpellInfo = CreateSpellInfoWithValidTargetMask(0x02u)
+            };
+
+            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
+
+            Assert.Equal(CastResult.Ok, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", target));
         }
         finally
         {

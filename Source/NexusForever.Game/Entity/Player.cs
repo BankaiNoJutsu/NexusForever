@@ -104,6 +104,7 @@ namespace NexusForever.Game.Entity
             Sex         = 0x0100,
             Race        = 0x0200,
             Options     = 0x0400,
+            PvP         = 0x0800,
         }
 
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
@@ -417,6 +418,8 @@ namespace NexusForever.Game.Entity
 
         private UpdateTimer relocationTimer = new(TimeSpan.FromSeconds(1));
         private UpdateTimer ghostSpawnTimer;
+        private UpdateTimer pvpFlagDisableTimer;
+        private DateTime? pvpFlagDisableUntilUtc;
 
         #region Dependency Injection
 
@@ -471,6 +474,7 @@ namespace NexusForever.Game.Entity
             sharedChallengeEnabled   = model.SharedChallengeEnabled;
             disableOtherPlayersCombatLogs = model.DisableOtherPlayersCombatLogs;
             combatLogDisableFlags    = (CombatLogOptions)model.CombatLogDisableFlags;
+            InitialisePvPFlagDisable(model.PvpFlagDisableUntilUtc);
 
             CreateTime        = model.CreateTime;
             TimePlayedTotal   = model.TimePlayedTotal;
@@ -575,6 +579,7 @@ namespace NexusForever.Game.Entity
             ChallengeManager.Update(lastTick);
             ResurrectionManager.Update(lastTick);
             UpdatePendingGhostSpawn(lastTick);
+            UpdatePvPFlagDisable(lastTick);
 
             relocationTimer.Update(lastTick);
             if (relocationTimer.HasElapsed)
@@ -798,6 +803,12 @@ namespace NexusForever.Game.Entity
 
                     model.CombatLogDisableFlags = (ushort)CombatLogDisableFlags;
                     entity.Property(p => p.CombatLogDisableFlags).IsModified = true;
+                }
+
+                if ((saveMask & PlayerSaveMask.PvP) != 0)
+                {
+                    model.PvpFlagDisableUntilUtc = pvpFlagDisableUntilUtc;
+                    entity.Property(p => p.PvpFlagDisableUntilUtc).IsModified = true;
                 }
 
                 saveMask = PlayerSaveMask.None;
@@ -1374,6 +1385,7 @@ namespace NexusForever.Game.Entity
 
             matchingManager.OnLogin(this);
             matchManager.OnLogin(this);
+            SendPendingPvPFlagDisableCooldown();
 
             IsOnline = true;
             forceSave = true;
@@ -2783,12 +2795,115 @@ namespace NexusForever.Game.Entity
         public void SetPvPFlag(PvPFlag flag)
         {
             PvPFlag = flag & (PvPFlag.Enabled | PvPFlag.Forced);
+            ClearPvPFlagDisable();
 
             EnqueueToVisible(new ServerUnitPvpStateChange
             {
                 UnitId = Guid,
                 State  = GetPvpState()
             }, true);
+        }
+
+        public void RequestPvPFlagDisable(uint cooldownMs)
+        {
+            if ((PvPFlag & PvPFlag.Enabled) == 0)
+                return;
+
+            pvpFlagDisableUntilUtc = DateTime.UtcNow.AddMilliseconds(cooldownMs);
+            pvpFlagDisableTimer = new UpdateTimer(TimeSpan.FromMilliseconds(cooldownMs));
+            saveMask |= PlayerSaveMask.PvP;
+            Session.EnqueueMessageEncrypted(new ServerPvpCooldownUpdate
+            {
+                CooldownRemaining = cooldownMs
+            });
+        }
+
+        public void CancelPvPFlagDisable()
+        {
+            if (pvpFlagDisableTimer == null && !pvpFlagDisableUntilUtc.HasValue)
+                return;
+
+            ClearPvPFlagDisable();
+            Session.EnqueueMessageEncrypted(new ServerPvpCooldownClear());
+        }
+
+        private void UpdatePvPFlagDisable(double lastTick)
+        {
+            if (pvpFlagDisableTimer == null)
+                return;
+
+            pvpFlagDisableTimer.Update(lastTick);
+            if (!pvpFlagDisableTimer.HasElapsed)
+                return;
+
+            FinishPvPFlagDisable();
+            Session.EnqueueMessageEncrypted(new ServerPvpCooldownClear());
+        }
+
+        private void InitialisePvPFlagDisable(DateTime? disableUntilUtc)
+        {
+            if (!disableUntilUtc.HasValue)
+                return;
+
+            DateTime utcExpiry = DateTime.SpecifyKind(disableUntilUtc.Value, DateTimeKind.Utc);
+            uint remainingMs = GetPvPFlagDisableRemainingMilliseconds(utcExpiry);
+            if (remainingMs == 0u)
+            {
+                pvpFlagDisableUntilUtc = null;
+                PvPFlag &= PvPFlag.Forced;
+                saveMask |= PlayerSaveMask.PvP;
+                return;
+            }
+
+            pvpFlagDisableUntilUtc = utcExpiry;
+            pvpFlagDisableTimer    = new UpdateTimer(TimeSpan.FromMilliseconds(remainingMs));
+            PvPFlag |= PvPFlag.Enabled;
+        }
+
+        private void SendPendingPvPFlagDisableCooldown()
+        {
+            if (!pvpFlagDisableUntilUtc.HasValue)
+                return;
+
+            uint remainingMs = GetPvPFlagDisableRemainingMilliseconds(pvpFlagDisableUntilUtc.Value);
+            if (remainingMs == 0u)
+            {
+                FinishPvPFlagDisable();
+                return;
+            }
+
+            Session.EnqueueMessageEncrypted(new ServerPvpCooldownUpdate
+            {
+                CooldownRemaining = remainingMs
+            });
+        }
+
+        private void FinishPvPFlagDisable()
+        {
+            ClearPvPFlagDisable();
+            SetPvPFlag(PvPFlag & PvPFlag.Forced);
+        }
+
+        private void ClearPvPFlagDisable()
+        {
+            if (pvpFlagDisableTimer == null && !pvpFlagDisableUntilUtc.HasValue)
+                return;
+
+            pvpFlagDisableTimer    = null;
+            pvpFlagDisableUntilUtc = null;
+            saveMask |= PlayerSaveMask.PvP;
+        }
+
+        private static uint GetPvPFlagDisableRemainingMilliseconds(DateTime disableUntilUtc)
+        {
+            TimeSpan remaining = disableUntilUtc - DateTime.UtcNow;
+            if (remaining <= TimeSpan.Zero)
+                return 0u;
+
+            if (remaining.TotalMilliseconds >= uint.MaxValue)
+                return uint.MaxValue;
+
+            return (uint)Math.Ceiling(remaining.TotalMilliseconds);
         }
 
         private PvpState GetPvpState()

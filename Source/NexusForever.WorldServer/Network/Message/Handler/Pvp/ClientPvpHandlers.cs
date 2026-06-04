@@ -187,16 +187,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
             if (session.Player == null)
                 return;
 
-            PvPFlag pvpFlag = session.Player.PvPFlag & PvPFlag.Forced;
             if (pvpToggleFlags.Value)
-                pvpFlag |= PvPFlag.Enabled;
-
-            session.Player.SetPvPFlag(pvpFlag);
-            if (!pvpToggleFlags.Value)
-                session.EnqueueMessageEncrypted(new ServerPvpCooldownUpdate
-                {
-                    CooldownRemaining = RetailCertainRules.PvpFlagCooldownMs
-                });
+            {
+                session.Player.CancelPvPFlagDisable();
+                session.Player.SetPvPFlag(session.Player.PvPFlag | PvPFlag.Enabled);
+            }
+            else
+                session.Player.RequestPvPFlagDisable(RetailCertainRules.PvpFlagCooldownMs);
 
             log.LogDebug("Updated PvP flag toggle for player {PlayerGuid}: value {Value}.",
                 session.Player?.Guid, pvpToggleFlags.Value);

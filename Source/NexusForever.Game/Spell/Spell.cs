@@ -269,11 +269,12 @@ namespace NexusForever.Game.Spell
 
         private CastResult CheckPrimaryTargetValidMask(IWorldEntity target)
         {
+            uint validTargetMask = Parameters.SpellInfo.BaseInfo.ValidTargets?.TargetBitmask ?? 0u;
+            if ((validTargetMask & ValidTargetObjectMask) != 0u && IsInteractableObjectTarget(target))
+                return CastResult.Ok;
+
             if (target is not IUnitEntity unitTarget)
-                // Current verified non-unit target bit: 0x02 = interactable/world-object target.
-                return ((Parameters.SpellInfo.BaseInfo.ValidTargets?.TargetBitmask ?? 0u) & ValidTargetObjectMask) != 0u
-                    ? CastResult.Ok
-                    : CastResult.TargetUnknown;
+                return CastResult.TargetUnknown;
 
             CastResult result = CheckTargetLivingState(unitTarget);
             if (result != CastResult.Ok)
@@ -282,6 +283,13 @@ namespace NexusForever.Game.Spell
             return IsHostileToTarget(unitTarget) && UnitStateSetRules.TryGetHostileEffectImmuneState(unitTarget, out _)
                 ? CastResult.TargetInvulnerable
                 : CastResult.Ok;
+        }
+
+        private static bool IsInteractableObjectTarget(IWorldEntity target)
+        {
+            // Simple entities are used for many interactable world objects even though the
+            // server models them as units for entity-create/stat purposes.
+            return target is not IUnitEntity || target.Type == EntityType.Simple;
         }
 
         private CastResult CheckPrimaryTargetCastGroup(IWorldEntity target)
@@ -1621,6 +1629,9 @@ namespace NexusForever.Game.Spell
                         if (removed)
                             SendRemoveBuff(target.Guid);
                     };
+                case SpellEffectType.Fluff:
+                case SpellEffectType.UnlockMount:
+                    return () => { };
                 case SpellEffectType.SummonMount:
                     if (target is not IPlayer mountPlayer)
                         return null;

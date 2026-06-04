@@ -36,6 +36,22 @@ namespace NexusForever.Game.Prerequisite
             return unit is UnitEntity unitEntity && unitEntity.HasActiveSpellEffectGroup(effectGroupId, gameTableManager);
         }
 
+        public static bool HasActiveSpellMatchingSpell4Group(IUnitEntity unit, uint spell4Id, IGameTableManager gameTableManager)
+        {
+            if (spell4Id == 0u || gameTableManager == null || unit is not UnitEntity unitEntity)
+                return false;
+
+            if (gameTableManager.Spell4 == null || gameTableManager.Spell4GroupList == null)
+                return false;
+
+            Spell4Entry spellEntry = gameTableManager.Spell4.GetEntry(spell4Id);
+            if (spellEntry == null || spellEntry.Spell4GroupListId == 0u)
+                return false;
+
+            Spell4GroupListEntry requestedGroupList = gameTableManager.Spell4GroupList.GetEntry(spellEntry.Spell4GroupListId);
+            return unitEntity.HasActiveSpellMatchingSpell4Group(requestedGroupList, gameTableManager);
+        }
+
         public static bool HasActiveSpellTargetMechanic(IUnitEntity unit, uint mechanicFlags)
         {
             return unit is UnitEntity unitEntity && unitEntity.HasActiveSpellTargetMechanic(mechanicFlags);

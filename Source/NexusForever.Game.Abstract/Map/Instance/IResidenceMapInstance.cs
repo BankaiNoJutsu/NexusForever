@@ -49,6 +49,21 @@ namespace NexusForever.Game.Abstract.Map.Instance
         bool TryHarvestPlug(IPlayer harvester, IPlugEntity plugEntity);
 
         /// <summary>
+        /// Update server-side housing edit mode state for <see cref="IPlayer"/>.
+        /// </summary>
+        void SetEditMode(IPlayer player, IResidence residence, bool enabled);
+
+        /// <summary>
+        /// Return the residence currently being edited by <see cref="IPlayer"/>.
+        /// </summary>
+        bool TryGetEditModeResidence(IPlayer player, out IResidence residence);
+
+        /// <summary>
+        /// Clear server-side housing edit mode state for <see cref="IPlayer"/>.
+        /// </summary>
+        void ClearEditMode(IPlayer player);
+
+        /// <summary>
         /// Create and add <see cref="IDecor"/> from supplied <see cref="HousingDecorInfoEntry"/> to your crate.
         /// </summary>
         void DecorCreate(IResidence residence, HousingDecorInfoEntry entry, uint quantity);

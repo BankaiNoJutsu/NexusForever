@@ -59,7 +59,7 @@ namespace NexusForever.Game.Matching.Queue
 
         public IEnumerable<IMatchingCharacterQueue> GetMatchingCharacterQueues()
         {
-            return matchingCharacterGroups.Values;
+            return matchingCharacterGroups.Values.ToList();
         }
 
         /// <summary>

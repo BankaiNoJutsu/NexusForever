@@ -71,6 +71,36 @@ public class ClientHousingVisitResidenceHandlerTests
     }
 
     [Fact]
+    public void HandleMessage_PrivateResidence_WithModifyAccess_TeleportsToResidenceEntrance()
+    {
+        IResidence residence = CreateResidence(ResidencePrivacyLevel.Private, out RecordingDispatchProxy<IResidence> residenceProxy);
+        residenceProxy.SetMethodReturn(nameof(IResidence.CanModifyResidence), true);
+
+        IResidenceEntrance entrance = CreateEntrance(new WorldEntry { Id = 654u }, new Vector3(7f, 8f, 9f), Quaternion.Identity);
+        IResidenceMapLock mapLock = RecordingDispatchProxy<IResidenceMapLock>.Create(out _);
+
+        ClientHousingVisitResidenceHandler handler = CreateHandler(
+            out RecordingDispatchProxy<IGlobalResidenceManager> residenceManagerProxy,
+            out RecordingDispatchProxy<IMapLockManager> mapLockManagerProxy);
+        residenceManagerProxy.SetMethodReturn(nameof(IGlobalResidenceManager.GetResidence), residence);
+        residenceManagerProxy.SetMethodReturn(nameof(IGlobalResidenceManager.GetResidenceEntrance), entrance);
+        mapLockManagerProxy.SetMethodReturn(nameof(IMapLockManager.GetResidenceLock), mapLock);
+        IWorldSession session = CreateSession(
+            residenceMap: true,
+            out RecordingDispatchProxy<IPlayer> playerProxy,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy);
+
+        handler.HandleMessage(session, CreateRequest());
+
+        Assert.Empty(GetEncryptedMessages(sessionProxy));
+        RecordingDispatchProxy<IPlayer>.Invocation teleport = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        IMapPosition position = Assert.IsAssignableFrom<IMapPosition>(teleport.Arguments[0]);
+        Assert.Same(entrance.Entry, position.Info.Entry);
+        Assert.Same(mapLock, position.Info.MapLock);
+        Assert.Equal(new Vector3(7f, 8f, 9f), position.Position);
+    }
+
+    [Fact]
     public void HandleMessage_NeighborsOnlyResidence_WithoutNeighborAccess_SendsInvalidPermissions()
     {
         IResidence residence = CreateResidence(ResidencePrivacyLevel.NeighborsOnly, out RecordingDispatchProxy<IResidence> residenceProxy);

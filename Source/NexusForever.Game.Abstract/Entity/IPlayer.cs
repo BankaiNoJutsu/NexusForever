@@ -270,6 +270,8 @@ namespace NexusForever.Game.Abstract.Entity
 
         void SendCharacterFlagsUpdated();
         void SetPvPFlag(PvPFlag flag);
+        void RequestPvPFlagDisable(uint cooldownMs);
+        void CancelPvPFlagDisable();
 
         /// <summary>
         /// Add a <see cref="Property"/> modifier given a <see cref="ItemSlot"/> and value.

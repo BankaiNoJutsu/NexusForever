@@ -22,12 +22,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Housing
 
         public void HandleMessage(IWorldSession session, ClientHousingEditMode housingEditMode)
         {
-            if (session.Player.Map is not IResidenceMapInstance)
+            if (session.Player.Map is not IResidenceMapInstance residenceMap)
                 throw new InvalidPacketValueException();
 
             IResidence targetResidence = globalResidenceManager.GetResidenceByOwner(housingEditMode.TargetPlayerIdentity.Id);
             if (targetResidence == null || !targetResidence.CanModifyResidence(session.Player))
                 throw new InvalidPacketValueException();
+
+            residenceMap.SetEditMode(session.Player, targetResidence, housingEditMode.Enabled);
 
             log.LogDebug("ClientHousingEditMode: player={PlayerGuid}, targetRealm={TargetRealm}, targetId={TargetId}, enabled={Enabled}",
                 session.Player?.Guid,

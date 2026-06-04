@@ -63,10 +63,7 @@ public class MatchingCharacterStatusTests
         MatchingCharacter character = CreateCharacter(identity,
             out RecordingDispatchProxy<IGameSession> sessionProxy,
             out _);
-        IMatchingQueueProposal proposal = RecordingDispatchProxy<IMatchingQueueProposal>.Create(out RecordingDispatchProxy<IMatchingQueueProposal> proposalProxy);
-        proposalProxy.SetProperty(nameof(IMatchingQueueProposal.MatchType), MatchType.Dungeon);
-        IMatchingQueueGroup group = RecordingDispatchProxy<IMatchingQueueGroup>.Create(out _);
-        character.AddMatchingQueueProposal(proposal, group);
+        AddMatchingQueueProposal(character, MatchType.Dungeon);
 
         character.RemoveMatchingQueueProposal(MatchType.Dungeon);
 
@@ -78,6 +75,40 @@ public class MatchingCharacterStatusTests
             message => Assert.IsType<ServerMatchingQueueResultAnnounce>(message),
             message => Assert.IsType<ServerMatchingLeftQueue>(message),
             message => Assert.IsType<ServerMatchingQueueStatus>(message));
+    }
+
+    [Fact]
+    public void GetMatchingCharacterQueues_ReturnsSnapshotWhenQueuesMutate()
+    {
+        Identity identity = new()
+        {
+            RealmId = 1,
+            Id      = 400ul
+        };
+        MatchingCharacter character = CreateCharacter(identity,
+            out _,
+            out _);
+        AddMatchingQueueProposal(character, MatchType.Dungeon);
+        AddMatchingQueueProposal(character, MatchType.Arena);
+
+        IEnumerable<IMatchingCharacterQueue> queues = character.GetMatchingCharacterQueues();
+
+        character.RemoveMatchingQueueProposal(MatchType.Dungeon, null);
+
+        MatchType[] matchTypes = queues
+            .Select(q => q.MatchingQueueProposal.MatchType)
+            .ToArray();
+        Assert.Equal(2, matchTypes.Length);
+        Assert.Contains(MatchType.Dungeon, matchTypes);
+        Assert.Contains(MatchType.Arena, matchTypes);
+    }
+
+    private static void AddMatchingQueueProposal(MatchingCharacter character, MatchType matchType)
+    {
+        IMatchingQueueProposal proposal = RecordingDispatchProxy<IMatchingQueueProposal>.Create(out RecordingDispatchProxy<IMatchingQueueProposal> proposalProxy);
+        proposalProxy.SetProperty(nameof(IMatchingQueueProposal.MatchType), matchType);
+        IMatchingQueueGroup group = RecordingDispatchProxy<IMatchingQueueGroup>.Create(out _);
+        character.AddMatchingQueueProposal(proposal, group);
     }
 
     private static MatchingCharacter CreateCharacter(
