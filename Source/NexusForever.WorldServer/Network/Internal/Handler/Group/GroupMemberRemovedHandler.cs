@@ -3,7 +3,6 @@ using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Network.Internal.Message.Group;
-using NexusForever.Network.Internal.Message.Group.Shared;
 using NexusForever.Network.World.Message.Model;
 using Rebus.Handlers;
 
@@ -38,11 +37,7 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
                 TargetPlayer = message.RemovedMember.Identity.ToNetworkIdentity(),
             };
 
-            foreach (GroupMember member in message.Group.Members)
-            {
-                IPlayer player = playerManager.GetPlayer(member.Identity.ToGameIdentity());
-                player?.Session.EnqueueMessageEncrypted(groupRemove);
-            }
+            playerManager.EnqueueToOnlineMembers(message.Group.Members, groupRemove);
 
             return Task.CompletedTask;
         }

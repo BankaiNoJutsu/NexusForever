@@ -21,6 +21,7 @@ namespace NexusForever.Server.GroupServer.Group
                 ThresholdRule    = group.LootRuleThreshold,
                 ThresholdQuality = group.LootThreshold,
                 HarvestRule      = group.LootRuleHarvest,
+                InstanceDifficulty = group.InstanceDifficulty,
                 Leader           = group.Leader?.ToInternalIdentity(),
                 MaxGroupSize     = group.GetMaxGroupSize(),
                 Match            = group.Match,

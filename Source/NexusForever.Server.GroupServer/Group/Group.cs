@@ -2,6 +2,7 @@
 using NexusForever.Database.Group.Model;
 using NexusForever.Game.Static.Group;
 using NexusForever.Game.Static.Matching;
+using NexusForever.Game.Static.Setting;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Group;
 using NexusForever.Server.GroupServer.Character;
@@ -44,6 +45,8 @@ namespace NexusForever.Server.GroupServer.Group
             get => Model.LootRuleHarvest;
             set => Model.LootRuleHarvest = value;
         }
+
+        public WorldDifficulty InstanceDifficulty { get; private set; } = WorldDifficulty.Normal;
 
         public Guid? Match
         {
@@ -733,6 +736,31 @@ namespace NexusForever.Server.GroupServer.Group
             await _messagePublisher.PublishAsync(new GroupLootRulesUpdatedMessage
             {
                 Group = await this.ToInternalGroup()
+            });
+
+            return GroupActionResult.ChangeSettingsSuccess;
+        }
+
+        /// <summary>
+        /// Sets the instance difficulty for the group.
+        /// </summary>
+        /// <param name="updater">The identity of the member updating the instance difficulty.</param>
+        /// <param name="difficulty">The instance difficulty to set.</param>
+        public async Task<GroupActionResult> SetInstanceDifficultyAsync(Identity updater, WorldDifficulty difficulty)
+        {
+            var member = GetMember(updater);
+            if (member == null)
+                return GroupActionResult.InvalidGroup;
+
+            if (member.Identity != Leader)
+                return GroupActionResult.ChangeSettingsFailed;
+
+            InstanceDifficulty = difficulty;
+
+            await _messagePublisher.PublishAsync(new GroupInstanceDifficultyUpdatedMessage
+            {
+                Group  = await this.ToInternalGroup(),
+                Setter = updater.ToInternalIdentity()
             });
 
             return GroupActionResult.ChangeSettingsSuccess;

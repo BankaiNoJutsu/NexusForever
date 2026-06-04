@@ -2,7 +2,6 @@
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Network.Internal.Message.Group;
-using NexusForever.Network.Internal.Message.Group.Shared;
 using NexusForever.Network.World.Message.Model;
 using Rebus.Handlers;
 
@@ -31,11 +30,7 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
                 Message = message.Message,
             };
 
-            foreach (GroupMember member in message.Group.Members)
-            {
-                IPlayer player = playerManager.GetPlayer(member.Identity.ToGameIdentity());
-                player?.Session.EnqueueMessageEncrypted(readyCheckMessage);
-            }
+            playerManager.EnqueueToOnlineMembers(message.Group.Members, readyCheckMessage);
 
             return Task.CompletedTask;
         }

@@ -3,7 +3,7 @@ using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Group;
 using NexusForever.Network.Internal.Message.Group;
-using NexusForever.Network.Internal.Message.Group.Shared;
+using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using Rebus.Handlers;
 
@@ -26,43 +26,43 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
         public Task Handle(GroupMemberFlagsUpdatedMessage message)
         {
             uint memberIndex = message.Member.GroupIndex;
-
-            foreach (GroupMember item in message.Group.Members)
+            IWritable flagsMessage;
+            if (message.FromPromotion)
             {
-                IPlayer player = playerManager.GetPlayer(item.Identity.ToGameIdentity());
-                if (player == null)
-                    continue;
+                flagsMessage = new ServerGroupMemberFlagsChanged
+                {
+                    GroupId         = message.Group.Id,
+                    MemberIndex     = memberIndex,
+                    TargetedPlayer  = message.Member.Identity.ToNetworkIdentity(),
+                    ChangedFlags    = message.Member.Flags,
+                    IsFromPromotion = true,
+                };
+            }
+            else
+            {
+                // Provisional runtime emitter: the native shape is mapped, but the leading
+                // value and parallel uint32 array semantics still need consumer proof.
+                var roleChange = new ServerGroupIdentityListAndUInt32Array
+                {
+                    GroupId      = message.Group.Id,
+                    LeadingValue = memberIndex,
+                };
+                roleChange.MemberIdentities.Add(message.Member.Identity.ToNetworkIdentity());
+                roleChange.Values.Add((uint)message.Member.Flags);
+                flagsMessage = roleChange;
+            }
 
-                if (message.FromPromotion)
-                {
-                    player.Session.EnqueueMessageEncrypted(new ServerGroupMemberFlagsChanged
-                    {
-                        GroupId         = message.Group.Id,
-                        MemberIndex     = memberIndex,
-                        TargetedPlayer  = message.Member.Identity.ToNetworkIdentity(),
-                        ChangedFlags    = message.Member.Flags,
-                        IsFromPromotion = true,
-                    });
-                }
-                else
-                {
-                    // Provisional runtime emitter: retail opcode 0x0438 currently decompiles as a
-                    // counted identity/value payload, not this single-member wrapper.
-                    player.Session.EnqueueMessageEncrypted(new ServerGroupMemberRoleChange
-                    {
-                        GroupId        = message.Group.Id,
-                        MemberIndex    = memberIndex,
-                        TargetedPlayer = message.Member.Identity.ToNetworkIdentity(),
-                        ChangedFlags   = message.Member.Flags,
-                    });
-                }
+            var readyCheckMessage = new ServerGroupReadyCheckStatusUpdate
+            {
+                GroupId        = message.Group.Id,
+                MemberIdentity = message.Member.Identity.ToNetworkIdentity(),
+                ReadyStatus    = BuildReadyCheckStatus(message.Member.Flags),
+            };
 
-                player.Session.EnqueueMessageEncrypted(new ServerGroupReadyCheckStatusUpdate
-                {
-                    GroupId        = message.Group.Id,
-                    MemberIdentity = message.Member.Identity.ToNetworkIdentity(),
-                    ReadyStatus    = BuildReadyCheckStatus(message.Member.Flags),
-                });
+            foreach (IPlayer player in playerManager.GetOnlineGroupMembers(message.Group.Members))
+            {
+                player.Session.EnqueueMessageEncrypted(flagsMessage);
+                player.Session.EnqueueMessageEncrypted(readyCheckMessage);
             }
 
             return Task.CompletedTask;

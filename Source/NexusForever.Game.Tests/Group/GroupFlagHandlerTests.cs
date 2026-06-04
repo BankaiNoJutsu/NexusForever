@@ -161,12 +161,12 @@ public class GroupFlagHandlerTests
             FromPromotion = false
         });
 
-        ServerGroupMemberRoleChange aliceMessage = AssertEncryptedMessage<ServerGroupMemberRoleChange>(aliceSessionProxy);
-        ServerGroupMemberRoleChange bobMessage   = AssertEncryptedMessage<ServerGroupMemberRoleChange>(bobSessionProxy);
+        ServerGroupIdentityListAndUInt32Array aliceMessage = AssertEncryptedMessage<ServerGroupIdentityListAndUInt32Array>(aliceSessionProxy);
+        ServerGroupIdentityListAndUInt32Array bobMessage   = AssertEncryptedMessage<ServerGroupIdentityListAndUInt32Array>(bobSessionProxy);
         Assert.Equal(9001ul, aliceMessage.GroupId);
-        Assert.Equal(GroupMemberInfoFlags.Healer, aliceMessage.ChangedFlags);
+        Assert.Equal([(uint)GroupMemberInfoFlags.Healer], aliceMessage.Values);
         Assert.Equal(aliceMessage.GroupId, bobMessage.GroupId);
-        Assert.Equal(aliceMessage.ChangedFlags, bobMessage.ChangedFlags);
+        Assert.Equal(aliceMessage.Values, bobMessage.Values);
     }
 
     [Fact]
@@ -191,7 +191,7 @@ public class GroupFlagHandlerTests
             FromPromotion = false
         });
 
-        ServerGroupMemberRoleChange roleChange = AssertEncryptedMessage<ServerGroupMemberRoleChange>(aliceSessionProxy);
+        ServerGroupIdentityListAndUInt32Array roleChange = AssertEncryptedMessage<ServerGroupIdentityListAndUInt32Array>(aliceSessionProxy);
         ServerGroupReadyCheckStatusUpdate readyCheck = AssertEncryptedMessage<ServerGroupReadyCheckStatusUpdate>(bobSessionProxy, 1);
 
         Assert.Equal(9001ul, roleChange.GroupId);

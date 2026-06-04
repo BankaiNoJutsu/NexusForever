@@ -12,6 +12,7 @@ namespace NexusForever.Server.GroupServer
         {
             sc.AddRebusHandler<GroupDisbandHandler>();
             sc.AddRebusHandler<GroupFlagsUpdateHandler>();
+            sc.AddRebusHandler<GroupInstanceDifficultyUpdateHandler>();
             sc.AddRebusHandler<GroupLootRulesUpdateHandler>();
             sc.AddRebusHandler<GroupMarkerHandler>();
             sc.AddRebusHandler<GroupMemberFlagUpdateHandler>();

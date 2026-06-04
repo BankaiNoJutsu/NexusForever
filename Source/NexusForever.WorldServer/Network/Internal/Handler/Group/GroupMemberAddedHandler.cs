@@ -3,7 +3,6 @@ using NexusForever.Game;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Network.Internal.Message.Group;
-using NexusForever.Network.Internal.Message.Group.Shared;
 using NexusForever.Network.World.Message.Model;
 using Rebus.Handlers;
 
@@ -38,15 +37,8 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
 
             ServerGroupMemberStatUpdate groupMemberStatUpdate = message.AddedMember.ToNetworkGroupMemberStatUpdate(message.Group.Id);
 
-            foreach (GroupMember member in message.Group.Members)
+            foreach (IPlayer player in playerManager.GetOnlineGroupMembers(message.Group.Members, member => member.Identity != message.AddedMember.Identity))
             {
-                if (member.Identity == message.AddedMember.Identity)
-                    continue;
-
-                IPlayer player = playerManager.GetPlayer(member.Identity.ToGameIdentity());
-                if (player == null)
-                    continue;
-
                 player.Session.EnqueueMessageEncrypted(serverGroupMemberAdd);
                 player.Session.EnqueueMessageEncrypted(groupMemberStatUpdate);
             }

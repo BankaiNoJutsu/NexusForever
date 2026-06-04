@@ -11,6 +11,7 @@ namespace NexusForever.Server.GroupServer.Network.Internal
         {
             await bus.Subscribe<GroupDisbandMessage>();
             await bus.Subscribe<GroupFlagsUpdateMessage>();
+            await bus.Subscribe<GroupInstanceDifficultyUpdateMessage>();
             await bus.Subscribe<GroupLootRulesUpdateMessage>();
             await bus.Subscribe<GroupMarkerMessage>();
             await bus.Subscribe<GroupMemberFlagUpdateMessage>();

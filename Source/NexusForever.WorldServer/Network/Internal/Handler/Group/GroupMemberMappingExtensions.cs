@@ -71,20 +71,5 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
                 Path              = source.Path
             };
         }
-
-        public static ServerGroupMemberDetailUpdate ToNetworkGroupMemberDetailUpdate(this InternalGroupMember member, ulong groupId)
-        {
-            return new ServerGroupMemberDetailUpdate
-            {
-                GroupId         = groupId,
-                TargetPlayer    = member.Identity.ToNetworkIdentity(),
-                Level           = member.Character.Level,
-                EffectiveLevel  = member.Character.EffectiveLevel,
-                GroupMemberId   = (ushort)member.GroupIndex,
-                Health          = member.Character.Health,
-                HealthMax       = member.Character.HealthMax,
-                Path            = member.Character.Path
-            };
-        }
     }
 }

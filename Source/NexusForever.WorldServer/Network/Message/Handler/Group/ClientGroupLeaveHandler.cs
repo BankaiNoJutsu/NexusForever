@@ -3,6 +3,7 @@ using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Group;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Shared;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Group
 {
@@ -28,7 +29,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Group
                 {
                     Identity = session.Player.Identity.ToInternalIdentity(),
                     GroupId  = groupLeave.GroupId
-                });
+                }).FireAndForgetAsync();
             }
             else
             {
@@ -36,7 +37,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Group
                 {
                     Identity = session.Player.Identity.ToInternalIdentity(),
                     GroupId  = groupLeave.GroupId
-                });
+                }).FireAndForgetAsync();
             }
         }
     }

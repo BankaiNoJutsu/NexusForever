@@ -50,6 +50,7 @@ namespace NexusForever.WorldServer.Network.Internal.Handler
             sc.AddRebusHandler<GroupActionResultHandler>();
             sc.AddRebusHandler<GroupDisbandedHandler>();
             sc.AddRebusHandler<GroupFlagsUpdatedHandler>();
+            sc.AddRebusHandler<GroupInstanceDifficultyUpdatedHandler>();
             sc.AddRebusHandler<GroupLootRulesUpdatedHandler>();
             sc.AddRebusHandler<GroupMarkerUpdatedHandler>();
             sc.AddRebusHandler<GroupMaxSizeUpdatedHandler>();

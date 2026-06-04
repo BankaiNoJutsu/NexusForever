@@ -100,19 +100,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Group
     {
         private readonly ILogger<ClientGroupSetInstanceDifficultyHandler> log;
         private readonly IInternalMessagePublisher messagePublisher;
-        private readonly IGroupStateManager groupStateManager;
-        private readonly IPlayerManager playerManager;
 
         public ClientGroupSetInstanceDifficultyHandler(
             ILogger<ClientGroupSetInstanceDifficultyHandler> log,
-            IInternalMessagePublisher messagePublisher,
-            IGroupStateManager groupStateManager,
-            IPlayerManager playerManager)
+            IInternalMessagePublisher messagePublisher)
         {
-            this.log               = log;
-            this.messagePublisher  = messagePublisher;
-            this.groupStateManager = groupStateManager;
-            this.playerManager     = playerManager;
+            this.log              = log;
+            this.messagePublisher = messagePublisher;
         }
 
         public void HandleMessage(IWorldSession session, ClientGroupSetInstanceDifficulty groupSetInstanceDifficulty)
@@ -120,57 +114,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Group
             if (groupSetInstanceDifficulty.Difficulty >= WorldDifficulty.Count)
                 throw new InvalidPacketValueException($"Invalid group instance difficulty received: {groupSetInstanceDifficulty.Difficulty}");
 
-            if (!groupStateManager.TryGetGroup(groupSetInstanceDifficulty.GroupId, out GroupLootState group))
+            messagePublisher.PublishAsync(new GroupInstanceDifficultyUpdateMessage
             {
-                SendResult(groupSetInstanceDifficulty.GroupId, session.Player.Identity, GroupActionResult.InvalidGroup);
-                return;
-            }
-
-            if (!group.HasMember(session.Player.Identity))
-            {
-                SendResult(groupSetInstanceDifficulty.GroupId, session.Player.Identity, GroupActionResult.InvalidGroup);
-                return;
-            }
-
-            // Apply difficulty to the requesting player.
-            // The ClientGroupSetInstanceDifficulty packet (0x0412) only carries difficulty;
-            // prime level and rally are set via the solo ClientSetInstanceSettings (0x014E).
-            session.Player.InstanceDifficulty = groupSetInstanceDifficulty.Difficulty;
-
-            log.LogDebug("Player {PlayerGuid} set group {GroupId} instance difficulty to {Difficulty}.",
-                session.Player.Guid, groupSetInstanceDifficulty.GroupId, groupSetInstanceDifficulty.Difficulty);
-
-            BroadcastInstanceDifficulty(group, session.Player.Guid, groupSetInstanceDifficulty.Difficulty);
-
-            SendResult(groupSetInstanceDifficulty.GroupId, session.Player.Identity, GroupActionResult.ChangeSettingsSuccess);
-        }
-
-        private void BroadcastInstanceDifficulty(GroupLootState group, uint setterGuid, WorldDifficulty difficulty)
-        {
-            var packet = new ServerGroupInstanceDifficultyResponse
-            {
-                GroupId        = group.GroupId,
-                CharacterGuid  = setterGuid,
-                Difficulty     = difficulty,
-                Unknown0       = 0u
-            };
-
-            foreach (GroupLootMember member in group.Members)
-            {
-                IPlayer memberPlayer = playerManager.GetPlayer(member.Identity);
-                memberPlayer?.Session.EnqueueMessageEncrypted(packet);
-            }
-        }
-
-        private void SendResult(ulong groupId, Identity identity, GroupActionResult result)
-        {
-            messagePublisher.PublishAsync(new GroupActionResultMessage
-            {
-                GroupId   = groupId,
-                Recipient = identity.ToInternalIdentity(),
-                Target    = identity.ToInternalIdentity(),
-                Result    = result
+                GroupId    = groupSetInstanceDifficulty.GroupId,
+                Identity   = session.Player.Identity.ToInternalIdentity(),
+                Difficulty = groupSetInstanceDifficulty.Difficulty
             }).FireAndForgetAsync();
+
+            log.LogDebug("Player {PlayerGuid} requested group {GroupId} instance difficulty {Difficulty}.",
+                session.Player.Guid, groupSetInstanceDifficulty.GroupId, groupSetInstanceDifficulty.Difficulty);
         }
     }
 }

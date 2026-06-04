@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Group;
 using NexusForever.Game.Static.Group;
+using NexusForever.Game.Static.Setting;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.WorldServer.Network.Internal.Handler.Group;
 using InternalGroup = NexusForever.Network.Internal.Message.Group.Shared.Group;
@@ -24,6 +25,7 @@ public class GroupStateManagerTests
 
         Assert.True(manager.TryGetGroup(group.GroupId, out GroupLootState stored));
         Assert.Equal(HarvestLootRule.RoundRobin, stored.HarvestRule);
+        Assert.Equal(WorldDifficulty.Veteran, stored.InstanceDifficulty);
         Assert.Equal(GroupFlags.Raid, stored.Flags);
     }
 
@@ -39,6 +41,7 @@ public class GroupStateManagerTests
         });
 
         Assert.Equal(HarvestLootRule.FirstTagger, updated.HarvestRule);
+        Assert.Equal(WorldDifficulty.Veteran, updated.InstanceDifficulty);
         Assert.Equal(GroupFlags.Raid, updated.Flags);
         Assert.Single(updated.Members);
     }
@@ -54,6 +57,7 @@ public class GroupStateManagerTests
             ThresholdRule    = LootRule.Master,
             ThresholdQuality = LootThreshold.Superb,
             HarvestRule      = HarvestLootRule.RoundRobin,
+            InstanceDifficulty = WorldDifficulty.Veteran,
             Leader           = new InternalIdentity
             {
                 RealmId = 1,
@@ -76,6 +80,7 @@ public class GroupStateManagerTests
         GroupLootState state = group.ToGroupLootState();
 
         Assert.Equal(HarvestLootRule.RoundRobin, state.HarvestRule);
+        Assert.Equal(WorldDifficulty.Veteran, state.InstanceDifficulty);
         Assert.Equal(GroupFlags.Raid, state.Flags);
     }
 
@@ -138,6 +143,7 @@ public class GroupStateManagerTests
             ThresholdRule    = LootRule.Master,
             ThresholdQuality = LootThreshold.Excellent,
             HarvestRule      = harvestRule,
+            InstanceDifficulty = WorldDifficulty.Veteran,
             Flags            = GroupFlags.Raid,
             Leader           = leader,
             Members =

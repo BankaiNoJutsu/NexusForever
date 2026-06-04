@@ -26,21 +26,9 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
         {
             ServerGroupMemberStatUpdate groupMemberStatUpdate = message.Member.ToNetworkGroupMemberStatUpdate(message.Group.Id);
             ServerGroupRosterUpdate rosterUpdate               = message.Member.ToNetworkGroupRosterUpdate(message.Group.Id);
-            ServerGroupMemberDetailUpdate detailUpdate         = message.Member.ToNetworkGroupMemberDetailUpdate(message.Group.Id);
 
-            foreach (GroupMember member in message.Group.Members)
-            {
-                if (message.Member.Identity == member.Identity)
-                    continue;
-
-                IPlayer player = playerManager.GetPlayer(member.Identity.ToGameIdentity());
-                if (player == null)
-                    continue;
-
-                player.Session.EnqueueMessageEncrypted(groupMemberStatUpdate);
-                player.Session.EnqueueMessageEncrypted(rosterUpdate);
-                player.Session.EnqueueMessageEncrypted(detailUpdate);
-            }
+            playerManager.EnqueueToOnlineMembers(message.Group.Members, member => message.Member.Identity != member.Identity, groupMemberStatUpdate);
+            playerManager.EnqueueToOnlineMembers(message.Group.Members, member => message.Member.Identity != member.Identity, rosterUpdate);
 
             return Task.CompletedTask;
         }

@@ -1,5 +1,6 @@
 ﻿using NexusForever.Game.Static.Group;
 using NexusForever.Game.Static.Matching;
+using NexusForever.Game.Static.Setting;
 using NexusForever.Network.Internal.Message.Shared;
 
 namespace NexusForever.Network.Internal.Message.Group.Shared
@@ -12,6 +13,7 @@ namespace NexusForever.Network.Internal.Message.Group.Shared
         public LootRule ThresholdRule { get; set; }
         public LootThreshold ThresholdQuality { get; set; }
         public HarvestLootRule HarvestRule { get; set; }
+        public WorldDifficulty InstanceDifficulty { get; set; }
         public Identity Leader { get; set; }
         public uint MaxGroupSize { get; set; }
         public Guid? Match { get; set; }

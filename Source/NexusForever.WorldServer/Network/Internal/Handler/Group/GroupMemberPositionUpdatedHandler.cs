@@ -46,11 +46,7 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
                     });
                 }
 
-                foreach (GroupMember groupMember in message.Group.Members)
-                {
-                    IPlayer player = playerManager.GetPlayer(groupMember.Identity.ToGameIdentity());
-                    player?.Session.EnqueueMessageEncrypted(groupPositionUpdate);
-                }
+                playerManager.EnqueueToOnlineMembers(message.Group.Members, groupPositionUpdate);
             }
 
             return Task.CompletedTask;
