@@ -74,6 +74,25 @@ For multi-binary export refreshes, prefer `run_ghidra_analysis.ps1 -MaxParallel`
 it starts one isolated runner per target, writes per-run summaries under
 `logs\runs`, and refreshes coverage once after all workers complete.
 
+When switching from the headless export loop to an interactive `ghidra-mcp`
+inspection pass, print the MCP-ready project and evidence-file hints first:
+
+```powershell
+.\Decomp\Analysis\Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe
+```
+
+The helper reads `logs\LATEST_RUN_SUMMARY.json`, analysis manifests, and known
+`.gpr` files. It does not modify Ghidra projects or exports. Open the listed
+project in Ghidra, use `mcp__ghidra_mcp.list_instances`, then connect with the
+printed project query. MCP comments and tentative renames are useful for focused
+inspection, but durable labels still belong in `function_labels.csv` followed
+by an export-only verification pass. See
+[`GHIDRA_MCP_PROMPT_ADAPTER.md`](GHIDRA_MCP_PROMPT_ADAPTER.md) for how to apply
+the upstream `bethington/ghidra-mcp` prompt workflows without losing the
+source-controlled Nexus evidence trail, and
+[`DATA_TYPE_INVESTIGATION_WORKFLOW.md`](DATA_TYPE_INVESTIGATION_WORKFLOW.md) for
+generic pointer and structure typing passes.
+
 Run a smaller or larger decompiler export:
 
 ```powershell
@@ -285,6 +304,13 @@ Focused helper scripts under `Decomp\Analysis\scripts` can be run with
 `-ExtraPostScript`, after the normal export, for one-off inspection without
 changing the repeatable CSV export shape.
 
+`Get-GhidraMcpWorkflowHints.ps1` bridges the same local artifacts into
+interactive `ghidra-mcp` sessions. Use it before opening CodeBrowser when a pass
+needs MCP-assisted function inspection, datatype review, live debugger tracing,
+or a quick handoff from a latest run summary to the correct per-target project.
+`GHIDRA_MCP_PROMPT_ADAPTER.md` maps the upstream prompt README to the local
+evidence ladder, label file, and tracker expectations.
+
 The Ghidra project is kept under `Decomp\Analysis\ghidra_projects` so the same
 analysis can be opened interactively in Ghidra later. Single-target Auto runs
 create per-target projects such as `NexusForeverClient64_WildStar64`, while
@@ -332,6 +358,10 @@ See [CLIENT_LOGGING.md](CLIENT_LOGGING.md) for evidence-backed retail client
 See [CONTINUATION_GUIDE.md](CONTINUATION_GUIDE.md) for the repeatable map,
 label, implement, and verification workflow to use when continuing the
 client-binary decompile.
+
+See [DATA_TYPE_INVESTIGATION_WORKFLOW.md](DATA_TYPE_INVESTIGATION_WORKFLOW.md)
+for the structure and parameter type investigation checklist to use when generic
+Ghidra types obscure packet, table, entity, item, spell, or callback layouts.
 
 Quest coverage (curated scripts vs generic table-driven vs blocked objective
 types) is tracked in [QUEST_IMPLEMENTATION_STATUS.md](QUEST_IMPLEMENTATION_STATUS.md).

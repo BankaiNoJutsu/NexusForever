@@ -17,6 +17,9 @@ implement server behavior from the evidence in the existing C# codebase.
 | `Decomp/Client64` | Local client binaries. Ignored by Git. |
 | `Decomp/Analysis/setup_decomp_tools.ps1` | Installs the pinned Java and Ghidra toolchain. |
 | `Decomp/Analysis/run_ghidra_analysis.ps1` | Runs or re-exports headless Ghidra analysis. |
+| `Decomp/Analysis/Get-GhidraMcpWorkflowHints.ps1` | Prints MCP-ready project, program, and evidence-file hints from the latest summaries, manifests, and `.gpr` files. |
+| `Decomp/Analysis/GHIDRA_MCP_PROMPT_ADAPTER.md` | Maps upstream `bethington/ghidra-mcp` prompt workflows onto the Nexus evidence ladder and durable label workflow. |
+| `Decomp/Analysis/DATA_TYPE_INVESTIGATION_WORKFLOW.md` | Local checklist for evidence-backed parameter typing, structure discovery, offset maps, and family-wide type application. |
 | `Decomp/Analysis/scripts/ApplyNexusForeverLabels.java` | Applies source-controlled function labels before export. |
 | `Decomp/Analysis/scripts/ExportNexusForeverAnalysis.java` | Writes repeatable CSV and decompiler exports. |
 | `Decomp/Analysis/scripts/DumpNearbyData.java` | Dumps nearby data-table slots and resolves pointer targets. |
@@ -65,6 +68,9 @@ The default analysis targets are:
    uncertain payload fields diagnostic-only.
 6. Each pass should leave a trail: what was mapped, what was labelled, what was
    implemented, what stayed blocked, and how it was verified.
+7. Use `ghidra-mcp` as a focused interactive probe, not as the durable record.
+   Mirror stable labels into `function_labels.csv` and re-export before relying
+   on them in future passes.
 
 ## Evidence Ladder
 
@@ -231,6 +237,40 @@ Increase `-MaxDecompiledFunctions` only when the selected functions are too
 shallow. If the desired function is not selected, prefer improving
 `HIGH_VALUE_STRING_PATTERNS`, adding a durable label, or locating a better xref
 over exporting thousands of functions.
+
+### Optional Ghidra MCP Probe
+
+Use `ghidra-mcp` when a static export points at the right function family but
+the next question is easier in an open CodeBrowser project: datatype shape,
+nearby symbols, current decompiler view, cross-reference navigation, comments,
+or live debugger tracing.
+
+Before connecting, print the project handoff from the repo root:
+
+```powershell
+.\Decomp\Analysis\Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe
+```
+
+The helper reads the latest run summary, analysis manifests, and `.gpr` files,
+then prints the matching project name, program name, export folder, and MCP
+sequence. Open the listed `.gpr` in Ghidra and the listed program in
+CodeBrowser. In Codex, call `mcp__ghidra_mcp.list_instances`, connect to the
+printed project query with `mcp__ghidra_mcp.connect_instance`, then call
+`mcp__ghidra_mcp.list_tool_groups` and load the needed groups if the bridge is
+lazy-loaded.
+
+Keep the handoff boundary clean:
+
+- Use MCP for focused inspection, tentative renames/comments, datatype review,
+  and debugger traces.
+- Follow `GHIDRA_MCP_PROMPT_ADAPTER.md` when applying upstream prompt workflows
+  such as Function Documentation V5 or Data Type Investigation.
+- Do not treat a Ghidra-only rename as durable evidence.
+- Add stable names to `function_labels.csv` only after the function is mapped.
+- Re-export the affected binary and confirm the names appear in `functions.csv`
+  and `selected_decompiled.c`.
+- Use `-DecompileMode Force` only when you intentionally need fresh output for
+  interactive Ghidra edits that are not represented in `function_labels.csv`.
 
 ## Selection Criteria Reference
 
@@ -598,6 +638,17 @@ Read:
 - Decomp/Analysis/CONTINUATION_GUIDE.md
 - Decomp/Analysis/INITIAL_FINDINGS.md
 - Decomp/Analysis/function_labels.csv
+- Decomp/Analysis/GHIDRA_MCP_PROMPT_ADAPTER.md when using ghidra-mcp
+- Decomp/Analysis/DATA_TYPE_INVESTIGATION_WORKFLOW.md when structure or
+  parameter types are in scope
+
+For an interactive Ghidra pass, first run:
+
+.\Decomp\Analysis\Get-GhidraMcpWorkflowHints.ps1 -Targets <binary>
+
+Then open the printed Ghidra project, use ghidra-mcp list_instances,
+connect_instance, and list_tool_groups, and keep durable labels in
+function_labels.csv.
 
 Do not touch Decomp/Client64, generated exports, logs, or Ghidra project files
 except by running the existing scripts. Do not copy decompiled client source into
@@ -735,8 +786,16 @@ Before adding labels:
 - [ ] Address is the function entry or a verified containing function.
 - [ ] Name describes proven behavior.
 - [ ] Comment is factual and short.
+- [ ] Any MCP/Ghidra-only rename worth keeping is mirrored to `function_labels.csv`.
 - [ ] Export-only run applies the label.
 - [ ] Label appears in generated exports.
+
+Before changing Ghidra datatypes:
+
+- [ ] Generic pointer parameters were investigated across all related functions.
+- [ ] Offset map records access size, access mode, and evidence source.
+- [ ] Existing structures were searched before creating or renaming a type.
+- [ ] Type application was verified across the whole mapped function family.
 
 Before finalizing implementation:
 
@@ -760,6 +819,9 @@ Before finalizing implementation:
   summary. Use `Start-DecompileBatch.ps1` or give each worker its own `-RunId`
   and `-SummaryPath`. The runner now waits on per-project Ghidra gates, but
   per-run summaries are still cleaner for parallel automation.
+- Leaving an MCP or interactive Ghidra rename only in the local project. If the
+  name is evidence-backed, mirror it to `function_labels.csv`; if it is still a
+  hypothesis, keep it out of source-controlled labels.
 - Mutating spell state from unknown `DataBits` because the value "looks like"
   an id. Prove the id space and behavior first.
 - Implementing crypto, anti-tamper, or token behavior from partial structure.
