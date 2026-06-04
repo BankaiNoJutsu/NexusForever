@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Net.Sockets;
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Cryptography;
+using NexusForever.Network.Diagnostics;
 using NexusForever.Network.Message;
 using NexusForever.Network.Packet;
 using NexusForever.Shared;
@@ -82,6 +83,7 @@ namespace NexusForever.Network.Session
                 writer.FlushBits();
 
                 byte[] data = stream.ToArray();
+                PacketEvidenceRecorder.Record(Id, "outgoing-plaintext", opcode.Value, message.GetType().Name, data, true);
                 byte[] encrypted = encryption.Encrypt(data, data.Length);
                 EnqueueMessage(BuildEncryptedMessage(encrypted));
                 LogSpellPacketBoundary("outgoing-encrypted-body", opcode.Value, true, message.GetType().Name, encrypted.Length);
@@ -106,6 +108,7 @@ namespace NexusForever.Network.Session
                 writer.FlushBits();
 
                 byte[] data = stream.ToArray();
+                PacketEvidenceRecorder.Record(Id, "outgoing-plaintext-raw", opcode, $"0x{opcode:X4}", "RawHexPayload", data, true);
                 byte[] encrypted = encryption.Encrypt(data, data.Length);
                 EnqueueMessage(BuildEncryptedMessage(encrypted));
             }
@@ -202,6 +205,13 @@ namespace NexusForever.Network.Session
                 //IReadable message = serviceScope.ServiceProvider.GetKeyedService<IReadable>(opcode);
                 IReadable message = serviceProvider.GetKeyedService<IReadable>(opcode);
                 LogSpellPacketBoundary("incoming-read", opcode, packet.IsEncrypted, message?.GetType().Name, packet.Data?.Length ?? 0);
+                PacketEvidenceRecorder.Record(
+                    Id,
+                    packet.IsEncrypted ? "incoming-decrypted" : "incoming-plaintext",
+                    opcode,
+                    message?.GetType().Name,
+                    reader.PlaintextData,
+                    packet.IsEncrypted);
                 if (message == null)
                 {
                     log.Warn($"Received unknown packet {opcode}(0x{opcode:X}).");

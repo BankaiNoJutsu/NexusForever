@@ -127,7 +127,7 @@ namespace NexusForever.Game.Account.Reward
                 [
                     "Only the request index range below seven is evidence-backed for client-originated refresh requests.",
                     "Schedule rows from GameTableRewardRotationRefreshProvider use correlated global-catalog selection until per-content reward mapping is verified.",
-                    "Account grant persistence is required before sending non-empty entry-state arrays; 0x07CD Flag apply helper remains unmapped."
+                    "Account grant persistence is required before sending non-empty entry-state arrays; 0x07CD registration has no static apply helper, so Flag and throttle-slot assignment remain blocked until capture or dynamic dispatch proof."
                 ],
                 Notes =
                 [

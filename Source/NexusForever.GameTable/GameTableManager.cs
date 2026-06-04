@@ -664,6 +664,8 @@ namespace NexusForever.GameTable
 
         [GameData]
         public GameTable<TaxiNodeEntry> TaxiNode { get; private set; }
+
+        [GameData]
         public GameTable<TaxiRouteEntry> TaxiRoute { get; private set; }
 
         [GameData]

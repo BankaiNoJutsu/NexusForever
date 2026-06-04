@@ -24,8 +24,7 @@ namespace NexusForever.Game.Entity
             return new TaxiEntityModel
             {
                 CreatureId    = CreatureId,
-                UnitVehicleId = (ushort)(CreatureEntry?.UnitVehicleId ?? 0u),
-                OwnerId       = SummonerGuid ?? 0u
+                UnitVehicleId = (ushort)(CreatureEntry?.UnitVehicleId ?? 0u)
             };
         }
     }

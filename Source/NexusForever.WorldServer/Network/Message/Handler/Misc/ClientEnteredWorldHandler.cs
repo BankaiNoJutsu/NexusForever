@@ -13,8 +13,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
         /// </summary>
         public void HandleMessage(IWorldSession session, ClientEnteredWorld enteredWorld)
         {
+            if (session.Player == null)
+                return;
+
             if (!session.Player.IsLoading)
-                throw new InvalidPacketValueException();
+                return;
 
             session.Player.OnEnteredWorld();
         }

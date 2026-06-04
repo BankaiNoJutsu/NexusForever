@@ -301,6 +301,39 @@ public class ItemRuneSocketTests
     }
 
     [Fact]
+    public void RuneSlotsCodec_RoundTripsSlotTypesAndInstalledRuneItemIds()
+    {
+        var slots = new List<ItemRuneSlot>
+        {
+            new(RuneType.Air) { RuneItem2Id = 9001u },
+            new(RuneType.Fusion),
+            new(RuneType.Life) { RuneItem2Id = 9002u },
+        };
+
+        string encoded = ItemRuneSlotsCodec.Serialize(slots);
+        var decoded = new List<ItemRuneSlot>();
+        ItemRuneSlotsCodec.DeserializeInto(encoded, decoded);
+
+        Assert.Equal("7:9001,13:0,12:9002", encoded);
+        Assert.Collection(decoded,
+            slot =>
+            {
+                Assert.Equal(RuneType.Air, slot.Type);
+                Assert.Equal(9001u, slot.RuneItem2Id);
+            },
+            slot =>
+            {
+                Assert.Equal(RuneType.Fusion, slot.Type);
+                Assert.Equal(0u, slot.RuneItem2Id);
+            },
+            slot =>
+            {
+                Assert.Equal(RuneType.Life, slot.Type);
+                Assert.Equal(9002u, slot.RuneItem2Id);
+            });
+    }
+
+    [Fact]
     public void ValidateInstallTargets_RejectsRuneCountBeyondSockets()
     {
         IGameTableManager tables = CreateInstallValidationTables();

@@ -56,7 +56,6 @@ namespace NexusForever.Game.Entity
                 EntityType.StructuredPlug     => serviceProvider.GetRequiredService<IStructuredPlugEntity>(),
                 EntityType.PinataLoot         => serviceProvider.GetRequiredService<IPinataLootEntity>(),
                 EntityType.BindPoint          => serviceProvider.GetRequiredService<IBindPointEntity>(),
-                EntityType.Player             => serviceProvider.GetRequiredService<IPlayer>(),
                 EntityType.Hidden             => serviceProvider.GetRequiredService<IHiddenEntity>(),
                 EntityType.Trigger            => serviceProvider.GetRequiredService<ITriggerEntity>(),
                 EntityType.Ghost              => serviceProvider.GetRequiredService<IGhostEntity>(),
@@ -73,6 +72,7 @@ namespace NexusForever.Game.Entity
                 EntityType.HousingHarvestPlug => serviceProvider.GetRequiredService<IHousingHarvestPlugEntity>(),
                 EntityType.HousingPlant       => serviceProvider.GetRequiredService<IHousingPlantEntity>(),
                 EntityType.Lockbox            => serviceProvider.GetRequiredService<ILockboxEntity>(),
+                EntityType.Player             => throw new InvalidOperationException("Player entities are created from character state and cannot be spawned from static world data."),
                 _                             => throw new InvalidOperationException($"Unsupported world entity type {type}.")
             };
         }

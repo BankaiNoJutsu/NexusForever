@@ -56,6 +56,23 @@ namespace NexusForever.Game.Entity
             CalculateRestXpAtLogin(model);
         }
 
+        public static byte CalculateLevelForXp(uint totalXp)
+        {
+            byte maxLevel = GetMaxCharacterLevel();
+            uint level = GameTableManager.Instance.XpPerLevel.Entries
+                .Where(e => e.Id <= maxLevel && e.MinXpForLevel <= totalXp)
+                .Select(e => e.Id)
+                .DefaultIfEmpty(1u)
+                .Max();
+
+            return (byte)Math.Clamp(level, 1u, maxLevel);
+        }
+
+        public static byte ResolveStoredLevel(byte storedLevel, uint totalXp)
+        {
+            return Math.Max(storedLevel, CalculateLevelForXp(totalXp));
+        }
+
         public void Save(CharacterContext context)
         {
             if (!isDirty)
@@ -261,7 +278,14 @@ namespace NexusForever.Game.Entity
 
         private static byte GetMaxCharacterLevel()
         {
-            return SharedConfiguration.Instance.Get<WorldConfig>()?.MaxCharacterLevel ?? DefaultMaxCharacterLevel;
+            try
+            {
+                return SharedConfiguration.Instance.Get<WorldConfig>()?.MaxCharacterLevel ?? DefaultMaxCharacterLevel;
+            }
+            catch (InvalidOperationException)
+            {
+                return DefaultMaxCharacterLevel;
+            }
         }
 
         private static float GetSignatureXpRate()

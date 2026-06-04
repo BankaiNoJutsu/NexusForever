@@ -547,7 +547,7 @@ namespace NexusForever.Game.Housing
             {
                 RealmId           = RealmContext.Instance.RealmId,
                 ResidenceId       = Id,
-                NeighbourhoodId   = 0x190000000000000A/*GuildOwnerId.GetValueOrDefault(0ul)*/,
+                NeighbourhoodId   = GuildOwnerId.GetValueOrDefault(0ul),
                 CharacterIdOwner  = OwnerId,
                 GuildIdOwner      = Type == ResidenceType.Community ? GuildOwnerId : 0,
                 Type              = Type,

@@ -6,7 +6,7 @@ namespace NexusForever.Game.Tests.Fortune;
 
 public class FortunePacketShapeTests
 {
-    private const uint ClickEmptyResetValue = 3u;
+    private const uint ClickEmptyResetCode = 3u;
 
     [Fact]
     public void ClientFortuneFlipCard_ReadsSelectedCardIndex()
@@ -100,17 +100,17 @@ public class FortunePacketShapeTests
     }
 
     [Fact]
-    public void ServerFortuneReset_WriteSerializesThreeBitValue()
+    public void ServerFortuneReset_WriteSerializesResetCode()
     {
         var message = new ServerFortuneReset
         {
-            Unknown = ClickEmptyResetValue
+            ResetCode = ClickEmptyResetCode
         };
 
         byte[] packetData = WritePacket(message.Write);
 
         using var reader = new GamePacketReader(new MemoryStream(packetData));
-        Assert.Equal(ClickEmptyResetValue, reader.ReadUInt(3u));
+        Assert.Equal(ClickEmptyResetCode, reader.ReadUInt(3u));
     }
 
     private static byte[] WritePacket(Action<GamePacketWriter> write)

@@ -840,12 +840,6 @@ namespace NexusForever.Game.Account.Inventory
                 return false;
             }
 
-            if (item.HasTargetPlayerIdentity || item.TargetPlayerIdentity?.Id != 0ul)
-            {
-                error = GenericError.Params;
-                return false;
-            }
-
             AccountItemEntry entry = item.Entry;
             if (!IsImmediateAccountGrant(entry))
             {

@@ -112,7 +112,9 @@ namespace NexusForever.Network.World.Message.Model
         /// Client reader <c>ServerItemMicrochips_ReadPayload</c>
         /// (<c>1400a3d50</c>) reads item guid, maker character id, random
         /// circuit data, an 18-bit power-core item id, a 3-bit count, and
-        /// counted microchip item ids. Producer timing remains blocked.
+        /// counted microchip item ids. This is a server-side item patch/update
+        /// surface, not the client rune install request (<c>0x085B</c>);
+        /// producer timing remains blocked.
         /// </summary>
         public ulong ItemGuid { get; set; }
 

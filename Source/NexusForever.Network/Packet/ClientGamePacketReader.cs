@@ -8,6 +8,8 @@ namespace NexusForever.Network.Packet
         private MemoryStream stream;
         private GamePacketReader reader;
 
+        public byte[] PlaintextData { get; private set; }
+
         public void Dispose()
         {
             stream?.Dispose();
@@ -19,7 +21,8 @@ namespace NexusForever.Network.Packet
             if (stream != null || reader != null)
                 throw new InvalidOperationException();
 
-            stream = new MemoryStream(packet.IsEncrypted ? encryption.Decrypt(packet.Data, packet.Data.Length) : packet.Data);
+            PlaintextData = packet.IsEncrypted ? encryption.Decrypt(packet.Data, packet.Data.Length) : packet.Data.ToArray();
+            stream = new MemoryStream(PlaintextData);
             reader = new GamePacketReader(stream);
         }
 

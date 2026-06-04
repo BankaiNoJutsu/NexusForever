@@ -27,6 +27,7 @@ using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Network.Message.Handler.Fortune;
 using NexusForever.WorldServer.Network.Message.Handler.Reward;
 
 namespace NexusForever.Game.Tests.Reward;
@@ -114,16 +115,52 @@ public class ClientRewardUpdateRequestHandlerTests
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.Guid), 600u);
         session.Player = player;
+        List<string> calls = [];
 
         IGlobalStorefrontManager storefront = RecordingDispatchProxy<IGlobalStorefrontManager>.Create(out RecordingDispatchProxy<IGlobalStorefrontManager> storefrontProxy);
+        storefrontProxy.SetMethodHandler(nameof(IGlobalStorefrontManager.HandleCatalogRequest), _ =>
+        {
+            calls.Add("catalog");
+            return null;
+        });
+        IFortuneSessionManager fortuneSessionManager = RecordingDispatchProxy<IFortuneSessionManager>.Create(out RecordingDispatchProxy<IFortuneSessionManager> fortuneSessionProxy);
+        fortuneSessionProxy.SetMethodHandler(nameof(IFortuneSessionManager.SendStatus), _ =>
+        {
+            calls.Add("fortune-status");
+            return null;
+        });
         var handler = new ClientRewardUpdateRequestHandler(
             new TestLogger<ClientRewardUpdateRequestHandler>(),
             storefront,
-            EmptyRewardRotationRefreshProvider.Instance);
+            EmptyRewardRotationRefreshProvider.Instance,
+            fortuneSessionManager);
 
         handler.HandleMessage(session, BuildRequest(0u));
 
         Assert.Single(storefrontProxy.GetInvocations(nameof(IGlobalStorefrontManager.HandleCatalogRequest)));
+        Assert.Single(fortuneSessionProxy.GetInvocations(nameof(IFortuneSessionManager.SendStatus)));
+        Assert.Equal(new[] { "catalog", "fortune-status" }, calls);
+    }
+
+    [Fact]
+    public void HandleMessage_WithNonZeroIndex_DoesNotSendFortuneStatus()
+    {
+        var rewardPropertyManager = new TestRewardPropertyManager();
+        var session = new TestWorldSession(new TestAccount(rewardPropertyManager));
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Guid), 600u);
+        session.Player = player;
+
+        IFortuneSessionManager fortuneSessionManager = RecordingDispatchProxy<IFortuneSessionManager>.Create(out RecordingDispatchProxy<IFortuneSessionManager> fortuneSessionProxy);
+        var handler = new ClientRewardUpdateRequestHandler(
+            new TestLogger<ClientRewardUpdateRequestHandler>(),
+            NoOpGlobalStorefrontManager.Instance,
+            EmptyRewardRotationRefreshProvider.Instance,
+            fortuneSessionManager);
+
+        handler.HandleMessage(session, BuildRequest(3u));
+
+        Assert.Empty(fortuneSessionProxy.GetInvocations(nameof(IFortuneSessionManager.SendStatus)));
     }
 
     [Fact]

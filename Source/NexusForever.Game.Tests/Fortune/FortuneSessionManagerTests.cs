@@ -1,22 +1,33 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using Microsoft.Extensions.DependencyInjection;
+using NexusForever.Database.Auth.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Currency;
 using NexusForever.Game.Abstract.Account.Inventory;
+using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Fortune;
+using NexusForever.Game.Account.Inventory;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Fortune;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Fortune;
+using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Fortune;
+using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
 namespace NexusForever.Game.Tests.Fortune;
 
+[Collection(LegacyServiceProviderCollection.Name)]
 public class FortuneSessionManagerTests
 {
-    private const uint ClickEmptyResetValue = 3u;
+    private const uint ClickEmptyResetCode = 3u;
 
     [Fact]
     public void SendStatus_WithNoSessionSendsRewardCatalogAndResetCards()
@@ -62,6 +73,75 @@ public class FortuneSessionManagerTests
     }
 
     [Fact]
+    public void Start_WithNonDisplayableCardRewardSendsResetWithoutSpending()
+    {
+        var rewardPool = new StubFortuneRewardPool(
+            cardRewards:
+            [
+                new FortuneCardReward(11u, 101u, RewardRarity.Normal),
+                new FortuneCardReward(26u, 0u, RewardRarity.Normal),
+                new FortuneCardReward(33u, 303u, RewardRarity.Rare)
+            ],
+            displayableAccountItemIds: new HashSet<uint> { 11u, 33u });
+        var manager = CreateManager(rewardPool);
+        IWorldSession session = CreateSessionWithCurrency(42u, out var sessionProxy, canAffordFortuneCoin: true, out var currencyProxy);
+
+        manager.Start(session);
+
+        Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)));
+        ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Single();
+        Assert.Equal(ClickEmptyResetCode, reset.ResetCode);
+    }
+
+    [Fact]
+    public void Start_WithClaimableFortuneCoinItemClaimsBundleBeforeDealingCards()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildGameTableProvider(
+            new AccountItemEntry
+            {
+                Id                    = 901u,
+                AccountCurrencyEnum   = (uint)AccountCurrencyType.FortuneCoin,
+                AccountCurrencyAmount = 5ul
+            });
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            var manager = CreateManager(out _);
+            IWorldSession session = CreateSessionWithClaimableFortuneCoinItem(
+                42u,
+                out var sessionProxy,
+                out var currencyProxy,
+                out AccountInventoryManager inventoryManager,
+                out Func<ulong> getFortuneCoinBalance);
+
+            manager.Start(session);
+
+            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation add = Assert.Single(
+                currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(AccountCurrencyType.FortuneCoin, add.Arguments[0]);
+            Assert.Equal(5ul, add.Arguments[1]);
+
+            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation subtract = Assert.Single(
+                currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)));
+            Assert.Equal(AccountCurrencyType.FortuneCoin, subtract.Arguments[0]);
+            Assert.Equal(1ul, subtract.Arguments[1]);
+
+            Assert.Equal(4ul, getFortuneCoinBalance());
+            Assert.Null(inventoryManager.GetItem(1ul));
+
+            ServerFortuneCards cards = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneCards>().Single();
+            Assert.Equal(FortuneOperation.Update, cards.Operation);
+            Assert.Equal([11u, 22u, 33u], cards.AccountItemId);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void Start_WithoutFortuneCoinSendsResetClick()
     {
         var manager = CreateManager(out _);
@@ -70,7 +150,7 @@ public class FortuneSessionManagerTests
         manager.Start(session);
 
         ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Single();
-        Assert.Equal(ClickEmptyResetValue, reset.Unknown);
+        Assert.Equal(ClickEmptyResetCode, reset.ResetCode);
     }
 
     [Fact]
@@ -85,8 +165,13 @@ public class FortuneSessionManagerTests
         RecordingDispatchProxy<IAccountInventoryManager>.Invocation addItem = Assert.Single(
             inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
         Assert.Equal(22u, addItem.Arguments[0]);
+        NetworkIdentity targetIdentity = Assert.IsType<NetworkIdentity>(addItem.Arguments[1]);
+        Assert.Equal(TestRealmId, targetIdentity.RealmId);
+        Assert.Equal(9001ul, targetIdentity.Id);
+        Assert.True((bool)addItem.Arguments[3]);
 
         ServerFortuneCardUpdate update = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneCardUpdate>().Single();
+        Assert.True(update.HasUpdate);
         Assert.Equal(FortuneOperation.Update, update.Operation);
         Assert.Equal([false, true, false], update.CardFlipped);
     }
@@ -119,6 +204,7 @@ public class FortuneSessionManagerTests
         manager.SendStatus(secondSession);
 
         ServerFortuneCardUpdate firstUpdate = GetEncryptedMessages(firstSessionProxy).OfType<ServerFortuneCardUpdate>().Single();
+        Assert.True(firstUpdate.HasUpdate);
         Assert.Equal([true, false, false], firstUpdate.CardFlipped);
         ServerFortuneCards secondCards = GetEncryptedMessages(secondSessionProxy).OfType<ServerFortuneCards>().Single();
         Assert.Equal(FortuneOperation.Reset, secondCards.Operation);
@@ -151,7 +237,7 @@ public class FortuneSessionManagerTests
         manager.FlipCard(session, CreateFlipCard(0u));
 
         ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Single();
-        Assert.Equal(ClickEmptyResetValue, reset.Unknown);
+        Assert.Equal(ClickEmptyResetCode, reset.ResetCode);
     }
 
     [Fact]
@@ -164,7 +250,7 @@ public class FortuneSessionManagerTests
         manager.FlipCard(session, CreateFlipCard(3u));
 
         ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Single();
-        Assert.Equal(ClickEmptyResetValue, reset.Unknown);
+        Assert.Equal(ClickEmptyResetCode, reset.ResetCode);
     }
 
     [Fact]
@@ -178,7 +264,7 @@ public class FortuneSessionManagerTests
         manager.FlipCard(session, CreateFlipCard(1u));
 
         ServerFortuneReset reset = GetEncryptedMessages(sessionProxy).OfType<ServerFortuneReset>().Last();
-        Assert.Equal(ClickEmptyResetValue, reset.Unknown);
+        Assert.Equal(ClickEmptyResetCode, reset.ResetCode);
     }
 
     private const ushort TestRealmId = 7;
@@ -186,6 +272,11 @@ public class FortuneSessionManagerTests
     private static FortuneSessionManager CreateManager(out StubFortuneRewardPool rewardPool)
     {
         rewardPool = new StubFortuneRewardPool();
+        return CreateManager(rewardPool);
+    }
+
+    private static FortuneSessionManager CreateManager(StubFortuneRewardPool rewardPool)
+    {
         IRealmContext realmContext = RecordingDispatchProxy<IRealmContext>.Create(out var realmProxy);
         realmProxy.SetProperty(nameof(IRealmContext.RealmId), TestRealmId);
         return new FortuneSessionManager(rewardPool, realmContext);
@@ -241,6 +332,127 @@ public class FortuneSessionManagerTests
         currencyProxy.SetMethodReturn(nameof(IAccountCurrencyManager.CanAfford), canAffordFortuneCoin);
 
         return session;
+    }
+
+    private static IWorldSession CreateSessionWithClaimableFortuneCoinItem(
+        uint accountId,
+        out RecordingDispatchProxy<IWorldSession> sessionProxy,
+        out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
+        out AccountInventoryManager inventoryManager,
+        out Func<ulong> getFortuneCoinBalance)
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
+        IAccountCurrencyManager currencyManager = RecordingDispatchProxy<IAccountCurrencyManager>.Create(out currencyProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+
+        ulong fortuneCoinBalance = 0ul;
+        getFortuneCoinBalance = () => fortuneCoinBalance;
+        currencyProxy.SetMethodHandler(nameof(IAccountCurrencyManager.CanAfford), args =>
+        {
+            return (AccountCurrencyType)args[0] == AccountCurrencyType.FortuneCoin
+                && fortuneCoinBalance >= (ulong)args[1];
+        });
+        currencyProxy.SetMethodHandler(nameof(IAccountCurrencyManager.CurrencyAddAmount), args =>
+        {
+            if ((AccountCurrencyType)args[0] == AccountCurrencyType.FortuneCoin)
+                fortuneCoinBalance += (ulong)args[1];
+            return null;
+        });
+        currencyProxy.SetMethodHandler(nameof(IAccountCurrencyManager.CurrencySubtractAmount), args =>
+        {
+            if ((AccountCurrencyType)args[0] == AccountCurrencyType.FortuneCoin)
+                fortuneCoinBalance -= (ulong)args[1];
+            return null;
+        });
+
+        accountProxy.SetProperty(nameof(IAccount.Id), accountId);
+        accountProxy.SetProperty(nameof(IAccount.Session), session);
+        accountProxy.SetProperty(nameof(IAccount.CurrencyManager), currencyManager);
+        sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
+
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 9001ul);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+        ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out _);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        playerProxy.SetProperty(nameof(IPlayer.Identity), new Identity
+        {
+            RealmId = TestRealmId,
+            Id      = 9001ul
+        });
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+
+        var model = new AccountModel
+        {
+            Id = accountId
+        };
+        model.AccountInventory.Add(new AccountInventoryModel
+        {
+            Id            = accountId,
+            InventoryId   = 1ul,
+            AccountItemId = 901u,
+            ClaimState    = (byte)AccountItemClaimState.CanClaim
+        });
+
+        inventoryManager = new AccountInventoryManager(account, model);
+        accountProxy.SetProperty(nameof(IAccount.InventoryManager), inventoryManager);
+
+        return session;
+    }
+
+    private static ServiceProvider BuildGameTableProvider(params AccountItemEntry[] accountItems)
+    {
+        var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItem), CreateGameTable(accountItems));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountItemCooldownGroup), CreateGameTable<AccountItemCooldownGroupEntry>());
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.DailyLoginReward), CreateGameTable<DailyLoginRewardEntry>());
+
+        return new ServiceCollection()
+            .AddSingleton(gameTableManager)
+            .BuildServiceProvider();
+    }
+
+    private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
+    {
+        var table = (GameTable<T>)RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
+        SetAutoProperty(table, nameof(GameTable<T>.Entries), entries);
+        SetPrivateField(table, "header", new GameTableHeader
+        {
+            MaxId = entries.Length == 0 ? 0u : entries.Max(GetEntryId) + 1u
+        });
+        SetPrivateField(table, "lookup", BuildLookup(entries));
+        return table;
+    }
+
+    private static int[] BuildLookup<T>(IReadOnlyList<T> entries)
+    {
+        if (entries.Count == 0)
+            return [];
+
+        int[] lookup = Enumerable.Repeat(-1, (int)(entries.Max(GetEntryId) + 1u)).ToArray();
+        for (int i = 0; i < entries.Count; i++)
+            lookup[GetEntryId(entries[i])] = i;
+
+        return lookup;
+    }
+
+    private static uint GetEntryId<T>(T entry)
+    {
+        return (uint)typeof(T).GetField("Id", BindingFlags.Instance | BindingFlags.Public)!.GetValue(entry)!;
+    }
+
+    private static void SetAutoProperty(object instance, string propertyName, object value)
+    {
+        FieldInfo backingField = instance.GetType()
+            .GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        backingField.SetValue(instance, value);
+    }
+
+    private static void SetPrivateField(object instance, string fieldName, object value)
+    {
+        FieldInfo field = instance.GetType()
+            .GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
+        field.SetValue(instance, value);
     }
 
     private static IEnumerable<object> GetEncryptedMessages(RecordingDispatchProxy<IWorldSession> sessionProxy)

@@ -99,6 +99,7 @@ namespace NexusForever.Game.Entity
             Path        = 0x0002,
             Costume     = 0x0004,
             InputKeySet = 0x0008,
+            Level       = 0x0010,
             Flags       = 0x0020,
             Innate      = 0x0080,
             Sex         = 0x0100,
@@ -316,7 +317,11 @@ namespace NexusForever.Game.Entity
             get => base.Level;
             set
             {
+                if (base.Level == value)
+                    return;
+
                 base.Level = value;
+                saveMask |= PlayerSaveMask.Level;
 
                 CalculateDefaultProperties();
                 SetBaseCharacterProperties();
@@ -361,6 +366,7 @@ namespace NexusForever.Game.Entity
         /// Returns if <see cref="IPlayer"/>'s client is currently in a loading screen.
         /// </summary>
         public bool IsLoading { get; set; } = true;
+        private bool deferredLoadingWorldZoneRuntimeSync;
 
         public IInventory Inventory { get; private set; }
         public ICurrencyManager CurrencyManager { get; }
@@ -499,6 +505,23 @@ namespace NexusForever.Game.Entity
                 var statValue = new StatValue(statModel);
                 stats.Add((Stat)statModel.Stat, statValue);
             }
+
+            byte resolvedLevel = NexusForever.Game.Entity.XpManager.ResolveStoredLevel(model.Level, model.TotalXp);
+            if (Level > resolvedLevel)
+                resolvedLevel = (byte)Math.Min(Level, byte.MaxValue);
+
+            if (stats.TryGetValue(Stat.Level, out IStatValue levelStat))
+            {
+                if ((uint)levelStat.Value != resolvedLevel)
+                    levelStat.Value = resolvedLevel;
+            }
+            else
+            {
+                stats.Add(Stat.Level, new StatValue(Stat.Level, (uint)resolvedLevel));
+            }
+
+            if (resolvedLevel != model.Level)
+                saveMask |= PlayerSaveMask.Level;
 
             //SetStat(Stat.Health, 1);
             SetStat(Stat.Sheathed, 1u);
@@ -772,6 +795,12 @@ namespace NexusForever.Game.Entity
                     entity.Property(p => p.Flags).IsModified = true;
                 }
 
+                if ((saveMask & PlayerSaveMask.Level) != 0)
+                {
+                    model.Level = checked((byte)Level);
+                    entity.Property(p => p.Level).IsModified = true;
+                }
+
                 if ((saveMask & PlayerSaveMask.Innate) != 0)
                 {
                     model.InnateIndex = InnateIndex;
@@ -937,6 +966,7 @@ namespace NexusForever.Game.Entity
         public override void OnAddToMap(IBaseMap map, uint guid, Vector3 vector)
         {
             IsLoading = true;
+            deferredLoadingWorldZoneRuntimeSync = false;
 
             Session.EnqueueMessageEncrypted(new ServerChangeWorld
             {
@@ -1040,13 +1070,10 @@ namespace NexusForever.Game.Entity
                     });
                 }
 
-                AchievementManager.CheckAchievements(this, AchievementType.EnterWorldZone, Zone.Id);
-                QuestManager.ObjectiveUpdate(QuestObjectiveType.EnterZone, Zone.Id, 1);
-                // WIP/GUESSED: branch path content activates the table-backed path episode
-                // and completes Explorer_ExploreZone map-zone objectives on zone entry; exact
-                // unlock filters, persistence, progress cadence, and rewards remain blocked.
-                PathManager.TryActivateCurrentZoneEpisode();
-                PathManager.CompleteCurrentExplorerExploreZoneMission();
+                if (IsLoading)
+                    deferredLoadingWorldZoneRuntimeSync = true;
+                else
+                    SyncWorldZoneRuntimeState();
             }
 
             ZoneMapManager.OnZoneUpdate();
@@ -1064,12 +1091,16 @@ namespace NexusForever.Game.Entity
             GlobalStorefrontManager.Instance.SendBootstrapCatalogPacketsIfNeeded(Session, Account.Id);
         }
 
+        internal bool CanSendDeferredInWorldStorefrontCatalog()
+        {
+            return !IsLoading;
+        }
+
         private void SendPacketsAfterAddToMap()
         {
             DateTime start = DateTime.UtcNow;
 
             SendInGameTime();
-            PathManager.SendInitialPackets();
             BuybackManager.Instance.SendBuybackItems(this);
 
             ResidenceManager.SendHousingBasics();
@@ -1164,7 +1195,7 @@ namespace NexusForever.Game.Entity
             // Do not send 0988/098B/0987 in the same enqueue pass as ServerPlayerCreate and the rest of the
             // login burst; the client can drop or mis-apply store payloads while applying create data.
             Session.Events.EnqueueEvent(new PredicateEvent(
-                () => true,
+                CanSendDeferredInWorldStorefrontCatalog,
                 SendDeferredInWorldStorefrontCatalog));
 
             log.Trace($"Player {Name} took {(DateTime.UtcNow - start).TotalMilliseconds}ms to send packets after add to map.");
@@ -1548,7 +1579,9 @@ namespace NexusForever.Game.Entity
                     we.MovementManager.SendNetworkEntityCommands(Session);
 
             Session.EnqueueMessageEncrypted(new ServerPlayerEnteredWorld());
+            PathManager.SendInitialPackets();
             QuestManager.SendInitialPackets();
+            SyncDeferredLoadingWorldZoneRuntimeState();
 
             TryRecoverStarterTutorialOnEnteredWorld();
             SyncStarterTutorialEntityVisibility();
@@ -1557,6 +1590,26 @@ namespace NexusForever.Game.Entity
 
             pendingTeleport = null;
             IsLoading = false;
+        }
+
+        private void SyncDeferredLoadingWorldZoneRuntimeState()
+        {
+            if (!deferredLoadingWorldZoneRuntimeSync)
+                return;
+
+            deferredLoadingWorldZoneRuntimeSync = false;
+            SyncWorldZoneRuntimeState();
+        }
+
+        private void SyncWorldZoneRuntimeState()
+        {
+            AchievementManager.CheckAchievements(this, AchievementType.EnterWorldZone, Zone.Id);
+            QuestManager.ObjectiveUpdate(QuestObjectiveType.EnterZone, Zone.Id, 1);
+
+            // Current path content activates table-backed zone episodes and Explorer map-zone
+            // objectives; keep the callback-triggering deltas out of the pre-player-create burst.
+            PathManager.TryActivateCurrentZoneEpisode();
+            PathManager.CompleteCurrentExplorerExploreZoneMission();
         }
 
         private void TryRecoverStarterTutorialOnEnteredWorld()

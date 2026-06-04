@@ -427,7 +427,7 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        private void SendServerSpellList()
+        public void SendServerSpellList()
         {
             var serverAbilityBook = new ServerAbilityBook();
             foreach ((uint spell4BaseId, ICharacterSpell spell) in spells)

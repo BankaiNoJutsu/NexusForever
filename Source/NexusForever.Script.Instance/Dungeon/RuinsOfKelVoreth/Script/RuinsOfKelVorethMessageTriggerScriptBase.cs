@@ -45,9 +45,9 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth.Script
                 return;
 
             // WIP-guessed from LaughingWS Instances-and-more Ruins trigger scaffolds. The branch lists
-            // paired Avra/Toric messages but leaves the faction routing as a TODO, so this port keeps
-            // trigger delivery player-gated, sends Avra/default for unknown or Exile players, and maps
-            // Dominion players to Toric only where the branch supplied a paired message.
+            // paired Avra/Toric messages but does not prove faction routing, so this port keeps trigger
+            // delivery player-gated, sends Avra/default for unknown or Exile players, and maps Dominion
+            // players to Toric only where the branch supplied a paired message.
             foreach (IPlayer player in mapInstance.GetPlayers())
                 Send(player, SelectMessage(player));
         }

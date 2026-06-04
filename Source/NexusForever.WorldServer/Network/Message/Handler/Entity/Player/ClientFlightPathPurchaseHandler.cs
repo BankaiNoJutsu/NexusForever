@@ -62,10 +62,22 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
                 return;
             }
 
+            if (gameTableManager.TaxiNode == null)
+            {
+                RejectFlightPathPurchase(session, "taxi node table is unavailable");
+                return;
+            }
+
             TaxiNodeEntry destinationNode = gameTableManager.TaxiNode.GetEntry(routes[^1].TaxiNodeIdDestination);
             if (destinationNode == null)
             {
                 RejectFlightPathPurchase(session, "destination node was not found");
+                return;
+            }
+
+            if (gameTableManager.WorldLocation2 == null)
+            {
+                RejectFlightPathPurchase(session, "world location table is unavailable");
                 return;
             }
 
@@ -94,6 +106,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
 
         private List<TaxiRouteEntry> ResolveRoutes(IReadOnlyList<uint> routeIds)
         {
+            if (gameTableManager.TaxiRoute == null)
+                return null;
+
             List<TaxiRouteEntry> routes = [];
             foreach (uint routeId in routeIds)
             {

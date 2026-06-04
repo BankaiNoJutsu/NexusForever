@@ -7,7 +7,7 @@ namespace NexusForever.Game.Tests.Network;
 public class MarketplacePacketShapeTests
 {
     [Fact]
-    public void AuctionInfo_ReadWriteRoundTripsMicrochipIds()
+    public void AuctionInfo_ReadWriteRoundTripsMicrochipIdsAndBlockedTail()
     {
         var auction = new AuctionInfo
         {
@@ -36,6 +36,7 @@ public class MarketplacePacketShapeTests
 
         Assert.Equal(auction.MicrochipIds, roundTrip.MicrochipIds);
         Assert.Equal(3u, (uint)roundTrip.MicrochipIds.Count);
+        Assert.Equal(auction.Unknown2, roundTrip.Unknown2);
     }
 
     private static byte[] WritePacket(IWritable packet)

@@ -7,6 +7,8 @@ namespace NexusForever.Network.World.Message.Model
     /// Reads opcode <c>0x0718</c> as one uint64, one 15-bit uint32, one uint64, and two trailing
     /// uint32 fields. The registered object size is <c>0x20</c>, but the mapped wire payload is
     /// only <c>0x1A</c> bytes.
+    /// Adjacent helper <c>14008c010</c> reads a count followed by 0x20-byte rows through the same
+    /// row reader, but does not prove field semantics.
     /// Field semantics remain blocked pending a non-zero retail capture or client consumer mapping.
     /// </summary>
     [Message(GameMessageOpcode.ServerRaidQueueStatus)]

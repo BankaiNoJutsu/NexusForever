@@ -56,17 +56,21 @@ public class FortuneRewardPoolTests
     }
 
     [Fact]
-    public void PickCardRewards_RealPoolKeepsNonItemAccountRewardsPickerOnly()
+    public void PickCardRewards_RealPoolSkipsNonItemAccountRewards()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         LegacyServiceProvider.Provider = BuildGameTableProvider(
             [
                 new AccountItemEntry { Id = 1u, Item2Id = 101u },
                 new AccountItemEntry { Id = 2u, EntitlementId = 202u },
-                new AccountItemEntry { Id = 3u, GenericUnlockSetId = 303u }
+                new AccountItemEntry { Id = 3u, GenericUnlockSetId = 303u },
+                new AccountItemEntry { Id = 4u, Item2Id = 104u },
+                new AccountItemEntry { Id = 5u, Item2Id = 105u }
             ],
             [
-                new Item2Entry { Id = 101u, ItemQualityId = (uint)Quality.Good }
+                new Item2Entry { Id = 101u, ItemQualityId = (uint)Quality.Good },
+                new Item2Entry { Id = 104u, ItemQualityId = (uint)Quality.Good },
+                new Item2Entry { Id = 105u, ItemQualityId = (uint)Quality.Good }
             ]);
 
         try
@@ -76,8 +80,8 @@ public class FortuneRewardPoolTests
             FortuneCardReward[] picks = pool.PickCardRewards(new ZeroRollRandom());
 
             Assert.Equal(3, picks.Length);
-            Assert.Equal([1u, 2u, 3u], picks.Select(pick => pick.AccountItemId));
-            Assert.Equal([101u, 0u, 0u], picks.Select(pick => pick.Item2Id));
+            Assert.Equal([1u, 4u, 5u], picks.Select(pick => pick.AccountItemId));
+            Assert.Equal([101u, 104u, 105u], picks.Select(pick => pick.Item2Id));
         }
         finally
         {
@@ -219,6 +223,11 @@ public class FortuneRewardPoolTests
             }
 
             return picks;
+        }
+
+        public bool IsCardRewardDisplayable(uint accountItemId)
+        {
+            return entries.Any(entry => entry.AccountItemId == accountItemId && entry.Item2Id != 0u);
         }
 
         private static Entry PickWeighted(List<Entry> available, Random random)

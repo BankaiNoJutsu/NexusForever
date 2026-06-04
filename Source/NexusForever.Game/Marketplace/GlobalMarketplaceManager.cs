@@ -708,6 +708,24 @@ namespace NexusForever.Game.Marketplace
             PersistCommodityFillOrderChange(context, sellOrder, sellRemainingQuantity, sellRemainingPrice);
         }
 
+        private bool TryPersistCommodityFillOrderChanges(
+            MarketplaceCommodityOrder buyOrder,
+            uint buyRemainingQuantity,
+            ulong buyRemainingPrice,
+            MarketplaceCommodityOrder sellOrder,
+            uint sellRemainingQuantity,
+            ulong sellRemainingPrice)
+        {
+            return Persist(context => PersistCommodityFillOrderChanges(
+                context,
+                buyOrder,
+                buyRemainingQuantity,
+                buyRemainingPrice,
+                sellOrder,
+                sellRemainingQuantity,
+                sellRemainingPrice));
+        }
+
         private void PersistCommodityFillOrderChange(
             CharacterContext context,
             MarketplaceCommodityOrder record,
@@ -1441,8 +1459,25 @@ namespace NexusForever.Game.Marketplace
                 ulong paidAmount          = proceeds;
                 ulong sellEscrowAfter     = sellOrder.Order.PricePerUnit * sellRemainingQuantity;
 
-                bool persistedOrderChangesWithMail = false;
-                if (!TryDeliverCommodityItems(
+                bool persistedOrderChangesWithDelivery = false;
+                IPlayer buyer = PlayerManager.Instance.GetPlayer(buyOrder.OwnerCharacterId);
+                if (CanDeliverCommodityItemsToInventory(buyer, sellOrder.Order.Item2Id, fillQuantity, itemManager))
+                {
+                    if (!TryPersistCommodityFillOrderChanges(
+                        buyOrder,
+                        buyRemainingQuantity,
+                        buyEscrowAfter,
+                        sellOrder,
+                        sellRemainingQuantity,
+                        sellEscrowAfter))
+                    {
+                        continue;
+                    }
+
+                    buyer.Inventory.ItemCreate(InventoryLocation.Inventory, sellOrder.Order.Item2Id, fillQuantity, ItemUpdateReason.Auction);
+                    persistedOrderChangesWithDelivery = true;
+                }
+                else if (!TryDeliverCommodityItems(
                     buyOrder.OwnerCharacterId,
                     sellOrder.Order.Item2Id,
                     fillQuantity,
@@ -1455,7 +1490,7 @@ namespace NexusForever.Game.Marketplace
                         sellOrder,
                         sellRemainingQuantity,
                         sellEscrowAfter),
-                    out persistedOrderChangesWithMail))
+                    out persistedOrderChangesWithDelivery))
                 {
                     continue;
                 }
@@ -1475,14 +1510,14 @@ namespace NexusForever.Game.Marketplace
                 NotifyCommodityPartialFill(sellOrder, AuctionEventType.Fill);
 
                 if (buyOrder.Order.Quantity == 0u)
-                    RemoveCommodityOrder(buyOrder, persistedOrderChangesWithMail);
+                    RemoveCommodityOrder(buyOrder, persistedOrderChangesWithDelivery);
                 else if (IsRestingCommodityOrder(buyOrder))
-                    PersistCommodityOrderUpdate(buyOrder, persistedOrderChangesWithMail);
+                    PersistCommodityOrderUpdate(buyOrder, persistedOrderChangesWithDelivery);
 
                 if (sellOrder.Order.Quantity == 0u)
-                    RemoveCommodityOrder(sellOrder, persistedOrderChangesWithMail);
+                    RemoveCommodityOrder(sellOrder, persistedOrderChangesWithDelivery);
                 else if (IsRestingCommodityOrder(sellOrder))
-                    PersistCommodityOrderUpdate(sellOrder, persistedOrderChangesWithMail);
+                    PersistCommodityOrderUpdate(sellOrder, persistedOrderChangesWithDelivery);
             }
         }
 

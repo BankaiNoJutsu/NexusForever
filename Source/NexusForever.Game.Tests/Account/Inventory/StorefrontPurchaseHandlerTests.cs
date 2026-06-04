@@ -35,7 +35,9 @@ public class StorefrontPurchaseHandlerTests
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy);
         var handler = new ClientStorefrontPurchaseCharacterHandler(
             NullLogger<ClientStorefrontPurchaseCharacterHandler>.Instance,
-            null);
+            null,
+            CreateGameTableManager(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out _));
 
         ClientStorefrontPurchaseCharacter purchase = ReadCharacterPurchase(
             offerId: 77u,
@@ -59,7 +61,9 @@ public class StorefrontPurchaseHandlerTests
         IGlobalStorefrontManager storefrontManager = RecordingDispatchProxy<IGlobalStorefrontManager>.Create(out _);
         var handler = new ClientStorefrontPurchaseCharacterHandler(
             NullLogger<ClientStorefrontPurchaseCharacterHandler>.Instance,
-            storefrontManager);
+            storefrontManager,
+            CreateGameTableManager(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out _));
 
         ClientStorefrontPurchaseCharacter purchase = ReadCharacterPurchase(
             offerId: 1234u,
@@ -86,7 +90,9 @@ public class StorefrontPurchaseHandlerTests
             price: 80f);
         var handler = new ClientStorefrontPurchaseCharacterHandler(
             NullLogger<ClientStorefrontPurchaseCharacterHandler>.Instance,
-            storefrontManager);
+            storefrontManager,
+            CreateGameTableManager(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out _));
 
         ClientStorefrontPurchaseCharacter purchase = ReadCharacterPurchase(
             offerId: 1626u,
@@ -107,6 +113,48 @@ public class StorefrontPurchaseHandlerTests
         Assert.Equal(100ul, targetIdentity.Id);
         Assert.Equal(1, targetIdentity.RealmId);
         Assert.True((bool)addItem.Arguments[3]);
+    }
+
+    [Fact]
+    public void CharacterPurchase_WithoutPlayer_DirectAccountEntitlementUnlock_AppliesAndRefreshesCharacterList()
+    {
+        IWorldSession session = CreateSession(
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
+            out RecordingDispatchProxy<IAccountInventoryManager> inventoryProxy,
+            out RecordingDispatchProxy<IAccountEntitlementManager> entitlementProxy,
+            hasPlayer: false);
+        IGlobalStorefrontManager storefrontManager = CreateStorefrontManager(
+            offerId: 1545u,
+            accountItemId: 133u,
+            priceCurrency: AccountCurrencyType.Omnibit,
+            price: 115f,
+            accountItemEntry: CreateCharacterSlotAccountItemEntry());
+        ICharacterListManager characterListManager = RecordingDispatchProxy<ICharacterListManager>.Create(out RecordingDispatchProxy<ICharacterListManager> characterListProxy);
+        var handler = new ClientStorefrontPurchaseCharacterHandler(
+            NullLogger<ClientStorefrontPurchaseCharacterHandler>.Instance,
+            storefrontManager,
+            CreateGameTableManager(CreateCharacterSlotEntitlementEntry()),
+            characterListManager);
+
+        ClientStorefrontPurchaseCharacter purchase = ReadCharacterPurchase(
+            offerId: 1545u,
+            currencyId: AccountCurrencyType.Omnibit,
+            target: new NetworkIdentity());
+
+        handler.HandleMessage(session, purchase);
+
+        Assert.Empty(GetMessages<ServerStoreError>(sessionProxy));
+        Assert.Single(GetMessages<ServerStorePurchaseOfferResult>(sessionProxy));
+        RecordingDispatchProxy<IAccountCurrencyManager>.Invocation subtract = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)));
+        Assert.Equal(AccountCurrencyType.Omnibit, subtract.Arguments[0]);
+        Assert.Equal(115ul, subtract.Arguments[1]);
+        RecordingDispatchProxy<IAccountEntitlementManager>.Invocation update =
+            Assert.Single(entitlementProxy.GetInvocations(nameof(IAccountEntitlementManager.UpdateEntitlement)));
+        Assert.Equal(EntitlementType.BaseCharacterSlots, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
+        Assert.Single(characterListProxy.GetInvocations(nameof(ICharacterListManager.SendCharacterListPackets)));
     }
 
     [Fact]
@@ -148,7 +196,8 @@ public class StorefrontPurchaseHandlerTests
             characterManager,
             playerManager,
             CreateGameTableManager(),
-            new InMemoryAccountPendingItemRepository());
+            new InMemoryAccountPendingItemRepository(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out _));
 
         ClientStorefrontPurchaseAccount purchase = ReadAccountPurchase(
             offerId: 1234u,
@@ -181,7 +230,8 @@ public class StorefrontPurchaseHandlerTests
             RecordingDispatchProxy<ICharacterManager>.Create(out _),
             RecordingDispatchProxy<IPlayerManager>.Create(out _),
             CreateGameTableManager(),
-            new InMemoryAccountPendingItemRepository());
+            new InMemoryAccountPendingItemRepository(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out _));
 
         ClientStorefrontPurchaseAccount purchase = ReadAccountPurchase(
             offerId: 1626u,
@@ -204,7 +254,7 @@ public class StorefrontPurchaseHandlerTests
     }
 
     [Fact]
-    public void AccountPurchase_WithoutPlayer_DirectAccountEntitlementUnlock_AddsClaimableAccountItem()
+    public void AccountPurchase_WithoutPlayer_DirectAccountEntitlementUnlock_AppliesAndRefreshesCharacterList()
     {
         IWorldSession session = CreateSession(
             out RecordingDispatchProxy<IWorldSession> sessionProxy,
@@ -224,7 +274,8 @@ public class StorefrontPurchaseHandlerTests
             RecordingDispatchProxy<ICharacterManager>.Create(out _),
             RecordingDispatchProxy<IPlayerManager>.Create(out _),
             CreateGameTableManager(CreateCharacterSlotEntitlementEntry()),
-            new InMemoryAccountPendingItemRepository());
+            new InMemoryAccountPendingItemRepository(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out RecordingDispatchProxy<ICharacterListManager> characterListProxy));
 
         ClientStorefrontPurchaseAccount purchase = ReadAccountPurchase(
             offerId: 1545u,
@@ -241,9 +292,12 @@ public class StorefrontPurchaseHandlerTests
         RecordingDispatchProxy<IAccountCurrencyManager>.Invocation subtract = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencySubtractAmount)));
         Assert.Equal(AccountCurrencyType.Omnibit, subtract.Arguments[0]);
         Assert.Equal(115ul, subtract.Arguments[1]);
-        Assert.Empty(entitlementProxy.GetInvocations(nameof(IAccountEntitlementManager.UpdateEntitlement)));
-        RecordingDispatchProxy<IAccountInventoryManager>.Invocation addItem = Assert.Single(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
-        Assert.Equal(133u, addItem.Arguments[0]);
+        RecordingDispatchProxy<IAccountEntitlementManager>.Invocation update =
+            Assert.Single(entitlementProxy.GetInvocations(nameof(IAccountEntitlementManager.UpdateEntitlement)));
+        Assert.Equal(EntitlementType.BaseCharacterSlots, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.AddItem)));
+        Assert.Single(characterListProxy.GetInvocations(nameof(ICharacterListManager.SendCharacterListPackets)));
     }
 
     [Fact]
@@ -268,7 +322,8 @@ public class StorefrontPurchaseHandlerTests
             RecordingDispatchProxy<ICharacterManager>.Create(out _),
             RecordingDispatchProxy<IPlayerManager>.Create(out _),
             CreateGameTableManager(CreateCharacterSlotEntitlementEntry()),
-            new InMemoryAccountPendingItemRepository());
+            new InMemoryAccountPendingItemRepository(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out _));
 
         ClientStorefrontPurchaseAccount purchase = ReadAccountPurchase(
             offerId: 1545u,
@@ -320,7 +375,8 @@ public class StorefrontPurchaseHandlerTests
                 MaxCount = uint.MaxValue,
                 Flags    = (uint)EntitlementFlags.None
             }),
-            new InMemoryAccountPendingItemRepository());
+            new InMemoryAccountPendingItemRepository(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out _));
 
         ClientStorefrontPurchaseAccount purchase = ReadAccountPurchase(
             offerId: 1546u,
@@ -364,7 +420,8 @@ public class StorefrontPurchaseHandlerTests
             RecordingDispatchProxy<ICharacterManager>.Create(out _),
             RecordingDispatchProxy<IPlayerManager>.Create(out _),
             CreateGameTableManager(),
-            new InMemoryAccountPendingItemRepository());
+            new InMemoryAccountPendingItemRepository(),
+            RecordingDispatchProxy<ICharacterListManager>.Create(out _));
 
         ClientStorefrontPurchaseAccount purchase = ReadAccountPurchase(
             offerId: 1700u,

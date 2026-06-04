@@ -17,5 +17,10 @@ namespace NexusForever.Game.Abstract.Fortune
         /// Picks three unique card rewards for a new fortune session.
         /// </summary>
         FortuneCardReward[] PickCardRewards(Random random);
+
+        /// <summary>
+        /// Returns whether an account item can be displayed safely as a fortune card.
+        /// </summary>
+        bool IsCardRewardDisplayable(uint accountItemId);
     }
 }

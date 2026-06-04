@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.Spell;
@@ -9,6 +10,7 @@ using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Abilities;
 using NexusForever.Network.World.Message.Static;
 
@@ -16,28 +18,46 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
 {
     public class ClientRequestActionSetChangesHandler : IMessageHandler<IWorldSession, ClientRequestActionSetChanges>
     {
-        private const int LimitedActionSlotCount = 8;
-        private const uint LimitedActionSpellWeaponSlot = 5u;
         private const uint PvpPreparationRestrictedFlag = 0x40u;
         private const uint PvpInProgressRestrictedFlag = 0x04u;
 
         #region Dependency Injection
 
         private readonly IMatchManager matchManager;
+        private readonly IGameTableManager gameTableManager;
+        private readonly IGlobalSpellManager globalSpellManager;
+        private readonly ILogger<ClientRequestActionSetChangesHandler> log;
 
         public ClientRequestActionSetChangesHandler(
-            IMatchManager matchManager)
+            IMatchManager matchManager,
+            IGameTableManager gameTableManager,
+            IGlobalSpellManager globalSpellManager,
+            ILogger<ClientRequestActionSetChangesHandler> log)
         {
-            this.matchManager = matchManager;
+            this.matchManager        = matchManager;
+            this.gameTableManager   = gameTableManager;
+            this.globalSpellManager = globalSpellManager;
+            this.log                = log;
         }
 
         #endregion
 
         public void HandleMessage(IWorldSession session, ClientRequestActionSetChanges requestActionSetChanges)
         {
-            LimitedActionSetResult validationResult = ValidateRequest(session, requestActionSetChanges);
+            LimitedActionSetResult validationResult = ValidateRequest(session, requestActionSetChanges, out List<uint> requestedSpell4BaseIds);
             if (validationResult != LimitedActionSetResult.Ok)
             {
+                log.LogDebug(
+                    "Rejecting action set changes for player {PlayerGuid}: spec {SpecIndex}, activeSpec {ActiveSpec}, result {Result}, actionCount {ActionCount}, tierCount {TierCount}, ampCount {AmpCount}, actions [{Actions}], resolvedActions [{ResolvedActions}].",
+                    session.Player?.Guid,
+                    requestActionSetChanges.ActionSetIndex,
+                    session.Player?.SpellManager?.ActiveActionSet,
+                    validationResult,
+                    requestActionSetChanges.Actions.Count,
+                    requestActionSetChanges.ActionTiers.Count,
+                    requestActionSetChanges.Amps.Count,
+                    string.Join(",", requestActionSetChanges.Actions),
+                    string.Join(",", requestedSpell4BaseIds));
                 SendActionSetResult(session, requestActionSetChanges.ActionSetIndex, validationResult);
                 return;
             }
@@ -55,7 +75,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 if (shortcut != null)
                     actionSet.RemoveShortcut(i);
 
-                uint spell4BaseId = requestActionSetChanges.Actions[(int)i];
+                uint spell4BaseId = requestedSpell4BaseIds[(int)i];
                 if (spell4BaseId != 0u)
                 {
                     IActionSetShortcut existingShortcut = spellShortcuts.SingleOrDefault(s => s.ObjectId == spell4BaseId);
@@ -65,7 +85,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             }
 
             foreach (ClientRequestActionSetChanges.ActionTier actionTier in requestActionSetChanges.ActionTiers)
-                session.Player.SpellManager.UpdateSpell(actionTier.Action, actionTier.Tier, requestActionSetChanges.ActionSetIndex);
+            {
+                TryResolveSpell4BaseId(session, actionTier.Action, out uint spell4BaseId, out _);
+                session.Player.SpellManager.UpdateSpell(spell4BaseId, actionTier.Tier, requestActionSetChanges.ActionSetIndex);
+            }
 
             List<ushort> newAmps = GetDistinctNewAmpIds(actionSet, requestActionSetChanges.Amps)
                 .ToList();
@@ -76,7 +99,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                     actionSet.AddAmp(id);
             }
 
+            session.Player.SpellManager.SendServerSpellList();
             session.EnqueueMessageEncrypted(new ServerActionSetClearCache());
+            SendSelectedAbilityItems(session, requestedSpell4BaseIds);
             session.EnqueueMessageEncrypted(actionSet.BuildServerActionSet());
             if (actionSet.TierPoints != previousTierPoints)
                 session.Player.SpellManager.SendServerAbilityPoints();
@@ -87,8 +112,32 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             }
         }
 
-        private LimitedActionSetResult ValidateRequest(IWorldSession session, ClientRequestActionSetChanges requestActionSetChanges)
+        private static void SendSelectedAbilityItems(IWorldSession session, IEnumerable<uint> spell4BaseIds)
         {
+            foreach (uint spell4BaseId in spell4BaseIds.Where(id => id != 0u).Distinct())
+            {
+                ICharacterSpell spell = session.Player.SpellManager.GetSpell(spell4BaseId);
+                if (spell?.Item == null)
+                    continue;
+
+                session.EnqueueMessageEncrypted(new ServerItemAdd
+                {
+                    InventoryItem = new NexusForever.Network.World.Message.Model.Shared.InventoryItem
+                    {
+                        Item   = spell.Item.Build(),
+                        Reason = ItemUpdateReason.NoReason
+                    }
+                });
+            }
+        }
+
+        private LimitedActionSetResult ValidateRequest(
+            IWorldSession session,
+            ClientRequestActionSetChanges requestActionSetChanges,
+            out List<uint> requestedSpell4BaseIds)
+        {
+            requestedSpell4BaseIds = [];
+
             if (session.Player == null)
                 return LimitedActionSetResult.InvalidUnit;
 
@@ -113,24 +162,23 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
 
             for (int i = 0; i < requestActionSetChanges.Actions.Count; i++)
             {
-                uint spell4BaseId = requestActionSetChanges.Actions[i];
-                if (spell4BaseId == 0u)
+                uint requestedSpellId = requestActionSetChanges.Actions[i];
+                if (requestedSpellId == 0u)
+                {
+                    requestedSpell4BaseIds.Add(0u);
                     continue;
+                }
+
+                if (!TryResolveSpell4BaseId(session, requestedSpellId, out uint spell4BaseId, out ISpellBaseInfo spellBaseInfo))
+                    return LimitedActionSetResult.UnknownSpellId;
+
+                requestedSpell4BaseIds.Add(spell4BaseId);
 
                 if (!requestedSpellIds.Add(spell4BaseId))
                     return LimitedActionSetResult.DuplicateSpell;
 
-                ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(spell4BaseId);
-                if (spellBaseInfo == null)
-                    return LimitedActionSetResult.UnknownSpellId;
-
                 if (session.Player.SpellManager.GetSpell(spell4BaseId) == null)
                     return LimitedActionSetResult.BadSpellInActionSet;
-
-                bool isLimitedActionSlot = i < LimitedActionSlotCount;
-                bool isLimitedActionSpell = spellBaseInfo.Entry.WeaponSlot == LimitedActionSpellWeaponSlot;
-                if (isLimitedActionSlot != isLimitedActionSpell)
-                    return LimitedActionSetResult.InvalidSlot;
 
                 byte tier = actionSet.GetShortcut(ShortcutType.SpellbookItem, spell4BaseId)?.Tier ?? 1;
                 requestedSpellTiers[spell4BaseId] = tier;
@@ -141,20 +189,19 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 if (actionTier.Tier > ActionSet.MaxTier)
                     return LimitedActionSetResult.InvalidSpellTier;
 
-                if (!requestedSpellTiers.ContainsKey(actionTier.Action))
-                    return LimitedActionSetResult.LASChangeSpellFailed;
-
-                ISpellBaseInfo spellBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(actionTier.Action);
-                if (spellBaseInfo == null)
+                if (!TryResolveSpell4BaseId(session, actionTier.Action, out uint spell4BaseId, out ISpellBaseInfo spellBaseInfo))
                     return LimitedActionSetResult.UnknownSpellId;
+
+                if (!requestedSpellTiers.ContainsKey(spell4BaseId))
+                    return LimitedActionSetResult.LASChangeSpellFailed;
 
                 if (spellBaseInfo.GetSpellInfo(actionTier.Tier) == null)
                     return LimitedActionSetResult.InvalidSpellTier;
 
-                if (session.Player.SpellManager.GetSpell(actionTier.Action) == null)
+                if (session.Player.SpellManager.GetSpell(spell4BaseId) == null)
                     return LimitedActionSetResult.LASChangeSpellFailed;
 
-                requestedSpellTiers[actionTier.Action] = actionTier.Tier;
+                requestedSpellTiers[spell4BaseId] = actionTier.Tier;
             }
 
             int requiredTierPoints = requestedSpellTiers.Values.Sum(CalculateTierCost);
@@ -171,7 +218,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             ushort requiredAmpPower = 0;
             foreach (ushort ampId in newAmpIds)
             {
-                var entry = GameTableManager.Instance.EldanAugmentation.GetEntry(ampId);
+                var entry = gameTableManager.EldanAugmentation.GetEntry(ampId);
                 if (entry == null)
                     return LimitedActionSetResult.EldanAugmentationInvalidId;
 
@@ -190,6 +237,51 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                 return LimitedActionSetResult.RestrictedInPVP;
 
             return LimitedActionSetResult.Ok;
+        }
+
+        private bool TryResolveSpell4BaseId(IWorldSession session, uint requestedSpellId, out uint spell4BaseId, out ISpellBaseInfo spellBaseInfo)
+        {
+            if (TryGetSpellBaseInfo(requestedSpellId, out ISpellBaseInfo directSpellBaseInfo)
+                && session.Player.SpellManager.GetSpell(requestedSpellId) != null)
+            {
+                spell4BaseId = requestedSpellId;
+                spellBaseInfo = directSpellBaseInfo;
+                return true;
+            }
+
+            Spell4Entry spell4Entry = gameTableManager.Spell4.GetEntry(requestedSpellId);
+            if (spell4Entry != null
+                && TryGetSpellBaseInfo(spell4Entry.Spell4BaseIdBaseSpell, out ISpellBaseInfo mappedSpellBaseInfo))
+            {
+                spell4BaseId = spell4Entry.Spell4BaseIdBaseSpell;
+                spellBaseInfo = mappedSpellBaseInfo;
+                return true;
+            }
+
+            if (directSpellBaseInfo != null)
+            {
+                spell4BaseId = requestedSpellId;
+                spellBaseInfo = directSpellBaseInfo;
+                return true;
+            }
+
+            spell4BaseId = 0u;
+            spellBaseInfo = null;
+            return false;
+        }
+
+        private bool TryGetSpellBaseInfo(uint spell4BaseId, out ISpellBaseInfo spellBaseInfo)
+        {
+            try
+            {
+                spellBaseInfo = globalSpellManager.GetSpellBaseInfo(spell4BaseId);
+            }
+            catch (System.ArgumentOutOfRangeException)
+            {
+                spellBaseInfo = null;
+            }
+
+            return spellBaseInfo != null;
         }
 
         private bool IsRestrictedInPvp(Identity identity)

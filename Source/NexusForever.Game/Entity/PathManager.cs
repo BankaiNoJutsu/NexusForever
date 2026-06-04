@@ -54,9 +54,6 @@ namespace NexusForever.Game.Entity
 
                 var state = new PathMissionRuntimeState(pathMissionModel);
                 pathMissions.Add(state.MissionId, state);
-
-                if (!state.Completed && IsPersistedMissionReplayEligible(state))
-                    activatedEpisodes.Add(state.EpisodeId);
             }
 
             HydrateScientistScanStateFromCompletedMissions();
@@ -893,16 +890,6 @@ namespace NexusForever.Game.Entity
         public void SendInitialPackets()
         {
             SendPathLogPacket();
-
-            foreach (ushort episodeId in activatedEpisodes.OrderBy(e => e))
-            {
-                if (!pathMissions.Values.Any(m => m.EpisodeId == episodeId && !m.Completed && IsPersistedMissionReplayEligible(m)))
-                    continue;
-
-                SendPathCurrentEpisode(episodeId);
-                SendPathEpisodeProgress(episodeId, persistedReplayOnly: true);
-                SendPathMissionActivate(episodeId, persistedReplayOnly: true);
-            }
         }
 
         /// <summary>
@@ -1098,7 +1085,7 @@ namespace NexusForever.Game.Entity
             });
         }
 
-        private void SendPathEpisodeProgress(ushort episodeId, bool persistedReplayOnly = false, IReadOnlySet<ushort> missionIds = null)
+        private void SendPathEpisodeProgress(ushort episodeId, IReadOnlySet<ushort> missionIds = null)
         {
             player.Session.EnqueueMessageEncrypted(new ServerPathEpisodeProgress
             {
@@ -1106,51 +1093,23 @@ namespace NexusForever.Game.Entity
                 Missions = pathMissions.Values
                     .Where(m => m.EpisodeId == episodeId)
                     .Where(m => missionIds == null || missionIds.Contains(m.MissionId))
-                    .Where(m => !persistedReplayOnly || IsPersistedMissionReplayEligible(m))
                     .OrderBy(m => m.MissionId)
                     .Select(BuildMission)
                     .ToList()
             });
         }
 
-        private void SendPathMissionActivate(ushort episodeId, bool persistedReplayOnly = false, IReadOnlySet<ushort> missionIds = null)
+        private void SendPathMissionActivate(ushort episodeId, IReadOnlySet<ushort> missionIds = null)
         {
             player.Session.EnqueueMessageEncrypted(new ServerPathMissionActivate
             {
                 Missions = pathMissions.Values
                     .Where(m => m.EpisodeId == episodeId && !m.Completed)
                     .Where(m => missionIds == null || missionIds.Contains(m.MissionId))
-                    .Where(m => !persistedReplayOnly || IsPersistedMissionReplayEligible(m))
                     .OrderBy(m => m.MissionId)
                     .Select(BuildMission)
                     .ToList()
             });
-        }
-
-        private bool IsPersistedMissionReplayEligible(PathMissionRuntimeState state)
-        {
-            if (state.Completed || state.EpisodeId == 0u)
-                return false;
-
-            PathMissionEntry mission = GameTableManager.Instance.PathMission?.GetEntry(state.MissionId);
-            if (mission == null)
-                return false;
-
-            PathEpisodeEntry episode = GameTableManager.Instance.PathEpisode?.GetEntry(state.EpisodeId);
-            if (episode == null)
-                return false;
-
-            // Persisted active mission replay is intentionally narrower than normal script
-            // activation: LWS-060 still lacks retail proof for path/faction/zone reload
-            // transitions, so replay only table-backed rows that still match the active path.
-            return mission.PathEpisodeId == state.EpisodeId
-                && episode.Id == state.EpisodeId
-                && episode.PathTypeEnum == (uint)player.Path
-                && mission.PathTypeEnum == (uint)player.Path
-                && mission.Id <= 0x7FFFu
-                && episode.Id <= 0x3FFFu
-                && IsMissionFactionAllowed(mission)
-                && IsMissionPrerequisiteAllowed(mission);
         }
 
         private static Mission BuildMission(PathMissionRuntimeState state)

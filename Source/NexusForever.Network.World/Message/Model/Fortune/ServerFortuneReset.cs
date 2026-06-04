@@ -2,16 +2,15 @@
 
 namespace NexusForever.Network.World.Message.Model.Fortune
 {
-    // Not sure the level of use of this message
-    // Triggers ClickEmpty sound if fortune game is not started or when value is 3
     [Message(GameMessageOpcode.ServerFortuneReset)]
     public class ServerFortuneReset : IWritable
     {
-        public uint Unknown { get; set; } // 3 = click empty sound, only seen value 2 in sniffs
+        // Fortune_ApplyReset (WildStar64.exe 1407291f0) only maps code 3 to the click-empty reset path.
+        public uint ResetCode { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Unknown, 3u);
+            writer.Write(ResetCode, 3u);
         }
     }
 }

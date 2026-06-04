@@ -60,7 +60,6 @@ public class EntityCreatePacketTests
         EntityType.EsperPet,
         EntityType.Pickup,
         EntityType.ScannerUnit,
-        EntityType.Taxi,
         EntityType.Trap
     };
 
@@ -76,6 +75,18 @@ public class EntityCreatePacketTests
 
         Assert.Equal(entityType, packet.Type);
         Assert.IsType(expectedModelType, packet.EntityModel);
+    }
+
+    [Fact]
+    public void EntityFactoryCreateWorldEntity_RejectsStaticPlayerEntity()
+    {
+        using ServiceProvider provider = BuildProvider();
+        IEntityFactory entityFactory = provider.GetRequiredService<IEntityFactory>();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => entityFactory.CreateWorldEntity(EntityType.Player));
+
+        Assert.Contains("Player entities are created from character state", exception.Message);
     }
 
     [Theory]
@@ -112,6 +123,55 @@ public class EntityCreatePacketTests
         var packet = entity.BuildCreatePacket(false);
 
         Assert.Equal(ownerId, GetOwnerId(packet.EntityModel));
+    }
+
+    [Fact]
+    public void EsperPetEntityModel_WriteMatchesNativeBranchWithoutTrailingName()
+    {
+        var model = new EsperPetEntityModel
+        {
+            CreatureId = 0x12345u,
+            OwnerId = 0xAABBCCDDu,
+            OwnerDisplayItemId = 0x3456
+        };
+
+        byte[] packetData = WriteModel(model);
+
+        Assert.Equal(9, packetData.Length);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(0x12345u, reader.ReadUInt(18u));
+        Assert.Equal(0xAABBCCDDu, reader.ReadUInt());
+        Assert.Equal((ushort)0x3456, reader.ReadUShort(15u));
+    }
+
+    [Fact]
+    public void TaxiEntityModel_WriteOmitsOwnerBeforePassengerCount()
+    {
+        var model = new TaxiEntityModel
+        {
+            CreatureId = 0x12345u,
+            UnitVehicleId = 0x2345,
+            Passengers =
+            {
+                new TaxiEntityModel.Passenger
+                {
+                    SeatType = 2,
+                    SeatPosition = 5,
+                    UnitId = 0xCAFEBABEu
+                }
+            }
+        };
+
+        byte[] packetData = WriteModel(model);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(0x12345u, reader.ReadUInt(18u));
+        Assert.Equal((ushort)0x2345, reader.ReadUShort(14u));
+        Assert.Equal((byte)1, reader.ReadByte(3u));
+        Assert.Equal((byte)2, reader.ReadByte(2u));
+        Assert.Equal((byte)5, reader.ReadByte(3u));
+        Assert.Equal(0xCAFEBABEu, reader.ReadUInt());
     }
 
     [Fact]
@@ -222,7 +282,6 @@ public class EntityCreatePacketTests
             EsperPetEntityModel model    => model.OwnerId,
             PickupEntityModel model      => model.OwnerId,
             ScannerUnitEntityModel model => model.OwnerId,
-            TaxiEntityModel model        => model.OwnerId,
             TrapEntityModel model        => model.OwnerId,
             _                            => throw new Xunit.Sdk.XunitException($"Unexpected owner-aware model {entityModel.GetType().Name}.")
         };
@@ -233,6 +292,15 @@ public class EntityCreatePacketTests
         using var stream = new MemoryStream();
         using var writer = new GamePacketWriter(stream);
         message.Write(writer);
+        writer.FlushBits();
+        return stream.ToArray();
+    }
+
+    private static byte[] WriteModel(IEntityModel model)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new GamePacketWriter(stream);
+        model.Write(writer);
         writer.FlushBits();
         return stream.ToArray();
     }

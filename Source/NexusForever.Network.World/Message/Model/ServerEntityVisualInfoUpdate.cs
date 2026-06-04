@@ -2,6 +2,11 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model
 {
+    /// <summary>
+    /// Compact entity visual-info update (<c>0x08A8</c>).
+    /// Reader: <c>ServerEntityVisualInfoUpdate_ReadPayload</c> @ <c>140098460</c>.
+    /// </summary>
+    /// <remarks>Flag meanings and runtime producer conditions remain blocked; do not infer from adjacent visual packets.</remarks>
     [Message(GameMessageOpcode.ServerEntityVisualInfoUpdate)]
     public class ServerEntityVisualInfoUpdate : IWritable
     {

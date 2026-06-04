@@ -84,6 +84,29 @@ public class TransportHandlerTests
     }
 
     [Fact]
+    public void RapidTransport_RejectsWhenTaxiRouteTableUnavailable()
+    {
+        ClientRapidTransportHandler handler = CreateRapidTransportHandler(
+            out RecordingDispatchProxy<IGameTableManager> tableProxy,
+            out IPlayer player,
+            out _,
+            out _,
+            out _,
+            out _);
+        tableProxy.SetProperty(nameof(IGameTableManager.TaxiRoute), null);
+
+        TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
+        handler.HandleMessage(session, BuildRapidTransport(destinationNodeId: 20));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IUnitEntity.CastSpell)));
+        ServerSpellCastResult result = GetEncryptedMessages(session)
+            .OfType<ServerSpellCastResult>()
+            .Single();
+        Assert.Equal(RapidTransportSpell4Id, result.Spell4Id);
+        Assert.Equal(CastResult.RapidTransportInvalid, result.CastResult);
+    }
+
+    [Fact]
     public void RapidTransport_ChargesNearestRouteAndCastsRapidTransportSpell()
     {
         ClientRapidTransportHandler handler = CreateRapidTransportHandler(
@@ -125,6 +148,25 @@ public class TransportHandlerTests
 
         TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
         handler.HandleMessage(session, BuildFlightPathPurchase(1u, 2u));
+
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
+        RecordingDispatchProxy<IPlayer>.Invocation error =
+            Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.SendGenericError)));
+        Assert.Equal(GenericError.EmbarkNoSplineForTaxi, error.Arguments[0]);
+    }
+
+    [Fact]
+    public void FlightPathPurchase_RejectsWhenTaxiRouteTableUnavailable()
+    {
+        ClientFlightPathPurchaseHandler handler = CreateFlightPathHandler(
+            out RecordingDispatchProxy<IGameTableManager> tableProxy,
+            out IPlayer player,
+            out _,
+            out _);
+        tableProxy.SetProperty(nameof(IGameTableManager.TaxiRoute), null);
+
+        TransportTestSession session = CreateSession(player, out RecordingDispatchProxy<IPlayer> playerProxy);
+        handler.HandleMessage(session, BuildFlightPathPurchase(1u));
 
         Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TeleportTo)));
         RecordingDispatchProxy<IPlayer>.Invocation error =

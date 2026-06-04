@@ -25,6 +25,7 @@ using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Account;
 using NexusForever.WorldServer.Network.Message.Handler.Character;
 using NexusForever.WorldServer.Network.Message.Handler.Item;
+using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
@@ -119,6 +120,59 @@ public class AccountItemHandlerTests
                 out _,
                 out RecordingDispatchProxy<IAccountEntitlementManager> entitlementProxy);
             IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+
+            AccountOperationResult result = manager.TakeItem(player, 1ul);
+
+            Assert.Equal(AccountOperationResult.Ok, result);
+            RecordingDispatchProxy<IAccountEntitlementManager>.Invocation update =
+                Assert.Single(entitlementProxy.GetInvocations(nameof(IAccountEntitlementManager.UpdateEntitlement)));
+            Assert.Equal(EntitlementType.BaseCharacterSlots, update.Arguments[0]);
+            Assert.Equal(1, update.Arguments[1]);
+            Assert.Null(manager.GetItem(1ul));
+
+            ServerAccountOperationResult operationResult = Assert.Single(GetEncryptedMessages<ServerAccountOperationResult>(sessionProxy));
+            Assert.Equal(AccountOperation.TakeItem, operationResult.Operation);
+            Assert.Equal(AccountOperationResult.Ok, operationResult.Result);
+            Assert.Single(GetEncryptedMessages<ServerAccountItemDelete>(sessionProxy));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void TakeItem_WithPlayer_TargetedAccountEntitlementGrant_AppliesToAccount()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        using ServiceProvider provider = BuildGameTableProvider(
+            [
+                CreateCharacterSlotAccountItemEntry()
+            ],
+            [
+                CreateCharacterSlotEntitlementEntry()
+            ]);
+        LegacyServiceProvider.Provider = provider;
+
+        try
+        {
+            AccountInventoryManager manager = CreateAccountInventoryManager(
+                accountItemId: 133u,
+                out RecordingDispatchProxy<IWorldSession> sessionProxy,
+                out _,
+                out RecordingDispatchProxy<IAccountEntitlementManager> entitlementProxy,
+                targetPlayerIdentity: new NetworkIdentity
+                {
+                    RealmId = 1,
+                    Id      = 321ul
+                },
+                hasTargetPlayerIdentity: true);
+            IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+            playerProxy.SetProperty(nameof(IPlayer.Identity), new NexusForever.Game.Abstract.Identity
+            {
+                RealmId = 1,
+                Id      = 321ul
+            });
 
             AccountOperationResult result = manager.TakeItem(player, 1ul);
 
@@ -330,7 +384,9 @@ public class AccountItemHandlerTests
         uint accountItemId,
         out RecordingDispatchProxy<IWorldSession> sessionProxy,
         out RecordingDispatchProxy<IAccountCurrencyManager> currencyProxy,
-        out RecordingDispatchProxy<IAccountEntitlementManager> entitlementProxy)
+        out RecordingDispatchProxy<IAccountEntitlementManager> entitlementProxy,
+        NetworkIdentity targetPlayerIdentity = null,
+        bool hasTargetPlayerIdentity = false)
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
         IAccount account = RecordingDispatchProxy<IAccount>.Create(out RecordingDispatchProxy<IAccount> accountProxy);
@@ -352,7 +408,10 @@ public class AccountItemHandlerTests
             Id            = 5001u,
             InventoryId   = 1ul,
             AccountItemId = accountItemId,
-            ClaimState    = (byte)AccountItemClaimState.CanClaim
+            ClaimState    = (byte)AccountItemClaimState.CanClaim,
+            HasTargetPlayerIdentity = hasTargetPlayerIdentity,
+            TargetRealmId = targetPlayerIdentity?.RealmId ?? 0,
+            TargetCharacterId = targetPlayerIdentity?.Id ?? 0ul
         });
 
         return new AccountInventoryManager(account, model);

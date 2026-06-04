@@ -77,6 +77,7 @@ namespace NexusForever.Game.Abstract.Entity
         SpecError SetActiveActionSet(byte value);
 
         void SendInitialPackets();
+        void SendServerSpellList();
         void SendServerAbilityPoints();
     }
 }

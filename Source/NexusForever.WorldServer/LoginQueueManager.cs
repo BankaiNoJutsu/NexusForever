@@ -93,6 +93,7 @@ namespace NexusForever.WorldServer
             {
                 log.LogTrace($"Session {session.Id} has rejoined the queue.");
 
+                session.IsQueued = true;
                 SendQueueStatus(session, data.Position);
                 return false;
             }
@@ -105,6 +106,7 @@ namespace NexusForever.WorldServer
 
                 uint position = (uint)queue.Count + 1u;
 
+                session.IsQueued = true;
                 queue.Enqueue(session.Id);
                 queueData.Add(session.Id, new QueueData
                 {

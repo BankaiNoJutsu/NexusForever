@@ -7,6 +7,10 @@ namespace NexusForever.Network.World.Message.Model
     /// Single housing neighborhood row (<c>0x0501</c> / shared <c>0x0506</c> list entry, 0x30 bytes).
     /// Reader: <c>ServerHousingNeighborhoodEntry_ReadPayload</c> @ <c>14009cbe0</c>.
     /// </summary>
+    /// <remarks>
+    /// Producer timing and row backing remain blocked; do not synthesize this row from
+    /// <c>HousingNeighborhoodInfo.tbl</c> or residence-session state without a verified sender.
+    /// </remarks>
     [Message(GameMessageOpcode.ServerHousingNeighborhoodEntry)]
     public class ServerHousingNeighborhoodEntry : IWritable
     {
@@ -50,7 +54,9 @@ namespace NexusForever.Network.World.Message.Model
     /// Realm-scoped neighborhood list (<c>0x0506</c>).
     /// Consumer: <c>Housing_HandleNeighborhoodList</c> @ <c>1404ba4f0</c> -> Lua <c>HousingNeighborhoodRecieved</c>.
     /// </summary>
-    /// <remarks>Client request opcode that triggers retail <c>0x0506</c> remains blocked; no production NF emitter.</remarks>
+    /// <remarks>
+    /// Evidence currently proves the reader/consumer only; the retail server-push trigger remains blocked.
+    /// </remarks>
     [Message(GameMessageOpcode.ServerHousingNeighborhoodList)]
     public class ServerHousingNeighborhoodList : IWritable
     {

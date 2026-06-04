@@ -23,6 +23,50 @@ namespace NexusForever.Game.Tests.Entity;
 public class XpManagerTests
 {
     [Fact]
+    public void CalculateLevelForXp_UsesHighestLevelAtOrBelowTotalXp()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            new XpPerLevelEntry { Id = 1u, MinXpForLevel = 0u },
+            new XpPerLevelEntry { Id = 2u, MinXpForLevel = 100u },
+            new XpPerLevelEntry { Id = 3u, MinXpForLevel = 300u },
+            new XpPerLevelEntry { Id = 4u, MinXpForLevel = 600u });
+
+        try
+        {
+            Assert.Equal(1, XpManager.CalculateLevelForXp(0u));
+            Assert.Equal(2, XpManager.CalculateLevelForXp(299u));
+            Assert.Equal(3, XpManager.CalculateLevelForXp(300u));
+            Assert.Equal(4, XpManager.CalculateLevelForXp(600u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void ResolveStoredLevel_RepairsZeroLevelFromTotalXpWithoutLoweringStoredLevel()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider(
+            new XpPerLevelEntry { Id = 1u, MinXpForLevel = 0u },
+            new XpPerLevelEntry { Id = 2u, MinXpForLevel = 100u },
+            new XpPerLevelEntry { Id = 3u, MinXpForLevel = 300u },
+            new XpPerLevelEntry { Id = 4u, MinXpForLevel = 600u });
+
+        try
+        {
+            Assert.Equal(3, XpManager.ResolveStoredLevel(0, 300u));
+            Assert.Equal(4, XpManager.ResolveStoredLevel(4, 300u));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void SetLevel_IncreasingLevelAwardsProgressionAndPositiveExperienceDelta()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;

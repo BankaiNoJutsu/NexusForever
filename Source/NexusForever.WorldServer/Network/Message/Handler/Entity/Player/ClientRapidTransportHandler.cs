@@ -37,6 +37,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
             log.LogTrace("Received rapid transport request from player {PlayerGuid}: TaxiNode={TaxiNode}, ContextToken={ContextToken}.",
                 session.Player?.Guid, rapidTransport.TaxiNode, rapidTransport.ContextToken);
 
+            if (gameTableManager.TaxiNode == null)
+            {
+                log.LogTrace("Rapid transport rejected for player {PlayerGuid}: taxi node table is unavailable.",
+                    session.Player?.Guid);
+                SendRapidTransportCastResult(session, 0u, CastResult.RapidTransportInvalid);
+                return;
+            }
+
             TaxiNodeEntry taxiNode = gameTableManager.TaxiNode.GetEntry(rapidTransport.TaxiNode);
             if (taxiNode == null)
             {
@@ -54,6 +62,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
                 return;
             }
 
+            if (gameTableManager.WorldLocation2 == null)
+            {
+                log.LogTrace("Rapid transport rejected for player {PlayerGuid}: world location table is unavailable.",
+                    session.Player?.Guid);
+                SendRapidTransportCastResult(session, 0u, CastResult.RapidTransportInvalid);
+                return;
+            }
+
             WorldLocation2Entry worldLocation = gameTableManager.WorldLocation2.GetEntry(taxiNode.WorldLocation2Id);
             if (worldLocation == null)
             {
@@ -63,7 +79,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
                 return;
             }
 
-            GameFormulaEntry formula = gameTableManager.GameFormula.GetEntry(RapidTransportSpellGameFormulaId);
+            GameFormulaEntry formula = gameTableManager.GameFormula?.GetEntry(RapidTransportSpellGameFormulaId);
             if (formula == null || formula.Dataint0 == 0u)
                 throw new InvalidPacketValueException();
 
@@ -112,7 +128,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
 
         private TaxiRouteEntry ResolveRapidTransportRoute(IWorldSession session, ushort destinationNodeId)
         {
-            if (session.Player.Map == null)
+            if (session.Player.Map?.Entry == null
+                || gameTableManager.TaxiRoute == null
+                || gameTableManager.TaxiNode == null
+                || gameTableManager.WorldLocation2 == null)
                 return null;
 
             uint worldId = session.Player.Map.Entry.Id;

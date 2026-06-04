@@ -129,12 +129,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                     Race       = (byte)creationEntry.RaceId,
                     Sex        = (byte)creationEntry.Sex,
                     Class      = (byte)creationEntry.ClassId,
+                    Level      = XpManager.CalculateLevelForXp(creationEntry.Xp),
                     FactionId  = (ushort)creationEntry.FactionId,
                     ActivePath = characterCreate.Path,
                     TotalXp    = creationEntry.Xp
                 };
-
-                uint startingLevel = gameTableManager.XpPerLevel.Entries.First(l => l.MinXpForLevel >= creationEntry.Xp).Id;
 
                 for (Game.Static.PlayerPath.Path path = Game.Static.PlayerPath.Path.Soldier; path <= Game.Static.PlayerPath.Path.Explorer; path++)
                 {
@@ -239,7 +238,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 {
                     Id    = character.Id,
                     Stat  = (byte)Stat.Level,
-                    Value = startingLevel
+                    Value = character.Level
                 });
                 character.Stat.Add(new CharacterStatModel
                 {

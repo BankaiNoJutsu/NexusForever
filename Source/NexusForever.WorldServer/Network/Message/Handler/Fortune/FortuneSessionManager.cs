@@ -9,6 +9,7 @@ using NexusForever.Database.Auth.Model;
 using NexusForever.Game;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Fortune;
 using NexusForever.Game.Static.Account;
@@ -23,7 +24,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
     {
         private const int CardCount = 3;
         private const ulong FortuneCoinCost = 1ul;
-        private const uint ClickEmptyResetValue = 3u;
+        private const uint ClickEmptyResetCode = 3u;
 
         private readonly IFortuneRewardPool fortuneRewardPool;
         private readonly IRealmContext realmContext;
@@ -73,14 +74,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 return;
             }
 
-            if (!account.CurrencyManager.CanAfford(AccountCurrencyType.FortuneCoin, FortuneCoinCost))
+            if (!EnsureFortuneCoinBalance(session, account))
             {
                 SendClickEmptyReset(session);
                 return;
             }
 
             FortuneCardReward[] cardRewards = fortuneRewardPool.PickCardRewards(Random.Shared);
-            if (cardRewards.Length != CardCount)
+            if (cardRewards.Length != CardCount || !AreCardRewardsDisplayable(cardRewards))
             {
                 SendClickEmptyReset(session);
                 return;
@@ -94,6 +95,74 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
 
             PersistSession(account.Id, fortuneSession);
             session.EnqueueMessageEncrypted(BuildCards(fortuneSession));
+        }
+
+        private bool EnsureFortuneCoinBalance(IWorldSession session, IAccount account)
+        {
+            if (account.CurrencyManager.CanAfford(AccountCurrencyType.FortuneCoin, FortuneCoinCost))
+                return true;
+
+            if (!TryClaimFortuneCoinAccountItem(account, session.Player))
+                return false;
+
+            return account.CurrencyManager.CanAfford(AccountCurrencyType.FortuneCoin, FortuneCoinCost);
+        }
+
+        private bool TryClaimFortuneCoinAccountItem(IAccount account, IPlayer player)
+        {
+            IAccountInventoryManager inventoryManager = account.InventoryManager;
+            if (inventoryManager == null)
+                return false;
+
+            foreach (IAccountInventoryItem item in GetClaimableFortuneCoinItems(inventoryManager, player))
+            {
+                AccountOperationResult result = inventoryManager.TakeItem(player, item.Id);
+                log.LogDebug(
+                    "Fortune start auto-claim account {AccountId}: inventoryId={InventoryId}, accountItemId={AccountItemId}, amount={Amount}, result={Result}.",
+                    account.Id,
+                    item.Id,
+                    item.AccountItemId,
+                    item.Entry.AccountCurrencyAmount,
+                    result);
+                if (result == AccountOperationResult.Ok)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static List<IAccountInventoryItem> GetClaimableFortuneCoinItems(IAccountInventoryManager inventoryManager, IPlayer player)
+        {
+            var items = new List<IAccountInventoryItem>();
+            IEnumerator<IAccountInventoryItem> enumerator = inventoryManager.GetEnumerator();
+            if (enumerator == null)
+                return items;
+
+            using (enumerator)
+            {
+                while (enumerator.MoveNext())
+                {
+                    IAccountInventoryItem item = enumerator.Current;
+                    if (item?.Entry == null)
+                        continue;
+
+                    if (item.ClaimState != AccountItemClaimState.CanClaim)
+                        continue;
+
+                    if (!IsTargetPlayer(player, item.TargetPlayerIdentity))
+                        continue;
+
+                    if (item.Entry.AccountCurrencyEnum != (uint)AccountCurrencyType.FortuneCoin)
+                        continue;
+
+                    if (item.Entry.AccountCurrencyAmount == 0ul)
+                        continue;
+
+                    items.Add(item);
+                }
+            }
+
+            return items;
         }
 
         public void FlipCard(IWorldSession session, ClientFortuneFlipCard flipCard)
@@ -162,7 +231,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             if (databaseManager == null)
                 return null;
 
-            AccountFortuneSessionModel model = databaseManager.GetDatabase<AuthDatabase>().GetFortuneSession(accountId);
+            AuthDatabase authDatabase = databaseManager.GetDatabase<AuthDatabase>();
+            if (authDatabase == null)
+                return null;
+
+            AccountFortuneSessionModel model = authDatabase.GetFortuneSession(accountId);
             if (model == null || !HasActiveCards(model))
                 return null;
 
@@ -176,6 +249,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             if (cards.All(card => card.AccountItemId == 0u))
                 return null;
 
+            if (!AreCardsDisplayable(cards))
+            {
+                log.LogWarning(
+                    "Ignoring stored Fortune session for account {AccountId}: contains non-displayable account item ids [{AccountItemIds}].",
+                    accountId,
+                    string.Join(",", cards.Select(card => card.AccountItemId)));
+                authDatabase.DeleteFortuneSession(accountId);
+                return null;
+            }
+
             return new FortuneSession(cards);
         }
 
@@ -184,6 +267,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             return model.Card0AccountItemId != 0u
                 || model.Card1AccountItemId != 0u
                 || model.Card2AccountItemId != 0u;
+        }
+
+        private bool AreCardRewardsDisplayable(IEnumerable<FortuneCardReward> cardRewards)
+        {
+            return cardRewards.All(reward => fortuneRewardPool.IsCardRewardDisplayable(reward.AccountItemId));
+        }
+
+        private bool AreCardsDisplayable(IEnumerable<FortuneCardState> cards)
+        {
+            return cards.All(card => fortuneRewardPool.IsCardRewardDisplayable(card.AccountItemId));
         }
 
         private void PersistSession(uint accountId, FortuneSession fortuneSession)
@@ -280,7 +373,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 return;
 
             NetworkIdentity targetIdentity = BuildTargetIdentity(player);
-            account.InventoryManager.AddItem(card.AccountItemId, targetIdentity);
+            account.InventoryManager.AddItem(
+                card.AccountItemId,
+                targetIdentity,
+                hasTargetPlayerIdentity: targetIdentity?.Id != 0ul);
             card.Granted = true;
         }
 
@@ -296,11 +392,23 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             };
         }
 
+        private static bool IsTargetPlayer(IPlayer player, NetworkIdentity targetPlayerIdentity)
+        {
+            if (targetPlayerIdentity == null || targetPlayerIdentity.Id == 0ul)
+                return true;
+
+            if (player?.Identity == null)
+                return false;
+
+            return targetPlayerIdentity.Id == player.Identity.Id &&
+                (targetPlayerIdentity.RealmId == 0u || targetPlayerIdentity.RealmId == player.Identity.RealmId);
+        }
+
         private static void SendClickEmptyReset(IWorldSession session)
         {
             session.EnqueueMessageEncrypted(new ServerFortuneReset
             {
-                Unknown = ClickEmptyResetValue
+                ResetCode = ClickEmptyResetCode
             });
         }
 

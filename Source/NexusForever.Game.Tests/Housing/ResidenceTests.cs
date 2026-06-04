@@ -18,6 +18,81 @@ namespace NexusForever.Game.Tests.Housing;
 public class ResidenceTests
 {
     [Fact]
+    public void Build_ForPersonalResidence_UsesZeroNeighbourhoodId()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        try
+        {
+            LegacyServiceProvider.Provider = BuildRealmProvider(7);
+
+            ServerHousingProperties.Residence packet = new Residence(new ResidenceModel
+            {
+                Id = 100ul,
+                OwnerId = 200ul,
+                Name = "Personal Residence",
+                PropertyInfoId = (byte)PropertyInfoId.Residence
+            }).Build();
+
+            Assert.Equal(0ul, packet.NeighbourhoodId);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void Build_ForCommunityResidence_UsesGuildOwnerAsNeighbourhoodId()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        try
+        {
+            LegacyServiceProvider.Provider = BuildRealmProvider(7);
+
+            ServerHousingProperties.Residence packet = new Residence(new ResidenceModel
+            {
+                Id = 100ul,
+                GuildOwnerId = 0x1122334455667788ul,
+                Name = "Community Residence",
+                PropertyInfoId = (byte)PropertyInfoId.Community
+            }).Build();
+
+            Assert.Equal(0x1122334455667788ul, packet.NeighbourhoodId);
+            Assert.Equal(0x1122334455667788ul, packet.GuildIdOwner);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void Build_ForCommunityChildResidence_UsesGuildOwnerAsNeighbourhoodId()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        try
+        {
+            LegacyServiceProvider.Provider = BuildRealmProvider(7);
+
+            ServerHousingProperties.Residence packet = new Residence(new ResidenceModel
+            {
+                Id = 100ul,
+                OwnerId = 200ul,
+                GuildOwnerId = 0x1122334455667788ul,
+                Name = "Child Residence",
+                PropertyInfoId = (byte)PropertyInfoId.Residence
+            }).Build();
+
+            Assert.Equal(0x1122334455667788ul, packet.NeighbourhoodId);
+            Assert.Equal(0ul, packet.GuildIdOwner.GetValueOrDefault(0ul));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void Save_RemoveThenReaddPersistedNeighborBeforeSave_DoesNotDeleteNeighbor()
     {
         DbContextOptions<CharacterContext> options = new DbContextOptionsBuilder<CharacterContext>()

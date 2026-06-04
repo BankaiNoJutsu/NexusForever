@@ -44,6 +44,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
             if (session.IsQueued == true)
                 throw new InvalidPacketValueException();
 
+            if (session.Player != null)
+            {
+                if (session.Player.CharacterId == characterSelect.CharacterId)
+                    return;
+
+                session.EnqueueMessageEncrypted(new ServerCharacterSelectFail
+                {
+                    Result = CharacterSelectResult.FailedCharacterInWorld
+                });
+                return;
+            }
+
             CharacterModel character = session.Characters.SingleOrDefault(c => c.Id == characterSelect.CharacterId);
             if (character == null)
             {
@@ -63,12 +75,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 return;
             }
 
-            session.Player = entityFactory.CreateEntity<IPlayer>();
-            session.Player.Initialise(session, session.Account, character);
-
             WorldEntry entry = gameTableManager.World.GetEntry(character.WorldId);
             if (entry == null)
                 throw new ArgumentOutOfRangeException();
+
+            session.Player = entityFactory.CreateEntity<IPlayer>();
+            session.Player.Initialise(session, session.Account, character);
 
             session.Player.Rotation = new Vector3(character.RotationX, character.RotationY, character.RotationZ);
             mapManager.AddToMap(session.Player, new MapPosition

@@ -19,6 +19,7 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.WorldServer.Network.Message.Handler.Character;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Account
@@ -27,13 +28,19 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
     {
         private readonly ILogger<ClientStorefrontPurchaseCharacterHandler> log;
         private readonly IGlobalStorefrontManager globalStorefrontManager;
+        private readonly IGameTableManager gameTableManager;
+        private readonly ICharacterListManager characterListManager;
 
         public ClientStorefrontPurchaseCharacterHandler(
             ILogger<ClientStorefrontPurchaseCharacterHandler> log,
-            IGlobalStorefrontManager globalStorefrontManager)
+            IGlobalStorefrontManager globalStorefrontManager,
+            IGameTableManager gameTableManager,
+            ICharacterListManager characterListManager)
         {
-            this.log                     = log;
+            this.log                  = log;
             this.globalStorefrontManager = globalStorefrontManager;
+            this.gameTableManager     = gameTableManager;
+            this.characterListManager = characterListManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientStorefrontPurchaseCharacter purchase)
@@ -41,7 +48,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             log.LogInformation("StorefrontCatalogDiagnostics storefront character purchase request player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId} slot={PaymentCurrencySlot} amountBits={PurchaseMoneyAmountBits} option={PurchaseOptionId} extension={PurchaseExtensionId} target={Target}.",
                 session.Player?.Guid, session.Account?.Id, purchase.OfferId, purchase.CurrencyId, purchase.PaymentCurrencySlot, purchase.PurchaseMoneyAmountBits, purchase.PurchaseOptionId, purchase.PurchaseExtensionId, purchase.Target);
 
-            if (!StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.Target))
+            bool characterSelectPurchase = session.Player == null;
+            if (!characterSelectPurchase && !StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.Target))
             {
                 log.LogWarning("Rejecting storefront character purchase from player {PlayerGuid}: non-current target {Target}.",
                     session.Player?.Guid, purchase.Target);
@@ -49,19 +57,33 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 return;
             }
 
+            StorefrontPurchaseHelper.DirectAccountGrantPlan directGrantPlan = null;
             StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
                 purchase.OfferId, purchase.PaymentCurrencySlot, purchase.CurrencyId,
-                (_, accountItemIds) =>
+                (offerItem, accountItemIds) =>
                 {
                     log.LogInformation("StorefrontCatalogDiagnostics storefront character purchase delivery player={PlayerGuid} account={AccountId} itemCount={AccountItemCount} items=[{AccountItems}].",
                         session.Player?.Guid, session.Account?.Id, accountItemIds.Count, string.Join(",", accountItemIds));
-                    NetworkIdentity targetPlayerIdentity = StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session);
-                    foreach (uint accountItemId in accountItemIds)
-                        session.Account.InventoryManager.AddItem(accountItemId, targetPlayerIdentity, hasTargetPlayerIdentity: targetPlayerIdentity.Id != 0ul);
+                    if (directGrantPlan != null)
+                    {
+                        StorefrontPurchaseHelper.ApplyDirectAccountGrantPlan(session, directGrantPlan);
+                        characterListManager.SendCharacterListPackets(session);
+                    }
+                    else
+                    {
+                        NetworkIdentity targetPlayerIdentity = StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session);
+                        foreach (uint accountItemId in accountItemIds)
+                            session.Account.InventoryManager.AddItem(accountItemId, targetPlayerIdentity, hasTargetPlayerIdentity: targetPlayerIdentity.Id != 0ul);
+                    }
 
                     StorefrontPurchaseHelper.SendCharacterPurchaseSuccess(session);
                 },
-                "character");
+                characterSelectPurchase ? "character select direct account" : "character",
+                characterSelectPurchase
+                    ? (IOfferItem offerItem, IReadOnlyList<uint> _, out StoreError error, out string reason) =>
+                        StorefrontPurchaseHelper.TryBuildDirectAccountGrantPlan(session, gameTableManager, offerItem, requireDirectAccountGrant: true, out directGrantPlan, out error, out reason)
+                    : null,
+                requirePlayer: !characterSelectPurchase);
         }
     }
 
@@ -73,6 +95,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
         private readonly IPlayerManager playerManager;
         private readonly IGameTableManager gameTableManager;
         private readonly IAccountPendingItemRepository pendingItemRepository;
+        private readonly ICharacterListManager characterListManager;
 
         public ClientStorefrontPurchaseAccountHandler(
             ILogger<ClientStorefrontPurchaseAccountHandler> log,
@@ -80,7 +103,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             ICharacterManager characterManager,
             IPlayerManager playerManager,
             IGameTableManager gameTableManager,
-            IAccountPendingItemRepository pendingItemRepository)
+            IAccountPendingItemRepository pendingItemRepository,
+            ICharacterListManager characterListManager)
         {
             this.log                     = log;
             this.globalStorefrontManager = globalStorefrontManager;
@@ -88,6 +112,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             this.playerManager           = playerManager;
             this.gameTableManager        = gameTableManager;
             this.pendingItemRepository   = pendingItemRepository;
+            this.characterListManager    = characterListManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientStorefrontPurchaseAccount purchase)
@@ -123,20 +148,33 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 return;
             }
 
+            StorefrontPurchaseHelper.DirectAccountGrantPlan directGrantPlan = null;
+            bool characterSelectPurchase = session.Player == null;
             StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
                 purchase.OfferId, purchase.PaymentCurrencySlot, purchase.CurrencyId,
                 (offerItem, accountItemIds) =>
                 {
                     log.LogInformation("StorefrontCatalogDiagnostics storefront account purchase delivery player={PlayerGuid} account={AccountId} itemCount={AccountItemCount} items=[{AccountItems}].",
                         session.Player?.Guid, session.Account?.Id, accountItemIds.Count, string.Join(",", accountItemIds));
-                    foreach (uint accountItemId in accountItemIds)
-                        session.Account.InventoryManager.AddItem(accountItemId);
+                    if (directGrantPlan != null)
+                    {
+                        StorefrontPurchaseHelper.ApplyDirectAccountGrantPlan(session, directGrantPlan);
+                        characterListManager.SendCharacterListPackets(session);
+                    }
+                    else
+                    {
+                        foreach (uint accountItemId in accountItemIds)
+                            session.Account.InventoryManager.AddItem(accountItemId);
+                    }
 
                     StorefrontPurchaseHelper.SendAccountPurchaseSuccess(session);
                 },
                 "account",
-                (IOfferItem offerItem, IReadOnlyList<uint> _, out StoreError error, out string reason) =>
-                    StorefrontPurchaseHelper.ValidateDirectAccountGrantClaim(session, gameTableManager, offerItem, out error, out reason),
+                characterSelectPurchase
+                    ? (IOfferItem offerItem, IReadOnlyList<uint> _, out StoreError error, out string reason) =>
+                        StorefrontPurchaseHelper.TryBuildDirectAccountGrantPlan(session, gameTableManager, offerItem, requireDirectAccountGrant: true, out directGrantPlan, out error, out reason)
+                    : (IOfferItem offerItem, IReadOnlyList<uint> _, out StoreError error, out string reason) =>
+                        StorefrontPurchaseHelper.ValidateDirectAccountGrantClaim(session, gameTableManager, offerItem, out error, out reason),
                 requirePlayer: false);
         }
 
@@ -381,10 +419,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             error  = StoreError.GenericFail;
             reason = string.Empty;
 
-            if (!ShouldValidateDirectAccountGrant(offerItem))
+            if (!IsDirectAccountGrantOffer(offerItem))
                 return true;
 
-            if (!TryBuildDirectAccountGrantPlan(session, gameTableManager, offerItem, out _, out error, out reason))
+            if (!TryBuildDirectAccountGrantPlan(session, gameTableManager, offerItem, requireDirectAccountGrant: false, out _, out error, out reason))
                 return false;
 
             return true;
@@ -414,7 +452,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             return Enum.IsDefined(typeof(AccountCurrencyType), accountCurrencyType);
         }
 
-        private static bool ShouldValidateDirectAccountGrant(IOfferItem offerItem)
+        private static bool IsDirectAccountGrantOffer(IOfferItem offerItem)
         {
             return offerItem.Items.All(itemData => IsDirectAccountGrantItem(itemData.Entry));
         }
@@ -430,10 +468,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             return entry.AccountCurrencyEnum != 0u || entry.EntitlementId != 0u;
         }
 
-        private static bool TryBuildDirectAccountGrantPlan(
+        public static bool TryBuildDirectAccountGrantPlan(
             IWorldSession session,
             IGameTableManager gameTableManager,
             IOfferItem offerItem,
+            bool requireDirectAccountGrant,
             out DirectAccountGrantPlan plan,
             out StoreError error,
             out string reason)
@@ -441,6 +480,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             plan   = new DirectAccountGrantPlan();
             error  = StoreError.GenericFail;
             reason = string.Empty;
+
+            if (requireDirectAccountGrant && !IsDirectAccountGrantOffer(offerItem))
+            {
+                error  = StoreError.CannotUseOffer;
+                reason = "offer is not a direct account grant";
+                return false;
+            }
 
             foreach (IOfferItemData itemData in offerItem.Items)
             {
@@ -477,6 +523,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             }
 
             return true;
+        }
+
+        public static void ApplyDirectAccountGrantPlan(IWorldSession session, DirectAccountGrantPlan plan)
+        {
+            foreach ((AccountCurrencyType currencyType, ulong amount) in plan.CurrencyGrants)
+                session.Account.CurrencyManager.CurrencyAddAmount(currencyType, amount);
+
+            foreach ((EntitlementType entitlementType, int amount) in plan.EntitlementGrants)
+                session.Account.EntitlementManager.UpdateEntitlement(entitlementType, amount);
         }
 
         private static bool TryAddDirectCurrencyGrant(
@@ -668,7 +723,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             }
         }
 
-        private sealed class DirectAccountGrantPlan
+        public sealed class DirectAccountGrantPlan
         {
             public Dictionary<AccountCurrencyType, ulong> CurrencyGrants { get; } = [];
             public Dictionary<EntitlementType, int> EntitlementGrants { get; } = [];

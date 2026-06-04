@@ -2,6 +2,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Cinematic;
+using NexusForever.Network.World.Message.Model.Entity;
 using NexusForever.Network.World.Message.Model.PlayerPath;
 using NexusForever.Network.World.Message.Model.Pet;
 using NexusForever.Network.World.Message.Model.PublicEvent;
@@ -789,6 +790,86 @@ public class PacketPlaceholderNamingTests
         Assert.Equal(0x1Au, reader.ReadUInt(5u));
         Assert.Equal(0x11223344u, reader.ReadUInt());
         Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void ServerRaidQueueStatus_TailsRemainNeutralUntilNonZeroSemanticsAreProven()
+    {
+        Assert.Equal((ushort)0x0718, (ushort)GameMessageOpcode.ServerRaidQueueStatus);
+        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.Unknown0)));
+        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.Unknown1)));
+        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.Unknown2)));
+        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.Unknown3)));
+        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.Unknown4)));
+    }
+
+    [Fact]
+    public void ServerEntityStatAuxFieldsRemainNeutralUntilApplyHandlersAreProven()
+    {
+        Assert.Equal((ushort)0x0889, (ushort)GameMessageOpcode.ServerEntityStatUInt32Triplet);
+        AssertNeutralProperties<ServerEntityStatUInt32Triplet>(
+            nameof(ServerEntityStatUInt32Triplet.Value0),
+            nameof(ServerEntityStatUInt32Triplet.Value1),
+            nameof(ServerEntityStatUInt32Triplet.Value2));
+
+        Assert.Equal((ushort)0x08CC, (ushort)GameMessageOpcode.ServerEntityStatUInt32WideString);
+        AssertNeutralProperties<ServerEntityStatUInt32WideString>(
+            nameof(ServerEntityStatUInt32WideString.Value),
+            nameof(ServerEntityStatUInt32WideString.Text));
+
+        Assert.Equal((ushort)0x08F4, (ushort)GameMessageOpcode.ServerEntityStatUInt32UInt5UInt32);
+        AssertNeutralProperties<ServerEntityStatUInt32UInt5UInt32>(
+            nameof(ServerEntityStatUInt32UInt5UInt32.Value0),
+            nameof(ServerEntityStatUInt32UInt5UInt32.Value1),
+            nameof(ServerEntityStatUInt32UInt5UInt32.Value2));
+
+        Assert.Equal((ushort)0x0939, (ushort)GameMessageOpcode.ServerEntityStatUInt32UInt14UInt18WideString);
+        AssertNeutralProperties<ServerEntityStatUInt32UInt14UInt18WideString>(
+            nameof(ServerEntityStatUInt32UInt14UInt18WideString.Value0),
+            nameof(ServerEntityStatUInt32UInt14UInt18WideString.Value1),
+            nameof(ServerEntityStatUInt32UInt14UInt18WideString.Value2),
+            nameof(ServerEntityStatUInt32UInt14UInt18WideString.Text));
+
+        Assert.Equal((ushort)0x093D, (ushort)GameMessageOpcode.ServerEntityStatUInt32UInt5Pair);
+        AssertNeutralProperties<ServerEntityStatUInt32UInt5Pair>(
+            nameof(ServerEntityStatUInt32UInt5Pair.Value0),
+            nameof(ServerEntityStatUInt32UInt5Pair.Value1),
+            nameof(ServerEntityStatUInt32UInt5Pair.Value2),
+            nameof(ServerEntityStatUInt32UInt5Pair.Value3));
+
+        Assert.Equal((ushort)0x093E, (ushort)GameMessageOpcode.ServerEntityStatTwoUInt32UInt64);
+        AssertNeutralProperties<ServerEntityStatTwoUInt32UInt64>(
+            nameof(ServerEntityStatTwoUInt32UInt64.Value0),
+            nameof(ServerEntityStatTwoUInt32UInt64.Value1),
+            nameof(ServerEntityStatTwoUInt32UInt64.Value2));
+    }
+
+    [Fact]
+    public void ServerMapTrackedUnitUpdate_UsesTrackingSlotIdUntilProducerSelectionIsProven()
+    {
+        Assert.Equal((ushort)0x0849, (ushort)GameMessageOpcode.ServerMapTrackedUnitUpdate);
+        Assert.Equal((ushort)0x0848, (ushort)GameMessageOpcode.ServerMapTrackedUnitDisable);
+        Assert.NotNull(typeof(ServerMapTrackedUnitUpdate).GetProperty(nameof(ServerMapTrackedUnitUpdate.TrackedUnitId)));
+        Assert.NotNull(typeof(ServerMapTrackedUnitUpdate).GetProperty(nameof(ServerMapTrackedUnitUpdate.TrackingSlotId)));
+        Assert.Null(typeof(ServerMapTrackedUnitUpdate).GetProperty("PublicEventObjectiveId"));
+        Assert.NotNull(typeof(ServerMapTrackedUnitDisable).GetProperty(nameof(ServerMapTrackedUnitDisable.TrackedUnitId)));
+    }
+
+    [Fact]
+    public void ServerHousingNeighborhoodFieldsRemainWireNamedUntilProducerBackingIsProven()
+    {
+        Assert.Equal((ushort)0x0501, (ushort)GameMessageOpcode.ServerHousingNeighborhoodEntry);
+        Assert.Equal((ushort)0x0506, (ushort)GameMessageOpcode.ServerHousingNeighborhoodList);
+        Assert.NotNull(typeof(ServerHousingNeighborhoodEntry).GetProperty(nameof(ServerHousingNeighborhoodEntry.NeighborhoodId)));
+        Assert.NotNull(typeof(ServerHousingNeighborhoodEntry).GetProperty(nameof(ServerHousingNeighborhoodEntry.RealmId0)));
+        Assert.NotNull(typeof(ServerHousingNeighborhoodEntry).GetProperty(nameof(ServerHousingNeighborhoodEntry.RealmId1)));
+        Assert.NotNull(typeof(ServerHousingNeighborhoodEntry).GetProperty(nameof(ServerHousingNeighborhoodEntry.NeighborhoodWireUInt64_AfterRealmIds)));
+        Assert.NotNull(typeof(ServerHousingNeighborhoodEntry).GetProperty(nameof(ServerHousingNeighborhoodEntry.NeighborhoodWireUInt32_0)));
+        Assert.NotNull(typeof(ServerHousingNeighborhoodEntry).GetProperty(nameof(ServerHousingNeighborhoodEntry.NeighborhoodWireUInt32_1)));
+        Assert.NotNull(typeof(ServerHousingNeighborhoodEntry).GetProperty(nameof(ServerHousingNeighborhoodEntry.NeighborhoodWireUInt32_2)));
+        Assert.Null(typeof(ServerHousingNeighborhoodEntry).GetProperty("BaseCost"));
+        Assert.Null(typeof(ServerHousingNeighborhoodEntry).GetProperty("MaxPopulation"));
+        Assert.Null(typeof(ServerHousingNeighborhoodEntry).GetProperty("HousingMapInfoIdPrimary"));
     }
 
     [Fact]
@@ -2503,6 +2584,12 @@ public class PacketPlaceholderNamingTests
         }
 
         return stream.ToArray();
+    }
+
+    private static void AssertNeutralProperties<TPacket>(params string[] propertyNames)
+    {
+        foreach (string propertyName in propertyNames)
+            Assert.NotNull(typeof(TPacket).GetProperty(propertyName));
     }
 
     private static byte[] BuildHousingPlugUpdatePacket(

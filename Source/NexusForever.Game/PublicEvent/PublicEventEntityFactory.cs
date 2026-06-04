@@ -7,6 +7,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Map;
+using NexusForever.Game.Static.Entity;
 
 namespace NexusForever.Game.PublicEvent
 {
@@ -65,6 +66,12 @@ namespace NexusForever.Game.PublicEvent
 
             foreach (EntityModel model in models)
             {
+                if (model.Type == EntityType.Player)
+                {
+                    log.LogWarning("Skipping public-event player entity {EntityId} for event {PublicEventId} phase {Phase}; players are created from character state.", model.Id, publicEvent.Id, phase);
+                    continue;
+                }
+
                 IWorldEntity entity = entityFactory.CreateWorldEntity(model.Type);
                 ICreatureInfo creatureInfo = GetCreatureInfo(model, phase);
                 if (creatureInfo != null)

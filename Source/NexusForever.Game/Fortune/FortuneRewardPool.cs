@@ -1,5 +1,4 @@
 using NexusForever.Game.Abstract.Fortune;
-using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Fortune;
 using NexusForever.Game.Static.Item;
 using NexusForever.GameTable;
@@ -39,12 +38,6 @@ namespace NexusForever.Game.Fortune
             var weights = new List<uint>(entries.Count);
             foreach (FortunePoolEntry entry in entries)
             {
-                // WildStar64.exe 140081f60 and FortunesLib_GetFortunesLootList (140766370)
-                // consume the ServerFortuneRewards item/probability arrays; non-item account
-                // rewards stay picker-only until retail rotation/catalog evidence maps them.
-                if (entry.Item2Id == 0u)
-                    continue;
-
                 item2Ids.Add(entry.Item2Id);
                 weights.Add(entry.Weight);
             }
@@ -77,6 +70,14 @@ namespace NexusForever.Game.Fortune
             }
 
             return picks;
+        }
+
+        public bool IsCardRewardDisplayable(uint accountItemId)
+        {
+            if (accountItemId == 0u)
+                return false;
+
+            return pool.Value.Any(entry => entry.AccountItemId == accountItemId);
         }
 
         private static FortunePoolEntry PickEntry(
@@ -136,12 +137,11 @@ namespace NexusForever.Game.Fortune
             if (entry == null)
                 return false;
 
-            if (entry.AccountCurrencyEnum == (uint)AccountCurrencyType.FortuneCoin && entry.Item2Id == 0u)
-                return false;
-
-            return entry.Item2Id != 0u
-                || entry.EntitlementId != 0u
-                || entry.GenericUnlockSetId != 0u;
+            // Fortune_ApplyCards resolves each dealt account item to an item display object and
+            // dereferences that object without a null guard. Entitlement/unlock-only rows have no
+            // Item2 display object, so keep dealt cards item-backed until retail evidence maps a
+            // card-safe non-item payload.
+            return entry.Item2Id != 0u;
         }
 
         private static uint ResolveItem2Id(AccountItemEntry entry)

@@ -367,19 +367,37 @@ namespace NexusForever.Game.Spell
             for (UILocation i = 0; i < (UILocation)MaxActionCount; i++)
             {
                 IActionSetShortcut action = GetShortcut(i);
+                ItemLocation location = BuildShortcutItemLocation(action, i);
+                if (action != null)
+                    log.Trace($"Action set {Index} slot {i} sends {action.ShortcutType} {action.ObjectId} at {location.Location}:{location.BagIndex}.");
+
                 serverActionSet.Actions.Add(new ServerActionSet.Action
                 {
                     ShortcutType = action?.ShortcutType ?? ShortcutType.None,
                     ObjectId     = action?.ObjectId ?? 0,
-                    Location     = new ItemLocation
-                    {
-                        Location = action != null ? InventoryLocation.Ability : (InventoryLocation)300, // no idea why 300, this is what retail did
-                        BagIndex = (uint)(action?.Location ?? i)
-                    }
+                    Location     = location
                 });
             }
 
             return serverActionSet;
+        }
+
+        private ItemLocation BuildShortcutItemLocation(IActionSetShortcut action, UILocation slot)
+        {
+            if (action == null)
+            {
+                return new ItemLocation
+                {
+                    Location = (InventoryLocation)300, // no idea why 300, this is what retail did
+                    BagIndex = (uint)slot
+                };
+            }
+
+            return new ItemLocation
+            {
+                Location = InventoryLocation.Ability,
+                BagIndex = (uint)slot
+            };
         }
 
         /// <summary>

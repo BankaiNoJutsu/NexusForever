@@ -14,7 +14,11 @@ namespace NexusForever.Network.World.Message.Model.Crafting
         /// </summary>
         public uint TradeskillSchematic2Id { get; set; }
         public CraftStats CraftStats { get; set; } = new CraftStats();
-        public uint GlyphData { get; set; } // is of type RuneSlots in "Item / Inventory message" pull request
+        /// <summary>
+        /// Reader-confirmed current-craft glyph field. Keep separate from persisted item rune slots
+        /// until a producer maps how crafting state populates it.
+        /// </summary>
+        public uint GlyphData { get; set; }
         public uint SchematicCount { get; set; }
         public uint AdditiveCount { get; set; }
         public uint Unused { get; set; } = 0;

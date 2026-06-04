@@ -414,6 +414,12 @@ namespace NexusForever.Game.Map
         {
             foreach (EntityModel model in entityCache.GetEntities(gridX, gridZ))
             {
+                if (model.Type == EntityType.Player)
+                {
+                    log.Warn($"Skipping static player entity {model.Id} in world {Entry.Id} at grid X:{gridX}, Z:{gridZ}; players are created from character state.");
+                    continue;
+                }
+
                 IWorldEntity entity = entityFactory.CreateWorldEntity(model.Type);
                 ICreatureInfo creatureInfo = GetCreatureInfo(model);
                 if (creatureInfo != null)

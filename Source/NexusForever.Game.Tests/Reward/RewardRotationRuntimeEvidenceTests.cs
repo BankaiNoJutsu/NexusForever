@@ -66,6 +66,9 @@ public class RewardRotationRuntimeEvidenceTests
         Assert.Equal(JsonValueKind.Null, root.GetProperty("ScheduleArrayPacket").ValueKind);
         Assert.Equal(JsonValueKind.Null, root.GetProperty("EntryStateArrayPacket").ValueKind);
         Assert.Equal(3, root.GetProperty("EntryStateDeltaPackets").GetArrayLength());
+        string blockers = string.Join(" ", root.GetProperty("Blockers").EnumerateArray().Select(element => element.GetString()));
+        Assert.Contains("0x07CD registration has no static apply helper", blockers, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Flag and throttle-slot assignment remain blocked", blockers, StringComparison.OrdinalIgnoreCase);
         Assert.Empty(session.EncryptedMessages);
         Assert.Equal(1, rewardPropertyManager.SendInitialPacketsCallCount);
     }

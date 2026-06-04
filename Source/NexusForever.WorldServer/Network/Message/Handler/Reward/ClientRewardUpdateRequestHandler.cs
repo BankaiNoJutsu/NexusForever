@@ -4,6 +4,7 @@ using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Account.Reward;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.WorldServer.Network.Message.Handler.Fortune;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Reward
 {
@@ -12,15 +13,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
         private readonly ILogger<ClientRewardUpdateRequestHandler> log;
         private readonly IGlobalStorefrontManager globalStorefrontManager;
         private readonly IRewardRotationRefreshProvider refreshProvider;
+        private readonly IFortuneSessionManager fortuneSessionManager;
 
         public ClientRewardUpdateRequestHandler(
             ILogger<ClientRewardUpdateRequestHandler> log,
             IGlobalStorefrontManager globalStorefrontManager,
-            IRewardRotationRefreshProvider refreshProvider = null)
+            IRewardRotationRefreshProvider refreshProvider = null,
+            IFortuneSessionManager fortuneSessionManager = null)
         {
             this.log = log;
             this.globalStorefrontManager = globalStorefrontManager;
             this.refreshProvider = refreshProvider;
+            this.fortuneSessionManager = fortuneSessionManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientRewardUpdateRequest rewardUpdateRequest)
@@ -34,6 +38,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
                 log.LogInformation("StorefrontCatalogDiagnostics sending catalog before reward rotation index 0 for player {PlayerGuid} account={AccountId}.",
                     session.Player.Guid, session.Account?.Id ?? 0u);
                 globalStorefrontManager.HandleCatalogRequest(session, session.Account.Id);
+                fortuneSessionManager?.SendStatus(session);
             }
 
             session.Account.RewardPropertyManager.SendInitialPackets();

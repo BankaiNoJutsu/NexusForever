@@ -157,6 +157,29 @@ public class GroupPacketShapeTests
     }
 
     [Fact]
+    public void ServerRaidQueueStatus_WritesMappedWireOrderWithoutNamingSemantics()
+    {
+        var packet = new ServerRaidQueueStatus
+        {
+            Unknown0 = 0x0102030405060708ul,
+            Unknown1 = 0x1234u,
+            Unknown2 = 0x8877665544332211ul,
+            Unknown3 = 0xAABBCCDDu,
+            Unknown4 = 0x10203040u
+        };
+
+        byte[] packetData = WritePacket(packet.Write);
+
+        Assert.Equal(0x1A, packetData.Length);
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        Assert.Equal(0x1234u, reader.ReadUInt(15u));
+        Assert.Equal(0x8877665544332211ul, reader.ReadULong());
+        Assert.Equal(0xAABBCCDDu, reader.ReadUInt());
+        Assert.Equal(0x10203040u, reader.ReadUInt());
+    }
+
+    [Fact]
     public void ServerQuestShareResult_WritesMappedFields()
     {
         var packet = new ServerQuestShareResult
