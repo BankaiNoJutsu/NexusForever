@@ -271,7 +271,7 @@ function Invoke-NexusForeverBuild {
     }
 
     Write-Info 'Building NexusForever because -SkipSetup skips Initialize-NexusForever.ps1 build phase.'
-    & dotnet build $solutionPath --configuration $Configuration
+    & dotnet build $solutionPath --configuration $Configuration --nologo -v minimal
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet build failed with exit code $LASTEXITCODE."
     }

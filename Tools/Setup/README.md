@@ -62,11 +62,12 @@ use the local restart wrapper instead of the full setup path:
   -PromptForRootPassword
 ```
 
-That wrapper stops any running `NexusForever.*` process, rebuilds
-`NexusForever.AuthServer`, `NexusForever.WorldServer`, and the runtime script
-assemblies loaded by WorldServer, then launches the full local standalone stack
-through the same runtime-prep flow. It skips launching the client when WildStar
-is already running.
+That wrapper stops any running `NexusForever.*` process, then launches the full
+local standalone stack through the same runtime-prep flow. The delegated
+launcher build runs once for the solution so server, client connector, and
+WorldServer runtime script assemblies stay in sync without a separate
+per-project pre-build. It skips launching the client when WildStar is already
+running.
 
 If you want auth/world-only restart behavior from the base launcher, pass
 `-RestartAuthWorldOnly`. When you pass `-RestartExistingServers:$false`
@@ -99,6 +100,10 @@ depending on modifiers.
 `-LogLevel` on the setup scripts configures **NexusForever server** NLog output
 only. The retail WildStar client has a separate logging system (`CLog`) controlled
 by `-log*` command-line switches parsed at startup.
+
+`Restart-NexusForeverLocal.ps1` defaults server `-LogLevel` to `Info` to keep
+the normal edit-loop output readable. Pass `-LogLevel Trace` when you need
+full server-side diagnostic output.
 
 Prefer `-EnableClientLogging`, which appends `-logFile`, `-logFlush`, and
 `-logDefaultLevel` for you. Combine with `-EnableClientConsole` when you also

@@ -2051,7 +2051,7 @@ if (!$SkipConfigCopy) {
 if (!$SkipBuild) {
     Write-Section 'Build'
     Assert-Command -Command 'dotnet' -InstallHint 'Install the .NET SDK required by this repository.'
-    Invoke-DotNet -Arguments @('build', (Join-Path $RepoRoot 'Source\NexusForever.slnx'), '--configuration', $Configuration)
+    Invoke-DotNet -Arguments @('build', (Join-Path $RepoRoot 'Source\NexusForever.slnx'), '--configuration', $Configuration, '--nologo', '-v', 'minimal')
 
     if (!$SkipConfigCopy) {
         Copy-ConfigurationFiles

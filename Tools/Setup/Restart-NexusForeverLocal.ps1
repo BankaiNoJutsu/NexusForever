@@ -1,14 +1,14 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-Stops running NexusForever processes, rebuilds the local runtime, and launches WildStar.
+Stops running NexusForever processes and launches the local restart flow.
 
 .DESCRIPTION
 Use this for the fast local edit loop after the repo has already been
 initialized once. The script:
 
-* rebuilds NexusForever.AuthServer, NexusForever.WorldServer, and runtime script assemblies loaded by WorldServer
-* kills any running NexusForever.* processes before rebuilding
+* kills any running NexusForever.* processes before the delegated launcher build
+* delegates the single solution build and runtime preparation to Start-NexusForeverLocal.ps1
 * starts the local standalone server processes
 * launches the WildStar client through the existing local launcher flow only when the client is not already running
 
@@ -31,7 +31,7 @@ param(
     [string] $TargetFramework = 'net10.0',
 
     [ValidateSet('Trace', 'Debug', 'Info', 'Warn', 'Error', 'Fatal', 'Off')]
-    [string] $LogLevel = 'Trace',
+    [string] $LogLevel = 'Info',
 
     [string] $ClientDirectory = '',
     [string] $ClientExecutable = '',
@@ -118,19 +118,6 @@ function Write-Info {
     Write-Host $Message -ForegroundColor Gray
 }
 
-function Invoke-DotNet {
-    param([string[]] $Arguments)
-
-    $output = & dotnet @Arguments 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "dotnet $($Arguments -join ' ') failed with exit code $LASTEXITCODE.`n$($output -join [Environment]::NewLine)"
-    }
-
-    if ($output) {
-        Write-Info ($output -join [Environment]::NewLine)
-    }
-}
-
 function Get-RunningWildStarProcesses {
     $runningProcessIds = @(
         Get-CimInstance Win32_Process -Filter "Name = 'WildStar64.exe' OR Name = 'WildStar32.exe'" -ErrorAction SilentlyContinue |
@@ -197,39 +184,14 @@ function Stop-RunningNexusForeverProcesses {
     }
 }
 
-function Invoke-ProjectBuild {
-    param([string] $ProjectPath)
-
-    Invoke-DotNet -Arguments @('build', $ProjectPath, '--configuration', $Configuration, '--framework', $TargetFramework)
-}
-
-function Get-WorldRuntimeScriptProjectPaths {
-    Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'Source') -Directory -Filter 'NexusForever.Script.*' |
-        Where-Object { $_.Name -ne 'NexusForever.Script' } |
-        ForEach-Object { Join-Path $_.FullName "$($_.Name).csproj" } |
-        Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
-        Sort-Object
-}
-
 $RepoRoot = [System.IO.Path]::GetFullPath($RepoRoot)
 $launcherScript = Join-Path $RepoRoot 'Tools\Setup\Start-NexusForeverLocal.ps1'
 if (!(Test-Path -LiteralPath $launcherScript -PathType Leaf)) {
     throw "Local launcher script was not found: $launcherScript"
 }
 
-if (!(Get-Command dotnet -ErrorAction SilentlyContinue)) {
-    throw 'Required command ''dotnet'' was not found. Install the .NET SDK required by this repository.'
-}
-
 Write-Section 'Process restart prep'
 Stop-RunningNexusForeverProcesses
-
-Write-Section 'Build'
-Invoke-ProjectBuild -ProjectPath (Join-Path $RepoRoot 'Source\NexusForever.AuthServer\NexusForever.AuthServer.csproj')
-Invoke-ProjectBuild -ProjectPath (Join-Path $RepoRoot 'Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj')
-foreach ($scriptProjectPath in Get-WorldRuntimeScriptProjectPaths) {
-    Invoke-ProjectBuild -ProjectPath $scriptProjectPath
-}
 
 $skipClientLaunchBecauseRunning = $false
 if (!$SkipClientLaunch) {
