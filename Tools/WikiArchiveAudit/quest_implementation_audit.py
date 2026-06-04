@@ -116,6 +116,10 @@ GENERIC = {
 }
 PARTIAL = set()
 UNSUPPORTED = {19, 27, 29}
+SCRIPT_FILTER_RE = re.compile(r"ScriptFilterOwnerId\(([^)]+)\)")
+IMPLEMENTATION_MARKER_RE = re.compile(
+    r"FollowUpQuestScript|protected override ushort NextQuestId|GrantNext(?:Quest)?\s*\(|ObjectiveUpdate\s*\("
+)
 
 # Hand-verified quest chains called out in CURRENT_STATUS / focused script work.
 CURATED_FULL = {
@@ -177,10 +181,20 @@ def load_script_ids(script_main: Path) -> set[int]:
     script_ids: set[int] = set()
     for path in script_main.rglob("*.cs"):
         text = path.read_text(encoding="utf-8", errors="replace")
-        for match in re.finditer(r"ScriptFilterOwnerId\(([^)]+)\)", text):
-            for num in re.findall(r"\d+", match.group(1)):
-                script_ids.add(int(num))
+        for owner_ids, _ in iter_script_owner_blocks(text):
+            script_ids.update(owner_ids)
     return script_ids
+
+
+def iter_script_owner_blocks(text: str):
+    matches = list(SCRIPT_FILTER_RE.finditer(text))
+    for index, match in enumerate(matches):
+        owner_ids = {int(num) for num in re.findall(r"\d+", match.group(1))}
+        if not owner_ids:
+            continue
+
+        next_start = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        yield owner_ids, text[match.start() : next_start]
 
 
 def load_script_quality(script_main: Path) -> set[int]:
@@ -188,16 +202,13 @@ def load_script_quality(script_main: Path) -> set[int]:
     quest_text: dict[int, str] = {}
     for path in script_main.rglob("*.cs"):
         text = path.read_text(encoding="utf-8", errors="replace")
-        for match in re.finditer(r"ScriptFilterOwnerId\((\d+)", text):
-            quest_id = int(match.group(1))
-            quest_text[quest_id] = f"{quest_text.get(quest_id, '')}\n{text}"
+        for owner_ids, block in iter_script_owner_blocks(text):
+            for quest_id in owner_ids:
+                quest_text[quest_id] = f"{quest_text.get(quest_id, '')}\n{block}"
 
     stub_only: set[int] = set()
     for quest_id, text in quest_text.items():
-        if re.search(
-            r"FollowUpQuestScript|protected override ushort NextQuestId|GrantNext(?:Quest)?\s*\(|ObjectiveUpdate\s*\(",
-            text,
-        ):
+        if IMPLEMENTATION_MARKER_RE.search(text):
             continue
 
         stub_only.add(quest_id)

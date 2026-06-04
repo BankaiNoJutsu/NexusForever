@@ -72,6 +72,16 @@ class BlockerEvidenceHarnessPresetTests(unittest.TestCase):
                 ["Quest Virtual Loot", "probability"],
             ),
             (
+                "RidersReefSmoke",
+                "F-023-riders-reef-smoke",
+                "f-023-riders-reef-smoke-targets.md",
+                [3460, 51, 870, 990, 1387],
+                [],
+                ["Rider's Reef", "terminal handoff"],
+                [],
+                5,
+            ),
+            (
                 "FortuneRewardsSmoke",
                 "LWS-066-fortune-rewards",
                 "lws-066-fortune-rewards-targets.md",

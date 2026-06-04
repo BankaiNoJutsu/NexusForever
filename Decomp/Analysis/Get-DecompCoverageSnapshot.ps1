@@ -387,7 +387,7 @@ function Get-OpcodeEntries {
         }
 
         $comment = [string] $Matches.comment
-        $isPlaceholderName = $name -match '^(Client|Server)[0-9A-F]{4}$'
+        $isPlaceholderName = $name -match '^(Client|Server)(?:0x)?[0-9A-Fa-f]{4}$'
         $isPlaceholderComment = $comment -match '(?i)opaque|unknown|unnamed|placeholder'
 
         $records.Add([pscustomobject]@{

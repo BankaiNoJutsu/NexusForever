@@ -33,6 +33,7 @@ param(
     [switch] $SkyplotHousingSmoke,
     [switch] $LiveEventSmoke,
     [switch] $QuestVirtualLootSmoke,
+    [switch] $RidersReefSmoke,
     [switch] $FortuneRewardsSmoke,
     [switch] $PublicEventVoteScoreboardSmoke,
     [switch] $PublicEventObjectiveNotificationSmoke,
@@ -57,9 +58,9 @@ if ([string]::IsNullOrWhiteSpace($safeBundleName)) {
     $safeBundleName = 'blocker-evidence'
 }
 
-$selectedPresetCount = @($Lws036ChecklistSmoke, $NewZoneAssetProof, $DustStalkerQ4516Smoke, $ArcterraPalaverSourceSmoke, $SkyplotHousingSmoke, $LiveEventSmoke, $QuestVirtualLootSmoke, $FortuneRewardsSmoke, $PublicEventVoteScoreboardSmoke, $PublicEventObjectiveNotificationSmoke, $PvpAdventureSmoke, $ExpeditionSmoke, $DungeonSmoke, $RaidEventSmoke).Where({ $_ }).Count
+$selectedPresetCount = @($Lws036ChecklistSmoke, $NewZoneAssetProof, $DustStalkerQ4516Smoke, $ArcterraPalaverSourceSmoke, $SkyplotHousingSmoke, $LiveEventSmoke, $QuestVirtualLootSmoke, $RidersReefSmoke, $FortuneRewardsSmoke, $PublicEventVoteScoreboardSmoke, $PublicEventObjectiveNotificationSmoke, $PvpAdventureSmoke, $ExpeditionSmoke, $DungeonSmoke, $RaidEventSmoke).Where({ $_ }).Count
 if ($selectedPresetCount -gt 1) {
-    throw 'Choose only one evidence preset: -Lws036ChecklistSmoke, -NewZoneAssetProof, -DustStalkerQ4516Smoke, -ArcterraPalaverSourceSmoke, -SkyplotHousingSmoke, -LiveEventSmoke, -QuestVirtualLootSmoke, -FortuneRewardsSmoke, -PublicEventVoteScoreboardSmoke, -PublicEventObjectiveNotificationSmoke, -PvpAdventureSmoke, -ExpeditionSmoke, -DungeonSmoke, or -RaidEventSmoke.'
+    throw 'Choose only one evidence preset: -Lws036ChecklistSmoke, -NewZoneAssetProof, -DustStalkerQ4516Smoke, -ArcterraPalaverSourceSmoke, -SkyplotHousingSmoke, -LiveEventSmoke, -QuestVirtualLootSmoke, -RidersReefSmoke, -FortuneRewardsSmoke, -PublicEventVoteScoreboardSmoke, -PublicEventObjectiveNotificationSmoke, -PvpAdventureSmoke, -ExpeditionSmoke, -DungeonSmoke, or -RaidEventSmoke.'
 }
 
 if ($Lws036ChecklistSmoke) {
@@ -243,6 +244,33 @@ if ($QuestVirtualLootSmoke) {
         $Notes = $questVirtualLootNotes
     } else {
         $Notes = "$Notes`n$questVirtualLootNotes"
+    }
+}
+
+if ($RidersReefSmoke) {
+    if ($BundleName -eq 'blocker-evidence') {
+        $safeBundleName = 'F-023-riders-reef-smoke'
+    }
+
+    if ($WorldIds.Count -eq 0) {
+        $WorldIds = @(3460, 51, 870, 990, 1387)
+    }
+
+    if ($NegativeCases.Count -eq 0) {
+        $NegativeCases = @(
+            'wrong-faction departure terminal does not route or complete the opposite faction handoff',
+            'repeat terminal interaction after final quest completion does not duplicate rewards or quest state',
+            'logout/re-entry after movement/projector progress restores the expected tutorial chain without root-skip regression',
+            'hoverboard/projector recovery does not strand the player or duplicate ring/projector credit',
+            'destination welcome quest is absent or mismatched and the handoff remains blocked instead of inventing quest state'
+        )
+    }
+
+    $ridersReefNotes = 'F-023 Rider''s Reef Exile and Dominion smoke from character creation through final terminal handoff. Capture quest acceptance, movement/projector/hoverboard/mine/combat loops, reward UI/toasts, respawn/re-entry, CSI, terminal routing to Everstar Grove/Northern Wilds/Crimson Isle/Levian Bay, destination welcome quests, logs, screenshots/video, and negative cases before promoting remaining NPE behavior.'
+    if ([string]::IsNullOrWhiteSpace($Notes)) {
+        $Notes = $ridersReefNotes
+    } else {
+        $Notes = "$Notes`n$ridersReefNotes"
     }
 }
 
@@ -475,6 +503,9 @@ if ($LiveEventSmoke) {
 }
 if ($QuestVirtualLootSmoke) {
     $requiredFiles += 'lws-055-quest-virtual-loot-targets.md'
+}
+if ($RidersReefSmoke) {
+    $requiredFiles += 'f-023-riders-reef-smoke-targets.md'
 }
 if ($FortuneRewardsSmoke) {
     $requiredFiles += 'lws-066-fortune-rewards-targets.md'
@@ -937,6 +968,70 @@ behavior.
 '@
 
     $questVirtualLootTargets | Set-Content -Path (Join-Path $bundleDirectory 'lws-055-quest-virtual-loot-targets.md') -Encoding UTF8
+}
+
+if ($RidersReefSmoke) {
+    $ridersReefTargets = @'
+# F-023 Rider's Reef Exile/Dominion Smoke Targets
+
+Use this worksheet with `CURRENT_STATUS.md`,
+`Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, and
+`Decomp/Analysis/coverage/RIDERS_REEF_EVIDENCE_MATRIX_2026-05-25.md`.
+Do not promote remaining NPE/Rider's Reef behavior without client-visible smoke
+for both faction flows and terminal handoff into the expected starter
+destinations.
+
+## Required Evidence
+
+| Field | Value |
+| --- | --- |
+| Account/character/faction | |
+| New character creation timestamp | |
+| Start world and coordinates | |
+| Quest ids accepted/completed | |
+| Movement/projector/hoverboard objective evidence | |
+| Mine warning/combat loop evidence | |
+| Reward UI/toast evidence | |
+| Respawn/re-entry/logout recovery evidence | |
+| CSI / exact pad pose / visual-SFX notes | |
+| Final terminal creature id and faction route | |
+| Destination world and welcome quest evidence | |
+| Server log or packet evidence file | |
+| Screenshot/video evidence file | |
+| Negative case evidence | |
+| Outcome: implemented, rejected, or still blocked | |
+
+## Target Sequence
+
+| Step | Expected smoke proof |
+| --- | --- |
+| Create Exile and Dominion novice characters | Confirm build-16042 flow enters Rider's Reef (`worldId=3460`) and grants only the expected initial tutorial chain. |
+| Opening movement and projector sequence | Capture the "three points -> platform -> projector" beat without mid-play `ServerQuestInit` refresh or duplicate root-skip behavior. |
+| Hoverboard course | Verify ring lightning/booster visuals, trail persistence, remount recovery, finish snap, and no movement-stranding disable state. |
+| Mine/combat/projector follow-up | Verify mine warning timing, combat objective progress, projector activation fallback, reward UI/toasts, and respawn behavior. |
+| Logout/re-entry after partial progress | Confirm recovered quest chain and terminal state without duplicate rewards or skipped visible steps. |
+| Final departure terminal | Verify Exile/Dominion terminal routing and final quest completion before visible surface receiver. |
+| Starter-zone handoff | Verify Everstar Grove, Northern Wilds, Crimson Isle, and Levian Bay handoff/welcome quest behavior for the appropriate faction route. |
+
+## Current Safe Runtime Boundary
+
+| Surface | Current behavior to verify before widening |
+| --- | --- |
+| Initial quest chain | Fresh entry grants only the expected starting quests; movement recovery grants follow-up quests only after completed movement. |
+| Hoverboard visuals | Table-backed ring/booster visual casts exist, but exact `84387` producer/use and SFX remain blocked. |
+| Mine warning | Danger-zone `Spell4.CastTime` controls the warning window; exact native visual/SFX timing still needs client proof. |
+| Final terminal | Current code has terminal routing and fallback handling; destination welcome quest rows still need client-visible proof. |
+
+## Useful Commands
+
+~~~text
+!character level 6
+!character save
+!teleport coordinates <x> <y> <z> 3460
+~~~
+'@
+
+    $ridersReefTargets | Set-Content -Path (Join-Path $bundleDirectory 'f-023-riders-reef-smoke-targets.md') -Encoding UTF8
 }
 
 if ($FortuneRewardsSmoke) {
