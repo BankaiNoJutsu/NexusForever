@@ -51,7 +51,7 @@ Evidence sources for this matrix:
 | 240 | 15 | 20 | case `0xf0`, vtable `+0x2e8` -> `14049e7e0` | closed duplicate-body alias | Same currency body; reopen only with distinct owner proof. |
 | 245 | 249 | 248 | case `0xf5`, vtable `+0x698` -> `1404a1790` | closed duplicate-body alias | Same body as `ItemTradeSkill`; reopen only with distinct owner proof. |
 | 259 | 4 | 0 | case `0x103`, vtable `+0x530` -> `140001ba0`; handler table `_purecall` | closed rejected no-op | No external refs; reopen only with non-stub live path or live sniff. |
-| 260 | 1 | 0 | case `0x104`, vtable `+0x640` -> `1404a1220` | diagnostic field-owner blocker | State `5` correlates to `HousingBuildComplete`, but active residence fields `+0x60/+0x64` and row/use-site reachability remain unnamed. |
+| 260 | 1 | 0 | case `0x104`, vtable `+0x640` -> `1404a1220` | diagnostic field-owner blocker | State `5` is backed by `HousingPlotEntry_DispatchBuildCompleteIfState5` (`1405a9920`) and `HousingResidence_SetBuildState5AndDispatchComplete` (`1405a9980`); `ClientDB_GetHousingPlotInfo` (`140205fa0`), `ClientDB_GetHousingPlugItem` (`140206c60`), and `HousingResidence_FindPlotEntryByPlotInfoId` (`1405aea10`) now map the lookup chain. Row `36343` still lacks a prerequisite use-site and the active residence state fields remain unnamed. |
 | 267 | 2 | 1 | case `0x10b`, decimal vtable `800` (`+0x320`) -> `14049e9a0` | renamed mapped predicate | Renamed to `GroupIsRaid`; bit 1 at `*(DAT_140c65898+0x6c50)+8` maps to current group context `GroupFlags.Raid`; retail rows use `NotEqual 0`. |
 | 271 | 2 | 5 | case `0x10f`, vtable `+0x178` -> `140001ba0`; handler table `_purecall` | closed rejected no-op | Spell4Effects target-apply refs only; reopen only with non-stub live path or live sniff. |
 | 272 | 0 | 0 | case `0x110`, vtable `+0x180` -> `140001ba0`; handler table `_purecall` | closed rejected no-op | No rows/refs; reopen only with non-stub live path or live sniff. |
@@ -69,7 +69,7 @@ Evidence sources for this matrix:
 ## Next Pass Order
 
 1. No active rename candidates remain in this 26-id slice.
-2. `260` stays mapped-only/blocked until active residence fields `+0x60/+0x64` and a reachable row/use-site are named.
+2. `260` stays mapped-only/blocked until the active residence state fields and a reachable prerequisite use-site are named. The lookup chain now reaches `HousingPlotInfo` / `HousingPlugItem` / residence plot-entry helpers and state value `5` is native-event backed by `HousingBuildComplete`, but row `36343` still has no prerequisite reference outside the row itself.
 
 ## Closed Slices
 
@@ -200,7 +200,14 @@ Evidence:
 - retail rows `19225` and `37519` use type 267 with `NotEqual 0` against that
   raid bit.
 
-`Unknown260` remains intentionally unnamed. The housing plug state value `5`
-correlates with native `HousingBuildComplete` paths, but the active residence
-fields `+0x60/+0x64` and row/use-site reachability are still not named well
-enough for a safe enum rename.
+`Unknown260` remains intentionally unnamed. The predicate now has a mapped
+lookup chain through `ClientDB_GetHousingPlotInfo` (`140205fa0`),
+`ClientDB_GetHousingPlugItem` (`140206c60`), and
+`HousingResidence_FindPlotEntryByPlotInfoId` (`1405aea10`), while the housing
+plug state value `5` is backed by native `HousingBuildComplete` paths:
+`HousingPlotEntry_DispatchBuildCompleteIfState5` (`1405a9920`) dispatches the
+event for plot-entry rows at state `5`, and
+`HousingResidence_SetBuildState5AndDispatchComplete` (`1405a9980`) transitions
+residence build state `4` -> `5`, clears handles, and dispatches the same
+event. The active residence state fields and row/use-site reachability are
+still not named well enough for a safe enum rename.

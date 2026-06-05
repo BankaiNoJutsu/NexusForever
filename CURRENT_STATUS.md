@@ -19,7 +19,7 @@ of truth for feature-area completion.
 | Blocked / diagnostic / structural-only | 3 (`F-001` blocked, `F-002` diagnostic, `F-003` structurally closed) |
 | Consolidated runtime gaps (emit/producer proof) | 5 rows in **Remaining Blocked Items** |
 | Related trackers | `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`, `MATCHING_IMPLEMENTATION_STATUS.md`, `ENTITY_AUX_DECODE_ROADMAP.md`, `BLOCKER_EVIDENCE_PLAN.md` |
-| Placeholder inventory (2026-06-05) | 12 `Client0xNNNN`, 1 `Server0xNNNN` (`Server0x0015`), 16 client diagnostic log-only surfaces, 24 `PrerequisiteType.UnknownNNN`, and 2 quest objective unknowns (`Unknown27`, `Unknown29`); the audit-prompt ghost literal names are absent |
+| Placeholder inventory (2026-06-05) | 12 `Client0xNNNN`, 1 `Server0xNNNN` (`Server0x0015`), 16 client diagnostic log-only surfaces, 24 `PrerequisiteType.UnknownNNN`, and 2 quest objective unknowns (`Unknown27`, `Unknown29`); the audit-prompt ghost literal names are absent; `Client0x0701` MCP/cache recheck remains registration-only at `MOV EDX,0x701` (`140079e05`); `Client0x0928` remains shared `uint32+5-bit` registration-only at `1400a8524` through `ServerUInt32UInt5_ReadPayload` (`14008ce80`) |
 | Build | 0 errors, 0 warnings |
 | Tests | 2504 passed, 0 failed, 0 skipped |
 | Handlers surveyed | 200+ |
@@ -159,13 +159,21 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
 
 ### Remaining Decomp Targets
 - **Entity aux consumers** (F-025): Need `Network_RegisterServerOpcode_0351` (0x14006c290, 56KB) to map opcodes to consumer handlers.
-- **PvP cooldown consumer** (F-015): Consumer for `ServerPvpCooldownUpdate`; address unknown.
+- **PvP cooldown/state consumer** (F-015): `ServerPvpCooldownUpdate` (`0x013E`) still only maps to shared `ServerUInt32_ReadPayload` (`14007ab50`) with no opcode-specific apply consumer found; direct Ghidra MCP plugin pass mapped adjacent `ServerUnitPvpStateChange` (`0x08BD`) reader `ServerUnitPvpStateChange_ReadPayload` (`140098160`) and apply path `Entity_ApplyUnitPvpFlagsChanged` (`1403ddc60`), which updates entity `+0x15a8` and dispatches `UnitPvpFlagsChanged`.
 - **Item context action / Pet stance** (F-026): `0x00B7` native empty reader is
-  mapped; item-context producer/consumer semantics and pet-stance consumer
-  addresses remain unknown.
-- **ServerRaidQueueStatus** (F-010): reader `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` mapped; helper `14008c010` is only a count-plus-array structural reader; zero-value compatibility emit exists from raid-info and non-zero wire order is test-pinned; non-zero queue semantics still blocked.
-- **ServerMatching0x05CF** (F-010): raw `uint32` reader `ServerUInt32_LocalReadThunk` @ `140099110` mapped; candidate apply helper `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0` remains correlated only until a real apply dispatcher/index or live `0x05CF` witness proves manager `+0xa0` semantics; the prior `140e1e66c` data ref is PE `.pdata` unwind metadata, and the `WorldSocket+0x15b0` slot-11 scan found the Fortune positive control but no matching-helper route.
-- **Client0x062A/0634** (F-010): shared `uint32` reader/writer `14007d000`/`14007d010` mapped and handlers are log-only/test-pinned; sender/intent remains blocked until a native send site or live queue UI sniff appears.
+  mapped; item-context producer/consumer semantics remain unknown. Pet stance
+  request/apply flow is mapped through `Pet_SetStance_SendClientPetSetStance`
+  (`14050a270`) for `0x068E`, `Pet_GetStance_ReadCachedStance`
+  (`14050a130`) for the local cache read, and
+  `Pet_ApplyStanceChangedPayload` (`1403c0a80`) for `0x068F`, but server
+  producer timing/scope remains unknown.
+- **ServerRaidQueueStatus / ServerRaidInfoResponse row** (F-010): reader `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` mapped; adjacent `ServerRaidInfoResponse_ReadPayload` @ `14008c010` reads `0x071A` count-plus-0x20-byte rows and `Group_DispatchRaidInfoResponse` @ `1406042b0` maps row fields to saved-instance id, world id, FILETIME expiration, days-from-now, and prime level; pass 134 found no cached static standalone `0x0718` sender beyond registration and the selected caller into the row reader remains `14008c010`; zero-value `0x0718` compatibility emit remains, while standalone non-zero queue timing/aliases stay blocked.
+- **ServerMatching0x05CF** (F-010): raw `uint32` reader `ServerUInt32_LocalReadThunk` @ `140099110` mapped; candidate apply helper `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0` remains correlated only until a real apply dispatcher/index or live `0x05CF` witness proves manager `+0xa0` semantics; the prior `140e1e66c` data ref is PE `.pdata` unwind metadata, the `WorldSocket+0x15b0` slot-11 scan found the Fortune positive control but no matching-helper route, and the 2026-06-05 MCP recheck found only broad manager globals plus shared `0x05CF`/`0x085D` registration refs.
+- **Client0x062A/0634** (F-010): shared `uint32` reader/writer `14007d000`/`14007d010` mapped and handlers are log-only/test-pinned; 2026-06-05 MCP/cache recheck still finds `0x062A`/`0x0634` only in movement-spline registration (`1400a82b6`/`1400a872c`), while positive controls `0x05D5` and `0x0635` have real send helpers. Sender/intent remains blocked until a native send site or live queue UI sniff appears.
+- **PrerequisiteType.Unknown260** (F-022): live case `0x104` / `Prerequisite_CheckHousingPlotPlugState_Table260` maps active housing plot/plug flags `0x08`/`0x20` against state `5`; the 2026-06-05 MCP passes label the `HousingPlotInfo` / `HousingPlugItem` lookup helpers (`140205fa0`/`140206c60`), the residence plot-entry lookup (`1405aea10`), `HousingPlotEntry_DispatchBuildCompleteIfState5` (`1405a9920`), and `HousingResidence_SetBuildState5AndDispatchComplete` (`1405a9980`), proving state `5` is `HousingBuildComplete`-backed. Enum rename remains blocked because row `36343` still lacks a prerequisite use-site and the active residence state fields at the returned subrecord remain unnamed.
+- **PrerequisiteType.IsLocalPlayerEntity** (F-022): pass 140 recovered the formerly missing native function entry at `14049c7b0` as `Prerequisite_CheckIsLocalPlayerEntity`. The body is the already-implemented type 63 Equal/NotEqual identity comparison between the evaluated entity and `DAT_140c65898+0x78` local-player entity; no runtime behavior changed.
+- **PrerequisiteType.DeadState / State** (F-022): pass 141 recovered live vtable entries `Prerequisite_CheckDeadState` (`14049c800`, case `0x0c` / `+0x80`) and `Prerequisite_CheckEntityStateFlags_Table149` (`14049c840`, case `0x95` / `+0x88`). DeadState now has a native live witness but NF keeps the existing `IsAlive` proxy until entity `+0x250` / `+0x254` / type `0x17` fields are server-owned; State remains mapped-only/blocked because type-149 row ids have no direct prerequisite-column references and `entity+0x1e4` ownership is incomplete. Pass 142 rejected the strongest cached `+0x1e4` writer cluster (`PrimalMatrix_UpdateNodeVisualStateFlags` `1406e70a0` / `PrimalMatrix_HandleNodeAllocationInput` `1406e73e0`) as a PrimalMatrix node visual/allocation path, not prerequisite entity-state evidence.
+  Pass 143 mapped the scene proximity-cue reader/application cluster (`SceneProximityCue_LookupConfigById` `1404cc070`, `SceneProximityCue_IsCandidateInRange` `140722d30`, `SceneProximityCue_CheckPrerequisiteGate` `1407234a0`, `SceneProximityCue_ProcessQueuedCandidate` `1404cc0d0`, `Entity_ApplySceneProximityCue` `14047a1f0`, `SceneProximityCue_SelectWorldZoneEntry` `140722ed0`): it strengthens `entity+0x2ac` as an action/cue-blocking gate and `+0x250/+0x254` as approach/movement blockers, but still gives no native writer for evaluated-entity `+0x1e4` and no type-149 use-site.
 
 ### F-001 - STS Token Crypto - BLOCKED
 Token crypto handshake, external-account edge routes, and optional envelope
@@ -178,7 +186,11 @@ fields remain blocked until crypto/token semantics are mapped safely.
 `ClientAddonModuleList`. Every packet's wire shape is pinned by focused tests.
 A 2026-06-04 guard now pins the unresolved diagnostic handler family as
 log-only with no plaintext or encrypted server emit; focused diagnostic
-coverage passed 90/90. A 2026-06-05 follow-up pins `Client0x00C8` as a
+coverage passed 90/90. A 2026-06-05 realm-row follow-up keeps
+`ClientAccountRealmData`, `ClientRealmListRealmRow`, and
+`ClientRealmListMessageRow` structural-only: selected cache call edges nest
+their writers under the `Client0x0760` row / `ServerRealmList` serializers,
+and no client send owner surfaced. A 2026-06-05 follow-up pins `Client0x00C8` as a
 shared 5-bit `MatchType` wire shape that must not be aliased to queue-leave or
 challenge-choice behavior without an opcode-specific sender; a second follow-up
 pins `Client0x00ED` as mapped `uint64 + uint32 + uint64 + 3 bits` but rejects
@@ -204,7 +216,11 @@ remains: `Server0x0015`, whose native reader `ServerUInt5UInt32_ReadPayload`
 (`140081f00`) maps one 5-bit field plus one `uint32` but not semantic owner or
 producer behavior; the same reader is reused by matching opcode `0x0628` and
 inside `ServerFortuneRewards`, so `Server0x0015` remains neutral rather than
-being inferred as matching average-wait state. Of the 62 shape-mapped aux/spell
+being inferred as matching average-wait state. A 2026-06-05 cache/xref recheck
+found the positive `0x0628` apply control at
+`MatchingManager_ApplyMatchingAverageWaitTimeUpdated` but no equivalent
+`0x0015` apply owner or producer; the fresh helper trace was blocked by the open
+Ghidra project lock. Of the 62 shape-mapped aux/spell
 packets with neutral fields, 12 have controlled entity-create or selected
 housing emit paths and 50 remain gated behind consumer or producer evidence
 before production emission.
@@ -453,14 +469,17 @@ for pending/cleared state.
 - `ClientMatchingMatchInitiateLookingForReplacementsHandler` / `ClientMatchingStopLookingForReplacementsHandler` validate in-progress match membership and native role mask `0..2`; they do not start a server replacement queue
 - Removed the unsupported replacement anchor queue/merge runtime; addon and sender
   evidence prove the UI/event boundary, not server producer timing or merge rules
-- `ServerRaidQueueStatus` (0x0718) emitted alongside `ServerRaidInfoResponse` as zero-value compatibility state; non-zero wire order is covered by `GroupPacketShapeTests`, but field semantics remain neutral
+- `ServerRaidQueueStatus` (0x0718) emitted alongside `ServerRaidInfoResponse` as zero-value compatibility state; shared row fields are mapped through `0x071A` / `Group_DispatchRaidInfoResponse`, but standalone non-zero queue timing and queue-only aliases remain blocked
 - `ServerMatching0x05CF` remains a raw `uint32` packet only: reader `140099110`
   is mapped, and `MatchingManager_ApplyManagerUInt32Field0xA0` (`1405c41c0`)
   is only a correlated apply candidate until a real apply dispatcher/index or
   live packet witness is proven. The prior `140e1e66c` xref is PE `.pdata`
   unwind metadata, not a matching dispatch-table cell; the `WorldSocket+0x15b0`
   slot-11 scan found the Fortune `vtable+0x58` positive control but no
-  `1405c41c0` match
+  `1405c41c0` match. A 2026-06-05 MCP recheck confirms the candidate apply
+  helper only touches broad manager globals `140c65b98` / `140c65898`, while
+  `ServerUInt32_LocalReadThunk` refs resolve to the shared `0x05CF` and
+  `0x085D` registration rows, not an apply dispatcher.
 - Shared one-flag matching outputs `0x05B0`/`0x05CC`/`0x05F1` remain wire-mapped
   only. `MatchingManager_ApplyMatchingRoleCheckStarted` (`1405c0e90`) consumes
   `payload[0]` and dispatches `MatchingRoleCheckStarted`, but its only direct
@@ -488,8 +507,10 @@ for pending/cleared state.
 - 0x0461 ServerQuestShareResult [ok]
 - 0x0468 ServerGroupTargetIdentityPrimeLevelList [ok; producer semantics blocked, stale stat/detail emit removed]
 
-**Blocked:** exact `ServerRaidQueueStatus` queue-position semantics and timing
-(native `14008c010` only proves a count-plus-array reader over 0x20-byte rows);
+**Blocked:** exact standalone `ServerRaidQueueStatus` queue-position semantics
+and non-zero timing (shared row fields are mapped through `0x071A`, but pass
+134 found no cached static sender beyond registration and no queue producer/apply
+owner is proven);
 replacement queue fill still needs live accept/teleport smoke and multi-slot
 role-fill verification; `ServerMatching0x05CF` still needs either a real
 matching apply dispatcher/index that ties opcode `0x05CF` to `1405c41c0` or a
@@ -588,6 +609,11 @@ PvP toggle-off now starts a player-owned pending cooldown with
 `character.pvpFlagDisableUntilUtc`, reload as `PvPFlag.Enabled` with the
 remaining timer, resend `ServerPvpCooldownUpdate` on login, and clear the
 stored expiry on cancel or expiration; focused PvP cooldown coverage is 14/14.
+Native pass 135 confirms `0x08BD` client state apply via
+`ServerUnitPvpStateChange_ReadPayload` (`140098160`) and
+`Entity_ApplyUnitPvpFlagsChanged` (`1403ddc60`) / `UnitPvpFlagsChanged`, while
+the standalone `0x013E` cooldown consumer remains blocked behind apply-owner or
+live UI evidence.
 Open-world player-vs-player attackability remains deliberately active-duel-only
 through `Player.CanAttack` and `DuelManager.AreDueling`; instanced PvP match
 combat is a separate content-map/match path. Broader non-duel open-world PvP
@@ -660,7 +686,11 @@ this is emulator-side local avoidance polish, not retail parity proof.
 leading `uint32`, `18`-bit `Spell4Id`, and `9`-bit `CastResult`. The leading
 managed `Unknown0` field remains neutral because current evidence is
 registration/reader-only; client request context-token mapping is not enough to
-prove result echo semantics without an apply consumer or live echo capture.
+prove result echo semantics without an apply consumer or live echo capture. A
+same-day pass 132 MCP/cache recheck still found no apply owner: the MCP bridge
+could not connect to the open project, and cached call edges for `140094fb0`
+only show internal bit-reader calls. `PacketPlaceholderNamingTests` now guards
+against `ContextToken`, `ClientContextToken`, and `CastingId` aliases.
 
 ### F-021 - Action Set / LAS / AMP / Attributes - PARTIAL (blocked)
 LAS size/spec/tier/AMP preflight checks exist. `UpdateSpellInProgress`,
@@ -1347,7 +1377,12 @@ blocked.
 
 **Blocked:** `ClientItemContextActionHandler` still keeps `SelectedBranch`
 diagnostic-only for non-use item actions until right-click branch semantics are
-mapped. Pet stance behavior remains limited to the existing pet stance state.
+mapped. Pet stance packet shape and client apply are mapped through
+`Pet_SetStance_SendClientPetSetStance` (`14050a270`),
+`ServerUInt32UInt5_ReadPayload` (`14008ce80`),
+`Pet_GetStance_ReadCachedStance` (`14050a130`), and
+`Pet_ApplyStanceChangedPayload` (`1403c0a80`) for `ServerPetStanceChanged`
+(`0x068F`), but server producer timing/scope remains unmapped.
 
 ### F-027 - Options / Keybindings - COMPLETE
 6 handlers, account+character keybinding split, casting options, combat
@@ -1802,7 +1837,7 @@ and others) stay in their `F-00x` sections and in
 | `TryCompleteFixedRecipe(chargeCounts:)` / `CalculateTotalCharges()` | **False.** Complex craft logs `ChargeCounts` but calls `TryCompleteFixedRecipe` without applying them. |
 | `ClientItemContextAction` delegates to `ClientItemUse` | **False.** Handler validates/logs; `SelectedBranch` stays diagnostic-only. |
 | LFR `SetInProgress` + server queue integration | **False.** `0x05D5`/`0x0602` are validation/logging only; replacement backfill was removed per evidence rollback. |
-| `ServerRaidQueueStatus` never sent | **Partially false.** Emitted with raid-info as zero-value compatibility and non-zero wire order is test-pinned; queue-position semantics remain blocked. |
+| `ServerRaidQueueStatus` never sent | **Partially false.** Emitted with raid-info as zero-value compatibility; shared row field names are mapped, but standalone queue-position semantics and non-zero timing remain blocked. |
 | Source TODO/FIXME/NotImplemented search proves unfinished production code | **False after 2026-06-04 audit.** Scoped C# searches now leave no production TODO/FIXME/NotImplemented markers. Remaining hits are test doubles, explicit unsupported guardrails, WIP content docs, or blocked tracker entries with named evidence gates. |
 
 | # | Feature | Gap | Evidence status (latest) | Blocker |
@@ -1850,7 +1885,7 @@ candidate labels are reviewed individually.
 ### Next Decomp Targets (not yet labeled)
 | Address | Hypothesized Role |
 |---------|-------------------|
-| 0x14008bf80 / 0x14008c010 | ServerRaidQueueStatus (0x0718) row reader plus count-array helper (emit exists; wire order covered; semantics blocked) |
+| 0x14008bf80 / 0x14008c010 | ServerRaidQueueStatus (0x0718) shared row reader plus ServerRaidInfoResponse (0x071A) count-array reader; fields mapped via Group_DispatchRaidInfoResponse, standalone queue timing blocked |
 | ~0x1404dbxxx | Crafting complex craft stat consumer (`0x084B`/`0x0855`) |
 | ~0x140095xxx | Entity auxiliary 0x025F-0264 registration block |
 | ~0x140097xxx | Entity auxiliary 0x0889-093E registration block |
