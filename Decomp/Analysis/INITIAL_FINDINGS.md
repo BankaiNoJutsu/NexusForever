@@ -19381,6 +19381,154 @@ F-010 ServerMatching0x05CF tracker reconciliation (2026-06-04):
   -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f010-matching-05cf\`
   passed `98/98`.
 
+F-010 ServerMatching0x05CF apply-cell xref refresh (2026-06-05):
+
+- **Target question**: Does a fresh native reference sweep tie opcode `0x05CF`
+  to `MatchingManager_ApplyManagerUInt32Field0xA0` strongly enough to rename the
+  packet or emit a semantic manager-field update?
+- **Evidence state**: Correlated / Blocked. `FindDataReferences` over
+  `1405c41c0`, `140e1e66c`, neighboring cells `140e1e660` / `140e1e228`, and
+  `ServerUInt32_LocalReadThunk` (`140099110`) found exactly one data reference
+  to the apply candidate at `140e1e66c`; at this point that address was still
+  under test as a possible table cell. The raw uint32 reader had only four
+  registration-block references inside `Network_RegisterServerOpcode_0351`,
+  matching the known `0x05CF` / `0x085D` shared-reader rows.
+  `selected_call_edges.csv` still shows `1405c41c0` calling
+  `ClientEntityLookup_FindByIdentity` and `FUN_1400a8020`, with no
+  `ClientEvent_DispatchNamedEvent` edge.
+- **Disposition**: No runtime behavior, semantic rename, or field promotion is
+  safe. The packet remains `ServerMatching0x05CF` with one neutral `uint32`
+  payload. The apply function remains a durable correlated candidate, not an
+  opcode-proven consumer.
+- **Next evidence source**: recover a real matching apply dispatcher/index that
+  maps opcode `0x05CF` to `1405c41c0`, or capture live `0x05CF` alongside
+  `0x05CA` / `0x05CC` during match-ready, participant-count, or queue-state UI
+  transitions.
+
+F-010 ServerMatching0x05CF apply-cell false-lead rejection (2026-06-05):
+
+- **Target question**: Are `140e1e228` / `140e1e66c` actually matching
+  apply-table cells, or did the xref sweep land in PE metadata?
+- **Evidence state**: Rejected as dispatch evidence. `DumpNearbyData 140e1e228
+  32` and `DumpNearbyData 140e1e66c 8` both report the addresses as contained
+  by `_IMAGE_RUNTIME_FUNCTION_ENTRY[46407]` at `140dc7000`, with the same
+  `0x0C` row spacing that previously made the function-address refs look like
+  an apply table. That is PE `.pdata` exception/unwind metadata, not a matching
+  opcode dispatch structure.
+- **Disposition**: removed the stale "table cell" wording from current F-010
+  status, placeholder tracker, `GameMessageOpcode.ServerMatching0x05CF`, and
+  the matching function-label comments. `MatchingManager_ApplyManagerUInt32Field0xA0`
+  remains a correlated one-uint32 apply candidate by function behavior only; it
+  is no longer backed by `140e1e66c` as opcode-link evidence.
+- **Next evidence source**: find a real apply dispatcher/index outside PE
+  `.pdata`, or capture live `0x05CF` with surrounding `0x05CA` / `0x05CC`
+  queue-state transitions to prove whether manager `+0xa0` belongs to this
+  opcode.
+
+F-010 shared matching one-flag cluster refresh (2026-06-05):
+
+- **Target question**: Do the native rows for `0x05B0`, `0x05CC`, and `0x05F1`
+  prove semantic flag owners beyond the shared one-flag reader already modeled
+  by NexusForever?
+- **Evidence state**: Mapped wire / Blocked semantics. `InspectCodeAddress
+  1400807f0` reports no containing function at that exact address; the local
+  thunk sits between `ServerUInt32PairArray_ReadPayload` (`140080710`) and
+  `ServerDailyLoginUpdate_ReadPayload` (`140080810`), null-checks the payload
+  target, loads `R8D = 1`, and jumps to `14006c090`. `TraceFunctionCallers
+  1400807f0 12` found `27` references, all data/registration references. The
+  opcode comparison probe for `05B0`, `05CC`, and `05F1` found the expected
+  registration literals in `Network_RegisterServerOpcode_0351` at `140075bd2`,
+  `140075cf2`, and `140075db6`; the wider scan saturated on unrelated raw
+  immediates used as struct offsets.
+- **Native map**: `selected_decompiled.c` registers `0x05B0`, `0x05CC`, and
+  `0x05F1` with size 4 and `&LAB_1400807f0`. The same reader thunk is also
+  reused by non-matching rows such as `0x0972`, `0x00B2`, `0x06DE`, `0x080E`,
+  `0x063F`, and `0x0555`, so the thunk is structural evidence only.
+- **NexusForever map**:
+  `ServerMatchingManagerFlag.Flag`,
+  `ServerMatchingMatchParticipantCountUpdate.Ally`, and
+  `ServerMatchingRoleCheckStarted.RolesRequired` all serialize the same
+  single-flag shape, and `MatchingPacketShapeTests` pins that shared packet
+  layout. Runtime producers currently use `0x05CC.Ally` for participant-count
+  direction and `0x05F1.RolesRequired` for role-check state, but this pass did
+  not recover native consumer proof for those field meanings or emit timing.
+- **Disposition**: no runtime behavior change and no further semantic rename is
+  safe. Keep the three packets as mapped one-flag wire surfaces, and do not use
+  `0x05CC` as semantic corroboration for `ServerMatching0x05CF` until a client
+  apply path or live matching capture proves the flag owner.
+- **Next evidence source**: recover the client apply/consumer path for the
+  shared one-flag rows, or capture live queue/role-check transitions that show
+  `0x05B0`, `0x05CC`, and `0x05F1` payload values alongside `0x05CA` /
+  `0x05CF` state changes.
+
+F-010 matching apply-helper xref rejection (2026-06-05):
+
+- **Target question**: Can native matching-manager event helpers such as
+  `MatchingManager_ApplyMatchingRoleCheckStarted` be tied to `0x05B0`,
+  `0x05CC`, or `0x05F1` strongly enough to prove one-flag semantics?
+- **Evidence state**: Correlated / Blocked. The selected decompile shows
+  `MatchingManager_ApplyMatchingRoleCheckStarted` (`1405c0e90`) setting
+  matching-manager `+0xa4`, sending a role-check chat notice, and dispatching
+  `MatchingRoleCheckStarted` with `payload[0]`. That makes it a strong semantic
+  candidate for the `0x05F1` one-flag payload, but it is not opcode-owned by the
+  current evidence.
+- **Rejected xrefs**: `FindDataReferences --maxRefs 16` over `1405c0e90`,
+  `1405c1850`, `1405c21d0`, `1405c2440`, and `1405c24a0` found exactly one data
+  reference for each helper: `140e1e2c4`, `140e1e3b4`, `140e1e48c`,
+  `140e1e4a4`, and `140e1e4b0`. `TraceFunctionCallers 1405c0e90 10` likewise
+  found one ref only, `140e1e2c4`, with no instruction. `DumpNearbyData
+  140e1e2c4 16` and the existing wider `140e1e60c` dump place these addresses
+  inside `_IMAGE_RUNTIME_FUNCTION_ENTRY[46407]` at `140dc7000`, i.e. PE
+  `.pdata` exception/unwind metadata rather than an apply dispatch table.
+- **Slot scan**: `FindVtableSlotReferences 11 1405c0e90 140b40000 140e00000 16`
+  returned `matches=0`, so the common `vtable+0x58` consumer-table hypothesis
+  did not produce a dispatch cell for the role-check-started helper.
+- **Disposition**: no C# behavior or packet-field rename is safe. The helper
+  labels now explicitly note that their `140e1e*` xrefs are `.pdata`, not
+  opcode-index proof. `ServerMatchingRoleCheckStarted.RolesRequired` remains a
+  local compatibility field over a proven one-flag wire shape until a real
+  dispatcher or live capture ties `0x05F1` to `1405c0e90`.
+- **Next evidence source**: recover the actual server-message apply dispatcher
+  outside PE `.pdata`, or collect a live role-check packet capture showing
+  `0x05F1` payload values and the resulting client event/UI state.
+
+F-010 WorldSocket slot-11 matching dispatcher rejection (2026-06-05):
+
+- **Target question**: Does the known `WorldSocket_ProcessServerMessage`
+  handler-chain apply route at callback-view `+0x14b0` / native
+  `WorldSocket+0x15b0` / `vtable+0x58` expose matching-manager helper targets,
+  or is F-010 matching still routed elsewhere?
+- **Evidence state**: Rejected for this route. `selected_decompiled.c` shows
+  `WorldSocket_ProcessServerMessage` (`140014f10`) deserializing the server
+  packet, handling AccountInventory / Storefront fast paths, then walking
+  `param_1+0x14b0` and calling `(**(code **)(*node + 0x58))(node, packetId,
+  payload, payloadLen)` before advancing through `node+0x20`.
+  `WorldSocket_FilterServerMessageHandlers` (`140014d30`) walks the same chain
+  with `vtable+0x50` before deserialize.
+- **Positive control**: `WorldSocketPersistentNode15A8_Ctor` (`1404d56b0`)
+  installs vtable pointer `140b690f0`. `FindVtableSlotReferences 11 1404d60f0
+  140b40000 140e00000 16` found `matches=1` at slot cell `140b69148`, proving
+  the scanner can find a real `vtable+0x58` apply target. The target
+  `FortuneNode_ApplyServerFortunePackets` (`1404d60f0`) handles Fortune packets
+  `0x03CF..0x03D2`.
+- **Negative matching probes**: `FindVtableSlotReferences 11` returned
+  `matches=0` for `MatchingManager_ApplyMatchingRoleCheckStarted` (`1405c0e90`),
+  `MatchingManager_ApplyManagerUInt32Field0xA0` (`1405c41c0`),
+  `MatchingManager_ApplyMatchLeftReset` (`1405c1850`),
+  `MatchingManager_ApplyMatchVoteSurrenderBegin` (`1405c21d0`),
+  `MatchingManager_ApplyMatchLookingForReplacements` (`1405c2440`), and
+  `MatchingManager_ApplyMatchStoppedLookingForReplacements` (`1405c24a0`).
+  The pointer-family slot inventory also has zero rows for those helper
+  addresses.
+- **Disposition**: no runtime behavior change or semantic rename is safe. This
+  rejects the exported `WorldSocket+0x15b0` / `vtable+0x58` chain as the current
+  F-010 matching dispatcher while preserving the positive Fortune route as a
+  validation control.
+- **Next evidence source**: recover a different matching apply dispatcher/index
+  outside exported vtable slots, or capture live queue / role-check /
+  match-ready packets and correlate `0x05B0`, `0x05CC`, `0x05CF`, and `0x05F1`
+  with client UI state.
+
 F-010 Client0x062A/Client0x0634 diagnostic boundary (2026-06-04):
 
 - **Target question**: Can `Client0x062A` / `Client0x0634` safely drive matching
@@ -19634,3 +19782,299 @@ F-025 Taxi/EsperPet create-packet branch correction (2026-06-04):
   passenger count, and `EsperPetEntityModel` no longer writes the Pet-only
   trailing name. `EntityCreatePacketTests` now guards both branch shapes.
 - Verification: pending focused test/live rerun.
+
+F-016-F-020 `ServerSpellCastResult` reader / context-token echo blocker (2026-06-05):
+
+- **Target question**: Does server opcode `0x07FC` prove that
+  `ServerSpellCastResult.Unknown0` is an echoed client cast context token?
+- **Evidence state**: Mapped wire / Blocked semantics. A focused
+  `FindOpcodeComparisons` pass for `0x07FC` found the real registration at
+  `Network_RegisterServerOpcode_0351` instruction `0x1400743d9` and one
+  unrelated object-offset immediate at `0x1407c2fdc`. The registration binds
+  reader `0x140094fb0` with a 12-byte object.
+- **Reader map**: `ServerSpellCastResult_ReadPayload` (`WildStar64.exe`
+  `0x140094fb0`) reads a leading `uint32`, then `18`-bit `Spell4Id`, then
+  `9`-bit `CastResult`. `FindDataReferences` found only registration/data refs
+  for the reader (`0x140dcf604`, `0x1400743bb`, `0x1400743cd`).
+- **Disposition**: Added the durable reader label but kept the managed
+  `Unknown0` field neutral. Existing client request packets carry mapped
+  context tokens, but this pass does not prove that `0x07FC` echoes them back
+  into the first field; no server behavior or packet field rename is safe until
+  an apply/consumer handler or live cast-result echo capture proves it.
+- **Next evidence source**: a `0x07FC` client apply/consumer mapping, apply-table
+  owner, or live cast-result capture correlating a non-zero leading uint32 with
+  a known client request context token.
+
+F-003 `Server0x0015` shared-reader semantic blocker (2026-06-05):
+
+- **Target question**: Can the lone `Server0xNNNN` placeholder be promoted from
+  its shared `UInt5 + UInt32` reader shape to matching average-wait semantics?
+- **Evidence state**: Mapped wire / Blocked semantics. `Server0x0015` registers
+  in `Network_RegisterServerOpcode_0351` as opcode `0x0015`, size `8`, reader
+  `ServerUInt5UInt32_ReadPayload` (`WildStar64.exe` `140081f00`). The same
+  selected decompile registers matching opcode `0x0628` with that reader, and
+  the direct reader body reads one 5-bit field into offset `+0`, then one
+  `uint32` into offset `+4`.
+- **False-rename guard**: the reader is not matching-specific. The selected
+  decompile also calls `140081f00` inside `ServerFortuneRewards_ReadPayload`
+  (`140081f60`) for counted money reward rows. That third caller means the
+  helper proves only the reusable wire row shape; it does not prove that
+  `Server0x0015.Value0` is a `MatchType` or that `Value1` is an average wait.
+- **Fresh probe**: `FindOpcodeComparisons` over `0x0015`/`0x0628` found the
+  known `0x0628` registration literal and the `0x0015` registration tuple, but
+  global `0x15` immediates saturate with bit counts, offsets, and write-size
+  arithmetic. Those hits are non-semantic until tied to an opcode dispatch or
+  sender/apply path. `TraceFunctionCallers 140081f00 8` found six refs: one raw
+  data ref, one unconditional call from `ServerFortuneRewards_ReadPayload`
+  (`140081f60`) to read counted rows, and four registration-table data refs for
+  the `0x0015` and `0x0628` tuples; it found no opcode-specific apply or
+  producer caller for `0x0015`.
+- **Disposition**: kept the opcode/model as `Server0x0015` with neutral
+  `Value0`/`Value1`, updated source/tracker comments to mention the Fortune row
+  reuse, and added a packet placeholder guard rejecting `MatchType` /
+  `AverageWaitTime` aliases on `Server0x0015`.
+- **Next evidence source**: an opcode-specific `0x0015` apply/producer path,
+  client post-read consumer, or live `0x0015` payload capture. Do not rename or
+  emit from reader adjacency alone.
+
+F-002/F-033 `Client0x00C8` shared-MatchType false-rename guard (2026-06-05):
+
+- **Target question**: Can `Client0x00C8` be promoted to a matching queue-leave
+  or challenge-choice packet because it shares the 5-bit `MatchType` payload?
+- **Current support**: Mapped wire / Blocked semantics. Source keeps
+  `Client0x00C8` in the unresolved diagnostic handler family, logging only the
+  mapped `MatchType` enum value and performing no queue, challenge, housing, or
+  server-response mutation.
+- **Native map**: `Network_RegisterServerOpcode_0351` (`WildStar64.exe`
+  `14006c290`) binds decimal `200` (`0x00C8`) to
+  `ClientMatchType_ReadPayload` (`14008a140`) /
+  `ClientMatchType_WritePayload` (`14008a150`) with registered size `4`. The
+  same reader/writer pair is also registered for `ClientMatchingQueueLeave`
+  (`0x05B5`) and `ClientMatchingQueueLeaveAsGroup` (`0x05B6`), proving only the
+  reusable one-field wire shape.
+- **Fresh probe**: `TraceFunctionCallers 14008a150 8` found six refs, all
+  registration-table setup references inside `Network_RegisterServerOpcode_0351`;
+  no opcode-specific gameplay sender or consumer surfaced. `ClientChallengeChoice`
+  (`0x00C5`) separately owns the proven challenge send cluster
+  (`140710c10`, `140710d60`, `140711ea0`, `140711f10`), so challenge adjacency
+  is not enough to rename or mutate `Client0x00C8`.
+- **Disposition**: kept one of the remaining `12` `Client0xNNNN` placeholders
+  diagnostic-only. Added `PacketPlaceholderNamingTests.Client0x00C8_RemainsDiagnosticUntilOpcodeSpecificSenderIsProven`
+  to reject queue-leave, group queue-leave, challenge-choice, `ChallengeId`,
+  `Choice`, and `QueueId` aliases while preserving the mapped `MatchType` field.
+- **Next evidence source**: a native `0x00C8` sender, client consumer/apply path,
+  or live challenge/housing/matching UI capture tied to this opcode.
+
+F-002 `Client0x00ED` duel/path/mail false-rename guard (2026-06-05):
+
+- **Target question**: Can `Client0x00ED` be promoted to a duel, mail, or path
+  packet because it sits between duel and path opcodes and prior exact
+  immediates touched mail-side code?
+- **Current support**: Mapped wire / Blocked semantics. NexusForever parses one
+  `uint64`, one `uint32`, one `uint64`, and three trailing bits as neutral
+  `Value0..5`, then logs the values through the unresolved diagnostic handler
+  without mutating duel, mail, path, player, or server-response state.
+- **Native map**: `Network_RegisterServerOpcode_0351` (`WildStar64.exe`
+  `14006c290`) registers opcode `0x00ED`, size `0x20`, local read/advance label
+  `1400a61e0`, and writer `ClientUnresolvedDiagnosticPacket00ED_WritePayload`
+  (`1400a6200`). The writer body matches the managed field order. The paired
+  read label is not a standalone function; `InspectCodeAddress 1400a61e0 32`
+  reports `functionAtOrContaining=<none>`, so no durable function label was
+  added for it.
+- **Fresh probe**: `TraceFunctionCallers 1400a6200 10` found five refs: raw data
+  refs `140dd0a14`, `140b97b64`, and `140b97b74`, plus registration-table setup
+  refs `140079cce` and `140079ced` inside `Network_RegisterServerOpcode_0351`.
+  No opcode-specific gameplay sender or consumer surfaced.
+- **Rejected false lead**: prior exact `MOV ECX,0xED` hits in `FUN_14062a160`,
+  `FUN_14062a5f0`, and `FUN_1406b4cf0` feed
+  `GameFormula_GetEntryById(0xed)` around the `ClientMailSend` (`0x0168`) path;
+  those are formula ids, not `0x00ED` packet ownership.
+- **Disposition**: kept one of the remaining `12` `Client0xNNNN` placeholders
+  diagnostic-only. Added
+  `PacketPlaceholderNamingTests.Client0x00ED_RemainsDiagnosticUntilOpcodeSpecificOwnerIsProven`
+  to reject duel, mail, and path aliases while preserving neutral
+  `Value0..5`.
+- **Next evidence source**: a native `0x00ED` sender, post-read consumer, or live
+  duel/path/mail UI capture tied to this opcode.
+
+F-002 `Client0x011B`/`Client0x011D` character/loot/mail false-rename guard (2026-06-05):
+
+- **Target question**: Can `Client0x011B` or `Client0x011D` be promoted to loot
+  bind confirmation, mail UI/list request, loot vacuum, or tradeskill-reset
+  behavior from opcode adjacency or shared writer evidence?
+- **Current support**: Mapped wire / Blocked semantics. NexusForever keeps
+  `Client0x011B` as an empty unresolved diagnostic request and `Client0x011D`
+  as a one-`uint32` unresolved diagnostic request, both handled log-only with no
+  loot, mail, crafting, player, or server-response mutation.
+- **Native map**: `Network_RegisterServerOpcode_0351` (`WildStar64.exe`
+  `14006c290`) registers opcode `0x011B` to shared zero-payload
+  `ClientCraftingAbandon_WritePayload` (`140001ba0`) and opcode `0x011D` to
+  shared `ClientTradeskillResetTalents_WritePayload` (`14007d010`). Field order
+  remains empty for `0x011B` and one raw `uint32` for `0x011D`.
+- **Fresh probe**: `TraceFunctionCallers 140001ba0 12` found 833 shared-helper
+  references, not an opcode-specific `0x011B` owner. `TraceFunctionCallers
+  14007d010 12` found 67 references, including registration/data rows and
+  `ClientCompoundTradeskillUInt32_WriteCluster` (`14007dc80`), but no direct
+  `0x011D` gameplay sender or post-read consumer.
+- **Rejected false leads**: earlier non-registration `0x011B`/`0x011D` hits in
+  Lua lexer/parser functions are token ids, `Movement_UpdateAndSendFallStateOpcodes`
+  uses `GameFormula_GetEntryById(0x11B)`, and
+  `SpellCast_SendClientCastSpellOrPosition` returns `CastResult.IllegalSpellCast`
+  (`0x011D`) rather than sending opcode `0x011D`.
+- **Disposition**: kept two of the remaining `12` `Client0xNNNN` placeholders
+  diagnostic-only. Added
+  `PacketPlaceholderNamingTests.Client0x011BAnd011D_RemainDiagnosticUntilOpcodeSpecificOwnersAreProven`
+  to reject loot-bind, mail, loot-vacuum, and tradeskill-reset aliases while
+  preserving the exact empty / one-`uint32` contracts.
+- **Next evidence source**: a native `0x011B`/`0x011D` sender, post-read
+  consumer, or live character/loot/mail UI capture tied to these opcodes.
+
+F-002 `Client0x012D` quest/pet-customisation false-rename guard (2026-06-05):
+
+- **Target question**: Can `Client0x012D` be promoted to `ClientSuggest`,
+  account-item pending group, realm-transfer, quest, or pet behavior because it
+  shares the one-wide-string writer?
+- **Current support**: Mapped wire / Blocked semantics. NexusForever reads one
+  wide string into neutral `Client0x012D.Text`, logs it through the unresolved
+  diagnostic handler, and performs no support, account-item, realm-transfer,
+  quest, pet, or server-response mutation.
+- **Native map**: `Network_RegisterServerOpcode_0351` (`WildStar64.exe`
+  `14006c290`) registers opcode `0x012D`, size `8`, read label
+  `LAB_14007ae30`, and shared `ClientSuggest_WritePayload` (`14007ae80`). The
+  writer body calls `NetworkBitWriter_WriteWideString`, proving one wide-string
+  field only.
+- **Fresh probe**: `TraceFunctionCallers 14007ae80 18` found 18 direct
+  references: shared registration rows in `Network_RegisterServerOpcode_0351`,
+  two registration rows in `ClientWorldOpcodeRegister_MovementSpline`
+  (`1400a8190`), and raw data refs `140c1eda8` / `140c1edb0`. No opcode-specific
+  `0x012D` gameplay sender or post-read consumer surfaced.
+- **Rejected false leads**: a narrowed `FindOpcodeComparisons` pass over
+  `0x012D`, `0x0833`, `0x063E`, `0x0233`, and `0x07C6` found `0x012D` only at
+  registration literal `14006c8dc` plus unrelated arithmetic/offset hits in
+  `FUN_1403b2c40`, `FUN_1408c4190`, and `FUN_1408c5600`. The same scan found
+  proven sibling senders for `0x0833` (`Support_SendClientSuggest`), `0x0233`
+  (`AccountItem_SendClientClaimPendingItemGroup`), and `0x07C6`
+  (`AccountItem_SendClientReturnPendingItemGroup`), which are evidence not to
+  reuse those names for `0x012D`.
+- **Disposition**: kept one of the remaining `12` `Client0xNNNN` placeholders
+  diagnostic-only. Added
+  `PacketPlaceholderNamingTests.Client0x012D_RemainsDiagnosticUntilOpcodeSpecificSenderIsProven`
+  to reject `ClientSuggest`, account-item pending-group, realm-transfer,
+  sibling `Client0x063E`, and quest/pet-style field aliases while preserving
+  the one-wide-string contract.
+- **Next evidence source**: a native `0x012D` sender, post-read consumer, or
+  live quest tracker / pet customisation / account rail capture tied to this
+  opcode.
+
+F-002 `Client0x063E` auth/marketplace/status false-rename guard (2026-06-05):
+
+- **Target question**: Can `Client0x063E` be promoted to `ClientSuggest`,
+  account-item pending group, support-ticket, marketplace/auth/status, or
+  auction-filter behavior because it shares the one-wide-string writer?
+- **Current support**: Mapped wire / Blocked semantics. NexusForever reads one
+  wide string into neutral `Client0x063E.Text`, logs it through the unresolved
+  diagnostic handler, and performs no support, account-item, marketplace, auth,
+  auction, or server-response mutation.
+- **Native map**: `ClientWorldOpcodeRegister_MovementSpline` (`WildStar64.exe`
+  `1400a8190`) registers opcode `0x063E`, size `8`, local read label
+  `LAB_14007ae30`, and shared `ClientSuggest_WritePayload` (`14007ae80`). The
+  writer body calls `NetworkBitWriter_WriteWideString`, proving one wide-string
+  field only.
+- **Fresh probe**: `TraceFunctionCallers 14007ae80 18` found 18 direct
+  references: shared registration rows in `Network_RegisterServerOpcode_0351`,
+  two registration rows in `ClientWorldOpcodeRegister_MovementSpline`, and raw
+  data refs `140c1eda8` / `140c1edb0`. No opcode-specific `0x063E` gameplay
+  sender or post-read consumer surfaced.
+- **Rejected false leads**: a narrowed `FindOpcodeComparisons` pass over
+  `0x063E`, `0x012D`, `0x0833`, `0x0233`, and `0x07C6` found `0x063E` only at
+  registration literal `1400a821a`. The same scan found proven sibling senders
+  for `0x0833` (`Support_SendClientSuggest`), `0x0233`
+  (`AccountItem_SendClientClaimPendingItemGroup`), and `0x07C6`
+  (`AccountItem_SendClientReturnPendingItemGroup`), which are evidence not to
+  reuse those names for `0x063E`.
+- **Disposition**: kept one of the remaining `12` `Client0xNNNN` placeholders
+  diagnostic-only. Added
+  `PacketPlaceholderNamingTests.Client0x063E_RemainsDiagnosticUntilOpcodeSpecificSenderIsProven`
+  to reject `ClientSuggest`, sibling `Client0x012D`, account-item pending-group,
+  support-ticket, marketplace/auth/status, and auction-filter aliases while
+  preserving the one-wide-string contract.
+- **Next evidence source**: a native `0x063E` sender, post-read consumer, or
+  live auth-denied / marketplace-status / support-text capture tied to this
+  opcode.
+
+F-002/F-012 `Client0x0550` ICComm/spell-list false-rename guard (2026-06-05):
+
+- **Target question**: Can `Client0x0550` be promoted to ICComm, server
+  spell-list, matching replacement, movement-control ack, tradeskill-reset,
+  ability-book, combat-log, or P2P-trading behavior because it is adjacent to
+  ICComm and shares the one-`uint32` writer?
+- **Current support**: Mapped wire / Blocked semantics. NexusForever reads one
+  raw `uint32` into neutral `Client0x0550.Value`, logs it through the unresolved
+  diagnostic handler, and performs no ICComm, spell-list, matching, movement,
+  tradeskill, ability, combat-log, trade, or server-response mutation.
+- **Native map**: `ClientWorldOpcodeRegister_MovementSpline` (`WildStar64.exe`
+  `1400a8190`) registers opcode `0x0550`, size `4`,
+  `ClientUInt32_ReadPayload` (`14007d000`), and shared
+  `ClientTradeskillResetTalents_WritePayload` (`14007d010`) at literal
+  `1400a824e`. The writer body serialises one 32-bit field only.
+- **Fresh probe**: `TraceFunctionCallers 14007d010 80` found 67 direct
+  references: one code caller, `ClientCompoundTradeskillUInt32_WriteCluster`
+  (`14007dc80`), registration/data rows in `Network_RegisterServerOpcode_0351`,
+  movement-spline registration/data rows, and raw data refs `140c1ec38`,
+  `140c1ec68`, `140c1ec88`, `140c1ef80`, `140c1ef88`, `140c1f040`,
+  `140c1f058`, and `140c1f168`. No opcode-specific `0x0550` gameplay sender or
+  post-read consumer surfaced.
+- **Rejected false leads**: a narrowed `FindOpcodeComparisons` pass over
+  `0x0550`, ICComm `0x0546`/`0x054B`, `0x0551`, `0x05D5`, `0x0635`, `0x0858`,
+  `0x017A`, and combat-log `0x0248`/`0x0249` found `0x0550` only at
+  registration literal `1400a824e`; the remaining `0x550` hits were struct or
+  stack offsets. `DumpNearbyData 140c247e0 8`, the static
+  `DAT_140c1f210 + (0x0550 - 3) * 0x10` slot, found no defined message-name
+  metadata for the indirect `Network_SendMessageById` rail. Named sibling
+  senders such as `MatchingReplacement_SendStartLookingForReplacements`
+  (`0x05D5`) and `Tradeskill_SendClientTradeskillResetTalents` (`0x0858`) are
+  evidence not to reuse those names for `0x0550`.
+- **Disposition**: kept one of the remaining `12` `Client0xNNNN` placeholders
+  diagnostic-only. Added
+  `PacketPlaceholderNamingTests.Client0x0550_RemainsDiagnosticUntilOpcodeSpecificSenderIsProven`
+  to reject ICComm channel/message, spell-list, matching replacement,
+  movement-control ack, tradeskill reset, ability-book, combat-log, and
+  P2P-trading aliases while preserving the one-`uint32` contract.
+- **Next evidence source**: a runtime indirect sender, post-read consumer, or
+  live ICComm / spell-list / ability-book capture tied to opcode `0x0550`.
+
+F-002 `Client0x07E3` character/destination-arrow false-rename guard (2026-06-05):
+
+- **Target question**: Can `Client0x07E3` be promoted from a numeric diagnostic
+  to a concrete character or destination-arrow UI request because it lives in
+  the movement/spline registration block and shares the one-`uint32` writer?
+- **Current support**: Mapped wire / Blocked semantics. NexusForever reads one
+  raw `uint32` into neutral `Client0x07E3.Value`, logs it through the unresolved
+  diagnostic handler, and performs no character, destination-arrow, matching,
+  movement, tradeskill, or server-response mutation.
+- **Native map**: Ghidra MCP decompiled
+  `ClientWorldOpcodeRegister_MovementSpline` (`WildStar64.exe` `1400a8190`) and
+  confirmed opcode `0x07E3` registers at literal `1400a8282` with size `4`,
+  `ClientUInt32_ReadPayload` (`14007d000`),
+  `ClientTradeskillResetTalents_WritePayload` (`14007d010`), and
+  `ServerUInt32_ReadPayload` (`14007ab50`). MCP batch decompile of the reader
+  and writer confirms only a one-`uint32` contract: the reader advances `0x20`
+  bits and the writer serialises one 32-bit field.
+- **Fresh cache/MCP probe**: `selected_call_edges.csv` still shows the shared
+  writer's only selected code caller as `ClientCompoundTradeskillUInt32_WriteCluster`
+  (`14007dc80`), plus registration and intra-function edges. The `140c1ef80`
+  function-pointer selector table also reuses `ClientTradeskillResetTalents_WritePayload`
+  at multiple slots, but that table does not tie a slot to opcode `0x07E3`.
+  The useful positive-control distinction remains: `0x05D5` has both
+  registration and gameplay-send evidence, while current `0x07E3` evidence is
+  registration/shared-serializer only.
+- **Tooling note**: a focused headless `FindOpcodeComparisons` rerun
+  (`client07e3_opcode_scan`) was attempted, but it timed out waiting for the
+  Ghidra project lock held by the active MCP/CodeBrowser session. No result
+  from that helper is used as evidence.
+- **Disposition**: kept one of the remaining `12` `Client0xNNNN` placeholders
+  diagnostic-only. No C# rename, function-label change, or runtime behavior is
+  safe from this pass.
+- **Next evidence source**: a native `0x07E3` sender, post-read consumer,
+  indirect send-rail owner, or live character/destination UI capture tied to
+  opcode `0x07E3`.

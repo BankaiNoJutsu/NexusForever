@@ -26,7 +26,9 @@ namespace NexusForever.Network.World.Message.Model
         /// size <c>4</c>, the same structural slot reused by matching queue-leave opcodes
         /// <c>0x05B5</c> and <c>0x05B6</c>. The reader advances a 5-bit field, so the proven
         /// wire surface matches the queue-leave <c>MatchType</c> payload even though the owner
-        /// remains unresolved.
+        /// remains unresolved. A focused caller trace on the shared writer found registration
+        /// references only, and opcode <c>0x00C5</c> owns the mapped challenge-choice sends.
+        /// Keep this diagnostic-only until an opcode-specific sender or consumer is proven.
         /// </summary>
         public Game.Static.Matching.MatchType MatchType { get; private set; }
 
@@ -46,7 +48,8 @@ namespace NexusForever.Network.World.Message.Model
         /// and three trailing bits. Exact <c>0xED</c> immediate scans only surfaced mail-side
         /// <c>GameFormula_GetEntryById(0xed)</c> lookups in helpers around
         /// <c>ClientMailSend</c> (<c>0x0168</c>), not a packet owner for opcode <c>0x00ED</c>,
-        /// so the packet remains numerically named.
+        /// and a focused caller trace on <c>1400a6200</c> found registration/data references
+        /// only. Keep these fields neutral until a sender or consumer proves semantics.
         /// </summary>
         public ulong Value0 { get; private set; }
 
@@ -81,7 +84,8 @@ namespace NexusForever.Network.World.Message.Model
         /// (<c>0x00F0</c>), <c>ClientPathScientistDismissScanbotPathAction</c> (<c>0x015F</c>),
         /// and <c>ClientLootVacuum</c> (<c>0x01AD</c>). Pass 94 rejected non-registration
         /// <c>0x011B</c> hits as Lua token ids or <c>GameFormula</c> lookups, so the request owner
-        /// remains unresolved.
+        /// remains unresolved. A focused caller trace on <c>140001ba0</c> found hundreds of shared
+        /// registration/data references, not an opcode-specific gameplay sender.
         /// </summary>
 
         public void Read(GamePacketReader reader)
@@ -97,6 +101,9 @@ namespace NexusForever.Network.World.Message.Model
         /// <c>ClientTradeskillResetTalents_WritePayload</c> (<c>14007d010</c>), so the proven
         /// wire surface remains one raw uint32 field. Pass 94 rejected the spell-cast
         /// <c>0x011D</c> hit as <c>CastResult.IllegalSpellCast</c>, not a packet sender.
+        /// <c>TraceFunctionCallers 14007d010 12</c> found 67 shared references, including
+        /// registration rows and a compound tradeskill uint32 cluster helper; no
+        /// opcode-specific owner has surfaced.
         /// </summary>
         public uint Value { get; private set; }
 
@@ -116,7 +123,10 @@ namespace NexusForever.Network.World.Message.Model
         /// <c>ClientAccountItemClaimPendingItemGroup</c> (<c>0x0233</c>), and
         /// <c>ClientAccountItemReturnPendingItemGroup</c> (<c>0x07C6</c>), and
         /// <c>Client0x063E</c>. Pass 94 found no non-registration opcode owner, so the model stays
-        /// structurally named.
+        /// structurally named. <c>TraceFunctionCallers 14007ae80 18</c> found only shared
+        /// registration/data references; exact opcode scans show <c>0x012D</c> registration plus
+        /// unrelated arithmetic/offset uses, while <c>0x0833</c> has the proven
+        /// <c>Support_SendClientSuggest</c> sender.
         /// </summary>
         public string Text { get; private set; }
 
@@ -132,10 +142,13 @@ namespace NexusForever.Network.World.Message.Model
         /// <summary>
         /// Opcode 0x0550. Native client registration in <c>ClientWorldOpcodeRegister_MovementSpline</c>
         /// (<c>1400a8190</c> @ <c>1400a824e</c>) binds this packet to shared
-        /// <c>ClientTradeskillResetTalents_WritePayload</c> (<c>14007d010</c>). PE scan finds a
-        /// single <c>mov eax,0x550</c> (registration batch only). Do not alias to
+        /// <c>ClientTradeskillResetTalents_WritePayload</c> (<c>14007d010</c>). The exact opcode
+        /// scan finds a single <c>MOV EDX,0x550</c> (registration batch only). Do not alias to
         /// <c>ClientMatchingMatchInitiateLookingForReplacements</c> (<c>0x05D5</c>), which has
-        /// gameplay sends at <c>140075918</c>/<c>14076ab61</c>.
+        /// gameplay sends at <c>140075918</c>/<c>14076ab61</c>. <c>TraceFunctionCallers
+        /// 14007d010 80</c> found only the compound tradeskill cluster plus registration/data
+        /// refs, and <c>DAT_140c1f210</c> slot <c>140c247e0</c> is undefined for the
+        /// <c>Network_SendMessageById</c> name rail.
         /// </summary>
         public uint Value { get; private set; }
 
@@ -186,7 +199,10 @@ namespace NexusForever.Network.World.Message.Model
         /// Opcode 0x063E. Native client registration in <c>ClientWorldOpcodeRegister_MovementSpline</c>
         /// (<c>1400a8190</c>) binds this packet to shared
         /// <c>ClientSuggest_WritePayload</c> (<c>14007ae80</c>), so the proven wire surface remains
-        /// one wide-string field.
+        /// one wide-string field. <c>TraceFunctionCallers 14007ae80 18</c> only found shared
+        /// registration/data references; exact opcode scans found <c>0x063E</c> only at
+        /// <c>1400a821a</c>, while sibling <c>0x0833</c>, <c>0x0233</c>, and <c>0x07C6</c>
+        /// have separate senders and are not evidence for this opcode.
         /// </summary>
         public string Text { get; private set; }
 

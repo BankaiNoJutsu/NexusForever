@@ -19,10 +19,11 @@ of truth for feature-area completion.
 | Blocked / diagnostic / structural-only | 3 (`F-001` blocked, `F-002` diagnostic, `F-003` structurally closed) |
 | Consolidated runtime gaps (emit/producer proof) | 5 rows in **Remaining Blocked Items** |
 | Related trackers | `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`, `MATCHING_IMPLEMENTATION_STATUS.md`, `ENTITY_AUX_DECODE_ROADMAP.md`, `BLOCKER_EVIDENCE_PLAN.md` |
+| Placeholder inventory (2026-06-05) | 12 `Client0xNNNN`, 1 `Server0xNNNN` (`Server0x0015`), 16 client diagnostic log-only surfaces, 24 `PrerequisiteType.UnknownNNN`, and 2 quest objective unknowns (`Unknown27`, `Unknown29`); the audit-prompt ghost literal names are absent |
 | Build | 0 errors, 0 warnings |
 | Tests | 2504 passed, 0 failed, 0 skipped |
 | Handlers surveyed | 200+ |
-| Stubs found | 0 |
+| Production TODO/FIXME/NotImplemented | 0 |
 | **LaughingWS blocker tracking (2026-05-27)** | Evidence harness added; broad new-zone/sandbox/arkship/Rider's Reef rows remain blocked or rejected where proof is missing; Dungeon Chase hidden SMC item `86919` rejected for current seeds because the world store model and type-`0` storefront transport cannot represent it |
 | **Dust Stalker Q4516 review (2026-05-27)** | Boss Xagg and bridge-control data remain WIP/GUESSED; self-destruct and exit-panel behavior are blocked pending a harness smoke bundle rather than inferred from source-only SQL |
 | **Arcterra/Palaver source-only review (2026-05-27)** | Arcterra Caretaker, Coldblood portal, and Palaver Ish'amel rows stay WIP/GUESSED pending placement, portal target, interaction, and quest smoke proof |
@@ -38,7 +39,7 @@ of truth for feature-area completion.
 | **PARTIAL** | Substantial behavior exists, but retail parity, producer semantics, or persistence edges remain open. |
 | **BLOCKED** | Evidence gate prevents widening behavior (e.g. F-001 STS crypto). |
 | **DIAGNOSTIC** | Safe parse/log only (F-002). |
-| **STRUCTURALLY CLOSED** | All server opcodes have named models (F-003); emitters are feature-owned. |
+| **STRUCTURALLY CLOSED** | All server opcodes have models (F-003); one numeric `Server0x0015` contract and feature-owned emitters remain evidence-gated. |
 
 `Decomp/Analysis/GAMEPLAY_ECONOMY_SOCIAL_STATUS.md` uses **Partial** for the same rows when retail parity is still incomplete even if handlers exist — prefer this file for the 36-row completion snapshot.
 
@@ -163,7 +164,7 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
   mapped; item-context producer/consumer semantics and pet-stance consumer
   addresses remain unknown.
 - **ServerRaidQueueStatus** (F-010): reader `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` mapped; helper `14008c010` is only a count-plus-array structural reader; zero-value compatibility emit exists from raid-info and non-zero wire order is test-pinned; non-zero queue semantics still blocked.
-- **ServerMatching0x05CF** (F-010): raw `uint32` reader `ServerUInt32_LocalReadThunk` @ `140099110` mapped; candidate apply helper `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0` remains correlated only until an opcode-to-table-cell index or live `0x05CF` witness proves manager `+0xa0` semantics.
+- **ServerMatching0x05CF** (F-010): raw `uint32` reader `ServerUInt32_LocalReadThunk` @ `140099110` mapped; candidate apply helper `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0` remains correlated only until a real apply dispatcher/index or live `0x05CF` witness proves manager `+0xa0` semantics; the prior `140e1e66c` data ref is PE `.pdata` unwind metadata, and the `WorldSocket+0x15b0` slot-11 scan found the Fortune positive control but no matching-helper route.
 - **Client0x062A/0634** (F-010): shared `uint32` reader/writer `14007d000`/`14007d010` mapped and handlers are log-only/test-pinned; sender/intent remains blocked until a native send site or live queue UI sniff appears.
 
 ### F-001 - STS Token Crypto - BLOCKED
@@ -171,18 +172,42 @@ Token crypto handshake, external-account edge routes, and optional envelope
 fields remain blocked until crypto/token semantics are mapped safely.
 
 ### F-002 - Client Diagnostic Opcodes - DIAGNOSTIC
-17 models with diagnostic handlers exist. Every packet's wire shape is pinned
-by focused tests. A 2026-06-04 guard now pins the unresolved diagnostic handler
-family as log-only with no plaintext or encrypted server emit; focused
-diagnostic coverage passed 90/90. Client request intent and server response
-behavior remain unknown. Needs Ghidra decomp of client writer functions by
-feature cluster.
+16 client diagnostic surfaces with diagnostic handlers exist: 12 numeric
+`Client0xNNNN` models plus `ClientAccountRealmData`,
+`ClientRealmListRealmRow`, `ClientRealmListMessageRow`, and
+`ClientAddonModuleList`. Every packet's wire shape is pinned by focused tests.
+A 2026-06-04 guard now pins the unresolved diagnostic handler family as
+log-only with no plaintext or encrypted server emit; focused diagnostic
+coverage passed 90/90. A 2026-06-05 follow-up pins `Client0x00C8` as a
+shared 5-bit `MatchType` wire shape that must not be aliased to queue-leave or
+challenge-choice behavior without an opcode-specific sender; a second follow-up
+pins `Client0x00ED` as mapped `uint64 + uint32 + uint64 + 3 bits` but rejects
+duel, mail, and path names until an opcode-specific owner appears. A third
+follow-up pins `Client0x011B`/`Client0x011D` as empty/`uint32` shared-writer
+shapes and rejects loot-bind, mail, loot-vacuum, and tradeskill-reset aliases
+without a direct owner. A fourth follow-up pins `Client0x012D` as a
+one-wide-string shared-writer diagnostic and rejects `ClientSuggest`,
+account-item, realm-transfer, and pet/quest names until an opcode-specific
+sender appears. A fifth follow-up pins `Client0x063E` as the sibling
+one-wide-string shared-writer diagnostic and rejects `ClientSuggest`,
+account-item, support-ticket, marketplace/auth/status, and filter aliases until
+an opcode-specific sender appears. A sixth follow-up pins `Client0x0550` as a
+one-`uint32` shared-writer diagnostic and rejects ICComm, spell-list,
+matching-replacement, movement-ack, tradeskill-reset, ability-book, combat-log,
+and P2P-trading aliases until an opcode-specific sender appears. Client request
+intent and server response behavior remain unknown. Needs Ghidra decomp of
+client writer functions by feature cluster.
 
 ### F-003 - Server Unresolved Output Opcodes - STRUCTURALLY CLOSED
-0 `Server0xNNNN` enum/model placeholders remain in `Source/`. All 699 server
-opcodes have named models. Of the 62 shape-mapped aux/spell packets with neutral
-fields, 12 have controlled entity-create or selected housing emit paths and 50
-remain gated behind consumer or producer evidence before production emission.
+All 702 server opcodes have models. One `Server0xNNNN` enum/model placeholder
+remains: `Server0x0015`, whose native reader `ServerUInt5UInt32_ReadPayload`
+(`140081f00`) maps one 5-bit field plus one `uint32` but not semantic owner or
+producer behavior; the same reader is reused by matching opcode `0x0628` and
+inside `ServerFortuneRewards`, so `Server0x0015` remains neutral rather than
+being inferred as matching average-wait state. Of the 62 shape-mapped aux/spell
+packets with neutral fields, 12 have controlled entity-create or selected
+housing emit paths and 50 remain gated behind consumer or producer evidence
+before production emission.
 Named-but-partial packets remain tracked in their feature rows.
 Eight native size-1 aux registrations now use empty wire models instead of
 raw byte payloads: `0x00B7`, `0x00DF`, `0x00EE`, `0x0101`, `0x0143`,
@@ -430,9 +455,20 @@ for pending/cleared state.
   evidence prove the UI/event boundary, not server producer timing or merge rules
 - `ServerRaidQueueStatus` (0x0718) emitted alongside `ServerRaidInfoResponse` as zero-value compatibility state; non-zero wire order is covered by `GroupPacketShapeTests`, but field semantics remain neutral
 - `ServerMatching0x05CF` remains a raw `uint32` packet only: reader `140099110`
-  is mapped, and `MatchingManager_ApplyManagerUInt32Field0xA0` (`1405c41c0`,
-  table cell `140e1e66c`) is only a correlated apply candidate until the
-  opcode-to-cell index or live packet witness is proven
+  is mapped, and `MatchingManager_ApplyManagerUInt32Field0xA0` (`1405c41c0`)
+  is only a correlated apply candidate until a real apply dispatcher/index or
+  live packet witness is proven. The prior `140e1e66c` xref is PE `.pdata`
+  unwind metadata, not a matching dispatch-table cell; the `WorldSocket+0x15b0`
+  slot-11 scan found the Fortune `vtable+0x58` positive control but no
+  `1405c41c0` match
+- Shared one-flag matching outputs `0x05B0`/`0x05CC`/`0x05F1` remain wire-mapped
+  only. `MatchingManager_ApplyMatchingRoleCheckStarted` (`1405c0e90`) consumes
+  `payload[0]` and dispatches `MatchingRoleCheckStarted`, but its only direct
+  ref is `140e1e2c4` in PE `.pdata`; the `WorldSocket+0x15b0` slot-11 scan
+  found the Fortune `vtable+0x58` positive control but no matching-helper entry
+  for `1405c0e90`, `1405c1850`, `1405c21d0`, `1405c2440`, or `1405c24a0`.
+  The adjacent zero-payload matching event helpers likewise only have `.pdata`
+  xrefs.
 - `Client0x062A`/`Client0x0634` remain numeric diagnostic packets; focused
   handler tests now pin both as log-only with no queue/raid-state emit until a
   native sender or live sniff proves their semantics
@@ -455,9 +491,14 @@ for pending/cleared state.
 **Blocked:** exact `ServerRaidQueueStatus` queue-position semantics and timing
 (native `14008c010` only proves a count-plus-array reader over 0x20-byte rows);
 replacement queue fill still needs live accept/teleport smoke and multi-slot
-role-fill verification; `ServerMatching0x05CF` still needs either the matching
-apply-table walker tying `0x05CF` to cell `140e1e66c` or a live match-ready /
-queue-state sniff that explains manager field `+0xa0`; `Client0x062A`/`0634`
+role-fill verification; `ServerMatching0x05CF` still needs either a real
+matching apply dispatcher/index that ties opcode `0x05CF` to `1405c41c0` or a
+live match-ready / queue-state sniff that explains manager field `+0xa0`;
+`0x05B0`/`0x05CC`/`0x05F1` still need a real dispatcher or live role-check /
+queue capture before their single flag can be treated as semantic evidence
+because the known `WorldSocket+0x15b0` slot-11 path does not expose the matching
+helpers;
+`Client0x062A`/`0634`
 still need a native sender or live sniff before semantic rename or mutation.
 
 ### F-011 - Guild / Recruitment / War Party - PARTIAL (blocked)
@@ -612,6 +653,14 @@ movement now applies a small deterministic
 follower-GUID spread around known targets, so multiple chasers choose distinct
 final points at the requested distance instead of collapsing onto one endpoint;
 this is emulator-side local avoidance polish, not retail parity proof.
+
+**Spell cast result reader pass (2026-06-05):** `ServerSpellCastResult`
+(`0x07FC`) now has a durable native reader label:
+`ServerSpellCastResult_ReadPayload` (`WildStar64.exe` `0x140094fb0`) reads a
+leading `uint32`, `18`-bit `Spell4Id`, and `9`-bit `CastResult`. The leading
+managed `Unknown0` field remains neutral because current evidence is
+registration/reader-only; client request context-token mapping is not enough to
+prove result echo semantics without an apply consumer or live echo capture.
 
 ### F-021 - Action Set / LAS / AMP / Attributes - PARTIAL (blocked)
 LAS size/spec/tier/AMP preflight checks exist. `UpdateSpellInProgress`,

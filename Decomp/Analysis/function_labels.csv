@@ -1243,6 +1243,7 @@ WildStar64.exe,1400a3af0,ServerCraftingAuxFourUInt32FloatUInt32_ReadPayload,Read
 WildStar64.exe,140078e4a,Network_RegisterServerOpcode_0855,Registers server opcode 0x0855 with 0xC-byte reader @140081df0 in FUN_14006c290 packet registration table.
 WildStar64.exe,140081df0,ServerUInt32AndTwoFloats_ReadPayload,Reads one uint32 followed by two floats (12 bytes); registered for 0x0221 ServerCinematicCameraRotation and crafting-adjacent opcode 0x0855.
 WildStar64.exe,140081f00,ServerUInt5UInt32_ReadPayload,Reads one 5-bit field followed by one uint32 field in an 8-byte object; registered for unresolved server opcode 0x0015 and matching opcode 0x0628.
+WildStar64.exe,140094fb0,ServerSpellCastResult_ReadPayload,Reads opcode 0x07FC ServerSpellCastResult as uint32 leading field then 18-bit Spell4Id and 9-bit CastResult; leading-field semantics remain blocked pending apply consumer or live echo proof.
 WildStar64.exe,1400874a0,ServerCostumeItemAux_ReadPayload,Reads server opcode 0x037F as one 14-bit field, three uint32 fields, and two trailing 1-bit flags inside the registered 0x18-byte object.
 WildStar64.exe,14006e125,Network_RegisterServerOpcode_05A1,Registers server opcode 0x05A1 with 0x10-byte reader @140080b00 between ServerRealmInfoResponse 0x059D and ServerMailResult 0x05A2.
 WildStar64.exe,140080b00,ServerRealmAuxUInt32TripletList_ReadPayload,Reads opcode 0x05A1 as uint32 count followed by count 12-byte rows of three uint32 fields (same wire as 0x080F).
@@ -1344,7 +1345,7 @@ WildStar64.exe,140013d00,WorldSocket_UpdateRuntimeAndChainNodes,Runtime update l
 WildStar64.exe,140014070,WorldSocket_RenderChainNodes,Render or screen-transition walker over native +0x15b0 chain; not a network packet consumer.
 WildStar64.exe,1400149a0,WorldSocket_WindowMessageDispatch,Window-message dispatcher over native +0x15b0 chain using node slot +0x48; toggles console node on hotkey.
 WildStar64.exe,140014d30,WorldSocket_FilterServerMessageHandlers,Pre-deserialize filter phase: walks callback-view +0x14b0 which is native WorldSocket+0x15b0 and calls handler vtable+0x50.
-WildStar64.exe,140014f10,WorldSocket_ProcessServerMessage,Live server-message apply path: deserializes then AccountInventory/Storefront fast paths then native +0x15b0 handler-list vtable+0x58 dispatch.
+WildStar64.exe,140014f10,WorldSocket_ProcessServerMessage,Live server-message apply path: deserializes then AccountInventory/Storefront fast paths then native +0x15b0 handler-list vtable+0x58 dispatch; 2026-06-05 slot scan finds Fortune positive control 140b690f0->1404d60f0 but no matching helpers.
 WildStar64.exe,140014c60,WorldSocket_LogZoneMessageById,Formats a zone message name via WorldZone_GetNameString and forwards it to FUN_140015ec0 for logging/UI on unhandled opcodes.
 WildStar64.exe,140015ec0,WorldSocket_AppendDiagnosticMessageNode,Allocates PTR_FUN_140b55540 diagnostic message node and appends to native +0x15b0; filter/apply-style slots return one via 14001d310.
 WildStar64.exe,1400163d0,WorldSocket_ToggleConsoleNode,Appends or unlinks persistent console node at native +0x1598 within the +0x15b0 chain.
@@ -1363,35 +1364,35 @@ WildStar64.exe,14036b8d0,WorldZone_UnlinkOrRespliceVisibleSpatialUnit,Sibling zo
 WildStar64.exe,1405bedf0,MatchingManager_GetOrCreateSingleton,Lazy allocator for DAT_140c65b98 matching-manager singleton (0x238 bytes); ctor FUN_1405bee80 then FUN_1405c2f20 reset.
 WildStar64.exe,1405bee80,MatchingManager_Ctor,Constructs matching-manager object; initializes EVENT tag 0x544e5645 at +0xc0 and session fields used by UI send gates (+0x10c state 0x10).
 WildStar64.exe,1405c2f20,MatchingManager_ResetSessionState,Resets matching-manager session fields (+0x10c=0x10, +0x120/+0x128=0x34) and sets DAT_140c65898+0x558=1 during manager init.
-WildStar64.exe,1405c0760,MatchingManager_ApplyRoleCheckCanceled,Matching apply: role-check cancel / match-left prep; table cell 140e1e228; dispatches MatchingRoleCheckCanceled/MatchLeft ClientEvents via sub-dispatch.
-WildStar64.exe,1405c0ad0,MatchingManager_ApplyMatchingPenaltyUpdated,Matching apply: writes 16 uint32 penalty fields from payload; table cell 140e1e288; dispatches MatchingPenaltyUpdated.
-WildStar64.exe,1405c0b80,MatchingManager_ApplyMatchingJoinQueue,Matching apply: queue join side-effect; table cell 140e1e294; dispatches MatchingJoinQueue.
-WildStar64.exe,1405c0e00,MatchingManager_ApplyMatchingAverageWaitTimeUpdated,Matching apply: average-wait update for opcode 0x0628 family; table cell 140e1e2b8; dispatches MatchingAverageWaitTimeUpdated.
-WildStar64.exe,1405c0e90,MatchingManager_ApplyMatchingRoleCheckStarted,Matching apply: sets manager+0xa4=1 and dispatches MatchingRoleCheckStarted; table cell 140e1e2c4.
-WildStar64.exe,1405c3500,MatchingManager_SendClientGameReadyCancel,Matching UI outbound helper (not server consumer): sends client 0x05C8 and may dispatch MatchingCancelPendingGame; table cell 140e1e5a0.
-WildStar64.exe,1405c39f0,MatchingManager_ApplyMatchingGameReady,Matching apply for ServerMatchingMatchReady 0x05CA: writes manager+0xa8/+0xac/+0xb4 from three payload uint32s and dispatches MatchingGameReady; table cell 140e1e60c.
-WildStar64.exe,1405c3af0,MatchingManager_ApplyMatchingGameReadyPending,Matching apply variant for 0x05CA pending path: same field writes as 1405c39f0 but dispatches MatchingGameReady or MatchingGamePendingUpdate; table cell 140e1e618.
-WildStar64.exe,1405c3c90,MatchingManager_ApplyMatchingCancelPendingGame,Matching apply: resets ready-state fields and dispatches MatchingCancelPendingGame; table cell 140e1e630.
-WildStar64.exe,1405c3d30,MatchingManager_ApplyQueueStatusDispatch,Matching apply: internal queue-status sub-dispatch (0xf/0x16/0x17) calling 1405c0760; table cell 140e1e63c.
-WildStar64.exe,1405c3e40,MatchingManager_ApplyMatchLeft,Matching apply: match-left state transition and MatchLeft ClientEvent; table cell 140e1e648.
-WildStar64.exe,1405c4140,MatchingManager_ApplyMatchJoined,Matching apply for match-joined map id: writes manager+0x108 from payload uint32 and dispatches MatchJoined; table cell 140e1e660.
-WildStar64.exe,1405c41c0,MatchingManager_ApplyManagerUInt32Field0xA0,Tentative ServerMatching0x05CF apply: writes payload uint32 to matching-manager+0xa0 (and sub-object+0x98 when present) then calls FUN_1400a8020 UI refresh; no ClientEvent; table cell 140e1e66c; opcode index proof still blocked.
-WildStar64.exe,1405c4690,MatchingManager_ValidateQueueSelection,Matching queue validation helper referenced from apply table cell 140e1e690; not a server-packet consumer.
-WildStar64.exe,1405c0f00,MatchingManager_ApplyRoleCheckResultChatNotify,Matching apply: role-check result chat notify from payload role flags at +0x10; table cell 140e1e2d0; uses FUN_14079ee60 lookup and FUN_140003890 chat dispatch.
-WildStar64.exe,1405c11c0,MatchingManager_ApplyPvpRatingUpdated,Matching apply: maintains PvP rating tree keyed by payload[4] and dispatches PvpRatingUpdated; table cell 140e1e2f4.
-WildStar64.exe,1405c1850,MatchingManager_ApplyMatchLeftReset,Matching apply: resets match-left session fields on manager and dispatches MatchLeft; table cell 140e1e3b4; zero-payload apply shape.
-WildStar64.exe,1405c18d0,MatchingManager_ApplyPvpMatchStateUpdated,Matching apply: writes manager+0xc/+0x14 from payload and dispatches PVPMatchStateUpdated; table cell 140e1e3c0.
-WildStar64.exe,1405c1cb0,MatchingManager_ApplyMatchVoteKickBegin,Matching apply: MatchVoteKickBegin ClientEvent plus localized chat notify; table cell 140e1e420.
-WildStar64.exe,1405c1fc0,MatchingManager_ApplyMatchVoteTimerChatNotify,Matching apply: vote kick/surrender timer chat notify when payload[0] is 0x1e/0x1f; table cell 140e1e450.
-WildStar64.exe,1405c21d0,MatchingManager_ApplyMatchVoteSurrenderBegin,Matching apply: sets manager+0x40=1 and dispatches MatchVoteSurrenderBegin with chat notify; table cell 140e1e48c; zero-payload apply shape.
-WildStar64.exe,1405c2440,MatchingManager_ApplyMatchLookingForReplacements,Matching apply: sets manager+0x44=1 and dispatches MatchLookingForReplacements; table cell 140e1e4a4; zero-payload apply shape.
-WildStar64.exe,1405c24a0,MatchingManager_ApplyMatchStoppedLookingForReplacements,Matching apply: clears manager+0xa4/+0x44 and dispatches MatchStoppedLookingForReplacements; table cell 140e1e4b0; zero-payload apply shape.
-WildStar64.exe,1405c26a0,MatchingManager_ApplyPvpKillNotification,Matching apply: drains PvP kill notification queue and dispatches PvpKillNotification; table cell 140e1e4e0.
-WildStar64.exe,1405c2d40,MatchingManager_LookupMatchingRandomReward,MatchingRandomReward table lookup helper referenced from apply table cell 140e1e510; not a server-packet consumer.
-WildStar64.exe,1405c2e70,MatchingManager_LookupPvpRatingFloor,Matching PvPRatingFloor lookup helper referenced from apply table cell 140e1e51c; not a server-packet consumer.
-WildStar64.exe,1405c3360,MatchingManager_ComputeMinMapCapacity,Matching map-capacity helper over MatchingGameMap rows referenced from apply table cell 140e1e57c; not a server-packet consumer.
-WildStar64.exe,1405c3f50,MatchingManager_FormatQueuedPlayersDebugText,Debug/UI string builder for queued-players list (0x060A family); table cell 140e1e654; not a silent uint32 apply.
-WildStar64.exe,1405c4260,MatchingManager_DispatchMatchingCancelPendingGame,MatchingCancelPendingGame ClientEvent callback; resets ready-state fields; table cell 140e1e678; also used as timer callback from MatchingGameReady apply.
+WildStar64.exe,1405c0760,MatchingManager_ApplyRoleCheckCanceled,Matching apply: role-check cancel / match-left prep; dispatches MatchingRoleCheckCanceled/MatchLeft ClientEvents via sub-dispatch.
+WildStar64.exe,1405c0ad0,MatchingManager_ApplyMatchingPenaltyUpdated,Matching apply: writes 16 uint32 penalty fields from payload and dispatches MatchingPenaltyUpdated.
+WildStar64.exe,1405c0b80,MatchingManager_ApplyMatchingJoinQueue,Matching apply: queue join side-effect; dispatches MatchingJoinQueue.
+WildStar64.exe,1405c0e00,MatchingManager_ApplyMatchingAverageWaitTimeUpdated,Matching apply: average-wait update for opcode 0x0628 family; dispatches MatchingAverageWaitTimeUpdated.
+WildStar64.exe,1405c0e90,MatchingManager_ApplyMatchingRoleCheckStarted,Matching apply helper: sets manager+0xa4=1 and dispatches MatchingRoleCheckStarted with payload[0]; candidate for 0x05F1 by event shape but xref 140e1e2c4 is PE .pdata and WorldSocket +0x15b0 vtable+0x58 scan has no match.
+WildStar64.exe,1405c3500,MatchingManager_SendClientGameReadyCancel,Matching UI outbound helper (not server consumer): sends client 0x05C8 and may dispatch MatchingCancelPendingGame.
+WildStar64.exe,1405c39f0,MatchingManager_ApplyMatchingGameReady,Matching apply for ServerMatchingMatchReady 0x05CA: writes manager+0xa8/+0xac/+0xb4 from three payload uint32s and dispatches MatchingGameReady.
+WildStar64.exe,1405c3af0,MatchingManager_ApplyMatchingGameReadyPending,Matching apply variant for 0x05CA pending path: same field writes as 1405c39f0 but dispatches MatchingGameReady or MatchingGamePendingUpdate.
+WildStar64.exe,1405c3c90,MatchingManager_ApplyMatchingCancelPendingGame,Matching apply: resets ready-state fields and dispatches MatchingCancelPendingGame.
+WildStar64.exe,1405c3d30,MatchingManager_ApplyQueueStatusDispatch,Matching apply: internal queue-status sub-dispatch (0xf/0x16/0x17) calling 1405c0760.
+WildStar64.exe,1405c3e40,MatchingManager_ApplyMatchLeft,Matching apply: match-left state transition and MatchLeft ClientEvent.
+WildStar64.exe,1405c4140,MatchingManager_ApplyMatchJoined,Matching apply for match-joined map id: writes manager+0x108 from payload uint32 and dispatches MatchJoined.
+WildStar64.exe,1405c41c0,MatchingManager_ApplyManagerUInt32Field0xA0,Tentative ServerMatching0x05CF apply: writes payload uint32 to matching-manager+0xa0 (and sub-object+0x98 when present) then calls FUN_1400a8020 UI refresh; no ClientEvent; opcode index proof still blocked. Prior 140e1e66c xref is PE .pdata unwind metadata not a dispatch cell; WorldSocket +0x15b0 vtable+0x58 scan also has no match.
+WildStar64.exe,1405c4690,MatchingManager_ValidateQueueSelection,Matching queue validation helper; not a server-packet consumer.
+WildStar64.exe,1405c0f00,MatchingManager_ApplyRoleCheckResultChatNotify,Matching apply: role-check result chat notify from payload role flags at +0x10; uses FUN_14079ee60 lookup and FUN_140003890 chat dispatch.
+WildStar64.exe,1405c11c0,MatchingManager_ApplyPvpRatingUpdated,Matching apply: maintains PvP rating tree keyed by payload[4] and dispatches PvpRatingUpdated.
+WildStar64.exe,1405c1850,MatchingManager_ApplyMatchLeftReset,Matching apply helper: resets match-left session fields on manager and dispatches MatchLeft; zero-payload shape but xref 140e1e3b4 is PE .pdata not dispatch proof and WorldSocket +0x15b0 vtable+0x58 scan has no match.
+WildStar64.exe,1405c18d0,MatchingManager_ApplyPvpMatchStateUpdated,Matching apply: writes manager+0xc/+0x14 from payload and dispatches PVPMatchStateUpdated.
+WildStar64.exe,1405c1cb0,MatchingManager_ApplyMatchVoteKickBegin,Matching apply: MatchVoteKickBegin ClientEvent plus localized chat notify.
+WildStar64.exe,1405c1fc0,MatchingManager_ApplyMatchVoteTimerChatNotify,Matching apply: vote kick/surrender timer chat notify when payload[0] is 0x1e/0x1f.
+WildStar64.exe,1405c21d0,MatchingManager_ApplyMatchVoteSurrenderBegin,Matching apply helper: sets manager+0x40=1 and dispatches MatchVoteSurrenderBegin with chat notify; zero-payload shape but xref 140e1e48c is PE .pdata not dispatch proof and WorldSocket +0x15b0 vtable+0x58 scan has no match.
+WildStar64.exe,1405c2440,MatchingManager_ApplyMatchLookingForReplacements,Matching apply helper: sets manager+0x44=1 and dispatches MatchLookingForReplacements; zero-payload shape but xref 140e1e4a4 is PE .pdata not dispatch proof and WorldSocket +0x15b0 vtable+0x58 scan has no match.
+WildStar64.exe,1405c24a0,MatchingManager_ApplyMatchStoppedLookingForReplacements,Matching apply helper: clears manager+0xa4/+0x44 and dispatches MatchStoppedLookingForReplacements; zero-payload shape but xref 140e1e4b0 is PE .pdata not dispatch proof and WorldSocket +0x15b0 vtable+0x58 scan has no match.
+WildStar64.exe,1405c26a0,MatchingManager_ApplyPvpKillNotification,Matching apply: drains PvP kill notification queue and dispatches PvpKillNotification.
+WildStar64.exe,1405c2d40,MatchingManager_LookupMatchingRandomReward,MatchingRandomReward table lookup helper; not a server-packet consumer.
+WildStar64.exe,1405c2e70,MatchingManager_LookupPvpRatingFloor,Matching PvPRatingFloor lookup helper; not a server-packet consumer.
+WildStar64.exe,1405c3360,MatchingManager_ComputeMinMapCapacity,Matching map-capacity helper over MatchingGameMap rows; not a server-packet consumer.
+WildStar64.exe,1405c3f50,MatchingManager_FormatQueuedPlayersDebugText,Debug/UI string builder for queued-players list (0x060A family); not a silent uint32 apply.
+WildStar64.exe,1405c4260,MatchingManager_DispatchMatchingCancelPendingGame,MatchingCancelPendingGame ClientEvent callback; resets ready-state fields; also used as timer callback from MatchingGameReady apply.
 WildStar64.exe,1400161d0,AccountItem_SendOpcodePayloadHelper,Sends account-item client opcodes through DAT_140c635f0 with opcode in EDX; used by AccountItem_SendClientClaimPendingItemGroup 140006ba0 and ReturnPendingItemGroup 140006c50 instead of Network_SendOpcodePayloadHelper.
 WildStar64.exe,140016010,AccountItem_SendViaNetworkMessageId,Account-item/pregame send hub via DAT_140c65808 vtable+0x108 using message ids ClientPackedWorld 0x038C and ClientEncrypted 0x0244; callers include AccountItem take/gift DailyLogin storefront — not ClientSuggest 0x012D/0x063E.
 WildStar64.exe,140333960,FUN_140333960,Consumer dispatch candidate — may route server→client packets.

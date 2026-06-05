@@ -28,6 +28,170 @@ namespace NexusForever.Game.Tests.Network;
 public class PacketPlaceholderNamingTests
 {
     [Fact]
+    public void OpcodePlaceholderInventory_MatchesFreshEvidenceQueue()
+    {
+        string[] expectedClientPlaceholders =
+        [
+            nameof(GameMessageOpcode.Client0x00C8),
+            nameof(GameMessageOpcode.Client0x00ED),
+            nameof(GameMessageOpcode.Client0x011B),
+            nameof(GameMessageOpcode.Client0x011D),
+            nameof(GameMessageOpcode.Client0x012D),
+            nameof(GameMessageOpcode.Client0x0550),
+            nameof(GameMessageOpcode.Client0x062A),
+            nameof(GameMessageOpcode.Client0x0634),
+            nameof(GameMessageOpcode.Client0x063E),
+            nameof(GameMessageOpcode.Client0x0701),
+            nameof(GameMessageOpcode.Client0x07E3),
+            nameof(GameMessageOpcode.Client0x0928)
+        ];
+        string[] clientPlaceholders = Enum.GetNames<GameMessageOpcode>()
+            .Where(n => n.StartsWith("Client0x", StringComparison.Ordinal))
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(expectedClientPlaceholders, clientPlaceholders);
+
+        string[] serverPlaceholders = Enum.GetNames<GameMessageOpcode>()
+            .Where(n => n.StartsWith("Server0x", StringComparison.Ordinal))
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToArray();
+
+        string[] expectedServerPlaceholders = [nameof(GameMessageOpcode.Server0x0015)];
+        Assert.Equal(expectedServerPlaceholders, serverPlaceholders);
+    }
+
+    [Fact]
+    public void Client0x00C8_RemainsDiagnosticUntilOpcodeSpecificSenderIsProven()
+    {
+        Assert.Equal((ushort)0x00C8, (ushort)GameMessageOpcode.Client0x00C8);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientMatchingQueueLeave, (ushort)GameMessageOpcode.Client0x00C8);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientMatchingQueueLeaveAsGroup, (ushort)GameMessageOpcode.Client0x00C8);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientChallengeChoice, (ushort)GameMessageOpcode.Client0x00C8);
+
+        Assert.NotNull(typeof(Client0x00C8).GetProperty(nameof(Client0x00C8.MatchType)));
+        Assert.Null(typeof(Client0x00C8).GetProperty("ChallengeId"));
+        Assert.Null(typeof(Client0x00C8).GetProperty("Choice"));
+        Assert.Null(typeof(Client0x00C8).GetProperty("QueueId"));
+    }
+
+    [Fact]
+    public void Client0x00ED_RemainsDiagnosticUntilOpcodeSpecificOwnerIsProven()
+    {
+        Assert.Equal((ushort)0x00ED, (ushort)GameMessageOpcode.Client0x00ED);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientDuelAccept, (ushort)GameMessageOpcode.Client0x00ED);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientDuelDecline, (ushort)GameMessageOpcode.Client0x00ED);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientDuelForfeit, (ushort)GameMessageOpcode.Client0x00ED);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientDuelInitiate, (ushort)GameMessageOpcode.Client0x00ED);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientMailSend, (ushort)GameMessageOpcode.Client0x00ED);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientPathScientistDismissScanbot, (ushort)GameMessageOpcode.Client0x00ED);
+
+        AssertNeutralProperties<Client0x00ED>(
+            nameof(Client0x00ED.Value0),
+            nameof(Client0x00ED.Value1),
+            nameof(Client0x00ED.Value2),
+            nameof(Client0x00ED.Value3),
+            nameof(Client0x00ED.Value4),
+            nameof(Client0x00ED.Value5));
+        Assert.Null(typeof(Client0x00ED).GetProperty("OpponentUnitId"));
+        Assert.Null(typeof(Client0x00ED).GetProperty("MailId"));
+        Assert.Null(typeof(Client0x00ED).GetProperty("Recipient"));
+        Assert.Null(typeof(Client0x00ED).GetProperty("PathMissionId"));
+        Assert.Null(typeof(Client0x00ED).GetProperty("ScanbotProfileId"));
+    }
+
+    [Fact]
+    public void Client0x011BAnd011D_RemainDiagnosticUntilOpcodeSpecificOwnersAreProven()
+    {
+        Assert.Equal((ushort)0x011B, (ushort)GameMessageOpcode.Client0x011B);
+        Assert.Equal((ushort)0x011D, (ushort)GameMessageOpcode.Client0x011D);
+        Assert.NotEqual((ushort)GameMessageOpcode.ServerLootBindOnPickup, (ushort)GameMessageOpcode.Client0x011B);
+        Assert.NotEqual((ushort)GameMessageOpcode.ServerLootBindOnPickup, (ushort)GameMessageOpcode.Client0x011D);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientMailDelete, (ushort)GameMessageOpcode.Client0x011D);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientMailOpen, (ushort)GameMessageOpcode.Client0x011D);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientMailTakeAttachment, (ushort)GameMessageOpcode.Client0x011D);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientMailTakeCash, (ushort)GameMessageOpcode.Client0x011D);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientLootVacuum, (ushort)GameMessageOpcode.Client0x011B);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientTradeskillResetTalents, (ushort)GameMessageOpcode.Client0x011D);
+
+        Assert.Null(typeof(Client0x011B).GetProperty("Value"));
+        Assert.Null(typeof(Client0x011B).GetProperty("LootUnitId"));
+        Assert.Null(typeof(Client0x011B).GetProperty("MailId"));
+        Assert.Null(typeof(Client0x011B).GetProperty("ItemGuid"));
+        Assert.NotNull(typeof(Client0x011D).GetProperty(nameof(Client0x011D.Value)));
+        Assert.Null(typeof(Client0x011D).GetProperty("LootUnitId"));
+        Assert.Null(typeof(Client0x011D).GetProperty("MailId"));
+        Assert.Null(typeof(Client0x011D).GetProperty("ItemGuid"));
+        Assert.Null(typeof(Client0x011D).GetProperty("TradeskillId"));
+    }
+
+    [Fact]
+    public void Client0x012D_RemainsDiagnosticUntilOpcodeSpecificSenderIsProven()
+    {
+        Assert.Equal((ushort)0x012D, (ushort)GameMessageOpcode.Client0x012D);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientSuggest, (ushort)GameMessageOpcode.Client0x012D);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientAccountItemClaimPendingItemGroup, (ushort)GameMessageOpcode.Client0x012D);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientAccountItemReturnPendingItemGroup, (ushort)GameMessageOpcode.Client0x012D);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientRealmTransfer, (ushort)GameMessageOpcode.Client0x012D);
+        Assert.NotEqual((ushort)GameMessageOpcode.Client0x063E, (ushort)GameMessageOpcode.Client0x012D);
+
+        Assert.NotNull(typeof(Client0x012D).GetProperty(nameof(Client0x012D.Text)));
+        Assert.Null(typeof(Client0x012D).GetProperty("Suggestion"));
+        Assert.Null(typeof(Client0x012D).GetProperty("PendingItemGroup"));
+        Assert.Null(typeof(Client0x012D).GetProperty("PendingItemGroupId"));
+        Assert.Null(typeof(Client0x012D).GetProperty("RealmId"));
+        Assert.Null(typeof(Client0x012D).GetProperty("SelectedCharacterId"));
+        Assert.Null(typeof(Client0x012D).GetProperty("PetName"));
+    }
+
+    [Fact]
+    public void Client0x0550_RemainsDiagnosticUntilOpcodeSpecificSenderIsProven()
+    {
+        Assert.Equal((ushort)0x0550, (ushort)GameMessageOpcode.Client0x0550);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientICCommChannelJoin, (ushort)GameMessageOpcode.Client0x0550);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientICCommMessage, (ushort)GameMessageOpcode.Client0x0550);
+        Assert.NotEqual((ushort)GameMessageOpcode.ServerSpellList, (ushort)GameMessageOpcode.Client0x0550);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientMatchingMatchInitiateLookingForReplacements, (ushort)GameMessageOpcode.Client0x0550);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientMovementControlAck, (ushort)GameMessageOpcode.Client0x0550);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientTradeskillResetTalents, (ushort)GameMessageOpcode.Client0x0550);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientAbilityBookActivateSpell, (ushort)GameMessageOpcode.Client0x0550);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientCombatLogDisableOthers, (ushort)GameMessageOpcode.Client0x0550);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientCombatLogDisables, (ushort)GameMessageOpcode.Client0x0550);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientP2PTradingInitiateTrade, (ushort)GameMessageOpcode.Client0x0550);
+
+        Assert.NotNull(typeof(Client0x0550).GetProperty(nameof(Client0x0550.Value)));
+        Assert.Null(typeof(Client0x0550).GetProperty("ChannelId"));
+        Assert.Null(typeof(Client0x0550).GetProperty("MessageId"));
+        Assert.Null(typeof(Client0x0550).GetProperty("Text"));
+        Assert.Null(typeof(Client0x0550).GetProperty("Spell4Id"));
+        Assert.Null(typeof(Client0x0550).GetProperty("Roles"));
+        Assert.Null(typeof(Client0x0550).GetProperty("Ticket"));
+        Assert.Null(typeof(Client0x0550).GetProperty("TradeskillId"));
+        Assert.Null(typeof(Client0x0550).GetProperty("TargetUnitId"));
+    }
+
+    [Fact]
+    public void Client0x063E_RemainsDiagnosticUntilOpcodeSpecificSenderIsProven()
+    {
+        Assert.Equal((ushort)0x063E, (ushort)GameMessageOpcode.Client0x063E);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientSuggest, (ushort)GameMessageOpcode.Client0x063E);
+        Assert.NotEqual((ushort)GameMessageOpcode.Client0x012D, (ushort)GameMessageOpcode.Client0x063E);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientAccountItemClaimPendingItemGroup, (ushort)GameMessageOpcode.Client0x063E);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientAccountItemReturnPendingItemGroup, (ushort)GameMessageOpcode.Client0x063E);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientSupportTicket, (ushort)GameMessageOpcode.Client0x063E);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientRequestCommodityInfo, (ushort)GameMessageOpcode.Client0x063E);
+        Assert.NotEqual((ushort)GameMessageOpcode.ClientAuctionsByFilterRequest, (ushort)GameMessageOpcode.Client0x063E);
+
+        Assert.NotNull(typeof(Client0x063E).GetProperty(nameof(Client0x063E.Text)));
+        Assert.Null(typeof(Client0x063E).GetProperty("Suggestion"));
+        Assert.Null(typeof(Client0x063E).GetProperty("TicketText"));
+        Assert.Null(typeof(Client0x063E).GetProperty("FilterText"));
+        Assert.Null(typeof(Client0x063E).GetProperty("MarketplaceStatus"));
+        Assert.Null(typeof(Client0x063E).GetProperty("AuthDeniedReason"));
+        Assert.Null(typeof(Client0x063E).GetProperty("PendingItemGroupId"));
+    }
+
+    [Fact]
     public void ClientAddonModuleList_UsesStructuralEvidenceBackedOpcodeName()
     {
         Assert.Equal((ushort)0x07B6, (ushort)GameMessageOpcode.ClientAddonModuleList);
@@ -58,28 +222,34 @@ public class PacketPlaceholderNamingTests
     }
 
     [Theory]
+    [InlineData(0x00C8, nameof(GameMessageOpcode.Client0x00C8), nameof(Client0x00C8))]
+    [InlineData(0x00ED, nameof(GameMessageOpcode.Client0x00ED), nameof(Client0x00ED))]
     [InlineData(0x011B, nameof(GameMessageOpcode.Client0x011B), nameof(Client0x011B))]
     [InlineData(0x011D, nameof(GameMessageOpcode.Client0x011D), nameof(Client0x011D))]
     [InlineData(0x012D, nameof(GameMessageOpcode.Client0x012D), nameof(Client0x012D))]
     [InlineData(0x0550, nameof(GameMessageOpcode.Client0x0550), nameof(Client0x0550))]
     [InlineData(0x062A, nameof(GameMessageOpcode.Client0x062A), nameof(Client0x062A))]
     [InlineData(0x0634, nameof(GameMessageOpcode.Client0x0634), nameof(Client0x0634))]
+    [InlineData(0x063E, nameof(GameMessageOpcode.Client0x063E), nameof(Client0x063E))]
     [InlineData(0x0701, nameof(GameMessageOpcode.Client0x0701), nameof(Client0x0701))]
     [InlineData(0x07E3, nameof(GameMessageOpcode.Client0x07E3), nameof(Client0x07E3))]
     [InlineData(0x0928, nameof(GameMessageOpcode.Client0x0928), nameof(Client0x0928))]
-    public void RegistrationOnlyDiagnosticClientPackets_RemainNumericUntilSemanticOwnerIsProven(ushort opcode, string expectedOpcodeName, string expectedTypeName)
+    public void NumericDiagnosticClientPackets_RemainNumericUntilSemanticOwnerIsProven(ushort opcode, string expectedOpcodeName, string expectedTypeName)
     {
         Assert.Equal(opcode, (ushort)Enum.Parse<GameMessageOpcode>(expectedOpcodeName));
         Assert.Equal(expectedOpcodeName, Enum.GetName(Enum.Parse<GameMessageOpcode>(expectedOpcodeName)));
 
         Type packetType = expectedTypeName switch
         {
+            nameof(Client0x00C8) => typeof(Client0x00C8),
+            nameof(Client0x00ED) => typeof(Client0x00ED),
             nameof(Client0x011B) => typeof(Client0x011B),
             nameof(Client0x011D) => typeof(Client0x011D),
             nameof(Client0x012D) => typeof(Client0x012D),
             nameof(Client0x0550) => typeof(Client0x0550),
             nameof(Client0x062A) => typeof(Client0x062A),
             nameof(Client0x0634) => typeof(Client0x0634),
+            nameof(Client0x063E) => typeof(Client0x063E),
             nameof(Client0x0701) => typeof(Client0x0701),
             nameof(Client0x07E3) => typeof(Client0x07E3),
             nameof(Client0x0928) => typeof(Client0x0928),
@@ -790,6 +960,18 @@ public class PacketPlaceholderNamingTests
         Assert.Equal(0x1Au, reader.ReadUInt(5u));
         Assert.Equal(0x11223344u, reader.ReadUInt());
         Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void Server0x0015_RemainsNeutralUntilOpcodeSpecificConsumerIsProven()
+    {
+        Assert.Equal((ushort)0x0015, (ushort)GameMessageOpcode.Server0x0015);
+        Assert.NotEqual((ushort)GameMessageOpcode.ServerMatchingAverageWaitTimeUpdate, (ushort)GameMessageOpcode.Server0x0015);
+
+        Assert.NotNull(typeof(Server0x0015).GetProperty(nameof(Server0x0015.Value0)));
+        Assert.NotNull(typeof(Server0x0015).GetProperty(nameof(Server0x0015.Value1)));
+        Assert.Null(typeof(Server0x0015).GetProperty(nameof(ServerMatchingAverageWaitTimeUpdate.Type)));
+        Assert.Null(typeof(Server0x0015).GetProperty(nameof(ServerMatchingAverageWaitTimeUpdate.AverageWaitTime)));
     }
 
     [Fact]

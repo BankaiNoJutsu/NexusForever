@@ -85,8 +85,9 @@ namespace NexusForever.Network.World.Message.Model
         /// <summary>
         /// Opcode 0x0015. Native reader <c>ServerUInt5UInt32_ReadPayload</c> (<c>140081f00</c>)
         /// reads one 5-bit field followed by one uint32 field. Matching opcode <c>0x0628</c>
-        /// reuses the same reader but has stronger runtime semantics, so this placeholder keeps
-        /// both fields neutral.
+        /// reuses the same reader with stronger runtime semantics, and <c>ServerFortuneRewards</c>
+        /// calls the same function for money reward rows, so this placeholder keeps both fields
+        /// neutral until an opcode-specific consumer or live payload is proven.
         /// </summary>
         public uint Value0 { get; set; }
 

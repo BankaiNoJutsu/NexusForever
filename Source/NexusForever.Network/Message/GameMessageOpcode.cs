@@ -5,7 +5,7 @@ namespace NexusForever.Network.Message
         State                           = 0x0000,
         State2                          = 0x0001,
         ServerHello                     = 0x0003,
-        Server0x0015                    = 0x0015, // native 140081f00 reads one 5-bit field plus one uint32; shared with matching opcode 0x0628 and semantics unresolved
+        Server0x0015                    = 0x0015, // native 140081f00 reads one 5-bit field plus one uint32; shared with matching opcode 0x0628 and Fortune reward rows, so semantics remain unresolved
         ServerMaxCharacterLevelAchieved = 0x0036,
         ClientAccountRealmData          = 0x003D, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers a 0x18-byte payload with writer ClientAccountRealmData_WritePayload @ 1400aba70; one RealmInfo.AccountRealmData row (uint14 + uint32 + wide string + uint64), same nested shape as ClientRealmListRealmRow; standalone send/consumer event still unresolved
         ServerPlayerEnteredWorld        = 0x0061,
@@ -50,7 +50,7 @@ namespace NexusForever.Network.Message
         ClientChallengeChoice           = 0x00C5, // native 14006c290 binds 0x00C5 to ClientChallengeChoice_WritePayload 14008a210 / ReadPayload 14008a200 (size 0xC); send cluster 140710c10/140710d60/140711ea0/140711f10 emits choice bytes 1/2/0xE/0xF via Network_SendOpcodePayloadHelper
         ServerChallengeResult           = 0x00C6,
         ServerChallengeUpdate           = 0x00C7,
-        Client0x00C8                    = 0x00C8, // Network_RegisterServerOpcode_0351 @ 14006c290 binds decimal 200 to shared ClientMatchType_ReadPayload 14008a140 / WritePayload 14008a150 with size 4; FindPointerInData 14008a150 returned zero .data pointers — writer referenced only via registration LEA; send_helper and Network_SendMessageById filters blocked — do not alias to queue-leave or challenge (0x00C5 owns challenge sends)
+        Client0x00C8                    = 0x00C8, // Network_RegisterServerOpcode_0351 @ 14006c290 binds decimal 200 to shared ClientMatchType_ReadPayload 14008a140 / WritePayload 14008a150 with size 4; TraceFunctionCallers 14008a150 finds registration refs only; send_helper and Network_SendMessageById filters blocked — do not alias to queue-leave or challenge (0x00C5 owns challenge sends)
         ClientHousingResidencePrivacyLevel = 0x00C9,
         ServerHousingResidenceKeyedUpdate = 0x00CA, // uint64 + uint32 fields; semantics unresolved
         ServerHousingResidenceEmpty     = 0x00CB, // empty; reader ServerEmpty_ReadPayload @ 14007d8e0
@@ -81,7 +81,7 @@ namespace NexusForever.Network.Message
         ClientDuelForfeit               = 0x00EA,
         ServerDuelFailure               = 0x00EB,
         ClientDuelInitiate              = 0x00EC,
-        Client0x00ED                    = 0x00ED, // uint64 + uint32 + uint64 + three trailing bits; exact 0xED immediate hits resolve to mail-side GameFormula lookups, not packet ownership
+        Client0x00ED                    = 0x00ED, // uint64 + uint32 + uint64 + three trailing bits; TraceFunctionCallers 1400a6200 finds registration/data refs only; exact 0xED immediate hits resolve to mail-side GameFormula lookups, not packet ownership
         ServerDuelAuxEmpty              = 0x00EE, // native size-1 registration with empty reader
         ClientPathScientistDismissScanbot = 0x00F0,
         ServerInstanceSettings          = 0x00F1, // handler sends 0x00D5 and ClientPlayerMovementSpeedUpdate
@@ -119,9 +119,9 @@ namespace NexusForever.Network.Message
         ServerDuelLeftArea              = 0x0114,
         ServerCharacterDeletedInfo      = 0x0116,
         ServerCharacterList             = 0x0117,
-        Client0x011B                    = 0x011B, // native client registration binds 0x011B to shared zero-payload ClientCraftingAbandon_WritePayload 140001ba0; pass 94 non-registration hits are Lua token ids / GameFormula, not senders
+        Client0x011B                    = 0x011B, // native client registration binds 0x011B to shared zero-payload ClientCraftingAbandon_WritePayload 140001ba0; TraceFunctionCallers finds shared registration/data refs only; pass 94 non-registration hits are Lua token ids / GameFormula, not senders
         ServerLootBindOnPickup          = 0x011C,
-        Client0x011D                    = 0x011D, // native client registration binds 0x011D to shared ClientTradeskillResetTalents_WritePayload 14007d010; pass 94 spell-cast hit is CastResult.IllegalSpellCast, not a sender
+        Client0x011D                    = 0x011D, // native client registration binds 0x011D to shared ClientTradeskillResetTalents_WritePayload 14007d010; TraceFunctionCallers found 67 shared refs; pass 94 spell-cast hit is CastResult.IllegalSpellCast, not a sender
         ClientMailDelete                = 0x011E,
         ClientMailOpen                  = 0x0122,
         ClientMailPayCod                = 0x0123,
@@ -133,7 +133,7 @@ namespace NexusForever.Network.Message
         ClientItemMoveToSupplySatchel   = 0x012A,
         ClientOptions                   = 0x012B,
         ServerQuestObjectiveWorldLocation = 0x012C,
-        Client0x012D                    = 0x012D, // native client registration binds 0x012D to ClientSuggest_WritePayload 14007ae80; pass 94 comparison scan found only registration or non-opcode constants, so sender remains blocked
+        Client0x012D                    = 0x012D, // native client registration binds 0x012D to shared ClientSuggest_WritePayload 14007ae80; TraceFunctionCallers finds registration/data refs only; exact scan finds Support_SendClientSuggest for 0x0833, not this opcode
         ServerPetCustomisationList      = 0x012E,
         ServerPetCustomisation          = 0x012F,
         ServerPublicEventStatsUpdate    = 0x0130,
@@ -613,7 +613,7 @@ namespace NexusForever.Network.Message
         ServerICCommMessageResult       = 0x054C,
         ServerICCommOrderedMessage      = 0x054D,
         ServerICCommDirectedMessage     = 0x054E,
-        Client0x0550                    = 0x0550, // ClientWorldOpcodeRegister_MovementSpline 1400a8190 @ 1400a824e: 4-byte uint32 14007d010; PE mov eax,0x550 count=1 (registration batch only); not ICComm 14006c290; not 0x05D5 ClientMatchingMatchInitiateLookingForReplacements (sends 140075918/14076ab61); sender blocked
+        Client0x0550                    = 0x0550, // ClientWorldOpcodeRegister_MovementSpline 1400a8190 @ 1400a824e: 4-byte uint32 14007d010; exact opcode scan finds 0x0550 only here, TraceFunctionCallers finds no owner, and message-name slot 140c247e0 is undefined; not ICComm, spell-list, 0x05D5, 0x0635, or 0x0858
         ServerSpellList                 = 0x0551,
         ClientInspectPlayerRequest      = 0x0552,
         ServerInspectPlayerResponse     = 0x0553,
@@ -654,7 +654,7 @@ namespace NexusForever.Network.Message
         ServerMailAvailable             = 0x05A3,
         ServerMailUnavailable           = 0x05A7,
         ServerMailTakeAttachment        = 0x05A8,
-        ServerMatchingManagerFlag       = 0x05B0, // native 14006c290 binds 0x05B0 to shared reader slot LAB_1400807f0 with registered size 4; disassembly at 1400807f0 uses MOV R8D,0x1 (one-byte read) before 14006c090; apply cell not opcode-index proven; current model stays a structural one-flag surface reused by 0x05CC and 0x05F1
+        ServerMatchingManagerFlag       = 0x05B0, // native 14006c290 binds 0x05B0 to shared reader slot LAB_1400807f0 with registered size 4; disassembly at 1400807f0 uses MOV R8D,0x1 before 14006c090; caller refs are registration/data only; current model stays a structural one-flag surface reused by 0x05CC and 0x05F1
         ClientMatchingRoleCheckResponse = 0x05B2, // native client registration binds 0x05B2 to 140098e10, which serialises one 5-bit MatchType, one 32-bit Roles field, and one trailing response bit
         ClientMatchingQueueLeaveAll     = 0x05B4, // native client registration binds 0x05B4 to shared zero-payload ClientCraftingAbandon_WritePayload 140001ba0
         ClientMatchingQueueLeave        = 0x05B5, // native client registration binds 0x05B5 to shared local writer slot LAB_14008a150; FindCallsToTarget 14008a150 total_calls=0; send_helper_filter_05b5 and sendmsg filter on Network_SendMessageById found no 0x05B5 — sender blocked
@@ -668,8 +668,8 @@ namespace NexusForever.Network.Message
         ServerMatchingMatchJoined       = 0x05C6, // native 14006c290 binds 0x05C6 to local reader slot LAB_14007a530 with registered size 4; current model stays a structural one-uint14 surface for the joined matching map id
         ClientMatchingGameReadyResponse = 0x05C8, // native client registration binds 0x05C8 to shared ClientBool_WritePayload 14007e610
         ServerMatchingMatchReady        = 0x05CA, // native 140099700 reads a 5-bit match type followed by two uint32 count fields
-        ServerMatchingMatchParticipantCountUpdate = 0x05CC, // native 14006c290 binds 0x05CC to shared reader slot LAB_1400807f0 with registered size 4; disassembly at 1400807f0 uses MOV R8D,0x1 (one-byte read); matching apply table has zero-payload apply cluster (1405c2440/1405c24a0 etc.) but opcode-to-cell index still blocked; current model stays a structural one-flag surface reused by 0x05B0 and 0x05F1
-        ServerMatching0x05CF            = 0x05CF, // native 14006c290 binds 0x05CF to ServerUInt32_LocalReadThunk 140099110 (size 4); matching-manager apply table 140e1e228 maps apply fns via .rdata cells — tentative consumer MatchingManager_ApplyManagerUInt32Field0xA0@1405c41c0 (cell 140e1e66c) writes payload uint32 to manager+0xa0 without ClientEvent; opcode-index proof still blocked; emit blocked; F-010 sniff recommended
+        ServerMatchingMatchParticipantCountUpdate = 0x05CC, // native 14006c290 binds 0x05CC to shared reader slot LAB_1400807f0 with registered size 4; disassembly at 1400807f0 uses MOV R8D,0x1 before 14006c090; runtime currently emits Ally, but native proof is still only the shared one-flag surface reused by 0x05B0 and 0x05F1
+        ServerMatching0x05CF            = 0x05CF, // native 14006c290 binds 0x05CF to ServerUInt32_LocalReadThunk 140099110 (size 4); tentative consumer MatchingManager_ApplyManagerUInt32Field0xA0@1405c41c0 writes payload uint32 to manager+0xa0 without ClientEvent, but prior 140e1e66c xref is PE .pdata unwind metadata, not dispatch proof; opcode-index proof still blocked; emit blocked; F-010 sniff recommended
         ClientMatchingMatchInitiateVoteToKick = 0x05D1, // native client registration binds 0x05D1 to shared local writer slot LAB_1400867f0 with registered size 0x10; current model stays a single Identity payload
         ClientMatchingMatchInitiateVoteToSurrender = 0x05D3, // native client registration binds 0x05D3 to shared zero-payload ClientCraftingAbandon_WritePayload 140001ba0
         ClientMatchingMatchInitiateLookingForReplacements = 0x05D5, // native client registration binds 0x05D5 to shared ClientTradeskillResetTalents_WritePayload 14007d010; PE sends @ 140075918 and 14076ab61 via MatchingReplacement_SendStartLookingForReplacements 14076aa30 (role bitmask 0..2) — do not alias diagnostic uint32 cluster 0x0550/0x062A/0x0634/0x07E3
@@ -688,7 +688,7 @@ namespace NexusForever.Network.Message
         ServerMatchingPvpRatingUpdated  = 0x05ED, // native 140099330 reads four uint32 counters plus one 3-bit rating type
         ServerMatchingPvpTeamInfoUpdate = 0x05EE, // native 140099290 reads two wide strings plus two uint32 rating fields
         ClientMatchingQueue             = 0x05EF, // native client writer 140098a70 serialises MatchingMap plus one uint32 roles field and one uint32 prime-level field; sender Matching_QueueDispatchFromUi 14076c830
-        ServerMatchingRoleCheckStarted  = 0x05F1, // native 14006c290 binds 0x05F1 to shared reader slot LAB_1400807f0, the same structural one-flag path reused by 0x05B0 and 0x05CC
+        ServerMatchingRoleCheckStarted  = 0x05F1, // native 14006c290 binds 0x05F1 to shared reader slot LAB_1400807f0, the same structural one-flag path reused by 0x05B0 and 0x05CC; runtime currently emits RolesRequired, but native consumer/timing proof remains blocked
         ServerMatchingGroupIsQueued     = 0x05F2, // native 14006c290 binds 0x05F2 to ServerEmpty_ReadPayload 14007d8e0
         ClientMatchingQueueParty        = 0x05F3, // native client writer 140098a70 serialises MatchingMap plus one uint32 roles field and one uint32 prime-level field; sender Matching_QueueDispatchFromUi 14076c830
         ClientMatchingQueueRandom       = 0x05F8, // native client writer 140098c00 serialises one 5-bit match type, one uint32 MatchingQueueFlags field, and one uint32 roles field; sender Matching_QueueDispatchFromUi 14076c830
@@ -719,7 +719,7 @@ namespace NexusForever.Network.Message
         ClientZoneChange                = 0x063A,
         ClientPlayerMovementSpeedUpdate = 0x063B, // native 1404dafb0 builds and sends one raw uint32 movement-speed scalar, then dispatches PlayerMovementSpeedUpdate
         ServerAuthDenied                = 0x063D,
-        Client0x063E                    = 0x063E, // native client registration in ClientWorldOpcodeRegister_MovementSpline 1400a8190 binds 0x063E to ClientSuggest_WritePayload 14007ae80; send_helper_filter_63e and accountitem010_filter on 140016010 found no 0x63E — sender blocked
+        Client0x063E                    = 0x063E, // ClientWorldOpcodeRegister_MovementSpline 1400a8190 @ 1400a821a binds 0x063E to ClientSuggest_WritePayload 14007ae80; TraceFunctionCallers found only shared registration/data refs, and sibling 0x0833/0x0233/0x07C6 senders are not evidence — sender blocked
         ServerMarketplaceStatus         = 0x0640,
         ServerPrerequisiteFailure       = 0x0642,
         ServerOwnedCommodityOrders      = 0x064C,
