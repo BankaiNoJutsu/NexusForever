@@ -28,6 +28,7 @@ using NexusForever.Game.Pvp;
 using NexusForever.Game.PublicEvent;
 using NexusForever.Game.Quest;
 using NexusForever.Game.RBAC;
+using NexusForever.Game.RealmBank;
 using NexusForever.Game.Reputation;
 using NexusForever.Game.Server;
 using NexusForever.Game.Spell;
@@ -54,6 +55,7 @@ namespace NexusForever.Game
             sc.AddSingletonLegacy<ITradeManager, TradeManager>();
             sc.AddSingletonLegacy<IGroupStateManager, GroupStateManager>();
             sc.AddSingletonLegacy<IGlobalLootManager, GlobalLootManager>();
+            sc.AddSingleton<RealmBankManager>();
             sc.AddSingletonLegacy<IAccountPendingItemRepository, AccountPendingItemRepository>();
             sc.AddSingletonLegacy<IPendingAccountItemGroupDelivery, RetailPendingAccountItemGroupDelivery>();
 

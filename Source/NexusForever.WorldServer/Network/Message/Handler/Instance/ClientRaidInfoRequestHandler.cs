@@ -44,7 +44,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Instance
             {
                 var now = System.DateTime.UtcNow;
                 var expireDate = now.AddDays(DefaultLockoutDays);
-                var expireTimestamp = (ulong)new System.DateTimeOffset(expireDate).ToUnixTimeSeconds();
+                var expireFileTimeUtc = (ulong)expireDate.ToFileTimeUtc();
                 var daysUntilExpire = DefaultLockoutDays;
 
                 foreach (IMapLock mapLock in lockCollection)
@@ -58,7 +58,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Instance
                         // Retail used database auto-increment IDs; derive a stable local id from the instance Guid.
                         SavedInstanceId = System.BitConverter.ToUInt64(mapLock.InstanceId.ToByteArray(), 0),
                         WorldId         = (ushort)mapLock.WorldId,
-                        DateExpireUTC   = expireTimestamp,
+                        DateExpireUTC   = expireFileTimeUtc,
                         DaysUntilExpire = daysUntilExpire,
                         PrimeLevel      = 0u
                     });
@@ -70,11 +70,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Instance
             // Keep the raid-info UI compatibility emission; non-zero queue semantics are not mapped yet.
             session.EnqueueMessageEncrypted(new ServerRaidQueueStatus
             {
-                Unknown0 = 0u,
-                Unknown1 = 0u,
-                Unknown2 = 0u,
-                Unknown3 = 0u,
-                Unknown4 = 0u
+                SavedInstanceId = 0u,
+                WorldId         = 0,
+                DateExpireUTC   = 0u,
+                DaysUntilExpire = 0f,
+                PrimeLevel      = 0u
             });
         }
     }

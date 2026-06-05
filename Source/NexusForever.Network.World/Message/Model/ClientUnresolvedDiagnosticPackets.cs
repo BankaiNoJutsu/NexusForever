@@ -13,7 +13,9 @@ namespace NexusForever.Network.World.Message.Model
         /// <c>ClientAccountRealmData_WritePayload</c> @ <c>1400aba70</c>. The writer serialises one
         /// <see cref="RealmInfo.AccountRealmData"/> row (14-bit realm id, character count, last-played
         /// name, last-played time). The same layout is nested inside <see cref="ClientRealmListRealmRow"/>;
-        /// standalone send/consumer event remains unresolved.
+        /// standalone send/consumer event remains unresolved. A 2026-06-05 cache recheck found the
+        /// writer's only selected non-self caller at <c>Client0x0760_WritePayload</c> @ <c>1400abd30</c>;
+        /// no selected send-helper owner surfaced.
         /// </summary>
     }
 
@@ -144,8 +146,9 @@ namespace NexusForever.Network.World.Message.Model
         /// (<c>1400a8190</c> @ <c>1400a824e</c>) binds this packet to shared
         /// <c>ClientTradeskillResetTalents_WritePayload</c> (<c>14007d010</c>). The exact opcode
         /// scan finds a single <c>MOV EDX,0x550</c> (registration batch only). Do not alias to
-        /// <c>ClientMatchingMatchInitiateLookingForReplacements</c> (<c>0x05D5</c>), which has
-        /// gameplay sends at <c>140075918</c>/<c>14076ab61</c>. <c>TraceFunctionCallers
+        /// <c>ClientMatchingMatchInitiateLookingForReplacements</c> (<c>0x05D5</c>), whose
+        /// registration literal is <c>140075918</c> and whose gameplay send is
+        /// <c>14076ab61</c>/<c>14076ab69</c>. <c>TraceFunctionCallers
         /// 14007d010 80</c> found only the compound tradeskill cluster plus registration/data
         /// refs, and <c>DAT_140c1f210</c> slot <c>140c247e0</c> is undefined for the
         /// <c>Network_SendMessageById</c> name rail.
@@ -165,7 +168,8 @@ namespace NexusForever.Network.World.Message.Model
         /// Opcode 0x062A. Native client registration in <c>ClientWorldOpcodeRegister_MovementSpline</c>
         /// (<c>1400a8190</c> @ <c>1400a82b6</c>) binds this packet to shared
         /// <c>ClientTradeskillResetTalents_WritePayload</c> (<c>14007d010</c>). PE scan finds a
-        /// single <c>mov eax,0x62A</c> (registration only; not <c>0x05D5</c>).
+        /// single <c>MOV EDX,0x62A</c> (registration only; not <c>0x05D5</c> or
+        /// <c>0x0635</c>).
         /// </summary>
         public uint Value { get; private set; }
 
@@ -182,7 +186,8 @@ namespace NexusForever.Network.World.Message.Model
         /// Opcode 0x0634. Native client registration in <c>ClientWorldOpcodeRegister_MovementSpline</c>
         /// (<c>1400a8190</c> @ <c>1400a872c</c>) binds this packet to shared
         /// <c>ClientTradeskillResetTalents_WritePayload</c> (<c>14007d010</c>). PE scan finds a
-        /// single <c>mov eax,0x634</c> (registration only; not <c>0x05D5</c>).
+        /// single <c>MOV EDX,0x634</c> (registration only; not <c>0x05D5</c> or
+        /// <c>0x0635</c>).
         /// </summary>
         public uint Value { get; private set; }
 
@@ -219,7 +224,7 @@ namespace NexusForever.Network.World.Message.Model
         /// Opcode 0x0701. Registered in <c>Network_RegisterServerOpcode_0351</c> (<c>14006c290</c>),
         /// not <c>ClientWorldOpcodeRegister_MovementSpline</c>. Native writer
         /// <c>ClientUInt2UInt32_WritePayload</c> @ <c>1400a69d0</c> serialises one 2-bit field
-        /// followed by one uint32. Sole PE <c>mov eax,0x701</c> is the registration harness at
+        /// followed by one uint32. Sole PE <c>MOV EDX,0x701</c> is the registration harness at
         /// <c>140079e05</c> (batch with <c>0x0942</c>/<c>0x0602</c>). Packet semantics remain
         /// unresolved.
         /// </summary>
@@ -243,7 +248,9 @@ namespace NexusForever.Network.World.Message.Model
         /// <c>Client0x0760_WritePayload</c> @ <c>1400abd30</c>. Wire layout matches one
         /// <see cref="RealmInfo"/> row with the same field order used by
         /// <see cref="ServerRealmList"/> realm entries. The source event that sends or consumes
-        /// this client-side realm row remains unresolved.
+        /// this client-side realm row remains unresolved. Selected callers are
+        /// <c>ServerRealmList_WritePayload</c> @ <c>1400ac770</c> and a row-plus-trailing-bit serializer
+        /// wrapper at <c>1400ac2c0</c>, not a proven client send owner.
         /// </summary>
         public RealmInfo Realm => this;
     }
@@ -257,7 +264,8 @@ namespace NexusForever.Network.World.Message.Model
         /// <c>Client0x0762_WritePayload</c> @ <c>1400ac410</c>. Wire layout matches one
         /// <see cref="NetworkMessage"/> row with the same field order used by
         /// <see cref="ServerRealmList"/> messages. The source event that sends or consumes
-        /// this client-side message row remains unresolved.
+        /// this client-side message row remains unresolved. The selected caller remains
+        /// <c>ServerRealmList_WritePayload</c> @ <c>1400ac770</c>; no client send owner surfaced.
         /// </summary>
         public NetworkMessage MessageRow => this;
     }
@@ -344,9 +352,14 @@ namespace NexusForever.Network.World.Message.Model
         /// <summary>
         /// Opcode 0x0928. Native writer <c>ClientUInt32UInt5_WritePayload</c> @ <c>1400898b0</c>
         /// serialises one uint32 followed by one 5-bit field inside the registered 8-byte slot.
-        /// The same helper is used by <c>ClientPetSetStance</c> (<c>0x068E</c>, sends @ <c>140070cc4</c> /
-        /// <c>14050a31d</c>). Static PE has no gameplay send site for <c>0x0928</c> (only opcode-registration
-        /// batch @ <c>1400a8524</c>).
+        /// The same helper is used by <c>ClientPetSetStance</c> (<c>0x068E</c>, registration @
+        /// <c>140070cc4</c> and gameplay send @ <c>14050a31d</c>). The final reader/apply helper
+        /// <c>ServerUInt32UInt5_ReadPayload</c> @ <c>14008ce80</c> is also shared with
+        /// <c>ServerPetStanceChanged</c> (<c>0x068F</c>), whose client apply path is
+        /// <c>Pet_ApplyStanceChangedPayload</c> @ <c>1403c0a80</c>. No equivalent
+        /// <c>0x0928</c> owner has surfaced.
+        /// Static PE has no gameplay send site for <c>0x0928</c> (only opcode-registration batch
+        /// @ <c>1400a8524</c>).
         /// </summary>
         public uint LeadingValue { get; private set; }
 

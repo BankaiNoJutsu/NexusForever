@@ -1,10 +1,13 @@
 using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 #nullable disable
 
 namespace NexusForever.Database.Character.Migrations
 {
+    [DbContext(typeof(CharacterContext))]
+    [Migration("20260522191000_LeaderboardScores")]
     public partial class LeaderboardScores : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

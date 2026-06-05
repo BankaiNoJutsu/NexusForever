@@ -975,14 +975,38 @@ public class PacketPlaceholderNamingTests
     }
 
     [Fact]
-    public void ServerRaidQueueStatus_TailsRemainNeutralUntilNonZeroSemanticsAreProven()
+    public void ServerRaidQueueStatus_UsesRaidInfoRowNamesWhileStandaloneProducerRemainsBlocked()
     {
         Assert.Equal((ushort)0x0718, (ushort)GameMessageOpcode.ServerRaidQueueStatus);
-        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.Unknown0)));
-        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.Unknown1)));
-        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.Unknown2)));
-        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.Unknown3)));
-        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.Unknown4)));
+        Assert.NotEqual((ushort)GameMessageOpcode.ServerRaidInfoResponse, (ushort)GameMessageOpcode.ServerRaidQueueStatus);
+
+        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.SavedInstanceId)));
+        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.WorldId)));
+        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.DateExpireUTC)));
+        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.DaysUntilExpire)));
+        Assert.NotNull(typeof(ServerRaidQueueStatus).GetProperty(nameof(ServerRaidQueueStatus.PrimeLevel)));
+
+        Assert.Null(typeof(ServerRaidQueueStatus).GetProperty("Unknown0"));
+        Assert.Null(typeof(ServerRaidQueueStatus).GetProperty("Unknown1"));
+        Assert.Null(typeof(ServerRaidQueueStatus).GetProperty("Unknown2"));
+        Assert.Null(typeof(ServerRaidQueueStatus).GetProperty("Unknown3"));
+        Assert.Null(typeof(ServerRaidQueueStatus).GetProperty("Unknown4"));
+        Assert.Null(typeof(ServerRaidQueueStatus).GetProperty("QueuePosition"));
+        Assert.Null(typeof(ServerRaidQueueStatus).GetProperty("QueueStatus"));
+        Assert.Null(typeof(ServerRaidQueueStatus).GetProperty("MatchType"));
+    }
+
+    [Fact]
+    public void ServerSpellCastResult_LeadingFieldRemainsNeutralUntilEchoSemanticsAreProven()
+    {
+        Assert.Equal((ushort)0x07FC, (ushort)GameMessageOpcode.ServerSpellCastResult);
+
+        Assert.NotNull(typeof(ServerSpellCastResult).GetProperty(nameof(ServerSpellCastResult.Unknown0)));
+        Assert.NotNull(typeof(ServerSpellCastResult).GetProperty(nameof(ServerSpellCastResult.Spell4Id)));
+        Assert.NotNull(typeof(ServerSpellCastResult).GetProperty(nameof(ServerSpellCastResult.CastResult)));
+        Assert.Null(typeof(ServerSpellCastResult).GetProperty("ContextToken"));
+        Assert.Null(typeof(ServerSpellCastResult).GetProperty("ClientContextToken"));
+        Assert.Null(typeof(ServerSpellCastResult).GetProperty("CastingId"));
     }
 
     [Fact]

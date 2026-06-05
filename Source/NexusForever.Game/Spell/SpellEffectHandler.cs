@@ -63,7 +63,7 @@ namespace NexusForever.Game.Spell
         [SpellEffectHandler(SpellEffectType.Damage)]
         public static void HandleEffectDamage(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
-            if (!target.CanAttack(spell.Caster))
+            if (!spell.Caster.CanAttack(target))
                 return;
 
             IDamageCalculator damageCalculator = CreateDamageCalculator();

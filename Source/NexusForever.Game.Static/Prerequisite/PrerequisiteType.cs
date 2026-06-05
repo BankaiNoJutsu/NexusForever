@@ -14,7 +14,7 @@
         EpisodeState                = 9, // Episode requirement not met
         Gender                      = 10, // Gender requirement not met - client enum PrerequisiteComp_Sex
         OtherPrerequisite           = 11, // Other requirement not met
-        DeadState                   = 12, // Player death state not correct - handler table[12] shares body with ActionSetSpell 14049d6d0 (live 0xdd); NF uses IsAlive scalar until separate dead-state witness
+        DeadState                   = 12, // Player death state not correct - live case 0x0c vtable +0x80 -> Prerequisite_CheckDeadState 14049c800; native tests entity+0x250/+0x254/type 0x17, NF uses IsAlive proxy
         ItemEquipped                = 13, // Item equipment requirement not met - handler table[13] Prerequisite_CheckItemEquipped 14049d760; NF checks Equipped bag index objectId0
         ItemOnCharacter             = 14, // Inventory requirement not met - handler table[14] Prerequisite_CheckItemOnCharacter 14049d7b0; NF uses Inventory.GetItemCount
         UnderSpell                  = 15, // Spell requirements not met
@@ -154,7 +154,7 @@
         ItemTradeSkillLevel         = 146, // Item tradeskill level requirement not met
         PlayersInWorld              = 147, // There are no players in the world who meet the requirement
         InfrastructureState         = 148, // The infrastructure state requirement is not met - client case 0x94 via Prerequisite_CheckInfrastructureState 1404a0150 (+0x4e8); FUN_1403d2d60 lookup then value0 vs state +0x10; NF maps PathMissionTypeEnum 0x15 (21) ObjectId = PathSettlerInfrastructure.Id
-        State                       = 149, // State requirement not met
+        State                       = 149, // State requirement not met - live case 0x95 vtable +0x88 -> Prerequisite_CheckEntityStateFlags_Table149 14049c840; tests entity+0x1e4/+0x2ac presence, row/use-site semantics blocked
         HubEconomyProgress          = 150, // Hub economy progress requirement not met
         HubQualityOfLife            = 151, // Hub quality of life progress requirement not met
         HubSecurity                 = 152, // Hub security progress requirement not met
@@ -265,7 +265,7 @@
         // 257 is unused in PrerequisiteType.tbl
         // 258 is unused in PrerequisiteType.tbl
         Unknown259                  = 259, // Exist in PrerequisiteType.tbl but does not have a description - four rows use objectId0 38923/38924, but live case 0x103 dispatches vtable +0x530 no-op stub; no semantic rename
-        Unknown260                  = 260, // Requirements not met - one orphan row 36343 nests HousingNeighborResidence and objectId1=12 HousingPlugItem, but live case 0x104 ignores object/value and checks active housing plot/plug flags 0x08/0x20 against state 5; state 5 correlates to HousingBuildComplete, active residence fields/use-site blocked
+        Unknown260                  = 260, // Requirements not met - one orphan row 36343 nests HousingNeighborResidence and objectId1=12 HousingPlugItem, but live case 0x104 ignores object/value and checks active housing plot/plug flags 0x08/0x20 against state 5; state 5 is native HousingBuildComplete-backed, active residence fields/use-site blocked
         Personal2V2ArenaRating261   = 261, // Personal arena 2v2 rating requirement not met
         Personal3V3ArenaRating262   = 262, // Personal arena 3v3 rating requirement not met
         Personal5V5ArenaRating263   = 263, // Personal arena 5v5 rating requirement not met

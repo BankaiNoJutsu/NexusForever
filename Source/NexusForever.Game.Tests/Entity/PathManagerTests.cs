@@ -964,7 +964,7 @@ public class PathManagerTests
     }
 
     [Fact]
-    public void TryActivateCurrentZoneEpisode_WithPersistedActiveEpisode_SendsCurrentZoneActivationPackets()
+    public void TryActivateCurrentZoneEpisode_WithPersistedActiveEpisode_DoesNotReemitActivationPackets()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         LegacyServiceProvider.Provider = BuildGameTableProvider(
@@ -1010,19 +1010,7 @@ public class PathManagerTests
             playerProxy.SetProperty("Zone", new WorldZoneEntry { Id = 10u });
 
             Assert.True(manager.TryActivateCurrentZoneEpisode());
-
-            IReadOnlyList<object> messages = sessionProxy
-                .GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
-                .Select(i => i.Arguments[0])
-                .ToList();
-
-            Assert.Equal(3, messages.Count);
-            ServerPathSetCurrentEpisode currentEpisode = Assert.IsType<ServerPathSetCurrentEpisode>(messages[0]);
-            Assert.Equal(82u, currentEpisode.PathEpisodeId);
-            ServerPathEpisodeProgress episodeProgress = Assert.IsType<ServerPathEpisodeProgress>(messages[1]);
-            Assert.Equal([650u], episodeProgress.Missions.Select(m => m.PathMissionId).ToArray());
-            ServerPathMissionActivate missionActivate = Assert.IsType<ServerPathMissionActivate>(messages[2]);
-            Assert.Equal([650u], missionActivate.Missions.Select(m => m.PathMissionId).ToArray());
+            Assert.Empty(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
         }
         finally
         {

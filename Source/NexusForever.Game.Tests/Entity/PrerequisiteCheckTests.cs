@@ -616,6 +616,19 @@ public class PrerequisiteCheckTests
     }
 
     [Fact]
+    public void RapidTransport_UsesTaxiNodeFromCastContext()
+    {
+        var check = new PrerequisiteCheckRapidTransport();
+        var parameters = new PrerequisiteParameters
+        {
+            TaxiNode = 88
+        };
+
+        Assert.True(check.Meets(player: null, PrerequisiteComparison.Equal, value: 0u, objectId: 88u, parameters));
+        Assert.False(check.Meets(player: null, PrerequisiteComparison.Equal, value: 0u, objectId: 89u, parameters));
+    }
+
+    [Fact]
     public void ItemTradeSkillKnown_RequiresNpcTargetAndLearnedSchematicForItem2()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);

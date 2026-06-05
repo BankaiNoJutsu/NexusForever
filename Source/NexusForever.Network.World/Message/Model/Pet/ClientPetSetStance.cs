@@ -3,6 +3,10 @@ using NexusForever.Network.Message;
 
 namespace NexusForever.Network.World.Message.Model.Pet
 {
+    /// <summary>
+    /// Native <c>Pet_SetStance_SendClientPetSetStance</c> (<c>14050a270</c>) sends
+    /// this as pet unit id plus a mapped 5-bit stance value.
+    /// </summary>
     [Message(GameMessageOpcode.ClientPetSetStance)]
     public class ClientPetSetStance : IReadable
     {

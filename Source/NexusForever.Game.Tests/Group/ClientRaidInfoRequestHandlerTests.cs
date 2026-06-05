@@ -42,11 +42,11 @@ public class ClientRaidInfoRequestHandlerTests
         Assert.Empty(response.Raids);
 
         ServerRaidQueueStatus queueStatus = Assert.Single(GetEncryptedMessages<ServerRaidQueueStatus>(sessionProxy));
-        Assert.Equal(0ul, queueStatus.Unknown0);
-        Assert.Equal(0u, queueStatus.Unknown1);
-        Assert.Equal(0ul, queueStatus.Unknown2);
-        Assert.Equal(0u, queueStatus.Unknown3);
-        Assert.Equal(0u, queueStatus.Unknown4);
+        Assert.Equal(0ul, queueStatus.SavedInstanceId);
+        Assert.Equal(0, queueStatus.WorldId);
+        Assert.Equal(0ul, queueStatus.DateExpireUTC);
+        Assert.Equal(0f, queueStatus.DaysUntilExpire);
+        Assert.Equal(0u, queueStatus.PrimeLevel);
     }
 
     [Fact]
@@ -78,18 +78,20 @@ public class ClientRaidInfoRequestHandlerTests
         Assert.Equal(1234, raid.WorldId);
         Assert.Equal(7f, raid.DaysUntilExpire);
         Assert.Equal(0u, raid.PrimeLevel);
-        Assert.True(raid.DateExpireUTC > (ulong)System.DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        System.DateTime expireDateUtc = System.DateTime.FromFileTimeUtc((long)raid.DateExpireUTC);
+        Assert.True(expireDateUtc > System.DateTime.UtcNow.AddDays(6));
+        Assert.True(expireDateUtc < System.DateTime.UtcNow.AddDays(8));
 
         RecordingDispatchProxy<IMapLockManager>.Invocation lookup =
             Assert.Single(mapLockManagerProxy.GetInvocations(nameof(IMapLockManager.TryGetSoloLockCollection)));
         Assert.Equal(identity, lookup.Arguments[0]);
 
         ServerRaidQueueStatus queueStatus = Assert.Single(GetEncryptedMessages<ServerRaidQueueStatus>(sessionProxy));
-        Assert.Equal(0ul, queueStatus.Unknown0);
-        Assert.Equal(0u, queueStatus.Unknown1);
-        Assert.Equal(0ul, queueStatus.Unknown2);
-        Assert.Equal(0u, queueStatus.Unknown3);
-        Assert.Equal(0u, queueStatus.Unknown4);
+        Assert.Equal(0ul, queueStatus.SavedInstanceId);
+        Assert.Equal(0, queueStatus.WorldId);
+        Assert.Equal(0ul, queueStatus.DateExpireUTC);
+        Assert.Equal(0f, queueStatus.DaysUntilExpire);
+        Assert.Equal(0u, queueStatus.PrimeLevel);
     }
 
     private static IReadOnlyList<T> GetEncryptedMessages<T>(RecordingDispatchProxy<IWorldSession> sessionProxy)

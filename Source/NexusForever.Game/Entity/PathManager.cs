@@ -239,12 +239,14 @@ namespace NexusForever.Game.Entity
             if (episodeId == 0 || missionXp == null || missionXp.Count == 0)
                 return;
 
+            HashSet<ushort> activatedMissionIds = [];
             foreach ((ushort missionId, uint xp) in missionXp)
             {
                 if (!pathMissions.TryGetValue(missionId, out PathMissionRuntimeState state))
                 {
                     state = new PathMissionRuntimeState(player.CharacterId, missionId, episodeId);
                     pathMissions.Add(missionId, state);
+                    activatedMissionIds.Add(missionId);
                 }
 
                 state.EpisodeId = episodeId;
@@ -253,10 +255,12 @@ namespace NexusForever.Game.Entity
                     state.State = PathMissionState.Started;
             }
 
+            if (activatedMissionIds.Count == 0)
+                return;
+
             if (!activatedEpisodes.Add(episodeId))
                 return;
 
-            HashSet<ushort> activatedMissionIds = missionXp.Keys.ToHashSet();
             SendPathCurrentEpisode(episodeId);
             SendPathEpisodeProgress(episodeId, missionIds: activatedMissionIds);
             SendPathMissionActivate(episodeId, missionIds: activatedMissionIds);

@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 #nullable disable
 
 namespace NexusForever.Database.Character.Migrations
 {
+    [DbContext(typeof(CharacterContext))]
+    [Migration("20260522190000_CharacterChallenges")]
     public partial class CharacterChallenges : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

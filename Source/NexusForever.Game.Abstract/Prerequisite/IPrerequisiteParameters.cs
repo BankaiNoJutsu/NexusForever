@@ -10,5 +10,10 @@ namespace NexusForever.Game.Abstract.Prerequisite
         /// Item under evaluation for item-scoped prerequisite types (client item-eval context).
         /// </summary>
         public IItem Item { get; set; }
+
+        /// <summary>
+        /// Taxi node supplied by a client rapid-transport cast request.
+        /// </summary>
+        public ushort TaxiNode { get; set; }
     }
 }

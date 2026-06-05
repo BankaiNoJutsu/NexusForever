@@ -42,6 +42,16 @@ public class RealmBankInventoryTests : IDisposable
     }
 
     [Fact]
+    public void AddGame_RegistersRealmBankManagerForLegacySingleton()
+    {
+        var services = new ServiceCollection();
+        services.AddGame();
+        using ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+        Assert.NotNull(serviceProvider.GetRequiredService<RealmBankManager>());
+    }
+
+    [Fact]
     public void GetSlotCapacity_WithoutUnlock_ReturnsZero()
     {
         IPlayer player = CreatePlayer(unlocked: false);

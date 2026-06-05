@@ -87,7 +87,9 @@ namespace NexusForever.Network.World.Message.Model
         /// reads one 5-bit field followed by one uint32 field. Matching opcode <c>0x0628</c>
         /// reuses the same reader with stronger runtime semantics, and <c>ServerFortuneRewards</c>
         /// calls the same function for money reward rows, so this placeholder keeps both fields
-        /// neutral until an opcode-specific consumer or live payload is proven.
+        /// neutral until an opcode-specific consumer or live payload is proven. A 2026-06-05
+        /// cache/xref recheck found no <c>0x0015</c> apply owner equivalent to
+        /// <c>MatchingManager_ApplyMatchingAverageWaitTimeUpdated</c> for <c>0x0628</c>.
         /// </summary>
         public uint Value0 { get; set; }
 

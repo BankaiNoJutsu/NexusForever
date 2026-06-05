@@ -24,6 +24,7 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Combat;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Loot;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Script.Template;
 using NexusForever.Shared;
@@ -2506,14 +2507,56 @@ namespace NexusForever.Game.Entity
         private void Respawn()
         {
             RemoveLootForOwner();
+            ResetVitalsForRespawn();
+            DeathState = null;
+            SendLootRemoveForOwnerToVisiblePlayers();
+            RefreshVisiblePlayersAfterRespawn();
+        }
+
+        protected virtual void ResetVitalsForRespawn()
+        {
             Health = MaxHealth;
             Shield = MaxShieldCapacity;
-            DeathState = null;
         }
 
         private void RemoveLootForOwner()
         {
             LegacyServiceProvider.Provider?.GetService<GlobalLootManager>()?.RemoveLootForOwner(Guid);
+        }
+
+        private void SendLootRemoveForOwnerToVisiblePlayers()
+        {
+            if (this is not INonPlayerEntity || Guid == 0u)
+                return;
+
+            foreach (IPlayer player in visibleEntities.Values.OfType<IPlayer>().ToList())
+            {
+                player.Session.EnqueueMessageEncrypted(new ServerLootRemove
+                {
+                    OwnerUnitId = Guid
+                });
+            }
+        }
+
+        private void RefreshVisiblePlayersAfterRespawn()
+        {
+            if (this is not INonPlayerEntity || Guid == 0u)
+                return;
+
+            foreach (IPlayer player in visibleEntities.Values.OfType<IPlayer>().ToList())
+            {
+                // The client can keep corpse presentation state for reused creature GUIDs.
+                player.Session.EnqueueMessageEncrypted(new ServerEntityDestroy
+                {
+                    Guid = Guid,
+                    Flag = true
+                });
+
+                foreach (var auxiliary in BuildEntityCreateAuxPackets())
+                    player.Session.EnqueueMessageEncrypted(auxiliary);
+
+                player.Session.EnqueueMessageEncrypted(BuildCreatePacket(false));
+            }
         }
 
         /// <summary>

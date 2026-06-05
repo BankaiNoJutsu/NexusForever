@@ -5,11 +5,11 @@ namespace NexusForever.Network.Message
         State                           = 0x0000,
         State2                          = 0x0001,
         ServerHello                     = 0x0003,
-        Server0x0015                    = 0x0015, // native 140081f00 reads one 5-bit field plus one uint32; shared with matching opcode 0x0628 and Fortune reward rows, so semantics remain unresolved
+        Server0x0015                    = 0x0015, // native 140081f00 reads one 5-bit field plus one uint32; shared with matching opcode 0x0628 and Fortune reward rows; 2026-06-05 cache/xref recheck found no 0x0015 apply owner equivalent to MatchingManager_ApplyMatchingAverageWaitTimeUpdated for 0x0628, so semantics remain unresolved
         ServerMaxCharacterLevelAchieved = 0x0036,
-        ClientAccountRealmData          = 0x003D, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers a 0x18-byte payload with writer ClientAccountRealmData_WritePayload @ 1400aba70; one RealmInfo.AccountRealmData row (uint14 + uint32 + wide string + uint64), same nested shape as ClientRealmListRealmRow; standalone send/consumer event still unresolved
+        ClientAccountRealmData          = 0x003D, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers a 0x18-byte payload with writer ClientAccountRealmData_WritePayload @ 1400aba70; one RealmInfo.AccountRealmData row (uint14 + uint32 + wide string + uint64), same nested shape as ClientRealmListRealmRow; 2026-06-05 selected call edges only show the 0x0760 row serializer caller and no send-helper owner
         ServerPlayerEnteredWorld        = 0x0061,
-        ServerPetSpawned                = 0x0068,
+        ServerPetSpawned                = 0x0068, // native reader LAB_14008ce70 reads unit id + 18-bit spell id + 5-bit valid stances + 5-bit stance; apply path Pet_ApplySpawnedPayload 1403c08d0 dispatches PetSpawned
         ServerClientEntityUpdateInterval = 0x0070,
         ServerAuthEncrypted             = 0x0076,
         ServerGameCameraRotation        = 0x0091,
@@ -149,8 +149,8 @@ namespace NexusForever.Network.Message
         ServerPublicEventResetObjectiveState = 0x013A,
         ServerPublicEventPersonalStatUpdate = 0x013B,
         ServerPveRatingUpdate           = 0x013C,
-        ServerPvpCooldownClear          = 0x013D,
-        ServerPvpCooldownUpdate         = 0x013E,
+        ServerPvpCooldownClear          = 0x013D, // native 14006c290 registers empty reader ServerEmpty_ReadPayload 14007d8e0; cooldown apply consumer remains unmapped
+        ServerPvpCooldownUpdate         = 0x013E, // native 14006c290 registers shared uint32 reader ServerUInt32_ReadPayload 14007ab50; opcode-specific cooldown apply consumer remains unmapped
         ServerPvpRatingUpdate           = 0x0140,
         ClientRapidTransport            = 0x0141,
         ClientRealmTransfer             = 0x0142, // native sender ClientRealmTransfer_SendFromLuaDispatch 140027d80 is registered beside GetRealmTransferDestinations/RealmTransfer table strings; payload is u64 selected-character id, u14 target realm id, and one trailing transfer flag
@@ -672,7 +672,7 @@ namespace NexusForever.Network.Message
         ServerMatching0x05CF            = 0x05CF, // native 14006c290 binds 0x05CF to ServerUInt32_LocalReadThunk 140099110 (size 4); tentative consumer MatchingManager_ApplyManagerUInt32Field0xA0@1405c41c0 writes payload uint32 to manager+0xa0 without ClientEvent, but prior 140e1e66c xref is PE .pdata unwind metadata, not dispatch proof; opcode-index proof still blocked; emit blocked; F-010 sniff recommended
         ClientMatchingMatchInitiateVoteToKick = 0x05D1, // native client registration binds 0x05D1 to shared local writer slot LAB_1400867f0 with registered size 0x10; current model stays a single Identity payload
         ClientMatchingMatchInitiateVoteToSurrender = 0x05D3, // native client registration binds 0x05D3 to shared zero-payload ClientCraftingAbandon_WritePayload 140001ba0
-        ClientMatchingMatchInitiateLookingForReplacements = 0x05D5, // native client registration binds 0x05D5 to shared ClientTradeskillResetTalents_WritePayload 14007d010; PE sends @ 140075918 and 14076ab61 via MatchingReplacement_SendStartLookingForReplacements 14076aa30 (role bitmask 0..2) — do not alias diagnostic uint32 cluster 0x0550/0x062A/0x0634/0x07E3
+        ClientMatchingMatchInitiateLookingForReplacements = 0x05D5, // native client registration binds 0x05D5 to shared ClientTradeskillResetTalents_WritePayload 14007d010; 140075918 is registration, gameplay send uses MOV EDX,0x5D5 @ 14076ab61 + Network_SendOpcodePayloadHelper @ 14076ab69 in MatchingReplacement_SendStartLookingForReplacements 14076aa30 (role bitmask 0..2) - do not alias diagnostic uint32 cluster 0x0550/0x062A/0x0634/0x07E3
         ServerMatchingPenaltyUpdated    = 0x05D9, // native 14006c290 binds 0x05D9 to local reader slot LAB_140099920 with registered size 0x40; current model stays a fixed 16xuint32 penalty table ordered by MatchType
         ClientMatchingMatchLeave        = 0x05DA, // native client registration binds 0x05DA to shared zero-payload ClientCraftingAbandon_WritePayload 140001ba0; sender Matching_SendMatchLeave 14076a9f0 when match UI state==0x10
         ServerMatchingMatchLeft         = 0x05DC, // native 14006c290 binds 0x05DC to shared ServerUInt5_ReadPayload 14007e950
@@ -709,8 +709,8 @@ namespace NexusForever.Network.Message
         ServerMatchingMatchOperationResult = 0x0623, // native 14007fcf0 reads one 6-bit MatchingQueueResult plus one uint32 wait-time field
         ClientMatchingMatchCastVoteSurrender = 0x0624, // native client registration binds 0x0624 to shared ClientBool_WritePayload 14007e610
         ServerMatchingAverageWaitTimeUpdate = 0x0628, // native 140081f00 reads one 5-bit field plus one uint32 field; runtime maps this shared 8-byte reader as MatchType + average wait time and unresolved server opcode 0x0015 reuses it
-        Client0x062A                    = 0x062A, // ClientWorldOpcodeRegister_MovementSpline 1400a8190 @ 1400a82b6 + ClientTradeskillResetTalents_WritePayload 14007d010; PE mov eax,0x62A count=1 (registration only); not 0x05D5; send_helper/sendmsg filters negative — sender blocked — F-010 live sniff recommended
-        Client0x0634                    = 0x0634, // ClientWorldOpcodeRegister_MovementSpline 1400a8190 @ 1400a872c + same writer as 0x062A; PE mov eax,0x634 count=1 (registration only); not 0x05D5; sender blocked — F-010 live sniff recommended
+        Client0x062A                    = 0x062A, // ClientWorldOpcodeRegister_MovementSpline 1400a8190 @ 1400a82b6 + ClientTradeskillResetTalents_WritePayload 14007d010; 2026-06-05 MCP/cache recheck found selected export 0x62A only in registration; not 0x05D5 or 0x0635; sender blocked - F-010 live sniff recommended
+        Client0x0634                    = 0x0634, // ClientWorldOpcodeRegister_MovementSpline 1400a8190 @ 1400a872c + same writer as 0x062A; 2026-06-05 MCP/cache recheck found selected export 0x634 only in registration; not 0x05D5 or 0x0635; sender blocked - F-010 live sniff recommended
         ClientMovementControlAck        = 0x0635, // ClientWorldOpcodeRegister_MovementSpline 1400a8190 + ClientTradeskillResetTalents_WritePayload 14007d010; native sender TargetSelection_SendClientMovementControlAck 14057a630 emits ticket during target-selection apply
         ServerMovementControl           = 0x0636, // runtime sender in Player.SetControl currently writes ticket + immediate flag + controlled unit id; client acknowledges with 0x0635 and zone transfers can follow with 0x063A
         ClientEntityCommand             = 0x0637, // runtime movement input envelope consumed by MovementManager.HandleClientEntityCommands: uint32 client time + uint32 command count + repeated 5-bit command ids and payloads
@@ -755,8 +755,8 @@ namespace NexusForever.Network.Message
         ServerPetCustomisationFailed    = 0x068B,
         ClientPathScientistSetScannerName = 0x068C,
         ServerUnlockPetFlair            = 0x068D,
-        ClientPetSetStance              = 0x068E, // native writer 1400898b0 serialises pet unit id plus 5-bit PetStance; shared with unresolved 0x0928
-        ServerPetStanceChanged          = 0x068F,
+        ClientPetSetStance              = 0x068E, // native sender Pet_SetStance_SendClientPetSetStance 14050a270 uses writer 1400898b0 for pet unit id plus 5-bit PetStance; shared writer with unresolved 0x0928
+        ServerPetStanceChanged          = 0x068F, // native reader ServerUInt32UInt5_ReadPayload 14008ce80 reads pet unit id plus 5-bit PetStance; Pet_ApplyStanceChangedPayload 1403c0a80 updates the cache read by Pet_GetStance_ReadCachedStance 14050a130; producer timing/scope remains unmapped
         ClientPlayedRequest             = 0x0693,
         ServerPlayedResponse            = 0x0694,
         ClientPathChangeRequest         = 0x06B2,
@@ -794,10 +794,10 @@ namespace NexusForever.Network.Message
         ServerPublicEventDetailedVoteInitiate = 0x06FE,
         ServerPublicEventVoteTally      = 0x06FF,
         ServerPublicEventTriggerUiUpdates = 0x0700,
-        Client0x0701                    = 0x0701, // Network_RegisterServerOpcode_0351 @ 14006c290 (not ClientWorldOpcodeRegister_MovementSpline 1400a8190); writer ClientUInt2UInt32_WritePayload @ 1400a69d0 (2-bit + uint32); sole PE mov eax,0x701 @ 140079e05 (registration harness batch with 0x0942/0x0602 — not gameplay); semantics unresolved
+        Client0x0701                    = 0x0701, // Network_RegisterServerOpcode_0351 @ 14006c290 (not ClientWorldOpcodeRegister_MovementSpline 1400a8190); writer ClientUInt2UInt32_WritePayload @ 1400a69d0 (2-bit + uint32); sole PE MOV EDX,0x701 @ 140079e05 (registration harness batch with 0x0942/0x0602 — not gameplay); semantics unresolved
         ServerQueueFinish               = 0x0715,
         ServerQueueStatus               = 0x0717,
-        ServerRaidQueueStatus            = 0x0718, // native 14008bf80 reads uint64 + 15-bit uint32 + uint64 + uint32 + uint32; registered object size 0x20 maps to 0x1A wire bytes
+        ServerRaidQueueStatus            = 0x0718, // native 14008bf80 reads the shared raid-info row also used by 0x071A; standalone non-zero queue producer remains blocked
         ClientRaidInfoRequest           = 0x0719,
         ServerRaidInfoResponse          = 0x071A,
         ClientRandomRollRequest         = 0x071B,
@@ -823,9 +823,9 @@ namespace NexusForever.Network.Message
         ServerStoryPanelCustomShow      = 0x075B,
         ServerStoryTextUnitYell         = 0x075C,
         ServerRealmFirstAchievement     = 0x075F,
-        ClientRealmListRealmRow         = 0x0760, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers 0x58-byte slot with writer Client0x0760_WritePayload @ 1400abd30; one RealmInfo row matching ServerRealmList realm entries; native send/consumer event still unresolved
+        ClientRealmListRealmRow         = 0x0760, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers 0x58-byte slot with writer Client0x0760_WritePayload @ 1400abd30; one RealmInfo row matching ServerRealmList realm entries; selected callers are ServerRealmList_WritePayload @ 1400ac770 and wrapper 1400ac2c0, not a proven client send owner
         ServerRealmList                 = 0x0761,
-        ClientRealmListMessageRow       = 0x0762, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers 0x10-byte slot with writer Client0x0762_WritePayload @ 1400ac410; one NetworkMessage row matching ServerRealmList messages; native send/consumer event still unresolved
+        ClientRealmListMessageRow       = 0x0762, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers 0x10-byte slot with writer Client0x0762_WritePayload @ 1400ac410; one NetworkMessage row matching ServerRealmList messages; selected caller remains ServerRealmList_WritePayload @ 1400ac770 with no client send owner
         ServerRealmMessages             = 0x0763,
         ServerRealmTransferResult       = 0x0765,
         ServerRecruitmentGuildsList     = 0x0767,
@@ -838,7 +838,7 @@ namespace NexusForever.Network.Message
         ClientRecruitmentGuildGetDetailedGuildInfo = 0x076E,
         ClientRecruitmentGuildSubscribe = 0x076F,
         ServerRecruitmentAuxUInt32List  = 0x077E, // count + counted uint32 list; shares ServerFlightPathUpdate_ReadPayload 14008eaa0
-        ServerPetDespawned              = 0x077F,
+        ServerPetDespawned              = 0x077F, // native reader ServerUInt32_ReadPayload 14007ab50 reads pet unit id; apply path Pet_ApplyDespawnedPayload 1403c09b0 dispatches PetDespawned
         ClientCharacterRename           = 0x0786,
         ClientHousingCommunityRename    = 0x0788,
         ServerHousingCommunityRenameResult = 0x078C,
@@ -975,7 +975,7 @@ namespace NexusForever.Network.Message
         ServerSetUnitPathType           = 0x08B8,
         ServerPublicEventUnitAdd        = 0x08BB,
         ServerPublicEventUnitUpdate     = 0x08BC,
-        ServerUnitPvpStateChange        = 0x08BD,
+        ServerUnitPvpStateChange        = 0x08BD, // native reader ServerUnitPvpStateChange_ReadPayload 140098160 reads uint32 unit id + 3-bit PvP state; apply path Entity_ApplyUnitPvpFlagsChanged 1403ddc60 dispatches UnitPvpFlagsChanged
         ServerVehiclePassengerRemove    = 0x08C7,
         ServerEntityStatUInt32WideString = 0x08CC, // uint32 + wide string; reader 1400980f0
         ServerUnitSetChair              = 0x08CF,
@@ -991,7 +991,7 @@ namespace NexusForever.Network.Message
         ServerEntitlement               = 0x0918,
         ServerCombatReward              = 0x0919,
         ServerCooldownList              = 0x091B,
-        Client0x0928                    = 0x0928, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers 8-byte slot with shared ClientUInt32UInt5_WritePayload @ 1400898b0 (same as ClientPetSetStance 0x068E); PE send for 0x928 only in registration harness @ 1400a8524 — gameplay sender blocked; do not alias to ClientPetSetStance without second witness
+        Client0x0928                    = 0x0928, // ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers 8-byte slot with shared ClientUInt32UInt5_WritePayload @ 1400898b0 and shared ServerUInt32UInt5_ReadPayload @ 14008ce80 (also ServerPetStanceChanged 0x068F); PE send for 0x928 only in registration harness @ 1400a8524 — gameplay sender blocked; do not alias to ClientPetSetStance without second witness
         ServerRewardPropertySet         = 0x092C, // native 140097800 reads counted RewardProperty rows; each row can include counted sub-reward-property modifiers
         ServerPlayerHealthUpdate        = 0x092F,
         ServerEntityBoneUpdate          = 0x0931,

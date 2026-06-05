@@ -4,33 +4,31 @@ namespace NexusForever.Network.World.Message.Model
 {
     /// <summary>
     /// Native reader: <c>ServerRaidQueueStatus_ReadPayload</c> (<c>14008bf80</c>).
-    /// Reads opcode <c>0x0718</c> as one uint64, one 15-bit uint32, one uint64, and two trailing
-    /// uint32 fields. The registered object size is <c>0x20</c>, but the mapped wire payload is
-    /// only <c>0x1A</c> bytes.
-    /// Adjacent helper <c>14008c010</c> reads a count followed by 0x20-byte rows through the same
-    /// row reader, but does not prove field semantics.
-    /// Field semantics remain blocked pending a non-zero retail capture or client consumer mapping.
+    /// The same 0x20-byte row reader is used by <c>ServerRaidInfoResponse_ReadPayload</c>
+    /// (<c>14008c010</c>) for opcode <c>0x071A</c>, and <c>Group_DispatchRaidInfoResponse</c>
+    /// (<c>1406042b0</c>) maps the row to the raid-info UI fields below.
+    /// Standalone non-zero opcode <c>0x0718</c> producer timing remains evidence-gated.
     /// </summary>
     [Message(GameMessageOpcode.ServerRaidQueueStatus)]
     public class ServerRaidQueueStatus : IWritable
     {
-        public ulong Unknown0 { get; set; }
+        public ulong SavedInstanceId { get; set; }
 
-        public uint Unknown1 { get; set; }
+        public ushort WorldId { get; set; }
 
-        public ulong Unknown2 { get; set; }
+        public ulong DateExpireUTC { get; set; }
 
-        public uint Unknown3 { get; set; }
+        public float DaysUntilExpire { get; set; }
 
-        public uint Unknown4 { get; set; }
+        public uint PrimeLevel { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Unknown0);
-            writer.Write(Unknown1, 15u);
-            writer.Write(Unknown2);
-            writer.Write(Unknown3);
-            writer.Write(Unknown4);
+            writer.Write(SavedInstanceId);
+            writer.Write(WorldId, 15u);
+            writer.Write(DateExpireUTC);
+            writer.Write(DaysUntilExpire);
+            writer.Write(PrimeLevel);
         }
     }
 }

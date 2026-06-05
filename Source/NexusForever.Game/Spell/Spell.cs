@@ -373,9 +373,14 @@ namespace NexusForever.Game.Spell
             if (Caster is not IPlayer player)
                 return CastResult.Ok;
 
-            if (Parameters.SpellInfo.CasterCastPrerequisite != null && !CheckRunnerOverride(player))
+            var prerequisiteParameters = new PrerequisiteParameters
             {
-                if (!PrerequisiteManager.Instance.Meets(player, Parameters.SpellInfo.CasterCastPrerequisite.Id))
+                TaxiNode = Parameters.TaxiNode
+            };
+
+            if (Parameters.SpellInfo.CasterCastPrerequisite != null && !CheckRunnerOverride(player, prerequisiteParameters))
+            {
+                if (!PrerequisiteManager.Instance.Meets(player, Parameters.SpellInfo.CasterCastPrerequisite.Id, prerequisiteParameters))
                     return CastResult.PrereqCasterCast;
             }
 
@@ -396,10 +401,10 @@ namespace NexusForever.Game.Spell
             return CastResult.Ok;
         }
 
-        private bool CheckRunnerOverride(IPlayer player)
+        private bool CheckRunnerOverride(IPlayer player, PrerequisiteParameters prerequisiteParameters)
         {
             foreach (PrerequisiteEntry runnerPrereq in Parameters.SpellInfo.PrerequisiteRunners)
-                if (PrerequisiteManager.Instance.Meets(player, runnerPrereq.Id))
+                if (PrerequisiteManager.Instance.Meets(player, runnerPrereq.Id, prerequisiteParameters))
                     return true;
 
             return false;

@@ -5,9 +5,11 @@ using NexusForever.Game.Static.Prerequisite;
 namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
-    /// Prerequisite type 12: handler table slot points at <c>14049d6d0</c> (same body as live
-    /// <see cref="PrerequisiteType.ActionSetSpell"/> case <c>0xdd</c>); NF uses death scalar until a
-    /// separate dead-state witness is mapped.
+    /// Prerequisite type 12: live case <c>0x0c</c> dispatches to
+    /// <c>Prerequisite_CheckDeadState</c> (<c>14049c800</c>), which tests native
+    /// entity state fields <c>+0x250</c>/<c>+0x254</c> and entity type <c>0x17</c>.
+    /// NF keeps the existing <see cref="IUnitEntity.IsAlive"/> proxy until those native
+    /// fields are mapped to server-owned runtime state.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.DeadState)]
     public class PrerequisiteCheckDeadState : IPrerequisiteCheck
