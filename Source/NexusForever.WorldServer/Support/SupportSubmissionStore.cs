@@ -1,7 +1,9 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
 
 namespace NexusForever.WorldServer.Support
@@ -25,9 +27,6 @@ namespace NexusForever.WorldServer.Support
         {
             try
             {
-                string directory = Path.Combine(AppContext.BaseDirectory, "support-submissions");
-                Directory.CreateDirectory(directory);
-
                 var record = new
                 {
                     Type = type,
@@ -40,15 +39,29 @@ namespace NexusForever.WorldServer.Support
                 };
 
                 string line = JsonSerializer.Serialize(record, jsonOptions);
+                string directory = Path.Combine(AppContext.BaseDirectory, "support-submissions");
                 string path = Path.Combine(directory, $"{DateTime.UtcNow:yyyyMMdd}.jsonl");
-                lock (writeLock)
-                    File.AppendAllText(path, line + Environment.NewLine);
+
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(directory);
+                        lock (writeLock)
+                            File.AppendAllText(path, line + Environment.NewLine);
+                    }
+                    catch (Exception exception)
+                    {
+                        log.LogError(exception, "Failed to persist support submission {SubmissionType} for player {PlayerGuid}.",
+                            type, session.Player?.Guid);
+                    }
+                }).FireAndForgetAsync();
 
                 return true;
             }
             catch (Exception exception)
             {
-                log.LogError(exception, "Failed to persist support submission {SubmissionType} for player {PlayerGuid}.",
+                log.LogError(exception, "Failed to queue support submission {SubmissionType} for player {PlayerGuid}.",
                     type, session.Player?.Guid);
                 return false;
             }

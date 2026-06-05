@@ -4,6 +4,7 @@ using System.Linq;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
+using NexusForever.Database.Character;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
@@ -234,48 +235,59 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 return AccountOperation.BuyCREDD;
 
             EnsureLoaded();
+
+            CREDDOrder sellOrder;
             lock (syncRoot)
             {
-                CREDDOrder sellOrder = orders
+                sellOrder = orders
                     .Where(o => !o.IsBuyOrder && o.CreditAmount <= creditAmount && o.AccountId != session.Account.Id)
                     .OrderBy(o => o.CreditAmount)
                     .FirstOrDefault();
-                if (sellOrder != null)
-                {
-                    if (!session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, sellOrder.CreditAmount))
-                    {
-                        result = AccountOperationResult.NotEnoughCurrency;
-                        return AccountOperation.BuyCREDD;
-                    }
+            }
 
-                    session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, sellOrder.CreditAmount);
-                    IPlayer seller = PlayerManager.Instance.GetPlayerByAccountId(sellOrder.AccountId);
-                    seller?.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, sellOrder.CreditAmount);
-                    session.Account.EntitlementManager.UpdateEntitlement(EntitlementType.CREDDUsage, 1);
-                    RemoveOrder(sellOrder);
-                    NetworkIdentity sellerIdentity = seller == null ? sellOrder.Identity : CloneIdentity(seller.Identity, seller.CharacterId);
-                    RecordHistory(session.Account.Id, session.Player, AccountOperation.BuyCREDDComplete, sellOrder.CreditAmount, true, sellerIdentity);
-                    RecordHistory(sellOrder.AccountId, sellOrder.Identity, AccountOperation.SellCREDDComplete, sellOrder.CreditAmount, false,
-                        CloneIdentity(session.Player.Identity, session.Player.CharacterId));
-
-                    result = AccountOperationResult.Ok;
-                    return AccountOperation.BuyCREDDComplete;
-                }
-
-                if (!submitFlag)
-                {
-                    result = AccountOperationResult.NoMatchingOrder;
-                    return AccountOperation.BuyCREDD;
-                }
-
-                if (!session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, creditAmount))
+            if (sellOrder != null)
+            {
+                if (!session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, sellOrder.CreditAmount))
                 {
                     result = AccountOperationResult.NotEnoughCurrency;
                     return AccountOperation.BuyCREDD;
                 }
 
-                session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, creditAmount);
-                AddOrder(new CREDDOrder
+                if (!TryReserveRemoveOrder(sellOrder))
+                {
+                    result = AccountOperationResult.GenericFail;
+                    return AccountOperation.BuyCREDD;
+                }
+
+                session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, sellOrder.CreditAmount);
+                IPlayer seller = PlayerManager.Instance.GetPlayerByAccountId(sellOrder.AccountId);
+                CreditCharacterCurrency(sellOrder.CharacterId, sellOrder.CreditAmount, seller);
+                session.Account.EntitlementManager.UpdateEntitlement(EntitlementType.CREDDUsage, 1);
+                NetworkIdentity sellerIdentity = seller == null ? sellOrder.Identity : CloneIdentity(seller.Identity, seller.CharacterId);
+                RecordHistory(session.Account.Id, session.Player, AccountOperation.BuyCREDDComplete, sellOrder.CreditAmount, true, sellerIdentity);
+                RecordHistory(sellOrder.AccountId, sellOrder.Identity, AccountOperation.SellCREDDComplete, sellOrder.CreditAmount, false,
+                    CloneIdentity(session.Player.Identity, session.Player.CharacterId));
+
+                result = AccountOperationResult.Ok;
+                return AccountOperation.BuyCREDDComplete;
+            }
+
+            if (!submitFlag)
+            {
+                result = AccountOperationResult.NoMatchingOrder;
+                return AccountOperation.BuyCREDD;
+            }
+
+            if (!session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, creditAmount))
+            {
+                result = AccountOperationResult.NotEnoughCurrency;
+                return AccountOperation.BuyCREDD;
+            }
+
+            CREDDOrder restingBuyOrder;
+            lock (syncRoot)
+            {
+                restingBuyOrder = new CREDDOrder
                 {
                     OrderId      = nextOrderId++,
                     AccountId    = session.Account.Id,
@@ -283,12 +295,27 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                     Identity     = CloneIdentity(session.Player.Identity, session.Player.CharacterId),
                     CreditAmount = creditAmount,
                     IsBuyOrder   = true
-                });
-                RecordHistory(session.Account.Id, session.Player, AccountOperation.BuyCREDD, creditAmount, true);
+                };
+            }
 
-                result = AccountOperationResult.Ok;
+            session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, creditAmount);
+            if (!TryCommitAddOrder(restingBuyOrder))
+            {
+                session.Player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, creditAmount);
+                lock (syncRoot)
+                {
+                    if (nextOrderId == restingBuyOrder.OrderId + 1ul)
+                        nextOrderId--;
+                }
+
+                result = AccountOperationResult.GenericFail;
                 return AccountOperation.BuyCREDD;
             }
+
+            RecordHistory(session.Account.Id, session.Player, AccountOperation.BuyCREDD, creditAmount, true);
+
+            result = AccountOperationResult.Ok;
+            return AccountOperation.BuyCREDD;
         }
 
         public static AccountOperation SubmitSellOrder(IWorldSession session, ulong creditAmount, bool submitFlag, out AccountOperationResult result)
@@ -298,34 +325,47 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 return AccountOperation.SellCREDD;
 
             EnsureLoaded();
+
+            CREDDOrder buyOrder;
             lock (syncRoot)
             {
-                CREDDOrder buyOrder = orders
+                buyOrder = orders
                     .Where(o => o.IsBuyOrder && o.CreditAmount >= creditAmount && o.AccountId != session.Account.Id)
                     .OrderByDescending(o => o.CreditAmount)
                     .FirstOrDefault();
-                if (buyOrder != null)
-                {
-                    IPlayer buyer = PlayerManager.Instance.GetPlayerByAccountId(buyOrder.AccountId);
-                    buyer?.Account.EntitlementManager.UpdateEntitlement(EntitlementType.CREDDUsage, 1);
-                    session.Player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, buyOrder.CreditAmount);
-                    RemoveOrder(buyOrder);
-                    NetworkIdentity buyerIdentity = buyer == null ? buyOrder.Identity : CloneIdentity(buyer.Identity, buyer.CharacterId);
-                    RecordHistory(session.Account.Id, session.Player, AccountOperation.SellCREDDComplete, buyOrder.CreditAmount, true, buyerIdentity);
-                    RecordHistory(buyOrder.AccountId, buyOrder.Identity, AccountOperation.BuyCREDDComplete, buyOrder.CreditAmount, false,
-                        CloneIdentity(session.Player.Identity, session.Player.CharacterId));
+            }
 
-                    result = AccountOperationResult.Ok;
-                    return AccountOperation.SellCREDDComplete;
-                }
-
-                if (!submitFlag)
+            if (buyOrder != null)
+            {
+                ulong matchedCreditAmount = buyOrder.CreditAmount;
+                if (!TryReserveRemoveOrder(buyOrder))
                 {
-                    result = AccountOperationResult.NoMatchingOrder;
+                    result = AccountOperationResult.GenericFail;
                     return AccountOperation.SellCREDD;
                 }
 
-                AddOrder(new CREDDOrder
+                IPlayer buyer = PlayerManager.Instance.GetPlayerByAccountId(buyOrder.AccountId);
+                GrantCreddEntitlement(buyOrder.AccountId, buyer?.Account);
+                session.Player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, matchedCreditAmount);
+                NetworkIdentity buyerIdentity = buyer == null ? buyOrder.Identity : CloneIdentity(buyer.Identity, buyer.CharacterId);
+                RecordHistory(session.Account.Id, session.Player, AccountOperation.SellCREDDComplete, buyOrder.CreditAmount, true, buyerIdentity);
+                RecordHistory(buyOrder.AccountId, buyOrder.Identity, AccountOperation.BuyCREDDComplete, buyOrder.CreditAmount, false,
+                    CloneIdentity(session.Player.Identity, session.Player.CharacterId));
+
+                result = AccountOperationResult.Ok;
+                return AccountOperation.SellCREDDComplete;
+            }
+
+            if (!submitFlag)
+            {
+                result = AccountOperationResult.NoMatchingOrder;
+                return AccountOperation.SellCREDD;
+            }
+
+            CREDDOrder restingSellOrder;
+            lock (syncRoot)
+            {
+                restingSellOrder = new CREDDOrder
                 {
                     OrderId      = nextOrderId++,
                     AccountId    = session.Account.Id,
@@ -333,12 +373,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                     Identity     = CloneIdentity(session.Player.Identity, session.Player.CharacterId),
                     CreditAmount = creditAmount,
                     IsBuyOrder   = false
-                });
-                RecordHistory(session.Account.Id, session.Player, AccountOperation.SellCREDD, creditAmount, true);
+                };
+            }
 
-                result = AccountOperationResult.Ok;
+            if (!TryCommitAddOrder(restingSellOrder))
+            {
+                lock (syncRoot)
+                {
+                    if (nextOrderId == restingSellOrder.OrderId + 1ul)
+                        nextOrderId--;
+                }
+
+                result = AccountOperationResult.GenericFail;
                 return AccountOperation.SellCREDD;
             }
+
+            RecordHistory(session.Account.Id, session.Player, AccountOperation.SellCREDD, creditAmount, true);
+
+            result = AccountOperationResult.Ok;
+            return AccountOperation.SellCREDD;
         }
 
         public static AccountOperationResult CancelOrder(IWorldSession session, ulong orderId)
@@ -347,19 +400,24 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 return AccountOperationResult.GenericFail;
 
             EnsureLoaded();
+
+            CREDDOrder order;
             lock (syncRoot)
             {
-                CREDDOrder order = orders.FirstOrDefault(o => o.OrderId == orderId && o.AccountId == session.Account.Id);
-                if (order == null)
-                    return AccountOperationResult.NoMatchingOrder;
-
-                RemoveOrder(order);
-                if (order.IsBuyOrder)
-                    session.Player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, order.CreditAmount);
-                RecordHistory(session.Account.Id, session.Player, AccountOperation.CancelCREDDOrder, order.CreditAmount, true);
-
-                return AccountOperationResult.Ok;
+                order = orders.FirstOrDefault(o => o.OrderId == orderId && o.AccountId == session.Account.Id);
             }
+
+            if (order == null)
+                return AccountOperationResult.NoMatchingOrder;
+
+            if (!TryReserveRemoveOrder(order))
+                return AccountOperationResult.GenericFail;
+
+            if (order.IsBuyOrder)
+                session.Player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, order.CreditAmount);
+            RecordHistory(session.Account.Id, session.Player, AccountOperation.CancelCREDDOrder, order.CreditAmount, true);
+
+            return AccountOperationResult.Ok;
         }
 
         private static void RecordHistory(uint accountId, IPlayer player, AccountOperation operation, ulong creditAmount, bool isInitiator, NetworkIdentity counterparty = null)
@@ -380,21 +438,25 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 CreditAmount  = creditAmount
             };
 
-            operationHistory.Add(entry);
-            PersistHistory(entry);
-
-            int overflowRows = operationHistory.Count(h => h.AccountId == accountId) - MaxHistoryRowsPerAccount;
-            if (overflowRows <= 0)
-                return;
-
-            foreach (CREDDHistoryEntry oldEntry in operationHistory
-                .Where(h => h.AccountId == accountId)
-                .OrderBy(h => h.CreatedUtc)
-                .Take(overflowRows)
-                .ToList())
+            lock (syncRoot)
             {
-                operationHistory.Remove(oldEntry);
+                operationHistory.Add(entry);
+
+                int overflowRows = operationHistory.Count(h => h.AccountId == accountId) - MaxHistoryRowsPerAccount;
+                if (overflowRows > 0)
+                {
+                    foreach (CREDDHistoryEntry oldEntry in operationHistory
+                        .Where(h => h.AccountId == accountId)
+                        .OrderBy(h => h.CreatedUtc)
+                        .Take(overflowRows)
+                        .ToList())
+                    {
+                        operationHistory.Remove(oldEntry);
+                    }
+                }
             }
+
+            PersistHistory(entry);
         }
 
         private static AuthDatabase TryGetAuthDatabase()
@@ -414,62 +476,155 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             if (loadedFromDatabase)
                 return;
 
+            AuthDatabase authDatabase = TryGetAuthDatabase();
+            if (authDatabase == null)
+            {
+                lock (syncRoot)
+                    loadedFromDatabase = true;
+
+                return;
+            }
+
+            List<CREDDOrder> loadedOrders = authDatabase.GetCREDDOrders()
+                .Select(model => new CREDDOrder
+                {
+                    OrderId      = model.OrderId,
+                    AccountId    = model.AccountId,
+                    CharacterId  = model.CharacterId,
+                    Identity     = new NetworkIdentity
+                    {
+                        RealmId = model.RealmId,
+                        Id      = model.CharacterId
+                    },
+                    CreditAmount = model.CreditAmount,
+                    IsBuyOrder   = model.IsBuyOrder
+                })
+                .ToList();
+
+            ulong loadedNextOrderId = loadedOrders.Count == 0
+                ? 1ul
+                : loadedOrders.Max(order => order.OrderId) + 1ul;
+
             lock (syncRoot)
             {
                 if (loadedFromDatabase)
                     return;
 
-                AuthDatabase authDatabase = TryGetAuthDatabase();
-                if (authDatabase == null)
-                {
-                    loadedFromDatabase = true;
-                    return;
-                }
+                foreach (CREDDOrder order in loadedOrders)
+                    orders.Add(order);
 
-                foreach (AccountCREDDOrderModel model in authDatabase.GetCREDDOrders())
-                {
-                    orders.Add(new CREDDOrder
-                    {
-                        OrderId      = model.OrderId,
-                        AccountId    = model.AccountId,
-                        CharacterId  = model.CharacterId,
-                        Identity     = new NetworkIdentity
-                        {
-                            RealmId = model.RealmId,
-                            Id      = model.CharacterId
-                        },
-                        CreditAmount = model.CreditAmount,
-                        IsBuyOrder   = model.IsBuyOrder
-                    });
-                    nextOrderId = Math.Max(nextOrderId, model.OrderId + 1ul);
-                }
-
+                nextOrderId        = Math.Max(nextOrderId, loadedNextOrderId);
                 loadedFromDatabase = true;
             }
         }
 
-        private static void AddOrder(CREDDOrder order)
+        private static bool TryCommitAddOrder(CREDDOrder order)
         {
-            orders.Add(order);
-            AuthDatabase authDatabase = TryGetAuthDatabase();
-            if (authDatabase == null)
-                return;
+            if (!TryPersistAddOrder(order))
+                return false;
 
-            authDatabase.UpsertCREDDOrder(new AccountCREDDOrderModel
-            {
-                OrderId      = order.OrderId,
-                AccountId    = order.AccountId,
-                CharacterId  = order.CharacterId,
-                RealmId      = order.Identity.RealmId,
-                CreditAmount = order.CreditAmount,
-                IsBuyOrder   = order.IsBuyOrder
-            });
+            lock (syncRoot)
+                orders.Add(order);
+
+            return true;
         }
 
-        private static void RemoveOrder(CREDDOrder order)
+        private static bool TryReserveRemoveOrder(CREDDOrder order)
         {
-            orders.Remove(order);
-            TryGetAuthDatabase()?.RemoveCREDDOrder(order.OrderId);
+            lock (syncRoot)
+            {
+                if (!orders.Remove(order))
+                    return false;
+            }
+
+            if (!TryPersistRemoveOrder(order))
+            {
+                lock (syncRoot)
+                    orders.Add(order);
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryPersistAddOrder(CREDDOrder order)
+        {
+            AuthDatabase authDatabase = TryGetAuthDatabase();
+            if (authDatabase == null)
+                return true;
+
+            try
+            {
+                authDatabase.UpsertCREDDOrder(new AccountCREDDOrderModel
+                {
+                    OrderId      = order.OrderId,
+                    AccountId    = order.AccountId,
+                    CharacterId  = order.CharacterId,
+                    RealmId      = order.Identity.RealmId,
+                    CreditAmount = order.CreditAmount,
+                    IsBuyOrder   = order.IsBuyOrder
+                });
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static bool TryPersistRemoveOrder(CREDDOrder order)
+        {
+            AuthDatabase authDatabase = TryGetAuthDatabase();
+            if (authDatabase == null)
+                return true;
+
+            try
+            {
+                authDatabase.RemoveCREDDOrder(order.OrderId);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static CharacterDatabase TryGetCharacterDatabase()
+        {
+            try
+            {
+                return DatabaseManager.Instance?.GetDatabase<CharacterDatabase>();
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentNullException)
+            {
+                return null;
+            }
+        }
+
+        private static void CreditCharacterCurrency(ulong characterId, ulong amount, IPlayer onlinePlayer)
+        {
+            if (amount == 0ul)
+                return;
+
+            if (onlinePlayer != null)
+            {
+                onlinePlayer.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, amount);
+                return;
+            }
+
+            TryGetCharacterDatabase()?.CreditCharacterCurrency(characterId, (byte)CurrencyType.Credits, amount);
+        }
+
+        private static void GrantCreddEntitlement(uint accountId, IAccount onlineAccount)
+        {
+            if (onlineAccount != null)
+            {
+                onlineAccount.EntitlementManager.UpdateEntitlement(EntitlementType.CREDDUsage, 1);
+                return;
+            }
+
+            TryGetAuthDatabase()?.IncrementAccountEntitlement(accountId, (byte)EntitlementType.CREDDUsage, 1u);
         }
 
         private static void PersistHistory(CREDDHistoryEntry entry)

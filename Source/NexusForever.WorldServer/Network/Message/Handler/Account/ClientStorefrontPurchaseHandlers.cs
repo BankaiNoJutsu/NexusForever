@@ -19,6 +19,7 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Shared;
 using NexusForever.WorldServer.Network.Message.Handler.Character;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
@@ -712,15 +713,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             if (authDatabase == null)
                 return;
 
-            try
-            {
-                authDatabase.Save(session.Account.Save).ConfigureAwait(false).GetAwaiter().GetResult();
-            }
-            catch (Exception ex)
-            {
+            authDatabase.Save(session.Account.Save).FireAndForgetAsync(ex =>
                 log.LogWarning(ex, "StorefrontCatalogDiagnostics account {AccountId}: failed to persist account state after storefront purchase.",
-                    session.Account?.Id);
-            }
+                    session.Account?.Id));
         }
 
         public sealed class DirectAccountGrantPlan

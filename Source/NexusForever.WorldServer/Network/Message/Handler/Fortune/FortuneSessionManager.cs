@@ -87,13 +87,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 return;
             }
 
+            var fortuneSession = new FortuneSession(cardRewards);
+            if (!TryPersistSession(account.Id, fortuneSession))
+            {
+                SendClickEmptyReset(session);
+                return;
+            }
+
             account.CurrencyManager.CurrencySubtractAmount(AccountCurrencyType.FortuneCoin, FortuneCoinCost);
 
-            var fortuneSession = new FortuneSession(cardRewards);
             lock (sync)
                 sessions[account.Id] = fortuneSession;
 
-            PersistSession(account.Id, fortuneSession);
             session.EnqueueMessageEncrypted(BuildCards(fortuneSession));
         }
 
@@ -176,18 +181,24 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             FortuneSession fortuneSession;
             lock (sync)
             {
-                if (!sessions.TryGetValue(account.Id, out fortuneSession))
-                {
-                    fortuneSession = LoadSession(account.Id);
-                    if (fortuneSession == null)
-                    {
-                        SendClickEmptyReset(session);
-                        return;
-                    }
+                sessions.TryGetValue(account.Id, out fortuneSession);
+            }
 
-                    sessions[account.Id] = fortuneSession;
+            if (fortuneSession == null)
+            {
+                fortuneSession = LoadSession(account.Id);
+                if (fortuneSession == null)
+                {
+                    SendClickEmptyReset(session);
+                    return;
                 }
 
+                lock (sync)
+                    sessions[account.Id] = fortuneSession;
+            }
+
+            lock (sync)
+            {
                 FortuneCardState card = fortuneSession.Cards[flipCard.SelectedCardIndex];
                 if (card.Flipped)
                 {
@@ -279,10 +290,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
             return cards.All(card => fortuneRewardPool.IsCardRewardDisplayable(card.AccountItemId));
         }
 
-        private void PersistSession(uint accountId, FortuneSession fortuneSession)
+        private bool TryPersistSession(uint accountId, FortuneSession fortuneSession)
         {
             if (databaseManager == null || fortuneSession == null)
-                return;
+                return databaseManager == null;
 
             var model = new AccountFortuneSessionModel
             {
@@ -301,7 +312,21 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Fortune
                 Card2Granted       = fortuneSession.Cards[2].Granted
             };
 
-            databaseManager.GetDatabase<AuthDatabase>().UpsertFortuneSession(model);
+            try
+            {
+                databaseManager.GetDatabase<AuthDatabase>().UpsertFortuneSession(model);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Failed to persist Fortune session for account {AccountId}.", accountId);
+                return false;
+            }
+        }
+
+        private void PersistSession(uint accountId, FortuneSession fortuneSession)
+        {
+            TryPersistSession(accountId, fortuneSession);
         }
 
         private ServerFortuneRewards BuildRewards()

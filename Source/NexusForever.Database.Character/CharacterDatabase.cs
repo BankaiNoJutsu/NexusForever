@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using NexusForever.Database;
 using NexusForever.Database.Character.Model;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Shared.Diagnostics;
@@ -30,6 +31,14 @@ namespace NexusForever.Database.Character
                 action.Invoke(context);
                 await context.SaveChangesAsync();
             });
+        }
+
+        /// <summary>
+        /// Synchronously persist changes. Blocks the calling thread until the save completes.
+        /// </summary>
+        public void SaveBlocking(Action<CharacterContext> action)
+        {
+            Save(action).WaitUnwrap();
         }
 
         public async Task Save(IDatabaseCharacter entity)

@@ -101,22 +101,23 @@ namespace NexusForever.Game.Marketplace
 
         public ServerCommodityInfoResults BuildCommodityInfo(uint item2Id)
         {
+            List<MarketplaceCommodityOrder> itemOrders;
             lock (syncRoot)
             {
-                List<MarketplaceCommodityOrder> itemOrders = commodityOrders
+                itemOrders = commodityOrders
                     .Where(o => o.Order.Item2Id == item2Id)
                     .ToList();
-
-                return new ServerCommodityInfoResults
-                {
-                    Item2Id         = item2Id,
-                    BuyOrderCount   = (uint)itemOrders.Count(o => o.Order.IsBuyOrder),
-                    BuyOrderPrices  = BuildCommodityPriceBuckets(itemOrders.Where(o => o.Order.IsBuyOrder), true),
-                    SellOrderCount  = (uint)itemOrders.Count(o => !o.Order.IsBuyOrder),
-                    SellOrderPrices = BuildCommodityPriceBuckets(itemOrders.Where(o => !o.Order.IsBuyOrder), false),
-                    Orders          = itemOrders.Select(o => CloneOrder(o.Order)).ToList()
-                };
             }
+
+            return new ServerCommodityInfoResults
+            {
+                Item2Id         = item2Id,
+                BuyOrderCount   = (uint)itemOrders.Count(o => o.Order.IsBuyOrder),
+                BuyOrderPrices  = BuildCommodityPriceBuckets(itemOrders.Where(o => o.Order.IsBuyOrder), true),
+                SellOrderCount  = (uint)itemOrders.Count(o => !o.Order.IsBuyOrder),
+                SellOrderPrices = BuildCommodityPriceBuckets(itemOrders.Where(o => !o.Order.IsBuyOrder), false),
+                Orders          = itemOrders.Select(o => CloneOrder(o.Order)).ToList()
+            };
         }
 
         public List<CommodityOrder> GetOwnedCommodityOrders(IPlayer player)
@@ -149,37 +150,38 @@ namespace NexusForever.Game.Marketplace
 
         public ServerAuctionSearchResults SearchAuctions(IItemManager itemManager, ClientAuctionsByFilterRequest request)
         {
+            List<MarketplaceAuction> snapshot;
             lock (syncRoot)
+                snapshot = auctions.ToList();
+
+            List<MarketplaceAuction> matching = snapshot
+                .Where(a => MatchesAuctionRequest(itemManager, a, request))
+                .ToList();
+
+            bool descending = (request.ReverseSort & 1u) != 0u;
+            IOrderedEnumerable<MarketplaceAuction> sorted = request.AuctionSort switch
             {
-                List<MarketplaceAuction> matching = auctions
-                    .Where(a => MatchesAuctionRequest(itemManager, a, request))
+                AuctionSort.Buyout   => descending ? matching.OrderByDescending(a => a.Auction.BuyoutPrice) : matching.OrderBy(a => a.Auction.BuyoutPrice),
+                AuctionSort.TimeLeft => descending ? matching.OrderByDescending(GetAuctionSortExpiration) : matching.OrderBy(GetAuctionSortExpiration),
+                _                    => descending ? matching.OrderByDescending(a => a.Auction.CurrentBid == 0ul ? a.Auction.MinimumBid : a.Auction.CurrentBid) : matching.OrderBy(a => a.Auction.CurrentBid == 0ul ? a.Auction.MinimumBid : a.Auction.CurrentBid)
+            };
+            List<MarketplaceAuction> sortedList = sorted.ToList();
+
+            ulong skip = (ulong)request.Page * AuctionPageSize;
+            List<AuctionInfo> page = skip > int.MaxValue
+                ? []
+                : sortedList
+                    .Skip((int)skip)
+                    .Take((int)AuctionPageSize)
+                    .Select(a => CloneAuction(a.Auction, a.ExpiresAtUtc))
                     .ToList();
 
-                bool descending = (request.ReverseSort & 1u) != 0u;
-                IOrderedEnumerable<MarketplaceAuction> sorted = request.AuctionSort switch
-                {
-                    AuctionSort.Buyout   => descending ? matching.OrderByDescending(a => a.Auction.BuyoutPrice) : matching.OrderBy(a => a.Auction.BuyoutPrice),
-                    AuctionSort.TimeLeft => descending ? matching.OrderByDescending(GetAuctionSortExpiration) : matching.OrderBy(GetAuctionSortExpiration),
-                    _                    => descending ? matching.OrderByDescending(a => a.Auction.CurrentBid == 0ul ? a.Auction.MinimumBid : a.Auction.CurrentBid) : matching.OrderBy(a => a.Auction.CurrentBid == 0ul ? a.Auction.MinimumBid : a.Auction.CurrentBid)
-                };
-                List<MarketplaceAuction> sortedList = sorted.ToList();
-
-                ulong skip = (ulong)request.Page * AuctionPageSize;
-                List<AuctionInfo> page = skip > int.MaxValue
-                    ? []
-                    : sortedList
-                        .Skip((int)skip)
-                        .Take((int)AuctionPageSize)
-                        .Select(a => CloneAuction(a.Auction, a.ExpiresAtUtc))
-                        .ToList();
-
-                return new ServerAuctionSearchResults
-                {
-                    TotalResultCount = (uint)sortedList.Count,
-                    CurrentPage      = request.Page,
-                    Auctions         = page
-                };
-            }
+            return new ServerAuctionSearchResults
+            {
+                TotalResultCount = (uint)sortedList.Count,
+                CurrentPage      = request.Page,
+                Auctions         = page
+            };
         }
 
         public GenericError PostAuction(IPlayer player, IItem item, ulong minimumBid, ulong buyoutPrice, out AuctionInfo auction)
@@ -197,6 +199,7 @@ namespace NexusForever.Game.Marketplace
             if (!CanPostAuctionItem(player, item))
                 return GenericError.AuctionCannotFillOrder;
 
+            MarketplaceAuction record;
             lock (syncRoot)
             {
                 if (CountOwnedSellAuctions(player.CharacterId) >= MarketplaceAccountLimits.GetMaxAuctionSellLots(player))
@@ -211,21 +214,26 @@ namespace NexusForever.Game.Marketplace
 
                 player.Inventory.ItemRemove(item, ItemUpdateReason.Auction);
 
-                var record = new MarketplaceAuction
+                record = new MarketplaceAuction
                 {
                     Auction      = CloneAuction(auction, expiresAtUtc),
                     Item         = item,
                     ExpiresAtUtc = expiresAtUtc
                 };
                 auctions.Add(record);
-                if (!PersistAuctionInsert(record))
+            }
+
+            if (!PersistAuctionInsert(record))
+            {
+                lock (syncRoot)
                 {
                     auctions.Remove(record);
-                    RestoreRemovedAuctionItem(player, item);
                     if (auction.AuctionId + 1ul == nextAuctionId)
                         nextAuctionId--;
-                    return GenericError.DbFailure;
                 }
+
+                RestoreRemovedAuctionItem(player, item);
+                return GenericError.DbFailure;
             }
 
             return GenericError.Ok;
@@ -243,9 +251,18 @@ namespace NexusForever.Game.Marketplace
             if (player == null)
                 return GenericError.Params;
 
+            MarketplaceAuction record;
+            bool isBuyout;
+            ulong originalBid;
+            ulong originalTopBidderId;
+            ulong previousBidderId;
+            ulong previousBid;
+            ulong amountToCharge;
+            ulong acceptedAmount;
+
             lock (syncRoot)
             {
-                MarketplaceAuction record = auctions.FirstOrDefault(a => a.Auction.AuctionId == buyOrderSubmit.AuctionId);
+                record = auctions.FirstOrDefault(a => a.Auction.AuctionId == buyOrderSubmit.AuctionId);
                 if (record == null || record.Auction.Item2Id != buyOrderSubmit.Item2Id)
                     return GenericError.ItemBadId;
 
@@ -256,7 +273,7 @@ namespace NexusForever.Game.Marketplace
                 }
 
                 ulong minimumOffer = record.Auction.CurrentBid == 0ul ? record.Auction.MinimumBid : record.Auction.CurrentBid + 1ul;
-                bool isBuyout = record.Auction.BuyoutPrice != 0ul && buyOrderSubmit.AmountOffered >= record.Auction.BuyoutPrice;
+                isBuyout = record.Auction.BuyoutPrice != 0ul && buyOrderSubmit.AmountOffered >= record.Auction.BuyoutPrice;
                 bool alreadyTopBidder = record.Auction.TopBidderCharacterId == player.CharacterId;
                 if (!isBuyout && !alreadyTopBidder
                     && CountActiveAuctionBids(player.CharacterId) >= MarketplaceAccountLimits.GetMaxAuctionBids(player))
@@ -265,16 +282,16 @@ namespace NexusForever.Game.Marketplace
                     return GenericError.AuctionTooManyBids;
                 }
 
-                ulong acceptedAmount = isBuyout ? record.Auction.BuyoutPrice : buyOrderSubmit.AmountOffered;
+                acceptedAmount = isBuyout ? record.Auction.BuyoutPrice : buyOrderSubmit.AmountOffered;
                 if (acceptedAmount < minimumOffer)
                 {
                     auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
                     return GenericError.Params;
                 }
 
-                ulong previousBidderId = record.Auction.TopBidderCharacterId;
-                ulong previousBid      = record.Auction.CurrentBid;
-                ulong amountToCharge   = previousBidderId == player.CharacterId ? acceptedAmount - previousBid : acceptedAmount;
+                previousBidderId = record.Auction.TopBidderCharacterId;
+                previousBid      = record.Auction.CurrentBid;
+                amountToCharge   = previousBidderId == player.CharacterId ? acceptedAmount - previousBid : acceptedAmount;
                 if (!player.CurrencyManager.CanAfford(CurrencyType.Credits, amountToCharge))
                 {
                     auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
@@ -287,78 +304,103 @@ namespace NexusForever.Game.Marketplace
                     return GenericError.ItemInventoryFull;
                 }
 
-                ulong originalBid = record.Auction.CurrentBid;
-                ulong originalTopBidderId = record.Auction.TopBidderCharacterId;
+                originalBid           = record.Auction.CurrentBid;
+                originalTopBidderId   = record.Auction.TopBidderCharacterId;
                 record.Auction.CurrentBid           = acceptedAmount;
                 record.Auction.TopBidderCharacterId = player.CharacterId;
 
-                if (isBuyout)
-                {
-                    AuctionInfo wonAuction = CloneAuction(record.Auction, record.ExpiresAtUtc);
-                    bool deliverToInventory = player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
-                    if (deliverToInventory)
-                    {
-                        ulong? previousItemCharacterId = record.Item.CharacterId;
-                        record.Item.CharacterId = player.CharacterId;
-                        if (!PersistAuctionDelete(record))
-                        {
-                            record.Item.CharacterId = previousItemCharacterId;
-                            record.Auction.CurrentBid           = originalBid;
-                            record.Auction.TopBidderCharacterId = originalTopBidderId;
-                            auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
-                            return GenericError.DbFailure;
-                        }
-
-                        if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
-                            CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
-
-                        player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, amountToCharge);
-                        player.Inventory.AddItem(record.Item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
-                        PaySeller(record, acceptedAmount);
-                        NotifyAuctionWon(player, wonAuction);
-                        auctions.Remove(record);
-                    }
-                    else
-                    {
-                        if (!CompleteAuctionSale(record, player.CharacterId, acceptedAmount, wonAuction, player, true, out bool persistedAuctionDelete))
-                        {
-                            record.Auction.CurrentBid           = originalBid;
-                            record.Auction.TopBidderCharacterId = originalTopBidderId;
-                            auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
-                            return GenericError.ItemInventoryFull;
-                        }
-
-                        if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
-                            CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
-
-                        player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, amountToCharge);
-                        auctions.Remove(record);
-                        if (!persistedAuctionDelete)
-                            PersistAuctionDelete(record);
-                    }
-                }
-                else
-                {
+                if (!isBuyout)
                     player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, amountToCharge);
-                    if (!PersistAuctionUpdate(record))
+
+                auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
+            }
+
+            if (!isBuyout)
+            {
+                if (!PersistAuctionUpdate(record))
+                {
+                    lock (syncRoot)
                     {
                         record.Auction.CurrentBid           = originalBid;
                         record.Auction.TopBidderCharacterId = originalTopBidderId;
-                        player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, amountToCharge);
                         auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
-                        return GenericError.DbFailure;
                     }
 
-                    if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
-                    {
-                        CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
-                        NotifyOutbid(previousBidderId, CloneAuction(record.Auction, record.ExpiresAtUtc));
-                    }
+                    player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, amountToCharge);
+                    return GenericError.DbFailure;
                 }
 
-                auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
+                if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
+                {
+                    CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
+                    NotifyOutbid(previousBidderId, CloneAuction(record.Auction, record.ExpiresAtUtc));
+                }
+
                 return GenericError.Ok;
             }
+
+            AuctionInfo wonAuction = CloneAuction(record.Auction, record.ExpiresAtUtc);
+            bool deliverToInventory = player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
+            if (deliverToInventory)
+            {
+                ulong? previousItemCharacterId;
+                lock (syncRoot)
+                {
+                    previousItemCharacterId = record.Item.CharacterId;
+                    record.Item.CharacterId = player.CharacterId;
+                }
+
+                if (!PersistAuctionDelete(record))
+                {
+                    lock (syncRoot)
+                    {
+                        record.Item.CharacterId               = previousItemCharacterId;
+                        record.Auction.CurrentBid           = originalBid;
+                        record.Auction.TopBidderCharacterId = originalTopBidderId;
+                    }
+
+                    auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
+                    return GenericError.DbFailure;
+                }
+
+                if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
+                    CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
+
+                player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, amountToCharge);
+                player.Inventory.AddItem(record.Item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
+
+                lock (syncRoot)
+                {
+                    PaySeller(record, acceptedAmount);
+                    auctions.Remove(record);
+                }
+
+                NotifyAuctionWon(player, wonAuction);
+                return GenericError.Ok;
+            }
+
+            bool persistedAuctionDelete;
+            lock (syncRoot)
+            {
+                if (!CompleteAuctionSale(record, player.CharacterId, acceptedAmount, wonAuction, player, true, out persistedAuctionDelete))
+                {
+                    record.Auction.CurrentBid           = originalBid;
+                    record.Auction.TopBidderCharacterId = originalTopBidderId;
+                    auction = CloneAuction(record.Auction, record.ExpiresAtUtc);
+                    return GenericError.ItemInventoryFull;
+                }
+
+                if (previousBidderId != 0ul && previousBidderId != player.CharacterId)
+                    CreditCharacter(previousBidderId, CurrencyType.Credits, previousBid);
+
+                player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, amountToCharge);
+                auctions.Remove(record);
+            }
+
+            if (!persistedAuctionDelete)
+                PersistAuctionDelete(record);
+
+            return GenericError.Ok;
         }
 
         public GenericError CancelAuction(IPlayer player, ulong auctionId, uint item2Id, out AuctionInfo auction)
@@ -372,9 +414,14 @@ namespace NexusForever.Game.Marketplace
             if (player == null)
                 return GenericError.Params;
 
+            MarketplaceAuction record;
+            bool canReturnToInventory;
+            ulong? previousItemCharacterId;
+            bool persistedAuctionDelete;
+
             lock (syncRoot)
             {
-                MarketplaceAuction record = auctions.FirstOrDefault(a => a.Auction.AuctionId == auctionId);
+                record = auctions.FirstOrDefault(a => a.Auction.AuctionId == auctionId);
                 if (record == null || record.Auction.Item2Id != item2Id)
                     return GenericError.ItemBadId;
 
@@ -382,43 +429,48 @@ namespace NexusForever.Game.Marketplace
                 if (record.Auction.OwnerCharacterId != player.CharacterId)
                     return GenericError.Params;
 
-                bool canReturnToInventory = player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
+                canReturnToInventory = player.Inventory.GetInventorySlotsRemaining(InventoryLocation.Inventory) > 0u;
                 if (!canReturnToInventory && !MarketplaceMailDelivery.IsAvailable)
                     return GenericError.ItemInventoryFull;
 
-                ulong? previousItemCharacterId = record.Item.CharacterId;
+                previousItemCharacterId = record.Item.CharacterId;
                 record.Item.CharacterId = player.CharacterId;
-                bool persistedAuctionDelete = false;
-                if (canReturnToInventory)
-                {
-                    if (!PersistAuctionDelete(record))
-                    {
-                        record.Item.CharacterId = previousItemCharacterId;
-                        return GenericError.DbFailure;
-                    }
-                }
-                else if (!MarketplaceMailDelivery.TrySendItemAuctionReturnMail(
-                    player.CharacterId,
-                    record.Item,
-                    context => RemoveAuctionModel(context, record)))
+                persistedAuctionDelete  = false;
+            }
+
+            if (canReturnToInventory)
+            {
+                if (!PersistAuctionDelete(record))
                 {
                     record.Item.CharacterId = previousItemCharacterId;
-                    return GenericError.ItemInventoryFull;
+                    return GenericError.DbFailure;
                 }
-                else
-                {
-                    persistedAuctionDelete = true;
-                }
+            }
+            else if (!MarketplaceMailDelivery.TrySendItemAuctionReturnMail(
+                player.CharacterId,
+                record.Item,
+                context => RemoveAuctionModel(context, record)))
+            {
+                record.Item.CharacterId = previousItemCharacterId;
+                return GenericError.ItemInventoryFull;
+            }
+            else
+            {
+                persistedAuctionDelete = true;
+            }
 
+            lock (syncRoot)
+            {
                 auctions.Remove(record);
                 RefundTopBidder(record);
-
-                if (canReturnToInventory)
-                    player.Inventory.AddItem(record.Item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
-                else if (!persistedAuctionDelete)
-                    PersistAuctionDelete(record);
-                return GenericError.Ok;
             }
+
+            if (canReturnToInventory)
+                player.Inventory.AddItem(record.Item, InventoryLocation.Inventory, ItemUpdateReason.Auction);
+            else if (!persistedAuctionDelete)
+                PersistAuctionDelete(record);
+
+            return GenericError.Ok;
         }
 
         public GenericError PostCommodityOrder(IPlayer player, CommodityOrder order, out CommodityOrder postedOrder, IItemManager itemManager = null)
@@ -426,6 +478,9 @@ namespace NexusForever.Game.Marketplace
             postedOrder = CloneOrder(order);
             if (player == null)
                 return GenericError.Params;
+
+            MarketplaceCommodityOrder record = null;
+            bool persistInsertedOrder = false;
 
             lock (syncRoot)
             {
@@ -469,7 +524,7 @@ namespace NexusForever.Game.Marketplace
                 postedOrder.ListTime         = MarketplaceCommodityDuration.ResolveListFileTime(order.ListTime);
                 postedOrder.ExpirationTime   = MarketplaceCommodityDuration.ResolveExpirationFileTime(order.ListTime, order.ExpirationTime);
 
-                var record = new MarketplaceCommodityOrder
+                record = new MarketplaceCommodityOrder
                 {
                     OwnerCharacterId = player.CharacterId,
                     Order            = CloneOrder(postedOrder)
@@ -478,19 +533,7 @@ namespace NexusForever.Game.Marketplace
                 if (!forceImmediate)
                 {
                     AddCommodityOrder(record);
-                    if (!PersistCommodityOrderInsert(record))
-                    {
-                        RemoveCommodityOrderRecord(record);
-                        if (postedOrder.CommodityOrderId + 1ul == nextCommodityOrderId)
-                            nextCommodityOrderId--;
-
-                        if (order.IsBuyOrder)
-                            player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, order.Price);
-                        else
-                            player.Inventory.ItemCreate(InventoryLocation.Inventory, order.Item2Id, order.Quantity, ItemUpdateReason.Auction);
-
-                        return GenericError.DbFailure;
-                    }
+                    persistInsertedOrder = true;
                 }
 
                 TryMatchCommodityOrder(record, itemManager);
@@ -501,6 +544,23 @@ namespace NexusForever.Game.Marketplace
                     postedOrder = CloneOrder(record.Order);
                     return immediateResult;
                 }
+            }
+
+            if (persistInsertedOrder && !PersistCommodityOrderInsert(record))
+            {
+                lock (syncRoot)
+                {
+                    RemoveCommodityOrderRecord(record);
+                    if (postedOrder.CommodityOrderId + 1ul == nextCommodityOrderId)
+                        nextCommodityOrderId--;
+                }
+
+                if (order.IsBuyOrder)
+                    player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, order.Price);
+                else
+                    player.Inventory.ItemCreate(InventoryLocation.Inventory, order.Item2Id, order.Quantity, ItemUpdateReason.Auction);
+
+                return GenericError.DbFailure;
             }
 
             return GenericError.Ok;
@@ -518,9 +578,11 @@ namespace NexusForever.Game.Marketplace
             if (player == null)
                 return GenericError.Params;
 
+            MarketplaceCommodityOrder record;
+            bool returnByMail;
             lock (syncRoot)
             {
-                MarketplaceCommodityOrder record = commodityOrders.FirstOrDefault(o =>
+                record = commodityOrders.FirstOrDefault(o =>
                     o.OwnerCharacterId == player.CharacterId &&
                     o.Order.CommodityOrderId == orderId &&
                     o.Order.Item2Id == item2Id &&
@@ -530,7 +592,7 @@ namespace NexusForever.Game.Marketplace
 
                 cancelledOrder = CloneOrder(record.Order);
 
-                bool returnByMail = !record.Order.IsBuyOrder
+                returnByMail = !record.Order.IsBuyOrder
                     && !CanDeliverCommodityItemsToInventory(player, record.Order.Item2Id, record.Order.Quantity, itemManager);
                 if (returnByMail)
                 {
@@ -544,18 +606,22 @@ namespace NexusForever.Game.Marketplace
                         return GenericError.ItemInventoryFull;
                     }
                 }
-
-                if (!returnByMail && !PersistCommodityOrderDelete(record))
-                    return GenericError.DbFailure;
-
-                RemoveCommodityOrderRecord(record);
-                if (record.Order.IsBuyOrder)
-                    player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, record.Order.Price);
-                else if (!returnByMail)
-                    player.Inventory.ItemCreate(InventoryLocation.Inventory, record.Order.Item2Id, record.Order.Quantity, ItemUpdateReason.Auction);
-
-                return GenericError.Ok;
             }
+
+            if (!returnByMail && !PersistCommodityOrderDelete(record))
+                return GenericError.DbFailure;
+
+            lock (syncRoot)
+            {
+                RemoveCommodityOrderRecord(record);
+            }
+
+            if (record.Order.IsBuyOrder)
+                player.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, record.Order.Price);
+            else if (!returnByMail)
+                player.Inventory.ItemCreate(InventoryLocation.Inventory, record.Order.Item2Id, record.Order.Quantity, ItemUpdateReason.Auction);
+
+            return GenericError.Ok;
         }
 
         public void ValidateAuctionSearch(IGameTableManager gameTableManager, IItemManager itemManager, ClientAuctionsByFilterRequest request)
@@ -673,7 +739,13 @@ namespace NexusForever.Game.Marketplace
         {
             return Persist(context =>
             {
-                MarketplaceAuctionModel model = context.MarketplaceAuction.Single(a => a.Id == record.Auction.AuctionId);
+                MarketplaceAuctionModel model = context.MarketplaceAuction.SingleOrDefault(a => a.Id == record.Auction.AuctionId);
+                if (model == null)
+                {
+                    log.Error("PersistAuctionUpdate failed: auction id={0} missing from database.", record.Auction.AuctionId);
+                    return;
+                }
+
                 ApplyAuctionModel(model, record.Auction, record.ExpiresAtUtc);
             });
         }
@@ -683,7 +755,13 @@ namespace NexusForever.Game.Marketplace
             return Persist(context =>
             {
                 MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
-                    .Single(o => o.Id == record.Order.CommodityOrderId);
+                    .SingleOrDefault(o => o.Id == record.Order.CommodityOrderId);
+                if (model == null)
+                {
+                    log.Error("PersistCommodityOrderUpdate failed: commodity order id={0} missing from database.", record.Order.CommodityOrderId);
+                    return;
+                }
+
                 model.Quantity     = record.Order.Quantity;
                 model.Price        = record.Order.Price;
                 model.PricePerUnit = record.Order.PricePerUnit;
@@ -742,7 +820,13 @@ namespace NexusForever.Game.Marketplace
             }
 
             MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
-                .Single(o => o.Id == record.Order.CommodityOrderId);
+                .SingleOrDefault(o => o.Id == record.Order.CommodityOrderId);
+            if (model == null)
+            {
+                log.Error("PersistCommodityFillOrderChange failed: commodity order id={0} missing from database.", record.Order.CommodityOrderId);
+                return;
+            }
+
             model.Quantity     = remainingQuantity;
             model.Price        = remainingPrice;
             model.PricePerUnit = record.Order.PricePerUnit;
@@ -792,13 +876,13 @@ namespace NexusForever.Game.Marketplace
             CharacterDatabase database = TryGetCharacterDatabase();
             if (database == null)
             {
-                log.Warn("GlobalMarketplaceManager.Persist skipped: CharacterDatabase is null. In-memory state may diverge from database.");
+                log.Warn("GlobalMarketplaceManager.Persist skipped: CharacterDatabase is null. Operating in in-memory-only marketplace mode.");
                 return true;
             }
 
             try
             {
-                database.Save(action).ConfigureAwait(false).GetAwaiter().GetResult();
+                database.SaveBlocking(action);
                 return true;
             }
             catch (Exception ex)
@@ -1035,9 +1119,17 @@ namespace NexusForever.Game.Marketplace
         {
             ulong now = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
+            List<MarketplaceAuction> expired;
             lock (syncRoot)
+                expired = auctions.Where(a => a.ExpiresAtUtc <= now).ToList();
+
+            foreach (MarketplaceAuction record in expired)
             {
-                foreach (MarketplaceAuction record in auctions.Where(a => a.ExpiresAtUtc <= now).ToList())
+                bool shouldExpire;
+                lock (syncRoot)
+                    shouldExpire = auctions.Contains(record) && record.ExpiresAtUtc <= now;
+
+                if (shouldExpire)
                     ExpireAuction(record);
             }
         }
@@ -1083,7 +1175,11 @@ namespace NexusForever.Game.Marketplace
                 persistedDelete = persistedReturnDelete;
             }
 
-            auctions.Remove(record);
+            lock (syncRoot)
+            {
+                auctions.Remove(record);
+            }
+
             if (!persistedDelete)
                 PersistAuctionDelete(record);
         }
@@ -1092,14 +1188,22 @@ namespace NexusForever.Game.Marketplace
         {
             long nowFileTime = DateTime.UtcNow.ToFileTimeUtc();
 
+            List<MarketplaceCommodityOrder> expired;
             lock (syncRoot)
             {
-                foreach (MarketplaceCommodityOrder record in commodityOrders
+                expired = commodityOrders
                     .Where(o => o.Order.ExpirationTime != 0ul && (long)o.Order.ExpirationTime <= nowFileTime)
-                    .ToList())
-                {
+                    .ToList();
+            }
+
+            foreach (MarketplaceCommodityOrder record in expired)
+            {
+                bool shouldExpire;
+                lock (syncRoot)
+                    shouldExpire = commodityOrders.Contains(record);
+
+                if (shouldExpire)
                     ExpireCommodityOrder(record);
-                }
             }
         }
 
@@ -1114,7 +1218,11 @@ namespace NexusForever.Game.Marketplace
                 if (!PersistCommodityOrderDelete(record))
                     return;
 
-                RemoveCommodityOrderRecord(record);
+                lock (syncRoot)
+                {
+                    RemoveCommodityOrderRecord(record);
+                }
+
                 if (directBuyRefund)
                     owner.CurrencyManager.CurrencyAddAmount(CurrencyType.Credits, record.Order.Price);
                 else
@@ -1130,6 +1238,9 @@ namespace NexusForever.Game.Marketplace
 
             if (record.Order.IsBuyOrder)
             {
+                if (!PersistCommodityOrderDelete(record))
+                    return;
+
                 CreditCharacter(record.OwnerCharacterId, CurrencyType.Credits, record.Order.Price);
             }
             else
@@ -1145,16 +1256,16 @@ namespace NexusForever.Game.Marketplace
                 }
             }
 
-            RemoveCommodityOrderRecord(record);
+            lock (syncRoot)
+            {
+                RemoveCommodityOrderRecord(record);
+            }
 
             owner?.Session.EnqueueMessageEncrypted(new ServerCommodityAuctionRemoved
             {
                 OrderRemoved = CloneOrder(record.Order),
                 Type         = AuctionEventType.Expire
             });
-
-            if (record.Order.IsBuyOrder)
-                PersistCommodityOrderDelete(record);
         }
 
         private bool CompleteAuctionSale(

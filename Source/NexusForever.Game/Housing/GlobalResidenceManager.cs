@@ -131,11 +131,19 @@ namespace NexusForever.Game.Housing
 
         private void SaveResidences()
         {
-            var tasks = new List<Task>();
-            foreach (IResidence residence in residences.Values)
-                tasks.Add(DatabaseManager.Instance.GetDatabase<CharacterDatabase>().Save(residence.Save));
+            CharacterDatabase database = DatabaseManager.Instance.GetDatabase<CharacterDatabase>();
+            if (database == null)
+                return;
 
-            Task.WaitAll(tasks.ToArray());
+            foreach (IResidence residence in residences.Values)
+            {
+                if (residence is Residence concreteResidence && !concreteResidence.NeedsSave)
+                    continue;
+
+                IResidence residenceToSave = residence;
+                database.Save(residenceToSave.Save).FireAndForgetAsync(ex =>
+                    log.Error(ex, "Failed to save residence {0}.", residenceToSave.Id));
+            }
         }
 
         /// <summary>
@@ -319,10 +327,9 @@ namespace NexusForever.Game.Housing
         public IEnumerable<IPublicResidence> GetRandomVisitableResidences()
         {
             // unsure if this is how it was done on retail, might need to be tweaked
-            var random = new Random();
             return visitableResidences
                 .Values
-                .OrderBy(r => random.Next())
+                .OrderBy(_ => Random.Shared.Next())
                 .Take(50);
         }
 
@@ -332,10 +339,9 @@ namespace NexusForever.Game.Housing
         public IEnumerable<IPublicCommunity> GetRandomVisitableCommunities()
         {
             // unsure if this is how it was done on retail, might need to be tweaked
-            var random = new Random();
             return visitableCommunities
                 .Values
-                .OrderBy(r => random.Next())
+                .OrderBy(_ => Random.Shared.Next())
                 .Take(50);
         }
     }

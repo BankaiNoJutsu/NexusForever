@@ -94,6 +94,8 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public bool PendingDelete => (saveMask & GuildBaseSaveMask.Delete) != 0;
 
+        public bool NeedsSave => saveMask != GuildBaseSaveMask.None;
+
         /// <summary>
         /// Maximum number of <see cref="IGuildMember"/>'s allowed in the guild.
         /// </summary>

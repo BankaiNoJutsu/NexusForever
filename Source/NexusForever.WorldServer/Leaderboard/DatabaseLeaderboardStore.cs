@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Linq;
 using System.Text.Json;
 using NexusForever.Database;
@@ -18,6 +19,7 @@ namespace NexusForever.WorldServer.Leaderboard
         private readonly IDatabaseManager databaseManager;
         private readonly IRealmContext realmContext;
         private readonly object sync = new();
+        private readonly SemaphoreSlim loadGate = new(1, 1);
         private IReadOnlyList<LeaderboardPveEntryRecord> cachedPve;
         private IReadOnlyList<LeaderboardPvpEntryRecord> cachedPvp;
 
@@ -54,24 +56,48 @@ namespace NexusForever.WorldServer.Leaderboard
 
         private void EnsureLoaded()
         {
-            lock (sync)
+            if (Volatile.Read(ref cachedPve) != null && Volatile.Read(ref cachedPvp) != null)
+                return;
+
+            loadGate.Wait();
+            try
             {
                 if (cachedPve != null && cachedPvp != null)
                     return;
 
-                var database = databaseManager.GetDatabase<CharacterDatabase>();
+                CharacterDatabase database = databaseManager.GetDatabase<CharacterDatabase>();
+                if (database == null)
+                {
+                    lock (sync)
+                    {
+                        cachedPve ??= [];
+                        cachedPvp ??= [];
+                    }
 
-                cachedPve = database.GetLeaderboardPveScores(realmContext.RealmId)
+                    return;
+                }
+
+                IReadOnlyList<LeaderboardPveEntryRecord> loadedPve = database.GetLeaderboardPveScores(realmContext.RealmId)
                     .OrderBy(s => s.CompletionTime)
                     .Take(MaxRowsPerScope * 8)
                     .Select(MapPve)
                     .ToList();
 
-                cachedPvp = database.GetLeaderboardPvpScores(realmContext.RealmId)
+                IReadOnlyList<LeaderboardPvpEntryRecord> loadedPvp = database.GetLeaderboardPvpScores(realmContext.RealmId)
                     .OrderByDescending(s => s.Rating)
                     .Take(MaxRowsPerScope * 8)
                     .Select(MapPvp)
                     .ToList();
+
+                lock (sync)
+                {
+                    cachedPve ??= loadedPve;
+                    cachedPvp ??= loadedPvp;
+                }
+            }
+            finally
+            {
+                loadGate.Release();
             }
         }
 
@@ -108,14 +134,14 @@ namespace NexusForever.WorldServer.Leaderboard
             };
         }
 
-        private static IReadOnlyList<LeaderboardTeamMemberRecord> DeserializeTeamMembers(string json)
+        private static IReadOnlyList<LeaderboardTeamMemberRecord> DeserializeTeamMembers(string teamMembersJson)
         {
-            if (string.IsNullOrWhiteSpace(json))
+            if (string.IsNullOrWhiteSpace(teamMembersJson))
                 return [];
 
             try
             {
-                return JsonSerializer.Deserialize<List<LeaderboardTeamMemberRecord>>(json) ?? [];
+                return JsonSerializer.Deserialize<List<LeaderboardTeamMemberRecord>>(teamMembersJson) ?? [];
             }
             catch (JsonException)
             {

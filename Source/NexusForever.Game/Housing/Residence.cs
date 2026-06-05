@@ -257,6 +257,8 @@ namespace NexusForever.Game.Housing
 
         private ResidenceSaveMask saveMask;
 
+        public bool NeedsSave => saveMask != ResidenceSaveMask.None;
+
         public bool IsCommunityResidence => GuildOwnerId.HasValue && !OwnerId.HasValue;
 
         /// <summary>

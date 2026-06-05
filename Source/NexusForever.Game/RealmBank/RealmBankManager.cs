@@ -11,11 +11,14 @@ using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared;
+using NLog;
 
 namespace NexusForever.Game.RealmBank
 {
     public sealed class RealmBankManager : Singleton<RealmBankManager>
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
         const uint BaseSlotCount = 16u;
         const uint SlotsPerEntitlementStack = 8u;
 
@@ -132,6 +135,7 @@ namespace NexusForever.Game.RealmBank
                 Soulbound          = item.Soulbound
             };
 
+            ulong itemGuid = item.Guid;
             database.Save(context =>
             {
                 RealmBankItemModel existing = context.RealmBankItem.SingleOrDefault(i => i.Id == model.Id);
@@ -150,10 +154,10 @@ namespace NexusForever.Game.RealmBank
                     existing.Soulbound          = model.Soulbound;
                 }
 
-                ItemModel characterItem = context.Item.SingleOrDefault(i => i.Id == item.Guid);
+                ItemModel characterItem = context.Item.SingleOrDefault(i => i.Id == itemGuid);
                 if (characterItem != null)
                     context.Item.Remove(characterItem);
-            }).GetAwaiter().GetResult();
+            }).FireAndForgetAsync(ex => log.Error(ex, "Failed to save realm bank item {0}.", itemGuid));
         }
 
         public void SaveCharacterItem(IItem item, IPlayer player)
@@ -179,9 +183,10 @@ namespace NexusForever.Game.RealmBank
                 Soulbound          = item.Soulbound
             };
 
+            ulong itemGuid = item.Guid;
             database.Save(context =>
             {
-                RealmBankItemModel realmBankItem = context.RealmBankItem.SingleOrDefault(i => i.Id == item.Guid);
+                RealmBankItemModel realmBankItem = context.RealmBankItem.SingleOrDefault(i => i.Id == itemGuid);
                 if (realmBankItem != null)
                     context.RealmBankItem.Remove(realmBankItem);
 
@@ -200,7 +205,7 @@ namespace NexusForever.Game.RealmBank
                     existing.ExpirationTimeLeft = model.ExpirationTimeLeft;
                     existing.Soulbound          = model.Soulbound;
                 }
-            }).GetAwaiter().GetResult();
+            }).FireAndForgetAsync(ex => log.Error(ex, "Failed to save character item {0} after realm bank move.", itemGuid));
         }
 
         public void DeleteItem(ulong itemGuid)
@@ -214,7 +219,7 @@ namespace NexusForever.Game.RealmBank
                 RealmBankItemModel model = context.RealmBankItem.SingleOrDefault(i => i.Id == itemGuid);
                 if (model != null)
                     context.RealmBankItem.Remove(model);
-            }).GetAwaiter().GetResult();
+            }).FireAndForgetAsync(ex => log.Error(ex, "Failed to delete realm bank item {0}.", itemGuid));
         }
 
         static CharacterDatabase GetDatabase()

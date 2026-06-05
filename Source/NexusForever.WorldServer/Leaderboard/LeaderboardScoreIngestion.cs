@@ -1,20 +1,29 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
-using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Leaderboard;
+using NexusForever.Shared;
+using NLog;
 
 namespace NexusForever.WorldServer.Leaderboard
 {
     public sealed class LeaderboardScoreIngestion : ILeaderboardScoreIngestion
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
+        private readonly object scoreIdLock = new();
+        private ulong nextPveScoreId;
+        private ulong nextPvpScoreId;
+        private bool pveScoreIdsInitialized;
+        private bool pvpScoreIdsInitialized;
+
         private readonly IDatabaseManager databaseManager;
         private readonly IRealmContext realmContext;
         private readonly DatabaseLeaderboardStore store;
@@ -27,6 +36,15 @@ namespace NexusForever.WorldServer.Leaderboard
             this.databaseManager = databaseManager;
             this.realmContext    = realmContext;
             this.store           = store;
+
+            CharacterDatabase database = databaseManager.GetDatabase<CharacterDatabase>();
+            if (database == null)
+                return;
+
+            nextPveScoreId         = database.GetNextLeaderboardPveScoreId() + 1ul;
+            nextPvpScoreId         = database.GetNextLeaderboardPvpScoreId() + 1ul;
+            pveScoreIdsInitialized = true;
+            pvpScoreIdsInitialized = true;
         }
 
         public void RecordPveCompletion(
@@ -42,7 +60,13 @@ namespace NexusForever.WorldServer.Leaderboard
                 return;
 
             var database = databaseManager.GetDatabase<CharacterDatabase>();
-            ulong scoreId = database.GetNextLeaderboardPveScoreId() + 1ul;
+            if (database == null)
+            {
+                log.Warn("RecordPveCompletion skipped: CharacterDatabase is unavailable.");
+                return;
+            }
+
+            ulong scoreId = AllocatePveScoreId(database);
 
             var model = new LeaderboardPveScoreModel
             {
@@ -61,8 +85,15 @@ namespace NexusForever.WorldServer.Leaderboard
                 RecordedUtc       = DateTime.UtcNow
             };
 
-            database.Save(context => context.LeaderboardPveScore.Add(model)).GetAwaiter().GetResult();
-            store.InvalidateCache();
+            database.Save(context => context.LeaderboardPveScore.Add(model))
+                .ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                        log.Error(t.Exception?.GetBaseException(), "Failed to persist PvE leaderboard score for character {0}.", player.CharacterId);
+                    else
+                        store.InvalidateCache();
+                }, TaskContinuationOptions.ExecuteSynchronously)
+                .FireAndForgetAsync();
         }
 
         public void RecordPvpRating(
@@ -75,7 +106,13 @@ namespace NexusForever.WorldServer.Leaderboard
                 return;
 
             var database = databaseManager.GetDatabase<CharacterDatabase>();
-            ulong scoreId = database.GetNextLeaderboardPvpScoreId() + 1ul;
+            if (database == null)
+            {
+                log.Warn("RecordPvpRating skipped: CharacterDatabase is unavailable.");
+                return;
+            }
+
+            ulong scoreId = AllocatePvpScoreId(database);
 
             var model = new LeaderboardPvpScoreModel
             {
@@ -91,8 +128,43 @@ namespace NexusForever.WorldServer.Leaderboard
                 RecordedUtc     = DateTime.UtcNow
             };
 
-            database.Save(context => context.LeaderboardPvpScore.Add(model)).GetAwaiter().GetResult();
-            store.InvalidateCache();
+            database.Save(context => context.LeaderboardPvpScore.Add(model))
+                .ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                        log.Error(t.Exception?.GetBaseException(), "Failed to persist PvP leaderboard score for character {0}.", player.CharacterId);
+                    else
+                        store.InvalidateCache();
+                }, TaskContinuationOptions.ExecuteSynchronously)
+                .FireAndForgetAsync();
+        }
+
+        private ulong AllocatePveScoreId(CharacterDatabase database)
+        {
+            lock (scoreIdLock)
+            {
+                if (!pveScoreIdsInitialized)
+                {
+                    nextPveScoreId        = database.GetNextLeaderboardPveScoreId() + 1ul;
+                    pveScoreIdsInitialized = true;
+                }
+
+                return nextPveScoreId++;
+            }
+        }
+
+        private ulong AllocatePvpScoreId(CharacterDatabase database)
+        {
+            lock (scoreIdLock)
+            {
+                if (!pvpScoreIdsInitialized)
+                {
+                    nextPvpScoreId        = database.GetNextLeaderboardPvpScoreId() + 1ul;
+                    pvpScoreIdsInitialized = true;
+                }
+
+                return nextPvpScoreId++;
+            }
         }
 
         private static string SerializeTeamMembers(IReadOnlyList<LeaderboardTeamMemberRecord> teamMembers)

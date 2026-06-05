@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using NexusForever.Database;
 using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Shared.Diagnostics;
@@ -33,6 +34,14 @@ namespace NexusForever.Database.Auth
                 action.Invoke(context);
                 await context.SaveChangesAsync();
             });
+        }
+
+        /// <summary>
+        /// Synchronously persist changes. Blocks the calling thread until the save completes.
+        /// </summary>
+        public void SaveBlocking(Action<AuthContext> action)
+        {
+            Save(action).WaitUnwrap();
         }
 
         public void Migrate()
@@ -153,7 +162,7 @@ namespace NexusForever.Database.Auth
             if (AccountExists(email))
                 throw new InvalidOperationException($"Account with that username already exists.");
 
-            CreateAccountAsync(email, s, v, role, []).GetAwaiter().GetResult();
+            CreateAccountAsync(email, s, v, role, []).WaitUnwrap();
         }
 
         /// <summary>
@@ -362,6 +371,32 @@ namespace NexusForever.Database.Auth
         {
             using var context = new AuthContext(config);
             context.AccountCREDDHistory.Add(model);
+            context.SaveChanges();
+        }
+
+        /// <summary>
+        /// Increment an account entitlement while the account is offline.
+        /// </summary>
+        public void IncrementAccountEntitlement(uint accountId, byte entitlementId, uint amount)
+        {
+            if (amount == 0u)
+                return;
+
+            using var context = new AuthContext(config);
+            AccountEntitlementModel entitlement = context.AccountEntitlement
+                .SingleOrDefault(e => e.Id == accountId && e.EntitlementId == entitlementId);
+            if (entitlement == null)
+            {
+                context.AccountEntitlement.Add(new AccountEntitlementModel
+                {
+                    Id            = accountId,
+                    EntitlementId = entitlementId,
+                    Amount        = amount
+                });
+            }
+            else
+                entitlement.Amount += amount;
+
             context.SaveChanges();
         }
 

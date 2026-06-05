@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -33,6 +34,7 @@ namespace NexusForever.Game.Guild
         public ulong NextGuildId => nextGuildId++;
         private ulong nextGuildId;
 
+        private readonly object cacheLock = new();
         private readonly Dictionary</*guildId*/ ulong, IGuildBase> guilds = new();
         private readonly Dictionary<(GuildType Type, string Name), /*guildId*/ ulong> guildNameCache = new(new GuildNameEqualityComparer());
         private readonly Dictionary</*guildId*/ ulong, List</*memberId*/ ulong>> guildMemberCache = new();
@@ -182,22 +184,51 @@ namespace NexusForever.Game.Guild
 
         private void SaveGuilds()
         {
-            var tasks = new List<Task>();
+            CharacterDatabase database = DatabaseManager.Instance.GetDatabase<CharacterDatabase>();
+            if (database == null)
+                return;
+
             foreach (GuildBase guild in guilds.Values.ToList())
             {
                 if (guild.PendingDelete)
                 {
-                    guilds.Remove(guild.Id);
-                    guildNameCache.Remove((guild.Type, guild.Name));
-
                     if (guild.PendingCreate)
+                    {
+                        lock (cacheLock)
+                        {
+                            guilds.Remove(guild.Id);
+                            guildNameCache.Remove((guild.Type, guild.Name));
+                        }
+
                         continue;
+                    }
+
+                    GuildBase guildToDelete = guild;
+                    database.Save(guildToDelete.Save).ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            log.Error(t.Exception?.GetBaseException(), "Failed to persist guild delete for guild {0}.", guildToDelete.Id);
+                            return;
+                        }
+
+                        lock (cacheLock)
+                        {
+                            guilds.Remove(guildToDelete.Id);
+                            guildNameCache.Remove((guildToDelete.Type, guildToDelete.Name));
+                        }
+                    }, TaskContinuationOptions.ExecuteSynchronously).FireAndForgetAsync();
+
+                    continue;
                 }
 
-                tasks.Add(DatabaseManager.Instance.GetDatabase<CharacterDatabase>().Save(guild.Save));
-            }
+                if (!guild.NeedsSave)
+                    continue;
 
-            Task.WaitAll(tasks.ToArray());
+                GuildBase guildToSave = guild;
+                database.Save(guildToSave.Save).FireAndForgetAsync(ex =>
+                    log.Error(ex, "Failed to save guild {0}.", guildToSave.Id));
+            }
         }
 
         /// <summary>

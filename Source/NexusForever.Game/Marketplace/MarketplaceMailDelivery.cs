@@ -296,7 +296,7 @@ namespace NexusForever.Game.Marketplace
             IEnumerable<IItem> items,
             Action<CharacterContext> additionalSaveAction)
         {
-            database.Save(context =>
+            database.SaveBlocking(context =>
             {
                 additionalSaveAction?.Invoke(context);
 
@@ -307,7 +307,7 @@ namespace NexusForever.Game.Marketplace
                     if (item is Item itemEntity)
                         itemEntity.Save(context);
                 }
-            }).GetAwaiter().GetResult();
+            });
 
             IPlayer recipient = PlayerManager.Instance.GetPlayer(recipientCharacterId);
             recipient?.MailManager.EnqueueMail(mail);
