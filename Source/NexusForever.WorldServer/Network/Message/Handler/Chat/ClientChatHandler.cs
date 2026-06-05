@@ -34,6 +34,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Chat
 
         public void HandleMessage(IWorldSession session, ClientChat chat)
         {
+            if (session.Player == null)
+                return;
+
             if (chat.Message.StartsWith(CommandPrefix))
                 HandleCommand(session, chat);
             else
@@ -59,7 +62,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Chat
             }
             catch (Exception e)
             {
-                log.LogWarning($"{e.Message}: {e.StackTrace}");
+                log.LogWarning(e, "Failed to execute chat command for player {PlayerName}.", session.Player.Name);
             }
         }
     }

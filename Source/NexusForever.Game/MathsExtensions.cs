@@ -92,8 +92,7 @@ namespace NexusForever.Game
         /// </summary>
         public static Vector3 GetRandomPoint2D(this Vector3 v, float maxRange)
         {
-            var random = new Random();
-            return GetPoint2D(v, (float)random.NextDouble() * PI2, (float)random.NextDouble() * maxRange);
+            return GetPoint2D(v, (float)Random.Shared.NextDouble() * PI2, (float)Random.Shared.NextDouble() * maxRange);
         }
 
         /// <summary>

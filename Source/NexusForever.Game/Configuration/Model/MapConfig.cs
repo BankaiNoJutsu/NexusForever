@@ -8,7 +8,7 @@ namespace NexusForever.Game.Configuration.Model
         public string MapPath { get; set; } = "map";
         public List<ushort> PrecacheBaseMaps { get; set; }
         public List<ushort> PrecacheMapSpawns { get; set; }
-        public bool SynchronousUpdate { get; set; } = false;
+        public bool SynchronousUpdate { get; set; } = true;
         public uint? GridActionThreshold { get; set; } = 100u;
         public uint? GridActionMaxRetry { get; set; } = 5u;
         public double? GridUnloadTimer { get; set; } = 600u;

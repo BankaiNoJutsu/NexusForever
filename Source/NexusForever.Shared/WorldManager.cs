@@ -55,7 +55,11 @@ namespace NexusForever.Shared
                     log.Error(ex, "Error during world update.");
                 }
 
-                Thread.Sleep(1);
+                const int targetTickMilliseconds = 1;
+                int remainingMilliseconds = targetTickMilliseconds - (int)stopwatch.ElapsedMilliseconds;
+                if (remainingMilliseconds > 0)
+                    Thread.Sleep(remainingMilliseconds);
+
                 lastTick = (double)stopwatch.ElapsedTicks / Stopwatch.Frequency;
                 NexusForeverDiagnostics.RecordTick(lastTick * 1000d);
             }

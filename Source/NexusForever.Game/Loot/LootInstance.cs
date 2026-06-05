@@ -79,8 +79,15 @@ namespace NexusForever.Game.Loot
 
             if (LootEntityType == LootEntityType.Item && LooterType == LooterType.Player)
             {
-                KeyValuePair<ulong, uint> looter = looterGuids.First();
-                item.SetWinner(looter.Key, looter.Value);
+                if (looterGuids.Count == 0)
+                {
+                    log.Warn($"Player loot item created without eligible looters: ownerUnit={OwnerUnitId}, staticId={staticId}.");
+                }
+                else
+                {
+                    KeyValuePair<ulong, uint> looter = looterGuids.First();
+                    item.SetWinner(looter.Key, looter.Value);
+                }
             }
 
             return item;

@@ -23,7 +23,18 @@ namespace NexusForever.WorldServer.Command.Context
         /// Create a new <see cref="ConsoleCommandContext"/> with the <see cref="Permission"/>'s from the Console <see cref="Role"/>.
         /// </summary>
         public ConsoleCommandContext()
+            : this(null, null)
         {
+        }
+
+        /// <summary>
+        /// Create a new <see cref="ConsoleCommandContext"/> with optional invoker and target entities.
+        /// </summary>
+        public ConsoleCommandContext(IWorldEntity invoker, IWorldEntity target = null)
+        {
+            Invoker = invoker;
+            Target  = target;
+
             // console role needs to exist in order for the console command context to work
             IRBACRole role = RBACManager.Instance.GetRole(Role.Console);
             if (role == null)
@@ -53,7 +64,8 @@ namespace NexusForever.WorldServer.Command.Context
         /// </summary>
         public T GetTargetOrInvoker<T>() where T : IWorldEntity
         {
-            return default;
+            IWorldEntity entity = Target ?? Invoker;
+            return entity is T typed ? typed : default;
         }
     }
 }

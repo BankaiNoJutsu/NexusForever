@@ -246,6 +246,11 @@ namespace NexusForever.WorldServer.Command
         /// </summary>
         public void HandleCommand(ICommandContext context, string commandText)
         {
+            if (!CommandContextResolver.TryResolve(context, ref commandText, out ICommandContext resolvedContext))
+                return;
+
+            context = resolvedContext;
+
             static string GetCommandError(CommandResult result)
             {
                 return result switch

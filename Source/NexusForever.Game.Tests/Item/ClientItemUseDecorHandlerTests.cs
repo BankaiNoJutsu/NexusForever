@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Housing;
@@ -127,7 +128,7 @@ public class ClientItemUseDecorHandlerTests
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);
         proxy.SetProperty(nameof(IGameTableManager.HousingDecorInfo), CreateGameTable(decorEntry));
 
-        return new ClientItemUseDecorHandler(gameTableManager);
+        return new ClientItemUseDecorHandler(NullLogger<ClientItemUseDecorHandler>.Instance, gameTableManager);
     }
 
     private static IWorldSession CreateSession(

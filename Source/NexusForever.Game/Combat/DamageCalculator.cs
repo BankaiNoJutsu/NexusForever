@@ -621,7 +621,7 @@ namespace NexusForever.Game.Combat
 
         private bool IsSuccessfulChance(float percentage)
         {
-            return new Random().Next(1, 10000) <= percentage * 10000f;
+            return Random.Shared.Next(1, 10000) <= percentage * 10000f;
         }
 
         /// <summary>

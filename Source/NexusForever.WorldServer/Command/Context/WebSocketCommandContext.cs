@@ -4,6 +4,7 @@ using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NexusForever.Game.Abstract.Entity;
@@ -25,16 +26,26 @@ namespace NexusForever.WorldServer.Command.Context
         public Language Language { get; } = Language.English;
         public ImmutableHashSet<Permission> Permissions { get; }
 
-        private readonly WebSocket webSocket;
+        internal WebSocket WebSocket { get; }
 
         /// <summary>
         /// Create a new <see cref="WebSocketCommandContext"/> with the <see cref="Permission"/>'s from the WebSocket <see cref="Role"/>.
         /// </summary>
         public WebSocketCommandContext(WebSocket webSocket)
+            : this(webSocket, null, null)
         {
-            this.webSocket = webSocket;
+        }
 
-            // console role needs to exist in order for the websocket command context to work
+        /// <summary>
+        /// Create a new <see cref="WebSocketCommandContext"/> with optional invoker and target entities.
+        /// </summary>
+        public WebSocketCommandContext(WebSocket webSocket, IWorldEntity invoker, IWorldEntity target = null)
+        {
+            WebSocket = webSocket;
+            Invoker   = invoker;
+            Target    = target;
+
+            // websocket role needs to exist in order for the websocket command context to work
             IRBACRole role = RBACManager.Instance.GetRole(Role.WebSocket);
             if (role == null)
                 throw new InvalidDataException("WebSocket role doesn't exist!");
@@ -63,18 +74,24 @@ namespace NexusForever.WorldServer.Command.Context
         /// </summary>
         public T GetTargetOrInvoker<T>() where T : IWorldEntity
         {
-            return default;
+            IWorldEntity entity = Target ?? Invoker;
+            return entity is T typed ? typed : default;
         }
 
-        private async void SendWebSocketMessage(string text, string type)
+        private void SendWebSocketMessage(string text, string type)
         {
-            if (webSocket.State != WebSocketState.Open)
+            _ = SendWebSocketMessageAsync(text, type);
+        }
+
+        private async Task SendWebSocketMessageAsync(string text, string type)
+        {
+            if (WebSocket.State != WebSocketState.Open)
                 return;
 
             try
             {
                 string message = JObject.FromObject(new { text, type }).ToString(Formatting.None);
-                await webSocket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(message)), WebSocketMessageType.Text, true, CancellationToken.None)
+                await WebSocket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(message)), WebSocketMessageType.Text, true, CancellationToken.None)
                     .ConfigureAwait(false);
             }
             catch (Exception exception)

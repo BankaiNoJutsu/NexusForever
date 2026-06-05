@@ -19,6 +19,8 @@ namespace NexusForever.Game.ICComm
             public Dictionary<uint, IPlayer> Members { get; } = [];
         }
 
+        private const int MaxMessageLength = 512;
+
         private readonly object syncRoot = new();
         private readonly Dictionary<ulong, ICCommChannel> channelsById = [];
         private readonly Dictionary<(ICCommChannelType Type, ulong ScopeId, string KeyName), ICCommChannel> channelsByKey = [];
@@ -76,7 +78,7 @@ namespace NexusForever.Game.ICComm
             if (player == null)
                 return ICCommMessageResult.NotInChannel;
 
-            if (string.IsNullOrWhiteSpace(message))
+            if (string.IsNullOrWhiteSpace(message) || message.Length > MaxMessageLength)
                 return ICCommMessageResult.InvalidText;
 
             List<IPlayer> recipients;

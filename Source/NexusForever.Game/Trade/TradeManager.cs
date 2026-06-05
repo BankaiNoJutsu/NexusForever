@@ -209,6 +209,7 @@ namespace NexusForever.Game.Trade
 
         public P2PTradeResult? Commit(IPlayer player)
         {
+            TradeSession sessionToSettle = null;
             lock (syncRoot)
             {
                 if (!TryGetActiveSession(player, out TradeSession session))
@@ -241,8 +242,11 @@ namespace NexusForever.Game.Trade
                 });
 
                 if (session.InitiatorOffer.Committed && session.TargetOffer.Committed)
-                    Settle(session);
+                    sessionToSettle = session;
             }
+
+            if (sessionToSettle != null)
+                Settle(sessionToSettle);
 
             return null;
         }
@@ -425,36 +429,48 @@ namespace NexusForever.Game.Trade
 
         private void Settle(TradeSession session)
         {
-            if (!HasAnyOffer(session))
+            lock (syncRoot)
             {
-                Finish(session, P2PTradeResult.NothingToTrade, true);
-                return;
-            }
+                if (!sessions.Contains(session))
+                    return;
 
-            P2PTradeResult? initiatorFailure = ValidateOffer(session.Initiator, session.InitiatorOffer);
-            if (initiatorFailure.HasValue)
-            {
-                Finish(session, initiatorFailure.Value, true);
-                return;
-            }
+                if (!HasAnyOffer(session))
+                {
+                    Finish(session, P2PTradeResult.NothingToTrade, true);
+                    return;
+                }
 
-            P2PTradeResult? targetFailure = ValidateOffer(session.Target, session.TargetOffer);
-            if (targetFailure.HasValue)
-            {
-                Finish(session, targetFailure.Value, true);
-                return;
-            }
+                P2PTradeResult? initiatorFailure = ValidateOffer(session.Initiator, session.InitiatorOffer);
+                if (initiatorFailure.HasValue)
+                {
+                    Finish(session, initiatorFailure.Value, true);
+                    return;
+                }
 
-            P2PTradeResult? settlementFailure = ValidateSettlement(session);
-            if (settlementFailure.HasValue)
-            {
-                Finish(session, settlementFailure.Value, true);
-                return;
+                P2PTradeResult? targetFailure = ValidateOffer(session.Target, session.TargetOffer);
+                if (targetFailure.HasValue)
+                {
+                    Finish(session, targetFailure.Value, true);
+                    return;
+                }
+
+                P2PTradeResult? settlementFailure = ValidateSettlement(session);
+                if (settlementFailure.HasValue)
+                {
+                    Finish(session, settlementFailure.Value, true);
+                    return;
+                }
+
+                RemoveSession(session);
             }
 
             TransferOffers(session);
 
-            Finish(session, P2PTradeResult.FinishedSuccess, false);
+            SendToParticipants(session, new ServerP2PTradeResult
+            {
+                Result    = P2PTradeResult.FinishedSuccess,
+                Cancelled = false
+            });
         }
 
         private static bool HasAnyOffer(TradeSession session)

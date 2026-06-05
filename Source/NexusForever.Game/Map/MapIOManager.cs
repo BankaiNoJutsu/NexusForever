@@ -14,6 +14,7 @@ namespace NexusForever.Game.Map
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
 
         private readonly Dictionary<string, MapFile> mapFiles = new();
+        private readonly object mapFileLock = new();
 
         public void Initialise()
         {
@@ -64,7 +65,13 @@ namespace NexusForever.Game.Map
             if (mapFiles.TryGetValue(assetPath, out MapFile mapFile))
                 return mapFile;
 
-            return LoadBaseMap(assetPath);
+            lock (mapFileLock)
+            {
+                if (mapFiles.TryGetValue(assetPath, out mapFile))
+                    return mapFile;
+
+                return LoadBaseMap(assetPath);
+            }
         }
 
         private MapFile LoadBaseMap(string assetPath)

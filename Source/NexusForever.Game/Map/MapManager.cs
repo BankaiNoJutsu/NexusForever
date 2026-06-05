@@ -95,19 +95,8 @@ namespace NexusForever.Game.Map
 
             try
             {
-                if (SharedConfiguration.Instance.Get<MapConfig>().SynchronousUpdate)
-                {
-                    foreach (IMap map in maps.Values)
-                        map.Update(lastTick);
-                }
-                else
-                {
-                    var tasks = new List<Task>();
-                    foreach (IMap map in maps.Values)
-                        tasks.Add(Task.Run(() => { map.Update(lastTick); }));
-
-                    Task.WaitAll(tasks.ToArray());
-                }
+                foreach (IMap map in maps.Values)
+                    map.Update(lastTick);
             }
             catch (Exception exception)
             {

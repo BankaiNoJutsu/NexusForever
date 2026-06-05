@@ -8,7 +8,7 @@ namespace NexusForever.WorldServer
         {
             return builder.UseStartup<WorldServerStartup>()
                 .UseUrls("http://localhost:5000")
-                .PreferHostingUrls(false); // Can override in XXX.json
+                .PreferHostingUrls(false); // Can override in appsettings.json
         }
     }
 }

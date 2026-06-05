@@ -1,4 +1,5 @@
-﻿using NexusForever.Game.Abstract.Entity;
+﻿using Microsoft.Extensions.Logging;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Housing;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -12,11 +13,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
     {
         #region Dependency Injection
 
+        private readonly ILogger<ClientItemUseDecorHandler> log;
         private readonly IGameTableManager gameTableManager;
 
         public ClientItemUseDecorHandler(
+            ILogger<ClientItemUseDecorHandler> log,
             IGameTableManager gameTableManager)
         {
+            this.log              = log;
             this.gameTableManager = gameTableManager;
         }
 
@@ -40,8 +44,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 if (session.Player.ResidenceManager.GetOrCreateResidence() == null)
                     return;
             }
-            catch (HousingException)
+            catch (HousingException exception)
             {
+                log.LogWarning(exception, "Player {PlayerGuid} cannot use decor item {ItemGuid}.", session.Player.Guid, itemUseDecor.ItemGuid);
                 return;
             }
 

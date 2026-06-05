@@ -9,11 +9,14 @@ using NexusForever.Game.Static.RBAC;
 using NexusForever.WorldServer.Command.Context;
 using NexusForever.WorldServer.Command.Convert;
 using NexusForever.WorldServer.Command.Static;
+using NLog;
 
 namespace NexusForever.WorldServer.Command
 {
     public class CommandHandler : ICommandHandler
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
         public class CommandParameter
         {
             public Type Type { get; }
@@ -196,7 +199,9 @@ namespace NexusForever.WorldServer.Command
             }
             catch (Exception exception)
             {
-                context.SendError(exception.ToString());
+                log.Error(exception, "Command handler {0} failed.", methodContainer.Method.Name);
+                context.SendError("Command failed. See server logs for details.");
+                return CommandResult.InvalidParameters;
             }
 
             return CommandResult.Ok;
