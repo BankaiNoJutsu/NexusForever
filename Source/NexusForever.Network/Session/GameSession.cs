@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using Microsoft.Extensions.DependencyInjection;
@@ -124,9 +125,9 @@ namespace NexusForever.Network.Session
             encryption = new PacketCrypt(key);
         }
 
-        protected override uint OnData(byte[] data)
+        protected override uint OnData(byte[] buffer, int offset, int count)
         {
-            using (var stream = new MemoryStream(data))
+            using (var stream = new MemoryStream(buffer, offset, count))
             using (var reader = new GamePacketReader(stream))
             {
                 while (stream.Remaining() != 0)
@@ -262,6 +263,7 @@ namespace NexusForever.Network.Session
             catch (Exception exception)
             {
                 log.Error(exception);
+                ForceDisconnect();
             }
         }
 
@@ -323,15 +325,25 @@ namespace NexusForever.Network.Session
         private bool FlushPacket(ServerGamePacket packet)
         {
             long start = NexusForeverDiagnostics.GetTimestamp();
-            using (var stream = new MemoryStream())
-            using (var writer = new GamePacketWriter(stream))
+            int wireLength = checked((int)packet.Size);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(wireLength);
+            try
             {
-                writer.Write(packet.Size);
-                writer.Write(packet.Opcode, 16);
-                writer.WriteBytes(packet.Data);
+                using (var stream = new MemoryStream(buffer, 0, wireLength, writable: true, publiclyVisible: true))
+                using (var writer = new GamePacketWriter(stream))
+                {
+                    writer.Write(packet.Size);
+                    writer.Write(packet.Opcode, 16);
+                    writer.WriteBytes(packet.Data);
+                    writer.FlushBits();
 
-                if (!SendRaw(stream.ToArray()))
-                    return false;
+                    if (!SendRaw(buffer, 0, (int)stream.Position))
+                        return false;
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
             }
 
             NexusForeverDiagnostics.RecordPacketFlush("world", packet.Opcode.ToString(), packet.Data.Length, NexusForeverDiagnostics.GetElapsedMilliseconds(start));

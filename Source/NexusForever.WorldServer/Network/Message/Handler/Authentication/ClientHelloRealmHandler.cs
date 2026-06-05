@@ -38,6 +38,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Authentication
                 session.Initialise(account);
                 session.SetEncryptionKey(helloRealm.SessionKey);
                 session.CanProcessIncomingPackets = true;
+            },
+            () =>
+            {
+                session.CanProcessIncomingPackets = true;
+                session.ForceDisconnect();
             }));
         }
     }

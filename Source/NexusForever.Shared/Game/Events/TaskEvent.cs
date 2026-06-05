@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
-
 using NexusForever.Shared.Diagnostics;
+using NLog;
 
 namespace NexusForever.Shared.Game.Events
 {
@@ -10,15 +10,19 @@ namespace NexusForever.Shared.Game.Events
     /// </summary>
     public class TaskEvent : IEvent
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
         private readonly Task task;
         private readonly Action callback;
+        private readonly Action failureCallback;
         private readonly long queuedTimestamp = NexusForeverDiagnostics.GetTimestamp();
         private long completionTimestamp;
 
-        public TaskEvent(Task task, Action callback)
+        public TaskEvent(Task task, Action callback, Action failureCallback = null)
         {
-            this.task     = task;
-            this.callback = callback;
+            this.task            = task;
+            this.callback        = callback;
+            this.failureCallback = failureCallback;
         }
 
         /// <summary>
@@ -42,6 +46,30 @@ namespace NexusForever.Shared.Game.Events
         {
             if (completionTimestamp != 0)
                 NexusForeverDiagnostics.RecordEventTaskWait(nameof(TaskEvent), NexusForeverDiagnostics.GetElapsedMilliseconds(queuedTimestamp));
+
+            if (task.IsFaulted)
+            {
+                log.Error(task.Exception, "TaskEvent callback skipped because the task faulted.");
+                if (failureCallback != null)
+                {
+                    failureCallback.Invoke();
+                    return;
+                }
+
+                throw task.Exception.GetBaseException();
+            }
+
+            if (task.IsCanceled)
+            {
+                log.Warn("TaskEvent callback skipped because the task was canceled.");
+                if (failureCallback != null)
+                {
+                    failureCallback.Invoke();
+                    return;
+                }
+
+                throw new TaskCanceledException(task);
+            }
 
             long callbackTimestamp = NexusForeverDiagnostics.GetTimestamp();
             callback.Invoke();

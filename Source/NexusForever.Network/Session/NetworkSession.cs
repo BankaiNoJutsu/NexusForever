@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Buffers;
+using System.Net;
 using System.Net.Sockets;
 using NexusForever.Network.Session.Static;
 using NexusForever.Shared.Game.Events;
@@ -43,6 +44,8 @@ namespace NexusForever.Network.Session
                 throw new InvalidOperationException();
 
             Id = Guid.NewGuid().ToString();
+
+            Events.UnhandledExceptionHandler ??= _ => ForceDisconnect();
 
             socket = newSocket;
             socket.NoDelay = true;
@@ -139,14 +142,22 @@ namespace NexusForever.Network.Session
 
                 Heartbeat.OnHeartbeat();
 
-                byte[] data = new byte[length + bufferOffset];
-                Buffer.BlockCopy(buffer, 0, data, 0, data.Length);
-                bufferOffset = (int)OnData(data);
+                int dataLength = length + bufferOffset;
+                byte[] data = ArrayPool<byte>.Shared.Rent(dataLength);
+                try
+                {
+                    Buffer.BlockCopy(buffer, 0, data, 0, dataLength);
+                    bufferOffset = (int)OnData(data, 0, dataLength);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(data);
+                }
 
                 // if we have data that wasn't processed move it to the start of the buffer
                 // any new data will be amended to it
                 if (bufferOffset != 0)
-                    Buffer.BlockCopy(buffer, data.Length - bufferOffset, buffer, 0, bufferOffset);
+                    Buffer.BlockCopy(buffer, dataLength - bufferOffset, buffer, 0, bufferOffset);
 
                 socket.BeginReceive(buffer, bufferOffset, buffer.Length - bufferOffset, SocketFlags.None, ReceiveDataCallback, null);
             }
@@ -168,23 +179,31 @@ namespace NexusForever.Network.Session
             }
         }
 
-        protected abstract uint OnData(byte[] data);
+        protected abstract uint OnData(byte[] buffer, int offset, int count);
 
         /// <summary>
         /// Send supplied data to remote client on <see cref="Socket"/>.
         /// </summary>
         protected bool SendRaw(byte[] data)
         {
+            return SendRaw(data, 0, data.Length);
+        }
+
+        /// <summary>
+        /// Send a segment of supplied data to remote client on <see cref="Socket"/>.
+        /// </summary>
+        protected bool SendRaw(byte[] data, int offset, int count)
+        {
             try
             {
-                int offset = 0;
-                while (offset < data.Length)
+                while (count > 0)
                 {
-                    int sent = socket.Send(data, offset, data.Length - offset, SocketFlags.None);
+                    int sent = socket.Send(data, offset, count, SocketFlags.None);
                     if (sent <= 0)
                         throw new SocketException((int)SocketError.ConnectionReset);
 
                     offset += sent;
+                    count  -= sent;
                 }
 
                 return true;

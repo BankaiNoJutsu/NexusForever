@@ -687,43 +687,51 @@ namespace NexusForever.Game.Entity
         private void StartSave(Action callback = null)
         {
             saveInProgress = true;
-
-            var authSaveTask = DatabaseManager.Instance.GetDatabase<AuthDatabase>().Save(Save);
-            Session.Events.EnqueueEvent(new TaskEvent(authSaveTask,
-            () =>
-            {
-                if (authSaveTask.IsFaulted)
-                    log.Error(authSaveTask.Exception, $"Failed to save auth data for character {CharacterId}.");
-
-                var characterSaveTask = DatabaseManager.Instance.GetDatabase<CharacterDatabase>().Save(Save);
-                Session.Events.EnqueueEvent(new TaskEvent(characterSaveTask,
-                () =>
-                {
-                    if (characterSaveTask.IsFaulted)
-                        log.Error(characterSaveTask.Exception, $"Failed to save character data for character {CharacterId}.");
-
-                    Session.CanProcessIncomingPackets = true;
-                    saveTimer.Resume();
-                    saveInProgress = false;
-
-                    if (saveRequestedDuringSave)
-                    {
-                        saveRequestedDuringSave = false;
-                        Action chainedCallback = callback;
-                        chainedCallback += deferredSaveCallback;
-                        deferredSaveCallback = null;
-                        StartSave(chainedCallback);
-                        return;
-                    }
-
-                    callback?.Invoke();
-                }));
-            }));
-
             saveTimer.Reset(false);
 
             // prevent packets from being processed until asynchronous player save task is complete
             Session.CanProcessIncomingPackets = false;
+
+            Task authSaveTask = DatabaseManager.Instance.GetDatabase<AuthDatabase>().Save(Save);
+            Session.Events.EnqueueEvent(new TaskEvent(authSaveTask,
+                () =>
+                {
+                    Task characterSaveTask = DatabaseManager.Instance.GetDatabase<CharacterDatabase>().Save(Save);
+                    Session.Events.EnqueueEvent(new TaskEvent(characterSaveTask,
+                        () => CompleteSave(callback),
+                        () => HandleSaveFailure("character")));
+                },
+                () => HandleSaveFailure("auth")));
+        }
+
+        private void CompleteSave(Action callback)
+        {
+            Session.CanProcessIncomingPackets = true;
+            saveInProgress                    = false;
+            saveTimer.Resume();
+
+            if (saveRequestedDuringSave)
+            {
+                saveRequestedDuringSave = false;
+                Action chainedCallback = callback;
+                chainedCallback += deferredSaveCallback;
+                deferredSaveCallback = null;
+                StartSave(chainedCallback);
+                return;
+            }
+
+            callback?.Invoke();
+        }
+
+        private void HandleSaveFailure(string phase)
+        {
+            log.Error("Failed to save {0} data for character {1}. Disconnecting session.", phase, CharacterId);
+            saveInProgress                    = false;
+            saveRequestedDuringSave           = false;
+            deferredSaveCallback              = null;
+            Session.CanProcessIncomingPackets = true;
+            saveTimer.Resume();
+            Session.ForceDisconnect();
         }
 
         /// <summary>

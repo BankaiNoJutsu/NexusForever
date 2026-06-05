@@ -23,6 +23,11 @@ namespace NexusForever.Shared.Game.Events
         private readonly Queue<PendingEvent> events = new();
 
         /// <summary>
+        /// Optional handler invoked when an enqueued event throws during execution.
+        /// </summary>
+        public Action<Exception> UnhandledExceptionHandler { get; set; }
+
+        /// <summary>
         /// Enqueue <see cref="IEvent"/> to be executed.
         /// </summary>
         public void EnqueueEvent(IEvent @event, ConditionalEventType type = ConditionalEventType.Standard)
@@ -68,6 +73,7 @@ namespace NexusForever.Shared.Game.Events
                 catch (Exception exception)
                 {
                     log.Error(exception);
+                    UnhandledExceptionHandler?.Invoke(exception);
                 }
             }
 

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
 using NexusForever.Shared;
@@ -104,7 +105,9 @@ namespace NexusForever.Network.Session
 
             cancellationToken.Cancel();
 
-            listenerTask.Wait();
+            if (!listenerTask.Wait(TimeSpan.FromSeconds(5)))
+                log.LogWarning("Listener task did not complete within 5 seconds during shutdown.");
+
             listenerTask = null;
 
             cancellationToken = null;

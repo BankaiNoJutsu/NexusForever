@@ -284,6 +284,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                         WorldId     = character.WorldId,
                         Result      = CharacterModifyResult.CreateOk
                     });
+                },
+                () =>
+                {
+                    session.EnqueueMessageEncrypted(new ServerCharacterCreate
+                    {
+                        Result = CharacterModifyResult.CreateFailed_Internal
+                    });
                 }));
             }
             catch

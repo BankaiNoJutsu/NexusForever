@@ -106,7 +106,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
                 {
                     Result = deleteCheck.result
                 });
-                }));
+            },
+            () =>
+            {
+                session.CanProcessIncomingPackets = true;
+
+                session.EnqueueMessageEncrypted(new ServerCharacterDeleteResult
+                {
+                    Result = CharacterModifyResult.DeleteFailed
+                });
+            }));
         }
 
         private static bool HasMailWithAttachments(CharacterModel character)

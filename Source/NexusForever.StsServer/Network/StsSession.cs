@@ -80,8 +80,12 @@ namespace NexusForever.StsServer.Network
             }
         }
 
-        protected override uint OnData(byte[] data)
+        protected override uint OnData(byte[] buffer, int offset, int count)
         {
+            byte[] data = offset == 0 && count == buffer.Length
+                ? buffer
+                : buffer.AsSpan(offset, count).ToArray();
+
             clientEncryption?.Decrypt(data);
 
             using (var stream = new MemoryStream(data))
