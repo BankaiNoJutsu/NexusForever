@@ -321,10 +321,14 @@ Emulator databases:
 - `nexus_forever_chat`
 - `nexus_forever_friendship`
 
-Reference dump databases:
+Reference dump databases, only when `-EnableDataMappingAuthoring` is passed:
 
 - `jabbithole` from `jabbithole_mysql\*.sql`
 - `wildstar_client` from `wildstar_client_mysql\*.sql`
+
+Normal setup is runtime-only and skips these reference databases. Existing
+authoring artifacts can be previewed or removed with
+`Tools\Setup\Remove-DataMappingAuthoringArtifacts.ps1`.
 
 Runtime auth data:
 
@@ -418,17 +422,18 @@ lingering after extractor changes:
 - Skyplot housing: `2000000000..2099999999`
 - live event: `2100000000..2147483647`
 
-If either split folder is missing or empty, the script falls back to the older
-single-file dump for that database:
+When `-EnableDataMappingAuthoring` is passed and either split folder is missing
+or empty, the script falls back to the older single-file dump for that database:
 
 - `all_jabbithole_mysql.sql`
 - `all_wildstar_client_mysql.sql`
 
-The reference databases get a `__nexusforever_imports` marker table, so later
-runs skip already imported files unless their hash changed. With the split
-folders, markers are tracked per SQL file, so a rerun can continue after the
-last completed file instead of starting the whole dump again. Use
-`-RecreateLargeDumpDatabases` only when you intentionally want to drop and
+The reference databases get a `__nexusforever_imports` marker table during
+authoring setup, so later authoring runs skip already imported files unless
+their hash changed. With the split folders, markers are tracked per SQL file,
+so a rerun can continue after the last completed file instead of starting the
+whole dump again. Use `-RecreateLargeDumpDatabases` with
+`-EnableDataMappingAuthoring` only when you intentionally want to drop and
 re-import both reference databases.
 
 `jabbithole_mysql\.sql` is skipped by default. It is a nameless aggregate-style
@@ -450,10 +455,25 @@ correct target database even if the client reconnects during a long import.
 
 ## Useful Variants
 
-Create databases, copy configs, build, and migrate without optional data imports:
+Create databases, copy configs, build, and migrate without the official world
+database import:
 
 ```powershell
-.\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -SkipLargeDumpImports -SkipWorldDatabaseImport
+.\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -SkipWorldDatabaseImport
+```
+
+Import the development reference databases for DataMapping authoring:
+
+```powershell
+.\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -EnableDataMappingAuthoring
+```
+
+Preview and then remove old DataMapping authoring artifacts from an existing
+local server:
+
+```powershell
+.\Tools\Setup\Remove-DataMappingAuthoringArtifacts.ps1 -PromptForRootPassword
+.\Tools\Setup\Remove-DataMappingAuthoringArtifacts.ps1 -PromptForRootPassword -Apply
 ```
 
 Skip the promoted runtime seed overlays while still importing the official world
@@ -463,17 +483,17 @@ database:
 .\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -SkipRuntimeWorldSeedImport
 ```
 
-Recover from a failed partial reference SQL import without dropping completed
-reference databases:
+Recover from a failed partial authoring reference SQL import without dropping
+completed reference databases:
 
 ```powershell
-.\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -InstallDotNetEf -RepairPartialLargeDumpDatabases
+.\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -InstallDotNetEf -EnableDataMappingAuthoring -RepairPartialLargeDumpDatabases
 ```
 
 Force both reference databases to be dropped and rebuilt:
 
 ```powershell
-.\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -RecreateLargeDumpDatabases
+.\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -EnableDataMappingAuthoring -RecreateLargeDumpDatabases
 ```
 
 Use custom split SQL folder locations:
@@ -481,6 +501,7 @@ Use custom split SQL folder locations:
 ```powershell
 .\Tools\Setup\Initialize-NexusForever.ps1 `
   -PromptForRootPassword `
+  -EnableDataMappingAuthoring `
   -JabbitholeSqlDirectory "I:\Exports\jabbithole_mysql" `
   -WildstarClientSqlDirectory "I:\Exports\wildstar_client_mysql"
 ```
@@ -545,31 +566,36 @@ Start the standalone servers after setup:
 
 `ERROR 1264 ... Out of range value for column 'cost'`:
 
-- Re-run after this update with `-RepairPartialLargeDumpDatabases`.
+- Re-run authoring setup with
+  `-EnableDataMappingAuthoring -RepairPartialLargeDumpDatabases`.
 - The importer now normalizes reference SQL `INTEGER` columns to `BIGINT`.
 - Do not pass `-KeepLargeDumpIntegerColumns` unless you want the old behavior.
 
 `ERROR 1118 ... Row size too large`:
 
-- Re-run after this update with `-RepairPartialLargeDumpDatabases`.
+- Re-run authoring setup with
+  `-EnableDataMappingAuthoring -RepairPartialLargeDumpDatabases`.
 - The importer now converts over-wide `VARCHAR(...)` declarations to `TEXT`
   inside affected `CREATE TABLE` blocks.
 
 `ERROR 1064 ... near 'maxValue ...'`:
 
-- Re-run after this update with `-RepairPartialLargeDumpDatabases`.
+- Re-run authoring setup with
+  `-EnableDataMappingAuthoring -RepairPartialLargeDumpDatabases`.
 - The importer now quotes generated column identifiers in `CREATE TABLE`
   blocks.
 
 `ERROR 1049 ... Unknown database 'wildstar_client'` during the client dump:
 
-- Re-run after this update with `-RepairPartialLargeDumpDatabases`.
+- Re-run authoring setup with
+  `-EnableDataMappingAuthoring -RepairPartialLargeDumpDatabases`.
 - The importer now selects the target database inside each stream and on client
   reconnects, instead of relying only on the startup `--database` argument.
 
 Reference databases are being dropped every run:
 
-- That only happens when `-RecreateLargeDumpDatabases` is passed.
+- That only happens during authoring setup when
+  `-RecreateLargeDumpDatabases` is passed.
 - Omit that switch for normal runs; matching imports are skipped by hash marker.
 - Use `-RepairPartialLargeDumpDatabases` after a failed import to rebuild only
   incomplete reference databases.
@@ -579,15 +605,16 @@ Reference databases are being dropped every run:
 
 `ERROR 1050 ... Table '...' already exists` during a split-folder import:
 
-- Re-run with `-RepairPartialLargeDumpDatabases`.
+- Re-run authoring setup with
+  `-EnableDataMappingAuthoring -RepairPartialLargeDumpDatabases`.
 - The script will detect the table created by the unmarked file, drop only that
   table, and import the file again.
 
 An older monolithic import already exists:
 
-- Normal runs leave a completed older single-file import intact.
+- Normal authoring runs leave a completed older single-file import intact.
 - To switch that database to split-file markers, run once with
-  `-RecreateLargeDumpDatabases`.
+  `-EnableDataMappingAuthoring -RecreateLargeDumpDatabases`.
 - After that, omit `-RecreateLargeDumpDatabases`; the per-file markers will
   skip completed split imports.
 

@@ -9,7 +9,7 @@ server guide:
 
 * create the MySQL/MariaDB user used by the server configs
 * create the auth, character, world, group, chat, and friendship databases
-* create/import the split SQL dump folders into standalone reference DBs
+* optionally create/import the split SQL dump folders into standalone reference DBs
 * copy default server configuration files
 * build the solution and run EF Core migrations
 * create or verify the local player, gm, and admin login accounts
@@ -22,12 +22,17 @@ By default, the world database import searches for a sibling checkout named
 NexusForever.WorldDatabase next to this NexusForever repo, then falls back to
 the guide's C:\nexusforever-database path. Pass -WorldDatabasePath to override.
 
+By default, setup is runtime-only and skips the Jabbithole/WildStar reference
+dump imports. Pass -EnableDataMappingAuthoring when you need the local
+reference databases for mapper regeneration or review work.
+
 If mysql is not on PATH, the script searches common MariaDB and MySQL install
 locations under Program Files before asking you to pass -MySqlExe explicitly.
 
-The reference SQL imports are hash-marked in each target database so repeated
-runs skip already imported files. If you need a clean re-import, pass
--RecreateLargeDumpDatabases.
+When -EnableDataMappingAuthoring is passed, the reference SQL imports are
+hash-marked in each target database so repeated authoring runs skip already
+imported files. If you need a clean authoring re-import, pass
+-RecreateLargeDumpDatabases with -EnableDataMappingAuthoring.
 
 Official world SQL files are imported only when their target tables and columns
 exist in the migrated world schema. This keeps branch-specific world data from
@@ -48,10 +53,10 @@ The setup also imports Tools\Setup\sql\runtime_auth_seed.sql into
 nexus_forever_auth after account creation. That seed is intentionally separate
 from DataMapping world seeds and contains only local auth cleanup/state rows.
 
-The split folders jabbithole_mysql and wildstar_client_mysql are preferred over
-the older all_jabbithole_mysql.sql and all_wildstar_client_mysql.sql files. The
-single-file dumps are used only as fallbacks when a split folder is missing or
-empty.
+For authoring imports, the split folders jabbithole_mysql and
+wildstar_client_mysql are preferred over the older all_jabbithole_mysql.sql and
+all_wildstar_client_mysql.sql files. The single-file dumps are used only as
+fallbacks when a split folder is missing or empty.
 
 The reference SQL files are exported with SQLite-style INTEGER columns. MySQL maps
 INTEGER to a 32-bit signed type, but the WildStar client dump contains larger
@@ -69,16 +74,23 @@ password, and installs dotnet-ef if needed. Already imported reference SQL
 files are skipped when their hash marker matches.
 
 .EXAMPLE
-.\Tools\Setup\Initialize-NexusForever.ps1 -SkipLargeDumpImports -SkipWorldDatabaseImport
+.\Tools\Setup\Initialize-NexusForever.ps1 -SkipWorldDatabaseImport
 
 Creates the emulator databases, copies configs, builds, and runs migrations
 without importing optional SQL data.
 
 .EXAMPLE
-.\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -RepairPartialLargeDumpDatabases
+.\Tools\Setup\Initialize-NexusForever.ps1 -EnableDataMappingAuthoring -PromptForRootPassword
 
-Skips completed reference SQL imports, but recreates any reference database that
-has tables without a matching import marker from a previous failed import.
+Runs setup with the development reference database imports needed for
+DataMapping authoring. Normal runtime setup does not create those databases.
+
+.EXAMPLE
+.\Tools\Setup\Initialize-NexusForever.ps1 -EnableDataMappingAuthoring -PromptForRootPassword -RepairPartialLargeDumpDatabases
+
+Skips completed authoring reference SQL imports, but recreates any reference
+database that has tables without a matching import marker from a previous
+failed import.
 
 .EXAMPLE
 .\Tools\Setup\Initialize-NexusForever.ps1 -MySqlExe "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -PromptForRootPassword
@@ -134,6 +146,7 @@ param(
     [string] $WildstarClientSqlDirectory = 'wildstar_client_mysql',
     [string] $WildstarClientSql = 'all_wildstar_client_mysql.sql',
     [string] $WildstarClientDatabase = 'wildstar_client',
+    [switch] $EnableDataMappingAuthoring,
     [switch] $SkipLargeDumpImports,
     [switch] $ForceImport,
     [switch] $RecreateLargeDumpDatabases,
@@ -2048,7 +2061,7 @@ foreach ($database in $GameDatabases.Values) {
     Ensure-Database -Database $database
 }
 
-if (!$SkipLargeDumpImports) {
+if ($EnableDataMappingAuthoring -and !$SkipLargeDumpImports) {
     Write-Section 'Reference SQL imports'
     Import-SqlFilesWithMarkers `
         -SqlDirectory $JabbitholeSqlDirectory `
@@ -2061,6 +2074,12 @@ if (!$SkipLargeDumpImports) {
         -FallbackSqlPath $WildstarClientSql `
         -Database $WildstarClientDatabase `
         -Label 'WildStar client'
+}
+elseif ($SkipLargeDumpImports) {
+    Write-Info 'Skipping reference SQL imports because -SkipLargeDumpImports was set.'
+}
+else {
+    Write-Info 'Skipping reference SQL imports. Pass -EnableDataMappingAuthoring to import jabbithole and wildstar_client.'
 }
 
 Write-Section 'RabbitMQ user'

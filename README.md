@@ -50,6 +50,10 @@ Local setup and launch scripts live under `Tools\Setup`:
 .\Tools\Setup\Start-NexusForeverLocal.ps1 -ClientDirectory "D:\Games\WildStar" -PromptForRootPassword
 ```
 
+Setup is runtime-only by default. Pass `-EnableDataMappingAuthoring` only when
+you need the local `jabbithole` and `wildstar_client` reference databases for
+DataMapping regeneration or review work.
+
 Useful workflow docs:
 
 * [Local setup automation](Tools/Setup/README.md)

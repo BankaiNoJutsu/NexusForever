@@ -111,6 +111,7 @@ param(
     [switch] $CreateWorldDatabaseCompatibilityTables,
     [string] $RuntimeWorldSeedPath = '',
     [switch] $SkipRuntimeWorldSeedImport,
+    [switch] $EnableDataMappingAuthoring,
 
     [Alias('DefaultAccountUsername')]
     [string] $PlayerAccountUsername = 'player',
@@ -832,6 +833,10 @@ function Invoke-NexusForeverSetup {
 
     if ($SkipRuntimeWorldSeedImport) {
         $setupParameters.SkipRuntimeWorldSeedImport = $true
+    }
+
+    if ($EnableDataMappingAuthoring) {
+        $setupParameters.EnableDataMappingAuthoring = $true
     }
 
     if ($InstallDotNetEf) {

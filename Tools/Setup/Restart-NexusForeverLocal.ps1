@@ -85,6 +85,7 @@ param(
     [switch] $CreateWorldDatabaseCompatibilityTables,
     [string] $RuntimeWorldSeedPath = '',
     [switch] $SkipRuntimeWorldSeedImport,
+    [switch] $EnableDataMappingAuthoring,
 
     [Alias('DefaultAccountUsername')]
     [string] $PlayerAccountUsername = 'player',
@@ -238,6 +239,7 @@ $launcherParameters = @{
     RabbitMqCtl                         = $RabbitMqCtl
     WorldDatabasePath                   = $WorldDatabasePath
     RuntimeWorldSeedPath                = $RuntimeWorldSeedPath
+    EnableDataMappingAuthoring          = $EnableDataMappingAuthoring
     PlayerAccountUsername               = $PlayerAccountUsername
     PlayerAccountPassword               = $PlayerAccountPassword
     GameMasterAccountUsername           = $GameMasterAccountUsername
