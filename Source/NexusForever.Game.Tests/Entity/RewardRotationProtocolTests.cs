@@ -8,7 +8,7 @@ namespace NexusForever.Game.Tests.Entity;
 public class RewardRotationProtocolTests
 {
     [Fact]
-    public void ServerRewardRotationScheduleArray_WriteUsesContentIdBeforeRewardKeyId()
+    public void ServerRewardRotationScheduleArray_WriteMatchesNativeApplyFieldOrder()
     {
         var packet = new ServerRewardRotationScheduleArray
         {
@@ -16,8 +16,8 @@ public class RewardRotationProtocolTests
             {
                 new ServerRewardRotationScheduleArray.ScheduleRow
                 {
-                    ContentId = 0x89ABCDEFu,
-                    RewardKeyId = 0x1234u,
+                    RewardKeyId = 0x89ABCDEFu,
+                    ContentId = 0x1234u,
                     Duration = 1.5f,
                     RewardType = 3,
                     Value = 0x10203040u
@@ -40,7 +40,7 @@ public class RewardRotationProtocolTests
     [Theory]
     [InlineData(0x4000u)]
     [InlineData(0x5000u)]
-    public void ServerRewardRotationScheduleArray_WriteRejectsRewardKeyIdsOutside14BitRange(uint rewardKeyId)
+    public void ServerRewardRotationScheduleArray_WriteRejectsContentIdsOutside14BitRange(uint contentId)
     {
         var packet = new ServerRewardRotationScheduleArray
         {
@@ -48,8 +48,8 @@ public class RewardRotationProtocolTests
             {
                 new ServerRewardRotationScheduleArray.ScheduleRow
                 {
-                    ContentId = 1u,
-                    RewardKeyId = rewardKeyId,
+                    ContentId = contentId,
+                    RewardKeyId = 1u,
                     Duration = 1f,
                     RewardType = 1,
                     Value = 2u

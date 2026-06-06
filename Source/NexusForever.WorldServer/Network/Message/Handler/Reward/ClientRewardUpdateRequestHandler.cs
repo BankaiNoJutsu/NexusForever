@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Account.Reward;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Account.Reward;
 using NexusForever.Network.Message;
@@ -44,7 +45,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
             session.Account.RewardPropertyManager.SendInitialPackets();
 
             IRewardRotationRefreshProvider provider = refreshProvider
-                ?? new AccountRewardRotationRefreshProvider(session.Account);
+                ?? new AccountRewardRotationRefreshProvider(
+                    session.Account,
+                    playerLevel: ResolveRewardRotationPlayerLevel(session.Player),
+                    worldDifficultyFlags: RewardRotationScheduleBuilder.KnownWorldDifficultyFlags);
             RewardRotationRefresh refresh = RewardRotationRefreshBuilder.Build(rewardUpdateRequest.RewardRotationIndex, provider);
             if (refresh == null)
             {
@@ -155,6 +159,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
         private static string DescribeEmptyArrayReason(RewardRotationRefresh refresh)
         {
             return "reward rotation index 0 is a storefront-visible placeholder";
+        }
+
+        private static uint ResolveRewardRotationPlayerLevel(IPlayer player)
+        {
+            return System.Math.Max(
+                player?.Level ?? RewardRotationScheduleBuilder.DefaultPlayerLevel,
+                RewardRotationScheduleBuilder.DefaultPlayerLevel);
         }
 
         private static bool TryProcessClaimRequest(

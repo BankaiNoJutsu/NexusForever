@@ -13,10 +13,17 @@ namespace NexusForever.Game.Account.Reward
         public static GameTableRewardRotationRefreshProvider Instance { get; } = new();
 
         private readonly IGameTableManager gameTables;
+        private readonly uint playerLevel;
+        private readonly uint worldDifficultyFlags;
 
-        public GameTableRewardRotationRefreshProvider(IGameTableManager gameTables = null)
+        public GameTableRewardRotationRefreshProvider(
+            IGameTableManager gameTables = null,
+            uint playerLevel = RewardRotationScheduleBuilder.DefaultPlayerLevel,
+            uint worldDifficultyFlags = RewardRotationScheduleBuilder.DefaultWorldDifficultyFlags)
         {
             this.gameTables = gameTables ?? GameTableManager.Instance;
+            this.playerLevel = playerLevel;
+            this.worldDifficultyFlags = worldDifficultyFlags;
         }
 
         public RewardRotationRefresh Build(uint rewardRotationIndex)
@@ -29,7 +36,13 @@ namespace NexusForever.Game.Account.Reward
             RewardRotationContentContextSources sources = RewardRotationContentContextSources.From(gameTables);
             List<ServerRewardRotationContentContext> contentContexts = RewardRotationContentContextBuilder.BuildContexts(sources, rewardRotationIndex);
             List<uint> contentIds = contentContexts.SelectMany(context => context.ContentIds).Distinct().OrderBy(id => id).ToList();
-            ServerRewardRotationScheduleArray schedule = RewardRotationScheduleBuilder.Build(sources, rewardRotationIndex, contentIds, gameTables);
+            ServerRewardRotationScheduleArray schedule = RewardRotationScheduleBuilder.Build(
+                sources,
+                rewardRotationIndex,
+                contentIds,
+                gameTables,
+                playerLevel,
+                worldDifficultyFlags);
             int contentIdCount = contentIds.Count;
             entryState ??= new ServerRewardRotationEntryStateArray();
             int entryStateCount = entryState.Entries.Count;

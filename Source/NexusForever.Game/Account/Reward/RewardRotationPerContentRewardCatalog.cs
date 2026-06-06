@@ -12,8 +12,8 @@ namespace NexusForever.Game.Account.Reward
         public static RewardRotationItemEntry SelectItem(
             IReadOnlyList<RewardRotationItemEntry> items,
             uint contentId,
-            uint playerLevel = 1u,
-            uint worldDifficultyFlags = 0u)
+            uint playerLevel = RewardRotationScheduleBuilder.DefaultPlayerLevel,
+            uint worldDifficultyFlags = RewardRotationScheduleBuilder.DefaultWorldDifficultyFlags)
         {
             return SelectEntry(Filter(items, playerLevel, worldDifficultyFlags, entry => entry.MinPlayerLevel, entry => entry.WorldDifficultyFlags), contentId, entry => entry.Id);
         }
@@ -21,8 +21,8 @@ namespace NexusForever.Game.Account.Reward
         public static RewardRotationEssenceEntry SelectEssence(
             IReadOnlyList<RewardRotationEssenceEntry> essences,
             uint contentId,
-            uint playerLevel = 1u,
-            uint worldDifficultyFlags = 0u)
+            uint playerLevel = RewardRotationScheduleBuilder.DefaultPlayerLevel,
+            uint worldDifficultyFlags = RewardRotationScheduleBuilder.DefaultWorldDifficultyFlags)
         {
             return SelectEntry(Filter(essences, playerLevel, worldDifficultyFlags, entry => entry.MinPlayerLevel, entry => entry.WorldDifficultyFlags), contentId, entry => entry.Id);
         }
@@ -30,8 +30,8 @@ namespace NexusForever.Game.Account.Reward
         public static RewardRotationModifierEntry SelectModifier(
             IReadOnlyList<RewardRotationModifierEntry> modifiers,
             uint contentId,
-            uint playerLevel = 1u,
-            uint worldDifficultyFlags = 0u)
+            uint playerLevel = RewardRotationScheduleBuilder.DefaultPlayerLevel,
+            uint worldDifficultyFlags = RewardRotationScheduleBuilder.DefaultWorldDifficultyFlags)
         {
             return SelectEntry(Filter(modifiers, playerLevel, worldDifficultyFlags, entry => entry.MinPlayerLevel, entry => entry.WorldDifficultyFlags), contentId, entry => entry.Id);
         }

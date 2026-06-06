@@ -79,11 +79,11 @@ namespace NexusForever.Game.Account.Reward
                     Fields =
                     [
                         "Count:uint32",
-                        "Entry[n].ContentId:uint32",
-                        "Entry[n].RewardKeyId:uint14",
+                        "Entry[n].RewardKeyId:uint32",
+                        "Entry[n].ContentId:uint14",
                         "Entry[n].Duration:float32",
                         "Entry[n].RewardType:uint8",
-                        "Entry[n].Value:uint32"
+                        "Entry[n].RewardKeyIdLookup:uint32"
                     ],
                     Constraints =
                     [

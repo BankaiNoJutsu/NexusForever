@@ -4,7 +4,7 @@ namespace NexusForever.Network.World.Message.Model
 {
     internal static class RewardRotationWireValidation
     {
-        private const uint MaxScheduleRewardKeyId = 0x3FFFu;
+        private const uint MaxScheduleContentId = 0x3FFFu;
         private const uint MaxEntryStateTypeId = 0x7u;
         private const uint MaxRewardRotationIndex = 0x6u;
         private const int MaxContentContextContentIds = 5;
@@ -15,8 +15,8 @@ namespace NexusForever.Network.World.Message.Model
             if (row == null)
                 throw new InvalidOperationException($"{packetName} row must not be null.");
 
-            if (row.RewardKeyId > MaxScheduleRewardKeyId)
-                throw new InvalidOperationException($"{packetName} reward key id {row.RewardKeyId} exceeds the 14-bit wire limit.");
+            if (row.ContentId > MaxScheduleContentId)
+                throw new InvalidOperationException($"{packetName} content id {row.ContentId} exceeds the 14-bit wire limit.");
 
             if (!float.IsFinite(row.Duration))
                 throw new InvalidOperationException($"{packetName} duration {row.Duration} must be finite.");
