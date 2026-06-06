@@ -5,6 +5,7 @@ using NexusForever.Database.EntityFramework;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Entity.Movement.Spline;
+using NexusForever.Game.Static.Loot;
 
 namespace NexusForever.Database.World
 {
@@ -25,6 +26,7 @@ namespace NexusForever.Database.World
         public DbSet<EntityVendorCategoryModel> EntityVendorCategory { get; set; }
         public DbSet<EntityVendorItemModel> EntityVendorItem { get; set; }
         public DbSet<ItemLootModel> ItemLoot { get; set; }
+        public DbSet<ItemSalvageModel> ItemSalvage { get; set; }
         public DbSet<LootGroupModel> LootGroup { get; set; }
         public DbSet<LootItemModel> LootItem { get; set; }
         public DbSet<MapEntranceModel> MapEntrance { get; set; }
@@ -631,6 +633,80 @@ namespace NexusForever.Database.World
                     .WithMany()
                     .HasForeignKey(d => d.LootGroupId)
                     .HasConstraintName("FK_item_loot_loot_group_lootGroupId");
+            });
+
+            modelBuilder.Entity<ItemSalvageModel>(entity =>
+            {
+                entity.ToTable("item_salvage");
+
+                entity.HasKey(e => new
+                    {
+                        e.Purpose,
+                        e.SourceItemId,
+                        e.SourceItem2TypeId,
+                        e.SourceLevel,
+                        e.Type,
+                        e.StaticId
+                    })
+                    .HasName("PRIMARY");
+
+                entity.HasIndex(e => new { e.Purpose, e.SourceItemId })
+                    .HasDatabaseName("ix_item_salvage_exact_item");
+
+                entity.HasIndex(e => new { e.Purpose, e.SourceItem2TypeId, e.SourceLevel })
+                    .HasDatabaseName("ix_item_salvage_type_level");
+
+                entity.HasIndex(e => new { e.Type, e.StaticId })
+                    .HasDatabaseName("ix_item_salvage_static");
+
+                entity.Property(e => e.Purpose)
+                    .HasUnsignedTinyEnumColumn("purpose", (byte)ItemSalvagePurpose.ExactItem);
+
+                entity.Property(e => e.SourceItemId)
+                    .HasColumnName("sourceItemId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.SourceItem2TypeId)
+                    .HasColumnName("sourceItem2TypeId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.SourceLevel)
+                    .HasColumnName("sourceLevel")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.Type)
+                    .HasColumnName("type")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.StaticId)
+                    .HasColumnName("staticId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.Probability)
+                    .HasColumnName("probability")
+                    .HasColumnType("float")
+                    .HasDefaultValue(100);
+
+                entity.Property(e => e.MinCount)
+                    .HasColumnName("minCount")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.MaxCount)
+                    .HasColumnName("maxCount")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.Comment)
+                    .IsRequired()
+                    .HasColumnName("comment")
+                    .HasColumnType("varchar(200)")
+                    .HasDefaultValue("");
             });
 
             modelBuilder.Entity<LootGroupModel>(entity =>

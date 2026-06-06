@@ -33,6 +33,7 @@ CUSTOM_TABLES = [
     "entity_loot",
     "item_loot",
     "loot_item",
+    "item_salvage",
     "creature_info_property",
     "creature_info_stat",
 ]
@@ -198,6 +199,9 @@ WHERE lg.comment LIKE 'DataMapping %';
 DELETE FROM loot_group
 WHERE comment LIKE 'DataMapping %';
 
+DELETE FROM item_salvage
+WHERE comment LIKE 'DataMapping %';
+
 DELETE FROM creature_loot;
 
 DELETE FROM entity_stats
@@ -263,6 +267,7 @@ def write_data(handle, args: argparse.Namespace) -> None:
         ("entity_loot", f"comment LIKE 'DataMapping %' OR ({primary_entity_filter})"),
         ("item_loot", "comment LIKE 'DataMapping %'"),
         ("loot_item", "id IN (SELECT id FROM loot_group WHERE comment LIKE 'DataMapping %')"),
+        ("item_salvage", "comment LIKE 'DataMapping %'"),
         ("creature_info_property", "`property` IN (7, 41)"),
         ("creature_info_stat", "`stat` IN (21)"),
     ]
@@ -293,6 +298,7 @@ UNION ALL SELECT 'loot_group_mapped', COUNT(*) FROM loot_group WHERE comment LIK
 UNION ALL SELECT 'entity_loot_mapped', COUNT(*) FROM entity_loot WHERE comment LIKE 'DataMapping %'
 UNION ALL SELECT 'item_loot_mapped', COUNT(*) FROM item_loot WHERE comment LIKE 'DataMapping %'
 UNION ALL SELECT 'loot_item_mapped', COUNT(*) FROM loot_item li JOIN loot_group lg ON lg.id = li.id WHERE lg.comment LIKE 'DataMapping %'
+UNION ALL SELECT 'item_salvage_mapped', COUNT(*) FROM item_salvage WHERE comment LIKE 'DataMapping %'
 UNION ALL SELECT 'creature_info_property', COUNT(*) FROM creature_info_property
 UNION ALL SELECT 'creature_info_stat', COUNT(*) FROM creature_info_stat;
 """.lstrip()

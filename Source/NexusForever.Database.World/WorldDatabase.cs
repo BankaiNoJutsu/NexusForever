@@ -163,6 +163,14 @@ namespace NexusForever.Database.World
                 .ToImmutableList();
         }
 
+        public ImmutableList<ItemSalvageModel> GetItemSalvage()
+        {
+            using var context = new WorldContext(config);
+            return context.ItemSalvage
+                .AsNoTracking()
+                .ToImmutableList();
+        }
+
         public ImmutableList<EntityLootModel> GetAllEntityLootTables()
         {
             using var context = new WorldContext(config);

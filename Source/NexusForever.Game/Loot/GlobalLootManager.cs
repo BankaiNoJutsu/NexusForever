@@ -16,6 +16,7 @@ using NexusForever.Game.Static.Group;
 using NexusForever.Game.Static.Loot;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Shared;
 using NexusForever.Shared.Game;
@@ -34,6 +35,7 @@ namespace NexusForever.Game.Loot
         private const int OMNIBIT_KILL_MIN_AMOUNT = 7;
         private const int OMNIBIT_KILL_MAX_BASE_AMOUNT = 25;
         private const uint CLIENT_LOOT_UNIT_ID_OVERLAY = 0x40000000u;
+        private const string ITEM_SALVAGE_LOOT_GROUP_COMMENT_PREFIX = "DataMapping item_salvage";
 
         private sealed class LootRecipientContext
         {
@@ -66,6 +68,8 @@ namespace NexusForever.Game.Loot
 
         private readonly Dictionary<uint, List<LootGroup>> creatureLoot = [];
         private readonly Dictionary<uint, List<LootGroup>> itemLoot = [];
+        private readonly Dictionary<uint, List<ItemSalvageModel>> itemSalvageByItem = [];
+        private readonly Dictionary<(uint Item2TypeId, uint Level), List<ItemSalvageModel>> itemSalvageByTypeLevel = [];
         private readonly Dictionary<uint, List<LootItem>> directCreatureLoot = [];
 
         /// <summary>
@@ -97,6 +101,8 @@ namespace NexusForever.Game.Loot
 
             creatureLoot.Clear();
             itemLoot.Clear();
+            itemSalvageByItem.Clear();
+            itemSalvageByTypeLevel.Clear();
             directCreatureLoot.Clear();
             lootInstances.Clear();
             lootInstancesByOwnerUnit.Clear();
@@ -109,6 +115,12 @@ namespace NexusForever.Game.Loot
 
             foreach (EntityLootModel entityLootModel in worldDatabase.GetAllEntityLootTables())
                 BuildLoot(entityLootModel.Id, LootEntityType.Creature, entityLootModel.LootGroup);
+
+            int skippedItemSalvageRows = 0;
+            int exactItemSalvageRows = 0;
+            int typeLevelItemSalvageRows = 0;
+            foreach (ItemSalvageModel itemSalvageModel in worldDatabase.GetItemSalvage())
+                BuildItemSalvage(itemSalvageModel, ref skippedItemSalvageRows, ref exactItemSalvageRows, ref typeLevelItemSalvageRows);
 
             int skippedDirectRows = 0;
             int skippedDirectRowsWithMappedFlatLootTables = 0;
@@ -142,6 +154,9 @@ namespace NexusForever.Game.Loot
                 log.Warn($"Skipped {skippedDirectRows} imported creature loot row(s) because their Item2 id is not present in the current game tables.");
             if (skippedDirectRowsWithMappedFlatLootTables > 0)
                 log.Info($"Skipped {skippedDirectRowsWithMappedFlatLootTables} imported creature loot row(s) because mapped flat creature loot_group rows are already present for those creatures.");
+            log.Info($"Loaded item salvage for {itemSalvageByItem.Count} exact item(s) ({exactItemSalvageRows} row(s)) and {itemSalvageByTypeLevel.Count} client type/level pair(s) ({typeLevelItemSalvageRows} row(s)).");
+            if (skippedItemSalvageRows > 0)
+                log.Warn($"Skipped {skippedItemSalvageRows} item_salvage row(s) because their source key or reward is invalid.");
         }
 
         private void BuildLoot(uint entityId, LootEntityType type, LootGroupModel lootGroupModel)
@@ -219,6 +234,71 @@ namespace NexusForever.Game.Loot
 
                 RemoveLootInstance(lootInstance);
             }
+        }
+
+        private void BuildItemSalvage(
+            ItemSalvageModel itemSalvageModel,
+            ref int skippedRows,
+            ref int exactRows,
+            ref int typeLevelRows)
+        {
+            if (!IsValidItemSalvageRow(itemSalvageModel))
+            {
+                skippedRows++;
+                return;
+            }
+
+            switch (itemSalvageModel.Purpose)
+            {
+                case ItemSalvagePurpose.ExactItem:
+                    AddItemSalvage(itemSalvageByItem, itemSalvageModel.SourceItemId, itemSalvageModel);
+                    exactRows++;
+                    break;
+                case ItemSalvagePurpose.ClientTypeLevel:
+                    AddItemSalvage(
+                        itemSalvageByTypeLevel,
+                        (itemSalvageModel.SourceItem2TypeId, itemSalvageModel.SourceLevel),
+                        itemSalvageModel);
+                    typeLevelRows++;
+                    break;
+            }
+        }
+
+        private static void AddItemSalvage<TKey>(
+            Dictionary<TKey, List<ItemSalvageModel>> itemSalvage,
+            TKey key,
+            ItemSalvageModel itemSalvageModel)
+            where TKey : notnull
+        {
+            if (!itemSalvage.TryGetValue(key, out List<ItemSalvageModel> items))
+            {
+                items = [];
+                itemSalvage.Add(key, items);
+            }
+
+            items.Add(itemSalvageModel);
+        }
+
+        private static bool IsValidItemSalvageRow(ItemSalvageModel itemSalvageModel)
+        {
+            if (itemSalvageModel == null)
+                return false;
+
+            if (itemSalvageModel.StaticId == 0u || itemSalvageModel.Probability <= 0f)
+                return false;
+
+            if (!CanDeliverLootItem(new GeneratedLootItem(
+                (LootItemType)itemSalvageModel.Type,
+                itemSalvageModel.StaticId,
+                Math.Max(1u, itemSalvageModel.MinCount))))
+                return false;
+
+            return itemSalvageModel.Purpose switch
+            {
+                ItemSalvagePurpose.ExactItem       => itemSalvageModel.SourceItemId != 0u,
+                ItemSalvagePurpose.ClientTypeLevel => itemSalvageModel.SourceItem2TypeId != 0u && itemSalvageModel.SourceLevel != 0u,
+                _                                  => false
+            };
         }
 
         private void RemoveExpiredLootInstance(LootInstance lootInstance, bool sendRemove)
@@ -348,7 +428,7 @@ namespace NexusForever.Game.Loot
 
         public bool HasLoot(IItem lootedItem)
         {
-            return lootedItem?.Info != null && itemLoot.ContainsKey(lootedItem.Info.Entry.Id);
+            return HasItemLoot(lootedItem, IsNonSalvageItemLootGroup);
         }
 
         public bool DropLoot(IPlayer looter, IItem lootedItem)
@@ -359,7 +439,7 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            if (!TryGenerateItemLoot(lootedItem, looter, out IReadOnlyList<GeneratedLootItem> items, out string reason))
+            if (!TryGenerateItemLoot(lootedItem, looter, IsNonSalvageItemLootGroup, "missing-item-loot", "empty-item-loot", out IReadOnlyList<GeneratedLootItem> items, out string reason))
             {
                 log.Trace($"Item loot drop skipped for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: generation failed with reason {reason}.");
                 return false;
@@ -391,7 +471,7 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            if (!TryGenerateItemLoot(lootedItem, looter, out IReadOnlyList<GeneratedLootItem> items, out reason))
+            if (!TryGenerateItemLoot(lootedItem, looter, IsNonSalvageItemLootGroup, "missing-item-loot", "empty-item-loot", out IReadOnlyList<GeneratedLootItem> items, out reason))
             {
                 log.Trace($"Loot bag use failed during generation for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: reason={reason}.");
                 return false;
@@ -441,6 +521,176 @@ namespace NexusForever.Game.Loot
 
             log.Trace($"Loot bag use succeeded for player {looter.CharacterId}, item {lootedItem.Info.Entry.Id}: generatedItems=[{FormatGeneratedLootItems(items)}].");
             return true;
+        }
+
+        public bool TrySalvageItem(IPlayer looter, IItem salvagedItem, out string reason)
+        {
+            reason = string.Empty;
+            if (looter == null)
+            {
+                reason = "no-looter";
+                return false;
+            }
+
+            if (salvagedItem?.Info == null)
+            {
+                reason = "missing-item";
+                return false;
+            }
+
+            if (!TryGenerateItemSalvageLoot(salvagedItem, out IReadOnlyList<GeneratedLootItem> items, out reason))
+            {
+                log.Trace($"Item salvage failed during generation for player {looter.CharacterId}, item {salvagedItem.Info.Entry.Id}: reason={reason}.");
+                return false;
+            }
+
+            if (!CanDeliverGeneratedLoot(looter, items, out reason))
+            {
+                log.Trace($"Item salvage failed during delivery validation for player {looter.CharacterId}, item {salvagedItem.Info.Entry.Id}: reason={reason}, generatedItems=[{FormatGeneratedLootItems(items)}].");
+                return false;
+            }
+
+            if (!CanDeliverGeneratedItemLoot(looter, items, out reason))
+            {
+                log.Trace($"Item salvage failed during delivery preflight for player {looter.CharacterId}, item {salvagedItem.Info.Entry.Id}: reason={reason}, generatedItems=[{FormatGeneratedLootItems(items)}].");
+                return false;
+            }
+
+            IItem deletedItem;
+            try
+            {
+                deletedItem = looter.Inventory.ItemDelete(new NetworkItemLocation
+                {
+                    Location = salvagedItem.Location,
+                    BagIndex = salvagedItem.BagIndex
+                }, 1u, ItemUpdateReason.Salvage);
+            }
+            catch (InvalidPacketValueException)
+            {
+                reason = "item-delete-failed";
+                log.Trace($"Item salvage failed while deleting source item for player {looter.CharacterId}, item {salvagedItem.Info.Entry.Id}: reason={reason}, generatedItems=[{FormatGeneratedLootItems(items)}].");
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                reason = "item-delete-failed";
+                log.Trace($"Item salvage failed while deleting source item for player {looter.CharacterId}, item {salvagedItem.Info.Entry.Id}: reason={reason}, generatedItems=[{FormatGeneratedLootItems(items)}].");
+                return false;
+            }
+
+            if (deletedItem == null)
+            {
+                reason = "item-delete-failed";
+                log.Trace($"Item salvage failed while deleting source item for player {looter.CharacterId}, item {salvagedItem.Info.Entry.Id}: reason={reason}, generatedItems=[{FormatGeneratedLootItems(items)}].");
+                return false;
+            }
+
+            if (!TryDeliverGeneratedItemLoot(looter, items, looter.Guid))
+            {
+                reason = "loot-delivery-failed";
+                log.Warn($"Item salvage failed during final delivery after source item deletion for player {looter.CharacterId}, item {salvagedItem.Info.Entry.Id}: generatedItems=[{FormatGeneratedLootItems(items)}].");
+                return false;
+            }
+
+            log.Trace($"Item salvage succeeded for player {looter.CharacterId}, item {salvagedItem.Info.Entry.Id}: generatedItems=[{FormatGeneratedLootItems(items)}].");
+            return true;
+        }
+
+        private bool TryGenerateItemSalvageLoot(IItem salvagedItem, out IReadOnlyList<GeneratedLootItem> items, out string reason)
+        {
+            items  = [];
+            reason = string.Empty;
+
+            if (salvagedItem?.Info?.Entry == null)
+            {
+                reason = "missing-item";
+                return false;
+            }
+
+            Item2Entry itemEntry = salvagedItem.Info.Entry;
+            if (itemSalvageByItem.TryGetValue(itemEntry.Id, out List<ItemSalvageModel> exactItemSalvage))
+                return TryGenerateItemSalvageLoot(itemEntry.Id, exactItemSalvage, out items, out reason);
+
+            uint salvageLevel = GetClientSalvageLevel(itemEntry);
+            if (itemEntry.Item2TypeId != 0u
+                && salvageLevel != 0u
+                && itemSalvageByTypeLevel.TryGetValue((itemEntry.Item2TypeId, salvageLevel), out List<ItemSalvageModel> typeLevelItemSalvage))
+            {
+                return TryGenerateItemSalvageLoot(itemEntry.Id, typeLevelItemSalvage, out items, out reason);
+            }
+
+            reason = $"missing-item-salvage:{itemEntry.Id}";
+            return false;
+        }
+
+        private static bool TryGenerateItemSalvageLoot(
+            uint itemId,
+            IReadOnlyList<ItemSalvageModel> itemSalvage,
+            out IReadOnlyList<GeneratedLootItem> items,
+            out string reason)
+        {
+            items  = [];
+            reason = string.Empty;
+
+            double totalProbability = itemSalvage.Sum(i => Math.Max(0f, i.Probability));
+            if (totalProbability <= 0d)
+            {
+                reason = $"empty-item-salvage:{itemId}";
+                return false;
+            }
+
+            double roll = Random.Shared.NextDouble() * totalProbability;
+            double currentProbability = 0d;
+            foreach (ItemSalvageModel itemSalvageModel in itemSalvage)
+            {
+                if (itemSalvageModel.Probability <= 0f)
+                    continue;
+
+                currentProbability += itemSalvageModel.Probability;
+                if (roll > currentProbability)
+                    continue;
+
+                if (!TryCreateGeneratedItemSalvageLoot(itemSalvageModel, out GeneratedLootItem item, out reason))
+                    return false;
+
+                items = [item];
+                return true;
+            }
+
+            reason = $"empty-item-salvage:{itemId}";
+            return false;
+        }
+
+        private static bool TryCreateGeneratedItemSalvageLoot(
+            ItemSalvageModel itemSalvageModel,
+            out GeneratedLootItem item,
+            out string reason)
+        {
+            LootItemType type = (LootItemType)itemSalvageModel.Type;
+            uint minimum = Math.Max(1u, itemSalvageModel.MinCount);
+            uint maximum = Math.Max(minimum, itemSalvageModel.MaxCount);
+            uint count = minimum == maximum
+                ? minimum
+                : (uint)Random.Shared.NextInt64(minimum, (long)maximum + 1L);
+
+            item = new GeneratedLootItem(type, itemSalvageModel.StaticId, count);
+            if (!CanDeliverLootItem(item))
+            {
+                reason = $"invalid-loot-item:{item.Type}:{item.StaticId}";
+                return false;
+            }
+
+            reason = string.Empty;
+            return true;
+        }
+
+        private static uint GetClientSalvageLevel(Item2Entry itemEntry)
+        {
+            if (itemEntry.PowerLevel != 0u)
+                return itemEntry.PowerLevel;
+            if (itemEntry.RequiredItemLevel != 0u)
+                return itemEntry.RequiredItemLevel;
+            return itemEntry.RequiredLevel;
         }
 
         /// <summary>
@@ -763,7 +1013,21 @@ namespace NexusForever.Game.Loot
             };
         }
 
-        private bool TryGenerateItemLoot(IItem lootedItem, IPlayer looter, out IReadOnlyList<GeneratedLootItem> items, out string reason)
+        private bool HasItemLoot(IItem lootedItem, Func<LootGroup, bool> lootGroupFilter)
+        {
+            return lootedItem?.Info != null
+                && itemLoot.TryGetValue(lootedItem.Info.Entry.Id, out List<LootGroup> itemLootGroups)
+                && itemLootGroups.Any(lootGroupFilter);
+        }
+
+        private bool TryGenerateItemLoot(
+            IItem lootedItem,
+            IPlayer looter,
+            Func<LootGroup, bool> lootGroupFilter,
+            string missingReasonPrefix,
+            string emptyReasonPrefix,
+            out IReadOnlyList<GeneratedLootItem> items,
+            out string reason)
         {
             items  = [];
             reason = string.Empty;
@@ -774,14 +1038,14 @@ namespace NexusForever.Game.Loot
                 return false;
             }
 
-            if (!itemLoot.TryGetValue(lootedItem.Info.Entry.Id, out List<LootGroup> itemLootGroups) || itemLootGroups.Count == 0)
+            if (!itemLoot.TryGetValue(lootedItem.Info.Entry.Id, out List<LootGroup> itemLootGroups))
             {
-                reason = $"missing-item-loot:{lootedItem.Info.Entry.Id}";
+                reason = $"{missingReasonPrefix}:{lootedItem.Info.Entry.Id}";
                 return false;
             }
 
             var generatedItems = new Dictionary<(LootItemType Type, uint StaticId), uint>();
-            foreach (LootGroup lootGroup in itemLootGroups)
+            foreach (LootGroup lootGroup in itemLootGroups.Where(lootGroupFilter))
             {
                 foreach ((LootItem item, uint count) in lootGroup.GenerateLootDrops(looter))
                 {
@@ -808,7 +1072,7 @@ namespace NexusForever.Game.Loot
 
             if (generatedItems.Count == 0)
             {
-                reason = $"empty-item-loot:{lootedItem.Info.Entry.Id}";
+                reason = $"{emptyReasonPrefix}:{lootedItem.Info.Entry.Id}";
                 return false;
             }
 
@@ -892,6 +1156,16 @@ namespace NexusForever.Game.Loot
             log.Trace($"Generated item loot delivery succeeded for player {looter.CharacterId}, ownerUnit={ownerUnitId}, items=[{FormatLootInstanceItems(lootInstance)}].");
             SendGrantedLootNotifyAndRemove(lootInstance, looter);
             return true;
+        }
+
+        private static bool IsNonSalvageItemLootGroup(LootGroup lootGroup)
+        {
+            return !IsSalvageItemLootGroup(lootGroup);
+        }
+
+        private static bool IsSalvageItemLootGroup(LootGroup lootGroup)
+        {
+            return lootGroup?.Comment?.StartsWith(ITEM_SALVAGE_LOOT_GROUP_COMMENT_PREFIX, StringComparison.OrdinalIgnoreCase) == true;
         }
 
         private static void SendGrantedLootNotifyAndRemove(LootInstance lootInstance, IPlayer looter)

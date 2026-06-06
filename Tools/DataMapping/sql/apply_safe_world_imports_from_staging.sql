@@ -103,6 +103,23 @@ CREATE TABLE IF NOT EXISTS loot_item (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS item_salvage (
+  `purpose` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `sourceItemId` INT UNSIGNED NOT NULL DEFAULT 0,
+  `sourceItem2TypeId` INT UNSIGNED NOT NULL DEFAULT 0,
+  `sourceLevel` INT UNSIGNED NOT NULL DEFAULT 0,
+  `type` INT UNSIGNED NOT NULL DEFAULT 0,
+  `staticId` INT UNSIGNED NOT NULL DEFAULT 0,
+  `probability` FLOAT NOT NULL DEFAULT 100,
+  `minCount` INT UNSIGNED NOT NULL DEFAULT 0,
+  `maxCount` INT UNSIGNED NOT NULL DEFAULT 0,
+  `comment` VARCHAR(200) NOT NULL DEFAULT '',
+  PRIMARY KEY (`purpose`, `sourceItemId`, `sourceItem2TypeId`, `sourceLevel`, `type`, `staticId`),
+  KEY `ix_item_salvage_exact_item` (`purpose`, `sourceItemId`),
+  KEY `ix_item_salvage_type_level` (`purpose`, `sourceItem2TypeId`, `sourceLevel`),
+  KEY `ix_item_salvage_static` (`type`, `staticId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS creature_info_property (
   `id` INT UNSIGNED NOT NULL,
   `property` TINYINT UNSIGNED NOT NULL,
@@ -760,6 +777,114 @@ ON DUPLICATE KEY UPDATE
   `maxCount` = VALUES(`maxCount`),
   `comment` = VALUES(`comment`);
 
+DELETE li
+FROM loot_item li
+JOIN loot_group lg ON lg.id = li.id
+WHERE lg.comment LIKE 'DataMapping item_salvage%';
+
+DELETE il
+FROM item_loot il
+JOIN loot_group lg ON lg.id = il.lootGroupId
+WHERE lg.comment LIKE 'DataMapping item_salvage%';
+
+DELETE FROM loot_group
+WHERE comment LIKE 'DataMapping item_salvage%';
+
+DELETE FROM item_salvage
+WHERE @nf_safe_import_replace_existing = 1
+  AND comment LIKE 'DataMapping item_salvage%';
+
+DROP TEMPORARY TABLE IF EXISTS tmp_nf_runtime_item_salvage_exact_weights;
+CREATE TEMPORARY TABLE tmp_nf_runtime_item_salvage_exact_weights ENGINE=InnoDB AS
+SELECT
+  original_item2_id AS sourceItemId,
+  salvaged_item2_id AS staticId,
+  IFNULL(MIN(NULLIF(original_item_name, '')), CONCAT('Item2 ', original_item2_id)) AS sourceItemName,
+  IFNULL(MIN(NULLIF(salvaged_item_name, '')), CONCAT('Item2 ', salvaged_item2_id)) AS salvagedItemName,
+  SUM(GREATEST(IFNULL(drop_times, 0), 1)) AS itemWeight
+FROM nf_map_item_salvage
+WHERE IFNULL(original_item2_id, 0) > 0
+  AND IFNULL(salvaged_item2_id, 0) > 0
+GROUP BY original_item2_id, salvaged_item2_id;
+
+ALTER TABLE tmp_nf_runtime_item_salvage_exact_weights
+  ADD KEY ix_tmp_nf_runtime_item_salvage_exact_weights_source (sourceItemId),
+  ADD KEY ix_tmp_nf_runtime_item_salvage_exact_weights_static (staticId);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_nf_runtime_item_salvage_exact_totals;
+CREATE TEMPORARY TABLE tmp_nf_runtime_item_salvage_exact_totals ENGINE=InnoDB AS
+SELECT sourceItemId, SUM(itemWeight) AS totalWeight
+FROM tmp_nf_runtime_item_salvage_exact_weights
+GROUP BY sourceItemId;
+
+ALTER TABLE tmp_nf_runtime_item_salvage_exact_totals
+  ADD PRIMARY KEY (sourceItemId);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_nf_runtime_item_salvage_exact;
+CREATE TEMPORARY TABLE tmp_nf_runtime_item_salvage_exact ENGINE=InnoDB AS
+SELECT
+  0 AS purpose,
+  w.sourceItemId,
+  0 AS sourceItem2TypeId,
+  0 AS sourceLevel,
+  0 AS type,
+  w.staticId,
+  CAST(LEAST(100, GREATEST(0, 100 * w.itemWeight / t.totalWeight)) AS DECIMAL(9,4)) AS probability,
+  1 AS minCount,
+  1 AS maxCount,
+  LEFT(CONCAT('DataMapping item_salvage exact: ', w.sourceItemName, ' -> ', w.salvagedItemName), 200) AS comment
+FROM tmp_nf_runtime_item_salvage_exact_weights w
+JOIN tmp_nf_runtime_item_salvage_exact_totals t ON t.sourceItemId = w.sourceItemId
+WHERE t.totalWeight > 0;
+
+ALTER TABLE tmp_nf_runtime_item_salvage_exact
+  ADD PRIMARY KEY (purpose, sourceItemId, sourceItem2TypeId, sourceLevel, type, staticId);
+
+DROP TEMPORARY TABLE IF EXISTS tmp_nf_runtime_item_salvage_type_level;
+CREATE TEMPORARY TABLE tmp_nf_runtime_item_salvage_type_level ENGINE=InnoDB AS
+SELECT
+  1 AS purpose,
+  0 AS sourceItemId,
+  item2TypeId AS sourceItem2TypeId,
+  level AS sourceLevel,
+  0 AS type,
+  CASE
+    WHEN level >= 45 THEN 16565
+    WHEN level >= 35 THEN 14784
+    WHEN level >= 25 THEN 14783
+    WHEN level >= 15 THEN 14782
+    ELSE 14781
+  END AS staticId,
+  100 AS probability,
+  1 AS minCount,
+  1 AS maxCount,
+  LEFT(CONCAT('DataMapping item_salvage client type-level: ', IFNULL(MIN(NULLIF(item2TypeId_label, '')), CONCAT('Item2Type ', item2TypeId)), ' level ', level), 200) AS comment
+FROM nf_map_client_source_salvage
+WHERE IFNULL(item2TypeId, 0) > 0
+  AND IFNULL(level, 0) > 0
+GROUP BY item2TypeId, level;
+
+ALTER TABLE tmp_nf_runtime_item_salvage_type_level
+  ADD PRIMARY KEY (purpose, sourceItemId, sourceItem2TypeId, sourceLevel, type, staticId);
+
+INSERT INTO item_salvage (`purpose`, `sourceItemId`, `sourceItem2TypeId`, `sourceLevel`, `type`, `staticId`, `probability`, `minCount`, `maxCount`, `comment`)
+SELECT purpose, sourceItemId, sourceItem2TypeId, sourceLevel, type, staticId, probability, minCount, maxCount, comment
+FROM tmp_nf_runtime_item_salvage_exact
+ON DUPLICATE KEY UPDATE
+  `probability` = VALUES(`probability`),
+  `minCount` = VALUES(`minCount`),
+  `maxCount` = VALUES(`maxCount`),
+  `comment` = VALUES(`comment`);
+
+INSERT INTO item_salvage (`purpose`, `sourceItemId`, `sourceItem2TypeId`, `sourceLevel`, `type`, `staticId`, `probability`, `minCount`, `maxCount`, `comment`)
+SELECT purpose, sourceItemId, sourceItem2TypeId, sourceLevel, type, staticId, probability, minCount, maxCount, comment
+FROM tmp_nf_runtime_item_salvage_type_level
+ON DUPLICATE KEY UPDATE
+  `probability` = VALUES(`probability`),
+  `minCount` = VALUES(`minCount`),
+  `maxCount` = VALUES(`maxCount`),
+  `comment` = VALUES(`comment`);
+
 DELETE FROM creature_info_property
 WHERE @nf_safe_import_replace_existing = 1
   AND `property` IN (7, 41);
@@ -877,6 +1002,9 @@ UNION ALL SELECT 'loot_item_mapped', COUNT(*) FROM loot_item li JOIN loot_group 
 UNION ALL SELECT 'item_loot_group_mapped', COUNT(*) FROM loot_group WHERE comment LIKE 'DataMapping item_container%'
 UNION ALL SELECT 'item_loot_mapped', COUNT(*) FROM item_loot WHERE comment LIKE 'DataMapping item_container%'
 UNION ALL SELECT 'item_loot_item_mapped', COUNT(*) FROM loot_item li JOIN loot_group lg ON lg.id = li.id WHERE lg.comment LIKE 'DataMapping item_container%'
+UNION ALL SELECT 'item_salvage_exact_mapped', COUNT(*) FROM item_salvage WHERE purpose = 0 AND comment LIKE 'DataMapping item_salvage%'
+UNION ALL SELECT 'item_salvage_type_level_mapped', COUNT(*) FROM item_salvage WHERE purpose = 1 AND comment LIKE 'DataMapping item_salvage%'
+UNION ALL SELECT 'item_salvage_mapped', COUNT(*) FROM item_salvage WHERE comment LIKE 'DataMapping item_salvage%'
 UNION ALL SELECT 'creature_info_property', COUNT(*) FROM creature_info_property
 UNION ALL SELECT 'creature_info_stat', COUNT(*) FROM creature_info_stat
 UNION ALL SELECT 'northern_wilds_unsafe_spawn_rows', COUNT(*) FROM entity WHERE world = 426 AND id BETWEEN @nf_entity_id_base AND @nf_entity_id_max;

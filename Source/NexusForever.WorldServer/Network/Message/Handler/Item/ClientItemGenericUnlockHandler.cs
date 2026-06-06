@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game.Abstract.Entity;
+using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -31,7 +32,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
 
         public void HandleMessage(IWorldSession session, ClientItemGenericUnlock itemGenericUnlock)
         {
-            IItem item = session.Player.Inventory.GetItem(itemGenericUnlock.Location);
+            IItem item = GetItemOrDefault(session, itemGenericUnlock, out string invalidItemReason);
             Item2Entry itemEntry = item?.Info?.Entry;
             if (itemEntry == null || itemEntry.GenericUnlockSetId == 0u)
             {
@@ -43,8 +44,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                     item?.Id ?? 0u,
                     itemEntry?.GenericUnlockSetId ?? 0u,
                     GenericUnlockResult.Invalid,
-                    itemEntry == null ? "missing-item" : "missing-generic-unlock-set");
-                session.Account.GenericUnlockManager.SendUnlockResult(GenericUnlockResult.Invalid);
+                    invalidItemReason ?? (itemEntry == null ? "missing-item" : "missing-generic-unlock-set"));
+                SendUnlockResult(session, GenericUnlockResult.Invalid);
                 return;
             }
 
@@ -52,7 +53,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             if (unlockSetEntry == null)
             {
                 LogInvalidUnlock(session, item, itemEntry.GenericUnlockSetId, GenericUnlockResult.Invalid, "missing-generic-unlock-set-row");
-                session.Account.GenericUnlockManager.SendUnlockResult(GenericUnlockResult.Invalid);
+                SendUnlockResult(session, GenericUnlockResult.Invalid);
                 return;
             }
 
@@ -60,7 +61,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             if (entries.Count == 0)
             {
                 LogInvalidUnlock(session, item, itemEntry.GenericUnlockSetId, GenericUnlockResult.Invalid, "missing-or-invalid-generic-unlock-entries");
-                session.Account.GenericUnlockManager.SendUnlockResult(GenericUnlockResult.Invalid);
+                SendUnlockResult(session, GenericUnlockResult.Invalid);
                 return;
             }
 
@@ -77,7 +78,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                     itemEntry.GenericUnlockSetId,
                     string.Join(",", entries.Select(e => e.Id)),
                     GenericUnlockResult.AlreadyUnlocked);
-                session.Account.GenericUnlockManager.SendUnlockResult(GenericUnlockResult.AlreadyUnlocked);
+                SendUnlockResult(session, GenericUnlockResult.AlreadyUnlocked);
                 return;
             }
 
@@ -86,6 +87,42 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                     session.Account.GenericUnlockManager.Unlock((ushort)entry.Id);
             else
                 LogInvalidUnlock(session, item, itemEntry.GenericUnlockSetId, GenericUnlockResult.Invalid, "item-consume-failed");
+        }
+
+        private IItem GetItemOrDefault(IWorldSession session, ClientItemGenericUnlock itemGenericUnlock, out string invalidItemReason)
+        {
+            invalidItemReason = null;
+
+            IInventory inventory = session.Player?.Inventory;
+            if (inventory == null)
+            {
+                invalidItemReason = "missing-inventory";
+                return null;
+            }
+
+            try
+            {
+                return inventory.GetItem(itemGenericUnlock.Location);
+            }
+            catch (ArgumentException)
+            {
+                invalidItemReason = "invalid-item-location";
+                return null;
+            }
+        }
+
+        private void SendUnlockResult(IWorldSession session, GenericUnlockResult result)
+        {
+            if (session.Account?.GenericUnlockManager == null)
+            {
+                log.LogWarning("Unable to send item generic unlock result for player {PlayerGuid}: result={Result}, reason={Reason}.",
+                    session.Player?.Guid,
+                    result,
+                    "missing-generic-unlock-manager");
+                return;
+            }
+
+            session.Account.GenericUnlockManager.SendUnlockResult(result);
         }
 
         private void LogInvalidUnlock(IWorldSession session, IItem item, uint genericUnlockSetId, GenericUnlockResult result, string reason)

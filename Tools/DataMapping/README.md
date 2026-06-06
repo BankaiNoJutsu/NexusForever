@@ -156,7 +156,8 @@ Item and reward relationships:
 - `item_spell_effect_map.csv` maps item effects and imbuements to Jabbithole spells and client `Spell4` IDs where available.
 - `item_drop_source_map.csv` maps legacy `item_drops`, `item_drop4_drops`, and `item_drop5_drops` rows to `Item2` and resolved creatures.
 - `item_container_map.csv` maps container items to contained `Item2` rows.
-- `item_salvage_map.csv` maps salvaged item outputs.
+- `item_salvage_map.csv` maps exact salvaged item outputs.
+- `client_source_salvage_map.csv` maps client `Salvage.tbl` item type/level rows used for runtime fallback salvage eligibility and reward material tiers.
 - `item_class_requirement_map.csv` and `item_tradeskill_requirement_map.csv` map item use requirements.
 - `item_chip_spell_map.csv` maps item chip spell relations.
 - `item_component_map.csv` maps circuit and microchip component item relations.
@@ -366,7 +367,7 @@ Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
 
-That migration-style script imports vendor stock, optional reviewed entity spawns, creature loot, flat runtime creature loot groups, weighted item-container loot groups, and creature-info template overrides from `nf_map_*` into explicit `nexus_forever_world` runtime tables. Runtime code must consume those promoted tables only, never the staging/source databases. Creature-backed imports use only `unique_name`, `scored_name`, and `reviewed` creature bridges by default; targeted world repair can opt into exact-name ambiguous rows and direct Jabbithole coordinate fallback for source-zone rows whose coordinates are valid but whose source `worldid` is blank. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import, including mismatch metrics for each promoted LaughingWS overlay and the official Evil from the Ether script-hook count that is intentionally not duplicated by the WIP seed.
+That migration-style script imports vendor stock, optional reviewed entity spawns, creature loot, flat runtime creature loot groups, weighted item-container loot groups, runtime `item_salvage` exact/type-level rows, and creature-info template overrides from `nf_map_*` into explicit `nexus_forever_world` runtime tables. Runtime code must consume those promoted tables only, never the staging/source databases. Creature-backed imports use only `unique_name`, `scored_name`, and `reviewed` creature bridges by default; targeted world repair can opt into exact-name ambiguous rows and direct Jabbithole coordinate fallback for source-zone rows whose coordinates are valid but whose source `worldid` is blank. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import, including mismatch metrics for each promoted LaughingWS overlay and the official Evil from the Ether script-hook count that is intentionally not duplicated by the WIP seed.
 
 After changing reviewed mappings and verifying the staging import, refresh the
 standalone seed with:
@@ -401,7 +402,7 @@ python Tools\DataMapping\apply_creature_loot.py
 python Tools\DataMapping\apply_creature_loot.py --apply
 ```
 
-`apply_creature_loot.py` creates/upserts `nexus_forever_world.creature_loot` from safe, de-duplicated `creature_loot_map.csv` rows. The current localhost apply upserted 198,735 creature-item loot rows for 3,795 creatures and 18,504 items. The JSON report includes status-filter, missing Creature2, invalid/missing Item2, duplicate creature-item, selected creature/item, and runtime mapped-flat-group skip counts so each import pass shows what would load and what `GlobalLootManager` would ignore when table-backed `DataMapping creature_loot` groups already exist. Runtime loot generation is now wired through `GlobalLootManager`; the SQL staging import also mirrors those rows into flat `loot_group`, `entity_loot`, and `loot_item` rows so the older loot-table path is populated too. The same SQL import now maps `item_container_map.csv` into `item_loot` groups for loot bags: 272 container items and 23,865 weighted contained-item rows on localhost.
+`apply_creature_loot.py` creates/upserts `nexus_forever_world.creature_loot` from safe, de-duplicated `creature_loot_map.csv` rows. The current localhost apply upserted 198,735 creature-item loot rows for 3,795 creatures and 18,504 items. The JSON report includes status-filter, missing Creature2, invalid/missing Item2, duplicate creature-item, selected creature/item, and runtime mapped-flat-group skip counts so each import pass shows what would load and what `GlobalLootManager` would ignore when table-backed `DataMapping creature_loot` groups already exist. Runtime loot generation is now wired through `GlobalLootManager`; the SQL staging import also mirrors those rows into flat `loot_group`, `entity_loot`, and `loot_item` rows so the older loot-table path is populated too. The same SQL import maps `item_container_map.csv` into `item_loot` groups for loot bags and promotes `item_salvage_map.csv` plus `client_source_salvage_map.csv` into the runtime-owned `item_salvage` table, using `purpose = 0` for exact source-item rows and `purpose = 1` for client type/level rows.
 
 ```powershell
 python Tools\DataMapping\apply_creature_info_overrides.py

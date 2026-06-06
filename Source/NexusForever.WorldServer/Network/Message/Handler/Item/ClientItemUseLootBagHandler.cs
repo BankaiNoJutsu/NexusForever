@@ -1,6 +1,6 @@
+using System;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Loot;
-using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Network.World.Message.Model;
@@ -24,15 +24,26 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
 
         public void HandleMessage(IWorldSession session, ClientItemUseLootBag itemUseLootBag)
         {
-            IItem item = session.Player.Inventory.GetItem(itemUseLootBag.ItemLocation);
+            IItem item = GetItemOrDefault(session, itemUseLootBag);
             if (item == null)
-                throw new InvalidPacketValueException();
+            {
+                SendItemError(session, itemUseLootBag.Guid, GenericError.ItemBadId);
+                return;
+            }
 
             if (itemUseLootBag.Guid != item.Guid)
-                throw new InvalidPacketValueException();
+            {
+                SendItemError(session, itemUseLootBag.Guid, GenericError.ItemBadId);
+                return;
+            }
 
-            if (item.Info.Entry.Item2CategoryId != LOOT_BAG_CATEGORY_ID)
-                throw new InvalidPacketValueException();
+            if (item.Info?.Entry?.Item2CategoryId != LOOT_BAG_CATEGORY_ID)
+            {
+                if (!lootManager.TrySalvageItem(session.Player, item, out string salvageReason))
+                    SendItemError(session, item.Guid, GetSalvageError(salvageReason));
+
+                return;
+            }
 
             if (!lootManager.HasLoot(item))
             {
@@ -42,6 +53,34 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
 
             if (!lootManager.TryUseLootBag(session.Player, item, out string reason) && reason == "inventory-full")
                 session.Player.SendGenericError(GenericError.ItemInventoryFull);
+        }
+
+        private static IItem GetItemOrDefault(IWorldSession session, ClientItemUseLootBag itemUseLootBag)
+        {
+            try
+            {
+                return session.Player?.Inventory?.GetItem(itemUseLootBag.ItemLocation);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+        }
+
+        private static void SendItemError(IWorldSession session, ulong itemGuid, GenericError error)
+        {
+            session.EnqueueMessageEncrypted(new ServerItemError
+            {
+                ItemGuid  = itemGuid,
+                ErrorCode = error
+            });
+        }
+
+        private static GenericError GetSalvageError(string reason)
+        {
+            return reason == "inventory-full"
+                ? GenericError.ItemInventoryFull
+                : GenericError.ItemCannotBeSalvaged;
         }
     }
 }

@@ -29,6 +29,21 @@ public class ClientItemGenericUnlockHandlerTests
     }
 
     [Fact]
+    public void HandleMessage_WithInvalidItemLocationReturnsInvalid()
+    {
+        IWorldSession session = CreateSession(item: null, out RecordingDispatchProxy<IGenericUnlockManager> unlockProxy, out RecordingDispatchProxy<IInventory> inventoryProxy);
+        inventoryProxy.SetMethodHandler(nameof(IInventory.GetItem), _ => throw new ArgumentException("invalid item location"));
+        var handler = new ClientItemGenericUnlockHandler(
+            RecordingDispatchProxy<IGameTableManager>.Create(out _),
+            NullLogger<ClientItemGenericUnlockHandler>.Instance);
+
+        handler.HandleMessage(session, new ClientItemGenericUnlock());
+
+        AssertUnlockResult(unlockProxy, GenericUnlockResult.Invalid);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+    }
+
+    [Fact]
     public void HandleMessage_WithMissingItemAndNullLoggerReturnsInvalid()
     {
         IWorldSession session = CreateSession(item: null, out RecordingDispatchProxy<IGenericUnlockManager> unlockProxy, out RecordingDispatchProxy<IInventory> inventoryProxy);

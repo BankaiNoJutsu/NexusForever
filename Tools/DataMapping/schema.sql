@@ -740,6 +740,14 @@ CREATE TABLE IF NOT EXISTS nf_map_item_salvage (
     KEY ix_nf_map_item_salvage_salvaged (salvaged_item2_id)
 );
 
+CREATE TABLE IF NOT EXISTS nf_map_client_source_salvage (
+    ID INT PRIMARY KEY,
+    item2TypeId INT NULL,
+    item2TypeId_label VARCHAR(255),
+    level INT NULL,
+    KEY ix_nf_map_client_source_salvage_type_level (item2TypeId, level)
+);
+
 CREATE TABLE IF NOT EXISTS nf_map_item_class_requirement (
     source_relation_id INT PRIMARY KEY,
     item2_id INT NULL,

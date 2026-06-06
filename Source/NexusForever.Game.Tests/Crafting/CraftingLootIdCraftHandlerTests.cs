@@ -265,6 +265,12 @@ public class CraftingLootIdCraftHandlerTests
             return false;
         }
 
+        public bool TrySalvageItem(IPlayer looter, IItem salvagedItem, out string reason)
+        {
+            reason = string.Empty;
+            return false;
+        }
+
         public void SendLootNotify(IPlayer looter, uint ownerUnitId) { }
         public void SendLootNotifyForVisibleOwner(IPlayer looter, IWorldEntity owner) { }
         public bool TryGetLootRuntimeSnapshot(IPlayer looter, uint ownerUnitId, out LootRuntimeSnapshot snapshot)

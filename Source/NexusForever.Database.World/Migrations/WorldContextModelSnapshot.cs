@@ -628,6 +628,84 @@ namespace NexusForever.Database.World.Migrations
                     b.ToTable("item_loot", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.World.Model.ItemSalvageModel", b =>
+                {
+                    b.Property<byte>("Purpose")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("purpose");
+
+                    b.Property<uint>("SourceItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("sourceItemId");
+
+                    b.Property<uint>("SourceItem2TypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("sourceItem2TypeId");
+
+                    b.Property<uint>("SourceLevel")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("sourceLevel");
+
+                    b.Property<uint>("Type")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("type");
+
+                    b.Property<uint>("StaticId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("staticId");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(200)")
+                        .HasDefaultValue("")
+                        .HasColumnName("comment");
+
+                    b.Property<uint>("MaxCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("maxCount");
+
+                    b.Property<uint>("MinCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("minCount");
+
+                    b.Property<float>("Probability")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(100f)
+                        .HasColumnName("probability");
+
+                    b.HasKey("Purpose", "SourceItemId", "SourceItem2TypeId", "SourceLevel", "Type", "StaticId")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("Purpose", "SourceItemId")
+                        .HasDatabaseName("ix_item_salvage_exact_item");
+
+                    b.HasIndex("Purpose", "SourceItem2TypeId", "SourceLevel")
+                        .HasDatabaseName("ix_item_salvage_type_level");
+
+                    b.HasIndex("Type", "StaticId")
+                        .HasDatabaseName("ix_item_salvage_static");
+
+                    b.ToTable("item_salvage", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.World.Model.LootGroupModel", b =>
                 {
                     b.Property<ulong>("Id")

@@ -237,6 +237,7 @@ It currently covers:
 - `entity_loot`
 - `item_loot`
 - `loot_item`
+- `item_salvage`
 - `creature_info_property`
 - `creature_info_stat`
 
@@ -297,7 +298,10 @@ optional mapped entity-spawn imports use `INSERT IGNORE` with deterministic
 DataMapping-owned IDs, creature loot upserts by `(creatureId, itemId)`, mapped
 creature loot is also materialised into flat `loot_group`/`entity_loot`/`loot_item` rows,
 `item_container_map.csv` is materialised into weighted `item_loot` groups for
-loot bags, and creature-info overrides insert missing rows after skipping
+loot bags, and `item_salvage_map.csv` plus `client_source_salvage_map.csv` are
+promoted into runtime-owned `item_salvage` rows. `purpose = 0` rows match exact
+source items, while `purpose = 1` rows match client `Item2TypeId`/level pairs
+for the table-backed salvage material fallback. Creature-info overrides insert missing rows after skipping
 conflicting template values. Creature `BaseHealth` imports use the mapper's
 `template_base_health` column only. Source health ranges are preserved for
 review, but are not promoted as global `creature_info_property` rows because a

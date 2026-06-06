@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Collections.Immutable;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NexusForever.Database.Auth.Model;
@@ -32,6 +33,9 @@ namespace NexusForever.Game.Tests.Loot;
 public class LootBagUsageTests
 {
     private const uint LootBagItemId = 84623u;
+    private const uint SalvageItemId = 447u;
+    private const uint ProtostarFocusMkIIItemId = 82799u;
+    private const uint StandardOmniPlasmItemId = 14781u;
 
     [Fact]
     public void TryUseLootBag_EmptyLootGroup_DoesNotConsumeItem()
@@ -233,6 +237,189 @@ public class LootBagUsageTests
     }
 
     [Fact]
+    public void TryUseLootBag_WithOnlySalvageGroups_DoesNotConsumeItem()
+    {
+        GlobalLootManager manager = CreateLootManager(CreateItemLootGroup(
+            "DataMapping item_salvage: loot bag should ignore this group",
+            new LootItemModel
+            {
+                Id          = 220000000007,
+                Type        = (uint)LootItemType.AccountCurrency,
+                StaticId    = (uint)AccountCurrencyType.Omnibit,
+                Probability = 100f,
+                MinCount    = 5u,
+                MaxCount    = 5u
+            }));
+
+        IPlayer player = CreatePlayer(out var inventoryProxy, out _, out _, out _);
+        IItem item = CreateLootBagItem();
+
+        bool result = manager.TryUseLootBag(player, item, out string reason);
+
+        Assert.False(result);
+        Assert.Equal($"empty-item-loot:{LootBagItemId}", reason);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+    }
+
+    [Fact]
+    public void TrySalvageItem_ExactRuntimeRowDeletesSourceItemAndGrantsLoot()
+    {
+        GlobalLootManager manager = CreateLootManagerWithItemSalvage(
+            new ItemSalvageModel
+            {
+                Purpose      = ItemSalvagePurpose.ExactItem,
+                SourceItemId = SalvageItemId,
+                Type         = (uint)LootItemType.AccountCurrency,
+                StaticId     = (uint)AccountCurrencyType.Omnibit,
+                Probability  = 100f,
+                MinCount     = 5u,
+                MaxCount     = 5u
+            });
+
+        IPlayer player = CreatePlayer(out var inventoryProxy, out var currencyProxy, out _, out var sessionProxy);
+        IItem item = CreateItem(SalvageItemId, maxStackCount: 1u, maxCharges: 0u, bagIndex: 9u);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.ItemDelete), item);
+
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(manager, CreateGameTable(
+            new AccountCurrencyTypeEntry
+            {
+                Id = (uint)AccountCurrencyType.Omnibit
+            }));
+
+        try
+        {
+            bool result = manager.TrySalvageItem(player, item, out string reason);
+
+            Assert.True(result);
+            Assert.Equal(string.Empty, reason);
+            Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+
+            RecordingDispatchProxy<IInventory>.Invocation itemDeleteCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+            ItemLocation location = Assert.IsType<ItemLocation>(itemDeleteCall.Arguments[0]);
+            Assert.Equal(InventoryLocation.Inventory, location.Location);
+            Assert.Equal(9u, location.BagIndex);
+            Assert.Equal(1u, itemDeleteCall.Arguments[1]);
+            Assert.Equal(ItemUpdateReason.Salvage, itemDeleteCall.Arguments[2]);
+
+            RecordingDispatchProxy<IAccountCurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+            Assert.Equal(AccountCurrencyType.Omnibit, currencyCall.Arguments[0]);
+            Assert.Equal(5ul, currencyCall.Arguments[1]);
+
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+            Assert.Equal(2, sessionCalls.Count);
+            Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
+            Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void TrySalvageItem_WithoutSalvageGroupDoesNotDeleteItem()
+    {
+        GlobalLootManager manager = CreateLootManager(SalvageItemId, CreateItemLootGroup(
+            "DataMapping item_container: not salvage",
+            new LootItemModel
+            {
+                Id          = 230000000002,
+                Type        = (uint)LootItemType.AccountCurrency,
+                StaticId    = (uint)AccountCurrencyType.Omnibit,
+                Probability = 100f,
+                MinCount    = 5u,
+                MaxCount    = 5u
+            }));
+
+        IPlayer player = CreatePlayer(out var inventoryProxy, out var currencyProxy, out _, out _);
+        IItem item = CreateItem(SalvageItemId, maxStackCount: 1u, maxCharges: 0u);
+
+        bool result = manager.TrySalvageItem(player, item, out string reason);
+
+        Assert.False(result);
+        Assert.Equal($"missing-item-salvage:{SalvageItemId}", reason);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+        Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.CurrencyAddAmount)));
+    }
+
+    [Fact]
+    public void TrySalvageItem_WithClientTypeLevelRuntimeRowDeletesSourceItemAndGrantsMaterial()
+    {
+        GlobalLootManager manager = CreateLootManagerWithItemSalvage(
+            new ItemSalvageModel
+            {
+                Purpose           = ItemSalvagePurpose.ClientTypeLevel,
+                SourceItem2TypeId = 301u,
+                SourceLevel       = 12u,
+                Type              = (uint)LootItemType.StaticItem,
+                StaticId          = StandardOmniPlasmItemId,
+                Probability       = 100f,
+                MinCount          = 1u,
+                MaxCount          = 1u
+            });
+
+        IPlayer player = CreatePlayer(out var inventoryProxy, out _, out _, out var sessionProxy);
+        ConfigureInventoryBag(inventoryProxy, slotsRemaining: 1u);
+        IItem item = CreateItem(
+            ProtostarFocusMkIIItemId,
+            maxStackCount: 1u,
+            maxCharges: 0u,
+            bagIndex: 10u,
+            item2TypeId: 301u,
+            powerLevel: 12u,
+            requiredLevel: 10u);
+        inventoryProxy.SetMethodReturn(nameof(IInventory.ItemDelete), item);
+
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(
+            manager,
+            CreateGameTable<AccountCurrencyTypeEntry>(),
+            itemManager: CreateItemManager(CreateStaticItemInfo(StandardOmniPlasmItemId)),
+            itemTable: CreateGameTable(new Item2Entry
+            {
+                Id            = StandardOmniPlasmItemId,
+                ItemQualityId = 2u,
+                MaxStackCount = 250u
+            }));
+
+        try
+        {
+            bool result = manager.TrySalvageItem(player, item, out string reason);
+
+            Assert.True(result);
+            Assert.Equal(string.Empty, reason);
+
+            RecordingDispatchProxy<IInventory>.Invocation itemDeleteCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+            ItemLocation location = Assert.IsType<ItemLocation>(itemDeleteCall.Arguments[0]);
+            Assert.Equal(InventoryLocation.Inventory, location.Location);
+            Assert.Equal(10u, location.BagIndex);
+            Assert.Equal(1u, itemDeleteCall.Arguments[1]);
+            Assert.Equal(ItemUpdateReason.Salvage, itemDeleteCall.Arguments[2]);
+
+            RecordingDispatchProxy<IInventory>.Invocation itemCreateCall = Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+            Assert.Equal(InventoryLocation.Inventory, itemCreateCall.Arguments[0]);
+            Assert.Equal(StandardOmniPlasmItemId, itemCreateCall.Arguments[1]);
+            Assert.Equal(1u, itemCreateCall.Arguments[2]);
+            Assert.Equal(ItemUpdateReason.Loot, itemCreateCall.Arguments[3]);
+
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+            Assert.Equal(2, sessionCalls.Count);
+            var notify = Assert.IsType<ServerLootNotify>(sessionCalls[0].Arguments[0]);
+            NexusForever.Network.World.Message.Model.Loot.LootItem grantedItem = Assert.Single(notify.LootItems);
+            Assert.True(grantedItem.Granted);
+            Assert.Equal(LootItemType.StaticItem, grantedItem.Type);
+            Assert.Equal(StandardOmniPlasmItemId, grantedItem.ItemId);
+            Assert.IsType<ServerLootRemove>(sessionCalls[1].Arguments[0]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void TryUseLootBag_ServiceTokenReward_ConsumesItemAndGrantsLoot()
     {
         GlobalLootManager manager = CreateLootManager(CreateItemLootGroup(
@@ -335,18 +522,74 @@ public class LootBagUsageTests
 
     private static GlobalLootManager CreateLootManager(LootGroup lootGroup)
     {
+        return CreateLootManager(LootBagItemId, lootGroup);
+    }
+
+    private static GlobalLootManager CreateLootManager()
+    {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
-        var manager = new GlobalLootManager(groupStateManager);
+        return new GlobalLootManager(groupStateManager);
+    }
+
+    private static GlobalLootManager CreateLootManager(uint itemId, LootGroup lootGroup)
+    {
+        GlobalLootManager manager = CreateLootManager();
 
         Dictionary<uint, List<LootGroup>> itemLoot = (Dictionary<uint, List<LootGroup>>)typeof(GlobalLootManager)
             .GetField("itemLoot", BindingFlags.Instance | BindingFlags.NonPublic)!
             .GetValue(manager)!;
-        itemLoot[LootBagItemId] = [lootGroup];
+        itemLoot[itemId] = [lootGroup];
 
         return manager;
     }
 
-    private static IServiceProvider BuildProvider(GlobalLootManager manager, GameTable<AccountCurrencyTypeEntry> accountCurrencyTypeTable)
+    private static GlobalLootManager CreateLootManagerWithItemSalvage(params ItemSalvageModel[] salvageRows)
+    {
+        GlobalLootManager manager = CreateLootManager();
+
+        Dictionary<uint, List<ItemSalvageModel>> itemSalvageByItem = (Dictionary<uint, List<ItemSalvageModel>>)typeof(GlobalLootManager)
+            .GetField("itemSalvageByItem", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(manager)!;
+        Dictionary<(uint Item2TypeId, uint Level), List<ItemSalvageModel>> itemSalvageByTypeLevel = (Dictionary<(uint Item2TypeId, uint Level), List<ItemSalvageModel>>)typeof(GlobalLootManager)
+            .GetField("itemSalvageByTypeLevel", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(manager)!;
+
+        foreach (ItemSalvageModel salvageRow in salvageRows)
+        {
+            switch (salvageRow.Purpose)
+            {
+                case ItemSalvagePurpose.ExactItem:
+                    AddItemSalvage(itemSalvageByItem, salvageRow.SourceItemId, salvageRow);
+                    break;
+                case ItemSalvagePurpose.ClientTypeLevel:
+                    AddItemSalvage(itemSalvageByTypeLevel, (salvageRow.SourceItem2TypeId, salvageRow.SourceLevel), salvageRow);
+                    break;
+            }
+        }
+
+        return manager;
+    }
+
+    private static void AddItemSalvage<TKey>(
+        Dictionary<TKey, List<ItemSalvageModel>> itemSalvage,
+        TKey key,
+        ItemSalvageModel salvageRow)
+        where TKey : notnull
+    {
+        if (!itemSalvage.TryGetValue(key, out List<ItemSalvageModel> rows))
+        {
+            rows = [];
+            itemSalvage.Add(key, rows);
+        }
+
+        rows.Add(salvageRow);
+    }
+
+    private static IServiceProvider BuildProvider(
+        GlobalLootManager manager,
+        GameTable<AccountCurrencyTypeEntry> accountCurrencyTypeTable,
+        ItemManager itemManager = null,
+        GameTable<Item2Entry> itemTable = null)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -354,11 +597,16 @@ public class LootBagUsageTests
         }));
 
         SetAutoProperty(gameTableManager, nameof(GameTableManager.AccountCurrencyType), accountCurrencyTypeTable);
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), itemTable ?? CreateGameTable<Item2Entry>());
 
-        return new ServiceCollection()
+        IServiceCollection services = new ServiceCollection()
             .AddSingleton(manager)
-            .AddSingleton(gameTableManager)
-            .BuildServiceProvider();
+            .AddSingleton(gameTableManager);
+
+        if (itemManager != null)
+            services.AddSingleton(itemManager);
+
+        return services.BuildServiceProvider();
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()
@@ -406,25 +654,50 @@ public class LootBagUsageTests
 
     private static LootGroup CreateItemLootGroup(params LootItemModel[] items)
     {
+        return CreateItemLootGroup(null, items);
+    }
+
+    private static LootGroup CreateItemLootGroup(string comment, params LootItemModel[] items)
+    {
         return new LootGroup(new LootGroupModel
         {
             Id          = items[0].Id,
             Probability = 100f,
             MinDrop     = 1u,
             MaxDrop     = 1u,
+            Comment     = comment,
             Item        = items
         }, loadChildren: false);
     }
 
     private static IItem CreateLootBagItem(uint maxStackCount = 0u, uint maxCharges = 0u, InventoryLocation location = InventoryLocation.Inventory, uint bagIndex = 0u)
     {
+        return CreateItem(LootBagItemId, maxStackCount, maxCharges, location, bagIndex);
+    }
+
+    private static IItem CreateItem(
+        uint itemId,
+        uint maxStackCount = 0u,
+        uint maxCharges = 0u,
+        InventoryLocation location = InventoryLocation.Inventory,
+        uint bagIndex = 0u,
+        uint item2TypeId = 0u,
+        uint powerLevel = 0u,
+        uint requiredLevel = 0u,
+        uint requiredItemLevel = 0u)
+    {
         IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
         IItemInfo itemInfo = RecordingDispatchProxy<IItemInfo>.Create(out var itemInfoProxy);
+        itemInfoProxy.SetProperty(nameof(IItemInfo.Id), itemId);
         itemInfoProxy.SetProperty(nameof(IItemInfo.Entry), new GameTable.Model.Item2Entry
         {
-            Id            = LootBagItemId,
-            MaxStackCount = maxStackCount,
-            MaxCharges    = maxCharges
+            Id                = itemId,
+            Item2TypeId       = item2TypeId,
+            PowerLevel        = powerLevel,
+            RequiredLevel     = requiredLevel,
+            RequiredItemLevel = requiredItemLevel,
+            MaxStackCount     = maxStackCount,
+            MaxCharges        = maxCharges
         });
 
         itemProxy.SetProperty(nameof(IItem.Info), itemInfo);
@@ -456,6 +729,37 @@ public class LootBagUsageTests
         accountProxy.SetProperty(nameof(IAccount.CurrencyManager), currencyManager);
 
         return player;
+    }
+
+    private static void ConfigureInventoryBag(RecordingDispatchProxy<IInventory> inventoryProxy, uint slotsRemaining)
+    {
+        IBag bag = RecordingDispatchProxy<IBag>.Create(out var bagProxy);
+        bagProxy.SetProperty(nameof(IBag.Location), InventoryLocation.Inventory);
+        bagProxy.SetProperty(nameof(IBag.SlotsRemaining), slotsRemaining);
+        bagProxy.SetMethodReturnFactory("GetEnumerator", () => Enumerable.Empty<IItem>().GetEnumerator());
+
+        inventoryProxy.SetMethodReturnFactory("GetEnumerator", () => new[] { bag }.AsEnumerable().GetEnumerator());
+    }
+
+    private static ItemManager CreateItemManager(params IItemInfo[] itemInfos)
+    {
+        var itemManager = new ItemManager();
+        SetPrivateField(itemManager, "item", itemInfos.ToImmutableDictionary(i => i.Id));
+        return itemManager;
+    }
+
+    private static IItemInfo CreateStaticItemInfo(uint itemId)
+    {
+        IItemInfo itemInfo = RecordingDispatchProxy<IItemInfo>.Create(out var itemInfoProxy);
+        itemInfoProxy.SetProperty(nameof(IItemInfo.Id), itemId);
+        itemInfoProxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry
+        {
+            Id            = itemId,
+            ItemQualityId = 2u,
+            MaxStackCount = 250u
+        });
+        itemInfoProxy.SetMethodReturn(nameof(IItemInfo.IsStackable), true);
+        return itemInfo;
     }
 
     private static IPlayer CreatePlayerWithRealAccountCurrencyManager(
