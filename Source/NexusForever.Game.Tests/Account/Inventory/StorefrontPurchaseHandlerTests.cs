@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging.Abstractions;
+using NexusForever.Database;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Currency;
@@ -20,9 +21,11 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.WorldServer.Account;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Account;
 using NexusForever.WorldServer.Network.Message.Handler.Character;
+using NexusForever.WorldServer.Service;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
@@ -35,7 +38,7 @@ public class StorefrontPurchaseHandlerTests
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy);
         var handler = new ClientStorefrontPurchaseCharacterHandler(
             NullLogger<ClientStorefrontPurchaseCharacterHandler>.Instance,
-            null,
+            CreateStorefrontPurchaseService(),
             CreateGameTableManager(),
             RecordingDispatchProxy<ICharacterListManager>.Create(out _));
 
@@ -61,7 +64,7 @@ public class StorefrontPurchaseHandlerTests
         IGlobalStorefrontManager storefrontManager = RecordingDispatchProxy<IGlobalStorefrontManager>.Create(out _);
         var handler = new ClientStorefrontPurchaseCharacterHandler(
             NullLogger<ClientStorefrontPurchaseCharacterHandler>.Instance,
-            storefrontManager,
+            CreateStorefrontPurchaseService(storefrontManager),
             CreateGameTableManager(),
             RecordingDispatchProxy<ICharacterListManager>.Create(out _));
 
@@ -90,7 +93,7 @@ public class StorefrontPurchaseHandlerTests
             price: 80f);
         var handler = new ClientStorefrontPurchaseCharacterHandler(
             NullLogger<ClientStorefrontPurchaseCharacterHandler>.Instance,
-            storefrontManager,
+            CreateStorefrontPurchaseService(storefrontManager),
             CreateGameTableManager(),
             RecordingDispatchProxy<ICharacterListManager>.Create(out _));
 
@@ -133,7 +136,7 @@ public class StorefrontPurchaseHandlerTests
         ICharacterListManager characterListManager = RecordingDispatchProxy<ICharacterListManager>.Create(out RecordingDispatchProxy<ICharacterListManager> characterListProxy);
         var handler = new ClientStorefrontPurchaseCharacterHandler(
             NullLogger<ClientStorefrontPurchaseCharacterHandler>.Instance,
-            storefrontManager,
+            CreateStorefrontPurchaseService(storefrontManager),
             CreateGameTableManager(CreateCharacterSlotEntitlementEntry()),
             characterListManager);
 
@@ -161,7 +164,7 @@ public class StorefrontPurchaseHandlerTests
     public void CharacterPurchaseSuccess_Emits098C()
     {
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy);
-        StorefrontPurchaseHelper.SendCharacterPurchaseSuccess(session);
+        CreateStorefrontPurchaseService().SendCharacterPurchaseSuccess(session);
 
         ServerStorePurchaseOfferResult result = Assert.Single(GetMessages<ServerStorePurchaseOfferResult>(sessionProxy));
         Assert.True(result.IsSuccess);
@@ -172,7 +175,7 @@ public class StorefrontPurchaseHandlerTests
     public void AccountPurchaseSuccess_Emits098DAnd098CCompatibilityResult()
     {
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy);
-        StorefrontPurchaseHelper.SendAccountPurchaseSuccess(session);
+        CreateStorefrontPurchaseService().SendAccountPurchaseSuccess(session);
 
         ServerStorePurchaseOfferResultVariant variantResult = Assert.Single(GetMessages<ServerStorePurchaseOfferResultVariant>(sessionProxy));
         Assert.True(variantResult.IsSuccess);
@@ -192,7 +195,7 @@ public class StorefrontPurchaseHandlerTests
         IPlayerManager playerManager = RecordingDispatchProxy<IPlayerManager>.Create(out _);
         var handler = new ClientStorefrontPurchaseAccountHandler(
             NullLogger<ClientStorefrontPurchaseAccountHandler>.Instance,
-            storefrontManager,
+            CreateStorefrontPurchaseService(storefrontManager),
             characterManager,
             playerManager,
             CreateGameTableManager(),
@@ -226,7 +229,7 @@ public class StorefrontPurchaseHandlerTests
             price: 80f);
         var handler = new ClientStorefrontPurchaseAccountHandler(
             NullLogger<ClientStorefrontPurchaseAccountHandler>.Instance,
-            storefrontManager,
+            CreateStorefrontPurchaseService(storefrontManager),
             RecordingDispatchProxy<ICharacterManager>.Create(out _),
             RecordingDispatchProxy<IPlayerManager>.Create(out _),
             CreateGameTableManager(),
@@ -270,7 +273,7 @@ public class StorefrontPurchaseHandlerTests
             accountItemEntry: CreateCharacterSlotAccountItemEntry());
         var handler = new ClientStorefrontPurchaseAccountHandler(
             NullLogger<ClientStorefrontPurchaseAccountHandler>.Instance,
-            storefrontManager,
+            CreateStorefrontPurchaseService(storefrontManager),
             RecordingDispatchProxy<ICharacterManager>.Create(out _),
             RecordingDispatchProxy<IPlayerManager>.Create(out _),
             CreateGameTableManager(CreateCharacterSlotEntitlementEntry()),
@@ -318,7 +321,7 @@ public class StorefrontPurchaseHandlerTests
             accountItemEntry: CreateCharacterSlotAccountItemEntry());
         var handler = new ClientStorefrontPurchaseAccountHandler(
             NullLogger<ClientStorefrontPurchaseAccountHandler>.Instance,
-            storefrontManager,
+            CreateStorefrontPurchaseService(storefrontManager),
             RecordingDispatchProxy<ICharacterManager>.Create(out _),
             RecordingDispatchProxy<IPlayerManager>.Create(out _),
             CreateGameTableManager(CreateCharacterSlotEntitlementEntry()),
@@ -366,7 +369,7 @@ public class StorefrontPurchaseHandlerTests
             amount: 3u);
         var handler = new ClientStorefrontPurchaseAccountHandler(
             NullLogger<ClientStorefrontPurchaseAccountHandler>.Instance,
-            storefrontManager,
+            CreateStorefrontPurchaseService(storefrontManager),
             RecordingDispatchProxy<ICharacterManager>.Create(out _),
             RecordingDispatchProxy<IPlayerManager>.Create(out _),
             CreateGameTableManager(new EntitlementEntry
@@ -416,7 +419,7 @@ public class StorefrontPurchaseHandlerTests
             });
         var handler = new ClientStorefrontPurchaseAccountHandler(
             NullLogger<ClientStorefrontPurchaseAccountHandler>.Instance,
-            storefrontManager,
+            CreateStorefrontPurchaseService(storefrontManager),
             RecordingDispatchProxy<ICharacterManager>.Create(out _),
             RecordingDispatchProxy<IPlayerManager>.Create(out _),
             CreateGameTableManager(),
@@ -498,6 +501,13 @@ public class StorefrontPurchaseHandlerTests
         });
 
         return session;
+    }
+
+    private static IStorefrontPurchaseService CreateStorefrontPurchaseService(IGlobalStorefrontManager storefrontManager = null)
+    {
+        storefrontManager ??= RecordingDispatchProxy<IGlobalStorefrontManager>.Create(out _);
+        IDatabaseManager databaseManager = RecordingDispatchProxy<IDatabaseManager>.Create(out _);
+        return new StorefrontPurchaseService(databaseManager, storefrontManager, new BackgroundTaskRunner());
     }
 
     private static IGlobalStorefrontManager CreateStorefrontManager(

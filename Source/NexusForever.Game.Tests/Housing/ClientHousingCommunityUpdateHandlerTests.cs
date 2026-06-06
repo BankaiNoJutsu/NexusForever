@@ -47,7 +47,8 @@ public class ClientHousingCommunityUpdateHandlerTests
         IResidenceEntrance entrance = CreateEntrance();
         globalResidenceManagerProxy.SetMethodReturn(nameof(IGlobalResidenceManager.GetResidenceEntrance), entrance);
 
-        using LegacyProviderScope providerScope = UseMapLockProvider();
+        using ServiceProvider provider = BuildMapLockProvider();
+        using LegacyServiceProviderScope providerScope = new(provider);
 
         handler.HandleMessage(session, CreatePlacementRequest(2u));
 
@@ -195,17 +196,15 @@ public class ClientHousingCommunityUpdateHandlerTests
         return packet;
     }
 
-    private static LegacyProviderScope UseMapLockProvider()
+    private static ServiceProvider BuildMapLockProvider()
     {
         IMapLockManager mapLockManager = RecordingDispatchProxy<IMapLockManager>.Create(out RecordingDispatchProxy<IMapLockManager> mapLockManagerProxy);
         IResidenceMapLock mapLock = RecordingDispatchProxy<IResidenceMapLock>.Create(out _);
         mapLockManagerProxy.SetMethodReturn(nameof(IMapLockManager.GetResidenceLock), mapLock);
 
-        ServiceProvider provider = new ServiceCollection()
+        return new ServiceCollection()
             .AddSingleton(mapLockManager)
             .BuildServiceProvider();
-
-        return new LegacyProviderScope(provider);
     }
 
     private static void SetPacketProperty(object packet, string propertyName, object value)
@@ -220,22 +219,4 @@ public class ClientHousingCommunityUpdateHandlerTests
             .Select(invocation => invocation.Arguments[0]);
     }
 
-    private sealed class LegacyProviderScope : IDisposable
-    {
-        private readonly IServiceProvider previous;
-        private readonly ServiceProvider provider;
-
-        public LegacyProviderScope(ServiceProvider provider)
-        {
-            previous = LegacyServiceProvider.Provider;
-            this.provider = provider;
-            LegacyServiceProvider.Provider = provider;
-        }
-
-        public void Dispose()
-        {
-            LegacyServiceProvider.Provider = previous;
-            provider.Dispose();
-        }
-    }
 }

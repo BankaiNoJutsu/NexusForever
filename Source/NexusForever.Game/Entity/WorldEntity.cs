@@ -201,6 +201,8 @@ namespace NexusForever.Game.Entity
         public uint? SummonerGuid { get; set; }
 
         private IEntitySummonFactory summonFactory;
+        private Func<IEntitySummonFactory> summonFactoryResolver;
+        private Func<ICreatureInfoManager> creatureInfoManagerResolver;
 
         /// <summary>
         /// Factory used to summon child entities owned by this <see cref="IWorldEntity"/>.
@@ -209,7 +211,8 @@ namespace NexusForever.Game.Entity
 
         private IEntitySummonFactory InitialiseSummonFactory()
         {
-            IEntitySummonFactory factory = LegacyServiceProvider.Provider?.GetService<IEntitySummonFactory>();
+            IEntitySummonFactory factory = summonFactoryResolver?.Invoke()
+                ?? LegacyServiceProvider.Provider?.GetService<IEntitySummonFactory>();
             factory?.Initialise(this);
             return factory;
         }
@@ -255,6 +258,14 @@ namespace NexusForever.Game.Entity
             MovementManager.Initialise(this);
         }
 
+        internal void InitialiseRuntimeDependencies(
+            Func<IEntitySummonFactory> summonFactoryResolver,
+            Func<ICreatureInfoManager> creatureInfoManagerResolver)
+        {
+            this.summonFactoryResolver = summonFactoryResolver;
+            this.creatureInfoManagerResolver = creatureInfoManagerResolver;
+        }
+
         #endregion
 
         /// <summary>
@@ -262,9 +273,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void Initialise(uint creatureId)
         {
-            ICreatureInfo creatureInfo = LegacyServiceProvider.Provider?
-                .GetService<ICreatureInfoManager>()?
-                .GetCreatureInfo(creatureId);
+            ICreatureInfo creatureInfo = GetCreatureInfo(creatureId);
             if (creatureInfo != null)
             {
                 Initialise(creatureInfo);
@@ -313,9 +322,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public virtual void Initialise(EntityModel model)
         {
-            ICreatureInfo creatureInfo = LegacyServiceProvider.Provider?
-                .GetService<ICreatureInfoManager>()?
-                .GetCreatureInfo(model.Creature);
+            ICreatureInfo creatureInfo = GetCreatureInfo(model.Creature);
             if (creatureInfo != null)
             {
                 Initialise(creatureInfo, model);
@@ -350,6 +357,13 @@ namespace NexusForever.Game.Entity
                 SetBaseProperty(propertyModel.Property, propertyModel.Value);
 
             ResetVitalsToMaximum();
+        }
+
+        private ICreatureInfo GetCreatureInfo(uint creatureId)
+        {
+            ICreatureInfoManager manager = creatureInfoManagerResolver?.Invoke()
+                ?? LegacyServiceProvider.Provider?.GetService<ICreatureInfoManager>();
+            return manager?.GetCreatureInfo(creatureId);
         }
 
         /// <summary>

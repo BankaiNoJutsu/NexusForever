@@ -3,8 +3,8 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Service;
 
 namespace NexusForever.WorldServer.Support
 {
@@ -17,10 +17,14 @@ namespace NexusForever.WorldServer.Support
         };
 
         private readonly ILogger<FileSupportSubmissionStore> log;
+        private readonly IBackgroundTaskRunner backgroundTaskRunner;
 
-        public FileSupportSubmissionStore(ILogger<FileSupportSubmissionStore> log)
+        public FileSupportSubmissionStore(
+            ILogger<FileSupportSubmissionStore> log,
+            IBackgroundTaskRunner backgroundTaskRunner)
         {
-            this.log = log;
+            this.log                  = log;
+            this.backgroundTaskRunner = backgroundTaskRunner;
         }
 
         public bool TryAppend(IWorldSession session, string type, object payload)
@@ -42,20 +46,15 @@ namespace NexusForever.WorldServer.Support
                 string directory = Path.Combine(AppContext.BaseDirectory, "support-submissions");
                 string path = Path.Combine(directory, $"{DateTime.UtcNow:yyyyMMdd}.jsonl");
 
-                Task.Run(() =>
+                backgroundTaskRunner.Queue(() =>
                 {
-                    try
-                    {
-                        Directory.CreateDirectory(directory);
-                        lock (writeLock)
-                            File.AppendAllText(path, line + Environment.NewLine);
-                    }
-                    catch (Exception exception)
-                    {
-                        log.LogError(exception, "Failed to persist support submission {SubmissionType} for player {PlayerGuid}.",
-                            type, session.Player?.Guid);
-                    }
-                }).FireAndForgetAsync();
+                    Directory.CreateDirectory(directory);
+                    lock (writeLock)
+                        File.AppendAllText(path, line + Environment.NewLine);
+
+                    return Task.CompletedTask;
+                }, exception => log.LogError(exception, "Failed to persist support submission {SubmissionType} for player {PlayerGuid}.",
+                    type, session.Player?.Guid));
 
                 return true;
             }

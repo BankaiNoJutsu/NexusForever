@@ -36,86 +36,62 @@ public class LootBindOnPickupPolicyTests
     [Fact]
     public void GiveLoot_BindOnPickupItem_FirstCollectSendsBindcheckWithoutDelivering()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(CreateBindOnPickupItemInfo(), CreateNormalItemInfo());
+        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateBindOnPickupItemInfo(), CreateNormalItemInfo()));
 
-        try
-        {
-            IPlayer player = CreatePlayer(slotsRemaining: 1u, out RecordingDispatchProxy<IGameSession> sessionProxy);
-            var lootInstance = CreateLootInstance(player);
-            LootInstanceItem lootItem = lootInstance.AddLootItem(BindOnPickupItemId, LootItemType.StaticItem, 1u);
+        IPlayer player = CreatePlayer(slotsRemaining: 1u, out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var lootInstance = CreateLootInstance(player);
+        LootInstanceItem lootItem = lootInstance.AddLootItem(BindOnPickupItemId, LootItemType.StaticItem, 1u);
 
-            bool delivered = lootInstance.GiveLoot(player, lootItem.Id);
+        bool delivered = lootInstance.GiveLoot(player, lootItem.Id);
 
-            Assert.False(delivered);
-            Assert.False(lootItem.Delivered);
+        Assert.False(delivered);
+        Assert.False(lootItem.Delivered);
 
-            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls =
-                sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            RecordingDispatchProxy<IGameSession>.Invocation bindCall = Assert.Single(sessionCalls);
-            var bindPacket = Assert.IsType<ServerLootBindOnPickup>(bindCall.Arguments[0]);
-            Assert.Equal(99u, bindPacket.OwnerUnitId);
-            Assert.Equal(lootItem.Id, bindPacket.LootUnitId);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls =
+            sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        RecordingDispatchProxy<IGameSession>.Invocation bindCall = Assert.Single(sessionCalls);
+        var bindPacket = Assert.IsType<ServerLootBindOnPickup>(bindCall.Arguments[0]);
+        Assert.Equal(99u, bindPacket.OwnerUnitId);
+        Assert.Equal(lootItem.Id, bindPacket.LootUnitId);
     }
 
     [Fact]
     public void GiveLoot_BindOnPickupItem_SecondCollectDeliversAndSoulbinds()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(CreateBindOnPickupItemInfo(), CreateNormalItemInfo());
+        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateBindOnPickupItemInfo(), CreateNormalItemInfo()));
 
-        try
-        {
-            IPlayer player = CreatePlayer(slotsRemaining: 1u, out RecordingDispatchProxy<IGameSession> sessionProxy);
-            var lootInstance = CreateLootInstance(player);
-            LootInstanceItem lootItem = lootInstance.AddLootItem(BindOnPickupItemId, LootItemType.StaticItem, 1u);
+        IPlayer player = CreatePlayer(slotsRemaining: 1u, out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var lootInstance = CreateLootInstance(player);
+        LootInstanceItem lootItem = lootInstance.AddLootItem(BindOnPickupItemId, LootItemType.StaticItem, 1u);
 
-            Assert.False(lootInstance.GiveLoot(player, lootItem.Id));
-            Assert.True(lootInstance.GiveLoot(player, lootItem.Id));
+        Assert.False(lootInstance.GiveLoot(player, lootItem.Id));
+        Assert.True(lootInstance.GiveLoot(player, lootItem.Id));
 
-            Assert.True(lootItem.Delivered);
-            IItem createdItem = Assert.Single(player.Inventory.Single(bag => bag.Location == InventoryLocation.Inventory));
-            Assert.True(createdItem.Soulbound);
+        Assert.True(lootItem.Delivered);
+        IItem createdItem = Assert.Single(player.Inventory.Single(bag => bag.Location == InventoryLocation.Inventory));
+        Assert.True(createdItem.Soulbound);
 
-            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls =
-                sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            Assert.Collection(sessionCalls,
-                call => Assert.IsType<ServerLootBindOnPickup>(call.Arguments[0]),
-                call => Assert.IsType<ServerLootGrant>(call.Arguments[0]));
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls =
+            sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        Assert.Collection(sessionCalls,
+            call => Assert.IsType<ServerLootBindOnPickup>(call.Arguments[0]),
+            call => Assert.IsType<ServerLootGrant>(call.Arguments[0]));
     }
 
     [Fact]
     public void GiveLoot_NonBindOnPickupItem_DeliversOnFirstCollect()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(CreateBindOnPickupItemInfo(), CreateNormalItemInfo());
+        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateBindOnPickupItemInfo(), CreateNormalItemInfo()));
 
-        try
-        {
-            IPlayer player = CreatePlayer(slotsRemaining: 1u, out RecordingDispatchProxy<IGameSession> sessionProxy);
-            var lootInstance = CreateLootInstance(player);
-            LootInstanceItem lootItem = lootInstance.AddLootItem(NormalItemId, LootItemType.StaticItem, 1u);
+        IPlayer player = CreatePlayer(slotsRemaining: 1u, out RecordingDispatchProxy<IGameSession> sessionProxy);
+        var lootInstance = CreateLootInstance(player);
+        LootInstanceItem lootItem = lootInstance.AddLootItem(NormalItemId, LootItemType.StaticItem, 1u);
 
-            Assert.True(lootInstance.GiveLoot(player, lootItem.Id));
-            Assert.True(lootItem.Delivered);
-            Assert.DoesNotContain(
-                sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)),
-                call => call.Arguments[0] is ServerLootBindOnPickup);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        Assert.True(lootInstance.GiveLoot(player, lootItem.Id));
+        Assert.True(lootItem.Delivered);
+        Assert.DoesNotContain(
+            sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)),
+            call => call.Arguments[0] is ServerLootBindOnPickup);
     }
 
     private static LootInstance CreateLootInstance(IPlayer player)
@@ -131,7 +107,7 @@ public class LootBindOnPickupPolicyTests
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
-        var inventory = new TestInventory(slotsRemaining);
+        var inventory = new TestInventory(slotsRemaining, createItems: true);
 
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
         playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
@@ -236,98 +212,4 @@ public class LootBindOnPickupPolicyTests
         return itemInfo;
     }
 
-    private sealed class TestInventory : IInventory
-    {
-        public TestBag InventoryBag { get; }
-
-        public TestInventory(uint slotsRemaining)
-        {
-            InventoryBag = new TestBag(slotsRemaining);
-        }
-
-        public void Save(Database.Character.CharacterContext context) { }
-        public void Update(double lastTick) { }
-        public bool IsVisualItemSlot(InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public bool IsEquippableBagSlot(InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public bool IsEquippableBankBagSlot(InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public bool IsInventoryFull(InventoryLocation location) => InventoryBag.SlotsRemaining == 0u;
-        public uint GetInventorySlotsRemaining(InventoryLocation location) => InventoryBag.SlotsRemaining;
-        public bool HasItemCount(uint itemId, uint count) => throw new NotSupportedException();
-        public uint GetItemCount(uint itemId) => throw new NotSupportedException();
-        public IItem GetItem(ItemLocation itemLocation) => throw new NotSupportedException();
-        public IItem GetItem(InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public IItem GetItem(ulong guid) => throw new NotSupportedException();
-        public IEnumerable<IItemVisual> GetItemVisuals() => throw new NotSupportedException();
-        public IItem SpellCreate(Spell4BaseEntry spell4BaseEntry, ItemUpdateReason reason = ItemUpdateReason.NoReason) => throw new NotSupportedException();
-
-        public void ItemCreate(InventoryLocation location, uint itemId, uint count, ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
-        {
-            IItemInfo info = ItemManager.Instance.GetItemInfo(itemId)
-                ?? throw new InvalidOperationException($"Missing item info for {itemId}.");
-            ItemCreate(location, info, count, reason, charges);
-        }
-
-        public void ItemCreate(InventoryLocation location, IItemInfo info, uint count, ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
-        {
-            var item = new NexusForever.Game.Entity.Item(42ul, info, count, charges);
-            InventoryBag.AddItem(item, 0u);
-            if (InventoryBag.SlotsRemaining > 0u)
-                InventoryBag.SlotsRemaining--;
-        }
-
-        public GenericError? CanMoveItem(IItem item, ItemLocation location) => throw new NotSupportedException();
-        public GenericError? CanMoveItem(IItem item, InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public void ItemMove(IItem item, ItemLocation location) => throw new NotSupportedException();
-        public void ItemMove(IItem item, InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public void ItemSplit(ulong itemGuid, ItemLocation newItemLocation, uint count) => throw new NotSupportedException();
-        public IItem ItemDelete(ItemLocation from, ItemUpdateReason reason = ItemUpdateReason.Loot) => throw new NotSupportedException();
-        public IItem ItemDelete(ItemLocation from, uint count, ItemUpdateReason reason = ItemUpdateReason.Loot) => throw new NotSupportedException();
-        public void ItemDelete(uint itemId, uint count = 1, ItemUpdateReason reason = ItemUpdateReason.Loot) => throw new NotSupportedException();
-        public void ItemRemove(IItem item, ItemUpdateReason reason = ItemUpdateReason.NoReason) => throw new NotSupportedException();
-        public void AddItem(IItem item, InventoryLocation location, ItemUpdateReason reason = ItemUpdateReason.NoReason) => throw new NotSupportedException();
-        public void LoadItem(IItem item, InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public bool ItemUse(IItem item) => throw new NotSupportedException();
-        public void ItemMoveToSupplySatchel(IItem item, uint amount) => throw new NotSupportedException();
-
-        public IEnumerator<IBag> GetEnumerator()
-        {
-            yield return InventoryBag;
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-
-    private sealed class TestBag : IBag
-    {
-        private readonly List<IItem> items = [];
-
-        public InventoryLocation Location => InventoryLocation.Inventory;
-        public uint Slots => SlotsRemaining;
-        public uint SlotsRemaining { get; set; }
-
-        public TestBag(uint slotsRemaining)
-        {
-            SlotsRemaining = slotsRemaining;
-        }
-
-        public void Save(Database.Character.CharacterContext context) { }
-        public IItem GetItem(ulong guid) => items.SingleOrDefault(item => item.Guid == guid);
-        public IItem GetItem(uint bagIndex) => items.SingleOrDefault(item => item.BagIndex == bagIndex);
-        public uint? GetFirstAvailableBagIndex() => items.Count < Slots ? (uint)items.Count : null;
-        public uint? GetFirstAvailableBagIndex(ItemSlot slot) => GetFirstAvailableBagIndex();
-        public void AddItem(IItem item, uint bagIndex)
-        {
-            item.BagIndex = bagIndex;
-            items.Add(item);
-        }
-        public void RemoveItem(IItem item) => items.Remove(item);
-        public void MoveItem(IItem item, uint bagIndex) => throw new NotSupportedException();
-        public void SwapItem(IItem item, IItem item2) => throw new NotSupportedException();
-        public void Resize(int capacityChange) => throw new NotSupportedException();
-        public IItem[] CreateSnapshot() => throw new NotSupportedException();
-        public void RestoreSnapshot(IItem[] snapshot) => throw new NotSupportedException();
-
-        public IEnumerator<IItem> GetEnumerator() => items.GetEnumerator();
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-    }
 }

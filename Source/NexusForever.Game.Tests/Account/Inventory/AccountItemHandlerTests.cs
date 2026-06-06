@@ -21,6 +21,7 @@ using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.GenericUnlock;
 using NexusForever.Shared;
+using NexusForever.WorldServer.Account;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Account;
 using NexusForever.WorldServer.Network.Message.Handler.Character;
@@ -252,10 +253,12 @@ public class AccountItemHandlerTests
             sessionProxy.SetProperty(nameof(IWorldSession.Player), null);
             accountProxy.SetProperty(nameof(IAccount.InventoryManager), inventoryManager);
             inventoryProxy.SetMethodReturn(nameof(IAccountInventoryManager.TakeItem), AccountOperationResult.Ok);
+            IStorefrontPurchaseService storefrontPurchaseService = RecordingDispatchProxy<IStorefrontPurchaseService>.Create(out RecordingDispatchProxy<IStorefrontPurchaseService> storefrontPurchaseProxy);
 
             var handler = new ClientAccountItemTakeHandler(
                 NullLogger<ClientAccountItemTakeHandler>.Instance,
-                characterListManager);
+                characterListManager,
+                storefrontPurchaseService);
 
             var request = new ClientAccountItemTake();
             SetAutoProperty(request, nameof(ClientAccountItemTake.Id), 7ul);
@@ -266,6 +269,7 @@ public class AccountItemHandlerTests
                 Assert.Single(inventoryProxy.GetInvocations(nameof(IAccountInventoryManager.TakeItem)));
             Assert.Null(take.Arguments[0]);
             Assert.Equal(7ul, take.Arguments[1]);
+            Assert.Single(storefrontPurchaseProxy.GetInvocations(nameof(IStorefrontPurchaseService.PersistAccount)));
             Assert.Single(characterListProxy.GetInvocations(nameof(ICharacterListManager.SendCharacterListPackets)));
         }
         finally

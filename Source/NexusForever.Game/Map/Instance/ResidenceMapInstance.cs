@@ -1,6 +1,7 @@
 using System.Numerics;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Map;
@@ -54,8 +55,9 @@ namespace NexusForever.Game.Map.Instance
             IGlobalResidenceManager globalResidenceManager,
             IGameTableManager gameTableManager,
             IRealmContext realmContext,
-            IScriptManager scriptManager)
-            : base(entityFactory, publicEventManager)
+            IScriptManager scriptManager,
+            ICreatureInfoManager creatureInfoManager = null)
+            : base(entityFactory, publicEventManager, creatureInfoManager)
         {
             this.entityFactory          = entityFactory;
             this.mapLockManager         = mapLockManager;

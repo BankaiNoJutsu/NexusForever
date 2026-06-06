@@ -1,25 +1,15 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.Logging;
-using NexusForever.Database;
-using NexusForever.Database.Auth;
 using NexusForever.Game;
-using NexusForever.Game.Abstract;
-using NexusForever.Game.Abstract.Account.Entitlement;
+using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Storefront;
-using NexusForever.Game.Static.Entity;
-using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Storefront;
-using NexusForever.Game.Account.Inventory;
-using NexusForever.Game.Abstract.Account.Inventory;
 using NexusForever.GameTable;
-using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
+using NexusForever.WorldServer.Account;
 using NexusForever.WorldServer.Network.Message.Handler.Character;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
@@ -28,20 +18,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
     public class ClientStorefrontPurchaseCharacterHandler : IMessageHandler<IWorldSession, ClientStorefrontPurchaseCharacter>
     {
         private readonly ILogger<ClientStorefrontPurchaseCharacterHandler> log;
-        private readonly IGlobalStorefrontManager globalStorefrontManager;
+        private readonly IStorefrontPurchaseService storefrontPurchaseService;
         private readonly IGameTableManager gameTableManager;
         private readonly ICharacterListManager characterListManager;
 
         public ClientStorefrontPurchaseCharacterHandler(
             ILogger<ClientStorefrontPurchaseCharacterHandler> log,
-            IGlobalStorefrontManager globalStorefrontManager,
+            IStorefrontPurchaseService storefrontPurchaseService,
             IGameTableManager gameTableManager,
             ICharacterListManager characterListManager)
         {
-            this.log                  = log;
-            this.globalStorefrontManager = globalStorefrontManager;
-            this.gameTableManager     = gameTableManager;
-            this.characterListManager = characterListManager;
+            this.log                       = log;
+            this.storefrontPurchaseService = storefrontPurchaseService;
+            this.gameTableManager          = gameTableManager;
+            this.characterListManager      = characterListManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientStorefrontPurchaseCharacter purchase)
@@ -50,16 +40,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                 session.Player?.Guid, session.Account?.Id, purchase.OfferId, purchase.CurrencyId, purchase.PaymentCurrencySlot, purchase.PurchaseMoneyAmountBits, purchase.PurchaseOptionId, purchase.PurchaseExtensionId, purchase.Target);
 
             bool characterSelectPurchase = session.Player == null;
-            if (!characterSelectPurchase && !StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.Target))
+            if (!characterSelectPurchase && !storefrontPurchaseService.IsCurrentOrEmptyTarget(session, purchase.Target))
             {
                 log.LogWarning("Rejecting storefront character purchase from player {PlayerGuid}: non-current target {Target}.",
                     session.Player?.Guid, purchase.Target);
-                StorefrontPurchaseHelper.SendFailure(session, StoreError.GenericFail);
+                storefrontPurchaseService.SendFailure(session, StoreError.GenericFail);
                 return;
             }
 
-            StorefrontPurchaseHelper.DirectAccountGrantPlan directGrantPlan = null;
-            StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
+            DirectAccountGrantPlan directGrantPlan = null;
+            storefrontPurchaseService.TryPurchase(session, log,
                 purchase.OfferId, purchase.PaymentCurrencySlot, purchase.CurrencyId,
                 (offerItem, accountItemIds) =>
                 {
@@ -67,22 +57,22 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                         session.Player?.Guid, session.Account?.Id, accountItemIds.Count, string.Join(",", accountItemIds));
                     if (directGrantPlan != null)
                     {
-                        StorefrontPurchaseHelper.ApplyDirectAccountGrantPlan(session, directGrantPlan);
+                        storefrontPurchaseService.ApplyDirectAccountGrantPlan(session, directGrantPlan);
                         characterListManager.SendCharacterListPackets(session);
                     }
                     else
                     {
-                        NetworkIdentity targetPlayerIdentity = StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session);
+                        NetworkIdentity targetPlayerIdentity = storefrontPurchaseService.GetCurrentPlayerIdentity(session);
                         foreach (uint accountItemId in accountItemIds)
                             session.Account.InventoryManager.AddItem(accountItemId, targetPlayerIdentity, hasTargetPlayerIdentity: targetPlayerIdentity.Id != 0ul);
                     }
 
-                    StorefrontPurchaseHelper.SendCharacterPurchaseSuccess(session);
+                    storefrontPurchaseService.SendCharacterPurchaseSuccess(session);
                 },
                 characterSelectPurchase ? "character select direct account" : "character",
                 characterSelectPurchase
                     ? (IOfferItem offerItem, IReadOnlyList<uint> _, out StoreError error, out string reason) =>
-                        StorefrontPurchaseHelper.TryBuildDirectAccountGrantPlan(session, gameTableManager, offerItem, requireDirectAccountGrant: true, out directGrantPlan, out error, out reason)
+                        storefrontPurchaseService.TryBuildDirectAccountGrantPlan(session, gameTableManager, offerItem, requireDirectAccountGrant: true, out directGrantPlan, out error, out reason)
                     : null,
                 requirePlayer: !characterSelectPurchase);
         }
@@ -91,7 +81,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
     public class ClientStorefrontPurchaseAccountHandler : IMessageHandler<IWorldSession, ClientStorefrontPurchaseAccount>
     {
         private readonly ILogger<ClientStorefrontPurchaseAccountHandler> log;
-        private readonly IGlobalStorefrontManager globalStorefrontManager;
+        private readonly IStorefrontPurchaseService storefrontPurchaseService;
         private readonly ICharacterManager characterManager;
         private readonly IPlayerManager playerManager;
         private readonly IGameTableManager gameTableManager;
@@ -100,20 +90,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
         public ClientStorefrontPurchaseAccountHandler(
             ILogger<ClientStorefrontPurchaseAccountHandler> log,
-            IGlobalStorefrontManager globalStorefrontManager,
+            IStorefrontPurchaseService storefrontPurchaseService,
             ICharacterManager characterManager,
             IPlayerManager playerManager,
             IGameTableManager gameTableManager,
             IAccountPendingItemRepository pendingItemRepository,
             ICharacterListManager characterListManager)
         {
-            this.log                     = log;
-            this.globalStorefrontManager = globalStorefrontManager;
-            this.characterManager        = characterManager;
-            this.playerManager           = playerManager;
-            this.gameTableManager        = gameTableManager;
-            this.pendingItemRepository   = pendingItemRepository;
-            this.characterListManager    = characterListManager;
+            this.log                       = log;
+            this.storefrontPurchaseService = storefrontPurchaseService;
+            this.characterManager          = characterManager;
+            this.playerManager             = playerManager;
+            this.gameTableManager          = gameTableManager;
+            this.pendingItemRepository     = pendingItemRepository;
+            this.characterListManager      = characterListManager;
         }
 
         public void HandleMessage(IWorldSession session, ClientStorefrontPurchaseAccount purchase)
@@ -121,37 +111,37 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             log.LogInformation("StorefrontCatalogDiagnostics storefront account purchase request player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId} slot={PaymentCurrencySlot} amountBits={PurchaseMoneyAmountBits} option={PurchaseOptionId} extension={PurchaseExtensionId} accountExtension={AccountPurchaseExtensionId} target={Target} accountTarget={AccountTarget} recipientLength={RecipientLength}.",
                 session.Player?.Guid, session.Account?.Id, purchase.OfferId, purchase.CurrencyId, purchase.PaymentCurrencySlot, purchase.PurchaseMoneyAmountBits, purchase.PurchaseOptionId, purchase.PurchaseExtensionId, purchase.AccountPurchaseExtensionId, purchase.Target, purchase.AccountTarget, purchase.RecipientName?.Length ?? 0);
 
-            if (!StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.Target))
+            if (!storefrontPurchaseService.IsCurrentOrEmptyTarget(session, purchase.Target))
             {
                 log.LogDebug("Rejecting storefront account purchase from player {PlayerGuid}: non-current target {Target}, account target {AccountTarget}, recipient length {RecipientLength}.",
                     session.Player?.Guid, purchase.Target, purchase.AccountTarget, purchase.RecipientName?.Length ?? 0);
-                StorefrontPurchaseHelper.SendFailure(session, StoreError.GenericFail);
+                storefrontPurchaseService.SendFailure(session, StoreError.GenericFail);
                 return;
             }
 
             bool hasRecipientName = !string.IsNullOrWhiteSpace(purchase.RecipientName);
-            bool hasAccountTarget = purchase.AccountTarget.Id != 0ul && !StorefrontPurchaseHelper.IsCurrentOrEmptyTarget(session, purchase.AccountTarget);
+            bool hasAccountTarget = purchase.AccountTarget.Id != 0ul && !storefrontPurchaseService.IsCurrentOrEmptyTarget(session, purchase.AccountTarget);
             if (hasRecipientName || hasAccountTarget)
             {
                 if (!TryResolveGiftRecipient(session, purchase, out uint recipientAccountId, out IPlayer recipient, out NetworkIdentity recipientIdentity))
                     return;
 
-                StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
+                storefrontPurchaseService.TryPurchase(session, log,
                     purchase.OfferId, purchase.PaymentCurrencySlot, purchase.CurrencyId,
                     (_, accountItemIds) =>
                     {
                         log.LogInformation("StorefrontCatalogDiagnostics storefront account gift delivery player={PlayerGuid} account={AccountId} recipientAccount={RecipientAccountId} online={IsOnline} itemCount={AccountItemCount} items=[{AccountItems}].",
                             session.Player?.Guid, session.Account?.Id, recipientAccountId, recipient != null, accountItemIds.Count, string.Join(",", accountItemIds));
                         DeliverStorefrontGift(session, recipientAccountId, recipient, recipientIdentity, accountItemIds);
-                        StorefrontPurchaseHelper.SendAccountPurchaseSuccess(session);
+                        storefrontPurchaseService.SendAccountPurchaseSuccess(session);
                     },
                     "account gift");
                 return;
             }
 
-            StorefrontPurchaseHelper.DirectAccountGrantPlan directGrantPlan = null;
+            DirectAccountGrantPlan directGrantPlan = null;
             bool characterSelectPurchase = session.Player == null;
-            StorefrontPurchaseHelper.TryPurchase(session, globalStorefrontManager, log,
+            storefrontPurchaseService.TryPurchase(session, log,
                 purchase.OfferId, purchase.PaymentCurrencySlot, purchase.CurrencyId,
                 (offerItem, accountItemIds) =>
                 {
@@ -159,7 +149,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                         session.Player?.Guid, session.Account?.Id, accountItemIds.Count, string.Join(",", accountItemIds));
                     if (directGrantPlan != null)
                     {
-                        StorefrontPurchaseHelper.ApplyDirectAccountGrantPlan(session, directGrantPlan);
+                        storefrontPurchaseService.ApplyDirectAccountGrantPlan(session, directGrantPlan);
                         characterListManager.SendCharacterListPackets(session);
                     }
                     else
@@ -168,14 +158,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
                             session.Account.InventoryManager.AddItem(accountItemId);
                     }
 
-                    StorefrontPurchaseHelper.SendAccountPurchaseSuccess(session);
+                    storefrontPurchaseService.SendAccountPurchaseSuccess(session);
                 },
                 "account",
                 characterSelectPurchase
                     ? (IOfferItem offerItem, IReadOnlyList<uint> _, out StoreError error, out string reason) =>
-                        StorefrontPurchaseHelper.TryBuildDirectAccountGrantPlan(session, gameTableManager, offerItem, requireDirectAccountGrant: true, out directGrantPlan, out error, out reason)
+                        storefrontPurchaseService.TryBuildDirectAccountGrantPlan(session, gameTableManager, offerItem, requireDirectAccountGrant: true, out directGrantPlan, out error, out reason)
                     : (IOfferItem offerItem, IReadOnlyList<uint> _, out StoreError error, out string reason) =>
-                        StorefrontPurchaseHelper.ValidateDirectAccountGrantClaim(session, gameTableManager, offerItem, out error, out reason),
+                        storefrontPurchaseService.ValidateDirectAccountGrantClaim(session, gameTableManager, offerItem, out error, out reason),
                 requirePlayer: false);
         }
 
@@ -193,7 +183,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 log.LogDebug("Rejecting storefront account gift from player {PlayerGuid}: unknown recipient name {RecipientName}, account target {AccountTarget}.",
                     session.Player?.Guid, purchase.RecipientName, purchase.AccountTarget);
-                StorefrontPurchaseHelper.SendFailure(session, StoreError.IneligibleGiftRecipient);
+                storefrontPurchaseService.SendFailure(session, StoreError.IneligibleGiftRecipient);
                 return false;
             }
 
@@ -214,7 +204,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 recipient.Account.InventoryManager.AddPendingItemGroup(
                     accountItemIds,
-                    StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session),
+                    storefrontPurchaseService.GetCurrentPlayerIdentity(session),
                     recipientIdentity,
                     senderAccountId: session.Account.Id,
                     targetAccountId: recipientAccountId);
@@ -225,503 +215,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
             {
                 AccountItemIds  = accountItemIds,
                 SenderAccountId = session.Account.Id,
-                SenderIdentity  = StorefrontPurchaseHelper.GetCurrentPlayerIdentity(session),
+                SenderIdentity  = storefrontPurchaseService.GetCurrentPlayerIdentity(session),
                 TargetIdentity  = recipientIdentity
             });
 
             log.LogDebug("Queued storefront gift from player {PlayerGuid} to offline account {RecipientAccountId}.",
                 session.Player?.Guid, recipientAccountId);
-        }
-    }
-
-    internal static class StorefrontPurchaseHelper
-    {
-        public delegate bool StorefrontDeliveryValidator(IOfferItem offerItem, IReadOnlyList<uint> accountItemIds, out StoreError error, out string reason);
-
-        public static void TryPurchase(
-            IWorldSession session,
-            IGlobalStorefrontManager globalStorefrontManager,
-            ILogger log,
-            uint offerId,
-            byte paymentCurrencySlot,
-            ushort currencyId,
-            Action<IOfferItem, IReadOnlyList<uint>> deliverItems,
-            string purchaseScope,
-            StorefrontDeliveryValidator deliveryValidator = null,
-            bool requirePlayer = true)
-        {
-            log.LogInformation("StorefrontCatalogDiagnostics storefront {PurchaseScope} purchase validate player={PlayerGuid} account={AccountId} offer={OfferId} paymentCurrencySlot={PaymentCurrencySlot} currency={CurrencyId}.",
-                purchaseScope, session.Player?.Guid, session.Account?.Id, offerId, paymentCurrencySlot, currencyId);
-
-            if (requirePlayer && session.Player == null)
-            {
-                log.LogWarning("Rejecting storefront {PurchaseScope} purchase for offer {OfferId}: session has no player.",
-                    purchaseScope, offerId);
-                SendFailure(session, StoreError.GenericFail);
-                return;
-            }
-
-            if (session.Account == null)
-            {
-                log.LogWarning("Rejecting storefront {PurchaseScope} purchase for offer {OfferId}: session has no account.",
-                    purchaseScope, offerId);
-                SendFailure(session, StoreError.GenericFail);
-                return;
-            }
-
-            if (!StorePurchaseVelocityLimiter.IsWithinVelocityLimit(session.Account.Id))
-            {
-                log.LogDebug("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: purchase velocity limit reached for account {AccountId}.",
-                    purchaseScope, session.Player?.Guid, session.Account.Id);
-                SendFailure(session, StoreError.PurchaseVelocityLimit);
-                return;
-            }
-
-            IOfferItem offerItem = globalStorefrontManager.GetStoreOfferItem(offerId);
-            if (offerItem == null)
-            {
-                log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: unknown offer {OfferId}.",
-                    purchaseScope, session.Player?.Guid, offerId);
-                SendFailure(session, StoreError.InvalidOffer);
-                return;
-            }
-
-            if (!TryResolvePurchaseCurrency(paymentCurrencySlot, currencyId, out AccountCurrencyType accountCurrencyType, out ushort resolvedCurrencyId))
-            {
-                log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: invalid payment currency slot {PaymentCurrencySlot} and currency {CurrencyId} for offer {OfferId}.",
-                    purchaseScope, session.Player?.Guid, paymentCurrencySlot, currencyId, offerId);
-                SendFailure(session, StoreError.InvalidPrice);
-                return;
-            }
-
-            IOfferItemPrice price = offerItem.GetPriceDataForCurrency(accountCurrencyType);
-            if (price == null)
-            {
-                log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: offer {OfferId} has no price for resolved currency {ResolvedCurrencyId} (slot {PaymentCurrencySlot}, currency {CurrencyId}).",
-                    purchaseScope, session.Player?.Guid, offerId, resolvedCurrencyId, paymentCurrencySlot, currencyId);
-                SendFailure(session, StoreError.InvalidPrice);
-                return;
-            }
-
-            if (!TryGetChargeAmount(price, out ulong chargeAmount))
-            {
-                log.LogWarning("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: offer {OfferId} has invalid price {Price}.",
-                    purchaseScope, session.Player?.Guid, offerId, price.Price);
-                SendFailure(session, StoreError.InvalidPrice);
-                return;
-            }
-
-            if (!TryBuildAccountItemList(session, offerItem, out List<uint> accountItemIds, out StoreError error, out string reason))
-            {
-                log.LogDebug("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: offer {OfferId} cannot be placed in account inventory ({Reason}).",
-                    purchaseScope, session.Player?.Guid, offerId, reason);
-                SendFailure(session, error);
-                return;
-            }
-
-            if (deliveryValidator != null && !deliveryValidator(offerItem, accountItemIds, out error, out reason))
-            {
-                log.LogDebug("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: offer {OfferId} cannot be delivered ({Reason}).",
-                    purchaseScope, session.Player?.Guid, offerId, reason);
-                SendFailure(session, error);
-                return;
-            }
-
-            if (chargeAmount > 0ul && !session.Account.CurrencyManager.CanAfford(accountCurrencyType, chargeAmount))
-            {
-                log.LogDebug("Rejecting storefront {PurchaseScope} purchase from player {PlayerGuid}: insufficient currency {CurrencyId}, price {Price}.",
-                    purchaseScope, session.Player?.Guid, resolvedCurrencyId, chargeAmount);
-                SendFailure(session, StoreError.CannotUseOffer);
-                return;
-            }
-
-            if (chargeAmount > 0ul)
-                session.Account.CurrencyManager.CurrencySubtractAmount(accountCurrencyType, chargeAmount);
-
-            deliverItems(offerItem, accountItemIds);
-
-            StorePurchaseHistoryManager.RecordPurchase(session.Account.Id, offerId, resolvedCurrencyId, chargeAmount);
-            PersistAccount(session, log);
-
-            log.LogInformation("StorefrontCatalogDiagnostics storefront {PurchaseScope} purchase completed player={PlayerGuid} account={AccountId} offer={OfferId} currency={CurrencyId} price={Price} accountItems={AccountItemCount}.",
-                purchaseScope, session.Player?.Guid, session.Account.Id, offerId, resolvedCurrencyId, chargeAmount, accountItemIds.Count);
-
-            log.LogDebug("Completed storefront {PurchaseScope} purchase for player {PlayerGuid}: offer {OfferId}, currency {CurrencyId}, price {Price}, account items {AccountItemCount}.",
-                purchaseScope, session.Player?.Guid, offerId, resolvedCurrencyId, chargeAmount, accountItemIds.Count);
-        }
-
-        public static bool IsCurrentOrEmptyTarget(IWorldSession session, NetworkIdentity identity)
-        {
-            if (identity == null || identity.Id == 0ul)
-                return true;
-
-            if (session.Player == null)
-                return false;
-
-            return identity.Id == session.Player.Identity.Id &&
-                (identity.RealmId == 0u || identity.RealmId == session.Player.Identity.RealmId);
-        }
-
-        public static NetworkIdentity GetCurrentPlayerIdentity(IWorldSession session)
-        {
-            if (session.Player == null)
-                return new NetworkIdentity();
-
-            return new NetworkIdentity
-            {
-                RealmId = session.Player.Identity.RealmId,
-                Id      = session.Player.Identity.Id
-            };
-        }
-
-        public static void SendFailure(IWorldSession session, StoreError error)
-        {
-            if (error == StoreError.PurchaseVelocityLimit)
-                AccountPrivilegeRestrictionManager.SendStorePurchaseVelocityRestriction(session.Account);
-
-            session.EnqueueMessageEncrypted(new ServerStoreError(error));
-        }
-
-        /// <summary>
-        /// Character purchases use opcode 0x098C. Native client handlers route 0x098C and 0x098D
-        /// through the same purchase-result path, so account purchases emit both to satisfy
-        /// character-select flows that keep the processing overlay open after variant-only results.
-        /// </summary>
-        public static void SendCharacterPurchaseSuccess(IWorldSession session)
-        {
-            session.EnqueueMessageEncrypted(new ServerStorePurchaseOfferResult
-            {
-                IsSuccess   = true,
-                DisplayType = PurchaseResultDisplayType.Default
-            });
-        }
-
-        public static void SendAccountPurchaseSuccess(IWorldSession session)
-        {
-            session.EnqueueMessageEncrypted(new ServerStorePurchaseOfferResultVariant
-            {
-                IsSuccess   = true,
-                DisplayType = PurchaseResultDisplayType.Default
-            });
-            session.EnqueueMessageEncrypted(new ServerStorePurchaseOfferResult
-            {
-                IsSuccess   = true,
-                DisplayType = PurchaseResultDisplayType.Default
-            });
-        }
-
-        public static bool ValidateDirectAccountGrantClaim(
-            IWorldSession session,
-            IGameTableManager gameTableManager,
-            IOfferItem offerItem,
-            out StoreError error,
-            out string reason)
-        {
-            error  = StoreError.GenericFail;
-            reason = string.Empty;
-
-            if (!IsDirectAccountGrantOffer(offerItem))
-                return true;
-
-            if (!TryBuildDirectAccountGrantPlan(session, gameTableManager, offerItem, requireDirectAccountGrant: false, out _, out error, out reason))
-                return false;
-
-            return true;
-        }
-
-        private static bool TryGetChargeAmount(IOfferItemPrice price, out ulong chargeAmount)
-        {
-            chargeAmount = 0ul;
-            if (float.IsNaN(price.Price) || float.IsInfinity(price.Price) || price.Price < 0f)
-                return false;
-
-            double roundedPrice = Math.Ceiling(price.Price);
-            if (roundedPrice > ulong.MaxValue)
-                return false;
-
-            chargeAmount = (ulong)roundedPrice;
-            return true;
-        }
-
-        private static bool TryResolvePurchaseCurrency(byte paymentCurrencySlot, ushort currencyId, out AccountCurrencyType accountCurrencyType, out ushort resolvedCurrencyId)
-        {
-            resolvedCurrencyId = paymentCurrencySlot != 0
-                ? paymentCurrencySlot
-                : currencyId;
-            accountCurrencyType = (AccountCurrencyType)resolvedCurrencyId;
-
-            return Enum.IsDefined(typeof(AccountCurrencyType), accountCurrencyType);
-        }
-
-        private static bool IsDirectAccountGrantOffer(IOfferItem offerItem)
-        {
-            return offerItem.Items.All(itemData => IsDirectAccountGrantItem(itemData.Entry));
-        }
-
-        private static bool IsDirectAccountGrantItem(AccountItemEntry entry)
-        {
-            if (entry == null)
-                return false;
-
-            if (entry.Item2Id != 0u || entry.GenericUnlockSetId != 0u || entry.InstantEventEnum != 0u || entry.AccountItemCooldownGroupId != 0u)
-                return false;
-
-            return entry.AccountCurrencyEnum != 0u || entry.EntitlementId != 0u;
-        }
-
-        public static bool TryBuildDirectAccountGrantPlan(
-            IWorldSession session,
-            IGameTableManager gameTableManager,
-            IOfferItem offerItem,
-            bool requireDirectAccountGrant,
-            out DirectAccountGrantPlan plan,
-            out StoreError error,
-            out string reason)
-        {
-            plan   = new DirectAccountGrantPlan();
-            error  = StoreError.GenericFail;
-            reason = string.Empty;
-
-            if (requireDirectAccountGrant && !IsDirectAccountGrantOffer(offerItem))
-            {
-                error  = StoreError.CannotUseOffer;
-                reason = "offer is not a direct account grant";
-                return false;
-            }
-
-            foreach (IOfferItemData itemData in offerItem.Items)
-            {
-                AccountItemEntry entry = itemData.Entry;
-                if (!IsDirectAccountGrantItem(entry))
-                {
-                    error  = StoreError.CannotUseOffer;
-                    reason = $"account item {itemData.ItemId} is not a direct account grant";
-                    return false;
-                }
-
-                if (itemData.Amount == 0u)
-                {
-                    error  = StoreError.CannotUseOffer;
-                    reason = $"offer item data {itemData.ItemId} has zero amount";
-                    return false;
-                }
-
-                if (entry.AccountCurrencyEnum != 0u && !TryAddDirectCurrencyGrant(itemData, entry, plan, out reason))
-                {
-                    error = StoreError.CannotUseOffer;
-                    return false;
-                }
-
-                if (entry.EntitlementId != 0u && !TryAddDirectEntitlementGrant(session, gameTableManager, itemData, entry, plan, out error, out reason))
-                    return false;
-            }
-
-            if (plan.CurrencyGrants.Count == 0 && plan.EntitlementGrants.Count == 0)
-            {
-                error  = StoreError.CannotUseOffer;
-                reason = "offer has no direct account grants";
-                return false;
-            }
-
-            return true;
-        }
-
-        public static void ApplyDirectAccountGrantPlan(IWorldSession session, DirectAccountGrantPlan plan)
-        {
-            foreach ((AccountCurrencyType currencyType, ulong amount) in plan.CurrencyGrants)
-                session.Account.CurrencyManager.CurrencyAddAmount(currencyType, amount);
-
-            foreach ((EntitlementType entitlementType, int amount) in plan.EntitlementGrants)
-                session.Account.EntitlementManager.UpdateEntitlement(entitlementType, amount);
-        }
-
-        private static bool TryAddDirectCurrencyGrant(
-            IOfferItemData itemData,
-            AccountItemEntry entry,
-            DirectAccountGrantPlan plan,
-            out string reason)
-        {
-            reason = string.Empty;
-
-            var currencyType = (AccountCurrencyType)entry.AccountCurrencyEnum;
-            if (!Enum.IsDefined(typeof(AccountCurrencyType), currencyType) || entry.AccountCurrencyAmount == 0ul)
-            {
-                reason = $"account item {itemData.ItemId} has invalid account currency grant";
-                return false;
-            }
-
-            if (itemData.Amount > 1u && entry.AccountCurrencyAmount > ulong.MaxValue / itemData.Amount)
-            {
-                reason = $"account item {itemData.ItemId} account currency grant overflows";
-                return false;
-            }
-
-            ulong amount = entry.AccountCurrencyAmount * itemData.Amount;
-            if (plan.CurrencyGrants.TryGetValue(currencyType, out ulong pendingAmount))
-            {
-                if (ulong.MaxValue - pendingAmount < amount)
-                {
-                    reason = $"account item {itemData.ItemId} account currency grant overflows";
-                    return false;
-                }
-
-                plan.CurrencyGrants[currencyType] = pendingAmount + amount;
-            }
-            else
-                plan.CurrencyGrants.Add(currencyType, amount);
-
-            return true;
-        }
-
-        private static bool TryAddDirectEntitlementGrant(
-            IWorldSession session,
-            IGameTableManager gameTableManager,
-            IOfferItemData itemData,
-            AccountItemEntry entry,
-            DirectAccountGrantPlan plan,
-            out StoreError error,
-            out string reason)
-        {
-            error  = StoreError.GenericFail;
-            reason = string.Empty;
-
-            EntitlementEntry entitlementEntry = gameTableManager?.Entitlement?.GetEntry(entry.EntitlementId);
-            if (entitlementEntry == null)
-            {
-                error  = StoreError.CannotUseOffer;
-                reason = $"account item {itemData.ItemId} has invalid entitlement {entry.EntitlementId}";
-                return false;
-            }
-
-            var entitlementFlags = (EntitlementFlags)entitlementEntry.Flags;
-            if (entitlementFlags.HasFlag(EntitlementFlags.Disabled) || entitlementFlags.HasFlag(EntitlementFlags.Character))
-            {
-                error  = StoreError.MissingEntitlement;
-                reason = $"account item {itemData.ItemId} entitlement {entry.EntitlementId} is not account scoped";
-                return false;
-            }
-
-            if (entry.EntitlementCount == 0u || entry.EntitlementCount > int.MaxValue)
-            {
-                error  = StoreError.CannotUseOffer;
-                reason = $"account item {itemData.ItemId} has invalid entitlement count";
-                return false;
-            }
-
-            ulong grantAmount = (ulong)entry.EntitlementCount * itemData.Amount;
-            if (grantAmount > int.MaxValue)
-            {
-                error  = StoreError.CannotUseOffer;
-                reason = $"account item {itemData.ItemId} entitlement grant exceeds supported amount";
-                return false;
-            }
-
-            var entitlementType = (EntitlementType)entitlementEntry.Id;
-            if (!Enum.IsDefined(typeof(EntitlementType), entitlementType))
-            {
-                error  = StoreError.CannotUseOffer;
-                reason = $"account item {itemData.ItemId} has unmapped entitlement {entry.EntitlementId}";
-                return false;
-            }
-
-            uint currentAmount = session.Account.EntitlementManager.GetEntitlement(entitlementType)?.Amount ?? 0u;
-            ulong pendingAmount = plan.EntitlementGrants.TryGetValue(entitlementType, out int pending)
-                ? (ulong)pending
-                : 0ul;
-            if (pendingAmount + grantAmount > int.MaxValue)
-            {
-                error  = StoreError.CannotUseOffer;
-                reason = $"account item {itemData.ItemId} entitlement grant exceeds supported amount";
-                return false;
-            }
-
-            if (currentAmount + pendingAmount + grantAmount > entitlementEntry.MaxCount)
-            {
-                error  = StoreError.CannotUseOffer;
-                reason = $"account entitlement {entry.EntitlementId} would exceed max count {entitlementEntry.MaxCount}";
-                return false;
-            }
-
-            if (pendingAmount == 0ul)
-                plan.EntitlementGrants.Add(entitlementType, (int)grantAmount);
-            else
-                plan.EntitlementGrants[entitlementType] = (int)(pendingAmount + grantAmount);
-
-            return true;
-        }
-
-        private static bool TryBuildAccountItemList(
-            IWorldSession session,
-            IOfferItem offerItem,
-            out List<uint> accountItemIds,
-            out StoreError error,
-            out string reason)
-        {
-            accountItemIds = [];
-            error          = StoreError.GenericFail;
-            reason         = string.Empty;
-
-            foreach (IOfferItemData itemData in offerItem.Items)
-            {
-                if (itemData.Amount == 0u)
-                {
-                    error  = StoreError.CannotUseOffer;
-                    reason = $"offer item data {itemData.ItemId} has zero amount";
-                    return false;
-                }
-
-                if (!session.Account.InventoryManager.CanAddItem(itemData.ItemId))
-                {
-                    error  = StoreError.CannotUseOffer;
-                    reason = $"account item {itemData.ItemId} does not exist";
-                    return false;
-                }
-
-                if (itemData.Amount > int.MaxValue || accountItemIds.Count > int.MaxValue - (int)itemData.Amount)
-                {
-                    error  = StoreError.CannotUseOffer;
-                    reason = $"offer account item count overflows for account item {itemData.ItemId}";
-                    return false;
-                }
-
-                for (uint i = 0u; i < itemData.Amount; i++)
-                    accountItemIds.Add(itemData.ItemId);
-            }
-
-            if (accountItemIds.Count == 0)
-            {
-                error  = StoreError.CannotUseOffer;
-                reason = "offer has no account item data";
-                return false;
-            }
-
-            return true;
-        }
-
-        public static void PersistAccount(IWorldSession session, ILogger log)
-        {
-            AuthDatabase authDatabase;
-            try
-            {
-                authDatabase = DatabaseManager.Instance?.GetDatabase<AuthDatabase>();
-            }
-            catch (Exception ex) when (ex is InvalidOperationException or ArgumentNullException)
-            {
-                return;
-            }
-
-            if (authDatabase == null)
-                return;
-
-            authDatabase.Save(session.Account.Save).FireAndForgetAsync(ex =>
-                log.LogWarning(ex, "StorefrontCatalogDiagnostics account {AccountId}: failed to persist account state after storefront purchase.",
-                    session.Account?.Id));
-        }
-
-        public sealed class DirectAccountGrantPlan
-        {
-            public Dictionary<AccountCurrencyType, ulong> CurrencyGrants { get; } = [];
-            public Dictionary<EntitlementType, int> EntitlementGrants { get; } = [];
         }
     }
 }

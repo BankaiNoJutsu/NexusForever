@@ -19,6 +19,7 @@ using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Option;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
 using NexusForever.Network.Internal;
 using NexusForever.Shared;
 using NexusForever.Shared.Configuration;
@@ -129,6 +130,7 @@ public class OptionPersistenceTests
             CreateProxy<IEntityFactory>(),
             CreateProxy<IMatchingManager>(),
             CreateProxy<IMatchManager>(),
+            CreateProxy<IGameTableManager>(),
             currencyManager);
 
         SetPrivateProperty(player, nameof(Player.Identity), new Identity

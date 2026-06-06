@@ -13,6 +13,7 @@ using NexusForever.Game.Entity;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
@@ -148,10 +149,11 @@ public class PlayerVisibilityPacketTests
         IEntityFactory entityFactory = RecordingDispatchProxy<IEntityFactory>.Create(out _);
         IMatchingManager matchingManager = RecordingDispatchProxy<IMatchingManager>.Create(out _);
         IMatchManager matchManager = RecordingDispatchProxy<IMatchManager>.Create(out _);
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out _);
         ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out _);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
 
-        var player = new TestPlayer(movementManager, messagePublisher, entityFactory, matchingManager, matchManager, currencyManager)
+        var player = new TestPlayer(movementManager, messagePublisher, entityFactory, matchingManager, matchManager, gameTableManager, currencyManager)
         {
             VisibilityFilter = null
         };
@@ -190,8 +192,9 @@ public class PlayerVisibilityPacketTests
             IEntityFactory entityFactory,
             IMatchingManager matchingManager,
             IMatchManager matchManager,
+            IGameTableManager gameTableManager,
             ICurrencyManager currencyManager)
-            : base(movementManager, messagePublisher, entityFactory, matchingManager, matchManager, currencyManager)
+            : base(movementManager, messagePublisher, entityFactory, matchingManager, matchManager, gameTableManager, currencyManager)
         {
         }
 

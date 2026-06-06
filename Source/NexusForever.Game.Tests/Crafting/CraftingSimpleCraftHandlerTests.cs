@@ -19,6 +19,7 @@ using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Crafting;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.WorldServer.Crafting;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Crafting;
 
@@ -273,7 +274,8 @@ public class CraftingSimpleCraftHandlerTests
             NullLogger<ClientCraftingSimpleCraftHandler>.Instance,
             CreateGameTableManager(),
             itemManager,
-            lootManager);
+            lootManager,
+            new CraftingModifierSessionStore());
     }
 
     private static ClientCraftingCraftItemHandler CreateCraftItemHandler(IItemInfo outputInfo)
@@ -286,7 +288,8 @@ public class CraftingSimpleCraftHandlerTests
             NullLogger<ClientCraftingCraftItemHandler>.Instance,
             CreateGameTableManager(),
             itemManager,
-            lootManager);
+            lootManager,
+            new CraftingModifierSessionStore());
     }
 
     private static ClientCraftingComplexCraftHandler CreateComplexHandler(IItemInfo outputInfo)
@@ -299,7 +302,8 @@ public class CraftingSimpleCraftHandlerTests
             NullLogger<ClientCraftingComplexCraftHandler>.Instance,
             CreateGameTableManager(),
             itemManager,
-            lootManager);
+            lootManager,
+            new CraftingModifierSessionStore());
     }
 
     private static IWorldSession CreateSession(

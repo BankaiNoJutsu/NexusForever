@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using NexusForever.Game.Static.Account;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.WorldServer.Account;
 using NexusForever.WorldServer.Network.Message.Handler.Character;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Account
@@ -10,13 +11,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
     {
         private readonly ILogger<ClientAccountItemTakeHandler> log;
         private readonly ICharacterListManager characterListManager;
+        private readonly IStorefrontPurchaseService storefrontPurchaseService;
 
         public ClientAccountItemTakeHandler(
             ILogger<ClientAccountItemTakeHandler> log,
-            ICharacterListManager characterListManager)
+            ICharacterListManager characterListManager,
+            IStorefrontPurchaseService storefrontPurchaseService)
         {
-            this.log                  = log;
-            this.characterListManager = characterListManager;
+            this.log                       = log;
+            this.characterListManager      = characterListManager;
+            this.storefrontPurchaseService = storefrontPurchaseService;
         }
 
         public void HandleMessage(IWorldSession session, ClientAccountItemTake accountItemTake)
@@ -31,7 +35,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Account
 
             if (result == AccountOperationResult.Ok)
             {
-                StorefrontPurchaseHelper.PersistAccount(session, log);
+                storefrontPurchaseService.PersistAccount(session, log);
 
                 if (session.Player == null)
                     characterListManager.SendCharacterListPackets(session);

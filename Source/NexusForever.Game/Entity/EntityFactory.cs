@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
+using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity;
 
 namespace NexusForever.Game.Entity
@@ -23,7 +25,9 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public T CreateEntity<T>() where T : IGridEntity
         {
-            return serviceProvider.GetRequiredService<T>();
+            T entity = serviceProvider.GetRequiredService<T>();
+            InitialiseRuntimeDependencies(entity);
+            return entity;
         }
 
         /// <summary>
@@ -34,7 +38,7 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public IWorldEntity CreateWorldEntity(EntityType type)
         {
-            return type switch
+            IWorldEntity entity = type switch
             {
                 EntityType.NonPlayer          => serviceProvider.GetRequiredService<INonPlayerEntity>(),
                 EntityType.Chest              => serviceProvider.GetRequiredService<IChestEntity>(),
@@ -75,6 +79,23 @@ namespace NexusForever.Game.Entity
                 EntityType.Player             => throw new InvalidOperationException("Player entities are created from character state and cannot be spawned from static world data."),
                 _                             => throw new InvalidOperationException($"Unsupported world entity type {type}.")
             };
+
+            InitialiseRuntimeDependencies(entity);
+            return entity;
+        }
+
+        private void InitialiseRuntimeDependencies(IGridEntity entity)
+        {
+            if (entity is not WorldEntity worldEntity)
+                return;
+
+            worldEntity.InitialiseRuntimeDependencies(
+                () => serviceProvider.GetService<IEntitySummonFactory>(),
+                () => serviceProvider.GetService<ICreatureInfoManager>());
+
+            if (entity is UnitEntity unitEntity)
+                unitEntity.InitialiseRuntimeDependencies(
+                    () => serviceProvider.GetService<GlobalLootManager>());
         }
     }
 }

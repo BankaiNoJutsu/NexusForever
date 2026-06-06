@@ -13,6 +13,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Crafting;
+using NexusForever.WorldServer.Crafting;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Crafting;
 
@@ -39,7 +40,8 @@ public class CraftingAdditiveHandlerTests
             new GameTableManager(Options.Create(new GameTableConfig
             {
                 GameTablePath = string.Empty
-            })));
+            })),
+            new CraftingModifierSessionStore());
 
         Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, CreateRequest(0u)));
     }
@@ -48,17 +50,19 @@ public class CraftingAdditiveHandlerTests
     public void Additive_WithValidStation_RecordsModifierStateWithoutBlockedCurrentCraftOrAuxPackets()
     {
         GameTableManager gameTableManager = CreateGameTableManager();
+        var modifierStore = new CraftingModifierSessionStore();
         IWorldSession session = CreateSession(CharacterId, out RecordingDispatchProxy<IWorldSession> sessionProxy, out RecordingDispatchProxy<IPlayer> playerProxy);
         var handler = new ClientCraftingAdditiveHandler(
             NullLogger<ClientCraftingAdditiveHandler>.Instance,
-            gameTableManager);
+            gameTableManager,
+            modifierStore);
 
         try
         {
             handler.HandleMessage(session, CreateRequest(StationUnitId, AdditiveItem2Id, CatalystItem2Id));
 
-            bool result = CraftingRuneRequestHelper.TryBuildCraftingModifierItemCounts(
-                session,
+            bool result = modifierStore.TryBuildModifierItemCounts(
+                session.Player,
                 gameTableManager,
                 CreateSchematic(),
                 out IReadOnlyDictionary<uint, uint> itemCounts,
@@ -76,7 +80,7 @@ public class CraftingAdditiveHandlerTests
         }
         finally
         {
-            CraftingRuneRequestHelper.ClearCraftingAdditives(session);
+            modifierStore.ClearModifiers(session.Player);
         }
     }
 
@@ -84,20 +88,23 @@ public class CraftingAdditiveHandlerTests
     public void Abandon_ClearsModifierStateWithoutBlockedCurrentCraftOrAuxPackets()
     {
         GameTableManager gameTableManager = CreateGameTableManager();
+        var modifierStore = new CraftingModifierSessionStore();
         IWorldSession session = CreateSession(CharacterId + 1ul, out RecordingDispatchProxy<IWorldSession> sessionProxy, out _);
         var additiveHandler = new ClientCraftingAdditiveHandler(
             NullLogger<ClientCraftingAdditiveHandler>.Instance,
-            gameTableManager);
+            gameTableManager,
+            modifierStore);
         var abandonHandler = new ClientCraftingAbandonHandler(
-            NullLogger<ClientCraftingAbandonHandler>.Instance);
+            NullLogger<ClientCraftingAbandonHandler>.Instance,
+            modifierStore);
 
         try
         {
             additiveHandler.HandleMessage(session, CreateRequest(StationUnitId, AdditiveItem2Id, CatalystItem2Id));
             abandonHandler.HandleMessage(session, new ClientCraftingAbandon());
 
-            bool result = CraftingRuneRequestHelper.TryBuildCraftingModifierItemCounts(
-                session,
+            bool result = modifierStore.TryBuildModifierItemCounts(
+                session.Player,
                 gameTableManager,
                 CreateSchematic(),
                 out IReadOnlyDictionary<uint, uint> itemCounts,
@@ -112,7 +119,7 @@ public class CraftingAdditiveHandlerTests
         }
         finally
         {
-            CraftingRuneRequestHelper.ClearCraftingAdditives(session);
+            modifierStore.ClearModifiers(session.Player);
         }
     }
 

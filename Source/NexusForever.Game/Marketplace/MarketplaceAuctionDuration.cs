@@ -16,9 +16,10 @@ namespace NexusForever.Game.Marketplace
         private const uint DefaultAuctionDurationGameFormulaId = 821u;
         private const ulong FallbackExpirationSeconds = 172800ul;
 
-        public static ulong GetDefaultExpirationSeconds()
+        public static ulong GetDefaultExpirationSeconds(IGameTableManager gameTables = null)
         {
-            GameTableManager gameTables = LegacyServiceProvider.Provider?.GetService<GameTableManager>();
+            gameTables ??= LegacyServiceProvider.Provider?.GetService<IGameTableManager>()
+                ?? LegacyServiceProvider.Provider?.GetService<GameTableManager>();
             GameFormulaEntry entry = gameTables?.GameFormula?.GetEntry(DefaultAuctionDurationGameFormulaId);
             if (entry != null && entry.Dataint0 > 0u)
                 return entry.Dataint0 * 3600ul;

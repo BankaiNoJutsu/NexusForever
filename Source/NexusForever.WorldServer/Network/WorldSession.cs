@@ -138,7 +138,7 @@ namespace NexusForever.WorldServer.Network
             if (Account != null)
                 throw new InvalidOperationException();
 
-            Account = new Account();
+            Account = new NexusForever.Game.Account.Account();
             Account.Initialise(account, this);
 
             networkManager.UpdateSessionId(this, account.Id.ToString());

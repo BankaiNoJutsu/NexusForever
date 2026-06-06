@@ -22,7 +22,7 @@ using NLog;
 
 namespace NexusForever.Game.Marketplace
 {
-    public sealed class GlobalMarketplaceManager : Singleton<GlobalMarketplaceManager>, IGlobalMarketplaceManager
+    public sealed partial class GlobalMarketplaceManager : Singleton<GlobalMarketplaceManager>, IGlobalMarketplaceManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
@@ -38,6 +38,21 @@ namespace NexusForever.Game.Marketplace
         private ulong nextAuctionId = 1ul;
         private ulong nextCommodityOrderId = 1ul;
         private double expirationCheckTimer;
+
+        private readonly IDatabaseManager databaseManager;
+        private readonly IGameTableManager gameTableManager;
+
+        public GlobalMarketplaceManager()
+        {
+        }
+
+        public GlobalMarketplaceManager(
+            IDatabaseManager databaseManager,
+            IGameTableManager gameTableManager)
+        {
+            this.databaseManager  = databaseManager;
+            this.gameTableManager = gameTableManager;
+        }
 
         public void Initialise()
         {
@@ -73,7 +88,7 @@ namespace NexusForever.Game.Marketplace
                     });
                 }
 
-                GameTableManager gameTableManager = LegacyServiceProvider.Provider?.GetService<GameTableManager>();
+                IGameTableManager gameTableManager = GetGameTableManager();
                 foreach (MarketplaceCommodityOrderModel model in database.GetMarketplaceCommodityOrders())
                 {
                     if (!IsValidPersistedCommodityOrder(model, gameTableManager))
@@ -205,7 +220,7 @@ namespace NexusForever.Game.Marketplace
                 if (CountOwnedSellAuctions(player.CharacterId) >= MarketplaceAccountLimits.GetMaxAuctionSellLots(player))
                     return GenericError.AuctionTooManyOrders;
 
-                ulong expirationSeconds = MarketplaceAuctionDuration.GetDefaultExpirationSeconds();
+                ulong expirationSeconds = MarketplaceAuctionDuration.GetDefaultExpirationSeconds(GetGameTableManager());
                 ulong expiresAtUtc = (ulong)DateTimeOffset.UtcNow.AddSeconds(expirationSeconds).ToUnixTimeSeconds();
 
                 auction.AuctionId        = nextAuctionId++;
@@ -522,7 +537,7 @@ namespace NexusForever.Game.Marketplace
 
                 postedOrder.CommodityOrderId = nextCommodityOrderId++;
                 postedOrder.ListTime         = MarketplaceCommodityDuration.ResolveListFileTime(order.ListTime);
-                postedOrder.ExpirationTime   = MarketplaceCommodityDuration.ResolveExpirationFileTime(order.ListTime, order.ExpirationTime);
+                postedOrder.ExpirationTime   = MarketplaceCommodityDuration.ResolveExpirationFileTime(order.ListTime, order.ExpirationTime, GetGameTableManager());
 
                 record = new MarketplaceCommodityOrder
                 {
@@ -724,180 +739,11 @@ namespace NexusForever.Game.Marketplace
                 throw new InvalidPacketValueException();
         }
 
-        private static bool PersistAuctionInsert(MarketplaceAuction record)
+        private IGameTableManager GetGameTableManager()
         {
-            return Persist(context =>
-            {
-                if (record.Item is Item item)
-                    item.Save(context);
-
-                context.MarketplaceAuction.Add(ToAuctionModel(record));
-            });
-        }
-
-        private static bool PersistAuctionUpdate(MarketplaceAuction record)
-        {
-            return Persist(context =>
-            {
-                MarketplaceAuctionModel model = context.MarketplaceAuction.SingleOrDefault(a => a.Id == record.Auction.AuctionId);
-                if (model == null)
-                {
-                    log.Error("PersistAuctionUpdate failed: auction id={0} missing from database.", record.Auction.AuctionId);
-                    return;
-                }
-
-                ApplyAuctionModel(model, record.Auction, record.ExpiresAtUtc);
-            });
-        }
-
-        private static bool PersistCommodityOrderUpdate(MarketplaceCommodityOrder record)
-        {
-            return Persist(context =>
-            {
-                MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
-                    .SingleOrDefault(o => o.Id == record.Order.CommodityOrderId);
-                if (model == null)
-                {
-                    log.Error("PersistCommodityOrderUpdate failed: commodity order id={0} missing from database.", record.Order.CommodityOrderId);
-                    return;
-                }
-
-                model.Quantity     = record.Order.Quantity;
-                model.Price        = record.Order.Price;
-                model.PricePerUnit = record.Order.PricePerUnit;
-            });
-        }
-
-        private static bool PersistCommodityOrderUpdate(MarketplaceCommodityOrder record, bool alreadyPersisted)
-        {
-            return alreadyPersisted || PersistCommodityOrderUpdate(record);
-        }
-
-        private void PersistCommodityFillOrderChanges(
-            CharacterContext context,
-            MarketplaceCommodityOrder buyOrder,
-            uint buyRemainingQuantity,
-            ulong buyRemainingPrice,
-            MarketplaceCommodityOrder sellOrder,
-            uint sellRemainingQuantity,
-            ulong sellRemainingPrice)
-        {
-            PersistCommodityFillOrderChange(context, buyOrder, buyRemainingQuantity, buyRemainingPrice);
-            PersistCommodityFillOrderChange(context, sellOrder, sellRemainingQuantity, sellRemainingPrice);
-        }
-
-        private bool TryPersistCommodityFillOrderChanges(
-            MarketplaceCommodityOrder buyOrder,
-            uint buyRemainingQuantity,
-            ulong buyRemainingPrice,
-            MarketplaceCommodityOrder sellOrder,
-            uint sellRemainingQuantity,
-            ulong sellRemainingPrice)
-        {
-            return Persist(context => PersistCommodityFillOrderChanges(
-                context,
-                buyOrder,
-                buyRemainingQuantity,
-                buyRemainingPrice,
-                sellOrder,
-                sellRemainingQuantity,
-                sellRemainingPrice));
-        }
-
-        private void PersistCommodityFillOrderChange(
-            CharacterContext context,
-            MarketplaceCommodityOrder record,
-            uint remainingQuantity,
-            ulong remainingPrice)
-        {
-            if (!IsRestingCommodityOrder(record))
-                return;
-
-            if (remainingQuantity == 0u)
-            {
-                RemoveCommodityOrderModel(context, record);
-                return;
-            }
-
-            MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
-                .SingleOrDefault(o => o.Id == record.Order.CommodityOrderId);
-            if (model == null)
-            {
-                log.Error("PersistCommodityFillOrderChange failed: commodity order id={0} missing from database.", record.Order.CommodityOrderId);
-                return;
-            }
-
-            model.Quantity     = remainingQuantity;
-            model.Price        = remainingPrice;
-            model.PricePerUnit = record.Order.PricePerUnit;
-        }
-
-        private static bool PersistAuctionDelete(MarketplaceAuction record)
-        {
-            return Persist(context =>
-            {
-                RemoveAuctionModel(context, record);
-                SaveSettledAuctionItem(context, record.Item);
-            });
-        }
-
-        private static void RemoveAuctionModel(CharacterContext context, MarketplaceAuction record)
-        {
-            MarketplaceAuctionModel model = context.MarketplaceAuction.SingleOrDefault(a => a.Id == record.Auction.AuctionId);
-            if (model != null)
-                context.MarketplaceAuction.Remove(model);
-        }
-
-        private static void SaveSettledAuctionItem(CharacterContext context, IItem item)
-        {
-            item?.Save(context);
-        }
-
-        private static bool PersistCommodityOrderInsert(MarketplaceCommodityOrder record)
-        {
-            return Persist(context => context.MarketplaceCommodityOrder.Add(ToCommodityOrderModel(record)));
-        }
-
-        private static bool PersistCommodityOrderDelete(MarketplaceCommodityOrder record)
-        {
-            return Persist(context => RemoveCommodityOrderModel(context, record));
-        }
-
-        private static void RemoveCommodityOrderModel(CharacterContext context, MarketplaceCommodityOrder record)
-        {
-            MarketplaceCommodityOrderModel model = context.MarketplaceCommodityOrder
-                .SingleOrDefault(o => o.Id == record.Order.CommodityOrderId);
-            if (model != null)
-                context.MarketplaceCommodityOrder.Remove(model);
-        }
-
-        private static bool Persist(Action<CharacterContext> action)
-        {
-            CharacterDatabase database = TryGetCharacterDatabase();
-            if (database == null)
-            {
-                log.Warn("GlobalMarketplaceManager.Persist skipped: CharacterDatabase is null. Operating in in-memory-only marketplace mode.");
-                return true;
-            }
-
-            try
-            {
-                database.SaveBlocking(action);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex, "GlobalMarketplaceManager.Persist failed. Rolling back in-memory marketplace mutation where possible.");
-                return false;
-            }
-        }
-
-        private static CharacterDatabase TryGetCharacterDatabase()
-        {
-            if (LegacyServiceProvider.Provider?.GetService<DatabaseManager>() is not DatabaseManager manager)
-                return null;
-
-            return manager.GetDatabase<CharacterDatabase>();
+            return gameTableManager
+                ?? LegacyServiceProvider.Provider?.GetService<IGameTableManager>()
+                ?? LegacyServiceProvider.Provider?.GetService<GameTableManager>();
         }
 
         private static MarketplaceAuctionModel ToAuctionModel(MarketplaceAuction record)
@@ -988,7 +834,7 @@ namespace NexusForever.Game.Marketplace
             };
         }
 
-        private static bool IsValidPersistedCommodityOrder(MarketplaceCommodityOrderModel model, GameTableManager gameTableManager = null)
+        private static bool IsValidPersistedCommodityOrder(MarketplaceCommodityOrderModel model, IGameTableManager gameTableManager = null)
         {
             string reason = GetInvalidPersistedCommodityOrderReason(model, gameTableManager);
             if (reason == null)
@@ -1000,7 +846,7 @@ namespace NexusForever.Game.Marketplace
             return false;
         }
 
-        private static string GetInvalidPersistedCommodityOrderReason(MarketplaceCommodityOrderModel model, GameTableManager gameTableManager)
+        private static string GetInvalidPersistedCommodityOrderReason(MarketplaceCommodityOrderModel model, IGameTableManager gameTableManager)
         {
             if (model == null)
                 return "model is null";
@@ -1397,7 +1243,7 @@ namespace NexusForever.Game.Marketplace
             });
         }
 
-        private static void RefundTopBidder(MarketplaceAuction record)
+        private void RefundTopBidder(MarketplaceAuction record)
         {
             if (record.Auction.TopBidderCharacterId == 0ul || record.Auction.CurrentBid == 0ul)
                 return;
@@ -1405,9 +1251,9 @@ namespace NexusForever.Game.Marketplace
             CreditCharacter(record.Auction.TopBidderCharacterId, CurrencyType.Credits, record.Auction.CurrentBid);
         }
 
-        private static void PaySeller(MarketplaceAuction record, ulong grossAmount)
+        private void PaySeller(MarketplaceAuction record, ulong grossAmount)
         {
-            ulong proceeds = MarketplaceTransactionFee.CalculateItemAuctionSellerProceeds(grossAmount);
+            ulong proceeds = MarketplaceTransactionFee.CalculateItemAuctionSellerProceeds(grossAmount, GetGameTableManager());
             CreditCharacter(record.Auction.OwnerCharacterId, CurrencyType.Credits, proceeds);
         }
 
@@ -1420,7 +1266,7 @@ namespace NexusForever.Game.Marketplace
             });
         }
 
-        private static void CreditCharacter(ulong characterId, CurrencyType currencyType, ulong amount)
+        private void CreditCharacter(ulong characterId, CurrencyType currencyType, ulong amount)
         {
             if (amount == 0ul)
                 return;
@@ -1606,7 +1452,7 @@ namespace NexusForever.Game.Marketplace
                     continue;
                 }
 
-                CreditCharacter(sellOrder.OwnerCharacterId, CurrencyType.Credits, MarketplaceTransactionFee.CalculateCommoditySellerProceeds(proceeds));
+                CreditCharacter(sellOrder.OwnerCharacterId, CurrencyType.Credits, MarketplaceTransactionFee.CalculateCommoditySellerProceeds(proceeds, GetGameTableManager()));
 
                 buyOrder.Order.Quantity  = buyRemainingQuantity;
                 sellOrder.Order.Quantity = sellRemainingQuantity;

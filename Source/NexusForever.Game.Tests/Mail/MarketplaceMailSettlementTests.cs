@@ -30,7 +30,7 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MailItem_ItemAuctionWon_UsesLocalizedTextAndAuctionContentType()
     {
-        using ServiceProviderScope scope = UseGameTableProvider();
+        using LegacyServiceProviderScope scope = UseGameTableProvider();
 
         MailItem mail = new(new MailParameters
         {
@@ -54,7 +54,7 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MailItem_CommodityAuctionReturn_UsesAuctionExpiredContentType()
     {
-        using ServiceProviderScope scope = UseGameTableProvider();
+        using LegacyServiceProviderScope scope = UseGameTableProvider();
 
         MailItem mail = new(new MailParameters
         {
@@ -75,7 +75,7 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MailItem_PersistedMarketplaceMail_PreservesStoredContentType()
     {
-        using ServiceProviderScope scope = UseGameTableProvider();
+        using LegacyServiceProviderScope scope = UseGameTableProvider();
 
         MailItem mail = new(new CharacterMailModel
         {
@@ -99,7 +99,7 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MailItem_PersistedLegacyMarketplaceMail_FallsBackToSenderType()
     {
-        using ServiceProviderScope scope = UseGameTableProvider();
+        using LegacyServiceProviderScope scope = UseGameTableProvider();
 
         MailItem mail = new(new CharacterMailModel
         {
@@ -123,7 +123,7 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MailItem_Build_ReportsRemainingExpiryDays()
     {
-        using ServiceProviderScope scope = UseGameTableProvider();
+        using LegacyServiceProviderScope scope = UseGameTableProvider();
 
         MailItem mail = new(new CharacterMailModel
         {
@@ -146,7 +146,7 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MarketplaceMailTexts_ResolvesAchievementTextToLocalizedId()
     {
-        using ServiceProviderScope scope = UseGameTableProvider(
+        using LegacyServiceProviderScope scope = UseGameTableProvider(
             new AchievementTextEntry
             {
                 Id              = MarketplaceMailTexts.MarketplaceMailAchievementTextId,
@@ -160,7 +160,7 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MarketplaceMailDelivery_AdditionalSaveFailure_RestoresAttachedItemOwner()
     {
-        using ServiceProviderScope scope = UseMarketplaceMailProvider();
+        using LegacyServiceProviderScope scope = UseMarketplaceMailProvider();
 
         IItem item = RecordingDispatchProxy<IItem>.Create(out RecordingDispatchProxy<IItem> itemProxy);
         itemProxy.SetProperty(nameof(IItem.Id), 123u);
@@ -185,7 +185,7 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MarketplaceMailDelivery_AuctionReturnAdditionalSaveFailure_RestoresAttachedItemOwner()
     {
-        using ServiceProviderScope scope = UseMarketplaceMailProvider();
+        using LegacyServiceProviderScope scope = UseMarketplaceMailProvider();
 
         IItem item = RecordingDispatchProxy<IItem>.Create(out RecordingDispatchProxy<IItem> itemProxy);
         itemProxy.SetProperty(nameof(IItem.Id), 123u);
@@ -210,7 +210,7 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MarketplaceMailDelivery_CommodityReturnAdditionalSaveFailure_ReturnsFalse()
     {
-        using ServiceProviderScope scope = UseMarketplaceMailProvider();
+        using LegacyServiceProviderScope scope = UseMarketplaceMailProvider();
 
         IItemInfo itemInfo = CreateItemInfo(123u);
         PrimeItemManager(itemInfo);
@@ -233,7 +233,7 @@ public class MarketplaceMailSettlementTests
     [Fact]
     public void MarketplaceMailDelivery_CommodityFillAdditionalSaveFailure_ReturnsFalse()
     {
-        using ServiceProviderScope scope = UseMarketplaceMailProvider();
+        using LegacyServiceProviderScope scope = UseMarketplaceMailProvider();
 
         IItemInfo itemInfo = CreateItemInfo(123u);
         PrimeItemManager(itemInfo);
@@ -253,7 +253,7 @@ public class MarketplaceMailSettlementTests
         Assert.True(additionalSaveInvoked);
     }
 
-    private static ServiceProviderScope UseGameTableProvider(params AchievementTextEntry[] achievementTexts)
+    private static LegacyServiceProviderScope UseGameTableProvider(params AchievementTextEntry[] achievementTexts)
     {
         var configuration = new SharedConfiguration(new ConfigurationBuilder().Build());
         configuration.Initialise<TestConfiguration>();
@@ -268,10 +268,10 @@ public class MarketplaceMailSettlementTests
         services.AddSingleton(configuration);
         services.AddSingleton(new AssetManager());
         services.AddSingleton(gameTableManager);
-        return new ServiceProviderScope(services.BuildServiceProvider());
+        return new LegacyServiceProviderScope(services.BuildServiceProvider());
     }
 
-    private static ServiceProviderScope UseMarketplaceMailProvider(params AchievementTextEntry[] achievementTexts)
+    private static LegacyServiceProviderScope UseMarketplaceMailProvider(params AchievementTextEntry[] achievementTexts)
     {
         var configuration = new SharedConfiguration(new ConfigurationBuilder().Build());
         configuration.Initialise<TestConfiguration>();
@@ -301,7 +301,7 @@ public class MarketplaceMailSettlementTests
         services.AddSingleton(gameTableManager);
         services.AddSingleton(new ItemManager());
         services.AddSingleton(databaseManager);
-        return new ServiceProviderScope(services.BuildServiceProvider());
+        return new LegacyServiceProviderScope(services.BuildServiceProvider());
     }
 
     private sealed class TestConfiguration
@@ -370,19 +370,4 @@ public class MarketplaceMailSettlementTests
         field.SetValue(instance, value);
     }
 
-    private sealed class ServiceProviderScope : IDisposable
-    {
-        private readonly IServiceProvider previous;
-
-        public ServiceProviderScope(IServiceProvider provider)
-        {
-            previous                       = LegacyServiceProvider.Provider;
-            LegacyServiceProvider.Provider = provider;
-        }
-
-        public void Dispose()
-        {
-            LegacyServiceProvider.Provider = previous;
-        }
-    }
 }

@@ -17,10 +17,11 @@ namespace NexusForever.Game.Marketplace
         /// <summary>WildStar client DB: achievement text 14672 → localized text 278287.</summary>
         public const uint FallbackMarketplaceLocalizedTextId = 278287u;
 
-        public static bool TryGetMarketplaceMailLocalizedTextId(out uint localizedTextId)
+        public static bool TryGetMarketplaceMailLocalizedTextId(out uint localizedTextId, IGameTableManager gameTables = null)
         {
             localizedTextId = 0u;
-            GameTableManager gameTables = LegacyServiceProvider.Provider?.GetService<GameTableManager>();
+            gameTables ??= LegacyServiceProvider.Provider?.GetService<IGameTableManager>()
+                ?? LegacyServiceProvider.Provider?.GetService<GameTableManager>();
             AchievementTextEntry entry = gameTables?.AchievementText?.GetEntry(MarketplaceMailAchievementTextId);
             if (entry != null && entry.LocalizedTextId != 0u)
             {

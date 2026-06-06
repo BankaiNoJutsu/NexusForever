@@ -35,248 +35,208 @@ public class LootInstanceDeliveryTests
     [Fact]
     public void GiveLoot_StaticItemInventoryFull_DoesNotMarkDeliveredAndCanBeRetried()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
+        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
 
-        try
-        {
-            var inventory = new TestInventory(0u);
-            IPlayer player = CreatePlayer(inventory, out var sessionProxy);
-            var lootInstance = new LootInstance(
-                ownerUnitId: 99u,
-                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
-                looterType: LooterType.Player,
-                lootEntityType: LootEntityType.Creature);
+        var inventory = new TestInventory(0u);
+        IPlayer player = CreatePlayer(inventory, out var sessionProxy);
+        var lootInstance = new LootInstance(
+            ownerUnitId: 99u,
+            looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+            looterType: LooterType.Player,
+            lootEntityType: LootEntityType.Creature);
 
-            LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 3u);
+        LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 3u);
 
-            bool firstAttempt = lootInstance.GiveLoot(player, lootItem.Id);
+        bool firstAttempt = lootInstance.GiveLoot(player, lootItem.Id);
 
-            Assert.False(firstAttempt);
-            Assert.False(lootItem.Delivered);
-            Assert.Empty(inventory.CreatedItems);
+        Assert.False(firstAttempt);
+        Assert.False(lootItem.Delivered);
+        Assert.Empty(inventory.CreatedItems);
 
-            inventory.InventoryBag.SlotsRemaining = 3u;
-            bool secondAttempt = lootInstance.GiveLoot(player, lootItem.Id);
+        inventory.InventoryBag.SlotsRemaining = 3u;
+        bool secondAttempt = lootInstance.GiveLoot(player, lootItem.Id);
 
-            Assert.True(secondAttempt);
-            Assert.True(lootItem.Delivered);
+        Assert.True(secondAttempt);
+        Assert.True(lootItem.Delivered);
 
-            TestInventory.ItemCreateCall itemCreate = Assert.Single(inventory.CreatedItems);
-            Assert.Equal(InventoryLocation.Inventory, itemCreate.Location);
-            Assert.Equal(StaticItemId, itemCreate.ItemId);
-            Assert.Equal(3u, itemCreate.Count);
-            Assert.Equal(ItemUpdateReason.Loot, itemCreate.Reason);
+        TestInventory.ItemCreateCall itemCreate = Assert.Single(inventory.CreatedItems);
+        Assert.Equal(InventoryLocation.Inventory, itemCreate.Location);
+        Assert.Equal(StaticItemId, itemCreate.ItemId);
+        Assert.Equal(3u, itemCreate.Count);
+        Assert.Equal(ItemUpdateReason.Loot, itemCreate.Reason);
 
-            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            Assert.Collection(sessionCalls,
-                call =>
-                {
-                    var error = Assert.IsType<ServerItemError>(call.Arguments[0]);
-                    Assert.Equal(GenericError.ItemInventoryFull, error.ErrorCode);
-                },
-                call =>
-                {
-                    var grant = Assert.IsType<ServerLootGrant>(call.Arguments[0]);
-                    Assert.Equal(99u, grant.OwnerUnitId);
-                    Assert.Equal(4242u, grant.LooterUnitId);
-                    Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
-                    Assert.Equal(StaticItemId, grant.LootItem.ItemId);
-                    Assert.Equal(3u, grant.LootItem.Amount);
-                });
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        Assert.Collection(sessionCalls,
+            call =>
+            {
+                var error = Assert.IsType<ServerItemError>(call.Arguments[0]);
+                Assert.Equal(GenericError.ItemInventoryFull, error.ErrorCode);
+            },
+            call =>
+            {
+                var grant = Assert.IsType<ServerLootGrant>(call.Arguments[0]);
+                Assert.Equal(99u, grant.OwnerUnitId);
+                Assert.Equal(4242u, grant.LooterUnitId);
+                Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
+                Assert.Equal(StaticItemId, grant.LootItem.ItemId);
+                Assert.Equal(3u, grant.LootItem.Amount);
+            });
     }
 
     [Fact]
     public void GiveLoot_Cash_SendsLootGrant()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
+        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
 
-        try
-        {
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
-            ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out var currencyProxy);
-            IPlayer player = TestPlayerBuilder.Create()
-                .WithCurrencyManager(currencyManager)
-                .WithSession(session)
-                .WithCharacterId(42ul)
-                .WithGuid(4242u)
-                .Build();
-            var lootInstance = new LootInstance(
-                ownerUnitId: 99u,
-                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
-                looterType: LooterType.Player,
-                lootEntityType: LootEntityType.Creature);
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+        ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out var currencyProxy);
+        IPlayer player = TestPlayerBuilder.Create()
+            .WithCurrencyManager(currencyManager)
+            .WithSession(session)
+            .WithCharacterId(42ul)
+            .WithGuid(4242u)
+            .Build();
+        var lootInstance = new LootInstance(
+            ownerUnitId: 99u,
+            looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+            looterType: LooterType.Player,
+            lootEntityType: LootEntityType.Creature);
 
-            LootInstanceItem lootItem = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 17u);
+        LootInstanceItem lootItem = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 17u);
 
-            bool delivered = lootInstance.GiveLoot(player, lootItem.Id);
+        bool delivered = lootInstance.GiveLoot(player, lootItem.Id);
 
-            Assert.True(delivered);
-            RecordingDispatchProxy<ICurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
-            Assert.Equal(CurrencyType.Credits, currencyCall.Arguments[0]);
-            Assert.Equal(17ul, currencyCall.Arguments[1]);
-            Assert.True((bool)currencyCall.Arguments[2]);
+        Assert.True(delivered);
+        RecordingDispatchProxy<ICurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+        Assert.Equal(CurrencyType.Credits, currencyCall.Arguments[0]);
+        Assert.Equal(17ul, currencyCall.Arguments[1]);
+        Assert.True((bool)currencyCall.Arguments[2]);
 
-            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
-            var grant = Assert.IsType<ServerLootGrant>(sessionCall.Arguments[0]);
-            Assert.Equal(99u, grant.OwnerUnitId);
-            Assert.Equal(4242u, grant.LooterUnitId);
-            Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
-            Assert.Equal(LootItemType.Cash, grant.LootItem.Type);
-            Assert.Equal((uint)CurrencyType.Credits, grant.LootItem.ItemId);
-            Assert.Equal(17u, grant.LootItem.Amount);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
+        var grant = Assert.IsType<ServerLootGrant>(sessionCall.Arguments[0]);
+        Assert.Equal(99u, grant.OwnerUnitId);
+        Assert.Equal(4242u, grant.LooterUnitId);
+        Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
+        Assert.Equal(LootItemType.Cash, grant.LootItem.Type);
+        Assert.Equal((uint)CurrencyType.Credits, grant.LootItem.ItemId);
+        Assert.Equal(17u, grant.LootItem.Amount);
     }
 
     [Fact]
     public void DeliverAllLoot_MixedSuccessAndFailure_ReturnsFalseAndKeepsFailedItemRetryable()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
+        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
 
-        try
-        {
-            var inventory = new TestInventory(0u);
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
-            ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out var currencyProxy);
-            IPlayer player = TestPlayerBuilder.Create()
-                .WithInventory(inventory)
-                .WithCurrencyManager(currencyManager)
-                .WithSession(session)
-                .WithCharacterId(42ul)
-                .WithGuid(4242u)
-                .Build();
-            var lootInstance = new LootInstance(
-                ownerUnitId: 99u,
-                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
-                looterType: LooterType.Player,
-                lootEntityType: LootEntityType.Creature);
+        var inventory = new TestInventory(0u);
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+        ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out var currencyProxy);
+        IPlayer player = TestPlayerBuilder.Create()
+            .WithInventory(inventory)
+            .WithCurrencyManager(currencyManager)
+            .WithSession(session)
+            .WithCharacterId(42ul)
+            .WithGuid(4242u)
+            .Build();
+        var lootInstance = new LootInstance(
+            ownerUnitId: 99u,
+            looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+            looterType: LooterType.Player,
+            lootEntityType: LootEntityType.Creature);
 
-            LootInstanceItem cash = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 17u);
-            LootInstanceItem staticItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
+        LootInstanceItem cash = lootInstance.AddLootItem((uint)CurrencyType.Credits, LootItemType.Cash, 17u);
+        LootInstanceItem staticItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
 
-            bool delivered = lootInstance.DeliverAllLoot(player);
+        bool delivered = lootInstance.DeliverAllLoot(player);
 
-            Assert.False(delivered);
-            Assert.True(cash.Delivered);
-            Assert.False(staticItem.Delivered);
+        Assert.False(delivered);
+        Assert.True(cash.Delivered);
+        Assert.False(staticItem.Delivered);
 
-            RecordingDispatchProxy<ICurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
-            Assert.Equal(CurrencyType.Credits, currencyCall.Arguments[0]);
-            Assert.Equal(17ul, currencyCall.Arguments[1]);
+        RecordingDispatchProxy<ICurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+        Assert.Equal(CurrencyType.Credits, currencyCall.Arguments[0]);
+        Assert.Equal(17ul, currencyCall.Arguments[1]);
 
-            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
-            var error = Assert.IsType<ServerItemError>(sessionCall.Arguments[0]);
-            Assert.Equal(GenericError.ItemInventoryFull, error.ErrorCode);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
+        var error = Assert.IsType<ServerItemError>(sessionCall.Arguments[0]);
+        Assert.Equal(GenericError.ItemInventoryFull, error.ErrorCode);
     }
 
     [Fact]
     public void GiveGeneratedLoot_WithGrantedNotify_WhenPartiallyDelivered_DoesNotSendGrantedNotify()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
         var manager = new GlobalLootManager(groupStateManager);
-        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
+        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo()));
 
-        try
-        {
-            var inventory = new TestInventory(0u);
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
-            ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out var currencyProxy);
-            IPlayer player = TestPlayerBuilder.Create()
-                .WithInventory(inventory)
-                .WithCurrencyManager(currencyManager)
-                .WithSession(session)
-                .WithCharacterId(42ul)
-                .WithGuid(4242u)
-                .Build();
+        var inventory = new TestInventory(0u);
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+        ICurrencyManager currencyManager = RecordingDispatchProxy<ICurrencyManager>.Create(out var currencyProxy);
+        IPlayer player = TestPlayerBuilder.Create()
+            .WithInventory(inventory)
+            .WithCurrencyManager(currencyManager)
+            .WithSession(session)
+            .WithCharacterId(42ul)
+            .WithGuid(4242u)
+            .Build();
 
-            manager.GiveGeneratedLoot(player, [
-                new GeneratedLootItem(LootItemType.Cash, (uint)CurrencyType.Credits, 17u),
-                new GeneratedLootItem(LootItemType.StaticItem, StaticItemId, 1u)
-            ], ownerUnitId: 99u, sendGrantedNotify: true);
+        manager.GiveGeneratedLoot(player, [
+            new GeneratedLootItem(LootItemType.Cash, (uint)CurrencyType.Credits, 17u),
+            new GeneratedLootItem(LootItemType.StaticItem, StaticItemId, 1u)
+        ], ownerUnitId: 99u, sendGrantedNotify: true);
 
-            RecordingDispatchProxy<ICurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
-            Assert.Equal(CurrencyType.Credits, currencyCall.Arguments[0]);
-            Assert.Equal(17ul, currencyCall.Arguments[1]);
+        RecordingDispatchProxy<ICurrencyManager>.Invocation currencyCall = Assert.Single(currencyProxy.GetInvocations(nameof(ICurrencyManager.CurrencyAddAmount)));
+        Assert.Equal(CurrencyType.Credits, currencyCall.Arguments[0]);
+        Assert.Equal(17ul, currencyCall.Arguments[1]);
 
-            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
-            var error = Assert.IsType<ServerItemError>(sessionCall.Arguments[0]);
-            Assert.Equal(GenericError.ItemInventoryFull, error.ErrorCode);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        RecordingDispatchProxy<IGameSession>.Invocation sessionCall = Assert.Single(sessionCalls);
+        var error = Assert.IsType<ServerItemError>(sessionCall.Arguments[0]);
+        Assert.Equal(GenericError.ItemInventoryFull, error.ErrorCode);
     }
 
     [Fact]
     public void GiveLoot_VirtualItemUpdatesVirtualCollectObjective()
     {
-        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
-        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo(), CreateVirtualItemInfo(265u));
+        using var providerScope = new LegacyServiceProviderScope(BuildProvider(CreateItemInfo(), CreateVirtualItemInfo(265u)));
 
-        try
-        {
-            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
-            IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out var questManagerProxy);
-            TestPlayerBuilder playerBuilder = TestPlayerBuilder.Create()
-                .WithSession(session)
-                .WithCharacterId(42ul)
-                .WithGuid(4242u);
-            playerBuilder.PlayerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
-            IPlayer player = playerBuilder.Build();
-            var lootInstance = new LootInstance(
-                ownerUnitId: 99u,
-                looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
-                looterType: LooterType.Player,
-                lootEntityType: LootEntityType.Creature);
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+        IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out var questManagerProxy);
+        TestPlayerBuilder playerBuilder = TestPlayerBuilder.Create()
+            .WithSession(session)
+            .WithCharacterId(42ul)
+            .WithGuid(4242u);
+        playerBuilder.PlayerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
+        IPlayer player = playerBuilder.Build();
+        var lootInstance = new LootInstance(
+            ownerUnitId: 99u,
+            looterIds: new Dictionary<ulong, uint> { [42ul] = 4242u },
+            looterType: LooterType.Player,
+            lootEntityType: LootEntityType.Creature);
 
-            LootInstanceItem lootItem = lootInstance.AddLootItem(265u, LootItemType.VirtualItem, 2u);
+        LootInstanceItem lootItem = lootInstance.AddLootItem(265u, LootItemType.VirtualItem, 2u);
 
-            bool delivered = lootInstance.GiveLoot(player, lootItem.Id);
+        bool delivered = lootInstance.GiveLoot(player, lootItem.Id);
 
-            Assert.True(delivered);
-            Assert.True(lootItem.Delivered);
+        Assert.True(delivered);
+        Assert.True(lootItem.Delivered);
 
-            RecordingDispatchProxy<IQuestManager>.Invocation objectiveUpdate = Assert.Single(
-                questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-            Assert.Equal(QuestObjectiveType.VirtualCollect, objectiveUpdate.Arguments[0]);
-            Assert.Equal(265u, objectiveUpdate.Arguments[1]);
-            Assert.Equal(2u, objectiveUpdate.Arguments[2]);
+        RecordingDispatchProxy<IQuestManager>.Invocation objectiveUpdate = Assert.Single(
+            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Equal(QuestObjectiveType.VirtualCollect, objectiveUpdate.Arguments[0]);
+        Assert.Equal(265u, objectiveUpdate.Arguments[1]);
+        Assert.Equal(2u, objectiveUpdate.Arguments[2]);
 
-            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
-            RecordingDispatchProxy<IGameSession>.Invocation grantCall = Assert.Single(sessionCalls);
-            var grant = Assert.IsType<ServerLootGrant>(grantCall.Arguments[0]);
-            Assert.Equal(99u, grant.OwnerUnitId);
-            Assert.Equal(4242u, grant.LooterUnitId);
-            Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
-            Assert.Equal(LootItemType.VirtualItem, grant.LootItem.Type);
-            Assert.Equal(265u, grant.LootItem.ItemId);
-            Assert.Equal(2u, grant.LootItem.Amount);
-        }
-        finally
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-        }
+        IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> sessionCalls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+        RecordingDispatchProxy<IGameSession>.Invocation grantCall = Assert.Single(sessionCalls);
+        var grant = Assert.IsType<ServerLootGrant>(grantCall.Arguments[0]);
+        Assert.Equal(99u, grant.OwnerUnitId);
+        Assert.Equal(4242u, grant.LooterUnitId);
+        Assert.Equal(lootItem.Id, grant.LootItem.LootUnitId);
+        Assert.Equal(LootItemType.VirtualItem, grant.LootItem.Type);
+        Assert.Equal(265u, grant.LootItem.ItemId);
+        Assert.Equal(2u, grant.LootItem.Amount);
     }
 
     private static IServiceProvider BuildProvider(IItemInfo itemInfo, VirtualItemEntry virtualItem = null)
@@ -353,111 +313,4 @@ public class LootInstanceDeliveryTests
             .Build();
     }
 
-    private sealed class TestInventory : IInventory
-    {
-        public sealed record ItemCreateCall(InventoryLocation Location, uint ItemId, uint Count, ItemUpdateReason Reason);
-
-        public TestBag InventoryBag { get; }
-        public List<ItemCreateCall> CreatedItems { get; } = [];
-
-        public TestInventory(uint slotsRemaining)
-        {
-            InventoryBag = new TestBag(slotsRemaining);
-        }
-
-        public void Save(Database.Character.CharacterContext context)
-        {
-        }
-
-        public void Update(double lastTick)
-        {
-        }
-
-        public bool IsVisualItemSlot(InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public bool IsEquippableBagSlot(InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public bool IsEquippableBankBagSlot(InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public bool IsInventoryFull(InventoryLocation location) => InventoryBag.SlotsRemaining == 0u;
-        public uint GetInventorySlotsRemaining(InventoryLocation location) => InventoryBag.SlotsRemaining;
-        public bool HasItemCount(uint itemId, uint count) => throw new NotSupportedException();
-        public uint GetItemCount(uint itemId) => throw new NotSupportedException();
-        public IItem GetItem(ItemLocation itemLocation) => throw new NotSupportedException();
-        public IItem GetItem(InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public IItem GetItem(ulong guid) => throw new NotSupportedException();
-        public IEnumerable<IItemVisual> GetItemVisuals() => throw new NotSupportedException();
-        public IItem SpellCreate(Spell4BaseEntry spell4BaseEntry, ItemUpdateReason reason = ItemUpdateReason.NoReason) => throw new NotSupportedException();
-
-        public void ItemCreate(InventoryLocation location, uint itemId, uint count, ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
-        {
-            CreatedItems.Add(new ItemCreateCall(location, itemId, count, reason));
-            if (InventoryBag.SlotsRemaining > 0u)
-                InventoryBag.SlotsRemaining--;
-        }
-
-        public void ItemCreate(InventoryLocation location, IItemInfo info, uint count, ItemUpdateReason reason = ItemUpdateReason.NoReason, uint charges = 0)
-        {
-            throw new NotSupportedException();
-        }
-
-        public GenericError? CanMoveItem(IItem item, ItemLocation location) => throw new NotSupportedException();
-        public GenericError? CanMoveItem(IItem item, InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public void ItemMove(IItem item, ItemLocation location) => throw new NotSupportedException();
-        public void ItemMove(IItem item, InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public void ItemSplit(ulong itemGuid, ItemLocation newItemLocation, uint count) => throw new NotSupportedException();
-        public IItem ItemDelete(ItemLocation from, ItemUpdateReason reason = ItemUpdateReason.Loot) => throw new NotSupportedException();
-        public IItem ItemDelete(ItemLocation from, uint count, ItemUpdateReason reason = ItemUpdateReason.Loot) => throw new NotSupportedException();
-        public void ItemDelete(uint itemId, uint count = 1, ItemUpdateReason reason = ItemUpdateReason.Loot) => throw new NotSupportedException();
-        public void ItemRemove(IItem item, ItemUpdateReason reason = ItemUpdateReason.NoReason) => throw new NotSupportedException();
-        public void AddItem(IItem item, InventoryLocation location, ItemUpdateReason reason = ItemUpdateReason.NoReason) => throw new NotSupportedException();
-        public void LoadItem(IItem item, InventoryLocation location, uint bagIndex) => throw new NotSupportedException();
-        public bool ItemUse(IItem item) => throw new NotSupportedException();
-        public void ItemMoveToSupplySatchel(IItem item, uint amount) => throw new NotSupportedException();
-
-        public IEnumerator<IBag> GetEnumerator()
-        {
-            yield return InventoryBag;
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-    }
-
-    private sealed class TestBag : IBag
-    {
-        public InventoryLocation Location => InventoryLocation.Inventory;
-        public uint Slots => SlotsRemaining;
-        public uint SlotsRemaining { get; set; }
-
-        public TestBag(uint slotsRemaining)
-        {
-            SlotsRemaining = slotsRemaining;
-        }
-
-        public void Save(Database.Character.CharacterContext context)
-        {
-        }
-
-        public IItem GetItem(ulong guid) => throw new NotSupportedException();
-        public IItem GetItem(uint bagIndex) => throw new NotSupportedException();
-        public uint? GetFirstAvailableBagIndex() => throw new NotSupportedException();
-        public uint? GetFirstAvailableBagIndex(ItemSlot slot) => throw new NotSupportedException();
-        public void AddItem(IItem item, uint bagIndex) => throw new NotSupportedException();
-        public void RemoveItem(IItem item) => throw new NotSupportedException();
-        public void MoveItem(IItem item, uint bagIndex) => throw new NotSupportedException();
-        public void SwapItem(IItem item, IItem item2) => throw new NotSupportedException();
-        public void Resize(int capacityChange) => throw new NotSupportedException();
-        public IItem[] CreateSnapshot() => throw new NotSupportedException();
-        public void RestoreSnapshot(IItem[] snapshot) => throw new NotSupportedException();
-
-        public IEnumerator<IItem> GetEnumerator()
-        {
-            yield break;
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-    }
 }

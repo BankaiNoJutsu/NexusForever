@@ -288,6 +288,39 @@ public class PathManagerTests
     }
 
     [Fact]
+    public void MarkScientistCreatureScanned_WithInjectedGameTableManager_PersistsChecklistMask()
+    {
+        IGameTableManager gameTableManager = CreateScientistCreatureInfoGameTableManager(new PathScientistCreatureInfoEntry
+        {
+            Id             = 130,
+            ChecklistCount = 3u
+        });
+        PathManager manager = CreateManager(
+            Path.Scientist,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out IPlayer player,
+            out _,
+            out _,
+            out _,
+            out _,
+            gameTableManager: gameTableManager);
+
+        manager.MarkScientistCreatureScanned(130u);
+        Assert.True(manager.HasScannedScientistCreature(130u));
+        Assert.Equal(7u, player.DatacubeManager.GetScientistCreatureScanProgress(130));
+
+        using CharacterContext context = CreateCharacterContext();
+        player.DatacubeManager.Save(context);
+
+        EntityEntry<CharacterDatacubeModel> entry = Assert.Single(
+            context.ChangeTracker.Entries<CharacterDatacubeModel>());
+        Assert.Equal((byte)DatacubeType.ScientistCreatureScan, entry.Entity.Type);
+        Assert.Equal(130, entry.Entity.Datacube);
+        Assert.Equal(7u, entry.Entity.Progress);
+    }
+
+    [Fact]
     public void DatacubeManager_SendInitialPackets_ReplaysVolumeArchivesAndSkipsScientistScanState()
     {
         _ = CreateManager(
@@ -2941,7 +2974,8 @@ public class PathManagerTests
         out RecordingDispatchProxy<ICharacterAchievementManager> achievementManagerProxy,
         out RecordingDispatchProxy<IInventory> inventoryProxy,
         IEnumerable<CharacterPathMissionModel> pathMissionModels = null,
-        IEnumerable<CharacterDatacubeModel> datacubeModels = null)
+        IEnumerable<CharacterDatacubeModel> datacubeModels = null,
+        IGameTableManager gameTableManager = null)
     {
         player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
         IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
@@ -2973,13 +3007,20 @@ public class PathManagerTests
             Datacube    = datacubeModels?.ToList() ?? []
         };
 
-        var datacubeManager = new DatacubeManager(player, characterModel);
+        var datacubeManager = new DatacubeManager(player, characterModel, gameTableManager);
         playerProxy.SetProperty(nameof(IPlayer.DatacubeManager), datacubeManager);
 
         var manager = new PathManager(player, characterModel);
         playerProxy.SetProperty(nameof(IPlayer.PathManager), manager);
 
         return manager;
+    }
+
+    private static IGameTableManager CreateScientistCreatureInfoGameTableManager(params PathScientistCreatureInfoEntry[] entries)
+    {
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
+        proxy.SetProperty(nameof(IGameTableManager.PathScientistCreatureInfo), CreateGameTable(entries));
+        return gameTableManager;
     }
 
     private static CharacterContext CreateCharacterContext()

@@ -32,7 +32,7 @@ public class MarketplaceOwnedListHandlerTests
     [Fact]
     public void OwnedMarketplaceRequests_WithNoRows_SendEmptyOwnedListPackets()
     {
-        using ServiceProviderScope scope = UseMarketplaceProvider();
+        using LegacyServiceProviderScope scope = UseMarketplaceProvider();
         ClearMarketplaceState((GlobalMarketplaceManager)scope.Provider.GetRequiredService<IGlobalMarketplaceManager>());
 
         IWorldSession session = CreateSession(out RecordingDispatchProxy<IWorldSession> sessionProxy, out _, out _);
@@ -50,7 +50,7 @@ public class MarketplaceOwnedListHandlerTests
     [Fact]
     public void OwnedMarketplaceRequests_WithRows_SendOwnedListPackets()
     {
-        using ServiceProviderScope scope = UseMarketplaceProvider();
+        using LegacyServiceProviderScope scope = UseMarketplaceProvider();
         GlobalMarketplaceManager manager = (GlobalMarketplaceManager)scope.Provider.GetRequiredService<IGlobalMarketplaceManager>();
         ClearMarketplaceState(manager);
 
@@ -160,29 +160,10 @@ public class MarketplaceOwnedListHandlerTests
         field.SetValue(instance, value);
     }
 
-    private static ServiceProviderScope UseMarketplaceProvider()
+    private static LegacyServiceProviderScope UseMarketplaceProvider()
     {
         var services = new ServiceCollection();
         services.AddSingletonLegacy<IGlobalMarketplaceManager, GlobalMarketplaceManager>();
-        return new ServiceProviderScope(services.BuildServiceProvider());
-    }
-
-    private sealed class ServiceProviderScope : IDisposable
-    {
-        private readonly IServiceProvider previous;
-
-        public ServiceProviderScope(IServiceProvider provider)
-        {
-            Provider = provider;
-            previous = LegacyServiceProvider.Provider;
-            LegacyServiceProvider.Provider = provider;
-        }
-
-        public IServiceProvider Provider { get; }
-
-        public void Dispose()
-        {
-            LegacyServiceProvider.Provider = previous;
-        }
+        return new LegacyServiceProviderScope(services.BuildServiceProvider());
     }
 }

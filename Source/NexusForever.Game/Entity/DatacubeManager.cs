@@ -18,14 +18,24 @@ namespace NexusForever.Game.Entity
         }
 
         private readonly IPlayer player;
+        private readonly IGameTableManager gameTableManager;
         private readonly Dictionary<uint, IDatacube> datacubes = new();
 
         /// <summary>
         /// Create a new <see cref="IDatacubeManager"/> from an existing database model.
         /// </summary>
         public DatacubeManager(IPlayer owner, CharacterModel characterModel)
+            : this(owner, characterModel, null)
         {
-            player = owner;
+        }
+
+        /// <summary>
+        /// Create a new <see cref="IDatacubeManager"/> from an existing database model.
+        /// </summary>
+        public DatacubeManager(IPlayer owner, CharacterModel characterModel, IGameTableManager gameTableManager)
+        {
+            player                = owner;
+            this.gameTableManager = gameTableManager;
 
             foreach (CharacterDatacubeModel model in characterModel.Datacube)
             {
@@ -55,7 +65,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void AddDatacube(ushort id, uint progress)
         {
-            if (GameTableManager.Instance.Datacube.GetEntry(id) == null)
+            if (ResolveDatacubeGameTableManager().Datacube.GetEntry(id) == null)
                 throw new ArgumentException();
 
             uint hash = DatacubeHash(id, DatacubeType.Datacube);
@@ -77,7 +87,7 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void AddDatacubeVolume(ushort id, uint progress)
         {
-            if (GameTableManager.Instance.DatacubeVolume.GetEntry(id) == null)
+            if (ResolveDatacubeGameTableManager().DatacubeVolume.GetEntry(id) == null)
                 throw new ArgumentException();
 
             uint hash = DatacubeHash(id, DatacubeType.Journal);
@@ -100,10 +110,10 @@ namespace NexusForever.Game.Entity
                 return;
 
             uint completionMask = 1u;
-            IGameTableManager gameTableManager = LegacyServiceProvider.Provider?.GetService<IGameTableManager>();
-            if (gameTableManager?.PathScientistCreatureInfo != null)
+            IGameTableManager resolvedGameTableManager = ResolveScientistScanGameTableManager();
+            if (resolvedGameTableManager?.PathScientistCreatureInfo != null)
             {
-                PathScientistCreatureInfoEntry entry = gameTableManager.PathScientistCreatureInfo.GetEntry(pathScientistCreatureInfoId);
+                PathScientistCreatureInfoEntry entry = resolvedGameTableManager.PathScientistCreatureInfo.GetEntry(pathScientistCreatureInfoId);
                 completionMask = PathScientistScanHelper.GetCompletionMask(entry);
             }
 
@@ -126,11 +136,11 @@ namespace NexusForever.Game.Entity
             if (progress == 0u)
                 return false;
 
-            IGameTableManager gameTableManager = LegacyServiceProvider.Provider?.GetService<IGameTableManager>();
-            if (gameTableManager?.PathScientistCreatureInfo == null)
+            IGameTableManager resolvedGameTableManager = ResolveScientistScanGameTableManager();
+            if (resolvedGameTableManager?.PathScientistCreatureInfo == null)
                 return true;
 
-            PathScientistCreatureInfoEntry entry = gameTableManager.PathScientistCreatureInfo.GetEntry(pathScientistCreatureInfoId);
+            PathScientistCreatureInfoEntry entry = resolvedGameTableManager.PathScientistCreatureInfo.GetEntry(pathScientistCreatureInfoId);
             return PathScientistScanHelper.IsFullyScanned(progress, entry);
         }
 
@@ -174,6 +184,16 @@ namespace NexusForever.Game.Entity
             {
                 DatacubeVolumeData = datacube.Build()
             });
+        }
+
+        private IGameTableManager ResolveDatacubeGameTableManager()
+        {
+            return gameTableManager ?? GameTableManager.Instance;
+        }
+
+        private IGameTableManager ResolveScientistScanGameTableManager()
+        {
+            return gameTableManager ?? LegacyServiceProvider.Provider?.GetService<IGameTableManager>();
         }
     }
 }

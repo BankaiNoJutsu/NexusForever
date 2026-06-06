@@ -1,9 +1,15 @@
 using System.Reflection;
+using System.Numerics;
 using Microsoft.Extensions.DependencyInjection;
+using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
+using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reputation;
+using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
@@ -87,6 +93,34 @@ public class EntityCreatePacketTests
             () => entityFactory.CreateWorldEntity(EntityType.Player));
 
         Assert.Contains("Player entities are created from character state", exception.Message);
+    }
+
+    [Fact]
+    public void EntityFactoryCreateWorldEntity_InitialisesRuntimeDependencies()
+    {
+        const uint creatureId = 8765u;
+
+        var creatureInfo = new TestCreatureInfo(creatureId);
+        var creatureInfoManager = new TestCreatureInfoManager(creatureInfo);
+        var summonFactory = new TestEntitySummonFactory();
+        using ServiceProvider provider = BuildProvider(services =>
+        {
+            services.AddTransient<ISimpleEntity, TestSimpleEntity>();
+            services.AddSingleton<ICreatureInfoManager>(creatureInfoManager);
+            services.AddSingleton<IEntitySummonFactory>(summonFactory);
+        });
+
+        IEntityFactory entityFactory = provider.GetRequiredService<IEntityFactory>();
+        IWorldEntity entity = entityFactory.CreateWorldEntity(EntityType.Simple);
+
+        Assert.Same(summonFactory, entity.SummonFactory);
+        Assert.Same(entity, summonFactory.Owner);
+
+        entity.Initialise(creatureId);
+
+        Assert.Same(creatureInfo, entity.CreatureInfo);
+        Assert.Equal(creatureId, creatureInfoManager.LastCreatureId);
+        Assert.Equal(1, creatureInfoManager.LookupCount);
     }
 
     [Theory]
@@ -249,11 +283,12 @@ public class EntityCreatePacketTests
         Assert.Equal((ushort)0x3456, reader.ReadUShort(15u));
     }
 
-    internal static ServiceProvider BuildProvider()
+    internal static ServiceProvider BuildProvider(Action<IServiceCollection> configure = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddGameEntity();
+        configure?.Invoke(services);
         return services.BuildServiceProvider();
     }
 
@@ -303,5 +338,159 @@ public class EntityCreatePacketTests
         model.Write(writer);
         writer.FlushBits();
         return stream.ToArray();
+    }
+
+    private sealed class TestSimpleEntity : UnitEntity, ISimpleEntity
+    {
+        public override EntityType Type => EntityType.Simple;
+
+        public TestSimpleEntity()
+            : base(RecordingDispatchProxy<IMovementManager>.Create(out _))
+        {
+        }
+
+        protected override IEntityModel BuildEntityModel()
+        {
+            return new SimpleEntityModel();
+        }
+
+        public override void Initialise(ICreatureInfo creatureInfo)
+        {
+            CreatureInfo = creatureInfo;
+        }
+
+        protected override float CalculateDefaultProperty(Property property)
+        {
+            return 0f;
+        }
+    }
+
+    private sealed class TestCreatureInfoManager(ICreatureInfo creatureInfo) : ICreatureInfoManager
+    {
+        public uint LastCreatureId { get; private set; }
+        public int LookupCount { get; private set; }
+
+        public void Initialise()
+        {
+        }
+
+        public ICreatureInfo GetCreatureInfo<T>(T creatureId) where T : Enum
+        {
+            return GetCreatureInfo(Convert.ToUInt32(creatureId));
+        }
+
+        public ICreatureInfo GetCreatureInfo(uint creatureId)
+        {
+            LastCreatureId = creatureId;
+            LookupCount++;
+            return creatureInfo;
+        }
+    }
+
+    private sealed class TestCreatureInfo(uint creatureId) : ICreatureInfo
+    {
+        public Creature2Entry Entry { get; } = new()
+        {
+            Id        = creatureId,
+            FactionId = (uint)Faction.None
+        };
+
+        public Creature2DifficultyEntry DifficultyEntry => null;
+        public Creature2ArcheTypeEntry ArcheTypeEntry => null;
+        public Creature2TierEntry TierEntry => null;
+        public Creature2ModelInfoEntry ModelEntry => null;
+        public UnitVehicleEntry UnitVehicleEntry => null;
+        public PrerequisiteEntry PrerequisiteVisibilityEntry => null;
+
+        public void Initialise(Creature2Entry entry)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void InitialiseOverrides(IEnumerable<CreatureInfoPropertyModel> properties, IEnumerable<CreatureInfoStatModel> stats)
+        {
+            throw new NotSupportedException();
+        }
+
+        public IEnumerable<ICreatureInfoProperty> GetPropertyOverrides()
+        {
+            return [];
+        }
+
+        public IEnumerable<ICreatureInfoStat> GetStatOverrides()
+        {
+            return [];
+        }
+
+        public uint GetLevel()
+        {
+            return 1u;
+        }
+
+        public Creature2DisplayInfoEntry GetDisplayInfoEntry()
+        {
+            return null;
+        }
+
+        public Creature2OutfitInfoEntry GetOutfitInfoEntry()
+        {
+            return null;
+        }
+    }
+
+    private sealed class TestEntitySummonFactory : IEntitySummonFactory
+    {
+        public uint SummonCount => 0u;
+        public IWorldEntity Owner { get; private set; }
+
+        public void Initialise(IWorldEntity owner)
+        {
+            Owner = owner;
+        }
+
+        public T Summon<T>(ICreatureInfo creatureInfo, Vector3 position, Vector3 rotation) where T : IWorldEntity
+        {
+            throw new NotSupportedException();
+        }
+
+        public IWorldEntity Summon(ICreatureInfo creatureInfo, Vector3 position, Vector3 rotation)
+        {
+            throw new NotSupportedException();
+        }
+
+        public IWorldEntity Summon(ICreatureInfo creatureInfo, EntityType entityType, Vector3 position, Vector3 rotation)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void TrackSummon(IWorldEntity entity)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void UntrackSummon(IWorldEntity entity)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void Unsummon(uint guid)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void UnsummonCreature<T>(T creatureId) where T : Enum
+        {
+            throw new NotSupportedException();
+        }
+
+        public void UnsummonCreature(uint creatureId)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void Unsummon()
+        {
+            throw new NotSupportedException();
+        }
     }
 }

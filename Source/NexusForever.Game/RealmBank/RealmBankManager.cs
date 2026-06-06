@@ -23,6 +23,16 @@ namespace NexusForever.Game.RealmBank
         const uint SlotsPerEntitlementStack = 8u;
 
         readonly HashSet<(uint AccountId, ushort RealmId)> loaded = new();
+        readonly IDatabaseManager databaseManager;
+
+        public RealmBankManager()
+        {
+        }
+
+        public RealmBankManager(IDatabaseManager databaseManager)
+        {
+            this.databaseManager = databaseManager;
+        }
 
         public bool HasUnlock(IPlayer player)
         {
@@ -222,9 +232,11 @@ namespace NexusForever.Game.RealmBank
             }).FireAndForgetAsync(ex => log.Error(ex, "Failed to delete realm bank item {0}.", itemGuid));
         }
 
-        static CharacterDatabase GetDatabase()
+        CharacterDatabase GetDatabase()
         {
-            return LegacyServiceProvider.Provider?.GetService<DatabaseManager>()?.GetDatabase<CharacterDatabase>();
+            return databaseManager?.GetDatabase<CharacterDatabase>()
+                ?? LegacyServiceProvider.Provider?.GetService<IDatabaseManager>()?.GetDatabase<CharacterDatabase>()
+                ?? LegacyServiceProvider.Provider?.GetService<DatabaseManager>()?.GetDatabase<CharacterDatabase>();
         }
     }
 }

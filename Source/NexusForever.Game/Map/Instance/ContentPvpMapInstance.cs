@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Matching.Match;
@@ -16,8 +17,9 @@ namespace NexusForever.Game.Map.Instance
         public ContentPvpMapInstance(
             IEntityFactory entityFactory,
             IPublicEventManager publicEventManager,
-            IScriptManager scriptManager)
-            : base(entityFactory, publicEventManager, scriptManager)
+            IScriptManager scriptManager,
+            ICreatureInfoManager creatureInfoManager = null)
+            : base(entityFactory, publicEventManager, scriptManager, creatureInfoManager)
         {
         }
 

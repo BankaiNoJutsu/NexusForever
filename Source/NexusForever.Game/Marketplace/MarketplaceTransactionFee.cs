@@ -18,20 +18,20 @@ namespace NexusForever.Game.Marketplace
         private const ulong FallbackMinimumFeeCredits = 500ul;
         private const ulong CreditsPerMinimumFeeUnit = 100ul;
 
-        public static ulong CalculateItemAuctionSellerProceeds(ulong grossAmount) =>
-            CalculateSellerProceeds(grossAmount, ItemAuctionFeeGameFormulaId);
+        public static ulong CalculateItemAuctionSellerProceeds(ulong grossAmount, IGameTableManager gameTables = null) =>
+            CalculateSellerProceeds(grossAmount, ItemAuctionFeeGameFormulaId, gameTables);
 
-        public static ulong CalculateCommoditySellerProceeds(ulong grossAmount) =>
-            CalculateSellerProceeds(grossAmount, CommodityAuctionFeeGameFormulaId);
+        public static ulong CalculateCommoditySellerProceeds(ulong grossAmount, IGameTableManager gameTables = null) =>
+            CalculateSellerProceeds(grossAmount, CommodityAuctionFeeGameFormulaId, gameTables);
 
-        private static ulong CalculateSellerProceeds(ulong grossAmount, uint feeFormulaId)
+        private static ulong CalculateSellerProceeds(ulong grossAmount, uint feeFormulaId, IGameTableManager gameTables)
         {
             if (grossAmount == 0ul)
                 return 0ul;
 
-            float feeRate = GetFeeRate(feeFormulaId);
+            float feeRate = GetFeeRate(feeFormulaId, gameTables);
             ulong fee = (ulong)Math.Ceiling(grossAmount * feeRate);
-            ulong minimumFee = GetMinimumFeeCredits();
+            ulong minimumFee = GetMinimumFeeCredits(gameTables);
             if (grossAmount >= minimumFee)
                 fee = Math.Max(fee, minimumFee);
 
@@ -41,9 +41,10 @@ namespace NexusForever.Game.Marketplace
             return grossAmount - fee;
         }
 
-        private static float GetFeeRate(uint feeFormulaId)
+        private static float GetFeeRate(uint feeFormulaId, IGameTableManager gameTables)
         {
-            GameTableManager gameTables = LegacyServiceProvider.Provider?.GetService<GameTableManager>();
+            gameTables ??= LegacyServiceProvider.Provider?.GetService<IGameTableManager>()
+                ?? LegacyServiceProvider.Provider?.GetService<GameTableManager>();
             GameFormulaEntry entry = gameTables?.GameFormula?.GetEntry(feeFormulaId);
             if (entry == null || entry.Datafloat0 <= 0f)
                 return DefaultFeeRate;
@@ -51,9 +52,10 @@ namespace NexusForever.Game.Marketplace
             return entry.Datafloat0;
         }
 
-        private static ulong GetMinimumFeeCredits()
+        private static ulong GetMinimumFeeCredits(IGameTableManager gameTables)
         {
-            GameTableManager gameTables = LegacyServiceProvider.Provider?.GetService<GameTableManager>();
+            gameTables ??= LegacyServiceProvider.Provider?.GetService<IGameTableManager>()
+                ?? LegacyServiceProvider.Provider?.GetService<GameTableManager>();
             GameFormulaEntry entry = gameTables?.GameFormula?.GetEntry(MinimumFeeGameFormulaId);
             if (entry != null && entry.Dataint0 > 0u)
                 return entry.Dataint0 * CreditsPerMinimumFeeUnit;

@@ -193,6 +193,22 @@ public class UnitEntityDamageResultTests
     }
 
     [Fact]
+    public void CancelSpellsOnMove_WhenMovementInterruptedSpellBlocksButIsExecuting_CancelsSpell()
+    {
+        TestUnitEntity unit = new();
+        ISpell spell = RecordingDispatchProxy<ISpell>.Create(out RecordingDispatchProxy<ISpell> spellProxy);
+        spellProxy.SetProperty(nameof(ISpell.IsCasting), false);
+        spellProxy.SetProperty(nameof(ISpell.BlocksCasting), true);
+        spellProxy.SetMethodReturn(nameof(ISpell.IsMovingInterrupted), true);
+        AddPendingSpell(unit, spell);
+
+        unit.CancelSpellsOnMove();
+
+        RecordingDispatchProxy<ISpell>.Invocation cancel = Assert.Single(spellProxy.GetInvocations(nameof(ISpell.CancelCast)));
+        Assert.Equal(CastResult.CasterMovement, cancel.Arguments[0]);
+    }
+
+    [Fact]
     public void CheckActiveCastSlot_WhenActiveCastPending_ReturnsAlreadyCasting()
     {
         TestUnitEntity unit = new();

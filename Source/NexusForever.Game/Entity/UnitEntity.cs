@@ -33,7 +33,7 @@ using NexusForever.Shared.Game;
 
 namespace NexusForever.Game.Entity
 {
-    public abstract class UnitEntity : WorldEntity, IUnitEntity
+    public abstract partial class UnitEntity : WorldEntity, IUnitEntity
     {
         public float HitRadius { get; protected set; } = 1f;
 
@@ -106,6 +106,7 @@ namespace NexusForever.Game.Entity
         private readonly UpdateTimer statUpdateTimer = new UpdateTimer(0.25);
         private double shieldRebootRemainingSeconds;
         private double shieldRegenElapsedSeconds;
+        private Func<GlobalLootManager> globalLootManagerResolver;
 
         private UpdateTimer respawnTimer;
 
@@ -292,6 +293,11 @@ namespace NexusForever.Game.Entity
             ThreatManager = new ThreatManager(this);
 
             InitialiseHitRadius();
+        }
+
+        internal void InitialiseRuntimeDependencies(Func<GlobalLootManager> globalLootManagerResolver)
+        {
+            this.globalLootManagerResolver = globalLootManagerResolver;
         }
 
         #endregion
@@ -2012,7 +2018,7 @@ namespace NexusForever.Game.Entity
         public void CancelSpellsOnMove()
         {
             foreach (ISpell spell in pendingSpells)
-                if (spell.IsMovingInterrupted() && spell.IsCasting)
+                if (spell.IsMovingInterrupted() && spell.BlocksCasting)
                     spell.CancelCast(CastResult.CasterMovement);
         }
 
@@ -2041,6 +2047,15 @@ namespace NexusForever.Game.Entity
         {
             ISpell spell = pendingSpells.SingleOrDefault(s => s.CastingId == castingId);
             spell?.CancelCast(result);
+        }
+
+        public bool TryReleaseChargeSpell(ICharacterSpell characterSpell, uint rootSpell4Id, uint primaryTargetId, uint clientContextToken = 0u, string clientRequestSource = null)
+        {
+            foreach (Spell.Spell spell in pendingSpells.OfType<Spell.Spell>())
+                if (spell.TryReleaseChargeSpell(characterSpell, rootSpell4Id, primaryTargetId, clientContextToken, clientRequestSource))
+                    return true;
+
+            return false;
         }
 
         public bool TryCancelSpellEffect(uint serverUniqueId)
@@ -2443,7 +2458,7 @@ namespace NexusForever.Game.Entity
                 player.XpManager.GrantXpForCreatureKill(Level, groupValue, GetPropertyValue(Property.XpMultiplier));
             }
 
-            GlobalLootManager.Instance.DropLoot(player, this);
+            GetGlobalLootManager()?.DropLoot(player, this);
         }
 
         private void RewardPublicEventKiller(IPlayer player, IEnumerable<uint> targetGroupIds)
@@ -2517,46 +2532,6 @@ namespace NexusForever.Game.Entity
         {
             Health = MaxHealth;
             Shield = MaxShieldCapacity;
-        }
-
-        private void RemoveLootForOwner()
-        {
-            LegacyServiceProvider.Provider?.GetService<GlobalLootManager>()?.RemoveLootForOwner(Guid);
-        }
-
-        private void SendLootRemoveForOwnerToVisiblePlayers()
-        {
-            if (this is not INonPlayerEntity || Guid == 0u)
-                return;
-
-            foreach (IPlayer player in visibleEntities.Values.OfType<IPlayer>().ToList())
-            {
-                player.Session.EnqueueMessageEncrypted(new ServerLootRemove
-                {
-                    OwnerUnitId = Guid
-                });
-            }
-        }
-
-        private void RefreshVisiblePlayersAfterRespawn()
-        {
-            if (this is not INonPlayerEntity || Guid == 0u)
-                return;
-
-            foreach (IPlayer player in visibleEntities.Values.OfType<IPlayer>().ToList())
-            {
-                // The client can keep corpse presentation state for reused creature GUIDs.
-                player.Session.EnqueueMessageEncrypted(new ServerEntityDestroy
-                {
-                    Guid = Guid,
-                    Flag = true
-                });
-
-                foreach (var auxiliary in BuildEntityCreateAuxPackets())
-                    player.Session.EnqueueMessageEncrypted(auxiliary);
-
-                player.Session.EnqueueMessageEncrypted(BuildCreatePacket(false));
-            }
         }
 
         /// <summary>

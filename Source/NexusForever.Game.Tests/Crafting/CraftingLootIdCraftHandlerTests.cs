@@ -19,6 +19,7 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Crafting;
+using NexusForever.WorldServer.Crafting;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Crafting;
 
@@ -83,7 +84,8 @@ public class CraftingLootIdCraftHandlerTests
             NullLogger<ClientCraftingSimpleCraftHandler>.Instance,
             CreateGameTableManager(),
             itemManager,
-            lootManager);
+            lootManager,
+            new CraftingModifierSessionStore());
     }
 
     private static IWorldSession CreateSession(

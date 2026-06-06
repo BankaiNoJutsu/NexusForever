@@ -9,7 +9,7 @@ using NexusForever.Game;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Leaderboard;
-using NexusForever.Shared;
+using NexusForever.WorldServer.Service;
 using NLog;
 
 namespace NexusForever.WorldServer.Leaderboard
@@ -27,15 +27,18 @@ namespace NexusForever.WorldServer.Leaderboard
         private readonly IDatabaseManager databaseManager;
         private readonly IRealmContext realmContext;
         private readonly DatabaseLeaderboardStore store;
+        private readonly IBackgroundTaskRunner backgroundTaskRunner;
 
         public LeaderboardScoreIngestion(
             IDatabaseManager databaseManager,
             IRealmContext realmContext,
-            DatabaseLeaderboardStore store)
+            DatabaseLeaderboardStore store,
+            IBackgroundTaskRunner backgroundTaskRunner)
         {
-            this.databaseManager = databaseManager;
-            this.realmContext    = realmContext;
-            this.store           = store;
+            this.databaseManager       = databaseManager;
+            this.realmContext          = realmContext;
+            this.store                 = store;
+            this.backgroundTaskRunner  = backgroundTaskRunner;
 
             CharacterDatabase database = databaseManager.GetDatabase<CharacterDatabase>();
             if (database == null)
@@ -85,15 +88,10 @@ namespace NexusForever.WorldServer.Leaderboard
                 RecordedUtc       = DateTime.UtcNow
             };
 
-            database.Save(context => context.LeaderboardPveScore.Add(model))
-                .ContinueWith(t =>
-                {
-                    if (t.IsFaulted)
-                        log.Error(t.Exception?.GetBaseException(), "Failed to persist PvE leaderboard score for character {0}.", player.CharacterId);
-                    else
-                        store.InvalidateCache();
-                }, TaskContinuationOptions.ExecuteSynchronously)
-                .FireAndForgetAsync();
+            backgroundTaskRunner.Observe(
+                database.Save(context => context.LeaderboardPveScore.Add(model)),
+                store.InvalidateCache,
+                exception => log.Error(exception, "Failed to persist PvE leaderboard score for character {0}.", player.CharacterId));
         }
 
         public void RecordPvpRating(
@@ -128,15 +126,10 @@ namespace NexusForever.WorldServer.Leaderboard
                 RecordedUtc     = DateTime.UtcNow
             };
 
-            database.Save(context => context.LeaderboardPvpScore.Add(model))
-                .ContinueWith(t =>
-                {
-                    if (t.IsFaulted)
-                        log.Error(t.Exception?.GetBaseException(), "Failed to persist PvP leaderboard score for character {0}.", player.CharacterId);
-                    else
-                        store.InvalidateCache();
-                }, TaskContinuationOptions.ExecuteSynchronously)
-                .FireAndForgetAsync();
+            backgroundTaskRunner.Observe(
+                database.Save(context => context.LeaderboardPvpScore.Add(model)),
+                store.InvalidateCache,
+                exception => log.Error(exception, "Failed to persist PvP leaderboard score for character {0}.", player.CharacterId));
         }
 
         private ulong AllocatePveScoreId(CharacterDatabase database)

@@ -17,7 +17,8 @@ namespace NexusForever.Game.Marketplace
 
         public static ulong[] GetTierSeconds(IGameTableManager gameTables = null)
         {
-            gameTables ??= LegacyServiceProvider.Provider?.GetService<GameTableManager>();
+            gameTables ??= LegacyServiceProvider.Provider?.GetService<IGameTableManager>()
+                ?? LegacyServiceProvider.Provider?.GetService<GameTableManager>();
             GameFormulaEntry entry = gameTables?.GameFormula?.GetEntry(ListingDurationGameFormulaId);
             if (entry == null)
                 return FallbackTierSeconds;

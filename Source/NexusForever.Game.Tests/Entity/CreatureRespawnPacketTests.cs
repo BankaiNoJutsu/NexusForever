@@ -1,8 +1,12 @@
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
+using NexusForever.Game.Abstract.Group;
 using NexusForever.Game.Entity;
+using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
@@ -15,6 +19,38 @@ namespace NexusForever.Game.Tests.Entity;
 
 public class CreatureRespawnPacketTests
 {
+    [Fact]
+    public void Respawn_RemovesLootUsingInjectedLootManager()
+    {
+        const uint creatureGuid = 9090u;
+
+        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
+        var lootManager = new GlobalLootManager(groupStateManager);
+        var lootInstance = new LootInstance(
+            ownerUnitId: creatureGuid,
+            looterIds: [],
+            looterType: LooterType.Player,
+            lootEntityType: LootEntityType.Creature);
+        AddLootInstance(lootManager, lootInstance);
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddGameEntity();
+        services.AddTransient<INonPlayerEntity, TestNonPlayerEntity>();
+        services.AddSingleton(lootManager);
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        IEntityFactory entityFactory = provider.GetRequiredService<IEntityFactory>();
+        var creature = Assert.IsType<TestNonPlayerEntity>(entityFactory.CreateWorldEntity(EntityType.NonPlayer));
+        creature.SetGuidForTest(creatureGuid);
+        creature.SetDeadForTest();
+
+        InvokeRespawn(creature);
+
+        Assert.Equal(0, GetLootInstanceCount(lootManager));
+        Assert.Equal(0, GetOwnerIndexCount(lootManager, creatureGuid));
+    }
+
     [Fact]
     public void Respawn_RecreatesVisibleNonPlayerAndClearsLootPresentation()
     {
@@ -72,6 +108,31 @@ public class CreatureRespawnPacketTests
         typeof(UnitEntity)
             .GetMethod("Respawn", BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(creature, null);
+    }
+
+    private static void AddLootInstance(GlobalLootManager manager, LootInstance lootInstance)
+    {
+        typeof(GlobalLootManager)
+            .GetMethod("AddLootInstance", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(manager, [lootInstance]);
+    }
+
+    private static int GetLootInstanceCount(GlobalLootManager manager)
+    {
+        var instances = (List<LootInstance>)typeof(GlobalLootManager)
+            .GetField("lootInstances", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(manager)!;
+        return instances.Count;
+    }
+
+    private static int GetOwnerIndexCount(GlobalLootManager manager, uint ownerUnitId)
+    {
+        var instancesByOwnerUnit = (Dictionary<uint, List<LootInstance>>)typeof(GlobalLootManager)
+            .GetField("lootInstancesByOwnerUnit", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(manager)!;
+        return instancesByOwnerUnit.TryGetValue(ownerUnitId, out List<LootInstance> instances)
+            ? instances.Count
+            : 0;
     }
 
     private sealed class TestNonPlayerEntity : UnitEntity, INonPlayerEntity

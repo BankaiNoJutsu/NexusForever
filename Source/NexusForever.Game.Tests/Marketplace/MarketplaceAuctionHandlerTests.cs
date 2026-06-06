@@ -49,6 +49,23 @@ public class MarketplaceAuctionHandlerTests
     private const ulong BuyoutPrice = 250ul;
 
     [Fact]
+    public void PostAuction_UsesInjectedGameTableForDefaultExpiration()
+    {
+        using LegacyServiceProviderScope scope = new(new ServiceCollection().BuildServiceProvider());
+        var manager = new GlobalMarketplaceManager(
+            null,
+            CreateGameTableManager(defaultAuctionDurationHours: 1u));
+        IItemInfo itemInfo = CreateItemInfo();
+        IItem item = CreateItem(itemInfo, out _);
+        CreateSession(SellerGuid, SellerCharacterId, out _, out _, out _, out IPlayer seller);
+
+        GenericError result = manager.PostAuction(seller, item, MinimumBid, BuyoutPrice, out AuctionInfo auction);
+
+        Assert.Equal(GenericError.Ok, result);
+        Assert.Equal(3600ul, auction.ExpirationTime);
+    }
+
+    [Fact]
     public void AuctionPostSearchAndBuyout_UsesTransientOrderBookAndTransfersItem()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -2023,7 +2040,10 @@ public class MarketplaceAuctionHandlerTests
         return session;
     }
 
-    private static GameTableManager CreateGameTableManager(uint maxCommodityOrderQuantity = 200u, bool includeListingDurationFormula = false)
+    private static GameTableManager CreateGameTableManager(
+        uint maxCommodityOrderQuantity = 200u,
+        bool includeListingDurationFormula = false,
+        uint? defaultAuctionDurationHours = null)
     {
         var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig
         {
@@ -2048,6 +2068,15 @@ public class MarketplaceAuctionHandlerTests
                 Dataint01 = 1800u,
                 Dataint02 = 7200u,
                 Dataint03 = 43200u
+            });
+        }
+
+        if (defaultAuctionDurationHours.HasValue)
+        {
+            formulaEntries.Add(new GameFormulaEntry
+            {
+                Id       = 821u,
+                Dataint0 = defaultAuctionDurationHours.Value
             });
         }
 

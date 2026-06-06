@@ -56,13 +56,16 @@ namespace NexusForever.Game.Map
         #region Dependency Injection
 
         private readonly IEntityFactory entityFactory;
+        private readonly ICreatureInfoManager creatureInfoManager;
 
         public BaseMap(
             IEntityFactory entityFactory,
-            IPublicEventManager publicEventManager)
+            IPublicEventManager publicEventManager,
+            ICreatureInfoManager creatureInfoManager = null)
         {
-            this.entityFactory = entityFactory;
-            PublicEventManager = publicEventManager;
+            this.entityFactory        = entityFactory;
+            this.creatureInfoManager  = creatureInfoManager;
+            PublicEventManager        = publicEventManager;
         }
 
         #endregion
@@ -442,11 +445,12 @@ namespace NexusForever.Game.Map
             if (model.Creature == 0u)
                 return null;
 
-            ICreatureInfoManager creatureInfoManager = LegacyServiceProvider.Provider?.GetService<ICreatureInfoManager>();
-            if (creatureInfoManager == null)
+            ICreatureInfoManager manager = creatureInfoManager
+                ?? LegacyServiceProvider.Provider?.GetService<ICreatureInfoManager>();
+            if (manager == null)
                 throw new InvalidOperationException($"CreatureInfoManager is not available while spawning entity {model.Id} for world {model.World}.");
 
-            ICreatureInfo creatureInfo = creatureInfoManager.GetCreatureInfo(model.Creature);
+            ICreatureInfo creatureInfo = manager.GetCreatureInfo(model.Creature);
             if (creatureInfo == null)
                 throw new InvalidOperationException($"Missing creature info for creature {model.Creature} while spawning entity {model.Id} for world {model.World}.");
 

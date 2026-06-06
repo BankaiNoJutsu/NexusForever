@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
@@ -29,8 +30,9 @@ namespace NexusForever.Game.Map.Instance
         public ContentMapInstance(
             IEntityFactory entityFactory,
             IPublicEventManager publicEventManager,
-            IScriptManager scriptManager)
-            : base(entityFactory, publicEventManager)
+            IScriptManager scriptManager,
+            ICreatureInfoManager creatureInfoManager = null)
+            : base(entityFactory, publicEventManager, creatureInfoManager)
         {
             this.scriptManager = scriptManager;
         }

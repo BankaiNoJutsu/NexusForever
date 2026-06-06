@@ -11,7 +11,6 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
-using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Account.Inventory;
 
@@ -228,27 +227,9 @@ public class DailyLoginRewardManagerTests
 
     private static LegacyServiceProviderScope UseDailyLoginRewards(params DailyLoginRewardEntry[] dailyLoginRewards)
     {
-        return new LegacyServiceProviderScope(CreateGameTableManager(dailyLoginRewards));
-    }
-
-    private sealed class LegacyServiceProviderScope : IDisposable
-    {
-        private readonly IServiceProvider previousProvider;
-        private readonly ServiceProvider provider;
-
-        public LegacyServiceProviderScope(GameTableManager gameTableManager)
-        {
-            previousProvider = LegacyServiceProvider.Provider;
-            provider = new ServiceCollection()
-                .AddSingleton(gameTableManager)
-                .BuildServiceProvider();
-            LegacyServiceProvider.Provider = provider;
-        }
-
-        public void Dispose()
-        {
-            LegacyServiceProvider.Provider = previousProvider;
-            provider.Dispose();
-        }
+        ServiceProvider provider = new ServiceCollection()
+            .AddSingleton(CreateGameTableManager(dailyLoginRewards))
+            .BuildServiceProvider();
+        return new LegacyServiceProviderScope(provider);
     }
 }

@@ -1,5 +1,6 @@
 using System.Numerics;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Character;
@@ -78,7 +79,7 @@ using static NexusForever.Game.Static.Tutorial.StarterTutorialDefinition;
 
 namespace NexusForever.Game.Entity
 {
-    public class Player : UnitEntity, IPlayer
+    public partial class Player : UnitEntity, IPlayer
     {
         private sealed class StarterTutorialEntitySearchCheck : ISearchCheck<IGridEntity>
         {
@@ -434,6 +435,8 @@ namespace NexusForever.Game.Entity
         private readonly IEntityFactory entityFactory;
         private readonly IMatchingManager matchingManager;
         private readonly IMatchManager matchManager;
+        private readonly IGameTableManager gameTableManager;
+        private readonly GlobalLootManager globalLootManager;
 
         public Player(
             IMovementManager movementManager,
@@ -441,13 +444,17 @@ namespace NexusForever.Game.Entity
             IEntityFactory entityFactory,
             IMatchingManager matchingManager,
             IMatchManager matchManager,
-            ICurrencyManager currencyManager)
+            IGameTableManager gameTableManager,
+            ICurrencyManager currencyManager,
+            GlobalLootManager globalLootManager = null)
             : base(movementManager)
         {
             this.messagePublisher = messagePublisher;
             this.entityFactory    = entityFactory;
             this.matchingManager  = matchingManager;
             this.matchManager     = matchManager;
+            this.gameTableManager = gameTableManager;
+            this.globalLootManager = globalLootManager;
 
             // managers
             CurrencyManager = currencyManager;
@@ -495,7 +502,7 @@ namespace NexusForever.Game.Entity
 
             foreach (CharacterSchematicModel schematicModel in model.Schematic)
             {
-                if (GameTableManager.Instance.TradeskillSchematic2.GetEntry(schematicModel.TradeskillSchematic2Id) == null)
+                if (gameTableManager.TradeskillSchematic2.GetEntry(schematicModel.TradeskillSchematic2Id) == null)
                     continue;
 
                 schematics[schematicModel.TradeskillSchematic2Id] = SchematicState.FromModel(schematicModel);
@@ -548,7 +555,7 @@ namespace NexusForever.Game.Entity
             SpellManager            = new SpellManager(this, model);
             PetCustomisationManager = new PetCustomisationManager(this, model);
             KeybindingManager       = new CharacterKeybindingManager(this, model);
-            DatacubeManager         = new DatacubeManager(this, model);
+            DatacubeManager         = new DatacubeManager(this, model, gameTableManager);
             GalacticArchiveManager  = new GalacticArchiveManager(this, model);
             MailManager             = new MailManager(this, model);
             ZoneMapManager          = new ZoneMapManager(this, model);
@@ -1245,103 +1252,6 @@ namespace NexusForever.Game.Entity
         {
             DestroyDependents();
             base.OnRemoveFromMap();
-        }
-
-        public override bool CanSeeEntity(IGridEntity entity)
-        {
-            if (ShouldForceStarterTutorialEntityVisibility(entity))
-                return true;
-
-            return base.CanSeeEntity(entity) && !ShouldHideStarterTutorialEntity(entity);
-        }
-
-        public override void AddVisible(IGridEntity entity)
-        {
-            bool wasVisible = visibleEntities.ContainsKey(entity.Guid);
-            base.AddVisible(entity);
-
-            if (wasVisible || !visibleEntities.ContainsKey(entity.Guid))
-                return;
-
-            if (entity is IWorldEntity worldEntity)
-            {
-                foreach (IWritable auxiliary in worldEntity.BuildEntityCreateAuxPackets())
-                    Session.EnqueueMessageEncrypted(auxiliary);
-
-                Session.EnqueueMessageEncrypted(worldEntity.BuildCreatePacket(IsLoading));
-                GlobalLootManager.Instance.SendLootNotifyForVisibleOwner(this, worldEntity);
-            }
-
-            if (entity is IPlayer playerEntity)
-                Session.EnqueueMessageEncrypted(new ServerSetUnitPathType
-                {
-                    UnitId = playerEntity.Guid,
-                    Path = playerEntity.Path
-                });
-
-            if (entity == this)
-            {
-                Session.EnqueueMessageEncrypted(new ServerPlayerChanged
-                {
-                    Guid = entity.Guid,
-                    Unknown1 = 1
-                });
-            }
-
-            if (entity is IUnitEntity unitEntity && unitEntity.InCombat)
-            {
-                Session.EnqueueMessageEncrypted(new ServerUnitEnteredCombat
-                {
-                    UnitId = unitEntity.Guid,
-                    InCombat = unitEntity.InCombat
-                });
-            }
-
-            if (entity is IWorldEntity busyEntity && busyEntity.IsBusy)
-            {
-                Session.EnqueueMessageEncrypted(new ServerUnitInUse
-                {
-                    UnitId = busyEntity.Guid,
-                    InUse  = true
-                });
-            }
-        }
-
-        public override void RemoveVisible(IGridEntity entity)
-        {
-            if (ShouldForceStarterTutorialEntityVisibility(entity))
-                return;
-
-            bool wasVisible = visibleEntities.ContainsKey(entity.Guid);
-            base.RemoveVisible(entity);
-
-            if (!wasVisible || visibleEntities.ContainsKey(entity.Guid))
-                return;
-
-
-            if (selectedVendorGuid == entity.Guid)
-                SelectedVendorInfo = null;
-
-            if (entity is IWorldEntity && entity != this)
-            {
-                Session.EnqueueMessageEncrypted(new ServerEntityDestroy
-                {
-                    Guid = entity.Guid,
-                    Flag = true
-                });
-            }
-        }
-
-        protected override void AddVisible(uint gridX, uint gridZ)
-        {
-            base.AddVisible(gridX, gridZ);
-            Map.GridAddVisiblePlayer(gridX, gridZ);
-        }
-
-        protected override void RemoveVisible(uint gridX, uint gridZ)
-        {
-            base.RemoveVisible(gridX, gridZ);
-            Map.GridRemoveVisiblePlayer(gridX, gridZ);
         }
 
         /// <summary>
@@ -2635,8 +2545,11 @@ namespace NexusForever.Game.Entity
                 return false;
             }
 
-            TeleportTo((ushort)destination.WorldId, destination.Position0, destination.Position1, destination.Position2);
-            log.Debug($"Starter tutorial combat transition recovery teleported player {Guid}: destinationWorldLocation={destinationWorldLocationId}, hoverboardState={hoverboardState?.ToString() ?? "None"}, combatState={combatState?.ToString() ?? "None"}.");
+            if (!TryGetCombatSimulationTeleportPosition(Faction1, out Vector3 teleportPosition))
+                return false;
+
+            TeleportTo((ushort)destination.WorldId, teleportPosition.X, teleportPosition.Y, teleportPosition.Z);
+            log.Debug($"Starter tutorial combat transition recovery teleported player {Guid}: destinationWorldLocation={destinationWorldLocationId}, destination=({teleportPosition.X}, {teleportPosition.Y}, {teleportPosition.Z}), hoverboardState={hoverboardState?.ToString() ?? "None"}, combatState={combatState?.ToString() ?? "None"}.");
             return true;
         }
 

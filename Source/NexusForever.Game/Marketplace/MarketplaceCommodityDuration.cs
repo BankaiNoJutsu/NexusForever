@@ -1,3 +1,5 @@
+using NexusForever.GameTable;
+
 namespace NexusForever.Game.Marketplace
 {
     /// <summary>
@@ -13,10 +15,10 @@ namespace NexusForever.Game.Marketplace
             return (ulong)DateTime.UtcNow.ToFileTimeUtc();
         }
 
-        public static ulong ResolveExpirationFileTime(ulong clientListTime, ulong clientExpirationTime)
+        public static ulong ResolveExpirationFileTime(ulong clientListTime, ulong clientExpirationTime, IGameTableManager gameTables = null)
         {
             ulong listFileTime = ResolveListFileTime(clientListTime);
-            ulong[] tiers = MarketplaceListingDuration.GetTierSeconds();
+            ulong[] tiers = MarketplaceListingDuration.GetTierSeconds(gameTables);
 
             if (clientExpirationTime > listFileTime)
             {
