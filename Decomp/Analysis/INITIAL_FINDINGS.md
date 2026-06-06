@@ -1529,14 +1529,16 @@ Twenty-fourth monster aggro/combat-state follow-up mapped from this pass:
   reaches a generic client event emitter, not a dedicated raw-state parser, so
   the live raw state `4` producer still remains upstream of the resolved-state
   branch.
-- `FUN_1403db7f0` is now decompiled strongly enough for a generic cache-helper
-  label: it resolves the target unit for `*param_2`, forwards `(state, extra)`
-  through `FUN_14045bdc0(...)`, and when the cached raw value changes rewrites
-  `unit + 0x108` before recomputing the derived classification at `unit +
-  0x10c` through `FUN_14045a950(...)`. That pushes the live evade path one
-  step farther: raw state `4` definitely enters the same live cache/update
-  cluster, but a one-off caller trace of `FUN_1403db7f0` still only lands on
-  unwind metadata at `140e02c94`, so the true dispatcher is still unrecovered.
+- `UnitState_UpdateCachedStateFields` (`1403db7f0`) is now decompiled strongly
+  enough for a generic cache-helper label, with one correction to older notes:
+  `param_2[1]` is left live in `EDX` for
+  `Entity_GetRelationshipCodeToTargetId` (`14045a950`), which resolves it as a
+  target entity id. The helper resolves the subject unit from `param_2[0]`,
+  forwards `(targetId, secondary)` through
+  `EntityTarget_ApplyTargetedByUnitUpdate` (`14045bdc0`), and when the cached
+  target changes rewrites `unit + 0x108` before recomputing the relationship
+  code at `unit + 0x10c`. That pushes the live evade path one step farther, but
+  the true dispatcher for the resolved-state cluster is still unrecovered.
 - The neighboring `FUN_1403db9a0` block is now a closed false lead. Its only
   recovered string xrefs are `InvokeVendorWindow` and `VendorItemsUpdated`, so
   adjacency to the unit-state helpers does not make it part of the evade path.
@@ -7536,24 +7538,32 @@ masks, facing-angle gates, and range-check subtleties.
 
 ### `UnitState_*` packet structure decode (`1403db7f0`-`1403db920`)
 
-Three labelled functions near `0x1403db7f0` decode the server `UnitState` packet
-structure and entity state fields:
+Three labelled functions near `0x1403db7f0` decode a server-side
+unit-state/target update cluster. Older notes treated `entity+0x108/+0x10c`
+as raw state fields; the later relationship-helper pass shows this specific
+cluster stores a cached target entity id plus a relationship code.
 
 **`UnitState_UpdateCachedStateFields` (`1403db7f0`):**
 ```c
-// param_2 = int[3]: [0]=entity_guid, [1]=new_state_value, [2]=secondary_state_data
-longlong entity = FUN_1403d90d0(param_1, param_2[0]);
-FUN_14045bdc0(entity, param_2[1], param_2[2]);
-// If entity is NOT the local player:
+// param_2 = int[3]: [0]=entity_guid, [1]=target_entity_id, [2]=secondary_target_data
+longlong entity = Entity_ResolveById(param_1, param_2[0]);
+EntityTarget_ApplyTargetedByUnitUpdate(entity, param_2[1], param_2[2]);
+// If entity is NOT the active controlled entity:
 if (entity + 0x108 != param_2[1]) {
-    entity + 0x108 = param_2[1];  // current unit state value
-    entity + 0x10c = FUN_14045a950(entity);  // derived state flags
+    entity + 0x108 = param_2[1];  // cached target entity id
+    entity + 0x10c = Entity_GetRelationshipCodeToTargetId(entity, param_2[1]);
 }
 ```
 **Entity fields confirmed:**
-- `entity + 0x108`: current `UnitState` value (also used as spell-wrapper targeting flags)
-- `entity + 0x10c`: derived flags computed from state; bit `0x02` = valid interactable target;
-  bit `0x4000000` = self-AOE gate
+- `entity + 0x108`: cached target entity id/current selected target id, also
+  used by target selection and spell-target resolution.
+- `entity + 0x10c`: relationship code for `entity+0x108`. Current evidence
+  proves return categories `0`, `1`, and `2` are consumed by target selection,
+  CSI current-object actions, spell targeting, and faction special cases, but
+  does not yet name those categories safely.
+- `entity + 0x148`: target-tracking state updated by
+  `EntityTarget_ApplyTargetedByUnitUpdate`; exact container shape remains
+  blocked.
 
 **`UnitState_ApplyResolvedState` (`1403db870`):**
 ```c
@@ -7624,7 +7634,7 @@ esolved_id == 0 AND TargetType is in bitmask x12a:
 | Offset | Content |
 |--------|---------|
 | ntity + 0x08 | entity GUID / ID (uint) |
-| ntity + 0x108 | current UnitState value |
+| ntity + 0x108 | cached current target entity id |
 | ntity + 0x11e0 | x position (float) |
 | ntity + 0x11e4 | y position (float) |
 | ntity + 0x11e8 | z position (float) |
@@ -7633,7 +7643,7 @@ esolved_id == 0 AND TargetType is in bitmask x12a:
 ### Special Override Path (flags param_1+0x7ba0 bit 0)
 When player+0x7ba0 & 1 AND wrapper+0x10c bit 26 AND wrapper+0x10c bit 28:
 - Reads secondary entity ID from player+0x6490 ? +0x108.
-- Performs relationship check via FUN_14045a950 and bounding check via FUN_140466b90.
+- Performs relationship check via `Entity_GetRelationshipCodeToTargetId` and bounding check via FUN_140466b90.
 - Result: overridden entity replaces normal entity target.
 
 ### Server Implementation Applied
@@ -8072,8 +8082,8 @@ Decoded from `ValidTargetsCriteria_Evaluate @ 1403b4a20`.
 |------|----------|--------------------------|----------|
 | 1 | must-include | `+0x10` FactionGroupId | entity FactionGroupId MUST be in values[0..6] |
 | 2 | must-exclude | `+0x10` FactionGroupId | entity FactionGroupId MUST NOT be in values[0..6] |
-| 3 | must-include | `+0x30` Attr2_Unk118 | entity Attr2_Unk118 MUST be in values[0..6] |
-| 4 | must-exclude | `+0x30` Attr2_Unk118 | entity Attr2_Unk118 MUST NOT be in values[0..6] |
+| 3 | must-include | `+0x30` Faction2Id | entity Faction2Id MUST be in values[0..6] |
+| 4 | must-exclude | `+0x30` Faction2Id | entity Faction2Id MUST NOT be in values[0..6] |
 | 5 | must-include | `+0x20` RaceId | entity RaceId MUST be in values[0..6] |
 | 6 | must-exclude | `+0x20` RaceId | entity RaceId MUST NOT be in values[0..6] |
 | 7 | must-include | `+0x28` ClassId | entity ClassId MUST be in values[0..6] |
@@ -8098,7 +8108,7 @@ Return codes:
 | `+0x18` | 9 | `MultiCheck(values, count)` ? array-based eval (CheckType9) | `EntityCriteria_GetField0x140_ListMatch @ 1403b4960` (entity+0x140) |
 | `+0x20` | 5, 6 | getter: RaceId | `EntityCriteria_GetRaceId @ 1403b49a0` (entity+0xd8) |
 | `+0x28` | 7, 8 | getter: ClassId | `EntityCriteria_GetClassId @ 1403b49b0` (entity+0xdc) |
-| `+0x30` | 3, 4 | getter: Attr2_Unk118 | `EntityCriteria_GetAttr2_Unk118 @ 1403b49c0` (entity+0x118) |
+| `+0x30` | 3, 4 | getter: Faction2Id | `EntityCriteria_GetFaction2Id @ 1403b49c0` (entity+0x118 Faction2 component) |
 | `+0x38` | 12, 13 | getter: UnitRaceId | `EntityCriteria_GetUnitRaceId @ 1403b49e0` (entity+0xd0 ptr) |
 
 ---
@@ -8502,7 +8512,7 @@ undefined4 Entity_GetFactionRelationship(entity *param_1, context *param_2) {
     if (*(int *)(param_1 + 0x80) == 0x14) {
         faction_entry = FUN_1401f31e0(*(int *)(param_2 + 0xdc));
         if (faction_entry != 0 &&
-            FUN_14045a950(param_1, *(int *)(param_2 + 8)) != 0)
+            Entity_GetRelationshipCodeToTargetId(param_1, *(int *)(param_2 + 8)) != 0)
             return *(int *)(faction_entry + 0x54);  // override faction
     } else {
         // Default path: faction-override array at entity+0x18+0xc0
@@ -8533,7 +8543,7 @@ undefined4 Entity_GetFactionRelationship(entity *param_1, context *param_2) {
 | ntity+0x18 + 0x148 | Flag B (must be 0 for faction override to apply) |
 | ntity+0x18 + 0xc0 | Pointer to faction-override entry array (up to 4 entries) |
 | context + 0xdc | Faction entry ID in context |
-| context + 0x08 | Caster membership ID for FUN_14045a950 check |
+| context + 0x08 | Context target/entity id for `Entity_GetRelationshipCodeToTargetId` check |
 
 #### Server Implication
 
@@ -11946,12 +11956,16 @@ Storefront `0x0987..0x0991` client-consumer semantics:
   decoded flag, 5-bit value, string, and float fields. The model is now named
   for the event, but individual field names remain conservative until the
   purchase flow or Lua consumer proves their exact meanings.
-- `Storefront_SendClientPurchaseVirtualCurrencyPackage` (`1404f1d50`) sends
-  opcode `0x082E` with one package-id byte and is registered in
-  `FUN_14006c290` (`1400781c0`). NexusForever now names
-  `ClientStorefrontPurchaseVirtualCurrencyPackage` and grants emulated NCoin/
-  Omnibit packages from a hardcoded catalog before emitting `0x0991` and
-  `0x0990`. Real-money billing remains out of scope.
+- Raw PE decoding of the `StorefrontLib` registration table corrected the
+  earlier `0x082E` hypothesis: table slot `140b69e10` registers
+  `RequestHistory` to `1404f1d50`, and that function sends opcode `0x082E` as
+  a zero-byte storefront purchase-history request. NexusForever now names this
+  `ClientStorefrontRequestPurchaseHistory` and responds with
+  `ServerStorePurchaseHistoryReady` (`0x098E`). The adjacent
+  `PurchaseVirtualCurrencyPackage` (`1404f1470`) and
+  `CompleteOrderVirtualCurrencyPackage` (`1404f1550`) Lua registration targets
+  stay mapped-only pending a focused decompile/live trigger of the Protobucks/
+  real-money package flow.
 
 One-hundred-twenty-fourth storefront error/result semantics pass:
 
@@ -13920,7 +13934,7 @@ F-006 account/storefront terminal cluster `0969..0991` unblock pass:
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
   --no-restore --filter
-  "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~AccountItemCooldownTests|FullyQualifiedName~CREDDExchangeHandlerTests|FullyQualifiedName~StorefrontPurchaseHandlerTests|FullyQualifiedName~AccountInventoryPendingGroupTests|FullyQualifiedName~AccountItemHandlerTests|FullyQualifiedName~AccountRuntimeEvidenceTests|FullyQualifiedName~AccountTerminalHandlerTests|FullyQualifiedName~VirtualCurrencyPackageHandlerTests|FullyQualifiedName~StorePurchaseVelocityLimiterTests"
+  "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~AccountItemCooldownTests|FullyQualifiedName~CREDDExchangeHandlerTests|FullyQualifiedName~StorefrontPurchaseHandlerTests|FullyQualifiedName~AccountInventoryPendingGroupTests|FullyQualifiedName~AccountItemHandlerTests|FullyQualifiedName~AccountRuntimeEvidenceTests|FullyQualifiedName~AccountTerminalHandlerTests|FullyQualifiedName~StorefrontRequestPurchaseHistoryHandlerTests|FullyQualifiedName~StorePurchaseVelocityLimiterTests"
   -m:1 -v minimal --nologo -p:UseSharedCompilation=false`
   (focused F-006 cluster).
 
@@ -17858,6 +17872,20 @@ Prerequisite / guild-bank opcodes + Faction128 handler (2026-05-31, pass 47 - `N
 - **Mapped (opcode registration, not generic names):**
   - **`0x046F` `ServerGuildBankInventoryAdd`** ? reader **`ServerGuildBankInventoryAdd_ReadPayload` (`140092580`)**, registered size **`0xB8`**, apply **`GuildBank_ApplyInventoryAdd` (`14057d190`)** ? `ClientEvent` **`GuildBankItem`** via **`GuildBank_DispatchItemAddedClientEvent` (`1404277d0`)**.
   - **`0x047A` `ServerGuildBankTabInventory`** ? reader **`ServerGuildBankTabInventory_ReadPayload` (`140092470`)**, registered size **`0x20`** (+ heap `SharedItem` rows), apply **`GuildBank_ApplyTabInventoryRows` (`14057cdc0`)** ? `InventoryItem_ApplySharedItemPayload` (`140569c90`) per row (same microchip/glyph path as bag add).
+- **2026-06-06 follow-up:** `ServerGuildBankTabInventory.Write` now emits the
+  native-mapped uint32 row count before `SharedItem` rows; `GuildPacketShapeTests`
+  pins the empty-tab identity/tab/count shape.
+- **2026-06-06 live Guild smoke:** `guild_cdb_admin_validname_20260606_012222.log`
+  attached cleanly but produced no post-setup `HIT` records. The server path was
+  chat-command-only: world log lines 49483/49493-49496 show `ClientChat` ->
+  `ServerGuildResult`/`ServerGuildJoin`/`ServerGuildRoster`/
+  `ServerGuildMemberChange`, and `nexus_forever_character` confirms `Joy Ner`
+  (`character.id=30`) joined guild `Nexus` (`guild.id=1`) at rank `0`. This is
+  valid server-side membership/prerequisite setup evidence, not rename-grade
+  client opcode ownership evidence. `Run-GuildCdbProbe.ps1` now watches both
+  `Network_SendOpcodePayloadHelper` (`1403f4900`) and
+  `Network_SendOpcodePayloadOrPackedHelper` (`1403f4740`) for the follow-up
+  elevated UI pass.
 - **Mapped (item cluster readers on same registrar):**
   - **`0x0148` `ServerItemDelete`** ? **`ServerItemDelete_ReadPayload` (`14008d9c0`)**: uint64 guid + 6-bit reason.
   - **`0x017F` `ServerItemStackCountUpdate`** ? **`ServerItemStackCountUpdate_ReadPayload` (`14007fd50`)**: uint64 + uint32 count + 6-bit reason.
@@ -18721,6 +18749,48 @@ Loot sync tracker correction pass (2026-06-03 - D-L2 test-backed):
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~LootInstanceResolutionTests" -v minimal --nologo`
   passed `2/2`.
 
+Loot direct-delivery `0x08A0` correction pass (2026-06-05 - live-runtime evidence):
+- Live client/server evidence rejects direct corpse/vacuum pickup emission of
+  `ServerLootItemUpdate` (`0x08A0`) even though the packet reader/model remains
+  mapped. In the 2026-06-05 local runtime, the client logged
+  `Invalid or foreign Message Id #2208` in
+  `I:\WildStar\Logs\WildStar64_16042_DAN_260605_151616.txt` immediately after
+  `NexusForever.WorldServer_20260605_48852.log` sent
+  `ServerLootItemUpdate(0x000008A0)` during `ClientLootVacuum` delivery.
+  Decimal `#2208` is `0x08A0`.
+- The strongest correlation is the `16:28:54` / `14:28:54` local/UTC pair:
+  `ClientLootVacuum` delivered loot unit `2147483660`, sent
+  `ServerLootGrant(0x08A5)`, then sent `ServerLootItemUpdate(0x08A0)`, and the
+  client logged `#2208`. The later `16:29:39` pickup emitted three
+  `ServerLootItemUpdate` packets for three delivered rows and produced three
+  matching client `#2208` errors.
+- The captured evidence row
+  `artifacts\verify\loot-evidence\20260605-142852259-loot-char-30-guid-617.json`
+  proves the preceding `ServerLootNotify(0x07F2)` row shape and loot item
+  identity (`StaticItem`, item `7301`, amount `1`) were valid; the failure is
+  the auxiliary direct-delivery update emission policy, not the notify row.
+- Implementation narrows `LootInstance.GiveLoot` so successful direct/deferred
+  pickup keeps `ServerLootGrant`, remote `ServerLootNotification`, and manager
+  `ServerLootRemove` cleanup, but no longer broadcasts `ServerLootItemUpdate`.
+  The packet model and roll/master row-state broadcasts are retained pending
+  separate live evidence for those UI contexts.
+- `LootInstanceResolutionTests.GiveLoot_DirectDeliveryWithRegisteredLooterDoesNotSendLootItemUpdate`
+  pins the live-server condition where the looter is registered in
+  `IPlayerManager`, receives `ServerLootGrant`, and does not receive
+  `ServerLootItemUpdate`. `RollWinnerOffline_RemainsLootableForWinnerWhenTheyReturn`
+  now also pins that deferred winner pickup sends grant/remote notification
+  without a delivery-time `ServerLootItemUpdate`.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~LootInstanceResolutionTests" -m:1 -v minimal --nologo -p:UseSharedCompilation=false -p:OutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\loot-item-update-tests\out\`
+  passed `6/6`;
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~LootInstanceResolutionTests|FullyQualifiedName~LootInstanceDeliveryTests|FullyQualifiedName~GlobalLootManagerTests|FullyQualifiedName~LootRequestHandlerTests|FullyQualifiedName~LootPacketShapeTests" -m:1 -v minimal --nologo -p:UseSharedCompilation=false -p:OutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\loot-item-update-broader-tests\out\`
+  passed `43/43`; and
+  `dotnet build Source\NexusForever.Game\NexusForever.Game.csproj --no-restore -v minimal --nologo -p:UseSharedCompilation=false -p:OutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\loot-item-update-game-build\out\`
+  succeeded with `0` warnings and `0` errors. The default output-path test
+  command was blocked by the live `NexusForever.WorldServer (48852)` process
+  locking `Source\NexusForever.WorldServer\bin\Debug\net10.0` DLLs, so the
+  passing verification used isolated output paths.
+
 Full missing-system restoration pass (2026-06-02 - F-025 entity-stat aux socket-chain false leads):
 - Rejected `FUN_140001a50` as an entity aux or socket handler anchor. `Apollo_RegisterActorFixedWindow` (`1400016d0`) registers it as the `Apollo.ActorFixedWindow` constructor; the installed `PTR_FUN_140b54e10` family is an interior refcount/destructor vtable, not an opcode consumer table.
 - Reclassified the `WorldZone_* +0x14b0` cluster (`140356a30`, `14035c650`, `140369f30`, `14036a460`, `14036a980`, `14036b8d0`) as spatial/visibility maintenance. These helpers splice nodes with `+0x450/+0x458` backlinks and are distinct from `WorldSocket_ProcessServerMessage`, whose handler chain advances at `node+0x20` and applies via vtable `+0x58`.
@@ -19548,12 +19618,18 @@ F-010 WorldSocket slot-11 matching dispatcher rejection (2026-06-05):
   match-ready packets and correlate `0x05B0`, `0x05CC`, `0x05CF`, and `0x05F1`
   with client UI state.
 
-F-010 ServerMatching0x05CF MCP dispatcher recheck (2026-06-05):
+F-010 ServerMatching0x05CF MCP bridge retry and dispatcher recheck (2026-06-05):
 
 - **Target question**: Does `ServerMatching0x05CF` have a real native apply
   dispatcher/index for `MatchingManager_ApplyManagerUInt32Field0xA0`
   (`1405c41c0`), or is that helper still only correlated by behavior?
-- **MCP/native map**: `batch_decompile` reconfirmed
+- **MCP bridge state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets
+  WildStar64.exe` still resolves project `NexusForeverClient64_WildStar64`, but
+  direct `mcp__ghidra_mcp.list_instances` and `connect_instance` both return
+  `Transport closed`. The evidence below therefore comes from the WildStar64
+  cache plus direct-plugin xref/audit endpoints, not a successful bridge
+  connection.
+- **Native map**: cache/decompile fragments reconfirmed
   `Network_RegisterServerOpcode_0351` (`14006c290`) registering `0x05CF` with
   size `4` and `ServerUInt32_LocalReadThunk` (`140099110`); the same thunk is
   also installed for `0x085D`. Assembly context pins the install sites:
@@ -19565,11 +19641,12 @@ F-010 ServerMatching0x05CF MCP dispatcher recheck (2026-06-05):
   broad globals `140c65b98` / `140c65898`; selected call edges remain
   `ClientEntityLookup_FindByIdentity` and `FUN_1400a8020`, with no
   `ClientEvent_DispatchNamedEvent`.
-- **Rejected ownership evidence**: MCP xrefs keep `1405c41c0` on the single
-  `140e1e66c` data ref, and `audit_global 140e1e66c` / `140e1e660` reports
-  untyped zero-xref data locations, matching the earlier `_IMAGE_RUNTIME_FUNCTION_ENTRY`
-  / PE `.pdata` false-lead rejection. No opcode comparison, table walker,
-  callback slot, or `WorldSocket+0x15b0` route surfaced.
+- **Rejected ownership evidence**: direct-plugin xrefs keep `1405c41c0` on the
+  single `140e1e66c` data ref, and `audit_global 140e1e66c` / `140e1e660`
+  reports untyped zero-xref data locations, matching the earlier
+  `_IMAGE_RUNTIME_FUNCTION_ENTRY` / PE `.pdata` false-lead rejection. No opcode
+  comparison, table walker, callback slot, or `WorldSocket+0x15b0` route
+  surfaced.
 - **Disposition**: Mapped-only / Blocked. Keep `ServerMatching0x05CF` numeric
   with one neutral `uint32` field; keep `1405c41c0` as a correlated apply
   candidate, not an opcode-proven consumer. No C# behavior, emit path, field
@@ -20924,7 +21001,958 @@ F-022 prerequisite type-149 scene proximity-cue gate map (2026-06-05 pass 143):
 - **Disposition**: mapped-only. `PrerequisiteType.State` remains blocked until
   a native writer/owner for the evaluated entity `+0x1e4` field or a concrete
   type-149 prerequisite use-site is recovered.
-- **Next evidence source**: inspect the broad relation helper `FUN_14045a950`
+- **Next evidence source**: inspect the broad relation helper
+  `Entity_GetRelationshipCodeToTargetId` (`14045a950`)
   (called by CSI, target selection, spell targeting, and
   `Entity_GetFactionRelationship`) or search for a true entity `+0x1e4`
   writer rather than same-offset object collisions.
+
+Entity target relationship-code helper map (2026-06-05 pass 144):
+
+- **Target question**: Can broad relation helper `FUN_14045a950`, called from
+  CSI, target selection, spell targeting, `Entity_GetFactionRelationship`, and
+  cached entity `+0x10c` refresh paths, be safely labeled from native evidence?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` and
+  `mcp__ghidra_mcp.connect_instance("NexusForeverClient64_WildStar64")` still
+  failed immediately with `Transport closed`. Direct Ghidra plugin calls to
+  `127.0.0.1:8089` were healthy and were used for decompile, disassembly,
+  xrefs, rename, comments, and save.
+- **Function map**:
+  `Entity_GetRelationshipCodeToTargetId` (`WildStar64.exe` `14045a950`,
+  previous `FUN_14045a950`) computes a client relationship code between a
+  source entity pointer in `RCX` and target entity id in `RDX`. Disassembly
+  proves the hidden second argument: the first `Entity_ResolveById` call loads
+  `RCX = DAT_140c65898` without setting `RDX`, so the incoming `RDX` is the id
+  resolved as the other entity. The function canonicalizes source and target
+  type `0x14`/`0x17` proxy entities through `+0x2b0`, reads relationship
+  components at `entity+0x118`, checks the resolved-target override tree at
+  `target+0x150` keyed by source `entity+0x08`, handles local-player special
+  state at `DAT_140c65898+0x6ee4/+0x6ee0`, and returns codes `0`, `1`, or `2`.
+  Callers consume those codes in target selection, spell targeting, CSI
+  current-object actions, faction override checks, nearest-target filters, and
+  cached entity `+0x10c`.
+- **Supporting function map**:
+  `EntityTarget_ApplyTargetedByUnitUpdate` (`WildStar64.exe` `14045bdc0`,
+  previous `FUN_14045bdc0`) is only called by
+  `UnitState_UpdateCachedStateFields` (`1403db7f0`). It dispatches literal
+  `TargetedByUnit` / `UnTargetedByUnit` client events against the active
+  controlled entity, updates `entity+0x148` target-tracking state, and refreshes
+  target selection when the active unit targets this entity. This supports the
+  correction that `UnitState_UpdateCachedStateFields` record field `[1]` is a
+  target entity id for this cache path, not a raw state flag.
+- **Caller anchors**:
+  `TargetSelection_ApplySelectionAndDispatch` (`14055b0e0`) writes
+  `entity+0x108 = targetId` and then stores
+  `Entity_GetRelationshipCodeToTargetId(entity, targetId)` at `entity+0x10c`.
+  `CSIAction_HandleCurrentObjectPress` (`14077e2c0`) requires return code `2`
+  for the type-`0x14` special current-object action path.
+  `SpellTarget_ResolveTargetEntity` (`14055bdc0`) also requires code `2` for
+  its beneficial/ground-target override before falling back to
+  `SpellTarget_ValidateTargetRelationship`. `Entity_FindNearestTargetable`
+  (`14055a5f0`) exposes all three codes as filterable categories.
+- **Durable labels**: direct plugin `rename_function_by_address`,
+  `set_plate_comment`, and `save_program` succeeded for
+  `Entity_GetRelationshipCodeToTargetId` (`14045a950`) and
+  `EntityTarget_ApplyTargetedByUnitUpdate` (`14045bdc0`). The labels and stale
+  `UnitState_UpdateCachedStateFields` description correction are mirrored in
+  `function_labels.csv`.
+- **Verification note**: direct plugin `get_function_by_address` confirmed
+  both saved labels after `save_program`. Export verification remains blocked
+  by the interactive Ghidra project lock:
+  `run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe
+  -ProjectLockTimeoutMinutes 1 -SkipCoverage` failed after four attempts with
+  lock candidates `bridge_mcp_ghidra.py --transport stdio` pids `13104`,
+  `13544`, `20176`, and `31220`. Because export did not run, `functions.csv`
+  and `selected_decompiled.c` still show the old names until the next export
+  can acquire the project lock. No C# runtime behavior changed.
+- **Disposition**: mapped-only. Relationship helper inputs, outputs, fields,
+  callers, and labels are mapped, but the semantic names for return codes
+  `0`/`1`/`2` remain blocked on deeper relation-component or table evidence.
+- **Next evidence source**: inspect the `entity+0x118` relation component
+  vtable slots used by `Entity_GetRelationshipCodeToTargetId` (`+0x18` and
+  `+0x30`) and correlate them with `Faction2Relationship` rows before naming
+  code `0`/`1`/`2` categories or changing runtime behavior.
+
+Entity Faction2 component slot map (2026-06-05 pass 145):
+
+- **Target question**: Do the `entity+0x118` relation-component vtable slots
+  used by `Entity_GetRelationshipCodeToTargetId` prove enough semantics to
+  label stale CriteriaProxy functions or native relationship-code categories?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` and
+  `mcp__ghidra_mcp.connect_instance("NexusForeverClient64_WildStar64")` still
+  failed immediately with `Transport closed`; direct Ghidra plugin calls were
+  used for decompile, disassembly, labels, comments, and save.
+- **Function label cleanup**:
+  `EntityCriteria_GetFaction2Id` (`WildStar64.exe` `1403b49c0`, previous
+  `EntityCriteria_GetAttr2_Unk118`) is now durably aligned with the older
+  TargetGroup findings. The body reads `CriteriaProxy+0x08` entity,
+  dereferences `entity+0x118`, and tail-calls the component vtable slot
+  `+0x18`; null component returns `0`. TargetGroup checkTypes `3` and `4`
+  compare that value against row `data0..data6`, whose known values all fall
+  within the Faction2 id range. Direct plugin `rename_function_by_address`,
+  `set_plate_comment`, and `save_program` succeeded, and the label is mirrored
+  in `function_labels.csv`.
+- **Component slot map**:
+  `entity+0x118` is the Faction2/reputation component. Slot `+0x18` returns
+  Faction2Id: used by `EntityCriteria_GetFaction2Id` and
+  `Prerequisite_CheckFaction` (`14049c720`) before
+  `PlayerFactionService_GetActiveRecord` / `PlayerFactionService_IsFactionOrAncestor`.
+  Slot `+0x20` returns the reputation/standing value for a supplied Faction2 id:
+  live `PrerequisiteType.Reputation` case `0x5` in
+  `PrerequisiteManager_EvaluateTypeSlot` (`1404a2100`) calls
+  `[entity+0x118]->vtable[+0x20](objectId0)` and compares the float through
+  `PrerequisiteManager_ApplyComparisonFloat` (`1404a2010`). Slot `+0x30`
+  returns the relationship code consumed by
+  `Entity_GetRelationshipCodeToTargetId`: the helper reads the target-side
+  Faction2Id through slot `+0x18`, then calls selected source component
+  slot `+0x30` with that Faction2Id and stores/returns code `0`, `1`, or `2`.
+- **Correlation, not implementation proof**:
+  managed `Disposition` is ordered `Hostile=0`, `Neutral=1`, `Friendly=2`,
+  and NexusForever's `WorldEntity.GetDispositionTo` / `Player.GetDispositionTo`
+  already reduce `Faction2Relationship.FactionLevel` and reputation through the
+  same Hostile/Neutral/Friendly categories. Native callers also treat code `2`
+  as the special beneficial/current-object category. This strongly correlates
+  native relationship codes with managed `Disposition` order, but the exact
+  native slot `+0x30` implementation address has not been recovered, so do not
+  rename return-code constants or widen runtime behavior from this alone.
+- **Verification note**: direct plugin `get_function_by_address` confirmed
+  the saved `EntityCriteria_GetFaction2Id` and
+  `Entity_GetRelationshipCodeToTargetId` labels after `save_program`. Export
+  verification remains blocked by the interactive Ghidra project lock:
+  `run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe
+  -ProjectLockTimeoutMinutes 1 -SkipCoverage` failed after four attempts with
+  lock candidates `bridge_mcp_ghidra.py --transport stdio` pids `13104`,
+  `13544`, `17640`, and `20176`. Because export did not run, `functions.csv`
+  and `selected_decompiled.c` still show old names until the next export can
+  acquire the project lock.
+- **Disposition**: mapped-only. The stale `Attr2_Unk118` function label is
+  promoted to Faction2Id, the component slot map is recorded, and code category
+  names remain blocked on the actual component `+0x30` implementation.
+- **Next evidence source**: recover the concrete Faction2/reputation component
+  vtable family or constructor that installs slot `+0x30`, then inspect that
+  implementation against `Faction2Relationship.tbl` before naming relationship
+  code categories or changing combat/targeting behavior.
+
+Faction2 component vtable and disposition-code closure (2026-06-05 pass 146):
+
+- **Target question**: Can the concrete Faction2/reputation component vtable
+  family or constructor that owns `entity+0x118` slot `+0x30` be recovered and
+  used to map relationship-code categories?
+- **MCP state**: `mcp__ghidra_mcp.list_instances` and
+  `mcp__ghidra_mcp.connect_instance("NexusForeverClient64_WildStar64")` still
+  failed immediately with `Transport closed`. Direct Ghidra plugin calls were
+  used for decompile, disassembly, memory reads, function creation, labels,
+  comments, and `save_program`.
+- **Producer/consumer field order**: `UnitCreated` consumer
+  `FUN_140456960` reads the packet-backed struct around offsets `+0xd4` and
+  `+0xd8`: it stores `packet+0xd4` at entity `+0x120`, calls
+  `Entity_InitBaseFaction2ComponentById` (`14045ac60`) with `packet+0xd8`,
+  then calls `Entity_SetActiveFaction2ComponentById` (`14045ab70`) with
+  `packet+0xd4`. The base component lives at entity `+0x110`; the active
+  component used by criteria, prerequisites, and relationship-code lookups
+  lives at entity `+0x118`.
+- **Mapped functions and anchors**:
+  - `Faction2Service_LoadFactionTables` (`140716ac0`) builds
+    `DAT_140c665d0` from `Faction2` rows, resolves parent links from each row,
+    then walks `Faction2Relationship` rows and attaches relationship edges to
+    both endpoint component records through
+    `Faction2Component_AddRelationshipEdge` (`1407171f0`).
+  - `Faction2Service_CreateComponentForFaction2Id` (`140716fa0`) looks up a
+    Faction2 id in `DAT_140c665d0`, allocates a component with vtable
+    `140b77da0`, then initializes it through vtable slot `+0x38`
+    `Faction2Component_SetFaction2Row` (`140787550`).
+  - `Entity_InitBaseFaction2ComponentById` (`14045ac60`) creates the base
+    component at entity `+0x110` and aliases active `+0x118` to it when both
+    slots are empty; if either slot is already populated the path logs a
+    diagnostic instead of overwriting.
+  - `Entity_SetActiveFaction2ComponentById` (`14045ab70`) compares the current
+    active component's slot `+0x18` Faction2Id with the requested id, reuses
+    base `+0x110` when it already matches, otherwise creates a replacement
+    component through `Faction2Service_CreateComponentForFaction2Id`, releases
+    the old active component through vtable `+0x08`, stores the new pointer at
+    entity `+0x118`, and marks entity/local-player faction state dirty.
+- **Concrete vtable `140b77da0`**:
+  - `+0x10` -> `Faction2Component_SetStandingOverrideCallback` (`140787630`):
+    stores callback context at component `+0x18` and callback pointer at
+    `+0x20`. `Faction2Component_GetStandingValueToFaction2Id` and
+    `Faction2Component_GetFactionLevelToFaction2Id` consult this callback
+    before table-backed fallback.
+  - `+0x18` -> `Faction2Component_GetFaction2Id` (`140787640`): returns the
+    Faction2 row id from component `+0x10`, or `0` when the row pointer is
+    missing. This is the slot used by `EntityCriteria_GetFaction2Id`
+    (`1403b49c0`), `Prerequisite_CheckFaction` (`14049c720`), and
+    `Entity_GetRelationshipCodeToTargetId` (`14045a950`).
+  - `+0x20` -> `Faction2Component_GetStandingValueToFaction2Id`
+    (`140787690`): resolves the standing/reputation value for a supplied
+    Faction2 id through the standing override callback, active player faction
+    records from `PlayerFactionService_GetActiveRecord`, and
+    `Faction2Relationship` edges.
+  - `+0x28` -> `Faction2Component_GetFactionLevelToFaction2Id`
+    (`140787760`): resolves the raw `FactionLevel` for a supplied Faction2 id.
+    It uses the override callback first, then table-backed relationship edges,
+    then returns level `10` for self-faction and default level `5` otherwise.
+  - `+0x30` -> `Faction2Component_GetDispositionCodeToFaction2Id`
+    (`140787830`): calls slot `+0x28` and maps `FactionLevel` `0`, `1`, or `2`
+    to relationship code `0`; `8`, `9`, or `10` to code `2`; and all other
+    levels to code `1`.
+  - `+0x38` -> `Faction2Component_SetFaction2Row` (`140787550`): stores the
+    matched Faction2 row pointer at component `+0x10`.
+- **Mapped category names**: the recovered slot `+0x30` implementation maps
+  native relationship code `0` to Hostile, code `1` to Neutral, and code `2`
+  to Friendly. This is now supported by native FactionLevel buckets and
+  matches managed `Disposition` order (`Hostile=0`, `Neutral=1`,
+  `Friendly=2`). The finding is **Mapped**, not runtime-verified; no combat,
+  targeting, reputation, or packet behavior was changed.
+- **Durable label state**: direct plugin `create_function` created the missing
+  tiny functions at `140787630` and `140787640`. Direct plugin
+  `rename_function_by_address`, `set_plate_comment`, and `save_program`
+  succeeded for the Faction2 service/component labels above, and
+  `get_function_by_address` confirmed the saved names after `save_program`.
+  The labels are mirrored in `function_labels.csv`.
+- **Verification note**: direct plugin `get_function_by_address` confirmed the
+  saved labels after `save_program`. The immediate pass-146 export attempt was
+  blocked by the interactive Ghidra project lock, but the pass-147 export-only
+  retry succeeded:
+  `run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe
+  -ProjectLockTimeoutMinutes 1 -SkipCoverage`. The refreshed
+  `exports/WildStar64.exe/functions.csv` now contains
+  `Entity_SetActiveFaction2ComponentById`,
+  `Entity_InitBaseFaction2ComponentById`,
+  `Faction2Service_CreateComponentForFaction2Id`, and
+  `Faction2Component_GetDispositionCodeToFaction2Id`.
+- **Disposition**: mapped-only. The native component vtable and disposition
+  buckets are mapped, but no NexusForever runtime behavior changed because
+  live/sniff verification and server-owned reputation/targeting producer
+  evidence were outside this narrow pass.
+- **Next evidence source**: use the recovered Faction2 service map to audit
+  emit/apply paths that write `packet+0xd4` and `packet+0xd8` in modeled
+  `UnitCreated`/entity aux packets, especially server aux neutral fields that
+  remain blocked on producer evidence.
+
+ServerEntityCreate Faction fields versus entity-create aux fields (2026-06-05 pass 147):
+
+- **Target question**: Which managed `ServerEntityCreate` or entity-create aux
+  fields correspond to native `UnitCreated` packet offsets `+0xd4` and `+0xd8`,
+  and can any aux neutral fields be safely renamed?
+- **MCP state**: retried `mcp__ghidra_mcp.list_instances` and
+  `mcp__ghidra_mcp.connect_instance("NexusForeverClient64_WildStar64")`; both
+  still failed immediately with `Transport closed`. The direct plugin endpoint
+  on `127.0.0.1:8089`, which was healthy during pass 146, also refused
+  connections during this pass. Existing WildStar64 export cache and the saved
+  pass-146 direct-plugin evidence were used instead.
+- **Function/opcode map**:
+  - `ServerEntityCreate_ReadPayload` (`WildStar64.exe` `140096fa0`, opcode
+    `0x0262`, object size `0x120`) is the owning reader. The cached body reads
+    `+0xd0` as `CurrentSpellUniqueId`, `+0xd4` as a 14-bit value, `+0xd8` as a
+    14-bit value, `+0xdc` as `UnitTagOwner`, and `+0xe0` as `GroupTagOwner`.
+    This matches `Source/NexusForever.Network.World/Message/Model/ServerEntityCreate.cs`
+    write order and the existing `EntityCreatePacketTests` wire-order
+    regression.
+  - `FUN_140456960` (`WildStar64.exe` `140456960`) is the cached
+    `UnitCreated` apply/initialization path for the parsed create payload. It
+    stores `param_2[0x35]` (`packet+0xd4`) at entity `+0x120`, calls
+    `Entity_InitBaseFaction2ComponentById` (`14045ac60`) with `param_2[0x36]`
+    (`packet+0xd8`), then calls
+    `Entity_SetActiveFaction2ComponentById` (`14045ab70`) with
+    `param_2[0x35]`. It later dispatches the named event `UnitCreated`. A
+    durable label for this helper is deferred until live Ghidra/export
+    confirmation is available.
+  - `ServerEntityCreateAuxBitPackedRow_ReadPayload` (`1400959c0`, opcode
+    `0x0263`) remains shape-mapped only: two `uint32` fields, three generic
+    17-bit values, one `uint32`, and a trailing three-`uint32` tuple. Current
+    NexusForever code populates `Value4`/`Value5` from `entity.Faction1` and
+    `entity.Faction2`, but the native reader width and lack of a mapped
+    consumer/apply path do not support renaming those aux fields yet.
+- **Mapped result**: `packet+0xd4` is the main `ServerEntityCreate.Faction1`
+  wire field and active Faction2 component seed; `packet+0xd8` is the main
+  `ServerEntityCreate.Faction2` wire field and base Faction2 component seed.
+  Confidence: **Mapped** for the main `0x0262` fields; **Blocked** for
+  entity-create aux `Value4`/`Value5` semantics.
+- **Durable changes**: updated the `ServerEntityCreate_ReadPayload` comment in
+  `function_labels.csv`, `CURRENT_STATUS.md`, and
+  `ENTITY_AUX_DECODE_ROADMAP.md`. No C# packet/model names changed because
+  the main fields already have supported names and the aux fields remain
+  diagnostic/neutral.
+- **Verification note**: cache/source correlation completed.
+  `run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe
+  -ProjectLockTimeoutMinutes 1 -SkipCoverage` completed, and focused `rg`
+  checks verified `ServerEntityCreate_ReadPayload` in both refreshed
+  `exports/WildStar64.exe/functions.csv` and `selected_decompiled.c`. The same
+  refreshed `functions.csv` contains the pass-146 Faction2 labels. Live MCP
+  remains unavailable (`Transport closed`) and the direct endpoint refused
+  connections during this pass, so the cached `FUN_140456960` apply helper was
+  mapped but not renamed.
+- **Disposition**: mapped-only. No runtime behavior changed.
+- **Next evidence source**: recover or relaunch a healthy Ghidra MCP instance,
+  then classify the indirect apply/consumer path for `0x025F`-`0x0264` entity
+  create aux packets or find a live sniff/order witness proving whether the
+  `0x0263` 17-bit slots duplicate factions or carry separate bounded ids.
+
+Entity-create aux indirect consumer recheck (2026-06-05 pass 148):
+
+- **Target question**: Does the native `WorldSocket+0x15b0` handler chain expose
+  a post-read apply/consumer owner for entity-create aux opcodes `0x025F`-
+  `0x0264`, enough to rename neutral aux fields or widen runtime behavior?
+- **MCP state**: exposed the `ghidra-mcp` tools and retried both
+  `mcp__ghidra_mcp.list_instances` and
+  `mcp__ghidra_mcp.connect_instance("NexusForeverClient64_WildStar64")`; both
+  failed immediately with `Transport closed`. A direct Ghidra plugin fallback on
+  `127.0.0.1:8089` was available after opening `WildStar64.exe`, so the pass
+  used live xrefs/decompile plus the existing WildStar64 export cache.
+- **Function/opcode map**:
+  - `ServerEntityCreateAuxRow_ReadPayload` (`140095c20`, opcode `0x025F`):
+    direct xrefs are the `0x0260` list reader, registration/data refs, and no
+    post-read apply owner.
+  - `ServerEntityCreateAuxRowList_ReadPayload` (`140095ce0`, opcode `0x0260`):
+    direct xrefs are registration/data refs only.
+  - `ServerEntityCreateAuxBitPackedRowList_ReadPayload` (`140095a80`, opcode
+    `0x0261`): direct xrefs are registration/data refs only.
+  - `ServerEntityCreateAuxBitPackedRow_ReadPayload` (`1400959c0`, opcode
+    `0x0263`): direct xrefs are the `0x0261` list reader, registration/data
+    refs, and no post-read apply owner.
+  - `ServerEntityCreateAuxScalarList_ReadPayload` (`140095b40`, opcode
+    `0x0264`): direct xrefs are registration/data refs only.
+- **Handler-chain catalog result**: cached slot tables and direct plugin xrefs
+  rechecked the known inserted native `WorldSocket+0x15b0` node families:
+  diagnostic/log node `PTR_FUN_140b55540`, console node `PTR_FUN_140b55430`,
+  options/addons node `PTR_FUN_140b558c0`, and persistent node
+  `PTR_FUN_140b690f0`. The first three use `WorldSocketChain_ReturnOne` for
+  filter/apply-style slots. The persistent node's nontrivial `+0x58` target is
+  `FortuneNode_ApplyServerFortunePackets` (`1404d60f0`), which dispatches only
+  Fortune opcodes `0x03CF`-`0x03D2`. No known socket-chain node consumes
+  entity-create aux opcodes.
+- **Durable changes**: updated the five entity-create aux reader comments in
+  `function_labels.csv` so each row records the current xref limit and lack of
+  a post-read apply owner. No C# packet/model names changed.
+- **Verification blocker**: two export-only refresh attempts failed because the
+  `NexusForeverClient64_WildStar64` Ghidra project stayed locked by local
+  `bridge_mcp_ghidra.py --transport stdio` processes. The direct plugin open
+  program was saved and closed, and `/list_open_programs` returned zero open
+  programs, but `run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe
+  -ProjectLockTimeoutMinutes 2 -SkipCoverage` still failed after seven lock
+  attempts. `LATEST_RUN_SUMMARY.json` reports `projectLockFailure: true` and
+  `labelFingerprintMatchesRun: false`; therefore the new label comments are
+  source-controlled but not yet proven in refreshed generated exports.
+- **Disposition**: mapped-only. The wire readers and known handler-chain
+  negatives are mapped, but aux field semantics and emit timing remain blocked
+  because no consumer/apply owner or live sniff/order witness has been found.
+- **Next evidence source**: recover dynamically inserted socket-chain node
+  families not present in the selected cache, or capture a live packet-order
+  witness around entity creation to determine whether `0x025F`-`0x0264` are
+  live packets, replay-only payloads, or both.
+
+F-016-F-020 `ServerSpellCastResult.Unknown0` direct-plugin/source recheck (2026-06-05 pass 149):
+
+- **Target question**: Does any current native or NexusForever producer evidence
+  prove the `0x07FC` leading `uint32` is an echoed client cast context token?
+- **MCP state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+  still resolves project `NexusForeverClient64_WildStar64`, but
+  `mcp__ghidra_mcp.list_instances` and `connect_instance` both fail immediately
+  with `Transport closed`. The direct plugin was used for focused xrefs and was
+  closed afterward.
+- **Native map**:
+  - `ServerSpellCastResult_ReadPayload` (`WildStar64.exe` `140094fb0`, opcode
+    `0x07FC`, object size `0x0C`) still reads payload `+0` as `uint32`, `+4`
+    as 18-bit `Spell4Id`, and `+8` as 9-bit `CastResult`.
+  - Direct plugin `get_function_xrefs?address=140094fb0` returns only data ref
+    `140dcf604` plus registration/data refs in
+    `Network_RegisterServerOpcode_0351` (`1400743bb`, `1400743cd`). There is no
+    direct post-read apply owner.
+  - Native client request writers remain request-side only evidence:
+    `ClientCastSpell_WritePayload` (`140093360`) and
+    `ClientCastSpellPosition_WritePayload` (`140093950`) write a 32-bit
+    generated context token first; `ClientSpellCastWithServiceToken_WritePayload`
+    (`140089570`) writes an 18-bit generated context token first. None of those
+    writers proves how the client consumes the server result's leading field.
+- **NexusForever source audit**: managed producers are mixed. Core
+  `Spell.SendSpellCastResult`, rapid transport, activate-cast selected-spell
+  reject, guild-boss-token reject, and service-token reject all leave
+  `ServerSpellCastResult.Unknown0` at default `0`; the support stuck flow
+  explicitly echoes the client stuck context token. This is compatibility
+  behavior, not native proof of the field's client-side owner.
+- **Disposition**: mapped-only / blocked. Keep
+  `ServerSpellCastResult.Unknown0` neutral and keep the
+  `PacketPlaceholderNamingTests` guard rejecting `ContextToken`,
+  `ClientContextToken`, and `CastingId` aliases.
+- **Next evidence source**: a real `0x07FC` apply/consumer owner, an apply-table
+  slot, or a live cast-result capture that correlates a non-zero leading field
+  with a known request context token.
+
+F-016-F-020 spell auxiliary triplet-list xref recheck (2026-06-05 pass 150):
+
+- **Target question**: Does the native client prove producer or consumer
+  semantics for `ServerSpellUInt32TripletList` (`0x080F`) / variant `0x0810`
+  beyond the counted uint32-triplet wire shape?
+- **MCP state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+  resolves project `NexusForeverClient64_WildStar64`, but
+  `mcp__ghidra_mcp.list_instances`, `connect_instance`, and
+  `list_tool_groups` all fail immediately with `Transport closed`. Ghidra
+  itself is open and its plugin is listening at `127.0.0.1:8089`, so this pass
+  used the live plugin endpoint plus the existing WildStar64 cache. Multiple
+  local `bridge_mcp_ghidra.py --transport stdio` processes remain present; none
+  were stopped.
+- **Native map**:
+  - `ServerSpellUInt32TripletList_ReadPayload` (`WildStar64.exe` `140095da0`,
+    opcodes `0x080F` and `0x0810`, registered object size `0x10`) reads a
+    32-bit row count, allocates `count * 0x0C`, and loops through
+    `ServerSpellUInt32TripletListRow_ReadPayload` (`140080bf0`).
+  - `ServerSpellUInt32TripletListRow_ReadPayload` (`140080bf0`) reads three
+    consecutive `uint32` fields at row offsets `+0`, `+4`, and `+8`.
+  - Direct plugin xrefs for `140095da0` return only data ref `140dcf718` plus
+    `Network_RegisterServerOpcode_0351` registration/data refs
+    `1400747f1`, `140074803`, `140074822`, and `140074834`. No direct post-read
+    apply owner or producer/consumer path surfaced.
+  - Direct plugin xrefs for `140080bf0` show the list-reader call at
+    `140095e2f`, other triplet-shaped opcode registrations/data refs, and no
+    semantic consumer. This confirms the shared row reader alone cannot name
+    the `0x080F` / `0x0810` row fields.
+  - Adjacent `ServerSpellFourUInt32_ReadPayload` (`14007fef0`, opcode `0x0812`)
+    was spot-checked: xrefs remain data/registration-only for this spell-aux
+    use, so the four fields also stay neutral.
+- **NexusForever source audit**: `ServerSpellUInt32TripletList`,
+  `ServerSpellUInt32TripletListVariant`, and `ServerSpellFourUInt32` are present
+  as packet models and shape tests only. There are no managed runtime producers
+  for the spell-aux triplet lists or four-uint32 packet outside tests.
+- **Disposition**: mapped-only / blocked. Keep `Value0` / `Value1` / `Value2`
+  and `Value3` names neutral, do not add spell-runtime emitters for these
+  packets, and do not infer cooldown/target/buff semantics from adjacency to
+  `0x07FC`, `0x0811`, `0x0813`, or `0x091B`.
+- **Next evidence source**: recover an indirect apply-table/socket-chain owner
+  for `0x080F` / `0x0810` / `0x0812`, or capture live packet rows around spell
+  cast failure, cooldown, target list, or buff-removal flows and correlate row
+  values to known `Spell4`, unit, cooldown, or aura state.
+
+F-003 `Server0x0015` live-plugin ownership recheck (2026-06-05 pass 151):
+
+- **Target question**: Does the lone server opcode placeholder `Server0x0015`
+  have an opcode-specific native apply/producer path, or is it still only a
+  shared `ServerUInt5UInt32_ReadPayload` registration row?
+- **MCP state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+  resolved project `NexusForeverClient64_WildStar64`, but
+  `mcp__ghidra_mcp.list_instances` and `connect_instance` both failed
+  immediately with `Transport closed`. The live Ghidra plugin endpoint on
+  `127.0.0.1:8089` was used for direct xrefs/decompile and closed afterward.
+- **Function/opcode map**:
+  - `ServerUInt5UInt32_ReadPayload` (`WildStar64.exe` `140081f00`) reads one
+    5-bit field at payload offset `+0` and one `uint32` at `+4`.
+  - `Network_RegisterServerOpcode_0351` (`14006c290`) registers `0x0015`, size
+    `8`, with this reader; the same function registers matching opcode
+    `0x0628`, size `8`, with the same reader.
+  - `ServerFortuneRewards_ReadPayload` (`140081f60`, opcode `0x03D2`) calls the
+    same reader as a counted money-reward row helper, proving the shape is
+    reusable and not semantic by itself.
+- **Live xrefs**:
+  - Direct plugin xrefs for `140081f00` returned data ref `140dce380`, the
+    `ServerFortuneRewards_ReadPayload` call at `140082040`, and four
+    registration/data refs in `Network_RegisterServerOpcode_0351`:
+    `14006ecbc`, `14006eccf`, `140075d67`, and `140075d79`.
+  - The positive `0x0628` apply control remains
+    `MatchingManager_ApplyMatchingAverageWaitTimeUpdated` (`1405c0e00`): it
+    consumes the two-field payload shape, writes `payload[1]` to a matching map
+    row at `+0x48`, and dispatches `MatchingAverageWaitTimeUpdated` when the row
+    is active. Direct plugin xrefs for `1405c0e00` returned only data ref
+    `140e1e2b8`, so this remains matching-family evidence and does not identify
+    an `0x0015` owner.
+- **Matching NexusForever files**:
+  `Source/NexusForever.Network/Message/GameMessageOpcode.cs`,
+  `Source/NexusForever.Network.World/Message/Model/ServerUnresolvedOutputPackets.cs`,
+  `Source/NexusForever.Network.World/Message/Model/ServerMatchingAverageWaitTimeUpdate.cs`,
+  and `Source/NexusForever.Game.Tests/Network/PacketPlaceholderNamingTests.cs`.
+- **Disposition**: mapped-only / blocked. Keep `Server0x0015.Value0` and
+  `Value1` neutral, keep the alias guards that reject `MatchType` and
+  `AverageWaitTime`, and do not emit opcode `0x0015` until an opcode-specific
+  apply/producer path, post-read consumer, or live `0x0015` payload capture
+  proves ownership.
+- **Next evidence source**: a live `0x0015` payload capture or a recovered
+  post-read apply table/socket-chain owner that references opcode `0x0015`
+  separately from the shared `0x0628` matching apply path.
+
+F-016-F-020 `Client0x0928` shared uint32/5-bit sender recheck (2026-06-05 pass 152):
+
+- **Target question**: Does the native client prove an opcode-specific sender or
+  consumer for client opcode `0x0928`, or is it still only a shared
+  `uint32 + 5-bit` diagnostic registration row?
+- **MCP state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+  resolved project `NexusForeverClient64_WildStar64`, but the requested MCP
+  retry still failed at the transport layer: `mcp__ghidra_mcp.list_instances`
+  and `connect_instance` both returned `Transport closed`. The live Ghidra
+  plugin endpoint on `127.0.0.1:8089` and the existing WildStar64 cache were
+  used for focused decompiler/xref evidence.
+- **Function/opcode map**:
+  - `ClientUInt32UInt5_WritePayload` (`WildStar64.exe` `1400898b0`) writes
+    `param_2[0]` as 32 bits followed by `param_2[1] & 0x1f` as 5 bits.
+  - `ServerUInt32UInt5_ReadPayload` (`14008ce80`) reads one `uint32` followed
+    by one 5-bit value.
+  - `Network_RegisterServerOpcode_0351` registers pet opcode `0x068E`, size
+    `8`, with the shared writer, and pet opcode `0x068F`, size `8`, with the
+    shared reader.
+  - `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) registers
+    `0x0928`, size `8`, with the same writer/read-helper pair. The registration
+    row alone does not name the payload fields.
+  - Positive pet-control sender `Pet_SetStance_SendClientPetSetStance`
+    (`14050a270`) resolves pet command context, packs pet unit id plus mapped
+    5-bit stance, and sends opcode `0x068E` through
+    `Network_SendOpcodePayloadHelper`; it does not send `0x0928`.
+- **Live xrefs and cache scan**:
+  - Direct plugin xrefs for `1400898b0` returned data ref `140dceab8`, two
+    `0x068E` registration/data refs (`140070ca0`, `140070cbf`), and two
+    `0x0928` registration/data refs (`1400a850a`, `1400a8511`).
+  - Direct plugin xrefs for `14008ce80` returned data ref `140dceca4`, two
+    `0x068F` registration/data refs (`140071a18`, `140071a2a`), and two
+    `0x0928` registration/data refs (`1400a84fa`, `1400a8505`).
+  - Cache scans for `Network_SendOpcodePayloadHelper(...0x928...)`,
+    `Network_SendMessageById(...0x928...)`, and `0x0928` selected xref/string
+    CSV anchors found only the registration row, not an opcode-specific sender.
+- **Matching NexusForever files**:
+  `Source/NexusForever.Network.World/Message/Model/ClientUnresolvedDiagnosticPackets.cs`,
+  `Source/NexusForever.WorldServer/Network/Message/Handler/Misc/ClientUnresolvedDiagnosticHandlers.cs`,
+  `Source/NexusForever.Network.World/Message/Model/Pet/ClientPetSetStance.cs`,
+  and `Source/NexusForever.Network.World/Message/Model/Pet/ServerPetStanceChanged.cs`.
+- **Disposition**: mapped-only / blocked. Keep `Client0x0928.LeadingValue` and
+  `TrailingBits` diagnostic-only; do not alias the fields to pet unit/stance,
+  movement, cooldown, reward, or UI semantics from the shared helper or opcode
+  adjacency alone.
+- **Next evidence source**: an opcode-specific `0x0928` sender, callback/table
+  owner, Lua/UI anchor, indirect send rail, or live capture that correlates the
+  32-bit and 5-bit values to a known gameplay action.
+
+F-002 `Client0x0701` indirect sender/owner recheck (2026-06-05 pass 153):
+
+- **Target question**: Does `Client0x0701` have an indirect native sender,
+  callback/table owner, or post-read consumer beyond the known registration row?
+- **MCP state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+  resolved project `NexusForeverClient64_WildStar64`. The requested Ghidra MCP
+  retry still failed at the transport boundary: `mcp__ghidra_mcp.list_instances`
+  and `connect_instance` both returned `Transport closed`. The live Ghidra
+  plugin endpoint and the existing WildStar64 cache were used for direct
+  xrefs/global audit and selected-cache scans.
+- **Function/opcode map**:
+  - `Network_RegisterServerOpcode_0351` (`WildStar64.exe` `14006c290`)
+    registers opcode `0x0701`, object size `8`, read-advance label
+    `1400a69c0`, writer `ClientUInt2UInt32_WritePayload` (`1400a69d0`), and no
+    server reader/apply callback.
+  - `ClientUInt2UInt32_WritePayload` (`1400a69d0`) writes `param_2[0] & 3` as
+    a 2-bit field, then writes `param_2[1]` as a 32-bit value. It falls back to
+    `FUN_140336470` for buffered bit writes when the fast path lacks room.
+  - The `0x0701` registration row sits between named/adjacent registrations
+    such as `ClientCraftingAbandon` (`0x0602`), `0x0942`, marketplace commodity
+    info (`0x082F`), and map-tracked-unit updates, but adjacency does not prove
+    owner semantics.
+- **Live xrefs and raw pointer audit**:
+  - Direct plugin xrefs for `1400a69d0` returned raw data pointer `140dd0a74`
+    plus `Network_RegisterServerOpcode_0351` setup refs `140079de1` and
+    `140079e00`; no gameplay sender or non-registration code caller surfaced.
+  - Direct plugin xrefs for read-advance label `1400a69c0` returned no function
+    refs because it is a label/stub, not a standalone function.
+  - Direct plugin `audit_global 140dd0a74` reported `xref_count=0`, no type,
+    no plate comment, and generic/untyped documentation issues. The pointer is
+    not currently a recoverable owner table.
+  - Selected `0x0701` literal scan over `selected_decompiled.c` found only the
+    registration row:
+    `(**(code **)*puVar1)(puVar1,0x701,8,&LAB_1400a69c0,FUN_1400a69d0,0,0);`.
+    Selected send-helper scans for `Network_SendOpcodePayloadHelper`,
+    `Network_SendMessageById`, and `Network_SerialiseBufferedMessageById`
+    found no `0x0701` sender.
+- **Matching NexusForever files**:
+  `Source/NexusForever.Network/Message/GameMessageOpcode.cs`,
+  `Source/NexusForever.Network.World/Message/Model/ClientUnresolvedDiagnosticPackets.cs`,
+  `Source/NexusForever.WorldServer/Network/Message/Handler/Misc/ClientUnresolvedDiagnosticHandlers.cs`,
+  `Source/NexusForever.Game.Tests/Network/ClientDiagnosticPacketShapeTests.cs`,
+  and `Source/NexusForever.Game.Tests/Network/PacketPlaceholderNamingTests.cs`.
+- **Disposition**: mapped-only / blocked. Keep `Client0x0701.LeadingBits` and
+  `TrailingValue` diagnostic-only; do not alias to public event, queue,
+  crafting, marketplace, map-tracking, or movement semantics from the
+  registration cluster alone.
+- **Next evidence source**: a non-registration `0x0701` sender, a callback/table
+  owner for `140dd0a74`, a post-read server consumer, an indirect send rail
+  trace, or a live packet capture that correlates the 2-bit and uint32 values to
+  a known gameplay action.
+
+F-002/F-033 `Client0x00C8` shared-MatchType owner recheck (2026-06-05 pass 154):
+
+- **Target question**: Does `Client0x00C8` have an opcode-specific native
+  sender, consumer, or callback owner beyond the shared 5-bit `MatchType`
+  registration helper?
+- **MCP state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+  resolved project `NexusForeverClient64_WildStar64`, but
+  `mcp__ghidra_mcp.list_instances` and `connect_instance` both failed
+  immediately with `Transport closed`. The pass used the live Ghidra plugin
+  endpoint and current WildStar64 selected cache for xrefs and decompiler
+  evidence.
+- **Function/opcode map**:
+  - `Network_RegisterServerOpcode_0351` (`WildStar64.exe` `14006c290`) registers
+    decimal `200` (`0x00C8`), object size `4`, with read-advance label
+    `ClientMatchType_ReadPayload` (`14008a140`) and writer
+    `ClientMatchType_WritePayload` (`14008a150`).
+  - The same helper pair is registered for matching queue-leave opcodes
+    `0x05B5` and `0x05B6`, also with size `4`.
+  - `ClientMatchType_ReadPayload` (`14008a140`) advances the payload bit cursor
+    by 5 bits. `ClientMatchType_WritePayload` (`14008a150`) writes
+    `param_2[0] & 0x1f` as a 5-bit value, using `FUN_140336470` on the buffered
+    slow path.
+- **Live xrefs and selected-cache scans**:
+  - Direct plugin xrefs for `14008a140` returned only registration setup refs
+    in `Network_RegisterServerOpcode_0351`: `140070f54`, `1400756e6`, and
+    `140075714`.
+  - Direct plugin xrefs for `14008a150` returned only registration setup refs:
+    `140070f34`, `140070f4c`, `1400756df`, `1400756f2`, `140075705`, and
+    `140075724`.
+  - Selected decompile exact rows remain:
+    `0x00C8` as `(**(code **)*puVar1)(puVar1,200,4,&LAB_14008a140,&LAB_14008a150,0,0);`
+    and shared `0x05B5` / `0x05B6` rows with the same callbacks.
+  - Selected send-helper scans for `Network_SendOpcodePayloadHelper`,
+    `Network_SendMessageById`, and `Network_SerialiseBufferedMessageById`
+    found no `0x00C8` or decimal-`200` sender.
+- **Negative controls**:
+  - Challenge-choice is not this packet: opcode `0x00C5` has its own
+    `ClientChallengeChoice_ReadPayload` / `ClientChallengeChoice_WritePayload`
+    pair plus concrete senders `ClientChallengeChoice_SendActivate`
+    (`140710c10`), `ClientChallengeChoice_SendAbandon` (`140710d60`),
+    `ClientChallengeChoice_SendAcceptShared` (`140711ea0`), and
+    `ClientChallengeChoice_SendDeclineShared` (`140711f10`).
+  - Matching queue dispatch is also not enough: `Matching_QueueDispatchFromUi`
+    (`14076c830`) is a positive control for queue join/random opcodes
+    `0x05EF`, `0x05F3`, `0x05F8`, and `0x05F9`, while the shared
+    `0x00C8`/`0x05B5`/`0x05B6` helper still lacks a non-registration send
+    witness.
+- **Matching NexusForever files**:
+  `Source/NexusForever.Network/Message/GameMessageOpcode.cs`,
+  `Source/NexusForever.Network.World/Message/Model/ClientUnresolvedDiagnosticPackets.cs`,
+  `Source/NexusForever.WorldServer/Network/Message/Handler/Misc/ClientUnresolvedDiagnosticHandlers.cs`,
+  `Source/NexusForever.Game.Tests/Network/ClientDiagnosticPacketShapeTests.cs`,
+  `Source/NexusForever.Game.Tests/Network/PacketPlaceholderNamingTests.cs`,
+  and the named queue-leave models/handlers under
+  `Source/NexusForever.Network.World/Message/Model/ClientMatchingQueueLeave.cs`,
+  `Source/NexusForever.Network.World/Message/Model/ClientMatchingLeaveQueueAsGroup.cs`,
+  and `Source/NexusForever.WorldServer/Network/Message/Handler/Matching/`.
+- **Disposition**: mapped-only / blocked. Keep `Client0x00C8.MatchType`
+  diagnostic-only and do not alias the opcode to queue leave, challenge choice,
+  housing privacy, or reward/challenge behavior from enum adjacency or shared
+  helper reuse alone.
+- **Next evidence source**: a native `0x00C8` sender, post-read consumer,
+  callback/table owner, indirect send rail trace, or live packet capture that
+  proves what the 5-bit `MatchType` value means for this opcode.
+
+F-010 `Client0x062A` / `Client0x0634` sender-intent recheck (2026-06-05 pass 155):
+
+- **Target question**: Do `Client0x062A` or `Client0x0634` have an
+  opcode-specific native sender, callback/table owner, or post-read consumer
+  beyond their shared one-`uint32` registration rows?
+- **MCP state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+  resolved project `NexusForeverClient64_WildStar64`, but
+  `mcp__ghidra_mcp.list_instances` and `connect_instance` both failed
+  immediately with `Transport closed`. The pass used the live Ghidra plugin
+  endpoint and current WildStar64 selected cache for direct xrefs, global audit,
+  and exact send-helper scans.
+- **Function/opcode map**:
+  - `ClientWorldOpcodeRegister_MovementSpline` (`WildStar64.exe` `1400a8190`)
+    registers `0x062A` at `1400a82b6` and `0x0634` at `1400a872c`, both object
+    size `4`, with `ClientUInt32_ReadPayload` (`14007d000`),
+    `ClientTradeskillResetTalents_WritePayload` (`14007d010`), and
+    `ServerUInt32_ReadPayload`.
+  - `ClientTradeskillResetTalents_WritePayload` (`14007d010`) writes one raw
+    32-bit field, either through the fast bit-buffer path or `FUN_140336470`.
+    It is a broad shared serializer reused by many client opcodes, so it cannot
+    name `0x062A` / `0x0634` by itself.
+  - Direct xrefs for `14007d010` are shared: one code caller
+    `ClientCompoundTradeskillUInt32_WriteCluster` (`14007dc80`), broad
+    `Network_RegisterServerOpcode_0351` registration/data refs, movement-spline
+    registration/data refs including the unresolved rows, and function-pointer
+    data families such as `140c1ef80`.
+- **Selected scans and metadata rails**:
+  - Exact selected send-helper scans found no `Network_SendOpcodePayloadHelper`,
+    `Network_SendMessageById`, or `Network_SerialiseBufferedMessageById` sender
+    for `0x062A` or `0x0634`; selected decompile hits for these opcodes are only
+    the two movement-spline registration rows.
+  - The `Network_GetMessageNameString` rail slots computed from
+    `DAT_140c65828 + 8 + (id - 3) * 0x10` are not helpful: direct
+    `audit_global` on `140c25488` (`0x062A`) and `140c25528` (`0x0634`) reports
+    `xref_count=0`, no type, and no plate comment for both.
+- **Positive controls rejected as aliases**:
+  - `MatchingReplacement_SendStartLookingForReplacements` (`14076aa30`) builds
+    a role bitmask from selected role values `0..2` and sends opcode `0x05D5`
+    through `Network_SendOpcodePayloadHelper` at `14076ab69`; it is not evidence
+    for `0x062A` or `0x0634`.
+  - `TargetSelection_SendClientMovementControlAck` (`14057a630`) sends opcode
+    `0x0635` with one uint32 ticket during target-selection control apply and
+    may send `0x063A` later in that flow; it is the movement-control positive
+    control, not ownership evidence for the adjacent unresolved `0x0634`.
+- **Matching NexusForever files**:
+  `Source/NexusForever.Network/Message/GameMessageOpcode.cs`,
+  `Source/NexusForever.Network.World/Message/Model/ClientUnresolvedDiagnosticPackets.cs`,
+  `Source/NexusForever.WorldServer/Network/Message/Handler/Misc/ClientUnresolvedDiagnosticHandlers.cs`,
+  `Source/NexusForever.Game.Tests/Network/ClientDiagnosticPacketShapeTests.cs`,
+  `Source/NexusForever.Game.Tests/Network/ClientUnresolvedDiagnosticHandlerTests.cs`,
+  and `Source/NexusForever.Game.Tests/Network/PacketPlaceholderNamingTests.cs`.
+- **Disposition**: mapped-only / blocked. Keep `Client0x062A.Value` and
+  `Client0x0634.Value` diagnostic-only and do not alias either opcode to
+  replacement-queue, movement-control ack, tradeskill reset, spell-list, or
+  matching queue behavior from shared uint32 helpers or enum adjacency alone.
+- **Next evidence source**: an opcode-specific sender, callback/table owner,
+  post-read server consumer, indirect send rail trace, or live packet capture
+  tying the uint32 value to a concrete matching, movement, or UI action.
+
+F-010 standalone `ServerRaidQueueStatus` producer recheck (2026-06-05 pass 157):
+
+- **Target question**: Does `ServerRaidQueueStatus` (`0x0718`) have a standalone
+  non-zero producer/apply owner, or is its only mapped native path still the
+  `0x071A` raid-info list reader/consumer chain?
+- **MCP state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+  resolved project `NexusForeverClient64_WildStar64`, but
+  `mcp__ghidra_mcp.list_instances` and `connect_instance` both failed
+  immediately with `Transport closed`. The pass used the current WildStar64
+  selected cache and the live Ghidra plugin endpoint on `127.0.0.1:8089`.
+- **Function/opcode map**:
+  - `Network_RegisterServerOpcode_0351` (`14006c290`) registers server opcode
+    `0x0718` size `0x20` with `ServerRaidQueueStatus_ReadPayload`
+    (`14008bf80`) and adjacent `0x071A` size `0x10` with
+    `ServerRaidInfoResponse_ReadPayload` (`14008c010`).
+  - `ServerRaidQueueStatus_ReadPayload` reads row fields in the established
+    order: `uint64`, 15-bit `uint32`, `uint64`, `uint32`, `uint32`.
+  - `ServerRaidInfoResponse_ReadPayload` reads a 32-bit count, allocates
+    `count * 0x20`, stores the row pointer at payload `+8`, and calls
+    `14008bf80` for each row.
+  - `Group_DispatchRaidInfoResponse` (`1406042b0`) remains the mapped
+    `RaidInfoResponse` named-event consumer for the `0x071A` array path; string
+    xrefs remain anchored to `RaidInfoResponse`, `strSavedInstanceId`,
+    `nWorldId`, `strDateExpireUTC`, `fDaysFromNow`, and `nPrimeLevel`.
+- **Producer/apply scan**:
+  - Direct-plugin xrefs for `14008bf80`: data `140dcebd8`, the real code caller
+    `14008c0a1` inside `14008c010`, and registration setup refs
+    `1400717c4` / `1400717d6`.
+  - Direct-plugin xrefs for `14008c010`: data `140dcebe4`, anonymous data refs
+    `140b98c50` / `140b98c60`, and registration setup refs `1400717f5` /
+    `140071804`.
+  - Direct-plugin xrefs for `1406042b0`: data refs `140e22bcc`, `140bf08e8`,
+    and `140bf092c` only. `audit_global` reports all of these candidate data
+    refs as untyped zero-xref data. Memory around `140bf08e8` and `140e22ba0`
+    has PE `.pdata`-style runtime-function-entry triples around `1406042b0`,
+    not an owned apply table. Memory around `140b98c50` shows anonymous pointer
+    metadata containing `0x0008c010` / `0x0008c07b` cells with no owner xrefs,
+    not a queue-state dispatch proof.
+  - Exact selected send-helper scans found no
+    `Network_SendOpcodePayloadHelper`, `Network_SendMessageById`, or
+    `Network_SerialiseBufferedMessageById` hit for `0x0718` / decimal `1816`.
+- **Matching NexusForever files**:
+  `Source/NexusForever.Network/Message/GameMessageOpcode.cs`,
+  `Source/NexusForever.Network.World/Message/Model/ServerRaidQueueStatus.cs`,
+  `Source/NexusForever.Network.World/Message/Model/Instance/ServerRaidInfoResponse.cs`,
+  `Source/NexusForever.WorldServer/Network/Message/Handler/Instance/ClientRaidInfoRequestHandler.cs`,
+  `Source/NexusForever.Game.Tests/Network/GroupPacketShapeTests.cs`,
+  `Source/NexusForever.Game.Tests/Group/ClientRaidInfoRequestHandlerTests.cs`,
+  and `Source/NexusForever.Game.Tests/Network/PacketPlaceholderNamingTests.cs`.
+- **Disposition**: mapped-only / blocked. Keep the zero-value compatibility emit
+  and shared raid-info field names; do not add non-zero `0x0718` producer timing,
+  queue-position/status aliases, field renames, or new labels from these data
+  refs.
+- **Next evidence source**: live non-zero `0x0718` capture, native server
+  producer evidence, or a real non-`.pdata` apply/consumer table that binds
+  standalone `0x0718` to queue-state UI behavior.
+
+F-002 `Client0x07E3` sender/consumer recheck (2026-06-05 pass 158):
+
+- **Target question**: Does `Client0x07E3` have an opcode-specific native
+  sender, callback/table owner, indirect send rail, or post-read consumer that
+  justifies renaming the numeric diagnostic beyond its proven one-`uint32`
+  payload?
+- **MCP state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+  resolved project `NexusForeverClient64_WildStar64` and program
+  `WildStar64.exe`, but `mcp__ghidra_mcp.list_instances` and
+  `connect_instance` both failed immediately with `Transport closed`, including
+  after a second retry. The live Ghidra plugin at `127.0.0.1:8089` still had
+  `WildStar64.exe` open, so this pass used direct-plugin xrefs/global audit
+  plus the selected decompile cache.
+- **Function/opcode map**:
+  - `ClientWorldOpcodeRegister_MovementSpline` (`WildStar64.exe` `1400a8190`)
+    registers opcode `0x07E3` at row literal `1400a8282`, object size `4`,
+    with `ClientUInt32_ReadPayload` (`14007d000`),
+    `ClientTradeskillResetTalents_WritePayload` (`14007d010`), and
+    `ServerUInt32_ReadPayload`.
+  - `ClientUInt32_ReadPayload` (`14007d000`) advances the bit cursor by
+    `0x20`, proving only one raw 32-bit field.
+  - `ClientTradeskillResetTalents_WritePayload` (`14007d010`) writes one raw
+    32-bit field through the fast bit-buffer path or `FUN_140336470(..., 0x20)`;
+    it is shared by many client opcodes and is not semantic evidence by itself.
+  - Direct-plugin xrefs for `14007d010` remain shared: one real code caller,
+    `ClientCompoundTradeskillUInt32_WriteCluster` (`14007dc80`), broad
+    `Network_RegisterServerOpcode_0351` registration/data refs, movement-spline
+    registration/data refs including `1400a829c` / `1400a82a3`, and shared
+    function-pointer data such as `140c1ef80`.
+  - Direct-plugin xrefs for `14007d000` are registration/data refs plus the
+    generic computed jump `140085ae0`; no opcode-specific consumer surfaced.
+- **Sender/metadata scan**:
+  - Exact selected cache scans found no `Network_SendOpcodePayloadHelper`,
+    `Network_SendMessageById`, or `Network_SerialiseBufferedMessageById` sender
+    for `0x07E3` / decimal `2019`.
+  - Direct-plugin `get_xrefs_to 1400a8282` and `get_xrefs_to 140c27018` both
+    returned no references. The computed message-name slot `140c27018` audits as
+    unnamed, untyped, uncommented, and zero-xref.
+  - `audit_global 140c1ef80` reports the shared writer pointer
+    `PTR_ClientTradeskillResetTalents_WritePayload_140c1ef80` with one xref and
+    no type/comment; this remains selector-table metadata, not opcode ownership.
+- **Matching NexusForever files**:
+  `Source/NexusForever.Network.World/Message/Model/ClientUnresolvedDiagnosticPackets.cs`,
+  `Source/NexusForever.WorldServer/Network/Message/Handler/Misc/ClientUnresolvedDiagnosticHandlers.cs`,
+  `Source/NexusForever.Game.Tests/Network/ClientDiagnosticPacketShapeTests.cs`,
+  `Source/NexusForever.Game.Tests/Network/ClientUnresolvedDiagnosticHandlerTests.cs`,
+  and `Source/NexusForever.Game.Tests/Network/PacketPlaceholderNamingTests.cs`.
+- **Disposition**: mapped-only / blocked. Keep `Client0x07E3.Value`
+  diagnostic-only; do not alias it to destination-arrow, matching replacement,
+  movement-control ack, ICComm/spell-list, tradeskill reset, ability-book,
+  combat-log, or P2P-trading behavior from adjacency, shared helpers, or
+  selector-table reuse.
+- **Next evidence source**: an opcode-specific sender, callback/table owner,
+  post-read server consumer, indirect send rail trace, or live
+  character/destination UI capture tied to opcode `0x07E3`.
+
+F-010 `ServerMatchingGroupMemberRoleSelection` trailing-value recheck (2026-06-05 pass 159):
+
+- **Target question**: Does server opcode `0x0600` have a native producer,
+  apply/consumer path, callback owner, or live role-selection witness proving
+  that its trailing `uint32` is a matching role value?
+- **MCP state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+  resolved project `NexusForeverClient64_WildStar64`, but
+  `mcp__ghidra_mcp.list_instances` and `connect_instance` still failed
+  immediately with `Transport closed`; the follow-up
+  `mcp__ghidra_mcp.load_tool_group("function")` retry failed the same way. The
+  pass used the live Ghidra plugin and selected WildStar64 cache as fallback
+  evidence.
+- **Function/opcode map**:
+  - `Network_RegisterServerOpcode_0351` (`14006c290`) registers `0x0600` with
+    object size `0x18` and reader `ServerHousingCommunityPlotReservation_ReadPayload`
+    (`140086e70`), the same identity-plus-`uint32` reader already used by
+    `0x051F`.
+  - `ServerHousingCommunityPlotReservation_ReadPayload` (`140086e70`) reads a
+    14-bit realm/identity component, a 64-bit identity component, and one
+    32-bit trailing value. Direct-plugin xrefs show it is broadly reused by
+    registration rows `0x01B7`, `0x048B`, `0x0478`, `0x076C`, `0x0600`,
+    `0x03C6`, `0x0533`, and `0x051F`, plus data `140dce92c`.
+  - The only real code callers into `140086e70` are two row-helper calls from
+    `FUN_1400a4e50`, which is registered for `ServerLootWinner` (`0x08A3`) and
+    uses the same identity-plus-`uint32` row shape for winning and other loot
+    rolls. That is row-shape reuse, not `0x0600` ownership.
+  - Exact selected send-helper scans found no `Network_SendOpcodePayloadHelper`,
+    `Network_SendMessageById`, or `Network_SerialiseBufferedMessageById` path
+    for `0x0600` / decimal `1536`.
+- **Rejected aliases / false leads**:
+  - Strong non-registration `0x600` hits sampled from selected cache are not
+    opcode evidence: `140051530` and `14031a280` use `0x600` as allocation
+    sizes, `1407f4a78` is CRT/file-mode parsing, and `1408557d0` masks
+    `param_1 & 0xff00`.
+  - Matching role-check UI/apply functions remain separate: `MatchingUi_BuildRoleSelectionTable`
+    (`14076b770`) builds a Lua role table only; `MatchingManager_ApplyMatchingRoleCheckStarted`
+    (`1405c0e90`), `MatchingManager_ApplyRoleCheckCanceled` (`1405c0760`), and
+    `MatchingManager_ApplyQueueStatusDispatch` (`1405c3d30`) dispatch role-check
+    events but do not reference `140086e70` or an opcode `0x0600` row.
+  - Data refs for candidate role-check apply helpers remain unowned metadata or
+    PE `.pdata`-style entries (`140e1e2c4`, `140e1e228`, `140e1e63c`,
+    `140bebc70`, `140bebcd8`, `140bebcf0`) rather than an opcode apply table.
+- **NexusForever change**:
+  `ServerMatchingGroupMemberRoleSelection` now exposes the trailing field as
+  neutral `TrailingValue` and the focused shape test writes `(uint)Role.DPS`
+  only as a numeric sample. This preserves the mapped wire shape while removing
+  the unsupported semantic `Role` field name.
+- **Matching NexusForever files**:
+  `Source/NexusForever.Network/Message/GameMessageOpcode.cs`,
+  `Source/NexusForever.Network.World/Message/Model/ServerMatchingGroupMemberRoleSelection.cs`,
+  and `Source/NexusForever.Game.Tests/Network/MatchingPacketShapeTests.cs`.
+- **Disposition**: implemented field neutralization / blocked semantics. Keep
+  `0x0600` mapped as identity plus `TrailingValue`; do not emit role-selection
+  state or reintroduce role semantics until a real `0x0600` apply/consumer
+  table, native producer, callback owner, or live payload proves the trailing
+  value.
+- **Next evidence source**: live `0x0600` capture during party role selection,
+  or a recovered client apply table linking opcode `0x0600` to a matching
+  manager consumer instead of the shared row reader.
+
+F-010 live group/raid/matching CDB probe (2026-06-06):
+
+- **Target question**: Does a live group-finder / raid-info UI pass prove any
+  remaining unknown matching opcodes or promote static matching labels?
+- **Capture**:
+  `artifacts/live-prereq-debug/Run-GroupRaidCdbProbe.ps1` attached elevated
+  `cdbX64.exe` to `WildStar64.exe` PID `20788` and logged to
+  `artifacts/live-prereq-debug/group_raid_matching_cdb_20260606_002604.log`.
+  Correlated WorldServer lines are in
+  `Source/NexusForever.WorldServer/bin/Debug/net10.0/logs/NexusForever.WorldServer_20260605_44724.log`
+  around lines `96169..97791`.
+- **Positive evidence**:
+  - `Matching_QueueDispatchFromUi` (`14076c830`) hit nine times, each followed
+    by `ClientMatchingQueue_WritePayload` (`140098a70`) with `r8=0x05ef`.
+    WorldServer received matching `ClientMatchingQueue(0x05EF)` packets for
+    Dungeon map `70` and WorldStory maps `102` / `103`, with observed role
+    masks Tank, DPS, Tank+DPS, and SoloMatch / non-SoloMatch flags.
+  - Queue cancellation was observed server-side as
+    `ClientMatchingQueueLeaveAll(0x05B4)` followed by
+    `ServerMatchingQueueResultAnnounce`, `ServerMatchingLeftQueue`, and
+    `ServerMatchingQueueStatus`.
+  - Solo WorldStory queues produced match-ready prompts:
+    WorldServer emitted `ServerMatchingMatchReady(0x05CA)`, CDB hit
+    `MatchingManager_ApplyMatchingGameReady` (`1405c39f0`), ready prompt
+    responses hit `MatchingManager_SendClientGameReadyResponse` (`1405c3500`),
+    and WorldServer received `ClientMatchingGameReadyResponse(0x05C8)` with
+    false declines plus one true accept that completed `ServerMatchingMatchJoined`.
+- **Negative evidence**:
+  no live hit / server witness for `ServerMatching0x05CF` / `1405c41c0`,
+  `ServerMatchingGroupMemberRoleSelection` (`0x0600`), `Client0x062A`,
+  `Client0x0634`, standalone non-zero `ServerRaidQueueStatus` (`0x0718`),
+  replacement LFR start/stop, or transfer into match.
+- **Disposition**:
+  queue, match-ready, and ready-response labels are now live-correlated. No opcode or
+  field rename is safe for the still-unhit blocked surfaces; keep
+  `ServerMatching0x05CF`, `ServerMatchingGroupMemberRoleSelection.TrailingValue`,
+  `Client0x062A`, `Client0x0634`, and standalone `0x0718` semantics blocked.
+- **Next evidence source**:
+  a party/multi-client pass that triggers role selection / role check /
+  replacement LFR, or a static apply dispatcher/index outside PE `.pdata` tying
+  `0x05CF` / `0x0600` to matching-manager state.
+
+F-014 `ServerLootWinner` reader label closure (2026-06-05 pass 160):
+
+- **Target question**: Can the generic native reader at `1400a4e50`, surfaced
+  during the `0x0600` shared-row audit, be durably labelled as the
+  `ServerLootWinner` reader?
+- **MCP state**: `Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe`
+  resolved project `NexusForeverClient64_WildStar64`, but
+  `mcp__ghidra_mcp.list_instances`, `connect_instance`, and
+  `load_tool_group("function")` all failed immediately with `Transport
+  closed`. Direct Ghidra plugin fallback on `127.0.0.1:8089` opened
+  `WildStar64.exe` and returned xrefs for `1400a4e50`.
+- **Function/opcode map**:
+  - Binary: `WildStar64.exe`.
+  - Address: `1400a4e50`.
+  - Previous label: `FUN_1400a4e50`.
+  - Durable label added: `ServerLootWinner_ReadPayload`.
+  - Native registration: `Network_RegisterServerOpcode_0351` (`14006c290`)
+    registers opcode `0x08A3`, object size `0x30`, with `1400a4e50`
+    (`selected_decompiled.c` line `13855`; direct-plugin xrefs
+    `14007972b` / `14007973d` plus data pointer `140dd0960`).
+  - Field order: `uint32` loot unit id at payload `+0`; shared
+    identity-plus-`uint32` row reader for the winning roll at payload `+8`;
+    18-bit item id at payload `+0x20`; `uint32` other-roll count at
+    payload `+0x24`; allocated row storage pointer at `+0x28`; counted
+    other-roll rows using the same identity-plus-`uint32` row reader.
+  - Existing consumer: `Loot_HandleLootWinner` (`1403db610`) iterates
+    `param_2[9]` rows from `*(payload+0x28)`, converts roll values over
+    `100` to need-roll display values, dispatches `LootRoll` events, then
+    uses the winning row for `LootRollAllPassed`, `LootAssigned`, or
+    `LootRollWon` feedback before refreshing loot UI state.
+  - NexusForever match: `Source/NexusForever.Network.World/Message/Model/Loot/ServerLootWinner.cs`
+    writes `LootUnitId`, `WinningRoll` identity/value, 18-bit `ItemId`,
+    `OtherRolls.Count`, and counted identity/value rows; `LootPacketShapeTests`
+    pins this wire order.
+- **Durable updates**: Added `ServerLootWinner_ReadPayload` to
+  `function_labels.csv`; updated `CURRENT_STATUS.md`,
+  `MISSING_FEATURE_MATRIX.md`, and
+  `coverage/opcode_coverage_inventory.csv` with the reader address and field
+  order. The local Ghidra plugin rename/save succeeded, and a refreshed
+  WildStar64 export verifies the durable label in `functions.csv` plus the
+  selected decompile body (`ServerLootWinner_ReadPayload` at `1400a4e50`).
+- **Confidence / disposition**: Mapped-only label closure. No C# runtime
+  behavior changed; existing packet/model/tests already matched the native
+  reader. Export verification completed with `functions.csv` carrying
+  `ServerLootWinner_ReadPayload` and `selected_decompiled.c` rendering
+  `int ServerLootWinner_ReadPayload(...)`.
+- **Next evidence source**: continue with higher-value open loot blockers:
+  `ServerLootCanLoot` producer/consumer timing or bind-on-pickup
+  acknowledgement behavior.

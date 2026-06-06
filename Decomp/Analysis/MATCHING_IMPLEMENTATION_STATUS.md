@@ -1,6 +1,6 @@
 # Matching Implementation Status
 
-Status date: 2026-06-05
+Status date: 2026-06-06
 
 This tracker closes matching work only when a surface is one of:
 
@@ -23,7 +23,7 @@ Generated exports, logs, and client binaries remain local artifacts. Add durable
 | Deserter restart persistence | Implemented + verified | Active deserter state is persisted in `character_matching_penalty`, restored on login/lazy queue checks, and removed when cleared or expired. | `MatchingDeserterManagerTests`. |
 | Queue-left UI sync | Implemented + verified | Authoritative queue removal now emits `ServerMatchingLeftQueue` before the refreshed `ServerMatchingQueueStatus`. | `MatchingCharacterStatusTests`. |
 | Flexible role selection | Implemented + verified | The old `1 tank / 1 healer / 3 DPS` reducer was removed. Dungeon/adventure role validation now preserves each player's selected role mask and rejects `Role.None` or undefined role bits; full groups are not rejected solely for non-trinity composition. | `MatchingRoleEnforcerTests`. |
-| Raid-info row field closure | Implemented + verified / standalone blocked | `ServerRaidQueueStatus` keeps the compatibility zero emission from raid-info, but its shared `0x0718` row fields now use the `0x071A` raid-info names proven by `ServerRaidInfoResponse_ReadPayload` (`14008c010`) and `Group_DispatchRaidInfoResponse` (`1406042b0`): `SavedInstanceId`, `WorldId`, `DateExpireUTC`, `DaysUntilExpire`, and `PrimeLevel`. Pass 134 found no static standalone `0x0718` sender literal beyond registration, and the only selected caller into `ServerRaidQueueStatus_ReadPayload` remains `14008c010`; queue-only aliases and non-zero `0x0718` producer timing remain blocked. | `GroupPacketShapeTests`; `ClientRaidInfoRequestHandlerTests`; `PacketPlaceholderNamingTests`. |
+| Raid-info row field closure | Implemented + verified / standalone blocked | `ServerRaidQueueStatus` keeps the compatibility zero emission from raid-info, but its shared `0x0718` row fields now use the `0x071A` raid-info names proven by `ServerRaidInfoResponse_ReadPayload` (`14008c010`) and `Group_DispatchRaidInfoResponse` (`1406042b0`): `SavedInstanceId`, `WorldId`, `DateExpireUTC`, `DaysUntilExpire`, and `PrimeLevel`. Pass 157 retried MCP (`Transport closed`) and found no static standalone `0x0718` sender literal beyond registration; direct-plugin xrefs keep `14008c010` as the only real code caller into `ServerRaidQueueStatus_ReadPayload`, and extra data refs resolve to unowned metadata / PE `.pdata`-shaped entries rather than queue ownership. | `GroupPacketShapeTests`; `ClientRaidInfoRequestHandlerTests`; `PacketPlaceholderNamingTests`. |
 | Replacement role-mask guard | Implemented + verified | `ClientMatchingMatchInitiateLookingForReplacements` and `ClientMatchingStopLookingForReplacements` validate in-progress match membership; initiate accepts only native-emitted role bits `0..2` (`0x07`, locally `Tank/Healer/DPS`) and both handlers log without starting a server backfill queue or emitting blocked replacement/status packets. | `MatchingLookingForReplacementsValidationTests`. |
 | `Client0x062A` / `Client0x0634` diagnostic boundary | Implemented + verified | Both handlers remain log-only and do not emit queue or raid state while native sender semantics are registration-only. | `ClientUnresolvedDiagnosticHandlerTests`; diagnostic-focused slice passed `93/93`. |
 | Average wait UI (`0x0628`) | Implemented + verified | `ServerMatchingAverageWaitTimeUpdate` emitted on queue join, after non-solo pop samples queue time, and on login for active queues; EasyMatchMaker listens via `MatchingAverageWaitTimeUpdated`. | `MatchingAverageWaitTimeTests`; addon corpus `ADDON_CORPUS_EVIDENCE.md`. |
@@ -63,6 +63,50 @@ dotnet build Source\NexusForever.Server.GroupServer\NexusForever.Server.GroupSer
 ```
 
 Results: group-focused tests passed `155/155`; both builds succeeded with `0` warnings and `0` errors.
+
+Latest live group/raid/matching CDB probe (2026-06-06):
+
+```powershell
+Start-Process powershell.exe -Verb RunAs -ArgumentList @(
+  '-NoExit',
+  '-ExecutionPolicy',
+  'Bypass',
+  '-File',
+  'I:\GIT\NexusForever\artifacts\live-prereq-debug\Run-GroupRaidCdbProbe.ps1'
+)
+```
+
+Artifacts:
+
+- CDB log: `artifacts/live-prereq-debug/group_raid_matching_cdb_20260606_002604.log`
+- WorldServer log: `Source/NexusForever.WorldServer/bin/Debug/net10.0/logs/NexusForever.WorldServer_20260605_44724.log`
+
+Result: useful live correlation, no source behavior change. The CDB probe hit
+`Matching_QueueDispatchFromUi` (`14076c830`) nine times and
+`ClientMatchingQueue_WritePayload` (`140098a70`) nine times; the writer hits
+had `r8=0x05ef`, matching WorldServer receives of
+`ClientMatchingQueue(0x000005EF)`. The corresponding server rows include
+Dungeon map `70` and WorldStory maps `102`/`103`, with role masks observed as
+Tank, DPS, Tank+DPS, and SoloMatch/non-SoloMatch queue flags depending on the UI
+selection. Queue cancellation used `ClientMatchingQueueLeaveAll(0x000005B4)`
+and the server responded with `ServerMatchingQueueResultAnnounce`,
+`ServerMatchingLeftQueue`, and refreshed `ServerMatchingQueueStatus`.
+
+The solo queue flow also produced three match-ready prompts. WorldServer emitted
+`ServerMatchingMatchReady(0x000005CA)`, CDB hit
+`MatchingManager_ApplyMatchingGameReady` (`1405c39f0`), then responding to the
+ready popup hit `MatchingManager_SendClientGameReadyResponse` (`1405c3500`).
+WorldServer received `ClientMatchingGameReadyResponse(0x000005C8)` with both
+false declines and one true accept; the accept path completed
+`ServerMatchingMatchJoined`. This upgrades the existing queue / match-ready /
+ready-response labels from static mapped to live-correlated.
+
+Negative evidence from this pass matters: no CDB hit or server log witness was
+captured for `ServerMatching0x05CF`, `ServerMatchingGroupMemberRoleSelection`
+(`0x0600`), `Client0x062A`, `Client0x0634`, standalone non-zero
+`ServerRaidQueueStatus` (`0x0718`), replacement LFR start/stop, or transfer into
+match. Those surfaces remain mapped-only / blocked and are not rename-grade
+from this solo queue smoke.
 
 Latest shared one-flag matching cluster refresh (2026-06-05):
 
@@ -164,26 +208,32 @@ xref is rejected as opcode-link evidence. The next static unblocker must find a
 real dispatcher/index outside `.pdata`, or a live `0x05CF` capture must prove
 the manager `+0xa0` field.
 
-Latest `ServerMatching0x05CF` MCP dispatcher recheck (2026-06-05):
+Latest `ServerMatching0x05CF` MCP bridge retry and dispatcher recheck (2026-06-05):
 
 ```text
-MCP batch_decompile:
+mcp__ghidra_mcp.list_instances -> Transport closed
+mcp__ghidra_mcp.connect_instance project=NexusForeverClient64_WildStar64 -> Transport closed
+
+Cache/direct-plugin decompile and xref pass:
   1405c41c0, 140099110, 14006c290, 140014f10, 1405c4140, 1405c3d30,
   1405c0e90, 1405c39f0, 1405c3af0, 1405c4260
-MCP get_bulk_xrefs:
+Direct-plugin xrefs:
   1405c41c0, 140099110, 1405c0e90, 1405c39f0, 1405c3af0,
   1405c4140, 1405c3d30, 140e1e66c, 140e1e660, 140e1e63c, 140e1e228
-MCP audit_globals_in_function 1405c41c0
-MCP audit_global 140e1e66c / 140e1e660
-MCP get_assembly_context 1400759f5,140075a07,14007947d,14007948f
+Direct-plugin audit_global 140e1e66c / 140e1e660
+Selected-cache assembly/context check 1400759f5,140075a07,14007947d,14007948f
 ```
 
-Result: still blocked. `MatchingManager_ApplyManagerUInt32Field0xA0`
+Result: still blocked. The Ghidra MCP bridge is visible to Codex but closes the
+transport during instance discovery/connect, so this pass used the existing
+WildStar64 export cache and direct-plugin xref/audit endpoints for the evidence
+below. `MatchingManager_ApplyManagerUInt32Field0xA0`
 (`1405c41c0`) writes `payload[0]` to matching-manager `+0xa0`, mirrors it to a
-looked-up sub-object at `+0x98` when present, then calls `FUN_1400a8020`; MCP
-global audit finds only broad manager globals `140c65b98` and `140c65898`.
+looked-up sub-object at `+0x98` when present, then calls `FUN_1400a8020`; the
+candidate helper only references broad manager globals `140c65b98` and
+`140c65898`.
 There is still no `ClientEvent` edge, opcode comparison, vtable slot, or
-non-`.pdata` table cell tying this helper to `0x05CF`. MCP audits of
+non-`.pdata` table cell tying this helper to `0x05CF`. Direct-plugin audits of
 `140e1e66c` / `140e1e660` report untyped zero-xref data locations, matching the
 prior PE `.pdata` rejection. `ServerUInt32_LocalReadThunk` (`140099110`) remains
 registration/shared structural evidence only: assembly at `1400759f5` /
@@ -244,14 +294,54 @@ dotnet build Source\NexusForever.sln -v minimal --nologo
 
 Results: test project passed `943/943`; solution build succeeded with `0` warnings and `0` errors.
 
+Latest standalone `ServerRaidQueueStatus` producer recheck (2026-06-05 pass 157):
+
+```text
+mcp__ghidra_mcp.list_instances -> Transport closed
+mcp__ghidra_mcp.connect_instance project=NexusForeverClient64_WildStar64 -> Transport closed
+
+Direct-plugin/cache targets:
+  14008bf80 ServerRaidQueueStatus_ReadPayload
+  14008c010 ServerRaidInfoResponse_ReadPayload
+  1406042b0 Group_DispatchRaidInfoResponse
+  14006c290 Network_RegisterServerOpcode_0351
+```
+
+Result: mapped-only / blocked. `Network_RegisterServerOpcode_0351` still
+registers `0x0718` size `0x20` with `ServerRaidQueueStatus_ReadPayload`
+(`14008bf80`) and adjacent `0x071A` size `0x10` with
+`ServerRaidInfoResponse_ReadPayload` (`14008c010`). The row reader still reads
+`uint64`, 15-bit `uint32`, `uint64`, `uint32`, and `uint32`; the list reader
+still reads a count, allocates `count * 0x20`, and calls `14008bf80` for each
+row.
+
+Direct-plugin xrefs keep `14008c010` as the only code caller into `14008bf80`.
+The other refs are data: `140dcebd8`, registration setup at `1400717c4` /
+`1400717d6`, and for `14008c010` anonymous cells `140b98c50` / `140b98c60`.
+`audit_global` reports those cells as untyped zero-xref data, and raw memory
+around `140b98c50` shows anonymous pointer metadata, not an owned opcode table.
+`Group_DispatchRaidInfoResponse` (`1406042b0`) remains the `RaidInfoResponse`
+named-event consumer, but its direct-plugin refs (`140e22bcc`, `140bf08e8`,
+`140bf092c`) are also untyped zero-xref data; memory around `140bf08e8` and
+`140e22ba0` has PE `.pdata`-style runtime-function-entry triples for
+`1406042b0`, not dispatch ownership. Exact selected send-helper scans found no
+`Network_SendOpcodePayloadHelper`, `Network_SendMessageById`, or
+`Network_SerialiseBufferedMessageById` hit for `0x0718` / decimal `1816`.
+
+No field rename, opcode rename, producer emit, or label change is safe from
+this pass. The next evidence source remains a live non-zero `0x0718` payload or
+a real non-`.pdata` apply/consumer table that binds standalone `0x0718` to a
+queue-state update.
+
 ## Mapped-only / Blocked
 
 | Surface | Current evidence | Blocker before implementation |
 | --- | --- | --- |
 | `ServerMatchingManagerFlag` / `ServerMatchingMatchParticipantCountUpdate` / `ServerMatchingRoleCheckStarted` | Native server registration binds `0x05B0`, `0x05CC`, and `0x05F1` to shared reader slot `LAB_1400807f0` with registered size 4. `InspectCodeAddress 1400807f0` shows a tiny local thunk that sets `R8D = 1` before jumping to `14006c090`; `TraceFunctionCallers` found registration/data refs only. The opcode comparison scan only produced useful hits for the three registration rows (`140075bd2`, `140075cf2`, `140075db6`) and then saturated on unrelated offsets. `MatchingManager_ApplyMatchingRoleCheckStarted` @ `1405c0e90` consumes `payload[0]` and dispatches `MatchingRoleCheckStarted`, but its only direct ref is `140e1e2c4` in PE `.pdata`, and the `WorldSocket+0x15b0` slot-11 scan found no `vtable+0x58` entry for it while finding the Fortune positive control. NexusForever currently emits `0x05CC.Ally` and `0x05F1.RolesRequired`, but native proof only establishes the shared one-flag wire shape plus a non-opcode-owned semantic candidate. | Recover the client apply/consumer path or live queue/role-check capture proving exact flag semantics and emit timing before renaming fields further, widening behavior, or using these packets as semantic evidence for `0x05CF`. |
-| `ServerMatching0x05CF` | `Network_RegisterServerOpcode_0351` @ `14006c290` registers opcode `0x05CF` with size 4 and reader `ServerUInt32_LocalReadThunk` @ `140099110` (same thunk as `ServerTradeskillSigilResult` @ `0x085D`, different opcode slot). Matching-manager probes found correlated candidate `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0`; it writes the payload to manager `+0xa0` and refreshes UI state, but no opcode-to-consumer index or live packet witness ties it uniquely to `0x05CF`. The 2026-06-05 `FindDataReferences` refresh found `1405c41c0` referenced only by `140e1e66c`, and the follow-up `DumpNearbyData` pass proved `140e1e66c` / `140e1e228` are PE `.pdata` `_IMAGE_RUNTIME_FUNCTION_ENTRY` entries, not matching dispatch cells. The later `WorldSocket+0x15b0` slot-11 scan found the Fortune positive control but no `vtable+0x58` match for `1405c41c0`; the MCP recheck found only broad manager globals `140c65b98` / `140c65898` in the helper, while `140099110` remains registration-only/shared with `0x085D`; `selected_call_edges.csv` still shows no `ClientEvent_DispatchNamedEvent` edge. No NexusForever emit. | Recover a real apply dispatcher/index outside PE `.pdata` that binds `0x05CF` to `1405c41c0`, or capture live `0x05CF` during match-ready / participant-count / queue UI flows and correlate with `0x05CA`/`0x05CC`. |
-| `Client0x062A` / `Client0x0634` | `ClientWorldOpcodeRegister_MovementSpline` @ `1400a8190` registers both as 4-byte generic uint32 payloads via `ClientTradeskillResetTalents_WritePayload` @ `14007d010` / read @ `14007d000`. `MOV R8D` and `MOV EDX` probes return registration-only hits (`1400a82b6` for `0x62A`). `TraceFunctionCallers` on `14007d010` and `14007dc80` show no gameplay send path. NexusForever handlers are now test-pinned as log-only with no queue-state emit. | Native sender via `14076aa30`-style UI cluster trace or live sniff tying value to matching/queue UI. |
-| `ServerRaidQueueStatus` / `ServerRaidInfoResponse` row | `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` reads the shared 0x20-byte row. Adjacent `ServerRaidInfoResponse_ReadPayload` @ `14008c010` reads a 32-bit row count and array of those rows for opcode `0x071A`; `Group_DispatchRaidInfoResponse` @ `1406042b0` maps offsets to `SavedInstanceId`, `WorldId`, Windows FILETIME `DateExpireUTC`, float `DaysUntilExpire`, and `PrimeLevel`. Runtime still emits only zero-value `0x0718` compatibility state from raid-info. Pass 134 cache probes found exact `0x0718` hits only in registration/reader surfaces and no selected static sender path. | Standalone non-zero `0x0718` queue producer timing and queue-position/status aliases. |
+| `ServerMatching0x05CF` | `Network_RegisterServerOpcode_0351` @ `14006c290` registers opcode `0x05CF` with size 4 and reader `ServerUInt32_LocalReadThunk` @ `140099110` (same thunk as `ServerTradeskillSigilResult` @ `0x085D`, different opcode slot). Matching-manager probes found correlated candidate `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0`; it writes the payload to manager `+0xa0` and refreshes UI state, but no opcode-to-consumer index or live packet witness ties it uniquely to `0x05CF`. The 2026-06-05 `FindDataReferences` refresh found `1405c41c0` referenced only by `140e1e66c`, and the follow-up `DumpNearbyData` pass proved `140e1e66c` / `140e1e228` are PE `.pdata` `_IMAGE_RUNTIME_FUNCTION_ENTRY` entries, not matching dispatch cells. The later `WorldSocket+0x15b0` slot-11 scan found the Fortune positive control but no `vtable+0x58` match for `1405c41c0`; the direct MCP bridge retry still fails with `Transport closed`, while fallback cache/direct-plugin evidence finds only broad manager globals `140c65b98` / `140c65898` in the helper and `140099110` remains registration-only/shared with `0x085D`; `selected_call_edges.csv` still shows no `ClientEvent_DispatchNamedEvent` edge. The 2026-06-06 solo queue / match-ready live probe confirmed neighboring `0x05EF`, `0x05B4`, `0x05CA`, and `0x05C8` paths but did not capture `0x05CF` or hit `1405c41c0`. No NexusForever emit. | Recover a real apply dispatcher/index outside PE `.pdata` that binds `0x05CF` to `1405c41c0`, or capture live `0x05CF` during match-ready / participant-count / queue UI flows and correlate with `0x05CA`/`0x05CC`. |
+| `ServerMatchingGroupMemberRoleSelection` | Native registration binds `0x0600` size `0x18` to the shared identity-plus-`uint32` reader `ServerHousingCommunityPlotReservation_ReadPayload` @ `140086e70`. Pass 159 retried MCP (`Transport closed`) and used live-plugin/cache fallback: direct xrefs show `140086e70` reused by eight registration rows (`0x01B7`, `0x048B`, `0x0478`, `0x076C`, `0x0600`, `0x03C6`, `0x0533`, `0x051F`) plus two real row-helper calls from `ServerLootWinner` reader `1400a4e50`; exact selected send-helper scans found no `0x0600` producer; sampled non-registration `0x600` hits are allocator sizes, CRT/file-mode masks, or unrelated offsets; matching role-check UI/apply functions (`14076b770`, `1405c0e90`, `1405c0760`, `1405c3d30`) do not reference the `0x0600` reader or row. The managed trailing field is now neutral `TrailingValue` instead of `Role`. | Recover a real `0x0600` apply/consumer table, native producer, callback owner, or live payload tying the trailing uint32 to role-selection state before reintroducing role semantics or runtime emits. |
+| `Client0x062A` / `Client0x0634` | `ClientWorldOpcodeRegister_MovementSpline` @ `1400a8190` registers both as 4-byte generic uint32 payloads via `ClientTradeskillResetTalents_WritePayload` @ `14007d010` / read @ `14007d000`. Pass 155 recheck: MCP still fails with `Transport closed`; exact selected rows remain `0x062A` at `1400a82b6` and `0x0634` at `1400a872c`, selected send-helper scans find no `0x062A`/`0x0634` sender, direct helper xrefs are shared registration/data plus `ClientCompoundTradeskillUInt32_WriteCluster`, and message-name slots `140c25488`/`140c25528` are untyped/unxrefed. Positive controls remain separate: `MatchingReplacement_SendStartLookingForReplacements` (`14076aa30`) sends `0x05D5`, and `TargetSelection_SendClientMovementControlAck` (`14057a630`) sends `0x0635`. NexusForever handlers are test-pinned as log-only with no queue-state emit. | Native sender via a non-registration UI/queue cluster trace, callback/table owner, indirect send rail, or live sniff tying value to matching/queue UI. |
+| `ServerRaidQueueStatus` / `ServerRaidInfoResponse` row | `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` reads the shared 0x20-byte row. Adjacent `ServerRaidInfoResponse_ReadPayload` @ `14008c010` reads a 32-bit row count and array of those rows for opcode `0x071A`; `Group_DispatchRaidInfoResponse` @ `1406042b0` maps offsets to `SavedInstanceId`, `WorldId`, Windows FILETIME `DateExpireUTC`, float `DaysUntilExpire`, and `PrimeLevel`. Runtime still emits only zero-value `0x0718` compatibility state from raid-info. Pass 157 cache/direct-plugin probes found exact `0x0718` hits only in registration/reader surfaces, no selected static send-helper path, `14008c010` as the only real code caller into the row reader, and no owned opcode/apply table among extra data refs. | Standalone non-zero `0x0718` queue producer timing and queue-position/status aliases. |
 | Replacement queue fill | **Mapped client surface only (2026-05-23 rollback):** `0x05D5` and `0x0602` are handled as validation/logging surfaces. Addon corpus: EMM `MatchLookingForReplacements`; public AddOn Studio API events also list `MatchLookingForReplacements` / `MatchStoppedLookingForReplacements`. Runtime anchor queues, accepted replacement merges, and close timing were removed because the available evidence does not prove server producer behavior. | Retail sniff/native evidence for queue anchor timing, multi-replacement sequencing, accepted replacement merge, and teleport into the running instance. |
 | Partial PUG role composition | The shipped `MatchMaker.lua` UI exposes DPS/Tank/Healer toggles from `MatchMakingLib.GetEligibleRoles()`, stores selected values in `tQueueOptions[*].arRoles`, requires at least one selected role for non-solo non-arena queues, and passes the option table to `MatchMakingLib.Queue` / `QueueAsGroup`. It does not prove a server-side 1/1/3 reducer. | Native/server-side evidence or live captures showing exact partial-group fill policy. |
 | Manager flag / group-is-queued / list-players broadcasts | `QueueJoin`, `LeftQueue`, `QueueStatus`, `PenaltyUpdated`, and `AverageWaitTimeUpdate` are runtime-emitted; manager-flag and list-players timing still incomplete. | Client consumer mapping or retail captures for remaining opcodes in `0x05B0..0x0628`. |

@@ -5,6 +5,136 @@ Use the evidence ladder from `CONTINUATION_GUIDE.md`: Observed -> Correlated -> 
 
 **Inventory (2026-05-23):** ~761 `Unknown*` token matches in 176 `Source/**/*.cs` files (ripgrep); ~147 distinct symbol names; ~205 enum members (64 in `PrerequisiteType` alone).
 
+## Initiative status - ACTIVE (2026-06-05 pass 155)
+
+Pass 155 rechecked `Client0x062A` / `Client0x0634` for matching or
+movement-control sender intent. The MCP tool surface was visible and workflow
+hints resolved project `NexusForeverClient64_WildStar64`, but
+`mcp__ghidra_mcp.list_instances` and `connect_instance` both failed immediately
+with `Transport closed`. Live-plugin/cache evidence remains registration-only:
+`ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) registers `0x062A` at
+`1400a82b6` and `0x0634` at `1400a872c`, both size `4`, through
+`ClientUInt32_ReadPayload` (`14007d000`),
+`ClientTradeskillResetTalents_WritePayload` (`14007d010`), and
+`ServerUInt32_ReadPayload`. Selected send-helper scans found no `0x062A` or
+`0x0634` sender. Direct helper xrefs are broad shared registration/data refs
+plus `ClientCompoundTradeskillUInt32_WriteCluster`; the message-name rail slots
+for `0x062A` and `0x0634` (`140c25488`, `140c25528`) are untyped and
+`xref_count=0`. Positive controls stay separate: `MatchingReplacement_SendStartLookingForReplacements`
+(`14076aa30`) sends `0x05D5`, and `TargetSelection_SendClientMovementControlAck`
+(`14057a630`) sends `0x0635`. Keep `Client0x062A.Value` and
+`Client0x0634.Value` diagnostic-only until a real sender, post-read consumer,
+callback/table owner, indirect send rail, or live capture proves semantics.
+
+## Initiative status - ACTIVE (2026-06-05 pass 154)
+
+Pass 154 rechecked `Client0x00C8` for an opcode-specific sender/consumer beyond
+the shared `MatchType` helper. The MCP tool surface was visible and workflow
+hints still resolved project `NexusForeverClient64_WildStar64`, but
+`mcp__ghidra_mcp.list_instances` and `connect_instance` both failed immediately
+with `Transport closed`. Direct live-plugin/cache evidence remains
+registration-only: `Network_RegisterServerOpcode_0351` (`14006c290`) binds
+decimal `200` (`0x00C8`), `0x05B5`, and `0x05B6` to
+`ClientMatchType_ReadPayload` (`14008a140`) /
+`ClientMatchType_WritePayload` (`14008a150`) with size `4`. The reader advances
+5 bits and the writer masks `param_2[0] & 0x1f`; direct xrefs for `14008a150`
+are only registration setup refs (`140070f34`, `140070f4c`, `1400756df`,
+`1400756f2`, `140075705`, `140075724`). Selected send-helper scans found no
+`0x00C8`/decimal-`200` sender. Challenge-choice remains a negative control:
+opcode `0x00C5` has separate senders at `140710c10`, `140710d60`, `140711ea0`,
+and `140711f10`; matching queue dispatch `14076c830` is a positive control for
+join/random queue opcodes, not `0x00C8`. Keep `Client0x00C8.MatchType`
+diagnostic-only until a native `0x00C8` sender, post-read consumer, callback
+owner, indirect send rail, or live capture proves semantics.
+
+## Initiative status - ACTIVE (2026-06-05 pass 153)
+
+Pass 153 rechecked `Client0x0701` for an indirect native sender/owner. The MCP
+tool surface was visible, and `Get-GhidraMcpWorkflowHints.ps1 -Targets
+WildStar64.exe` again resolved project `NexusForeverClient64_WildStar64`, but
+`mcp__ghidra_mcp.list_instances` and `connect_instance` both failed immediately
+with `Transport closed`. The cache/live-plugin evidence remains registration
+only: `Network_RegisterServerOpcode_0351` (`14006c290`) registers `0x0701`,
+size `8`, with read-advance label `1400a69c0` and
+`ClientUInt2UInt32_WritePayload` (`1400a69d0`), whose body writes a 2-bit field
+followed by one `uint32`. Direct xrefs for `1400a69d0` returned only raw data
+pointer `140dd0a74` and registration setup refs `140079de1`/`140079e00`; direct
+`audit_global 140dd0a74` reports `xref_count=0`, untyped, and no plate comment.
+Selected `0x0701` literal scans found only the registration row, and selected
+send-helper scans found no `0x0701` sender. Keep `Client0x0701.LeadingBits` and
+`TrailingValue` diagnostic-only until a gameplay sender, post-read consumer,
+callback/table owner, indirect send rail, or live capture proves semantics.
+
+## Initiative status - ACTIVE (2026-06-05 pass 152)
+
+Pass 152 rechecked `Client0x0928` after another explicit Ghidra MCP retry.
+`Get-GhidraMcpWorkflowHints.ps1 -Targets WildStar64.exe` still resolves project
+`NexusForeverClient64_WildStar64`, but `mcp__ghidra_mcp.list_instances` and
+`connect_instance` both fail immediately with `Transport closed`. The live
+Ghidra plugin and cache confirm only the shared `uint32 + 5-bit` shape:
+`ClientUInt32UInt5_WritePayload` (`1400898b0`) writes `param_2[0]` as 32 bits
+and `param_2[1] & 0x1f` as 5 bits, while `ServerUInt32UInt5_ReadPayload`
+(`14008ce80`) reads the same shape. Direct xrefs for both helpers are data or
+registration refs only, including the `0x0928` registration refs in
+`ClientWorldOpcodeRegister_MovementSpline` (`1400a850a`, `1400a8511`,
+`1400a84fa`, `1400a8505`). The positive pet-control sender remains
+`Pet_SetStance_SendClientPetSetStance` (`14050a270`) for opcode `0x068E`, not
+`0x0928`, and cache/source scans found no selected/static `0x0928` send helper.
+Keep `Client0x0928.LeadingValue` and `TrailingBits` diagnostic-only until an
+opcode-specific sender, callback owner, Lua/UI anchor, indirect send rail, or
+live capture proves semantics.
+
+## Initiative status - ACTIVE (2026-06-05 pass 151)
+
+Pass 151 rechecked the lone `Server0xNNNN` placeholder with the live Ghidra
+plugin after MCP again failed at the transport layer (`list_instances` and
+`connect_instance` both returned `Transport closed`). Direct xrefs for
+`ServerUInt5UInt32_ReadPayload` (`140081f00`) returned only data ref
+`140dce380`, the `ServerFortuneRewards_ReadPayload` row-helper call at
+`140082040`, and four `Network_RegisterServerOpcode_0351` registration/data
+refs for the shared `0x0015`/`0x0628` reader (`14006ecbc`, `14006eccf`,
+`140075d67`, `140075d79`). The positive `0x0628` control remains
+`MatchingManager_ApplyMatchingAverageWaitTimeUpdated` (`1405c0e00`), whose
+direct xref is only data ref `140e1e2b8`; its body dispatches
+`MatchingAverageWaitTimeUpdated`, proving matching semantics for `0x0628` but
+not for `0x0015`. Keep `Server0x0015.Value0` / `Value1` neutral until an
+opcode-specific `0x0015` apply owner, producer, post-read consumer, or live
+payload is found.
+
+## Initiative status - ACTIVE (2026-06-05 pass 150)
+
+Pass 150 rechecked spell auxiliary triplet/four-uint32 placeholders. MCP tools
+were visible, but `list_instances`, `connect_instance`, and `list_tool_groups`
+all failed with `Transport closed`; the live Ghidra plugin endpoint on
+`127.0.0.1:8089` was used instead. Direct xrefs for
+`ServerSpellUInt32TripletList_ReadPayload` (`140095da0`, opcodes `0x080F` /
+`0x0810`) returned only data ref `140dcf718` and
+`Network_RegisterServerOpcode_0351` registration/data refs (`1400747f1`,
+`140074803`, `140074822`, `140074834`). The shared row reader
+`ServerSpellUInt32TripletListRow_ReadPayload` (`140080bf0`) reads three
+`uint32` fields and has only the list-reader call plus other registration/data
+refs. The adjacent `ServerSpellFourUInt32_ReadPayload` (`14007fef0`, opcode
+`0x0812`) also remains data/registration-only for this spell-aux use. Source
+audit found packet models/tests only and no runtime producers. Keep `Value0` /
+`Value1` / `Value2` / `Value3` neutral until an apply owner or live correlated
+spell packet capture proves semantics.
+
+## Initiative status - ACTIVE (2026-06-05 pass 149)
+
+Pass 149 rechecked `ServerSpellCastResult.Unknown0` with the direct Ghidra
+plugin and a source producer audit. MCP `list_instances` / `connect_instance`
+still failed with `Transport closed`, but direct
+`get_function_xrefs?address=140094fb0` returned only data/registration refs
+(`140dcf604`, `1400743bb`, `1400743cd`) and no post-read apply owner.
+The native request writers prove only request-side context-token fields:
+`ClientCastSpell_WritePayload` and `ClientCastSpellPosition_WritePayload` write
+32-bit generated tokens first, while `ClientSpellCastWithServiceToken_WritePayload`
+writes an 18-bit generated token first. Managed producers are mixed: core spell,
+rapid transport, activate-cast, selected-spell reject, guild-boss-token reject,
+and service-token reject leave `Unknown0` as zero, while support stuck echoes
+its client context token. Keep `ServerSpellCastResult.Unknown0` neutral until a
+`0x07FC` apply owner or live echo capture proves the client-side meaning.
+
 ## Initiative status - ACTIVE (2026-06-05 pass 132)
 
 Pass 132 rechecked `ServerSpellCastResult.Unknown0`, the leading `uint32` in
@@ -62,6 +192,24 @@ timed-out helper is used as evidence. Blocker: a native `0x07E3` sender,
 post-read consumer, indirect send-rail owner, or live character/destination UI
 capture tied to opcode `0x07E3` is required before renaming or implementing
 behavior.
+
+Pass 158 retried the same question after the bridge degraded: the repository
+hint script still resolves project `NexusForeverClient64_WildStar64`, but
+`mcp__ghidra_mcp.list_instances` and `connect_instance` both fail immediately
+with `Transport closed`. The live Ghidra plugin and cache preserve the same
+map: `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) registers
+`0x07E3` at `1400a8282` as size `4` with `ClientUInt32_ReadPayload`
+(`14007d000`), `ClientTradeskillResetTalents_WritePayload` (`14007d010`), and
+`ServerUInt32_ReadPayload`; `14007d010` still writes one raw 32-bit field and
+has only one real selected code caller, `ClientCompoundTradeskillUInt32_WriteCluster`
+(`14007dc80`), plus broad registration/data refs. Exact selected scans found no
+`Network_SendOpcodePayloadHelper`, `Network_SendMessageById`, or
+`Network_SerialiseBufferedMessageById` sender for `0x07E3`/`2019`; direct
+plugin probes report no xrefs to row address `1400a8282`, no xrefs to computed
+message-name slot `140c27018`, and `audit_global 140c27018` reports an
+untyped/uncommented zero-xref slot. The `140c1ef80` selector-table pointer is
+still shared writer metadata and not opcode ownership evidence. Disposition is
+unchanged: mapped-only / blocked.
 
 ## Initiative status - ACTIVE (2026-06-05 pass 127)
 
@@ -300,9 +448,10 @@ with the same reader at line 848, while selected call edges still show only the
 `MatchingManager_ApplyMatchingAverageWaitTimeUpdated` remains the positive
 `0x0628` apply control and dispatches `MatchingAverageWaitTimeUpdated`, but
 selected xrefs/function-pointer inventories expose no equivalent `0x0015` apply
-owner or producer. MCP and a bounded `TraceFunctionCallers 140081f00 12`
-helper attempt were blocked by the open `NexusForeverClient64_WildStar64`
-project lock, so no local Ghidra rename/export was attempted.
+owner or producer. Pass 151 live-plugin xrefs replaced the stale blocked-helper
+state with direct evidence: `140081f00` still has only the data ref, the
+Fortune row-helper call, and `0x0015`/`0x0628` registration/data refs listed
+above, so no local Ghidra rename/export was attempted.
 
 ## Initiative status - ACTIVE (2026-06-05 pass 129)
 
@@ -397,7 +546,7 @@ update cadence, disable lifetime, and slot selection are proven by a native
 send site or accepted live public-event marker capture. Focused verification
 passed 97/97.
 
-## Initiative status - ACTIVE (2026-06-05 pass 133/134)
+## Initiative status - ACTIVE (2026-06-05 pass 133/134/157)
 
 Pass 133 closed `ServerRaidQueueStatus.Unknown0..4` as shared raid-info row
 fields, not queue-position tails. Native registration binds `0x0718` to
@@ -417,6 +566,29 @@ the MCP bridge (`list_instances` and `connect_instance` both returned
 registration/reader-only, `selected_call_edges.csv`
 shows the only selected caller into `14008bf80` as `14008c010`, and no static
 standalone `0x0718` sender literal was found.
+
+Pass 157 retried the MCP bridge (`Transport closed`) and then used the live
+Ghidra plugin plus the WildStar64 cache. Direct xrefs keep `14008c010` as the
+only code caller into `14008bf80`; extra refs for `14008bf80`, `14008c010`, and
+`Group_DispatchRaidInfoResponse` (`1406042b0`) are data-only. Audits report
+`140dcebd8`, `140dcebe4`, `140b98c50`, `140b98c60`, `140e22bcc`, `140bf08e8`,
+and `140bf092c` as untyped zero-xref data, and memory around `140bf08e8` /
+`140e22ba0` has PE `.pdata`-style runtime-function-entry triples rather than an
+owned dispatch table. Exact selected send-helper scans found no `0x0718` /
+decimal `1816` producer. Keep queue-position/status aliases blocked.
+
+## Initiative status - ACTIVE (2026-06-05 pass 148)
+
+Pass 148 rechecked F-025 entity-create aux placeholder fields. Ghidra MCP
+discovery/connect still failed with `Transport closed`, but direct Ghidra plugin
+xrefs plus the current WildStar64 export cache show `0x025F` and `0x0263` row
+readers have only list-composition plus registration/data xrefs, while
+`0x0260`, `0x0261`, and `0x0264` remain registration/data-only. The known native
+`WorldSocket+0x15b0` inserted families are diagnostic/log, console,
+options/addons, and Fortune; only Fortune has a nontrivial apply slot and it
+handles `0x03CF`-`0x03D2`. Keep entity-create aux neutral names, including the
+`ServerEntityCreateAuxBitPackedRow.Value4` / `Value5` slots, until a new
+consumer/apply owner or live sniff/order witness proves semantics.
 
 ## Initiative status - ACTIVE (2026-06-04 pass 117)
 
@@ -658,7 +830,7 @@ The 2026-05-23 closure pass marked the first tranche complete. Every in-scope pl
 | `AuctionInfo.UnknownArray` | `MicrochipIds` | NF marketplace persistence + shared `Item.Microchips` 3-bit wire array |
 | `ServerMatchingListPlayersQueuedForMap.QueuedPlayerInfo.Unknown30`-`Unknown38` | `PrimeLevel`, `IsParty`, `Roles` | `MatchingQueuedPlayerInfo_ReadPayload` @ `140098500`; correlates with `ClientMatchingQueue_WritePayload` @ `140098a70` and `MatchingQueueJoinQueueData_ReadPayload` @ `1400989d0` |
 | `ServerMatchingListPlayersQueuedForMap.QueuedPlayerInfo.Unknown3C` | `TrailingUInt32_0x3C` | `MatchingQueuedPlayerInfo_ReadPayload` @ `140098500`; uint32 wire confirmed, semantics blocked |
-| `ServerMatching0x05CF` | keep numeric | `ServerUInt32_LocalReadThunk` @ `140099110` proves one `uint32`; `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0` is only a correlated apply candidate. The 2026-06-05 reference refresh found `1405c41c0` referenced only by `140e1e66c`, and `DumpNearbyData` then proved `140e1e66c` / `140e1e228` are PE `.pdata` `_IMAGE_RUNTIME_FUNCTION_ENTRY` entries rather than dispatch cells. A later MCP recheck found the helper only references broad globals `140c65b98` / `140c65898`, and the raw reader refs are the `0x05CF` / `0x085D` registration rows, so keep numeric until a real apply dispatcher/index or live sniff proves the semantic owner |
+| `ServerMatching0x05CF` | keep numeric | `ServerUInt32_LocalReadThunk` @ `140099110` proves one `uint32`; `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0` is only a correlated apply candidate. The 2026-06-05 reference refresh found `1405c41c0` referenced only by `140e1e66c`, and `DumpNearbyData` then proved `140e1e66c` / `140e1e228` are PE `.pdata` `_IMAGE_RUNTIME_FUNCTION_ENTRY` entries rather than dispatch cells. A later MCP bridge retry still returns `Transport closed`; fallback cache/direct-plugin evidence found the helper only references broad globals `140c65b98` / `140c65898`, and the raw reader refs are the `0x05CF` / `0x085D` registration rows, so keep numeric until a real apply dispatcher/index or live sniff proves the semantic owner |
 | `ServerRaidQueueStatus.Unknown0..4` | `SavedInstanceId`, `WorldId`, `DateExpireUTC`, `DaysUntilExpire`, `PrimeLevel` | `0x0718` row reader `14008bf80` is reused by `ServerRaidInfoResponse_ReadPayload` (`14008c010`) for opcode `0x071A`; `Group_DispatchRaidInfoResponse` (`1406042b0`) maps row offsets to `strSavedInstanceId`, `nWorldId`, `strDateExpireUTC` (Windows FILETIME), `fDaysFromNow`, and `nPrimeLevel`. Queue-only aliases remain blocked. |
 | `ServerSpellCastTargetReport.UnknownStructure0` / `unknownStructure0` | `TargetReportRow` / `TargetReportRows` | Partial row map (`CasterId` known); tail fields blocked |
 | `PrerequisiteType.Spell221` / `Unknown269` | `ActionSetSpell` / `RapidTransport` | Table ids 221/269; client dispatch @ `1404a2100` cases `0xdd` / `0x10d` |
@@ -826,7 +998,8 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 | `GroupCharacter.StatBlockPrefix17` | 17-bit prefix at parsed `+0x1c` in stat block; copied to client `+0x98`; gameplay meaning blocked |
 | `GroupMemberStatSlot.Value` | Five-row ushort in stat block; per-row semantics blocked |
 | `GroupCharacter.Unknown10` | `uint32` after mentoring (`+0x50`); no labeled consumer |
-| `ServerSpellCastResult.Unknown0` | Native reader `ServerSpellCastResult_ReadPayload` @ `140094fb0` proves `0x07FC` starts with a `uint32` before `18`-bit `Spell4Id` and `9`-bit `CastResult`. Pass 132 rechecked MCP/cache: the MCP bridge could not connect to the open project, cached call edges only show internal bit-reader calls, and no apply consumer or live echo capture proves the leading field is the echoed context token. Packet placeholder coverage now rejects `ContextToken` / `ClientContextToken` / `CastingId` aliases, so no field rename or echo behavior widening is safe. |
+| `ServerSpellCastResult.Unknown0` | Native reader `ServerSpellCastResult_ReadPayload` @ `140094fb0` proves `0x07FC` starts with a `uint32` before `18`-bit `Spell4Id` and `9`-bit `CastResult`. Pass 132 rechecked MCP/cache: the MCP bridge could not connect to the open project, cached call edges only show internal bit-reader calls, and no apply consumer or live echo capture proves the leading field is the echoed context token. Pass 149 direct-plugin/source recheck still found only data/registration xrefs for the reader and mixed managed producers (mostly zero, support stuck echo). Packet placeholder coverage now rejects `ContextToken` / `ClientContextToken` / `CastingId` aliases, so no field rename or echo behavior widening is safe. |
+| `ServerSpellUInt32TripletListRow.Value0..2` / `ServerSpellFourUInt32.Value0..3` | Pass 150 direct-plugin xrefs found `ServerSpellUInt32TripletList_ReadPayload` (`140095da0`, `0x080F`/`0x0810`) and `ServerSpellFourUInt32_ReadPayload` (`14007fef0`, `0x0812`) are data/registration-only for spell-aux use. The triplet row reader `140080bf0` proves three `uint32` fields only; source has packet models/tests but no runtime producers. Keep neutral `Value*` names until an apply owner or live correlated packet capture proves field semantics. |
 | `QuestObjectiveType.Unknown27` / `Unknown29` | No localization / single-digit table counts; no NF runtime handler |
 | `PathMissionChecklistItemComplete` exact checklist runtime | Enum/check implemented with an NF proxy; exact per-path-type `+0x50` checklist/clue ownership remains blocked until path mission runtime state is modeled beyond completed-mission and persisted `ProgressData` bits. |
 | `PrerequisiteType.Unknown260` | One retail row `36343` nests `OtherPrerequisite` -> row `17536` (`HouseOwnership` + `HousingNeighborResidence`) and type 260 Equal with `objectId1=12` (`HousingPlugItem` row flags `2`), but no imported `wildstar_client` prerequisite reference column points at row `36343`; generated DataMapping hits for `36343` are display/action/source ids, not prerequisite references. Live case `0x104` vtable `+0x640` -> `1404a1220` ignores row object/value and resolves active housing plot/plug state through `ClientDB_GetHousingPlotInfo` (`140205fa0`), current/default `ClientDB_GetHousingPlugItem` (`140206c60`), `HousingResidence_FindPlotEntryByPlotInfoId` (`1405aea10`), plug flags `0x08`/`0x20`, and active residence state fields vs state value `5`. State `5` is backed by native `HousingBuildComplete`: `HousingPlotEntry_DispatchBuildCompleteIfState5` (`1405a9920`) dispatches and resets plot-entry state `5`, while `HousingResidence_SetBuildState5AndDispatchComplete` (`1405a9980`) transitions residence state `4` -> `5`, clears handles, and dispatches completion. The active residence state fields and row/use-site reachability remain unnamed, so no enum rename. |
@@ -860,8 +1033,9 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 | `Stat.Unknown*`, `InventoryLocation.Unknown*` | ~15 | No client stat/location enum strings |
 | `EntityCreateFlag.Unknown08` | 1 | Used in cinematics; no label |
 | Marketplace `AuctionInfo.Unknown2` | 1 | **Blocked tail.** 2026-06-04 source audit: 32-bit final `AuctionInfo` field, persisted as `marketplace_auction.unknown2`, cloned/loaded for preservation, default-zero on newly posted NF auctions, and no current `Game`/`WorldServer` semantic producer or consumer. Packet coverage pins round-trip only. |
-| F-010 standalone `ServerRaidQueueStatus` queue producer | 1 surface | **Blocked producer/timing.** Pass 133 mapped the shared row fields through `0x071A` and `Group_DispatchRaidInfoResponse`; pass 134 found no cached static sender literal beyond registration, with `14008c010` still the only selected caller into the row reader. Do not invent queue-position/status aliases or non-zero `0x0718` emits until a live payload, native producer, or opcode-specific apply owner appears. |
-| `ServerSpellCastResult.Unknown0` | 1 | **Blocked tail.** Native reader `140094fb0` proves a leading `uint32` in `0x07FC`, but apply/consumer semantics are not mapped; pass 132 cache edges add no apply owner. Do not infer echo behavior from nearby client request context-token fields alone. |
+| F-010 standalone `ServerRaidQueueStatus` queue producer | 1 surface | **Blocked producer/timing.** Pass 133 mapped the shared row fields through `0x071A` and `Group_DispatchRaidInfoResponse`; pass 157 still finds no cached static sender literal beyond registration, with `14008c010` the only real code caller into the row reader and candidate data refs resolving to unowned metadata / PE `.pdata`-shaped entries rather than a queue producer. Do not invent queue-position/status aliases or non-zero `0x0718` emits until a live payload, native producer, or opcode-specific apply owner appears. |
+| `ServerSpellCastResult.Unknown0` | 1 | **Blocked tail.** Native reader `140094fb0` proves a leading `uint32` in `0x07FC`, but apply/consumer semantics are not mapped; pass 132 cache edges and pass 149 direct-plugin xrefs add no apply owner. Do not infer echo behavior from nearby client request context-token fields or mixed managed producer behavior alone. |
+| Spell auxiliary `Value*` fields | 2 packet surfaces | **Blocked semantics.** Pass 150 found `0x080F`/`0x0810` triplet-list and `0x0812` four-uint32 readers have registration/data xrefs only and no managed runtime producer. Do not rename to cooldown, target-list, or buff fields from opcode adjacency. |
 | Item packet offset names (`Unknown44`, etc.) | many | Layout known, semantics not |
 
 ## Mapped - `PendingAccountItemGroup` (`0x0976` / `0x0979`) - detail reference
@@ -888,6 +1062,7 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 5. Marketplace `AuctionInfo.Unknown2` - native auction row consumer, retail capture with a non-zero final uint32, or client UI/Lua reader proving the field owner.
 6. Standalone `ServerRaidQueueStatus` queue semantics - live non-zero `0x0718` capture, native producer, or apply-table owner proving queue position/status timing beyond the shared raid-info row.
 7. `ServerSpellCastResult.Unknown0` - `0x07FC` apply/consumer mapping or live cast-result capture that proves whether the leading uint32 echoes the client context token.
+8. Spell auxiliary `Value*` fields - apply owner or live correlated `0x080F` / `0x0810` / `0x0812` rows tied to spell cooldown, target, buff, aura, or cast state before semantic rename.
 
 ## Deferred - structurally mapped packet opcodes
 
@@ -896,7 +1071,7 @@ Do **not** rename to bare `Field6`/`Field7`; use `RetailCatalogWireScalar` / `Re
 | `Client0x011B` / `Client0x011D` / `Client0x012D` | empty / `uint32` / wide string | Pass 124 rechecked `0x011B`/`0x011D`: `TraceFunctionCallers 140001ba0 12` found 833 shared zero-payload helper refs, and `TraceFunctionCallers 14007d010 12` found 67 shared uint32 helper refs including `ClientCompoundTradeskillUInt32_WriteCluster`, but neither produced an opcode-specific gameplay sender or consumer. Pass 125 rechecked `0x012D`: `TraceFunctionCallers 14007ae80 18` found only shared registration/data refs, and narrowed exact opcode scans found `0x012D` only in registration plus unrelated arithmetic/offset uses; sibling senders exist for `0x0833` `ClientSuggest`, `0x0233` claim-pending, and `0x07C6` return-pending, so those names must not be inherited. Pass 94 comparison scan remains valid: native registration is confirmed at `Network_RegisterServerOpcode_0351` (`14006c290`) with `0x011B` -> zero-payload writer `140001ba0`, `0x011D` -> `ClientUInt32_ReadPayload` / `ClientTradeskillResetTalents_WritePayload`, and `0x012D` -> `ClientSuggest_WritePayload`. Non-registration hits are rejected: `0x011B`/`0x011D` in `LuaLexer_ReadNextToken`/parser functions are Lua token ids, `Movement_UpdateAndSendFallStateOpcodes` uses `GameFormula_GetEntryById(0x11B)`, and `SpellCast_SendClientCastSpellOrPosition` returns `CastResult.IllegalSpellCast` (`0x011D`) rather than sending opcode `0x011D`. | Gameplay sender/consumer or live sniff before semantic rename |
 | `Client0x063E` | wide string | Pass 126 rechecked `0x063E`: native registration in `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) binds `0x063E` to shared `ClientSuggest_WritePayload` (`14007ae80`), proving only one wide string. `TraceFunctionCallers 14007ae80 18` found only shared registration/data refs, and narrowed exact opcode scans found `0x063E` only at registration literal `1400a821a`; sibling senders for `0x0833` support suggest, `0x0233` claim-pending, and `0x07C6` return-pending must not be inherited. | Native `0x063E` sender, post-read consumer, or live auth/marketplace/support capture before semantic rename |
 | `Client0x0550` | `uint32` via `14007d010` | Pass 127 rechecked `0x0550`: native registration in `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) binds `0x0550` at `1400a824e` to `ClientUInt32_ReadPayload` (`14007d000`) / `ClientTradeskillResetTalents_WritePayload` (`14007d010`). `TraceFunctionCallers 14007d010 80` found the compound tradeskill cluster plus registration/data refs only, a narrowed exact opcode scan found `0x0550` only at registration literal `1400a824e`, and `DAT_140c1f210` static slot `140c247e0` is undefined for the message-id name rail. ICComm `0x0546`/`0x054B`, spell-list `0x0551`, matching replacement `0x05D5`, movement ack `0x0635`, tradeskill reset `0x0858`, ability-book `0x017A`, combat-log `0x0248`/`0x0249`, and P2P-trading `0x0192` must not be inherited. | Runtime indirect sender, post-read consumer, or live ICComm/spell-list/ability-book capture before semantic rename |
-| `Client0x062A` / `0x0634` / `0x07E3` | `uint32` via `14007d010` | Pass 58 PE: sole opcode literals each in `ClientWorldOpcodeRegister_MovementSpline` (`1400a82b6`/`872c`/`8282`); `0x062A`/`0x0634` handlers are test-pinned log-only. Pass 128 MCP/cache rechecked `0x07E3`: registration at `1400a8282` binds size `4`, `ClientUInt32_ReadPayload`, shared `ClientTradeskillResetTalents_WritePayload`, and `ServerUInt32_ReadPayload`; the shared writer's selected code caller is still only `ClientCompoundTradeskillUInt32_WriteCluster`, and the `140c1ef80` selector-table reuse does not prove opcode ownership. Pass 131 MCP/cache rechecked `0x062A`/`0x0634`: `1400a82b6`/`1400a872c` remain registration-only, selected export has no `Network_SendOpcodePayloadHelper` sends for either opcode, `0x05D5` gameplay send is `MOV EDX,0x5D5` @ `14076ab61` + call @ `14076ab69` (not stale registration literal `140075918`), and `TargetSelection_SendClientMovementControlAck` @ `14057a630` is the labeled `0x0635` positive-control sender. | Indirect send rail, opcode-specific sender/consumer, or live sniff before semantic rename |
+| `Client0x062A` / `0x0634` / `0x07E3` | `uint32` via `14007d010` | Pass 58 PE: sole opcode literals each in `ClientWorldOpcodeRegister_MovementSpline` (`1400a82b6`/`872c`/`8282`); `0x062A`/`0x0634` handlers are test-pinned log-only. Pass 128 MCP/cache rechecked `0x07E3`: registration at `1400a8282` binds size `4`, `ClientUInt32_ReadPayload`, shared `ClientTradeskillResetTalents_WritePayload`, and `ServerUInt32_ReadPayload`; the shared writer's selected code caller is still only `ClientCompoundTradeskillUInt32_WriteCluster`, and the `140c1ef80` selector-table reuse does not prove opcode ownership. Pass 158 retried MCP (`Transport closed`) and used live-plugin/cache fallback: exact selected send-helper scans still find no `0x07E3` sender, `1400a8282` has no direct xrefs, and message-name slot `140c27018` is untyped/unxrefed. Pass 131 MCP/cache rechecked `0x062A`/`0x0634`: `1400a82b6`/`1400a872c` remain registration-only, selected export has no `Network_SendOpcodePayloadHelper` sends for either opcode, `0x05D5` gameplay send is `MOV EDX,0x5D5` @ `14076ab61` + call @ `14076ab69` (not stale registration literal `140075918`), and `TargetSelection_SendClientMovementControlAck` @ `14057a630` is the labeled `0x0635` positive-control sender. | Indirect send rail, opcode-specific sender/consumer, or live sniff before semantic rename |
 | `Client0x0701` | 2-bit + `uint32` | Pass 129 MCP/cache rechecked the registration row: `Network_RegisterServerOpcode_0351` (`14006c290`) binds `0x0701` to read-advance label `1400a69c0` (`+0x22` bits) and writer `ClientUInt2UInt32_WritePayload` (`1400a69d0`). Assembly at `140079de1`/`140079df0` loads the writer/read-advance callbacks, `MOV EDX,0x701` at `140079e05` sets the opcode, and `140079e13` calls the registrar. Writer xrefs are only those registration setup refs plus unxrefed raw pointer `140dd0a74`; no sender/consumer surfaced. | Gameplay sender, post-read consumer, callback owner, indirect send rail, or live capture before rename |
 | `Client0x0928` | `uint32` + 5-bit field | Pass 130/pass 136/pass 137 MCP/cache rechecked `0x0928`: registration at `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) / `1400a8524` binds read-advance `140089240`, shared writer `ClientUInt32UInt5_WritePayload` (`1400898b0`), and reader/apply helper `ServerUInt32UInt5_ReadPayload` (`14008ce80`). `ServerUInt32UInt5_ReadPayload` is also registered for `ServerPetStanceChanged` (`0x068F`) at `140071a36`, whose client apply path is `Pet_ApplyStanceChangedPayload` (`1403c0a80`); `ClientPetSetStance` (`0x068E`) registers the same writer at `140070cc4` and has the actual send witness at `14050a31d`. | Opcode-specific sender, post-read consumer, callback owner, indirect send rail, Lua/UI anchor, or live capture before rename |
 

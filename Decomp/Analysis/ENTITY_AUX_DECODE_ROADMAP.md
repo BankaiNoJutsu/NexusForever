@@ -1,6 +1,6 @@
 # Entity / Cluster Aux Opcode Decode Roadmap
 
-Updated: 2026-06-04 (master closure workboard added; cached export/Ghidra MCP rechecks keep entity-stat and map-tracked producers blocked)
+Updated: 2026-06-05 (entity-create main Faction1/Faction2 offsets mapped; aux `Value*` names remain blocked pending consumer/apply evidence)
 
 Tracks decompile progress to unblock **field semantics** and **runtime emitters** for the
 shape-mapped server-output clusters that replaced `Server0xNNNN` placeholders.
@@ -35,6 +35,29 @@ Registration evidence: `Network_RegisterServerOpcode_0351` @ `14006c290` (see
 
 List readers allocate `count * rowSize` and call the row reader in a loop (`IMUL 0x2c` /
 `IMUL 0x24`), matching NexusForever packet-shape tests.
+
+Pass 147 note: `ServerEntityCreate_ReadPayload` (`140096fa0`, opcode `0x0262`)
+reads `+0xd4` and `+0xd8` as the main 14-bit `Faction1` and `Faction2`
+fields. `FUN_140456960` stores `packet+0xd4` at entity `+0x120`, seeds the
+base Faction2 component from `packet+0xd8`, then sets the active Faction2
+component from `packet+0xd4`. The current NexusForever aux builder also
+populates `0x0263` `Value4`/`Value5` from the same entity faction values, but
+the native `ServerEntityCreateAuxBitPackedRow_ReadPayload` still exposes those
+as generic 17-bit slots and no native apply handler or sniff/order witness ties
+them to faction semantics. Keep `ServerEntityCreateAuxBitPackedRow.Value4` and
+`Value5` neutral until that consumer evidence lands.
+
+Pass 148 note: Ghidra MCP tools were exposed again, but both
+`mcp__ghidra_mcp.list_instances` and `connect_instance` still failed with
+`Transport closed`. Direct Ghidra plugin xrefs plus the current export cache
+rechecked the entity-create aux readers and the known native
+`WorldSocket+0x15b0` handler-chain families. `0x025F` and `0x0263` row readers
+still have only list-composition plus registration/data refs; `0x0260`,
+`0x0261`, and `0x0264` still have registration/data refs only. The known
+inserted socket nodes are diagnostic/log, console, options/addons, and Fortune;
+only Fortune has a nontrivial apply slot, and it handles `0x03CF`-`0x03D2`.
+Keep `0x025F`-`0x0264` aux fields neutral until a new socket-chain consumer or
+live sniff/order witness is recovered.
 
 ### Shared helpers (newly labeled)
 
@@ -358,7 +381,8 @@ Safe always: packet-shape tests, enum/model names, registration notes in `GameMe
    nontrivial slot `+0x50` filters and slot `+0x58` apply implementers for aux opcodes. Do not
    anchor on the `WorldZone_*` spatial list (`node+0x450` backlinks) or `FUN_140001a50` again.
    Search for dynamically allocated nodes not covered by the diagnostic/console/options/Fortune
-   families and use live sniff/order witnesses when static chain discovery stays exhausted.
+   families; pass 148 reconfirmed those known families do not consume entity-create aux. Use live
+   sniff/order witnesses when static chain discovery stays exhausted.
 2. **Entity-create aux consumer** - Prove whether `0x025F`-`0x0264` are live packets,
    replay-only, or both; correlate with `ServerEntityCreate` (`0x0262`) send order via sniff.
 3. **Entity-stat aux cluster** - Map consumers for `0x0889` / `0x08CC` / `0x08F4` / `0x0939`
@@ -368,8 +392,11 @@ Safe always: packet-shape tests, enum/model names, registration notes in `GameMe
    duplicate objective groups disprove objective-only slot selection.
 5. **Cluster aux bands** - One band per session (chat `0x01B8`..., item/options `0x056B`..., etc.)
    using the same dispatch discovery approach.
-6. **Spell aux** - Follow `SPELL_BROADCAST_ROADMAP.md`; map row semantics for
-   `ServerSpellUInt32TripletList` before emit.
+6. **Spell aux** - Follow `SPELL_BROADCAST_ROADMAP.md`; pass 150 confirmed
+   `ServerSpellUInt32TripletList` (`0x080F`/`0x0810`) and
+   `ServerSpellFourUInt32` (`0x0812`) are still registration/data-only in the
+   direct xref check. Map an apply owner or live correlated row semantics
+   before emit.
 
 ## Tooling
 

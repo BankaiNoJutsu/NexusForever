@@ -168,7 +168,9 @@ Closed as duplicate-body aliases without distinct semantic enum ownership:
 
 These remain `UnknownNNN` because the duplicate body proves behavior but does
 not prove a distinct semantic enum owner. Reopen only with row/use-site evidence
-that proves a more specific owner than the already-mapped body twin.
+that proves a more specific owner than the already-mapped body twin. NF now
+handles the account-item claim row contexts for `Unknown245` and `Unknown275`
+without using those contextual rows as enum rename evidence.
 
 ### Pass 113 - type 295 renamed
 
@@ -211,3 +213,207 @@ event for plot-entry rows at state `5`, and
 residence build state `4` -> `5`, clears handles, and dispatches the same
 event. The active residence state fields and row/use-site reachability are
 still not named well enough for a safe enum rename.
+
+### Pass 115 - prerequisite localized text/use-site audit
+
+Joined `wildstar_client.prerequisite`, `prerequisitetype`, and `stringsenus`
+for the remaining unknowns and adjacent account-item gates.
+
+No additional unknown enum renames were accepted:
+
+- `Unknown245` account-item rows use `objectId` as a dye colour-ramp unlock id
+  with `NotEqual 0` claim text such as "Dye already acquired!", but live
+  dispatcher evidence still maps type `245` to the `ItemTradeSkill` duplicate
+  body. NF handles this only when evaluating `accountitem.prerequisiteId`.
+- `Unknown275` account-item rows use `objectId` as the Holo-Wardrobe Item2 id
+  with `NotEqual 0` claim text, but live dispatcher evidence still maps type
+  `275` to the `ItemTradeSkillKnown` duplicate body. NF handles this only when
+  evaluating `accountitem.prerequisiteId`.
+- Type `270` was already named `LoyaltyRewards`; the join maps it to account
+  currency `8` (`CosmicReward`) with the threshold in `valueN`, so NF now has a
+  dedicated handler for that server-side gate.
+
+### Pass 116 - account-item live/use-site ownership check
+
+Checked whether the account-item claim/use surfaces prove distinct enum
+ownership for `Unknown245` or `Unknown275`.
+
+SQL/use-site evidence:
+
+- Full prerequisite-reference column inventory includes many possible
+  `wildstar_client` prerequisite owner columns, but rows containing type `245`
+  or `275` are referenced only by `accountitem.prerequisiteId` and
+  `spell4.prerequisiteIdCasterCast` in this pass.
+- `Unknown245`: `accountitem.prerequisiteId` has 28 refs / 28 distinct
+  prerequisites; `spell4.prerequisiteIdCasterCast` has 220 refs / 219 distinct
+  prerequisites. Slot shape is `NotEqual 0` with `objectId` ranges `2..504`
+  in slot 0 and `355..371` in slot 2.
+- `Unknown275`: `accountitem.prerequisiteId` has 281 refs / 281 distinct
+  prerequisites and no `spell4` refs. Slot shape is `NotEqual 0` with
+  Holo-Wardrobe Item2 ids in `objectId`.
+- Joined failure text confirms the account-item context: `245` rows say the
+  dye is already learned; `275` rows say the item was already added to the
+  Holo-Wardrobe.
+
+Native ownership evidence:
+
+- `PrerequisiteManager_EvaluateTypeSlot` (`1404a2100`) dispatches case `0xf5`
+  to vtable `+0x698` -> `Prerequisite_CheckItemTradeSkill` (`1404a1790`) and
+  case `0x113` to vtable `+0x6a0` ->
+  `Prerequisite_CheckItemTradeSkillKnown` (`1404a17e0`).
+- `Prerequisite_CheckItemTradeSkill` and
+  `Prerequisite_CheckItemTradeSkillKnown` both require NPC target types
+  `0x14/0x17` and call the tradeskill/known-recipe helpers. No dye,
+  Holo-Wardrobe, or account-item ownership branch is present in either body.
+- Cached account-item Lua/UI use paths
+  `Lua_AccountItemLib_TakeAccountItem` (`1404e50f0`),
+  `AccountItemUi_ClaimSelectedPendingItemGroup` (`140518b70`), and
+  `AccountItemUi_TakeSelectedAccountItem` (`140518be0`) resolve the selected
+  pending group/account item and send opcodes `0x0233` or `0x0839` through
+  `AccountItem_SendClientClaimPendingItemGroup` (`140006ba0`) or
+  `AccountItem_SendClientAccountItemTake` (`140006d00`). The selected call-edge
+  graph shows no call from these account-item surfaces to
+  `PrerequisiteManager_EvaluateEntry`, `PrerequisiteManager_EvaluateTypeSlot`,
+  `Prerequisite_CheckItemTradeSkill`, or
+  `Prerequisite_CheckItemTradeSkillKnown`.
+
+Conclusion:
+
+- Keep enum names `Unknown245` and `Unknown275`. The account-item row text
+  proves server-side contextual handling, not live client enum ownership.
+- NF's account-item-context handlers remain valid as server gates, but a safe
+  enum rename now requires live debugger call stacks or fresh static evidence
+  proving an alternate account-item evaluator reaches these ids outside the
+  normal dispatcher.
+
+### Pass 117 - local live-debug and CDB evidence
+
+Closed the remaining live/use-site proof locally.
+
+- Stopped the stale `NexusForever.WorldServer` lock, restarted
+  `NexusForever.WorldServer`, launched WildStar through
+  `NexusForever.ClientConnector`, and confirmed the client connected to local
+  auth on port `6600`.
+- A Python breakpoint harness under `artifacts/live-prereq-debug/` attempted to
+  attach to `WildStar64` with breakpoints on the account-item senders,
+  account-item UI/Lua entry points, and prerequisite dispatcher/body addresses.
+- Non-elevated attach from this Codex session was denied (`Access is denied`),
+  and the token does not have `SeDebugPrivilege` assigned. An elevated Python
+  retry attached, but the first version passed the MSVC thread-name exception
+  `0x406d1388` through to the debuggee and caused the client to close during
+  login. The harness now consumes that exception.
+- After the Ghidra lock cleared, focused `TraceFunctionCallers` passes were
+  rerun for `AccountItem_SendClientClaimPendingItemGroup` (`140006ba0`) and
+  `AccountItem_SendClientAccountItemTake` (`140006d00`). The claim sender has
+  direct code callers only from `FUN_1404e5050` and
+  `AccountItemUi_ClaimSelectedPendingItemGroup` (`140518b70`); the take sender
+  has direct code callers only from `Lua_AccountItemLib_TakeAccountItem`
+  (`1404e50f0`) and `AccountItemUi_TakeSelectedAccountItem` (`140518be0`).
+  No refreshed static caller trace shows an account-item path calling
+  `PrerequisiteManager_EvaluateEntry`, `PrerequisiteManager_EvaluateTypeSlot`,
+  `Prerequisite_CheckItemTradeSkill`, or
+  `Prerequisite_CheckItemTradeSkillKnown`.
+- `cdbX64.exe` was then run elevated through
+  `artifacts/live-prereq-debug/Run-PrereqCdbProbe.ps1`; log:
+  `artifacts/live-prereq-debug/prereq_probe_cdb_admin_20260605_225844.log`.
+  The CDB script ignores `0x406d1388` with `sxi 406d1388` and sets absolute
+  breakpoints from the loaded `WildStar64` base address.
+- Live CDB hit `PrerequisiteManager_EvaluateTypeSlot` for type `0x113` rows
+  with slot dumps shaped like `00000113 00000002 <Item2Id> 00000000`, followed
+  immediately by `Prerequisite_CheckItemTradeSkillKnown` (`1404a17e0`). The
+  target-type word dumped from the handler target was `0x14`, matching the
+  NPC-gated known-tradeskill duplicate body. This reinforces that type `275`
+  has native duplicate-body behavior, not a distinct Holo-Wardrobe client
+  evaluator.
+- Live CDB also hit the account-item take path twice:
+  `Lua_AccountItemLib_TakeAccountItem` (`1404e50f0`) then
+  `AccountItem_SendClientAccountItemTake` (`140006d00`). The immediate stack is
+  the Lua/account-item send path; it does not include
+  `PrerequisiteManager_EvaluateEntry`, `PrerequisiteManager_EvaluateTypeSlot`,
+  `Prerequisite_CheckItemTradeSkill`, or
+  `Prerequisite_CheckItemTradeSkillKnown`.
+- No live claim-group click was captured in this pass. Claim remains covered by
+  the refreshed static caller trace above, while the live take evidence proves
+  the account-item UI/Lua send path can execute without the client prerequisite
+  evaluator.
+
+Conclusion remains unchanged and stronger: keep `Unknown245` and `Unknown275`
+as duplicate-body aliases for enum naming. NF should keep the account-item
+context handlers as server gates for dye/Holo-Wardrobe claim data, but those
+contextual account-item rows are not rename-grade evidence for distinct client
+prerequisite enum ownership.
+
+### Pass 118 - account-item claim retry under CDB
+
+Retried the live pass with `cdbX64.exe` still attached after the client was
+restarted. The CDB command file continued to ignore the MSVC thread-name
+exception (`sxi 406d1388`) and set account-item sender plus duplicate-body
+breakpoints from the loaded `WildStar64` base.
+
+Local setup and seed evidence:
+
+- Runtime log: `Source/NexusForever.WorldServer/bin/Debug/net10.0/logs/NexusForever.WorldServer_20260605_44724.log`.
+- CDB retry log:
+  `artifacts/live-prereq-debug/prereq_probe_cdb_retry_20260605_232004.log`.
+- Seeded dye pending group `codex-live-dye-20260605231934` for account `1`,
+  account item `272`, prerequisite `39615`. That row contains type `245`
+  (`0xf5`) with dye colour-ramp object `362` (`0x16a`).
+- Seeded Holo-Wardrobe pending group `codex-live-holo-20260605232615` for
+  account `1`, account item `24`, item2/object `42367` (`0xa57f`),
+  prerequisite `39781`.
+
+Live account-item evidence:
+
+- The dye group loaded in the initial account packets with
+  `pending=[codex-live-dye-20260605231934[1:272:CanClaim]]` and claimed
+  successfully. World log lines `32340..32347` show the claim request/result;
+  line `32341` shows the account item add as inventory id `60`.
+- CDB line `10273` hit `AccountItem_SendClientClaimPendingItemGroup` during
+  the dye claim. CDB lines `10186/10229`, `11116/11159`, `21786/21829`,
+  `24076/24119`, and `34668/34711` also hit the Lua/take sender path
+  (`Lua_AccountItemLib_TakeAccountItem` ->
+  `AccountItem_SendClientAccountItemTake`).
+- A later dye take of inventory id `60` succeeded server-side; world log lines
+  `41257..41262` show `ClientAccountItemTake` result `Ok`.
+- The Holo-Wardrobe group loaded with
+  `pending=[codex-live-holo-20260605232615[1:24:CanClaim]]` and claimed
+  successfully. World log lines `45230..45237` show the claim request/result;
+  line `45231` shows account item `24` added as inventory id `61`.
+- CDB line `45094` hit `AccountItem_SendClientClaimPendingItemGroup` during
+  the Holo claim.
+- The first Holo take attempts for inventory id `61` returned `GenericFail`
+  because the character inventory had no free slot (operator observation).
+  After freeing inventory space, the same account item take succeeded; world
+  log lines `50241..50246` show `ClientAccountItemTake` result `Ok`.
+- CDB captured the Holo take sender path during those attempts:
+  `Lua_AccountItemLib_TakeAccountItem` -> `AccountItem_SendClientAccountItemTake`
+  at lines `56451/56494`, `56538/56581`, `56625/56668`,
+  `56712/56755`, `56799/56842`, and `59028/59071`.
+
+Live prerequisite-slot evidence:
+
+- Type `245` repeatedly reached `Prerequisite_CheckItemTradeSkill` with the
+  dye slot dump `000000f5 00000002 0000016a 00000000`; representative CDB
+  anchors include lines `10372`, `10540`, `10889`, `44877`, `45193`,
+  `45281`, `45448`, `45835`, and `45985`.
+- Type `275` reached `Prerequisite_CheckItemTradeSkillKnown` for the seeded
+  Holo item with slot dump `00000113 00000002 0000a57f 00000000`
+  (`0xa57f` = item2/object `42367`); representative CDB anchors include lines
+  `45237`, `45486`, `45873`, `45911`, `45948`, `56030`, `56106`,
+  `56410`, `56985`, `57117`, `57251`, and `58987`.
+- The separate live disconnect observed during the pass was not caused by the
+  prerequisite probes. World log lines `36752..36757` show the server received
+  old-model `ClientStorefrontPurchaseVirtualCurrencyPackage(0x082E)` and then
+  threw `EndOfStreamException` in that reader, which forced a world session
+  disconnect. Follow-up raw PE registration-table evidence corrected `0x082E`
+  to `StorefrontLib.RequestHistory` (`140b69e10` -> `1404f1d50`), a zero-byte
+  storefront purchase-history request now modeled as
+  `ClientStorefrontRequestPurchaseHistory`.
+
+Conclusion remains unchanged: this is mapped-only evidence for enum naming.
+The live debugger now proves the client can claim account items while the
+duplicate-body handlers fire for the same dye/Holo object ids, but it still
+does not prove distinct client enum owners for `245` or `275`. Keep
+`Unknown245` and `Unknown275`; keep the server-side account-item contextual
+handlers because the runtime account-item rows and live claim/take paths need
+those gates.

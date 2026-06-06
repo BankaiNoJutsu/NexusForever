@@ -6,13 +6,13 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `Houston64.exe` | 25129 | 31.39% | 100% | 0 | 1631 | 0.2% |
 | `StsConnLib64.MT.dll` | 4522 | 8.31% | 100% | 0 | 864 | 19.11% |
-| `WildStar64.exe` | 25045 | 7.94% | 100.4% | 0 | 3732 | 9.58% |
+| `WildStar64.exe` | 25050 | 8.1% | 100.4% | 0 | 3738 | 2% |
 
 ## Full Function Backlog
 
 | Scope | Functions | Named | Selected | Unselected | Selected % |
 | --- | --- | --- | --- | --- | --- |
-| Default targets | 54696 | 10253 | 6227 | 48469 | 11.38% |
+| Default targets | 54701 | 10293 | 6233 | 48468 | 11.39% |
 
 ## Opcode Coverage
 
@@ -50,7 +50,7 @@ None.
 | `Client0x063E` | 0x063E | `Client0x063E` | ClientWorldOpcodeRegister_MovementSpline 1400a8190 @ 1400a821a binds 0x063E to ClientSuggest_WritePayload 14007ae80; TraceFunctionCallers found only shared registration/data refs, and sibling 0x0833/0x0233/0x07C6 senders are not evidence — sender blocked |
 | `Client0x0701` | 0x0701 | `Client0x0701` | Network_RegisterServerOpcode_0351 @ 14006c290 (not ClientWorldOpcodeRegister_MovementSpline 1400a8190); writer ClientUInt2UInt32_WritePayload @ 1400a69d0 (2-bit + uint32); sole PE MOV EDX,0x701 @ 140079e05 (registration harness batch with 0x0942/0x0602 — not gameplay); semantics unresolved |
 | `Client0x07E3` | 0x07E3 | `Client0x07E3` | ClientWorldOpcodeRegister_MovementSpline 1400a8190 @ 1400a8282 + ClientTradeskillResetTalents_WritePayload 14007d010; PE mov eax,0x7E3 count=1 (registration only); not 0x05D5; current model stays one raw uint32 diagnostic field |
-| `Client0x0928` | 0x0928 | `Client0x0928` | ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers 8-byte slot with shared ClientUInt32UInt5_WritePayload @ 1400898b0 and shared reader 14008ce80 (also ServerPetStanceChanged 0x068F); PE send for 0x928 only in registration harness @ 1400a8524 — gameplay sender blocked; do not alias to ClientPetSetStance without second witness |
+| `Client0x0928` | 0x0928 | `Client0x0928` | ClientWorldOpcodeRegister_MovementSpline @ 1400a8190 registers 8-byte slot with shared ClientUInt32UInt5_WritePayload @ 1400898b0 and shared ServerUInt32UInt5_ReadPayload @ 14008ce80 (also ServerPetStanceChanged 0x068F); PE send for 0x928 only in registration harness @ 1400a8524 — gameplay sender blocked; do not alias to ClientPetSetStance without second witness |
 
 Generated artifacts:
 

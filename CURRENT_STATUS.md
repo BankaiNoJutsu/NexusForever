@@ -19,7 +19,7 @@ of truth for feature-area completion.
 | Blocked / diagnostic / structural-only | 3 (`F-001` blocked, `F-002` diagnostic, `F-003` structurally closed) |
 | Consolidated runtime gaps (emit/producer proof) | 5 rows in **Remaining Blocked Items** |
 | Related trackers | `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`, `MATCHING_IMPLEMENTATION_STATUS.md`, `ENTITY_AUX_DECODE_ROADMAP.md`, `BLOCKER_EVIDENCE_PLAN.md` |
-| Placeholder inventory (2026-06-05) | 12 `Client0xNNNN`, 1 `Server0xNNNN` (`Server0x0015`), 16 client diagnostic log-only surfaces, 24 `PrerequisiteType.UnknownNNN`, and 2 quest objective unknowns (`Unknown27`, `Unknown29`); the audit-prompt ghost literal names are absent; `Client0x0701` MCP/cache recheck remains registration-only at `MOV EDX,0x701` (`140079e05`); `Client0x0928` remains shared `uint32+5-bit` registration-only at `1400a8524` through `ServerUInt32UInt5_ReadPayload` (`14008ce80`) |
+| Placeholder inventory (2026-06-05) | 12 `Client0xNNNN`, 1 `Server0xNNNN` (`Server0x0015`), 16 client diagnostic log-only surfaces, 24 `PrerequisiteType.UnknownNNN`, and 2 quest objective unknowns (`Unknown27`, `Unknown29`); the audit-prompt ghost literal names are absent; pass 158 keeps `Client0x07E3` registration-only at `1400a8282` through `ClientUInt32_ReadPayload` (`14007d000`) / `ClientTradeskillResetTalents_WritePayload` (`14007d010`), with MCP still returning `Transport closed`, live-plugin helper xrefs shared, selected send-helper scans finding no `0x07E3` sender, and message-name slot `140c27018` unxrefed; pass 155 keeps `Client0x062A`/`Client0x0634` registration-only at `1400a82b6`/`1400a872c`; pass 154 keeps `Client0x00C8` registration-only; pass 153 keeps `Client0x0701` registration-only; pass 152 keeps `Client0x0928` shared `uint32+5-bit` registration-only |
 | Build | 0 errors, 0 warnings |
 | Tests | 2504 passed, 0 failed, 0 skipped |
 | Handlers surveyed | 200+ |
@@ -167,13 +167,16 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
   (`14050a130`) for the local cache read, and
   `Pet_ApplyStanceChangedPayload` (`1403c0a80`) for `0x068F`, but server
   producer timing/scope remains unknown.
-- **ServerRaidQueueStatus / ServerRaidInfoResponse row** (F-010): reader `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` mapped; adjacent `ServerRaidInfoResponse_ReadPayload` @ `14008c010` reads `0x071A` count-plus-0x20-byte rows and `Group_DispatchRaidInfoResponse` @ `1406042b0` maps row fields to saved-instance id, world id, FILETIME expiration, days-from-now, and prime level; pass 134 found no cached static standalone `0x0718` sender beyond registration and the selected caller into the row reader remains `14008c010`; zero-value `0x0718` compatibility emit remains, while standalone non-zero queue timing/aliases stay blocked.
-- **ServerMatching0x05CF** (F-010): raw `uint32` reader `ServerUInt32_LocalReadThunk` @ `140099110` mapped; candidate apply helper `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0` remains correlated only until a real apply dispatcher/index or live `0x05CF` witness proves manager `+0xa0` semantics; the prior `140e1e66c` data ref is PE `.pdata` unwind metadata, the `WorldSocket+0x15b0` slot-11 scan found the Fortune positive control but no matching-helper route, and the 2026-06-05 MCP recheck found only broad manager globals plus shared `0x05CF`/`0x085D` registration refs.
-- **Client0x062A/0634** (F-010): shared `uint32` reader/writer `14007d000`/`14007d010` mapped and handlers are log-only/test-pinned; 2026-06-05 MCP/cache recheck still finds `0x062A`/`0x0634` only in movement-spline registration (`1400a82b6`/`1400a872c`), while positive controls `0x05D5` and `0x0635` have real send helpers. Sender/intent remains blocked until a native send site or live queue UI sniff appears.
+- **ServerRaidQueueStatus / ServerRaidInfoResponse row** (F-010): reader `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` mapped; adjacent `ServerRaidInfoResponse_ReadPayload` @ `14008c010` reads `0x071A` count-plus-0x20-byte rows and `Group_DispatchRaidInfoResponse` @ `1406042b0` maps row fields to saved-instance id, world id, FILETIME expiration, days-from-now, and prime level; pass 157 retried MCP (`Transport closed`) and direct-plugin/cache xrefs still show `14008c010` as the only real code caller into `14008bf80`, exact selected send-helper scans find no `0x0718` producer, and data refs for `1406042b0` / `14008c010` are unowned metadata or PE `.pdata`-shaped runtime entries rather than opcode ownership; zero-value `0x0718` compatibility emit remains, while standalone non-zero queue timing/aliases stay blocked.
+- **ServerMatching0x05CF** (F-010): raw `uint32` reader `ServerUInt32_LocalReadThunk` @ `140099110` mapped; candidate apply helper `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0` remains correlated only until a real apply dispatcher/index or live `0x05CF` witness proves manager `+0xa0` semantics; the prior `140e1e66c` data ref is PE `.pdata` unwind metadata, the `WorldSocket+0x15b0` slot-11 scan found the Fortune positive control but no matching-helper route, and the 2026-06-05 MCP bridge retry still returns `Transport closed`, so the cache/direct-plugin recheck remains limited to broad manager globals plus shared `0x05CF`/`0x085D` registration refs. A 2026-06-06 solo queue live probe hit neighboring `0x05EF`, `0x05B4`, `0x05CA`, and `0x05C8` paths but did not capture `0x05CF` or hit `1405c41c0`.
+- **ServerMatchingGroupMemberRoleSelection** (F-010): `0x0600` remains a structural identity-plus-`uint32` wrapper through shared reader `ServerHousingCommunityPlotReservation_ReadPayload` @ `140086e70`; pass 159 MCP retry still returns `Transport closed`, direct-plugin xrefs show the reader is reused by eight registration rows plus `ServerLootWinner` row helpers rather than a matching apply owner, exact selected send-helper scans find no `0x0600` producer, and role-check UI/apply functions stay separate. The managed trailing field is now neutral `TrailingValue` until a real role-selection consumer or live payload proves role semantics.
+- **Client0x062A/0634** (F-010): shared `uint32` reader/writer `14007d000`/`14007d010` mapped and handlers are log-only/test-pinned; pass 155 MCP/cache recheck still finds `0x062A`/`0x0634` only in movement-spline registration (`1400a82b6`/`1400a872c`), selected send-helper scans found no sender, message-name slots `140c25488`/`140c25528` are unxrefed, and positive controls `0x05D5` and `0x0635` have separate real send helpers. Sender/intent remains blocked until a native send site or live queue UI sniff appears.
+- **Client0x07E3** (F-002): shared `uint32` reader/writer `14007d000`/`14007d010` mapped and handler remains log-only/test-pinned; pass 158 MCP retry still fails with `Transport closed`, while the live Ghidra plugin and cache show only the `ClientWorldOpcodeRegister_MovementSpline` registration row (`1400a8282`), shared helper xrefs, no selected static send-helper path for `0x07E3`, and unxrefed name-rail slot `140c27018`. Sender/intent remains blocked until a native send site, callback/table owner, indirect send rail, or live character/destination UI sniff appears.
 - **PrerequisiteType.Unknown260** (F-022): live case `0x104` / `Prerequisite_CheckHousingPlotPlugState_Table260` maps active housing plot/plug flags `0x08`/`0x20` against state `5`; the 2026-06-05 MCP passes label the `HousingPlotInfo` / `HousingPlugItem` lookup helpers (`140205fa0`/`140206c60`), the residence plot-entry lookup (`1405aea10`), `HousingPlotEntry_DispatchBuildCompleteIfState5` (`1405a9920`), and `HousingResidence_SetBuildState5AndDispatchComplete` (`1405a9980`), proving state `5` is `HousingBuildComplete`-backed. Enum rename remains blocked because row `36343` still lacks a prerequisite use-site and the active residence state fields at the returned subrecord remain unnamed.
 - **PrerequisiteType.IsLocalPlayerEntity** (F-022): pass 140 recovered the formerly missing native function entry at `14049c7b0` as `Prerequisite_CheckIsLocalPlayerEntity`. The body is the already-implemented type 63 Equal/NotEqual identity comparison between the evaluated entity and `DAT_140c65898+0x78` local-player entity; no runtime behavior changed.
 - **PrerequisiteType.DeadState / State** (F-022): pass 141 recovered live vtable entries `Prerequisite_CheckDeadState` (`14049c800`, case `0x0c` / `+0x80`) and `Prerequisite_CheckEntityStateFlags_Table149` (`14049c840`, case `0x95` / `+0x88`). DeadState now has a native live witness but NF keeps the existing `IsAlive` proxy until entity `+0x250` / `+0x254` / type `0x17` fields are server-owned; State remains mapped-only/blocked because type-149 row ids have no direct prerequisite-column references and `entity+0x1e4` ownership is incomplete. Pass 142 rejected the strongest cached `+0x1e4` writer cluster (`PrimalMatrix_UpdateNodeVisualStateFlags` `1406e70a0` / `PrimalMatrix_HandleNodeAllocationInput` `1406e73e0`) as a PrimalMatrix node visual/allocation path, not prerequisite entity-state evidence.
   Pass 143 mapped the scene proximity-cue reader/application cluster (`SceneProximityCue_LookupConfigById` `1404cc070`, `SceneProximityCue_IsCandidateInRange` `140722d30`, `SceneProximityCue_CheckPrerequisiteGate` `1407234a0`, `SceneProximityCue_ProcessQueuedCandidate` `1404cc0d0`, `Entity_ApplySceneProximityCue` `14047a1f0`, `SceneProximityCue_SelectWorldZoneEntry` `140722ed0`): it strengthens `entity+0x2ac` as an action/cue-blocking gate and `+0x250/+0x254` as approach/movement blockers, but still gives no native writer for evaluated-entity `+0x1e4` and no type-149 use-site.
+- **Entity target relationship-code helper** (decompile-only): pass 144 labeled `Entity_GetRelationshipCodeToTargetId` (`14045a950`) and `EntityTarget_ApplyTargetedByUnitUpdate` (`14045bdc0`), correcting the old `UnitState_UpdateCachedStateFields` note so `entity+0x108` is treated as cached target entity id and `entity+0x10c` as a relationship code. Pass 145 promoted stale `EntityCriteria_GetAttr2_Unk118` (`1403b49c0`) to `EntityCriteria_GetFaction2Id` and mapped `entity+0x118` component slots `+0x18` Faction2Id, `+0x20` reputation value, and `+0x30` relationship code to Faction2Id. Pass 146 recovered the concrete Faction2 service/component vtable family: `Entity_InitBaseFaction2ComponentById` (`14045ac60`) seeds base `+0x110` from UnitCreated field `+0xd8`, `Entity_SetActiveFaction2ComponentById` (`14045ab70`) sets active `+0x118` from field `+0xd4`, and `Faction2Component_GetDispositionCodeToFaction2Id` (`140787830`) maps FactionLevel `0..2` to Hostile code `0`, `8..10` to Friendly code `2`, and all other levels to Neutral code `1`. Pass 147 tied those UnitCreated offsets back to `ServerEntityCreate_ReadPayload` (`140096fa0`) field order: `+0xd4` is the main 14-bit `Faction1` field and `+0xd8` is the main 14-bit `Faction2` field. The similarly populated entity-create aux `Value4`/`Value5` slots remain neutral because native `0x0263` reads three generic 17-bit values and no apply/consumer path proves semantic names. Pass 148 rechecked the known native `WorldSocket+0x15b0` handler families and the `0x025F`-`0x0264` reader xrefs; only diagnostic/log, console, options/addons, and Fortune nodes are mapped, with no entity-create aux apply owner. The native code categories now map to managed `Disposition` order; no runtime behavior changed.
 
 ### F-001 - STS Token Crypto - BLOCKED
 Token crypto handshake, external-account edge routes, and optional envelope
@@ -219,8 +222,12 @@ inside `ServerFortuneRewards`, so `Server0x0015` remains neutral rather than
 being inferred as matching average-wait state. A 2026-06-05 cache/xref recheck
 found the positive `0x0628` apply control at
 `MatchingManager_ApplyMatchingAverageWaitTimeUpdated` but no equivalent
-`0x0015` apply owner or producer; the fresh helper trace was blocked by the open
-Ghidra project lock. Of the 62 shape-mapped aux/spell
+`0x0015` apply owner or producer. Pass 151 retried MCP (`Transport closed`) and
+used the live Ghidra plugin instead: direct xrefs for `140081f00` are data ref
+`140dce380`, the `ServerFortuneRewards_ReadPayload` row-helper call
+`140082040`, and four `Network_RegisterServerOpcode_0351` registration/data
+refs for `0x0015`/`0x0628`; no opcode-specific `0x0015` apply owner surfaced.
+Of the 62 shape-mapped aux/spell
 packets with neutral fields, 12 have controlled entity-create or selected
 housing emit paths and 50 remain gated behind consumer or producer evidence
 before production emission.
@@ -465,21 +472,34 @@ member-flag update after in-memory ready/has-set-ready clears, and the world
 handler always emits `ServerGroupReadyCheckStatusUpdate` including status `0`
 for pending/cleared state.
 
+The 2026-06-06 live CDB smoke confirmed the solo group-finder flow:
+`Matching_QueueDispatchFromUi` (`14076c830`) and
+`ClientMatchingQueue_WritePayload` (`140098a70`) hit before each
+`ClientMatchingQueue(0x05EF)` server receive; queue cancellation used
+`ClientMatchingQueueLeaveAll(0x05B4)`; server `ServerMatchingMatchReady(0x05CA)`
+hit `MatchingManager_ApplyMatchingGameReady` (`1405c39f0`); ready prompt
+responses hit `MatchingManager_SendClientGameReadyResponse` (`1405c3500`) and
+arrived as `ClientMatchingGameReadyResponse(0x05C8)` false declines plus one
+true accept that completed `ServerMatchingMatchJoined`. The same pass produced no
+live witness for `0x05CF`, `0x0600`, `0x062A`, `0x0634`, or standalone non-zero
+`0x0718`.
+
 **Validation/logging only (not full LFR backfill):**
 - `ClientMatchingMatchInitiateLookingForReplacementsHandler` / `ClientMatchingStopLookingForReplacementsHandler` validate in-progress match membership and native role mask `0..2`; they do not start a server replacement queue
 - Removed the unsupported replacement anchor queue/merge runtime; addon and sender
   evidence prove the UI/event boundary, not server producer timing or merge rules
-- `ServerRaidQueueStatus` (0x0718) emitted alongside `ServerRaidInfoResponse` as zero-value compatibility state; shared row fields are mapped through `0x071A` / `Group_DispatchRaidInfoResponse`, but standalone non-zero queue timing and queue-only aliases remain blocked
+- `ServerRaidQueueStatus` (0x0718) emitted alongside `ServerRaidInfoResponse` as zero-value compatibility state; shared row fields are mapped through `0x071A` / `Group_DispatchRaidInfoResponse`, but standalone non-zero queue timing and queue-only aliases remain blocked. Pass 157 direct-plugin/cache recheck found no exact `0x0718` send-helper hit, no code caller into the row reader except `ServerRaidInfoResponse_ReadPayload` (`14008c010`), and no owner for the extra data refs.
 - `ServerMatching0x05CF` remains a raw `uint32` packet only: reader `140099110`
   is mapped, and `MatchingManager_ApplyManagerUInt32Field0xA0` (`1405c41c0`)
   is only a correlated apply candidate until a real apply dispatcher/index or
   live packet witness is proven. The prior `140e1e66c` xref is PE `.pdata`
   unwind metadata, not a matching dispatch-table cell; the `WorldSocket+0x15b0`
   slot-11 scan found the Fortune `vtable+0x58` positive control but no
-  `1405c41c0` match. A 2026-06-05 MCP recheck confirms the candidate apply
+  `1405c41c0` match. The 2026-06-05 MCP bridge retry still returns
+  `Transport closed`; cache/direct-plugin evidence confirms the candidate apply
   helper only touches broad manager globals `140c65b98` / `140c65898`, while
-  `ServerUInt32_LocalReadThunk` refs resolve to the shared `0x05CF` and
-  `0x085D` registration rows, not an apply dispatcher.
+  `ServerUInt32_LocalReadThunk` refs resolve to the shared `0x05CF` and `0x085D`
+  registration rows, not an apply dispatcher.
 - Shared one-flag matching outputs `0x05B0`/`0x05CC`/`0x05F1` remain wire-mapped
   only. `MatchingManager_ApplyMatchingRoleCheckStarted` (`1405c0e90`) consumes
   `payload[0]` and dispatches `MatchingRoleCheckStarted`, but its only direct
@@ -509,8 +529,10 @@ for pending/cleared state.
 
 **Blocked:** exact standalone `ServerRaidQueueStatus` queue-position semantics
 and non-zero timing (shared row fields are mapped through `0x071A`, but pass
-134 found no cached static sender beyond registration and no queue producer/apply
-owner is proven);
+157 found no cached static sender beyond registration; direct-plugin xrefs keep
+`14008c010` as the only code caller into `14008bf80`, while candidate data refs
+are unowned pointer metadata or PE `.pdata`-shaped runtime entries rather than a
+queue producer/apply owner);
 replacement queue fill still needs live accept/teleport smoke and multi-slot
 role-fill verification; `ServerMatching0x05CF` still needs either a real
 matching apply dispatcher/index that ties opcode `0x05CF` to `1405c41c0` or a
@@ -523,9 +545,14 @@ helpers;
 still need a native sender or live sniff before semantic rename or mutation.
 
 ### F-011 - Guild / Recruitment / War Party - PARTIAL (blocked)
-Guild handlers and recruitment output models exist. Bank transactions, perks,
+Guild handlers and recruitment output models exist. `ServerGuildBankTabInventory`
+(`0x047A`) now emits the native-mapped row count before item rows. Bank transactions, perks,
 holomarks, standards, recruitment subscriptions, boss-token inventory,
 warplot plug state incomplete. Needs decomp.
+The 2026-06-06 live Guild smoke verified server-side guild membership setup
+(`ClientChat` command -> `ServerGuildResult`/`Join`/`Roster`/`MemberChange`,
+DB guild `Nexus`/character `Joy Ner`) but produced no client CDB sender hits, so
+Guild opcode/prerequisite renames still require the widened elevated UI probe.
 The nearby `0x077E` packet contract is now mapped as a counted uint32 list
 rather than a fixed four-field payload; recruitment/pet producer semantics
 remain blocked.
@@ -562,6 +589,9 @@ save; final marketplace DB transaction/save parity remains under F-005.
 ### F-014 - Loot - COMPLETE
 Basic delivery, group roll/master-loot runtime, roll/assign/result packets,
 `ServerLootNotify` ingestion, `ServerLootBindOnPickup`, `ServerLootWinner`.
+Pass 160 labels the native `ServerLootWinner_ReadPayload` reader (`1400a4e50`),
+registered for `0x08A3`, matching the existing packet model and
+`Loot_HandleLootWinner` consumer (`1403db610`).
 `LootInstanceResolutionTests` now pin runtime `ServerLootItemUpdate` refresh
 packets after roll/finalise/master/deferred delivery plus remote
 `ServerLootNotification` feedback. `GlobalLootManager` also rejects non-looter
@@ -691,6 +721,21 @@ same-day pass 132 MCP/cache recheck still found no apply owner: the MCP bridge
 could not connect to the open project, and cached call edges for `140094fb0`
 only show internal bit-reader calls. `PacketPlaceholderNamingTests` now guards
 against `ContextToken`, `ClientContextToken`, and `CastingId` aliases.
+Pass 149 direct-plugin/source recheck kept that blocker in place: direct xrefs
+to `140094fb0` remain data/registration-only, and managed producers are mixed
+between default-zero sends and the support stuck context-token echo.
+
+**Spell auxiliary triplet/four-uint32 pass (2026-06-05):** MCP retry still
+failed (`list_instances`, `connect_instance`, and `list_tool_groups` all
+returned `Transport closed`), so the live Ghidra plugin endpoint was used for
+focused xrefs. `ServerSpellUInt32TripletList_ReadPayload` (`0x140095da0`,
+opcodes `0x080F` / `0x0810`) has only data/registration xrefs
+(`0x140dcf718`, `0x1400747f1`, `0x140074803`, `0x140074822`, `0x140074834`);
+the shared row reader `0x140080bf0` proves only three `uint32` fields, and
+`ServerSpellFourUInt32_ReadPayload` (`0x14007fef0`, opcode `0x0812`) remains
+registration/data-only for spell-aux use. NexusForever has models/tests but no
+runtime producers for these spell-aux packets, so `Value*` field names and emit
+paths remain blocked pending an apply owner or live correlated rows.
 
 ### F-021 - Action Set / LAS / AMP / Attributes - PARTIAL (blocked)
 LAS size/spec/tier/AMP preflight checks exist. `UpdateSpellInProgress`,

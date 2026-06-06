@@ -1,6 +1,6 @@
 # WildStar Addon Corpus Evidence (`I:\Wildstar Addons`)
 
-Updated: 2026-05-23
+Updated: 2026-06-06
 
 This document records **player-addon evidence** from the local CurseForge-era zip corpus (876 archives, 875 with Lua). It complements `RETAIL_FEATURE_EVIDENCE.md` (wikis/Carbine Lua) and Ghidra decompile notes. Addon Lua shows **client API and Apollo event names** the retail UI expects; it does not prove server wire layout by itself.
 
@@ -11,7 +11,7 @@ This document records **player-addon evidence** from the local CurseForge-era zi
 | Location | `I:\Wildstar Addons` |
 | Archives | 876 `.zip` (flat folder) |
 | Archives with `.lua` | 875 |
-| Machine-readable scan | `artifacts/addon_apollo_api_scan.json`, `artifacts/addon_inventory.txt` |
+| Machine-readable scan | `Tools/AddonCorpusAudit/reports/addon_apollo_api_scan.json`, `Tools/AddonCorpusAudit/reports/addon_inventory.txt` |
 
 ## Evidence ladder (addon-specific)
 
@@ -131,8 +131,10 @@ strings, but only one item changes implementation confidence:
 
 ## Related repo files
 
+- `Tools/AddonCorpusAudit/README.md`
+- `Tools/AddonCorpusAudit/audit_addon_corpus.py`
+- `Tools/AddonCorpusAudit/reports/addon-corpus-summary.md`
 - `Decomp/Analysis/MATCHING_IMPLEMENTATION_STATUS.md`
 - `Decomp/Analysis/RETAIL_FEATURE_EVIDENCE.md`
 - `Decomp/Analysis/GROUP_MEMBER_STAT_BLOCK.md`
 - `Source/NexusForever.Game/Retail/RetailCertainRules.cs`
-- `artifacts/addon_inventory.txt` (generated list, gitignored under `artifacts/`)
