@@ -1,0 +1,1028 @@
+{
+  "behaviors": [
+    {
+      "id": "starter-tutorial-common",
+      "aggroSpell4Id": 41368,
+      "aggroRange": 14.0,
+      "minimumLeashRange": 50.0,
+      "assistRange": 12.0,
+      "traceCombat": true
+    },
+    {
+      "id": "northern-wilds-common",
+      "aggroRange": 14.0,
+      "minimumLeashRange": 35.0
+    },
+    {
+      "id": "open-world-common",
+      "aggroRange": 14.0,
+      "minimumLeashRange": 35.0
+    }
+  ],
+  "kits": [
+    {
+      "id": "starter-tutorial-combat",
+      "behavior": "starter-tutorial-common",
+      "source": "reviewed-riders-reef-combat-kit",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Rider's Reef combat audit",
+      "note": "Starter tutorial non-stationary combat fixtures."
+    },
+    {
+      "id": "open-world-beast-tear-gnash-lunge",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        372,
+        1616
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55292,
+          "cooldownSeconds": 8.0
+        }
+      ],
+      "source": "reviewed-creature-spell-map-2026-06-06",
+      "evidence": "Tools/DataMapping/output/creature_spell_map.csv unique_name rows; artifacts/combat-profile-audit spawn-priority review",
+      "note": "Observed creature spell bridge: Tear, Gnash, Lunge."
+    },
+    {
+      "id": "open-world-mystpaw-thrasher",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        372,
+        1616
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55289,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 55290,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-creature-spell-map-2026-06-06",
+      "evidence": "Tools/DataMapping/output/creature_spell_map.csv unique_name rows; artifacts/combat-profile-audit spawn-priority review",
+      "note": "Observed creature spell bridge: Tear, Gnash, Gnash variants."
+    },
+    {
+      "id": "open-world-torine-fastpaw",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32768,
+        32769
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 35192,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 45494,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-creature-spell-map-2026-06-06",
+      "evidence": "Tools/DataMapping/output/creature_spell_map.csv unique_name rows; artifacts/combat-profile-audit spawn-priority review",
+      "note": "Observed creature spell bridge: Bite, Rip, Pride Pounce, Razor Sharp."
+    },
+    {
+      "id": "open-world-venombite-hatchling",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        6651,
+        6652
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55327,
+          "cooldownSeconds": 8.0
+        }
+      ],
+      "source": "reviewed-creature-spell-map-2026-06-06",
+      "evidence": "Tools/DataMapping/output/creature_spell_map.csv unique_name rows; artifacts/combat-profile-audit spawn-priority review",
+      "note": "Observed creature spell bridge: Pinch, Slice, Venomous Mandible."
+    },
+    {
+      "id": "northern-wilds-dagun",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        372,
+        1616
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55292,
+          "cooldownSeconds": 8.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-skeech-caster",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        30756
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55840,
+          "cooldownSeconds": 7.0
+        },
+        {
+          "spell4Id": 55841,
+          "cooldownSeconds": 11.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-skeech-scratcher",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        5649,
+        5652
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55843,
+          "cooldownSeconds": 7.0
+        },
+        {
+          "spell4Id": 55844,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-skeech-frostlord",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        30756
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55841,
+          "cooldownSeconds": 9.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-crystal-guardian",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        7267,
+        7270
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55305,
+          "cooldownSeconds": 10.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-yeti-snowstalker",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        33251,
+        33252
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55635,
+          "cooldownSeconds": 10.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-yeti-frostclaw",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        33251,
+        33252
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55632,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 55633,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-dominion-swordsman",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        32867,
+        32868
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55434,
+          "cooldownSeconds": 9.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-dominion-gunner",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        2764
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55766,
+          "cooldownSeconds": 8.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-rootbrute-grimspore",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        33247,
+        33248
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 47154,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 55317,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 55318,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-rootbrute-deathcap",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        33247,
+        33248
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55320,
+          "cooldownSeconds": 9.0
+        },
+        {
+          "spell4Id": 55321,
+          "cooldownSeconds": 14.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-blasterbot",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        4537
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55656,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 70379,
+          "cooldownSeconds": 14.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-ultrabot",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        24626,
+        24627
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55366,
+          "cooldownSeconds": 7.0
+        },
+        {
+          "spell4Id": 57877,
+          "cooldownSeconds": 10.0
+        },
+        {
+          "spell4Id": 57880,
+          "cooldownSeconds": 13.0
+        },
+        {
+          "spell4Id": 57881,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 57882,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-frost-giant",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        32388,
+        32389
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 38448,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 38450,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 53320,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 74395,
+          "cooldownSeconds": 22.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-xenobite",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        4495,
+        4496
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-dagunlord",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        5649,
+        5652
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-chillfang",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        372,
+        1616
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-swordsmaster",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        32867,
+        32868
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 50007,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 50103,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 50289,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 51329,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-yeti-icefang",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        33251,
+        33252
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55632,
+          "cooldownSeconds": 10.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-skeech-melee-holdout",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        5649,
+        5652
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55843,
+          "cooldownSeconds": 8.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-dominion-scrapper",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        2605,
+        2607
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55426,
+          "cooldownSeconds": 9.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-xenobreeder",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        34062
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 54621,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 54622,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 54626,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "northern-wilds-crystal-titan",
+      "behavior": "northern-wilds-common",
+      "autoAttackSpell4Ids": [
+        7267,
+        7270
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 47149,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 55305,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 55306,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    }
+  ],
+  "creatures": [
+    {
+      "creature2Id": 73464,
+      "kit": "starter-tutorial-combat",
+      "source": "reviewed-riders-reef-combat-kit",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Rider's Reef combat audit",
+      "note": "Exile lane Dominion Battle Beast"
+    },
+    {
+      "creature2Id": 73465,
+      "kit": "starter-tutorial-combat",
+      "source": "reviewed-riders-reef-combat-kit",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Rider's Reef combat audit",
+      "note": "Dominion lane Dagun"
+    },
+    {
+      "creature2Id": 73473,
+      "kit": "starter-tutorial-combat",
+      "source": "reviewed-riders-reef-combat-kit",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Rider's Reef combat audit",
+      "note": "Dominion lane Virtual Elite Exile"
+    },
+    {
+      "creature2Id": 73492,
+      "kit": "starter-tutorial-combat",
+      "source": "reviewed-riders-reef-combat-kit",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Rider's Reef combat audit",
+      "note": "Exile lane Virtual Legionnaire"
+    },
+    {
+      "creature2Id": 73566,
+      "kit": "starter-tutorial-combat",
+      "source": "reviewed-riders-reef-combat-kit",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Rider's Reef combat audit",
+      "note": "Dominion lane Virtual Elite Exile"
+    },
+    {
+      "creature2Id": 73567,
+      "kit": "starter-tutorial-combat",
+      "source": "reviewed-riders-reef-combat-kit",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Rider's Reef combat audit",
+      "note": "Exile lane Virtual Legionnaire"
+    },
+    {
+      "creature2Id": 24051,
+      "kit": "open-world-venombite-hatchling",
+      "source": "reviewed-creature-spell-map-2026-06-06",
+      "evidence": "Tools/DataMapping/output/creature_spell_map.csv unique_name rows; artifacts/combat-profile-audit spawn-priority review",
+      "note": "Venombite Hatchling - 48 runtime spawns - Pinch/Slice/Venomous Mandible"
+    },
+    {
+      "creature2Id": 24057,
+      "kit": "open-world-venombite-hatchling",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId/FactionId spell-signature match",
+      "note": "Venombite Spider - propagated exact Pinch/Slice/Venomous Mandible kit"
+    },
+    {
+      "creature2Id": 27527,
+      "kit": "open-world-torine-fastpaw",
+      "source": "reviewed-creature-spell-map-2026-06-06",
+      "evidence": "Tools/DataMapping/output/creature_spell_map.csv unique_name rows; artifacts/combat-profile-audit spawn-priority review",
+      "note": "Torine Fastpaw - 53 runtime spawns - Bite/Rip/Pride Pounce/Razor Sharp"
+    },
+    {
+      "creature2Id": 17286,
+      "kit": "open-world-torine-fastpaw",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Irradiated Icetail Leaper - propagated exact Bite/Rip/Pride Pounce/Razor Sharp kit"
+    },
+    {
+      "creature2Id": 38348,
+      "kit": "open-world-torine-fastpaw",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Twilight Mauler - propagated exact Bite/Rip/Pride Pounce/Razor Sharp kit"
+    },
+    {
+      "creature2Id": 62025,
+      "kit": "open-world-torine-fastpaw",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Twilight Shredder - propagated exact Bite/Rip/Pride Pounce/Razor Sharp kit"
+    },
+    {
+      "creature2Id": 61900,
+      "kit": "open-world-torine-fastpaw",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Feralclaw Gasher - propagated exact Bite/Rip/Pride Pounce/Razor Sharp kit"
+    },
+    {
+      "creature2Id": 38347,
+      "kit": "open-world-torine-fastpaw",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Twilight Stalker - propagated exact Bite/Rip/Pride Pounce/Razor Sharp kit"
+    },
+    {
+      "creature2Id": 9596,
+      "kit": "open-world-torine-fastpaw",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Whitepaw Stalker - propagated exact Bite/Rip/Pride Pounce/Razor Sharp kit"
+    },
+    {
+      "creature2Id": 9751,
+      "kit": "open-world-torine-fastpaw",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Kivuli - propagated exact Bite/Rip/Pride Pounce/Razor Sharp kit"
+    },
+    {
+      "creature2Id": 27038,
+      "kit": "open-world-torine-fastpaw",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Savannah Stalker - propagated exact Bite/Rip/Pride Pounce/Razor Sharp kit"
+    },
+    {
+      "creature2Id": 38107,
+      "kit": "open-world-torine-fastpaw",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Tanglevine Slasher - propagated exact Bite/Rip/Pride Pounce/Razor Sharp kit"
+    },
+    {
+      "creature2Id": 38325,
+      "kit": "open-world-torine-fastpaw",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Savannah Prowler - propagated exact Bite/Rip/Pride Pounce/Razor Sharp kit"
+    },
+    {
+      "creature2Id": 27878,
+      "kit": "open-world-mystpaw-thrasher",
+      "source": "reviewed-creature-spell-map-2026-06-06",
+      "evidence": "Tools/DataMapping/output/creature_spell_map.csv unique_name rows; artifacts/combat-profile-audit spawn-priority review",
+      "note": "Mystpaw Thrasher - 48 runtime spawns - Tear/Gnash bridge"
+    },
+    {
+      "creature2Id": 29919,
+      "kit": "open-world-beast-tear-gnash-lunge",
+      "source": "reviewed-creature-spell-map-2026-06-06",
+      "evidence": "Tools/DataMapping/output/creature_spell_map.csv unique_name rows; artifacts/combat-profile-audit spawn-priority review",
+      "note": "Mystpaw Dasher - 6 runtime spawns - Tear/Gnash/Lunge bridge"
+    },
+    {
+      "creature2Id": 25977,
+      "kit": "open-world-beast-tear-gnash-lunge",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 47 spell-signature match",
+      "note": "Seaspine Dagun - propagated exact Tear/Gnash/Lunge kit"
+    },
+    {
+      "creature2Id": 43906,
+      "kit": "open-world-beast-tear-gnash-lunge",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 47/FactionId 328 spell-signature match",
+      "note": "Stormcaller Dagun - propagated exact Tear/Gnash/Lunge kit"
+    },
+    {
+      "creature2Id": 25676,
+      "kit": "open-world-beast-tear-gnash-lunge",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 47 spell-signature match",
+      "note": "Megatech Hound - propagated exact Tear/Gnash/Lunge kit"
+    },
+    {
+      "creature2Id": 11071,
+      "kit": "northern-wilds-dagun",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Dagun Scavenger - Northern Wilds - MeleeDPS [NW-CBC]"
+    },
+    {
+      "creature2Id": 11907,
+      "kit": "northern-wilds-skeech-caster",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Skeech Diviner - Northern Wilds - RangedDPS [NW-CBC]"
+    },
+    {
+      "creature2Id": 11910,
+      "kit": "northern-wilds-skeech-scratcher",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Skeech Scratcher - Northern Wilds - Bruiser [NW-CBC]"
+    },
+    {
+      "creature2Id": 11912,
+      "kit": "northern-wilds-skeech-caster",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Skeech Shaman - Northern Wilds - RangedDPS [NW-CBC]"
+    },
+    {
+      "creature2Id": 11917,
+      "kit": "northern-wilds-skeech-frostlord",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Skeech Frostlord - Northern Wilds - RangedDPS [NW-CBC]"
+    },
+    {
+      "creature2Id": 11925,
+      "kit": "northern-wilds-crystal-guardian",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Crystal Guardian - Northern Wilds - Tank [NW-CBC]"
+    },
+    {
+      "creature2Id": 11945,
+      "kit": "northern-wilds-yeti-snowstalker",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Yeti Snowstalker - Northern Wilds - Bruiser [NW-CBC]"
+    },
+    {
+      "creature2Id": 11948,
+      "kit": "northern-wilds-yeti-frostclaw",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Yeti Frostclaw - Northern Wilds - MeleeDPS [NW-CBC]"
+    },
+    {
+      "creature2Id": 11951,
+      "kit": "northern-wilds-dominion-swordsman",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Dominion Swordsman - Northern Wilds - Tank [NW-CBC]"
+    },
+    {
+      "creature2Id": 27579,
+      "kit": "northern-wilds-dominion-swordsman",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 170 spell-signature match",
+      "note": "Firestorm Guardian - propagated exact Slice/Slash/Downward Slash kit"
+    },
+    {
+      "creature2Id": 26591,
+      "kit": "northern-wilds-dominion-swordsman",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Megatech Swordsmaster - propagated exact Slice/Slash/Downward Slash kit"
+    },
+    {
+      "creature2Id": 11953,
+      "kit": "northern-wilds-dominion-gunner",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Dominion Gunner - Northern Wilds - RangedDPS [NW-CBC]"
+    },
+    {
+      "creature2Id": 27402,
+      "kit": "northern-wilds-dominion-gunner",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 170 spell-signature match",
+      "note": "Firestorm Bomber - propagated exact Plasma Shot/Blast Shot kit"
+    },
+    {
+      "creature2Id": 12212,
+      "kit": "northern-wilds-rootbrute-grimspore",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Rootbrute Grimspore - Northern Wilds - MeleeDPS [NW-CBC]"
+    },
+    {
+      "creature2Id": 12213,
+      "kit": "northern-wilds-rootbrute-deathcap",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Rootbrute Deathcap - Northern Wilds - Tank [NW-CBC]"
+    },
+    {
+      "creature2Id": 12518,
+      "kit": "northern-wilds-dagun",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Dagun Tracker - Northern Wilds - Bruiser [NW-CBC]"
+    },
+    {
+      "creature2Id": 12525,
+      "kit": "northern-wilds-blasterbot",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Dominion Blasterbot - Northern Wilds - RangedDPS [NW-CBC]"
+    },
+    {
+      "creature2Id": 12526,
+      "kit": "northern-wilds-ultrabot",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Dominion Ultrabot - Northern Wilds quest target [NW-CBC]"
+    },
+    {
+      "creature2Id": 14055,
+      "kit": "northern-wilds-skeech-caster",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Fierce Skeech Shaman - Northern Wilds Holdout - DefensiveHealer [NW-hCBC]"
+    },
+    {
+      "creature2Id": 14119,
+      "kit": "northern-wilds-dominion-swordsman",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Fierce Dominion Swordsman - Northern Wilds Holdout - MeleeDPS [NW-hCBC]"
+    },
+    {
+      "creature2Id": 15614,
+      "kit": "northern-wilds-frost-giant",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Frost Giant - Northern Wilds Holdout Boss - Tank [NW-hCBC]"
+    },
+    {
+      "creature2Id": 15728,
+      "kit": "northern-wilds-xenobite",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Xenobite - Northern Wilds - Tank [NW-CBC]"
+    },
+    {
+      "creature2Id": 46137,
+      "kit": "northern-wilds-xenobite",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 233 spell-signature match",
+      "note": "Skittering Nightmare - propagated exact Bite/Chomp kit"
+    },
+    {
+      "creature2Id": 48144,
+      "kit": "northern-wilds-xenobite",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 233 spell-signature match",
+      "note": "Rotwind Skitter - propagated exact Bite/Chomp kit"
+    },
+    {
+      "creature2Id": 50158,
+      "kit": "northern-wilds-xenobite",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 233 spell-signature match",
+      "note": "Vilespawn Swarmer - propagated exact Bite/Chomp kit"
+    },
+    {
+      "creature2Id": 50225,
+      "kit": "northern-wilds-xenobite",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 233 spell-signature match",
+      "note": "Malicious Skitter - propagated exact Bite/Chomp kit"
+    },
+    {
+      "creature2Id": 50909,
+      "kit": "northern-wilds-xenobite",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 233 spell-signature match",
+      "note": "Strain Swarmer - propagated exact Bite/Chomp kit"
+    },
+    {
+      "creature2Id": 53159,
+      "kit": "northern-wilds-xenobite",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 233 spell-signature match",
+      "note": "Skittering Invader - propagated exact Bite/Chomp kit"
+    },
+    {
+      "creature2Id": 53452,
+      "kit": "northern-wilds-xenobite",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 233 spell-signature match",
+      "note": "Grimwort Parasite - propagated exact Bite/Chomp kit"
+    },
+    {
+      "creature2Id": 58557,
+      "kit": "northern-wilds-xenobite",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 233 spell-signature match",
+      "note": "Deadly Desolate Peep - propagated exact Bite/Chomp kit"
+    },
+    {
+      "creature2Id": 68405,
+      "kit": "northern-wilds-xenobite",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 233 spell-signature match",
+      "note": "Cyclopean Sentry - propagated exact Bite/Chomp kit"
+    },
+    {
+      "creature2Id": 17545,
+      "kit": "northern-wilds-dagunlord",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Skeech Dagunlord - Northern Wilds Holdout Boss - Tank [NW-hCBC]"
+    },
+    {
+      "creature2Id": 17546,
+      "kit": "northern-wilds-chillfang",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Chillfang - Northern Wilds Holdout Boss - MeleeDPS [NW-hCBC]"
+    },
+    {
+      "creature2Id": 17592,
+      "kit": "northern-wilds-swordsmaster",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Dominion Swordsmaster - Northern Wilds Holdout - Tank [NW-hCBC]"
+    },
+    {
+      "creature2Id": 32590,
+      "kit": "northern-wilds-swordsmaster",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 170 spell-signature match",
+      "note": "Axis Vonotron - propagated exact Slice/Slash/Tempest Strike/Kiss of the Wind/Biting Wind/Storm of Vengeance kit"
+    },
+    {
+      "creature2Id": 33437,
+      "kit": "northern-wilds-swordsmaster",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 170 spell-signature match",
+      "note": "Equalizer Cyboc - propagated exact Slice/Slash/Tempest Strike/Kiss of the Wind/Biting Wind/Storm of Vengeance kit"
+    },
+    {
+      "creature2Id": 48832,
+      "kit": "northern-wilds-swordsmaster",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 170 spell-signature match",
+      "note": "Exterminator Cryvex - propagated exact Slice/Slash/Tempest Strike/Kiss of the Wind/Biting Wind/Storm of Vengeance kit"
+    },
+    {
+      "creature2Id": 61706,
+      "kit": "northern-wilds-swordsmaster",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 170 spell-signature match",
+      "note": "Nytia of the Many Faces - propagated exact Slice/Slash/Tempest Strike/Kiss of the Wind/Biting Wind/Storm of Vengeance kit"
+    },
+    {
+      "creature2Id": 26126,
+      "kit": "northern-wilds-swordsmaster",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Purifier Landes - propagated exact Slice/Slash/Tempest Strike/Kiss of the Wind/Biting Wind/Storm of Vengeance kit"
+    },
+    {
+      "creature2Id": 40266,
+      "kit": "northern-wilds-swordsmaster",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Vigilant Petitioner - propagated exact Slice/Slash/Tempest Strike/Kiss of the Wind/Biting Wind/Storm of Vengeance kit"
+    },
+    {
+      "creature2Id": 36331,
+      "kit": "northern-wilds-yeti-icefang",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Fierce Yeti Icefang - Northern Wilds Holdout - MeleeDPS [NW-hCBC]"
+    },
+    {
+      "creature2Id": 36429,
+      "kit": "northern-wilds-skeech-melee-holdout",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Fierce Skeech Scratcher - Northern Wilds Holdout - MeleeDPS [NW-hCBC]"
+    },
+    {
+      "creature2Id": 36443,
+      "kit": "northern-wilds-skeech-melee-holdout",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Fierce Skeech Basher - Northern Wilds Holdout - Tank [NW-hCBC]"
+    },
+    {
+      "creature2Id": 36513,
+      "kit": "northern-wilds-dominion-scrapper",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Fierce Dominion Scrapper - Northern Wilds Holdout - MeleeDPS [NW-hCBC]"
+    },
+    {
+      "creature2Id": 36884,
+      "kit": "northern-wilds-xenobreeder",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Coldburrow Xenobreeder - Northern Wilds - Skeech Queen - RangedDPS [NW-CBC]"
+    },
+    {
+      "creature2Id": 49040,
+      "kit": "northern-wilds-crystal-titan",
+      "source": "reviewed-northern-wilds-spell-bridge",
+      "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
+      "note": "Crystal Titan - Northern Wilds - Tank [NW-CBC]"
+    }
+  ]
+}

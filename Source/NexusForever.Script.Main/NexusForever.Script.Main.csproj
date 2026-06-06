@@ -13,6 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="AI\CombatActionRules.json" />
+    <EmbeddedResource Include="AI\CombatKits.json" />
     <EmbeddedResource Include="AI\CombatProfiles.json" />
   </ItemGroup>
 

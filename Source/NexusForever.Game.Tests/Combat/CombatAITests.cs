@@ -44,7 +44,7 @@ public class CombatAITests
     [Theory]
     [InlineData(73464u, false)]
     [InlineData(73494u, true)]
-    public void DefaultCombatProfileProvider_WhenCreatureHasEmbeddedProfile_ReturnsDataBackedProfile(uint creature2Id, bool stationary)
+    public void DefaultCombatProfileProvider_WhenCreatureHasReviewedProfile_ReturnsDataBackedProfile(uint creature2Id, bool stationary)
     {
         ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
         creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), creature2Id);
@@ -59,6 +59,48 @@ public class CombatAITests
         Assert.Equal(new uint[] { 5649u, 5652u }, profile.AutoAttackSpell4Ids);
         Assert.Equal(41368u, profile.AggroSpell4Id);
         Assert.Equal(5f, profile.ChaseDistance);
+    }
+
+    [Fact]
+    public void DefaultCombatProfileProvider_WhenStarterCreatureUsesCatalog_ReturnsReviewedKitResolution()
+    {
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), 73464u);
+
+        CombatProfileResolution resolution = DefaultCombatProfileProvider.Instance.GetResolution(creature);
+
+        Assert.Equal(CombatProfileResolutionSource.ReviewedKitMapping, resolution.Source);
+        Assert.Equal("starter-tutorial-combat", resolution.KitId);
+        Assert.Equal(41368u, resolution.Profile.AggroSpell4Id);
+    }
+
+    [Fact]
+    public void DefaultCombatProfileProvider_WhenStarterTurretUsesManualOverride_ReturnsManualResolution()
+    {
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), 73494u);
+
+        CombatProfileResolution resolution = DefaultCombatProfileProvider.Instance.GetResolution(creature);
+
+        Assert.Equal(CombatProfileResolutionSource.ManualOverride, resolution.Source);
+        Assert.Equal("starter-tutorial-turret", resolution.ProfileId);
+        Assert.True(resolution.Profile.Stationary);
+    }
+
+    [Fact]
+    public void DefaultCombatProfileProvider_Audit_ReturnsManualAndCatalogMappingCounts()
+    {
+        CombatProfileAudit audit = DefaultCombatProfileProvider.Instance.GetAudit();
+
+        Assert.Equal(2, audit.ManualOverrideCreatureCount);
+        Assert.Equal(70, audit.ReviewedKitMappingCreatureCount);
+        Assert.Equal(0, audit.ActionDerivedProfileCount);
+        Assert.Equal(0, audit.ActionIgnoredRuleRowCount);
+        Assert.Equal(0, audit.ActionRejectedRuleRowCount);
+        Assert.Equal(0, audit.ActionUnknownRowCount);
+        Assert.Equal(0, audit.ActionMissingSpellRowCount);
+        Assert.Equal(72, audit.MappedCreatureCount);
+        Assert.Equal(0, audit.UnmappedCreatureCount);
     }
 
     [Fact]
@@ -80,11 +122,394 @@ public class CombatAITests
 
         CombatProfile profile = DefaultCombatProfileProvider.Instance.GetProfile(creature);
 
-        Assert.Equal(new uint[] { 5649u, 5652u, 55843u, 55844u }, profile.AutoAttackSpell4Ids);
+        Assert.Equal(new uint[] { 5649u, 5652u }, profile.AutoAttackSpell4Ids);
+        Assert.Equal(
+            new[]
+            {
+                new CombatSpecialAttack(55843u, 7d),
+                new CombatSpecialAttack(55844u, 12d)
+            }, profile.SpecialAttacks);
         Assert.Equal(14f, profile.AggroRange);
         Assert.Equal(35f, profile.MinimumLeashRange);
         Assert.Equal(0u, profile.AggroSpell4Id);
         Assert.False(profile.AllowNonPlayerTargets);
+    }
+
+    [Fact]
+    public void DefaultCombatProfileProvider_WhenOpenWorldCreatureHasReviewedSpellBridge_ReturnsDataBackedSpellKit()
+    {
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), 24051u);
+
+        CombatProfileResolution resolution = DefaultCombatProfileProvider.Instance.GetResolution(creature);
+
+        Assert.Equal(CombatProfileResolutionSource.ReviewedKitMapping, resolution.Source);
+        Assert.Equal("open-world-venombite-hatchling", resolution.KitId);
+        Assert.Equal(new uint[] { 6651u, 6652u }, resolution.Profile.AutoAttackSpell4Ids);
+        Assert.Equal(
+            new[]
+            {
+                new CombatSpecialAttack(55327u, 8d)
+            }, resolution.Profile.SpecialAttacks);
+        Assert.Equal(14f, resolution.Profile.AggroRange);
+        Assert.Equal(35f, resolution.Profile.MinimumLeashRange);
+    }
+
+    [Fact]
+    public void DefaultCombatProfileProvider_WhenCreatureActionRowsAreUnproven_DoesNotResolveProfileAndReportsAuditRows()
+    {
+        IGameTableManager gameTableManager = CreateCombatProfileGameTableManager(
+            creatureEntries:
+            [
+                new Creature2Entry
+                {
+                    Id = 90001u,
+                    Creature2ActionSetId = 77u
+                }
+            ],
+            actionEntries:
+            [
+                new Creature2ActionEntry
+                {
+                    Id                  = 1u,
+                    CreatureActionSetId = 77u,
+                    VisualEffectId      = 123u
+                },
+                new Creature2ActionEntry
+                {
+                    Id                  = 2u,
+                    CreatureActionSetId = 77u,
+                    Action              = 999u,
+                    ActionData00        = 555u
+                }
+            ]);
+        DefaultCombatProfileProvider provider = DefaultCombatProfileProvider.ForGameTables(gameTableManager);
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), 90001u);
+
+        CombatProfileResolution resolution = provider.GetResolution(creature);
+        CombatProfileAudit audit = provider.GetAudit();
+        CombatProfileAuditDetails details = provider.GetAuditDetails();
+
+        Assert.Equal(CombatProfileResolutionSource.None, resolution.Source);
+        Assert.Null(resolution.Profile);
+        Assert.Equal(0, audit.ActionDerivedProfileCount);
+        Assert.Equal(1, audit.ActionVisualOnlyRowCount);
+        Assert.Equal(0, audit.ActionIgnoredRuleRowCount);
+        Assert.Equal(0, audit.ActionRejectedRuleRowCount);
+        Assert.Equal(1, audit.ActionUnknownRowCount);
+        Assert.Equal(0, audit.ActionMissingSpellRowCount);
+        Assert.Equal(0, audit.MappedCreatureCount);
+        Assert.Equal(1, audit.UnmappedCreatureCount);
+        CombatProfileCreatureAuditRow creatureRow = Assert.Single(details.CreatureRows, row => row.Creature2Id == 90001u);
+        Assert.Equal(CombatProfileResolutionSource.None, creatureRow.Source);
+        Assert.Equal(77u, creatureRow.Creature2ActionSetId);
+        Assert.Collection(
+            details.ActionRows.OrderBy(row => row.Creature2ActionId),
+            row => Assert.Equal(CombatActionAuditStatus.VisualOnly, row.Status),
+            row => Assert.Equal(CombatActionAuditStatus.Unknown, row.Status));
+    }
+
+    [Fact]
+    public void DefaultCombatProfileProvider_WhenCreatureActionRuleIsProvenExact_ResolvesActionProfile()
+    {
+        const uint creature2Id = 90002u;
+        const uint actionSetId = 88u;
+        const uint spell4Id = 321u;
+        IGameTableManager gameTableManager = CreateCombatProfileGameTableManager(
+            creatureEntries:
+            [
+                new Creature2Entry
+                {
+                    Id                   = creature2Id,
+                    Creature2ActionSetId = actionSetId
+                }
+            ],
+            actionEntries:
+            [
+                new Creature2ActionEntry
+                {
+                    Id                  = 1u,
+                    CreatureActionSetId = actionSetId,
+                    State               = 1u,
+                    Event               = 2u,
+                    Action              = 3u,
+                    ActionData00        = spell4Id
+                }
+            ],
+            spell4Entries:
+            [
+                new Spell4Entry
+                {
+                    Id             = spell4Id,
+                    TargetMaxRange = 17f
+                }
+            ]);
+        DefaultCombatProfileProvider provider = DefaultCombatProfileProvider.ForGameTables(
+            gameTableManager,
+            [
+                new CombatActionRule
+                {
+                    Kind = CombatActionRuleKind.Ignore
+                },
+                new CombatActionRule
+                {
+                    State           = 1u,
+                    Event           = 2u,
+                    Action          = 3u,
+                    Kind            = CombatActionRuleKind.SpecialAttack,
+                    Spell4IdField   = "actionData00",
+                    CooldownSeconds = 6d,
+                    MaxRange        = 17f,
+                    FaceTarget      = false,
+                    Weight          = 2d,
+                    Source          = "unit-test",
+                    Evidence        = "exact Creature2Action rule"
+                }
+            ]);
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), creature2Id);
+
+        CombatProfileResolution resolution = provider.GetResolution(creature);
+        CombatProfileAudit audit = provider.GetAudit();
+        CombatProfileAuditDetails details = provider.GetAuditDetails();
+
+        Assert.Equal(CombatProfileResolutionSource.ProvenActionResolver, resolution.Source);
+        Assert.Equal(actionSetId, resolution.Creature2ActionSetId);
+        CombatSpecialAttack specialAttack = Assert.Single(resolution.Profile.SpecialAttacks);
+        Assert.Equal(spell4Id, specialAttack.Spell4Id);
+        Assert.Equal(6d, specialAttack.CooldownSeconds);
+        Assert.Equal(17f, specialAttack.MaxRange);
+        Assert.False(specialAttack.FaceTarget);
+        Assert.Equal(2d, specialAttack.Weight);
+        Assert.Equal(1, audit.ActionDerivedProfileCount);
+        Assert.Equal(0, audit.ActionIgnoredRuleRowCount);
+        Assert.Equal(0, audit.ActionRejectedRuleRowCount);
+        Assert.Equal(0, audit.ActionUnknownRowCount);
+        Assert.Equal(0, audit.ActionMissingSpellRowCount);
+        Assert.Equal(1, audit.MappedCreatureCount);
+        Assert.Equal(0, audit.UnmappedCreatureCount);
+        CombatProfileCreatureAuditRow creatureRow = Assert.Single(details.CreatureRows, row => row.Creature2Id == creature2Id);
+        Assert.Equal(CombatProfileResolutionSource.ProvenActionResolver, creatureRow.Source);
+        Assert.Equal(1, creatureRow.SpecialAttackCount);
+        CombatProfileActionAuditRow actionRow = Assert.Single(details.ActionRows);
+        Assert.Equal(CombatActionAuditStatus.ActivatedSpecialAttack, actionRow.Status);
+        Assert.Equal("unit-test", actionRow.RuleSource);
+        Assert.Equal(spell4Id, actionRow.Spell4Id);
+    }
+
+    [Fact]
+    public void DefaultCombatProfileProvider_WhenCreatureActionRuleIsActiveWildcard_DoesNotResolveProfileAndReportsRejectedRule()
+    {
+        const uint creature2Id = 90003u;
+        IGameTableManager gameTableManager = CreateCombatProfileGameTableManager(
+            creatureEntries:
+            [
+                new Creature2Entry
+                {
+                    Id                   = creature2Id,
+                    Creature2ActionSetId = 89u
+                }
+            ],
+            actionEntries:
+            [
+                new Creature2ActionEntry
+                {
+                    Id                  = 1u,
+                    CreatureActionSetId = 89u,
+                    State               = 1u,
+                    Event               = 2u,
+                    Action              = 3u,
+                    ActionData00        = 321u
+                }
+            ],
+            spell4Entries:
+            [
+                new Spell4Entry
+                {
+                    Id = 321u
+                }
+            ]);
+        DefaultCombatProfileProvider provider = DefaultCombatProfileProvider.ForGameTables(
+            gameTableManager,
+            [
+                new CombatActionRule
+                {
+                    Event           = 2u,
+                    Action          = 3u,
+                    Kind            = CombatActionRuleKind.AutoAttack,
+                    Spell4IdField   = "actionData00",
+                    Source          = "unit-test",
+                    Evidence        = "wildcard active rule"
+                }
+            ]);
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), creature2Id);
+
+        CombatProfileResolution resolution = provider.GetResolution(creature);
+        CombatProfileAudit audit = provider.GetAudit();
+        CombatProfileAuditDetails details = provider.GetAuditDetails();
+
+        Assert.Equal(CombatProfileResolutionSource.None, resolution.Source);
+        Assert.Null(resolution.Profile);
+        Assert.Equal(0, audit.ActionDerivedProfileCount);
+        Assert.Equal(0, audit.ActionIgnoredRuleRowCount);
+        Assert.Equal(1, audit.ActionRejectedRuleRowCount);
+        Assert.Equal(0, audit.ActionUnknownRowCount);
+        Assert.Equal(0, audit.ActionMissingSpellRowCount);
+        Assert.Equal(0, audit.MappedCreatureCount);
+        Assert.Equal(1, audit.UnmappedCreatureCount);
+        CombatProfileActionAuditRow actionRow = Assert.Single(details.ActionRows);
+        Assert.Equal(CombatActionAuditStatus.RejectedRule, actionRow.Status);
+        Assert.Contains("exact State, Event, and Action", actionRow.Diagnostic);
+    }
+
+    [Fact]
+    public void DefaultCombatProfileProvider_WhenCreatureActionRuleLacksActivationEvidence_DoesNotResolveProfileAndReportsRejectedRule()
+    {
+        const uint creature2Id = 90004u;
+        IGameTableManager gameTableManager = CreateCombatProfileGameTableManager(
+            creatureEntries:
+            [
+                new Creature2Entry
+                {
+                    Id                   = creature2Id,
+                    Creature2ActionSetId = 90u
+                }
+            ],
+            actionEntries:
+            [
+                new Creature2ActionEntry
+                {
+                    Id                  = 1u,
+                    CreatureActionSetId = 90u,
+                    State               = 1u,
+                    Event               = 2u,
+                    Action              = 3u,
+                    ActionData00        = 321u
+                },
+                new Creature2ActionEntry
+                {
+                    Id                  = 2u,
+                    CreatureActionSetId = 90u,
+                    State               = 4u,
+                    Event               = 5u,
+                    Action              = 6u,
+                    ActionData01        = 322u
+                }
+            ],
+            spell4Entries:
+            [
+                new Spell4Entry
+                {
+                    Id = 321u
+                },
+                new Spell4Entry
+                {
+                    Id = 322u
+                }
+            ]);
+        DefaultCombatProfileProvider provider = DefaultCombatProfileProvider.ForGameTables(
+            gameTableManager,
+            [
+                new CombatActionRule
+                {
+                    State         = 1u,
+                    Event         = 2u,
+                    Action        = 3u,
+                    Kind          = CombatActionRuleKind.AutoAttack,
+                    Spell4IdField = "actionData00"
+                },
+                new CombatActionRule
+                {
+                    State           = 4u,
+                    Event           = 5u,
+                    Action          = 6u,
+                    Kind            = CombatActionRuleKind.SpecialAttack,
+                    Spell4IdField   = "actionData01",
+                    CooldownSeconds = 0d,
+                    Source          = "unit-test",
+                    Evidence        = "no positive cooldown"
+                }
+            ]);
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), creature2Id);
+
+        CombatProfileResolution resolution = provider.GetResolution(creature);
+        CombatProfileAudit audit = provider.GetAudit();
+        CombatProfileAuditDetails details = provider.GetAuditDetails();
+
+        Assert.Equal(CombatProfileResolutionSource.None, resolution.Source);
+        Assert.Null(resolution.Profile);
+        Assert.Equal(0, audit.ActionDerivedProfileCount);
+        Assert.Equal(0, audit.ActionIgnoredRuleRowCount);
+        Assert.Equal(2, audit.ActionRejectedRuleRowCount);
+        Assert.Equal(0, audit.ActionUnknownRowCount);
+        Assert.Equal(0, audit.ActionMissingSpellRowCount);
+        Assert.Equal(0, audit.MappedCreatureCount);
+        Assert.Equal(1, audit.UnmappedCreatureCount);
+        Assert.All(details.ActionRows, row => Assert.Equal(CombatActionAuditStatus.RejectedRule, row.Status));
+        Assert.Contains(details.ActionRows, row => row.Diagnostic.Contains("source and evidence"));
+        Assert.Contains(details.ActionRows, row => row.Diagnostic.Contains("positive cooldown"));
+    }
+
+    [Fact]
+    public void DefaultCombatProfileProvider_WhenCreatureActionRuleSpellIsMissing_DoesNotResolveProfileAndReportsMissingSpell()
+    {
+        const uint creature2Id = 90005u;
+        IGameTableManager gameTableManager = CreateCombatProfileGameTableManager(
+            creatureEntries:
+            [
+                new Creature2Entry
+                {
+                    Id                   = creature2Id,
+                    Creature2ActionSetId = 91u
+                }
+            ],
+            actionEntries:
+            [
+                new Creature2ActionEntry
+                {
+                    Id                  = 1u,
+                    CreatureActionSetId = 91u,
+                    State               = 1u,
+                    Event               = 2u,
+                    Action              = 3u,
+                    ActionData00        = 999u
+                }
+            ]);
+        DefaultCombatProfileProvider provider = DefaultCombatProfileProvider.ForGameTables(
+            gameTableManager,
+            [
+                new CombatActionRule
+                {
+                    State         = 1u,
+                    Event         = 2u,
+                    Action        = 3u,
+                    Kind          = CombatActionRuleKind.AutoAttack,
+                    Spell4IdField = "actionData00",
+                    Source        = "unit-test",
+                    Evidence      = "missing spell row"
+                }
+            ]);
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out RecordingDispatchProxy<ICreatureEntity> creatureProxy);
+        creatureProxy.SetProperty(nameof(ICreatureEntity.CreatureId), creature2Id);
+
+        CombatProfileResolution resolution = provider.GetResolution(creature);
+        CombatProfileAudit audit = provider.GetAudit();
+        CombatProfileAuditDetails details = provider.GetAuditDetails();
+
+        Assert.Equal(CombatProfileResolutionSource.None, resolution.Source);
+        Assert.Null(resolution.Profile);
+        Assert.Equal(0, audit.ActionDerivedProfileCount);
+        Assert.Equal(0, audit.ActionRejectedRuleRowCount);
+        Assert.Equal(0, audit.ActionUnknownRowCount);
+        Assert.Equal(1, audit.ActionMissingSpellRowCount);
+        Assert.Equal(0, audit.MappedCreatureCount);
+        Assert.Equal(1, audit.UnmappedCreatureCount);
+        CombatProfileActionAuditRow actionRow = Assert.Single(details.ActionRows);
+        Assert.Equal(CombatActionAuditStatus.MissingSpell, actionRow.Status);
+        Assert.Equal(999u, actionRow.Spell4Id);
     }
 
     [Fact]
@@ -403,6 +828,52 @@ public class CombatAITests
     }
 
     [Fact]
+    public void Update_WhenMultipleProfileSpecialAttacksAreReady_RotatesReadySpecials()
+    {
+        var profileProvider = new FixedCombatProfileProvider(CombatProfile.Default with
+        {
+            AutoAttackSpell4Ids = [],
+            SpecialAttacks =
+            [
+                new CombatSpecialAttack(
+                    Spell4Id: 88111u,
+                    CooldownSeconds: 1d),
+                new CombatSpecialAttack(
+                    Spell4Id: 88112u,
+                    CooldownSeconds: 1d)
+            ],
+            TraceCombat = false
+        });
+        CombatHarness harness = CreateHarness(
+            new Vector3(10f, 0f, 0f),
+            targetSelected: true,
+            profileProvider: profileProvider,
+            spell4Entries:
+            [
+                new Spell4Entry
+                {
+                    Id             = 88111u,
+                    TargetMaxRange = 15f
+                },
+                new Spell4Entry
+                {
+                    Id             = 88112u,
+                    TargetMaxRange = 15f
+                }
+            ]);
+
+        harness.Script.Update(1d);
+        harness.Script.Update(0.1d);
+
+        List<RecordingDispatchProxy<ICreatureEntity>.Invocation> casts = harness.CreatureProxy
+            .GetInvocations(nameof(ICreatureEntity.TryCastSpell))
+            .ToList();
+        Assert.Equal(2, casts.Count);
+        Assert.Equal(88111u, casts[0].Arguments[0]);
+        Assert.Equal(88112u, casts[1].Arguments[0]);
+    }
+
+    [Fact]
     public void Update_WhenProfileSpecialAttackCastIsRejected_DoesNotResetCooldown()
     {
         var profileProvider = new FixedCombatProfileProvider(CombatProfile.Default with
@@ -683,7 +1154,7 @@ public class CombatAITests
         harness.Script.Update(1d);
         harness.Script.Update(1d);
 
-        Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Follow)));
+        Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Chase)));
         Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Finalise)));
     }
 
@@ -696,7 +1167,7 @@ public class CombatAITests
         harness.PlayerProxy.SetProperty(nameof(IPlayer.Position), new Vector3(23f, 0f, 0f));
         harness.Script.Update(1d);
 
-        Assert.Equal(2, harness.MovementProxy.GetInvocations(nameof(IMovementManager.Follow)).Count);
+        Assert.Equal(2, harness.MovementProxy.GetInvocations(nameof(IMovementManager.Chase)).Count);
     }
 
     [Fact]
@@ -708,7 +1179,7 @@ public class CombatAITests
         harness.PlayerProxy.SetProperty(nameof(IPlayer.Position), new Vector3(3f, 0f, 0f));
         harness.Script.Update(1d);
 
-        Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Follow)));
+        Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Chase)));
         Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Finalise)));
     }
 
@@ -723,7 +1194,7 @@ public class CombatAITests
 
         harness.Script.Update(1d);
 
-        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Follow)));
+        Assert.Empty(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Chase)));
     }
 
     [Fact]
@@ -991,6 +1462,22 @@ public class CombatAITests
     {
         IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableManagerProxy);
         if (spell4Entries is { Length: > 0 })
+            gameTableManagerProxy.SetProperty(nameof(IGameTableManager.Spell4), CreateGameTable(spell4Entries));
+
+        return gameTableManager;
+    }
+
+    private static IGameTableManager CreateCombatProfileGameTableManager(
+        Creature2Entry[] creatureEntries = null,
+        Creature2ActionEntry[] actionEntries = null,
+        Spell4Entry[] spell4Entries = null)
+    {
+        IGameTableManager gameTableManager = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> gameTableManagerProxy);
+        if (creatureEntries != null)
+            gameTableManagerProxy.SetProperty(nameof(IGameTableManager.Creature2), CreateGameTable(creatureEntries));
+        if (actionEntries != null)
+            gameTableManagerProxy.SetProperty(nameof(IGameTableManager.Creature2Action), CreateGameTable(actionEntries));
+        if (spell4Entries != null)
             gameTableManagerProxy.SetProperty(nameof(IGameTableManager.Spell4), CreateGameTable(spell4Entries));
 
         return gameTableManager;

@@ -37,6 +37,8 @@ namespace NexusForever.Script.Main.AI
         private readonly UpdateTimer autoAttackTimer = new(TimeSpan.FromSeconds(1.5d));
         private bool selectingTarget;
         private readonly List<CombatSpecialAttackState> specialAttacks = [];
+        private readonly List<CombatSpecialAttackState> specialAttackSchedule = [];
+        private int specialAttackCursor;
 
         private readonly UpdateTimer idleAggroScanTimer = new(TimeSpan.FromSeconds(0.5d));
 
@@ -64,6 +66,7 @@ namespace NexusForever.Script.Main.AI
         {
             public CombatSpecialAttack Attack { get; init; }
             public UpdateTimer CooldownTimer { get; init; }
+            public int Index { get; init; }
         }
 
         public CombatAI(
@@ -74,7 +77,7 @@ namespace NexusForever.Script.Main.AI
         {
             this.spellParametersFactory = spellParametersFactory;
             this.gameTableManager       = gameTableManager;
-            this.combatProfileProvider  = combatProfileProvider ?? DefaultCombatProfileProvider.Instance;
+            this.combatProfileProvider  = combatProfileProvider ?? DefaultCombatProfileProvider.ForGameTables(gameTableManager);
             this.log                    = log ?? NullLogger<CombatAI>.Instance;
         }
 
@@ -97,18 +100,28 @@ namespace NexusForever.Script.Main.AI
                 ? profile.AutoAttackSpell4Ids.ToList()
                 : [];
             specialAttacks.Clear();
+            specialAttackSchedule.Clear();
+            specialAttackCursor = 0;
             if (combatEnabled)
             {
+                int specialAttackIndex = 0;
                 foreach (CombatSpecialAttack attack in profile.SpecialAttacks ?? [])
                 {
                     if (attack.Spell4Id == 0u || attack.CooldownSeconds <= 0d)
                         continue;
 
-                    specialAttacks.Add(new CombatSpecialAttackState
+                    var state = new CombatSpecialAttackState
                     {
                         Attack        = attack,
-                        CooldownTimer = new UpdateTimer(attack.CooldownSeconds)
-                    });
+                        CooldownTimer = new UpdateTimer(attack.CooldownSeconds),
+                        Index         = specialAttackIndex++
+                    };
+                    ApplySpecialAttackCooldownOffset(state);
+                    specialAttacks.Add(state);
+
+                    int weightSlots = GetSpecialAttackWeightSlots(attack);
+                    for (int i = 0; i < weightSlots; i++)
+                        specialAttackSchedule.Add(state);
                 }
             }
 
@@ -220,19 +233,69 @@ namespace NexusForever.Script.Main.AI
             if (UpdateSpecialCastLockout(lastTick))
                 return true;
 
-            foreach (CombatSpecialAttackState state in specialAttacks)
+            HashSet<CombatSpecialAttackState> attempted = [];
+            for (int offset = 0; offset < specialAttackSchedule.Count; offset++)
             {
+                CombatSpecialAttackState state = specialAttackSchedule[(specialAttackCursor + offset) % specialAttackSchedule.Count];
+                if (!attempted.Add(state))
+                    continue;
+
                 if (!state.CooldownTimer.HasElapsed)
                     continue;
 
                 if (!TryCastSpecialAttack(state.Attack, target))
                     continue;
 
-                state.CooldownTimer.Reset();
+                ResetSpecialAttackCooldown(state);
+                specialAttackCursor = (specialAttackCursor + offset + 1) % specialAttackSchedule.Count;
                 return true;
             }
 
             return false;
+        }
+
+        private void ResetSpecialAttackCooldown(CombatSpecialAttackState state)
+        {
+            state.CooldownTimer.Reset();
+            ApplySpecialAttackCooldownOffset(state);
+        }
+
+        private void ApplySpecialAttackCooldownOffset(CombatSpecialAttackState state)
+        {
+            double maxOffset = Math.Min(1.25d, state.CooldownTimer.Duration * 0.2d);
+            if (maxOffset <= 0d)
+                return;
+
+            double offset = GetDeterministicSpecialAttackOffset(state) * maxOffset;
+            if (offset > 0d)
+                state.CooldownTimer.Update(offset);
+        }
+
+        private double GetDeterministicSpecialAttackOffset(CombatSpecialAttackState state)
+        {
+            uint hash = HashSpecialAttack(entity?.CreatureId ?? 0u, entity?.Guid ?? 0u, state.Attack.Spell4Id, (uint)state.Index);
+            return (hash % 1000u) / 1000d;
+        }
+
+        private static int GetSpecialAttackWeightSlots(CombatSpecialAttack attack)
+        {
+            if (!double.IsFinite(attack.Weight) || attack.Weight <= 0d)
+                return 1;
+
+            return Math.Clamp((int)Math.Round(attack.Weight, MidpointRounding.AwayFromZero), 1, 10);
+        }
+
+        private static uint HashSpecialAttack(uint creatureId, uint guid, uint spell4Id, uint index)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                hash = (hash ^ creatureId) * 16777619u;
+                hash = (hash ^ guid) * 16777619u;
+                hash = (hash ^ spell4Id) * 16777619u;
+                hash = (hash ^ index) * 16777619u;
+                return hash;
+            }
         }
 
         private bool TryCastSpecialAttack(CombatSpecialAttack attack, IUnitEntity target)
@@ -528,7 +591,7 @@ namespace NexusForever.Script.Main.AI
                     target.Position.Z);
             }
 
-            entity.MovementManager.Follow(target, followDistance);
+            entity.MovementManager.Chase(target, followDistance);
             activeChaseTargetGuid      = target.Guid;
             activeChaseTargetPosition  = target.Position;
             activeChaseFollowDistance  = followDistance;
