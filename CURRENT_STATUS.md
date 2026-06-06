@@ -1,6 +1,6 @@
 # NexusForever Feature Restoration - Current Status
 
-Last updated: 2026-06-04 (F-005 direct commodity fill order-mutation persistence gate and multi-order price-priority fill coverage; option/keybind aux packet contracts for `0x056B`, `0x056C`, and `0x056D`, marketplace aux packet contracts for `0x06DF` and `0x07D5`, chat aux row/envelope packet contracts for `0x01B8`, `0x01C1`, and `0x01C4`, plus story/recruitment boundary packet contracts for `0x074A` and `0x077E`; ported useful LaughingWS branch scripts/data overlays, quest-loot/store/catalog/WIP-Dust-Stalker-quest-instance/WIP-live-event/Skyplot-housing overlays, settler build acknowledgements, active Settler hub build-count progress, WIP current-zone path episode activation with optional PathMission prerequisite filtering, active-path object-id completion guard, active Soldier assassinate kill progress with decompile-mapped ProgressCount, branch-informed active-only node/explore-zone/power-map-validated Explorer progress completion, PathMission and PathMissionType achievement credit, client-mapped GameFormula 0x017a path XP fallback for known completed path missions without configured XP, and unflagged PathRewardType.Mission grants for known completed path missions, branch starter-zone/map-only hooks, Shade's Eve/Infestation/Fragment Zero/Gauntlet/Ruins of Kel Voreth/Stormtalon's Lair/Skullcano/Initialization Core Y-83/Red Moon Terror/Genetic Archives/Sanctuary of the Swordmaiden/Datascape/Protogames/Space Madness/Evil from the Ether event/map chains, WIP-guessed Coldblood Citadel, Ruins of Kel Voreth, Sanctuary of the Swordmaiden, Skullcano, and Stormtalon's Lair optional-objective rolls, Space Madness/Gauntlet/Infestation/Protogames Academy/Fragment Zero/Shade's Eve/Red Moon Terror/Genetic Archives/Datascape/Ruins of Kel Voreth/Skullcano/Initialization Core Y-83/Sanctuary/Evil from the Ether/Cryo-Plex/War of the Wilds trigger objective/message/teleport/PvP scripts and phase broadcasts, SQL-backed boss objective-credit hooks including WIP Red Moon Terror Laveka credit, Skullcano and Sanctuary WIP route scaffolding, remaining map-only bindings plus WIP entry/boss/phase/cinematic-hook scaffolds for Deep Space, Rage Logic, Ultimate Protogames dungeon/raid, Protostar SuperMall, Journey into OMNICore-1, Fragment Zero, Infestation, Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet, narrow branch spell-script hooks for Marauder Mine/Pulse Blast, and the client-table-backed Exo-Lab 22 range teleporter; focused branch/path/event tests 552/552, focused instance/public-event tests 436/436, focused map-only entry/boss/phase/cinematic-hook scaffold tests 22/22, focused event/trigger cinematic-hook tests 155/155, focused PvP/adventure branch tests 25/25, focused Evil from the Ether tests 12/12, focused Coldblood Citadel tests 10/10, focused Ruins of Kel Voreth tests 16/16, focused Sanctuary of the Swordmaiden tests 38/38, focused Skullcano tests 34/34, focused Stormtalon's Lair tests 19/19, focused Protogames Academy trigger tests 25/25, focused Fragment Zero trigger tests 13/13, focused Gauntlet trigger tests 16/16, focused Infestation trigger tests 9/9, focused Datascape/objective-credit tests 102/102, path-progress tests 36/36, focused transporter tests 49/49, plus branch spell tests 11/11; F-004/F-009/F-024 remain partial)
+Last updated: 2026-06-06 (F-005 direct commodity fill order-mutation persistence gate and multi-order price-priority fill coverage; option/keybind aux packet contracts for `0x056B`, `0x056C`, and `0x056D`, marketplace aux packet contracts for `0x06DF` and `0x07D5`, chat aux row/envelope packet contracts for `0x01B8`, `0x01C1`, and `0x01C4`, plus story/recruitment boundary packet contracts for `0x074A` and `0x077E`; ported useful LaughingWS branch scripts/data overlays, quest-loot/store/catalog/WIP-Dust-Stalker-quest-instance/WIP-live-event/Skyplot-housing overlays, settler build acknowledgements, active Settler hub build-count progress, WIP current-zone path episode activation with optional PathMission prerequisite filtering, active-path object-id completion guard, active Soldier assassinate kill progress with decompile-mapped ProgressCount, branch-informed active-only node/explore-zone/power-map-validated Explorer progress completion, PathMission and PathMissionType achievement credit, client-mapped GameFormula 0x017a path XP fallback for known completed path missions without configured XP, and unflagged PathRewardType.Mission grants for known completed path missions, branch starter-zone/map-only hooks, Shade's Eve/Infestation/Fragment Zero/Gauntlet/Ruins of Kel Voreth/Stormtalon's Lair/Skullcano/Initialization Core Y-83/Red Moon Terror/Genetic Archives/Sanctuary of the Swordmaiden/Datascape/Protogames/Space Madness/Evil from the Ether event/map chains, WIP-guessed Coldblood Citadel, Ruins of Kel Voreth, Sanctuary of the Swordmaiden, Skullcano, and Stormtalon's Lair optional-objective rolls, Space Madness/Gauntlet/Infestation/Protogames Academy/Fragment Zero/Shade's Eve/Red Moon Terror/Genetic Archives/Datascape/Ruins of Kel Voreth/Skullcano/Initialization Core Y-83/Sanctuary/Evil from the Ether/Cryo-Plex/War of the Wilds trigger objective/message/teleport/PvP scripts and phase broadcasts, SQL-backed boss objective-credit hooks including WIP Red Moon Terror Laveka credit, Skullcano and Sanctuary WIP route scaffolding, remaining map-only bindings plus WIP entry/boss/phase/cinematic-hook scaffolds for Deep Space, Rage Logic, Ultimate Protogames dungeon/raid, Protostar SuperMall, Journey into OMNICore-1, Fragment Zero, Infestation, Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet, narrow branch spell-script hooks for Marauder Mine/Pulse Blast, and the client-table-backed Exo-Lab 22 range teleporter; reward-rotation schedule row order/player-level/difficulty refresh, runtime `item_salvage` exact/type-level salvage path, live group/guild CDB evidence, and full Game test project 2770/2770; focused branch/path/event tests 552/552, focused instance/public-event tests 436/436, focused map-only entry/boss/phase/cinematic-hook scaffold tests 22/22, focused event/trigger cinematic-hook tests 155/155, focused PvP/adventure branch tests 25/25, focused Evil from the Ether tests 12/12, focused Coldblood Citadel tests 10/10, focused Ruins of Kel Voreth tests 16/16, focused Sanctuary of the Swordmaiden tests 38/38, focused Skullcano tests 34/34, focused Stormtalon's Lair tests 19/19, focused Protogames Academy trigger tests 25/25, focused Fragment Zero trigger tests 13/13, focused Gauntlet trigger tests 16/16, focused Infestation tests 9/9, focused Datascape/objective-credit tests 102/102, path-progress tests 36/36, focused transporter tests 49/49, plus branch spell tests 11/11; F-004/F-009/F-024 remain partial)
 
 Maintained from `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, focused trackers
 (`MATCHING_IMPLEMENTATION_STATUS.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`), and
@@ -388,6 +388,27 @@ Game-table refresh emits (`0x07CA` schedule, `0x07CD`/`0x07D3` content context),
 claim path via `ClientRewardUpdateRequest`, and non-empty `0x07C8` entry-state on
 refresh/claim are implemented with focused tests.
 
+2026-06-06 live-local triage of an empty Content Finder Bonus Rewards tab found
+three schedule/display issues. First, the default refresh path selected rewards
+with player level `1` and world difficulty flags `0`, while the imported
+`RewardRotationItem`/`Essence`/`Modifier` rows require level `50` and
+normal/veteran flags (`1`/`2`). Second, a new-binary smoke showed non-empty
+`0x07CA` rows for indexes `1..6` but the tab still empty because
+`Game.MatchMakingEntry.GetRotationRewards` filters loaded rows by the selected
+entry's normal/veteran context. The default world request path now passes the
+live player level plus a known normal/veteran mask, and the schedule builder
+expands that mask into separate normal and veteran candidate rows per
+content/reward family. Third, the native apply path uses the 14-bit schedule
+field as `RewardRotationContent` id and the trailing 32-bit field as the
+`RewardRotationItem`/`Essence`/`Modifier` lookup id; the prior writer sent
+content id first and count/value last, so the client could receive rows without
+being able to resolve visible reward entries. `ServerRewardRotationScheduleArray`
+now writes the native apply order and generated rows put the catalog row id in
+the trailing lookup field. This restores display-eligible level-50 rows without
+claiming exact retail per-content selection parity. The full
+`NexusForever.Game.Tests` project now passes `2770/2770` with the corrected
+packet model, reward schedule path, and item-salvage manager contract.
+
 2026-06-04 Ghidra MCP recheck: `0x07CD` still registers only
 `ServerRewardRotationContentContext_ReadPayload` (`14008fcb0`) with no static
 apply handler; `Reward_SendRewardUpdateRequest` (`140636ba0`) sends only the
@@ -399,9 +420,9 @@ blocker text for the missing `0x07CD` apply helper and blocked `Flag` /
 throttle-slot assignment, so capture bundles preserve the mapped-only boundary.
 
 **Blocked:** per-content authoritative reward mapping precision, `0x07CD` apply/`Flag`
-consumer semantics, dynamic throttle-slot assignment, and full schedule filter parity
-(player level/difficulty). Next evidence source is a retail `0x07CD` capture or
-dynamic breakpoint on the runtime apply dispatch.
+consumer semantics, dynamic throttle-slot assignment, and exact retail
+difficulty/content reward selection. Next evidence source is a retail `0x07CD`
+capture or dynamic breakpoint on the runtime apply dispatch.
 
 ### F-008 - Crafting / Tradeskill - PARTIAL (12/12 handlers functional)
 **All 12 client handlers complete** with proper request/response cycles.
@@ -472,17 +493,20 @@ member-flag update after in-memory ready/has-set-ready clears, and the world
 handler always emits `ServerGroupReadyCheckStatusUpdate` including status `0`
 for pending/cleared state.
 
-The 2026-06-06 live CDB smoke confirmed the solo group-finder flow:
+The 2026-06-06 live CDB smokes confirmed the solo group-finder flow:
 `Matching_QueueDispatchFromUi` (`14076c830`) and
 `ClientMatchingQueue_WritePayload` (`140098a70`) hit before each
-`ClientMatchingQueue(0x05EF)` server receive; queue cancellation used
-`ClientMatchingQueueLeaveAll(0x05B4)`; server `ServerMatchingMatchReady(0x05CA)`
+`ClientMatchingQueue(0x05EF)` server receive; the widened helper pass also hit
+`Network_SendOpcodePayloadHelper` for `0x05EF` eleven times and `0x05B4` nine
+times, proving queue submit and leave-all are client-owned helper sends; queue
+cancellation used `ClientMatchingQueueLeaveAll(0x05B4)`; server
+`ServerMatchingMatchReady(0x05CA)`
 hit `MatchingManager_ApplyMatchingGameReady` (`1405c39f0`); ready prompt
 responses hit `MatchingManager_SendClientGameReadyResponse` (`1405c3500`) and
 arrived as `ClientMatchingGameReadyResponse(0x05C8)` false declines plus one
 true accept that completed `ServerMatchingMatchJoined`. The same pass produced no
-live witness for `0x05CF`, `0x0600`, `0x062A`, `0x0634`, or standalone non-zero
-`0x0718`.
+live witness for `0x05CF`, `0x0600`, `0x062A`, `0x0634`, `0x0719`, or
+standalone non-zero `0x0718`.
 
 **Validation/logging only (not full LFR backfill):**
 - `ClientMatchingMatchInitiateLookingForReplacementsHandler` / `ClientMatchingStopLookingForReplacementsHandler` validate in-progress match membership and native role mask `0..2`; they do not start a server replacement queue
@@ -551,8 +575,11 @@ holomarks, standards, recruitment subscriptions, boss-token inventory,
 warplot plug state incomplete. Needs decomp.
 The 2026-06-06 live Guild smoke verified server-side guild membership setup
 (`ClientChat` command -> `ServerGuildResult`/`Join`/`Roster`/`MemberChange`,
-DB guild `Nexus`/character `Joy Ner`) but produced no client CDB sender hits, so
-Guild opcode/prerequisite renames still require the widened elevated UI probe.
+DB guild `Nexus`/character `Joy Ner`). The widened elevated Guild UI CDB pass
+then captured live client-owned `ClientGuildBankMoneyTransaction` (`0x04A8`)
+deposit sends and a `ClientGuildOperation` (`0x04B1`) bank-management/log send.
+Buy-tab proof remains blocked because current guild state advertises influence
+`0` and does not yet model/persist guild influence or bank-tab count.
 The nearby `0x077E` packet contract is now mapped as a counted uint32 list
 rather than a fixed four-field payload; recruitment/pet producer semantics
 remain blocked.
@@ -1412,6 +1439,16 @@ License` for Exile, `Velocirex (Provisionary) License` for Dominion), rucksacks
 gear roll from the matching client Mk I-X item block (`82720`-`83311`) because
 the original server-side container relation is absent from the current
 Jabbithole/DataMapping imports.
+Item salvage now shares the client `ClientItemUseLootBag` (`0x015E`) item
+location/guid packet shape for non-loot-bag items, but routes through a
+dedicated `GlobalLootManager.TrySalvageItem` path. The server now generates
+from the runtime-owned `item_salvage` table, preflights delivery, deletes one
+source item with `ItemUpdateReason.Salvage`, and then delivers the generated
+reward; missing salvage data still returns `ItemCannotBeSalvaged`. The safe
+DataMapping import promotes `item_salvage_map.csv` exact rows as `purpose = 0`
+and `client_source_salvage_map.csv` client type/level rows as `purpose = 1`, so
+salvage no longer depends on high-range `item_loot`/`loot_group` fallback rows.
+Per-instance dynamic `NotSalvageable` flag parity remains unmapped.
 `ServerSupplySatchelAux` (`0x019A`) now uses the shared mapped reader shape
 (`6-bit value`, `uint32`) and `ServerCostumeItemAux` (`0x037F`) now uses its
 direct mapped reader shape (`14-bit value`, three `uint32` fields, two flags)

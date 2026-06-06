@@ -80,6 +80,10 @@ Artifacts:
 
 - CDB log: `artifacts/live-prereq-debug/group_raid_matching_cdb_20260606_002604.log`
 - WorldServer log: `Source/NexusForever.WorldServer/bin/Debug/net10.0/logs/NexusForever.WorldServer_20260605_44724.log`
+- Widened follow-up CDB log:
+  `artifacts/live-prereq-debug/group_raid_matching_cdb_admin_wide_20260606_110421.log`
+- Widened follow-up WorldServer log:
+  `Source/NexusForever.WorldServer/bin/Debug/net10.0/logs/NexusForever.WorldServer_20260606_31056.log`
 
 Result: useful live correlation, no source behavior change. The CDB probe hit
 `Matching_QueueDispatchFromUi` (`14076c830`) nine times and
@@ -92,6 +96,13 @@ selection. Queue cancellation used `ClientMatchingQueueLeaveAll(0x000005B4)`
 and the server responded with `ServerMatchingQueueResultAnnounce`,
 `ServerMatchingLeftQueue`, and refreshed `ServerMatchingQueueStatus`.
 
+The widened follow-up added generic send-helper filters and confirmed the
+client-owned helper path: `Network_SendOpcodePayloadHelper` hit for `0x05EF`
+eleven times and `0x05B4` nine times, while `ClientMatchingQueue_WritePayload`
+hit eleven times with `r8=0x05ef`. WorldServer receive rows around
+`46301..49464` show the same queue/leave-all pairs and queue result/status
+responses.
+
 The solo queue flow also produced three match-ready prompts. WorldServer emitted
 `ServerMatchingMatchReady(0x000005CA)`, CDB hit
 `MatchingManager_ApplyMatchingGameReady` (`1405c39f0`), then responding to the
@@ -101,12 +112,13 @@ false declines and one true accept; the accept path completed
 `ServerMatchingMatchJoined`. This upgrades the existing queue / match-ready /
 ready-response labels from static mapped to live-correlated.
 
-Negative evidence from this pass matters: no CDB hit or server log witness was
-captured for `ServerMatching0x05CF`, `ServerMatchingGroupMemberRoleSelection`
-(`0x0600`), `Client0x062A`, `Client0x0634`, standalone non-zero
-`ServerRaidQueueStatus` (`0x0718`), replacement LFR start/stop, or transfer into
+Negative evidence from these solo passes matters: no CDB hit or server log
+witness was captured for `ServerMatching0x05CF`,
+`ServerMatchingGroupMemberRoleSelection` (`0x0600`), `Client0x062A`,
+`Client0x0634`, standalone non-zero `ServerRaidQueueStatus` (`0x0718`),
+`ClientRaidInfoRequest` (`0x0719`), replacement LFR start/stop, or transfer into
 match. Those surfaces remain mapped-only / blocked and are not rename-grade
-from this solo queue smoke.
+from solo queue smoke.
 
 Latest shared one-flag matching cluster refresh (2026-06-05):
 

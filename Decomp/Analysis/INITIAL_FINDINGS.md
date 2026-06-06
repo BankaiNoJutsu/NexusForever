@@ -4963,6 +4963,15 @@ Ninety-first loot table and loot-bag follow-up implemented from this pass:
   before consuming the bag and dropping item-table loot. `ClientLootItem` also
   now accepts `OwnerUnitId == player.Guid`, which is required because inventory
   loot bags use the player as the loot owner rather than a visible corpse.
+- Salvage follow-up:
+  Live salvage UI requests use the same `ClientItemUseLootBag` item
+  location/guid shape for non-category-`138` items. The handler now routes those
+  through `GlobalLootManager.TrySalvageItem`, which consumes one source item with
+  `ItemUpdateReason.Salvage` only after runtime `item_salvage` reward generation
+  and delivery preflight succeed. The safe DataMapping import materialises
+  `item_salvage_map.csv` exact rows as `purpose = 0` and
+  `client_source_salvage_map.csv` client type/level rows as `purpose = 1`;
+  per-instance dynamic `NotSalvageable` flag semantics remain unmapped.
 - Superseded by later work:
   group/master/roll loot remained diagnostic-only at the end of this pass. The
   later ninety-fourth pass added the missing world-side group snapshot,
@@ -7086,9 +7095,10 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   (`1400a1e20`) is registered for opcode `0x07CA` with a 0x10-byte
   count-plus-pointer object and allocates `count * 0x14` before calling
   `RewardRotation_ScheduleRow_ReadPayload` (`1400a1d90`) for each row. That row
-  parser reads the exact schedule shape already inferred from
-  `RewardRotation_ApplyServerScheduleUpdate`: 32-bit content id, 14-bit
-  reward/key id, float duration, 8-bit reward type, and trailing 32-bit value.
+  parser reads the exact schedule field widths later named through
+  `RewardRotation_ApplyServerScheduleUpdate`: 32-bit duplicate key, 14-bit
+  content id, float duration, 8-bit reward type, and trailing 32-bit
+  `RewardRotationItem`/`Essence`/`Modifier` lookup id.
   `ServerRewardRotationEntryStateArray_ReadPayload` (`1400a1f80`) is
   registered for opcode `0x07C8` with the same 0x10-byte count-plus-pointer
   object and allocates `count * 0x14` before calling
@@ -7158,7 +7168,8 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   server message models for the mapped reward-rotation schedule array
   (`0x07CA`), entry-state array (`0x07C8`), and three single-row entry-state
   delta opcodes (`0x07C7`, `0x07C9`, `0x07CB`) using the field widths recovered
-  from `RewardRotation_ScheduleRow_ReadPayload` (`1400a1d90`) and
+  from `RewardRotation_ScheduleRow_ReadPayload` (`1400a1d90`),
+  `RewardRotation_ApplyServerScheduleUpdate` (`140636280`), and
   `RewardRotation_EntryStateRow_ReadPayload` (`1400a1ee0`). The three delta
   model names remain conservative/inference-backed; no reward-rotation schedule
   source, static grant, random essence grant, or entry-state mutation service was
@@ -7195,9 +7206,13 @@ Offline wiki quest/tradeskill/Galactic Archive implementation follow-up:
   (`140636280`): wire `Duration` is a float day count converted to FILETIME expiry
   (`days * 864000000000` plus fractional day remainder). NexusForever derives days
   from `GameFormula` `821` `Dataint0` hours / 24 (48h ? `2.0f` days), correlated with
-  the auction-house duration formula. `RewardRotationScheduleBuilder` emits one
-  item/essence/modifier row per content id via deterministic global-catalog selection
-  because client tables expose no `RewardRotationContent`?reward linkage. Entry-state
+  the auction-house duration formula. A 2026-06-06 Content Finder smoke corrected
+  the schedule row semantics: the 14-bit field is the `RewardRotationContent` id
+  used for the loaded bucket, while the trailing 32-bit field is the reward table
+  row id used by the Lua builders. `RewardRotationScheduleBuilder` emits
+  item/essence/modifier rows per content id via deterministic global-catalog
+  selection because client tables expose no `RewardRotationContent`?reward linkage.
+  Entry-state
   wire semantics are now mapped (`RewardRotation_ApplyEntryStateToLoadedContent`
   `14063a0e0`, `RewardRotation_HasEntryStateFlag` `14063aa90`): `State` is the
   reward-type lane (1/2/3) and `Value` is a grant bitmask (`0x1` item/modifier,
@@ -17886,6 +17901,17 @@ Prerequisite / guild-bank opcodes + Faction128 handler (2026-05-31, pass 47 - `N
   `Network_SendOpcodePayloadHelper` (`1403f4900`) and
   `Network_SendOpcodePayloadOrPackedHelper` (`1403f4740`) for the follow-up
   elevated UI pass.
+- **2026-06-06 widened Guild UI CDB:** `guild_cdb_admin_wide_20260606_105135.log`
+  hit two live `ClientGuildBankMoneyTransaction` sends (`0x04A8`) through
+  `Network_SendOpcodePayloadHelper` (`1403f4900`), with guild identity
+  `realm=1/id=1` and amounts `-1` and `-100` from deposit attempts. It also hit
+  `ClientGuildOperation` (`0x04B1`) through `Network_SendOpcodePayloadOrPackedHelper`
+  (`1403f4740`) with operation `0x1f` and data `1000`, matching the Guild Bank
+  management/log interaction path. World log `NexusForever.WorldServer_20260606_31056.log`
+  corroborates receives at lines 35203/35280 (`0x04A8`) and 35643 (`0x04B1`).
+  Buy-tab proof remains blocked because the client sees guild influence `0` and
+  disables Buy; current `GuildBase.Build()` does not yet model/persist influence
+  or bank-tab count beyond default `GuildData` fields.
 - **Mapped (item cluster readers on same registrar):**
   - **`0x0148` `ServerItemDelete`** ? **`ServerItemDelete_ReadPayload` (`14008d9c0`)**: uint64 guid + 6-bit reason.
   - **`0x017F` `ServerItemStackCountUpdate`** ? **`ServerItemStackCountUpdate_ReadPayload` (`14007fd50`)**: uint64 + uint32 count + 6-bit reason.
@@ -21876,6 +21902,12 @@ F-010 live group/raid/matching CDB probe (2026-06-06):
   Correlated WorldServer lines are in
   `Source/NexusForever.WorldServer/bin/Debug/net10.0/logs/NexusForever.WorldServer_20260605_44724.log`
   around lines `96169..97791`.
+  A widened follow-up with generic send-helper filters attached to PID `53860`
+  and logged to
+  `artifacts/live-prereq-debug/group_raid_matching_cdb_admin_wide_20260606_110421.log`;
+  correlated WorldServer rows are in
+  `Source/NexusForever.WorldServer/bin/Debug/net10.0/logs/NexusForever.WorldServer_20260606_31056.log`
+  around lines `46301..49464`.
 - **Positive evidence**:
   - `Matching_QueueDispatchFromUi` (`14076c830`) hit nine times, each followed
     by `ClientMatchingQueue_WritePayload` (`140098a70`) with `r8=0x05ef`.
@@ -21886,6 +21918,12 @@ F-010 live group/raid/matching CDB probe (2026-06-06):
     `ClientMatchingQueueLeaveAll(0x05B4)` followed by
     `ServerMatchingQueueResultAnnounce`, `ServerMatchingLeftQueue`, and
     `ServerMatchingQueueStatus`.
+  - The widened follow-up hit `Network_SendOpcodePayloadHelper` for
+    `0x05EF` eleven times and `0x05B4` nine times, plus
+    `ClientMatchingQueue_WritePayload` eleven times with `r8=0x05ef`.
+    This confirms both submit and leave-all are client-owned sends through the
+    mapped helper path, with matching server receives and queue result/status
+    responses.
   - Solo WorldStory queues produced match-ready prompts:
     WorldServer emitted `ServerMatchingMatchReady(0x05CA)`, CDB hit
     `MatchingManager_ApplyMatchingGameReady` (`1405c39f0`), ready prompt

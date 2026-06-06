@@ -34,7 +34,8 @@ client.
   token, and guild-prerequisite evidence. It watches mapped client send helpers
   `Network_SendOpcodePayloadHelper` and `Network_SendOpcodePayloadOrPackedHelper`.
 - `Run-GroupRaidCdbProbe.ps1`: group finder, matching, ready-response, raid
-  info, and group setting evidence.
+  info, and group setting evidence. It watches mapped client send helpers
+  `Network_SendOpcodePayloadHelper` and `Network_SendOpcodePayloadOrPackedHelper`.
 - `Run-PrereqCdbProbe.ps1`: account-item and prerequisite CDB breakpoints.
 - `Run-PrereqBreakpointProbe.ps1`: Python breakpoint harness for timed JSONL
   account-item/prerequisite captures.

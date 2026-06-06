@@ -179,6 +179,8 @@ $breakpoints = @(
     }
 )
 
+$groupRaidOpcodeCondition = '((@edx == 0x0411) + (@edx == 0x0412) + (@edx == 0x042e) + (@edx == 0x05b2) + (@edx == 0x05b4) + (@edx == 0x05b5) + (@edx == 0x05b6) + (@edx == 0x05c8) + (@edx == 0x05d1) + (@edx == 0x05d3) + (@edx == 0x05d5) + (@edx == 0x05da) + (@edx == 0x05ef) + (@edx == 0x05f3) + (@edx == 0x05f8) + (@edx == 0x05f9) + (@edx == 0x0602) + (@edx == 0x0606) + (@edx == 0x0617) + (@edx == 0x0624) + (@edx == 0x062a) + (@edx == 0x0634) + (@edx == 0x0719))'
+
 $commands = New-Object System.Collections.Generic.List[string]
 $commands.Add('sxi 406d1388')
 $commands.Add('.echo Nexus group/raid/matching CDB probe attached')
@@ -188,6 +190,12 @@ foreach ($breakpoint in $breakpoints) {
     $address = Format-BreakpointAddress -Offset ([UInt64]$breakpoint.Offset)
     $commands.Add(('bp {0} ".echo HIT {1}; {2}; gc"' -f $address, $breakpoint.Name, $breakpoint.Command))
 }
+
+$sendHelperAddress = Format-BreakpointAddress -Offset 0x3f4900
+$commands.Add(('bp {0} ".if {1} {{ .echo HIT Network_SendOpcodePayloadHelper_GroupRaidMatchingOpcode; r; db @r8 L40; dq @rsp L10; k; gc }} .else {{ gc }}"' -f $sendHelperAddress, $groupRaidOpcodeCondition))
+
+$sendOrPackedHelperAddress = Format-BreakpointAddress -Offset 0x3f4740
+$commands.Add(('bp {0} ".if {1} {{ .echo HIT Network_SendOpcodePayloadOrPackedHelper_GroupRaidMatchingOpcode; r; db @r8 L40; dq @rsp L10; k; gc }} .else {{ gc }}"' -f $sendOrPackedHelperAddress, $groupRaidOpcodeCondition))
 
 $commands.Add('g')
 $commands | Set-Content -LiteralPath $CommandPath -Encoding ASCII

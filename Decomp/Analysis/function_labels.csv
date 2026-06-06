@@ -102,7 +102,7 @@ WildStar64.exe,1400f06f0,Lua_InsertStringIntPair,Resolves a key string and inser
 WildStar64.exe,14009ab70,Marketplace_AuctionCancel_WritePayload,Serialises world opcode 0x0094 ClientAuctionCancel as 64-bit auction id plus 18-bit Item2 id inside a registered 0x10-byte object.
 WildStar64.exe,14009b500,ClientFriendshipRemoveByName_WritePayload,Serialises world opcode 0x03C2 ClientFriendshipRemoveByName as name and realm wide strings followed by a 4-bit FriendshipType.
 WildStar64.exe,14009b700,ClientFriendshipSetNoteByName_WritePayload,Serialises world opcode 0x03C8 ClientFriendshipSetNoteByName as name, realm, and note wide strings.
-WildStar64.exe,1400a1d90,RewardRotation_ScheduleRow_ReadPayload,Reads one 0x14-byte reward-rotation schedule row as 32-bit content id, 14-bit reward/key id, float duration, 8-bit reward type, and trailing 32-bit value.
+WildStar64.exe,1400a1d90,RewardRotation_ScheduleRow_ReadPayload,Reads one 0x14-byte reward-rotation schedule row as 32-bit duplicate key, 14-bit content id, float duration, 8-bit reward type, and trailing 32-bit reward-table lookup id.
 WildStar64.exe,1400a1e20,ServerRewardRotationScheduleArray_ReadPayload,Reads server opcode 0x07CA as a 32-bit count plus pointer-backed 0x14-byte reward-rotation schedule rows via RewardRotation_ScheduleRow_ReadPayload.
 WildStar64.exe,1400a1ee0,RewardRotation_EntryStateRow_ReadPayload,Reads one 0x14-byte reward-rotation entry-state row as a 3-bit leading field, two 32-bit ids, an 8-bit state flag, and a trailing 32-bit value.
 WildStar64.exe,1400a2040,RewardRotation_EntryStateDelta_ReadPayload,Null-guard thunk registered as the reader for server delta opcodes 0x07C7/0x07C9/0x07CB; validates param_3 non-null then tail-calls RewardRotation_EntryStateRow_ReadPayload.
