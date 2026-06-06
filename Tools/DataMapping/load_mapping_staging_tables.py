@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Load curated mapping CSV outputs into nf_map_* tables in the world database.
+Load curated mapping CSV outputs into nf_map_* tables in the authoring database.
 
 The nf_map_* tables are staging/reference tables. Loading them into the real
-world database is safe because they are not consumed by runtime code unless a
-future feature explicitly reads them.
+runtime world database is no longer the default; clean deployments should not
+need these tables at all.
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ from typing import Dict, Iterable, Optional, Sequence
 
 
 DEFAULT_MYSQL = r"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
+DEFAULT_MAPPING_DB = "nexus_forever_mapping"
 SPECIAL_CSV_NAMES = {
     "nf_map_world_entity_candidate": "world_entity_candidate.csv",
     "nf_map_world_entity_stats_candidate": "world_entity_stats_candidate.csv",
@@ -67,6 +68,12 @@ def to_int(value, default: int = 0) -> int:
 
 def sql_string(value: str) -> str:
     return "'" + str(value).replace("\\", "\\\\").replace("'", "''") + "'"
+
+
+def sql_identifier(value: str) -> str:
+    if not re.fullmatch(r"[A-Za-z0-9_]+", value):
+        raise ValueError(f"Unsafe MySQL identifier {value!r}. Use letters, numbers, and underscores only.")
+    return f"`{value}`"
 
 
 def mysql_command(args: argparse.Namespace, extra: Optional[Sequence[str]] = None) -> list[str]:
@@ -140,6 +147,14 @@ def get_local_infile(args: argparse.Namespace) -> str:
 
 def set_local_infile(args: argparse.Namespace, enabled: bool) -> None:
     mysql_execute(args, args.world_db, f"SET GLOBAL local_infile={1 if enabled else 0};")
+
+
+def ensure_mapping_database(args: argparse.Namespace) -> None:
+    mysql_execute(
+        args,
+        "information_schema",
+        f"CREATE DATABASE IF NOT EXISTS {sql_identifier(args.mapping_db)} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;",
+    )
 
 
 def parse_schema(schema_sql: str) -> list[TableSpec]:
@@ -372,7 +387,7 @@ def build_summary(args: argparse.Namespace, results: Sequence[dict[str, object]]
     missing_columns = sum(1 for result in results if result.get("status") == "missing_columns")
     return {
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "world_db": args.world_db,
+        "mapping_db": args.mapping_db,
         "schema": str(args.schema),
         "output_dir": str(args.output_dir),
         "mode": "apply" if args.apply else "dry-run",
@@ -404,7 +419,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--port", type=int, default=3306)
     parser.add_argument("--user", default="bankai")
     parser.add_argument("--password", default="bankai")
-    parser.add_argument("--world-db", default="nexus_forever_world")
+    parser.add_argument("--mapping-db", default=DEFAULT_MAPPING_DB, help="Authoring database that will hold nf_map_* staging tables.")
+    parser.add_argument("--world-db", default="", help="Deprecated alias for --mapping-db.")
     parser.add_argument("--only-table", default="", help="Comma-separated nf_map_* tables to load.")
     parser.add_argument("--skip-table", default="", help="Comma-separated nf_map_* tables to skip.")
     parser.add_argument("--keep-temp", action="store_true")
@@ -422,6 +438,13 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     args.report_out = (
         args.report_out or args.output_dir / "mapping_staging_load_report.json"
     ).resolve()
+    if args.world_db:
+        print(
+            "warning: --world-db is deprecated for staging loads; use --mapping-db instead.",
+            file=sys.stderr,
+        )
+        args.mapping_db = args.world_db
+    args.world_db = args.mapping_db
     return args
 
 
@@ -436,6 +459,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     tables = select_tables(args, parse_schema(args.schema.read_text(encoding="utf-8")))
     if args.apply:
+        ensure_mapping_database(args)
         results = load_tables(args, tables)
     else:
         results = dry_run_tables(args, tables)

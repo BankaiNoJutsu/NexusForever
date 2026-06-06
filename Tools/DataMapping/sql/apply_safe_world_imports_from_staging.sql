@@ -2,6 +2,7 @@
 --
 -- Prerequisite:
 --   python Tools\DataMapping\load_mapping_staging_tables.py --apply
+--   This loads nf_map_* into the authoring database nexus_forever_mapping.
 --
 -- Run:
 --   Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql |
@@ -31,131 +32,74 @@ SET @nf_safe_import_allow_unsafe_northern_wilds_spawns := IFNULL(@nf_safe_import
 SET @nf_entity_id_base := IFNULL(@nf_entity_id_base, 1000000000);
 SET @nf_entity_id_max := @nf_entity_id_base + 999999999;
 
-CREATE TABLE IF NOT EXISTS creature_loot (
-  creatureId INT UNSIGNED NOT NULL,
-  itemId INT UNSIGNED NOT NULL,
-  chance DECIMAL(12,8) NOT NULL DEFAULT 0,
-  dropTimes INT UNSIGNED NOT NULL DEFAULT 0,
-  aggregateDropSum INT UNSIGNED NOT NULL DEFAULT 0,
-  aggregateDropCount INT UNSIGNED NOT NULL DEFAULT 0,
-  gameVersion INT UNSIGNED NOT NULL DEFAULT 0,
-  sourceDropId INT UNSIGNED NOT NULL DEFAULT 0,
-  versionedItemDropAggregateId INT UNSIGNED NOT NULL DEFAULT 0,
-  versionedCreatureDropAggregateId INT UNSIGNED NOT NULL DEFAULT 0,
-  lastSeenIn INT UNSIGNED NOT NULL DEFAULT 0,
-  matchStatus VARCHAR(32) NOT NULL DEFAULT '',
-  sourceName VARCHAR(255) NOT NULL DEFAULT '',
-  itemName VARCHAR(255) NOT NULL DEFAULT '',
-  PRIMARY KEY (creatureId, itemId),
-  KEY ix_creature_loot_item (itemId),
-  KEY ix_creature_loot_chance (chance)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+DROP TEMPORARY TABLE IF EXISTS tmp_nf_required_runtime_tables;
+CREATE TEMPORARY TABLE tmp_nf_required_runtime_tables (
+  table_name VARCHAR(128) NOT NULL PRIMARY KEY
+) ENGINE=Memory;
 
-CREATE TABLE IF NOT EXISTS loot_group (
-  `id` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `parentId` BIGINT UNSIGNED NULL,
-  `probability` FLOAT NOT NULL DEFAULT 100,
-  `minDrop` INT UNSIGNED NOT NULL DEFAULT 0,
-  `maxDrop` INT UNSIGNED NOT NULL DEFAULT 0,
-  `conditionType` INT UNSIGNED NOT NULL DEFAULT 0,
-  `condition` INT UNSIGNED NOT NULL DEFAULT 0,
-  `comment` VARCHAR(200) NULL DEFAULT '',
-  PRIMARY KEY (`id`),
-  KEY `IX_loot_group_parentId` (`parentId`),
-  CONSTRAINT `FK__loot_group_parentId__loot_group_id`
-    FOREIGN KEY (`parentId`) REFERENCES loot_group (`id`)
-    ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT INTO tmp_nf_required_runtime_tables (table_name) VALUES
+  ('creature_loot'),
+  ('loot_group'),
+  ('entity_loot'),
+  ('item_loot'),
+  ('loot_item'),
+  ('item_salvage'),
+  ('creature_info_property'),
+  ('creature_info_stat'),
+  ('entity'),
+  ('entity_stats'),
+  ('entity_vendor'),
+  ('entity_vendor_category'),
+  ('entity_vendor_item');
 
-CREATE TABLE IF NOT EXISTS entity_loot (
-  `id` INT UNSIGNED NOT NULL DEFAULT 0,
-  `lootGroupId` BIGINT UNSIGNED NOT NULL,
-  `comment` VARCHAR(200) NULL DEFAULT '',
-  PRIMARY KEY (`id`, `lootGroupId`),
-  KEY `IX_entity_loot_lootGroupId` (`lootGroupId`),
-  CONSTRAINT `FK_entity_loot_loot_group_lootGroupId`
-    FOREIGN KEY (`lootGroupId`) REFERENCES loot_group (`id`)
-    ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS item_loot (
-  `id` INT UNSIGNED NOT NULL DEFAULT 0,
-  `lootGroupId` BIGINT UNSIGNED NOT NULL,
-  `comment` VARCHAR(200) NULL DEFAULT '',
-  PRIMARY KEY (`id`, `lootGroupId`),
-  KEY `IX_item_loot_lootGroupId` (`lootGroupId`),
-  CONSTRAINT `FK_item_loot_loot_group_lootGroupId`
-    FOREIGN KEY (`lootGroupId`) REFERENCES loot_group (`id`)
-    ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS loot_item (
-  `id` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  `type` INT UNSIGNED NOT NULL DEFAULT 0,
-  `staticId` INT UNSIGNED NOT NULL DEFAULT 0,
-  `probability` FLOAT NOT NULL DEFAULT 100,
-  `minCount` INT UNSIGNED NOT NULL DEFAULT 0,
-  `maxCount` INT UNSIGNED NOT NULL DEFAULT 0,
-  `comment` VARCHAR(200) NULL DEFAULT '',
-  PRIMARY KEY (`id`, `type`, `staticId`),
-  CONSTRAINT `FK__loot_item_id__loot_group_id`
-    FOREIGN KEY (`id`) REFERENCES loot_group (`id`)
-    ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS item_salvage (
-  `purpose` TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  `sourceItemId` INT UNSIGNED NOT NULL DEFAULT 0,
-  `sourceItem2TypeId` INT UNSIGNED NOT NULL DEFAULT 0,
-  `sourceLevel` INT UNSIGNED NOT NULL DEFAULT 0,
-  `type` INT UNSIGNED NOT NULL DEFAULT 0,
-  `staticId` INT UNSIGNED NOT NULL DEFAULT 0,
-  `probability` FLOAT NOT NULL DEFAULT 100,
-  `minCount` INT UNSIGNED NOT NULL DEFAULT 0,
-  `maxCount` INT UNSIGNED NOT NULL DEFAULT 0,
-  `comment` VARCHAR(200) NOT NULL DEFAULT '',
-  PRIMARY KEY (`purpose`, `sourceItemId`, `sourceItem2TypeId`, `sourceLevel`, `type`, `staticId`),
-  KEY `ix_item_salvage_exact_item` (`purpose`, `sourceItemId`),
-  KEY `ix_item_salvage_type_level` (`purpose`, `sourceItem2TypeId`, `sourceLevel`),
-  KEY `ix_item_salvage_static` (`type`, `staticId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS creature_info_property (
-  `id` INT UNSIGNED NOT NULL,
-  `property` TINYINT UNSIGNED NOT NULL,
-  `value` FLOAT NOT NULL,
-  PRIMARY KEY (`id`, `property`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-SET @hasOldCreatureInfoPropertyValue = (
-  SELECT COUNT(*)
-  FROM information_schema.columns
-  WHERE table_schema = DATABASE()
-    AND table_name = 'creature_info_property'
-    AND column_name = 'alue'
+SET @nf_missing_runtime_tables := (
+  SELECT GROUP_CONCAT(r.table_name ORDER BY r.table_name SEPARATOR ', ')
+  FROM tmp_nf_required_runtime_tables r
+  LEFT JOIN information_schema.tables t
+    ON t.table_schema = DATABASE()
+   AND t.table_name = r.table_name
+  WHERE t.table_name IS NULL
 );
-SET @hasCreatureInfoPropertyValue = (
-  SELECT COUNT(*)
-  FROM information_schema.columns
-  WHERE table_schema = DATABASE()
-    AND table_name = 'creature_info_property'
-    AND column_name = 'value'
+SET @nf_missing_runtime_tables_sql := IF(
+  @nf_missing_runtime_tables IS NULL,
+  'DO 0',
+  CONCAT('SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = ', QUOTE(LEFT(CONCAT('Missing runtime table(s). Run EF migrations first: ', @nf_missing_runtime_tables), 128)))
 );
-SET @repairCreatureInfoPropertyValue = IF(
-  @hasOldCreatureInfoPropertyValue > 0 AND @hasCreatureInfoPropertyValue = 0,
-  'ALTER TABLE creature_info_property CHANGE COLUMN `alue` `value` float NOT NULL',
-  'DO 0'
-);
-PREPARE repairCreatureInfoPropertyValueStatement FROM @repairCreatureInfoPropertyValue;
-EXECUTE repairCreatureInfoPropertyValueStatement;
-DEALLOCATE PREPARE repairCreatureInfoPropertyValueStatement;
+PREPARE nfMissingRuntimeTablesStatement FROM @nf_missing_runtime_tables_sql;
+EXECUTE nfMissingRuntimeTablesStatement;
+DEALLOCATE PREPARE nfMissingRuntimeTablesStatement;
 
-CREATE TABLE IF NOT EXISTS creature_info_stat (
-  `id` INT UNSIGNED NOT NULL,
-  `stat` TINYINT UNSIGNED NOT NULL,
-  `value` FLOAT NOT NULL,
-  PRIMARY KEY (`id`, `stat`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+DROP TEMPORARY TABLE IF EXISTS tmp_nf_required_mapping_tables;
+CREATE TEMPORARY TABLE tmp_nf_required_mapping_tables (
+  table_name VARCHAR(128) NOT NULL PRIMARY KEY
+) ENGINE=Memory;
+
+INSERT INTO tmp_nf_required_mapping_tables (table_name) VALUES
+  ('nf_map_world_entity_candidate'),
+  ('nf_map_world_entity_stats_candidate'),
+  ('nf_map_creature'),
+  ('nf_map_vendor_item'),
+  ('nf_map_creature_loot'),
+  ('nf_map_item_container'),
+  ('nf_map_item_salvage'),
+  ('nf_map_client_source_salvage');
+
+SET @nf_missing_mapping_tables := (
+  SELECT GROUP_CONCAT(r.table_name ORDER BY r.table_name SEPARATOR ', ')
+  FROM tmp_nf_required_mapping_tables r
+  LEFT JOIN information_schema.tables t
+    ON t.table_schema = 'nexus_forever_mapping'
+   AND t.table_name = r.table_name
+  WHERE t.table_name IS NULL
+);
+SET @nf_missing_mapping_tables_sql := IF(
+  @nf_missing_mapping_tables IS NULL,
+  'DO 0',
+  CONCAT('SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = ', QUOTE(LEFT(CONCAT('Missing authoring staging table(s). Run load_mapping_staging_tables.py --apply: ', @nf_missing_mapping_tables), 128)))
+);
+PREPARE nfMissingMappingTablesStatement FROM @nf_missing_mapping_tables_sql;
+EXECUTE nfMissingMappingTablesStatement;
+DEALLOCATE PREPARE nfMissingMappingTablesStatement;
 
 SET @nf_truncate_loot_sql := IF(
   @nf_safe_import_replace_existing = 1,
@@ -191,7 +135,7 @@ SELECT
   CAST(IFNULL(c.ActivePropId, 0) AS UNSIGNED) AS activePropId,
   CAST(IFNULL(c.WorldSocketId, 0) AS UNSIGNED) AS worldSocketId,
   CAST(IFNULL(c.Mode, 0) AS UNSIGNED) AS mode
-FROM nf_map_world_entity_candidate c
+FROM nexus_forever_mapping.nf_map_world_entity_candidate c
 WHERE @nf_safe_import_entity_spawns = 1
   AND (
     c.match_status IN ('unique_name', 'scored_name', 'reviewed')
@@ -200,7 +144,7 @@ WHERE @nf_safe_import_entity_spawns = 1
       AND c.match_status = 'ambiguous_name'
       AND EXISTS (
         SELECT 1
-        FROM nf_map_creature m
+        FROM nexus_forever_mapping.nf_map_creature m
         WHERE m.jabbithole_creature_id = c.jabbithole_creature_id
           AND m.creature2_id = c.Creature
           AND TRIM(LOWER(IFNULL(m.source_name, ''))) = TRIM(LOWER(IFNULL(m.client_name, '')))
@@ -280,7 +224,7 @@ SET @nfJabbitholeCoordinateImportSql := IF(
           NULLIF(c.worldzoneid, 0),
           (
             SELECT cand.Area
-            FROM nf_map_world_entity_candidate cand
+            FROM nexus_forever_mapping.nf_map_world_entity_candidate cand
             WHERE cand.World = @nf_safe_import_entity_spawn_world
               AND cand.Area > 0
               AND cand.X BETWEEN co.x - @nf_safe_import_jabbithole_creature_coordinate_area_match_radius AND co.x + @nf_safe_import_jabbithole_creature_coordinate_area_match_radius
@@ -315,7 +259,7 @@ SET @nfJabbitholeCoordinateImportSql := IF(
         CAST(0 AS UNSIGNED) AS mode
       FROM jabbithole.coordinates co
       JOIN jabbithole.creatures c ON c.id = co.location_id
-      JOIN nf_map_creature m ON m.jabbithole_creature_id = c.id
+      JOIN nexus_forever_mapping.nf_map_creature m ON m.jabbithole_creature_id = c.id
       WHERE co.location_type = ''Creature''
         AND c.zone_id = @nf_safe_import_jabbithole_creature_coordinate_zone
         AND (IFNULL(c.worldid, 0) = 0 OR c.worldid = @nf_safe_import_entity_spawn_world)
@@ -384,8 +328,8 @@ SELECT
   CAST(s.Stat AS UNSIGNED),
   s.Value
 FROM tmp_nf_world_entity_import i
-JOIN nf_map_world_entity_stats_candidate s ON s.source_coordinate_id = i.source_coordinate_id
-JOIN nf_map_creature m ON m.jabbithole_creature_id = s.jabbithole_creature_id AND m.creature2_id = i.creature
+JOIN nexus_forever_mapping.nf_map_world_entity_stats_candidate s ON s.source_coordinate_id = i.source_coordinate_id
+JOIN nexus_forever_mapping.nf_map_creature m ON m.jabbithole_creature_id = s.jabbithole_creature_id AND m.creature2_id = i.creature
 WHERE s.Stat BETWEEN 0 AND 255
   AND (s.Stat <> 0 OR (IFNULL(m.template_base_health, 0) > 0 AND ABS(s.Value - m.template_base_health) < 0.01))
 ON DUPLICATE KEY UPDATE
@@ -411,7 +355,7 @@ SET @nfJabbitholeCoordinateStatsSql := IF(
     FROM tmp_nf_world_entity_import i
     JOIN jabbithole.coordinates co ON co.id = i.source_coordinate_id
     JOIN jabbithole.creatures c ON c.id = co.location_id
-    JOIN nf_map_creature m ON m.jabbithole_creature_id = c.id AND m.creature2_id = i.creature
+    JOIN nexus_forever_mapping.nf_map_creature m ON m.jabbithole_creature_id = c.id AND m.creature2_id = i.creature
     JOIN (
       SELECT 0 AS stat
       UNION ALL SELECT 10
@@ -455,7 +399,7 @@ FROM (
       PARTITION BY v.creature2_id, v.item2_id
       ORDER BY IFNULL(v.game_version, 0) DESC, v.vendor_item_source_id DESC
     ) AS import_rank
-  FROM nf_map_vendor_item v
+  FROM nexus_forever_mapping.nf_map_vendor_item v
   WHERE v.match_status IN ('unique_name', 'scored_name', 'reviewed')
     AND IFNULL(v.creature2_id, 0) > 0
     AND IFNULL(v.item2_id, 0) > 0
@@ -568,7 +512,7 @@ FROM (
       PARTITION BY l.creature2_id, l.item2_id
       ORDER BY IFNULL(l.game_version, 0) DESC, l.source_drop_id DESC
     ) AS import_rank
-  FROM nf_map_creature_loot l
+  FROM nexus_forever_mapping.nf_map_creature_loot l
   WHERE l.match_status IN ('unique_name', 'scored_name', 'reviewed')
     AND IFNULL(l.creature2_id, 0) > 0
     AND IFNULL(l.item2_id, 0) > 0
@@ -698,7 +642,7 @@ SELECT
   container_item2_id AS itemId,
   CAST(@nf_item_loot_group_base + container_item2_id AS UNSIGNED) AS lootGroupId,
   LEFT(CONCAT('DataMapping item_container: ', IFNULL(MIN(NULLIF(container_item_name, '')), CONCAT('Item2 ', container_item2_id))), 200) AS comment
-FROM nf_map_item_container
+FROM nexus_forever_mapping.nf_map_item_container
 WHERE IFNULL(container_item2_id, 0) > 0
   AND IFNULL(contained_item2_id, 0) > 0
 GROUP BY container_item2_id;
@@ -714,7 +658,7 @@ SELECT
   contained_item2_id AS containedItemId,
   IFNULL(NULLIF(MIN(contained_item_name), ''), CONCAT('Item2 ', contained_item2_id)) AS containedItemName,
   SUM(GREATEST(IFNULL(drop_times, 0), 1)) AS itemWeight
-FROM nf_map_item_container
+FROM nexus_forever_mapping.nf_map_item_container
 WHERE IFNULL(container_item2_id, 0) > 0
   AND IFNULL(contained_item2_id, 0) > 0
 GROUP BY container_item2_id, contained_item2_id;
@@ -802,7 +746,7 @@ SELECT
   IFNULL(MIN(NULLIF(original_item_name, '')), CONCAT('Item2 ', original_item2_id)) AS sourceItemName,
   IFNULL(MIN(NULLIF(salvaged_item_name, '')), CONCAT('Item2 ', salvaged_item2_id)) AS salvagedItemName,
   SUM(GREATEST(IFNULL(drop_times, 0), 1)) AS itemWeight
-FROM nf_map_item_salvage
+FROM nexus_forever_mapping.nf_map_item_salvage
 WHERE IFNULL(original_item2_id, 0) > 0
   AND IFNULL(salvaged_item2_id, 0) > 0
 GROUP BY original_item2_id, salvaged_item2_id;
@@ -859,7 +803,7 @@ SELECT
   1 AS minCount,
   1 AS maxCount,
   LEFT(CONCAT('DataMapping item_salvage client type-level: ', IFNULL(MIN(NULLIF(item2TypeId_label, '')), CONCAT('Item2Type ', item2TypeId)), ' level ', level), 200) AS comment
-FROM nf_map_client_source_salvage
+FROM nexus_forever_mapping.nf_map_client_source_salvage
 WHERE IFNULL(item2TypeId, 0) > 0
   AND IFNULL(level, 0) > 0
 GROUP BY item2TypeId, level;
@@ -900,7 +844,7 @@ WHERE @nf_safe_import_replace_existing = 1
 -- below.
 DELETE p
 FROM creature_info_property p
-JOIN nf_map_creature m ON m.creature2_id = p.id
+JOIN nexus_forever_mapping.nf_map_creature m ON m.creature2_id = p.id
 WHERE p.`property` = 7
   AND m.match_status IN ('unique_name', 'scored_name', 'reviewed')
   AND IFNULL(m.creature2_id, 0) > 0
@@ -914,13 +858,13 @@ CREATE TEMPORARY TABLE tmp_nf_creature_info_property_candidate ENGINE=InnoDB AS
 SELECT creature2_id AS id, 7 AS `property`, CAST(CASE
     WHEN IFNULL(template_base_health, 0) > 0 THEN template_base_health
   END AS DECIMAL(18,6)) AS `value`
-FROM nf_map_creature
+FROM nexus_forever_mapping.nf_map_creature
 WHERE match_status IN ('unique_name', 'scored_name', 'reviewed')
   AND IFNULL(creature2_id, 0) > 0
   AND IFNULL(template_base_health, 0) > 0
 UNION ALL
 SELECT creature2_id AS id, 41 AS `property`, CAST(shield AS DECIMAL(18,6)) AS `value`
-FROM nf_map_creature
+FROM nexus_forever_mapping.nf_map_creature
 WHERE match_status IN ('unique_name', 'scored_name', 'reviewed')
   AND IFNULL(creature2_id, 0) > 0
   AND IFNULL(shield, 0) > 0;
@@ -928,7 +872,7 @@ WHERE match_status IN ('unique_name', 'scored_name', 'reviewed')
 DROP TEMPORARY TABLE IF EXISTS tmp_nf_creature_info_stat_candidate;
 CREATE TEMPORARY TABLE tmp_nf_creature_info_stat_candidate ENGINE=InnoDB AS
 SELECT creature2_id AS id, 21 AS `stat`, CAST(interrupt_armor_max AS DECIMAL(18,6)) AS `value`
-FROM nf_map_creature
+FROM nexus_forever_mapping.nf_map_creature
 WHERE match_status IN ('unique_name', 'scored_name', 'reviewed')
   AND IFNULL(creature2_id, 0) > 0
   AND IFNULL(interrupt_armor_max, 0) > 0;

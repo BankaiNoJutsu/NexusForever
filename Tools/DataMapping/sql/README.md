@@ -7,9 +7,10 @@ The staging/source databases are development-only. World/Auth runtime code must
 not query `wildstar_client`, `jabbithole`, or `nf_map_*`; it should consume only
 the runtime-owned tables populated by these imports.
 
-Fresh machines should use the checked-in runtime seed SQL. It contains the
-already-promoted runtime rows and does not require running the mapper or loading
-`nf_map_*` staging:
+Fresh machines should use the checked-in runtime seed SQL after EF migrations
+and the official world database import. It contains the already-promoted
+runtime rows and does not require running the mapper, loading `nf_map_*`
+staging, or creating `jabbithole`/`wildstar_client` reference databases:
 
 ```powershell
 Get-Content -Raw Tools\DataMapping\sql\runtime_world_seed.sql |
@@ -29,6 +30,8 @@ the official world database import. It then imports
 present. Use
 `-SkipRuntimeWorldSeedImport` to skip these runtime seed overlays, or
 `-RuntimeWorldSeedPath` to point setup at a different primary seed.
+Normal setup is runtime-only by default. Pass `-EnableDataMappingAuthoring`
+only on machines that need the reference databases for mapper regeneration.
 
 Auth-database seed/cleanup SQL is intentionally kept outside this world-data
 folder. `Tools\Setup\sql\runtime_auth_seed.sql` is imported into
@@ -195,12 +198,17 @@ Authoring workflow from the repository root, only when regenerating reviewed
 mapping data:
 
 ```powershell
+.\Tools\Setup\Initialize-NexusForever.ps1 -EnableDataMappingAuthoring -PromptForRootPassword
 python Tools\DataMapping\map_wildstar_data.py --include-spline-candidates
 python Tools\DataMapping\load_mapping_staging_tables.py --apply
 Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql |
   & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
+
+`load_mapping_staging_tables.py` loads `nf_map_*` into
+`nexus_forever_mapping` by default. The promotion SQL reads from that authoring
+database and writes only native runtime rows into `nexus_forever_world`.
 
 Spline candidates are still audit-only: the mapper scores full `Spline2` path
 geometry, records start/path distances, and uses runtime `entity`/`entity_spline`
@@ -388,6 +396,12 @@ Get-Content -Raw Tools\DataMapping\sql\verify_safe_world_imports.sql |
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
 
+Use `verify_safe_world_imports.sql` for clean runtime deployments. It does not
+query staging/reference tables and reports mismatches when `nf_map_*`,
+`nexus_forever_mapping`, `jabbithole`, or `wildstar_client` are present. Use
+`verify_authoring_safe_world_imports.sql` on authoring machines after applying
+staging-backed imports.
+
 ## Verified Run - 2026-05-25
 
 Smoke mapping from the repository root:
@@ -409,7 +423,7 @@ python Tools\DataMapping\load_mapping_staging_tables.py --apply
 ```
 
 Result: loaded `95/95` `nf_map_*` tables from `Tools\DataMapping\output` into
-`nexus_forever_world` with `replace_existing=true`, including `732694`
+the authoring staging database with `replace_existing=true`, including `732694`
 `nf_map_world_entity_candidate` rows and `2442855`
 `nf_map_world_entity_stats_candidate` rows. `local_infile` was restored after
 the load.
@@ -421,14 +435,15 @@ Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql
   & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 
-Get-Content -Raw Tools\DataMapping\sql\verify_safe_world_imports.sql |
+Get-Content -Raw Tools\DataMapping\sql\verify_authoring_safe_world_imports.sql |
   & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
 
-Verification reported `95` `nf_map_*` staging tables, `17520` safe vendor rows,
-`460121` safe loot rows, `3795` mapped creature runtime loot groups, `17612`
-safe creature rows, and `23865` safe item-container rows. Rider's Reef cleanup
+Authoring verification reported `95` `nf_map_*` staging tables, `17520` safe
+vendor rows, `460121` safe loot rows, `3795` mapped creature runtime loot
+groups, `17612` safe creature rows, and `23865` safe item-container rows.
+Rider's Reef cleanup
 checks reported `riders_reef_beacon_rows=0`,
 `riders_reef_wrong_faction_turrets=0`, and
 `riders_reef_wrong_type_turrets=0`; the remaining world `3460` turret rows were

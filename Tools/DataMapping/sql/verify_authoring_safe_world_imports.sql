@@ -1,6 +1,6 @@
--- Runtime-only verification for promoted mapped world-data imports.
--- This verifier is safe for clean deployments and does not require nf_map_*,
--- jabbithole, or wildstar_client.
+-- Authoring verification for safe mapped world-data imports.
+-- Requires nf_map_* staging tables in nexus_forever_mapping plus the
+-- Jabbithole reference database.
 
 USE `nexus_forever_world`;
 
@@ -288,15 +288,38 @@ UNION ALL SELECT 'expected_store_offer_group_laughingws_shades_eve_10_mismatch',
 UNION ALL SELECT 'expected_store_offer_group_laughingws_winterfest_21_mismatch', IF(COUNT(*) = 21, 0, 1) FROM store_offer_group WHERE id IN (1839, 1841, 1899, 2074, 2076, 2077, 2091, 2968, 2969, 2970, 2971, 2972, 2985, 3312, 3315, 3318, 3327, 3328, 3329, 3330, 3332)
 UNION ALL SELECT 'creature_info_property', COUNT(*) FROM creature_info_property
 UNION ALL SELECT 'creature_info_stat', COUNT(*) FROM creature_info_stat
-UNION ALL SELECT 'runtime_loot_group_creatures', COUNT(DISTINCT creatureId) FROM creature_loot WHERE chance > 0
-UNION ALL SELECT 'runtime_world_nf_map_tables', COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE 'nf_map_%'
-UNION ALL SELECT 'expected_runtime_world_nf_map_tables_0_mismatch', IF(COUNT(*) = 0, 0, 1) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE 'nf_map_%'
-UNION ALL SELECT 'reference_schema_jabbithole_present', COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = 'jabbithole'
-UNION ALL SELECT 'expected_reference_schema_jabbithole_absent_mismatch', IF(COUNT(*) = 0, 0, 1) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = 'jabbithole'
-UNION ALL SELECT 'reference_schema_wildstar_client_present', COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = 'wildstar_client'
-UNION ALL SELECT 'expected_reference_schema_wildstar_client_absent_mismatch', IF(COUNT(*) = 0, 0, 1) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = 'wildstar_client'
-UNION ALL SELECT 'authoring_schema_nexus_forever_mapping_present', COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = 'nexus_forever_mapping'
-UNION ALL SELECT 'expected_authoring_schema_nexus_forever_mapping_absent_mismatch', IF(COUNT(*) = 0, 0, 1) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = 'nexus_forever_mapping';
+UNION ALL SELECT 'nf_map_tables', COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'nexus_forever_mapping' AND TABLE_NAME LIKE 'nf_map_%';
+
+SELECT match_status, COUNT(*) AS row_count
+FROM nexus_forever_mapping.nf_map_creature
+GROUP BY match_status
+ORDER BY match_status;
+
+SELECT 'safe_vendor_rows' AS metric, COUNT(*) AS value
+FROM nexus_forever_mapping.nf_map_vendor_item
+WHERE match_status IN ('unique_name', 'scored_name', 'reviewed')
+  AND IFNULL(creature2_id, 0) > 0
+  AND IFNULL(item2_id, 0) > 0
+UNION ALL
+SELECT 'safe_loot_rows', COUNT(*)
+FROM nexus_forever_mapping.nf_map_creature_loot
+WHERE match_status IN ('unique_name', 'scored_name', 'reviewed')
+  AND IFNULL(creature2_id, 0) > 0
+  AND IFNULL(item2_id, 0) > 0
+UNION ALL
+SELECT 'runtime_loot_group_creatures', COUNT(DISTINCT creatureId)
+FROM creature_loot
+WHERE chance > 0
+UNION ALL
+SELECT 'safe_creature_rows', COUNT(*)
+FROM nexus_forever_mapping.nf_map_creature
+WHERE match_status IN ('unique_name', 'scored_name', 'reviewed')
+  AND IFNULL(creature2_id, 0) > 0
+UNION ALL
+SELECT 'safe_item_container_rows', COUNT(*)
+FROM nexus_forever_mapping.nf_map_item_container
+WHERE IFNULL(container_item2_id, 0) > 0
+  AND IFNULL(contained_item2_id, 0) > 0;
 
 SELECT 'riders_reef_beacon_rows' AS metric, COUNT(*) AS value
 FROM entity
@@ -334,3 +357,46 @@ FROM entity
 WHERE world = 3460
   AND creature IN (73494, 74862, 73665)
 ORDER BY creature, id;
+
+SELECT 'northern_wilds_enabled_jabbithole_creatures' AS metric, COUNT(DISTINCT c.id) AS value
+FROM jabbithole.creatures c
+WHERE c.zone_id = 1
+  AND c.enabled = 'true'
+UNION ALL
+SELECT 'northern_wilds_default_safe_mapped_creatures', COUNT(DISTINCT m.jabbithole_creature_id)
+FROM nexus_forever_mapping.nf_map_creature m
+JOIN jabbithole.creatures c ON c.id = m.jabbithole_creature_id
+WHERE c.zone_id = 1
+  AND c.enabled = 'true'
+  AND m.match_status IN ('unique_name', 'scored_name', 'reviewed')
+  AND IFNULL(m.creature2_id, 0) > 0
+UNION ALL
+SELECT 'northern_wilds_resolved_creature_bridges', COUNT(DISTINCT c.id)
+FROM jabbithole.creatures c
+JOIN nexus_forever_mapping.nf_map_creature m ON m.jabbithole_creature_id = c.id
+WHERE c.zone_id = 1
+  AND c.enabled = 'true'
+  AND IFNULL(m.creature2_id, 0) > 0
+UNION ALL
+SELECT 'northern_wilds_runtime_creatures', COUNT(DISTINCT c.id)
+FROM jabbithole.creatures c
+JOIN nexus_forever_mapping.nf_map_creature m ON m.jabbithole_creature_id = c.id
+JOIN entity e ON e.world = 426 AND e.creature = m.creature2_id
+WHERE c.zone_id = 1
+  AND c.enabled = 'true'
+  AND IFNULL(m.creature2_id, 0) > 0
+UNION ALL
+SELECT 'northern_wilds_runtime_missing_creatures', COUNT(DISTINCT c.id)
+FROM jabbithole.creatures c
+LEFT JOIN nexus_forever_mapping.nf_map_creature m ON m.jabbithole_creature_id = c.id
+LEFT JOIN entity e ON e.world = 426 AND e.creature = m.creature2_id
+WHERE c.zone_id = 1
+  AND c.enabled = 'true'
+  AND e.id IS NULL
+UNION ALL
+SELECT 'northern_wilds_unmatched_creature_bridges', COUNT(DISTINCT c.id)
+FROM jabbithole.creatures c
+LEFT JOIN nexus_forever_mapping.nf_map_creature m ON m.jabbithole_creature_id = c.id
+WHERE c.zone_id = 1
+  AND c.enabled = 'true'
+  AND IFNULL(m.creature2_id, 0) = 0;

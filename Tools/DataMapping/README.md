@@ -11,6 +11,14 @@ Current coverage is complete at the split-file level: all 387 `wildstar_client_m
 
 ## Quick Run
 
+DataMapping runs are authoring workflows. Before regenerating maps on a fresh
+machine, run setup with `-EnableDataMappingAuthoring` so the `jabbithole` and
+`wildstar_client` reference databases exist:
+
+```powershell
+.\Tools\Setup\Initialize-NexusForever.ps1 -EnableDataMappingAuthoring -PromptForRootPassword
+```
+
 From the repository root:
 
 ```powershell
@@ -335,7 +343,11 @@ python Tools\DataMapping\promote_creature_bridge_suggestions.py --apply
 
 ## Loading Into MySQL
 
-`schema.sql` creates staging tables named `nf_map_*`. They are intended for review and import workflows, not as the final NexusForever runtime schema.
+`schema.sql` creates staging tables named `nf_map_*`. They are intended for
+review and import workflows, not as the final NexusForever runtime schema.
+Authoring loads use the separate `nexus_forever_mapping` database by default so
+fresh runtime deployments do not need `nf_map_*`, `jabbithole`, or
+`wildstar_client`.
 
 Preferred repeatable loader:
 
@@ -344,7 +356,12 @@ python Tools\DataMapping\load_mapping_staging_tables.py
 python Tools\DataMapping\load_mapping_staging_tables.py --apply
 ```
 
-`load_mapping_staging_tables.py` creates/replaces each owned `nf_map_*` table in `nexus_forever_world` and loads every curated staging CSV covered by `schema.sql`. It uses `LOAD DATA LOCAL INFILE`, temporarily enables the local MySQL server setting when the login can do so, and restores it afterward by default. The current localhost apply loaded 95 `nf_map_*` tables and 6,383,288 exact rows.
+`load_mapping_staging_tables.py` creates/replaces each owned `nf_map_*` table
+in `nexus_forever_mapping` and loads every curated staging CSV covered by
+`schema.sql`. It uses `LOAD DATA LOCAL INFILE`, temporarily enables the local
+MySQL server setting when the login can do so, and restores it afterward by
+default. The current localhost apply loaded 95 `nf_map_*` tables and 6,383,288
+exact rows.
 
 Fresh machines do not need to run the mapper. Import the checked-in promoted
 runtime seed after the base world database has been loaded:
@@ -367,7 +384,21 @@ Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
 
-That migration-style script imports vendor stock, optional reviewed entity spawns, creature loot, flat runtime creature loot groups, weighted item-container loot groups, runtime `item_salvage` exact/type-level rows, and creature-info template overrides from `nf_map_*` into explicit `nexus_forever_world` runtime tables. Runtime code must consume those promoted tables only, never the staging/source databases. Creature-backed imports use only `unique_name`, `scored_name`, and `reviewed` creature bridges by default; targeted world repair can opt into exact-name ambiguous rows and direct Jabbithole coordinate fallback for source-zone rows whose coordinates are valid but whose source `worldid` is blank. `Tools\DataMapping\sql\verify_safe_world_imports.sql` prints the expected row counts after import, including mismatch metrics for each promoted LaughingWS overlay and the official Evil from the Ether script-hook count that is intentionally not duplicated by the WIP seed.
+That migration-style script imports vendor stock, optional reviewed entity
+spawns, creature loot, flat runtime creature loot groups, weighted
+item-container loot groups, runtime `item_salvage` exact/type-level rows, and
+creature-info template overrides from `nexus_forever_mapping.nf_map_*` into
+explicit `nexus_forever_world` runtime tables. Runtime code must consume those
+promoted tables only, never the staging/source databases. Creature-backed
+imports use only `unique_name`, `scored_name`, and `reviewed` creature bridges
+by default; targeted world repair can opt into exact-name ambiguous rows and
+direct Jabbithole coordinate fallback for source-zone rows whose coordinates
+are valid but whose source `worldid` is blank.
+`Tools\DataMapping\sql\verify_authoring_safe_world_imports.sql` prints
+authoring-only staging/reference metrics after promotion.
+`Tools\DataMapping\sql\verify_safe_world_imports.sql` is the clean runtime
+verifier and also reports whether any authoring schemas or `nf_map_*` tables
+are present.
 
 After changing reviewed mappings and verifying the staging import, refresh the
 standalone seed with:
@@ -376,13 +407,9 @@ standalone seed with:
 python Tools\DataMapping\export_runtime_world_seed.py
 ```
 
-Manual schema load example:
-
-```powershell
-& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
-  --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world `
-  < Tools\DataMapping\schema.sql
-```
+Runtime table schema is owned by EF migrations. Do not load `schema.sql` into
+`nexus_forever_world`; it is only the authoring staging schema consumed by
+`load_mapping_staging_tables.py`.
 
 Then load CSVs with `LOAD DATA LOCAL INFILE` or your preferred import tool. Keep `world_entity_candidate.csv` in staging until entity IDs have been assigned safely for the target world database. Some raw client sentinel values use the full uint32 range; the preferred loader widens bare staging `INT` columns to `BIGINT` during table creation for that reason.
 

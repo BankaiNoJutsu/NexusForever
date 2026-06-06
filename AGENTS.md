@@ -56,6 +56,10 @@ update it when repeated session friction appears.
 - Runtime setup needs MySQL or MariaDB, RabbitMQ or Azure Service Bus, and a
   WildStar build 16042 client. `Tools/Setup` can provision portable Docker-backed
   MySQL/RabbitMQ dependencies when configured to do so.
+- Setup is runtime-only by default and does not create `jabbithole`,
+  `wildstar_client`, `nexus_forever_mapping`, or `nf_map_*` tables. Pass
+  `-EnableDataMappingAuthoring` only when reference databases are needed for
+  mapper regeneration or review.
 - DataMapping Python scripts use the standard library and the MySQL command-line
   client; no Python package manifest was found.
 - No active CI workflow file was found in the repo. `Obsolete/.travis.yml` is
@@ -130,10 +134,18 @@ Run a DataMapping smoke pass:
 python Tools\DataMapping\map_wildstar_data.py --limit-creatures 200 --limit-relation-rows 500 --limit-spawns 500 --output-dir Tools\DataMapping\output_test
 ```
 
-Verify safe world imports after applying DataMapping staging:
+Verify safe world imports on a clean runtime deployment:
 
 ```powershell
 Get-Content -Raw Tools\DataMapping\sql\verify_safe_world_imports.sql |
+  & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
+  --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
+```
+
+Verify authoring-only staging metrics after applying DataMapping staging:
+
+```powershell
+Get-Content -Raw Tools\DataMapping\sql\verify_authoring_safe_world_imports.sql |
   & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
@@ -181,7 +193,8 @@ Run the load-test harness commands listed in
   staging/reference tables. Promote reviewed data into runtime-owned world/auth
   tables, scripts, or code-owned assets first.
 - For local investigation of achievement IDs, names, checklist rows, and related
-  client data, query the imported MySQL reference databases first:
+  client data, query the imported MySQL reference databases first when they were
+  explicitly created with `-EnableDataMappingAuthoring`:
   `wildstar_client` has `achievement`, `achievementchecklist`,
   `achievementtext`, `achievementgroup`, and related tables; `jabbithole` may
   also have useful `achievements`, `achievement_titles`, and
