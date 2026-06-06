@@ -83,13 +83,15 @@ internal static class CombatProfileAuditCommand
             combatKitGroupCandidates = BuildCombatKitGroupCandidates(details, spawnPriorityRows, gameTableManager, creatureSpellSignatures);
         }
         IReadOnlyList<CombatActionRuleCandidateRow> combatActionRuleCandidates = BuildCombatActionRuleCandidates(details, spawnPriorityRows, gameTableManager, creatureSpellSignatures);
+        IReadOnlyList<CombatSignalBlockerRow> combatSignalBlockers = BuildCombatSignalBlockerRows(spawnPriorityRows, combatKitGroupCandidates);
 
-        string markdown = BuildMarkdownReport(details, options, spawnPriorityRows, combatKitGroupCandidates, combatActionRuleCandidates);
+        string markdown = BuildMarkdownReport(details, options, spawnPriorityRows, combatKitGroupCandidates, combatActionRuleCandidates, combatSignalBlockers);
         string creatureCsv = BuildCreatureCsv(details.CreatureRows);
         string actionCsv = BuildActionCsv(details.ActionRows);
         string spawnPriorityCsv = BuildSpawnPriorityCsv(spawnPriorityRows);
         string combatKitGroupCandidateCsv = BuildCombatKitGroupCandidateCsv(combatKitGroupCandidates);
         string combatActionRuleCandidateCsv = BuildCombatActionRuleCandidateCsv(combatActionRuleCandidates);
+        string combatSignalBlockerCsv = BuildCombatSignalBlockerCsv(combatSignalBlockers);
 
         string markdownPath = Path.Combine(options.OutputDirectory, "combat-profile-audit.md");
         string creaturePath = Path.Combine(options.OutputDirectory, "combat-profile-creatures.csv");
@@ -97,12 +99,14 @@ internal static class CombatProfileAuditCommand
         string spawnPriorityPath = Path.Combine(options.OutputDirectory, "combat-profile-spawn-priority.csv");
         string combatKitGroupCandidatePath = Path.Combine(options.OutputDirectory, "combat-kit-group-candidates.csv");
         string combatActionRuleCandidatePath = Path.Combine(options.OutputDirectory, "combat-action-rule-candidates.csv");
+        string combatSignalBlockerPath = Path.Combine(options.OutputDirectory, "combat-signal-blockers.csv");
         await File.WriteAllTextAsync(markdownPath, markdown, Encoding.UTF8);
         await File.WriteAllTextAsync(creaturePath, creatureCsv, Encoding.UTF8);
         await File.WriteAllTextAsync(actionPath, actionCsv, Encoding.UTF8);
         await File.WriteAllTextAsync(spawnPriorityPath, spawnPriorityCsv, Encoding.UTF8);
         await File.WriteAllTextAsync(combatKitGroupCandidatePath, combatKitGroupCandidateCsv, Encoding.UTF8);
         await File.WriteAllTextAsync(combatActionRuleCandidatePath, combatActionRuleCandidateCsv, Encoding.UTF8);
+        await File.WriteAllTextAsync(combatSignalBlockerPath, combatSignalBlockerCsv, Encoding.UTF8);
 
         Console.WriteLine($"Wrote combat profile audit to {options.OutputDirectory}");
         Console.WriteLine($"Mapped creatures: {details.Summary.MappedCreatureCount}");
@@ -112,6 +116,8 @@ internal static class CombatProfileAuditCommand
             Console.WriteLine($"Runtime spawned creature ids: {spawnPriorityRows.Count}");
             Console.WriteLine($"Runtime spawned unmapped creature ids: {spawnPriorityRows.Count(row => row.Source == CombatProfileResolutionSource.None)}");
             Console.WriteLine($"Runtime spawned combat-signal unmapped creature ids: {spawnPriorityRows.Count(row => row.Source == CombatProfileResolutionSource.None && row.CombatSignalCount != 0)}");
+            Console.WriteLine($"Runtime spawned combat-signal blocked creature ids: {combatSignalBlockers.Count(row => row.IsBlocked)}");
+            Console.WriteLine($"Runtime spawned combat-signal unblocked creature ids: {combatSignalBlockers.Count(row => !row.IsBlocked)}");
         }
         if (combatKitGroupCandidates.Count != 0)
             Console.WriteLine($"Combat kit group candidates: {combatKitGroupCandidates.Count}");
@@ -139,7 +145,8 @@ internal static class CombatProfileAuditCommand
         AuditOptions options,
         IReadOnlyList<SpawnPriorityRow> spawnPriorityRows,
         IReadOnlyList<CombatKitGroupCandidateRow> combatKitGroupCandidates,
-        IReadOnlyList<CombatActionRuleCandidateRow> combatActionRuleCandidates)
+        IReadOnlyList<CombatActionRuleCandidateRow> combatActionRuleCandidates,
+        IReadOnlyList<CombatSignalBlockerRow> combatSignalBlockers)
     {
         var builder = new StringBuilder();
         builder.AppendLine("# Combat Profile Audit");
@@ -169,6 +176,8 @@ internal static class CombatProfileAuditCommand
             AppendMetric(builder, "Runtime spawned creature ids", spawnPriorityRows.Count);
             AppendMetric(builder, "Runtime spawned unmapped creature ids", spawnPriorityRows.Count(row => row.Source == CombatProfileResolutionSource.None));
             AppendMetric(builder, "Runtime spawned combat-signal unmapped creature ids", spawnPriorityRows.Count(row => row.Source == CombatProfileResolutionSource.None && row.CombatSignalCount != 0));
+            AppendMetric(builder, "Runtime spawned combat-signal blocked creature ids", combatSignalBlockers.Count(row => row.IsBlocked));
+            AppendMetric(builder, "Runtime spawned combat-signal unblocked creature ids", combatSignalBlockers.Count(row => !row.IsBlocked));
             AppendMetric(builder, "Runtime non-player spawns", spawnPriorityRows.Sum(row => row.SpawnCount));
         }
         if (combatKitGroupCandidates.Count != 0)
@@ -183,6 +192,7 @@ internal static class CombatProfileAuditCommand
         AppendExistingKitPropagationQueue(builder, combatKitGroupCandidates, options.MaxReviewRows);
         AppendCombatKitGroupCandidateQueue(builder, combatKitGroupCandidates, options.MaxReviewRows);
         AppendCombatActionRuleCandidateQueue(builder, combatActionRuleCandidates, options.MaxReviewRows);
+        AppendCombatSignalBlockerQueue(builder, combatSignalBlockers, options.MaxReviewRows);
         AppendCombatSignalQueue(builder, spawnPriorityRows, options.MaxReviewRows);
         AppendSpawnPriorityQueue(builder, spawnPriorityRows, options.MaxReviewRows);
         AppendUnmappedQueue(builder, details, options.MaxReviewRows);
@@ -296,6 +306,38 @@ internal static class CombatProfileAuditCommand
                 $"{row.RuntimeSpawnCount} | {EscapeMarkdown(row.DataShape)} | {row.ActionData00SpellBridgeHitCount + row.ActionData01SpellBridgeHitCount} | " +
                 $"{EscapeMarkdown(row.ActionData00Values)} | {EscapeMarkdown(row.ActionData01Values)} | " +
                 $"{EscapeMarkdown(row.SampleCreatureNames)} | {EscapeMarkdown(row.Recommendation)} |");
+        }
+    }
+
+    private static void AppendCombatSignalBlockerQueue(StringBuilder builder, IReadOnlyList<CombatSignalBlockerRow> rows, int maxRows)
+    {
+        if (rows.Count == 0)
+            return;
+
+        builder.AppendLine();
+        builder.AppendLine("## Spawned Combat-Signal Blockers");
+        builder.AppendLine();
+        builder.AppendLine("These rows remain unmapped because their current evidence is diagnostic-only, visual-only, sound-only, or an ambiguous reviewed spell bridge. They do not activate runtime combat.");
+        builder.AppendLine();
+        builder.AppendLine("| Category | Blocked | Count |");
+        builder.AppendLine("| --- | ---: | ---: |");
+
+        foreach (IGrouping<string, CombatSignalBlockerRow> group in rows.GroupBy(row => row.BlockerCategory).OrderByDescending(group => group.Count()).ThenBy(group => group.Key, StringComparer.Ordinal))
+            builder.AppendLine($"| {EscapeMarkdown(group.Key)} | {group.Count(row => row.IsBlocked)} | {group.Count()} |");
+
+        builder.AppendLine();
+        builder.AppendLine("| Creature2Id | Name | Spawns | Signals | Category | Reason | Candidate Groups |");
+        builder.AppendLine("| ---: | --- | ---: | --- | --- | --- | --- |");
+
+        foreach (CombatSignalBlockerRow row in rows
+            .OrderBy(row => row.IsBlocked ? 1 : 0)
+            .ThenByDescending(row => row.SpawnCount)
+            .ThenBy(row => row.Creature2Id)
+            .Take(maxRows))
+        {
+            builder.AppendLine(
+                $"| {row.Creature2Id} | {EscapeMarkdown(row.CreatureName)} | {row.SpawnCount} | {EscapeMarkdown(row.PrioritySignals)} | " +
+                $"{EscapeMarkdown(row.BlockerCategory)} | {EscapeMarkdown(row.BlockerReason)} | {EscapeMarkdown(row.CandidateGroups)} |");
         }
     }
 
@@ -561,6 +603,10 @@ internal static class CombatProfileAuditCommand
             "spell_names",
             "match_statuses",
             "mapped_kit_ids",
+            "candidate_creature2_ids",
+            "candidate_creature_names",
+            "unmapped_combat_signal_creature2_ids",
+            "unmapped_combat_signal_creature_names",
             "sample_creature2_ids",
             "sample_creature_names",
             "recommendation"));
@@ -582,6 +628,10 @@ internal static class CombatProfileAuditCommand
                 row.SpellNames,
                 row.MatchStatuses,
                 row.MappedKitIds,
+                row.CandidateCreature2Ids,
+                row.CandidateCreatureNames,
+                row.UnmappedCombatSignalCreature2Ids,
+                row.UnmappedCombatSignalCreatureNames,
                 row.SampleCreature2Ids,
                 row.SampleCreatureNames,
                 row.Recommendation));
@@ -662,6 +712,39 @@ internal static class CombatProfileAuditCommand
                 row.SampleCreature2Ids,
                 row.SampleCreatureNames,
                 row.Recommendation));
+        }
+
+        return builder.ToString();
+    }
+
+    private static string BuildCombatSignalBlockerCsv(IEnumerable<CombatSignalBlockerRow> rows)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine(Csv(
+            "creature2_id",
+            "creature_name",
+            "spawn_count",
+            "worlds",
+            "areas",
+            "priority_signals",
+            "blocker_category",
+            "is_blocked",
+            "blocker_reason",
+            "candidate_groups"));
+
+        foreach (CombatSignalBlockerRow row in rows)
+        {
+            builder.AppendLine(Csv(
+                row.Creature2Id,
+                row.CreatureName,
+                row.SpawnCount,
+                row.Worlds,
+                row.Areas,
+                row.PrioritySignals,
+                row.BlockerCategory,
+                row.IsBlocked,
+                row.BlockerReason,
+                row.CandidateGroups));
         }
 
         return builder.ToString();
@@ -767,6 +850,153 @@ internal static class CombatProfileAuditCommand
             signals.Add("combat-loop");
 
         return signals;
+    }
+
+    private static IReadOnlyList<CombatSignalBlockerRow> BuildCombatSignalBlockerRows(
+        IReadOnlyList<SpawnPriorityRow> spawnPriorityRows,
+        IReadOnlyList<CombatKitGroupCandidateRow> combatKitGroupCandidates)
+    {
+        Dictionary<uint, List<CombatKitGroupCandidateRow>> candidateRowsByCreature = BuildCombatKitCandidateRowsByCreature(combatKitGroupCandidates);
+
+        return spawnPriorityRows
+            .Where(row => row.Source == CombatProfileResolutionSource.None && row.CombatSignalCount != 0)
+            .Select(row =>
+            {
+                candidateRowsByCreature.TryGetValue(row.Creature2Id, out List<CombatKitGroupCandidateRow>? candidateRows);
+                return BuildCombatSignalBlockerRow(row, candidateRows ?? []);
+            })
+            .OrderBy(row => row.IsBlocked ? 1 : 0)
+            .ThenByDescending(row => row.SpawnCount)
+            .ThenBy(row => row.Creature2Id)
+            .ToList();
+    }
+
+    private static Dictionary<uint, List<CombatKitGroupCandidateRow>> BuildCombatKitCandidateRowsByCreature(IReadOnlyList<CombatKitGroupCandidateRow> combatKitGroupCandidates)
+    {
+        Dictionary<uint, List<CombatKitGroupCandidateRow>> rowsByCreature = [];
+        foreach (CombatKitGroupCandidateRow row in combatKitGroupCandidates)
+        {
+            foreach (uint creature2Id in ParseIdList(row.UnmappedCombatSignalCreature2Ids))
+            {
+                if (!rowsByCreature.TryGetValue(creature2Id, out List<CombatKitGroupCandidateRow>? rows))
+                {
+                    rows = [];
+                    rowsByCreature.Add(creature2Id, rows);
+                }
+
+                rows.Add(row);
+            }
+        }
+
+        return rowsByCreature;
+    }
+
+    private static CombatSignalBlockerRow BuildCombatSignalBlockerRow(SpawnPriorityRow row, IReadOnlyList<CombatKitGroupCandidateRow> kitCandidateRows)
+    {
+        (string category, bool isBlocked, string reason) = ClassifyCombatSignalBlocker(row, kitCandidateRows);
+        return new CombatSignalBlockerRow(
+            row.Creature2Id,
+            row.CreatureName,
+            row.SpawnCount,
+            row.Worlds,
+            row.Areas,
+            row.PrioritySignals,
+            category,
+            isBlocked,
+            reason,
+            FormatCandidateGroups(kitCandidateRows));
+    }
+
+    private static (string Category, bool IsBlocked, string Reason) ClassifyCombatSignalBlocker(SpawnPriorityRow row, IReadOnlyList<CombatKitGroupCandidateRow> kitCandidateRows)
+    {
+        if (kitCandidateRows.Count != 0 && !IsAmbiguousReviewedKitCandidate(row))
+        {
+            return (
+                "needs-review-exact-kit-candidate",
+                false,
+                "Reviewed/unique exact Spell4 signature exists and still needs manual kit promotion review.");
+        }
+
+        if (kitCandidateRows.Count != 0)
+        {
+            return (
+                "blocked-ambiguous-reviewed-kit-candidate",
+                true,
+                "Reviewed/unique exact Spell4 signature exists, but the creature name and visual/event evidence indicate a fixture or scripted encounter role; do not promote a generic combat kit without live encounter review.");
+        }
+
+        if (row.ReviewActionRows != 0)
+        {
+            return (
+                "blocked-unproven-action-semantics",
+                true,
+                "Creature2Action rows need semantic proof before activation; no reviewed kit mapping or proven action rule exists.");
+        }
+
+        if (row.VisualOnlyActionRows != 0)
+        {
+            return (
+                "blocked-visual-only-action-evidence",
+                true,
+                "Only visual Creature2Action evidence is present; no reviewed combat kit mapping or proven action rule exists.");
+        }
+
+        if (row.SoundEventIdAggro != 0u || row.SoundCombatLoopId != 0u)
+        {
+            return (
+                "blocked-sound-signal-only",
+                true,
+                "Aggro/combat-loop sound signal exists without a reviewed combat kit mapping or proven action rule.");
+        }
+
+        if (row.Creature2ActionSetId != 0u)
+        {
+            return (
+                "blocked-action-set-only",
+                true,
+                "Creature2ActionSetId is present, but no row has proven combat semantics and no reviewed combat kit mapping exists.");
+        }
+
+        return (
+            "needs-review-unclassified",
+            false,
+            "Combat signal remained after known blocker checks; requires manual audit review.");
+    }
+
+    private static bool IsAmbiguousReviewedKitCandidate(SpawnPriorityRow row)
+    {
+        string name = row.CreatureName.ToLowerInvariant();
+        string[] ambiguousNameTokens =
+        [
+            " fuel rod",
+            " energy rod",
+            "sacrifice"
+        ];
+
+        return ambiguousNameTokens.Any(token => name.Contains(token, StringComparison.Ordinal));
+    }
+
+    private static string FormatCandidateGroups(IReadOnlyList<CombatKitGroupCandidateRow> rows)
+    {
+        if (rows.Count == 0)
+            return string.Empty;
+
+        return string.Join("; ", rows
+            .Select(row => $"{row.GroupType}:{row.GroupId} spells={row.Spell4Ids}")
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(value => value, StringComparer.Ordinal));
+    }
+
+    private static IEnumerable<uint> ParseIdList(string values)
+    {
+        if (string.IsNullOrWhiteSpace(values))
+            yield break;
+
+        foreach (string value in values.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint id))
+                yield return id;
+        }
     }
 
     private static IReadOnlyList<CombatActionRuleCandidateRow> BuildCombatActionRuleCandidates(
@@ -1138,6 +1368,12 @@ internal static class CombatProfileAuditCommand
             .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         CreatureSpellSignature firstSignature = orderedSignatures[0];
+        List<CreatureSpellSignature> unmappedCombatSignalSignatures = orderedSignatures
+            .Where(signature => auditRows.TryGetValue(signature.Creature2Id, out CombatProfileCreatureAuditRow? auditRow)
+                && auditRow.Source == CombatProfileResolutionSource.None
+                && spawnRows.TryGetValue(signature.Creature2Id, out SpawnPriorityRow? spawnRow)
+                && spawnRow.CombatSignalCount != 0)
+            .ToList();
 
         return new CombatKitGroupCandidateRow(
             key.Signal.Type,
@@ -1154,6 +1390,10 @@ internal static class CombatProfileAuditCommand
             string.Join("; ", firstSignature.SpellNames),
             string.Join(";", signatures.SelectMany(signature => signature.MatchStatuses).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(status => status, StringComparer.OrdinalIgnoreCase)),
             string.Join(";", mappedKitIds),
+            string.Join(";", orderedSignatures.Select(signature => signature.Creature2Id.ToString(CultureInfo.InvariantCulture))),
+            string.Join("; ", orderedSignatures.Select(GetCandidateSampleName)),
+            string.Join(";", unmappedCombatSignalSignatures.Select(signature => signature.Creature2Id.ToString(CultureInfo.InvariantCulture))),
+            string.Join("; ", unmappedCombatSignalSignatures.Select(GetCandidateSampleName)),
             string.Join(";", orderedSignatures.Take(12).Select(signature => signature.Creature2Id.ToString(CultureInfo.InvariantCulture))),
             string.Join("; ", orderedSignatures.Take(12).Select(GetCandidateSampleName)),
             BuildCombatKitGroupRecommendation(mappedKitIds));
@@ -1493,6 +1733,10 @@ internal static class CombatProfileAuditCommand
         string SpellNames,
         string MatchStatuses,
         string MappedKitIds,
+        string CandidateCreature2Ids,
+        string CandidateCreatureNames,
+        string UnmappedCombatSignalCreature2Ids,
+        string UnmappedCombatSignalCreatureNames,
         string SampleCreature2Ids,
         string SampleCreatureNames,
         string Recommendation);
@@ -1529,6 +1773,17 @@ internal static class CombatProfileAuditCommand
         string SampleCreature2Ids,
         string SampleCreatureNames,
         string Recommendation);
+    private sealed record CombatSignalBlockerRow(
+        uint Creature2Id,
+        string CreatureName,
+        int SpawnCount,
+        string Worlds,
+        string Areas,
+        string PrioritySignals,
+        string BlockerCategory,
+        bool IsBlocked,
+        string BlockerReason,
+        string CandidateGroups);
     private sealed record SpawnPriorityRow(
         uint Creature2Id,
         string CreatureName,

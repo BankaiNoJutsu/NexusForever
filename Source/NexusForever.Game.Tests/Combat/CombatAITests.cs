@@ -28,6 +28,9 @@ namespace NexusForever.Game.Tests.Combat;
 
 public class CombatAITests
 {
+    private const Faction TutorialDominionCombatFaction = (Faction)1441u;
+    private const Faction TutorialExileCombatFaction = (Faction)1442u;
+
     [Fact]
     public void Constructor_WhenProfileProviderNotRegistered_UsesDefaultProvider()
     {
@@ -88,18 +91,71 @@ public class CombatAITests
     }
 
     [Fact]
+    public void OnLoad_WhenStarterTutorialExileLaneCreatureLoads_NormalizesToDominionCombatFaction()
+    {
+        CombatHarness harness = CreateHarness(
+            new Vector3(100f, 0f, 0f),
+            creatureId: 73464u,
+            includePlayer: false,
+            armRangeCheck: false);
+
+        Assert.Equal(TutorialDominionCombatFaction, harness.Creature.Faction1);
+        Assert.Equal(TutorialDominionCombatFaction, harness.Creature.Faction2);
+        RecordingDispatchProxy<ICreatureEntity>.Invocation faction1 = Assert.Single(
+            harness.CreatureProxy.GetInvocations($"set_{nameof(ICreatureEntity.Faction1)}"));
+        RecordingDispatchProxy<ICreatureEntity>.Invocation faction2 = Assert.Single(
+            harness.CreatureProxy.GetInvocations($"set_{nameof(ICreatureEntity.Faction2)}"));
+        Assert.Equal(TutorialDominionCombatFaction, faction1.Arguments[0]);
+        Assert.Equal(TutorialDominionCombatFaction, faction2.Arguments[0]);
+    }
+
+    [Fact]
+    public void OnLoad_WhenStarterTutorialDominionLaneCreatureLoads_NormalizesToExileCombatFaction()
+    {
+        CombatHarness harness = CreateHarness(
+            new Vector3(100f, 0f, 0f),
+            creatureId: 73465u,
+            includePlayer: false,
+            armRangeCheck: false);
+
+        Assert.Equal(TutorialExileCombatFaction, harness.Creature.Faction1);
+        Assert.Equal(TutorialExileCombatFaction, harness.Creature.Faction2);
+        RecordingDispatchProxy<ICreatureEntity>.Invocation faction1 = Assert.Single(
+            harness.CreatureProxy.GetInvocations($"set_{nameof(ICreatureEntity.Faction1)}"));
+        RecordingDispatchProxy<ICreatureEntity>.Invocation faction2 = Assert.Single(
+            harness.CreatureProxy.GetInvocations($"set_{nameof(ICreatureEntity.Faction2)}"));
+        Assert.Equal(TutorialExileCombatFaction, faction1.Arguments[0]);
+        Assert.Equal(TutorialExileCombatFaction, faction2.Arguments[0]);
+    }
+
+    [Fact]
+    public void OnLoad_WhenOpenWorldProfiledCreatureLoads_DoesNotNormalizeFaction()
+    {
+        CombatHarness harness = CreateHarness(
+            new Vector3(100f, 0f, 0f),
+            creatureId: 11910u,
+            includePlayer: false,
+            armRangeCheck: false);
+
+        Assert.Equal(Faction.Dominion, harness.Creature.Faction1);
+        Assert.Equal(Faction.None, harness.Creature.Faction2);
+        Assert.Empty(harness.CreatureProxy.GetInvocations($"set_{nameof(ICreatureEntity.Faction1)}"));
+        Assert.Empty(harness.CreatureProxy.GetInvocations($"set_{nameof(ICreatureEntity.Faction2)}"));
+    }
+
+    [Fact]
     public void DefaultCombatProfileProvider_Audit_ReturnsManualAndCatalogMappingCounts()
     {
         CombatProfileAudit audit = DefaultCombatProfileProvider.Instance.GetAudit();
 
         Assert.Equal(2, audit.ManualOverrideCreatureCount);
-        Assert.Equal(70, audit.ReviewedKitMappingCreatureCount);
+        Assert.Equal(185, audit.ReviewedKitMappingCreatureCount);
         Assert.Equal(0, audit.ActionDerivedProfileCount);
         Assert.Equal(0, audit.ActionIgnoredRuleRowCount);
         Assert.Equal(0, audit.ActionRejectedRuleRowCount);
         Assert.Equal(0, audit.ActionUnknownRowCount);
         Assert.Equal(0, audit.ActionMissingSpellRowCount);
-        Assert.Equal(72, audit.MappedCreatureCount);
+        Assert.Equal(187, audit.MappedCreatureCount);
         Assert.Equal(0, audit.UnmappedCreatureCount);
     }
 
@@ -557,7 +613,7 @@ public class CombatAITests
     [Fact]
     public void Update_WhenProfiledAllySharesFactionAndIsNearby_AssistsAggroTarget()
     {
-        ICreatureEntity ally = CreateAlly(200u, new Vector3(6f, 0f, 0f), Faction.Dominion, out IThreatManager allyThreat);
+        ICreatureEntity ally = CreateAlly(200u, new Vector3(6f, 0f, 0f), TutorialDominionCombatFaction, out IThreatManager allyThreat);
         CombatHarness harness = CreateHarness(new Vector3(10f, 0f, 0f), extraInRange: [ally]);
 
         harness.Script.Update(0.5d);
@@ -959,6 +1015,54 @@ public class CombatAITests
 
         RecordingDispatchProxy<ICreatureEntity>.Invocation autoAttack = Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.CastSpell)));
         Assert.Equal(777u, autoAttack.Arguments[0]);
+    }
+
+    [Fact]
+    public void Update_WhenProfileSpecialAttackHasChannelMaxTime_SuppressesAutoAttackDuringChannel()
+    {
+        var profileProvider = new FixedCombatProfileProvider(CombatProfile.Default with
+        {
+            AutoAttackSpell4Ids = [],
+            SpecialAttacks =
+            [
+                new CombatSpecialAttack(
+                    Spell4Id: 88113u,
+                    CooldownSeconds: 10d)
+            ],
+            TraceCombat = false
+        });
+        CombatHarness harness = CreateHarness(
+            new Vector3(5f, 0f, 0f),
+            targetSelected: true,
+            profileProvider: profileProvider,
+            autoAttacks: [779u],
+            spell4Entries:
+            [
+                new Spell4Entry
+                {
+                    Id             = 88113u,
+                    TargetMaxRange = 15f,
+                    ChannelMaxTime = 2500u
+                },
+                new Spell4Entry
+                {
+                    Id             = 779u,
+                    TargetMaxRange = 15f
+                }
+            ]);
+
+        harness.Script.Update(10d);
+        harness.Script.Update(2.4d);
+
+        Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.TryCastSpell)));
+        Assert.Empty(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.CastSpell)));
+        Assert.Single(harness.MovementProxy.GetInvocations(nameof(IMovementManager.Finalise)));
+
+        harness.Script.Update(0.1d);
+        harness.Script.Update(1.5d);
+
+        RecordingDispatchProxy<ICreatureEntity>.Invocation autoAttack = Assert.Single(harness.CreatureProxy.GetInvocations(nameof(ICreatureEntity.CastSpell)));
+        Assert.Equal(779u, autoAttack.Arguments[0]);
     }
 
     [Fact]

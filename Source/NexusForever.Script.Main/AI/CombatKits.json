@@ -531,6 +531,1489 @@
       ],
       "source": "reviewed-northern-wilds-spell-bridge",
       "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion"
+    },
+    {
+      "id": "open-world-woodling-splinter-poison-spores",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        6916,
+        6917
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 35400,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 35417,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 52760,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 53868,
+          "cooldownSeconds": 20.0
+        },
+        {
+          "spell4Id": 60894,
+          "cooldownSeconds": 24.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 101 spell-signature match",
+      "note": "Shared woodling/root spell bridge: Splinter, Tree Drop, Root Eruption, Growing Purge, One with the Earth, Creeping Poison, Ancient Spores."
+    },
+    {
+      "id": "open-world-strain-eye-event-horizon",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        4495,
+        4496
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 56490,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 56492,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 233 spell-signature match",
+      "note": "Shared strain peeper spell bridge: Bite, Chomp, Evil Eye, Event Horizon."
+    },
+    {
+      "id": "open-world-humanoid-slice-hack-bleed",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32867,
+        32868
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 34131,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 43759,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 49350,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Shared humanoid melee spell bridge: Slice, Slash, Hack and Slash, Bleed, Double Strike."
+    },
+    {
+      "id": "open-world-feline-rip-frenzy-bleed",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32768,
+        32769
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 33810,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 33969,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 43759,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Shared feline spell bridge: Bite, Rip, Frenzy of the Feline, Leaping Swipe, Bleed."
+    },
+    {
+      "id": "open-world-mech-electric-chain-missile",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        4537
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 39474,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 52788,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 54212,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 69803,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 205 spell-signature match",
+      "note": "Shared bot ranged spell bridge: Electric Shot, Chain Gun, Meltdown Missile, Default Attack Sequence, Tri-Blaster."
+    },
+    {
+      "id": "open-world-mech-zap-flame-phaser",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        4616,
+        4617
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 35287,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 40714,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 72728,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 72730,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 206 spell-signature match",
+      "note": "Shared servicebot spell bridge: Zap, Zap Blast, Burning Flames, Flame Barrier, Phaser Combo, Phaser Blast."
+    },
+    {
+      "id": "open-world-yeti-maul-boom-frenzy",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        33251,
+        33252
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 52968,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 53034,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 99 spell-signature match",
+      "note": "Shared yeti brute spell bridge: Maul, Slam, Boom Slap, Shouting Frenzy."
+    },
+    {
+      "id": "open-world-girrok-bite-pound",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32734,
+        32735
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 34262,
+          "cooldownSeconds": 8.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 31 spell-signature match",
+      "note": "Shared girrok spell bridge: Bite, Chomp, Ground Pound."
+    },
+    {
+      "id": "open-world-yeti-maul-frenzy-jump",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        33251,
+        33252
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 35275,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 70383,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 99 spell-signature match",
+      "note": "Shared yeti shambler spell bridge: Maul, Slam, Frenzy, Jump Shot."
+    },
+    {
+      "id": "open-world-feline-pounce-frenzy-bleed",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32768,
+        32769
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 33810,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 33969,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 35192,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 43759,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Shared feline pouncer spell bridge: Bite, Rip, Frenzy of the Feline, Leaping Swipe, Pride Pounce, Bleed."
+    },
+    {
+      "id": "open-world-hoartusk-pummel-trample",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        6323,
+        6324
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55151,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 55152,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 55153,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 55154,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 131 spell-signature match",
+      "note": "Shared hoartusk/mammodin spell bridge: Pummel, Bash, Stomp Smash Slam, Trample, Seismic Upsurge, Toss."
+    },
+    {
+      "id": "open-world-snoglug-tongue-slime",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        7031,
+        7032
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55331,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 57054,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 57056,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 57057,
+          "cooldownSeconds": 20.0
+        },
+        {
+          "spell4Id": 57094,
+          "cooldownSeconds": 24.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 125 spell-signature match",
+      "note": "Shared snoglug spell bridge: Tongue, Bite, Slime Spray, Oozer, VTOL, Drag and Drop, Odd Glob."
+    },
+    {
+      "id": "open-world-icetail-chilling-flurry",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32768,
+        32769
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 33969,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 46128,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 46149,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Shared icetail/feline spell bridge: Bite, Rip, Leaping Swipe, Chilling Flurry, Cold Snap."
+    },
+    {
+      "id": "open-world-buzzbing-stinger-honey",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        44650,
+        44714
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 44770,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 59759,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Shared buzzbing spell bridge: Stinger Torrent, Stinger Blast, Sting Shot, Honey Bomb."
+    },
+    {
+      "id": "open-world-freebot-wallop-spikes",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        4699,
+        4701
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 42052,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 54916,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 210 spell-signature match",
+      "note": "Shared freebot melee spell bridge: Wallop, Bonk, Controlled Spin, Steel Spikes."
+    },
+    {
+      "id": "open-world-valtross-blades-aerial",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        5960,
+        5961
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 35841,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 35862,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 35871,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 43759,
+          "cooldownSeconds": 20.0
+        },
+        {
+          "spell4Id": 74512,
+          "cooldownSeconds": 24.0
+        },
+        {
+          "spell4Id": 74514,
+          "cooldownSeconds": 28.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 84 spell-signature match",
+      "note": "Shared valtross/falkrin spell bridge: Slice, Slash, Savage Blades, Bladestrike, Bladespin, Bleed, Hack and Slash, Aerial Grace."
+    },
+    {
+      "id": "open-world-mech-electric-tri-missile",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        4537
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 39474,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 40035,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 52788,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 54212,
+          "cooldownSeconds": 20.0
+        },
+        {
+          "spell4Id": 69803,
+          "cooldownSeconds": 24.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 205 spell-signature match",
+      "note": "Shared bot ranged spell bridge: Electric Shot, Chain Gun, Tri-Blaster, Meltdown Missile, Default Attack Sequence."
+    },
+    {
+      "id": "open-world-storm-caster-bad-weather",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        34062
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55371,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 55401,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 55402,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 55421,
+          "cooldownSeconds": 20.0
+        },
+        {
+          "spell4Id": 55531,
+          "cooldownSeconds": 24.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 299/189 spell-signature match",
+      "note": "Shared storm caster spell bridge: Arcane Bolt, Bad Weather, Lightning Zap, Microburst, Gust."
+    },
+    {
+      "id": "open-world-wind-elemental-shock-ring",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        35474,
+        35475
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 65456,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 69072,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 69378,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 69382,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 180 spell-signature match",
+      "note": "Shared wind elemental spell bridge: Swing, Swipe, Shock Ring, Compression Blasts, Twisted Wind."
+    },
+    {
+      "id": "open-world-risen-brawler-haymaker",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        5649,
+        5652
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 34552,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 52448,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 281 spell-signature match",
+      "note": "Shared risen brawler spell bridge: Punch, Jab, Flourishing Combo, Haymaker."
+    },
+    {
+      "id": "open-world-humanoid-shell-longshot-mortar",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        2764
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 51828,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 51899,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 65459,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 70 spell-signature match",
+      "note": "Shared humanoid ranged spell bridge: Plasma Shot, Shell Storm, Longshot, Mortar Barrage."
+    },
+    {
+      "id": "open-world-snowshadow-ranged-emp",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        2764
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 51828,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 52796,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 52996,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 78 spell-signature match",
+      "note": "Shared Snowshadow ranged spell bridge: Plasma Shot, Shell Storm, Arc Thrower, EMP Charge."
+    },
+    {
+      "id": "open-world-snowshadow-melee-whirlwind",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32867,
+        32868
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 35717,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 49888,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 50007,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 50103,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 80 spell-signature match",
+      "note": "Shared Snowshadow melee spell bridge: Slice, Slash, Whirling Wind, Tempest Strike, Kiss of the Wind."
+    },
+    {
+      "id": "open-world-grazer-buck-crash",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32726,
+        32727
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55296,
+          "cooldownSeconds": 8.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 102 spell-signature match",
+      "note": "Shared grazer spell bridge: Buck, Ram, Crash."
+    },
+    {
+      "id": "open-world-medic-zap-overload",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        33432,
+        33433
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 58710,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 58711,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Shared medic/mech spell bridge: Zap, Jolt, Blast Burst, Controlled Overload."
+    },
+    {
+      "id": "open-world-construct-barrage-laser",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        28690,
+        28691
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 41187,
+          "cooldownSeconds": 8.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 275 spell-signature match",
+      "note": "Shared construct ranged spell bridge: Barrage, Shot, Laser Barrage."
+    },
+    {
+      "id": "open-world-construct-barrage-shot",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        28690,
+        28691
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 275 spell-signature match",
+      "note": "Shared construct ranged spell bridge: Barrage, Shot."
+    },
+    {
+      "id": "open-world-buzzbing-sting-needle",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32965,
+        32966
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Shared buzzbing basic spell bridge: Sting, Needle."
+    },
+    {
+      "id": "open-world-slank-bite-chew",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        33242,
+        33243
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 155 spell-signature match",
+      "note": "Shared slank spell bridge: Bite, Chew."
+    },
+    {
+      "id": "open-world-icetail-tail-guerrilla",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32773,
+        32774
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 33919,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 46895,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 48086,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 48089,
+          "cooldownSeconds": 20.0
+        },
+        {
+          "spell4Id": 48147,
+          "cooldownSeconds": 24.0
+        },
+        {
+          "spell4Id": 71001,
+          "cooldownSeconds": 28.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 139 spell-signature match",
+      "note": "Shared icetail wired spell bridge: Swipe, Tail Whip, Clawing Frenzy, Tail Spin, Barricade Shot, Guerrilla Attack, Aerial Bombardment."
+    },
+    {
+      "id": "open-world-humanoid-slice-slash-basic",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32867,
+        32868
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 71 spell-signature match",
+      "note": "Shared humanoid basic spell bridge: Slice, Slash."
+    },
+    {
+      "id": "open-world-girrok-bite-pound-rampage",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32734,
+        32735
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 34262,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 35556,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 283 spell-signature match",
+      "note": "Shared girrok spell bridge: Bite, Chomp, Ground Pound, Rolling Rampage."
+    },
+    {
+      "id": "open-world-humanoid-punch-crushing-blows",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        5649,
+        5652
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 50027,
+          "cooldownSeconds": 8.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 299 spell-signature match",
+      "note": "Shared humanoid brawler spell bridge: Punch, Jab, Crushing Blows."
+    },
+    {
+      "id": "open-world-humanoid-slice-dice-slashing",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        2605,
+        2607
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 54241,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 54299,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 272 spell-signature match",
+      "note": "Shared humanoid slasher spell bridge: Slice, Dice, Slashing Strikes, Feet of Fury."
+    },
+    {
+      "id": "open-world-girrok-bite-pound-boulder",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32734,
+        32735
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 34262,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 35556,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 58752,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 283 spell-signature match",
+      "note": "Shared girrok spell bridge: Bite, Chomp, Ground Pound, Rolling Rampage, Hurl Boulder."
+    },
+    {
+      "id": "open-world-humanoid-slice-dice-basic",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        2605,
+        2607
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 76 spell-signature match",
+      "note": "Shared humanoid basic spell bridge: Slice, Dice."
+    },
+    {
+      "id": "open-world-humanoid-blast-shot",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        27545,
+        27546
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2TractId 8 spell-signature match",
+      "note": "Shared humanoid ranged spell bridge: Blast, Shot."
+    },
+    {
+      "id": "open-world-humanoid-punch-firebomb",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        5649,
+        5652
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 34552,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 52448,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 60653,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 78/272 spell-signature match",
+      "note": "Shared humanoid brawler spell bridge: Punch, Jab, Flourishing Combo, Haymaker, Fire Bomb."
+    },
+    {
+      "id": "open-world-humanoid-slice-dice-fury-wallop",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        2605,
+        2607
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 54241,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 54299,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 54327,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 54675,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Shared humanoid slasher spell bridge: Slice, Dice, Slashing Strikes, Feet of Fury, Slicing Arcs, Wallop."
+    },
+    {
+      "id": "open-world-humanoid-onslaught-overpower",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32867,
+        32868
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 34131,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 35727,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 43759,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 49350,
+          "cooldownSeconds": 20.0
+        },
+        {
+          "spell4Id": 49410,
+          "cooldownSeconds": 24.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2ActionSetId 1435 spell-signature match",
+      "note": "Shared humanoid heavy melee spell bridge: Slice, Slash, Hack and Slash, Onslaught, Bleed, Double Strike, Overpower."
+    },
+    {
+      "id": "open-world-humanoid-plasma-suppression",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        2764
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 52150,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 52151,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Shared humanoid ranged spell bridge: Plasma Shot, Suppressing Fire variants."
+    },
+    {
+      "id": "open-world-buzzbing-charged-barbs",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32965,
+        32966
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 44483,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 44493,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Shared buzzbing spell bridge: Sting, Needle, Charged Barbs, Plasma Shell."
+    },
+    {
+      "id": "open-world-humanoid-contamination-brawler",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        5649,
+        5652
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 34552,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 52448,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 57396,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 272 spell-signature match",
+      "note": "Shared humanoid brawler spell bridge: Punch, Jab, Flourishing Combo, Haymaker, Contamination Cloud."
+    },
+    {
+      "id": "open-world-storm-caster-hydro-hurricane",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        30756
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 56683,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 56986,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 56990,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 56993,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 87 spell-signature match",
+      "note": "Shared storm caster spell bridge: Arcane Blast, Cold Snap, Hydro Burst, Hurricane, Flash Freeze."
+    },
+    {
+      "id": "open-world-humanoid-pistol-napalm",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        27545,
+        27546
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 46670,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 56503,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 57137,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 70367,
+          "cooldownSeconds": 20.0
+        },
+        {
+          "spell4Id": 72197,
+          "cooldownSeconds": 24.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Shared pistolier spell bridge: Blast, Shot, Burning, Blazing Akimbo, Napalm Spray, Flak Shot."
+    },
+    {
+      "id": "open-world-krogg-crushing-flurry",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32920,
+        32921
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 46692,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 46797,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2AffiliationId 218/UnitRaceId 272 spell-signature match",
+      "note": "Shared krogg bruiser spell bridge: Clobber, Smash, Crushing Flurry, Crushing Rush."
+    },
+    {
+      "id": "open-world-strain-corruptor-persistent-power",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        44337,
+        44339
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 57585,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 57588,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 57589,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 57593,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 226 spell-signature match",
+      "note": "Shared strain corruptor spell bridge: Corrupted Slash, Claw Swipe, Circumvention, From the Depths, Persistent Power."
+    },
+    {
+      "id": "open-world-mutant-hookshot-power-surge",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        40488,
+        40489
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 40494,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 40506,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 40571,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 234 spell-signature match",
+      "note": "Shared mutant bruiser spell bridge: Swat, Swipe, Hookshot, Eradicate, Power Surge."
+    },
+    {
+      "id": "open-world-humanoid-furious-strikes",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        2605,
+        2607
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 54742,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 55044,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 56425,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Shared humanoid slasher spell bridge: Slice, Dice, Furious Strikes, Discouraging Word, Arc of Steel."
+    },
+    {
+      "id": "open-world-humanoid-searing-strikes",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32867,
+        32868
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 49792,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 51383,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 148 spell-signature match",
+      "note": "Shared humanoid slasher spell bridge: Slice, Slash, Searing Strikes, Melt Armor."
+    },
+    {
+      "id": "open-world-humanoid-bewildering-barrage",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        5649,
+        5652
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 52551,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 53219,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 53247,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 71 spell-signature match",
+      "note": "Shared humanoid brawler spell bridge: Punch, Jab, Bewildering Blow, Flourishing Barrage, Furious Strike."
+    },
+    {
+      "id": "open-world-squirg-ink-rain",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32651
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 45668,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 45670,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 57739,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 294 spell-signature match",
+      "note": "Shared squirg spell bridge: Spit, Ink Trail, Ink Fountain, Ink Rain."
+    },
+    {
+      "id": "open-world-buzzbing-honey-bomb",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        42802
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Shared buzzbing event spell bridge: Honey Bomb."
+    },
+    {
+      "id": "open-world-construct-sentinel-salvo",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        28693,
+        28694
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 39430,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 46809,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 46893,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 277 spell-signature match",
+      "note": "Shared construct sentinel spell bridge: Swipe, Swing, Acrobatic Dash, Energy Storm, Homing Missile Salvo."
+    },
+    {
+      "id": "open-world-construct-barrage-laser-trishot",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        28690,
+        28691
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 41187,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 74369,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 275 spell-signature match",
+      "note": "Shared construct ranged spell bridge: Barrage, Shot, Laser Barrage, Tri-Shot."
+    },
+    {
+      "id": "open-world-guardian-rip-ethereal",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        42874,
+        42875
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 43759,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 57320,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 57321,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 57329,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 123 spell-signature match",
+      "note": "Shared guardian spell bridge: Rip, Tear, Bleed, Cull, Swirlwind, Ethereal Strike."
+    },
+    {
+      "id": "open-world-yeti-quake-frost-jump",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        33251,
+        33252
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 36569,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 52968,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 53034,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 53054,
+          "cooldownSeconds": 20.0
+        },
+        {
+          "spell4Id": 70383,
+          "cooldownSeconds": 24.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 99 spell-signature match",
+      "note": "Shared yeti spell bridge: Maul, Slam, Mini Quake, Boom Slap, Shouting Frenzy, Blistering Cold, Jump Shot."
+    },
+    {
+      "id": "open-world-drone-air-burst",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        56610
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 206 spell-signature match",
+      "note": "Shared drone spell bridge: Air Burst."
+    },
+    {
+      "id": "open-world-ulgar-crushing-heal",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        28998,
+        28999
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 35376,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 35526,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 73113,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 73116,
+          "cooldownSeconds": 20.0
+        },
+        {
+          "spell4Id": 73135,
+          "cooldownSeconds": 24.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 184 spell-signature match",
+      "note": "Shared ulgar elite spell bridge: Thump, Crush, Hammer Down, Crushing Swing, Bludgeon, Leaping Spin Slam, Offensive Healing."
+    },
+    {
+      "id": "open-world-fire-caster-overheat",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        34062
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 55848,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 55849,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 55851,
+          "cooldownSeconds": 16.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 184 spell-signature match",
+      "note": "Shared fire caster spell bridge: Arcane Bolt, Firestorm, Erupting Fissure, Overheat."
+    },
+    {
+      "id": "open-world-water-elemental-ice-storm",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        35321,
+        35322
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 49880,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 49906,
+          "cooldownSeconds": 12.0
+        },
+        {
+          "spell4Id": 51361,
+          "cooldownSeconds": 16.0
+        },
+        {
+          "spell4Id": 51379,
+          "cooldownSeconds": 20.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 243 spell-signature match",
+      "note": "Shared water elemental spell bridge: Swat, Pound, Ice Field, Sling Snow Boulders, Ice Storm, Cold Snap."
+    },
+    {
+      "id": "open-world-humanoid-punch-combo",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        5649,
+        5652
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 34552,
+          "cooldownSeconds": 8.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 170 spell-signature match",
+      "note": "Shared humanoid brawler spell bridge: Punch, Jab, Flourishing Combo."
+    },
+    {
+      "id": "open-world-strain-spray-tainted-soul",
+      "behavior": "open-world-common",
+      "autoAttackSpell4Ids": [
+        32651
+      ],
+      "specialAttacks": [
+        {
+          "spell4Id": 71072,
+          "cooldownSeconds": 8.0
+        },
+        {
+          "spell4Id": 71075,
+          "cooldownSeconds": 12.0
+        }
+      ],
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2ActionSetId 1435 spell-signature match",
+      "note": "Shared strain spray spell bridge: Spit, Corrupting Spray, Tainted Soul."
     }
   ],
   "creatures": [
@@ -701,6 +2184,468 @@
       "source": "reviewed-combat-kit-propagation-2026-06-06",
       "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 47 spell-signature match",
       "note": "Megatech Hound - propagated exact Tear/Gnash/Lunge kit"
+    },
+    {
+      "creature2Id": 30300,
+      "kit": "open-world-woodling-splinter-poison-spores",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 101 spell-signature match",
+      "note": "Darkloam Shadowroot - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 32508,
+      "kit": "open-world-woodling-splinter-poison-spores",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 101 spell-signature match",
+      "note": "Infused Lifesplinter - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61454,
+      "kit": "open-world-woodling-splinter-poison-spores",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 101 spell-signature match",
+      "note": "Infused Lifewood - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 14136,
+      "kit": "open-world-woodling-splinter-poison-spores",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 101 spell-signature match",
+      "note": "The Lurking Terror - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 45583,
+      "kit": "open-world-woodling-splinter-poison-spores",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 101 spell-signature match",
+      "note": "Wormwood the Wraithmaker - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 38358,
+      "kit": "open-world-strain-eye-event-horizon",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 233 spell-signature match",
+      "note": "Strain Watcher - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 58790,
+      "kit": "open-world-humanoid-slice-hack-bleed",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Writhing Soldier - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 38231,
+      "kit": "open-world-feline-rip-frenzy-bleed",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Corrupted Padfoot - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 38292,
+      "kit": "open-world-feline-rip-frenzy-bleed",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Corrupted Stalker - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 17288,
+      "kit": "open-world-feline-rip-frenzy-bleed",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Irradiated Icetail Slayer - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 38232,
+      "kit": "open-world-feline-rip-frenzy-bleed",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Corrupted Slasher - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61885,
+      "kit": "open-world-mech-electric-chain-missile",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 205 spell-signature match",
+      "note": "Sabotaged Enforcerbot - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61882,
+      "kit": "open-world-mech-electric-chain-missile",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 205 spell-signature match",
+      "note": "Sabotaged Securitybot - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 39994,
+      "kit": "open-world-mech-zap-flame-phaser",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 206 spell-signature match",
+      "note": "Sabotaged Servicebot - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 30325,
+      "kit": "open-world-yeti-maul-boom-frenzy",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 99 spell-signature match",
+      "note": "Needlebrook Brute - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61447,
+      "kit": "open-world-yeti-maul-boom-frenzy",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 99 spell-signature match",
+      "note": "Needlebrook Hulk - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 18902,
+      "kit": "open-world-girrok-bite-pound",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 31 spell-signature match",
+      "note": "Enraged Grimstone Mangler - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 30326,
+      "kit": "open-world-yeti-maul-frenzy-jump",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 99 spell-signature match",
+      "note": "Needlebrook Shambler - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 17287,
+      "kit": "open-world-feline-pounce-frenzy-bleed",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Irradiated Icetail Pouncer - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 38299,
+      "kit": "open-world-feline-pounce-frenzy-bleed",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Corrupted Mauler - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61877,
+      "kit": "open-world-hoartusk-pummel-trample",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 131 spell-signature match",
+      "note": "Wooly Trampler - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 12754,
+      "kit": "open-world-snoglug-tongue-slime",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 125 spell-signature match",
+      "note": "Irradiated Snoglug - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61549,
+      "kit": "open-world-icetail-chilling-flurry",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 32 spell-signature match",
+      "note": "Irradiated Icetail Stalker - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 30322,
+      "kit": "open-world-buzzbing-stinger-honey",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Dazeroot Hiveguard - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 57148,
+      "kit": "open-world-buzzbing-stinger-honey",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Enhanced Dazeroot Hivestriker - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61452,
+      "kit": "open-world-buzzbing-stinger-honey",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Enhanced Dazeroot Hiveguard - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61416,
+      "kit": "open-world-buzzbing-stinger-honey",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Dazeroot Impaler - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 19895,
+      "kit": "open-world-freebot-wallop-spikes",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 210 spell-signature match",
+      "note": "Mindless Freebot - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 26004,
+      "kit": "northern-wilds-swordsmaster",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 80 spell-signature match",
+      "note": "Purifier Clochron - propagated exact Swordsmaster kit"
+    },
+    {
+      "creature2Id": 45599,
+      "kit": "northern-wilds-swordsmaster",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2AffiliationId 576 spell-signature match",
+      "note": "Nym Maiden of Mercy - propagated exact Swordsmaster kit"
+    },
+    {
+      "creature2Id": 51059,
+      "kit": "northern-wilds-dominion-swordsman",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 171 spell-signature match",
+      "note": "Trooper Koren - propagated exact Dominion Swordsman kit"
+    },
+    {
+      "creature2Id": 31864,
+      "kit": "northern-wilds-dominion-swordsman",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 171 spell-signature match",
+      "note": "Megatech Merc - propagated exact Dominion Swordsman kit"
+    },
+    {
+      "creature2Id": 38228,
+      "kit": "northern-wilds-dominion-swordsman",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 171 spell-signature match",
+      "note": "Megatech Shock Trooper - propagated exact Dominion Swordsman kit"
+    },
+    {
+      "creature2Id": 23419,
+      "kit": "northern-wilds-swordsmaster",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2AffiliationId 225/FactionId 821 spell-signature match",
+      "note": "Truthbound Harbinger - propagated exact Swordsmaster kit"
+    },
+    {
+      "creature2Id": 26047,
+      "kit": "northern-wilds-dagunlord",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 34 spell-signature match",
+      "note": "Skeech Brawler - propagated exact Dagunlord kit"
+    },
+    {
+      "creature2Id": 33997,
+      "kit": "northern-wilds-dagunlord",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 34 spell-signature match",
+      "note": "Rime Hide Scrounger - propagated exact Dagunlord kit"
+    },
+    {
+      "creature2Id": 33835,
+      "kit": "northern-wilds-chillfang",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 47 spell-signature match",
+      "note": "Spirit Stalker - propagated exact Chillfang kit"
+    },
+    {
+      "creature2Id": 41207,
+      "kit": "northern-wilds-chillfang",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 47 spell-signature match",
+      "note": "Young Fringe Scavenger - propagated exact Chillfang kit"
+    },
+    {
+      "creature2Id": 14614,
+      "kit": "open-world-valtross-blades-aerial",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 84 spell-signature match",
+      "note": "Valtross Stormwing - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 17340,
+      "kit": "open-world-valtross-blades-aerial",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 84 spell-signature match",
+      "note": "Broodlord Taran Stormwing - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 26860,
+      "kit": "open-world-mech-electric-tri-missile",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 205 spell-signature match",
+      "note": "Sabotaged Patrolbot - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61915,
+      "kit": "open-world-storm-caster-bad-weather",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 299 spell-signature match",
+      "note": "Doomtide Shock-Weaver - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61934,
+      "kit": "open-world-storm-caster-bad-weather",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 299 spell-signature match",
+      "note": "Doomtide Squall-Bearer - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 26097,
+      "kit": "open-world-storm-caster-bad-weather",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 299 spell-signature match",
+      "note": "Doomtide Hail-Striker - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 16660,
+      "kit": "open-world-storm-caster-bad-weather",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 189 spell-signature match",
+      "note": "High Priest Storm-Render - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 16808,
+      "kit": "open-world-storm-caster-bad-weather",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 189 spell-signature match",
+      "note": "Wind-Wail the Storm-Shaman - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 14573,
+      "kit": "open-world-wind-elemental-shock-ring",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 180 spell-signature match",
+      "note": "Wind Elemental - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 37316,
+      "kit": "open-world-risen-brawler-haymaker",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 281 spell-signature match",
+      "note": "Risen Darkspur Raider - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 37315,
+      "kit": "open-world-risen-brawler-haymaker",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 281 spell-signature match",
+      "note": "Risen Darkspur Brute - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 58794,
+      "kit": "open-world-humanoid-shell-longshot-mortar",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 70 spell-signature match",
+      "note": "Writhing Officer - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61859,
+      "kit": "open-world-snowshadow-ranged-emp",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 78 spell-signature match",
+      "note": "Snowshadow Analyst - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 19900,
+      "kit": "open-world-snowshadow-ranged-emp",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 78 spell-signature match",
+      "note": "Snowshadow Scientist - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61984,
+      "kit": "open-world-snowshadow-melee-whirlwind",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 80 spell-signature match",
+      "note": "Snowshadow Calumniator - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 19901,
+      "kit": "open-world-snowshadow-melee-whirlwind",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 80 spell-signature match",
+      "note": "Snowshadow Inquisitor - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61858,
+      "kit": "open-world-snowshadow-melee-whirlwind",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 80 spell-signature match",
+      "note": "Snowshadow Executor - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 28623,
+      "kit": "open-world-grazer-buck-crash",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 102 spell-signature match",
+      "note": "Mysthoof Doe - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 27687,
+      "kit": "open-world-grazer-buck-crash",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 102 spell-signature match",
+      "note": "Mysthoof Trampler - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 58791,
+      "kit": "open-world-medic-zap-overload",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Writhing Medic - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 23519,
+      "kit": "open-world-construct-barrage-laser",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 275 spell-signature match",
+      "note": "Truthbound Sentinel - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 33968,
+      "kit": "open-world-construct-barrage-laser",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 275 spell-signature match",
+      "note": "N22 Sentinel - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 33787,
+      "kit": "open-world-construct-barrage-shot",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 275 spell-signature match",
+      "note": "N22 Blaster - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 31738,
+      "kit": "open-world-buzzbing-sting-needle",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Dazeroot Stinger - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 50528,
+      "kit": "open-world-buzzbing-sting-needle",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Augmented Buzzbing Youth - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 33538,
+      "kit": "open-world-slank-bite-chew",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 155 spell-signature match",
+      "note": "Slank Scavenger - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61909,
+      "kit": "open-world-icetail-tail-guerrilla",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 139 spell-signature match",
+      "note": "Wired Icetail Screecher - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 28564,
+      "kit": "open-world-icetail-tail-guerrilla",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 139 spell-signature match",
+      "note": "Wired Icetail - reviewed spell group promotion"
     },
     {
       "creature2Id": 11071,
@@ -1023,6 +2968,349 @@
       "source": "reviewed-northern-wilds-spell-bridge",
       "evidence": "Decomp/Analysis/INITIAL_FINDINGS.md Northern Wilds combat profile promotion",
       "note": "Crystal Titan - Northern Wilds - Tank [NW-CBC]"
+    },
+    {
+      "creature2Id": 19902,
+      "kit": "open-world-snowshadow-ranged-emp",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2AffiliationId 54 spell-signature match",
+      "note": "Snowshadow Cannoneer - propagated exact Snowshadow ranged EMP kit"
+    },
+    {
+      "creature2Id": 62000,
+      "kit": "open-world-snowshadow-ranged-emp",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2AffiliationId 54 spell-signature match",
+      "note": "Snowshadow Marksman - propagated exact Snowshadow ranged EMP kit"
+    },
+    {
+      "creature2Id": 61998,
+      "kit": "open-world-snowshadow-melee-whirlwind",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2AffiliationId 54 spell-signature match",
+      "note": "Snowshadow Officer - propagated exact Snowshadow melee whirlwind kit"
+    },
+    {
+      "creature2Id": 19898,
+      "kit": "open-world-snowshadow-melee-whirlwind",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2AffiliationId 54 spell-signature match",
+      "note": "Snowshadow Dominator - propagated exact Snowshadow melee whirlwind kit"
+    },
+    {
+      "creature2Id": 33213,
+      "kit": "northern-wilds-swordsmaster",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 70 spell-signature match",
+      "note": "Deathbringer Cordemia - propagated exact swordsmaster kit"
+    },
+    {
+      "creature2Id": 22076,
+      "kit": "open-world-humanoid-slice-slash-basic",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 71 spell-signature match",
+      "note": "Off-Duty Exile Soldier - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 22077,
+      "kit": "open-world-humanoid-slice-slash-basic",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 71 spell-signature match",
+      "note": "Drunken Daredevil - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 31865,
+      "kit": "open-world-girrok-bite-pound-rampage",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 283 spell-signature match",
+      "note": "Risen Stalker - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 26419,
+      "kit": "open-world-humanoid-punch-crushing-blows",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 299 spell-signature match",
+      "note": "Doomtide Converts - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 32502,
+      "kit": "open-world-humanoid-slice-dice-slashing",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 272 spell-signature match",
+      "note": "Ravenous Reaver - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 37314,
+      "kit": "open-world-girrok-bite-pound-boulder",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 283 spell-signature match",
+      "note": "Corrupted Mutilator - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 45580,
+      "kit": "open-world-girrok-bite-pound-boulder",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 283 spell-signature match",
+      "note": "Barebones - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 23368,
+      "kit": "open-world-humanoid-slice-dice-basic",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 76 spell-signature match",
+      "note": "Firing Squad Member - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 17432,
+      "kit": "open-world-humanoid-blast-shot",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2TractId 8 spell-signature match",
+      "note": "Cartel Gunhand - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 17429,
+      "kit": "open-world-humanoid-blast-shot",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2TractId 8 spell-signature match",
+      "note": "Cartel Outlaw - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 20780,
+      "kit": "open-world-humanoid-punch-firebomb",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 78 spell-signature match",
+      "note": "Snowshadow Apprentice Mastermind - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 32689,
+      "kit": "open-world-humanoid-punch-firebomb",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 272 spell-signature match",
+      "note": "Drugaur the Rotted - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 61841,
+      "kit": "open-world-humanoid-slice-dice-fury-wallop",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Blackfrost Assassin - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 62239,
+      "kit": "open-world-humanoid-onslaught-overpower",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2ActionSetId 1435 spell-signature match",
+      "note": "Writhing Warrior - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 22224,
+      "kit": "open-world-humanoid-plasma-suppression",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Snowshadow Grenadier - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 50527,
+      "kit": "open-world-buzzbing-charged-barbs",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Augmented Buzzbing Adult - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 32843,
+      "kit": "open-world-humanoid-contamination-brawler",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 272 spell-signature match",
+      "note": "Ravenous Freak - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 26122,
+      "kit": "open-world-storm-caster-hydro-hurricane",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 87 spell-signature match",
+      "note": "Doomtide Disciple - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 22551,
+      "kit": "open-world-humanoid-pistol-napalm",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Drill Operator Devan - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 53577,
+      "kit": "open-world-krogg-crushing-flurry",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2AffiliationId 218 spell-signature match",
+      "note": "Darkspur Purveyor - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 45603,
+      "kit": "open-world-krogg-crushing-flurry",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 272 spell-signature match",
+      "note": "Mikolai the Malevolent - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 39209,
+      "kit": "open-world-strain-corruptor-persistent-power",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 226 spell-signature match",
+      "note": "Puslek the Corruptor - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 53115,
+      "kit": "open-world-mutant-hookshot-power-surge",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 234 spell-signature match",
+      "note": "The Ravagist - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 22550,
+      "kit": "open-world-humanoid-furious-strikes",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 69 spell-signature match",
+      "note": "Drill Operator Mark - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 23016,
+      "kit": "open-world-humanoid-searing-strikes",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 148 spell-signature match",
+      "note": "Vox Strongblock - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 22549,
+      "kit": "open-world-humanoid-bewildering-barrage",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 71 spell-signature match",
+      "note": "Drill Operator Gridz - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 24037,
+      "kit": "open-world-squirg-ink-rain",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 294 spell-signature match",
+      "note": "Squirg Spewer - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 46252,
+      "kit": "open-world-buzzbing-honey-bomb",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Stinging Attacker - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 29125,
+      "kit": "open-world-buzzbing-honey-bomb",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 97 spell-signature match",
+      "note": "Stinging Defender - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 63160,
+      "kit": "open-world-construct-sentinel-salvo",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 277 spell-signature match",
+      "note": "Tech-Cache Guardian - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 54402,
+      "kit": "open-world-construct-barrage-laser-trishot",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 275 spell-signature match",
+      "note": "Sim Core Defense Protocol - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 51559,
+      "kit": "open-world-guardian-rip-ethereal",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 123 spell-signature match",
+      "note": "Megawatt - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 51771,
+      "kit": "open-world-guardian-rip-ethereal",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 123 spell-signature match",
+      "note": "Gigawatt - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 37213,
+      "kit": "open-world-yeti-quake-frost-jump",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 99 spell-signature match",
+      "note": "Grevitch the Gruesome - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 52400,
+      "kit": "open-world-yeti-quake-frost-jump",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 99 spell-signature match",
+      "note": "Crazed Zubblehead - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 53057,
+      "kit": "open-world-drone-air-burst",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 206 spell-signature match",
+      "note": "Air Bursterbot - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 22356,
+      "kit": "open-world-ulgar-crushing-heal",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 184 spell-signature match",
+      "note": "Warlord Vogor - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 22355,
+      "kit": "open-world-fire-caster-overheat",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 184 spell-signature match",
+      "note": "Darkwitch Hevika - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 22547,
+      "kit": "open-world-water-elemental-ice-storm",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact UnitRaceId 243 spell-signature match",
+      "note": "Noxinnate the Sludgerager - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 26000,
+      "kit": "open-world-freebot-wallop-spikes",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 233 spell-signature match",
+      "note": "Sabotaged Fishbot - propagated exact freebot wallop/spikes kit"
+    },
+    {
+      "creature2Id": 23186,
+      "kit": "open-world-storm-caster-bad-weather",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 821 spell-signature match",
+      "note": "Brother Vasker - propagated exact storm caster kit"
+    },
+    {
+      "creature2Id": 61456,
+      "kit": "open-world-humanoid-slice-dice-fury-wallop",
+      "source": "reviewed-combat-kit-propagation-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 740 spell-signature match",
+      "note": "Ravenous Abomination - propagated exact humanoid slasher fury kit"
+    },
+    {
+      "creature2Id": 27217,
+      "kit": "open-world-humanoid-punch-combo",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact FactionId 170 spell-signature match",
+      "note": "Snowshadow Technician - reviewed spell group promotion"
+    },
+    {
+      "creature2Id": 58792,
+      "kit": "open-world-strain-spray-tainted-soul",
+      "source": "reviewed-combat-kit-group-2026-06-06",
+      "evidence": "artifacts/combat-profile-audit/combat-kit-group-candidates.csv exact Creature2ActionSetId 1435 spell-signature match",
+      "note": "Writhing Crewman - reviewed spell group promotion"
     }
   ]
 }
