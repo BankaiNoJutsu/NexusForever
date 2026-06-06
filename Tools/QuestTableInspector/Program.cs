@@ -14,11 +14,15 @@ if (args.Length > 0 && args[0].Equals("--riders-reef-crosswalk", StringCompariso
 if (args.Length > 0 && args[0].Equals("--target-groups", StringComparison.OrdinalIgnoreCase))
     return await RunTargetGroups(args.Skip(1).ToArray());
 
+if (args.Length > 0 && args[0].Equals("--spell-action-set", StringComparison.OrdinalIgnoreCase))
+    return RunSpellActionSet(args.Skip(1).ToArray());
+
 if (args.Length == 0)
 {
     Console.Error.WriteLine("Usage:");
     Console.Error.WriteLine("  QuestTableInspector <tbl-path> [quest-id ...]");
     Console.Error.WriteLine("  QuestTableInspector --target-groups <tbl-path> <target-group-id ...>");
+    Console.Error.WriteLine("  QuestTableInspector --spell-action-set <tbl-path> [spell-id ...] [--xp <total-xp>] [--shortcut-set-id <id>]");
     Console.Error.WriteLine("  QuestTableInspector --riders-reef-crosswalk <world-sql-path> [--out <artifact-path>]");
     return 1;
 }
@@ -248,6 +252,217 @@ static string? GetOption(string[] args, string optionName)
     }
 
     return null;
+}
+
+static int RunSpellActionSet(string[] args)
+{
+    if (args.Length == 0)
+    {
+        Console.Error.WriteLine("Usage: QuestTableInspector --spell-action-set <tbl-path> [spell-id ...] [--xp <total-xp>] [--shortcut-set-id <id>]");
+        return 1;
+    }
+
+    string gameTablePath = Path.GetFullPath(args[0]);
+    if (!Directory.Exists(gameTablePath))
+    {
+        Console.Error.WriteLine($"Table directory not found: {gameTablePath}");
+        return 1;
+    }
+
+    string? spell4BasePath = GetRequiredTablePath(gameTablePath, "Spell4Base.tbl");
+    string? spell4Path = GetRequiredTablePath(gameTablePath, "Spell4.tbl");
+    if (spell4BasePath is null || spell4Path is null)
+        return 1;
+
+    uint[] spellIds = GetSpellActionSetSpellIds(args);
+    uint totalXp = GetUIntOption(args, "--xp", 4806u);
+    uint shortcutSetId = GetUIntOption(args, "--shortcut-set-id", 1553u);
+
+    Console.WriteLine($"TableRoot={gameTablePath}");
+
+    var spell4BaseTable = new GameTable<Spell4BaseEntry>(spell4BasePath);
+    var spell4Table = new GameTable<Spell4Entry>(spell4Path);
+
+    string xpPerLevelPath = Path.Combine(gameTablePath, "XpPerLevel.tbl");
+    if (File.Exists(xpPerLevelPath))
+        PrintXpLevel(xpPerLevelPath, totalXp);
+
+    foreach (uint spellId in spellIds)
+        PrintSpellActionSetSpell(spellId, spell4BaseTable, spell4Table);
+
+    string actionSlotPrereqPath = Path.Combine(gameTablePath, "ActionSlotPrereq.tbl");
+    if (File.Exists(actionSlotPrereqPath))
+        PrintActionSlotPrerequisites(gameTablePath, actionSlotPrereqPath);
+
+    string actionBarShortcutSetPath = Path.Combine(gameTablePath, "ActionBarShortcutSet.tbl");
+    if (File.Exists(actionBarShortcutSetPath))
+        PrintActionBarShortcutSets(actionBarShortcutSetPath, spellIds, shortcutSetId);
+
+    return 0;
+}
+
+static string? GetRequiredTablePath(string gameTablePath, string tableFileName)
+{
+    string tablePath = Path.Combine(gameTablePath, tableFileName);
+    if (File.Exists(tablePath))
+        return tablePath;
+
+    Console.Error.WriteLine($"Required table file not found: {tablePath}");
+    return null;
+}
+
+static uint GetUIntOption(string[] args, string optionName, uint defaultValue)
+{
+    string? value = GetOption(args, optionName);
+    return value is null
+        ? defaultValue
+        : uint.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+}
+
+static uint[] GetSpellActionSetSpellIds(string[] args)
+{
+    List<uint> spellIds = [];
+    for (int i = 1; i < args.Length; i++)
+    {
+        if (args[i].Equals("--xp", StringComparison.OrdinalIgnoreCase) ||
+            args[i].Equals("--shortcut-set-id", StringComparison.OrdinalIgnoreCase))
+        {
+            i++;
+            continue;
+        }
+
+        if (args[i].StartsWith("--", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException($"Unknown --spell-action-set option: {args[i]}");
+
+        spellIds.Add(uint.Parse(args[i], NumberStyles.Integer, CultureInfo.InvariantCulture));
+    }
+
+    return spellIds.Count == 0
+        ? [37968u, 19778u, 18309u, 18359u, 38017u]
+        : spellIds.ToArray();
+}
+
+static void PrintXpLevel(string xpPerLevelPath, uint totalXp)
+{
+    var xpPerLevelTable = new GameTable<XpPerLevelEntry>(xpPerLevelPath);
+    XpPerLevelEntry? xpLevel = xpPerLevelTable.Entries
+        .Where(entry => entry.MinXpForLevel <= totalXp)
+        .OrderBy(entry => entry.Id)
+        .LastOrDefault();
+
+    Console.WriteLine($"TotalXp={totalXp} maps to level {xpLevel?.Id.ToString(CultureInfo.InvariantCulture) ?? "-"}");
+}
+
+static void PrintSpellActionSetSpell(uint spellId, GameTable<Spell4BaseEntry> spell4BaseTable, GameTable<Spell4Entry> spell4Table)
+{
+    Spell4BaseEntry? directBase = spell4BaseTable.GetEntry(spellId);
+    Spell4Entry? spell4 = spell4Table.GetEntry(spellId);
+    Spell4BaseEntry? mappedBase = spell4 is null ? null : spell4BaseTable.GetEntry(spell4.Spell4BaseIdBaseSpell);
+
+    Console.WriteLine(
+        string.Join(
+            " | ",
+            $"Id={spellId}",
+            $"DirectBase={directBase?.Id.ToString(CultureInfo.InvariantCulture) ?? "-"}",
+            $"DirectWeaponSlot={directBase?.WeaponSlot.ToString(CultureInfo.InvariantCulture) ?? "-"}",
+            $"DirectSpellType={directBase?.Spell4SpellTypesIdSpellType.ToString(CultureInfo.InvariantCulture) ?? "-"}",
+            $"DirectSpellClass={directBase?.SpellClass.ToString(CultureInfo.InvariantCulture) ?? "-"}",
+            $"DirectClass={directBase?.ClassIdPlayer.ToString(CultureInfo.InvariantCulture) ?? "-"}",
+            $"DirectIcon={directBase?.Icon ?? "-"}",
+            $"Spell4Base={spell4?.Spell4BaseIdBaseSpell.ToString(CultureInfo.InvariantCulture) ?? "-"}",
+            $"Spell4Tier={spell4?.TierIndex.ToString(CultureInfo.InvariantCulture) ?? "-"}",
+            $"MappedWeaponSlot={mappedBase?.WeaponSlot.ToString(CultureInfo.InvariantCulture) ?? "-"}",
+            $"MappedSpellType={mappedBase?.Spell4SpellTypesIdSpellType.ToString(CultureInfo.InvariantCulture) ?? "-"}",
+            $"MappedSpellClass={mappedBase?.SpellClass.ToString(CultureInfo.InvariantCulture) ?? "-"}",
+            $"MappedClass={mappedBase?.ClassIdPlayer.ToString(CultureInfo.InvariantCulture) ?? "-"}",
+            $"MappedIcon={mappedBase?.Icon ?? "-"}"));
+}
+
+static void PrintActionSlotPrerequisites(string gameTablePath, string actionSlotPrereqPath)
+{
+    Console.WriteLine("ActionSlotPrereq");
+    var actionSlotPrereqTable = new GameTable<ActionSlotPrereqEntry>(actionSlotPrereqPath);
+    List<uint> prerequisiteIds = [];
+    foreach (ActionSlotPrereqEntry entry in actionSlotPrereqTable.Entries.OrderBy(entry => entry.SlotIndex))
+    {
+        Console.WriteLine($"Id={entry.Id} | SlotIndex={entry.SlotIndex} | PrerequisiteIdUnlock={entry.PrerequisiteIdUnlock}");
+        if (entry.PrerequisiteIdUnlock != 0u)
+            prerequisiteIds.Add(entry.PrerequisiteIdUnlock);
+    }
+
+    string prerequisitePath = Path.Combine(gameTablePath, "Prerequisite.tbl");
+    if (!File.Exists(prerequisitePath))
+        return;
+
+    Console.WriteLine("ActionSlotPrereq prerequisites");
+    var prerequisiteTable = new GameTable<PrerequisiteEntry>(prerequisitePath);
+    foreach (uint prerequisiteId in prerequisiteIds.Distinct().Order())
+    {
+        PrerequisiteEntry? entry = prerequisiteTable.GetEntry(prerequisiteId);
+        Console.WriteLine(
+            entry is null
+                ? $"PrerequisiteId={prerequisiteId} | missing"
+                : string.Join(
+                    " | ",
+                    $"PrerequisiteId={entry.Id}",
+                    $"Flags={entry.Flags}",
+                    $"Type0={entry.PrerequisiteTypeId[0]}",
+                    $"Comp0={entry.PrerequisiteComparisonId[0]}",
+                    $"Object0={entry.ObjectId[0]}",
+                    $"Value0={entry.Value[0]}",
+                    $"Type1={entry.PrerequisiteTypeId[1]}",
+                    $"Comp1={entry.PrerequisiteComparisonId[1]}",
+                    $"Object1={entry.ObjectId[1]}",
+                    $"Value1={entry.Value[1]}",
+                    $"Type2={entry.PrerequisiteTypeId[2]}",
+                    $"Comp2={entry.PrerequisiteComparisonId[2]}",
+                    $"Object2={entry.ObjectId[2]}",
+                    $"Value2={entry.Value[2]}"));
+    }
+}
+
+static void PrintActionBarShortcutSets(string actionBarShortcutSetPath, IEnumerable<uint> spellIds, uint shortcutSetId)
+{
+    Console.WriteLine("ActionBarShortcutSet sample");
+    var actionBarShortcutSetTable = new GameTable<ActionBarShortcutSetEntry>(actionBarShortcutSetPath);
+    HashSet<uint> spellIdSet = spellIds.ToHashSet();
+    foreach (ActionBarShortcutSetEntry entry in actionBarShortcutSetTable.Entries
+        .Where(entry => entry.Id <= 20u || entry.Id == shortcutSetId || HasShortcutObject(entry, spellIdSet))
+        .OrderBy(entry => entry.Id)
+        .Take(80))
+    {
+        Console.WriteLine($"Id={entry.Id} | {FormatShortcutSet(entry)}");
+    }
+}
+
+static bool HasShortcutObject(ActionBarShortcutSetEntry entry, ISet<uint> objectIds)
+{
+    return Enumerable.Range(0, 12)
+        .Select(index => GetFieldValue<uint>(entry, $"ObjectId{index:00}"))
+        .Any(objectIds.Contains);
+}
+
+static string FormatShortcutSet(ActionBarShortcutSetEntry entry)
+{
+    return string.Join(
+        " | ",
+        Enumerable.Range(0, 12)
+            .Select(index =>
+            {
+                uint shortcutType = GetFieldValue<uint>(entry, $"ShortcutType{index:00}");
+                uint objectId = GetFieldValue<uint>(entry, $"ObjectId{index:00}");
+                return $"[{index}] type={shortcutType} object={objectId}";
+            })
+            .Where(value => !value.EndsWith("type=0 object=0", StringComparison.Ordinal)));
+}
+
+static T GetFieldValue<T>(object instance, string fieldName)
+{
+    System.Reflection.FieldInfo? field = instance.GetType().GetField(fieldName);
+    if (field is null)
+        throw new InvalidOperationException($"Field '{fieldName}' was not found on {instance.GetType().Name}.");
+
+    return (T)field.GetValue(instance)!;
 }
 
 static async Task<int> RunTargetGroups(string[] args)

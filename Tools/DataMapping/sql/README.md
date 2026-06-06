@@ -202,6 +202,12 @@ Get-Content -Raw Tools\DataMapping\sql\apply_safe_world_imports_from_staging.sql
   --host=127.0.0.1 --user=bankai --password=bankai nexus_forever_world
 ```
 
+Spline candidates are still audit-only: the mapper scores full `Spline2` path
+geometry, records start/path distances, and uses runtime `entity`/`entity_spline`
+context to classify rows such as `strong_candidate`, `review_family_variant`,
+or `unsafe_existing_assignment`. These rows must not be promoted to
+`entity_spline` without row-level movement review or client/runtime smoke proof.
+
 After an authoring import is verified, refresh the checked-in runtime seed:
 
 ```powershell

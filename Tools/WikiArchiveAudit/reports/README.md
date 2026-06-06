@@ -17,7 +17,18 @@ Committed snapshots from `audit_wildstar_wiki.py` and related offline audits.
 
 | Report | Generator | Last refreshed |
 | --- | --- | --- |
+| `abilities-wiki-audit.md` | `audit_wildstar_wiki.py --domain abilities` | 2026-06-06 |
+| `achievements-wiki-audit.md` | `audit_wildstar_wiki.py --domain achievements` | 2026-06-06 |
+| `amps-wiki-audit.md` | `audit_wildstar_wiki.py --domain amps` | 2026-06-06 |
+| `character-creation-wiki-audit.md` | `audit_wildstar_wiki.py --domain character-creation` | 2026-06-06 |
+| `housing-wiki-audit.md` | `audit_wildstar_wiki.py --domain housing` | 2026-06-06 |
+| `lore-wiki-audit.md` | `audit_wildstar_wiki.py --domain lore` | 2026-06-06 |
 | `quests-wiki-audit.md` | `audit_wildstar_wiki.py --domain quests` | 2026-05-23 |
+| `tradeskills-wiki-audit.md` | `audit_wildstar_wiki.py --domain tradeskills` | 2026-06-06 |
+
+Some report refreshes intentionally exit nonzero when the audited domain still
+has hard gaps. Keep those snapshots when the markdown report was written; the
+`Result:` line records whether the domain passed or failed.
 
 Quest bucket coverage (curated vs generic vs blocked) is maintained separately:
 
@@ -35,5 +46,5 @@ python Tools\WikiArchiveAudit\audit_wildstar_wiki.py `
 ```
 
 Other domains can be promoted the same way (`character-creation`, `abilities`,
-`housing`, `achievements`, `tradeskills`, `lore`) when a pass needs a new
-committed snapshot.
+`amps`, `housing`, `achievements`, `tradeskills`, `lore`) when a pass needs a
+new committed snapshot.

@@ -1,0 +1,2874 @@
+{
+  "apollo": [
+    {
+      "Addons": 869,
+      "Api": "Apollo.RegisterAddon"
+    },
+    {
+      "Addons": 763,
+      "Api": "Apollo.RegisterEventHandler"
+    },
+    {
+      "Addons": 755,
+      "Api": "Apollo.LoadForm"
+    },
+    {
+      "Addons": 653,
+      "Api": "Apollo.RegisterSlashCommand"
+    },
+    {
+      "Addons": 473,
+      "Api": "Apollo.AddAddonErrorText"
+    },
+    {
+      "Addons": 399,
+      "Api": "Apollo.GetAddon"
+    },
+    {
+      "Addons": 357,
+      "Api": "Apollo.GetString"
+    },
+    {
+      "Addons": 252,
+      "Api": "Apollo.GetPackage"
+    },
+    {
+      "Addons": 247,
+      "Api": "Apollo.RegisterTimerHandler"
+    },
+    {
+      "Addons": 243,
+      "Api": "Apollo.RegisterPackage"
+    },
+    {
+      "Addons": 223,
+      "Api": "Apollo.CreateTimer"
+    },
+    {
+      "Addons": 206,
+      "Api": "Apollo.LoadSprites"
+    },
+    {
+      "Addons": 179,
+      "Api": "Apollo.GetConsoleVariable"
+    },
+    {
+      "Addons": 172,
+      "Api": "Apollo.RemoveEventHandler"
+    },
+    {
+      "Addons": 137,
+      "Api": "Apollo.StopTimer"
+    },
+    {
+      "Addons": 112,
+      "Api": "Apollo.StartTimer"
+    },
+    {
+      "Addons": 74,
+      "Api": "Apollo.SetConsoleVariable"
+    },
+    {
+      "Addons": 67,
+      "Api": "Apollo.GetAssetFolder"
+    },
+    {
+      "Addons": 53,
+      "Api": "Apollo.IsShiftKeyDown"
+    },
+    {
+      "Addons": 51,
+      "Api": "Apollo.GetAddonInfo"
+    },
+    {
+      "Addons": 50,
+      "Api": "Apollo.GetTextWidth"
+    },
+    {
+      "Addons": 48,
+      "Api": "Apollo.GetDisplaySize"
+    },
+    {
+      "Addons": 47,
+      "Api": "Apollo.GetMouse"
+    },
+    {
+      "Addons": 42,
+      "Api": "Apollo.IsControlKeyDown"
+    },
+    {
+      "Addons": 34,
+      "Api": "Apollo.GetScreenSize"
+    },
+    {
+      "Addons": 28,
+      "Api": "Apollo.IsAltKeyDown"
+    },
+    {
+      "Addons": 25,
+      "Api": "Apollo.AddonLoadStatus"
+    },
+    {
+      "Addons": 24,
+      "Api": "Apollo.DragDropQueryResult"
+    },
+    {
+      "Addons": 24,
+      "Api": "Apollo.FindWindowByName"
+    },
+    {
+      "Addons": 23,
+      "Api": "Apollo.FormatNumber"
+    },
+    {
+      "Addons": 23,
+      "Api": "Apollo.GetTickCount"
+    },
+    {
+      "Addons": 21,
+      "Api": "Apollo.GetGameFonts"
+    },
+    {
+      "Addons": 17,
+      "Api": "Apollo.GetAddons"
+    },
+    {
+      "Addons": 12,
+      "Api": "Apollo.LinkAddon"
+    },
+    {
+      "Addons": 11,
+      "Api": "Apollo.BeginDragDrop"
+    },
+    {
+      "Addons": 11,
+      "Api": "Apollo.GetMouseTargetWindow"
+    },
+    {
+      "Addons": 11,
+      "Api": "Apollo.GetReplacement"
+    },
+    {
+      "Addons": 11,
+      "Api": "Apollo.StringToLower"
+    },
+    {
+      "Addons": 10,
+      "Api": "Apollo.SetGlobalAnchor"
+    },
+    {
+      "Addons": 9,
+      "Api": "Apollo.StringLength"
+    },
+    {
+      "Addons": 8,
+      "Api": "Apollo.ParseInput"
+    },
+    {
+      "Addons": 6,
+      "Api": "Apollo.AlertAppWindow"
+    },
+    {
+      "Addons": 5,
+      "Api": "Apollo.DragDropCancelReason"
+    },
+    {
+      "Addons": 4,
+      "Api": "Apollo.GetAPIVersion"
+    },
+    {
+      "Addons": 4,
+      "Api": "Apollo.GetStrata"
+    },
+    {
+      "Addons": 4,
+      "Api": "Apollo.IsSpriteLoaded"
+    },
+    {
+      "Addons": 3,
+      "Api": "Apollo.DPF"
+    },
+    {
+      "Addons": 3,
+      "Api": "Apollo.GetMetaKeysDown"
+    },
+    {
+      "Addons": 3,
+      "Api": "Apollo.GetWindowsInStratum"
+    },
+    {
+      "Addons": 3,
+      "Api": "Apollo.UnlinkAddon"
+    },
+    {
+      "Addons": 1,
+      "Api": "Apollo.BeginClickStick"
+    },
+    {
+      "Addons": 1,
+      "Api": "Apollo.CreateFromFile"
+    },
+    {
+      "Addons": 1,
+      "Api": "Apollo.IsCapsLockOn"
+    },
+    {
+      "Addons": 1,
+      "Api": "Apollo.LoadTemplates"
+    },
+    {
+      "Addons": 1,
+      "Api": "Apollo.ResetConsoleVariable"
+    },
+    {
+      "Addons": 1,
+      "Api": "Apollo.SetNavTextAnchor"
+    },
+    {
+      "Addons": 1,
+      "Api": "Apollo.StarTimer"
+    }
+  ],
+  "challengeslib": [
+    {
+      "Addons": 32,
+      "Api": "ChallengesLib.GetActiveChallengeList"
+    },
+    {
+      "Addons": 10,
+      "Api": "ChallengesLib.ChallengeType_Ability"
+    },
+    {
+      "Addons": 10,
+      "Api": "ChallengesLib.ChallengeType_Combat"
+    },
+    {
+      "Addons": 10,
+      "Api": "ChallengesLib.ChallengeType_General"
+    },
+    {
+      "Addons": 10,
+      "Api": "ChallengesLib.ChallengeType_Item"
+    },
+    {
+      "Addons": 6,
+      "Api": "ChallengesLib.ActivateChallenge"
+    },
+    {
+      "Addons": 6,
+      "Api": "ChallengesLib.ShowHintArrow"
+    },
+    {
+      "Addons": 4,
+      "Api": "ChallengesLib.GetRewardList"
+    },
+    {
+      "Addons": 2,
+      "Api": "ChallengesLib.AbandonChallenge"
+    },
+    {
+      "Addons": 2,
+      "Api": "ChallengesLib.GenerateRewardList"
+    },
+    {
+      "Addons": 1,
+      "Api": "ChallengesLib.AtChallengeStartLocation"
+    },
+    {
+      "Addons": 1,
+      "Api": "ChallengesLib.GetLootBonusMultiplier"
+    }
+  ],
+  "craftinglib": [
+    {
+      "Addons": 25,
+      "Api": "CraftingLib.CodeEnumTradeskill"
+    },
+    {
+      "Addons": 25,
+      "Api": "CraftingLib.GetKnownTradeskills"
+    },
+    {
+      "Addons": 25,
+      "Api": "CraftingLib.GetTradeskillInfo"
+    },
+    {
+      "Addons": 18,
+      "Api": "CraftingLib.GetSchematicInfo"
+    },
+    {
+      "Addons": 9,
+      "Api": "CraftingLib.CodeEnumTradeskillResult"
+    },
+    {
+      "Addons": 9,
+      "Api": "CraftingLib.CraftItem"
+    },
+    {
+      "Addons": 8,
+      "Api": "CraftingLib.GetSchematicList"
+    },
+    {
+      "Addons": 6,
+      "Api": "CraftingLib.CodeEnumTradeskillTier"
+    },
+    {
+      "Addons": 6,
+      "Api": "CraftingLib.GetCurrentCraft"
+    },
+    {
+      "Addons": 5,
+      "Api": "CraftingLib.CompleteCraft"
+    },
+    {
+      "Addons": 5,
+      "Api": "CraftingLib.GetValidGlyphableItems"
+    },
+    {
+      "Addons": 4,
+      "Api": "CraftingLib.GetAvailablePowerCores"
+    },
+    {
+      "Addons": 3,
+      "Api": "CraftingLib.AddAdditive"
+    },
+    {
+      "Addons": 3,
+      "Api": "CraftingLib.ClearSigil"
+    },
+    {
+      "Addons": 3,
+      "Api": "CraftingLib.GetEngravingInfo"
+    },
+    {
+      "Addons": 3,
+      "Api": "CraftingLib.GetValidGlyphItems"
+    },
+    {
+      "Addons": 3,
+      "Api": "CraftingLib.InstallGlyphs"
+    },
+    {
+      "Addons": 3,
+      "Api": "CraftingLib.UnlockSigil"
+    },
+    {
+      "Addons": 2,
+      "Api": "CraftingLib.GetAvailableAdditives"
+    },
+    {
+      "Addons": 2,
+      "Api": "CraftingLib.GetPreviewInfo"
+    },
+    {
+      "Addons": 2,
+      "Api": "CraftingLib.IsAtCraftingStation"
+    },
+    {
+      "Addons": 1,
+      "Api": "CraftingLib.BotchCraft"
+    },
+    {
+      "Addons": 1,
+      "Api": "CraftingLib.CodeEnumCraftingDiscoveryHotCold"
+    },
+    {
+      "Addons": 1,
+      "Api": "CraftingLib.GetAvailableCatalysts"
+    },
+    {
+      "Addons": 1,
+      "Api": "CraftingLib.GetAvailableMicrochips"
+    },
+    {
+      "Addons": 1,
+      "Api": "CraftingLib.GetAvailableProperties"
+    },
+    {
+      "Addons": 1,
+      "Api": "CraftingLib.GetItemsWithRuneSlots"
+    },
+    {
+      "Addons": 1,
+      "Api": "CraftingLib.GetRunecraftingLevels"
+    },
+    {
+      "Addons": 1,
+      "Api": "CraftingLib.GetRuneSets"
+    },
+    {
+      "Addons": 1,
+      "Api": "CraftingLib.GetTradeskillTalents"
+    },
+    {
+      "Addons": 1,
+      "Api": "CraftingLib.InstallRuneIntoSlot"
+    },
+    {
+      "Addons": 1,
+      "Api": "CraftingLib.IsAtEngravingStation"
+    }
+  ],
+  "gamelib": [
+    {
+      "Addons": 583,
+      "Api": "GameLib.CodeEnumAddonSaveLevel"
+    },
+    {
+      "Addons": 531,
+      "Api": "GameLib.GetPlayerUnit"
+    },
+    {
+      "Addons": 137,
+      "Api": "GameLib.CodeEnumClass"
+    },
+    {
+      "Addons": 113,
+      "Api": "GameLib.CodeEnumInputMouse"
+    },
+    {
+      "Addons": 94,
+      "Api": "GameLib.GetTargetUnit"
+    },
+    {
+      "Addons": 90,
+      "Api": "GameLib.GetRealmName"
+    },
+    {
+      "Addons": 74,
+      "Api": "GameLib.GetCurrentZoneMap"
+    },
+    {
+      "Addons": 73,
+      "Api": "GameLib.GetGameTime"
+    },
+    {
+      "Addons": 62,
+      "Api": "GameLib.SetTargetUnit"
+    },
+    {
+      "Addons": 59,
+      "Api": "GameLib.GetPlayerCurrency"
+    },
+    {
+      "Addons": 58,
+      "Api": "GameLib.CodeEnumConfirmButtonType"
+    },
+    {
+      "Addons": 51,
+      "Api": "GameLib.GetAccountRealmCharacter"
+    },
+    {
+      "Addons": 44,
+      "Api": "GameLib.GetLocalTime"
+    },
+    {
+      "Addons": 40,
+      "Api": "GameLib.GetSpell"
+    },
+    {
+      "Addons": 34,
+      "Api": "GameLib.WorldLocToScreenPoint"
+    },
+    {
+      "Addons": 33,
+      "Api": "GameLib.CodeEnumDamageType"
+    },
+    {
+      "Addons": 33,
+      "Api": "GameLib.CodeEnumTutorialAnchor"
+    },
+    {
+      "Addons": 33,
+      "Api": "GameLib.GetUnitById"
+    },
+    {
+      "Addons": 27,
+      "Api": "GameLib.GetFrameRate"
+    },
+    {
+      "Addons": 27,
+      "Api": "GameLib.GetKeyBinding"
+    },
+    {
+      "Addons": 27,
+      "Api": "GameLib.GetServerTime"
+    },
+    {
+      "Addons": 26,
+      "Api": "GameLib.CodeEnumCombatResult"
+    },
+    {
+      "Addons": 23,
+      "Api": "GameLib.GetControlledUnit"
+    },
+    {
+      "Addons": 23,
+      "Api": "GameLib.GetUnitScreenPosition"
+    },
+    {
+      "Addons": 22,
+      "Api": "GameLib.CodeEnumRace"
+    },
+    {
+      "Addons": 22,
+      "Api": "GameLib.GetClassInnateAbilitySpells"
+    },
+    {
+      "Addons": 21,
+      "Api": "GameLib.IsCharacterLoaded"
+    },
+    {
+      "Addons": 19,
+      "Api": "GameLib.GetLootRolls"
+    },
+    {
+      "Addons": 18,
+      "Api": "GameLib.CodeEnumMissType"
+    },
+    {
+      "Addons": 18,
+      "Api": "GameLib.GetPlayerUnitByName"
+    },
+    {
+      "Addons": 18,
+      "Api": "GameLib.IsPvpFlagged"
+    },
+    {
+      "Addons": 17,
+      "Api": "GameLib.GetCurrentZoneId"
+    },
+    {
+      "Addons": 17,
+      "Api": "GameLib.GetMasterLoot"
+    },
+    {
+      "Addons": 17,
+      "Api": "GameLib.IsControlledUnit"
+    },
+    {
+      "Addons": 16,
+      "Api": "GameLib.GetLatency"
+    },
+    {
+      "Addons": 16,
+      "Api": "GameLib.GetPlayerLevel"
+    },
+    {
+      "Addons": 16,
+      "Api": "GameLib.GetPlayerMountUnit"
+    },
+    {
+      "Addons": 16,
+      "Api": "GameLib.GetPlayerPets"
+    },
+    {
+      "Addons": 16,
+      "Api": "GameLib.SetCurrentClassInnateAbilityIndex"
+    },
+    {
+      "Addons": 15,
+      "Api": "GameLib.RollOnLoot"
+    },
+    {
+      "Addons": 14,
+      "Api": "GameLib.ChannelUpdateLootType"
+    },
+    {
+      "Addons": 14,
+      "Api": "GameLib.CodeEnumGenericError"
+    },
+    {
+      "Addons": 14,
+      "Api": "GameLib.ElderPointsDailyMax"
+    },
+    {
+      "Addons": 14,
+      "Api": "GameLib.ElderPointsPerGem"
+    },
+    {
+      "Addons": 14,
+      "Api": "GameLib.GetPlayerTaxiUnit"
+    },
+    {
+      "Addons": 13,
+      "Api": "GameLib.CodeEnumMapOverlayType"
+    },
+    {
+      "Addons": 13,
+      "Api": "GameLib.CodeEnumRecallCommand"
+    },
+    {
+      "Addons": 13,
+      "Api": "GameLib.IsSpellSurgeActive"
+    },
+    {
+      "Addons": 13,
+      "Api": "GameLib.SetNavPoint"
+    },
+    {
+      "Addons": 12,
+      "Api": "GameLib.CodeEnumItemSlots"
+    },
+    {
+      "Addons": 12,
+      "Api": "GameLib.GetCurrentWorldId"
+    },
+    {
+      "Addons": 12,
+      "Api": "GameLib.GetInstanceSettings"
+    },
+    {
+      "Addons": 12,
+      "Api": "GameLib.GetPlayerCharacterName"
+    },
+    {
+      "Addons": 12,
+      "Api": "GameLib.IsNeedRollAllowed"
+    },
+    {
+      "Addons": 12,
+      "Api": "GameLib.PassOnLoot"
+    },
+    {
+      "Addons": 12,
+      "Api": "GameLib.ShowNavPointHintArrow"
+    },
+    {
+      "Addons": 11,
+      "Api": "GameLib.CodeEnumEquippedItems"
+    },
+    {
+      "Addons": 11,
+      "Api": "GameLib.CodeEnumUserText"
+    },
+    {
+      "Addons": 11,
+      "Api": "GameLib.CodeEnumUserTextFilterClass"
+    },
+    {
+      "Addons": 11,
+      "Api": "GameLib.GetCurrentClassInnateAbilitySpell"
+    },
+    {
+      "Addons": 11,
+      "Api": "GameLib.IsTextValid"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.AssignMasterLoot"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.CodeEnumZonePvpRules"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.GetCurrentZonePvpRules"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.GetDefaultRecallCommand"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.GetKeyBindings"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.GetOmnibitsBonusInfo"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.GetPingTime"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.GetReputationInfo"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.HasBindPoint"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.IsCurrentInnateAbilityActive"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.PauseGameActionInput"
+    },
+    {
+      "Addons": 10,
+      "Api": "GameLib.SetShortcutMount"
+    },
+    {
+      "Addons": 9,
+      "Api": "GameLib.GetKnownDyes"
+    },
+    {
+      "Addons": 9,
+      "Api": "GameLib.GetRepairAllCost"
+    },
+    {
+      "Addons": 9,
+      "Api": "GameLib.GetReputationLevels"
+    },
+    {
+      "Addons": 9,
+      "Api": "GameLib.SetKeyBindings"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.CodeEnumWhoResult"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.GetClassName"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.GetCurrentClassInnateAbilityIndex"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.GetGadgetAbility"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.GetNavPoint"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.GetPvpFlagInfo"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.GetTeleportIlliumSpell"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.GetTeleportThaydSpell"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.GetTickCount"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.GetTotalInventorySlots"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.IsInWorldZone"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.IsPvpServer"
+    },
+    {
+      "Addons": 8,
+      "Api": "GameLib.SetShortcutPotion"
+    },
+    {
+      "Addons": 7,
+      "Api": "GameLib.CodeEnumTutorial"
+    },
+    {
+      "Addons": 7,
+      "Api": "GameLib.GetSpellThresholdTimePrcntDone"
+    },
+    {
+      "Addons": 7,
+      "Api": "GameLib.IsNavPointSet"
+    },
+    {
+      "Addons": 7,
+      "Api": "GameLib.MapZone"
+    },
+    {
+      "Addons": 6,
+      "Api": "GameLib.ChannelUpdateCraftingType"
+    },
+    {
+      "Addons": 6,
+      "Api": "GameLib.CodeEnumInputDevice"
+    },
+    {
+      "Addons": 6,
+      "Api": "GameLib.GetEmptyInventorySlots"
+    },
+    {
+      "Addons": 6,
+      "Api": "GameLib.GetWorldTooltipContainer"
+    },
+    {
+      "Addons": 6,
+      "Api": "GameLib.IsMouseLockOn"
+    },
+    {
+      "Addons": 6,
+      "Api": "GameLib.IsOverdriveActive"
+    },
+    {
+      "Addons": 6,
+      "Api": "GameLib.SetDefaultRecallCommand"
+    },
+    {
+      "Addons": 6,
+      "Api": "GameLib.SetInteractHintArrowObject"
+    },
+    {
+      "Addons": 6,
+      "Api": "GameLib.SummonVanityPet"
+    },
+    {
+      "Addons": 5,
+      "Api": "GameLib.ChannelUpdateProgressType"
+    },
+    {
+      "Addons": 5,
+      "Api": "GameLib.ClearNavPoint"
+    },
+    {
+      "Addons": 5,
+      "Api": "GameLib.CodeEnumInputModifier"
+    },
+    {
+      "Addons": 5,
+      "Api": "GameLib.CodeEnumStoryPanel"
+    },
+    {
+      "Addons": 5,
+      "Api": "GameLib.EquipBagItem"
+    },
+    {
+      "Addons": 5,
+      "Api": "GameLib.GetVersionInfo"
+    },
+    {
+      "Addons": 5,
+      "Api": "GameLib.IsKeyBindable"
+    },
+    {
+      "Addons": 5,
+      "Api": "GameLib.IsTutorialZone"
+    },
+    {
+      "Addons": 5,
+      "Api": "GameLib.RefreshCustomTelegraphColors"
+    },
+    {
+      "Addons": 4,
+      "Api": "GameLib.CodeEnumInputModifierScancode"
+    },
+    {
+      "Addons": 4,
+      "Api": "GameLib.GetCostumeIndex"
+    },
+    {
+      "Addons": 4,
+      "Api": "GameLib.GetCurrInputKeySet"
+    },
+    {
+      "Addons": 4,
+      "Api": "GameLib.GetGearScore"
+    },
+    {
+      "Addons": 4,
+      "Api": "GameLib.GetGuildHolomarkDistance"
+    },
+    {
+      "Addons": 4,
+      "Api": "GameLib.GetGuildHolomarkVisible"
+    },
+    {
+      "Addons": 4,
+      "Api": "GameLib.GetInputKeyNameText"
+    },
+    {
+      "Addons": 4,
+      "Api": "GameLib.OpenStore"
+    },
+    {
+      "Addons": 4,
+      "Api": "GameLib.ShowGuildHolomark"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.CityDirectionType"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.CodeEnumDuelState"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.CodeEnumGameMode"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.CodeEnumInputAction"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.CodeEnumVital"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.DeclineDuel"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.GetGameExitInfo"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.GetGameMode"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.GetLevelUpUnlock"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.GetTotalAbilityPoints"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.GetWorldPrimeLevel"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.GuildHolomark"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.IsCostumeSlotVisible"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.IsZoneInZone"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.LevelUpUnlockType"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.MarkCityDirection"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.OpenFortunes"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.SearchRelationshipStatusByCharacterName"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.SetCostumeIndex"
+    },
+    {
+      "Addons": 3,
+      "Api": "GameLib.SetMouseLock"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.AcceptDuel"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.CanSetNavPoint"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.CanVacuum"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.ClearAllTargetMarkers"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.CodeEnumExitEvent"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.CodeEnumInputSets"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.CodeEnumRewardRotationContentType"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.DoAnyItemsBeginQuest"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetAllZoneCompletionMapZones"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetBagItem"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetCCStateStunTimeRemaining"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetCostumeCount"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetCostumeItem"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetDispositionTo"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetInputActionCategories"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetLevelCap"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetNavPointChatLinkString"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetNumBankBagSlots"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetNumClassInnateAbilitySpells"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetPetDismissCommand"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetPlayerDeathState"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetPrimeLevelAchieved"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetRewardRotation"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetRewardRotations"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetShortcutMount"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetShortcutPotion"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetVanityPetList"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetWorldDifficulty"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetWorldTimeOfDay"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.GetZoneMap"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.IsInLocation"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.key"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.knMaxBankBagSlots"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.LevelUpUnlock"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.RequestRewardUpdate"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.SetCostumeItem"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.SetCurrInputKeySet"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.SetWorldTooltipContainer"
+    },
+    {
+      "Addons": 2,
+      "Api": "GameLib.TogglePvpFlags"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.BuyBankBagSlot"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.CanEditKeySet"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.CanEquipBagItem"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.CanShowGuildHolomark"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.CodeEnumHintType"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.CodeEnumHoloMark"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.CodeEnumInputKeyLookupGroup"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.CodeEnumMapObjectType"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.CodeEnumRewardRotationRewardType"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.CodeEnumTutorialAnchorOrientation"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.CodeEnumZoneCompletionType"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.ForfeitDuel"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetAbilityPoints"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetCharInputKeySet"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetCostumeItemIcon"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetDuelState"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetgameTime"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetGroupMember"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetInputKeySet"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetInteractHintArrowObject"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetPlayer"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetPlayerBaseFaction"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetPlayerVehicleUnit"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetTarget"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetTextTypeMaxLength"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetUnit"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetWorldCompletionPercent"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetWorldMaxPrimeLevel"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetZoneCompletion"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.GetZoneCompletionTypes"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.InitiateDuel"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.InRatedPvpMatch"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.SalvageKeyCount"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.SetCostumeSlotVisible"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.SetSharedChallengePreference"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.SetTarget"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.SwapBagItems"
+    },
+    {
+      "Addons": 1,
+      "Api": "GameLib.unitTarget"
+    }
+  ],
+  "grouplib": [
+    {
+      "Addons": 104,
+      "Api": "GroupLib.GetMemberCount"
+    },
+    {
+      "Addons": 89,
+      "Api": "GroupLib.GetGroupMember"
+    },
+    {
+      "Addons": 71,
+      "Api": "GroupLib.InGroup"
+    },
+    {
+      "Addons": 61,
+      "Api": "GroupLib.GetUnitForGroupMember"
+    },
+    {
+      "Addons": 43,
+      "Api": "GroupLib.InRaid"
+    },
+    {
+      "Addons": 28,
+      "Api": "GroupLib.InInstance"
+    },
+    {
+      "Addons": 25,
+      "Api": "GroupLib.AmILeader"
+    },
+    {
+      "Addons": 15,
+      "Api": "GroupLib.Difficulty"
+    },
+    {
+      "Addons": 10,
+      "Api": "GroupLib.ConvertToRaid"
+    },
+    {
+      "Addons": 10,
+      "Api": "GroupLib.Invite"
+    },
+    {
+      "Addons": 10,
+      "Api": "GroupLib.ReadyCheck"
+    },
+    {
+      "Addons": 8,
+      "Api": "GroupLib.GetGroupMaxSize"
+    },
+    {
+      "Addons": 6,
+      "Api": "GroupLib.GetLootRules"
+    },
+    {
+      "Addons": 6,
+      "Api": "GroupLib.Kick"
+    },
+    {
+      "Addons": 6,
+      "Api": "GroupLib.LeaveGroup"
+    },
+    {
+      "Addons": 6,
+      "Api": "GroupLib.LootRule"
+    },
+    {
+      "Addons": 5,
+      "Api": "GroupLib.AcceptInvite"
+    },
+    {
+      "Addons": 5,
+      "Api": "GroupLib.AcceptRequest"
+    },
+    {
+      "Addons": 5,
+      "Api": "GroupLib.CanGotoGroupInstance"
+    },
+    {
+      "Addons": 5,
+      "Api": "GroupLib.DeclineInvite"
+    },
+    {
+      "Addons": 5,
+      "Api": "GroupLib.DenyRequest"
+    },
+    {
+      "Addons": 5,
+      "Api": "GroupLib.GotoGroupInstance"
+    },
+    {
+      "Addons": 5,
+      "Api": "GroupLib.SetJoinRequestMethod"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.DisbandGroup"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.GetInstanceDifficulty"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.GetJoinRequestMethod"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.HarvestLootRule"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.InvitationMethod"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.Promote"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.RemoveReason"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.Result"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.SetLootRules"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.SetReady"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.SetReferralMethod"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.SetRoleDPS"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.SetRoleHealer"
+    },
+    {
+      "Addons": 4,
+      "Api": "GroupLib.SetRoleTank"
+    },
+    {
+      "Addons": 3,
+      "Api": "GroupLib.AcceptMentoring"
+    },
+    {
+      "Addons": 3,
+      "Api": "GroupLib.ActionResult"
+    },
+    {
+      "Addons": 3,
+      "Api": "GroupLib.CancelMentoring"
+    },
+    {
+      "Addons": 3,
+      "Api": "GroupLib.CloseMentoringAOIDialog"
+    },
+    {
+      "Addons": 3,
+      "Api": "GroupLib.CloseMentoringDialog"
+    },
+    {
+      "Addons": 3,
+      "Api": "GroupLib.GetInvite"
+    },
+    {
+      "Addons": 3,
+      "Api": "GroupLib.GetMentoringList"
+    },
+    {
+      "Addons": 3,
+      "Api": "GroupLib.GetReferralMethod"
+    },
+    {
+      "Addons": 2,
+      "Api": "GroupLib.GetMemberVisibility"
+    },
+    {
+      "Addons": 2,
+      "Api": "GroupLib.GetPrimeLevelAchieved"
+    },
+    {
+      "Addons": 2,
+      "Api": "GroupLib.Join"
+    },
+    {
+      "Addons": 2,
+      "Api": "GroupLib.LootThreshold"
+    },
+    {
+      "Addons": 2,
+      "Api": "GroupLib.SetRaidAssistant"
+    },
+    {
+      "Addons": 1,
+      "Api": "GroupLib.inGroup"
+    },
+    {
+      "Addons": 1,
+      "Api": "GroupLib.inInstance"
+    },
+    {
+      "Addons": 1,
+      "Api": "GroupLib.IsMemberInGroupInstance"
+    },
+    {
+      "Addons": 1,
+      "Api": "GroupLib.IsReadyCheckOnCooldown"
+    },
+    {
+      "Addons": 1,
+      "Api": "GroupLib.SetCanMark"
+    },
+    {
+      "Addons": 1,
+      "Api": "GroupLib.SetMainAssist"
+    },
+    {
+      "Addons": 1,
+      "Api": "GroupLib.SetMainTank"
+    },
+    {
+      "Addons": 1,
+      "Api": "GroupLib.SetRoleLocked"
+    },
+    {
+      "Addons": 1,
+      "Api": "GroupLib.SwapOrder"
+    }
+  ],
+  "guildlib": [
+    {
+      "Addons": 71,
+      "Api": "GuildLib.GetGuilds"
+    },
+    {
+      "Addons": 54,
+      "Api": "GuildLib.GuildType_Guild"
+    },
+    {
+      "Addons": 23,
+      "Api": "GuildLib.GuildType_WarParty"
+    },
+    {
+      "Addons": 14,
+      "Api": "GuildLib.GuildType_Circle"
+    },
+    {
+      "Addons": 8,
+      "Api": "GuildLib.GuildType_ArenaTeam_2v2"
+    },
+    {
+      "Addons": 8,
+      "Api": "GuildLib.GuildType_ArenaTeam_3v3"
+    },
+    {
+      "Addons": 8,
+      "Api": "GuildLib.GuildType_ArenaTeam_5v5"
+    },
+    {
+      "Addons": 4,
+      "Api": "GuildLib.GuildResult_GuildDisbanded"
+    },
+    {
+      "Addons": 4,
+      "Api": "GuildLib.GuildResult_KickedYou"
+    },
+    {
+      "Addons": 4,
+      "Api": "GuildLib.GuildResult_YouQuit"
+    },
+    {
+      "Addons": 3,
+      "Api": "GuildLib.Decline"
+    },
+    {
+      "Addons": 3,
+      "Api": "GuildLib.GuildResult_InviteAccepted"
+    },
+    {
+      "Addons": 3,
+      "Api": "GuildLib.GuildResult_YouCreated"
+    },
+    {
+      "Addons": 3,
+      "Api": "GuildLib.GuildResult_YouJoined"
+    },
+    {
+      "Addons": 2,
+      "Api": "GuildLib.Accept"
+    },
+    {
+      "Addons": 2,
+      "Api": "GuildLib.GetPermissions"
+    },
+    {
+      "Addons": 2,
+      "Api": "GuildLib.GuildResult_BankTabCannotWithdraw"
+    },
+    {
+      "Addons": 2,
+      "Api": "GuildLib.GuildResult_Busy"
+    },
+    {
+      "Addons": 2,
+      "Api": "GuildLib.GuildResult_KickedMember"
+    },
+    {
+      "Addons": 2,
+      "Api": "GuildLib.GuildResult_MemberOnline"
+    },
+    {
+      "Addons": 2,
+      "Api": "GuildLib.GuildResult_MemberQuit"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.CanCreate"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.CodeEnumGuildEventType"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GetMinimumLevel"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_AlreadyAMember"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_AlreadyCastAVote"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_AtMaxCircleCount"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_AtMaxGuildCount"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_BankerOutOfRange"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_BankItemMoved"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_BankTabAlreadyLoaded"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_BankTabBought"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_BankTabDoesNotAcceptDeposits"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_BankTabInvalidPermissions"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_BankTabNotLoaded"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_BankTabNotVisible"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_BankTabRequiresAuthenticator"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_BankTabWithdrawsExceeded"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotChangePermissionsWithActiveGame"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotChangeRanksWithActiveGame"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotCreateWhileInQueue"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotDeleteDefaultRanks"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotDepositBankItem"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotDisbandTeamWithActiveGame"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotEditBankWithActiveGame"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotInviteGuildFull"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotKickHigherOrEqualRankedMember"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotLeaveTeamWithActiveGame"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotModifyResidenceWithActiveGame"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotPromoteMemberAboveYourRank"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotRemoveFromTeamWithActiveGame"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CannotWithdrawBankItem"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CanOnlyDeleteEmptyRanks"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CanOnlyDemoteLowerRankedMembers"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CanOnlyModifyRanksBelowYours"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CharacterAlreadyHasAGuildInvite"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CharacterCannotJoinMoreGuilds"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CharacterInvited"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_CharacterNotInYourGuild"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_DemotedMember"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_DuplicateRankName"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_ExceededMoneyWithdrawLimitToday"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_GenericActiveGameFailure"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_GuildLoading"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_GuildmasterCannotLeaveGuild"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_GuildNameUnavailable"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InsufficentMembers"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InsufficientInfluence"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InsufficientMoneyInGuild"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InsufficientMoneyOnCharacter"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InsufficientWarCoins"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InvalidBankTabName"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InvalidElection"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InvalidFlags"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InvalidGuildInfo"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InvalidGuildName"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InvalidMemberNote"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InvalidMessageOfTheDay"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InvalidRank"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InvalidRankName"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InvalidStandard"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InviteDeclined"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_InviteSent"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_MaxArenaTeamCount"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_MaxWarPartyCount"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_MemberAlreadyGuildMaster"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_MemberIsAlreadyLowestRank"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_MemberOffline"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NoBank"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NoBankItemSelected"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NoPendingInvites"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NotABankTab"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NotAGuild"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NotAValidWarPartyItem"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NotAWarParty"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NotEnoughCredits"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NotEnoughRenown"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NotHighEnoughLevel"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NotInAGuild"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NotInThatGuild"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_NoVoteInProgress"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_PendingInviteExpired"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_PerkDoesNotExist"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_PerkIsAlreadyActive"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_PerkIsAlreadyUnlocked"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_PerkNotActivateable"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_PromotedMember"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_PromotedToGuildMaster"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_RankCreated"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_RankDeleted"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_RankLacksRankRenamePermission"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_RankLacksSufficientPermissions"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_RankModified"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_RankRenamed"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_RequiresAchievement"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_RequiresPerkPurchase"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_RequiresPrereq"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_StandardChanged"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_Success"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_UnableToProcess"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_UnknownCharacter"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_VendorOutOfRange"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_VoteAlreadyInProgress"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_Voted"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_VoteFailedToPass"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_VotePassed"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_VoteStarted"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildResult_VoteTooRecentToHaveAnother"
+    },
+    {
+      "Addons": 1,
+      "Api": "GuildLib.GuildType_Warparty"
+    }
+  ],
+  "housinglib": [
+    {
+      "Addons": 26,
+      "Api": "HousingLib.IsHousingWorld"
+    },
+    {
+      "Addons": 15,
+      "Api": "HousingLib.GetResidence"
+    },
+    {
+      "Addons": 15,
+      "Api": "HousingLib.IsOnMyResidence"
+    },
+    {
+      "Addons": 14,
+      "Api": "HousingLib.GetPlot"
+    },
+    {
+      "Addons": 13,
+      "Api": "HousingLib.GetNeighborList"
+    },
+    {
+      "Addons": 12,
+      "Api": "HousingLib.RequestTakeMeHome"
+    },
+    {
+      "Addons": 11,
+      "Api": "HousingLib.IsResidenceOwner"
+    },
+    {
+      "Addons": 9,
+      "Api": "HousingLib.VisitNeighborResidence"
+    },
+    {
+      "Addons": 7,
+      "Api": "HousingLib.GetDecorCatalogList"
+    },
+    {
+      "Addons": 6,
+      "Api": "HousingLib.GetRandomResidenceList"
+    },
+    {
+      "Addons": 6,
+      "Api": "HousingLib.RequestRandomResidenceList"
+    },
+    {
+      "Addons": 6,
+      "Api": "HousingLib.RequestVisitPlayer"
+    },
+    {
+      "Addons": 5,
+      "Api": "HousingLib.GetPlotCount"
+    },
+    {
+      "Addons": 5,
+      "Api": "HousingLib.GetPlugItem"
+    },
+    {
+      "Addons": 5,
+      "Api": "HousingLib.NeighborInviteByName"
+    },
+    {
+      "Addons": 4,
+      "Api": "HousingLib.NeighborEvict"
+    },
+    {
+      "Addons": 4,
+      "Api": "HousingLib.PreviewVendorDecor"
+    },
+    {
+      "Addons": 4,
+      "Api": "HousingLib.RequestRandomVisit"
+    },
+    {
+      "Addons": 4,
+      "Api": "HousingLib.ScaleDecor"
+    },
+    {
+      "Addons": 4,
+      "Api": "HousingLib.SetDecorPosition"
+    },
+    {
+      "Addons": 4,
+      "Api": "HousingLib.SetDecorRotation"
+    },
+    {
+      "Addons": 4,
+      "Api": "HousingLib.SetEditMode"
+    },
+    {
+      "Addons": 3,
+      "Api": "HousingLib.GetDecorColorOptions"
+    },
+    {
+      "Addons": 3,
+      "Api": "HousingLib.GetDecorIconInfo"
+    },
+    {
+      "Addons": 3,
+      "Api": "HousingLib.GetDecorTypeList"
+    },
+    {
+      "Addons": 3,
+      "Api": "HousingLib.HousingUpkeepType"
+    },
+    {
+      "Addons": 3,
+      "Api": "HousingLib.NeighborInviteAccept"
+    },
+    {
+      "Addons": 3,
+      "Api": "HousingLib.NeighborInviteDecline"
+    },
+    {
+      "Addons": 3,
+      "Api": "HousingLib.PreviewCrateDecorAtLocation"
+    },
+    {
+      "Addons": 3,
+      "Api": "HousingLib.PreviewVendorDecorAtLocation"
+    },
+    {
+      "Addons": 3,
+      "Api": "HousingLib.ResidenceCustomizationMode"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.ApplyPreviewEffectToDecor"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.CodeEnumDecorHookType"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.DecorControlMode"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.FreePlaceDecorDisplacement_Cancel"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.FreePlaceDecorDisplacement_Confirm"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.GetDecorCrateList"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.GetPlacedDecorList"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.GetVendorList"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.NeighborPermissionLevel"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.NeighborSetPermission"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.PreviewCrateDecor"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.PreviewDecor_Cancel"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.PreviewPlacedDecor"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.RemodelOptionTypeExterior"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.RemodelOptionTypeInterior"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.RepairPlot"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.RequestVendorList"
+    },
+    {
+      "Addons": 2,
+      "Api": "HousingLib.SetControlMode"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.AddItemToCrate"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.CrateAllDecor"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.CrateDecor"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.Decorate"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.DecorCategoryLimit"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetBakedDecorDetails"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetControlMode"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetDecorColorInfo"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetDecorColorPrice"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetDecorDetailsBySector"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetPlugUpgradeList"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetPropertyName"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetRemodelDoorList"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetRemodelEntryList"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetRemodelGroundList"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetRemodelMusicExteriorList"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetRemodelRoofList"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetRemodelSkyExteriorList"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetRemodelWallpaperExteriorList"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetRemodelWallpaperInteriorList"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetResidencePrivacyLevel"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.GetWarplotMaintenanceCost"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.HousingPlugFacing"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.HousingResult_Decor_InvalidPosition"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.HousingResult_Mannequin_NotEmpty"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.IsHousingWOrld"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.IsInEditMode"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.IsWarplotResidence"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.PlaceDecorFromCrate"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.pre"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.PropertyRenameCost"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.PurchaseDecorIntoCrate"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.RefreshUI"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.RemodelOptionTypeCommunity"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.RequestCommunityPlacement"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.ResidencePrivacyLevel"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.RotateDecor"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.SendDecorToInventory"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.SetNeighborHarvestSplit"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.SetPlugRotation"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.ShowMoveControls"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.ShowRotateControls"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.TranslateDecor"
+    },
+    {
+      "Addons": 1,
+      "Api": "HousingLib.ValidateDecorPlacement"
+    }
+  ],
+  "iccommlib": [
+    {
+      "Addons": 76,
+      "Api": "ICCommLib.JoinChannel"
+    },
+    {
+      "Addons": 45,
+      "Api": "ICCommLib.CodeEnumICCommChannelType"
+    },
+    {
+      "Addons": 9,
+      "Api": "ICCommLib.CodeEnumICCommMessageResult"
+    },
+    {
+      "Addons": 8,
+      "Api": "ICCommLib.CodeEnumICCommJoinResult"
+    },
+    {
+      "Addons": 4,
+      "Api": "ICCommLib.GetUploadCapacityByType"
+    },
+    {
+      "Addons": 2,
+      "Api": "ICCommLib.GetDownloadCapacityByType"
+    }
+  ],
+  "mailsystemlib": [
+    {
+      "Addons": 10,
+      "Api": "MailSystemLib.GetInbox"
+    },
+    {
+      "Addons": 10,
+      "Api": "MailSystemLib.MailDeliverySpeed_Instant"
+    },
+    {
+      "Addons": 3,
+      "Api": "MailSystemLib.DeleteMultipleMessages"
+    },
+    {
+      "Addons": 3,
+      "Api": "MailSystemLib.GetItemFromInventoryId"
+    },
+    {
+      "Addons": 2,
+      "Api": "MailSystemLib.EmailType_Character"
+    },
+    {
+      "Addons": 2,
+      "Api": "MailSystemLib.EmailType_CommodityAuction"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.AtMailbox"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.EmailType_Creature"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.EmailType_GMMail"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.EmailType_ItemAuction"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.GetAttachmentMaxCount"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.GetMessageCharacterLimit"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.GetNameCharacterLimit"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.GetRealmCharacterLimit"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.GetSendCost"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.GetSubjectCharacterLimit"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.MailDeliverySpeed_Day"
+    },
+    {
+      "Addons": 1,
+      "Api": "MailSystemLib.MailDeliverySpeed_Hour"
+    }
+  ],
+  "marketplacelib": [
+    {
+      "Addons": 8,
+      "Api": "MarketplaceLib.RequestCommodityInfo"
+    },
+    {
+      "Addons": 5,
+      "Api": "MarketplaceLib.kfCommodityBuyOrderTaxMultiplier"
+    },
+    {
+      "Addons": 4,
+      "Api": "MarketplaceLib.AuctionSort"
+    },
+    {
+      "Addons": 4,
+      "Api": "MarketplaceLib.GetCommodityCategories"
+    },
+    {
+      "Addons": 4,
+      "Api": "MarketplaceLib.GetCommodityFamilies"
+    },
+    {
+      "Addons": 4,
+      "Api": "MarketplaceLib.GetCommodityTypes"
+    },
+    {
+      "Addons": 4,
+      "Api": "MarketplaceLib.kAuctionSearchPageSize"
+    },
+    {
+      "Addons": 4,
+      "Api": "MarketplaceLib.kCommodityAuctionRake"
+    },
+    {
+      "Addons": 4,
+      "Api": "MarketplaceLib.knCommodityBuyOrderTaxMinimum"
+    },
+    {
+      "Addons": 4,
+      "Api": "MarketplaceLib.RequestOwnedCommodityOrders"
+    },
+    {
+      "Addons": 3,
+      "Api": "MarketplaceLib.GetCommodityItems"
+    },
+    {
+      "Addons": 3,
+      "Api": "MarketplaceLib.kMaxCommodityOrder"
+    },
+    {
+      "Addons": 3,
+      "Api": "MarketplaceLib.RequestItemAuctionsByItems"
+    },
+    {
+      "Addons": 3,
+      "Api": "MarketplaceLib.SearchCommodityItems"
+    },
+    {
+      "Addons": 2,
+      "Api": "MarketplaceLib.AuctionPostResult"
+    },
+    {
+      "Addons": 2,
+      "Api": "MarketplaceLib.GetAuctionableFamilies"
+    },
+    {
+      "Addons": 2,
+      "Api": "MarketplaceLib.kAuctionSearchMaxResults"
+    },
+    {
+      "Addons": 2,
+      "Api": "MarketplaceLib.kCommodityOrderListTimeDays"
+    },
+    {
+      "Addons": 2,
+      "Api": "MarketplaceLib.kMaxPlayerCommodityOrders"
+    },
+    {
+      "Addons": 1,
+      "Api": "MarketplaceLib.AuctionEventType"
+    },
+    {
+      "Addons": 1,
+      "Api": "MarketplaceLib.GetAuctionableCategories"
+    },
+    {
+      "Addons": 1,
+      "Api": "MarketplaceLib.GetAuctionableTypes"
+    },
+    {
+      "Addons": 1,
+      "Api": "MarketplaceLib.GetItemAuctionCost"
+    },
+    {
+      "Addons": 1,
+      "Api": "MarketplaceLib.ItemAuctionFilterData"
+    },
+    {
+      "Addons": 1,
+      "Api": "MarketplaceLib.kItemAuctionListTimeDays"
+    },
+    {
+      "Addons": 1,
+      "Api": "MarketplaceLib.RequestItemAuctionsByFamily"
+    },
+    {
+      "Addons": 1,
+      "Api": "MarketplaceLib.SearchAuctionableItems"
+    }
+  ],
+  "matchinggamelib": [
+    {
+      "Addons": 7,
+      "Api": "MatchingGameLib.GetQueueEntry"
+    },
+    {
+      "Addons": 5,
+      "Api": "MatchingGameLib.IsFinished"
+    },
+    {
+      "Addons": 5,
+      "Api": "MatchingGameLib.IsInPvpGame"
+    },
+    {
+      "Addons": 4,
+      "Api": "MatchingGameLib.GetPvpMatchState"
+    },
+    {
+      "Addons": 4,
+      "Api": "MatchingGameLib.IsInGameInstance"
+    },
+    {
+      "Addons": 3,
+      "Api": "MatchingGameLib.LeaveGame"
+    },
+    {
+      "Addons": 2,
+      "Api": "MatchingGameLib.ConfirmRole"
+    },
+    {
+      "Addons": 2,
+      "Api": "MatchingGameLib.DeclineRoleCheck"
+    },
+    {
+      "Addons": 2,
+      "Api": "MatchingGameLib.GetMatchingGameType"
+    },
+    {
+      "Addons": 2,
+      "Api": "MatchingGameLib.IsLookingForReplacements"
+    },
+    {
+      "Addons": 2,
+      "Api": "MatchingGameLib.IsPendingGame"
+    },
+    {
+      "Addons": 2,
+      "Api": "MatchingGameLib.MatchType"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchingGameLib.CanLookForReplacements"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchingGameLib.CanVoteSurrender"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchingGameLib.CastVoteKick"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchingGameLib.CastVoteSurrender"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchingGameLib.GetPendingInfo"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchingGameLib.InitiateVoteToSurrender"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchingGameLib.IsRoleCheckActive"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchingGameLib.LookForReplacements"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchingGameLib.StopLookingForReplacements"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchingGameLib.TransferIntoMatch"
+    }
+  ],
+  "matchmakinglib": [
+    {
+      "Addons": 6,
+      "Api": "MatchMakingLib.Roles"
+    },
+    {
+      "Addons": 5,
+      "Api": "MatchMakingLib.MatchType"
+    },
+    {
+      "Addons": 5,
+      "Api": "MatchMakingLib.Queue"
+    },
+    {
+      "Addons": 5,
+      "Api": "MatchMakingLib.QueueAsGroup"
+    },
+    {
+      "Addons": 4,
+      "Api": "MatchMakingLib.GetMatchMakingEntries"
+    },
+    {
+      "Addons": 4,
+      "Api": "MatchMakingLib.IsQueuedForMatching"
+    },
+    {
+      "Addons": 3,
+      "Api": "MatchMakingLib.GetEligibleRoles"
+    },
+    {
+      "Addons": 3,
+      "Api": "MatchMakingLib.GetQueuedEntries"
+    },
+    {
+      "Addons": 3,
+      "Api": "MatchMakingLib.IsQueuedAsGroupForMatching"
+    },
+    {
+      "Addons": 3,
+      "Api": "MatchMakingLib.MatchQueueResult"
+    },
+    {
+      "Addons": 2,
+      "Api": "MatchMakingLib.GetMatchQueueResultString"
+    },
+    {
+      "Addons": 2,
+      "Api": "MatchMakingLib.GetPvpRatingByType"
+    },
+    {
+      "Addons": 2,
+      "Api": "MatchMakingLib.LeaveAllQueues"
+    },
+    {
+      "Addons": 2,
+      "Api": "MatchMakingLib.RatingType"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.CanLeaveQueueAsGroup"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.CanLookForReplacements"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.CanQueueAsGroup"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.CanVoteSurrender"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.GetAverageWaitTime"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.GetCurrentMatchingGame"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.GetMatchingGames"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.GetPenalizedPartyMembers"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.GetPvpSeason"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.GetQueuedMatches"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.GetSelectedRoles"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.GetTimeInQueue"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.InitiateVoteToSurrender"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.IsInMatchingGame"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.IsInMatchingInstance"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.IsLookingForReplacements"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.IsMatchingGameFinished"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.IsQueuedAsGroup"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.LeaveMatchingGame"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.LeaveMatchingQueue"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.LeaveMatchingQueueAsGroup"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.LookForReplacements"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.SelectRole"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.StopLookingForReplacements"
+    },
+    {
+      "Addons": 1,
+      "Api": "MatchMakingLib.TransferIntoMatchingGame"
+    }
+  ]
+}

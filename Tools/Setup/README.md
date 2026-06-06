@@ -243,6 +243,16 @@ The map generator now uses a bounded parallel worker count by default. Pass
 `-MapGeneratorParallelism` to the launcher if you want to force a specific
 worker count.
 
+To compare single-worker and parallel map generation outside the launcher, use
+the benchmark helper. It writes logs and outputs below `.nexusforever-runtime`
+by default:
+
+```powershell
+.\Tools\Setup\Benchmark-MapGenerator.ps1 `
+  -PatchPath "D:\Games\WildStar\Patch" `
+  -Parallelism 4
+```
+
 The setup scripts create these local accounts by default:
 
 - `player` / `player`: `Player` role (`roleId=1`) for ordinary gameplay.

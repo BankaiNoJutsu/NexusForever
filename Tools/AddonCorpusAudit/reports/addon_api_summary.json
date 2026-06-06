@@ -1,0 +1,277 @@
+{
+  "archives": 876,
+  "categoryCounts": {
+    "Challenge": 110,
+    "Crafting": 112,
+    "Events": 763,
+    "GameLib": 759,
+    "Group": 190,
+    "Housing": 87,
+    "Loot": 41,
+    "Mail": 34,
+    "Market": 44,
+    "Matching": 168,
+    "Network": 86
+  },
+  "errorSamples": [],
+  "errors": 0,
+  "scannedWithLua": 875,
+  "source": "I:\\Wildstar Addons",
+  "topEvents": [
+    {
+      "Addons": 235,
+      "Event": "KeyDown"
+    },
+    {
+      "Addons": 191,
+      "Event": "InterfaceMenuListHasLoaded"
+    },
+    {
+      "Addons": 144,
+      "Event": "WindowManagementReady"
+    },
+    {
+      "Addons": 138,
+      "Event": "CharacterCreated"
+    },
+    {
+      "Addons": 133,
+      "Event": "UnitEnteredCombat"
+    },
+    {
+      "Addons": 125,
+      "Event": "UnitCreated"
+    },
+    {
+      "Addons": 106,
+      "Event": "UnitDestroyed"
+    },
+    {
+      "Addons": 101,
+      "Event": "ChangeWorld"
+    },
+    {
+      "Addons": 77,
+      "Event": "NextFrame"
+    },
+    {
+      "Addons": 76,
+      "Event": "TargetUnitChanged"
+    },
+    {
+      "Addons": 75,
+      "Event": "ChatMessage"
+    },
+    {
+      "Addons": 67,
+      "Event": "VarChange_FrameCount"
+    },
+    {
+      "Addons": 65,
+      "Event": "SubZoneChanged"
+    },
+    {
+      "Addons": 64,
+      "Event": "Group_Left"
+    },
+    {
+      "Addons": 54,
+      "Event": "Group_Join"
+    },
+    {
+      "Addons": 48,
+      "Event": "CombatLogDamage"
+    },
+    {
+      "Addons": 45,
+      "Event": "Group_Remove"
+    },
+    {
+      "Addons": 43,
+      "Event": "Group_Add"
+    },
+    {
+      "Addons": 41,
+      "Event": "QuestStateChanged"
+    },
+    {
+      "Addons": 39,
+      "Event": "SystemKeyDown"
+    },
+    {
+      "Addons": 34,
+      "Event": "Group_Updated"
+    },
+    {
+      "Addons": 33,
+      "Event": "PublicEventStart"
+    },
+    {
+      "Addons": 33,
+      "Event": "QuestObjectiveUpdated"
+    },
+    {
+      "Addons": 32,
+      "Event": "Tutorial_RequestUIAnchor"
+    },
+    {
+      "Addons": 30,
+      "Event": "AbilityBookChange"
+    },
+    {
+      "Addons": 30,
+      "Event": "PlayerLevelChange"
+    },
+    {
+      "Addons": 30,
+      "Event": "UnitActivationTypeChanged"
+    },
+    {
+      "Addons": 30,
+      "Event": "VarChange_ZoneName"
+    },
+    {
+      "Addons": 29,
+      "Event": "PublicEventEnd"
+    },
+    {
+      "Addons": 28,
+      "Event": "PlayerPathMissionUpdate"
+    },
+    {
+      "Addons": 27,
+      "Event": "CombatLogCCState"
+    },
+    {
+      "Addons": 26,
+      "Event": "GuildRoster"
+    },
+    {
+      "Addons": 25,
+      "Event": "UnitNameChanged"
+    },
+    {
+      "Addons": 24,
+      "Event": "PlayerCurrencyChanged"
+    },
+    {
+      "Addons": 24,
+      "Event": "UpdateInventory"
+    },
+    {
+      "Addons": 22,
+      "Event": "DamageOrHealingDone"
+    },
+    {
+      "Addons": 22,
+      "Event": "GuildChange"
+    },
+    {
+      "Addons": 21,
+      "Event": "InvokeVendorWindow"
+    },
+    {
+      "Addons": 21,
+      "Event": "MatchEntered"
+    },
+    {
+      "Addons": 21,
+      "Event": "PublicEventObjectiveUpdate"
+    },
+    {
+      "Addons": 21,
+      "Event": "SpecChanged"
+    },
+    {
+      "Addons": 20,
+      "Event": "ChallengeActivate"
+    },
+    {
+      "Addons": 20,
+      "Event": "ElderPointsGained"
+    },
+    {
+      "Addons": 20,
+      "Event": "UnitLevelChanged"
+    },
+    {
+      "Addons": 20,
+      "Event": "UnitPvpFlagsChanged"
+    },
+    {
+      "Addons": 19,
+      "Event": "AlternateTargetUnitChanged"
+    },
+    {
+      "Addons": 19,
+      "Event": "LootedItem"
+    },
+    {
+      "Addons": 19,
+      "Event": "LootRollUpdate"
+    },
+    {
+      "Addons": 19,
+      "Event": "MatchExited"
+    },
+    {
+      "Addons": 19,
+      "Event": "PublicEventLeave"
+    }
+  ],
+  "topTokens": {
+    "Challenge": [
+      "Challenge",
+      "ChallengesLib"
+    ],
+    "Crafting": [
+      "Rune",
+      "CraftingLib",
+      "Tradeskill",
+      "Schematic"
+    ],
+    "Events": [
+      "RegisterEventHandler"
+    ],
+    "GameLib": [
+      "GameLib"
+    ],
+    "Group": [
+      "GroupLib",
+      "Raid",
+      "ReadyCheck"
+    ],
+    "Housing": [
+      "HousingLib",
+      "Decor",
+      "Residence"
+    ],
+    "Loot": [
+      "LootRoll",
+      "MasterLoot"
+    ],
+    "Mail": [
+      "MailSystemLib",
+      "Mailbox"
+    ],
+    "Market": [
+      "Auction",
+      "MarketplaceLib",
+      "Commodity",
+      "CREDD"
+    ],
+    "Matching": [
+      "Queue",
+      "MatchMaker",
+      "MatchingGameLib",
+      "MatchMakingLib",
+      "GroupFinder",
+      "VoteKick",
+      "Surrender"
+    ],
+    "Network": [
+      "JoinChannel",
+      "ICCommLib"
+    ]
+  }
+}

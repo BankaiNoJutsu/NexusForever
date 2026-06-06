@@ -27,6 +27,7 @@ DEFAULT_MYSQL = r"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 REVIEWED_MATCH_STATUS = "reviewed"
 APPROVED_REVIEW_DECISIONS = {"approve", "approved", "use", "map", "mapped", "reviewed"}
 TRACKED_CREATURE_BRIDGE_OVERRIDES = Path("Tools/DataMapping/creature_bridge_overrides.csv")
+SPLINE_APPROVED_BRIDGE_STATUSES = {"unique_name", "scored_name", REVIEWED_MATCH_STATUS}
 
 CREATURE_BRIDGE_OVERRIDE_FIELDS = [
     "source_table",
@@ -2042,7 +2043,7 @@ def normalize_name(value) -> str:
     return " ".join(text.split())
 
 
-def mysql_command(args: argparse.Namespace, query: str) -> List[str]:
+def mysql_command_for_db(args: argparse.Namespace, database: str, query: str) -> List[str]:
     return [
         str(args.mysql_exe),
         f"--host={args.host}",
@@ -2054,19 +2055,24 @@ def mysql_command(args: argparse.Namespace, query: str) -> List[str]:
         "--raw",
         "--skip-column-names",
         "--quick",
-        args.jabbithole_db,
+        database,
         "-e",
         query,
     ]
 
 
-def mysql_rows(
+def mysql_command(args: argparse.Namespace, query: str) -> List[str]:
+    return mysql_command_for_db(args, args.jabbithole_db, query)
+
+
+def mysql_rows_for_db(
     args: argparse.Namespace,
+    database: str,
     query: str,
     columns: Sequence[str],
 ) -> Iterator[Dict[str, str]]:
     process = subprocess.Popen(
-        mysql_command(args, query),
+        mysql_command_for_db(args, database, query),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -2087,6 +2093,14 @@ def mysql_rows(
     return_code = process.wait()
     if return_code != 0:
         raise RuntimeError(f"MySQL query failed with code {return_code}: {stderr.strip()}")
+
+
+def mysql_rows(
+    args: argparse.Namespace,
+    query: str,
+    columns: Sequence[str],
+) -> Iterator[Dict[str, str]]:
+    yield from mysql_rows_for_db(args, args.jabbithole_db, query, columns)
 
 
 def load_client_table(sql_dir: Path, filename: str, fields: Sequence[str]) -> Dict[int, Dict[str, object]]:
@@ -12024,45 +12038,453 @@ def write_action_map(args: argparse.Namespace, creature_rows: Sequence[Dict[str,
     return write_csv(args.output_dir / "creature_ai_action_map.csv", fieldnames, rows())
 
 
-def load_spline_first_nodes(sql_dir: Path) -> Dict[int, List[Tuple[int, float, float, float]]]:
+def distance3(a: Tuple[float, float, float], b: Tuple[float, float, float]) -> float:
+    return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
+
+
+def spatial_cell(x: float, z: float, cell_size: float) -> Tuple[int, int]:
+    return (math.floor(x / cell_size), math.floor(z / cell_size))
+
+
+def point_segment_distance(
+    point: Tuple[float, float, float],
+    start: Tuple[float, float, float],
+    end: Tuple[float, float, float],
+) -> Tuple[float, Tuple[float, float, float]]:
+    vx = end[0] - start[0]
+    vy = end[1] - start[1]
+    vz = end[2] - start[2]
+    length_squared = vx * vx + vy * vy + vz * vz
+    if length_squared <= 0:
+        return distance3(point, start), start
+
+    wx = point[0] - start[0]
+    wy = point[1] - start[1]
+    wz = point[2] - start[2]
+    t = max(0.0, min(1.0, (wx * vx + wy * vy + wz * vz) / length_squared))
+    nearest = (start[0] + t * vx, start[1] + t * vy, start[2] + t * vz)
+    return distance3(point, nearest), nearest
+
+
+def nearest_point_on_spline(
+    point: Tuple[float, float, float],
+    path: Dict[str, object],
+) -> Tuple[float, Tuple[float, float, float], int]:
+    nodes = path["nodes"]
+    if not isinstance(nodes, list) or not nodes:
+        return math.inf, point, -1
+    if len(nodes) == 1:
+        return distance3(point, nodes[0]), nodes[0], 0
+
+    best_distance = math.inf
+    best_point = nodes[0]
+    best_segment = 0
+    for index in range(len(nodes) - 1):
+        distance, nearest = point_segment_distance(point, nodes[index], nodes[index + 1])
+        if distance < best_distance:
+            best_distance = distance
+            best_point = nearest
+            best_segment = index
+    return best_distance, best_point, best_segment
+
+
+def load_spline_paths(sql_dir: Path) -> Dict[int, List[Dict[str, object]]]:
     splines = load_client_table(sql_dir, "Spline2.tbl.sql", ["ID", "worldId", "splineType"])
-    nodes_by_world: Dict[int, List[Tuple[int, float, float, float]]] = defaultdict(list)
-    log("Loading first nodes from Spline2Node.tbl.sql")
+    nodes_by_spline: Dict[int, List[Tuple[int, Tuple[float, float, float]]]] = defaultdict(list)
+    log("Loading full paths from Spline2Node.tbl.sql")
     for row in iter_table_rows(sql_dir / "Spline2Node.tbl.sql", ["splineId", "ordinal", "position0", "position1", "position2"]):
-        if to_int(row.get("ordinal"), -1) != 0:
-            continue
         spline_id = to_int(row.get("splineId"))
-        if spline_id is None:
+        ordinal = to_int(row.get("ordinal"), 0)
+        x = to_float(row.get("position0"))
+        y = to_float(row.get("position1"))
+        z = to_float(row.get("position2"))
+        if spline_id is None or ordinal is None or x is None or y is None or z is None:
             continue
+        nodes_by_spline[spline_id].append((ordinal, (x, y, z)))
+
+    paths_by_world: Dict[int, List[Dict[str, object]]] = defaultdict(list)
+    for spline_id, ordinal_nodes in nodes_by_spline.items():
         spline = splines.get(spline_id)
         if not spline:
             continue
         world_id = to_int(spline.get("worldId"))
-        x = to_float(row.get("position0"))
-        y = to_float(row.get("position1"))
-        z = to_float(row.get("position2"))
-        if world_id is None or x is None or y is None or z is None:
+        spline_type = to_int(spline.get("splineType"))
+        if world_id is None:
             continue
-        nodes_by_world[world_id].append((spline_id, x, y, z))
-    return nodes_by_world
+
+        nodes = [point for _, point in sorted(ordinal_nodes, key=lambda item: item[0])]
+        if not nodes:
+            continue
+
+        xs = [point[0] for point in nodes]
+        ys = [point[1] for point in nodes]
+        zs = [point[2] for point in nodes]
+        path_length = sum(distance3(nodes[index], nodes[index + 1]) for index in range(len(nodes) - 1))
+        start = nodes[0]
+        end = nodes[-1]
+        paths_by_world[world_id].append(
+            {
+                "spline2_id": spline_id,
+                "worldid": world_id,
+                "spline_type": spline_type,
+                "nodes": nodes,
+                "node_count": len(nodes),
+                "path_length": path_length,
+                "closed": len(nodes) > 2 and distance3(start, end) <= 3.0,
+                "start": start,
+                "end": end,
+                "min_x": min(xs),
+                "max_x": max(xs),
+                "min_y": min(ys),
+                "max_y": max(ys),
+                "min_z": min(zs),
+                "max_z": max(zs),
+            }
+        )
+    return paths_by_world
 
 
-def write_spline_candidates(args: argparse.Namespace, creature_map: Dict[int, Dict[str, object]]) -> int:
-    nodes_by_world = load_spline_first_nodes(args.client_sql_dir)
-    cell_size = args.spline_cell_size
-    grids: Dict[int, Dict[Tuple[int, int], List[Tuple[int, float, float, float]]]] = {}
-    for world_id, nodes in nodes_by_world.items():
-        grid: Dict[Tuple[int, int], List[Tuple[int, float, float, float]]] = defaultdict(list)
-        for node in nodes:
-            _, x, _, z = node
-            grid[(math.floor(x / cell_size), math.floor(z / cell_size))].append(node)
+def build_spline_path_grids(
+    paths_by_world: Dict[int, List[Dict[str, object]]],
+    cell_size: float,
+    radius: float,
+) -> Dict[int, Dict[Tuple[int, int], List[Dict[str, object]]]]:
+    grids: Dict[int, Dict[Tuple[int, int], List[Dict[str, object]]]] = {}
+    for world_id, paths in paths_by_world.items():
+        grid: Dict[Tuple[int, int], List[Dict[str, object]]] = defaultdict(list)
+        for path in paths:
+            min_cell = spatial_cell(to_float(path.get("min_x"), 0.0) - radius, to_float(path.get("min_z"), 0.0) - radius, cell_size)
+            max_cell = spatial_cell(to_float(path.get("max_x"), 0.0) + radius, to_float(path.get("max_z"), 0.0) + radius, cell_size)
+            for cx in range(min_cell[0], max_cell[0] + 1):
+                for cz in range(min_cell[1], max_cell[1] + 1):
+                    grid[(cx, cz)].append(path)
         grids[world_id] = grid
+    return grids
+
+
+def spline_path_candidates(
+    grids: Dict[int, Dict[Tuple[int, int], List[Dict[str, object]]]],
+    world_id: int,
+    point: Tuple[float, float, float],
+    cell_size: float,
+    radius: float,
+) -> List[Dict[str, object]]:
+    grid = grids.get(world_id)
+    if not grid:
+        return []
+
+    candidates: List[Dict[str, object]] = []
+    seen = set()
+    cell = spatial_cell(point[0], point[2], cell_size)
+    for path in grid.get(cell, []):
+        spline_id = to_int(path.get("spline2_id"))
+        if spline_id is None or spline_id in seen:
+            continue
+        seen.add(spline_id)
+        path_distance, nearest, segment_index = nearest_point_on_spline(point, path)
+        if path_distance > radius:
+            continue
+        start = path["start"]
+        if not isinstance(start, tuple):
+            continue
+        candidates.append(
+            {
+                "path": path,
+                "distance_to_path": path_distance,
+                "distance_to_start": distance3(point, start),
+                "nearest_path_point": nearest,
+                "nearest_segment_index": segment_index,
+            }
+        )
+    candidates.sort(key=lambda item: (to_float(item.get("distance_to_path"), math.inf), to_float(item.get("distance_to_start"), math.inf)))
+    return candidates
+
+
+def runtime_spline_context_empty(reason: str) -> Dict[str, object]:
+    return {
+        "available": False,
+        "reason": reason,
+        "grids": {},
+        "assigned_by_spline": {},
+    }
+
+
+def load_runtime_spline_context(
+    args: argparse.Namespace,
+    client_creatures: Dict[int, Dict[str, object]],
+) -> Dict[str, object]:
+    if args.skip_runtime_spline_context:
+        return runtime_spline_context_empty("runtime_spline_context_skipped")
+
+    columns = [
+        "entity_id",
+        "entity_type",
+        "creature2_id",
+        "worldid",
+        "area",
+        "x",
+        "y",
+        "z",
+        "existing_spline2_id",
+    ]
+    query = """
+SELECT
+    e.id,
+    e.type,
+    e.creature,
+    e.world,
+    e.area,
+    e.x,
+    e.y,
+    e.z,
+    es.splineId
+FROM entity e
+LEFT JOIN entity_spline es ON es.id = e.id
+WHERE e.world IS NOT NULL
+  AND e.world <> 0
+ORDER BY e.world, e.id
+""".strip()
+
+    try:
+        source_rows = list(mysql_rows_for_db(args, args.world_db, query, columns))
+    except RuntimeError as exc:
+        log(f"Skipping runtime spline context from {args.world_db}: {exc}")
+        return runtime_spline_context_empty("runtime_spline_context_unavailable")
+
+    entities_by_world: Dict[int, List[Dict[str, object]]] = defaultdict(list)
+    assigned_by_spline: Dict[int, List[Dict[str, object]]] = defaultdict(list)
+    for row in source_rows:
+        entity_id = to_int(row.get("entity_id"))
+        creature2_id = to_int(row.get("creature2_id"))
+        world_id = to_int(row.get("worldid"))
+        x = to_float(row.get("x"))
+        y = to_float(row.get("y"))
+        z = to_float(row.get("z"))
+        if entity_id is None or world_id is None or x is None or y is None or z is None:
+            continue
+
+        creature = client_creatures.get(creature2_id or -1, {})
+        creature_name = clean_cell(creature.get("clientName"))
+        entity = {
+            "entity_id": entity_id,
+            "entity_type": to_int(row.get("entity_type")),
+            "creature2_id": creature2_id,
+            "creature2_name": creature_name,
+            "creature2_name_normalized": normalize_name(creature_name),
+            "worldid": world_id,
+            "area": to_int(row.get("area")),
+            "x": x,
+            "y": y,
+            "z": z,
+            "existing_spline2_id": to_int(row.get("existing_spline2_id")),
+        }
+        entities_by_world[world_id].append(entity)
+        existing_spline_id = to_int(row.get("existing_spline2_id"))
+        if existing_spline_id is not None:
+            assigned_by_spline[existing_spline_id].append(entity)
+
+    grids: Dict[int, Dict[Tuple[int, int], List[Dict[str, object]]]] = {}
+    for world_id, entities in entities_by_world.items():
+        grid: Dict[Tuple[int, int], List[Dict[str, object]]] = defaultdict(list)
+        for entity in entities:
+            grid[spatial_cell(to_float(entity.get("x"), 0.0) or 0.0, to_float(entity.get("z"), 0.0) or 0.0, args.spline_cell_size)].append(entity)
+        grids[world_id] = grid
+    for entities in assigned_by_spline.values():
+        entities.sort(key=lambda item: to_int(item.get("entity_id"), 0) or 0)
+
+    return {
+        "available": True,
+        "reason": "runtime_spline_context_loaded",
+        "grids": grids,
+        "assigned_by_spline": assigned_by_spline,
+    }
+
+
+def entity_with_distance(entity: Dict[str, object], point: Tuple[float, float, float]) -> Dict[str, object]:
+    result = dict(entity)
+    result["distance"] = distance3(
+        point,
+        (
+            to_float(entity.get("x"), 0.0) or 0.0,
+            to_float(entity.get("y"), 0.0) or 0.0,
+            to_float(entity.get("z"), 0.0) or 0.0,
+        ),
+    )
+    return result
+
+
+def nearest_runtime_entities(
+    runtime_context: Dict[str, object],
+    world_id: int,
+    point: Tuple[float, float, float],
+    cell_size: float,
+    radius: float,
+    creature2_id: Optional[int],
+    creature_name_normalized: str,
+) -> Dict[str, Optional[Dict[str, object]]]:
+    grids = runtime_context.get("grids", {})
+    if not isinstance(grids, dict):
+        return {"any": None, "same_creature": None, "same_name": None}
+    grid = grids.get(world_id)
+    if not isinstance(grid, dict):
+        return {"any": None, "same_creature": None, "same_name": None}
+
+    cell = spatial_cell(point[0], point[2], cell_size)
+    span = max(1, math.ceil(radius / cell_size))
+    best_any = None
+    best_same_creature = None
+    best_same_name = None
+    seen = set()
+    for dx in range(-span, span + 1):
+        for dz in range(-span, span + 1):
+            for entity in grid.get((cell[0] + dx, cell[1] + dz), []):
+                entity_id = to_int(entity.get("entity_id"))
+                if entity_id is None or entity_id in seen:
+                    continue
+                seen.add(entity_id)
+                candidate = entity_with_distance(entity, point)
+                distance = to_float(candidate.get("distance"), math.inf) or math.inf
+                if distance > radius:
+                    continue
+                if best_any is None or distance < (to_float(best_any.get("distance"), math.inf) or math.inf):
+                    best_any = candidate
+                if creature2_id is not None and to_int(entity.get("creature2_id")) == creature2_id:
+                    if best_same_creature is None or distance < (to_float(best_same_creature.get("distance"), math.inf) or math.inf):
+                        best_same_creature = candidate
+                if creature_name_normalized and clean_cell(entity.get("creature2_name_normalized")) == creature_name_normalized:
+                    if best_same_name is None or distance < (to_float(best_same_name.get("distance"), math.inf) or math.inf):
+                        best_same_name = candidate
+    return {"any": best_any, "same_creature": best_same_creature, "same_name": best_same_name}
+
+
+def bool_cell(value: bool) -> str:
+    return "true" if value else "false"
+
+
+def classify_spline_candidate(
+    row: Dict[str, object],
+    path: Dict[str, object],
+    point: Tuple[float, float, float],
+    runtime_context: Dict[str, object],
+    args: argparse.Namespace,
+) -> None:
+    creature2_id = to_int(row.get("creature2_id"))
+    creature_name = clean_cell(row.get("creature2_name") or row.get("source_name"))
+    creature_name_normalized = normalize_name(creature_name)
+    spline_id = to_int(path.get("spline2_id"))
+    match_status = clean_cell(row.get("match_status"))
+
+    assigned_entities = {}
+    raw_assigned = runtime_context.get("assigned_by_spline", {})
+    if isinstance(raw_assigned, dict) and spline_id is not None:
+        assigned_entities = raw_assigned.get(spline_id, [])
+    assigned = None
+    if isinstance(assigned_entities, list) and assigned_entities:
+        assigned = min((entity_with_distance(entity, point) for entity in assigned_entities), key=lambda item: to_float(item.get("distance"), math.inf) or math.inf)
+
+    nearest = {"any": None, "same_creature": None, "same_name": None}
+    if runtime_context.get("available"):
+        nearest = nearest_runtime_entities(
+            runtime_context,
+            to_int(row.get("worldid"), -1) or -1,
+            point,
+            args.spline_cell_size,
+            args.spline_runtime_radius,
+            creature2_id,
+            creature_name_normalized,
+        )
+
+    selected_entity = None
+    if not runtime_context.get("available"):
+        row["candidate_classification"] = "geometry_only"
+        row["classification_reason"] = clean_cell(runtime_context.get("reason"))
+    elif assigned is not None:
+        assigned_same_creature = creature2_id is not None and to_int(assigned.get("creature2_id")) == creature2_id
+        assigned_same_name = creature_name_normalized and clean_cell(assigned.get("creature2_name_normalized")) == creature_name_normalized
+        selected_entity = assigned
+        if assigned_same_creature:
+            row["candidate_classification"] = "authoritative_existing_assignment"
+            row["classification_reason"] = "spline already attached to same Creature2 in runtime entity_spline"
+        elif assigned_same_name:
+            row["candidate_classification"] = "authoritative_existing_family_assignment"
+            row["classification_reason"] = "spline already attached to same-name Creature2 variant in runtime entity_spline"
+        else:
+            row["candidate_classification"] = "unsafe_existing_assignment"
+            row["classification_reason"] = "spline already attached to different runtime entity"
+    elif match_status not in SPLINE_APPROVED_BRIDGE_STATUSES:
+        row["candidate_classification"] = "unsafe_bridge"
+        row["classification_reason"] = "creature bridge is not unique/scored/reviewed"
+        selected_entity = nearest.get("any")
+    else:
+        same_creature = nearest.get("same_creature")
+        same_name = nearest.get("same_name")
+        same_name_is_same_creature = (
+            same_name is not None
+            and creature2_id is not None
+            and to_int(same_name.get("creature2_id")) == creature2_id
+        )
+        if same_creature and (to_float(same_creature.get("distance"), math.inf) or math.inf) <= args.spline_strong_runtime_radius:
+            row["candidate_classification"] = "strong_candidate"
+            row["classification_reason"] = "same Creature2 runtime entity is within strong radius"
+            selected_entity = same_creature
+        elif same_name and not same_name_is_same_creature:
+            row["candidate_classification"] = "review_family_variant"
+            row["classification_reason"] = "different same-name Creature2 variant is nearest in this local area"
+            selected_entity = same_name
+        elif same_creature:
+            row["candidate_classification"] = "review_same_creature_far"
+            row["classification_reason"] = "same Creature2 runtime entity exists but is outside strong radius"
+            selected_entity = same_creature
+        elif same_name:
+            row["candidate_classification"] = "review_same_name_unbridged"
+            row["classification_reason"] = "same-name runtime entity exists but source Creature2 bridge is missing"
+            selected_entity = same_name
+        elif nearest.get("any"):
+            row["candidate_classification"] = "review_nearest_other_entity"
+            row["classification_reason"] = "nearest runtime entity is a different creature"
+            selected_entity = nearest.get("any")
+        else:
+            row["candidate_classification"] = "unsafe_no_runtime_entity"
+            row["classification_reason"] = "no runtime entity found near source coordinate"
+
+    if selected_entity is not None:
+        selected_name_normalized = clean_cell(selected_entity.get("creature2_name_normalized"))
+        row["runtime_entity_id"] = selected_entity.get("entity_id", "")
+        row["runtime_entity_type"] = selected_entity.get("entity_type", "")
+        row["runtime_creature2_id"] = selected_entity.get("creature2_id", "")
+        row["runtime_creature2_name"] = selected_entity.get("creature2_name", "")
+        row["runtime_area"] = selected_entity.get("area", "")
+        row["runtime_distance"] = selected_entity.get("distance", "")
+        row["runtime_existing_spline2_id"] = selected_entity.get("existing_spline2_id", "")
+        row["runtime_creature_match"] = bool_cell(creature2_id is not None and to_int(selected_entity.get("creature2_id")) == creature2_id)
+        row["runtime_name_match"] = bool_cell(bool(creature_name_normalized) and selected_name_normalized == creature_name_normalized)
+
+    if assigned is not None:
+        row["assigned_entity_id"] = assigned.get("entity_id", "")
+        row["assigned_entity_type"] = assigned.get("entity_type", "")
+        row["assigned_creature2_id"] = assigned.get("creature2_id", "")
+        row["assigned_creature2_name"] = assigned.get("creature2_name", "")
+        row["assigned_area"] = assigned.get("area", "")
+        row["assigned_entity_count"] = len(assigned_entities) if isinstance(assigned_entities, list) else ""
+
+
+def write_spline_candidates(
+    args: argparse.Namespace,
+    creature_map: Dict[int, Dict[str, object]],
+    client_creatures: Dict[int, Dict[str, object]],
+) -> int:
+    paths_by_world = load_spline_paths(args.client_sql_dir)
+    cell_size = args.spline_cell_size
+    grids = build_spline_path_grids(paths_by_world, cell_size, args.spline_radius)
+    runtime_context = load_runtime_spline_context(args, client_creatures)
 
     columns = [
         "source_coordinate_id",
         "jabbithole_creature_id",
         "source_name",
+        "zone_id",
         "worldid",
+        "worldzoneid",
         "x",
         "y",
         "z",
@@ -12072,7 +12494,9 @@ SELECT
     co.id,
     co.location_id,
     c.name,
+    c.zone_id,
     c.worldid,
+    c.worldzoneid,
     co.x,
     co.y,
     co.z
@@ -12089,20 +12513,56 @@ ORDER BY co.id
         "creature2_id",
         "source_name",
         "creature2_name",
+        "match_status",
+        "entity_type",
+        "zone_id",
         "worldid",
+        "worldzoneid",
         "x",
         "y",
         "z",
         "spline2_id",
+        "spline_type",
         "spline_start_x",
         "spline_start_y",
         "spline_start_z",
+        "spline_end_x",
+        "spline_end_y",
+        "spline_end_z",
+        "spline_node_count",
+        "spline_path_length",
+        "spline_closed",
         "distance",
+        "distance_to_start",
+        "distance_to_path",
+        "nearest_path_x",
+        "nearest_path_y",
+        "nearest_path_z",
+        "nearest_segment_index",
+        "candidate_rank",
+        "candidate_classification",
+        "classification_reason",
+        "runtime_entity_id",
+        "runtime_entity_type",
+        "runtime_creature2_id",
+        "runtime_creature2_name",
+        "runtime_area",
+        "runtime_distance",
+        "runtime_creature_match",
+        "runtime_name_match",
+        "runtime_existing_spline2_id",
+        "assigned_entity_id",
+        "assigned_entity_type",
+        "assigned_creature2_id",
+        "assigned_creature2_name",
+        "assigned_area",
+        "assigned_entity_count",
         "candidate_note",
     ]
 
     def rows():
         radius = args.spline_radius
+        candidate_limit = max(1, args.spline_candidate_limit)
         for row in mysql_rows(args, limited(query, args.limit_spawns), columns):
             row = apply_creature_map(row, creature_map)
             world_id = to_int(row.get("worldid"))
@@ -12111,22 +12571,31 @@ ORDER BY co.id
             z = to_float(row.get("z"))
             if world_id is None or x is None or y is None or z is None:
                 continue
-            grid = grids.get(world_id)
-            if not grid:
-                continue
-            cx = math.floor(x / cell_size)
-            cz = math.floor(z / cell_size)
-            best = None
-            for dx in (-1, 0, 1):
-                for dz in (-1, 0, 1):
-                    for spline_id, sx, sy, sz in grid.get((cx + dx, cz + dz), []):
-                        distance = math.sqrt((x - sx) ** 2 + (y - sy) ** 2 + (z - sz) ** 2)
-                        if distance <= radius and (best is None or distance < best[-1]):
-                            best = (spline_id, sx, sy, sz, distance)
-            if best:
-                row["spline2_id"], row["spline_start_x"], row["spline_start_y"], row["spline_start_z"], row["distance"] = best
-                row["candidate_note"] = "nearest_spline_start_within_radius"
-                yield row
+            point = (x, y, z)
+            for rank, candidate in enumerate(spline_path_candidates(grids, world_id, point, cell_size, radius)[:candidate_limit], start=1):
+                output_row = dict(row)
+                path = candidate["path"]
+                start = path["start"]
+                end = path["end"]
+                nearest = candidate["nearest_path_point"]
+                if not isinstance(start, tuple) or not isinstance(end, tuple) or not isinstance(nearest, tuple):
+                    continue
+                output_row["spline2_id"] = path.get("spline2_id", "")
+                output_row["spline_type"] = path.get("spline_type", "")
+                output_row["spline_start_x"], output_row["spline_start_y"], output_row["spline_start_z"] = start
+                output_row["spline_end_x"], output_row["spline_end_y"], output_row["spline_end_z"] = end
+                output_row["spline_node_count"] = path.get("node_count", "")
+                output_row["spline_path_length"] = path.get("path_length", "")
+                output_row["spline_closed"] = bool_cell(bool(path.get("closed")))
+                output_row["distance"] = candidate.get("distance_to_start", "")
+                output_row["distance_to_start"] = candidate.get("distance_to_start", "")
+                output_row["distance_to_path"] = candidate.get("distance_to_path", "")
+                output_row["nearest_path_x"], output_row["nearest_path_y"], output_row["nearest_path_z"] = nearest
+                output_row["nearest_segment_index"] = candidate.get("nearest_segment_index", "")
+                output_row["candidate_rank"] = rank
+                output_row["candidate_note"] = "nearest_spline_path_within_radius"
+                classify_spline_candidate(output_row, path, point, runtime_context, args)
+                yield output_row
 
     target = args.output_dir / "creature_spline_candidate_map.csv"
     temp_path = target.with_suffix(target.suffix + ".tmp")
@@ -12226,11 +12695,14 @@ def write_summary(args: argparse.Namespace, counts: Dict[str, int], creature_row
         "client_sql_dir": str(args.client_sql_dir),
         "jabbithole_sql_dir": str(args.jabbithole_sql_dir),
         "jabbithole_db": args.jabbithole_db,
+        "world_db": args.world_db,
         "limits": {
             "limit_creatures": args.limit_creatures,
             "limit_relation_rows": args.limit_relation_rows,
             "limit_spawns": args.limit_spawns,
             "include_spline_candidates": args.include_spline_candidates,
+            "spline_candidate_limit": args.spline_candidate_limit,
+            "skip_runtime_spline_context": args.skip_runtime_spline_context,
         },
         "match_status_counts": dict(statuses),
         "output_counts": counts,
@@ -12243,6 +12715,7 @@ def write_summary(args: argparse.Namespace, counts: Dict[str, int], creature_row
         f"- Client dump: `{args.client_sql_dir}`",
         f"- Jabbithole dump: `{args.jabbithole_sql_dir}`",
         f"- Jabbithole DB used for relation queries: `{args.jabbithole_db}`",
+        f"- Runtime world DB used for spline context: `{args.world_db}`",
         "",
         "## Creature Name Bridge",
         "",
@@ -12259,7 +12732,7 @@ def write_summary(args: argparse.Namespace, counts: Dict[str, int], creature_row
             "",
             "- Jabbithole creature IDs are not Creature2 IDs. The bridge is Jabbithole creature name -> `StringsenUS.LocalizedText` -> `Creature2.localizedTextIdName`, then scored by faction, level range, difficulty, and datacube when available.",
             "- `world_entity_candidate.csv` and `world_entity_stats_candidate.csv` are import candidates. Entity IDs are blank because the target world database must assign non-conflicting IDs.",
-            "- `creature_spline_candidate_map.csv`, when enabled, is proximity-based only. The source data does not expose a direct creature-to-spline foreign key.",
+            "- `creature_spline_candidate_map.csv`, when enabled, is candidate-only. It scores nearby full `Spline2` paths, preserves the historical start-node distance, and classifies rows with optional runtime `entity`/`entity_spline` context. The source data still does not expose a direct creature-to-spline foreign key.",
             "- `client_source_*_map.csv` files provide complete client-table coverage for rows that do not yet need curated semantic bridge logic.",
         ]
     )
@@ -12512,12 +12985,17 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--user", default="bankai")
     parser.add_argument("--password", default="bankai")
     parser.add_argument("--jabbithole-db", default="jabbithole")
+    parser.add_argument("--world-db", default="nexus_forever_world")
     parser.add_argument("--limit-creatures", type=int, default=None)
     parser.add_argument("--limit-relation-rows", type=int, default=None)
     parser.add_argument("--limit-spawns", type=int, default=None)
     parser.add_argument("--include-spline-candidates", action="store_true")
     parser.add_argument("--spline-radius", type=float, default=25.0)
     parser.add_argument("--spline-cell-size", type=float, default=50.0)
+    parser.add_argument("--spline-candidate-limit", type=int, default=1)
+    parser.add_argument("--spline-runtime-radius", type=float, default=30.0)
+    parser.add_argument("--spline-strong-runtime-radius", type=float, default=5.0)
+    parser.add_argument("--skip-runtime-spline-context", action="store_true")
     parser.add_argument("--review-candidate-limit", type=int, default=8)
     args = parser.parse_args(argv)
 
@@ -12591,7 +13069,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     counts["creature_ai_action_map.csv"] = write_action_map(args, creature_rows, client["creatures"])
 
     if args.include_spline_candidates:
-        counts["creature_spline_candidate_map.csv"] = write_spline_candidates(args, creature_map)
+        counts["creature_spline_candidate_map.csv"] = write_spline_candidates(args, creature_map, client["creatures"])
 
     counts.update(write_coverage_inventory(args))
     write_summary(args, counts, creature_rows)

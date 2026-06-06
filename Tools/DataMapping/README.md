@@ -35,11 +35,15 @@ python Tools\DataMapping\map_wildstar_data.py `
   --output-dir Tools\DataMapping\output_test
 ```
 
-For the full run with proximity-based spline candidates:
+For the full run with geometry-scored spline candidates:
 
 ```powershell
 python Tools\DataMapping\map_wildstar_data.py --include-spline-candidates
 ```
+
+Spline candidates use the active runtime world database for review context by
+default. Pass `--skip-runtime-spline-context` when only client/Jabbithole
+geometry evidence is available.
 
 ## Generated Maps
 
@@ -76,7 +80,7 @@ Creature relationships:
 - `challenge_map.csv` maps Jabbithole challenges to client `Challenge`.
 - `challenge_creature_map.csv` maps challenge target creatures to resolved `Creature2` rows.
 - `challenge_reward_item_map.csv` maps direct challenge rewards and challenge reward-track item contents to `Item2` when a client item ID is available.
-- `creature_spline_candidate_map.csv` is optional and maps spawns to nearby `Spline2` starting nodes by proximity. This is candidate-only because no direct Jabbithole creature-to-spline foreign key exists.
+- `creature_spline_candidate_map.csv` is optional and maps spawns to nearby full `Spline2` path geometry. It preserves the historical start-node distance, adds nearest-path distance/segment evidence, and classifies candidates with optional runtime `entity`/`entity_spline` context so already-attached splines and same-name local variants stay reviewable instead of auto-promoted. This is candidate-only because no direct Jabbithole creature-to-spline foreign key exists.
 
 Path and exploration relationships:
 

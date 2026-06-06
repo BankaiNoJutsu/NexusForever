@@ -1,0 +1,840 @@
+entity_id,spline_id,mode,speed,world,area,area_name,creature2_id,client_name,match_status,source_coordinate_id,jabbithole_creature_id,path_distance,runtime_distance,spline_nodes,spline_length,spline_closed,existing_spline,import_action
+44413,19788,1,3,22,1402,Wilderrun,38403,Kinesis Probe,unique_name,5810881,7181,2.816822,0.992522,77,521.462875,false,,insert
+44416,19788,1,3,22,1402,Wilderrun,38403,Kinesis Probe,unique_name,6047227,7181,0.114908,1.798166,77,521.462875,false,,insert
+44420,19788,1,3,22,1402,Wilderrun,38404,Kinesis Drone,unique_name,5586402,7182,1.208292,1.424465,77,521.462875,false,,insert
+44426,13352,1,3,22,1402,Wilderrun,38405,Kinesis Exterminator,unique_name,5586089,7180,0.428824,1.037304,14,130.984666,false,13352,skip_existing_same_spline
+45597,13348,1,3,22,1402,Wilderrun,40474,Crushstone Titan,unique_name,8423514,29082,0.884770,1.691735,11,71.603899,false,13348,skip_existing_same_spline
+45957,13586,1,3,22,1402,Wilderrun,44940,Lumbering Hulker,unique_name,7958607,7834,0.454221,0.664512,24,170.729856,false,13586,skip_existing_same_spline
+46055,14583,1,3,22,1403,Fool's Hope,47598,Fool's Hope Warbot Guard,unique_name,3386689,4178,0.465402,0.491504,21,83.324529,false,14583,skip_existing_same_spline
+46056,14584,1,3,22,1403,Fool's Hope,47598,Fool's Hope Warbot Guard,unique_name,7630020,4178,0.741071,1.069542,20,65.667793,false,14584,skip_existing_same_spline
+46057,14582,1,3,22,1403,Fool's Hope,47598,Fool's Hope Warbot Guard,unique_name,2813426,4178,0.694206,1.564614,24,69.539033,false,14582,skip_existing_same_spline
+42409,19598,1,3,22,1404,Fort Vigilance,27505,Warpwood Rootgrabber,unique_name,8290312,1275,1.850474,2.102219,11,127.151806,false,,insert
+45589,19598,1,3,22,1404,Fort Vigilance,40380,Field Medic Lutton,scored_name,55030,6954,1.988444,0.932590,11,127.151806,false,,insert
+46224,14835,1,3,22,1404,Fort Vigilance,48514,Fort Vigilance Warbot Guard,unique_name,3450722,6944,0.685851,1.055919,22,69.410637,false,14835,skip_existing_same_spline
+46225,14836,1,3,22,1404,Fort Vigilance,48514,Fort Vigilance Warbot Guard,unique_name,2016735,6944,0.344907,0.887459,20,58.657919,false,14836,skip_existing_same_spline
+42870,19582,1,3,22,1438,Wildfall Commune,27700,Wildfall Warrior,unique_name,8465970,10161,0.329356,0.782864,11,49.980754,false,19582,skip_existing_same_spline
+42873,19583,1,3,22,1438,Wildfall Commune,27700,Wildfall Warrior,unique_name,8388485,10161,0.965323,0.650115,11,33.466688,false,,insert
+42863,8460,1,3,22,1439,The Gamma Ruins,27698,Wildfall Berserker,unique_name,8097719,10202,0.436824,2.909354,83,969.318354,false,,insert
+45998,8460,1,3,22,1439,The Gamma Ruins,45344,Swarming Splorg,scored_name,6494410,12349,1.919383,1.760220,83,969.318354,false,,insert
+45896,12723,1,3,22,1441,Giant's Wall,44793,Torine Lifesealer,unique_name,8230249,8711,0.391019,2.414945,15,74.684705,false,12723,skip_existing_same_spline
+42716,12772,1,3,22,1445,Maiden Pool,27678,Torine Battlemaiden,scored_name,8098500,7860,0.747794,1.704849,14,51.647914,false,12772,skip_existing_same_spline
+47380,12648,1,3,22,1485,The Undergrove,61887,Grizzlepaw Forager,unique_name,8388668,8751,0.253075,0.977883,32,131.566933,false,12648,skip_existing_same_spline
+47382,12645,1,3,22,1485,The Undergrove,61887,Grizzlepaw Forager,unique_name,8098511,8751,0.455850,0.122474,14,40.879223,false,,insert
+47383,12647,1,3,22,1485,The Undergrove,61887,Grizzlepaw Forager,unique_name,8206237,8751,0.889996,1.240846,28,141.712552,false,12647,skip_existing_same_spline
+47384,12646,1,3,22,1485,The Undergrove,61887,Grizzlepaw Forager,unique_name,8325334,8751,0.093384,2.099735,23,139.557443,false,12646,skip_existing_same_spline
+47390,12645,1,3,22,1485,The Undergrove,61887,Grizzlepaw Forager,unique_name,8014175,8751,0.494241,0.994668,14,40.879223,false,12645,skip_existing_same_spline
+42597,12728,1,3,22,1492,Giant's Wall,27532,Untamed Pouncer,unique_name,8293151,8730,2.588596,2.455712,11,48.267983,false,,insert
+47386,12671,1,3,22,1492,Giant's Wall,61887,Grizzlepaw Forager,unique_name,8223895,8751,0.547004,2.663059,33,206.587757,false,12671,skip_existing_same_spline
+43324,12656,1,3,22,1522,Feralclaw Cliffs,29783,Feralclaw Devourer,unique_name,8226261,7556,0.755276,2.228048,24,131.282271,false,12656,skip_existing_same_spline
+46963,12050,1,3,22,2069,Research Camp Echo,58702,Camp Echo Biologist,unique_name,502579,14477,2.804623,0.939132,19,187.730808,false,,insert
+43850,11734,1,3,22,2071,Kel Ulgar,38025,Ulgar Slavemaker,unique_name,8186650,12515,0.858761,0.772492,35,89.838819,false,,insert
+44032,12061,1,3,22,2071,Kel Ulgar,38179,Captured Pumera,unique_name,501636,13765,0.975217,1.611962,30,140.348678,false,,insert
+44083,11660,1,3,22,2071,Kel Ulgar,38202,Ulgar Beastmaster,unique_name,8230455,10378,2.009023,1.187547,65,560.870099,false,,insert
+47509,11658,1,3,22,2071,Kel Ulgar,61949,Ulgar Bonesmasher,unique_name,6493178,7211,1.000065,1.663812,45,530.316954,false,,insert
+47577,11716,1,3,22,2071,Kel Ulgar,62019,Ulgar Overlord,unique_name,7710841,10359,2.550219,2.653166,14,100.941441,false,,insert
+47583,11721,1,3,22,2071,Kel Ulgar,62019,Ulgar Overlord,unique_name,7764806,10359,2.961458,1.167947,26,116.495170,false,,insert
+47590,11735,1,3,22,2071,Kel Ulgar,62019,Ulgar Overlord,unique_name,7593573,10359,1.881417,1.125008,38,135.078515,false,,insert
+44399,11609,1,3,22,2076,The Strange Glade,38398,Hybridization Augmentor,unique_name,8449540,12791,1.420183,1.464221,15,76.147316,false,11609,skip_existing_same_spline
+44400,11608,1,3,22,2076,The Strange Glade,38398,Hybridization Augmentor,unique_name,8226860,12791,0.377928,1.320998,10,51.936852,false,11608,skip_existing_same_spline
+44401,11607,1,3,22,2076,The Strange Glade,38398,Hybridization Augmentor,unique_name,8382630,12791,0.712887,2.539630,8,47.059767,false,11607,skip_existing_same_spline
+44402,11606,1,3,22,2076,The Strange Glade,38398,Hybridization Augmentor,unique_name,8038514,12791,0.682102,2.827584,6,31.285914,false,11606,skip_existing_same_spline
+47602,13342,2,3,22,2077,The Battlemound,62028,Restless Tempest,unique_name,8248543,7184,1.001359,1.569777,15,189.313191,true,13342,skip_existing_same_spline
+44388,13305,1,3,22,2078,Deepfall Spires,38381,Raging Tide,unique_name,8031980,7189,0.654853,1.742785,24,263.029901,false,13305,skip_existing_same_spline
+47609,11684,1,3,22,2078,Deepfall Spires,62031,Spirevale Firenova,unique_name,7896256,6866,0.180813,0.427406,9,44.916572,false,11684,skip_existing_same_spline
+44368,14527,1,3,22,2131,Devastation Ridge,38367,Depot Agent Sakiro,unique_name,56321,7175,2.876953,0.887469,26,174.149656,false,,insert
+46811,17611,1,3,22,2131,Devastation Ridge,51921,Sylphia Barkberry,reviewed,2641310,7334,1.479973,0.858441,30,219.350101,false,,insert
+47613,11686,1,3,22,2712,Spirevale Landing,62033,Spirevale Inferno,unique_name,8226795,6744,0.866988,2.106490,7,41.561542,false,11686,skip_existing_same_spline
+44246,13121,1,3,22,2785,Northern Wilderrun,38322,Manglepaw Crusher,unique_name,4855796,16013,0.785659,1.075656,10,80.212297,false,13121,skip_existing_same_spline
+46031,16481,1,3,22,2785,Northern Wilderrun,47379,Ric Longshanks,reviewed,503411,14552,2.682443,0.991494,14,34.340013,false,,insert
+47591,13120,1,3,22,2785,Northern Wilderrun,62022,Manglepaw Mauler,unique_name,4849821,16014,1.082874,1.194454,9,93.841652,false,13120,skip_existing_same_spline
+415,4040,1,3,51,13,Algoroc,16632,Icemaw Frostclaw,unique_name,6073628,3272,0.792599,2.423725,16,86.823104,false,4040,skip_existing_same_spline
+3822,16311,1,3,51,13,Algoroc,51597,Augmented Spiderling,scored_name,8212683,29422,2.517938,2.262410,30,281.098388,false,,insert
+3824,16364,1,3,51,13,Algoroc,51598,Augmented Recluse,unique_name,8132893,29423,0.123970,0.524404,13,120.753406,false,16364,skip_existing_same_spline
+745,5616,1,3,51,20,Grim Valley,17366,Slave Chain,unique_name,5217449,7707,1.665849,1.022433,52,1174.888974,false,,insert
+755,5725,1,3,51,20,Grim Valley,17366,Slave Chain,unique_name,5955620,7707,1.719141,1.005923,8,46.297316,false,,insert
+839,5616,1,3,51,20,Grim Valley,17409,Musty Spore,unique_name,6376675,5773,2.405125,0.704880,52,1174.888974,false,,insert
+843,5616,1,3,51,20,Grim Valley,17409,Musty Spore,unique_name,36641,5773,1.958401,0.925075,52,1174.888974,false,,insert
+855,5616,1,3,51,20,Grim Valley,17409,Musty Spore,unique_name,180927,5773,1.376491,0.884491,52,1174.888974,false,,insert
+1010,4436,1,3,51,20,Grim Valley,17931,Energy Field,reviewed,6214299,23993,2.421513,1.108417,8,30.518780,false,,insert
+1900,5738,1,3,51,20,Grim Valley,20898,Grim Handler,unique_name,8405511,5772,0.073270,0.836002,9,36.325670,false,5738,skip_existing_same_spline
+1906,5616,1,3,51,20,Grim Valley,20898,Grim Handler,unique_name,8433751,5772,2.500434,0.924533,52,1174.888974,false,,insert
+1931,5729,1,3,51,20,Grim Valley,20901,Grim Overseer,reviewed,8467263,3151,0.418856,0.632320,10,72.430523,false,5729,skip_existing_same_spline
+1932,5723,1,3,51,20,Grim Valley,20901,Grim Overseer,reviewed,8433494,3151,0.566262,2.636574,9,82.579006,false,5723,skip_existing_same_spline
+1941,5728,1,3,51,20,Grim Valley,20901,Grim Overseer,reviewed,8467264,3151,0.831354,0.831354,8,45.026109,false,5728,skip_existing_same_spline
+1993,5616,1,3,51,20,Grim Valley,20932,Pinewrath Trunksplitter,unique_name,8167922,5770,1.255518,1.934907,52,1174.888974,false,,insert
+2298,5616,1,3,51,20,Grim Valley,21120,Jabbit,reviewed,7455486,4929,1.593613,1.811912,52,1174.888974,false,,insert
+1,4417,1,3,51,21,Gallow,312,Amylee Silverstand,unique_name,11537,2634,1.709795,1.052473,8,53.027331,false,,insert
+3624,15808,1,3,51,21,Gallow,45056,Gallow Peacekeeper,unique_name,168069,10792,1.967312,0.955249,20,72.951875,false,,insert
+3625,15808,1,3,51,21,Gallow,45056,Gallow Peacekeeper,unique_name,380714,10792,1.740115,1.052853,20,72.951875,false,,insert
+3628,3505,2,3,51,21,Gallow,45056,Gallow Peacekeeper,unique_name,363013,10792,0.648784,1.303265,39,277.139019,true,,insert
+3629,15804,1,3,51,21,Gallow,45056,Gallow Peacekeeper,unique_name,214446,10792,2.732400,1.125122,24,108.946360,false,,insert
+4020,4404,1,3,51,21,Gallow,67799,Protogames Recruiter,reviewed,6131086,28229,2.778945,1.233734,11,134.461295,false,,insert
+1001039686,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,1039686,11082,0.407597,0.000000,39,213.585472,true,,insert
+1001221648,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,1221648,11082,0.478450,0.000000,39,213.585472,true,,insert
+1001473290,5892,1,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,1473290,11082,1.033961,0.000000,110,52.202916,false,,insert
+1001504010,5892,1,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,1504010,11082,0.726614,0.000000,110,52.202916,false,,insert
+1001589726,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,1589726,11082,0.429394,0.000000,39,213.585472,true,,insert
+1001979013,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,1979013,11082,0.695498,0.000000,39,213.585472,true,,insert
+1002138217,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,2138217,11082,1.639077,0.000000,39,213.585472,true,,insert
+1002138218,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,2138218,11082,0.795031,0.000000,39,213.585472,true,,insert
+1002180375,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,2180375,11082,1.275265,0.000000,39,213.585472,true,,insert
+1002249328,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,2249328,11082,0.546515,0.000000,39,213.585472,true,,insert
+1002716962,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,2716962,11082,0.437386,0.000000,39,213.585472,true,,insert
+1002723812,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,2723812,11082,0.864571,0.000000,39,213.585472,true,,insert
+1003204081,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,3204081,11082,1.039298,0.000000,39,213.585472,true,,insert
+1003218211,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,3218211,11082,0.674772,0.000000,39,213.585472,true,,insert
+1003482617,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,3482617,11082,0.896347,0.000000,39,213.585472,true,,insert
+1004019922,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,4019922,11082,1.558373,0.000000,39,213.585472,true,,insert
+1004020176,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,4020176,11082,0.824968,0.000000,39,213.585472,true,,insert
+1006634583,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,6634583,11082,0.859303,0.000000,39,213.585472,true,,insert
+1007796187,11320,2,3,51,23,Tremor Ridge,37586,Loftite Cart,reviewed,7796187,11082,0.444303,0.000000,39,213.585472,true,,insert
+110,16469,1,3,51,24,Coldwater Gulch,12754,Irradiated Snoglug,reviewed,7799360,3334,0.165478,0.965246,11,85.392686,false,16469,skip_existing_same_spline
+111,16470,1,3,51,24,Coldwater Gulch,12754,Irradiated Snoglug,reviewed,7993445,3334,0.625467,1.522126,10,46.977719,false,16470,skip_existing_same_spline
+118,5424,2,3,51,24,Coldwater Gulch,12807,Coldscale Stunpike,unique_name,4792078,9679,1.557123,1.847025,60,142.345536,true,,insert
+122,5421,1,3,51,24,Coldwater Gulch,12807,Coldscale Stunpike,unique_name,4792075,9679,1.063166,2.404144,66,207.166434,false,,insert
+123,5421,1,3,51,24,Coldwater Gulch,12807,Coldscale Stunpike,unique_name,4792058,9679,1.659740,1.212676,66,207.166434,false,,insert
+124,5423,2,3,51,24,Coldwater Gulch,12807,Coldscale Stunpike,unique_name,7708988,9679,2.147223,2.416661,48,156.813938,true,,insert
+126,5425,2,3,51,24,Coldwater Gulch,12807,Coldscale Stunpike,unique_name,4792054,9679,1.405972,2.649795,57,119.608293,true,,insert
+128,5425,2,3,51,24,Coldwater Gulch,12807,Coldscale Stunpike,unique_name,4792046,9679,1.613639,1.279261,57,119.608293,true,,insert
+416,4063,1,3,51,24,Coldwater Gulch,16632,Icemaw Frostclaw,unique_name,8405652,28466,0.576722,1.661427,18,38.534330,false,4063,skip_existing_same_spline
+1887,5698,1,3,51,26,Deadstar Ravine,20811,Deadstar Trained Dagun,unique_name,8431363,1221,1.278984,1.569745,10,44.478372,false,5698,skip_existing_same_spline
+285,5278,2,3,51,27,Rockridge Hollow,14136,The Lurking Terror,unique_name,7917016,7658,0.640816,2.657024,38,739.215539,true,5278,skip_existing_same_spline
+1809,22164,1,3,51,27,Rockridge Hollow,20797,Dominion Basher,unique_name,8156592,28634,0.658352,2.529071,7,18.020574,false,22164,skip_existing_same_spline
+1842,5695,2,3,51,27,Rockridge Hollow,20798,Dominion Scientist,reviewed,6892684,28695,2.430893,1.557370,40,237.927372,true,,insert
+18711,5452,1,3,51,122,Thayd,18933,Cordelia Bronson,reviewed,17995,3856,2.605404,1.147230,8,93.523578,false,,insert
+18991,5451,1,3,51,122,Thayd,44886,Thayd Guardsman,reviewed,1888629,17299,2.799527,0.418000,12,133.764040,false,,insert
+18995,5703,1,3,51,122,Thayd,44886,Thayd Guardsman,reviewed,7744895,237,0.993702,1.030846,10,103.449081,false,,insert
+19989,20110,2,3,51,122,Thayd,61381,Gardener,unique_name,4540341,10666,1.057804,1.062968,57,306.496870,true,20110,skip_existing_same_spline
+924,4374,1,3,51,129,Crowe Family Homestead,17692,Slateface Slammer,scored_name,6055287,4944,0.762834,2.544072,9,35.118428,false,4374,skip_existing_same_spline
+925,6347,1,3,51,129,Crowe Family Homestead,17692,Slateface Slammer,scored_name,8418107,28662,0.431617,1.988693,46,511.176780,false,,insert
+928,6347,1,3,51,129,Crowe Family Homestead,17692,Slateface Slammer,scored_name,6055305,4944,1.825358,1.461711,46,511.176780,false,,insert
+930,6347,1,3,51,129,Crowe Family Homestead,17692,Slateface Slammer,scored_name,6055304,4944,2.126852,2.662536,46,511.176780,false,,insert
+2033,5582,2,3,51,129,Crowe Family Homestead,20952,Crowe Marksman,unique_name,7794926,4946,2.658931,1.313775,65,1234.128588,true,,insert
+2049,5419,1,3,51,129,Crowe Family Homestead,20953,Crowe Swordsman,unique_name,7888515,4893,1.271569,2.435366,39,855.658745,false,,insert
+2074,16074,1,3,51,129,Crowe Family Homestead,20960,Crowe Attack Dagun,unique_name,8456417,4895,0.499631,2.079760,6,13.359946,false,16074,skip_existing_same_spline
+2153,5778,1,3,51,129,Crowe Family Homestead,20980,Duskfall Creeper,unique_name,6120446,1670,1.345456,1.954533,9,76.013086,false,5778,skip_existing_same_spline
+2554,6347,1,3,51,129,Crowe Family Homestead,22902,Halsen's Claim Miner,reviewed,380902,11158,2.573295,0.720139,46,511.176780,false,,insert
+2555,6347,1,3,51,129,Crowe Family Homestead,22902,Halsen's Claim Miner,reviewed,962230,11158,1.841107,1.030873,46,511.176780,false,,insert
+21602,6211,1,3,51,137,Whitevale,20575,Evolved Silversnout,unique_name,7864173,29003,0.028652,0.061025,10,72.062857,false,6211,skip_existing_same_spline
+21603,6213,1,3,51,137,Whitevale,20575,Evolved Silversnout,unique_name,8006815,29003,1.033514,2.792963,11,71.694456,false,6213,skip_existing_same_spline
+22285,12214,1,3,51,137,Whitevale,22583,Blackfrost Agent,unique_name,8035242,4546,0.905842,1.013410,11,72.774590,false,12214,skip_existing_same_spline
+22820,6489,1,3,51,137,Whitevale,22681,Blackfrost Analyst,unique_name,7959691,4534,0.581168,0.501494,41,389.181680,false,,insert
+23529,12252,1,3,51,137,Whitevale,23301,Toxic Fraz,unique_name,8457317,29318,0.646037,1.367553,8,22.954580,false,12252,skip_existing_same_spline
+23540,6308,1,3,51,137,Whitevale,23302,Toxic Frizlet,unique_name,8290171,29379,2.473753,0.832315,29,368.915668,false,,insert
+23548,6308,1,3,51,137,Whitevale,23302,Toxic Frizlet,unique_name,8373089,29379,1.420186,2.168407,29,368.915668,false,,insert
+23549,6308,1,3,51,137,Whitevale,23302,Toxic Frizlet,unique_name,5979381,4356,1.016001,2.467752,29,368.915668,false,,insert
+23550,6308,1,3,51,137,Whitevale,23302,Toxic Frizlet,unique_name,8290190,29379,1.603554,2.859721,29,368.915668,false,,insert
+24350,17535,1,3,51,137,Whitevale,24183,Darkice Basher,unique_name,7563031,28543,0.280905,2.369133,13,55.209478,false,17535,skip_existing_same_spline
+20962,17380,1,3,51,138,Whitevale,19893,Frost-Striped Predator,unique_name,8196888,860,1.419816,1.449404,8,60.190967,false,17380,skip_existing_same_spline
+20970,13980,1,3,51,138,Whitevale,19896,Skittering Destructobot,unique_name,8362388,29038,0.161018,2.862792,20,366.987870,false,,insert
+20971,5767,1,3,51,138,Whitevale,19896,Skittering Destructobot,unique_name,8280569,29038,1.237932,2.465888,62,1144.274683,false,,insert
+20971,13980,1,3,51,138,Whitevale,19896,Skittering Destructobot,unique_name,8396127,29038,1.617693,2.297957,20,366.987870,false,,insert
+20972,5767,1,3,51,138,Whitevale,19896,Skittering Destructobot,unique_name,8280568,29038,0.788551,2.903208,62,1144.274683,false,,insert
+20974,5767,1,3,51,138,Whitevale,19896,Skittering Destructobot,unique_name,8362387,29038,0.983886,2.196933,62,1144.274683,false,,insert
+20975,13980,1,3,51,138,Whitevale,19896,Skittering Destructobot,unique_name,8280577,29038,0.648530,2.913668,20,366.987870,false,,insert
+20976,5767,1,3,51,138,Whitevale,19896,Skittering Destructobot,unique_name,8452922,29038,0.406849,2.830672,62,1144.274683,false,,insert
+20976,13980,1,3,51,138,Whitevale,19896,Skittering Destructobot,unique_name,8280576,29038,0.532021,2.427901,20,366.987870,false,,insert
+20977,5767,1,3,51,138,Whitevale,19896,Skittering Destructobot,unique_name,8280574,29038,0.242343,2.213263,62,1144.274683,false,,insert
+20977,13980,1,3,51,138,Whitevale,19896,Skittering Destructobot,unique_name,8429310,29038,0.439638,1.728738,20,366.987870,false,,insert
+21010,5530,1,3,51,138,Whitevale,19898,Snowshadow Dominator,unique_name,8429659,28596,2.263058,1.237335,17,221.041052,false,,insert
+21023,13980,1,3,51,138,Whitevale,19900,Snowshadow Scientist,unique_name,6189843,29022,0.434565,0.998577,20,366.987870,false,,insert
+21024,5767,1,3,51,138,Whitevale,19900,Snowshadow Scientist,unique_name,6189841,29022,0.394824,0.999852,62,1144.274683,false,,insert
+21029,17393,1,3,51,138,Whitevale,19901,Snowshadow Inquisitor,unique_name,8378302,29032,1.484328,2.275284,9,38.022945,false,17393,skip_existing_same_spline
+21519,5767,1,3,51,138,Whitevale,20452,Snowshadow Saboteur,reviewed,8122452,28996,0.719577,2.958081,62,1144.274683,false,,insert
+21519,13980,1,3,51,138,Whitevale,20452,Snowshadow Saboteur,reviewed,8211655,28996,0.074897,2.042607,20,366.987870,false,,insert
+21791,5852,2,3,51,138,Whitevale,21218,Dominion Scout,scored_name,3401030,3184,1.172288,1.314855,16,102.526370,true,5852,skip_existing_same_spline
+26297,5767,1,3,51,138,Whitevale,27217,Snowshadow Technician,unique_name,5958561,552,0.272159,1.859798,62,1144.274683,false,,insert
+26297,13980,1,3,51,138,Whitevale,27217,Snowshadow Technician,unique_name,5881954,552,0.322831,1.924279,20,366.987870,false,,insert
+26298,5767,1,3,51,138,Whitevale,27217,Snowshadow Technician,unique_name,7894639,28994,1.135533,1.358236,62,1144.274683,false,,insert
+26298,13980,1,3,51,138,Whitevale,27217,Snowshadow Technician,unique_name,8210786,28994,0.439097,2.159816,20,366.987870,false,,insert
+26299,5767,1,3,51,138,Whitevale,27217,Snowshadow Technician,unique_name,8123269,28994,0.247766,2.416366,62,1144.274683,false,,insert
+26299,13980,1,3,51,138,Whitevale,27217,Snowshadow Technician,unique_name,5898092,552,0.274877,1.396003,20,366.987870,false,,insert
+26696,5633,1,3,51,138,Whitevale,35215,Program Scrambler,unique_name,338489,12412,1.273493,0.484080,25,329.058324,false,,insert
+27995,17103,1,3,51,138,Whitevale,53388,Frostbite,scored_name,6425902,3134,0.581104,1.411191,8,53.901817,false,17103,skip_existing_same_spline
+28427,17394,1,3,51,138,Whitevale,61858,Snowshadow Executor,unique_name,5917699,1226,0.579299,2.144328,8,48.483017,false,17394,skip_existing_same_spline
+28428,17391,1,3,51,138,Whitevale,61858,Snowshadow Executor,unique_name,8461044,29023,0.467186,2.105685,9,39.201823,false,17391,skip_existing_same_spline
+28558,17364,1,3,51,138,Whitevale,61869,Ice-Claw Predator,unique_name,7894869,2639,0.964531,1.240234,7,37.208479,false,17364,skip_existing_same_spline
+28883,17426,1,3,51,138,Whitevale,61998,Snowshadow Officer,unique_name,8394321,4261,0.706904,2.930655,10,86.673667,false,17426,skip_existing_same_spline
+28885,17422,1,3,51,138,Whitevale,61998,Snowshadow Officer,unique_name,5890065,4261,0.793590,2.256342,10,53.935253,false,17422,skip_existing_same_spline
+24935,6999,1,3,51,227,Wigwalli Village,25103,Wigwalli Hunter,unique_name,6710484,5916,0.696896,1.386567,22,135.574460,false,6999,skip_existing_same_spline
+21241,6145,1,3,51,240,Thermock Hold,20027,Grollo the Butcher,unique_name,1460,361,0.480810,0.482437,5,7.161269,false,,insert
+21244,6160,1,3,51,240,Thermock Hold,20054,Drunk Patron,unique_name,425480,19,1.805560,0.578872,28,130.969095,false,,insert
+21247,5615,1,3,51,240,Thermock Hold,20054,Drunk Patron,unique_name,263443,19,0.483354,0.573758,37,524.753138,false,,insert
+21248,5615,1,3,51,240,Thermock Hold,20054,Drunk Patron,unique_name,5657703,19,2.893100,1.558240,37,524.753138,false,,insert
+21255,5615,1,3,51,240,Thermock Hold,20054,Drunk Patron,unique_name,80,19,1.197202,1.410919,37,524.753138,false,,insert
+21841,5994,1,3,51,240,Thermock Hold,21646,Ric Longshanks,scored_name,4428121,772,1.229554,1.288337,35,378.072469,false,,insert
+21923,7590,1,3,51,240,Thermock Hold,21851,Bar Patron,scored_name,7587520,871,2.175287,0.331308,46,295.956146,false,,insert
+21924,6193,1,3,51,240,Thermock Hold,21851,Bar Patron,scored_name,3021460,871,2.807678,0.789994,29,204.122855,false,,insert
+22025,12176,1,3,51,240,Thermock Hold,22100,Thermock Fling-a-Tron Worker,unique_name,3440833,17246,0.542007,0.991910,9,25.745600,false,12176,skip_existing_same_spline
+22026,12177,1,3,51,240,Thermock Hold,22100,Thermock Fling-a-Tron Worker,unique_name,3369004,17246,0.935936,0.938392,7,14.192485,false,12177,skip_existing_same_spline
+26845,6007,1,3,51,240,Thermock Hold,36419,Weaponsmith Dunpepper,reviewed,417608,13619,1.887749,0.890351,14,45.706948,false,,insert
+26848,6007,1,3,51,240,Thermock Hold,36423,Technologist Blackwood,reviewed,432633,13841,2.333339,1.087520,14,45.706948,false,,insert
+8283,17445,2,3,51,248,Celestion,35397,Malfunctioning Tripod,unique_name,46418,6395,1.100306,1.114739,75,589.177476,true,,insert
+7084,16999,1,3,51,301,The Verdant Vale,32912,Tanglemore Gobbler,unique_name,8369502,29211,0.752351,2.787199,26,217.734594,false,,insert
+9059,14474,1,3,51,301,The Verdant Vale,46698,Augmented Nightfang Creeper,unique_name,7434584,29255,1.085055,2.472347,16,237.552074,false,,insert
+9063,14118,1,3,51,301,The Verdant Vale,46698,Augmented Nightfang Creeper,unique_name,7948045,29255,1.727671,2.706160,7,231.146470,false,,insert
+9063,14474,1,3,51,301,The Verdant Vale,46698,Augmented Nightfang Creeper,unique_name,7847880,29255,2.361619,1.784180,16,237.552074,false,,insert
+9066,14474,1,3,51,301,The Verdant Vale,46698,Augmented Nightfang Creeper,unique_name,5594680,2941,0.645758,2.236448,16,237.552074,false,,insert
+9067,14474,1,3,51,301,The Verdant Vale,46698,Augmented Nightfang Creeper,unique_name,5612721,2941,0.561082,2.395433,16,237.552074,false,,insert
+9072,14118,1,3,51,301,The Verdant Vale,46706,Augmented Nightfang Flayer,unique_name,12932,2939,0.568267,1.152649,7,231.146470,false,,insert
+9072,14474,1,3,51,301,The Verdant Vale,46706,Augmented Nightfang Flayer,unique_name,1565447,2939,2.883487,2.669944,16,237.552074,false,,insert
+9075,14474,1,3,51,301,The Verdant Vale,46708,Augmented Nightfang Spitter,unique_name,5528981,2949,1.129916,0.890449,16,237.552074,false,,insert
+10109,10226,1,3,51,301,The Verdant Vale,61427,Tangleclaw Pridelord,unique_name,7427156,6362,1.325669,1.325728,9,65.335801,false,10226,skip_existing_same_spline
+7140,17411,1,3,51,303,Hijunga Village,32973,Chief Chugach,unique_name,7683,1798,1.641889,0.765860,16,73.201727,false,,insert
+9098,14453,1,3,51,305,Verdant Edge,47426,Hunter Lyrya,unique_name,2519860,11278,0.567382,1.037461,47,365.558461,false,14453,skip_existing_same_spline
+6610,12494,1,3,51,306,Verdant Sanctuary,32554,Sanctum Blademaster,unique_name,8338451,29956,0.533385,0.533385,10,31.552301,false,12494,skip_existing_same_spline
+6612,12491,1,3,51,306,Verdant Sanctuary,32554,Sanctum Blademaster,unique_name,5613137,4245,0.277292,1.137981,15,22.686900,false,12491,skip_existing_same_spline
+6613,12495,1,3,51,306,Verdant Sanctuary,32554,Sanctum Blademaster,unique_name,5305468,4245,0.465261,1.192518,10,35.208248,false,12495,skip_existing_same_spline
+8466,14452,1,3,51,306,Verdant Sanctuary,37515,Minebot,reviewed,1959416,10252,1.647878,1.150117,33,232.038097,false,,insert
+7055,10159,1,3,51,307,Tanglewood Grove,32894,Gormash the Lopp-Crusher,unique_name,8173237,1772,0.053415,2.700815,8,126.484520,false,10159,skip_existing_same_spline
+7794,10243,1,3,51,307,Tanglewood Grove,33921,Tangleclaw Slasher,unique_name,8276278,1605,0.690740,1.042384,11,64.760878,false,10243,skip_existing_same_spline
+7801,10224,1,3,51,307,Tanglewood Grove,33921,Tangleclaw Slasher,unique_name,8393968,1605,1.530393,2.191807,13,75.144254,false,10224,skip_existing_same_spline
+9100,14463,2,3,51,307,Tanglewood Grove,47428,Hunter Melyan,unique_name,1185145,15933,1.129274,2.848006,52,474.007406,true,14463,skip_existing_same_spline
+9101,14464,1,3,51,307,Tanglewood Grove,47429,Hunter Forlla,unique_name,2536560,9569,0.859035,0.864315,30,243.388545,false,14464,skip_existing_same_spline
+10108,10253,1,3,51,307,Tanglewood Grove,61427,Tangleclaw Pridelord,unique_name,8200322,6362,0.592352,1.298813,9,54.058852,false,10253,skip_existing_same_spline
+6819,16993,2,3,51,310,Lifeglade Hills,32755,Lirawn the Lifewalker,unique_name,5045805,4216,0.252013,1.533664,35,397.114594,true,16993,skip_existing_same_spline
+7773,14429,2,3,51,310,Lifeglade Hills,33885,Darkwhisper Jabbit,unique_name,137955,10382,1.072177,1.395851,249,2148.520415,true,,insert
+6609,12490,1,3,51,313,Horizon Plateau,32554,Sanctum Blademaster,unique_name,5874911,4245,0.394320,1.711666,11,40.496884,false,12490,skip_existing_same_spline
+1466,11325,1,3,51,322,Gallow Fields,19755,Munitions Cache,unique_name,50487,4889,2.975130,1.155249,10,28.168206,false,,insert
+1952,11325,1,3,51,322,Gallow Fields,20906,Darkspur Pummeler,unique_name,7600851,4916,0.146831,0.781665,10,28.168206,false,,insert
+1966,5731,1,3,51,322,Gallow Fields,20909,Darkspur Quickdraw,reviewed,6615094,4989,0.706968,0.812158,7,45.967251,false,5731,skip_existing_same_spline
+1967,11322,1,3,51,322,Gallow Fields,20910,Darkspur Butcher,reviewed,8081594,2098,1.049164,1.074104,11,92.375537,false,11322,skip_existing_same_spline
+2185,3799,2,3,51,322,Gallow Fields,20992,Skytalon Rotbeak,reviewed,6769020,30875,2.847892,0.790190,14,248.255283,true,,insert
+3063,5749,1,3,51,322,Gallow Fields,34998,Throg Smasher,scored_name,7953710,28675,0.368452,2.409336,13,72.090106,false,5749,skip_existing_same_spline
+1475,4445,1,3,51,323,North Gallow Fields,19758,Roan Carcass,unique_name,25326,4951,1.219849,0.978826,61,683.179062,false,,insert
+20749,5576,2,3,51,363,Locus Dawn,19866,Regulator Codec,unique_name,1436817,490,0.603092,0.949842,14,53.704729,true,5576,skip_existing_same_spline
+520,4927,2,3,51,365,The Crystal Shards,16801,Stonefist Devastator,unique_name,5680553,3830,1.534445,1.534568,28,556.688061,true,4927,skip_existing_same_spline
+6624,9771,1,3,51,379,Junction Zeta,32583,Zeta Warbot,unique_name,5614006,4401,2.995130,2.995130,13,99.380862,false,9771,skip_existing_same_spline
+7216,10771,2,3,51,379,Junction Zeta,33156,Sensor Sweep,unique_name,8448360,4617,0.419556,2.857744,18,113.604119,true,10771,skip_existing_same_spline
+7218,10770,2,3,51,379,Junction Zeta,33156,Sensor Sweep,unique_name,7855202,4617,1.142305,2.378975,15,82.506855,true,10770,skip_existing_same_spline
+7219,10769,1,3,51,379,Junction Zeta,33156,Sensor Sweep,unique_name,7489210,4617,1.327418,2.999044,15,95.618324,false,10769,skip_existing_same_spline
+7220,10767,1,3,51,379,Junction Zeta,33156,Sensor Sweep,unique_name,7698465,4617,0.682286,1.233217,13,78.776812,false,10767,skip_existing_same_spline
+6883,10187,1,3,51,382,Exo-Site N22,32791,Augmented Scientist Clone,unique_name,8118402,2928,0.917275,1.416701,8,68.760289,false,10187,skip_existing_same_spline
+6885,10178,1,3,51,382,Exo-Site N22,32791,Augmented Scientist Clone,unique_name,8348834,2928,0.472304,0.735339,6,39.097612,false,10178,skip_existing_same_spline
+6887,10185,1,3,51,382,Exo-Site N22,32791,Augmented Scientist Clone,unique_name,8118399,2928,0.271144,1.819065,6,34.876236,false,10185,skip_existing_same_spline
+7217,10773,1,3,51,382,Exo-Site N22,33156,Sensor Sweep,unique_name,7887075,4617,0.664294,1.297584,13,46.319457,false,10773,skip_existing_same_spline
+9516,15216,1,3,51,382,Exo-Site N22,49555,N22 Nanite Recharger,unique_name,7938714,5819,0.376871,1.967130,21,422.649596,false,,insert
+9521,15213,1,3,51,382,Exo-Site N22,49555,N22 Nanite Recharger,unique_name,8030927,5819,0.145059,2.322520,12,144.644489,false,,insert
+9522,15212,1,3,51,382,Exo-Site N22,49555,N22 Nanite Recharger,unique_name,7855523,5819,0.860257,1.451904,12,143.011356,false,15212,skip_existing_same_spline
+1161,4824,1,3,51,694,Demonclaw Pass,18900,Nooks Barkbiter,reviewed,245489,11870,1.604338,0.993982,7,16.502482,false,,insert
+1255,6215,1,3,51,694,Demonclaw Pass,19193,Fungal Spore,scored_name,186319,444,2.916237,1.134082,18,107.684238,false,,insert
+3926,6085,2,3,51,694,Demonclaw Pass,61561,Grimstone Ravager,unique_name,8459122,1695,2.126143,1.412948,25,284.071186,true,,insert
+1009,4437,1,3,51,715,Grim's Lumber Mill,17931,Energy Field,reviewed,3052940,23993,2.018447,1.223469,8,51.284733,false,,insert
+1011,4438,1,3,51,715,Grim's Lumber Mill,17931,Energy Field,reviewed,6157874,23993,1.033436,1.115518,8,59.520976,false,,insert
+1944,5616,1,3,51,715,Grim's Lumber Mill,20902,Headmistress Hilda Grim,unique_name,6565814,7708,2.779039,2.794584,52,1174.888974,false,,insert
+2533,6021,1,3,51,786,Exo-Site 14,21955,Augmented Slateform Charger,unique_name,7953965,1560,1.185749,2.131244,9,99.452166,false,6021,skip_existing_same_spline
+2536,6022,1,3,51,786,Exo-Site 14,21955,Augmented Slateform Charger,unique_name,8466849,1560,2.160597,2.668089,11,120.675718,false,6022,skip_existing_same_spline
+2540,6021,1,3,51,786,Exo-Site 14,21955,Augmented Slateform Charger,unique_name,7992147,1560,2.858557,1.657528,9,99.452166,false,,insert
+21011,17420,1,3,51,932,Junction Snowshadow,19898,Snowshadow Dominator,unique_name,6485588,515,0.491394,1.807786,14,109.757360,false,17420,skip_existing_same_spline
+21025,17410,1,3,51,932,Junction Snowshadow,19901,Snowshadow Inquisitor,unique_name,8089219,40,1.372273,1.372273,9,43.019655,false,17410,skip_existing_same_spline
+21679,5821,2,3,51,932,Junction Snowshadow,20780,Snowshadow Apprentice Mastermind,unique_name,8019684,192,0.510695,2.664905,21,128.643142,true,5821,skip_existing_same_spline
+21680,5690,2,3,51,932,Junction Snowshadow,20780,Snowshadow Apprentice Mastermind,unique_name,7979961,192,1.910039,1.969489,14,83.301262,true,5690,skip_existing_same_spline
+21681,5820,2,3,51,932,Junction Snowshadow,20780,Snowshadow Apprentice Mastermind,unique_name,8394073,192,1.036421,1.038898,24,129.150608,true,5820,skip_existing_same_spline
+21682,5822,2,3,51,932,Junction Snowshadow,20780,Snowshadow Apprentice Mastermind,unique_name,7719807,192,0.501710,1.833685,33,128.685352,true,5822,skip_existing_same_spline
+28432,17408,1,3,51,932,Junction Snowshadow,61859,Snowshadow Analyst,unique_name,7700700,1225,0.275837,2.263354,12,53.145389,false,17408,skip_existing_same_spline
+28433,17416,1,3,51,932,Junction Snowshadow,61859,Snowshadow Analyst,unique_name,7710962,1225,1.088431,1.509320,10,66.565864,false,17416,skip_existing_same_spline
+28436,17409,1,3,51,932,Junction Snowshadow,61859,Snowshadow Analyst,unique_name,8022239,1225,0.861937,1.743223,11,57.428441,false,17409,skip_existing_same_spline
+28438,17415,1,3,51,932,Junction Snowshadow,61859,Snowshadow Analyst,unique_name,8105939,1225,0.460723,2.403121,7,37.863370,false,17415,skip_existing_same_spline
+28874,5520,1,3,51,932,Junction Snowshadow,61984,Snowshadow Calumniator,unique_name,7720020,1229,1.028844,2.500769,9,104.044589,false,,insert
+11679,4834,1,3,51,937,Gale Canyon,14573,Wind Elemental,unique_name,8212633,1613,1.823794,0.727685,32,673.064150,false,,insert
+11679,10988,1,3,51,937,Gale Canyon,14573,Wind Elemental,unique_name,8280725,1613,0.334681,2.240430,24,687.389632,false,,insert
+13690,5035,2,3,51,937,Gale Canyon,19381,Razorbeak Gribbon,unique_name,1446827,16721,0.760142,1.864333,5,45.124912,true,5035,skip_existing_same_spline
+11627,4748,1,3,51,940,Skywind Ruins,14433,Darkspur Bladegrinder,scored_name,8251806,3144,1.605682,1.039327,13,215.586322,false,,insert
+11641,4748,1,3,51,940,Skywind Ruins,14435,Darkspur Bruiser,scored_name,8349244,3260,1.534236,2.748745,13,215.586322,false,,insert
+12071,10757,1,3,51,940,Skywind Ruins,16702,Darkspur Lieutenant,unique_name,8182992,3140,0.377379,2.281622,8,59.108576,false,10757,skip_existing_same_spline
+12074,10752,1,3,51,940,Skywind Ruins,16702,Darkspur Lieutenant,unique_name,8279889,3140,0.889185,1.363452,8,68.704969,false,10752,skip_existing_same_spline
+12075,10756,1,3,51,940,Skywind Ruins,16702,Darkspur Lieutenant,unique_name,8387105,3140,1.123326,1.838913,9,92.268286,false,10756,skip_existing_same_spline
+13062,19257,1,3,51,940,Skywind Ruins,18588,Razorbeak Nester,unique_name,8174597,3918,0.188141,0.638150,8,25.339391,false,,insert
+16937,5851,1,3,51,940,Skywind Ruins,48836,Slopper,unique_name,5811704,3143,0.240623,2.519722,17,441.324666,false,,insert
+14694,6046,1,3,51,941,Camp Dustdevil,21749,XAS Research Guard,unique_name,3074861,18899,1.117958,1.118494,11,97.599780,false,6046,skip_existing_same_spline
+11812,4011,1,3,51,943,XAS Forward Camp,16594,Lead Scientist Armin,reviewed,7880,1864,2.373454,0.386523,7,20.056603,false,,insert
+16451,5031,1,3,51,973,Crosswind Fields,35850,Wounded Galehorn Steer,unique_name,1115316,4847,2.794952,0.797147,35,314.054728,false,,insert
+17645,4825,2,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,8276676,2163,0.092724,2.111214,57,198.347721,true,,insert
+17646,10843,1,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,8468754,2163,1.122401,2.016608,7,42.263764,false,10843,skip_existing_same_spline
+17652,10875,1,3,51,973,Crosswind Fields,61710,Mudraker Flayer,unique_name,7948090,2157,1.609515,2.833131,7,33.420512,false,10875,skip_existing_same_spline
+17654,10857,1,3,51,973,Crosswind Fields,61710,Mudraker Flayer,unique_name,8284975,2157,0.390689,2.224311,7,47.832769,false,10857,skip_existing_same_spline
+1007162797,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7162797,2177,1.106167,0.000000,73,652.309152,false,,insert
+1007284396,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7284396,2177,1.869424,0.000000,73,652.309152,false,,insert
+1007423937,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7423937,2177,0.957668,0.000000,73,652.309152,false,,insert
+1007442402,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7442402,2177,2.704442,0.000000,73,652.309152,false,,insert
+1007448765,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7448765,2177,2.435363,0.000000,73,652.309152,false,,insert
+1007456853,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7456853,2177,0.754835,0.000000,73,652.309152,false,,insert
+1007618654,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7618654,2177,2.665543,0.000000,73,652.309152,false,,insert
+1007618656,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7618656,2177,2.664569,0.000000,73,652.309152,false,,insert
+1007622224,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7622224,2177,1.049148,0.000000,73,652.309152,false,,insert
+1007622398,10841,1,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,8252967,2163,0.676031,2.449490,9,73.074066,false,,insert
+1007622399,10843,1,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,7622399,2163,2.090913,0.000000,7,42.263764,false,,insert
+1007806936,10843,1,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,7806936,2163,1.941662,0.000000,7,42.263764,false,,insert
+1007834442,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7834442,2177,1.019472,0.000000,73,652.309152,false,,insert
+1007855145,10843,1,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,7898540,2163,2.026564,2.828427,7,42.263764,false,,insert
+1007866523,10841,1,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,7866523,2163,1.611313,0.000000,9,73.074066,false,,insert
+1007880056,4825,2,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,7880056,2163,1.148946,0.000000,57,198.347721,true,,insert
+1007979651,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7979651,2177,1.542075,0.000000,73,652.309152,false,,insert
+1007979652,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7979652,2177,0.161841,0.000000,73,652.309152,false,,insert
+1007979654,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,7979654,2177,2.245535,0.000000,73,652.309152,false,,insert
+1007979950,4825,2,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,7979950,2163,1.412085,0.000000,57,198.347721,true,,insert
+1007979953,10843,1,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,7979953,2163,0.611882,0.000000,7,42.263764,false,,insert
+1008005135,10841,1,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,8005135,2163,0.508792,0.000000,9,73.074066,false,,insert
+1008104983,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,8104983,2177,1.176970,0.000000,73,652.309152,false,,insert
+1008168484,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,8168484,2177,1.886825,0.000000,73,652.309152,false,,insert
+1008175662,10843,1,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,8175662,2163,1.401623,0.000000,7,42.263764,false,,insert
+1008184997,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,8184997,2177,0.495699,0.000000,73,652.309152,false,,insert
+1008184999,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,8184999,2177,2.593286,0.000000,73,652.309152,false,,insert
+1008207843,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,8207843,2177,1.329264,0.000000,73,652.309152,false,,insert
+1008207844,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,8207844,2177,0.593626,0.000000,73,652.309152,false,,insert
+1008211242,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,8211242,2177,2.320119,0.000000,73,652.309152,false,,insert
+1008211243,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,8211243,2177,1.529407,0.000000,73,652.309152,false,,insert
+1008252964,4825,2,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,8252964,2163,0.754503,0.000000,57,198.347721,true,,insert
+1008276456,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,8276456,2177,2.641975,0.000000,73,652.309152,false,,insert
+1008280300,10843,1,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,8280300,2163,2.340885,0.000000,7,42.263764,false,,insert
+1008285616,3910,1,3,51,973,Crosswind Fields,22373,Mudraker Smasher,unique_name,8285616,2204,0.855912,0.000000,13,118.848320,false,,insert
+1008285619,3910,1,3,51,973,Crosswind Fields,22373,Mudraker Smasher,unique_name,8285619,2204,1.243123,0.000000,13,118.848320,false,,insert
+1008285636,3910,1,3,51,973,Crosswind Fields,22373,Mudraker Smasher,unique_name,8285636,2204,2.435727,0.000000,13,118.848320,false,,insert
+1008313609,4184,1,3,51,973,Crosswind Fields,23953,Stormwing Striker,scored_name,8313609,2113,2.833619,0.000000,73,652.309152,false,,insert
+1008313610,4184,1,3,51,973,Crosswind Fields,23953,Stormwing Striker,scored_name,8313610,2113,0.964738,0.000000,73,652.309152,false,,insert
+1008313612,4184,1,3,51,973,Crosswind Fields,23953,Stormwing Striker,scored_name,8313612,2113,2.483480,0.000000,73,652.309152,false,,insert
+1008313614,4184,1,3,51,973,Crosswind Fields,23953,Stormwing Striker,scored_name,8313614,2113,1.138602,0.000000,73,652.309152,false,,insert
+1008314198,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,8314198,2177,1.088144,0.000000,73,652.309152,false,,insert
+1008314199,4184,1,3,51,973,Crosswind Fields,22406,Stormwing Murgh Striker,unique_name,8314199,2177,1.704180,0.000000,73,652.309152,false,,insert
+1008316488,3909,1,3,51,973,Crosswind Fields,22373,Mudraker Smasher,unique_name,8316488,2204,1.328755,0.000000,15,152.158064,false,,insert
+1008330265,4826,2,3,51,973,Crosswind Fields,23953,Stormwing Striker,scored_name,8330265,2113,1.752728,0.000000,74,254.267067,true,,insert
+1008330857,3910,1,3,51,973,Crosswind Fields,22373,Mudraker Smasher,unique_name,8330857,2204,0.491205,0.000000,13,118.848320,false,,insert
+1008340112,4184,1,3,51,973,Crosswind Fields,23953,Stormwing Striker,scored_name,8340112,2113,2.308078,0.000000,73,652.309152,false,,insert
+1008340288,4825,2,3,51,973,Crosswind Fields,61707,Dominion Forward Tracker,unique_name,8340288,2163,1.094099,0.000000,57,198.347721,true,,insert
+1008393913,4184,1,3,51,973,Crosswind Fields,23953,Stormwing Striker,scored_name,8393913,2113,2.641975,0.000000,73,652.309152,false,,insert
+1008393914,4184,1,3,51,973,Crosswind Fields,23953,Stormwing Striker,scored_name,8393914,2113,2.370325,0.000000,73,652.309152,false,,insert
+1008428946,4184,1,3,51,973,Crosswind Fields,23953,Stormwing Striker,scored_name,8428946,2113,0.893778,0.000000,73,652.309152,false,,insert
+11749,9736,1,3,51,975,Stormwing Fortress,14608,Stormwing Brutalizer,reviewed,7855467,2180,1.667868,2.371273,6,378.098853,false,,insert
+11756,14899,2,3,51,975,Stormwing Fortress,14611,Stormwing Razortalon,unique_name,8349935,2187,0.518622,1.189037,12,42.990458,true,14899,skip_existing_same_spline
+11758,14902,2,3,51,975,Stormwing Fortress,14611,Stormwing Razortalon,unique_name,7856102,2187,2.466582,2.466582,15,54.007258,true,14902,skip_existing_same_spline
+11805,10978,1,3,51,975,Stormwing Fortress,14616,Stormwing Guardian,reviewed,8429212,2181,0.289291,1.410860,7,25.534357,false,10978,skip_existing_same_spline
+16662,4874,1,3,51,975,Stormwing Fortress,38674,Lightning Strike,reviewed,1594849,2160,0.772463,1.053757,25,285.275513,false,,insert
+16665,4794,1,3,51,975,Stormwing Fortress,38674,Lightning Strike,reviewed,1508241,2160,0.748822,1.118152,36,215.660582,false,,insert
+16667,4794,1,3,51,975,Stormwing Fortress,38674,Lightning Strike,reviewed,929439,2160,0.920067,1.034512,36,215.660582,false,,insert
+17027,6659,1,3,51,976,Temple of Osiric,53082,Osiric Totem,unique_name,287717,5535,0.366561,1.374773,11,189.318870,false,,insert
+17028,6660,1,3,51,976,Temple of Osiric,53082,Osiric Totem,unique_name,339361,5535,2.916350,0.409611,31,568.406406,false,,insert
+17788,1540,1,3,51,976,Temple of Osiric,61759,Dominion Field Commander,unique_name,6081706,6654,1.956097,0.833720,20,1794.832523,false,,insert
+1001472933,6660,1,3,51,976,Temple of Osiric,48380,Road Warrior,scored_name,1472933,13438,2.315510,0.000000,31,568.406406,false,,insert
+1001925649,6660,1,3,51,976,Temple of Osiric,48380,Road Warrior,scored_name,1925649,13438,1.088774,0.000000,31,568.406406,false,,insert
+1002196159,19274,1,3,51,976,Temple of Osiric,48380,Road Warrior,scored_name,2196159,13438,0.631166,0.000000,9,44.393616,false,,insert
+1002231943,6659,1,3,51,976,Temple of Osiric,48380,Road Warrior,scored_name,2231943,13438,1.313868,0.000000,11,189.318870,false,,insert
+1003586810,6659,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,3586810,2201,1.329915,0.000000,11,189.318870,false,,insert
+1003609234,6659,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,3609234,2201,0.446435,0.000000,11,189.318870,false,,insert
+1003641261,6659,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,3641261,2201,2.324871,0.000000,11,189.318870,false,,insert
+1003831266,6659,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,3831266,2201,1.355833,0.000000,11,189.318870,false,,insert
+1003904289,6659,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,3904289,2201,0.850355,0.000000,11,189.318870,false,,insert
+1003904377,6660,1,3,51,976,Temple of Osiric,61718,Dominion Forward Dragoon,unique_name,3904377,2186,2.619328,0.000000,31,568.406406,false,,insert
+1003934347,6660,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,3934347,2201,2.021011,0.000000,31,568.406406,false,,insert
+1004107980,6659,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,4107980,2201,1.304183,0.000000,11,189.318870,false,,insert
+1004108334,6660,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,4108334,2201,1.913044,0.000000,31,568.406406,false,,insert
+1004375500,6660,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,4375500,2201,1.750970,0.000000,31,568.406406,false,,insert
+1004527255,6660,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,4527255,2201,2.942956,0.000000,31,568.406406,false,,insert
+1004541382,6660,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,4541382,2201,1.608524,0.000000,31,568.406406,false,,insert
+1004676042,17665,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,4676042,2201,2.640046,0.000000,825,1370.685229,false,,insert
+1004676043,6660,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,4676043,2201,0.677638,0.000000,31,568.406406,false,,insert
+1004822661,6659,1,3,51,976,Temple of Osiric,23771,Dominion Front Gunner,unique_name,4822661,2201,2.405212,0.000000,11,189.318870,false,,insert
+1005083546,6660,1,3,51,976,Temple of Osiric,61719,Dominion Advance Sharpshooter,unique_name,5083546,2131,0.268432,0.000000,31,568.406406,false,,insert
+1005181866,6660,1,3,51,976,Temple of Osiric,61718,Dominion Forward Dragoon,unique_name,5181866,2186,0.874286,0.000000,31,568.406406,false,,insert
+1005873448,6660,1,3,51,976,Temple of Osiric,61759,Dominion Field Commander,unique_name,5873448,6654,1.718295,0.000000,31,568.406406,false,,insert
+1008176146,6660,1,3,51,976,Temple of Osiric,19595,Stormwing Vanquisher,scored_name,8176146,2190,0.980977,0.000000,31,568.406406,false,,insert
+1008176147,17665,1,3,51,976,Temple of Osiric,19595,Stormwing Vanquisher,scored_name,8176147,2190,2.495966,0.000000,825,1370.685229,false,,insert
+1008185075,17665,1,3,51,976,Temple of Osiric,19595,Stormwing Vanquisher,scored_name,8185075,2190,2.441066,0.000000,825,1370.685229,false,,insert
+1008207580,6660,1,3,51,976,Temple of Osiric,19595,Stormwing Vanquisher,scored_name,8207580,2190,0.576499,0.000000,31,568.406406,false,,insert
+1008339982,6660,1,3,51,976,Temple of Osiric,19595,Stormwing Vanquisher,scored_name,8339982,2190,0.351671,0.000000,31,568.406406,false,,insert
+15271,10874,1,3,51,977,Mudraker Roost,22374,Mudraker Berserker,unique_name,8141598,2206,0.450824,0.829781,7,64.843707,false,10874,skip_existing_same_spline
+11743,10905,1,3,51,978,Kel Vishal,14600,Vishal-Thun Overlord,unique_name,8037987,2108,0.898015,1.511815,8,33.020082,false,10905,skip_existing_same_spline
+11744,10906,1,3,51,978,Kel Vishal,14600,Vishal-Thun Overlord,unique_name,8037988,2108,1.080329,2.876061,9,52.635015,false,10906,skip_existing_same_spline
+11746,10907,1,3,51,978,Kel Vishal,14600,Vishal-Thun Overlord,unique_name,8196214,2108,0.455611,2.522185,12,100.404449,false,10907,skip_existing_same_spline
+11747,10909,1,3,51,978,Kel Vishal,14600,Vishal-Thun Overlord,unique_name,7899426,2108,1.821213,1.180456,8,38.799434,false,,insert
+13051,6675,1,3,51,978,Kel Vishal,18586,Kuriktalon,unique_name,5169457,6066,0.305629,1.653714,9,60.354952,false,6675,skip_existing_same_spline
+15275,10854,1,3,51,980,Mudraker Roost,22374,Mudraker Berserker,unique_name,8340168,2206,0.758088,2.604498,9,72.743433,false,10854,skip_existing_same_spline
+17655,10852,1,3,51,980,Mudraker Roost,61710,Mudraker Flayer,unique_name,8207749,2157,0.884699,2.218040,7,64.217648,false,10852,skip_existing_same_spline
+12259,3892,1,3,51,984,Crosswind Post,17090,Galehorn Steer,unique_name,8448346,3318,2.774063,1.221853,14,169.064473,false,,insert
+12284,3892,1,3,51,989,Crosswind Fields,17091,Galehorn Grazer,unique_name,8429644,3289,1.156670,2.284248,14,169.064473,false,,insert
+12505,4323,1,3,51,994,Nibben's Ranch,17499,Pack Kurg,reviewed,2169937,1869,1.309980,2.710558,25,409.103570,false,,insert
+12622,5434,1,3,51,1000,Kriton's Command Post,17623,Exile Sentry,scored_name,181591,11294,1.402795,1.440868,19,170.466803,false,,insert
+14702,4789,1,3,51,1000,Kriton's Command Post,21794,Quartermaster Izabel Petrova,unique_name,20407,4315,2.883598,0.837526,18,139.586160,false,,insert
+12596,5062,1,3,51,1001,The Ravaged Front,17539,Crimson Soldier,reviewed,8280179,4320,0.176810,0.948854,15,39.932045,false,,insert
+14587,19258,1,3,51,1001,The Ravaged Front,21251,Incendiary Mortar,unique_name,8448081,8326,1.316002,1.259027,8,36.863540,false,,insert
+14592,19266,1,3,51,1001,The Ravaged Front,21251,Incendiary Mortar,unique_name,7533026,8326,2.809427,0.932269,7,26.150844,false,,insert
+15438,19263,1,3,51,1001,The Ravaged Front,22593,Crimson Sentinel,scored_name,8277277,4319,0.862352,2.458541,6,10.125618,false,,insert
+15438,19274,1,3,51,1001,The Ravaged Front,22593,Crimson Sentinel,scored_name,8400376,4319,1.852863,1.041357,9,44.393616,false,,insert
+15439,19265,1,3,51,1001,The Ravaged Front,22593,Crimson Sentinel,scored_name,8400368,4319,0.287708,0.292889,5,6.493470,false,,insert
+15440,19260,1,3,51,1001,The Ravaged Front,22593,Crimson Sentinel,scored_name,8313597,4319,0.812546,2.149606,8,26.496208,false,,insert
+15452,19262,1,3,51,1001,The Ravaged Front,22593,Crimson Sentinel,scored_name,8460681,4319,1.577406,1.254409,8,33.637029,false,,insert
+15456,19274,1,3,51,1001,The Ravaged Front,22594,Exile Trooper,scored_name,4664630,4299,0.419030,1.535401,9,44.393616,false,,insert
+15457,19276,1,3,51,1001,The Ravaged Front,22594,Exile Trooper,scored_name,3456715,4299,0.089835,1.475487,8,24.467470,false,,insert
+15458,19269,1,3,51,1001,The Ravaged Front,22594,Exile Trooper,scored_name,3479279,4299,0.947114,2.829046,6,17.041427,false,,insert
+15461,19270,1,3,51,1001,The Ravaged Front,22594,Exile Trooper,scored_name,8313749,4299,1.058743,1.067422,9,35.601300,false,,insert
+15463,19273,1,3,51,1001,The Ravaged Front,22594,Exile Trooper,scored_name,5791016,4299,0.647228,0.797477,6,9.192947,false,,insert
+15466,19268,1,3,51,1001,The Ravaged Front,22594,Exile Trooper,scored_name,7738739,4299,0.469246,1.646220,8,24.536442,false,,insert
+17591,5824,1,3,51,1001,The Ravaged Front,61648,Crimson Duelist,unique_name,7802012,2279,0.393319,1.360340,9,24.590151,false,5824,skip_existing_same_spline
+17592,5823,1,3,51,1001,The Ravaged Front,61648,Crimson Duelist,unique_name,8412405,2279,0.236224,2.699166,10,34.840654,false,5823,skip_existing_same_spline
+13591,14684,1,3,51,1002,Windswept Cliffs,19299,Whistlewind Howler,unique_name,8193277,29034,0.939046,1.065631,7,27.731545,false,,insert
+13594,14682,1,3,51,1002,Windswept Cliffs,19299,Whistlewind Howler,unique_name,6116238,1579,0.402596,1.152717,8,27.351776,false,14682,skip_existing_same_spline
+12580,6187,1,3,51,1004,Kendra's Roan Ranch,17536,Groundswell Watchguard,unique_name,6578303,3105,0.517370,1.627770,11,32.415812,false,6187,skip_existing_same_spline
+12581,6188,1,3,51,1004,Kendra's Roan Ranch,17536,Groundswell Watchguard,unique_name,6137119,3105,0.476912,0.852211,10,24.006770,false,6188,skip_existing_same_spline
+16932,5478,1,3,51,1004,Kendra's Roan Ranch,48828,Groundswell Guardsman,unique_name,4358865,8323,0.542026,0.890744,16,32.717296,false,,insert
+16933,5477,1,3,51,1004,Kendra's Roan Ranch,48828,Groundswell Guardsman,unique_name,4670233,8323,1.229339,1.360187,14,25.424760,false,,insert
+16933,5478,1,3,51,1004,Kendra's Roan Ranch,48828,Groundswell Guardsman,unique_name,5619490,8323,0.561395,2.988329,16,32.717296,false,,insert
+17610,6192,1,3,51,1004,Kendra's Roan Ranch,61657,Groundswell Enforcer,unique_name,6376937,3107,0.906326,2.526758,11,19.600023,false,6192,skip_existing_same_spline
+13179,4821,1,3,51,1005,The Growling Forest,18888,Exile Field Agent,reviewed,3513741,2290,0.588496,0.713852,109,569.219122,false,,insert
+14030,14726,1,3,51,1005,The Growling Forest,20255,Groundswell Demolitionist,scored_name,8313560,1569,0.545177,0.564996,7,18.706417,false,14726,skip_existing_same_spline
+16931,5478,1,3,51,1008,Tempest Refuge Outer Wall,48825,Captain Fripeti,unique_name,2095308,8325,0.637654,1.485549,16,32.717296,false,,insert
+12668,6025,1,3,51,1012,Crimson Base of Operations,17785,Galeras Cargo Lifter,unique_name,18087,3873,1.935820,0.920326,10,27.560599,false,,insert
+12669,6026,1,3,51,1012,Crimson Base of Operations,17785,Galeras Cargo Lifter,unique_name,306379,3873,0.725945,1.201749,11,22.824342,false,,insert
+12671,6024,1,3,51,1012,Crimson Base of Operations,17785,Galeras Cargo Lifter,unique_name,2505457,3873,0.581133,1.458258,11,25.355816,false,,insert
+12672,6041,1,3,51,1012,Crimson Base of Operations,17785,Galeras Cargo Lifter,unique_name,29807,3873,2.337028,0.622736,9,15.802142,false,,insert
+12673,6042,1,3,51,1012,Crimson Base of Operations,17785,Galeras Cargo Lifter,unique_name,82390,3873,2.145117,1.096871,10,21.826560,false,,insert
+12674,6040,1,3,51,1012,Crimson Base of Operations,17785,Galeras Cargo Lifter,unique_name,82391,3873,1.980991,1.072986,10,15.844606,false,,insert
+12869,5993,1,3,51,1012,Crimson Base of Operations,17922,Chief Medical Officer Terentius,unique_name,7980747,3897,2.478326,2.691306,9,14.524557,false,,insert
+14744,19278,1,3,51,1012,Crimson Base of Operations,21882,Crimson Bombardier,unique_name,7637437,3888,0.821525,2.497669,10,18.154320,false,,insert
+14235,6080,1,3,51,1014,Fuelfuze Depot,20713,Security Warbot,unique_name,8460683,5328,0.356500,2.022349,6,18.226094,false,,insert
+14690,11263,1,3,51,1014,Fuelfuze Depot,21727,Augmented Gustclaw Burrower,unique_name,6769012,29983,0.192912,2.873639,10,43.668898,false,11263,skip_existing_same_spline
+14707,14763,1,3,51,1014,Fuelfuze Depot,21858,Fuelfuze Supplier,reviewed,8087230,1844,0.398307,0.401956,10,11.883594,false,14763,skip_existing_same_spline
+15025,14762,1,3,51,1014,Fuelfuze Depot,22269,Fuelfuze Technician,unique_name,8037785,5297,0.759045,0.856304,10,11.475025,false,14762,skip_existing_same_spline
+15026,14764,1,3,51,1014,Fuelfuze Depot,22269,Fuelfuze Technician,unique_name,8460764,5297,0.342475,1.881940,10,14.384428,false,,insert
+15571,14754,1,3,51,1014,Fuelfuze Depot,23309,Fuelfuze Supply Operator,unique_name,8331141,5345,1.174414,1.405738,8,11.799408,false,14754,skip_existing_same_spline
+15574,14765,1,3,51,1014,Fuelfuze Depot,23309,Fuelfuze Supply Operator,unique_name,8422841,5345,0.341779,2.939745,12,18.226738,false,,insert
+17636,10561,1,3,51,1014,Fuelfuze Depot,61704,Fuelfuze Pyrotechnic,unique_name,7639596,1849,0.784887,0.825884,11,61.385105,false,10561,skip_existing_same_spline
+17527,6087,1,3,51,1015,Windspire Vigil,61630,Crimson Ranger,unique_name,7635663,5617,0.307027,2.135717,10,52.703033,false,6087,skip_existing_same_spline
+13595,14683,1,3,51,1020,Galewind Power Station,19299,Whistlewind Howler,unique_name,7746660,29034,0.824512,2.721030,7,21.938982,false,14683,skip_existing_same_spline
+16409,4627,2,3,51,1032,Feathersquall Ridge,35699,Vishal-Dagh Pup,unique_name,8208790,6063,2.050965,1.611867,18,393.028662,true,,insert
+12861,14777,1,3,51,1034,Control Site: Focus of Air,17913,Toxiplast Microchemist,unique_name,7981397,1867,2.672463,1.276331,13,33.526766,false,,insert
+13403,6112,1,3,51,1034,Control Site: Focus of Air,19234,Lead Xenoarchaeologist Skarval,unique_name,6445119,1851,0.940688,2.765816,20,107.111938,false,6112,skip_existing_same_spline
+14667,6181,1,3,51,1034,Control Site: Focus of Air,21651,Toxicologist Poxic,unique_name,5104679,1876,0.238095,1.863014,10,48.858385,false,,insert
+17720,10579,1,3,51,1034,Control Site: Focus of Air,61727,Crimson Bludgeoner,unique_name,8422986,1838,0.636662,2.552083,8,84.787245,false,10579,skip_existing_same_spline
+17721,10575,1,3,51,1034,Control Site: Focus of Air,61727,Crimson Bludgeoner,unique_name,7798885,1838,0.589183,2.037896,17,78.093510,false,10575,skip_existing_same_spline
+17722,10577,1,3,51,1034,Control Site: Focus of Air,61728,Crimson Warrant Officer,unique_name,6027741,1870,2.822302,2.825237,15,120.787212,false,10577,skip_existing_same_spline
+17002,16310,1,3,51,1036,Winding Ridge,51598,Augmented Recluse,unique_name,6109739,7664,0.460169,2.480685,47,489.716897,false,,insert
+17003,16367,1,3,51,1036,Winding Ridge,51598,Augmented Recluse,unique_name,8247437,29423,0.417565,2.345208,16,132.125562,false,16367,skip_existing_same_spline
+13002,4912,1,3,51,1037,Windward Notch,18326,Dominion Looter,unique_name,8394858,8455,0.652794,2.451358,14,34.577022,false,,insert
+13003,4913,1,3,51,1037,Windward Notch,18326,Dominion Looter,unique_name,8340124,8455,2.566258,0.989324,16,90.576281,false,,insert
+13004,4913,1,3,51,1037,Windward Notch,18326,Dominion Looter,unique_name,8279776,8455,0.755442,1.853079,16,90.576281,false,,insert
+14570,16489,1,3,51,1037,Windward Notch,21222,Underseer Mogo,unique_name,2245462,9852,0.301446,2.145017,10,34.891099,false,16489,skip_existing_same_spline
+518,4929,2,3,51,1084,,16801,Stonefist Devastator,unique_name,5890595,3830,0.824145,2.852175,34,558.216869,true,4929,skip_existing_same_spline
+1818,5665,1,3,51,1084,,20797,Dominion Basher,unique_name,8400417,847,0.961560,1.155595,8,42.257039,false,5665,skip_existing_same_spline
+3922,20187,1,3,51,1084,,61554,Shoveljaw Crusher,unique_name,8418769,3133,0.332469,1.618240,9,70.891037,false,20187,skip_existing_same_spline
+13191,5436,1,3,51,1089,Crash Site,18901,Crimson Spiderbot,scored_name,8393872,2297,0.752541,1.678105,13,32.394797,false,,insert
+21040,5574,2,3,51,1091,Snowfade Grounds,19936,Mr. Wiggles,reviewed,8411360,832,0.863059,1.626077,15,10.527831,true,,insert
+21699,6194,1,3,51,1091,Snowfade Grounds,20889,Snowfade Guard,unique_name,1813474,7320,0.438720,1.503305,25,183.723399,false,,insert
+21700,6194,1,3,51,1091,Snowfade Grounds,20889,Snowfade Guard,unique_name,2244959,7320,0.395184,1.773125,25,183.723399,false,,insert
+21703,5502,2,3,51,1091,Snowfade Grounds,20889,Snowfade Guard,unique_name,2497271,7320,0.732575,1.837025,106,851.685341,true,,insert
+20867,17298,1,3,51,1100,Whitespring Fields,19886,Silversnout Girrok,scored_name,6754796,30862,0.841332,1.733495,7,54.975475,false,17298,skip_existing_same_spline
+20961,17361,1,3,51,1100,Whitespring Fields,19893,Frost-Striped Predator,unique_name,8114740,860,0.863821,1.014551,9,59.500220,false,17361,skip_existing_same_spline
+21028,17396,1,3,51,1100,Whitespring Fields,19901,Snowshadow Inquisitor,unique_name,8328958,29032,0.802315,1.526062,9,39.440862,false,17396,skip_existing_same_spline
+21157,5502,2,3,51,1100,Whitespring Fields,19950,Warm-Weather Jabbit,unique_name,11546,1076,2.353814,1.001481,106,851.685341,true,,insert
+21214,17378,1,3,51,1100,Whitespring Fields,19970,Warm-Weather Razortail,unique_name,176781,682,1.896767,1.046293,9,50.504883,false,,insert
+21664,6195,1,3,51,1100,Whitespring Fields,20779,Boulderpack Ringtail,unique_name,8175588,143,2.466556,2.916907,26,258.692050,false,,insert
+28560,17379,1,3,51,1100,Whitespring Fields,61869,Ice-Claw Predator,unique_name,8396046,2639,1.217011,1.217483,8,64.441587,false,17379,skip_existing_same_spline
+28876,17395,1,3,51,1100,Whitespring Fields,61984,Snowshadow Calumniator,unique_name,8328876,29007,1.144286,2.428315,10,76.304848,false,17395,skip_existing_same_spline
+12979,6277,1,3,51,1102,Roan Roam Mills,18275,Contaminated Galehorn Bull,unique_name,7654398,2299,0.464194,2.700999,24,438.195911,false,,insert
+15385,6278,1,3,51,1102,Roan Roam Mills,22476,Fleeing Jabbit,unique_name,4560940,9808,1.678475,1.626734,19,379.519267,false,,insert
+13596,19232,1,3,51,1103,High Henge,19309,Gnarls,unique_name,4952862,1581,0.178862,1.258150,7,22.037693,false,19232,skip_existing_same_spline
+13225,5118,1,3,51,1104,Overrun Outpost,18906,Lieutenant Feraakh,scored_name,7618664,2285,2.493427,2.638244,9,26.245848,false,,insert
+17543,14709,1,3,51,1104,Overrun Outpost,61636,Crimson Claymore,unique_name,8410593,2302,0.116335,0.168597,9,31.086969,false,14709,skip_existing_same_spline
+17596,19264,1,3,51,1104,Overrun Outpost,61648,Crimson Duelist,unique_name,8460821,2279,2.311716,2.256404,7,19.702397,false,,insert
+1810,22163,1,3,51,1115,Algoroc,20797,Dominion Basher,unique_name,8211312,28634,0.930236,2.858549,7,23.609997,false,22163,skip_existing_same_spline
+21815,17405,1,3,51,1138,Hydrospine Station,21373,Ikthian Dissector,unique_name,7894748,801,0.480645,1.052248,8,32.246235,false,17405,skip_existing_same_spline
+23769,6662,1,3,51,1151,Palerock Post,23882,Dominion Warbot,scored_name,2424728,1323,0.706256,0.706256,10,243.192280,false,6662,skip_existing_same_spline
+23300,6390,1,3,51,1152,Palerock Wilds,23151,Sunderstone Proximity Mine,unique_name,7902308,5871,2.041390,0.910308,56,1108.974020,false,,insert
+23712,6602,1,3,51,1152,Palerock Wilds,23659,Deadrock Ferry Watchman,scored_name,7337654,13553,0.468817,0.482693,4,11.335520,false,6602,skip_existing_same_spline
+28668,12088,1,3,51,1152,Palerock Wilds,61904,Ice-Maned Matriarch,unique_name,7634453,2217,0.169356,2.328784,8,59.448028,false,12088,skip_existing_same_spline
+22246,12219,1,3,51,1153,Sunderstone Hold,22553,Sunderstone Smasher,unique_name,7519623,6048,0.757346,1.288042,16,97.330610,false,12219,skip_existing_same_spline
+22247,12220,2,3,51,1153,Sunderstone Hold,22553,Sunderstone Smasher,unique_name,7409351,6048,0.285929,1.140702,15,52.867042,true,12220,skip_existing_same_spline
+22248,12222,1,3,51,1153,Sunderstone Hold,22553,Sunderstone Smasher,unique_name,7960034,6048,0.894196,1.365410,11,88.744253,false,12222,skip_existing_same_spline
+22249,12218,1,3,51,1153,Sunderstone Hold,22553,Sunderstone Smasher,unique_name,7693040,6048,0.802127,1.515573,11,84.612983,false,12218,skip_existing_same_spline
+23327,6507,1,3,51,1153,Sunderstone Hold,23151,Sunderstone Proximity Mine,unique_name,8220590,5871,0.958618,1.233367,15,249.028316,false,,insert
+23760,6655,1,3,51,1153,Sunderstone Hold,23831,Deadrock Escapee,unique_name,7312510,15349,0.331958,1.141534,12,186.823688,false,,insert
+28817,12221,1,3,51,1153,Sunderstone Hold,61954,Sunderstone Crusher,unique_name,8152404,5936,0.481079,1.257062,12,97.543669,false,12221,skip_existing_same_spline
+28818,12224,1,3,51,1153,Sunderstone Hold,61954,Sunderstone Crusher,unique_name,7634244,5936,0.727720,2.428482,8,78.732973,false,12224,skip_existing_same_spline
+22290,19378,1,3,51,1160,Deadrock Prison,22587,Exile Escapee,unique_name,6687920,8028,1.379538,1.491892,6,25.782373,false,,insert
+22293,19378,1,3,51,1160,Deadrock Prison,22587,Exile Escapee,unique_name,6687921,8028,0.658497,0.804256,6,25.782373,false,,insert
+22313,19380,1,3,51,1160,Deadrock Prison,22587,Exile Escapee,unique_name,4330545,8028,0.755878,1.262563,7,50.341429,false,,insert
+23587,6326,1,3,51,1160,Deadrock Prison,23366,Condemned Exile Captive,unique_name,851906,12653,0.804828,1.269553,11,68.691537,false,,insert
+23588,6326,1,3,51,1160,Deadrock Prison,23366,Condemned Exile Captive,unique_name,3503397,12653,0.567549,0.588921,11,68.691537,false,,insert
+23589,6326,1,3,51,1160,Deadrock Prison,23366,Condemned Exile Captive,unique_name,1669517,12653,0.468943,0.566855,11,68.691537,false,,insert
+23590,6326,1,3,51,1160,Deadrock Prison,23366,Condemned Exile Captive,unique_name,1506028,12653,0.990920,1.002176,11,68.691537,false,,insert
+23713,6404,1,3,51,1160,Deadrock Prison,23659,Deadrock Ferry Watchman,scored_name,3571389,13553,0.350679,2.866136,10,93.865440,false,,insert
+23716,6326,1,3,51,1160,Deadrock Prison,23659,Deadrock Ferry Watchman,scored_name,5351757,13553,2.757973,1.072476,11,68.691537,false,,insert
+26911,6303,1,3,51,1160,Deadrock Prison,37545,Deadly Deadrock Inmate,unique_name,5733471,8029,1.446555,1.994976,14,312.896799,false,,insert
+26945,6482,1,3,51,1160,Deadrock Prison,37546,Rioting Deadrock Inmate,unique_name,5034053,8027,1.492789,1.220375,19,218.305300,false,,insert
+26978,19381,1,3,51,1160,Deadrock Prison,37595,Eli Redstone,unique_name,3541737,8016,0.486697,1.254702,10,56.919721,false,19381,skip_existing_same_spline
+26979,19383,1,3,51,1160,Deadrock Prison,37597,Zynian Bloodleaf,unique_name,5121020,8037,0.821033,0.830791,7,28.483871,false,19383,skip_existing_same_spline
+28231,12137,1,3,51,1166,Murmurwood Forest,56950,Ice-Spiked Predator,unique_name,6854190,4507,0.636968,0.642826,9,58.844374,false,12137,skip_existing_same_spline
+28234,12136,1,3,51,1166,Murmurwood Forest,56950,Ice-Spiked Predator,unique_name,6698317,4507,2.672288,2.914931,11,91.193217,false,12136,skip_existing_same_spline
+28665,12081,1,3,51,1166,Murmurwood Forest,61904,Ice-Maned Matriarch,unique_name,6585569,2217,0.720411,0.798020,8,57.777438,false,12081,skip_existing_same_spline
+22280,12208,1,3,51,1167,Abandoned Lodge,22583,Blackfrost Agent,unique_name,8372263,4546,0.759372,2.304391,11,77.982476,false,12208,skip_existing_same_spline
+26524,6391,1,3,51,1168,Shatterforce Outpost,28563,Wired Jabbit,unique_name,6802220,6018,0.384391,1.747197,69,1505.781246,false,,insert
+23627,6580,1,3,51,1175,Truthbound Encampment,23519,Truthbound Sentinel,unique_name,8321431,537,0.868130,0.937111,6,72.913602,false,6580,skip_existing_same_spline
+23628,6581,1,3,51,1175,Truthbound Encampment,23519,Truthbound Sentinel,unique_name,8238646,537,0.741282,2.307365,6,72.871187,false,6581,skip_existing_same_spline
+23629,6578,1,3,51,1175,Truthbound Encampment,23519,Truthbound Sentinel,unique_name,7902302,537,0.984276,1.559564,5,29.199394,false,6578,skip_existing_same_spline
+23630,6579,1,3,51,1175,Truthbound Encampment,23519,Truthbound Sentinel,unique_name,8092058,537,1.005710,1.033031,6,43.168014,false,6579,skip_existing_same_spline
+28498,12225,1,3,51,1175,Truthbound Encampment,61867,Silversnout Mauler,unique_name,8185943,2247,0.283569,2.527158,7,51.619612,false,12225,skip_existing_same_spline
+28499,12226,1,3,51,1175,Truthbound Encampment,61867,Silversnout Mauler,unique_name,8114519,2247,0.264742,0.793158,7,47.787247,false,12226,skip_existing_same_spline
+22067,6616,1,3,51,1181,Primal Drill Site Alpha,22452,Inventor Tazzo,scored_name,20868,4385,0.955572,0.518125,7,18.610849,false,,insert
+17032,4874,1,3,51,1191,Boneshatter Yard,53082,Osiric Totem,unique_name,191844,5535,0.902632,1.274139,25,285.275513,false,,insert
+11754,4185,1,3,51,1192,Sanctuary of the Brides,14610,Bride Osprea,unique_name,1934490,2112,0.861075,1.730130,11,49.657005,false,,insert
+11755,14900,2,3,51,1193,Broodlord's Roost,14611,Stormwing Razortalon,unique_name,7788018,2187,0.883900,1.371249,14,58.211644,true,14900,skip_existing_same_spline
+16680,4872,1,3,51,1193,Broodlord's Roost,38674,Lightning Strike,reviewed,366760,2160,2.085520,1.363409,31,418.749761,false,,insert
+17697,4872,1,3,51,1193,Broodlord's Roost,61720,Stormwing Skywatcher,unique_name,7552252,2107,2.659906,1.209172,31,418.749761,false,,insert
+24351,17539,1,3,51,1221,Softsnow Woods,24183,Darkice Basher,unique_name,7264333,1035,0.820419,1.496305,7,35.499730,false,17539,skip_existing_same_spline
+28738,17538,1,3,51,1221,Softsnow Woods,61920,Darkice Mystic,unique_name,8175839,4495,0.281594,0.928978,10,41.317477,false,17538,skip_existing_same_spline
+28739,17537,1,3,51,1221,Softsnow Woods,61920,Darkice Mystic,unique_name,7918424,4495,1.056320,2.304754,9,47.775743,false,17537,skip_existing_same_spline
+24376,17554,1,3,51,1223,Rimewater River,24196,Rimewater Girrok,unique_name,8290410,263,1.335946,2.603211,8,53.912974,false,17554,skip_existing_same_spline
+28734,17536,1,3,51,1224,Darkice Village,61920,Darkice Mystic,unique_name,7687991,4495,1.203587,1.676932,8,30.961161,false,17536,skip_existing_same_spline
+24400,14721,1,3,51,1242,Blasted Fields,24282,Dominion Warmonger,unique_name,7647484,134,1.556497,1.826276,36,220.008080,false,14721,skip_existing_same_spline
+24401,14721,1,3,51,1242,Blasted Fields,24282,Dominion Warmonger,unique_name,7614551,134,0.520783,2.456441,36,220.008080,false,,insert
+24402,14721,1,3,51,1242,Blasted Fields,24282,Dominion Warmonger,unique_name,7692617,134,1.773869,1.029958,36,220.008080,false,,insert
+24756,14693,1,3,51,1242,Blasted Fields,24745,Mutated Soldier,unique_name,8238604,302,1.414825,1.785605,10,45.040933,false,,insert
+25069,7252,1,3,51,1242,Blasted Fields,25945,Circling Steamglider,unique_name,2602764,7997,0.704089,1.402471,15,285.199839,false,7252,skip_existing_same_spline
+26701,13828,1,3,51,1242,Blasted Fields,35313,Broken Warbot,unique_name,6293082,29917,0.757465,1.241517,8,71.360790,false,,insert
+26702,13869,1,3,51,1242,Blasted Fields,35314,Broken Ultrabot,unique_name,22702,939,1.180375,1.019306,7,55.552648,false,,insert
+26783,6771,1,3,51,1242,Blasted Fields,35441,Spinebiting Terror,unique_name,8447830,10,2.808941,2.964404,26,733.175721,false,,insert
+27649,6770,1,3,51,1242,Blasted Fields,46871,Volatile Zurias,unique_name,331068,564,1.977782,0.859410,34,1028.244598,false,,insert
+27660,13828,1,3,51,1242,Blasted Fields,46871,Volatile Zurias,unique_name,61585,564,0.593641,1.309125,8,71.360790,false,,insert
+27662,6770,1,3,51,1242,Blasted Fields,46871,Volatile Zurias,unique_name,225022,564,1.740551,0.984789,34,1028.244598,false,,insert
+24080,6686,2,3,51,1246,Thermock Lake West,24071,Frostbite Sunfish,unique_name,4665523,8790,1.081153,1.287430,33,1120.513748,true,6686,skip_existing_same_spline
+22227,12249,1,3,51,1248,Roughwhite Wilds,22545,Pridianheart Cruxgrower,unique_name,5561985,4379,1.879689,1.910076,11,76.941207,false,12249,skip_existing_same_spline
+22228,12248,1,3,51,1248,Roughwhite Wilds,22545,Pridianheart Cruxgrower,unique_name,7673788,29344,0.726406,2.244332,10,51.867235,false,12248,skip_existing_same_spline
+22229,12247,1,3,51,1248,Roughwhite Wilds,22545,Pridianheart Cruxgrower,unique_name,7550235,29344,0.172265,2.395339,9,67.225563,false,12247,skip_existing_same_spline
+22230,12250,1,3,51,1248,Roughwhite Wilds,22547,Noxinnate the Sludgerager,unique_name,7604881,29312,0.931730,1.216918,22,182.834964,false,12250,skip_existing_same_spline
+23525,12254,1,3,51,1248,Roughwhite Wilds,23301,Toxic Fraz,unique_name,8290519,29318,0.956902,2.511738,10,46.671182,false,12254,skip_existing_same_spline
+23528,12256,1,3,51,1248,Roughwhite Wilds,23301,Toxic Fraz,unique_name,8465806,29318,1.025186,2.728274,8,26.612075,false,12256,skip_existing_same_spline
+28567,17556,1,3,51,1248,Roughwhite Wilds,61870,Rimewater Savage,unique_name,7356397,3159,0.744044,1.914532,7,37.382344,false,17556,skip_existing_same_spline
+24188,17488,1,3,51,1253,Redmoon's Dockyard,24094,Redmoon Rover,unique_name,8157894,763,0.291123,1.856037,7,24.065098,false,,insert
+24189,17487,1,3,51,1253,Redmoon's Dockyard,24094,Redmoon Rover,unique_name,8338259,763,0.307549,2.110444,7,25.316468,false,17487,skip_existing_same_spline
+24194,17495,1,3,51,1253,Redmoon's Dockyard,24094,Redmoon Rover,unique_name,8338260,763,0.422505,1.636554,12,106.669106,false,17495,skip_existing_same_spline
+24196,17520,1,3,51,1253,Redmoon's Dockyard,24094,Redmoon Rover,unique_name,7976046,28567,0.451779,2.898314,12,72.805068,false,,insert
+24199,17522,1,3,51,1253,Redmoon's Dockyard,24094,Redmoon Rover,unique_name,8362409,28567,0.432052,2.259713,7,24.597973,false,17522,skip_existing_same_spline
+24209,6879,1,3,51,1253,Redmoon's Dockyard,24102,Bosun Sprulo,unique_name,7863264,1190,2.915730,2.850076,7,15.620151,false,,insert
+24859,6962,1,3,51,1253,Redmoon's Dockyard,24933,Chef Garnua,unique_name,6024527,928,0.492031,0.498607,7,29.183066,false,6962,skip_existing_same_spline
+28644,6791,1,3,51,1253,Redmoon's Dockyard,61893,Redmoon Renegade,unique_name,8157676,4526,2.637027,1.422501,8,12.940326,false,,insert
+28645,17485,1,3,51,1253,Redmoon's Dockyard,61893,Redmoon Renegade,unique_name,8400353,4526,0.946329,0.972044,8,44.322230,false,17485,skip_existing_same_spline
+28646,17486,1,3,51,1253,Redmoon's Dockyard,61893,Redmoon Renegade,unique_name,7958315,4526,0.833356,1.083349,7,27.606825,false,17486,skip_existing_same_spline
+28647,6842,1,3,51,1253,Redmoon's Dockyard,61893,Redmoon Renegade,unique_name,8175784,4526,2.321566,2.972733,8,12.222056,false,,insert
+27092,12009,1,3,51,1312,Prosperity Junction,40068,Protostar Gear Wrangler Bot,unique_name,3045622,12082,0.570163,2.868116,16,188.621887,false,12009,skip_existing_same_spline
+27101,12014,1,3,51,1312,Prosperity Junction,40180,Protostar Regional Awareness Advisor,unique_name,2002189,15089,0.874606,1.163832,23,406.572712,false,12014,skip_existing_same_spline
+27107,12072,1,3,51,1312,Prosperity Junction,40329,Protostar Efficiency Verifier,unique_name,1484979,16813,0.385412,1.623238,8,62.881319,false,12072,skip_existing_same_spline
+25486,7472,1,3,51,1314,Calmwater Commune,26091,Doomtide Arcanist,unique_name,6264548,425,1.035621,1.363341,8,75.638153,false,,insert
+25521,7472,1,3,51,1314,Calmwater Commune,26104,Doomtide Rain-Hoarder,reviewed,8114465,5062,1.761908,2.422953,8,75.638153,false,,insert
+28627,7174,1,3,51,1314,Calmwater Commune,61879,Colossal Cragfist,unique_name,8394058,4866,1.956999,2.383737,61,2007.804100,false,,insert
+25104,7233,1,3,51,1315,Augment Facility X426,25996,Omnivapor Steamglider,unique_name,7729908,8952,1.037499,1.178222,22,335.072076,false,7233,skip_existing_same_spline
+25118,18889,1,3,51,1315,Augment Facility X426,25998,Soulcore Vindicator,unique_name,8157334,1019,0.577830,2.380205,8,37.723743,false,18889,skip_existing_same_spline
+25125,18926,1,3,51,1315,Augment Facility X426,25998,Soulcore Vindicator,unique_name,8394428,1019,0.655429,1.756256,9,63.696982,false,18926,skip_existing_same_spline
+25528,18857,1,3,51,1315,Augment Facility X426,26122,Doomtide Disciple,unique_name,8094624,642,0.482204,1.588175,10,55.085946,false,18857,skip_existing_same_spline
+25983,7433,1,3,51,1315,Augment Facility X426,26419,Doomtide Converts,unique_name,8230679,5089,1.967833,2.544161,12,118.278080,false,,insert
+25985,7434,1,3,51,1315,Augment Facility X426,26419,Doomtide Converts,unique_name,8466380,5089,2.793372,2.301823,13,110.690834,false,,insert
+25990,7434,1,3,51,1315,Augment Facility X426,26419,Doomtide Converts,unique_name,8051637,5089,2.302558,1.853545,13,110.690834,false,,insert
+28006,18940,1,3,51,1315,Augment Facility X426,53399,K9 Destroyer,unique_name,5897923,5049,1.540970,2.789576,10,103.171305,false,18940,skip_existing_same_spline
+28773,18896,1,3,51,1315,Augment Facility X426,61939,Soulcore Defender,unique_name,8108000,4868,0.619654,1.316230,11,53.033866,false,18896,skip_existing_same_spline
+28780,18890,1,3,51,1315,Augment Facility X426,61939,Soulcore Defender,unique_name,8105398,4868,0.470062,1.007784,7,38.514040,false,18890,skip_existing_same_spline
+28787,18908,1,3,51,1315,Augment Facility X426,61939,Soulcore Defender,unique_name,7992128,4868,0.209987,0.292034,10,111.450877,false,18908,skip_existing_same_spline
+26170,7522,2,3,51,1316,ZubbleBubble Crash Site,26731,Snow Devil,reviewed,7850134,187,0.275457,2.695749,26,474.662866,true,7522,skip_existing_same_spline
+26178,7529,1,3,51,1316,ZubbleBubble Crash Site,26731,Snow Devil,reviewed,7693132,187,0.831495,2.558300,26,459.813871,false,7529,skip_existing_same_spline
+25414,17787,1,3,51,1318,Silverscale Station,26040,Silverscale Behemoth,unique_name,8146486,762,0.787625,1.576301,9,82.059481,false,17787,skip_existing_same_spline
+25418,17790,1,3,51,1318,Silverscale Station,26040,Silverscale Behemoth,unique_name,8465576,762,0.908780,1.241501,11,112.705104,false,17790,skip_existing_same_spline
+25419,17793,1,3,51,1318,Silverscale Station,26041,Silverscale Leviathan,scored_name,8468054,275,1.255670,2.350919,7,29.075196,false,17793,skip_existing_same_spline
+25420,17792,1,3,51,1318,Silverscale Station,26041,Silverscale Leviathan,scored_name,8468050,275,0.105704,2.319832,8,29.719006,false,17792,skip_existing_same_spline
+25421,17797,1,3,51,1318,Silverscale Station,26041,Silverscale Leviathan,scored_name,8468044,275,0.103787,2.189228,6,34.255186,false,17797,skip_existing_same_spline
+25423,17798,1,3,51,1318,Silverscale Station,26041,Silverscale Leviathan,scored_name,8460251,275,0.250037,2.983357,6,30.817098,false,17798,skip_existing_same_spline
+27576,14200,1,3,51,1318,Silverscale Station,46544,Megadroid Zealbot v. 1.0,unique_name,7990388,28809,0.661927,2.643735,17,103.310237,false,,insert
+27577,14178,1,3,51,1318,Silverscale Station,46544,Megadroid Zealbot v. 1.0,unique_name,5840995,9203,1.884369,0.153300,19,163.419748,false,,insert
+27579,14179,1,3,51,1318,Silverscale Station,46544,Megadroid Zealbot v. 1.0,unique_name,5856791,9203,0.673660,0.904984,21,172.337988,false,,insert
+27588,14201,1,3,51,1318,Silverscale Station,46550,Megadroid Zealbot v. 2.0,unique_name,4312340,9201,1.972963,1.689208,18,94.449299,false,,insert
+27590,14202,1,3,51,1318,Silverscale Station,46550,Megadroid Zealbot v. 2.0,unique_name,7990113,28801,0.508023,2.868171,18,97.439292,false,,insert
+27613,14179,1,3,51,1318,Silverscale Station,46734,Megadroid Servitor v 1.0,unique_name,4884441,9196,0.159487,1.665734,21,172.337988,false,,insert
+25289,17726,1,3,51,1336,Calmwater Lake,26019,Nimble Steamglider,unique_name,8106433,5494,0.433945,1.619977,12,278.891495,false,17726,skip_existing_same_spline
+26215,17755,1,3,51,1336,Calmwater Lake,26860,Sabotaged Patrolbot,unique_name,6855982,737,0.679122,2.840587,11,85.171789,false,17755,skip_existing_same_spline
+25458,18851,1,3,51,1337,Doomtide Village,26086,Doomtide Thunder-Stalker,scored_name,8457822,5092,0.485705,1.614218,8,70.404788,false,18851,skip_existing_same_spline
+25461,18830,1,3,51,1337,Doomtide Village,26086,Doomtide Thunder-Stalker,scored_name,7980976,5092,1.651466,2.607528,8,48.400900,false,18830,skip_existing_same_spline
+25462,18829,1,3,51,1337,Doomtide Village,26086,Doomtide Thunder-Stalker,scored_name,7889520,5092,0.743140,2.261548,8,54.539498,false,18829,skip_existing_same_spline
+25463,18827,1,3,51,1337,Doomtide Village,26086,Doomtide Thunder-Stalker,scored_name,8099090,5092,0.417668,2.322348,10,104.420757,false,18827,skip_existing_same_spline
+25488,7511,1,3,51,1337,Doomtide Village,26095,Soulcore Interrogator,unique_name,8285759,141,1.310270,1.411595,10,115.457048,false,,insert
+25494,7544,1,3,51,1337,Doomtide Village,26095,Soulcore Interrogator,unique_name,8322455,141,1.726527,1.046375,10,80.489607,false,,insert
+25499,7414,1,3,51,1337,Doomtide Village,26095,Soulcore Interrogator,unique_name,8215443,141,1.790964,0.441475,12,93.746273,false,,insert
+25997,7512,1,3,51,1337,Doomtide Village,26453,Doomtide Corruptordrone,unique_name,8383881,206,0.828366,1.135077,11,149.086587,false,,insert
+25999,7512,1,3,51,1337,Doomtide Village,26453,Doomtide Corruptordrone,unique_name,8322698,206,0.804221,0.635138,11,149.086587,false,,insert
+26001,7629,1,3,51,1337,Doomtide Village,26453,Doomtide Corruptordrone,unique_name,8410573,206,0.731712,1.412055,12,164.535616,false,,insert
+26002,7629,1,3,51,1337,Doomtide Village,26453,Doomtide Corruptordrone,unique_name,8383880,206,1.284794,1.188949,12,164.535616,false,,insert
+26004,7544,1,3,51,1337,Doomtide Village,26453,Doomtide Corruptordrone,unique_name,8415873,206,1.057534,1.019951,10,80.489607,false,,insert
+26005,7508,1,3,51,1337,Doomtide Village,26453,Doomtide Corruptordrone,unique_name,8322689,206,2.712375,0.376563,10,66.567876,false,,insert
+26007,7510,1,3,51,1337,Doomtide Village,26453,Doomtide Corruptordrone,unique_name,8394096,206,2.272994,1.237619,11,122.698846,false,,insert
+26009,7630,1,3,51,1337,Doomtide Village,26453,Doomtide Corruptordrone,unique_name,8460170,206,2.895187,0.858254,14,109.115049,false,,insert
+26013,7414,1,3,51,1337,Doomtide Village,26453,Doomtide Corruptordrone,unique_name,8394101,206,1.099308,2.627508,12,93.746273,false,,insert
+28716,18848,1,3,51,1337,Doomtide Village,61916,Doomtide Gale-Slasher,unique_name,8020075,5097,0.954219,1.770056,8,64.040229,false,18848,skip_existing_same_spline
+28717,18828,1,3,51,1337,Doomtide Village,61916,Doomtide Gale-Slasher,unique_name,7674396,5097,0.774096,1.927200,7,43.040042,false,18828,skip_existing_same_spline
+25227,7174,1,3,51,1343,South Whitevale,26003,Colossal Gronyx,unique_name,8462919,1199,0.864198,2.206218,61,2007.804100,false,,insert
+25277,7174,1,3,51,1343,South Whitevale,26006,Roving Dawngrazer,unique_name,8303756,56,0.570134,2.551901,61,2007.804100,false,,insert
+27569,14179,1,3,51,1343,South Whitevale,46544,Megadroid Zealbot v. 1.0,unique_name,8286185,28809,2.227643,1.045225,21,172.337988,false,,insert
+27580,14177,1,3,51,1343,South Whitevale,46544,Megadroid Zealbot v. 1.0,unique_name,8156279,28809,0.568988,1.058513,19,139.398274,false,,insert
+27589,14200,1,3,51,1343,South Whitevale,46550,Megadroid Zealbot v. 2.0,unique_name,7534207,28801,0.409043,2.476767,17,103.310237,false,,insert
+27612,14202,1,3,51,1343,South Whitevale,46734,Megadroid Servitor v 1.0,unique_name,6097514,9196,1.673716,1.600074,18,97.439292,false,,insert
+28634,17759,1,3,51,1343,South Whitevale,61882,Sabotaged Securitybot,unique_name,7547108,5087,0.806579,1.690573,9,51.281209,false,17759,skip_existing_same_spline
+28635,17756,1,3,51,1343,South Whitevale,61882,Sabotaged Securitybot,unique_name,8361607,5087,0.867889,2.564710,14,92.912374,false,17756,skip_existing_same_spline
+28637,17757,1,3,51,1343,South Whitevale,61882,Sabotaged Securitybot,unique_name,8167339,5087,0.757816,1.510725,13,124.430128,false,17757,skip_existing_same_spline
+22608,6497,1,3,51,1344,Whitevale,22611,Territorial Icebay Shellark,reviewed,8305140,611,0.962558,1.754319,16,483.754045,false,6497,skip_existing_same_spline
+22616,6498,1,3,51,1344,Whitevale,22611,Territorial Icebay Shellark,reviewed,8305136,611,1.643500,1.879500,11,423.552265,false,6498,skip_existing_same_spline
+5213,14448,2,3,51,1559,Greenbough Glen,30449,Greenbough Calf,unique_name,8033833,2755,1.570956,2.703001,85,475.994680,true,,insert
+5310,14448,2,3,51,1559,Greenbough Glen,30672,Greenbark Spewer,unique_name,8422636,2764,0.993810,2.378079,85,475.994680,true,,insert
+9093,14446,1,3,51,1559,Greenbough Glen,47231,Hunter Varann,unique_name,7654916,4231,0.807636,0.940511,36,283.516499,false,14446,skip_existing_same_spline
+9737,17362,2,3,51,1570,Woodhaven,53147,Rogum,reviewed,3801,961,1.036822,1.319335,85,241.796706,true,,insert
+6286,9561,1,3,51,1572,Celestial Falls,32079,White Jabbit,unique_name,254329,9057,0.046454,0.613046,13,56.861770,false,9561,skip_existing_same_spline
+4905,14443,1,3,51,1573,Thistlewood Thicket,30327,Sunhorn Roamer,unique_name,8429096,5381,1.036388,2.616968,28,247.432503,false,,insert
+5716,14443,1,3,51,1573,Thistlewood Thicket,31349,Stonepaw Mangler,unique_name,8383928,4819,0.488598,2.699921,28,247.432503,false,,insert
+5717,14443,1,3,51,1573,Thistlewood Thicket,31349,Stonepaw Mangler,unique_name,7928032,4819,2.935339,1.033218,28,247.432503,false,,insert
+10147,9415,1,3,51,1573,Thistlewood Thicket,61441,Stonepaw Fleshrender,unique_name,6433255,2767,1.111312,2.760834,10,75.768330,false,,insert
+10148,9414,1,3,51,1573,Thistlewood Thicket,61441,Stonepaw Fleshrender,unique_name,6433264,2767,0.181633,0.738694,13,103.927565,false,9414,skip_existing_same_spline
+4862,14432,2,3,51,1575,Cursewood,30325,Needlebrook Brute,unique_name,8074064,5439,2.852491,1.166689,220,2321.521309,true,,insert
+4872,11784,1,3,51,1575,Cursewood,30326,Needlebrook Shambler,unique_name,8232986,5421,1.861393,2.858874,9,56.150767,false,,insert
+4882,14432,2,3,51,1575,Cursewood,30326,Needlebrook Shambler,unique_name,8415556,5421,2.576172,0.989930,220,2321.521309,true,,insert
+4887,14432,2,3,51,1575,Cursewood,30326,Needlebrook Shambler,unique_name,8102408,5421,1.268190,2.535298,220,2321.521309,true,,insert
+4913,14432,2,3,51,1575,Cursewood,30327,Sunhorn Roamer,unique_name,7334651,5381,0.546668,1.618955,220,2321.521309,true,,insert
+4914,14432,2,3,51,1575,Cursewood,30327,Sunhorn Roamer,unique_name,8415829,5381,1.944929,1.463395,220,2321.521309,true,,insert
+5056,9444,1,3,51,1575,Cursewood,30334,Bonerazer Huntstalker,unique_name,7902582,4793,0.928177,2.043853,13,48.043852,false,9444,skip_existing_same_spline
+5579,14432,2,3,51,1575,Cursewood,31054,Suspicious Bush,reviewed,8159147,4797,2.962553,2.127859,220,2321.521309,true,,insert
+5580,11784,1,3,51,1575,Cursewood,31054,Suspicious Bush,reviewed,8102857,4797,0.511734,2.892715,9,56.150767,false,,insert
+5596,11788,1,3,51,1575,Cursewood,31054,Suspicious Bush,reviewed,8161670,4797,0.836736,1.631594,9,67.208013,false,,insert
+5849,9100,1,3,51,1575,Cursewood,31507,Snap Trap,reviewed,77224,4788,1.268372,1.057225,21,323.952591,false,,insert
+5851,14432,2,3,51,1575,Cursewood,31507,Snap Trap,reviewed,180201,4788,0.312158,0.645755,220,2321.521309,true,,insert
+5870,14432,2,3,51,1575,Cursewood,31507,Snap Trap,reviewed,335715,4788,1.323461,1.102389,220,2321.521309,true,,insert
+5875,9100,1,3,51,1575,Cursewood,31507,Snap Trap,reviewed,1090344,4788,1.565157,0.609105,21,323.952591,false,,insert
+5878,11785,1,3,51,1575,Cursewood,31507,Snap Trap,reviewed,918818,4788,1.536131,1.473839,10,88.956288,false,,insert
+5886,14432,2,3,51,1575,Cursewood,31507,Snap Trap,reviewed,1834145,4788,1.944253,1.179468,220,2321.521309,true,,insert
+5889,14432,2,3,51,1575,Cursewood,31507,Snap Trap,reviewed,157695,4788,2.806270,0.585492,220,2321.521309,true,,insert
+5892,14432,2,3,51,1575,Cursewood,31507,Snap Trap,reviewed,273558,4788,1.276555,1.061670,220,2321.521309,true,,insert
+5895,11788,1,3,51,1575,Cursewood,31507,Snap Trap,reviewed,116312,4788,2.046904,0.882332,9,67.208013,false,,insert
+5897,14432,2,3,51,1575,Cursewood,31507,Snap Trap,reviewed,49027,4788,2.206537,1.060545,220,2321.521309,true,,insert
+5898,14432,2,3,51,1575,Cursewood,31507,Snap Trap,reviewed,1508225,4788,2.236463,1.121676,220,2321.521309,true,,insert
+5905,14432,2,3,51,1575,Cursewood,31507,Snap Trap,reviewed,1498352,4788,1.319474,1.162172,220,2321.521309,true,,insert
+8446,11802,2,3,51,1575,Cursewood,37213,Grevitch the Gruesome,unique_name,5845731,5443,0.334793,1.057596,15,101.908338,true,11802,skip_existing_same_spline
+9333,14845,1,3,51,1575,Cursewood,48417,Mylla Swiftfeather,reviewed,32077,5445,0.836155,0.489955,11,95.722637,false,,insert
+9334,14845,1,3,51,1575,Cursewood,48420,Gribbles,reviewed,1569030,9865,1.555364,0.928742,11,95.722637,false,,insert
+5013,9433,1,3,51,1576,Bonerazer Village,30332,Bonerazer Bloodspiller,unique_name,8460789,1597,1.494339,1.529857,13,182.892657,false,9433,skip_existing_same_spline
+10200,9441,1,3,51,1576,Bonerazer Village,61453,Bonerazer Vanquisher,unique_name,7443281,4813,0.456907,1.675506,8,41.588286,false,9441,skip_existing_same_spline
+4780,9454,1,3,51,1578,Darkloam Hollow,30252,Darkloam Spirit Kin,unique_name,8260636,1792,0.735032,1.551896,11,92.363997,false,9454,skip_existing_same_spline
+5069,9147,1,3,51,1585,Emberwood,30396,Firestorm Embermancer,unique_name,8286088,343,0.632985,2.375416,8,66.197101,false,9147,skip_existing_same_spline
+5116,9150,1,3,51,1585,Emberwood,30414,Firestorm Incinerator,unique_name,5424315,82,0.535909,0.551141,9,72.889969,false,9150,skip_existing_same_spline
+21573,7591,1,3,51,1613,The Last Man Standing,20534,Last Bouncer Standing,unique_name,1871151,12074,0.563304,1.833088,30,164.092124,false,,insert
+21920,6193,1,3,51,1613,The Last Man Standing,21851,Bar Patron,scored_name,2779895,871,2.158540,0.651126,29,204.122855,false,,insert
+5071,9148,1,3,51,1620,Emberwood,30396,Firestorm Embermancer,unique_name,8263257,343,0.695478,1.544712,9,85.068411,false,9148,skip_existing_same_spline
+6563,13035,1,3,51,1738,Celestion,32502,Ravenous Reaver,unique_name,7899827,6381,0.474737,0.723143,10,16.557484,false,13035,skip_existing_same_spline
+6634,10216,1,3,51,1738,Celestion,32587,Zeta Equalizer,scored_name,7891848,29205,0.052329,0.502709,11,49.415270,false,10216,skip_existing_same_spline
+6782,11965,1,3,51,1738,Celestion,32685,Glitchbyte Leecher,unique_name,8391204,29214,1.012100,1.492448,9,83.651067,false,11965,skip_existing_same_spline
+6560,13036,1,3,51,1741,Grimhold Blockade,32502,Ravenous Reaver,unique_name,7896074,6381,1.198511,1.533703,14,38.830837,false,13036,skip_existing_same_spline
+6799,13063,1,3,51,1742,Grimhold Quarantine Sector 2,32689,Drugaur the Rotted,unique_name,7159149,6379,0.093389,2.014384,18,67.371288,false,13063,skip_existing_same_spline
+7298,10273,1,3,51,1742,Grimhold Quarantine Sector 2,33367,Ravenous Malignant,scored_name,6317459,30030,1.057147,1.293765,9,63.668780,false,10273,skip_existing_same_spline
+8816,13049,1,3,51,1742,Grimhold Quarantine Sector 2,41752,Ravenous Fiend,reviewed,8128858,6408,2.431723,2.530725,10,46.201754,false,13049,skip_existing_same_spline
+8824,13047,1,3,51,1742,Grimhold Quarantine Sector 2,41752,Ravenous Fiend,reviewed,8274459,6408,1.190142,2.704169,10,40.443369,false,13047,skip_existing_same_spline
+6541,9983,1,3,51,1745,Grimhold Quarantine Sector 3,32497,Ravenous Ripper,scored_name,8306662,6402,0.476136,0.894273,184,908.164364,false,,insert
+8814,13058,1,3,51,1745,Grimhold Quarantine Sector 3,41752,Ravenous Fiend,reviewed,8395221,6408,2.142242,2.222846,11,61.081510,false,13058,skip_existing_same_spline
+8815,13060,1,3,51,1745,Grimhold Quarantine Sector 3,41752,Ravenous Fiend,reviewed,8415666,6408,1.866716,2.214282,9,44.777990,false,13060,skip_existing_same_spline
+8817,13051,1,3,51,1745,Grimhold Quarantine Sector 3,41752,Ravenous Fiend,reviewed,8128849,6408,0.537753,2.975558,10,26.063982,false,13051,skip_existing_same_spline
+10217,13064,1,3,51,1745,Grimhold Quarantine Sector 3,61456,Ravenous Abomination,unique_name,7967677,6414,0.241216,2.524573,9,61.519748,false,13064,skip_existing_same_spline
+6813,11060,1,3,51,1747,Puddlejump Pools,32754,Shadetree Growler,unique_name,8414857,4197,0.704379,1.766955,8,52.036695,false,11060,skip_existing_same_spline
+10138,11057,1,3,51,1747,Puddlejump Pools,61438,Shadetree Gorepaw,unique_name,5600710,5248,1.347213,2.600558,11,99.536086,false,11057,skip_existing_same_spline
+6769,10174,1,3,51,1776,Essential Access Column,32684,N22 Augmentor,scored_name,8210168,2930,1.472854,2.343438,9,92.050294,false,10174,skip_existing_same_spline
+9517,15217,1,3,51,1776,Essential Access Column,49555,N22 Nanite Recharger,unique_name,7632932,5819,0.658788,1.120446,20,454.302005,false,15217,skip_existing_same_spline
+6772,10173,1,3,51,1777,Repository Access Column,32684,N22 Augmentor,scored_name,8448144,2930,0.999000,1.817168,8,50.773942,false,10173,skip_existing_same_spline
+6773,10172,1,3,51,1777,Repository Access Column,32684,N22 Augmentor,scored_name,8031274,2930,1.095955,1.141972,8,48.513120,false,10172,skip_existing_same_spline
+6911,17444,2,3,51,1805,District Falls,32844,Ravenous Stalker,scored_name,7745058,6406,2.059269,2.628563,75,589.083098,true,,insert
+6912,14488,1,3,51,1805,District Falls,32844,Ravenous Stalker,scored_name,8196514,6406,1.925730,2.903261,13,83.963054,false,,insert
+7985,17440,2,3,51,1805,District Falls,34110,Mayor Hamhorn,reviewed,10578,2307,1.459665,0.995914,52,426.222751,true,,insert
+8286,17443,1,3,51,1805,District Falls,35397,Malfunctioning Tripod,unique_name,46422,6395,1.124428,0.768029,59,377.060749,false,,insert
+8287,13590,1,3,51,1805,District Falls,35397,Malfunctioning Tripod,unique_name,46419,6395,2.644939,0.570389,45,239.279075,false,,insert
+6578,12445,1,3,51,1812,The Pools of Vitara,32523,Torine Battlemaiden,reviewed,8437361,4255,0.712760,2.986553,21,127.119705,false,12445,skip_existing_same_spline
+6596,12452,1,3,51,1812,The Pools of Vitara,32523,Torine Battlemaiden,reviewed,8158627,4255,1.198882,1.246044,9,64.216403,false,12452,skip_existing_same_spline
+8237,16922,1,3,51,1812,The Pools of Vitara,34578,Torine Lifebringer,scored_name,8118113,4208,2.203482,1.419388,125,980.963583,false,,insert
+10184,12454,1,3,51,1812,The Pools of Vitara,61450,Torine Warblade,unique_name,7280431,4232,0.172820,1.161518,9,40.202601,false,12454,skip_existing_same_spline
+10186,12466,1,3,51,1812,The Pools of Vitara,61450,Torine Warblade,unique_name,7180176,4232,0.353746,0.396328,10,60.598458,false,12466,skip_existing_same_spline
+6601,12475,1,3,51,1813,The Vibrant Ascent,32553,Treebound Protector,scored_name,7997259,4224,0.342345,1.854299,11,36.147909,false,12475,skip_existing_same_spline
+6602,12480,1,3,51,1814,Godsbreath Terrace,32553,Treebound Protector,scored_name,7997258,4224,0.431038,0.450210,12,85.833200,false,12480,skip_existing_same_spline
+6603,12481,1,3,51,1814,Godsbreath Terrace,32553,Treebound Protector,scored_name,7927893,4224,0.773238,0.888011,13,100.174984,false,12481,skip_existing_same_spline
+6606,12484,1,3,51,1814,Godsbreath Terrace,32553,Treebound Protector,scored_name,7721412,4224,0.035326,2.415885,11,91.876177,false,12484,skip_existing_same_spline
+7009,16947,1,3,51,1814,Godsbreath Terrace,32881,Vitara's Bloom,unique_name,163404,4246,1.534697,1.359356,12,43.186846,false,,insert
+8174,10459,1,3,51,1815,Swordstone Hill,34475,Torine Sentinel,unique_name,8348476,4254,0.968999,2.003386,14,32.534158,false,10459,skip_existing_same_spline
+10156,9980,1,3,51,1815,Swordstone Hill,61446,Torine Liferender,unique_name,8378938,4205,1.220509,1.238987,39,500.797632,false,,insert
+22498,6332,1,3,51,1820,Murmurwood Forest,22609,Territorial Icetail,scored_name,8149935,2242,1.079527,2.357798,68,679.591303,false,,insert
+28227,12143,1,3,51,1820,Murmurwood Forest,56950,Ice-Spiked Predator,unique_name,7866887,4507,0.945493,2.564906,10,52.267886,false,12143,skip_existing_same_spline
+23530,12251,1,3,51,1821,Murmurwood Forest,23301,Toxic Fraz,unique_name,8167818,29318,0.744382,2.113259,8,27.275828,false,12251,skip_existing_same_spline
+23559,6308,1,3,51,1821,Murmurwood Forest,23302,Toxic Frizlet,unique_name,5979383,4356,2.285874,2.885867,29,368.915668,false,,insert
+23560,6308,1,3,51,1821,Murmurwood Forest,23302,Toxic Frizlet,unique_name,5979371,4356,0.682885,2.320360,29,368.915668,false,,insert
+28669,12139,1,3,51,1821,Murmurwood Forest,61904,Ice-Maned Matriarch,unique_name,6985668,2217,0.834436,0.851977,11,74.727277,false,12139,skip_existing_same_spline
+1292,5125,1,3,51,1886,Annihilator Silo 14,19291,Site 14 Analyzer,unique_name,8410982,10927,0.986052,1.386939,9,45.873456,false,,insert
+1295,5125,1,3,51,1886,Annihilator Silo 14,19291,Site 14 Analyzer,unique_name,7365215,10927,0.194490,0.308221,9,45.873456,false,,insert
+1296,5125,1,3,51,1886,Annihilator Silo 14,19291,Site 14 Analyzer,unique_name,7365205,10927,0.725648,0.691231,9,45.873456,false,,insert
+1307,5002,1,3,51,1886,Annihilator Silo 14,19308,Eldan Repair Construct,reviewed,8401024,7702,0.758155,0.878806,16,3322.243784,false,5002,skip_existing_same_spline
+1309,4970,2,3,51,1886,Annihilator Silo 14,19308,Eldan Repair Construct,reviewed,8460460,7702,1.297112,0.808270,16,431.523963,true,,insert
+1310,5003,2,3,51,1886,Annihilator Silo 14,19308,Eldan Repair Construct,reviewed,8401020,7702,0.501252,1.298345,17,565.577338,true,,insert
+1312,4970,2,3,51,1886,Annihilator Silo 14,19308,Eldan Repair Construct,reviewed,8460461,7702,2.202719,1.119777,16,431.523963,true,,insert
+1315,5003,2,3,51,1886,Annihilator Silo 14,19308,Eldan Repair Construct,reviewed,7992313,7702,0.417075,0.847408,17,565.577338,true,,insert
+2170,3887,2,3,51,1886,Annihilator Silo 14,20983,Rockhound Burrower,unique_name,8384168,7411,1.376948,0.810309,37,1454.005197,true,,insert
+2233,9824,1,3,51,1886,Annihilator Silo 14,20997,Site 14 Protector,scored_name,7809929,5844,0.369480,0.893588,301,281.458975,false,,insert
+2253,3887,2,3,51,1886,Annihilator Silo 14,21003,Augmented Rockhound Slasher,unique_name,8338595,5840,1.927279,1.640061,37,1454.005197,true,,insert
+2253,5965,2,3,51,1886,Annihilator Silo 14,21003,Augmented Rockhound Slasher,unique_name,8401063,5840,2.265953,0.608112,24,188.195455,true,,insert
+2268,5965,2,3,51,1886,Annihilator Silo 14,21004,Augmented Rockhound Burrower,unique_name,8411875,5838,0.863372,2.358368,24,188.195455,true,,insert
+2279,6127,2,3,51,1886,Annihilator Silo 14,21004,Augmented Rockhound Burrower,unique_name,8401418,5838,2.247208,1.151043,21,240.472280,true,,insert
+2405,5968,2,3,51,1886,Annihilator Silo 14,21534,Site 14 Augmentor,scored_name,8018863,5837,1.117655,2.006240,12,212.727131,true,5968,skip_existing_same_spline
+2406,5967,1,3,51,1886,Annihilator Silo 14,21534,Site 14 Augmentor,scored_name,8018864,5837,0.650538,1.154903,7,82.381037,false,5967,skip_existing_same_spline
+3163,3887,2,3,51,1886,Annihilator Silo 14,35251,Augmented Rockhound Guardian,unique_name,8349393,5845,2.284124,1.028931,37,1454.005197,true,,insert
+3812,16310,1,3,51,1886,Annihilator Silo 14,51596,Fresh Hatchling,unique_name,6074057,7649,0.147461,2.172119,47,489.716897,false,,insert
+3814,16311,1,3,51,1886,Annihilator Silo 14,51596,Fresh Hatchling,unique_name,8339114,29444,0.386935,1.847837,30,281.098388,false,,insert
+23785,6793,2,3,51,1965,Outbreak Fen,24035,Squirg Smasher,scored_name,7528494,964,0.625280,0.688111,12,165.590100,true,6793,skip_existing_same_spline
+23786,6796,2,3,51,1965,Outbreak Fen,24036,Squirg Erupter,unique_name,7444118,45,1.028063,2.186003,25,290.945903,true,,insert
+23787,6795,2,3,51,1965,Outbreak Fen,24037,Squirg Spewer,unique_name,7497144,231,0.379909,2.558239,16,144.457422,true,6795,skip_existing_same_spline
+23788,6794,2,3,51,1965,Outbreak Fen,24038,Squirg Stalker,unique_name,7651423,462,0.605084,2.327813,15,201.358358,true,6794,skip_existing_same_spline
+27488,13745,1,3,51,1965,Outbreak Fen,45478,Tachi the In-Between,unique_name,104976,9190,1.529902,1.374159,7,57.899288,false,,insert
+27526,10591,1,3,51,1965,Outbreak Fen,45799,Squirg Ripfang,unique_name,8331496,3477,0.843097,1.327022,42,1200.715264,false,,insert
+4826,9416,1,3,51,2512,Pollenberry Grove,30321,Doomsting,unique_name,8292270,5449,1.092235,2.915299,21,446.526167,false,9416,skip_existing_same_spline
+4828,14441,2,3,51,2512,Pollenberry Grove,30322,Dazeroot Hiveguard,unique_name,8218655,5388,1.522482,1.532374,42,556.072253,true,,insert
+4829,14441,2,3,51,2512,Pollenberry Grove,30322,Dazeroot Hiveguard,unique_name,8369607,5388,2.504473,2.077714,42,556.072253,true,,insert
+6220,9450,1,3,51,2512,Pollenberry Grove,31908,Dominion Bio-Weaponizer,reviewed,8224369,5424,0.579711,2.299379,11,61.689628,false,,insert
+10091,9421,1,3,51,2512,Pollenberry Grove,61416,Dazeroot Impaler,unique_name,7181765,5341,0.951146,0.985034,13,108.086035,false,9421,skip_existing_same_spline
+19118,14587,1,3,51,2547,Lair of the Black Hoods,47610,Black Hoods Recruit,reviewed,8136100,19060,0.712100,0.740232,17,91.562675,false,14587,skip_existing_same_spline
+19710,17414,1,3,51,2547,Lair of the Black Hoods,53956,Black Hoods Warden,unique_name,1006145,14711,1.038844,1.121287,14,24.196359,false,17414,skip_existing_same_spline
+19487,14674,1,3,51,2551,Alchemist's Maze,47936,Alchemists Guild Chemist,unique_name,7738701,31979,2.309848,0.962653,6,4.458979,false,,insert
+19488,14674,1,3,51,2551,Alchemist's Maze,47936,Alchemists Guild Chemist,unique_name,8136105,31979,1.356354,2.963073,6,4.458979,false,14674,skip_existing_same_spline
+20549,21494,1,3,51,2551,Alchemist's Maze,70336,Alchemists Guild Gatekeeper,unique_name,7881166,32342,0.917669,1.166789,122,1481.031479,false,,insert
+18958,22091,1,3,51,2552,Court of Judgment,44886,Thayd Guardsman,reviewed,8175736,237,2.421939,0.229061,189,1980.760194,false,,insert
+18961,22091,1,3,51,2552,Court of Judgment,44886,Thayd Guardsman,reviewed,7738691,237,2.226588,1.601232,189,1980.760194,false,,insert
+19436,14689,1,3,51,2552,Court of Judgment,47841,Judge Korara,unique_name,520011,14704,2.503318,0.898801,37,223.189715,false,,insert
+19977,14689,1,3,51,2552,Court of Judgment,59453,Merchant Setsya,unique_name,18558,3944,0.706379,0.550730,37,223.189715,false,,insert
+19159,21494,1,3,51,2553,Crooked Corners,47697,Roxi,unique_name,14754,3310,0.858795,0.929499,122,1481.031479,false,,insert
+19199,14637,2,3,51,2553,Crooked Corners,47724,Chazz Quivermoon,scored_name,2632624,10032,0.435969,0.435969,23,168.098287,true,14637,skip_existing_same_spline
+593,4365,1,3,51,2843,Kain's Camp,17215,Judge Kain,reviewed,25079,4891,0.856927,1.255920,7,22.990290,false,,insert
+921,4364,1,3,51,2843,Kain's Camp,17633,Justice Graybank,reviewed,1157603,4953,0.644071,1.594768,6,11.127351,false,,insert
+8017,16995,1,3,51,2939,Puddlejump Pools,34262,Mistborn Lifeglider,unique_name,7928596,4816,0.729041,1.254625,8,78.990529,false,16995,skip_existing_same_spline
+8024,11072,1,3,51,2939,Puddlejump Pools,34262,Mistborn Lifeglider,unique_name,7453208,4816,1.076096,1.109721,18,165.238388,false,11072,skip_existing_same_spline
+11961,4834,1,3,51,4072,Gale Canyon,16665,Shaleclaw Stinger,unique_name,7552057,3017,1.054247,1.230813,32,673.064150,false,,insert
+11961,10988,1,3,51,4072,Gale Canyon,16665,Shaleclaw Stinger,unique_name,8448373,3017,1.887918,2.962246,24,687.389632,false,,insert
+6767,11930,1,3,51,4439,The Verdant Vale,32684,N22 Augmentor,scored_name,6700089,29172,0.495670,2.464021,10,27.683011,false,11930,skip_existing_same_spline
+17991,3108,1,3,426,595,,11071,Dagun Scavenger,scored_name,5602688,3359,1.419679,1.690474,9,72.834135,false,,insert
+17991,3113,1,3,426,595,,11071,Dagun Scavenger,scored_name,3009726,3359,0.201784,0.581123,10,73.611533,false,,insert
+17972,2900,1,3,426,596,Northern Wilds,11063,Deadeye Brightland,reviewed,4370,1073,2.968609,1.031446,22,137.570792,false,,insert
+18149,15038,1,3,426,596,Northern Wilds,11951,Dominion Swordsman,reviewed,8103612,918,0.354078,1.507663,16,19.989942,false,15038,skip_existing_same_spline
+18070,3273,1,3,426,597,Northern Wilds,11907,Skeech Diviner,scored_name,8452286,27650,2.665241,2.619666,21,253.930271,false,,insert
+18071,3273,1,3,426,597,Northern Wilds,11907,Skeech Diviner,scored_name,7903129,27650,1.796983,2.392284,21,253.930271,false,,insert
+18092,2918,1,3,426,597,Northern Wilds,11910,Skeech Scratcher,unique_name,8102372,27648,0.050815,2.107536,14,62.469047,false,2918,skip_existing_same_spline
+18095,3273,1,3,426,597,Northern Wilds,11912,Skeech Shaman,scored_name,4899433,815,2.701285,0.793353,21,253.930271,false,,insert
+18457,3273,1,3,426,597,Northern Wilds,15728,Xenobite,reviewed,8452410,27644,2.867477,1.841475,21,253.930271,false,,insert
+18458,3273,1,3,426,597,Northern Wilds,15728,Xenobite,reviewed,8460198,27644,2.977526,1.921387,21,253.930271,false,,insert
+18459,3273,1,3,426,597,Northern Wilds,15728,Xenobite,reviewed,8452408,27644,0.113174,1.065509,21,253.930271,false,,insert
+18459,3274,1,3,426,597,Northern Wilds,15728,Xenobite,reviewed,5069487,1168,0.444093,2.962315,20,278.652991,false,,insert
+18556,3377,1,3,426,597,Northern Wilds,37219,Eldan Statue,reviewed,41695,924,2.491297,1.208083,45,220.778592,false,,insert
+18143,6916,1,3,426,602,Camp Icefury,11951,Dominion Swordsman,reviewed,8387365,918,0.201989,1.026799,13,35.962363,false,6916,skip_existing_same_spline
+18146,15041,1,3,426,602,Camp Icefury,11951,Dominion Swordsman,reviewed,8386786,918,0.800004,0.800016,17,16.652710,false,15041,skip_existing_same_spline
+18148,6915,1,3,426,602,Camp Icefury,11951,Dominion Swordsman,reviewed,8274477,918,1.111611,1.404024,18,70.157840,false,6915,skip_existing_same_spline
+18151,15033,1,3,426,602,Camp Icefury,11951,Dominion Swordsman,reviewed,8406165,918,1.682482,2.956448,12,15.787538,false,15033,skip_existing_same_spline
+18154,3215,1,3,426,602,Camp Icefury,11953,Dominion Gunner,reviewed,7363028,376,2.340698,1.428191,8,23.424467,false,,insert
+18154,3222,1,3,426,602,Camp Icefury,11953,Dominion Gunner,reviewed,4661166,376,2.185377,2.449434,10,24.010719,false,,insert
+18213,3221,1,3,426,602,Camp Icefury,12525,Dominion Blasterbot,unique_name,8410367,135,0.936400,2.985666,8,18.320888,false,,insert
+18487,3213,1,3,426,602,Camp Icefury,18680,Inactive Dominion Turret,unique_name,116017,6651,2.658756,1.408368,8,33.631822,false,,insert
+18490,3225,1,3,426,602,Camp Icefury,18680,Inactive Dominion Turret,unique_name,50511,6651,2.507676,0.994284,9,41.575339,false,,insert
+18079,15019,1,3,426,604,Coldburrow Cavern,11910,Skeech Scratcher,unique_name,8411205,1011,0.196008,0.643323,7,20.125955,false,15019,skip_existing_same_spline
+18081,15018,1,3,426,604,Coldburrow Cavern,11910,Skeech Scratcher,unique_name,8163754,1011,0.683472,2.715548,8,23.898395,false,15018,skip_existing_same_spline
+18460,3273,1,3,426,604,Coldburrow Cavern,15728,Xenobite,reviewed,8454327,27644,0.074001,1.861475,21,253.930271,false,,insert
+17984,2895,1,3,426,646,Crash Site,11070,Trapped Survivor,unique_name,15032,868,0.341109,1.065496,52,488.036771,false,,insert
+18427,3360,1,3,426,648,Landing Site,13747,Granok Drop Pod,reviewed,1512920,5986,2.858396,2.227627,8,28.891635,false,,insert
+38795,6898,1,3,870,1217,Megatech Shield Generator,25017,Strange Dirt Pile,unique_name,15093,3371,0.976001,1.127996,19,228.752219,false,,insert
+38547,7166,1,3,870,1218,Bloodstone Canyon,24244,Dreg Abomination,unique_name,3242639,4433,0.093400,2.783887,9,195.024919,false,,insert
+38945,10166,1,3,870,1225,,31792,Megatech Warbot,unique_name,5890127,3192,1.316637,2.677957,375,302.603775,false,,insert
+38844,6898,1,3,870,1227,Bloodstone Canyon,25378,Researcher Zum,unique_name,15511,3467,1.022351,1.274208,19,228.752219,false,,insert
+38673,7145,1,3,870,1236,Mondo's Beachhead,24322,Bloodpetal,reviewed,101667,5196,0.881106,0.914603,17,427.091369,false,,insert
+38296,6737,1,3,870,1320,Venombite Pass,24057,Venombite Spider,unique_name,8253269,3428,2.970585,0.694497,26,250.354438,false,,insert
+10432,13720,1,3,990,1415,Mystwood Forest,27687,Mysthoof Trampler,unique_name,7457094,8361,0.407841,1.549968,21,277.357181,false,,insert
+10432,13722,1,3,990,1415,Mystwood Forest,27687,Mysthoof Trampler,unique_name,7790849,8361,2.870135,2.776040,24,250.838472,false,,insert
+11422,14061,1,3,990,1415,Mystwood Forest,46431,Everstar Bee Swarm,unique_name,6923820,9674,1.016922,1.016922,19,462.262697,false,14061,skip_existing_same_spline
+11424,14066,1,3,990,1415,Mystwood Forest,46431,Everstar Bee Swarm,unique_name,4548564,9674,1.163083,1.156400,4,10.066855,false,14066,skip_existing_same_spline
+10381,13985,1,3,990,1416,Elderoot Refuge,27449,Barkblight Feeder,unique_name,8102016,28784,1.818528,2.314309,9,133.779032,false,,insert
+10382,13986,1,3,990,1416,Elderoot Refuge,27449,Barkblight Feeder,unique_name,8383688,28784,0.890018,1.404778,10,78.022347,false,,insert
+10391,8459,1,3,990,1416,Elderoot Refuge,27451,Barkblight Biter,reviewed,8369645,28783,0.954828,2.433639,68,447.631397,false,,insert
+10392,10904,1,3,990,1416,Elderoot Refuge,27451,Barkblight Biter,reviewed,8414933,28783,2.631391,2.568618,85,900.138591,false,,insert
+10858,8038,1,3,990,1416,Elderoot Refuge,29125,Stinging Defender,unique_name,4110050,8347,0.614802,0.887816,21,476.430924,false,8038,skip_existing_same_spline
+11092,16051,1,3,990,1416,Elderoot Refuge,36328,Watcher Ashealla,reviewed,1942540,15146,1.222025,1.190153,89,608.336640,false,,insert
+10437,13655,1,3,990,1418,Whisperwind Hollow,27756,Lukas Piotrev,unique_name,2997,768,2.693283,1.083576,5,24.960110,false,,insert
+10420,8880,1,3,990,1419,Bloodbloom Vale,27579,Firestorm Guardian,unique_name,8362539,1104,2.139220,1.247957,46,557.276516,false,,insert
+11073,8879,1,3,990,1419,Bloodbloom Vale,36248,Firestorm Assault Deforester,unique_name,130720,660,0.809461,1.422753,46,556.475671,false,,insert
+11283,8879,1,3,990,1419,Bloodbloom Vale,45868,Enraged Guardian,scored_name,1928716,11325,1.119291,0.965806,46,556.475671,false,,insert
+11289,8879,1,3,990,1419,Bloodbloom Vale,45868,Enraged Guardian,scored_name,822951,11325,0.749286,1.202615,46,556.475671,false,,insert
+11299,8879,1,3,990,1419,Bloodbloom Vale,45933,Elderoot Brute,reviewed,1681834,11014,1.119291,0.965806,46,556.475671,false,,insert
+11300,8879,1,3,990,1419,Bloodbloom Vale,45933,Elderoot Brute,reviewed,1829820,11014,1.198290,0.718872,46,556.475671,false,,insert
+11312,8879,1,3,990,1419,Bloodbloom Vale,45935,Furious Dawngrazer,reviewed,2577053,9579,0.942675,1.621350,46,556.475671,false,,insert
+11362,13992,1,3,990,1419,Bloodbloom Vale,46252,Stinging Attacker,unique_name,4394047,5293,0.584321,1.081775,83,981.901469,false,,insert
+10374,8052,2,3,990,1421,Blighted Glen,27449,Barkblight Feeder,unique_name,8423633,151,0.351710,0.697562,31,313.307796,true,,insert
+10389,8459,1,3,990,1421,Blighted Glen,27451,Barkblight Biter,reviewed,8422446,28783,1.160301,2.471113,68,447.631397,false,,insert
+10393,10904,1,3,990,1421,Blighted Glen,27451,Barkblight Biter,reviewed,8264076,28783,0.526772,0.717576,85,900.138591,false,,insert
+10394,8459,1,3,990,1421,Blighted Glen,27451,Barkblight Biter,reviewed,8414951,470,0.813764,1.545669,68,447.631397,false,,insert
+10404,8050,1,3,990,1421,Blighted Glen,27451,Barkblight Biter,reviewed,8414952,470,0.961352,1.519424,14,107.305100,false,,insert
+30607,16841,1,3,1061,2300,Bio-Mech Facility Alpha,50528,Augmented Buzzbing Youth,unique_name,6013081,4175,0.429187,0.579162,5,212.062923,false,16841,skip_existing_same_spline
+31447,19838,1,3,1061,2300,Bio-Mech Facility Alpha,58892,Dominion Guard,reviewed,5047470,16344,0.241967,1.149757,18,208.334729,false,19838,skip_existing_same_spline
+31656,22217,1,3,1061,2300,Bio-Mech Facility Alpha,62476,Speed Boost,reviewed,7715590,31960,1.157703,1.495823,7,17.811340,false,22217,skip_existing_same_spline
+31659,22213,1,3,1061,2300,Bio-Mech Facility Alpha,62476,Speed Boost,reviewed,8314533,31960,0.922310,2.132230,7,18.025108,false,22213,skip_existing_same_spline
+31664,22220,1,3,1061,2300,Bio-Mech Facility Alpha,62476,Speed Boost,reviewed,7783923,31960,1.450654,2.158622,7,17.647860,false,22220,skip_existing_same_spline
+31319,19822,1,3,1061,2308,Western Grimvault,58253,Ultraform Smasher,scored_name,5690666,4188,0.732290,0.737185,7,49.028995,false,19822,skip_existing_same_spline
+31452,19840,1,3,1061,2308,Western Grimvault,58920,Wayward Guardian,reviewed,628466,8384,0.361498,0.412321,14,198.925348,false,19840,skip_existing_same_spline
+29603,11743,1,3,1061,2751,Cryomere,39102,Department Spotlight,unique_name,6297554,29613,0.622415,0.622415,8,186.567506,false,11743,skip_existing_same_spline
+29604,11744,2,3,1061,2751,Cryomere,39102,Department Spotlight,unique_name,7340136,29613,0.908887,2.691145,11,179.082248,true,11744,skip_existing_same_spline
+29607,12168,1,3,1061,2751,Cryomere,39102,Department Spotlight,unique_name,6473852,28947,0.506192,0.507543,8,176.772232,false,12168,skip_existing_same_spline
+29608,12169,2,3,1061,2751,Cryomere,39102,Department Spotlight,unique_name,6473851,28947,0.902765,2.181167,11,178.407054,true,12169,skip_existing_same_spline
+30085,16341,1,3,1061,2751,Cryomere,46451,Corrupted Cryoglider,unique_name,6726095,7086,0.664409,0.915784,13,650.068140,false,16341,skip_existing_same_spline
+30230,16161,1,3,1061,2751,Cryomere,46460,Reconfigured Ravenok HD,unique_name,7299153,29592,0.796683,0.968867,5,23.373054,false,16161,skip_existing_same_spline
+30231,16160,1,3,1061,2751,Cryomere,46460,Reconfigured Ravenok HD,unique_name,7418515,29592,0.797184,1.390539,5,26.201048,false,16160,skip_existing_same_spline
+30234,16165,1,3,1061,2751,Cryomere,46460,Reconfigured Ravenok HD,unique_name,6103138,7072,1.051643,1.791090,5,23.186055,false,16165,skip_existing_same_spline
+30241,16163,1,3,1061,2751,Cryomere,46462,Weapon 24,unique_name,8148983,29604,0.974145,2.830654,10,96.813752,false,16163,skip_existing_same_spline
+30456,15820,1,3,1061,2751,Cryomere,50501,Cryobolli Ephyra,unique_name,5654202,7104,2.148682,1.445953,5,82.578008,false,,insert
+31321,19814,1,3,1061,2751,Cryomere,58253,Ultraform Smasher,scored_name,6405426,4188,0.411529,0.874116,8,69.033588,false,19814,skip_existing_same_spline
+31323,19817,1,3,1061,2752,Silverwaste,58253,Ultraform Smasher,scored_name,5739632,4188,1.007408,1.969984,8,61.200524,false,19817,skip_existing_same_spline
+31658,22211,1,3,1061,2834,The Antechamber,62476,Speed Boost,reviewed,8314532,31960,0.138225,2.597191,7,17.698620,false,22211,skip_existing_same_spline
+30641,16886,1,3,1061,2841,Alpha Sector,50558,Energy Worm,unique_name,8336403,6826,0.798628,2.833637,5,10.607531,false,16886,skip_existing_same_spline
+30643,16883,1,3,1061,2841,Alpha Sector,50558,Energy Worm,unique_name,8378584,6826,0.779322,1.043847,5,22.684025,false,16883,skip_existing_same_spline
+30644,16880,1,3,1061,2841,Alpha Sector,50558,Energy Worm,unique_name,8249185,6826,0.760053,2.181077,5,22.684025,false,16880,skip_existing_same_spline
+30645,16881,1,3,1061,2841,Alpha Sector,50558,Energy Worm,unique_name,8251975,6826,0.791209,0.840253,5,22.684725,false,16881,skip_existing_same_spline
+30647,16885,1,3,1061,2841,Alpha Sector,50558,Energy Worm,unique_name,8179394,6826,0.905788,1.982562,5,10.606235,false,16885,skip_existing_same_spline
+30649,16887,1,3,1061,2841,Alpha Sector,50558,Energy Worm,unique_name,8249188,6826,0.914243,1.191468,5,10.607697,false,16887,skip_existing_same_spline
+31325,19821,1,3,1061,2983,Corridor of Corruption,58258,Ultraform Triton,unique_name,6215006,7139,0.913420,0.947484,8,56.479907,false,19821,skip_existing_same_spline
+30547,19883,1,3,1061,4243,Beta Sector,50520,Augmented Withered Girrok,unique_name,7608442,28953,0.634481,0.998186,7,33.561941,false,19883,skip_existing_same_spline
+30699,16043,1,3,1061,4243,Beta Sector,50953,Vile Fluxskimmer,unique_name,3220923,7073,0.530366,0.530366,10,237.076948,false,16043,skip_existing_same_spline
+30548,19885,1,3,1061,4244,Gamma Sector,50520,Augmented Withered Girrok,unique_name,7878296,28953,0.912948,1.325024,7,38.720213,false,19885,skip_existing_same_spline
+30549,19886,1,3,1061,4244,Gamma Sector,50520,Augmented Withered Girrok,unique_name,7631497,28953,0.682570,1.093015,7,35.916868,false,19886,skip_existing_same_spline
+30615,16765,1,3,1061,4244,Gamma Sector,50530,Augmented Bladefoot,unique_name,8249310,6795,1.299281,2.953509,5,16.505318,false,16765,skip_existing_same_spline
+30695,15906,1,3,1061,4244,Gamma Sector,50953,Vile Fluxskimmer,unique_name,3813817,7073,0.703513,1.108560,10,237.062801,false,15906,skip_existing_same_spline
+31696,22237,1,3,1061,4244,Gamma Sector,62476,Speed Boost,reviewed,8252353,32567,0.827476,1.184872,7,18.008656,false,22237,skip_existing_same_spline
+31698,22234,1,3,1061,4244,Gamma Sector,62476,Speed Boost,reviewed,8252352,32567,0.621115,2.621744,7,18.008656,false,22234,skip_existing_same_spline
+30550,19887,1,3,1061,4245,Delta Sector,50520,Augmented Withered Girrok,unique_name,8237840,28953,0.788293,1.842966,7,36.091836,false,19887,skip_existing_same_spline
+30698,16044,1,3,1061,4248,Alpha Sector,50953,Vile Fluxskimmer,unique_name,3843447,7073,0.936055,1.069165,10,237.064499,false,16044,skip_existing_same_spline
+1100100001,19226,1,3,1138,950,The Dust Stalker,16707,Boss Xagg,unique_name,6903461,28379,2.776486,2.088590,53,290.664431,false,,insert
+40783,11405,1,3,1387,1305,Seaspine Forest,25978,Seaspine Girrok,unique_name,7871892,4145,1.190870,2.847150,11,64.437886,false,11405,skip_existing_same_spline
+40915,7650,1,3,1387,1305,Seaspine Forest,26026,Malverine Stalker,scored_name,8348540,28729,0.680802,0.808077,7,45.067288,false,7650,skip_existing_same_spline
+41439,14138,1,3,1387,1305,Seaspine Forest,38674,Lightning Strike,reviewed,7378246,4140,2.270392,0.878356,93,488.280858,false,,insert
+40902,7658,1,3,1387,1306,Star-Comm Station,26021,Scout Drone,scored_name,7703474,4125,0.742436,2.269295,13,108.043991,false,7658,skip_existing_same_spline
+41229,7665,1,3,1387,1306,Star-Comm Station,28313,Malfunctioning Scout Drone,unique_name,8345435,3978,1.050353,1.824226,10,62.025693,false,,insert
+41321,16740,1,3,1387,1306,Star-Comm Station,32602,Eldan Security Beam Laser,unique_name,7535315,3997,1.364083,2.762408,11,62.205413,false,16740,skip_existing_same_spline
+41326,15936,1,3,1387,1306,Star-Comm Station,32602,Eldan Security Beam Laser,unique_name,7535314,3997,0.823319,1.699471,9,38.076961,false,15936,skip_existing_same_spline
+41328,15937,1,3,1387,1306,Star-Comm Station,32602,Eldan Security Beam Laser,unique_name,6674281,3997,1.228178,1.796330,11,60.017423,false,15937,skip_existing_same_spline
+41330,16742,1,3,1387,1306,Star-Comm Station,32602,Eldan Security Beam Laser,unique_name,6442629,3997,1.126413,2.710590,10,56.989203,false,16742,skip_existing_same_spline
+41331,16743,1,3,1387,1306,Star-Comm Station,32602,Eldan Security Beam Laser,unique_name,6442627,3997,0.859963,2.745924,11,49.818331,false,16743,skip_existing_same_spline
+41337,16735,1,3,1387,1306,Star-Comm Station,32602,Eldan Security Beam Laser,unique_name,7389353,3997,1.040095,2.885862,10,45.175849,false,16735,skip_existing_same_spline
+41339,16733,1,3,1387,1306,Star-Comm Station,32602,Eldan Security Beam Laser,unique_name,7554271,3997,0.745546,2.189155,11,68.302057,false,16733,skip_existing_same_spline
+41341,16731,1,3,1387,1306,Star-Comm Station,32602,Eldan Security Beam Laser,unique_name,7706960,3997,0.877745,2.967069,10,43.115749,false,16731,skip_existing_same_spline
+41343,15928,1,3,1387,1306,Star-Comm Station,32602,Eldan Security Beam Laser,unique_name,8035090,3997,0.736071,0.738173,11,100.038014,false,15928,skip_existing_same_spline
+41603,14545,1,3,1387,1306,Star-Comm Station,47430,Eldan Security Construct,scored_name,3083672,10445,0.126389,0.919348,27,513.781604,false,,insert
+41610,14543,1,3,1387,1306,Star-Comm Station,47430,Eldan Security Construct,scored_name,4619698,10445,1.252338,1.877472,24,363.235291,false,,insert
+41612,14544,1,3,1387,1306,Star-Comm Station,47430,Eldan Security Construct,scored_name,496400,10445,1.024946,1.029272,22,346.075156,false,,insert
+41749,7653,1,3,1387,1306,Star-Comm Station,48954,Eldan Defender,scored_name,7787719,4054,2.626994,2.626994,8,51.469522,false,,insert
+41941,15868,1,3,1387,1306,Star-Comm Station,50920,Malfunctioning Security Construct,unique_name,5412511,6583,2.110188,2.906699,34,319.184356,false,,insert
+41996,22185,1,3,1387,1306,Star-Comm Station,62476,Speed Boost,reviewed,8314381,32596,0.395165,2.235464,7,20.436333,false,22185,skip_existing_same_spline
+41999,22186,1,3,1387,1306,Star-Comm Station,62476,Speed Boost,reviewed,8314380,32596,0.908447,2.075524,7,19.762778,false,22186,skip_existing_same_spline
+40843,11557,1,3,1387,1307,Greyshore,25990,Exile Trooper,scored_name,8321283,4111,0.822427,1.734383,8,58.567487,false,11557,skip_existing_same_spline
+41189,14137,1,3,1387,1350,Zin's Landing,27230,Supply Officer Darru,unique_name,3079088,24060,1.915872,0.672431,69,419.420336,false,,insert
+40769,11417,1,3,1387,1410,Jagged Cove,25978,Seaspine Girrok,unique_name,8319743,4145,1.021323,1.778456,8,45.757300,false,11417,skip_existing_same_spline
+40784,11416,1,3,1387,1410,Jagged Cove,25978,Seaspine Girrok,unique_name,8236037,4145,1.099470,2.736042,9,51.711310,false,11416,skip_existing_same_spline
+41436,14137,1,3,1387,1410,Jagged Cove,38674,Lightning Strike,reviewed,7645672,4140,1.253107,0.987172,69,419.420336,false,,insert
+41445,14137,1,3,1387,1410,Jagged Cove,38674,Lightning Strike,reviewed,7645673,4140,2.472075,1.114813,69,419.420336,false,,insert
+41474,14137,1,3,1387,1410,Jagged Cove,38674,Lightning Strike,reviewed,2515280,4140,1.352178,0.301801,69,419.420336,false,,insert
+41476,11422,1,3,1387,1410,Jagged Cove,38674,Lightning Strike,reviewed,2225961,4140,2.346513,0.529834,13,80.955847,false,,insert
+40762,11414,1,3,1387,1411,Stormcaller Landing,25978,Seaspine Girrok,unique_name,8209823,4145,0.755235,0.876414,9,39.381683,false,11414,skip_existing_same_spline
+40765,11418,1,3,1387,1411,Stormcaller Landing,25978,Seaspine Girrok,unique_name,8025982,4145,1.002191,2.280851,7,37.364288,false,11418,skip_existing_same_spline
+40796,11420,1,3,1387,1411,Stormcaller Landing,25978,Seaspine Girrok,unique_name,8359301,4145,0.858657,2.076006,8,38.532133,false,11420,skip_existing_same_spline
+41419,14138,1,3,1387,1411,Stormcaller Landing,38674,Lightning Strike,reviewed,7359268,4140,1.876723,0.838585,93,488.280858,false,,insert
+1100300006,13863,2,3,2149,2482,Shuttle Corridor,45812,Major Lee Barmy,unique_name,1390,332,2.316437,1.479532,14,122.922163,true,,insert
+1100200005,9478,1,3,2161,1979,Tideborn Facility,56858,Corrigan Doon,scored_name,222393,11728,0.297076,0.642609,9,26.873468,false,,insert
