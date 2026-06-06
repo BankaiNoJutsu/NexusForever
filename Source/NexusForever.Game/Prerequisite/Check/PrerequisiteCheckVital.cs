@@ -23,7 +23,7 @@ namespace NexusForever.Game.Prerequisite.Check
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            if (!TryGetVitalValue(player, (Vital)objectId, out uint currentValue))
+            if (!player.TryGetVitalValue((Vital)objectId, out float currentValue))
             {
                 log.LogWarning("Unhandled vital {Vital} for {PrerequisiteType}!", objectId, PrerequisiteType.Vital);
                 return false;
@@ -39,19 +39,6 @@ namespace NexusForever.Game.Prerequisite.Check
                 PrerequisiteComparison.LessThan           => currentValue < value,
                 _                                         => LogUnhandledComparison(comparison)
             };
-        }
-
-        private static bool TryGetVitalValue(IPlayer player, Vital vital, out uint currentValue)
-        {
-            currentValue = vital switch
-            {
-                Vital.Health          => player.Health,
-                Vital.ShieldCapacity  => player.Shield,
-                Vital.InterruptArmor  => player.InterruptArmor,
-                _                     => 0u
-            };
-
-            return vital is Vital.Health or Vital.ShieldCapacity or Vital.InterruptArmor;
         }
 
         private bool LogUnhandledComparison(PrerequisiteComparison comparison)

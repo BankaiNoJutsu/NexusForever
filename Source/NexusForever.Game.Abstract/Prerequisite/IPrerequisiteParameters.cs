@@ -15,5 +15,10 @@ namespace NexusForever.Game.Abstract.Prerequisite
         /// Taxi node supplied by a client rapid-transport cast request.
         /// </summary>
         public ushort TaxiNode { get; set; }
+
+        /// <summary>
+        /// Account item claim prerequisite context for accountitem.prerequisiteId rows.
+        /// </summary>
+        public bool AccountItemContext { get; set; }
     }
 }

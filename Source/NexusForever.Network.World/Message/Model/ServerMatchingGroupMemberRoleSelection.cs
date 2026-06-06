@@ -1,5 +1,4 @@
-﻿using NexusForever.Game.Static.Matching;
-using NexusForever.Network.Message;
+﻿using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Network.World.Message.Model
@@ -17,12 +16,12 @@ namespace NexusForever.Network.World.Message.Model
     public class ServerMatchingGroupMemberRoleSelection : IWritable
     {
         public Identity Identity { get; set; } = new();
-        public Role Role { get; set; }
+        public uint TrailingValue { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
             Identity.Write(writer);
-            writer.Write(Role, 32u);
+            writer.Write(TrailingValue, 32u);
         }
     }
 }

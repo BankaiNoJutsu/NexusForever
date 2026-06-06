@@ -15,7 +15,9 @@ namespace NexusForever.Network.World.Message.Model.Guild
         {
             GuildIdentity.Write(writer);
             writer.Write(BankTabIndex, 9u);
-            foreach(var item in InventoryItems)
+            writer.Write((uint)InventoryItems.Count);
+
+            foreach (var item in InventoryItems)
             {
                 item.Write(writer);
             }

@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Crafting;
+using NexusForever.Game.Static.Prerequisite;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 
@@ -13,6 +15,45 @@ namespace NexusForever.Game.Prerequisite
     /// </summary>
     internal static class TradeskillPrerequisiteHelper
     {
+        public static bool MeetsItemTradeSkill(
+            IPlayer player,
+            IGameTableManager gameTableManager,
+            PrerequisiteComparison comparison,
+            uint value,
+            uint objectId,
+            IPrerequisiteParameters parameters)
+        {
+            if (!PrerequisiteNpcTargetContext.RequiresNpcTarget(player, parameters))
+                return false;
+
+            if (gameTableManager.Item.GetEntry(objectId) == null)
+                return false;
+
+            if (!TryResolveTradeskillForItem2(gameTableManager, objectId, out TradeskillType tradeskillId))
+                return false;
+
+            uint tierRank = GetPlayerTradeskillTierRank(player, gameTableManager, tradeskillId);
+            return PrerequisiteCompare.Compare(comparison, tierRank, value);
+        }
+
+        public static bool MeetsItemTradeSkillKnown(
+            IPlayer player,
+            IGameTableManager gameTableManager,
+            PrerequisiteComparison comparison,
+            uint value,
+            uint objectId,
+            IPrerequisiteParameters parameters)
+        {
+            if (!PrerequisiteNpcTargetContext.RequiresNpcTarget(player, parameters))
+                return false;
+
+            if (gameTableManager.Item.GetEntry(objectId) == null)
+                return false;
+
+            bool known = HasKnownItem2Id(player, gameTableManager, objectId);
+            return PrerequisiteCompare.Compare(comparison, known ? 1u : 0u, value);
+        }
+
         public static bool HasKnownItem2Id(IPlayer player, IGameTableManager gameTableManager, uint item2Id)
         {
             foreach (TradeskillSchematic2Entry schematic in gameTableManager.TradeskillSchematic2.Entries)

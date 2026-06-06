@@ -153,15 +153,15 @@ namespace NexusForever.Game.Spell
         /// <summary>
         /// Used for when the client does not have continuous casting enabled
         /// </summary>
-        public void Cast()
+        public void Cast(string clientRequestSource = null)
         {
-            CastSpell();
+            CastSpell(clientRequestSource);
         }
 
         /// <summary>
         /// Used for continuous casting when the client has it enabled, or spells with Cast Methods like ChargeRelease
         /// </summary>
-        public void Cast(bool buttonPressed)
+        public void Cast(bool buttonPressed, string clientRequestSource = null)
         {
             if (!buttonPressed)
             {
@@ -173,17 +173,18 @@ namespace NexusForever.Game.Spell
                 return;
 
             continuousCastHeld = true;
-            CastSpell();
+            CastSpell(clientRequestSource);
         }
 
-        private void CastSpell()
+        private void CastSpell(string clientRequestSource = null)
         {
             Owner.CastSpell(new SpellParameters
             {
                 CharacterSpell         = this,
                 SpellInfo              = SpellInfo,
                 PrimaryTargetId        = ResolvePrimaryTargetId(),
-                UserInitiatedSpellCast = true
+                UserInitiatedSpellCast = true,
+                ClientRequestSource    = clientRequestSource
             });
         }
 

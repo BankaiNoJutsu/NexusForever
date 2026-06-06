@@ -79,9 +79,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
             if (entry == null)
                 throw new ArgumentOutOfRangeException();
 
-            session.Player = entityFactory.CreateEntity<IPlayer>();
-            session.Player.Initialise(session, session.Account, character);
+            IPlayer player = entityFactory.CreateEntity<IPlayer>();
+            player.Initialise(session, session.Account, character);
 
+            session.Player = player;
             session.Player.Rotation = new Vector3(character.RotationX, character.RotationY, character.RotationZ);
             mapManager.AddToMap(session.Player, new MapPosition
             {

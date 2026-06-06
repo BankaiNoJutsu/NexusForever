@@ -44,7 +44,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 session,
                 item,
                 gameTableManager,
-                clientRequestSource: nameof(ClientItemContextAction));
+                clientRequestSource: nameof(ClientItemContextAction),
+                selectedBranch: itemContextAction.SelectedBranch);
 
             if (!handled)
                 log.LogTrace("ClientItemContextAction: player={Player} itemGuid={ItemGuid} branch={Branch} - no item-use handler matched.",

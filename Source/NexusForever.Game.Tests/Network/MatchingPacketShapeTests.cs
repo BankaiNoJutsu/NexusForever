@@ -607,7 +607,7 @@ public class MatchingPacketShapeTests
         var matchingPacket = new ServerMatchingGroupMemberRoleSelection
         {
             Identity = new Identity { RealmId = 0x1234, Id = 0x0102030405060708ul },
-            Role = Role.DPS
+            TrailingValue = (uint)Role.DPS
         };
         var housingPacket = new ServerHousingCommunityPlotReservation
         {

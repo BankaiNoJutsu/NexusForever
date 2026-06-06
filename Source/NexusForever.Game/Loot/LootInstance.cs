@@ -271,10 +271,7 @@ namespace NexusForever.Game.Loot
 
             bool delivered = item.DeliverItem(player);
             if (delivered)
-            {
-                BroadcastLootItemUpdate(item);
                 BroadcastLootNotification(item, player);
-            }
 
             return delivered;
         }

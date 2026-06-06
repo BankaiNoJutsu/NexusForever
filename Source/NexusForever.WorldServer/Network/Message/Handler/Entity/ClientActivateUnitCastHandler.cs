@@ -95,6 +95,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 if (TryCompleteTutorialMineActivationWithoutSpell(session, entity, 0u, CastResult.NoValidActivateSpell))
                     return;
 
+                log.Warn($"Unhandled activate-cast request: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, entityId={entity.EntityId}, world={session.Player.Map?.Entry?.Id ?? 0u}, contextToken={contextToken}, source={clientRequestSource}, reason=no-valid-activate-spell.");
                 SendSpellCastResult(session, GetFallbackActivateSpellId(entity), CastResult.NoValidActivateSpell);
                 entity.OnActivateFail(session.Player);
                 return;

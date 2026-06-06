@@ -10,11 +10,14 @@ using NexusForever.Network;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.WorldServer.Network.Message.Handler.Spell;
+using NLog;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Item
 {
     internal static class ItemUseHelper
     {
+        private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+
         private const uint TreasureItemCategoryId = 94u;
         private const uint TreasureItemTypeId     = 200u;
 
@@ -26,7 +29,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             Position position = null,
             uint contextToken = 0u,
             string clientRequestSource = null,
-            bool applyPendingSpellEvidenceCapture = false)
+            bool applyPendingSpellEvidenceCapture = false,
+            bool? selectedBranch = null)
         {
             if (session?.Player == null || item?.Info == null)
                 return false;
@@ -53,7 +57,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 return true;
             }
 
-            return TryUseCurrencyTreasure(session.Player, item, gameTableManager);
+            bool handled = TryUseCurrencyTreasure(session.Player, item, gameTableManager, clientRequestSource, selectedBranch);
+            if (!handled)
+                LogUnhandledItemUse(session, item, targetUnitId, position, contextToken, clientRequestSource, selectedBranch);
+
+            return handled;
         }
 
         private static void UseActivatedItem(
@@ -99,13 +107,21 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
             session.Player.Inventory.ItemUse(item);
         }
 
-        private static bool TryUseCurrencyTreasure(IPlayer player, IItem item, IGameTableManager gameTableManager)
+        private static bool TryUseCurrencyTreasure(
+            IPlayer player,
+            IItem item,
+            IGameTableManager gameTableManager,
+            string clientRequestSource,
+            bool? selectedBranch)
         {
             if (item.Info.Entry.Item2CategoryId != TreasureItemCategoryId || item.Info.Entry.Item2TypeId != TreasureItemTypeId)
                 return false;
 
             if (!TryGetCurrencyGrants(item, gameTableManager, out List<(CurrencyType CurrencyType, ulong Amount)> grants))
+            {
+                log.Warn($"Unhandled currency treasure item use: player={player.Guid}, itemGuid={item.Guid}, item2Id={item.Id}, category={item.Info.Entry.Item2CategoryId}, type={item.Info.Entry.Item2TypeId}, itemSpecial={item.Info.Entry.ItemSpecialId00}, source={clientRequestSource ?? "unknown"}, selectedBranch={FormatSelectedBranch(selectedBranch)}, reason=no-currency-grants.");
                 return true;
+            }
 
             if (!CanUseItem(item))
                 return true;
@@ -119,6 +135,30 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 player.CurrencyManager.CurrencyAddAmount(currencyType, amount, isLoot: true);
 
             return true;
+        }
+
+        private static void LogUnhandledItemUse(
+            IWorldSession session,
+            IItem item,
+            uint targetUnitId,
+            Position position,
+            uint contextToken,
+            string clientRequestSource,
+            bool? selectedBranch)
+        {
+            log.Warn($"Unhandled item use: player={session.Player.Guid}, itemGuid={item.Guid}, item2Id={item.Id}, itemSpecial={item.Info.Entry.ItemSpecialId00}, category={item.Info.Entry.Item2CategoryId}, type={item.Info.Entry.Item2TypeId}, location={item.Location}, bagIndex={item.BagIndex}, stackCount={item.StackCount}, charges={item.Charges}, targetUnit={targetUnitId}, position={FormatPosition(position)}, contextToken={contextToken}, source={clientRequestSource ?? "unknown"}, selectedBranch={FormatSelectedBranch(selectedBranch)}, world={session.Player.Map?.Entry?.Id ?? 0u}.");
+        }
+
+        private static string FormatSelectedBranch(bool? selectedBranch)
+        {
+            return selectedBranch.HasValue ? selectedBranch.Value.ToString() : "n/a";
+        }
+
+        private static string FormatPosition(Position position)
+        {
+            return position == null
+                ? "n/a"
+                : $"{position.Vector.X},{position.Vector.Y},{position.Vector.Z}";
         }
 
         private static bool CanUseItem(IItem item)

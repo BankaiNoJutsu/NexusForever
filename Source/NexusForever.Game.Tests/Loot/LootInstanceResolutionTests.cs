@@ -62,6 +62,40 @@ public class LootInstanceResolutionTests
     }
 
     [Fact]
+    public void GiveLoot_DirectDeliveryWithRegisteredLooterDoesNotSendLootItemUpdate()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider(CreateItemInfo());
+
+        try
+        {
+            TestPlayer looter = CreatePlayer(characterId: 42ul, guid: 4242u, accountId: 1001u, slotsRemaining: 1u);
+            PlayerManager.Instance.AddPlayer(looter.Player);
+
+            LootInstance lootInstance = CreateLootInstance(looter);
+            LootInstanceItem lootItem = lootInstance.AddLootItem(StaticItemId, LootItemType.StaticItem, 1u);
+
+            IReadOnlyList<object> deliveryMessages = CaptureSessionMessages(
+                looter.SessionProxy,
+                () => Assert.True(lootInstance.GiveLoot(looter.Player, lootItem.Id)));
+
+            Assert.Contains(deliveryMessages, message => message is ServerLootGrant grant
+                && grant.LootItem.LootUnitId == lootItem.Id
+                && grant.LootItem.ItemId == StaticItemId);
+            Assert.DoesNotContain(deliveryMessages, message => message is ServerLootItemUpdate);
+            Assert.True(lootItem.Delivered);
+            Assert.Single(looter.Inventory.CreatedItems);
+        }
+        finally
+        {
+            foreach (IPlayer player in PlayerManager.Instance.Where(player => player.CharacterId == 42ul).ToList())
+                PlayerManager.Instance.RemovePlayer(player);
+
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void RollWinnerOffline_RemainsLootableForWinnerWhenTheyReturn()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -113,11 +147,18 @@ public class LootInstanceResolutionTests
             Assert.False(networkItem.RequiresRoll);
             Assert.False(networkItem.OnlyMasterLootable);
 
-            IReadOnlyList<object> loserDeliveryMessages = CaptureSessionMessages(
-                loser.SessionProxy,
-                () => Assert.True(lootInstance.GiveLoot(winner.Player, lootItem.Id)));
-            Assert.Contains(loserDeliveryMessages, message => message is ServerLootItemUpdate update
-                && update.LootItem.LootUnitId == lootItem.Id);
+            int winnerMessageCount = GetEncryptedMessageCount(winner.SessionProxy);
+            int loserMessageCount = GetEncryptedMessageCount(loser.SessionProxy);
+            Assert.True(lootInstance.GiveLoot(winner.Player, lootItem.Id));
+
+            IReadOnlyList<object> winnerDeliveryMessages = GetEncryptedMessages(winner.SessionProxy, winnerMessageCount);
+            Assert.Contains(winnerDeliveryMessages, message => message is ServerLootGrant grant
+                && grant.LootItem.LootUnitId == lootItem.Id
+                && grant.LootItem.ItemId == StaticItemId);
+            Assert.DoesNotContain(winnerDeliveryMessages, message => message is ServerLootItemUpdate);
+
+            IReadOnlyList<object> loserDeliveryMessages = GetEncryptedMessages(loser.SessionProxy, loserMessageCount);
+            Assert.DoesNotContain(loserDeliveryMessages, message => message is ServerLootItemUpdate);
             Assert.Contains(loserDeliveryMessages, message => message is ServerLootNotification notification
                 && notification.LootUnitId == lootItem.Id
                 && notification.LooterUnitId == winner.Guid);

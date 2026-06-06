@@ -417,6 +417,7 @@ namespace NexusForever.Game.Entity
         private bool saveInProgress;
         private bool saveRequestedDuringSave;
         private Action deferredSaveCallback;
+        private Action deferredSaveFailureCallback;
         private UpdateTimer saveTimer = new(SaveDuration);
         private PlayerSaveMask saveMask;
 
@@ -650,14 +651,20 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public void Save(Action callback = null)
         {
+            Save(callback, null);
+        }
+
+        private void Save(Action callback, Action failureCallback)
+        {
             if (saveInProgress)
             {
                 saveRequestedDuringSave = true;
-                deferredSaveCallback += callback;
+                deferredSaveCallback        += callback;
+                deferredSaveFailureCallback += failureCallback;
                 return;
             }
 
-            StartSave(callback);
+            StartSave(callback, failureCallback);
         }
 
         /// <summary>
@@ -684,7 +691,7 @@ namespace NexusForever.Game.Entity
             forceSave = true;
         }
 
-        private void StartSave(Action callback = null)
+        private void StartSave(Action callback = null, Action failureCallback = null)
         {
             saveInProgress = true;
             saveTimer.Reset(false);
@@ -698,13 +705,13 @@ namespace NexusForever.Game.Entity
                 {
                     Task characterSaveTask = DatabaseManager.Instance.GetDatabase<CharacterDatabase>().Save(Save);
                     Session.Events.EnqueueEvent(new TaskEvent(characterSaveTask,
-                        () => CompleteSave(callback),
-                        () => HandleSaveFailure("character")));
+                        () => CompleteSave(callback, failureCallback),
+                        () => HandleSaveFailure("character", failureCallback)));
                 },
-                () => HandleSaveFailure("auth")));
+                () => HandleSaveFailure("auth", failureCallback)));
         }
 
-        private void CompleteSave(Action callback)
+        private void CompleteSave(Action callback, Action failureCallback)
         {
             Session.CanProcessIncomingPackets = true;
             saveInProgress                    = false;
@@ -716,21 +723,40 @@ namespace NexusForever.Game.Entity
                 Action chainedCallback = callback;
                 chainedCallback += deferredSaveCallback;
                 deferredSaveCallback = null;
-                StartSave(chainedCallback);
+
+                Action chainedFailureCallback = failureCallback;
+                chainedFailureCallback += deferredSaveFailureCallback;
+                deferredSaveFailureCallback = null;
+
+                StartSave(chainedCallback, chainedFailureCallback);
                 return;
             }
 
             callback?.Invoke();
         }
 
-        private void HandleSaveFailure(string phase)
+        private void HandleSaveFailure(string phase, Action failureCallback)
         {
             log.Error("Failed to save {0} data for character {1}. Disconnecting session.", phase, CharacterId);
+            Action chainedFailureCallback = failureCallback;
+            chainedFailureCallback += deferredSaveFailureCallback;
+
             saveInProgress                    = false;
             saveRequestedDuringSave           = false;
             deferredSaveCallback              = null;
+            deferredSaveFailureCallback       = null;
             Session.CanProcessIncomingPackets = true;
             saveTimer.Resume();
+
+            try
+            {
+                chainedFailureCallback?.Invoke();
+            }
+            catch (Exception e)
+            {
+                log.Error(e, "Failed to execute save failure callback for character {0}.", CharacterId);
+            }
+
             Session.ForceDisconnect();
         }
 
@@ -1373,29 +1399,36 @@ namespace NexusForever.Game.Entity
                     LogoutManager.State = LogoutState.Finished;
                 }
 
+                void DisposeLoggedOutPlayer()
+                {
+                    if (Map != null)
+                        RemoveFromMap();
+
+                    messagePublisher.PublishAsync(new PlayerLoggedOutMessage
+                    {
+                        Identity = Identity.ToInternalIdentity()
+                    }).FireAndForgetAsync();
+
+                    Dispose();
+                }
+
+                void FinishCleanup()
+                {
+                    try
+                    {
+                        DisposeLoggedOutPlayer();
+                    }
+                    finally
+                    {
+                        CompleteCleanup();
+                    }
+                }
+
                 log.Trace($"Cleanup for character {Name}({CharacterId}) has started...");
 
                 try
                 {
-                    Save(() =>
-                    {
-                        try
-                        {
-                            if (Map != null)
-                                RemoveFromMap();
-
-                            messagePublisher.PublishAsync(new PlayerLoggedOutMessage
-                            {
-                                Identity = Identity.ToInternalIdentity()
-                            }).FireAndForgetAsync();
-
-                            Dispose();
-                        }
-                        finally
-                        {
-                            CompleteCleanup();
-                        }
-                    });
+                    Save(FinishCleanup, FinishCleanup);
                 }
                 catch
                 {

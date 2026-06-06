@@ -257,7 +257,7 @@ namespace NexusForever.Game.Account.Inventory
             if (directAccountGrant && HasAccountItemFlag(item.Entry, AccountItemFlag.MultiClaim))
                 return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.NoCharacter);
 
-            if (!directAccountGrant && player != null && item.Entry.PrerequisiteId != 0u && !PrerequisiteManager.Instance.Meets(player, item.Entry.PrerequisiteId))
+            if (!directAccountGrant && player != null && item.Entry.PrerequisiteId != 0u && !PrerequisiteEvaluation.MeetsAccountItem(player, item.Entry.PrerequisiteId))
                 return SendAccountOperationResult(AccountOperation.TakeItem, AccountOperationResult.Prereq);
 
             if (player == null && !directAccountGrant)

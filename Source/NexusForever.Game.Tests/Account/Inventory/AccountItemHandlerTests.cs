@@ -282,7 +282,9 @@ public class AccountItemHandlerTests
             unlockSets: [],
             unlockEntries: []);
 
-        var handler = new ClientItemGenericUnlockHandler(environment.GameTableManager);
+        var handler = new ClientItemGenericUnlockHandler(
+            environment.GameTableManager,
+            NullLogger<ClientItemGenericUnlockHandler>.Instance);
 
         handler.HandleMessage(environment.Session, new ClientItemGenericUnlock());
 
@@ -306,7 +308,9 @@ public class AccountItemHandlerTests
             ],
             unlockEntries: []);
 
-        var handler = new ClientItemGenericUnlockHandler(environment.GameTableManager);
+        var handler = new ClientItemGenericUnlockHandler(
+            environment.GameTableManager,
+            NullLogger<ClientItemGenericUnlockHandler>.Instance);
 
         handler.HandleMessage(environment.Session, new ClientItemGenericUnlock());
 
@@ -336,7 +340,9 @@ public class AccountItemHandlerTests
             ],
             alreadyUnlockedObjects: [200u, 201u]);
 
-        var handler = new ClientItemGenericUnlockHandler(environment.GameTableManager);
+        var handler = new ClientItemGenericUnlockHandler(
+            environment.GameTableManager,
+            NullLogger<ClientItemGenericUnlockHandler>.Instance);
 
         handler.HandleMessage(environment.Session, new ClientItemGenericUnlock());
 
@@ -369,7 +375,9 @@ public class AccountItemHandlerTests
             itemUseResult: true,
             item: out consumedItem);
 
-        var handler = new ClientItemGenericUnlockHandler(environment.GameTableManager);
+        var handler = new ClientItemGenericUnlockHandler(
+            environment.GameTableManager,
+            NullLogger<ClientItemGenericUnlockHandler>.Instance);
 
         handler.HandleMessage(environment.Session, new ClientItemGenericUnlock());
 

@@ -46,6 +46,7 @@ namespace NexusForever.Game.Abstract.Entity
         uint CurrentHealingAbsorption { get; }
         uint MaxHealingAbsorption { get; }
 
+        bool TryGetVitalValue(Vital vital, out float value);
         bool HasUnitState(uint stateId);
         void AddUnitState(uint effectId, uint spell4Id, uint castingId, uint stateId, uint dataBits01, uint dataBits02, uint dataBits03, uint dataBits04, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09);
         bool RemoveUnitState(uint effectId);

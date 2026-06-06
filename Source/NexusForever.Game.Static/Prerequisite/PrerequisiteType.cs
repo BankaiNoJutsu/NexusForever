@@ -250,7 +250,7 @@
         LiveEvent242                = 242, // Live event not complete
         Faction243                  = 243, // Faction requirement not met
         OwnsAccountItem               = 244, // Requirements not met - one retail row Equal with objectId0 Item2 id; client case 0xf4 vtable +0xc0 (raw 0x140b67800 -> 14049ca70) Prerequisite_CheckOwnsAccountItem; FUN_1401ed460 account Item2 lookup; NPC entity types 0x14/0x17 only
-        Unknown245                  = 245, // Exists without description - live case 0xf5 vtable +0x698 -> Prerequisite_CheckItemTradeSkill 1404a1790; NPC gate + item2 tradeskill tier requirement; duplicate-body alias, no semantic rename
+        Unknown245                  = 245, // Exists without description - live case 0xf5 vtable +0x698 -> Prerequisite_CheckItemTradeSkill 1404a1790; duplicate-body alias, no semantic rename; accountitem rows use objectId dye colour ramp in claim context
         DoesNotOwnAccountItemOnCharacter = 246, // Requirements not met - 53 retail rows all NotEqual with value0 Item2 id; client case 0xf6 vtable +0x130 (raw 0x140b67870 -> 14049d240) Prerequisite_CheckDoesNotOwnAccountItemOnCharacter; FUN_1403ac590 mode 0x707
         // 247 is unused in PrerequisiteType.tbl
         NpcInventoryItemCount         = 248, // Requirements not met - client case 0xf8 via Prerequisite_CheckNpcInventoryItemCount 1404a0cb0; objectId0 is Item2 id; FUN_1405f68f0 counts item in NPC bags (type 0x1c) on entity types 0x14/0x17
@@ -275,12 +275,12 @@
         GroupIsRaid                 = 267, // Requirements not met - live case 0x10b vtable +0x320 -> Prerequisite_CheckGroupIsRaid_Table62AndLive267 14049e9a0; compares GroupFlags.Raid bit from current group context flags; retail rows use NotEqual 0 against that bit
         CREDDPendingOrderState      = 268, // Exists without description - live case 0x10c vtable +0x3c8 Prerequisite_CheckCREDDPendingOrderState_Table268 14049f090; compares CREDD pending-order flag to objectId0; row 38851 gates CREDD exchange NPC visibility with NotEqual objectId0=1
         RapidTransport              = 269, // Requirements not met - client case 0x10d via manager +0xd0; objectId0 is rapid-transport node id
-        LoyaltyRewards              = 270, // Loyalty requirement not met
+        LoyaltyRewards              = 270, // Loyalty requirement not met - account currency 8 CosmicReward; value is the point threshold and objectId is usually 0
         Unknown271                  = 271, // Exist in PrerequisiteType.tbl but does not have a description - rows exist, but live case 0x10f dispatches vtable +0x178 no-op stub; no semantic rename
         Unknown272                  = 272, // Exist in PrerequisiteType.tbl but does not have a description - no retail rows found; live case 0x110 dispatches vtable +0x180 no-op stub; no semantic rename
         EntitlementCount            = 273, // Entitlement count requirement not met
         // 274 is unused in PrerequisiteType.tbl
-        Unknown275                  = 275, // Requirements not met - row shape uses objectId0 account Item2 ids/all NotEqual, but live case 0x113 dispatches vtable +0x6a0 -> Prerequisite_CheckItemTradeSkillKnown 1404a17e0; duplicate-body alias, no semantic rename
+        Unknown275                  = 275, // Requirements not met - live case 0x113 dispatches vtable +0x6a0 -> Prerequisite_CheckItemTradeSkillKnown 1404a17e0; duplicate-body alias, no semantic rename; accountitem rows use objectId Holo-Wardrobe Item2 id in claim context
         OutOfBounds                 = 276, // You're out of bounds
         QuestObjective47OnCasterAndTarget = 277, // You cannot do that right now - client case 0x115 requires caster and target to pass QuestObjective47 (+0x2f8)
         Unknown278                  = 278, // Requirements not met - one tbl row referenced by Spell4.prerequisiteIdAoeTarget on test spell 84203; live case 0x116 calls vtable +0x300 on caster and target, but that slot is no-op stub 140001ba0, so no semantic rename

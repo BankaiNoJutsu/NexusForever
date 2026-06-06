@@ -19,5 +19,21 @@ namespace NexusForever.Game.Prerequisite
 
             return PrerequisiteManager.Instance.Meets(player, prerequisiteId, parameters);
         }
+
+        public static bool MeetsAccountItem(IPlayer player, uint prerequisiteId)
+        {
+            if (prerequisiteId == 0u)
+                return true;
+
+            if (player == null)
+                return false;
+
+            var parameters = new PrerequisiteParameters
+            {
+                AccountItemContext = true
+            };
+
+            return PrerequisiteManager.Instance.Meets(player, prerequisiteId, parameters);
+        }
     }
 }

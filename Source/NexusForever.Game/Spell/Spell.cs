@@ -1219,7 +1219,7 @@ namespace NexusForever.Game.Spell
 
             if (handler == null)
             {
-                log.Warn($"Unhandled spell effect {(SpellEffectType)effect.Entry.EffectType}");
+                log.Warn($"Unhandled spell effect {(SpellEffectType)effect.Entry.EffectType} for spell {Parameters.SpellInfo.Entry.Id} (base {Parameters.SpellInfo.BaseInfo.Entry.Id}, effect {effect.Entry.Id}, caster {Caster.Guid}, targetCount {effectTargets.Count}, {FormatClientRequestContext()}).");
                 return false;
             }
 
@@ -1323,7 +1323,7 @@ namespace NexusForever.Game.Spell
                 catch (Exception ex)
                 {
                     info.DropEffect = true;
-                    log.Error(ex, $"Unhandled exception while executing spell effect {(SpellEffectType)effect.Entry.EffectType} for spell {Parameters.SpellInfo.Entry.Id} on target {unitTarget.Guid}.");
+                    log.Error(ex, $"Unhandled exception while executing spell effect {(SpellEffectType)effect.Entry.EffectType} for spell {Parameters.SpellInfo.Entry.Id} on target {unitTarget.Guid} ({FormatClientRequestContext()}).");
                 }
                 finally
                 {
@@ -1379,9 +1379,21 @@ namespace NexusForever.Game.Spell
                 case SpellEffectType.Fluff:
                     return true;
                 default:
-                    log.Warn($"Unhandled world-target spell effect {(SpellEffectType)effect.Entry.EffectType} for target {target.Guid} on spell {Parameters.SpellInfo.Entry.Id}.");
+                    log.Warn($"Unhandled world-target spell effect {(SpellEffectType)effect.Entry.EffectType} for target {target.Guid} on spell {Parameters.SpellInfo.Entry.Id} (base {Parameters.SpellInfo.BaseInfo.Entry.Id}, effect {effect.Entry.Id}, caster {Caster.Guid}, {FormatClientRequestContext()}).");
                     return false;
             }
+        }
+
+        private string FormatClientRequestContext()
+        {
+            return $"source={Parameters.ClientRequestSource ?? "unknown"}, contextToken={Parameters.ClientContextToken}, primaryTarget={Parameters.PrimaryTargetId}, position={FormatPosition(Parameters.Position)}";
+        }
+
+        private static string FormatPosition(Position position)
+        {
+            return position == null
+                ? "n/a"
+                : $"{position.Vector.X},{position.Vector.Y},{position.Vector.Z}";
         }
 
         private void ScheduleEffectLifetime(SpellEffectInterpretation effect, IWorldEntity target, ISpellTargetEffectInfo info)

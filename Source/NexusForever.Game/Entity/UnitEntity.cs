@@ -1099,7 +1099,7 @@ namespace NexusForever.Game.Entity
             return float.IsFinite(value) && value > 0f;
         }
 
-        private bool TryGetVitalValue(Vital vital, out float value)
+        public bool TryGetVitalValue(Vital vital, out float value)
         {
             switch (vital)
             {

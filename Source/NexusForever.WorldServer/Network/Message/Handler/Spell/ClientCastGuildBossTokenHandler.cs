@@ -18,8 +18,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
 
         public void HandleMessage(IWorldSession session, ClientCastGuildBossToken request)
         {
-            log.LogDebug("Rejecting guild boss token cast from player {PlayerGuid}: guild identity {GuildIdentity}, item {Item2Id}, context token {ContextToken}.",
-                session.Player?.Guid, request.GuildIdentity, request.Item2Id, request.ContextToken);
+            log.LogWarning("Unhandled guild boss token cast from player {PlayerGuid}: guild identity {GuildIdentity}, item {Item2Id}, context token {ContextToken}; returning {CastResult}.",
+                session.Player?.Guid, request.GuildIdentity, request.Item2Id, request.ContextToken, CastResult.BossTokenNotReady);
 
             session.EnqueueMessageEncrypted(new ServerSpellCastResult
             {

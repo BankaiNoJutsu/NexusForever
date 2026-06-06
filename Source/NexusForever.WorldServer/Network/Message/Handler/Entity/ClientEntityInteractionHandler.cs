@@ -117,7 +117,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
                     return true;
                 default:
-                    log.LogWarning($"Received unhandled interaction event {entityInteraction.Event} from Entity {entityInteraction.Guid}");
+                    log.LogWarning("Unhandled entity interaction event {InteractionEvent} from player {PlayerGuid}: requestedEntity={RequestedEntity}, resolvedEntity={ResolvedEntity}, creature={CreatureId}, entityId={EntityId}, world={WorldId}.",
+                        entityInteraction.Event,
+                        session.Player?.Guid,
+                        entityInteraction.Guid,
+                        entity?.Guid ?? 0u,
+                        entity?.CreatureId ?? 0u,
+                        entity?.EntityId ?? 0u,
+                        session.Player?.Map?.Entry?.Id ?? 0u);
                     return false;
             }
         }

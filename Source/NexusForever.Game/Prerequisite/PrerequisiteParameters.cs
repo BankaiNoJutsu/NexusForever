@@ -8,5 +8,6 @@ namespace NexusForever.Game.Prerequisite
         public IUnitEntity Target { get; set; }
         public IItem Item { get; set; }
         public ushort TaxiNode { get; set; }
+        public bool AccountItemContext { get; set; }
     }
 }

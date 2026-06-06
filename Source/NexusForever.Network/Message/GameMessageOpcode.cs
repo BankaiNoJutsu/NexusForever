@@ -693,7 +693,7 @@ namespace NexusForever.Network.Message
         ClientMatchingQueueParty        = 0x05F3, // native client writer 140098a70 serialises MatchingMap plus one uint32 roles field and one uint32 prime-level field; sender Matching_QueueDispatchFromUi 14076c830
         ClientMatchingQueueRandom       = 0x05F8, // native client writer 140098c00 serialises one 5-bit match type, one uint32 MatchingQueueFlags field, and one uint32 roles field; sender Matching_QueueDispatchFromUi 14076c830
         ClientMatchingQueueRandomParty  = 0x05F9, // native client writer 140098c00 serialises one 5-bit match type, one uint32 MatchingQueueFlags field, and one uint32 roles field; sender Matching_QueueDispatchFromUi 14076c830
-        ServerMatchingGroupMemberRoleSelection = 0x0600, // identity + uint32; shares reader 140086e70 with 0x051F, matching semantics blocked
+        ServerMatchingGroupMemberRoleSelection = 0x0600, // identity + neutral TrailingValue uint32; shares reader 140086e70 with 0x051F, matching semantics blocked
         ClientMatchingStopLookingForReplacements = 0x602, // native client registration binds 0x0602 to shared zero-payload ClientCraftingAbandon_WritePayload 140001ba0
         ServerMatchingLeftQueue         = 0x0604, // native 14006c290 binds 0x0604 to ServerEmpty_ReadPayload 14007d8e0
         ClientMatchingTransferIntoMatch = 0x0606, // native client registration binds 0x0606 to shared zero-payload ClientCraftingAbandon_WritePayload 140001ba0; sender Matching_SendTransferIntoMatch 14076ac30 after map lookup + flag gate
@@ -908,7 +908,7 @@ namespace NexusForever.Network.Message
         ClientStorefrontPurchaseAccount = 0x0828,
         ClientStorefrontPurchaseCharacter = 0x082A,
         ClientStorefrontRequestCatalog  = 0x082D,
-        ClientStorefrontPurchaseVirtualCurrencyPackage = 0x082E,
+        ClientStorefrontRequestPurchaseHistory = 0x082E,
         ClientSummonVanityPet           = 0x082F,
         ClientReportBug                 = 0x0830,
         ClientStuck                     = 0x0831,

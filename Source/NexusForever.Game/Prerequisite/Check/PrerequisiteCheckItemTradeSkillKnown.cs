@@ -17,14 +17,7 @@ namespace NexusForever.Game.Prerequisite.Check
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            if (!PrerequisiteNpcTargetContext.RequiresNpcTarget(player, parameters))
-                return false;
-
-            if (gameTableManager.Item.GetEntry(objectId) == null)
-                return false;
-
-            bool known = TradeskillPrerequisiteHelper.HasKnownItem2Id(player, gameTableManager, objectId);
-            return PrerequisiteCompare.Compare(comparison, known ? 1u : 0u, value);
+            return TradeskillPrerequisiteHelper.MeetsItemTradeSkillKnown(player, gameTableManager, comparison, value, objectId, parameters);
         }
     }
 }

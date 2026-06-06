@@ -1,4 +1,5 @@
 using NexusForever.Game.Static.Guild;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model.Guild;
@@ -8,6 +9,25 @@ namespace NexusForever.Game.Tests.Network;
 
 public class GuildPacketShapeTests
 {
+    [Fact]
+    public void ServerGuildBankTabInventory_WritesIdentityTabAndItemCount()
+    {
+        var packet = new ServerGuildBankTabInventory
+        {
+            GuildIdentity = new Identity { RealmId = 4, Id = 0x0102030405060708ul },
+            BankTabIndex = InventoryLocation.GuildBankTab2
+        };
+
+        byte[] packetData = WritePacket(packet);
+
+        Assert.Equal(15, packetData.Length);
+
+        using var reader = new GamePacketReader(new MemoryStream(packetData));
+        AssertIdentity(reader, 4, 0x0102030405060708ul);
+        Assert.Equal(InventoryLocation.GuildBankTab2, reader.ReadEnum<InventoryLocation>(9u));
+        Assert.Equal(0u, reader.ReadUInt());
+    }
+
     [Fact]
     public void ClientRecruitmentGuildGetDetailedGuildInfo_ReadsGuildIdentity()
     {

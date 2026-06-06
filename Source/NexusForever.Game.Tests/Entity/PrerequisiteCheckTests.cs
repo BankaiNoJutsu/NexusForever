@@ -6,8 +6,10 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Account.Costume;
 using NexusForever.Game.Abstract.Account.Currency;
 using NexusForever.Game.Abstract.Account.Inventory;
+using NexusForever.Game.Abstract.Account.Unlock;
 using NexusForever.Game.Abstract.Challenges;
 using NexusForever.GameTable.Model;
 using NexusForever.Game.Abstract.Entity;
@@ -649,6 +651,48 @@ public class PrerequisiteCheckTests
         Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, 500u, new PrerequisiteParameters()));
     }
 
+    [Fact]
+    public void Unknown275_NonAccountItemContext_UsesItemTradeSkillKnownDuplicateBody()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IUnitEntity npc = RecordingDispatchProxy<IUnitEntity>.Create(out var npcProxy);
+        npcProxy.SetProperty(nameof(IUnitEntity.Guid), 999u);
+        playerProxy.SetProperty(nameof(IPlayer.Guid), 1u);
+        playerProxy.SetMethodReturn(nameof(IPlayer.HasLearnedSchematic), true);
+
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
+        tableProxy.SetProperty(nameof(IGameTableManager.Item), CreateGameTable(new Item2Entry { Id = 500u }));
+        tableProxy.SetProperty(nameof(IGameTableManager.TradeskillSchematic2), CreateGameTable(
+            new TradeskillSchematic2Entry { Id = 10u, TradeSkillId = 1u, Item2IdOutput = 500u }));
+
+        var check = new PrerequisiteCheckUnknown275(tables);
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 500u, new PrerequisiteParameters { Target = npc }));
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, 500u, new PrerequisiteParameters()));
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void Unknown275_AccountItemContext_ComparesHoloWardrobeUnlockToObjectId(bool alreadyUnlocked, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
+        IAccountCostumeManager costumeManager = RecordingDispatchProxy<IAccountCostumeManager>.Create(out var costumeProxy);
+        costumeProxy.SetMethodReturn(nameof(IAccountCostumeManager.HasItemUnlock), alreadyUnlocked);
+        accountProxy.SetProperty(nameof(IAccount.CostumeManager), costumeManager);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+
+        var check = new PrerequisiteCheckUnknown275(gameTableManager: null);
+
+        bool result = check.Meets(player, PrerequisiteComparison.NotEqual, value: 0u, objectId: 42367u,
+            new PrerequisiteParameters { AccountItemContext = true });
+
+        Assert.Equal(expected, result);
+        RecordingDispatchProxy<IAccountCostumeManager>.Invocation call = Assert.Single(costumeProxy.GetInvocations(nameof(IAccountCostumeManager.HasItemUnlock)));
+        Assert.Equal(42367u, call.Arguments[0]);
+    }
+
     [Theory]
     [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 2u, 250u, true)]
     [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 3u, 250u, false)]
@@ -680,6 +724,53 @@ public class PrerequisiteCheckTests
         bool result = check.Meets(player, comparison, value, objectId: 500u, parameters);
 
         Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void Unknown245_NonAccountItemContext_UsesItemTradeSkillDuplicateBody()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IUnitEntity npc = RecordingDispatchProxy<IUnitEntity>.Create(out var npcProxy);
+        npcProxy.SetProperty(nameof(IUnitEntity.Guid), 999u);
+        playerProxy.SetProperty(nameof(IPlayer.Guid), 1u);
+        playerProxy.SetMethodReturn(nameof(IPlayer.HasTradeskill), true);
+        playerProxy.SetMethodReturn(nameof(IPlayer.GetTradeskillXp), 250u);
+
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
+        tableProxy.SetProperty(nameof(IGameTableManager.Item), CreateGameTable(new Item2Entry { Id = 500u }));
+        tableProxy.SetProperty(nameof(IGameTableManager.TradeskillSchematic2), CreateGameTable(
+            new TradeskillSchematic2Entry { Id = 10u, TradeSkillId = 1u, Item2IdOutput = 500u }));
+        tableProxy.SetProperty(nameof(IGameTableManager.TradeskillTier), CreateGameTable(
+            new TradeskillTierEntry { Id = 1u, TradeSkillId = 1u, Tier = 1u, RequiredXp = 0u },
+            new TradeskillTierEntry { Id = 2u, TradeSkillId = 1u, Tier = 2u, RequiredXp = 100u }));
+
+        var check = new PrerequisiteCheckUnknown245(tables);
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 2u, 500u,
+            new PrerequisiteParameters { Target = npc }));
+        Assert.False(check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 2u, 500u, new PrerequisiteParameters()));
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void Unknown245_AccountItemContext_ComparesDyeUnlockToObjectId(bool alreadyUnlocked, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
+        IGenericUnlockManager unlockManager = RecordingDispatchProxy<IGenericUnlockManager>.Create(out var unlockProxy);
+        unlockProxy.SetMethodReturn(nameof(IGenericUnlockManager.IsDyeUnlocked), alreadyUnlocked);
+        accountProxy.SetProperty(nameof(IAccount.GenericUnlockManager), unlockManager);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+
+        var check = new PrerequisiteCheckUnknown245(gameTableManager: null);
+
+        bool result = check.Meets(player, PrerequisiteComparison.NotEqual, value: 0u, objectId: 3456u,
+            new PrerequisiteParameters { AccountItemContext = true });
+
+        Assert.Equal(expected, result);
+        RecordingDispatchProxy<IGenericUnlockManager>.Invocation call = Assert.Single(unlockProxy.GetInvocations(nameof(IGenericUnlockManager.IsDyeUnlocked)));
+        Assert.Equal(3456u, call.Arguments[0]);
     }
 
     [Theory]
@@ -1122,6 +1213,28 @@ public class PrerequisiteCheckTests
 
         Assert.True(check.Meets(player, PrerequisiteComparison.Equal, value: 0u, objectId: 19u, new PrerequisiteParameters()));
         Assert.Empty(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.GetCurrencyAmount)));
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.GreaterThan, 12000u, 12001ul, true)]
+    [InlineData(PrerequisiteComparison.GreaterThan, 12000u, 12000ul, false)]
+    [InlineData(PrerequisiteComparison.LessThanOrEqual, 7750u, 7000ul, true)]
+    public void LoyaltyRewards_ComparesCosmicRewardAmount(PrerequisiteComparison comparison, uint value, ulong currentAmount, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
+        IAccountCurrencyManager currencyManager = RecordingDispatchProxy<IAccountCurrencyManager>.Create(out var currencyProxy);
+        currencyProxy.SetMethodReturn(nameof(IAccountCurrencyManager.GetCurrencyAmount), currentAmount);
+        accountProxy.SetProperty(nameof(IAccount.CurrencyManager), currencyManager);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+
+        var check = new PrerequisiteCheckLoyaltyRewards();
+
+        bool result = check.Meets(player, comparison, value, objectId: 0u, new PrerequisiteParameters());
+
+        Assert.Equal(expected, result);
+        RecordingDispatchProxy<IAccountCurrencyManager>.Invocation call = Assert.Single(currencyProxy.GetInvocations(nameof(IAccountCurrencyManager.GetCurrencyAmount)));
+        Assert.Equal(AccountCurrencyType.CosmicReward, call.Arguments[0]);
     }
 
     [Fact]

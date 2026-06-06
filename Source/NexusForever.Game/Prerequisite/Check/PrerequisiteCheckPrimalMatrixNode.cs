@@ -22,7 +22,7 @@ namespace NexusForever.Game.Prerequisite.Check
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            if (gameTableManager.PrimalMatrixNode.GetEntry(objectId) == null)
+            if (gameTableManager.PrimalMatrixNode?.GetEntry(objectId) == null)
                 return false;
 
             log.LogTrace(
