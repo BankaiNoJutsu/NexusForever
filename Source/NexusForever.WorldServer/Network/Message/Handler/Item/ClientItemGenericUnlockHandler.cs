@@ -49,7 +49,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
                 return;
             }
 
-            GenericUnlockSetEntry unlockSetEntry = gameTableManager.GenericUnlockSet.GetEntry(itemEntry.GenericUnlockSetId);
+            GameTable<GenericUnlockSetEntry> unlockSetTable = gameTableManager?.GenericUnlockSet;
+            if (unlockSetTable == null)
+            {
+                LogInvalidUnlock(session, item, itemEntry.GenericUnlockSetId, GenericUnlockResult.Invalid, "missing-generic-unlock-set-table");
+                SendUnlockResult(session, GenericUnlockResult.Invalid);
+                return;
+            }
+
+            GenericUnlockSetEntry unlockSetEntry = unlockSetTable.GetEntry(itemEntry.GenericUnlockSetId);
             if (unlockSetEntry == null)
             {
                 LogInvalidUnlock(session, item, itemEntry.GenericUnlockSetId, GenericUnlockResult.Invalid, "missing-generic-unlock-set-row");
@@ -143,12 +151,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
         private List<GenericUnlockEntryEntry> GetGenericUnlockEntries(GenericUnlockSetEntry unlockSetEntry)
         {
             var entries = new List<GenericUnlockEntryEntry>();
+            GameTable<GenericUnlockEntryEntry> unlockEntryTable = gameTableManager?.GenericUnlockEntry;
+            if (unlockEntryTable == null)
+                return entries;
+
             foreach (uint genericUnlockEntryId in GetGenericUnlockEntryIds(unlockSetEntry))
             {
                 if (genericUnlockEntryId == 0u)
                     continue;
 
-                GenericUnlockEntryEntry entry = gameTableManager.GenericUnlockEntry.GetEntry(genericUnlockEntryId);
+                GenericUnlockEntryEntry entry = unlockEntryTable.GetEntry(genericUnlockEntryId);
                 if (entry == null || entry.Id > ushort.MaxValue)
                     return [];
 

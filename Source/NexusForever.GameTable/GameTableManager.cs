@@ -230,6 +230,7 @@ namespace NexusForever.GameTable
         [GameData]
         public GameTable<GenericUnlockEntryEntry> GenericUnlockEntry { get; private set; }
 
+        [GameData]
         public GameTable<GenericUnlockSetEntry> GenericUnlockSet { get; private set; }
         public GameTable<GossipEntryEntry> GossipEntry { get; private set; }
         public GameTable<GossipSetEntry> GossipSet { get; private set; }

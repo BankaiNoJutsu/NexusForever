@@ -258,6 +258,30 @@ public class MovementManagerTests
     }
 
     [Fact]
+    public void Follow_UsesTargetFacingForFinalPosition()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create();
+        harness.PositionProxy.SetMethodReturn(nameof(IPositionCommandGroup.GetPosition), Vector3.Zero);
+        IWorldEntity target = CreateFollowTarget();
+
+        harness.Manager.Follow(target, 2f);
+
+        AssertVector(GetFinalPathNode(harness), 10f, 0f, 2f);
+    }
+
+    [Fact]
+    public void Chase_UsesCurrentApproachForFinalPosition()
+    {
+        MovementManagerHarness harness = MovementManagerHarness.Create();
+        harness.PositionProxy.SetMethodReturn(nameof(IPositionCommandGroup.GetPosition), Vector3.Zero);
+        IWorldEntity target = CreateFollowTarget();
+
+        harness.Manager.Chase(target, 2f);
+
+        AssertVector(GetFinalPathNode(harness), 8f, 0f, 0f);
+    }
+
+    [Fact]
     public void Follow_WithDifferentFollowerGuids_SpreadsFinalPositionAroundTarget()
     {
         MovementManagerHarness first = MovementManagerHarness.Create(ownerGuid: 101u);

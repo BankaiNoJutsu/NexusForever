@@ -828,31 +828,68 @@ namespace NexusForever.Game.Entity.Movement
         /// </summary>
         public void Follow(IWorldEntity entity, float distance)
         {
-            if (!ServerControl)
+            if (!TryPrepareFollow(entity, distance, out Vector3 begin, out float followDistance))
                 return;
-
-            Vector3 begin = positionCommandGroup.GetPosition();
-            if (!MovementMath.IsFinite(begin))
-                begin = Owner.Position;
-
-            if (!MovementMath.IsFinite(begin) || !MovementMath.IsFinite(entity.Position))
-            {
-                StopInvalidPositionPath(MovementMath.IsFinite(begin) ? begin : Owner.Position);
-                return;
-            }
-
-            SetState(StateFlags.Move);
-            SetMoveDefaults(false);
-            SetRotationFaceUnit(entity.Guid);
 
             // Start behind the target and apply a small deterministic spread so multiple followers do not stack.
             float angle = MovementMath.IsFinite(entity.Rotation.X)
                 ? -entity.Rotation.X + MathF.PI / 2f
                 : MathF.Atan2(begin.Z - entity.Position.Z, begin.X - entity.Position.X);
 
-            float followDistance = MovementMath.IsFinite(distance) && distance > 0f
+            FollowAtAngle(entity, begin, followDistance, angle);
+        }
+
+        /// <summary>
+        /// Launch a new chase spline, closing on the supplied <see cref="IWorldEntity"/> from the current approach angle.
+        /// </summary>
+        public void Chase(IWorldEntity entity, float distance)
+        {
+            if (!TryPrepareFollow(entity, distance, out Vector3 begin, out float followDistance))
+                return;
+
+            Vector3 approach = begin - entity.Position;
+            approach.Y = 0f;
+
+            float angle = MovementMath.HasDirection(approach)
+                ? MathF.Atan2(approach.Z, approach.X)
+                : MovementMath.IsFinite(entity.Rotation.X)
+                    ? -entity.Rotation.X + MathF.PI / 2f
+                    : 0f;
+
+            FollowAtAngle(entity, begin, followDistance, angle);
+        }
+
+        private bool TryPrepareFollow(IWorldEntity entity, float distance, out Vector3 begin, out float followDistance)
+        {
+            begin = default;
+            followDistance = 0f;
+
+            if (!ServerControl)
+                return false;
+
+            begin = positionCommandGroup.GetPosition();
+            if (!MovementMath.IsFinite(begin))
+                begin = Owner.Position;
+
+            if (!MovementMath.IsFinite(begin) || entity == null || !MovementMath.IsFinite(entity.Position))
+            {
+                StopInvalidPositionPath(MovementMath.IsFinite(begin) ? begin : Owner.Position);
+                return false;
+            }
+
+            SetState(StateFlags.Move);
+            SetMoveDefaults(false);
+            SetRotationFaceUnit(entity.Guid);
+
+            followDistance = MovementMath.IsFinite(distance) && distance > 0f
                 ? distance
                 : 0f;
+
+            return true;
+        }
+
+        private void FollowAtAngle(IWorldEntity entity, Vector3 begin, float followDistance, float angle)
+        {
             angle += GetFollowSpreadAngleOffset(entity, followDistance);
 
             var generator = new PathMovementGenerator

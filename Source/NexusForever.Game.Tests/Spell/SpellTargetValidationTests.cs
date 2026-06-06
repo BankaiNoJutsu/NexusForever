@@ -219,6 +219,74 @@ public class SpellTargetValidationTests
         }
     }
 
+    [Fact]
+    public void Cast_WithInstantSpell_ExecutesImmediatelyAndStopsBlockingAfterCastReturns()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider();
+
+        try
+        {
+            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> casterProxy, CreateEmptySearchMap());
+
+            var parameters = new NexusForever.Game.Spell.SpellParameters
+            {
+                SpellInfo = CreateSpellInfo(127u, 102u)
+            };
+
+            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
+
+            Assert.Equal(CastResult.Ok, spell.Cast());
+            Assert.False(spell.IsCasting);
+            Assert.False(spell.BlocksCasting);
+            Assert.Contains(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellGo);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void Cast_WithChannelMaxTime_DelaysFinishUntilChannelCompletes()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider();
+
+        try
+        {
+            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> casterProxy, CreateEmptySearchMap());
+
+            var parameters = new NexusForever.Game.Spell.SpellParameters
+            {
+                SpellInfo = CreateSpellInfo(128u, 103u, channelMaxTime: 2500u)
+            };
+
+            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
+
+            Assert.Equal(CastResult.Ok, spell.Cast());
+            Assert.True(spell.BlocksCasting);
+            Assert.False(spell.IsFinished);
+            Assert.DoesNotContain(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellFinish);
+
+            spell.Update(2.4d);
+
+            Assert.True(spell.BlocksCasting);
+            Assert.False(spell.IsFinished);
+            Assert.DoesNotContain(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellFinish);
+
+            spell.Update(0.2d);
+
+            Assert.False(spell.BlocksCasting);
+            Assert.True(spell.IsFinished);
+            Assert.Single(casterProxy.GetInvocations(nameof(IUnitEntity.EnqueueToVisible)), i => i.Arguments[0] is ServerSpellFinish);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
     [Theory]
     [InlineData(5u, PrerequisiteComparison.LessThan, 6u, true)]
     [InlineData(8u, PrerequisiteComparison.LessThan, 6u, false)]
@@ -337,6 +405,26 @@ public class SpellTargetValidationTests
         ISpellInfo spellInfo = RecordingDispatchProxy<ISpellInfo>.Create(out RecordingDispatchProxy<ISpellInfo> spellInfoProxy);
         spellInfoProxy.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry { Id = 126u, Spell4BaseIdBaseSpell = 101u });
         spellInfoProxy.SetProperty(nameof(ISpellInfo.BaseInfo), baseInfo);
+        spellInfoProxy.SetProperty(nameof(ISpellInfo.Effects), new List<Spell4EffectsEntry>());
+
+        return spellInfo;
+    }
+
+    private static ISpellInfo CreateSpellInfo(uint spellId, uint baseId, uint castTime = 0u, uint channelMaxTime = 0u)
+    {
+        ISpellBaseInfo baseInfo = RecordingDispatchProxy<ISpellBaseInfo>.Create(out RecordingDispatchProxy<ISpellBaseInfo> baseInfoProxy);
+        baseInfoProxy.SetProperty(nameof(ISpellBaseInfo.Entry), new Spell4BaseEntry { Id = baseId });
+
+        ISpellInfo spellInfo = RecordingDispatchProxy<ISpellInfo>.Create(out RecordingDispatchProxy<ISpellInfo> spellInfoProxy);
+        spellInfoProxy.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry
+        {
+            Id                   = spellId,
+            Spell4BaseIdBaseSpell = baseId,
+            CastTime             = castTime,
+            ChannelMaxTime       = channelMaxTime
+        });
+        spellInfoProxy.SetProperty(nameof(ISpellInfo.BaseInfo), baseInfo);
+        spellInfoProxy.SetProperty(nameof(ISpellInfo.Telegraphs), new List<TelegraphDamageEntry>());
         spellInfoProxy.SetProperty(nameof(ISpellInfo.Effects), new List<Spell4EffectsEntry>());
 
         return spellInfo;

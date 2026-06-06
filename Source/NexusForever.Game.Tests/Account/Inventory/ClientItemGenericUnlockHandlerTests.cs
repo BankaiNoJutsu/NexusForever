@@ -87,6 +87,21 @@ public class ClientItemGenericUnlockHandlerTests
         Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
     }
 
+    [Fact]
+    public void HandleMessage_WithMissingGenericUnlockSetTableReturnsInvalid()
+    {
+        IItem item = CreateItem(new Item2Entry { GenericUnlockSetId = 10u });
+        IWorldSession session = CreateSession(item, out RecordingDispatchProxy<IGenericUnlockManager> unlockProxy, out RecordingDispatchProxy<IInventory> inventoryProxy);
+        var handler = new ClientItemGenericUnlockHandler(
+            RecordingDispatchProxy<IGameTableManager>.Create(out _),
+            NullLogger<ClientItemGenericUnlockHandler>.Instance);
+
+        handler.HandleMessage(session, new ClientItemGenericUnlock());
+
+        AssertUnlockResult(unlockProxy, GenericUnlockResult.Invalid);
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemUse)));
+    }
+
     private static IWorldSession CreateSession(
         IItem item,
         out RecordingDispatchProxy<IGenericUnlockManager> unlockProxy,

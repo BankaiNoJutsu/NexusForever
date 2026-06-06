@@ -41,7 +41,7 @@ namespace NexusForever.Game.Spell
         public ISpellParameters Parameters { get; }
         public uint CastingId { get; }
         public bool IsCasting => status == SpellStatus.Casting;
-        public bool BlocksCasting => status == SpellStatus.Casting || (status == SpellStatus.Executing && awaitingInitialImpact);
+        public bool BlocksCasting => status == SpellStatus.Casting || (status == SpellStatus.Executing && (awaitingInitialImpact || channelCompletePending));
         public bool IsFinished => status == SpellStatus.Finished;
 
         public IUnitEntity Caster { get; }
@@ -49,6 +49,7 @@ namespace NexusForever.Game.Spell
         private SpellStatus status;
         private bool cancelled;
         private bool awaitingInitialImpact;
+        private bool channelCompletePending;
 
         private readonly List<ISpellTargetInfo> targets = new();
         private readonly List<ITelegraph> telegraphs = new();
@@ -144,9 +145,12 @@ namespace NexusForever.Game.Spell
             scriptCollection.Invoke<ISpellScript>(s => s.OnCast(this));
             SendSpellStart();
 
-            // enqueue spell to be executed after cast time
-            events.EnqueueEvent(new SpellEvent(Parameters.SpellInfo.Entry.CastTime / 1000d, Execute));
             status = SpellStatus.Casting;
+            if (Parameters.SpellInfo.Entry.CastTime == 0u)
+                Execute();
+            else
+                events.EnqueueEvent(new SpellEvent(Parameters.SpellInfo.Entry.CastTime / 1000d, Execute));
+
             SpellRuntimeEvidenceCollector.RecordCastAttempt(this, CastResult.Ok);
 
             log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} has started casting.");
@@ -901,11 +905,22 @@ namespace NexusForever.Game.Spell
             SelectTargets();
             scriptCollection.Invoke<ISpellScript>(s => s.OnExecute(this, targets.AsReadOnly()));
             ExecuteEffects();
+            ScheduleChannelCompletion();
 
             if (Caster is IPlayer executingPlayer)
                 SpellQuestObjectiveUpdater.UpdateSpellSuccessObjectives(executingPlayer, Parameters.SpellInfo.Entry.Id);
 
             CostSpell();
+        }
+
+        private void ScheduleChannelCompletion()
+        {
+            uint channelMaxTime = Parameters.SpellInfo.Entry.ChannelMaxTime;
+            if (channelMaxTime == 0u)
+                return;
+
+            channelCompletePending = true;
+            events.EnqueueEvent(new SpellEvent(channelMaxTime / 1000d, () => channelCompletePending = false));
         }
 
         private void CostSpell()
