@@ -1764,14 +1764,21 @@ combat audit:
   combat-spell source until stronger native/action semantics are mapped.
 - `CombatAI` now resolves `CombatProfile` through `ICombatProfileProvider`
   instead of baking spell/range constants into the runtime loop. The default
-  provider now loads the known Rider's Reef combat Creature2-to-profile mappings
-  from the tracked embedded `AI/CombatProfiles.json` data asset: auto-attacks,
-  aggro spell, chase distance, aggro radius, minimum leash radius, stationary
-  turret behavior, detailed tracing, and bounded assist radius are profile data
-  rather than `CombatAI` branches. Focused regressions prove both that the
-  embedded starter profiles load and that an injected provider can change aggro
-  spell/range behavior without editing `CombatAI`, which is a conservative step
-  toward data-driven AI while leaving `Creature2Action` behavior blocked.
+  provider is now layered: `AI/CombatProfiles.json` stays a small default/manual
+  override asset, `AI/CombatKits.json` maps reviewed shared kits to Rider's Reef
+  and Northern Wilds Creature2 rows, and `AI/CombatActionRules.json` is empty
+  until `Creature2Action` semantics are proven. The action resolver now has a
+  safe activation path for future rules, but active rules are rejected unless
+  they use an exact `(state,event,action)` key, carry source/evidence labels,
+  and point at existing `Spell4` rows. `Tools/CombatProfileAudit` can emit
+  markdown/CSV review queues from game tables plus the committed catalog assets
+  without querying authoring-only databases. Auto-attacks, aggro spell, chase
+  distance, aggro radius, minimum leash radius, stationary turret
+  behavior, detailed tracing, and bounded assist radius remain profile data
+  rather than `CombatAI` branches. Focused regressions prove the manual and
+  reviewed-kit resolution paths, action-row audit-only behavior, and injected
+  provider override path without editing `CombatAI`, which is a conservative
+  step toward data-driven AI while leaving `Creature2Action` behavior blocked.
 - A later fallback-profile cleanup added a top-level `default-combat` profile to
   `AI/CombatProfiles.json`; default-enabled derived scripts now inherit their
   fallback auto-attacks, aggro spell, and chase distance through the same
@@ -1786,7 +1793,10 @@ combat audit:
   rejected runtime starts leave the AI cooldown pending, and successful non-instant
   rows use `Spell4.CastTime` as a movement/auto-attack lockout. This lets profiled
   NPCs use normal cast-time/telegraph-capable spell data for WildStar-ish windups
-  without adding a speculative AI-only telegraph packet path.
+  without adding a speculative AI-only telegraph packet path. Ready special
+  attacks now rotate through deterministic weighted slots with a small
+  per-creature cooldown offset so identical profiled creatures do not always
+  choose the first ready skill in lockstep.
 - The interrupt follow-up keeps that windup behavior cancellable through the
   existing CC path: `UnitEntity.AddCCState(CCState.Interrupt)` cancels active
   pending casts with `CastResult.SpellInterrupted`, and `CombatAI` clears the
@@ -1948,6 +1958,13 @@ Twenty-sixth Game.Spell Lua accessor follow-up implemented from this pass:
   proxy-effect interpreter already models the child `Spell4Id`, so
   `/spell inspect` now reports any proxy child channel data without inventing a
   new runtime behavior.
+- 2026-06-06 runtime follow-up: server spell lifecycle now treats
+  `Spell4.ChannelMaxTime` as the channel-completion hold before
+  `ServerSpellFinish`, matching the accessor mapping above and local Whirlwind
+  witness rows (`Spell4` ids `33802`, `48295`, `48296`, `48302`: `SpellCoolDown`
+  `6000`, `ChannelMaxTime` `2500`, `ChannelPulseTime` `500`). This only delays
+  finish/active-cast blocking for channeled rows; it does not add new packet
+  fields or broaden proxy semantics.
 - `Lua_GameSpell_GetAbilityCharges` (`1405edff0`) exposes the runtime charge
   table shape with `nChargesRemaining`, `nChargesMax`, `fRechargeTime`, and
   `fRechargePercentRemaining`; the two float fields are written directly in the
@@ -16304,27 +16321,29 @@ CombatAI Northern Wilds profile promotion pass (2026-05-25):
   explicit combat markers (`[NW-CBC]` or `[NW-hCBC]`) and whose Jabbithole
   spell bridge resolves concrete Spell4 kits. Rows with `Simple`, invisible,
   flavor/dead, object, or non-combat descriptions were left out.
-- `AI/CombatProfiles.json` now promotes those combat-tagged Creature2 ids into
-  explicit profiles with their bridged Spell4 auto-attack kits, `aggroRange=14`,
-  `minimumLeashRange=35`, default no awareness-eye aggro spell, and default
-  player-only targeting. This gives Northern Wilds creatures such as Skeech
-  Scratchers, Skeech casters, Dagun, Yetis, Dominion soldiers/bots, Rootbrutes,
-  Xenobites, and holdout bosses real idle range aggro and table-backed spell
-  rotations while preserving the safety invariant that profiled default combat
-  does not acquire non-player targets.
-- Focused tests now prove the provider loads a Northern Wilds spell kit and
-  that a profiled Northern Wilds creature idle-aggroes a hostile player without
-  casting tutorial awareness VFX. Exact retail spell cadence, interruptible
-  special rotations, social assist for these outdoor packs, and profile coverage
-  outside the combat-tagged Northern Wilds set remain blocked on stronger
+- `AI/CombatKits.json` now promotes those combat-tagged Creature2 ids into
+  reviewed shared kits with their bridged Spell4 auto-attack kits,
+  `aggroRange=14`, `minimumLeashRange=35`, default no awareness-eye aggro spell,
+  and default player-only targeting, while `AI/CombatProfiles.json` is kept to
+  the default/manual override layer. This gives Northern Wilds creatures such as
+  Skeech Scratchers, Skeech casters, Dagun, Yetis, Dominion soldiers/bots,
+  Rootbrutes, Xenobites, and holdout bosses real idle range aggro and
+  table-backed spell rotations while preserving the safety invariant that
+  profiled default combat does not acquire non-player targets.
+- Focused tests now prove the provider loads a Northern Wilds reviewed kit,
+  reports manual/catalog/action audit counts, keeps unproven `Creature2Action`
+  rows audit-only, rejects unsafe active action rules, skips missing `Spell4`
+  rows, exposes detailed creature/action audit rows for the standalone audit
+  tool, and that a profiled Northern Wilds creature idle-aggroes a hostile
+  player without casting tutorial awareness VFX. Exact retail action semantics,
+  social assist for these outdoor packs, and profile coverage outside the
+  combat-tagged Northern Wilds set remain blocked on stronger
   Creature2Action/live-client evidence.
 - Verification:
-  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests" -v minimal --nologo`
-  passed 43/43.
-  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~CombatAITests|FullyQualifiedName~ThreatManagerTests|FullyQualifiedName~MovementManagerTests|FullyQualifiedName~PositionKeysTests|FullyQualifiedName~SplineTests" -v minimal --nologo`
-  passed 56/56.
-  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo`
-  passed with 0 warnings and 0 errors.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --filter "FullyQualifiedName~CombatAITests" -v minimal --nologo -p:OutputPath=I:\GIT\NexusForever\artifacts\test-bin\`
+  passed 44/44.
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo -m:1 -p:UseSharedCompilation=false`
+  passed 2790/2790.
 
 Northern Wilds spawn-density rollback and shield underflow fix (2026-05-25):
 

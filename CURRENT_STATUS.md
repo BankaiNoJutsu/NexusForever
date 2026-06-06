@@ -14,14 +14,14 @@ of truth for feature-area completion.
 | Metric | Value |
 |--------|-------|
 | Total feature areas | 36 (`F-001`..`F-036`; matrix rows `F-016`..`F-020` are five spell-runtime rows) |
-| Fully complete | 15 (sections marked **COMPLETE** below) |
-| Partial (real handlers/state exist; retail parity incomplete) | 15 |
+| Implementation-complete | 13 (sections marked **COMPLETE** below; not a retail-parity claim) |
+| Partial (real handlers/state exist; retail parity incomplete) | 20 (`F-016`..`F-020` count as five spell-runtime rows) |
 | Blocked / diagnostic / structural-only | 3 (`F-001` blocked, `F-002` diagnostic, `F-003` structurally closed) |
 | Consolidated runtime gaps (emit/producer proof) | 5 rows in **Remaining Blocked Items** |
 | Related trackers | `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`, `MATCHING_IMPLEMENTATION_STATUS.md`, `ENTITY_AUX_DECODE_ROADMAP.md`, `BLOCKER_EVIDENCE_PLAN.md` |
 | Placeholder inventory (2026-06-05) | 12 `Client0xNNNN`, 1 `Server0xNNNN` (`Server0x0015`), 16 client diagnostic log-only surfaces, 24 `PrerequisiteType.UnknownNNN`, and 2 quest objective unknowns (`Unknown27`, `Unknown29`); the audit-prompt ghost literal names are absent; pass 158 keeps `Client0x07E3` registration-only at `1400a8282` through `ClientUInt32_ReadPayload` (`14007d000`) / `ClientTradeskillResetTalents_WritePayload` (`14007d010`), with MCP still returning `Transport closed`, live-plugin helper xrefs shared, selected send-helper scans finding no `0x07E3` sender, and message-name slot `140c27018` unxrefed; pass 155 keeps `Client0x062A`/`Client0x0634` registration-only at `1400a82b6`/`1400a872c`; pass 154 keeps `Client0x00C8` registration-only; pass 153 keeps `Client0x0701` registration-only; pass 152 keeps `Client0x0928` shared `uint32+5-bit` registration-only |
 | Build | 0 errors, 0 warnings |
-| Tests | 2504 passed, 0 failed, 0 skipped |
+| Tests | 2790 passed, 0 failed, 0 skipped |
 | Handlers surveyed | 200+ |
 | Production TODO/FIXME/NotImplemented | 0 |
 | **LaughingWS blocker tracking (2026-05-27)** | Evidence harness added; broad new-zone/sandbox/arkship/Rider's Reef rows remain blocked or rejected where proof is missing; Dungeon Chase hidden SMC item `86919` rejected for current seeds because the world store model and type-`0` storefront transport cannot represent it |
@@ -35,13 +35,16 @@ of truth for feature-area completion.
 
 | Label | Meaning |
 | --- | --- |
-| **COMPLETE** | Client handlers and a working server/runtime path exist with focused tests; known retail gaps may still be listed in the section or in **Remaining Blocked Items**. |
+| **COMPLETE** | Client handlers and a working server/runtime path exist with focused tests; this is not a retail-parity claim, and known retail gaps may still be listed in the section or in **Remaining Blocked Items**. |
 | **PARTIAL** | Substantial behavior exists, but retail parity, producer semantics, or persistence edges remain open. |
 | **BLOCKED** | Evidence gate prevents widening behavior (e.g. F-001 STS crypto). |
 | **DIAGNOSTIC** | Safe parse/log only (F-002). |
 | **STRUCTURALLY CLOSED** | All server opcodes have models (F-003); one numeric `Server0x0015` contract and feature-owned emitters remain evidence-gated. |
 
-`Decomp/Analysis/GAMEPLAY_ECONOMY_SOCIAL_STATUS.md` uses **Partial** for the same rows when retail parity is still incomplete even if handlers exist — prefer this file for the 36-row completion snapshot.
+`Decomp/Analysis/GAMEPLAY_ECONOMY_SOCIAL_STATUS.md` intentionally uses
+**Partial** for implementation-complete rows when retail parity is still
+incomplete. Use this file for the handler/runtime completion snapshot, and the
+gameplay/matrix trackers for retail-parity gaps.
 
 ---
 
@@ -367,9 +370,9 @@ or commodity rows, item state, and online/offline currency persistence remains
 open.
 
 ### F-006 - Storefront / Account Inventory - COMPLETE
-Catalog, purchase, account currency charge, claim/return, pending item groups,
-daily login, coupon redemption, VC packages, wallet updates, purchase history,
-privilege restriction, purchase-velocity gate (10/hr), CREDD redeem (1000:1).
+Catalog, supported account-currency purchase, claim/return, pending item groups,
+daily login, coupon redemption, wallet updates, purchase history, privilege
+restriction, purchase-velocity gate (10/hr), and CREDD redeem (1000:1).
 70 focused packet/account tests. All `0969..0991` opcodes mapped.
 Character-select direct account purchases now apply entitlement/currency changes
 immediately and refresh the character list; in-world account-inventory direct
@@ -381,6 +384,10 @@ result, account-tier, catalog, purchase, and purchase-history surfaces are
 already covered, while the branch's `0x097D` transaction-update name is rejected
 by current pending-item-group delete evidence and its `0x03DD` subscription
 packet remains unmapped/unemitted.
+Known retail gaps remain for the real-money/Protobucks VC request-confirm path,
+the non-empty `0x026A` owned-order tail, live `0x0986`/`0x098F` emission,
+non-zero `096A..096C` leading-field producers, and the native coupon sender for
+`0x0790`.
 
 ### F-007 - Reward Rotation - PARTIAL
 Game-table refresh emits (`0x07CA` schedule, `0x07CD`/`0x07D3` content context),
@@ -612,6 +619,9 @@ receive the item; marketplace mail content type now persists across reload via
 item owner state before reporting delivery failure; auction return/won mail and
 commodity return/fill mail can compose marketplace row mutations with the mail
 save; final marketplace DB transaction/save parity remains under F-005.
+Known retail gaps remain for broader delete-state parity, exact expiration
+timing, VIP/trial social gates, and offline marketplace currency transaction
+atomicity.
 
 ### F-014 - Loot - COMPLETE
 Basic delivery, group roll/master-loot runtime, roll/assign/result packets,
@@ -716,19 +726,26 @@ Pulse Blast tooltip and hidden `+15 Volatility` effect. The supporting
 `currentPhase`/phase callbacks, and broad spell-script semantics remain blocked
 pending stronger runtime evidence.
 **AI movement this pass:** Rider's Reef `CombatAI` now resolves spell/range
-profiles through `ICombatProfileProvider` with the known starter combat
-Creature2-to-profile mappings loaded from the tracked embedded
-`AI/CombatProfiles.json` asset, including the default fallback auto-attack,
-aggro-spell, and chase-distance kit for default-enabled derived scripts, keeps
-sampled `Creature2Action` rows
-diagnostic-only, and adds bounded same-faction social assist with focused combat
-tests. Profiles can now define cooldown-gated special attacks that cast
+profiles through `ICombatProfileProvider` with a layered combat-kit catalog:
+`AI/CombatProfiles.json` carries only the default/manual overrides, while the
+reviewed `AI/CombatKits.json` asset maps shared Rider's Reef and Northern Wilds
+kits to combat-tagged Creature2 rows. The provider reports manual, reviewed-kit,
+action-derived, ignored-rule, and rejected-rule counts; active
+`Creature2Action` rules must be exact/evidence-labelled before they can resolve
+combat, so the current empty rule asset keeps sampled rows diagnostic-only. It
+also exposes detailed creature/action audit rows consumed by
+`Tools/CombatProfileAudit` for markdown/CSV review queues, and adds bounded
+same-faction social assist with focused combat tests. Profiles
+can now define cooldown-gated special attacks that cast
 ordinary `Spell4` rows through the existing spell runtime while honoring
 primary-target minimum range, hit-radius-aware effective maximum range, and
 vertical range; failed spell runtime starts do not consume the AI cooldown, and
 non-instant `CastTime` rows stop chase movement/auto-attacks during the windup,
 and `CCState.Interrupt` cancels active casts and clears the AI windup lockout so
-profiled NPCs can resume after a proven interrupt. This allows profiled NPC
+profiled NPCs can resume after a proven interrupt. Ready special attacks now
+rotate through deterministic weighted slots with a small per-creature cooldown
+offset so identical packs do not always fire the first ready skill in lockstep.
+This allows profiled NPC
 windups/telegraphs when the chosen spell data supports them. Patrolling
 creatures now walk back to leash before relaunching their data-backed patrol
 spline, including the existing reverse-speed spline normalisation. Server follow
@@ -871,7 +888,7 @@ profile); item rewards use `PathReward.Count` as a WIP-guessed stack count with
 zero falling back to one, and focused reward/path coverage now passes `74/74`.
 Exact reward presentation, overflow behavior, reward history, and retail
 flagged reward semantics still remain blocked. The last full current game test
-project pass remains `1806/1806`.
+project pass recorded in this file is now `2790/2790`.
 Public-event vote runtime is now hardened inside the existing proven vote path:
 client vote opcode `0x06EE` remains mapped as event id, vote id, team id, and
 choice, while `PublicEventVote.Choice` ignores finalised, non-participant,
@@ -1473,8 +1490,11 @@ log preferences. Zero stubs. Nearby server aux packet contracts `0x056B`,
 readback/initialisation semantics remain blocked.
 
 ### F-028 - Support / Reports / Surveys / Stuck - COMPLETE
-5 support handlers + stuck handler. Stuck cooldowns: RecallBind 30m,
-RecallHouse 30m, Death 30m. JSONL submission store. Survey parsing.
+5 support handlers + stuck handler. Stuck cooldowns are RecallBind 30m,
+RecallHouse 20m, and Death/Suicide 10m via `RetailStuckCooldownTracker`. JSONL
+submission store. Survey parsing. Durable database-backed case lifecycle,
+support-case readback, stuck-result signaling precision, and report/survey admin
+tooling remain incomplete.
 
 ### F-029 - Client DB / Data Mapping - COMPLETE
 Table registration pattern mapped, DataMapping exists. Field renames
@@ -1878,27 +1898,41 @@ false-source cleanup.
 Real database-backed pipeline (NOT empty stub). `DatabaseLeaderboardStore`
 with MySQL, 800 rows per table, caching, ranking, personal placement,
 score ingestion. `LeaderboardAggregation` for wire encoding.
+Known retail gaps remain for season/filter semantics, map or prime-level
+category rules, and broader live score-ingestion coverage.
 
 ### F-033 - Challenges - COMPLETE
 609-line `ChallengeManager`. 4 choice types: Activate, Abandon, AcceptShared,
 DeclineShared. Full lifecycle: activation, tier advancement (3 tiers),
 completion, sharing (30s timeout). DB persistence.
+Known retail gaps remain for `Client0x00C8` decode, share-init opcode ownership,
+combat objective/result hooks, reward tiers/medal win-chance, and
+quest/objective integration.
 
 ### F-034 - Datacubes / Journals / Galactic Archive - COMPLETE
 298-line `GalacticArchiveManager`. Unlock, view, rule-based auto-unlock
 (achievement/path/quest rules with ALL/ANY flag). DB persistence.
 `ServerGalacticArchiveRefresh` + `ServerGalacticArchiveUpdate`.
+Known retail gaps remain for broader content hookups, archive-link parent/child
+authorization, full journal/datacube progression semantics, path-mission rule
+parity, and wider Codex UX coverage.
 
 ### F-035 - Achievements - COMPLETE
 Generic base manager with checklist/value progress tracking, prerequisite
 checks, completion marking. Realm-first tracking (character + guild).
 Guild achievement forwarding. Title grants on completion.
+Known retail gaps remain for full trigger coverage, Steam achievement payload
+grammar/ingest mapping, exact realm-first broadcast semantics, remaining updater
+parity, and achievement UI edge cases.
 
 ### F-036 - Zone Maps / Zone Completion - COMPLETE
 Hex group discovery, movement-based rate limiting (10 unit^2 threshold),
 `WorldZone` parent chain + `MapZoneWorldJoin` fallback. Zone completion
 with `AchievementType.MapComplete`, `ZoneCompletionRewardResolver`,
 faction-aware. DB persistence.
+Known retail gaps remain for full zone-completion semantics, non-title rewards,
+faction/path-specific completion rows, and quest/challenge/datacube/journal
+total integration from `ZoneCompletion`.
 
 ---
 
