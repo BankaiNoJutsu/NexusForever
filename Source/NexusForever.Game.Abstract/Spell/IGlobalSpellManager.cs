@@ -43,6 +43,14 @@ namespace NexusForever.Game.Abstract.Spell
         IEnumerable<TelegraphDamageEntry> GetTelegraphDamageEntries(uint spell4Id);
 
         /// <summary>
+        /// Return all <see cref="Spell4ThresholdsEntry"/>'s for the supplied spell id.
+        /// </summary>
+        /// <remarks>
+        /// This should only be used for cache related code, if you want an overview of a spell use <see cref="ISpellBaseInfo"/>.
+        /// </remarks>
+        IEnumerable<Spell4ThresholdsEntry> GetSpell4ThresholdEntries(uint spell4Id);
+
+        /// <summary>
         /// Return <see cref="ISpellBaseInfo"/>, if not already cached it will be generated before being returned.
         /// </summary>
         ISpellBaseInfo GetSpellBaseInfo(uint spell4BaseId);

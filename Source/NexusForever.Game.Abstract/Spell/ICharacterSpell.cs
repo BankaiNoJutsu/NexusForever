@@ -26,6 +26,11 @@ namespace NexusForever.Game.Abstract.Spell
         /// </summary>
         void Cast(bool buttonPressed, string clientRequestSource = null);
 
+        /// <summary>
+        /// Used for continuous casting when the client supplied a resolved primary target.
+        /// </summary>
+        void Cast(bool buttonPressed, uint primaryTargetId, uint clientContextToken = 0u, string clientRequestSource = null);
+
         void UseCharge();
         void SetAbilityCharges(uint charges);
         void ModifyAbilityCharges(int delta);

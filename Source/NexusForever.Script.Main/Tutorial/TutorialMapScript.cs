@@ -94,6 +94,11 @@ namespace NexusForever.Script.Main.Tutorial
         private const uint CryopodNpcB = 73664u;
         private const uint CryopodNpcAWL = 51711u;
         private const uint CryopodNpcBWL = 51712u;
+        private const uint SkyplotReceiverNpc = 73421u;
+        private const uint SkyplotReceiverNpcWL = 52819u;
+        private const uint HousingProjectorCreatureId = 73741u;
+        private const uint ExileHousingProjectorWL = 51741u;
+        private const uint DominionHousingProjectorWL = 52905u;
 
         // Exile departure (zone 5998): quest 10528 NPC + escape pod consoles + checklist entities
         private const uint ExileEscapePodNpcId = 73604u;
@@ -304,8 +309,10 @@ namespace NexusForever.Script.Main.Tutorial
                 (ToVector3(turret00), 5f, ExileCombatTurretCreatureId),
                 (ToVector3(turret01), 5f, ExileCombatTurretCreatureId)))
             {
-                log.LogDebug("Skipping Rider's Reef Exile combat lane fallback on map {MapId}: imported combat anchor entities are already active.",
-                    owner.Entry.Id);
+                int finalWaveSpawned = EnsureExileCombatFinalWave(final);
+                log.LogDebug("Skipping Rider's Reef Exile combat lane fallback on map {MapId}: imported combat anchor entities are already active; final wave fallback spawned {FinalWaveSpawned} missing entities.",
+                    owner.Entry.Id,
+                    finalWaveSpawned);
                 exileCombatLaneSpawned = true;
                 return;
             }
@@ -323,10 +330,7 @@ namespace NexusForever.Script.Main.Tutorial
             SpawnTutorialEntity<INonPlayerEntity>(ExileCombatTurretCreatureId, ToVector3(turret00), factionOverride: TutorialDominionCombatFaction);
             SpawnTutorialEntity<INonPlayerEntity>(ExileCombatTurretCreatureId, ToVector3(turret01), factionOverride: TutorialDominionCombatFaction);
 
-            Vector3 finalPosition = ToVector3(final);
-            SpawnTutorialEntity<INonPlayerEntity>(73492u, finalPosition + new Vector3(-9f, 0f, -6f));
-            SpawnTutorialEntity<INonPlayerEntity>(73567u, finalPosition + new Vector3(8f, 0f, 5f));
-            SpawnTutorialEntity<INonPlayerEntity>(73492u, finalPosition + new Vector3(14f, 0f, -9f));
+            EnsureExileCombatFinalWave(final);
 
             exileCombatLaneSpawned = true;
             log.LogDebug("Spawned Rider's Reef Exile combat lane on map {MapId}: battleBeasts=5, mines=3, turrets=2, legionnaires=3.",
@@ -360,8 +364,10 @@ namespace NexusForever.Script.Main.Tutorial
                 (ToVector3(turret00), 5f, DominionCombatTurretCreatureId),
                 (ToVector3(turret01), 5f, DominionCombatTurretCreatureId)))
             {
-                log.LogDebug("Skipping Rider's Reef Dominion combat lane fallback on map {MapId}: imported combat anchor entities are already active.",
-                    owner.Entry.Id);
+                int finalWaveSpawned = EnsureDominionCombatFinalWave(elite);
+                log.LogDebug("Skipping Rider's Reef Dominion combat lane fallback on map {MapId}: imported combat anchor entities are already active; final wave fallback spawned {FinalWaveSpawned} missing entities.",
+                    owner.Entry.Id,
+                    finalWaveSpawned);
                 dominionCombatLaneSpawned = true;
                 return;
             }
@@ -379,14 +385,47 @@ namespace NexusForever.Script.Main.Tutorial
             SpawnTutorialEntity<INonPlayerEntity>(DominionCombatTurretCreatureId, ToVector3(turret00), factionOverride: TutorialExileCombatFaction);
             SpawnTutorialEntity<INonPlayerEntity>(DominionCombatTurretCreatureId, ToVector3(turret01), factionOverride: TutorialExileCombatFaction);
 
-            Vector3 elitePosition = ToVector3(elite);
-            SpawnTutorialEntity<INonPlayerEntity>(73473u, elitePosition + new Vector3(-9f, 0f, -6f));
-            SpawnTutorialEntity<INonPlayerEntity>(73566u, elitePosition + new Vector3(8f, 0f, 5f));
-            SpawnTutorialEntity<INonPlayerEntity>(73473u, elitePosition + new Vector3(14f, 0f, -9f));
+            EnsureDominionCombatFinalWave(elite);
 
             dominionCombatLaneSpawned = true;
             log.LogDebug("Spawned Rider's Reef Dominion combat lane on map {MapId}: dagun=5, mines=3, turrets=2, finalHostiles=3.",
                 owner.Entry.Id);
+        }
+
+        private int EnsureExileCombatFinalWave(WorldLocation2Entry final)
+        {
+            Vector3 finalPosition = ToVector3(final);
+            int spawned = 0;
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(73492u, finalPosition + new Vector3(-9f, 0f, -6f));
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(73567u, finalPosition + new Vector3(8f, 0f, 5f));
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(73492u, finalPosition + new Vector3(14f, 0f, -9f));
+            return spawned;
+        }
+
+        private int EnsureDominionCombatFinalWave(WorldLocation2Entry elite)
+        {
+            Vector3 elitePosition = ToVector3(elite);
+            int spawned = 0;
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(73473u, elitePosition + new Vector3(-9f, 0f, -6f));
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(73566u, elitePosition + new Vector3(8f, 0f, 5f));
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(73473u, elitePosition + new Vector3(14f, 0f, -9f));
+            return spawned;
+        }
+
+        private int EnsureTutorialEntity<T>(
+            uint creatureId,
+            Vector3 position,
+            float duplicateRadius = 5f,
+            Vector3 rotation = default,
+            byte? questChecklistIdx = null,
+            EntityCreateFlag createFlags = 0,
+            Faction? factionOverride = null) where T : class, IWorldEntity
+        {
+            if (HasActiveOrCachedEntity(creatureId, position, duplicateRadius))
+                return 0;
+
+            SpawnTutorialEntity<T>(creatureId, position, rotation, questChecklistIdx, createFlags, factionOverride);
+            return 1;
         }
 
         private void SpawnTutorialEntity<T>(
@@ -437,21 +476,25 @@ namespace NexusForever.Script.Main.Tutorial
 
         private bool HasActiveCombatLaneAnchors(params (Vector3 Position, float Radius, uint CreatureId)[] anchors)
         {
-            IEntityCache entityCache = entityCacheManager.GetEntityCache((ushort)owner.Entry.Id);
-
             foreach ((Vector3 position, float radius, uint creatureId) in anchors)
             {
-                if (owner.Search(Vector3.Zero, null, new CreatureSearchCheck(creatureId))
-                    .Any(entity => IsWithinAnchorRadius(entity.Position, position, radius)))
-                {
-                    continue;
-                }
-
-                if (!HasCachedCombatAnchor(entityCache, position, radius, creatureId))
+                if (!HasActiveOrCachedEntity(creatureId, position, radius))
                     return false;
             }
 
             return true;
+        }
+
+        private bool HasActiveOrCachedEntity(uint creatureId, Vector3 position, float radius)
+        {
+            if (owner.Search(Vector3.Zero, null, new CreatureSearchCheck(creatureId))
+                .Any(entity => IsWithinAnchorRadius(entity.Position, position, radius)))
+            {
+                return true;
+            }
+
+            IEntityCache entityCache = entityCacheManager.GetEntityCache((ushort)owner.Entry.Id);
+            return HasCachedCombatAnchor(entityCache, position, radius, creatureId);
         }
 
         private static bool HasCachedCombatAnchor(IEntityCache entityCache, Vector3 anchorPosition, float radius, uint creatureId)
@@ -573,33 +616,43 @@ namespace NexusForever.Script.Main.Tutorial
                 return;
 
             WorldLocation2Entry wlA = gameTableManager.WorldLocation2.GetEntry(CryopodNpcAWL);
-            if (wlA != null && owner.Search(ToVector3(wlA), 15f, new CreatureSearchCheck(CryopodNpcA)).Any())
-            {
-                log.LogDebug("Skipping Rider's Reef cryopod NPC fallback on map {MapId}: imported NPCs already active.", owner.Entry.Id);
-                cryopodNpcsSpawned = true;
-                return;
-            }
             WorldLocation2Entry wlB = gameTableManager.WorldLocation2.GetEntry(CryopodNpcBWL);
+            WorldLocation2Entry receiverWl = gameTableManager.WorldLocation2.GetEntry(SkyplotReceiverNpcWL);
+            WorldLocation2Entry exileProjectorWl = gameTableManager.WorldLocation2.GetEntry(ExileHousingProjectorWL);
+            WorldLocation2Entry dominionProjectorWl = gameTableManager.WorldLocation2.GetEntry(DominionHousingProjectorWL);
 
-            if (wlA == null || wlB == null)
+            if (wlA == null || wlB == null || receiverWl == null || exileProjectorWl == null || dominionProjectorWl == null)
             {
-                log.LogWarning("Unable to spawn Rider's Reef cryopod NPCs on map {MapId}: one or more world locations are missing.",
+                log.LogWarning("Unable to spawn Rider's Reef skyplot fallback entities on map {MapId}: one or more world locations are missing.",
                     owner.Entry.Id);
                 return;
             }
 
-            SpawnTutorialEntity<INonPlayerEntity>(CryopodNpcA, ToVector3(wlA));
-            SpawnTutorialEntity<INonPlayerEntity>(CryopodNpcB, ToVector3(wlB));
-            SpawnTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcA, ToVector3(wlA) + new Vector3(2f, 0f, 2f));
-            SpawnTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcB, ToVector3(wlB) + new Vector3(2f, 0f, 2f));
+            int spawned = 0;
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodNpcA, ToVector3(wlA));
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodNpcB, ToVector3(wlB));
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcA, ToVector3(wlA) + new Vector3(2f, 0f, 2f));
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcB, ToVector3(wlB) + new Vector3(2f, 0f, 2f));
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(SkyplotReceiverNpc, ToVector3(receiverWl));
+            spawned += EnsureTutorialEntity<ISimpleCollidableEntity>(
+                HousingProjectorCreatureId,
+                ToVector3(exileProjectorWl),
+                createFlags: EntityCreateFlag.HasInteractionPrereq);
+            spawned += EnsureTutorialEntity<ISimpleCollidableEntity>(
+                HousingProjectorCreatureId,
+                ToVector3(dominionProjectorWl),
+                createFlags: EntityCreateFlag.HasInteractionPrereq);
 
             cryopodNpcsSpawned = true;
-            log.LogDebug("Spawned Rider's Reef cryopod NPCs on map {MapId}: talkTo={NpcA},{NpcB}, targetGroup={TgNpcA},{TgNpcB}.",
+            log.LogDebug("Ensured Rider's Reef skyplot fallback entities on map {MapId}: spawned={Spawned}, talkTo={NpcA},{NpcB}, targetGroup={TgNpcA},{TgNpcB}, receiver={ReceiverNpc}, projectors={ProjectorCreature}.",
                 owner.Entry.Id,
+                spawned,
                 CryopodNpcA,
                 CryopodNpcB,
                 CryopodTargetGroupNpcA,
-                CryopodTargetGroupNpcB);
+                CryopodTargetGroupNpcB,
+                SkyplotReceiverNpc,
+                HousingProjectorCreatureId);
         }
 
         private void EnsureExileDepartureEntities()

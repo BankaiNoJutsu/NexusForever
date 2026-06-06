@@ -1,3 +1,6 @@
+using System.Numerics;
+using NexusForever.Game.Static.Reputation;
+
 namespace NexusForever.Game.Static.Tutorial
 {
     public static class StarterTutorialDefinition
@@ -45,6 +48,25 @@ namespace NexusForever.Game.Static.Tutorial
             DominionCrimsonIsleDepartureTerminalCreatureId,
             DominionLevianBayDepartureTerminalCreatureId
         ];
+
+        public static Vector3 ExileCombatSimulationTeleportPosition => new(-50.53350067138672f, -861.4010009765625f, 307.8080139160156f);
+        public static Vector3 DominionCombatSimulationTeleportPosition => new(50.53350067138672f, -861.4010009765625f, 307.8080139160156f);
+
+        public static bool TryGetCombatSimulationTeleportPosition(Faction faction, out Vector3 position)
+        {
+            switch (faction)
+            {
+                case Faction.Exile:
+                    position = ExileCombatSimulationTeleportPosition;
+                    return true;
+                case Faction.Dominion:
+                    position = DominionCombatSimulationTeleportPosition;
+                    return true;
+                default:
+                    position = default;
+                    return false;
+            }
+        }
 
         public static bool ShouldRecoverHoverboardFinishPosition(
             bool projectorObjectiveComplete,

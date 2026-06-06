@@ -27,5 +27,11 @@ namespace NexusForever.Game.Abstract.Spell
 
         List<TelegraphDamageEntry> Telegraphs { get; }
         List<Spell4EffectsEntry> Effects { get; }
+        List<Spell4ThresholdsEntry> Thresholds { get; }
+
+        /// <summary>
+        /// Return the threshold child spell for the supplied threshold stage.
+        /// </summary>
+        ISpellInfo GetThresholdSpellInfo(uint thresholdIndex, out Spell4ThresholdsEntry thresholdEntry);
     }
 }

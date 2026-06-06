@@ -40,8 +40,8 @@ namespace NexusForever.Game.Spell
 
         public ISpellParameters Parameters { get; }
         public uint CastingId { get; }
-        public bool IsCasting => status == SpellStatus.Casting;
-        public bool BlocksCasting => status == SpellStatus.Casting || (status == SpellStatus.Executing && (awaitingInitialImpact || channelCompletePending));
+        public bool IsCasting => status == SpellStatus.Casting || status == SpellStatus.Waiting;
+        public bool BlocksCasting => status == SpellStatus.Casting || status == SpellStatus.Waiting || (status == SpellStatus.Executing && (awaitingInitialImpact || channelCompletePending));
         public bool IsFinished => status == SpellStatus.Finished;
 
         public IUnitEntity Caster { get; }
@@ -56,6 +56,7 @@ namespace NexusForever.Game.Spell
         private readonly List<PendingSpellGoEffect> pendingSpellGoEffects = new();
         private readonly Dictionary<ISpellTargetEffectInfo, ISpellEvent> lifetimeEvents = new();
         private readonly HashSet<(uint TargetId, uint EffectEntryId)> terminatedPersistentEffects = new();
+        private uint chargeThresholdValue;
 
         private readonly ISpellEventManager events = new SpellEventManager();
 
@@ -139,7 +140,7 @@ namespace NexusForever.Game.Spell
                 if (!Parameters.IgnoreGlobalCooldown && Parameters.SpellInfo.GlobalCooldown != null)
                     player.SpellManager.SetGlobalSpellCooldown(Parameters.SpellInfo.GlobalCooldown.CooldownTime / 1000d);
 
-            if (Caster is not IPlayer)
+            if (Caster is not IPlayer || IsChargeReleaseThresholdSpell())
                 InitialiseTelegraphs();
 
             scriptCollection.Invoke<ISpellScript>(s => s.OnCast(this));
@@ -150,6 +151,9 @@ namespace NexusForever.Game.Spell
                 Execute();
             else
                 events.EnqueueEvent(new SpellEvent(Parameters.SpellInfo.Entry.CastTime / 1000d, Execute));
+
+            if (IsChargeReleaseThresholdSpell())
+                ScheduleChargeThresholdEvents();
 
             SpellRuntimeEvidenceCollector.RecordCastAttempt(this, CastResult.Ok);
 
@@ -280,7 +284,7 @@ namespace NexusForever.Game.Spell
             if (target is not IUnitEntity unitTarget)
                 return CastResult.TargetUnknown;
 
-            CastResult result = CheckTargetLivingState(unitTarget);
+            CastResult result = CheckTargetLivingState(unitTarget, AllowsObjectMaskAsLivingUnitTarget(unitTarget));
             if (result != CastResult.Ok)
                 return result;
 
@@ -294,6 +298,19 @@ namespace NexusForever.Game.Spell
             // Simple entities are used for many interactable world objects even though the
             // server models them as units for entity-create/stat purposes.
             return target is not IUnitEntity || target.Type == EntityType.Simple;
+        }
+
+        private bool AllowsObjectMaskAsLivingUnitTarget(IUnitEntity target)
+        {
+            uint validTargetMask = Parameters.SpellInfo.BaseInfo.ValidTargets?.TargetBitmask ?? 0u;
+            if ((validTargetMask & ValidTargetObjectMask) == 0u)
+                return false;
+
+            if (ReferenceEquals(target, Caster) || (target.Guid != 0u && target.Guid == Caster.Guid))
+                return true;
+
+            TargetGroupEntry castGroup = Parameters.SpellInfo.BaseInfo.CastGroup;
+            return castGroup != null && TargetGroupCriteriaEvaluator.Evaluate(castGroup, target, GameTableManager.Instance);
         }
 
         private CastResult CheckPrimaryTargetCastGroup(IWorldEntity target)
@@ -312,14 +329,15 @@ namespace NexusForever.Game.Spell
             return Caster.GetDispositionTo(target.Faction1) < Disposition.Friendly;
         }
 
-        private CastResult CheckTargetLivingState(IUnitEntity target)
+        private CastResult CheckTargetLivingState(IUnitEntity target, bool allowObjectMaskAsLivingTarget = false)
         {
             uint validTargetMask = Parameters.SpellInfo.BaseInfo.ValidTargets?.TargetBitmask ?? 0u;
             if (validTargetMask == 0u)
                 return CastResult.Ok;
 
             bool allowsDeadTargets = (validTargetMask & ValidTargetDeadMask) != 0u;
-            bool allowsLivingTargets = (validTargetMask & ~(ValidTargetDeadMask | ValidTargetObjectMask)) != 0u;
+            bool allowsLivingTargets = (validTargetMask & ~(ValidTargetDeadMask | ValidTargetObjectMask)) != 0u
+                || (allowObjectMaskAsLivingTarget && (validTargetMask & ValidTargetObjectMask) != 0u);
 
             if (!allowsDeadTargets && !allowsLivingTargets)
                 return CastResult.TargetUnknown;
@@ -832,6 +850,9 @@ namespace NexusForever.Game.Spell
                 });
             }
 
+            if (IsChargeReleaseThresholdSpell())
+                SendThresholdClear();
+
             events.CancelEvents();
             cancelled = true;
             status = SpellStatus.Executing;
@@ -893,12 +914,47 @@ namespace NexusForever.Game.Spell
 
         bool ISpell.TryCancelEffect(IUnitEntity requester) => TryCancelEffect(requester);
 
+        public bool TryReleaseChargeSpell(ICharacterSpell characterSpell, uint rootSpell4Id, uint primaryTargetId, uint clientContextToken = 0u, string clientRequestSource = null)
+        {
+            if (!IsChargeReleaseThresholdSpell() || status != SpellStatus.Waiting)
+                return false;
+
+            if (!MatchesChargeReleaseSpell(characterSpell, rootSpell4Id))
+                return false;
+
+            ISpellInfo thresholdSpellInfo = Parameters.SpellInfo.GetThresholdSpellInfo(chargeThresholdValue, out Spell4ThresholdsEntry thresholdEntry);
+            if (thresholdSpellInfo == null || thresholdEntry == null)
+                return false;
+
+            uint resolvedPrimaryTargetId = primaryTargetId != 0u ? primaryTargetId : Parameters.PrimaryTargetId;
+            var childParameters = new SpellParameters
+            {
+                ParentSpellInfo        = Parameters.SpellInfo,
+                RootSpellInfo          = Parameters.RootSpellInfo ?? Parameters.SpellInfo,
+                PrimaryTargetId        = resolvedPrimaryTargetId,
+                UserInitiatedSpellCast = Parameters.UserInitiatedSpellCast,
+                IgnoreGlobalCooldown   = true,
+                ClientContextToken     = clientContextToken != 0u ? clientContextToken : Parameters.ClientContextToken,
+                ClientRequestSource    = clientRequestSource ?? Parameters.ClientRequestSource,
+                Position               = Parameters.Position
+            };
+
+            CastResult result = Caster.TryCastSpell(thresholdSpellInfo.Entry.Id, childParameters);
+            if (result == CastResult.Ok)
+                ApplyChargeReleaseCostAndCooldown();
+
+            FinishChargeReleaseShell(result != CastResult.Ok);
+            return true;
+        }
+
         private void Execute()
         {
             status = SpellStatus.Executing;
             log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} has started executing.");
 
-            if (Caster is IPlayer player)
+            bool chargeReleaseThresholdSpell = IsChargeReleaseThresholdSpell();
+
+            if (!chargeReleaseThresholdSpell && Caster is IPlayer player)
                 if (Parameters.SpellInfo.Entry.SpellCoolDown != 0u)
                     player.SpellManager.SetSpellCooldown(Parameters.SpellInfo.Entry.Id, Parameters.SpellInfo.Entry.SpellCoolDown / 1000d);
 
@@ -909,6 +965,13 @@ namespace NexusForever.Game.Spell
 
             if (Caster is IPlayer executingPlayer)
                 SpellQuestObjectiveUpdater.UpdateSpellSuccessObjectives(executingPlayer, Parameters.SpellInfo.Entry.Id);
+
+            if (chargeReleaseThresholdSpell)
+            {
+                SendThresholdStart();
+                status = SpellStatus.Waiting;
+                return;
+            }
 
             CostSpell();
         }
@@ -927,6 +990,84 @@ namespace NexusForever.Game.Spell
         {
             if (Parameters.CharacterSpell?.MaxAbilityCharges > 0)
                 Parameters.CharacterSpell.UseCharge();
+        }
+
+        private bool IsChargeReleaseThresholdSpell()
+        {
+            return Parameters.ParentSpellInfo == null
+                && Parameters.SpellInfo.BaseInfo.CastMethod == SpellCastMethod.ChargeRelease
+                && (Parameters.SpellInfo.Thresholds?.Count ?? 0) != 0;
+        }
+
+        private bool MatchesChargeReleaseSpell(ICharacterSpell characterSpell, uint rootSpell4Id)
+        {
+            if (characterSpell != null && ReferenceEquals(Parameters.CharacterSpell, characterSpell))
+                return true;
+
+            if (rootSpell4Id == 0u)
+                return false;
+
+            return Parameters.SpellInfo.Entry.Id == rootSpell4Id
+                || Parameters.RootSpellInfo?.Entry.Id == rootSpell4Id;
+        }
+
+        private void ScheduleChargeThresholdEvents()
+        {
+            uint nextThresholdTime = Parameters.SpellInfo.Entry.CastTime;
+            foreach (Spell4ThresholdsEntry threshold in Parameters.SpellInfo.Thresholds.OrderBy(t => t.OrderIndex))
+            {
+                nextThresholdTime += threshold.ThresholdDuration;
+                if (threshold.OrderIndex == 0u)
+                    continue;
+
+                uint thresholdValue = threshold.OrderIndex;
+                events.EnqueueEvent(new SpellEvent(nextThresholdTime / 1000d, () =>
+                {
+                    if (status != SpellStatus.Waiting)
+                        return;
+
+                    chargeThresholdValue = thresholdValue;
+                    SendThresholdUpdate();
+                }));
+            }
+
+            uint thresholdTime = Parameters.SpellInfo.Entry.ThresholdTime;
+            if (thresholdTime == 0u)
+                return;
+
+            events.EnqueueEvent(new SpellEvent(thresholdTime / 1000d, () =>
+            {
+                if (status != SpellStatus.Waiting)
+                    return;
+
+                TryReleaseChargeSpell(
+                    Parameters.CharacterSpell,
+                    Parameters.RootSpellInfo?.Entry.Id ?? Parameters.SpellInfo.Entry.Id,
+                    Parameters.PrimaryTargetId,
+                    Parameters.ClientContextToken,
+                    Parameters.ClientRequestSource);
+            }));
+        }
+
+        private void ApplyChargeReleaseCostAndCooldown()
+        {
+            if (Caster is IPlayer player && Parameters.SpellInfo.Entry.SpellCoolDown != 0u)
+                player.SpellManager.SetSpellCooldown(Parameters.SpellInfo.Entry.Id, Parameters.SpellInfo.Entry.SpellCoolDown / 1000d);
+
+            CostSpell();
+        }
+
+        private void FinishChargeReleaseShell(bool wasCancelled)
+        {
+            if (status == SpellStatus.Finished)
+                return;
+
+            events.CancelEvents();
+            cancelled = wasCancelled;
+            SendThresholdClear();
+            status = SpellStatus.Finished;
+            scriptCollection.Invoke<ISpellScript>(s => s.OnFinish(this, cancelled));
+            SendSpellFinish();
         }
 
         private void SelectTargets()
@@ -1943,6 +2084,43 @@ namespace NexusForever.Game.Spell
             {
                 ServerUniqueId = CastingId,
             }, true);
+        }
+
+        private void SendThresholdStart()
+        {
+            if (Caster is not IPlayer player || player.IsLoading)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerSpellThresholdStart
+            {
+                Spell4Id       = Parameters.SpellInfo.Entry.Id,
+                RootSpell4Id   = Parameters.RootSpellInfo?.Entry.Id ?? Parameters.SpellInfo.Entry.Id,
+                ParentSpell4Id = Parameters.ParentSpellInfo?.Entry.Id ?? 0u,
+                CastingId      = CastingId
+            });
+        }
+
+        private void SendThresholdUpdate()
+        {
+            if (Caster is not IPlayer player || player.IsLoading)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerSpellThresholdUpdate
+            {
+                Spell4Id = Parameters.SpellInfo.Entry.Id,
+                Stage    = (byte)chargeThresholdValue
+            });
+        }
+
+        private void SendThresholdClear()
+        {
+            if (Caster is not IPlayer player || player.IsLoading)
+                return;
+
+            player.Session.EnqueueMessageEncrypted(new ServerSpellThresholdClear
+            {
+                Spell4Id = Parameters.SpellInfo.Entry.Id
+            });
         }
 
         private void SendSpellGo(bool sendEmpty = false)

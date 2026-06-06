@@ -1,13 +1,17 @@
 using System.Numerics;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Static.Prerequisite;
+using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
@@ -84,6 +88,68 @@ public class SpellTargetValidationTests
             var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
 
             Assert.Equal(CastResult.Ok, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", target));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void CheckPrimaryTargetValidMask_AllowsObjectMaskForSelfTargetedUnit()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider();
+
+        try
+        {
+            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> casterProxy);
+            casterProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
+
+            var parameters = new NexusForever.Game.Spell.SpellParameters
+            {
+                SpellInfo = CreateSpellInfoWithValidTargetMask(0x02u)
+            };
+
+            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
+
+            Assert.Equal(CastResult.Ok, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", caster));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Theory]
+    [InlineData((uint)Faction.Exile, CastResult.Ok)]
+    [InlineData((uint)Faction.MatchingTeam2, CastResult.TargetUnknown)]
+    public void CheckPrimaryTargetValidMask_AllowsObjectMaskUnitTargetsOnlyWhenCastGroupMatches(uint faction2Id, CastResult expected)
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider();
+
+        try
+        {
+            IUnitEntity caster = CreateUnit(1001u, Vector3.Zero, out _);
+            IUnitEntity target = CreateUnit(2002u, Vector3.Zero, out RecordingDispatchProxy<IUnitEntity> targetProxy);
+            targetProxy.SetProperty(nameof(IWorldEntity.Faction2), (Faction)faction2Id);
+            targetProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
+
+            var parameters = new NexusForever.Game.Spell.SpellParameters
+            {
+                SpellInfo = CreateSpellInfoWithValidTargetMask(
+                    0x02u,
+                    new TargetGroupEntry
+                    {
+                        Type        = 3u,
+                        DataEntries = [166u, 167u, 391u, 0u, 0u, 0u, 0u]
+                    })
+            };
+
+            var spell = new NexusForever.Game.Spell.Spell(caster, parameters);
+
+            Assert.Equal(expected, InvokePrivate<CastResult>(spell, "CheckPrimaryTargetValidMask", target));
         }
         finally
         {
@@ -319,6 +385,7 @@ public class SpellTargetValidationTests
 
         return new ServiceCollection()
             .AddSingleton<NexusForever.Game.Spell.GlobalSpellManager>()
+            .AddSingleton(new GameTableManager(Options.Create(new GameTableConfig())))
             .AddSingleton(scriptManager)
             .BuildServiceProvider();
     }
@@ -396,11 +463,12 @@ public class SpellTargetValidationTests
         return spellInfo;
     }
 
-    private static ISpellInfo CreateSpellInfoWithValidTargetMask(uint targetBitmask)
+    private static ISpellInfo CreateSpellInfoWithValidTargetMask(uint targetBitmask, TargetGroupEntry castGroup = null)
     {
         ISpellBaseInfo baseInfo = RecordingDispatchProxy<ISpellBaseInfo>.Create(out RecordingDispatchProxy<ISpellBaseInfo> baseInfoProxy);
         baseInfoProxy.SetProperty(nameof(ISpellBaseInfo.Entry), new Spell4BaseEntry { Id = 101u });
         baseInfoProxy.SetProperty(nameof(ISpellBaseInfo.ValidTargets), new Spell4ValidTargetsEntry { TargetBitmask = targetBitmask });
+        baseInfoProxy.SetProperty(nameof(ISpellBaseInfo.CastGroup), castGroup);
 
         ISpellInfo spellInfo = RecordingDispatchProxy<ISpellInfo>.Create(out RecordingDispatchProxy<ISpellInfo> spellInfoProxy);
         spellInfoProxy.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry { Id = 126u, Spell4BaseIdBaseSpell = 101u });

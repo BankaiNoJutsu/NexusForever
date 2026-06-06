@@ -194,6 +194,11 @@ namespace NexusForever.Game.Abstract.Entity
         void CancelSpellCast(uint castingId, CastResult result);
 
         /// <summary>
+        /// Release an active charge-release spell owned by the supplied character spell.
+        /// </summary>
+        bool TryReleaseChargeSpell(ICharacterSpell characterSpell, uint rootSpell4Id, uint primaryTargetId, uint clientContextToken = 0u, string clientRequestSource = null);
+
+        /// <summary>
         /// Attempt to cancel a client-cancelable active spell effect by server unique id.
         /// </summary>
         bool TryCancelSpellEffect(uint serverUniqueId);

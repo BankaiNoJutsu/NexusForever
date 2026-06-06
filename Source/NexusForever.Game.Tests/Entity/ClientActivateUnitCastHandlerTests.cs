@@ -172,6 +172,27 @@ public class ClientActivateUnitCastHandlerTests
         });
     }
 
+    [Fact]
+    public void HandleMessageInternal_WithTutorialHousingProjectorAndMissingActivateSpell_CompletesActivationWithoutCasting()
+    {
+        RunWithLegacyProvider(() =>
+        {
+            ClientActivateUnitCastHandler handler = CreateHandler();
+            IWorldSession session = CreateSession(
+                creatureId: 73741u,
+                castResult: CastResult.NoValidActivateSpell,
+                out RecordingDispatchProxy<IPlayer> playerProxy,
+                out RecordingDispatchProxy<IWorldEntity> entityProxy,
+                activateSpellId: 0u);
+
+            InvokeHandleMessageInternal(handler, session, 77u, 0u, nameof(ClientActivateUnitCast));
+
+            Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+            Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+            Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+        });
+    }
+
     private static void RunWithLegacyProvider(Action action)
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -208,7 +229,8 @@ public class ClientActivateUnitCastHandlerTests
         IWorldEntity entity = RecordingDispatchProxy<IWorldEntity>.Create(out entityProxy);
         IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out RecordingDispatchProxy<IQuestManager> questProxy);
         ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out _);
-        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
+        mapProxy.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = 3460u });
 
         questProxy.SetMethodReturn(nameof(IQuestManager.GetActiveQuests), Array.Empty<IQuest>());
 
@@ -278,7 +300,8 @@ public class ClientActivateUnitCastHandlerTests
             CreateCreatureEntry(73419u),
             CreateCreatureEntry(73463u),
             CreateCreatureEntry(73667u),
-            CreateCreatureEntry(73668u)));
+            CreateCreatureEntry(73668u),
+            CreateCreatureEntry(73741u)));
 
         return new ServiceCollection()
             .AddSingleton(gameTableManager)

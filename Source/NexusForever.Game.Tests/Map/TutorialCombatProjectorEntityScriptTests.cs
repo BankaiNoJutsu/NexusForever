@@ -11,6 +11,7 @@ using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
+using NexusForever.Game.Static.Tutorial;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -76,9 +77,9 @@ public class TutorialCombatProjectorEntityScriptTests
         playerProxy.SetMethodHandler(nameof(IPlayer.TeleportTo), args =>
         {
             Assert.Equal((ushort)3460, (ushort)args[0]);
-            Assert.Equal(10f, (float)args[1]);
-            Assert.Equal(20f, (float)args[2]);
-            Assert.Equal(30f, (float)args[3]);
+            Assert.Equal(StarterTutorialDefinition.ExileCombatSimulationTeleportPosition.X, (float)args[1]);
+            Assert.Equal(StarterTutorialDefinition.ExileCombatSimulationTeleportPosition.Y, (float)args[2]);
+            Assert.Equal(StarterTutorialDefinition.ExileCombatSimulationTeleportPosition.Z, (float)args[3]);
             order.Add("teleport");
             return null;
         });

@@ -15,6 +15,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
         private const uint TutorialHoverboardProjectorCreatureId = 73419u;
         private const uint TutorialHoverboardFinishCreatureId = 73735u;
+        private const uint TutorialHousingProjectorCreatureId = 73741u;
         private const uint TutorialHoverboardMountSpellId = 85562u;
         private const ushort TutorialWorldId = 3460;
 
@@ -43,8 +44,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                     throw new InvalidPacketValueException();
             }
 
-            if (IsTutorialHoverboardActivationEntity(entity))
-                log.Debug($"Tutorial hoverboard activate attempt: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, busy={entity.IsBusy}.");
+            if (IsTutorialSpecialActivationEntity(entity))
+                log.Debug($"Tutorial activate attempt: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}, busy={entity.IsBusy}.");
 
             if (ActivateUnitCombatHelper.TryHandleHostileActivation(session, entity))
             {
@@ -54,15 +55,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
             if (ActivationInteractionGuards.TryRejectBusyTarget(session, entity))
             {
-                if (IsTutorialHoverboardActivationEntity(entity))
-                    log.Debug($"Tutorial hoverboard activate rejected busy: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");
+                if (IsTutorialSpecialActivationEntity(entity))
+                    log.Debug($"Tutorial activate rejected busy: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");
                 return;
             }
 
             if (ActivationInteractionGuards.TryRejectOutOfRangeTarget(session, entity))
             {
-                if (IsTutorialHoverboardActivationEntity(entity))
-                    log.Debug($"Tutorial hoverboard activate rejected range: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");
+                if (IsTutorialSpecialActivationEntity(entity))
+                    log.Debug($"Tutorial activate rejected range: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");
                 return;
             }
 
@@ -78,13 +79,23 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(session.Player, entity, assetManager, includeActivateEntity: true);
             ActivationAchievementUpdater.Update(session.Player, entity);
 
-            if (IsTutorialHoverboardActivationEntity(entity))
-                log.Debug($"Tutorial hoverboard activate success: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");
+            if (IsTutorialSpecialActivationEntity(entity))
+                log.Debug($"Tutorial activate success: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");
         }
 
         private static bool IsTutorialHoverboardActivationEntity(IWorldEntity entity)
         {
             return entity.CreatureId is TutorialHoverboardProjectorCreatureId or TutorialHoverboardFinishCreatureId;
+        }
+
+        private static bool IsTutorialHousingProjectorEntity(IWorldEntity entity)
+        {
+            return entity.CreatureId == TutorialHousingProjectorCreatureId;
+        }
+
+        private static bool IsTutorialSpecialActivationEntity(IWorldEntity entity)
+        {
+            return IsTutorialHoverboardActivationEntity(entity) || IsTutorialHousingProjectorEntity(entity);
         }
 
         private static bool TryCastTutorialHoverboardMount(IWorldSession session, IWorldEntity entity, string clientRequestSource)
@@ -111,18 +122,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             entity = session.Player.Map?.GetEntity<IWorldEntity>(targetId);
             if (entity == null)
             {
-                log.Debug($"Tutorial hoverboard {opcodeName} lookup failed: player={session.Player.Guid}, requestedEntity={targetId}, reason=not-on-map.");
+                log.Debug($"Tutorial activate {opcodeName} lookup failed: player={session.Player.Guid}, requestedEntity={targetId}, reason=not-on-map.");
                 return false;
             }
 
             bool canSee = session.Player.CanSeeEntity(entity);
-            if (IsTutorialHoverboardActivationEntity(entity) && canSee)
+            if (IsTutorialSpecialActivationEntity(entity) && canSee)
             {
-                log.Debug($"Tutorial hoverboard {opcodeName} recovered stale visibility target: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");
+                log.Debug($"Tutorial activate {opcodeName} recovered stale visibility target: player={session.Player.Guid}, entity={entity.Guid}, creature={entity.CreatureId}.");
                 return true;
             }
 
-            log.Debug($"Tutorial hoverboard {opcodeName} ignored stale target: player={session.Player.Guid}, requestedEntity={targetId}, mapEntity={entity.Guid}, creature={entity.CreatureId}, canSee={canSee}.");
+            log.Debug($"Tutorial activate {opcodeName} ignored stale target: player={session.Player.Guid}, requestedEntity={targetId}, mapEntity={entity.Guid}, creature={entity.CreatureId}, canSee={canSee}.");
             entity = null;
             return false;
         }

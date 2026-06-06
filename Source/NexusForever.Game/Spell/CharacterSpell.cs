@@ -3,6 +3,10 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Prerequisite;
+using NexusForever.Game.Static.Spell;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared.Game;
 
@@ -33,6 +37,7 @@ namespace NexusForever.Game.Spell
         public IPlayer Owner { get; }
         public ISpellBaseInfo BaseInfo { get; }
         public ISpellInfo SpellInfo { get; private set; }
+        public ISpellInfo AlternateSpellInfo { get; private set; }
         public IItem Item { get; }
 
         public byte Tier
@@ -41,7 +46,10 @@ namespace NexusForever.Game.Spell
             set
             {
                 if (tier != value)
+                {
                     SpellInfo = BaseInfo.GetSpellInfo(value);
+                    AlternateSpellInfo = ResolveAlternateSpellInfo();
+                }
 
                 tier = value;
                 saveMask |= UnlockedSpellSaveMask.Tier;
@@ -73,6 +81,7 @@ namespace NexusForever.Game.Spell
             SpellInfo = baseInfo.GetSpellInfo(tier);
 
             InitialiseAbilityCharges();
+            AlternateSpellInfo = ResolveAlternateSpellInfo();
         }
 
         /// <summary>
@@ -87,6 +96,7 @@ namespace NexusForever.Game.Spell
             this.tier = tier;
 
             InitialiseAbilityCharges();
+            AlternateSpellInfo = ResolveAlternateSpellInfo();
 
             saveMask = UnlockedSpellSaveMask.Create;
         }
@@ -163,9 +173,17 @@ namespace NexusForever.Game.Spell
         /// </summary>
         public void Cast(bool buttonPressed, string clientRequestSource = null)
         {
+            Cast(buttonPressed, 0u, 0u, clientRequestSource);
+        }
+
+        public void Cast(bool buttonPressed, uint primaryTargetId, uint clientContextToken = 0u, string clientRequestSource = null)
+        {
             if (!buttonPressed)
             {
                 continuousCastHeld = false;
+                if (IsChargeReleaseSpell())
+                    Owner.TryReleaseChargeSpell(this, SpellInfo.Entry.Id, primaryTargetId, clientContextToken, clientRequestSource);
+
                 return;
             }
 
@@ -173,19 +191,59 @@ namespace NexusForever.Game.Spell
                 return;
 
             continuousCastHeld = true;
-            CastSpell(clientRequestSource);
+            CastSpell(clientRequestSource, primaryTargetId, clientContextToken);
         }
 
-        private void CastSpell(string clientRequestSource = null)
+        private void CastSpell(string clientRequestSource = null, uint primaryTargetId = 0u, uint clientContextToken = 0u)
         {
+            ISpellInfo spellInfoToCast = ResolveSpellInfoToCast();
             Owner.CastSpell(new SpellParameters
             {
                 CharacterSpell         = this,
-                SpellInfo              = SpellInfo,
-                PrimaryTargetId        = ResolvePrimaryTargetId(),
+                SpellInfo              = spellInfoToCast,
+                RootSpellInfo          = SpellInfo,
+                PrimaryTargetId        = primaryTargetId != 0u ? primaryTargetId : ResolvePrimaryTargetId(),
                 UserInitiatedSpellCast = true,
+                ClientContextToken     = clientContextToken,
                 ClientRequestSource    = clientRequestSource
             });
+        }
+
+        private bool IsChargeReleaseSpell()
+        {
+            return BaseInfo.CastMethod == SpellCastMethod.ChargeRelease
+                && (SpellInfo.Thresholds?.Count ?? 0) != 0;
+        }
+
+        private ISpellInfo ResolveSpellInfoToCast()
+        {
+            if (AlternateSpellInfo != null && CheckRunnerOverride())
+                return AlternateSpellInfo;
+
+            return SpellInfo;
+        }
+
+        private ISpellInfo ResolveAlternateSpellInfo()
+        {
+            uint alternateSpell4Id = SpellInfo.Entry.Spell4IdMechanicAlternateSpell;
+            if (alternateSpell4Id == 0u)
+                return null;
+
+            Spell4Entry alternateEntry = GameTableManager.Instance.Spell4.GetEntry(alternateSpell4Id);
+            if (alternateEntry == null)
+                return null;
+
+            ISpellBaseInfo alternateBaseInfo = GlobalSpellManager.Instance.GetSpellBaseInfo(alternateEntry.Spell4BaseIdBaseSpell);
+            return alternateBaseInfo.GetSpellInfo((byte)alternateEntry.TierIndex);
+        }
+
+        private bool CheckRunnerOverride()
+        {
+            foreach (PrerequisiteEntry runnerPrereq in SpellInfo.PrerequisiteRunners)
+                if (runnerPrereq != null && PrerequisiteManager.Instance.Meets(Owner, runnerPrereq.Id))
+                    return true;
+
+            return false;
         }
 
         private uint ResolvePrimaryTargetId()

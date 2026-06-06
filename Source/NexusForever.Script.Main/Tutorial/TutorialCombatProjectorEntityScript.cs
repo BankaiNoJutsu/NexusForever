@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Cinematic;
 using NexusForever.Game.Abstract.Cinematic.Cinematics;
@@ -13,6 +14,7 @@ using NexusForever.GameTable.Model;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 using NexusForever.Shared.Game.Events;
+using static NexusForever.Game.Static.Tutorial.StarterTutorialDefinition;
 
 namespace NexusForever.Script.Main.Tutorial
 {
@@ -93,6 +95,9 @@ namespace NexusForever.Script.Main.Tutorial
                 return;
             }
 
+            if (!TryGetCombatSimulationTeleportPosition(activator.Faction1, out Vector3 teleportPosition))
+                return;
+
             if (!pendingTransportPlayers.Add(activator.Guid))
             {
                 log.LogDebug("Starter tutorial combat projector ignored duplicate activation for player {PlayerGuid}: hoverboardState={HoverboardState}, combatState={CombatState}.",
@@ -134,13 +139,13 @@ namespace NexusForever.Script.Main.Tutorial
                 QuestState? hoverboardStateAfterRecovery = activator.QuestManager.GetQuestState(hoverboardQuestId);
                 QuestState? combatStateAfterRecovery = activator.QuestManager.GetQuestState(combatQuestId);
 
-                activator.TeleportTo((ushort)destination.WorldId, destination.Position0, destination.Position1, destination.Position2);
+                activator.TeleportTo((ushort)destination.WorldId, teleportPosition.X, teleportPosition.Y, teleportPosition.Z);
                 log.LogDebug("Starter tutorial combat projector transported player {PlayerGuid} to combat simulation world location {WorldLocationId}: ({X}, {Y}, {Z}), hoverboardState={HoverboardState}, combatState={CombatState}.",
                     activator.Guid,
                     destinationWorldLocationId,
-                    destination.Position0,
-                    destination.Position1,
-                    destination.Position2,
+                    teleportPosition.X,
+                    teleportPosition.Y,
+                    teleportPosition.Z,
                     hoverboardStateAfterRecovery?.ToString() ?? "None",
                     combatStateAfterRecovery?.ToString() ?? "None");
             }));

@@ -36,9 +36,22 @@ namespace NexusForever.Game.Spell
         private ImmutableDictionary<uint, ImmutableList<Spell4Entry>> spellEntries;
         private ImmutableDictionary<uint, ImmutableList<Spell4EffectsEntry>> spellEffectEntries;
         private ImmutableDictionary<uint, ImmutableList<TelegraphDamageEntry>> spellTelegraphEntries;
+        private ImmutableDictionary<uint, ImmutableList<Spell4ThresholdsEntry>> spellThresholdEntries;
+
+        private readonly ISpellEffectDependencyResolver spellEffectDependencyResolver;
+
+        public GlobalSpellManager()
+        {
+        }
+
+        internal GlobalSpellManager(ISpellEffectDependencyResolver spellEffectDependencyResolver)
+        {
+            this.spellEffectDependencyResolver = spellEffectDependencyResolver;
+        }
 
         public void Initialise()
         {
+            SpellHandler.InitialiseDependencyResolver(spellEffectDependencyResolver);
             CacheSpellEntries();
             InitialiseSpellInfo();
             InitialiseSpellEffectHandlers();
@@ -63,6 +76,12 @@ namespace NexusForever.Game.Spell
                 .GroupBy(e => e.Spell4Id)
                 .ToImmutableDictionary(g => g.Key, g => g
                     .Select(e => GameTableManager.Instance.TelegraphDamage.GetEntry(e.TelegraphDamageId))
+                    .ToImmutableList());
+
+            spellThresholdEntries = GameTableManager.Instance.Spell4Thresholds.Entries
+                .GroupBy(e => e.Spell4IdParent)
+                .ToImmutableDictionary(g => g.Key, g => g
+                    .OrderBy(e => e.OrderIndex)
                     .ToImmutableList());
         }
 
@@ -134,6 +153,18 @@ namespace NexusForever.Game.Spell
         {
             return spellTelegraphEntries.TryGetValue(spell4Id, out ImmutableList<TelegraphDamageEntry> entries)
                 ? entries : Enumerable.Empty<TelegraphDamageEntry>();
+        }
+
+        /// <summary>
+        /// Return all <see cref="Spell4ThresholdsEntry"/>'s for the supplied spell id.
+        /// </summary>
+        /// <remarks>
+        /// This should only be used for cache related code, if you want an overview of a spell use <see cref="ISpellBaseInfo"/>.
+        /// </remarks>
+        public IEnumerable<Spell4ThresholdsEntry> GetSpell4ThresholdEntries(uint spell4Id)
+        {
+            return spellThresholdEntries.TryGetValue(spell4Id, out ImmutableList<Spell4ThresholdsEntry> entries)
+                ? entries : Enumerable.Empty<Spell4ThresholdsEntry>();
         }
 
         /// <summary>

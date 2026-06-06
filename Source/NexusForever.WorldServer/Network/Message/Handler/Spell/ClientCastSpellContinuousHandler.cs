@@ -22,7 +22,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             if (characterSpell == null)
                 throw new InvalidPacketValueException();
 
-            characterSpell.Cast(castSpell.ButtonPressed, nameof(ClientCastSpellContinuous));
+            characterSpell.Cast(castSpell.ButtonPressed, castSpell.PrimaryTargetId, clientRequestSource: nameof(ClientCastSpellContinuous));
         }
     }
 }
