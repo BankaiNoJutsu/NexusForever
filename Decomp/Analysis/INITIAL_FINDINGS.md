@@ -15810,6 +15810,31 @@ Ninety-third Rider's Reef hoverboard finish-snap follow-up (2026-05-25):
   passed 58/58 after compiling `NexusForever.Game.Static`, `NexusForever.Game`,
   `NexusForever.Script.Main`, and `NexusForever.Game.Tests`.
 
+Rider's Reef booster target-validation regression (2026-06-06):
+
+- Local `wildstar_client` table check for booster spell `85424` confirms the
+  speed modifier remains target-side: `Spell4ValidTargets.TargetBitmask = 2`,
+  `Spell4Effects.TargetFlags = 2`, and `TargetGroup 2081` allows player
+  Faction2 ids `166`/`167`/`391`. The recent server target-mask split treated
+  bit `0x02` as object-only and rejected the pilot before `85424` could apply,
+  producing the client "Unknown target" result shown on booster contact.
+- Follow-up table check for the intermittent remainder showed `85424` also
+  proxies `82501` (`Big Speed Boost Safe Fall Proxy`) on the caster. `82501`
+  uses the same `TargetBitmask = 2` with no cast group and a self-only effect
+  (`Spell4Effects.TargetFlags = 1`), so the speed effect could apply while the
+  proxied safe-fall spell still emitted `TargetUnknown`.
+- `Spell.CheckPrimaryTargetValidMask` now keeps simple/interactable object
+  acceptance for bit `0x02`, but also allows an `IUnitEntity` target when the
+  target is the caster or when the bit is paired with a cast group that
+  explicitly accepts that unit. This restores the mapped booster and proxied
+  self-buff shapes without broadly allowing unrelated unit targets for
+  object-mask-only spells.
+- Verification: `NexusForever.Game` build passed with isolated output, and
+  `SpellTargetValidationTests` passed 22/22 after rebuilding the test project
+  with isolated output and node reuse disabled. The broader booster slice
+  `TutorialHoverboardCourseEffectTests|SpellTargetValidationTests` passed
+  28/28 from a fresh isolated output assembly.
+
 Northern Wilds Scientist path-mission creature-info pass (2026-05-25):
 
 - No new native labels were added. This pass uses already recorded
