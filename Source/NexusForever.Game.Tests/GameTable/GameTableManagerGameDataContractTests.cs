@@ -21,6 +21,7 @@ public class GameTableManagerGameDataContractTests
     [InlineData(nameof(GameTableManager.RewardRotationEssence), typeof(RewardRotationEssenceEntry), "RewardRotationEssence.tbl")]
     [InlineData(nameof(GameTableManager.RewardRotationItem), typeof(RewardRotationItemEntry), "RewardRotationItem.tbl")]
     [InlineData(nameof(GameTableManager.RewardRotationModifier), typeof(RewardRotationModifierEntry), "RewardRotationModifier.tbl")]
+    [InlineData(nameof(GameTableManager.Spell4Thresholds), typeof(Spell4ThresholdsEntry), "Spell4Thresholds.tbl")]
     [InlineData(nameof(GameTableManager.ZoneCompletion), typeof(ZoneCompletionEntry), "ZoneCompletion.tbl")]
     [InlineData(nameof(GameTableManager.GenericUnlockSet), typeof(GenericUnlockSetEntry), "GenericUnlockSet.tbl")]
     public void RuntimeRequiredTables_LoadThroughDefaultInitialise(string propertyName, Type entryType, string expectedDefaultFileName)
