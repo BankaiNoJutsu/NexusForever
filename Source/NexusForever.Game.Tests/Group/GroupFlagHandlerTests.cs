@@ -137,6 +137,8 @@ public class GroupFlagHandlerTests
         Assert.Equal(aliceMessage.TargetedPlayer.Id, bobMessage.TargetedPlayer.Id);
         Assert.Equal(aliceMessage.ChangedFlags, bobMessage.ChangedFlags);
         Assert.Equal(aliceMessage.IsFromPromotion, bobMessage.IsFromPromotion);
+        AssertEncryptedMessageCount(aliceSessionProxy, 1);
+        AssertEncryptedMessageCount(bobSessionProxy, 1);
     }
 
     [Fact]
@@ -167,6 +169,8 @@ public class GroupFlagHandlerTests
         Assert.Equal([(uint)GroupMemberInfoFlags.Healer], aliceMessage.Values);
         Assert.Equal(aliceMessage.GroupId, bobMessage.GroupId);
         Assert.Equal(aliceMessage.Values, bobMessage.Values);
+        AssertEncryptedMessageCount(aliceSessionProxy, 1);
+        AssertEncryptedMessageCount(bobSessionProxy, 1);
     }
 
     [Fact]
@@ -198,6 +202,35 @@ public class GroupFlagHandlerTests
         Assert.Equal(9001ul, readyCheck.GroupId);
         Assert.Equal(202ul, readyCheck.MemberIdentity.Id);
         Assert.Equal(0u, readyCheck.ReadyStatus);
+        AssertEncryptedMessageCount(aliceSessionProxy, 2);
+        AssertEncryptedMessageCount(bobSessionProxy, 2);
+    }
+
+    [Fact]
+    public async Task GroupMemberFlagsUpdated_ExcludesBootstrapRecipient()
+    {
+        var playerManager = new TestPlayerManager();
+        IPlayer alice = CreatePlayer(101ul, out RecordingDispatchProxy<IGameSession> aliceSessionProxy);
+        IPlayer bob = CreatePlayer(202ul, out RecordingDispatchProxy<IGameSession> bobSessionProxy);
+        playerManager.AddPlayer(alice);
+        playerManager.AddPlayer(bob);
+        InternalGroupMember returningMember = CreateGroupMember(202ul, GroupMemberInfoFlags.GroupMemberFlags);
+        var handler = new GroupMemberFlagsUpdatedHandler(playerManager);
+
+        await handler.Handle(new GroupMemberFlagsUpdatedMessage
+        {
+            Group = new InternalGroup
+            {
+                Id      = 9001ul,
+                Members = [CreateGroupMember(101ul), returningMember]
+            },
+            Member            = returningMember,
+            ExcludedRecipient = returningMember.Identity
+        });
+
+        AssertEncryptedMessage<ServerGroupIdentityListAndUInt32Array>(aliceSessionProxy);
+        AssertEncryptedMessageCount(aliceSessionProxy, 1);
+        Assert.Empty(bobSessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
     }
 
     private static IWorldSession CreateWorldSession(ulong characterId)
@@ -239,6 +272,11 @@ public class GroupFlagHandlerTests
             sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
         RecordingDispatchProxy<IGameSession>.Invocation invocation = invocations[index];
         return Assert.IsType<T>(invocation.Arguments[0]);
+    }
+
+    private static void AssertEncryptedMessageCount(RecordingDispatchProxy<IGameSession> sessionProxy, int count)
+    {
+        Assert.Equal(count, sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Count);
     }
 
     private sealed class TestPlayerManager : IPlayerManager

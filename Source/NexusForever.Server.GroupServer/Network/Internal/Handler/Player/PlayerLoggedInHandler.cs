@@ -46,7 +46,7 @@ namespace NexusForever.Server.GroupServer.Network.Internal.Handler.Player
                 if (member == null)
                     continue;
 
-                await member.RemoveFlagAsync(GroupMemberInfoFlags.Disconnected);
+                await member.RemoveFlagAsync(GroupMemberInfoFlags.Disconnected, excludedRecipient: character.Identity);
 
                 await _messagePublisher.PublishAsync(new GroupMemberJoinedMessage
                 {

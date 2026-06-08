@@ -52,20 +52,33 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Group
                 flagsMessage = roleChange;
             }
 
-            var readyCheckMessage = new ServerGroupReadyCheckStatusUpdate
+            ServerGroupReadyCheckStatusUpdate readyCheckMessage = null;
+            if (HasReadyCheckState(message.Member.Flags))
             {
-                GroupId        = message.Group.Id,
-                MemberIdentity = message.Member.Identity.ToNetworkIdentity(),
-                ReadyStatus    = BuildReadyCheckStatus(message.Member.Flags),
-            };
+                readyCheckMessage = new ServerGroupReadyCheckStatusUpdate
+                {
+                    GroupId        = message.Group.Id,
+                    MemberIdentity = message.Member.Identity.ToNetworkIdentity(),
+                    ReadyStatus    = BuildReadyCheckStatus(message.Member.Flags),
+                };
+            }
 
-            foreach (IPlayer player in playerManager.GetOnlineGroupMembers(message.Group.Members))
+            foreach (IPlayer player in playerManager.GetOnlineGroupMembers(message.Group.Members,
+                member => message.ExcludedRecipient == null || member.Identity != message.ExcludedRecipient))
             {
                 player.Session.EnqueueMessageEncrypted(flagsMessage);
-                player.Session.EnqueueMessageEncrypted(readyCheckMessage);
+                if (readyCheckMessage != null)
+                    player.Session.EnqueueMessageEncrypted(readyCheckMessage);
             }
 
             return Task.CompletedTask;
+        }
+
+        private static bool HasReadyCheckState(GroupMemberInfoFlags flags)
+        {
+            return flags.HasFlag(GroupMemberInfoFlags.Pending)
+                || flags.HasFlag(GroupMemberInfoFlags.HasSetReady)
+                || flags.HasFlag(GroupMemberInfoFlags.Ready);
         }
 
         private static uint BuildReadyCheckStatus(GroupMemberInfoFlags flags)

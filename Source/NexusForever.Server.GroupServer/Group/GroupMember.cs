@@ -134,15 +134,16 @@ namespace NexusForever.Server.GroupServer.Group
         /// Set group member flags.
         /// </summary>
         /// <param name="flags">Flags to set.</param>
-        public async Task SetFlagAsync(GroupMemberInfoFlags flags, bool fromPromotion = false)
+        public async Task SetFlagAsync(GroupMemberInfoFlags flags, bool fromPromotion = false, Identity excludedRecipient = null)
         {
             Flags |= flags;
 
             await _messagePublisher.PublishAsync(new GroupMemberFlagsUpdatedMessage
             {
-                Group         = await Group.ToInternalGroup(),
-                Member        = await this.ToInternalGroupMember(),
-                FromPromotion = fromPromotion
+                Group             = await Group.ToInternalGroup(),
+                Member            = await this.ToInternalGroupMember(),
+                FromPromotion     = fromPromotion,
+                ExcludedRecipient = excludedRecipient?.ToInternalIdentity()
             });
         }
 
@@ -150,15 +151,16 @@ namespace NexusForever.Server.GroupServer.Group
         /// Remove group member flags.
         /// </summary>
         /// <param name="flags">Flags to unset.</param>
-        public async Task RemoveFlagAsync(GroupMemberInfoFlags flags, bool fromPromotion = false)
+        public async Task RemoveFlagAsync(GroupMemberInfoFlags flags, bool fromPromotion = false, Identity excludedRecipient = null)
         {
             Flags &= ~flags;
 
             await _messagePublisher.PublishAsync(new GroupMemberFlagsUpdatedMessage
             {
-                Group         = await Group.ToInternalGroup(),
-                Member        = await this.ToInternalGroupMember(),
-                FromPromotion = fromPromotion
+                Group             = await Group.ToInternalGroup(),
+                Member            = await this.ToInternalGroupMember(),
+                FromPromotion     = fromPromotion,
+                ExcludedRecipient = excludedRecipient?.ToInternalIdentity()
             });
         }
     }
