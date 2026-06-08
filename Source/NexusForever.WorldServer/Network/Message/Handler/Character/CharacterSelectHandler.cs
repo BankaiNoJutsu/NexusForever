@@ -6,6 +6,7 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Map;
+using NexusForever.Game.Static.Entity;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
@@ -43,6 +44,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
         {
             if (session.IsQueued == true)
                 throw new InvalidPacketValueException();
+
+            if (session.Player?.LogoutManager?.State == LogoutState.Finished)
+                session.Player = null;
 
             if (session.Player != null)
             {

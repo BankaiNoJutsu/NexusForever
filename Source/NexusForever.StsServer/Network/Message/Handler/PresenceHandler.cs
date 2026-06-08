@@ -25,6 +25,11 @@ namespace NexusForever.StsServer.Network.Message.Handler
         [MessageHandler("/Presence/Logout", SessionState.None)]
         public static void HandlePresenceLogout(StsSession session, PresenceLogoutMessage message)
         {
+            // The retail client keeps the STS socket alive and can start SRP again after logging out.
+            session.State       = SessionState.Connected;
+            session.Account     = null;
+            session.KeyExchange = null;
+
             session.EnqueueMessageOk(new EmptyStsResponse());
         }
 

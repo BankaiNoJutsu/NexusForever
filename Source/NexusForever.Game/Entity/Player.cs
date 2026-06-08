@@ -1293,6 +1293,9 @@ namespace NexusForever.Game.Entity
         {
             log.Trace($"Cleanup for character {Name}({CharacterId})...");
 
+            // Character-select packets queued during logout must wait until this player is fully detached.
+            Session.CanProcessIncomingPackets = false;
+
             PlayerManager.Instance.RemovePlayer(this);
             CleanupManager.Instance.AddPlayer(this);
 
