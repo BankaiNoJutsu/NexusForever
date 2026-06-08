@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NexusForever.Aspire.Database.Migrations.Configuration.Model;
+using NexusForever.Database;
 using NexusForever.Database.World;
 using NexusForever.Database.World.Model;
 
@@ -78,45 +79,67 @@ namespace NexusForever.Aspire.Database.Migrations.Service
                 return;
             }
 
-            foreach (string filePath in Directory.GetFiles(_options.Path, "*.sql", SearchOption.AllDirectories))
+            foreach (string filePath in Directory.GetFiles(_options.Path, "*.sql", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
             {
-                string fileName    = Path.GetFileName(filePath);
-                string fileContent = File.ReadAllText(filePath);
-                string fileHash    = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(fileContent)));
-
-                if (_context.Version.Any(v => v.FileName == fileName && v.FileHash == fileHash))
-                {
-                    _log.LogInformation("Skipping already applied world database migration: {FileName}", fileName);
-                    continue;
-                }
-
-                fileContent = Regex.Replace(fileContent, @"/\*.*?\*/", "", RegexOptions.Singleline);
-                fileContent = Regex.Replace(fileContent, @"--.*?$", "", RegexOptions.Multiline);
-                fileContent = fileContent.Trim();
-
-                _log.LogInformation("Applying world database migration: {FileName}", fileName);
-                try
-                {
-                    await _context.Database.ExecuteSqlRawAsync(fileContent);
-                }
-                catch (Exception ex)
-                {
-                    _log.LogError(ex, "Failed to apply world database migration: {FileName}", fileName);
-                    throw;
-                }
-                _log.LogInformation("Applied world database migration: {FileName}", fileName);
-
-                _context.Version.Add(new VersionModel
-                {
-                    FileName = fileName,
-                    FileHash = fileHash,
-                    AppliedOn = DateTime.UtcNow
-                });
-
-                await _context.SaveChangesAsync(cancellationToken);
+                await ApplySqlFile(filePath, Path.GetFileName(filePath), cancellationToken);
             }
 
             await ValidateNewPlayerExperienceImport(cancellationToken);
+
+            foreach (string runtimeSeedPath in _options.RuntimeSeedPaths.Where(p => !string.IsNullOrWhiteSpace(p)))
+            {
+                if (!File.Exists(runtimeSeedPath))
+                {
+                    _log.LogWarning("Runtime world seed path does not exist. Skipping seed import: {RuntimeSeedPath}", runtimeSeedPath);
+                    continue;
+                }
+
+                await ApplySqlFile(runtimeSeedPath, $"DataMapping/{Path.GetFileName(runtimeSeedPath)}", cancellationToken);
+            }
+        }
+
+        private async Task ApplySqlFile(string filePath, string markerName, CancellationToken cancellationToken)
+        {
+            string fileContent = await File.ReadAllTextAsync(filePath, cancellationToken);
+            string fileHash    = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(fileContent)));
+
+            if (await _context.Version.AnyAsync(v => v.FileName == markerName && v.FileHash == fileHash, cancellationToken))
+            {
+                _log.LogInformation("Skipping already applied world database migration: {FileName}", markerName);
+                return;
+            }
+
+            _log.LogInformation("Applying world database migration: {FileName}", markerName);
+            try
+            {
+                if (string.Equals(_context.Database.ProviderName, Extensions.SqliteProviderName, StringComparison.Ordinal))
+                {
+                    var importer = new SqliteWorldSqlImporter(_log, _context);
+                    await importer.ImportFileAsync(filePath, cancellationToken);
+                }
+                else
+                {
+                    fileContent = Regex.Replace(fileContent, @"/\*.*?\*/", "", RegexOptions.Singleline);
+                    fileContent = Regex.Replace(fileContent, @"--.*?$", "", RegexOptions.Multiline);
+                    fileContent = fileContent.Trim();
+                    await _context.Database.ExecuteSqlRawAsync(fileContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "Failed to apply world database migration: {FileName}", markerName);
+                throw;
+            }
+            _log.LogInformation("Applied world database migration: {FileName}", markerName);
+
+            _context.Version.Add(new VersionModel
+            {
+                FileName = markerName,
+                FileHash = fileHash,
+                AppliedOn = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
         private async Task ValidateNewPlayerExperienceImport(CancellationToken cancellationToken)

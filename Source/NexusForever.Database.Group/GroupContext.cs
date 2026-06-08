@@ -410,6 +410,8 @@ namespace NexusForever.Database.Group
                     .HasColumnName("data")
                     .IsRequired();
             });
+
+            NexusForever.Database.EntityFramework.DatabaseModelBuilderExtensions.UseProviderCompatibility(modelBuilder, Database.ProviderName);
         }
     }
 }

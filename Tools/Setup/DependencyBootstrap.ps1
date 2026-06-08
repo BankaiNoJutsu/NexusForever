@@ -540,6 +540,7 @@ function Resolve-NexusSetupDependencies {
         [string] $RootUser,
         [string] $RootPassword,
         [switch] $PromptForRootPassword,
+        [switch] $SkipMySql,
         [string] $BrokerHost,
         [int] $BrokerPort,
         [string] $BrokerUser,
@@ -590,42 +591,48 @@ function Resolve-NexusSetupDependencies {
         $resolved.BrokerHost = 'localhost'
     }
 
-    $mysqlReachable = $false
-    if (!$forcePortable) {
-        $mysqlReachable = Test-NexusSetupTcpEndpoint -Address $resolved.MySqlHost -Port $resolved.MySqlPort
-    }
-
-    if ($mysqlReachable) {
-        Write-Info "MySQL/MariaDB server is reachable on $($resolved.MySqlHost):$($resolved.MySqlPort)"
-    }
-    elseif ($allowPortable -and (Test-NexusSetupLocalHostName -HostName $resolved.MySqlHost)) {
-        $dockerCliResolved = Get-ResolvedDockerCli
-        if (!$dockerCliResolved) {
-            throw "MySQL/MariaDB is not reachable on $($resolved.MySqlHost):$($resolved.MySqlPort). Start an existing server there, or install Docker Desktop so the setup scripts can provision a portable MariaDB instance automatically."
-        }
-
-        $portablePort = Find-NexusSetupAvailablePort -PreferredPort $resolved.MySqlPort -Label 'portable MariaDB'
-        $portableState = Ensure-NexusSetupPortableMariaDb `
-            -DockerCli $dockerCliResolved `
-            -ContainerName $portableNames.MySqlContainer `
-            -VolumeName $portableNames.MySqlVolume `
-            -Image $PortableMariaDbImage `
-            -HostPort $portablePort `
-            -RootUser 'root' `
-            -RootPassword (Get-NexusSetupPortableMySqlRootPassword)
-
-        $resolved.DockerCliResolved = $dockerCliResolved
-        $resolved.MySqlHost = '127.0.0.1'
-        $resolved.MySqlPort = $portableState.HostPort
-        $resolved.RootUser = 'root'
-        $resolved.RootPassword = Get-NexusSetupPortableMySqlRootPassword
+    if ($SkipMySql) {
+        Write-Info 'Skipping MySQL/MariaDB dependency resolution.'
         $resolved.ShouldPromptForRootPassword = $false
-        $resolved.MySqlInvocationMode = 'DockerExec'
-        $resolved.MySqlDockerContainerName = $portableState.ContainerName
-        $resolved.MySqlProvisionedThisRun = $portableState.ProvisionedThisRun
     }
     else {
-        throw "MySQL/MariaDB is not reachable on $($resolved.MySqlHost):$($resolved.MySqlPort). Portable provisioning only supports local endpoints; update -MySqlHost/-MySqlPort to a reachable server, or switch back to the default local host for portable mode."
+        $mysqlReachable = $false
+        if (!$forcePortable) {
+            $mysqlReachable = Test-NexusSetupTcpEndpoint -Address $resolved.MySqlHost -Port $resolved.MySqlPort
+        }
+
+        if ($mysqlReachable) {
+            Write-Info "MySQL/MariaDB server is reachable on $($resolved.MySqlHost):$($resolved.MySqlPort)"
+        }
+        elseif ($allowPortable -and (Test-NexusSetupLocalHostName -HostName $resolved.MySqlHost)) {
+            $dockerCliResolved = Get-ResolvedDockerCli
+            if (!$dockerCliResolved) {
+                throw "MySQL/MariaDB is not reachable on $($resolved.MySqlHost):$($resolved.MySqlPort). Start an existing server there, or install Docker Desktop so the setup scripts can provision a portable MariaDB instance automatically."
+            }
+
+            $portablePort = Find-NexusSetupAvailablePort -PreferredPort $resolved.MySqlPort -Label 'portable MariaDB'
+            $portableState = Ensure-NexusSetupPortableMariaDb `
+                -DockerCli $dockerCliResolved `
+                -ContainerName $portableNames.MySqlContainer `
+                -VolumeName $portableNames.MySqlVolume `
+                -Image $PortableMariaDbImage `
+                -HostPort $portablePort `
+                -RootUser 'root' `
+                -RootPassword (Get-NexusSetupPortableMySqlRootPassword)
+
+            $resolved.DockerCliResolved = $dockerCliResolved
+            $resolved.MySqlHost = '127.0.0.1'
+            $resolved.MySqlPort = $portableState.HostPort
+            $resolved.RootUser = 'root'
+            $resolved.RootPassword = Get-NexusSetupPortableMySqlRootPassword
+            $resolved.ShouldPromptForRootPassword = $false
+            $resolved.MySqlInvocationMode = 'DockerExec'
+            $resolved.MySqlDockerContainerName = $portableState.ContainerName
+            $resolved.MySqlProvisionedThisRun = $portableState.ProvisionedThisRun
+        }
+        else {
+            throw "MySQL/MariaDB is not reachable on $($resolved.MySqlHost):$($resolved.MySqlPort). Portable provisioning only supports local endpoints; update -MySqlHost/-MySqlPort to a reachable server, or switch back to the default local host for portable mode."
+        }
     }
 
     $brokerReachable = $false

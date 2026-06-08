@@ -178,6 +178,8 @@ namespace NexusForever.Database.Chat
                     .HasColumnName("data")
                     .IsRequired();
             });
+
+            NexusForever.Database.EntityFramework.DatabaseModelBuilderExtensions.UseProviderCompatibility(modelBuilder, Database.ProviderName);
         }
     }
 }

@@ -3,5 +3,6 @@
     public class WorldDatabaseOptions
     {
         public string Path { get; set; }
+        public List<string> RuntimeSeedPaths { get; set; } = [];
     }
 }

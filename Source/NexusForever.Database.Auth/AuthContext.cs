@@ -1711,6 +1711,8 @@ namespace NexusForever.Database.Auth
                         Message  = "Willkommen auf diesem NexusForever server!\nBesuch: https://github.com/NexusForever/NexusForever"
                     });
             });
+
+            NexusForever.Database.EntityFramework.DatabaseModelBuilderExtensions.UseProviderCompatibility(modelBuilder, Database.ProviderName);
         }
     }
 }

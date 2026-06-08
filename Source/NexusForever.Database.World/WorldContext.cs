@@ -1138,6 +1138,8 @@ namespace NexusForever.Database.World
                 entity.Property(e => e.AppliedOn)
                     .HasColumnName("appliedOn");
             });
+
+            modelBuilder.UseProviderCompatibility(Database.ProviderName);
         }
     }
 }

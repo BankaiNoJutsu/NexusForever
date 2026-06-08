@@ -70,6 +70,13 @@ namespace NexusForever.Aspire.AppHost
             return builder;
         }
 
+        public static IResourceBuilder<T> WithNexusForeverDatabase<T>(this IResourceBuilder<T> builder, string database, DatabaseProvider databaseProvider, string connectionString) where T : IResourceWithEnvironment
+        {
+            builder.WithEnvironment($"Database:{database}:Provider", databaseProvider.ToString());
+            builder.WithEnvironment($"Database:{database}:ConnectionString", connectionString);
+            return builder;
+        }
+
         public static IResourceBuilder<T> WithNexusForeverMessageBroker<T>(this IResourceBuilder<T> builder, string inputQueue, BrokerProvider brokerProvider, IResourceWithConnectionString resource) where T : IResourceWithEnvironment
         {
             builder.WithEnvironment("Network:Internal:InputQueue", inputQueue);

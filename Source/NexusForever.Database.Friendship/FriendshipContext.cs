@@ -505,6 +505,8 @@ namespace NexusForever.Database.Friendship
                     .WithMany()
                     .HasForeignKey(entity => new { entity.InviteeCharacterId, entity.InviteeRealmId });
             });
+
+            NexusForever.Database.EntityFramework.DatabaseModelBuilderExtensions.UseProviderCompatibility(modelBuilder, Database.ProviderName);
         }
     }
 }

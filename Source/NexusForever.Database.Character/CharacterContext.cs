@@ -3260,6 +3260,8 @@ namespace NexusForever.Database.Character
                     .HasColumnType("tinyint(1)")
                     .HasDefaultValue(false);
             });
+
+            NexusForever.Database.EntityFramework.DatabaseModelBuilderExtensions.UseProviderCompatibility(modelBuilder, Database.ProviderName);
         }
     }
 }

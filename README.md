@@ -19,7 +19,7 @@ see [CURRENT_STATUS.md](CURRENT_STATUS.md).
 
 ### Requirements
  * Visual Studio 2026 (.NET 10 and C# 14 support required)
- * MySQL Server (or equivalent, eg: MariaDB)
+ * MySQL Server (or equivalent, eg: MariaDB), or SQLite for runtime-only local setup
  * Message Broker (RabbitMQ or Azure Service Bus)
  * WildStar 16042 client
 

@@ -20,6 +20,7 @@
     <ProjectReference Include="..\NexusForever.Database.Chat\NexusForever.Database.Chat.csproj" />
     <ProjectReference Include="..\NexusForever.Database.Friendship\NexusForever.Database.Friendship.csproj" />
     <ProjectReference Include="..\NexusForever.Database.Group\NexusForever.Database.Group.csproj" />
+    <ProjectReference Include="..\NexusForever.Database.Sqlite.Migrations\NexusForever.Database.Sqlite.Migrations.csproj" />
     <ProjectReference Include="..\NexusForever.Database.World\NexusForever.Database.World.csproj" />
   </ItemGroup>
 

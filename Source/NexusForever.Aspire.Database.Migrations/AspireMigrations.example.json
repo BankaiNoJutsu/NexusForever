@@ -2,6 +2,32 @@
     "DatabaseMigration": {
         "Skip": false
     },
+    "Database": {
+        "Auth": {
+            "ConnectionString": "server=127.0.0.1;port=3306;user=nexusforever;password=nexusforever;database=nexus_forever_auth",
+            "Provider": "MySql"
+        },
+        "Character": {
+            "ConnectionString": "server=127.0.0.1;port=3306;user=nexusforever;password=nexusforever;database=nexus_forever_character",
+            "Provider": "MySql"
+        },
+        "World": {
+            "ConnectionString": "server=127.0.0.1;port=3306;user=nexusforever;password=nexusforever;database=nexus_forever_world",
+            "Provider": "MySql"
+        },
+        "Group": {
+            "ConnectionString": "server=127.0.0.1;port=3306;user=nexusforever;password=nexusforever;database=nexus_forever_group",
+            "Provider": "MySql"
+        },
+        "Chat": {
+            "ConnectionString": "server=127.0.0.1;port=3306;user=nexusforever;password=nexusforever;database=nexus_forever_chat",
+            "Provider": "MySql"
+        },
+        "Friendship": {
+            "ConnectionString": "server=127.0.0.1;port=3306;user=nexusforever;password=nexusforever;database=nexus_forever_friendship",
+            "Provider": "MySql"
+        }
+    },
     "AccountCreation": {
         "Accounts": [
             {
@@ -22,6 +48,9 @@
         ]
     },
     "WorldDatabase": {
-        "Path": "C:\\nexusforever-database"
+        "Path": "C:\\nexusforever-database",
+        "RuntimeSeedPaths": [
+            "Tools\\DataMapping\\sql\\runtime_world_seed.sql"
+        ]
     }
 }

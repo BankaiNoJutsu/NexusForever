@@ -4,16 +4,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" />
-    <PackageReference Include="xunit" />
-    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
-    <PackageReference Include="coverlet.collector" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,16 +17,7 @@
     <ProjectReference Include="..\NexusForever.Database.Chat\NexusForever.Database.Chat.csproj" />
     <ProjectReference Include="..\NexusForever.Database.Friendship\NexusForever.Database.Friendship.csproj" />
     <ProjectReference Include="..\NexusForever.Database.Group\NexusForever.Database.Group.csproj" />
-    <ProjectReference Include="..\NexusForever.Database.Sqlite.Migrations\NexusForever.Database.Sqlite.Migrations.csproj" />
     <ProjectReference Include="..\NexusForever.Database.World\NexusForever.Database.World.csproj" />
-    <ProjectReference Include="..\NexusForever.Game\NexusForever.Game.csproj" />
-    <ProjectReference Include="..\NexusForever.Network.Sts\NexusForever.Network.Sts.csproj" />
-    <ProjectReference Include="..\NexusForever.Script.Instance\NexusForever.Script.Instance.csproj" />
-    <ProjectReference Include="..\NexusForever.WorldServer\NexusForever.WorldServer.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="Xunit" />
   </ItemGroup>
 
 </Project>

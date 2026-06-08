@@ -117,6 +117,9 @@ param(
 
     [string] $DatabaseUser = 'nexusforever',
     [string] $DatabasePassword = 'nexusforever',
+    [ValidateSet('MySql', 'Sqlite')]
+    [string] $DatabaseProvider = 'MySql',
+    [string] $SqliteDirectory = '',
     [switch] $SkipDatabaseUser,
 
     [string] $BrokerUser = 'nexusforever',
@@ -419,6 +422,70 @@ function Resolve-RuntimeWorldSeedPath {
     }
 
     Join-Path $RepositoryRoot 'Tools\DataMapping\sql\runtime_world_seed.sql'
+}
+
+function Resolve-SqliteDirectoryPath {
+    param(
+        [string] $Path,
+        [string] $RepositoryRoot
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        $Path = Join-Path $RepositoryRoot '.nexusforever-runtime\sqlite'
+    }
+    elseif (![System.IO.Path]::IsPathRooted($Path)) {
+        $Path = Join-Path $RepositoryRoot $Path
+    }
+
+    New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    (Resolve-Path -LiteralPath $Path).Path
+}
+
+function Get-DatabaseKey {
+    param([string] $Database)
+
+    foreach ($entry in $GameDatabases.GetEnumerator()) {
+        if ($entry.Value -eq $Database) {
+            return $entry.Key
+        }
+    }
+
+    throw "Unknown NexusForever database '$Database'."
+}
+
+function Get-SqliteDatabasePath {
+    param([string] $Database)
+
+    $databaseKey = (Get-DatabaseKey -Database $Database).ToLowerInvariant()
+    Join-Path $SqliteDirectory "nexus_forever_$databaseKey.sqlite"
+}
+
+function New-DatabaseConnectionConfig {
+    param([string] $Database)
+
+    [pscustomobject]@{
+        ConnectionString = Get-DatabaseConnectionString -Database $Database
+        Provider         = $DatabaseProvider
+    }
+}
+
+function Get-RuntimeWorldSeedPaths {
+    if ($SkipRuntimeWorldSeedImport) {
+        return @()
+    }
+
+    @(
+        $RuntimeWorldSeedPath,
+        (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_map_entrance_seed.sql'),
+        (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_city_content_seed.sql'),
+        (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_quest_instance_wip_seed.sql'),
+        (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_small_world_wip_seed.sql'),
+        (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_instance_entity_wip_seed.sql'),
+        (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_live_event_wip_seed.sql'),
+        (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_housing_skyplot_wip_seed.sql'),
+        (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_store_catalog_seed.sql'),
+        (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_quest_loot_seed.sql')
+    ) | Where-Object { ![string]::IsNullOrWhiteSpace($_) }
 }
 
 function ConvertFrom-SecureStringToPlainText {
@@ -1283,6 +1350,11 @@ function Import-SqlFilesWithMarkers {
 function Get-DatabaseConnectionString {
     param([string] $Database)
 
+    if ($DatabaseProvider -eq 'Sqlite') {
+        $databasePath = Get-SqliteDatabasePath -Database $Database
+        return "Data Source=$databasePath"
+    }
+
     "server=$MySqlHost;port=$MySqlPort;user=$DatabaseUser;password=$DatabasePassword;database=$Database"
 }
 
@@ -1292,8 +1364,56 @@ function Get-BrokerConnectionString {
     "amqp://$escapedUser`:$escapedPassword@$BrokerHost`:$BrokerPort"
 }
 
+function Set-JsonPropertyValue {
+    param(
+        [object] $Node,
+        [string] $Name,
+        [object] $Value
+    )
+
+    $property = $Node.PSObject.Properties[$Name]
+    if ($property) {
+        $property.Value = $Value
+        return
+    }
+
+    $Node | Add-Member -NotePropertyName $Name -NotePropertyValue $Value
+}
+
+function Get-DatabaseFromConnectionNode {
+    param(
+        [object] $Node,
+        [string] $NodeName
+    )
+
+    $connectionProperty = $Node.PSObject.Properties['ConnectionString']
+    if (!$connectionProperty -or !($connectionProperty.Value -is [string])) {
+        return $null
+    }
+
+    $value = [string] $connectionProperty.Value
+    if ($value -match '(?i)(?:^|;)database=([^;]+)') {
+        $database = $Matches[1]
+        if ($GameDatabases.Values -contains $database) {
+            return $database
+        }
+    }
+
+    if (![string]::IsNullOrWhiteSpace($NodeName)) {
+        $databaseKey = ($NodeName -split ':', 2)[0]
+        if ($GameDatabases.Contains($databaseKey)) {
+            return $GameDatabases[$databaseKey]
+        }
+    }
+
+    $null
+}
+
 function Update-JsonNode {
-    param([object] $Node)
+    param(
+        [object] $Node,
+        [string] $NodeName = ''
+    )
 
     if ($null -eq $Node -or $Node -is [string]) {
         return
@@ -1301,27 +1421,25 @@ function Update-JsonNode {
 
     if ($Node -is [System.Array]) {
         foreach ($item in $Node) {
-            Update-JsonNode -Node $item
+            Update-JsonNode -Node $item -NodeName $NodeName
         }
         return
     }
 
+    $connectionProperty = $Node.PSObject.Properties['ConnectionString']
+    if ($connectionProperty -and $connectionProperty.Value -is [string]) {
+        $database = Get-DatabaseFromConnectionNode -Node $Node -NodeName $NodeName
+        if ($database) {
+            $connectionProperty.Value = Get-DatabaseConnectionString -Database $database
+            Set-JsonPropertyValue -Node $Node -Name 'Provider' -Value $DatabaseProvider
+        }
+        elseif ([string] $connectionProperty.Value -like 'amqp://*') {
+            $connectionProperty.Value = Get-BrokerConnectionString
+        }
+    }
+
     foreach ($property in $Node.PSObject.Properties) {
-        if ($property.Name -eq 'ConnectionString' -and $property.Value -is [string]) {
-            $value = [string] $property.Value
-            if ($value -match '(?i)database=([^;]+)') {
-                $database = $Matches[1]
-                if ($GameDatabases.Values -contains $database) {
-                    $property.Value = Get-DatabaseConnectionString -Database $database
-                }
-            }
-            elseif ($value -like 'amqp://*') {
-                $property.Value = Get-BrokerConnectionString
-            }
-        }
-        else {
-            Update-JsonNode -Node $property.Value
-        }
+        Update-JsonNode -Node $property.Value -NodeName $property.Name
     }
 }
 
@@ -1335,6 +1453,14 @@ function Update-ConfigJson {
     Update-JsonNode -Node $json
 
     if ($IsAspireMigrations) {
+        $json.Database = [pscustomobject]@{
+            Auth       = New-DatabaseConnectionConfig -Database $GameDatabases.Auth
+            Character  = New-DatabaseConnectionConfig -Database $GameDatabases.Character
+            World      = New-DatabaseConnectionConfig -Database $GameDatabases.World
+            Group      = New-DatabaseConnectionConfig -Database $GameDatabases.Group
+            Chat       = New-DatabaseConnectionConfig -Database $GameDatabases.Chat
+            Friendship = New-DatabaseConnectionConfig -Database $GameDatabases.Friendship
+        }
         $json.DatabaseMigration = [pscustomobject]@{
             Skip = $false
         }
@@ -1342,6 +1468,7 @@ function Update-ConfigJson {
             Accounts = @(Get-AccountCreationConfigAccounts)
         }
         $json.WorldDatabase.Path = $WorldDatabasePath
+        $json.WorldDatabase.RuntimeSeedPaths = @(Get-RuntimeWorldSeedPaths)
     }
 
     $json | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $Path -Encoding utf8
@@ -1381,19 +1508,7 @@ function Copy-ConfigurationFiles {
     }
 }
 
-function Invoke-AccountSeeder {
-    $migrationExe = Join-Path $RepoRoot "Source\NexusForever.Aspire.Database.Migrations\bin\$Configuration\$TargetFramework\NexusForever.Aspire.Database.Migrations.exe"
-    $skippedWorldDatabasePath = Join-Path $RepoRoot '.nexusforever-runtime\skip-world-database'
-
-    if (!(Test-Path -LiteralPath $migrationExe -PathType Leaf)) {
-        if ($SkipBuild) {
-            Write-Warning "Database migration executable was not found, so local account creation was skipped: $migrationExe"
-            return
-        }
-
-        throw "Database migration executable was not found: $migrationExe"
-    }
-
+function Get-DatabaseEnvironmentOverrides {
     $environmentOverrides = @{
         'ConnectionStrings__authdb'       = Get-DatabaseConnectionString -Database $GameDatabases.Auth
         'ConnectionStrings__characterdb'  = Get-DatabaseConnectionString -Database $GameDatabases.Character
@@ -1401,19 +1516,66 @@ function Invoke-AccountSeeder {
         'ConnectionStrings__groupdb'      = Get-DatabaseConnectionString -Database $GameDatabases.Group
         'ConnectionStrings__chatdb'       = Get-DatabaseConnectionString -Database $GameDatabases.Chat
         'ConnectionStrings__friendshipdb' = Get-DatabaseConnectionString -Database $GameDatabases.Friendship
-        'DatabaseMigration__Skip'         = 'true'
-        'WorldDatabase__Path'             = $skippedWorldDatabasePath
     }
+
+    foreach ($entry in $GameDatabases.GetEnumerator()) {
+        $environmentOverrides["Database__$($entry.Key)__Provider"] = $DatabaseProvider
+        $environmentOverrides["Database__$($entry.Key)__ConnectionString"] = Get-DatabaseConnectionString -Database $entry.Value
+    }
+
+    $environmentOverrides
+}
+
+function Add-LocalAccountEnvironmentOverrides {
+    param([hashtable] $EnvironmentOverrides)
 
     $accounts = @(Get-LocalLoginAccounts)
     for ($index = 0; $index -lt $accounts.Count; $index++) {
         $account = $accounts[$index]
-        $environmentOverrides["AccountCreation__Accounts__${index}__UserName"] = $account.UserName
-        $environmentOverrides["AccountCreation__Accounts__${index}__Password"] = $account.Password
-        $environmentOverrides["AccountCreation__Accounts__${index}__RoleId"] = [string] $account.RoleId
+        $EnvironmentOverrides["AccountCreation__Accounts__${index}__UserName"] = $account.UserName
+        $EnvironmentOverrides["AccountCreation__Accounts__${index}__Password"] = $account.Password
+        $EnvironmentOverrides["AccountCreation__Accounts__${index}__RoleId"] = [string] $account.RoleId
+    }
+}
+
+function Invoke-DatabaseMigrationWorker {
+    param(
+        [switch] $SkipDatabaseMigration,
+        [switch] $ImportWorldDatabase
+    )
+
+    $migrationExe = Join-Path $RepoRoot "Source\NexusForever.Aspire.Database.Migrations\bin\$Configuration\$TargetFramework\NexusForever.Aspire.Database.Migrations.exe"
+    $skippedWorldDatabasePath = Join-Path $RepoRoot '.nexusforever-runtime\skip-world-database'
+
+    if (!(Test-Path -LiteralPath $migrationExe -PathType Leaf)) {
+        if ($SkipBuild -and $SkipDatabaseMigration) {
+            Write-Warning "Database migration executable was not found, so local account creation was skipped: $migrationExe"
+            return
+        }
+
+        throw "Database migration executable was not found: $migrationExe"
     }
 
-    Write-Section 'Local accounts'
+    $environmentOverrides = Get-DatabaseEnvironmentOverrides
+    $environmentOverrides['DatabaseMigration__Skip'] = if ($SkipDatabaseMigration) { 'true' } else { 'false' }
+    $environmentOverrides['WorldDatabase__Path'] = if ($ImportWorldDatabase -and !$SkipWorldDatabaseImport) { $WorldDatabasePath } else { $skippedWorldDatabasePath }
+
+    if ($ImportWorldDatabase -and !$SkipWorldDatabaseImport -and !$SkipRuntimeWorldSeedImport) {
+        $runtimeSeedPaths = @(Get-RuntimeWorldSeedPaths)
+        for ($index = 0; $index -lt $runtimeSeedPaths.Count; $index++) {
+            $environmentOverrides["WorldDatabase__RuntimeSeedPaths__${index}"] = $runtimeSeedPaths[$index]
+        }
+    }
+
+    Add-LocalAccountEnvironmentOverrides -EnvironmentOverrides $environmentOverrides
+
+    if ($SkipDatabaseMigration) {
+        Write-Section 'Local accounts'
+    }
+    else {
+        Write-Section 'SQLite migrations and imports'
+    }
+
     Invoke-WithTemporaryEnvironment -Variables $environmentOverrides -ScriptBlock {
         Push-Location (Split-Path -Parent $migrationExe)
         try {
@@ -1427,6 +1589,10 @@ function Invoke-AccountSeeder {
             Pop-Location
         }
     }
+}
+
+function Invoke-AccountSeeder {
+    Invoke-DatabaseMigrationWorker -SkipDatabaseMigration
 }
 
 function Invoke-DotNet {
@@ -1993,6 +2159,13 @@ function Start-StandaloneServers {
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 $WorldDatabasePath = Resolve-WorldDatabasePath -Path $WorldDatabasePath -RepositoryRoot $RepoRoot
 $RuntimeWorldSeedPath = Resolve-RuntimeWorldSeedPath -Path $RuntimeWorldSeedPath -RepositoryRoot $RepoRoot
+if ($DatabaseProvider -eq 'Sqlite') {
+    $SqliteDirectory = Resolve-SqliteDirectoryPath -Path $SqliteDirectory -RepositoryRoot $RepoRoot
+}
+
+if ($DatabaseProvider -eq 'Sqlite' -and $EnableDataMappingAuthoring -and !$SkipLargeDumpImports) {
+    throw 'DataMapping authoring imports require MySQL/MariaDB reference databases. Re-run with -DatabaseProvider MySql, or omit -EnableDataMappingAuthoring for a runtime-only SQLite setup.'
+}
 
 $dependencyBootstrap = Resolve-NexusSetupDependencies `
     -RepoRoot $RepoRoot `
@@ -2006,6 +2179,7 @@ $dependencyBootstrap = Resolve-NexusSetupDependencies `
     -RootUser $RootUser `
     -RootPassword $RootPassword `
     -PromptForRootPassword:$PromptForRootPassword `
+    -SkipMySql:($DatabaseProvider -eq 'Sqlite') `
     -BrokerHost $BrokerHost `
     -BrokerPort $BrokerPort `
     -BrokerUser $BrokerUser `
@@ -2030,11 +2204,11 @@ $RabbitMqCtlInvocationMode = $dependencyBootstrap.RabbitMqCtlInvocationMode
 $RabbitMqDockerContainerName = $dependencyBootstrap.RabbitMqDockerContainerName
 $RabbitMqProvisionedThisRun = $dependencyBootstrap.RabbitMqProvisionedThisRun
 
-if ($ShouldPromptForRootPassword) {
+if ($DatabaseProvider -ne 'Sqlite' -and $ShouldPromptForRootPassword) {
     $RootPassword = ConvertFrom-SecureStringToPlainText (Read-Host 'MySQL/MariaDB root password' -AsSecureString)
 }
 
-if ($MySqlInvocationMode -eq 'Native') {
+if ($DatabaseProvider -ne 'Sqlite' -and $MySqlInvocationMode -eq 'Native') {
     try {
         $MySqlExe = Resolve-MySqlClient -Command $MySqlExe
     }
@@ -2055,13 +2229,25 @@ if ($MySqlInvocationMode -eq 'Native') {
     }
 }
 
-Write-Section 'MySQL/MariaDB user and databases'
-Ensure-DatabaseUser
-foreach ($database in $GameDatabases.Values) {
-    Ensure-Database -Database $database
+if ($DatabaseProvider -eq 'Sqlite') {
+    Write-Section 'SQLite database files'
+    Write-Info "SQLite directory: $SqliteDirectory"
+    foreach ($database in $GameDatabases.Values) {
+        Write-Info "$database => $(Get-SqliteDatabasePath -Database $database)"
+    }
+}
+else {
+    Write-Section 'MySQL/MariaDB user and databases'
+    Ensure-DatabaseUser
+    foreach ($database in $GameDatabases.Values) {
+        Ensure-Database -Database $database
+    }
 }
 
-if ($EnableDataMappingAuthoring -and !$SkipLargeDumpImports) {
+if ($DatabaseProvider -eq 'Sqlite' -and $EnableDataMappingAuthoring) {
+    Write-Info 'Skipping reference SQL imports because SQLite setup is runtime-only.'
+}
+elseif ($EnableDataMappingAuthoring -and !$SkipLargeDumpImports) {
     Write-Section 'Reference SQL imports'
     Import-SqlFilesWithMarkers `
         -SqlDirectory $JabbitholeSqlDirectory `
@@ -2101,41 +2287,54 @@ if (!$SkipBuild) {
 }
 
 if (!$SkipMigrations) {
-    Write-Section 'Entity Framework migrations'
-    Assert-Command -Command 'dotnet' -InstallHint 'Install the .NET SDK required by this repository.'
-    Ensure-DotNetEf
+    if ($DatabaseProvider -eq 'Sqlite') {
+        Invoke-DatabaseMigrationWorker -ImportWorldDatabase
+    }
+    else {
+        Write-Section 'Entity Framework migrations'
+        Assert-Command -Command 'dotnet' -InstallHint 'Install the .NET SDK required by this repository.'
+        Ensure-DotNetEf
 
-    $worldServerProject = Join-Path $RepoRoot 'Source\NexusForever.WorldServer'
-    Invoke-EfMigration -ProjectDirectory $worldServerProject -Context 'AuthContext'
-    Invoke-EfMigration -ProjectDirectory $worldServerProject -Context 'CharacterContext'
-    Invoke-EfMigration -ProjectDirectory $worldServerProject -Context 'WorldContext'
+        $worldServerProject = Join-Path $RepoRoot 'Source\NexusForever.WorldServer'
+        Invoke-EfMigration -ProjectDirectory $worldServerProject -Context 'AuthContext'
+        Invoke-EfMigration -ProjectDirectory $worldServerProject -Context 'CharacterContext'
+        Invoke-EfMigration -ProjectDirectory $worldServerProject -Context 'WorldContext'
 
-    Invoke-EfMigration -ProjectDirectory (Join-Path $RepoRoot 'Source\NexusForever.Server.ChatServer') -Context 'ChatContext'
-    Invoke-EfMigration -ProjectDirectory (Join-Path $RepoRoot 'Source\NexusForever.Server.GroupServer') -Context 'GroupContext'
-    Invoke-EfMigration -ProjectDirectory (Join-Path $RepoRoot 'Source\NexusForever.Server.Friendship') -Context 'FriendshipContext'
-}
-
-Invoke-AccountSeeder
-
-Write-Section 'Runtime auth seed import'
-Import-RuntimeAuthSeedSqlFiles
-
-if (!$SkipWorldDatabaseImport) {
-    Write-Section 'Official world database import'
-    $worldDatabaseSqlAvailable = Import-WorldDatabaseSqlFiles
-
-    if (!$SkipRuntimeWorldSeedImport) {
-        if ($worldDatabaseSqlAvailable) {
-            Write-Section 'Runtime world seed import'
-            Import-RuntimeWorldSeedSqlFiles
-        }
-        else {
-            Write-Warning 'Skipping runtime world seed import because no official world SQL files were imported or available.'
-        }
+        Invoke-EfMigration -ProjectDirectory (Join-Path $RepoRoot 'Source\NexusForever.Server.ChatServer') -Context 'ChatContext'
+        Invoke-EfMigration -ProjectDirectory (Join-Path $RepoRoot 'Source\NexusForever.Server.GroupServer') -Context 'GroupContext'
+        Invoke-EfMigration -ProjectDirectory (Join-Path $RepoRoot 'Source\NexusForever.Server.Friendship') -Context 'FriendshipContext'
     }
 }
-elseif (!$SkipRuntimeWorldSeedImport) {
-    Write-Warning 'Skipping runtime world seed import because -SkipWorldDatabaseImport was set.'
+
+if ($DatabaseProvider -eq 'Sqlite') {
+    if ($SkipMigrations) {
+        Invoke-AccountSeeder
+        Write-Warning 'Skipping SQLite world SQL import because -SkipMigrations was set.'
+    }
+}
+else {
+    Invoke-AccountSeeder
+
+    Write-Section 'Runtime auth seed import'
+    Import-RuntimeAuthSeedSqlFiles
+
+    if (!$SkipWorldDatabaseImport) {
+        Write-Section 'Official world database import'
+        $worldDatabaseSqlAvailable = Import-WorldDatabaseSqlFiles
+
+        if (!$SkipRuntimeWorldSeedImport) {
+            if ($worldDatabaseSqlAvailable) {
+                Write-Section 'Runtime world seed import'
+                Import-RuntimeWorldSeedSqlFiles
+            }
+            else {
+                Write-Warning 'Skipping runtime world seed import because no official world SQL files were imported or available.'
+            }
+        }
+    }
+    elseif (!$SkipRuntimeWorldSeedImport) {
+        Write-Warning 'Skipping runtime world seed import because -SkipWorldDatabaseImport was set.'
+    }
 }
 
 if ($StartServers) {

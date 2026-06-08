@@ -9,7 +9,7 @@ database, and can start the standalone server processes.
 
 ## Prerequisites
 
-- Either a reachable MySQL or MariaDB server on the configured `-MySqlHost` and `-MySqlPort`, or Docker Desktop for automatic portable provisioning.
+- Either a reachable MySQL or MariaDB server on the configured `-MySqlHost` and `-MySqlPort`, Docker Desktop for automatic portable provisioning, or `-DatabaseProvider Sqlite` for runtime-only local databases.
 - Either a reachable RabbitMQ broker on the configured `-BrokerHost` and `-BrokerPort`, or Docker Desktop for automatic portable provisioning.
 - MySQL/MariaDB command-line client (`mysql.exe`) if you want to target an existing external database server without Docker.
 - .NET SDK required by this repo.
@@ -31,6 +31,11 @@ pre-existing services.
 Use `-DependencyMode PortableDocker` to force the scripts to use the portable
 Docker-backed dependencies even if local services are already running.
 
+SQLite skips MySQL/MariaDB dependency resolution and stores the six runtime
+databases under `.nexusforever-runtime\sqlite` by default. RabbitMQ is still
+required for the standalone server processes. DataMapping authoring imports
+(`jabbithole` and `wildstar_client`) remain MySQL/MariaDB-only.
+
 ## Full Local Setup
 
 From the repository root:
@@ -38,6 +43,15 @@ From the repository root:
 ```powershell
 .\Tools\Setup\Initialize-NexusForever.ps1 -PromptForRootPassword -InstallDotNetEf
 ```
+
+Runtime-only SQLite setup:
+
+```powershell
+.\Tools\Setup\Initialize-NexusForever.ps1 -DatabaseProvider Sqlite
+```
+
+Use `-SqliteDirectory "D:\NexusForever\sqlite"` to place the database files
+outside the default `.nexusforever-runtime\sqlite` directory.
 
 ## One-Command Local Launch
 
@@ -53,6 +67,14 @@ From the repository root:
   -PromptForRootPassword
 ```
 
+To launch against SQLite runtime databases:
+
+```powershell
+.\Tools\Setup\Start-NexusForeverLocal.ps1 `
+  -DatabaseProvider Sqlite `
+  -ClientDirectory "D:\Games\WildStar"
+```
+
 For the faster local edit loop after the repo has already been initialized once,
 use the local restart wrapper instead of the full setup path:
 
@@ -61,6 +83,9 @@ use the local restart wrapper instead of the full setup path:
   -ClientDirectory "D:\Games\WildStar" `
   -PromptForRootPassword
 ```
+
+For a SQLite restart, pass `-DatabaseProvider Sqlite` to the restart wrapper as
+well so it rewrites runtime configs to the SQLite connection strings.
 
 That wrapper stops any running `NexusForever.*` process, then launches the full
 local standalone stack through the same runtime-prep flow. The delegated

@@ -71,6 +71,9 @@ param(
 
     [string] $DatabaseUser = 'nexusforever',
     [string] $DatabasePassword = 'nexusforever',
+    [ValidateSet('MySql', 'Sqlite')]
+    [string] $DatabaseProvider = 'MySql',
+    [string] $SqliteDirectory = '',
     [switch] $SkipDatabaseUser,
 
     [string] $BrokerUser = 'nexusforever',
@@ -232,6 +235,8 @@ $launcherParameters = @{
     RootPassword                        = $RootPassword
     DatabaseUser                        = $DatabaseUser
     DatabasePassword                    = $DatabasePassword
+    DatabaseProvider                    = $DatabaseProvider
+    SqliteDirectory                     = $SqliteDirectory
     BrokerUser                          = $BrokerUser
     BrokerPassword                      = $BrokerPassword
     BrokerHost                          = $BrokerHost

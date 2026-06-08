@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,9 +6,11 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusForever.Aspire.Database.Migrations.Configuration.Model;
 using NexusForever.Aspire.Database.Migrations.Service;
+using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Character;
 using NexusForever.Database.Chat;
+using NexusForever.Database.Configuration.Model;
 using NexusForever.Database.Friendship;
 using NexusForever.Database.Group;
 using NexusForever.Database.World;
@@ -50,56 +52,51 @@ namespace NexusForever.Aspire.Database.Migrations
                     sc.AddHostedService<WorldDatabaseHostedService>();
                     sc.AddHostedService<FinishHostedService>();
 
-                    sc.AddScoped(sp =>
-                    {
-                        var options = sp.GetService<DbContextOptions<AuthContext>>();
-                        return new AuthContext(options);
-                    });
-                    sc.AddScoped(sp =>
-                    {
-                        var options = sp.GetService<DbContextOptions<CharacterContext>>();
-                        return new CharacterContext(options);
-                    });
-                    sc.AddScoped(sp =>
-                    {
-                        var options = sp.GetService<DbContextOptions<WorldContext>>();
-                        return new WorldContext(options);
-                    });
-
-                    sc.AddDbContext<AuthContext>(options =>
-                    {
-                        var connectionString = hb.Configuration.GetConnectionString("authdb");
-                        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-                    });
-                    sc.AddDbContext<CharacterContext>(options =>
-                    {
-                        var connectionString = hb.Configuration.GetConnectionString("characterdb");
-                        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-                    });
-                    sc.AddDbContext<WorldContext>(options =>
-                    {
-                        var connectionString = hb.Configuration.GetConnectionString("worlddb");
-                        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-                    });
-                    sc.AddDbContext<GroupContext>(options =>
-                    {
-                        var connectionString = hb.Configuration.GetConnectionString("groupdb");
-                        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-                    });
-                    sc.AddDbContext<ChatContext>(options =>
-                    {
-                        var connectionString = hb.Configuration.GetConnectionString("chatdb");
-                        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-                    });
-                    sc.AddDbContext<FriendshipContext>(options =>
-                    {
-                        var connectionString = hb.Configuration.GetConnectionString("friendshipdb");
-                        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-                    });
+                    sc.AddConfiguredDbContext<AuthContext>(hb.Configuration, "Auth", "authdb");
+                    sc.AddConfiguredDbContext<CharacterContext>(hb.Configuration, "Character", "characterdb");
+                    sc.AddConfiguredDbContext<WorldContext>(hb.Configuration, "World", "worlddb");
+                    sc.AddConfiguredDbContext<GroupContext>(hb.Configuration, "Group", "groupdb");
+                    sc.AddConfiguredDbContext<ChatContext>(hb.Configuration, "Chat", "chatdb");
+                    sc.AddConfiguredDbContext<FriendshipContext>(hb.Configuration, "Friendship", "friendshipdb");
                 });
 
             IHost host = builder.Build();
             await host.RunAsync();
+        }
+    }
+
+    internal static class ServiceCollectionExtensions
+    {
+        public static void AddConfiguredDbContext<TContext>(this IServiceCollection services, IConfiguration configuration, string databaseName, string connectionStringName)
+            where TContext : DbContext
+        {
+            services.AddDbContext<TContext>(options =>
+            {
+                IConnectionString connectionString = GetConnectionString(configuration, databaseName, connectionStringName);
+                options.UseConfiguration(connectionString);
+            });
+        }
+
+        private static IConnectionString GetConnectionString(IConfiguration configuration, string databaseName, string connectionStringName)
+        {
+            DatabaseConnectionString configuredConnectionString = configuration
+                .GetSection($"Database:{databaseName}")
+                .Get<DatabaseConnectionString>();
+
+            if (configuredConnectionString != null && !string.IsNullOrWhiteSpace(configuredConnectionString.ConnectionString))
+                return configuredConnectionString;
+
+            string legacyConnectionString = configuration.GetConnectionString(connectionStringName);
+            if (!string.IsNullOrWhiteSpace(legacyConnectionString))
+            {
+                return new DatabaseConnectionString
+                {
+                    Provider         = DatabaseProvider.MySql,
+                    ConnectionString = legacyConnectionString
+                };
+            }
+
+            throw new InvalidOperationException($"Database connection string '{databaseName}' is not configured.");
         }
     }
 }

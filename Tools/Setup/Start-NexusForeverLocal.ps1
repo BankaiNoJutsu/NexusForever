@@ -97,6 +97,9 @@ param(
 
     [string] $DatabaseUser = 'nexusforever',
     [string] $DatabasePassword = 'nexusforever',
+    [ValidateSet('MySql', 'Sqlite')]
+    [string] $DatabaseProvider = 'MySql',
+    [string] $SqliteDirectory = '',
     [switch] $SkipDatabaseUser,
 
     [string] $BrokerUser = 'nexusforever',
@@ -381,8 +384,46 @@ function Resolve-PatchDirectoryPath {
     throw 'WildStar Patch directory was not found. Pass -PatchDirectory or -ClientDirectory.'
 }
 
+function Resolve-SqliteDirectoryPath {
+    param([string] $Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        $Path = Join-Path $RepoRoot '.nexusforever-runtime\sqlite'
+    }
+    elseif (![System.IO.Path]::IsPathRooted($Path)) {
+        $Path = Join-Path $RepoRoot $Path
+    }
+
+    New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    (Resolve-Path -LiteralPath $Path).Path
+}
+
+function Get-DatabaseKey {
+    param([string] $Database)
+
+    foreach ($entry in $GameDatabases.GetEnumerator()) {
+        if ($entry.Value -eq $Database) {
+            return $entry.Key
+        }
+    }
+
+    throw "Unknown NexusForever database '$Database'."
+}
+
+function Get-SqliteDatabasePath {
+    param([string] $Database)
+
+    $databaseKey = (Get-DatabaseKey -Database $Database).ToLowerInvariant()
+    Join-Path $SqliteDirectory "nexus_forever_$databaseKey.sqlite"
+}
+
 function Get-DatabaseConnectionString {
     param([string] $Database)
+
+    if ($DatabaseProvider -eq 'Sqlite') {
+        $databasePath = Get-SqliteDatabasePath -Database $Database
+        return "Data Source=$databasePath"
+    }
 
     "server=$MySqlHost;port=$MySqlPort;user=$DatabaseUser;password=$DatabasePassword;database=$Database"
 }
@@ -554,8 +595,56 @@ function Invoke-WithTemporaryEnvironment {
     }
 }
 
+function Set-JsonPropertyValue {
+    param(
+        [object] $Node,
+        [string] $Name,
+        [object] $Value
+    )
+
+    $property = $Node.PSObject.Properties[$Name]
+    if ($property) {
+        $property.Value = $Value
+        return
+    }
+
+    $Node | Add-Member -NotePropertyName $Name -NotePropertyValue $Value
+}
+
+function Get-DatabaseFromConnectionNode {
+    param(
+        [object] $Node,
+        [string] $NodeName
+    )
+
+    $connectionProperty = $Node.PSObject.Properties['ConnectionString']
+    if (!$connectionProperty -or !($connectionProperty.Value -is [string])) {
+        return $null
+    }
+
+    $value = [string] $connectionProperty.Value
+    if ($value -match '(?i)(?:^|;)database=([^;]+)') {
+        $database = $Matches[1]
+        if ($GameDatabases.Values -contains $database) {
+            return $database
+        }
+    }
+
+    if (![string]::IsNullOrWhiteSpace($NodeName)) {
+        $databaseKey = ($NodeName -split ':', 2)[0]
+        if ($GameDatabases.Contains($databaseKey)) {
+            return $GameDatabases[$databaseKey]
+        }
+    }
+
+    $null
+}
+
 function Update-ConnectionStringsInJsonNode {
-    param([AllowNull()][object] $Node)
+    param(
+        [AllowNull()][object] $Node,
+        [string] $NodeName = ''
+    )
 
     if ($null -eq $Node) {
         return
@@ -563,28 +652,26 @@ function Update-ConnectionStringsInJsonNode {
 
     if ($Node -is [System.Collections.IEnumerable] -and !($Node -is [string])) {
         foreach ($item in $Node) {
-            Update-ConnectionStringsInJsonNode -Node $item
+            Update-ConnectionStringsInJsonNode -Node $item -NodeName $NodeName
         }
 
         return
     }
 
+    $connectionProperty = $Node.PSObject.Properties['ConnectionString']
+    if ($connectionProperty -and $connectionProperty.Value -is [string]) {
+        $database = Get-DatabaseFromConnectionNode -Node $Node -NodeName $NodeName
+        if ($database) {
+            $connectionProperty.Value = Get-DatabaseConnectionString -Database $database
+            Set-JsonPropertyValue -Node $Node -Name 'Provider' -Value $DatabaseProvider
+        }
+        elseif ([string] $connectionProperty.Value -like 'amqp://*') {
+            $connectionProperty.Value = Get-BrokerConnectionString
+        }
+    }
+
     foreach ($property in $Node.PSObject.Properties) {
-        if ($property.Name -eq 'ConnectionString' -and $property.Value -is [string]) {
-            $value = [string] $property.Value
-            if ($value -match '(?i)database=([^;]+)') {
-                $database = $Matches[1]
-                if ($GameDatabases.Values -contains $database) {
-                    $property.Value = Get-DatabaseConnectionString -Database $database
-                }
-            }
-            elseif ($value -like 'amqp://*') {
-                $property.Value = Get-BrokerConnectionString
-            }
-        }
-        else {
-            Update-ConnectionStringsInJsonNode -Node $property.Value
-        }
+        Update-ConnectionStringsInJsonNode -Node $property.Value -NodeName $property.Name
     }
 }
 
@@ -790,6 +877,8 @@ function Invoke-NexusForeverSetup {
         RootPassword           = $RootPassword
         DatabaseUser           = $DatabaseUser
         DatabasePassword       = $DatabasePassword
+        DatabaseProvider       = $DatabaseProvider
+        SqliteDirectory        = $SqliteDirectory
         BrokerUser             = $BrokerUser
         BrokerPassword         = $BrokerPassword
         BrokerHost             = $BrokerHost
@@ -846,6 +935,24 @@ function Invoke-NexusForeverSetup {
     & $setupScript @setupParameters
 }
 
+function Get-DatabaseEnvironmentOverrides {
+    $environmentOverrides = @{
+        'ConnectionStrings__authdb'       = Get-DatabaseConnectionString -Database $GameDatabases.Auth
+        'ConnectionStrings__characterdb'  = Get-DatabaseConnectionString -Database $GameDatabases.Character
+        'ConnectionStrings__worlddb'      = Get-DatabaseConnectionString -Database $GameDatabases.World
+        'ConnectionStrings__groupdb'      = Get-DatabaseConnectionString -Database $GameDatabases.Group
+        'ConnectionStrings__chatdb'       = Get-DatabaseConnectionString -Database $GameDatabases.Chat
+        'ConnectionStrings__friendshipdb' = Get-DatabaseConnectionString -Database $GameDatabases.Friendship
+    }
+
+    foreach ($entry in $GameDatabases.GetEnumerator()) {
+        $environmentOverrides["Database__$($entry.Key)__Provider"] = $DatabaseProvider
+        $environmentOverrides["Database__$($entry.Key)__ConnectionString"] = Get-DatabaseConnectionString -Database $entry.Value
+    }
+
+    $environmentOverrides
+}
+
 function Invoke-AccountSeeder {
     $migrationExe = Join-Path $RepoRoot "Source\NexusForever.Aspire.Database.Migrations\bin\$Configuration\$TargetFramework\NexusForever.Aspire.Database.Migrations.exe"
     $skippedWorldDatabasePath = Join-Path $RepoRoot '.nexusforever-runtime\skip-world-database'
@@ -854,16 +961,9 @@ function Invoke-AccountSeeder {
         throw "Database migration executable was not found: $migrationExe"
     }
 
-    $environmentOverrides = @{
-        'ConnectionStrings__authdb'       = Get-DatabaseConnectionString -Database $GameDatabases.Auth
-        'ConnectionStrings__characterdb'  = Get-DatabaseConnectionString -Database $GameDatabases.Character
-        'ConnectionStrings__worlddb'      = Get-DatabaseConnectionString -Database $GameDatabases.World
-        'ConnectionStrings__groupdb'      = Get-DatabaseConnectionString -Database $GameDatabases.Group
-        'ConnectionStrings__chatdb'       = Get-DatabaseConnectionString -Database $GameDatabases.Chat
-        'ConnectionStrings__friendshipdb' = Get-DatabaseConnectionString -Database $GameDatabases.Friendship
-        'DatabaseMigration__Skip'         = 'true'
-        'WorldDatabase__Path'             = $skippedWorldDatabasePath
-    }
+    $environmentOverrides = Get-DatabaseEnvironmentOverrides
+    $environmentOverrides['DatabaseMigration__Skip'] = 'true'
+    $environmentOverrides['WorldDatabase__Path'] = $skippedWorldDatabasePath
 
     $accounts = @(Get-LocalLoginAccounts)
     for ($index = 0; $index -lt $accounts.Count; $index++) {
@@ -1465,6 +1565,13 @@ function Start-WildStarClient {
 }
 
 $RepoRoot = Get-AbsolutePath -Path $RepoRoot
+if ($DatabaseProvider -eq 'Sqlite') {
+    $SqliteDirectory = Resolve-SqliteDirectoryPath -Path $SqliteDirectory
+}
+
+if ($DatabaseProvider -eq 'Sqlite' -and $EnableDataMappingAuthoring) {
+    throw 'DataMapping authoring imports require MySQL/MariaDB reference databases. Re-run with -DatabaseProvider MySql, or omit -EnableDataMappingAuthoring for a runtime-only SQLite launch.'
+}
 
 if (Test-StoreBannerHostsRedirectEnabled -and !$PSBoundParameters.ContainsKey('RealmDataCenterId')) {
     $RealmDataCenterId = 9
@@ -1483,6 +1590,7 @@ $dependencyBootstrap = Resolve-NexusSetupDependencies `
     -RootUser $RootUser `
     -RootPassword $RootPassword `
     -PromptForRootPassword:$PromptForRootPassword `
+    -SkipMySql:($DatabaseProvider -eq 'Sqlite') `
     -BrokerHost $BrokerHost `
     -BrokerPort $BrokerPort `
     -BrokerUser $BrokerUser `
