@@ -1,11 +1,11 @@
-﻿using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NexusForever.Aspire.Database.Migrations.Configuration.Model;
 using NexusForever.Cryptography;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
-using Microsoft.EntityFrameworkCore;
 
 namespace NexusForever.Aspire.Database.Migrations.Service
 {
@@ -50,29 +50,37 @@ namespace NexusForever.Aspire.Database.Migrations.Service
 
                 AccountModel accountModel = await _context.Account
                     .Include(a => a.AccountRole)
+                    .Include(a => a.AccountEntitlement)
                     .SingleOrDefaultAsync(a => a.Email == configuredAccount.UserName, cancellationToken);
 
                 if (accountModel != null)
                 {
-                    if (accountModel.AccountRole.Any(r => r.RoleId == roleId))
+                    bool changed = AccountDefaultEntitlements.EnsureBaseline(accountModel);
+
+                    if (!accountModel.AccountRole.Any(r => r.RoleId == roleId))
                     {
-                        _log.LogInformation("Account with username '{UserName}' already exists with role {RoleId}, skipping account creation.", configuredAccount.UserName, roleId);
-                        continue;
+                        accountModel.AccountRole.Add(new AccountRoleModel
+                        {
+                            RoleId = roleId
+                        });
+                        changed = true;
                     }
 
-                    accountModel.AccountRole.Add(new AccountRoleModel
+                    if (changed)
                     {
-                        RoleId = roleId
-                    });
-
-                    try
-                    {
-                        await _context.SaveChangesAsync(cancellationToken);
-                        _log.LogInformation("Added role {RoleId} to existing account '{UserName}'.", roleId, configuredAccount.UserName);
+                        try
+                        {
+                            await _context.SaveChangesAsync(cancellationToken);
+                            _log.LogInformation("Updated existing account '{UserName}' with role {RoleId} and baseline entitlements.", configuredAccount.UserName, roleId);
+                        }
+                        catch (Exception ex)
+                        {
+                            _log.LogError(ex, "Failed to update existing account '{UserName}'.", configuredAccount.UserName);
+                        }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        _log.LogError(ex, "Failed to add role {RoleId} to existing account '{UserName}'.", roleId, configuredAccount.UserName);
+                        _log.LogInformation("Account with username '{UserName}' already exists with role {RoleId} and baseline entitlements, skipping account creation.", configuredAccount.UserName, roleId);
                     }
 
                     continue;
@@ -89,6 +97,7 @@ namespace NexusForever.Aspire.Database.Migrations.Service
                 {
                     RoleId = roleId
                 });
+                AccountDefaultEntitlements.EnsureBaseline(newAccount);
 
                 _context.Account.Add(newAccount);
 

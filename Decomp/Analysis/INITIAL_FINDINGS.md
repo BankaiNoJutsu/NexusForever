@@ -3776,6 +3776,22 @@ Sixty-sixth P2P trading state follow-up implemented from this pass:
   -m:1 -p:BaseOutputPath=I:/GIT/NexusForever/.nexusforever-runtime/build-trade-state/`
   succeeds with the existing `Spline.formation` warning and `0 Error(s)`.
 
+P2P trading entitlement/trial-account follow-up:
+
+- A local two-account trade smoke reached the native client-side
+  `P2PTradeError_MissingEntitlement` / trial-account UI string before the
+  NexusForever trade request handler emitted any server error. The existing
+  client exports already map the P2P request senders and expose the trade
+  missing-entitlement string, while source-side trade preflight had no trial
+  gate.
+- Fresh local accounts were being created with only account roles and no
+  `account_entitlement` rows, so `ServerAccountEntitlements` sent an empty list
+  at character select. Source now gives normal local accounts baseline
+  `EconomyParticipation` (`15`) and `FullSocialParticipation` (`17`) rows
+  through account creation, auth migrations, and the local runtime auth seed,
+  preventing the client from classifying emulator accounts as trial while
+  keeping mail/guild social checks backed by real account entitlement state.
+
 Sixty-seventh ICComm routing follow-up implemented from this pass:
 
 - The previously mapped ICComm client request group now has a bounded runtime

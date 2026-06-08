@@ -193,6 +193,8 @@ namespace NexusForever.Database.Auth
                 });
             }
 
+            AccountDefaultEntitlements.EnsureBaseline(model);
+
             context.Account.Add(model);
             await context.SaveChangesAsync();
         }
