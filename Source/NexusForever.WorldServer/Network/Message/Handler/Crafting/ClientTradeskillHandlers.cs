@@ -115,17 +115,17 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             if (allowNone && id == 0u)
                 return;
 
-            if (gameTableManager.Tradeskill.GetEntry(id) == null)
+            if (gameTableManager.Tradeskill?.GetEntry(id) == null)
                 throw new InvalidPacketValueException();
         }
 
         public static void ValidateBonusForTradeskill(IGameTableManager gameTableManager, TradeskillType tradeskillId, uint tradeskillBonusId)
         {
-            TradeskillBonusEntry bonus = gameTableManager.TradeskillBonus.GetEntry(tradeskillBonusId);
+            TradeskillBonusEntry bonus = gameTableManager.TradeskillBonus?.GetEntry(tradeskillBonusId);
             if (bonus == null)
                 throw new InvalidPacketValueException();
 
-            TradeskillTalentTierEntry tier = gameTableManager.TradeskillTalentTier.GetEntry(bonus.TradeSkillTierId);
+            TradeskillTalentTierEntry tier = gameTableManager.TradeskillTalentTier?.GetEntry(bonus.TradeSkillTierId);
             if (tier == null || tier.TradeSkillId != (uint)tradeskillId || !TierContainsBonus(tier, tradeskillBonusId))
                 throw new InvalidPacketValueException();
         }

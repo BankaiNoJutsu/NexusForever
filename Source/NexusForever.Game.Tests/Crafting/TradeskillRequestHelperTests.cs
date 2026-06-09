@@ -9,78 +9,65 @@ using NexusForever.WorldServer.Network.Message.Handler.Crafting;
 
 namespace NexusForever.Game.Tests.Crafting;
 
-public class CraftingRuneHandlerTests
+public class TradeskillRequestHelperTests
 {
-    [Theory]
-    [InlineData(7u, RuneType.Air)]
-    [InlineData(12u, RuneType.Life)]
-    public void NormalizeRuneType_DefaultPrefersFullRuneTypeIds(uint rawValue, RuneType expected)
-    {
-        RuneType result = CraftingRuneRequestHelper.NormalizeRuneType((RuneType)rawValue);
-
-        Assert.Equal(expected, result);
-    }
-
-    [Theory]
-    [InlineData(1u, RuneType.Air)]
-    [InlineData(6u, RuneType.Life)]
-    [InlineData(7u, RuneType.Fusion)]
-    public void NormalizeRuneType_CompactFirstPrefersCompactSocketIds(uint rawValue, RuneType expected)
-    {
-        RuneType result = CraftingRuneRequestHelper.NormalizeRuneType((RuneType)rawValue, compactFirst: true);
-
-        Assert.Equal(expected, result);
-    }
-
-    [Theory]
-    [InlineData(0u)]
-    [InlineData(14u)]
-    [InlineData(31u)]
-    public void NormalizeRuneType_RejectsUnknownValues(uint rawValue)
-    {
-        Assert.Throws<InvalidPacketValueException>(() => CraftingRuneRequestHelper.NormalizeRuneType((RuneType)rawValue));
-    }
+    private const uint TradeskillBonusId = 4008u;
+    private const uint TradeskillTierId = 4011u;
 
     [Fact]
-    public void ValidateItem2_WhenItemTableMissingThrowsInvalidPacket()
+    public void ValidateTradeskill_WhenTradeskillTableMissingThrowsInvalidPacket()
     {
         IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out _);
 
-        Assert.Throws<InvalidPacketValueException>(() => CraftingRuneRequestHelper.ValidateItem2(tables, 123u));
+        Assert.Throws<InvalidPacketValueException>(() => TradeskillRequestHelper.ValidateTradeskill(tables, TradeskillType.Armorer));
     }
 
     [Fact]
-    public void ValidateCraftingAdditive_WhenItemTableMissingThrowsInvalidPacket()
+    public void ValidateTradeskill_WhenNoneAllowedAndTableMissingDoesNotThrow()
     {
         IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out _);
 
-        Assert.Throws<InvalidPacketValueException>(() => CraftingRuneRequestHelper.ValidateCraftingAdditive(tables, 123u));
+        TradeskillRequestHelper.ValidateTradeskill(tables, 0, allowNone: true);
     }
 
     [Fact]
-    public void ValidateCraftingAdditive_WhenAdditiveTableMissingThrowsInvalidPacket()
+    public void ValidateBonusForTradeskill_WhenBonusTableMissingThrowsInvalidPacket()
     {
-        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
-        proxy.SetProperty(nameof(IGameTableManager.Item), CreateGameTable(new Item2Entry
-        {
-            Id = 123u,
-            TradeskillAdditiveId = 10u
-        }));
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out _);
 
-        Assert.Throws<InvalidPacketValueException>(() => CraftingRuneRequestHelper.ValidateCraftingAdditive(tables, 123u));
+        Assert.Throws<InvalidPacketValueException>(() => TradeskillRequestHelper.ValidateBonusForTradeskill(tables, TradeskillType.Armorer, TradeskillBonusId));
     }
 
     [Fact]
-    public void ValidateCraftingCatalyst_WhenCatalystTableMissingThrowsInvalidPacket()
+    public void ValidateBonusForTradeskill_WhenTalentTierTableMissingThrowsInvalidPacket()
     {
         IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
-        proxy.SetProperty(nameof(IGameTableManager.Item), CreateGameTable(new Item2Entry
+        proxy.SetProperty(nameof(IGameTableManager.TradeskillBonus), CreateGameTable(new TradeskillBonusEntry
         {
-            Id = 123u,
-            TradeskillCatalystId = 11u
+            Id = TradeskillBonusId,
+            TradeSkillTierId = TradeskillTierId
         }));
 
-        Assert.Throws<InvalidPacketValueException>(() => CraftingRuneRequestHelper.ValidateCraftingCatalyst(tables, 123u));
+        Assert.Throws<InvalidPacketValueException>(() => TradeskillRequestHelper.ValidateBonusForTradeskill(tables, TradeskillType.Armorer, TradeskillBonusId));
+    }
+
+    [Fact]
+    public void ValidateBonusForTradeskill_WhenTierContainsBonusDoesNotThrow()
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
+        proxy.SetProperty(nameof(IGameTableManager.TradeskillBonus), CreateGameTable(new TradeskillBonusEntry
+        {
+            Id = TradeskillBonusId,
+            TradeSkillTierId = TradeskillTierId
+        }));
+        proxy.SetProperty(nameof(IGameTableManager.TradeskillTalentTier), CreateGameTable(new TradeskillTalentTierEntry
+        {
+            Id = TradeskillTierId,
+            TradeSkillId = (uint)TradeskillType.Armorer,
+            TradeSkillBonusId00 = TradeskillBonusId
+        }));
+
+        TradeskillRequestHelper.ValidateBonusForTradeskill(tables, TradeskillType.Armorer, TradeskillBonusId);
     }
 
     private static GameTable<T> CreateGameTable<T>(params T[] entries) where T : class, new()

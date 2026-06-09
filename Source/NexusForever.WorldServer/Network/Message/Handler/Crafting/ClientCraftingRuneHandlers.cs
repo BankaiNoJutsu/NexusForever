@@ -185,7 +185,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             if (item2Id == 0u)
                 return;
 
-            if (gameTableManager.Item.GetEntry(item2Id) == null)
+            if (gameTableManager.Item?.GetEntry(item2Id) == null)
                 throw new InvalidPacketValueException();
         }
 
@@ -194,8 +194,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             if (item2Id == 0u)
                 return;
 
-            Item2Entry item = gameTableManager.Item.GetEntry(item2Id);
-            if (item == null || item.TradeskillAdditiveId == 0u || gameTableManager.TradeskillAdditive.GetEntry(item.TradeskillAdditiveId) == null)
+            Item2Entry item = gameTableManager.Item?.GetEntry(item2Id);
+            if (item == null || item.TradeskillAdditiveId == 0u || gameTableManager.TradeskillAdditive?.GetEntry(item.TradeskillAdditiveId) == null)
                 throw new InvalidPacketValueException();
         }
 
@@ -204,8 +204,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             if (item2Id == 0u)
                 return;
 
-            Item2Entry item = gameTableManager.Item.GetEntry(item2Id);
-            if (item == null || item.TradeskillCatalystId == 0u || gameTableManager.TradeskillCatalyst.GetEntry(item.TradeskillCatalystId) == null)
+            Item2Entry item = gameTableManager.Item?.GetEntry(item2Id);
+            if (item == null || item.TradeskillCatalystId == 0u || gameTableManager.TradeskillCatalyst?.GetEntry(item.TradeskillCatalystId) == null)
                 throw new InvalidPacketValueException();
         }
 

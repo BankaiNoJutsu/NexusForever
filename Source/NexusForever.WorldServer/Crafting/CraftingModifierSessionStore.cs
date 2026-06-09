@@ -119,14 +119,14 @@ namespace NexusForever.WorldServer.Crafting
         {
             reason = string.Empty;
 
-            Item2Entry item = gameTableManager.Item.GetEntry(item2Id);
+            Item2Entry item = gameTableManager.Item?.GetEntry(item2Id);
             if (item == null || item.TradeskillAdditiveId == 0u)
             {
                 reason = $"invalid-additive-item:{item2Id}";
                 return false;
             }
 
-            TradeskillAdditiveEntry additive = gameTableManager.TradeskillAdditive.GetEntry(item.TradeskillAdditiveId);
+            TradeskillAdditiveEntry additive = gameTableManager.TradeskillAdditive?.GetEntry(item.TradeskillAdditiveId);
             if (additive == null)
             {
                 reason = $"invalid-additive:{item.TradeskillAdditiveId}";
@@ -146,14 +146,14 @@ namespace NexusForever.WorldServer.Crafting
         {
             reason = string.Empty;
 
-            Item2Entry item = gameTableManager.Item.GetEntry(item2Id);
+            Item2Entry item = gameTableManager.Item?.GetEntry(item2Id);
             if (item == null || item.TradeskillCatalystId == 0u)
             {
                 reason = $"invalid-catalyst-item:{item2Id}";
                 return false;
             }
 
-            TradeskillCatalystEntry catalyst = gameTableManager.TradeskillCatalyst.GetEntry(item.TradeskillCatalystId);
+            TradeskillCatalystEntry catalyst = gameTableManager.TradeskillCatalyst?.GetEntry(item.TradeskillCatalystId);
             if (catalyst == null)
             {
                 reason = $"invalid-catalyst:{item.TradeskillCatalystId}";

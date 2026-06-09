@@ -43,7 +43,7 @@ namespace NexusForever.Game.Entity
             if (gameTableManager == null)
                 return 0;
 
-            ItemSpecialEntry special = gameTableManager.ItemSpecial.GetEntry(item.Info.Entry.ItemSpecialId00);
+            ItemSpecialEntry special = gameTableManager.ItemSpecial?.GetEntry(item.Info.Entry.ItemSpecialId00);
             if (special == null)
                 return 0;
 

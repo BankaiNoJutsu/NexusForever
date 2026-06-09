@@ -1,6 +1,7 @@
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Spell;
 using NexusForever.Network;
 using NexusForever.Network.Message;
@@ -233,7 +234,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                     continue;
 
                 uint prerequisiteId = prerequisiteIds[index];
-                if (prerequisiteId != 0u && !prerequisiteManager.Meets(player, prerequisiteId))
+                if (prerequisiteId != 0u && !MeetsActivateSpellPrerequisite(entity, player, prerequisiteId))
                     continue;
 
                 spell4Id = candidateSpellId;
@@ -241,6 +242,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             }
 
             return false;
+        }
+
+        private bool MeetsActivateSpellPrerequisite(IWorldEntity entity, IPlayer player, uint prerequisiteId)
+        {
+            var parameters = new PrerequisiteParameters
+            {
+                Target = entity as IUnitEntity
+            };
+
+            return prerequisiteManager.Meets(player, prerequisiteId, parameters);
         }
 
         private static uint GetFallbackActivateSpellId(IWorldEntity entity)

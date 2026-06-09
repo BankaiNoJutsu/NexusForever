@@ -60,7 +60,7 @@ public class PlayerTradeskillArchiveTests
 
             CharacterTradeskillModel learnedTradeskill = models[TradeskillType.Weaponsmith];
             Assert.Equal(1u, learnedTradeskill.IsActive);
-            Assert.Equal(10u, learnedTradeskill.TalentPoints);
+            Assert.Equal(0u, learnedTradeskill.TalentPoints);
 
             IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> calls = sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
             Assert.Collection(calls,
@@ -75,7 +75,7 @@ public class PlayerTradeskillArchiveTests
                     var update = Assert.IsType<ServerProfessionUpdate>(call.Arguments[0]);
                     Assert.Equal(TradeskillType.Weaponsmith, update.Tradeskill.TradeskillId);
                     Assert.Equal(1u, update.Tradeskill.IsActive);
-                    Assert.Equal(10u, update.Tradeskill.TalentPoints);
+                    Assert.Equal(0u, update.Tradeskill.TalentPoints);
                 });
         }
         finally
@@ -214,6 +214,90 @@ public class PlayerTradeskillArchiveTests
                     Assert.Equal(2.5f, discovered.Coordinates.Y);
                 },
                 call => Assert.IsType<ServerProfessionModifiers>(call.Arguments[0]));
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void EnsureTradeskillTalentPointTotal_BackfillsUnspentRewardPointsAndSendsUpdate()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider([]);
+
+        try
+        {
+            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+            var player = CreatePlayer(session);
+
+            AddTradeskillState(player, new CharacterTradeskillModel
+            {
+                Id            = 42ul,
+                TradeskillId  = (uint)TradeskillType.Technologist,
+                IsActive      = 1u,
+                TalentPoints  = 0u,
+                TalentTier00  = 111u
+            });
+
+            uint added = player.EnsureTradeskillTalentPointTotal(TradeskillType.Technologist, 3u);
+
+            Assert.Equal(2u, added);
+
+            IReadOnlyDictionary<TradeskillType, CharacterTradeskillModel> models = GetTradeskillModels(player);
+            Assert.Equal(2u, models[TradeskillType.Technologist].TalentPoints);
+
+            RecordingDispatchProxy<IGameSession>.Invocation call =
+                Assert.Single(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)));
+            var update = Assert.IsType<ServerProfessionUpdate>(call.Arguments[0]);
+            Assert.Equal(TradeskillType.Technologist, update.Tradeskill.TradeskillId);
+            Assert.Equal(2u, update.Tradeskill.TalentPoints);
+            Assert.Equal(111u, update.Tradeskill.TradeskillTalentTierIds[0]);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void ResetTradeskillTalents_ClearsSelectedTalentsWithoutGrantingLegacyFreePoints()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildGameTableProvider([]);
+
+        try
+        {
+            IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out var sessionProxy);
+            var player = CreatePlayer(session);
+
+            AddTradeskillState(player, new CharacterTradeskillModel
+            {
+                Id            = 42ul,
+                TradeskillId  = (uint)TradeskillType.Technologist,
+                IsActive      = 1u,
+                TalentPoints  = 1u,
+                TalentTier00  = 111u,
+                TalentTier01  = 222u
+            });
+
+            bool reset = player.ResetTradeskillTalents(TradeskillType.Technologist);
+
+            Assert.True(reset);
+
+            IReadOnlyDictionary<TradeskillType, CharacterTradeskillModel> models = GetTradeskillModels(player);
+            CharacterTradeskillModel technologist = models[TradeskillType.Technologist];
+            Assert.Equal(0u, technologist.TalentPoints);
+            Assert.Equal(0u, technologist.TalentTier00);
+            Assert.Equal(0u, technologist.TalentTier01);
+
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> calls =
+                sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+            var update = Assert.IsType<ServerProfessionUpdate>(calls[0].Arguments[0]);
+            Assert.Equal(0u, update.Tradeskill.TalentPoints);
+            Assert.All(update.Tradeskill.TradeskillTalentTierIds, tier => Assert.Equal(0u, tier));
+            Assert.IsType<ServerTradeskillRelearnCooldown>(calls[1].Arguments[0]);
         }
         finally
         {

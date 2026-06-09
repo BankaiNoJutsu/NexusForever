@@ -436,12 +436,83 @@ capture or dynamic breakpoint on the runtime apply dispatch.
 Fixed-recipe crafting, supply satchel, tradeskill lifecycle, schematic
 learning, profession modifiers, additive state/abandon clearing, rune slot management, rune fusion (add,
 clear, install, reroll - all 4 operations send `ServerTradeskillSigilResult`).
+Material availability now combines satchel and inventory counts with widened
+arithmetic so saturated inventory stack totals cannot overflow into a false
+missing-material failure before debit.
+Fixed-recipe crafting now also tolerates partial game-table loads for the
+schematic, item, material, and tier tables: missing schematic/item tables follow
+the existing invalid-request boundary before mutation, missing material tables
+fall back to inventory-only debits, and missing tier tables complete with zero
+craft XP. Tradeskill request validation now treats missing `Tradeskill`,
+`TradeskillBonus`, and `TradeskillTalentTier` tables like missing rows through
+the existing invalid-packet boundary. Rune install, additive/catalyst request
+validation, and queued modifier materialization now treat missing `Item`,
+`Item2Category`, `TradeskillAdditive`, `TradeskillCatalyst`, and `ItemSpecial`
+tables like missing rows through the existing invalid-result paths. Focused
+partial-table verification passed 12/12, focused tradeskill request
+verification passed 5/5, focused rune/modifier verification passed 63/63, and
+broader crafting verification passed 90/90.
+
+2026-06-09 live station/craft proof closed the generic-station fixed-recipe
+smoke for emulator parity. Bundle
+`artifacts\blocker_evidence\20260609-212659-F008-crafting-live` and packet
+evidence `artifacts\packet_evidence\F008-crafting-live\20260609-201741-packet-evidence.jsonl`
+show the Thayd generic station opening through activate spell `1817` on
+creature `21793` after prerequisite `1050` (`IsPlayer == 0`) is evaluated
+against the activated unit. The UI `Simple Craft` button sent
+`ClientCraftingCraftItemAutoCraft(0x0852)` with station unit `354`; that station
+reported `Creature2.TradeSkillIdStation = 4294967295`, so validation now
+accepts both observed all-tradeskills sentinel encodings (`uint.MaxValue` and
+the SQL/reference `int.MaxValue`). Contexts `47..49` completed schematic `270`,
+emitting `ServerSupplySatchelUpdate(0x0199)` plus
+`ServerCraftingFinish(0x0853)` and producing item `14838` x12 after three
+crafts while material `11` persisted at `28`.
+
+2026-06-09 live Tech Tree/talent proof split the follow-up into one fixed
+server-state bug and one remaining presentation/evidence gap. The Technologist
+craft threshold did persist server-side: character `30` had `tradeskillXp =
+480`, and tier achievement `1481` was completed after crossing the tier-2
+`450` XP requirement. The visible Crafting Result text still showed
+`480/450`, so the suspected issue is now packet/order/client presentation
+rather than lost XP; the packet evidence filter did not include
+`ServerProfessionUpdate(0x0860)`, so exact profession-update payload/order
+remains blocked pending a capture with `0x0860` enabled. The actual missing
+gameplay state was Tech Tree reward application: completed achievement `1470`
+maps through `TradeskillAchievementReward` `599` to one Technologist talent
+point, and achievement `1471` maps through reward `162` to one talent point plus
+schematic `2954` (`Spirovine Extract`). NexusForever now applies completed
+`TradeskillAchievementReward` rows idempotently, backfills them on login and
+tradeskill learn, and removed the old simplified 10-free-talent-point seed from
+learn/reset behavior. A live retry exposed the final dependency: the
+`TradeskillAchievementReward.tbl` file existed in runtime assets but was not
+marked `[GameData]`, so WorldServer never loaded it and the reward pass saw zero
+rows. `TradeskillAchievementReward` is now a runtime-required game table and is
+pinned by the game-table contract tests. Focused F-008/tradeskill reward/table
+verification passed 47/47, and WorldServer build passed. After reconnecting
+character `30`, the repair path persisted Technologist `talentPoints = 2` and
+schematic `2954`, while retaining `tradeskillXp = 480`.
+
+The 2026-06-09 cached-export/source recheck kept current-craft and crafting aux
+producers blocked: `Network_RegisterServerOpcode_0351` (`14006c290`) registers
+`0x0854` size `0x50` to `ServerCraftingCurrentCraft_ReadPayload`
+(`1400a46b0`), `0x084B` size `0x18` to
+`ServerCraftingAuxFourUInt32FloatUInt32_ReadPayload` (`1400a3af0`), and
+`0x0855` size `0x0c` to `ServerUInt32AndTwoFloats_ReadPayload`
+(`140081df0`). `Crafting_HandleServerCraftingCurrentCraft` (`1405e6830`) only
+stores current-craft state and dispatches `CraftingUpdateCurrent`, while
+`Crafting_HandleServerCraftingFinish` (`1405e6690`) remains the positive
+finish/hot-cold consumer. Current source emits `ServerCraftingFinish` and
+`ServerTradeskillSigilResult` only, and focused tests guard against
+`ServerCraftingCurrentCraft`, `0x084B`, and `0x0855` production.
 
 **Remaining gaps:**
 - Complex craft stats (CraftStats, ApSpSplitDelta, ChargeCounts discarded)
 - Discovery attempt coordinate packing, hot/cold emit timing, and unlock mutation remain blocked; validate with an F-008 live capture before enabling non-success discovery results
 - Crafting station request semantics are implemented; native service-key names remain diagnostic-only
-- 0x084B/0x0855 emit intent (corrected 24-byte and 12-byte payload shapes modeled, never sent; 2026-06-04 Ghidra MCP recheck found reader/registration evidence only)
+- ServerCraftingCurrentCraft (`0x0854`) cadence and 0x084B/0x0855 emit intent (corrected 80-byte, 24-byte, and 12-byte payload shapes modeled, never sent; 2026-06-09 cached-export/source recheck found reader/apply evidence only)
+- Crafting-result profession-progress display/order, including the observed
+  `480/450` stale threshold, remains blocked on live packet evidence that
+  includes `ServerProfessionUpdate(0x0860)`
 - Non-success sigil result rules and server-side `ServerItemMicrochips` (`0x056C`)
   patch producer precision
   (microchip taxonomy cleanup verification passed 149/149)

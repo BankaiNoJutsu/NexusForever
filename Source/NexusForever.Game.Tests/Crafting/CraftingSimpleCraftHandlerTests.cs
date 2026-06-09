@@ -14,6 +14,7 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Configuration.Model;
 using NexusForever.GameTable.Model;
+using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Crafting;
@@ -190,6 +191,138 @@ public class CraftingSimpleCraftHandlerTests
     }
 
     [Fact]
+    public void SimpleCraft_WhenSchematicTableMissing_ThrowsWithoutMutation()
+    {
+        IWorldSession session = CreateSession(
+            satchelMaterialAmount: 2,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<ISupplySatchelManager> satchelProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out IItemInfo outputInfo);
+        GameTableManager gameTableManager = CreateGameTableManager();
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.TradeskillSchematic2), null);
+        ClientCraftingSimpleCraftHandler handler = CreateHandler(outputInfo, gameTableManager);
+
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, CreateRequest(SchematicId)));
+
+        Assert.Empty(satchelProxy.GetInvocations(nameof(ISupplySatchelManager.RemoveAmount)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+        Assert.Empty(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+        Assert.Empty(GetMessages<ServerCraftingFinish>(sessionProxy));
+    }
+
+    [Fact]
+    public void CraftItem_WhenItemTableMissingForCatalyst_ThrowsWithoutMutation()
+    {
+        IWorldSession session = CreateSession(
+            satchelMaterialAmount: 4,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<ISupplySatchelManager> satchelProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out IItemInfo outputInfo,
+            catalystMaterialAmount: 2);
+        GameTableManager gameTableManager = CreateGameTableManager();
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), null);
+        ClientCraftingCraftItemHandler handler = CreateCraftItemHandler(outputInfo, gameTableManager);
+
+        Assert.Throws<InvalidPacketValueException>(() => handler.HandleMessage(session, CreateCraftItemRequest(SchematicId, 2u, CatalystItemId)));
+
+        Assert.Empty(satchelProxy.GetInvocations(nameof(ISupplySatchelManager.RemoveAmount)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Empty(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+        Assert.Empty(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+        Assert.Empty(GetMessages<ServerCraftingFinish>(sessionProxy));
+    }
+
+    [Fact]
+    public void SimpleCraft_WhenTradeskillTierTableMissing_CompletesWithZeroXp()
+    {
+        IWorldSession session = CreateSession(
+            satchelMaterialAmount: 2,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<ISupplySatchelManager> satchelProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> _,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out IItemInfo outputInfo);
+        GameTableManager gameTableManager = CreateGameTableManager();
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.TradeskillTier), null);
+        ClientCraftingSimpleCraftHandler handler = CreateHandler(outputInfo, gameTableManager);
+
+        handler.HandleMessage(session, CreateRequest(SchematicId));
+
+        Assert.Single(satchelProxy.GetInvocations(nameof(ISupplySatchelManager.RemoveAmount)));
+        Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+
+        ServerCraftingFinish finish = Assert.Single(GetMessages<ServerCraftingFinish>(sessionProxy));
+        Assert.True(finish.Pass);
+        Assert.Equal(OutputItemId, finish.Item2IdCrafted);
+        Assert.Equal(0u, finish.EarnedXp);
+    }
+
+    [Fact]
+    public void SimpleCraft_WhenTradeskillMaterialTableMissing_UsesInventoryOnlyMaterialDebit()
+    {
+        IWorldSession session = CreateSession(
+            satchelMaterialAmount: 2,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<ISupplySatchelManager> satchelProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> _,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out IItemInfo outputInfo,
+            inventoryMaterialAmount: 2u);
+        GameTableManager gameTableManager = CreateGameTableManager();
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.TradeskillMaterial), null);
+        ClientCraftingSimpleCraftHandler handler = CreateHandler(outputInfo, gameTableManager);
+
+        handler.HandleMessage(session, CreateRequest(SchematicId));
+
+        Assert.Empty(satchelProxy.GetInvocations(nameof(ISupplySatchelManager.RemoveAmount)));
+        RecordingDispatchProxy<IInventory>.Invocation inventoryDebit =
+            Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+        Assert.Equal(MaterialItemId, inventoryDebit.Arguments[0]);
+        Assert.Equal(2u, inventoryDebit.Arguments[1]);
+
+        Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        ServerCraftingFinish finish = Assert.Single(GetMessages<ServerCraftingFinish>(sessionProxy));
+        Assert.True(finish.Pass);
+        Assert.Equal(OutputItemId, finish.Item2IdCrafted);
+    }
+
+    [Fact]
+    public void SimpleCraft_WithSaturatedInventoryMaterialCount_DoesNotOverflowAvailabilityCheck()
+    {
+        IWorldSession session = CreateSession(
+            satchelMaterialAmount: 1,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<ISupplySatchelManager> satchelProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> _,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out IItemInfo outputInfo,
+            inventoryMaterialAmount: uint.MaxValue);
+        ClientCraftingSimpleCraftHandler handler = CreateHandler(outputInfo);
+
+        handler.HandleMessage(session, CreateRequest(SchematicId));
+
+        RecordingDispatchProxy<ISupplySatchelManager>.Invocation satchelDebit =
+            Assert.Single(satchelProxy.GetInvocations(nameof(ISupplySatchelManager.RemoveAmount)));
+        Assert.Equal(MaterialId, satchelDebit.Arguments[0]);
+        Assert.Equal(1u, satchelDebit.Arguments[1]);
+
+        RecordingDispatchProxy<IInventory>.Invocation inventoryDebit =
+            Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemDelete)));
+        Assert.Equal(MaterialItemId, inventoryDebit.Arguments[0]);
+        Assert.Equal(1u, inventoryDebit.Arguments[1]);
+        Assert.Equal(ItemUpdateReason.Crafting, inventoryDebit.Arguments[2]);
+
+        ServerCraftingFinish finish = Assert.Single(GetMessages<ServerCraftingFinish>(sessionProxy));
+        Assert.True(finish.Pass);
+        Assert.Equal(OutputItemId, finish.Item2IdCrafted);
+    }
+
+    [Fact]
     public void CraftItem_WithCountAndCatalyst_ConsumesScaledMaterialsCreatesScaledOutputAndSendsSuccess()
     {
         IWorldSession session = CreateSession(
@@ -264,7 +397,77 @@ public class CraftingSimpleCraftHandlerTests
         Assert.Equal(SchematicId, finish.TradeskillSchematic2IdCrafted);
     }
 
-    private static ClientCraftingSimpleCraftHandler CreateHandler(IItemInfo outputInfo)
+    [Theory]
+    [InlineData(int.MaxValue)]
+    [InlineData(-1)]
+    public void SimpleCraft_WithAllTradeskillsStation_ConsumesMaterialCreatesOutputAndSendsSuccess(int stationTradeskillId)
+    {
+        IWorldSession session = CreateSession(
+            satchelMaterialAmount: 2,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<ISupplySatchelManager> satchelProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> _,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out IItemInfo outputInfo,
+            stationTradeskillId: unchecked((uint)stationTradeskillId));
+        ClientCraftingSimpleCraftHandler handler = CreateHandler(outputInfo);
+
+        handler.HandleMessage(session, CreateRequest(SchematicId));
+
+        RecordingDispatchProxy<ISupplySatchelManager>.Invocation materialDebit =
+            Assert.Single(satchelProxy.GetInvocations(nameof(ISupplySatchelManager.RemoveAmount)));
+        Assert.Equal(MaterialId, materialDebit.Arguments[0]);
+        Assert.Equal(2u, materialDebit.Arguments[1]);
+
+        RecordingDispatchProxy<IInventory>.Invocation itemCreate =
+            Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Equal(InventoryLocation.Inventory, itemCreate.Arguments[0]);
+        Assert.Same(outputInfo, itemCreate.Arguments[1]);
+        Assert.Equal(1u, itemCreate.Arguments[2]);
+        Assert.Equal(ItemUpdateReason.Crafting, itemCreate.Arguments[3]);
+
+        ServerCraftingFinish finish = Assert.Single(GetMessages<ServerCraftingFinish>(sessionProxy));
+        Assert.True(finish.Pass);
+        Assert.Equal(SchematicId, finish.TradeskillSchematic2IdCrafted);
+        Assert.Equal(OutputItemId, finish.Item2IdCrafted);
+    }
+
+    [Theory]
+    [InlineData(int.MaxValue)]
+    [InlineData(-1)]
+    public void AutoCraft_WithAllTradeskillsStation_ConsumesMaterialCreatesOutputAndSendsSuccess(int stationTradeskillId)
+    {
+        IWorldSession session = CreateSession(
+            satchelMaterialAmount: 2,
+            out RecordingDispatchProxy<IInventory> inventoryProxy,
+            out RecordingDispatchProxy<ISupplySatchelManager> satchelProxy,
+            out RecordingDispatchProxy<ICharacterAchievementManager> _,
+            out RecordingDispatchProxy<IWorldSession> sessionProxy,
+            out IItemInfo outputInfo,
+            stationTradeskillId: unchecked((uint)stationTradeskillId));
+        ClientCraftingCraftItemAutoCraftHandler handler = CreateAutoCraftHandler(outputInfo);
+
+        handler.HandleMessage(session, CreateAutoCraftRequest(SchematicId, 1u));
+
+        RecordingDispatchProxy<ISupplySatchelManager>.Invocation materialDebit =
+            Assert.Single(satchelProxy.GetInvocations(nameof(ISupplySatchelManager.RemoveAmount)));
+        Assert.Equal(MaterialId, materialDebit.Arguments[0]);
+        Assert.Equal(2u, materialDebit.Arguments[1]);
+
+        RecordingDispatchProxy<IInventory>.Invocation itemCreate =
+            Assert.Single(inventoryProxy.GetInvocations(nameof(IInventory.ItemCreate)));
+        Assert.Equal(InventoryLocation.Inventory, itemCreate.Arguments[0]);
+        Assert.Same(outputInfo, itemCreate.Arguments[1]);
+        Assert.Equal(1u, itemCreate.Arguments[2]);
+        Assert.Equal(ItemUpdateReason.Crafting, itemCreate.Arguments[3]);
+
+        ServerCraftingFinish finish = Assert.Single(GetMessages<ServerCraftingFinish>(sessionProxy));
+        Assert.True(finish.Pass);
+        Assert.Equal(SchematicId, finish.TradeskillSchematic2IdCrafted);
+        Assert.Equal(OutputItemId, finish.Item2IdCrafted);
+    }
+
+    private static ClientCraftingSimpleCraftHandler CreateHandler(IItemInfo outputInfo, IGameTableManager gameTableManager = null)
     {
         IItemManager itemManager = RecordingDispatchProxy<IItemManager>.Create(out RecordingDispatchProxy<IItemManager> itemManagerProxy);
         IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out _);
@@ -272,13 +475,13 @@ public class CraftingSimpleCraftHandlerTests
 
         return new ClientCraftingSimpleCraftHandler(
             NullLogger<ClientCraftingSimpleCraftHandler>.Instance,
-            CreateGameTableManager(),
+            gameTableManager ?? CreateGameTableManager(),
             itemManager,
             lootManager,
             new CraftingModifierSessionStore());
     }
 
-    private static ClientCraftingCraftItemHandler CreateCraftItemHandler(IItemInfo outputInfo)
+    private static ClientCraftingCraftItemHandler CreateCraftItemHandler(IItemInfo outputInfo, IGameTableManager gameTableManager = null)
     {
         IItemManager itemManager = RecordingDispatchProxy<IItemManager>.Create(out RecordingDispatchProxy<IItemManager> itemManagerProxy);
         IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out _);
@@ -286,13 +489,27 @@ public class CraftingSimpleCraftHandlerTests
 
         return new ClientCraftingCraftItemHandler(
             NullLogger<ClientCraftingCraftItemHandler>.Instance,
-            CreateGameTableManager(),
+            gameTableManager ?? CreateGameTableManager(),
             itemManager,
             lootManager,
             new CraftingModifierSessionStore());
     }
 
-    private static ClientCraftingComplexCraftHandler CreateComplexHandler(IItemInfo outputInfo)
+    private static ClientCraftingCraftItemAutoCraftHandler CreateAutoCraftHandler(IItemInfo outputInfo, IGameTableManager gameTableManager = null)
+    {
+        IItemManager itemManager = RecordingDispatchProxy<IItemManager>.Create(out RecordingDispatchProxy<IItemManager> itemManagerProxy);
+        IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out _);
+        itemManagerProxy.SetMethodReturn(nameof(IItemManager.GetItemInfo), outputInfo);
+
+        return new ClientCraftingCraftItemAutoCraftHandler(
+            NullLogger<ClientCraftingCraftItemAutoCraftHandler>.Instance,
+            gameTableManager ?? CreateGameTableManager(),
+            itemManager,
+            lootManager,
+            new CraftingModifierSessionStore());
+    }
+
+    private static ClientCraftingComplexCraftHandler CreateComplexHandler(IItemInfo outputInfo, IGameTableManager gameTableManager = null)
     {
         IItemManager itemManager = RecordingDispatchProxy<IItemManager>.Create(out RecordingDispatchProxy<IItemManager> itemManagerProxy);
         IGlobalLootManager lootManager = RecordingDispatchProxy<IGlobalLootManager>.Create(out _);
@@ -300,7 +517,7 @@ public class CraftingSimpleCraftHandlerTests
 
         return new ClientCraftingComplexCraftHandler(
             NullLogger<ClientCraftingComplexCraftHandler>.Instance,
-            CreateGameTableManager(),
+            gameTableManager ?? CreateGameTableManager(),
             itemManager,
             lootManager,
             new CraftingModifierSessionStore());
@@ -315,7 +532,8 @@ public class CraftingSimpleCraftHandlerTests
         out IItemInfo outputInfo,
         ushort catalystMaterialAmount = 0,
         uint addTradeskillXpReturn = 12u,
-        uint stationTradeskillId = (uint)TradeskillType.Armorer)
+        uint stationTradeskillId = (uint)TradeskillType.Armorer,
+        uint inventoryMaterialAmount = 0u)
     {
         IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
@@ -347,7 +565,17 @@ public class CraftingSimpleCraftHandlerTests
         inventoryProxy.SetMethodReturnFactory(nameof(IEnumerable<IBag>.GetEnumerator), () => new[] { inventoryBag }.AsEnumerable().GetEnumerator());
         bagProxy.SetProperty(nameof(IBag.Location), InventoryLocation.Inventory);
         bagProxy.SetProperty(nameof(IBag.SlotsRemaining), 5u);
-        bagProxy.SetMethodReturn(nameof(IEnumerable<IItem>.GetEnumerator), Enumerable.Empty<IItem>().GetEnumerator());
+
+        var inventoryItems = new List<IItem>();
+        if (inventoryMaterialAmount != 0u)
+        {
+            IItem materialItem = RecordingDispatchProxy<IItem>.Create(out RecordingDispatchProxy<IItem> materialItemProxy);
+            materialItemProxy.SetProperty(nameof(IItem.Id), MaterialItemId);
+            materialItemProxy.SetProperty(nameof(IItem.StackCount), inventoryMaterialAmount);
+            inventoryItems.Add(materialItem);
+        }
+
+        bagProxy.SetMethodReturnFactory(nameof(IEnumerable<IItem>.GetEnumerator), () => inventoryItems.AsEnumerable().GetEnumerator());
 
         materialProxy.SetProperty(nameof(ITradeskillMaterial.MaterialId), MaterialId);
         materialProxy.SetProperty(nameof(ITradeskillMaterial.Amount), satchelMaterialAmount);
@@ -436,6 +664,16 @@ public class CraftingSimpleCraftHandlerTests
         SetAutoProperty(request, nameof(ClientCraftingCraftItem.TradeskillSchematic2Id), schematicId);
         SetAutoProperty(request, nameof(ClientCraftingCraftItem.SchematicCount), schematicCount);
         SetAutoProperty(request, nameof(ClientCraftingCraftItem.CatalystItem2Id), catalystItem2Id);
+        return request;
+    }
+
+    private static ClientCraftingCraftItemAutoCraft CreateAutoCraftRequest(uint schematicId, uint schematicCount)
+    {
+        var request = (ClientCraftingCraftItemAutoCraft)RuntimeHelpers.GetUninitializedObject(typeof(ClientCraftingCraftItemAutoCraft));
+        SetAutoProperty(request, nameof(ClientCraftingCraftItemAutoCraft.ContextToken), 123u);
+        SetAutoProperty(request, nameof(ClientCraftingCraftItemAutoCraft.CraftingStationUnitId), 456u);
+        SetAutoProperty(request, nameof(ClientCraftingCraftItemAutoCraft.TradeskillSchematic2Id), schematicId);
+        SetAutoProperty(request, nameof(ClientCraftingCraftItemAutoCraft.SchematicCount), schematicCount);
         return request;
     }
 

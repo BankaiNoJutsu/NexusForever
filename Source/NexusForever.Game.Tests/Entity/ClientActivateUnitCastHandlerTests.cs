@@ -96,6 +96,43 @@ public class ClientActivateUnitCastHandlerTests
     }
 
     [Fact]
+    public void HandleMessageInternal_WithActivateSpellPrerequisite_EvaluatesPrerequisiteAgainstActivatedUnit()
+    {
+        RunWithLegacyProvider(() =>
+        {
+            IPrerequisiteManager prerequisiteManager = RecordingDispatchProxy<IPrerequisiteManager>.Create(out RecordingDispatchProxy<IPrerequisiteManager> prerequisiteProxy);
+            ClientActivateUnitCastHandler handler = CreateHandler(prerequisiteManager);
+            IWorldSession session = CreateUnitSession(
+                creatureId: 21793u,
+                castResult: CastResult.Ok,
+                activateSpellId: 1817u,
+                activatePrerequisiteId: 1050u,
+                out RecordingDispatchProxy<IPlayer> playerProxy,
+                out RecordingDispatchProxy<IUnitEntity> entityProxy,
+                out IUnitEntity entity);
+
+            prerequisiteProxy.SetMethodHandler(nameof(IPrerequisiteManager.Meets), args =>
+            {
+                Assert.Equal(3, args.Length);
+                Assert.Same(session.Player, args[0]);
+                Assert.Equal(1050u, (uint)args[1]);
+
+                IPrerequisiteParameters parameters = Assert.IsAssignableFrom<IPrerequisiteParameters>(args[2]);
+                Assert.Same(entity, parameters.Target);
+                return true;
+            });
+
+            InvokeHandleMessageInternal(handler, session, 77u, 19u, nameof(ClientActivateUnitCast));
+
+            RecordingDispatchProxy<IPlayer>.Invocation cast = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.TryCastSpell)));
+            Assert.Equal(1817u, (uint)cast.Arguments[0]);
+            Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateCast)));
+            Assert.Single(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateSuccess)));
+            Assert.Empty(entityProxy.GetInvocations(nameof(IWorldEntity.OnActivateFail)));
+        });
+    }
+
+    [Fact]
     public void HandleMessageInternal_WithTutorialHoverboardProjectorAndBlockedActivateSpell_CastsDirectMountAndCompletesActivation()
     {
         RunWithLegacyProvider(() =>
@@ -209,9 +246,9 @@ public class ClientActivateUnitCastHandlerTests
         }
     }
 
-    private static ClientActivateUnitCastHandler CreateHandler()
+    private static ClientActivateUnitCastHandler CreateHandler(IPrerequisiteManager prerequisiteManager = null)
     {
-        IPrerequisiteManager prerequisiteManager = RecordingDispatchProxy<IPrerequisiteManager>.Create(out _);
+        prerequisiteManager ??= RecordingDispatchProxy<IPrerequisiteManager>.Create(out _);
         IAssetManager assetManager = RecordingDispatchProxy<IAssetManager>.Create(out _);
         return new ClientActivateUnitCastHandler(prerequisiteManager, assetManager);
     }
@@ -261,6 +298,55 @@ public class ClientActivateUnitCastHandlerTests
         {
             Id = creatureId,
             Spell4IdActivate00 = activateSpellId,
+            ActivateSpellMaxRange = 0f
+        });
+
+        return session;
+    }
+
+    private static IWorldSession CreateUnitSession(
+        uint creatureId,
+        CastResult castResult,
+        uint activateSpellId,
+        uint activatePrerequisiteId,
+        out RecordingDispatchProxy<IPlayer> playerProxy,
+        out RecordingDispatchProxy<IUnitEntity> entityProxy,
+        out IUnitEntity entity)
+    {
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out RecordingDispatchProxy<IWorldSession> sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out playerProxy);
+        entity = RecordingDispatchProxy<IUnitEntity>.Create(out entityProxy);
+        IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out RecordingDispatchProxy<IQuestManager> questProxy);
+        ICharacterAchievementManager achievementManager = RecordingDispatchProxy<ICharacterAchievementManager>.Create(out _);
+        IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out RecordingDispatchProxy<IBaseMap> mapProxy);
+        mapProxy.SetProperty(nameof(IMap.Entry), new WorldEntry { Id = 51u });
+
+        questProxy.SetMethodReturn(nameof(IQuestManager.GetActiveQuests), Array.Empty<IQuest>());
+
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+        sessionProxy.SetMethodHandler(nameof(IWorldSession.TryConsumeNextClientSpellEvidenceCapture), args =>
+        {
+            args[0] = false;
+            return false;
+        });
+
+        playerProxy.SetProperty(nameof(IPlayer.Map), map);
+        playerProxy.SetProperty(nameof(IPlayer.Guid), 17u);
+        playerProxy.SetProperty(nameof(IPlayer.Position), Vector3.Zero);
+        playerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
+        playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
+        playerProxy.SetMethodReturn("GetVisible", entity);
+        playerProxy.SetMethodHandler(nameof(IPlayer.TryCastSpell), _ => castResult);
+
+        entityProxy.SetProperty(nameof(IGridEntity.Guid), 77u);
+        entityProxy.SetProperty(nameof(IGridEntity.Position), Vector3.Zero);
+        entityProxy.SetProperty(nameof(IWorldEntity.IsBusy), false);
+        entityProxy.SetProperty(nameof(IWorldEntity.CreatureId), creatureId);
+        entityProxy.SetProperty(nameof(IWorldEntity.CreatureEntry), new Creature2Entry
+        {
+            Id = creatureId,
+            Spell4IdActivate00 = activateSpellId,
+            PrerequisiteIdActivateSpell00 = activatePrerequisiteId,
             ActivateSpellMaxRange = 0f
         });
 

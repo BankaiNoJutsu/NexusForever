@@ -123,6 +123,69 @@ public class CraftingAdditiveHandlerTests
         }
     }
 
+    [Fact]
+    public void ModifierCounts_WhenItemTableMissingReturnsInvalidAdditiveItem()
+    {
+        GameTableManager gameTableManager = CreateGameTableManager();
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.Item), null);
+        var modifierStore = new CraftingModifierSessionStore();
+        IWorldSession session = CreateSession(CharacterId + 2ul, out _, out _);
+        Assert.True(modifierStore.TryAddModifier(session.Player, AdditiveItem2Id, 0u));
+
+        bool result = modifierStore.TryBuildModifierItemCounts(
+            session.Player,
+            gameTableManager,
+            CreateSchematic(),
+            out IReadOnlyDictionary<uint, uint> itemCounts,
+            out string reason);
+
+        Assert.False(result);
+        Assert.Equal($"invalid-additive-item:{AdditiveItem2Id}", reason);
+        Assert.Empty(itemCounts);
+    }
+
+    [Fact]
+    public void ModifierCounts_WhenAdditiveTableMissingReturnsInvalidAdditive()
+    {
+        GameTableManager gameTableManager = CreateGameTableManager();
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.TradeskillAdditive), null);
+        var modifierStore = new CraftingModifierSessionStore();
+        IWorldSession session = CreateSession(CharacterId + 3ul, out _, out _);
+        Assert.True(modifierStore.TryAddModifier(session.Player, AdditiveItem2Id, 0u));
+
+        bool result = modifierStore.TryBuildModifierItemCounts(
+            session.Player,
+            gameTableManager,
+            CreateSchematic(),
+            out IReadOnlyDictionary<uint, uint> itemCounts,
+            out string reason);
+
+        Assert.False(result);
+        Assert.Equal($"invalid-additive:{AdditiveId}", reason);
+        Assert.Empty(itemCounts);
+    }
+
+    [Fact]
+    public void ModifierCounts_WhenCatalystTableMissingReturnsInvalidCatalyst()
+    {
+        GameTableManager gameTableManager = CreateGameTableManager();
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.TradeskillCatalyst), null);
+        var modifierStore = new CraftingModifierSessionStore();
+        IWorldSession session = CreateSession(CharacterId + 4ul, out _, out _);
+        Assert.True(modifierStore.TryAddModifier(session.Player, 0u, CatalystItem2Id));
+
+        bool result = modifierStore.TryBuildModifierItemCounts(
+            session.Player,
+            gameTableManager,
+            CreateSchematic(),
+            out IReadOnlyDictionary<uint, uint> itemCounts,
+            out string reason);
+
+        Assert.False(result);
+        Assert.Equal($"invalid-catalyst:{CatalystId}", reason);
+        Assert.Empty(itemCounts);
+    }
+
     private static ClientCraftingAdditive CreateRequest(uint craftingStationUnitId, uint additiveItem2Id = 0u, uint catalystItem2Id = 0u)
     {
         var request = (ClientCraftingAdditive)RuntimeHelpers.GetUninitializedObject(typeof(ClientCraftingAdditive));

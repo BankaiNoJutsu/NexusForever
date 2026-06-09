@@ -37,11 +37,11 @@ namespace NexusForever.Game.Entity
 
         public static TradeskillResult ValidateRuneMatchesSocket(IGameTableManager gameTableManager, IItem gearItem, RuneType socketType, uint runeItem2Id)
         {
-            Item2Entry runeItem2 = gameTableManager.Item.GetEntry(runeItem2Id);
+            Item2Entry runeItem2 = gameTableManager.Item?.GetEntry(runeItem2Id);
             if (runeItem2 == null)
                 return TradeskillResult.MissingRune;
 
-            Item2CategoryEntry category = gameTableManager.Item2Category.GetEntry(runeItem2.Item2CategoryId);
+            Item2CategoryEntry category = gameTableManager.Item2Category?.GetEntry(runeItem2.Item2CategoryId);
             if (category == null || category.TradeSkillId != ItemRuneGlyphTypes.RunecraftingTradeSkillId)
                 return TradeskillResult.InvalidSlot;
 

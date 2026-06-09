@@ -123,6 +123,34 @@ public class ItemRuneSocketTests
     }
 
     [Fact]
+    public void ValidateRuneMatchesSocket_MissingItemTableReturnsMissingRune()
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out _);
+
+        IItem item = CreateGearWithSocket(RuneType.Life);
+        TradeskillResult result = ItemRuneInstallValidator.ValidateRuneMatchesSocket(tables, item, RuneType.Life, 84956u);
+
+        Assert.Equal(TradeskillResult.MissingRune, result);
+    }
+
+    [Fact]
+    public void ValidateRuneMatchesSocket_MissingCategoryTableReturnsInvalidSlot()
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
+        proxy.SetProperty(nameof(IGameTableManager.Item), CreateGameTable(new Item2Entry
+        {
+            Id              = 84956u,
+            Item2TypeId     = 356u,
+            Item2CategoryId = ItemRuneGlyphTypes.Category175Id,
+        }));
+
+        IItem item = CreateGearWithSocket(RuneType.Life);
+        TradeskillResult result = ItemRuneInstallValidator.ValidateRuneMatchesSocket(tables, item, RuneType.Life, 84956u);
+
+        Assert.Equal(TradeskillResult.InvalidSlot, result);
+    }
+
+    [Fact]
     public void ValidateRuneMatchesSocket_RejectsMismatchedElement()
     {
         IGameTableManager tables = CreateRunecraftingGlyphTables(900u, 422u);
@@ -196,6 +224,19 @@ public class ItemRuneSocketTests
     {
         IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out _);
         IItem item = CreateItemWithRuneInstance(2u);
+
+        uint mask = ItemRuneSocketMaskBuilder.BuildAllowedSocketMask(item, tables);
+
+        Assert.Equal(0u, mask);
+    }
+
+    [Fact]
+    public void BuildAllowedSocketMask_MissingItemSpecialTable_DoesNotThrow()
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> proxy);
+        proxy.SetProperty(nameof(IGameTableManager.ItemRuneInstance), CreateGameTable<ItemRuneInstanceEntry>());
+
+        IItem item = CreateItemWithSpecial(9261u);
 
         uint mask = ItemRuneSocketMaskBuilder.BuildAllowedSocketMask(item, tables);
 
@@ -396,6 +437,19 @@ public class ItemRuneSocketTests
             ItemRuneInstanceId = instanceId
         });
         itemProxy.SetProperty(nameof(IItem.Id), itemId);
+        itemProxy.SetProperty(nameof(IItem.Info), info);
+        itemProxy.SetProperty(nameof(IItem.RuneSlots), new List<ItemRuneSlot>());
+        return item;
+    }
+
+    private static IItem CreateItemWithSpecial(uint itemSpecialId)
+    {
+        IItem item = RecordingDispatchProxy<IItem>.Create(out RecordingDispatchProxy<IItem> itemProxy);
+        IItemInfo info = RecordingDispatchProxy<IItemInfo>.Create(out RecordingDispatchProxy<IItemInfo> infoProxy);
+        infoProxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry
+        {
+            ItemSpecialId00 = itemSpecialId
+        });
         itemProxy.SetProperty(nameof(IItem.Info), info);
         itemProxy.SetProperty(nameof(IItem.RuneSlots), new List<ItemRuneSlot>());
         return item;

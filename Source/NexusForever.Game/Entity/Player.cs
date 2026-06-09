@@ -1223,6 +1223,8 @@ namespace NexusForever.Game.Entity
             Account.CurrencyManager.SendInitialPackets();
             Account.InventoryManager.SendInitialPackets();
             Account.GenericUnlockManager.SendCharacterUnlockSync();
+            if (AchievementManager is CharacterAchievementManager characterAchievementManager)
+                characterAchievementManager.GrantCompletedTradeskillAchievementRewards(this);
             SendTradeskillInitialPackets();
             AchievementManager.SendInitialPackets(null);
             Account.RewardPropertyManager.SendInitialPackets();
@@ -1928,11 +1930,12 @@ namespace NexusForever.Game.Entity
             }
 
             learnedTradeskill.IsActive = 1u;
-            learnedTradeskill.EnsureTalentPointBudget(MaxTradeskillTalentTiers);
             learnedTradeskill.MarkDirty();
 
             SendProfessionUpdate(learnedTradeskill.BuildInfo());
             QuestManager.ObjectiveUpdate(QuestObjectiveType.LearnTradeskill, (uint)toLearnTradeskillId, 1u);
+            if (AchievementManager is CharacterAchievementManager characterAchievementManager)
+                characterAchievementManager.GrantCompletedTradeskillAchievementRewards(this);
             if (!wasActive && !alreadyKnown)
                 CheckTradeskillTierAchievements(toLearnTradeskillId, 0u, learnedTradeskill.TradeskillXp);
             return true;
@@ -1983,6 +1986,27 @@ namespace NexusForever.Game.Entity
             return AddTradeskillXp(tradeskillId, amount);
         }
 
+        public uint EnsureTradeskillTalentPointTotal(TradeskillType tradeskillId, uint earnedTalentPoints)
+        {
+            if (earnedTalentPoints == 0u || !HasTradeskill(tradeskillId))
+                return 0u;
+
+            TradeskillState tradeskill = tradeskills[tradeskillId];
+            uint selectedTalents = tradeskill.GetSelectedTalentCount();
+            uint requiredUnspentTalentPoints = earnedTalentPoints > selectedTalents
+                ? earnedTalentPoints - selectedTalents
+                : 0u;
+            if (tradeskill.TalentPoints >= requiredUnspentTalentPoints)
+                return 0u;
+
+            uint previousTalentPoints = tradeskill.TalentPoints;
+            tradeskill.TalentPoints = requiredUnspentTalentPoints;
+
+            tradeskill.MarkDirty();
+            SendProfessionUpdate(tradeskill.BuildInfo());
+            return tradeskill.TalentPoints - previousTalentPoints;
+        }
+
         public bool PickTradeskillTalent(TradeskillType tradeskillId, uint tier, uint tradeskillBonusId)
         {
             if (tier >= MaxTradeskillTalentTiers || !HasTradeskill(tradeskillId))
@@ -2012,9 +2036,11 @@ namespace NexusForever.Game.Entity
 
             TradeskillState tradeskill = tradeskills[tradeskillId];
             Array.Clear(tradeskill.TalentTierIds);
-            tradeskill.TalentPoints = MaxTradeskillTalentTiers;
+            tradeskill.TalentPoints = 0u;
             tradeskill.MarkDirty();
 
+            if (AchievementManager is CharacterAchievementManager characterAchievementManager)
+                characterAchievementManager.GrantCompletedTradeskillAchievementRewards(this);
             SendProfessionUpdate(tradeskill.BuildInfo());
             Session.EnqueueMessageEncrypted(new ServerTradeskillRelearnCooldown());
             return true;
@@ -3242,7 +3268,6 @@ namespace NexusForever.Game.Entity
                     CharacterId   = characterId,
                     TradeskillId  = tradeskillId,
                     IsActive      = 1u,
-                    TalentPoints  = MaxTradeskillTalentTiers,
                     PendingCreate = true
                 };
             }
@@ -3273,17 +3298,9 @@ namespace NexusForever.Game.Entity
                 return state;
             }
 
-            public void EnsureTalentPointBudget(uint maxTalentPoints)
+            public uint GetSelectedTalentCount()
             {
-                uint selectedTalents = (uint)TalentTierIds.Count(t => t != 0u);
-                if (selectedTalents >= maxTalentPoints)
-                {
-                    TalentPoints = 0u;
-                    return;
-                }
-
-                if (TalentPoints == 0u)
-                    TalentPoints = maxTalentPoints - selectedTalents;
+                return (uint)TalentTierIds.Count(t => t != 0u);
             }
 
             public void MarkDirty()

@@ -6,6 +6,9 @@ using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Group;
 using NexusForever.Game.Static.Achievement;
+using NexusForever.Game.Static.Crafting;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Achievement
 {
@@ -104,7 +107,143 @@ namespace NexusForever.Game.Achievement
             base.CompleteAchievement(target, achievement);
 
             IPlayer achievementOwner = target ?? owner;
+            GrantCompletedTradeskillAchievementRewards(achievementOwner);
             CheckAchievements(achievementOwner, AchievementType.AchievementComplete, achievement.Id);
+        }
+
+        public void GrantCompletedTradeskillAchievementRewards(IPlayer player)
+        {
+            if (player == null)
+                return;
+
+            TradeskillAchievementRewardEntry[] rewardEntries = GameTableManager.Instance.TradeskillAchievementReward?.Entries;
+            if (rewardEntries == null || rewardEntries.Length == 0)
+                return;
+
+            var earnedTalentPointsByTradeskill = new Dictionary<TradeskillType, uint>();
+
+            foreach (IAchievement achievement in achievements.Values.Where(achievement => achievement.IsComplete()))
+            {
+                foreach (TradeskillAchievementRewardEntry reward in rewardEntries.Where(entry => entry.AchievementId == achievement.Info.Entry.Id))
+                {
+                    foreach (uint schematicId in GetRewardSchematicIds(reward))
+                        player.LearnSchematic(schematicId);
+
+                    if (reward.TalentPoints == 0u)
+                        continue;
+
+                    foreach (TradeskillType tradeskillId in ResolveRewardTradeskills(achievement.Info.Entry, reward))
+                    {
+                        earnedTalentPointsByTradeskill.TryGetValue(tradeskillId, out uint currentTalentPoints);
+                        earnedTalentPointsByTradeskill[tradeskillId] = AddSaturated(currentTalentPoints, reward.TalentPoints);
+                    }
+                }
+            }
+
+            foreach ((TradeskillType tradeskillId, uint earnedTalentPoints) in earnedTalentPointsByTradeskill)
+                player.EnsureTradeskillTalentPointTotal(tradeskillId, earnedTalentPoints);
+        }
+
+        private static IEnumerable<TradeskillType> ResolveRewardTradeskills(AchievementEntry achievement, TradeskillAchievementRewardEntry reward)
+        {
+            var tradeskillIds = new HashSet<TradeskillType>();
+
+            if (TryResolveTradeskillFromCategory(achievement.AchievementCategoryId, out TradeskillType categoryTradeskillId))
+                tradeskillIds.Add(categoryTradeskillId);
+
+            foreach (uint schematicId in GetRewardSchematicIds(reward))
+                if (TryResolveTradeskillFromSchematic(schematicId, out TradeskillType schematicTradeskillId))
+                    tradeskillIds.Add(schematicTradeskillId);
+
+            if ((AchievementType)achievement.AchievementTypeId == AchievementType.TradeskillTier
+                && TryResolveTradeskillFromTier(achievement.ObjectId, out TradeskillType tierTradeskillId))
+                tradeskillIds.Add(tierTradeskillId);
+
+            if ((AchievementType)achievement.AchievementTypeId is AchievementType.CraftItem or AchievementType.CraftItemChecklist
+                && TryResolveTradeskillFromCraftedItem(achievement.ObjectId, out TradeskillType craftedItemTradeskillId))
+                tradeskillIds.Add(craftedItemTradeskillId);
+
+            return tradeskillIds;
+        }
+
+        private static bool TryResolveTradeskillFromCategory(uint achievementCategoryId, out TradeskillType tradeskillId)
+        {
+            tradeskillId = default;
+            if (achievementCategoryId == 0u)
+                return false;
+
+            IGameTableManager gameTableManager = GameTableManager.Instance;
+            uint currentCategoryId = achievementCategoryId;
+            for (int depth = 0; depth < 8 && currentCategoryId != 0u; depth++)
+            {
+                TradeskillEntry tradeskill = gameTableManager.Tradeskill?.Entries
+                    .FirstOrDefault(entry => entry.AchievementCategoryId == currentCategoryId);
+                if (TryConvertTradeskillId(tradeskill?.Id ?? 0u, out tradeskillId))
+                    return true;
+
+                AchievementCategoryEntry category = gameTableManager.AchievementCategory?.GetEntry(currentCategoryId);
+                currentCategoryId = category?.AchievementCategoryIdParent ?? 0u;
+            }
+
+            return false;
+        }
+
+        private static bool TryResolveTradeskillFromSchematic(uint tradeskillSchematic2Id, out TradeskillType tradeskillId)
+        {
+            tradeskillId = default;
+            TradeskillSchematic2Entry schematic = GameTableManager.Instance.TradeskillSchematic2?.GetEntry(tradeskillSchematic2Id);
+            return TryConvertTradeskillId(schematic?.TradeSkillId ?? 0u, out tradeskillId);
+        }
+
+        private static bool TryResolveTradeskillFromTier(uint tradeskillTierId, out TradeskillType tradeskillId)
+        {
+            tradeskillId = default;
+            TradeskillTierEntry tier = GameTableManager.Instance.TradeskillTier?.GetEntry(tradeskillTierId);
+            return TryConvertTradeskillId(tier?.TradeSkillId ?? 0u, out tradeskillId);
+        }
+
+        private static bool TryResolveTradeskillFromCraftedItem(uint item2Id, out TradeskillType tradeskillId)
+        {
+            tradeskillId = default;
+            if (item2Id == 0u)
+                return false;
+
+            TradeskillSchematic2Entry schematic = GameTableManager.Instance.TradeskillSchematic2?.Entries
+                .FirstOrDefault(entry => entry.Item2IdOutput == item2Id
+                    || entry.Item2IdOutputFail == item2Id
+                    || entry.Item2IdOutputCrit == item2Id);
+            return TryConvertTradeskillId(schematic?.TradeSkillId ?? 0u, out tradeskillId);
+        }
+
+        private static bool TryConvertTradeskillId(uint value, out TradeskillType tradeskillId)
+        {
+            tradeskillId = (TradeskillType)value;
+            return value != 0u && Enum.IsDefined(tradeskillId);
+        }
+
+        private static uint AddSaturated(uint left, uint right)
+        {
+            return uint.MaxValue - left < right ? uint.MaxValue : left + right;
+        }
+
+        private static IEnumerable<uint> GetRewardSchematicIds(TradeskillAchievementRewardEntry reward)
+        {
+            if (reward.TradeSkillSchematicId00 != 0u)
+                yield return reward.TradeSkillSchematicId00;
+            if (reward.TradeSkillSchematicId01 != 0u)
+                yield return reward.TradeSkillSchematicId01;
+            if (reward.TradeSkillSchematicId02 != 0u)
+                yield return reward.TradeSkillSchematicId02;
+            if (reward.TradeSkillSchematicId03 != 0u)
+                yield return reward.TradeSkillSchematicId03;
+            if (reward.TradeSkillSchematicId04 != 0u)
+                yield return reward.TradeSkillSchematicId04;
+            if (reward.TradeSkillSchematicId05 != 0u)
+                yield return reward.TradeSkillSchematicId05;
+            if (reward.TradeSkillSchematicId06 != 0u)
+                yield return reward.TradeSkillSchematicId06;
+            if (reward.TradeSkillSchematicId07 != 0u)
+                yield return reward.TradeSkillSchematicId07;
         }
     }
 }

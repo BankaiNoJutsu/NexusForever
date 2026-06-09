@@ -184,6 +184,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
     internal static class CraftingCraftRequestHelper
     {
+        private const uint AllTradeskillsStationId = uint.MaxValue;
+        private const uint AllTradeskillsStationIdSqlImport = int.MaxValue;
+
         private readonly record struct MaterialRequirement(uint Item2Id, uint Count);
 
         private readonly record struct MaterialDebit(uint Item2Id, ushort MaterialId, uint SatchelCount, uint InventoryCount);
@@ -192,7 +195,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
         public static TradeskillSchematic2Entry GetSchematic(IGameTableManager gameTableManager, uint tradeskillSchematic2Id)
         {
-            TradeskillSchematic2Entry schematic = gameTableManager.TradeskillSchematic2.GetEntry(tradeskillSchematic2Id);
+            TradeskillSchematic2Entry schematic = gameTableManager.TradeskillSchematic2?.GetEntry(tradeskillSchematic2Id);
             if (schematic == null)
                 throw new InvalidPacketValueException();
 
@@ -204,7 +207,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             if (item2Id == 0u)
                 return;
 
-            if (gameTableManager.Item.GetEntry(item2Id) == null)
+            if (gameTableManager.Item?.GetEntry(item2Id) == null)
                 throw new InvalidPacketValueException();
         }
 
@@ -420,13 +423,21 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                 return false;
             }
 
-            if (schematic.TradeSkillId != 0u && stationTradeskillId != schematic.TradeSkillId)
+            if (schematic.TradeSkillId != 0u
+                && !IsAllTradeskillsStation(stationTradeskillId)
+                && stationTradeskillId != schematic.TradeSkillId)
             {
                 reason = $"station-tradeskill-mismatch:{craftingStationUnitId}:{stationTradeskillId}:{schematic.TradeSkillId}";
                 return false;
             }
 
             return true;
+        }
+
+        private static bool IsAllTradeskillsStation(uint stationTradeskillId)
+        {
+            return stationTradeskillId == AllTradeskillsStationId
+                || stationTradeskillId == AllTradeskillsStationIdSqlImport;
         }
 
         public static bool TryValidateAnyCraftingStation(IPlayer player, uint craftingStationUnitId, out string reason)
@@ -505,7 +516,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                 return 0u;
 
             uint tier = schematic.Tier + 1u;
-            TradeskillTierEntry tierEntry = gameTableManager.TradeskillTier.Entries
+            IEnumerable<TradeskillTierEntry> tierEntries = gameTableManager.TradeskillTier?.Entries ?? [];
+            TradeskillTierEntry tierEntry = tierEntries
                 .FirstOrDefault(entry => entry.TradeSkillId == schematic.TradeSkillId && entry.Tier == tier);
             if (tierEntry == null || tierEntry.CraftXp == 0u)
                 return 0u;
@@ -551,7 +563,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         {
             debit = default;
 
-            TradeskillMaterialEntry materialEntry = gameTableManager.TradeskillMaterial.Entries
+            IEnumerable<TradeskillMaterialEntry> materialEntries = gameTableManager.TradeskillMaterial?.Entries ?? [];
+            TradeskillMaterialEntry materialEntry = materialEntries
                 .SingleOrDefault(entry => entry.Item2IdStatRevolution == item2Id);
 
             ushort materialId = materialEntry != null && materialEntry.Id <= ushort.MaxValue ? (ushort)materialEntry.Id : (ushort)0u;
@@ -560,7 +573,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                 : player.SupplySatchelManager.FirstOrDefault(material => material.MaterialId == materialId)?.Amount ?? 0u;
             uint inventoryCount = CountInventoryItems(player.Inventory, item2Id);
 
-            if (satchelCount + inventoryCount < count)
+            if ((ulong)satchelCount + inventoryCount < count)
                 return false;
 
             uint debitFromSatchel = Math.Min(satchelCount, count);

@@ -206,6 +206,7 @@ namespace NexusForever.Game.Abstract.Entity
         bool LearnTradeskill(TradeskillType toLearnTradeskillId, TradeskillType toDropTradeskillId);
         uint AddTradeskillXp(TradeskillType tradeskillId, uint amount);
         uint AddTradeskillXpForTier(uint tradeskillTierId, uint amount);
+        uint EnsureTradeskillTalentPointTotal(TradeskillType tradeskillId, uint earnedTalentPoints);
         bool PickTradeskillTalent(TradeskillType tradeskillId, uint tier, uint tradeskillBonusId);
         bool ResetTradeskillTalents(TradeskillType tradeskillId);
         bool HasLearnedSchematic(uint tradeskillSchematic2Id);
