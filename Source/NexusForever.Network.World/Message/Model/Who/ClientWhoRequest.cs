@@ -9,9 +9,8 @@ namespace NexusForever.Network.World.Message.Model.Who
     public class ClientWhoRequest : IReadable
     {
         public List<WhoParameter> Parameters { get; private set; } = [];
-        public List<int> ParameterGroupCounts { get; private set; } = []; // Number of ANDed parameters in each parameter group
-                                                                  // Each new group count is another set of ANDed parameters
-                                                                  // Collectively each parameter group gets ORed with the other groups
+        public List<int> ParameterGroupCounts { get; private set; } = []; // Cumulative parameter offsets that end each ANDed group.
+                                                                          // Collectively each parameter group gets ORed with the other groups.
 
         public void Read(GamePacketReader reader)
         {

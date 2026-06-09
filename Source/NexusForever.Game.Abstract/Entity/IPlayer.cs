@@ -72,6 +72,11 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         ulong GroupAssociation { get; set; }
 
+        /// <summary>
+        /// Group association value emitted in player entity packets.
+        /// </summary>
+        ulong ClientGroupAssociation { get; }
+
         bool IsSitting { get; }
 
         /// <summary>

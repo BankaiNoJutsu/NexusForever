@@ -1,7 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Loot;
+using NexusForever.Game.Static.Entity.Movement.Command;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Entity;
+using NexusForever.Network.World.Entity.Command;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared;
 
@@ -19,6 +22,11 @@ namespace NexusForever.Game.Entity
 
         public override void AddVisible(IGridEntity entity)
         {
+            AddVisible(entity, synchroniseReciprocalPlayer: true);
+        }
+
+        private void AddVisible(IGridEntity entity, bool synchroniseReciprocalPlayer)
+        {
             bool wasVisible = visibleEntities.ContainsKey(entity.Guid);
             base.AddVisible(entity);
 
@@ -26,20 +34,7 @@ namespace NexusForever.Game.Entity
                 return;
 
             if (entity is IWorldEntity worldEntity)
-            {
-                foreach (IWritable auxiliary in worldEntity.BuildEntityCreateAuxPackets())
-                    Session.EnqueueMessageEncrypted(auxiliary);
-
-                Session.EnqueueMessageEncrypted(worldEntity.BuildCreatePacket(IsLoading));
-                GetGlobalLootManager()?.SendLootNotifyForVisibleOwner(this, worldEntity);
-            }
-
-            if (entity is IPlayer playerEntity)
-                Session.EnqueueMessageEncrypted(new ServerSetUnitPathType
-                {
-                    UnitId = playerEntity.Guid,
-                    Path   = playerEntity.Path
-                });
+                SendVisibleEntityCreate(worldEntity, refreshExistingEntity: false);
 
             if (entity == this)
             {
@@ -67,6 +62,102 @@ namespace NexusForever.Game.Entity
                     InUse  = true
                 });
             }
+
+            if (synchroniseReciprocalPlayer)
+                SynchroniseReciprocalPlayerVisibility(entity);
+        }
+
+        internal void RefreshVisiblePlayersForNearbyList()
+        {
+            foreach (IPlayer playerEntity in visibleEntities.Values.OfType<IPlayer>().ToList())
+            {
+                if (ReferenceEquals(playerEntity, this))
+                    continue;
+
+                SendVisibleEntityCreate(playerEntity, refreshExistingEntity: true);
+            }
+        }
+
+        private void SynchroniseReciprocalPlayerVisibility(IGridEntity entity)
+        {
+            if (entity is not Player playerEntity || ReferenceEquals(playerEntity, this))
+                return;
+
+            if (Map == null || playerEntity.Map != Map)
+                return;
+
+            if (playerEntity.GetVisible<IGridEntity>(Guid) == null)
+            {
+                playerEntity.AddVisible(this, synchroniseReciprocalPlayer: false);
+                return;
+            }
+
+            playerEntity.RefreshVisiblePlayerForNearbyList(this);
+        }
+
+        private void RefreshVisiblePlayerForNearbyList(IPlayer playerEntity)
+        {
+            SendVisibleEntityCreate(playerEntity, refreshExistingEntity: true);
+        }
+
+        private void SendVisibleEntityCreate(IWorldEntity worldEntity, bool refreshExistingEntity)
+        {
+            if (refreshExistingEntity)
+            {
+                Session.EnqueueMessageEncrypted(new ServerEntityDestroy
+                {
+                    Guid = worldEntity.Guid,
+                    Flag = true
+                });
+            }
+
+            foreach (IWritable auxiliary in worldEntity.BuildEntityCreateAuxPackets())
+                Session.EnqueueMessageEncrypted(auxiliary);
+
+            ServerEntityCreate createPacket = worldEntity.BuildCreatePacket(IsLoading);
+            IPlayer playerEntity = worldEntity as IPlayer;
+            if (playerEntity != null)
+                AddPlayerPositionSnapshot(createPacket, playerEntity);
+
+            Session.EnqueueMessageEncrypted(createPacket);
+            GetGlobalLootManager()?.SendLootNotifyForVisibleOwner(this, worldEntity);
+
+            if (playerEntity != null)
+                SendVisiblePlayerMetadata(playerEntity);
+        }
+
+        private static void AddPlayerPositionSnapshot(ServerEntityCreate createPacket, IPlayer playerEntity)
+        {
+            var positionCommand = new NetworkEntityCommand
+            {
+                Command = EntityCommand.SetPosition,
+                Model   = new SetPositionCommand
+                {
+                    Position = playerEntity.Position,
+                    Blend    = false
+                }
+            };
+
+            int index = createPacket.Commands.FindIndex(c => c.Command == EntityCommand.SetPosition || c.Model is SetPositionCommand);
+            if (index >= 0)
+                createPacket.Commands[index] = positionCommand;
+            else
+                createPacket.Commands.Insert(0, positionCommand);
+        }
+
+        private void SendVisiblePlayerMetadata(IPlayer playerEntity)
+        {
+            Session.EnqueueMessageEncrypted(new ServerSetUnitPathType
+            {
+                UnitId = playerEntity.Guid,
+                Path   = playerEntity.Path
+            });
+
+            Session.EnqueueMessageEncrypted(new ServerEntityGroupAssociation
+            {
+                UnitId  = playerEntity.Guid,
+                GroupId = playerEntity.ClientGroupAssociation
+            });
         }
 
         public override void RemoveVisible(IGridEntity entity)

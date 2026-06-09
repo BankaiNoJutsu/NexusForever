@@ -126,6 +126,7 @@ namespace NexusForever.Game.Entity
         private const uint TutorialHoverboardFinishLineCreatureId = 73595u;
         private const uint TutorialHoverboardSpinningHologramCreatureId = 73619u;
         private const uint TutorialHoverboardStartArrowCreatureId = 73707u;
+        private const ulong UngroupedClientGroupAssociationMask = 0x8000000000000000ul;
         private const uint TutorialHoverboardPressurePlate00CreatureId = 74767u;
         private const uint TutorialHoverboardPressurePlate01CreatureId = 74768u;
         private const uint TutorialHoverboardPressurePlate02CreatureId = 74769u;
@@ -350,6 +351,11 @@ namespace NexusForever.Game.Entity
         /// Id of the primary group that <see cref="IPlayer"/> is associated with.
         /// </summary>
         public ulong GroupAssociation { get; set; }
+
+        /// <summary>
+        /// Stable non-zero client-side group sentinel for ungrouped players.
+        /// </summary>
+        public ulong ClientGroupAssociation => GroupAssociation != 0ul ? GroupAssociation : UngroupedClientGroupAssociationMask | CharacterId;
 
         public bool IsSitting => currentChairGuid != null;
         private uint? currentChairGuid;
@@ -1000,7 +1006,7 @@ namespace NexusForever.Game.Entity
                 PvPFlag   = PvPFlag,
 
                 // We use Group 1 as the "dominant group"
-                GroupId   = GroupAssociation
+                GroupId   = ClientGroupAssociation
             };
         }
 
@@ -1533,6 +1539,7 @@ namespace NexusForever.Game.Entity
                     we.MovementManager.SendNetworkEntityCommands(Session);
 
             Session.EnqueueMessageEncrypted(new ServerPlayerEnteredWorld());
+            RefreshVisiblePlayersForNearbyList();
             PathManager.SendInitialPackets();
             QuestManager.SendInitialPackets();
             SyncDeferredLoadingWorldZoneRuntimeState();

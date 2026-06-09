@@ -43,7 +43,7 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Player
                 player.EnqueueToVisible(new ServerEntityGroupAssociation
                 {
                     UnitId  = player.Guid,
-                    GroupId = player.GroupAssociation
+                    GroupId = player.ClientGroupAssociation
                 }, true);
 
                 return true;

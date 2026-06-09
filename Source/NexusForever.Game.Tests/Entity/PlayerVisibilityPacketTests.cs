@@ -6,18 +6,21 @@ using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Abstract.Group;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Configuration.Model;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Loot;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Entity.Movement.Command;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Entity;
+using NexusForever.Network.World.Entity.Command;
 using NexusForever.Network.World.Entity.Model;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Shared;
@@ -77,6 +80,103 @@ public class PlayerVisibilityPacketTests
     }
 
     [Fact]
+    public void AddVisible_WhenRemotePlayerMissingOwner_AddsReciprocalVisibility()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider();
+
+        try
+        {
+            IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+            TestPlayer player = CreatePlayer(out _, 21u);
+            TestPlayer remotePlayer = CreatePlayer(out RecordingDispatchProxy<IGameSession> remoteSessionProxy, 77u);
+            SetMap(player, map);
+            SetMap(remotePlayer, map);
+
+            player.AddVisible(remotePlayer);
+
+            Assert.Same(remotePlayer, player.GetVisible<IGridEntity>(remotePlayer.Guid));
+            Assert.Same(player, remotePlayer.GetVisible<IGridEntity>(player.Guid));
+            Assert.Contains(remoteSessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)),
+                i => i.Arguments[0] is ServerEntityCreate create && create.Guid == player.Guid);
+            Assert.DoesNotContain(remoteSessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)),
+                i => i.Arguments[0] is ServerEntityDestroy);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void AddVisible_WhenRemotePlayerCreateHasStalePosition_ReplacesWithCurrentMapPosition()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider();
+
+        try
+        {
+            TestPlayer player = CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy, 21u);
+            TestPlayer remotePlayer = CreatePlayer(out _, 77u);
+            remotePlayer.SetPositionForTest(new Vector3(12f, 3f, 4f));
+            remotePlayer.CreateCommands.Add(new NetworkEntityCommand
+            {
+                Command = EntityCommand.SetPosition,
+                Model   = new SetPositionCommand
+                {
+                    Position = new Vector3(4370f, 0f, 0f),
+                    Blend    = true
+                }
+            });
+
+            player.AddVisible(remotePlayer);
+
+            ServerEntityCreate create = Assert.IsType<ServerEntityCreate>(
+                sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))[0].Arguments[0]);
+            AssertPositionSnapshot(create, remotePlayer.Position);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
+    public void AddVisible_WhenRemotePlayerAlreadyTracksOwner_RefreshesRemotePlayerCreate()
+    {
+        IServiceProvider previousProvider = LegacyServiceProvider.Provider;
+        LegacyServiceProvider.Provider = BuildProvider();
+
+        try
+        {
+            IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+            TestPlayer player = CreatePlayer(out _, 21u);
+            TestPlayer remotePlayer = CreatePlayer(out RecordingDispatchProxy<IGameSession> remoteSessionProxy, 77u);
+            player.SetPositionForTest(new Vector3(8f, 1f, 2f));
+            SetMap(player, map);
+            SetMap(remotePlayer, map);
+            SetVisibleEntity(remotePlayer, player);
+
+            player.AddVisible(remotePlayer);
+
+            IReadOnlyList<RecordingDispatchProxy<IGameSession>.Invocation> remoteMessages =
+                remoteSessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted));
+
+            ServerEntityDestroy destroy = Assert.IsType<ServerEntityDestroy>(remoteMessages[0].Arguments[0]);
+            Assert.Equal(player.Guid, destroy.Guid);
+            Assert.True(destroy.Flag);
+
+            ServerEntityCreate create = Assert.IsType<ServerEntityCreate>(remoteMessages[1].Arguments[0]);
+            Assert.Equal(player.Guid, create.Guid);
+            AssertPositionSnapshot(create, player.Position);
+        }
+        finally
+        {
+            LegacyServiceProvider.Provider = previousProvider;
+        }
+    }
+
+    [Fact]
     public void RemoveVisible_WhenEntityIsNotTracked_DoesNotEmitDestroyPacket()
     {
         IServiceProvider previousProvider = LegacyServiceProvider.Provider;
@@ -125,6 +225,14 @@ public class PlayerVisibilityPacketTests
         }
     }
 
+    private static void AssertPositionSnapshot(ServerEntityCreate create, Vector3 expectedPosition)
+    {
+        INetworkEntityCommand positionCommand = Assert.Single(create.Commands, c => c.Command == EntityCommand.SetPosition);
+        SetPositionCommand model = Assert.IsType<SetPositionCommand>(positionCommand.Model);
+        Assert.Equal(expectedPosition, model.Position);
+        Assert.False(model.Blend);
+    }
+
     private static IServiceProvider BuildProvider()
     {
         IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out _);
@@ -142,7 +250,7 @@ public class PlayerVisibilityPacketTests
         public WorldConfig World { get; set; }
     }
 
-    private static TestPlayer CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy)
+    private static TestPlayer CreatePlayer(out RecordingDispatchProxy<IGameSession> sessionProxy, uint guid = 21u)
     {
         IMovementManager movementManager = RecordingDispatchProxy<IMovementManager>.Create(out _);
         IInternalMessagePublisher messagePublisher = RecordingDispatchProxy<IInternalMessagePublisher>.Create(out _);
@@ -158,7 +266,7 @@ public class PlayerVisibilityPacketTests
             VisibilityFilter = null
         };
 
-        player.SetGuidForTest(21u);
+        player.SetGuidForTest(guid);
         player.SetPositionForTest(Vector3.Zero);
         SetAutoProperty(player, nameof(Player.Session), session);
         SetAutoProperty(player, nameof(Player.Identity), new NexusForever.Game.Abstract.Identity { Id = 42ul, RealmId = (ushort)1 });
@@ -175,10 +283,30 @@ public class PlayerVisibilityPacketTests
         return entity;
     }
 
+    private static void SetMap(TestPlayer player, IBaseMap map)
+    {
+        SetAutoProperty(player, nameof(GridEntity.Map), map);
+    }
+
+    private static void SetVisibleEntity(TestPlayer player, IGridEntity visibleEntity)
+    {
+        FieldInfo field = typeof(GridEntity).GetField("visibleEntities", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(field);
+        field.SetValue(player, new Dictionary<uint, IGridEntity>
+        {
+            [visibleEntity.Guid] = visibleEntity
+        });
+    }
+
     private static void SetAutoProperty(object instance, string propertyName, object value)
     {
-        FieldInfo backingField = instance.GetType().GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? instance.GetType().BaseType?.GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+        FieldInfo backingField = null;
+        for (Type type = instance.GetType(); type != null; type = type.BaseType)
+        {
+            backingField = type.GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (backingField != null)
+                break;
+        }
 
         Assert.NotNull(backingField);
         backingField.SetValue(instance, value);
@@ -199,6 +327,7 @@ public class PlayerVisibilityPacketTests
         }
 
         public Predicate<IGridEntity> VisibilityFilter { get; set; }
+        public List<INetworkEntityCommand> CreateCommands { get; } = [];
 
         public override bool CanSeeEntity(IGridEntity entity)
         {
@@ -216,6 +345,21 @@ public class PlayerVisibilityPacketTests
         public void SetPositionForTest(Vector3 position)
         {
             Position = position;
+        }
+
+        public override IReadOnlyList<IWritable> BuildEntityCreateAuxPackets()
+        {
+            return [];
+        }
+
+        public override ServerEntityCreate BuildCreatePacket(bool isLoading)
+        {
+            return new ServerEntityCreate
+            {
+                Guid     = Guid,
+                Type     = EntityType.Player,
+                Commands = CreateCommands.ToList()
+            };
         }
     }
 
