@@ -1,6 +1,7 @@
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Loot;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Tests.TestSupport;
@@ -108,6 +109,23 @@ public class ItemContainerLootTests
         Assert.Empty(dominionDrops);
     }
 
+    [Fact]
+    public void ClassLootGroup_DropsOnlyForMatchingClass()
+    {
+        LootGroup group = CreateClassLootGroup(Class.Warrior, staticItemId: 82778u);
+        IPlayer warrior = CreatePlayerWithClass(Class.Warrior);
+        IPlayer esper = CreatePlayerWithClass(Class.Esper);
+
+        List<(LootItem Item, uint Count)> warriorDrops = group.GenerateLootDrops(warrior).ToList();
+        List<(LootItem Item, uint Count)> esperDrops = group.GenerateLootDrops(esper).ToList();
+
+        (LootItem item, uint count) = Assert.Single(warriorDrops);
+        Assert.Equal(LootItemType.StaticItem, item.Type);
+        Assert.Equal(82778u, item.StaticId);
+        Assert.Equal(1u, count);
+        Assert.Empty(esperDrops);
+    }
+
     private static LootGroup CreateItemContainerLootGroup(params LootItemModel[] items)
     {
         LootGroupModel model = new()
@@ -176,6 +194,33 @@ public class ItemContainerLootTests
         return new LootGroup(model, loadChildren: false);
     }
 
+    private static LootGroup CreateClassLootGroup(Class @class, uint staticItemId)
+    {
+        LootGroupModel model = new()
+        {
+            Id            = 1200000003,
+            Probability   = 100f,
+            MinDrop       = 0u,
+            MaxDrop       = 0u,
+            ConditionType = (uint)LootConditionType.IsClass,
+            Condition     = (uint)@class,
+            Item =
+            [
+                new LootItemModel
+                {
+                    Id          = 1200000003,
+                    Type        = (uint)LootItemType.StaticItem,
+                    StaticId    = staticItemId,
+                    Probability = 100f,
+                    MinCount    = 1u,
+                    MaxCount    = 1u
+                }
+            ]
+        };
+
+        return new LootGroup(model, loadChildren: false);
+    }
+
     private static IPlayer CreatePlayerWithQuestObjective(uint objectiveId, Func<bool> isActive, out RecordingDispatchProxy<IQuestManager> questManagerProxy)
     {
         IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out questManagerProxy);
@@ -193,6 +238,13 @@ public class ItemContainerLootTests
     {
         TestPlayerBuilder builder = TestPlayerBuilder.Create();
         builder.PlayerProxy.SetProperty(nameof(IPlayer.Faction1), faction);
+        return builder.Build();
+    }
+
+    private static IPlayer CreatePlayerWithClass(Class @class)
+    {
+        TestPlayerBuilder builder = TestPlayerBuilder.Create();
+        builder.PlayerProxy.SetProperty(nameof(IPlayer.Class), @class);
         return builder.Build();
     }
 }
