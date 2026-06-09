@@ -1,6 +1,6 @@
 # F-031 Madame Fay Weight Audit
 
-Status date: 2026-06-04 (reset-code naming closure; retail weights still blocked)
+Status date: 2026-06-09 (cached-export/source recheck; retail weights still blocked)
 
 ## Scope
 
@@ -84,17 +84,19 @@ payout, screenshot, packet capture, or observed `RewardItemProbabilities` value.
   `IFortuneRewardPool`, so they are rejected as Madame Fay active-rotation
   evidence.
 - Current Fortune tests cover packet wire shape, catalog probability forwarding
-  from `IFortuneRewardPool`, Fortune coin debit, three-card dealing, card flip
-  state, `ServerFortuneCardUpdate.HasUpdate` on runtime flip updates,
-  account-item grant calls with current-character target identity, account-scoped
-  in-memory state, restart reset behavior, and invalid-flip resets.
+  from `IFortuneRewardPool`, Fortune coin debit and target-scoped Fortune Coin
+  account-item auto-claiming, three-card dealing, card flip state,
+  `ServerFortuneCardUpdate.HasUpdate` on runtime flip updates, account-item
+  grant calls with current-character target identity, account-scoped in-memory
+  state, restart reset behavior, and invalid-flip resets.
 
 ## Current Emulator Probability Shape
 
-The current emulator builds its candidate pool from `AccountItem` rows where
-`Item2Id`, `EntitlementId`, or `GenericUnlockSetId` is non-zero, excluding
-non-item `FortuneCoin` currency rows. It maps `Item2.ItemQualityId` to the
-three `RewardRarity` values and applies the current rarity-tier constants:
+The current emulator builds its card and display catalog pool from `AccountItem`
+rows where `Item2Id` is non-zero. Entitlement-only, generic-unlock-only, and
+Fortune Coin currency rows are excluded from dealt `ServerFortuneCards` until a
+card-safe non-item retail payload is mapped. It maps `Item2.ItemQualityId` to
+the three `RewardRarity` values and applies the current rarity-tier constants:
 
 - Normal: `1000`
 - Rare: `200`
@@ -105,15 +107,10 @@ plus `wildstar_client_mysql/Item2.tbl.sql`:
 
 | Slice | Count | Weight | Share |
 | --- | ---: | ---: | ---: |
-| All picker candidates | 2176 | 679350 | 100% |
-| Picker Normal | 311 | 311000 | 45.7791% |
-| Picker Rare | 1834 | 366800 | 53.9928% |
-| Picker Epic | 31 | 1550 | 0.2282% |
-| Displayed item candidates | 2121 | 624350 | 100% |
-| Display Normal | 256 | 256000 | 41.0026% |
-| Display Rare | 1834 | 366800 | 58.7491% |
-| Display Epic | 31 | 1550 | 0.2483% |
-| Non-item picker candidates not advertised in `Item2IdRewards` | 55 | 55000 | 8.0957% of picker weight |
+| Item-backed picker/display candidates | 2121 | 624350 | 100% |
+| Normal | 256 | 256000 | 41.0026% |
+| Rare | 1834 | 366800 | 58.7491% |
+| Epic | 31 | 1550 | 0.2483% |
 
 This proves the current approximation is deterministic and auditable against
 the extracted tables. It does not prove retail parity.
@@ -258,6 +255,14 @@ boundary without widening card selection or reward weights.
 Focused `FullyQualifiedName~Fortune` verification passed 20/20 with isolated
 output at `artifacts/testbin/f031-fortune-target`.
 
+Target-scoped auto-claim guard (2026-06-07): `ClientFortuneStart` still
+auto-claims a matching `CanClaim` Fortune Coin account item before re-checking
+and debiting the one-coin start cost, but a bundle targeted at another character
+is not claimed. The client receives the mapped click-empty reset, no currency is
+added or debited, and the account-inventory row remains claimable. Focused
+`FullyQualifiedName~Fortune` verification passed 24/24 with isolated output at
+`artifacts/codex-test-bin/`.
+
 Reward-rotation false-source cleanup (2026-06-04): the F-007 reward-rotation
 surface is a rejected source for F-031 active Madame Fay rotation. Native labels
 for the reward-rotation DB tables, `Lua_GameLib_BuildRewardRotations`,
@@ -272,3 +277,36 @@ storefront-server catalog dump, or native/server artifact that produces that
 packet family. Focused boundary verification passed 32/32:
 `FullyQualifiedName~Fortune|FullyQualifiedName~RewardRotationRuntimeEvidenceTests|FullyQualifiedName~ClientRewardUpdateRequestHandlerTests`
 with isolated output at `artifacts/testbin/f031-fortune-rewardrotation-falsesource/`.
+
+Missing-inventory flip guard (2026-06-08): `ClientFortuneFlipCard` now fails
+closed with the mapped click-empty reset when account-inventory delivery is
+unavailable, before marking the selected card flipped, granting an account item,
+persisting flipped state, or emitting `ServerFortuneCardUpdate`. This is a
+runtime dependency guard only; it does not change weights, active rotations, or
+eligible reward pools. Focused `FullyQualifiedName~FortuneSessionManagerTests`
+verification passed 14/14 and broader `FullyQualifiedName~Fortune` verification
+passed 25/25 with isolated output at `artifacts/codex-test-bin/`.
+
+Reward-pool partial-table guard (2026-06-08): `FortuneRewardPool` now treats a
+missing `AccountItem` table like no reward candidates and returns an empty
+catalog/card pool instead of throwing. A missing `Item2` table follows the
+existing missing-row behavior and maps otherwise item-backed rewards to
+`RewardRarity.Normal`. This is a static-data availability guard only; it does
+not add non-item rewards, change rarity-tier weights, or infer active rotation
+state. Focused `FullyQualifiedName~FortuneRewardPoolTests` verification passed
+6/6 and broader `FullyQualifiedName~Fortune` verification passed 27/27 with
+isolated output at `artifacts/codex-test-bin/`.
+
+Cached-export/source recheck (2026-06-09): Ghidra MCP discovery found no
+running instances, so this pass used tracked labels plus cached
+`WildStar64.exe` fragments under
+`selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+`ServerFortuneRewards_ReadPayload` (`140081f60`) still proves only the
+item2/money/probability transport shape. `Fortune_ApplyRewards` (`1407292a0`)
+copies server-provided arrays into UI state, `FortunesLib_GetFortunesLootList`
+(`140766370`) exposes cached item2 rewards and displays
+`fProbability = serverFloat * 100`, and `FortuneNode_ApplyServerFortunePackets`
+(`1404d60f0`) dispatches `0x03CF`-`0x03D2`. Source still emits
+`ServerFortuneRewards` from emulator rarity-tier `FortuneRewardPool`; no retail
+active rotation source, per-item weight table, or storefront-server catalog
+proof surfaced. The closure state remains mapped-only / blocked.

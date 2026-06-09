@@ -5,6 +5,19 @@ Use the evidence ladder from `CONTINUATION_GUIDE.md`: Observed -> Correlated -> 
 
 **Inventory (2026-05-23):** ~761 `Unknown*` token matches in 176 `Source/**/*.cs` files (ripgrep); ~147 distinct symbol names; ~205 enum members (64 in `PrerequisiteType` alone).
 
+## Initiative status - ACTIVE (2026-06-07 placeholder enum guard)
+
+The current source inventory still has exactly 24 `PrerequisiteType.UnknownNNN`
+entries and two quest objective placeholders,
+`QuestObjectiveType.Unknown27`/`Unknown29`. The prerequisite leftovers are
+already grouped by `PrerequisiteTypeNamingTests` into duplicate-body aliases,
+orphan helper candidates, skipped dispatcher candidates, no-op slot candidates,
+and one diagnostic field-owner blocker. Added `QuestObjectiveTypeNamingTests` so
+the two quest objective placeholders now share the same guardrail: keep them
+numeric until objective data ownership, objective text/data semantics, native
+handler ownership, or live script/update evidence proves a safe rename/runtime
+path. Focused naming verification passed 119/119 on 2026-06-07.
+
 ## Initiative status - ACTIVE (2026-06-05 pass 155)
 
 Pass 155 rechecked `Client0x062A` / `Client0x0634` for matching or

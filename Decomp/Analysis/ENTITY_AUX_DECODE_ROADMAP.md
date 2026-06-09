@@ -2,6 +2,125 @@
 
 Updated: 2026-06-05 (entity-create main Faction1/Faction2 offsets mapped; aux `Value*` names remain blocked pending consumer/apply evidence)
 
+Supplemental update: 2026-06-09 F-026/F-003 `ServerItemContextActionAck`
+(`0x00B7`) cached-export/source recheck:
+existing cached `WildStar64.exe` fragments were sufficient and no labels or
+exports were changed. `Network_RegisterServerOpcode_0351` (`14006c290`)
+registers `0x00B7` size `1` at `selected_decompiled.c:13226` to shared
+`ServerEmpty_ReadPayload` (`14007d8e0`), whose cached fragment succeeds without
+bit or field reads when a payload pointer is present. Exact selected scans found
+`0x00B7` only at that registration, selected xrefs for `14007d8e0` are
+label-only, selected call edges show no producer or post-read consumer, and
+current source has only the neutral packet model plus packet-placeholder tests.
+Positive controls stay separate: `ItemUse_SendClientItemUse` (`140398cc0`)
+sends `0x0943`, `Friendship_SendClientFriendshipBlock` (`1405e39e0`) sends
+`0x00B8`, and `Friendship_SetAutoResponseMessagesAndSend` (`1405de2e0`) uses
+`ClientFriendshipSetAutoResponseMessage_WritePayload` (`14007e4b0`) for
+`0x03B7`. Keep `ServerItemContextActionAck` zero-field and non-emitted until a
+native server producer/send site, post-read apply owner, callback/table owner,
+or accepted item-context/friendship capture proves intent and timing.
+
+Supplemental update: 2026-06-09 F-005 marketplace aux `0x06DF` / `0x07D5`
+producer recheck:
+Ghidra MCP discovery found no running instances, and cached fragments still
+prove only the reader shapes and registration rows. `ServerAuctionPostAux_ReadPayload`
+(`140090090`) reads count, counted `uint32` array, counted byte array of the
+same count, and trailing `uint32`; `ServerAuctionsByFilterAux_ReadPayload`
+(`14008fe80`) reads one 14-bit value, three `uint32` fields, and one flag.
+`Network_RegisterServerOpcode_0351` (`14006c290`) binds `0x06DF` at size
+`0x20` and `0x07D5` at size `0x14`, but no marketplace apply helper, runtime
+producer, or field consumer surfaced in cached exports or current source.
+
+Supplemental update: 2026-06-09 F-003 `Server0x0015` shared-reader recheck:
+Ghidra MCP discovery found no running instances, and cached fragments still
+prove only the shared 5-bit plus `uint32` reader (`ServerUInt5UInt32_ReadPayload`
+`140081f00`) registered for both `0x0015` and matching `0x0628`. The same
+reader is also used as a `ServerFortuneRewards` money-reward row helper. The
+positive matching apply path remains `MatchingManager_ApplyMatchingAverageWaitTimeUpdated`
+(`1405c0e00`); no opcode-specific `0x0015` apply/producer/post-read consumer
+surfaced. Keep `Server0x0015.Value0`/`Value1` neutral and non-emitted.
+
+Supplemental update: 2026-06-09 F-016..F-021 spell auxiliary cached recheck:
+existing cached `WildStar64.exe` fragments were sufficient and no export refresh
+or label change was needed. `Network_RegisterServerOpcode_0351` (`14006c290`)
+still binds `0x07FC` to `ServerSpellCastResult_ReadPayload` (`140094fb0`:
+`uint32`, 18-bit `Spell4Id`, 9-bit `CastResult`), `0x080F`/`0x0810` to
+`ServerSpellUInt32TripletList_ReadPayload` (`140095da0`: `uint32` count plus
+triplet rows via `140080bf0`), and `0x0812` to `ServerSpellFourUInt32_ReadPayload`
+(`14007fef0`: four `uint32` fields). Selected xrefs are label-only and selected
+call edges stay inside bit readers, allocation, and row parsing; current source
+has mixed `ServerSpellCastResult` emitters but no native proof for the leading
+field name, and the triplet/four-uint aux packets still appear only in models
+and packet-shape tests. Keep spell aux producer/apply semantics blocked pending
+a native apply/producer path, callback/table owner, dynamic dispatch proof, or
+accepted spell packet capture.
+
+Supplemental update: 2026-06-09 F-026 item-data aux `0x056B`/`0x056C`/`0x056D`
+cached recheck:
+existing cached `WildStar64.exe` fragments were sufficient and no labels or
+exports were changed. `Network_RegisterServerOpcode_0351` (`14006c290`) still
+registers `0x056B` size `0x20` to `ServerItemModdableData_ReadPayload`
+(`1400a3ce0`: item guid, threshold data, random glyph data, random circuit
+data), `0x056C` size `0x28` to `ServerItemMicrochips_ReadPayload`
+(`1400a3d50`: item guid, maker character id, random circuit data, 18-bit
+power-core item id, 3-bit count, counted microchip ids), and `0x056D` size
+`0x18` to `ServerItemGlyphs_ReadPayload` (`1400a3e40`: item guid, random glyph
+data, 4-bit count, counted glyph ids). Selected xrefs are label-only and
+selected call edges stay inside reader helpers. Client-side helpers
+`1403b8540`/`14056aa20` and `1403b85a0`/`14056aba0` prove existing-slot
+microchip/glyph apply and `ItemModified` dispatch, but no native server
+producer/send timing surfaced. Keep all three packets non-emitted until a
+server producer path, apply-table classification, callback/table owner, or
+accepted item-replication capture proves semantics and timing.
+
+Supplemental update: 2026-06-09 F-026 `ServerSupplySatchelAux` (`0x019A`)
+cached recheck:
+existing cached `WildStar64.exe` fragments and selected exports were sufficient
+and no labels or exports were changed. `Network_RegisterServerOpcode_0351`
+(`14006c290`) registers `0x019A` size `8` at `selected_decompiled.c:12829` to
+shared `MatchingQueueResultWaitTime_ReadPayload` (`14007fcf0`), whose cached
+reader consumes one 6-bit value and one `uint32`. Selected xrefs for
+`14007fcf0` are label-only and selected call edges stay reader-local through
+`FUN_14006c090`. The same reader is reused by `ServerCharacterDeleteResult`
+(`0x00E6`), `ServerMatchingMatchKickCooldownUpdate` (`0x0616`), and
+`ServerMatchingMatchOperationResult` (`0x0623`); their managed emitters are
+separate positive controls and do not prove supply-satchel semantics. Current
+source emits regular `ServerSupplySatchelUpdate` (`0x0199`) for stack updates
+and keeps `ServerSupplySatchelAux` model/test-only. Keep `UInt6Value` and
+`Value` neutral and non-emitted until a native producer/apply owner,
+callback/table owner, dynamic dispatch proof, accepted supply-satchel capture,
+or broader item/supply readback evidence proves semantics and timing.
+
+Supplemental update: 2026-06-09 F-026 `ServerCostumeItemAux` (`0x037F`)
+cached recheck:
+existing cached `WildStar64.exe` fragments were sufficient and no labels or
+exports were changed. `Network_RegisterServerOpcode_0351` (`14006c290`)
+registers `0x037F` size `0x18` at `selected_decompiled.c:13026` to
+`ServerCostumeItemAux_ReadPayload` (`1400874a0`), whose cached reader consumes
+one 14-bit value, three `uint32` fields, and two trailing flags. Selected xrefs
+for `1400874a0` are label-only and selected call edges stay reader-local
+through `FUN_14006c090`. Adjacent `ClientEmote` (`0x037E`) uses separate writer
+`140087270`, and costume unlock/forget/save event helpers prove separate result
+paths rather than a `0x037F` producer. Current source keeps
+`ServerCostumeItemAux` model/test-only. Keep `UInt14Value`, `Value0..Value2`,
+and `Flag0`/`Flag1` neutral and non-emitted until a native producer/apply
+owner, callback/table owner, dynamic dispatch proof, or accepted costume/emote
+capture proves semantics and timing.
+
+Supplemental update: 2026-06-09 F-004 housing-basics follow-up `0x010D` /
+`0x0110` cached recheck:
+existing cached `WildStar64.exe` fragments were sufficient and no labels or
+exports were changed. `Network_RegisterServerOpcode_0351` (`14006c290`)
+registers `0x010D` size `1` to shared `ServerEmpty_ReadPayload` (`14007d8e0`)
+and `0x0110` size `0x10` to `ServerHousingBasicsFollowup_ReadPayload`
+(`14008de70`: `uint32`, 18-bit scalar, `uint32`, 8-bit scalar). Adjacent
+`ServerHousingBasics` (`0x010E`) has separate apply evidence through
+`1403cd6d0` dispatching `HousingBasicsUpdated` / `HousingPrivacyUpdated`, but
+selected xrefs/call edges do not tie that apply owner to `0x010D` or `0x0110`.
+Keep the existing residence-session compatibility bundle neutral/defaulted until
+a follow-up producer/apply owner, callback/table owner, or accepted
+housing-login/return capture proves field semantics and timing.
+
 Tracks decompile progress to unblock **field semantics** and **runtime emitters** for the
 shape-mapped server-output clusters that replaced `Server0xNNNN` placeholders.
 
@@ -278,6 +397,30 @@ Entity-stat placeholder-name guard (2026-06-04 pass 117):
   -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f025-entity-stat-placeholder-guard\`
   passed `91/91`.
 
+Entity-stat aux cached-export recheck (2026-06-09):
+
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It rechecked current tracked labels plus cached
+  `WildStar64.exe` fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `ServerSpellUInt32TripletListRow_ReadPayload` (`140080bf0`) still maps
+  `0x0889` as three `uint32` fields, shared with other triplet-row packets.
+  Cached `ServerUInt32WideString_ReadPayload` (`1400980f0`) still maps `0x08CC`
+  as `uint32` plus wide string, shared with other UI/result packets.
+- Cached `ServerEntityStatUInt32UInt5UInt32_ReadPayload` (`140097620`),
+  `ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload` (`140097ee0`),
+  `ServerEntityStatUInt32UInt5Pair_ReadPayload` (`140097690`), and
+  `ServerEntityStatTwoUInt32UInt64_ReadPayload` (`140097f70`) still prove only
+  the `0x08F4`, `0x0939`, `0x093D`, and `0x093E` reader shapes.
+- Source search still finds the six `ServerEntityStat*` aux packets only in
+  packet models, packet-shape tests, placeholder naming guards, and negative
+  entity-create emission guards. Runtime stat sends remain the ordinary
+  `ServerEntityStatUpdateFloat` / `ServerEntityStatUpdateInteger` paths.
+- Result: disposition remains **Mapped only / Blocked producer**. The next
+  evidence source is unchanged: a per-opcode `WorldSocket+0x15b0`
+  `vtable+0x58` apply handler, apply-table classification, or live sniff/order
+  witness proving field semantics and emit timing.
+
 Map-tracked unit producer recheck (2026-06-04):
 
 - Direct Ghidra MCP decompile of `ServerMapTrackedUnitUpdate_ReadPayload` (`1400a6c10`),
@@ -327,6 +470,107 @@ Map-tracked unit selection guard (2026-06-04 pass 118):
   -v minimal --nologo -m:1 -p:UseSharedCompilation=false
   -p:OutDir=I:\GIT\NexusForever\artifacts\testbin\f025-map-tracked-selection-guard\`
   passed `97/97`.
+
+Housing neighborhood cached-export recheck (2026-06-09):
+
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It rechecked current tracked labels plus cached
+  `WildStar64.exe` fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `ServerHousingNeighborhoodEntry_ReadPayload` (`14009cbe0`) and
+  `ServerHousingNeighborhoodList_ReadPayload` (`14009ebf0`) still map only the
+  `0x0501` row reader and `0x0506` realm-plus-counted-row list reader.
+- Cached `Housing_HandleNeighborhoodList` (`1404ba4f0`) clears/rebuilds the
+  client housing neighborhood cache and dispatches `HousingNeighborhoodRecieved`;
+  cached `ClientDB_RegisterHousingNeighborhoodInfo` (`140205900`) proves only
+  client table-loader presence.
+- Source search still finds `ServerHousingNeighborhoodEntry` and
+  `ServerHousingNeighborhoodList` only in packet models, packet-shape tests,
+  placeholder naming guards, and residence-session negative emission guards.
+- Result: disposition remains **Mapped only / Blocked producer**. The next
+  evidence source is a native server-push path or accepted live housing
+  UI/realm-login capture proving trigger timing, row backing, row-tail field
+  population, and realm/session scope for `0x0501` / `0x0506`.
+
+Housing community donate cached-export/source recheck (2026-06-09):
+
+- Cached `WildStar64.exe` fragments were sufficient and no labels or exports
+  were changed. `Network_RegisterServerOpcode_0351` (`14006c290`) registers
+  `0x04FE` size `0x18` at `selected_decompiled.c:13681` to
+  `ServerHousingCommunityDonateUpdate_ReadPayload` (`14009e930`).
+- The cached reader consumes a `uint32` count, allocates two count-sized
+  buffers, and raw-copies two parallel `uint32` arrays. Selected xrefs for
+  `14009e930` are label-only, and selected call edges stay inside bit-read,
+  allocation, and raw-copy helpers.
+- The separate client donate positive control is `0x04F5`:
+  `ClientHousingCommunityDonate_WritePayload` (`14009da00`) writes count plus
+  counted `DecorInfo` rows, and `Housing_SendClientCommunityDonate`
+  (`1404b9ca0`) sends one selected decor row only after resolving
+  `HousingDecorInfo` and rejecting rows with `Flags & 0x8`.
+- Current source emits `ServerHousingCommunityDonateUpdate` from
+  `ClientHousingCommunityDonateHandler` after copying donated crate decor to the
+  community residence and deleting the source decor, but the model keeps
+  `Entry.Value0`/`Value1` neutral.
+- Result: disposition remains **Mapped only / Field-semantics blocked**. The
+  next evidence source is a native apply/consumer owner, callback/table owner,
+  accepted donate capture, or backing-store evidence proving the two array
+  meanings, resource/contribution costs, exact transfer semantics, and broader
+  ownership/unlock policy.
+
+Housing community plot-reservation cached-export/source recheck (2026-06-09):
+
+- Cached `WildStar64.exe` fragments were sufficient and no labels or exports
+  were changed. `Network_RegisterServerOpcode_0351` (`14006c290`) registers
+  `0x051F` size `0x18` at `selected_decompiled.c:13683` to
+  `ServerHousingCommunityPlotReservation_ReadPayload` (`140086e70`).
+- The cached reader consumes target residence identity (14-bit realm plus
+  64-bit residence id) and one `uint32` plot index. Selected xrefs for
+  `140086e70` are label-only; selected call edges are reader-local
+  `FUN_14006c090` / `NetworkBitReader_ReadUInt64` edges plus
+  `ServerLootWinner_ReadPayload` row-helper reuse.
+- `Lua_HousingLib_GetReservedCommunityPlotIndex` (`140737470`) searches the
+  type-7 community cache through `Housing_FindCommunityResidenceEntryByIdentity`
+  (`14057ff90`) and returns `nPlotIndex` / `bHasReservation` only when the
+  cached value is not `0xffffffff`.
+- Client positive controls stay on guild operations: `Housing_SendClientCommunityPlotReservation`
+  (`14057fe90`) sends `ClientGuildOperation` (`0x04B1`) operation `0x29` with
+  the requested plot index, and `Housing_SendClientCommunityPlotReservationRemoval`
+  (`14057ff10`) sends operation `0x2A` with the target name.
+- Current source emits `ServerHousingCommunityPlotReservation` from
+  `CommunityOperations.SendCommunityPlotReservation`, using
+  `unchecked((uint)plotIndex)` so `-1` becomes the native `uint.MaxValue`
+  sentinel pinned by packet-shape tests.
+- Result: disposition remains **Mapped only / Field-level source alignment**.
+  Do not widen plot-reservation permission, placement, teleport/unload,
+  persistence, or broadcast semantics until a native apply/consumer owner,
+  callback/table owner, accepted community-reservation capture, or backing-store
+  evidence proves timing and scope.
+
+Map-tracked unit cached-export recheck (2026-06-09):
+
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It rechecked the current tracked labels plus cached
+  `WildStar64.exe` fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `ServerMapTrackedUnitUpdate_ReadPayload` (`1400a6c10`) still maps
+  `0x0849` as tracked-unit id, three 32-bit position components, and a 15-bit
+  `TrackingSlotId` at payload `+0x10`.
+- Cached `MapTrackedUnitUpdate_ApplyAndDispatch` (`1403f4170`),
+  `MapTrackedUnitDisable_ApplyAndDispatch` (`1403f4200`),
+  `ClientEvent_MapTrackedUnitUpdate_Dispatch` (`140430f80`),
+  `Lua_GameLib_GetMapTrackedUnitData` (`140511c80`),
+  `Lua_PublicEvent_GetTrackedUnits` (`14068adb0`), and
+  `Lua_PublicEventObjective_GetTrackedUnits` (`140690500`) still show only
+  client cache mutation, Lua event dispatch, and Lua enumeration of cached
+  tracked-unit state.
+- Source search still finds `ServerMapTrackedUnitUpdate` and
+  `ServerMapTrackedUnitDisable` only in packet models, packet-shape tests, and
+  the negative entity-create emission guard. No runtime producer was added.
+- Result: disposition remains **Mapped only / Blocked producer**. The next
+  evidence source is unchanged: native server send-site evidence or an accepted
+  live public-event marker capture proving tracked-unit id allocation, update
+  cadence, disable lifetime, and `TrackingSlotId` selection for `0x0849` /
+  `0x0848`.
 
 Callback table @ `140b55100` (installed at socket `+0x100`):
 

@@ -1,6 +1,514 @@
 # NexusForever Feature Restoration - Current Status
 
-Last updated: 2026-06-07 (F-017 Charged Shot charge-release threshold runtime and continuous/charge spell-cast target forwarding; F-005 direct commodity fill order-mutation persistence gate and multi-order price-priority fill coverage; option/keybind aux packet contracts for `0x056B`, `0x056C`, and `0x056D`, marketplace aux packet contracts for `0x06DF` and `0x07D5`, chat aux row/envelope packet contracts for `0x01B8`, `0x01C1`, and `0x01C4`, plus story/recruitment boundary packet contracts for `0x074A` and `0x077E`; ported useful LaughingWS branch scripts/data overlays, quest-loot/store/catalog/WIP-Dust-Stalker-quest-instance/WIP-live-event/Skyplot-housing overlays, settler build acknowledgements, active Settler hub build-count progress, WIP current-zone path episode activation with optional PathMission prerequisite filtering, active-path object-id completion guard, active Soldier assassinate kill progress with decompile-mapped ProgressCount, branch-informed active-only node/explore-zone/power-map-validated Explorer progress completion, PathMission and PathMissionType achievement credit, client-mapped GameFormula 0x017a path XP fallback for known completed path missions without configured XP, and unflagged PathRewardType.Mission grants for known completed path missions, branch starter-zone/map-only hooks, Shade's Eve/Infestation/Fragment Zero/Gauntlet/Ruins of Kel Voreth/Stormtalon's Lair/Skullcano/Initialization Core Y-83/Red Moon Terror/Genetic Archives/Sanctuary of the Swordmaiden/Datascape/Protogames/Space Madness/Evil from the Ether event/map chains, WIP-guessed Coldblood Citadel, Ruins of Kel Voreth, Sanctuary of the Swordmaiden, Skullcano, and Stormtalon's Lair optional-objective rolls, Space Madness/Gauntlet/Infestation/Protogames Academy/Fragment Zero/Shade's Eve/Red Moon Terror/Genetic Archives/Datascape/Ruins of Kel Voreth/Skullcano/Initialization Core Y-83/Sanctuary/Evil from the Ether/Cryo-Plex/War of the Wilds trigger objective/message/teleport/PvP scripts and phase broadcasts, SQL-backed boss objective-credit hooks including WIP Red Moon Terror Laveka credit, Skullcano and Sanctuary WIP route scaffolding, remaining map-only bindings plus WIP entry/boss/phase/cinematic-hook scaffolds for Deep Space, Rage Logic, Ultimate Protogames dungeon/raid, Protostar SuperMall, Journey into OMNICore-1, Fragment Zero, Infestation, Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet, narrow branch spell-script hooks for Marauder Mine/Pulse Blast, and the client-table-backed Exo-Lab 22 range teleporter; reward-rotation schedule row order/player-level/difficulty refresh, runtime `item_salvage` exact/type-level salvage path, live group/guild CDB evidence, and full Game test project 2817/2817; focused branch/path/event tests 552/552, focused instance/public-event tests 436/436, focused map-only entry/boss/phase/cinematic-hook scaffold tests 22/22, focused event/trigger cinematic-hook tests 155/155, focused PvP/adventure branch tests 25/25, focused Evil from the Ether tests 12/12, focused Coldblood Citadel tests 10/10, focused Ruins of Kel Voreth tests 16/16, focused Sanctuary of the Swordmaiden tests 38/38, focused Skullcano tests 34/34, focused Stormtalon's Lair tests 19/19, focused Protogames Academy trigger tests 25/25, focused Fragment Zero trigger tests 13/13, focused Gauntlet trigger tests 16/16, focused Infestation tests 9/9, focused Datascape/objective-credit tests 102/102, path-progress tests 36/36, focused transporter tests 49/49, plus branch spell tests 11/11; F-004/F-009/F-024 remain partial)
+Last updated: 2026-06-09 (decompile-evidence closure checkpoint; F-011 war-party boss-token packet boundary; F-011 guild recruitment packet-family cached-export recheck; F-022 active path helper static-table guard; F-022 path mission static-table guard; F-004 residence entrance static-data guard; F-035 achievement primary-table startup guard; F-014 creature DropLoot Creature2 partial-table guard; F-026 item-manager item/item-slot partial-table guard; F-026 item display-source partial-table guard; F-022 quest target-group cache partial-table guard; F-006/F-026 entitlement-manager partial-table guard; F-006 account-currency partial-table guard; F-007 reward-property partial-table guard; F-014 generated loot reward-table guard; F-005 auction search selector-table guard; F-022 path reward scanbot profile guard; F-022 path reward Spell4 table guard; F-022 path reward title partial-table guard; F-026 title manager persisted-title partial-table guard; F-026 account-item generic-unlock partial-table guard; F-026 persisted generic-unlock partial-table guard; F-026 normal item-use partial-table guard; F-008 tradeskill request partial-table guard; F-008 additive modifier materialization partial-table guard; F-008/F-011 rune/additive partial-table guard; F-026 scanbot rename ownership/type guard and vanity-pet summon effect guard; F-027 combat-log disable-others boolean guard; F-034 datacube table-unavailable guard; F-035 Steam achievement ingest blocked classification; F-036 zone-completion non-title reward blocked classification; F-033 challenge reward/share-init blocked classification; F-032 leaderboard medal/season filter blocked classification; F-028 support-case readback blocked classification; F-031 Fortune reward-pool partial-table guard; F-008 crafting fixed-recipe partial-table guard; F-026 repair-vendor formula-table guard; F-011 guild create-cost formula-table guard; F-004 housing vendor-list partial-table guard; F-004 housing community-rename formula-table guard; F-026 decor item-use HousingDecorInfo partial-table guard; F-009 transport table-unavailable coverage; F-021 non-spell action-set item partial-table guard; F-012 emote partial-table guard; mapped small client request partial-table guard; F-036 generic-map partial-table guard; F-026 generic-unlock manager partial-table guard; F-026 account-costume partial-table guard; F-022 quest guidance partial-table guard; F-022 quest-info reward partial-table guard; F-022 character-XP partial-table guard; F-022 path-level partial-table guard; F-009 rapid-transport spell-formula partial-table guard; F-026 pet customisation invalid type/slot guard; F-006 account-item terminal missing-inventory guard; F-031 Fortune flip missing-inventory guard; F-030 realm-transfer known-character guard; F-036 zone-completion stale table-cache guard; F-034 persisted datacube duplicate-row merge guard; F-032 leaderboard duplicate-score dedupe guard; F-035 achievement checklist-bit mask guard; F-033 challenge progress overflow guard; F-017 Charged Shot charge-release threshold runtime and continuous/charge spell-cast target forwarding; F-005 item-auction offline seller settlement guard, commodity buy-order offline expiration refund guard, commodity-fill offline-credit guard, auction bidder-refund offline-credit guard, direct commodity fill order-mutation persistence gate, and multi-order price-priority fill coverage; item-data aux packet contracts for `0x056B`, `0x056C`, and `0x056D`, marketplace aux packet contracts for `0x06DF` and `0x07D5`, chat aux row/envelope packet contracts for `0x01B8`, `0x01C1`, and `0x01C4`, plus story/recruitment boundary packet contracts for `0x074A` and `0x077E`; ported useful LaughingWS branch scripts/data overlays, quest-loot/store/catalog/WIP-Dust-Stalker-quest-instance/WIP-live-event/Skyplot-housing overlays, settler build acknowledgements, active Settler hub build-count progress, WIP current-zone path episode activation with optional PathMission prerequisite filtering, active-path object-id completion guard, active Soldier assassinate kill progress with decompile-mapped ProgressCount, branch-informed active-only node/explore-zone/power-map-validated Explorer progress completion, PathMission and PathMissionType achievement credit, client-mapped GameFormula 0x017a path XP fallback for known completed path missions without configured XP, and unflagged PathRewardType.Mission grants for known completed path missions, branch starter-zone/map-only hooks, Shade's Eve/Infestation/Fragment Zero/Gauntlet/Ruins of Kel Voreth/Stormtalon's Lair/Skullcano/Initialization Core Y-83/Red Moon Terror/Genetic Archives/Sanctuary of the Swordmaiden/Datascape/Protogames/Space Madness/Evil from the Ether event/map chains, WIP-guessed Coldblood Citadel, Ruins of Kel Voreth, Sanctuary of the Swordmaiden, Skullcano, and Stormtalon's Lair optional-objective rolls, Space Madness/Gauntlet/Infestation/Protogames Academy/Fragment Zero/Shade's Eve/Red Moon Terror/Genetic Archives/Datascape/Ruins of Kel Voreth/Skullcano/Initialization Core Y-83/Sanctuary/Evil from the Ether/Cryo-Plex/War of the Wilds trigger objective/message/teleport/PvP scripts and phase broadcasts, SQL-backed boss objective-credit hooks including WIP Red Moon Terror Laveka credit, Skullcano and Sanctuary WIP route scaffolding, remaining map-only bindings plus WIP entry/boss/phase/cinematic-hook scaffolds for Deep Space, Rage Logic, Ultimate Protogames dungeon/raid, Protostar SuperMall, Journey into OMNICore-1, Fragment Zero, Infestation, Space Madness, Shade's Eve, Ruins of Kel Voreth, Stormtalon's Lair, Initialization Core Y-83, Genetic Archives, Datascape, and Gauntlet, narrow branch spell-script hooks for Marauder Mine/Pulse Blast, and the client-table-backed Exo-Lab 22 range teleporter; reward-rotation schedule row order/player-level/difficulty refresh, runtime `item_salvage` exact/type-level salvage path, live group/guild CDB evidence, and full Game test project 2817/2817; focused branch/path/event tests 552/552, focused instance/public-event tests 436/436, focused map-only entry/boss/phase/cinematic-hook scaffold tests 22/22, focused event/trigger cinematic-hook tests 155/155, focused PvP/adventure branch tests 25/25, focused Evil from the Ether tests 12/12, focused Coldblood Citadel tests 10/10, focused Ruins of Kel Voreth tests 16/16, focused Sanctuary of the Swordmaiden tests 38/38, focused Skullcano tests 34/34, focused Stormtalon's Lair tests 19/19, focused Protogames Academy trigger tests 25/25, focused Fragment Zero trigger tests 13/13, focused Gauntlet trigger tests 16/16, focused Infestation tests 9/9, focused Datascape/objective-credit tests 102/102, path-progress tests 36/36, focused transporter tests 49/49, focused quest tests 284/284, focused XP/rest-XP tests 237/237, focused costume tests 7/7, focused generic-unlock tests 22/22, focused account-item/generic-unlock tests 67/67, focused generic-map tests 6/6, focused vendor repair tests 10/10, focused item-use tests 9/9, broader item-use tests 20/20, focused crafting partial-table tests 12/12, focused tradeskill request tests 5/5, focused rune/modifier partial-table tests 63/63, broader crafting tests 90/90, focused Fortune reward-pool tests 6/6, broader Fortune tests 27/27, focused Option tests 36/36, focused Pet tests 293/293, focused Support tests 126/126, focused archive/datacube tests 18/18, broader PathManager tests 67/67, focused Steam achievement tests 2/2, focused achievement tests 25/25, focused Challenge tests 45/45, focused mapped-request tests 5/5, focused emote tests 2/2, broader chat tests 6/6, focused zone-completion tests 12/12, broader map tests 457/457, plus branch spell tests 11/11; F-004/F-009/F-024 remain partial)
+
+Supplemental update: 2026-06-09 decompile-evidence closure checkpoint.
+The current evidence-gated protocol/native backlog now has a named state and
+next evidence source in `Decomp/Analysis/FEATURE_BACKLOG_WORKING_QUEUE.md`,
+`MISSING_FEATURE_MATRIX.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`,
+`MATCHING_IMPLEMENTATION_STATUS.md`, `ENTITY_AUX_DECODE_ROADMAP.md`, and
+`BLOCKER_EVIDENCE_PLAN.md`. This is not a retail-parity claim and no runtime
+behavior was widened. Rows remain `Mapped only`, `Blocked`, `Rejected`, or
+diagnostic-only unless the focused tracker states `Implemented`. The next
+evidence sources are native apply/producer paths, opcode-specific senders or
+consumers, dynamic apply-dispatch proof, accepted packet captures, or retail
+server/catalog artifacts; live-client, content, setup, and data-mapping
+validation remain intentionally out of scope until re-enabled.
+
+Supplemental update: 2026-06-09 F-001 STS token/optional auth
+cached-export/source recheck kept the optional token/RSA branch mapped-only and
+blocked. Ghidra MCP discovery found no running instances, so no labels or
+exports were added. Tracked `StsConnLib64.MT.dll` labels plus cached fragments
+reconfirm the native token-login path as separate from the implemented
+password/SRP flow: `StsConn_SendLoginTokenStart` (`180003d70`) sends
+`ClientRand` for transaction `0x61`, `StsConn_SendTokenKeyData` (`18000a730`)
+reads `ServerRand`, `ServerPublicKey`, and `ServerSignature`, validates them
+through `StsConn_ValidateTokenServerKeyMaterial` (`180012de0`), creates an RSA
+client through `StsCrypt_CreateRsaClient` (`180037cb0`), then sends
+`PremasterSecret`, `AuthnToken`, optional `AuthProviderCode`, and `AppId` for
+transaction `0x3b`. `StsConn_SendRequestToken` (`180004c40`) and
+`StsConn_SendAssociateMyExternalAccount` (`1800067d0`) also remain mapped
+external/token support paths, while `StsConn_OnAuthnTokenResponse`
+(`180008230`) reads only the reply `AuthnToken`. Current source has handlers
+for SRP login/key data, login finish, request/consume game token, user-info,
+verified-IP, game-account, and presence compatibility routes, but no
+`/Auth/LoginTokenStart`, `/Auth/TokenKeyData`, `/Auth/RequestToken`, or
+`/Auth/AssociateMyExternalAccount` models/handlers. No runtime behavior changed;
+the exact RSA key format, signature/trust anchor, premaster derivation,
+TokenKeyData reply fields, post-token session/crypto transition, and startup
+route ordering still need native proof or live STS captures before
+implementation.
+
+Supplemental update: 2026-06-09 F-002 structural diagnostic realm/addon
+cached-export/source recheck kept `ClientAccountRealmData`,
+`ClientRealmListRealmRow`, `ClientRealmListMessageRow`, and
+`ClientAddonModuleList` mapped-only. Ghidra MCP discovery found no running
+instances, so no labels or exports were added. Cached `WildStar64.exe`
+fragments reconfirmed `ClientAccountRealmData_WritePayload` (`1400aba70`) as
+one nested account-realm row, `Client0x0760_WritePayload` (`1400abd30`) and
+`Client0x0762_WritePayload` (`1400ac410`) as realm-list row/message serializers,
+and `ServerRealmList_WritePayload` (`1400ac770`) as the proven parent row
+serializer. The realm structural rows still have no standalone sender or
+consumer event. Cached `ClientUnresolvedDiagnosticPacket07B6_WritePayload`
+(`140080220`), row helper `14007ff70`, `Client0x07B6_SendFromModuleList`
+(`1403f42e0`), and `Lua_GetAddons` (`140043370`) still support addon-module
+structural naming and prove the module-list walk, but not server-side consumer
+intent. Current source/tests keep all four handlers log-only with no gameplay
+state mutation or server emit.
+
+Supplemental update: 2026-06-09 F-003 `Server0x0015`
+cached-export/source recheck kept the lone server placeholder mapped-only.
+Ghidra MCP discovery found no running instances, so no labels or exports were
+added. Cached `WildStar64.exe` fragments reconfirmed `ServerUInt5UInt32_ReadPayload`
+(`140081f00`) as the shared 5-bit plus `uint32` reader registered for both
+`0x0015` and matching `0x0628`, with `ServerFortuneRewards_ReadPayload`
+(`140081f60`) calling the same reader as a money-reward row helper. The
+positive matching apply path remains `MatchingManager_ApplyMatchingAverageWaitTimeUpdated`
+(`1405c0e00`), which consumes the shared row as match type plus average wait
+and dispatches `MatchingAverageWaitTimeUpdated`; no equivalent `0x0015`
+apply/producer/post-read consumer surfaced. Current source/test guards keep
+`Server0x0015.Value0`/`Value1` neutral and non-emitted.
+
+Supplemental update: 2026-06-09 F-005 marketplace aux `0x06DF` / `0x07D5`
+cached-export/source recheck kept both marketplace aux packets mapped-only.
+Ghidra MCP discovery found no running instances, so no labels or exports were
+added. Cached `WildStar64.exe` fragments reconfirmed
+`ServerAuctionPostAux_ReadPayload` (`140090090`) as count, counted `uint32`
+array, counted byte array of the same count, and trailing `uint32`, and
+`ServerAuctionsByFilterAux_ReadPayload` (`14008fe80`) as one 14-bit value,
+three `uint32` fields, and one flag. `Network_RegisterServerOpcode_0351`
+(`14006c290`) still only registers `0x06DF` at size `0x20` and `0x07D5` at
+size `0x14`; selected call edges show only parsing helpers, and current source
+finds these packets only in packet models and packet-shape tests. No static
+marketplace apply helper, runtime producer, field consumer, or emit timing proof
+surfaced. Keep both packets non-emitted until a native apply/producer path,
+retail/live marketplace capture, or server producer witness proves field
+semantics and timing.
+
+Supplemental update: 2026-06-09 F-007 reward rotation `0x07CD`
+cached-export/source recheck kept the content-context packet mapped-only.
+Ghidra MCP discovery found no running instances, so no new labels or exports
+were added. Cached `WildStar64.exe` fragments still show
+`ServerRewardRotationContentContext_ReadPayload` (`14008fcb0`) registered for
+`0x07CD` with a null static handler, `RewardRotation_ManagerInit`
+(`140635840`) initializing seven throttle slots at
+`manager + 0x150 + index * 0x14`, `Reward_SendRewardUpdateRequest`
+(`140636ba0`) sending only the index through `0x07CC`, and
+`RewardRotation_GetLoadedScheduleForContent` (`140636c40`) proving refresh
+request/loaded-schedule lookup rather than `0x07CD` apply semantics. Current
+source already keeps `ServerRewardRotationContentContext.UInt0`/`UInt1`/`UInt3`
+neutral and records the missing apply-helper/`Flag`/throttle-slot blocker. No
+runtime behavior changed; next evidence remains a retail `0x07CD` capture or a
+dynamic breakpoint on the runtime apply dispatch.
+
+Supplemental update: 2026-06-08 F-022 / audit F-027 active path helper
+static-table guard implemented; active path mission helpers now treat missing
+`PathMission`, `PathSoldierTowerDefense`, `PathSoldierAssassinate`,
+`PathSettlerImprovementGroup`, and `PathSettlerHub` static data like missing
+rows. Explorer explore-zone completion, active object-id completion, Soldier
+tower/assassinate progress, Settler hub improvement progress, and Settler hub
+progress percent helpers now return no-progress/zero-progress instead of
+throwing when those tables are unavailable. `PathManagerTests` pin the
+missing-table no-completion boundaries. Focused PathManager verification passed
+81/81 and broader path verification passed 172/172 from alternate output
+directories. Exact path reward presentation, unlock sequencing, current-zone
+activation proof, per-mission producer timing, exact Soldier/Settler retail
+semantics, and broader content smoke remain evidence-gated.
+
+Supplemental update: 2026-06-08 F-022 / audit F-027 path mission
+static-table guard implemented; `PathManager.CompleteMission()` and Explorer
+mission completion helpers now treat missing `PathMission` static data like
+missing mission rows, preserving completion/reward behavior for direct
+completion and no-progress behavior for Explorer node/power-map hooks. Explorer
+vista completion now treats a missing `PathExplorerNode` table like no matching
+node rows, and power-map completion treats a missing `PathExplorerPowerMap`
+table like a missing power-map row. `PathManagerTests` pin direct missing-table
+mission completion plus Explorer missing-table no-completion boundaries. Focused
+PathManager verification passed 72/72 and broader path verification passed
+163/163 from alternate output directories. Exact path reward presentation,
+unlock sequencing, current-zone activation proof, per-mission producer timing,
+and broader content smoke remain evidence-gated.
+
+Supplemental update: 2026-06-08 F-004 residence entrance static-data guard
+implemented; `GlobalResidenceManager.GetResidenceEntrance()` now treats missing
+`HousingPropertyInfo` and `WorldLocation2` tables/rows like missing residence
+entrance data and throws the existing `HousingException`; `ResidenceEntrance`
+now treats missing `World` table/row the same way. `GlobalResidenceManagerTests`
+pin missing-table, empty-table, and table-backed entrance boundaries. Focused
+verification passed 7/7 and broader housing verification passed 121/121 from
+alternate output directories. Neighborhood `0x0501`/`0x0506`, edit-mode
+ack/broadcast, community/session precision, decor ownership/refund precision,
+and exact entrance UI/timing remain evidence-gated.
+
+Supplemental update: 2026-06-08 F-035 / audit F-042 achievement
+primary-table startup guard implemented; `GlobalAchievementManager.Initialise()`
+now treats a missing `Achievement` table like an empty achievement cache, and a
+missing `CharacterDatabase` service like no persisted realm-first preload.
+Unknown achievement ids still return `null`, character/guild achievement lists
+still return empty sequences for unavailable types, and table-backed player vs
+guild indexing remains unchanged. `GlobalAchievementManagerPartialTableTests`
+pin missing-table, empty-table, and table-backed cache boundaries. Focused
+global achievement verification passed 3/3 and broader achievement verification
+passed 32/32 from alternate output directories. Steam payload grammar,
+achievement-id correlation, data-only/unowned achievement families, exact
+realm-first UI/timing, and broader achievement UI edge cases remain
+evidence-gated.
+
+Supplemental update: 2026-06-08 F-014 / audit F-019 creature
+DropLoot Creature2 partial-table guard implemented; `GlobalLootManager.DropLoot`
+now treats a missing `Creature2` table like a missing creature row before loot
+recipient selection, loot-instance creation, or loot notify emission. Missing
+and empty `Creature2` sources both return the existing false/no-drop boundary.
+`GlobalLootManagerTests.DropLoot_WithUnavailableCreatureTableReturnsFalseWithoutLoot`
+pins missing-table and empty-table behavior. Focused creature DropLoot
+verification passed 2/2 and broader loot verification passed 93/93 from
+alternate output directories. Standalone `ServerLootCanLoot`, exact
+parent/source selection, bind-on-pickup confirmation policy, roll/master UI
+parity, and loot aux producer timing remain evidence-gated.
+
+Supplemental update: 2026-06-08 F-022 / audit F-026 global quest-manager
+cache partial-table guard implemented; `GlobalQuestManager` now treats missing
+`Quest2` tables like an empty quest-info cache, missing `Creature2` tables like
+empty quest giver/receiver relation caches, and missing `CommunicatorMessages`
+tables like empty communicator, quest-delivery, and quest-state trigger caches.
+Null quest/communicator id arrays are also treated like empty arrays while
+building those caches. Public getters preserve the existing missing-data
+behavior: unknown quest and communicator ids return `null`, and unavailable
+relations/triggers return empty sequences. `GlobalQuestManagerPartialTableTests`
+pin missing-table, empty-table, table-backed quest relation, delivered
+communicator, and state-trigger boundaries. Focused global quest-manager
+verification passed 3/3 and broader quest/communicator-adjacent verification
+passed 322/322 from alternate output directories. Exact objective guidance UI,
+receiver/visibility content smoke, public-event producer timing, path target
+semantics, and broader quest/path content parity remain evidence-gated.
+
+Supplemental update: 2026-06-08 F-016/F-021 spell metadata cache
+partial-table guard implemented; `GlobalSpellManager` now treats missing
+`Spell4`, `Spell4Effects`, `Spell4Telegraph`, `TelegraphDamage`, and
+`Spell4Thresholds` tables like empty spell caches, and treats a missing
+`Spell4Base` table like an empty spell-base cache. `GetSpellBaseInfo()` now
+uses the existing invalid-spell `ArgumentOutOfRangeException` boundary when the
+`Spell4Base` table or row is unavailable. `SpellBaseInfo.GetSpellInfo()` now
+returns `null` when no `Spell4` tier data exists for a known base spell or when
+the requested tier is outside the materialized cache. `SpellBaseInfo` and
+`SpellInfo` now resolve secondary spell metadata tables through nullable
+lookups, preserving the existing missing-row behavior while avoiding
+partial-table startup crashes. `GlobalSpellManagerPartialTableTests` pin
+missing-table, empty-table, table-backed cache ordering, missing dependency-table
+materialization, and sparse/out-of-range tier lookup boundaries. Focused
+spell-manager verification passed 8/8 and broader spell/action-set/pet
+verification passed 597/597 from alternate output directories. Spell aux
+producer timing, proc tails, immunity/effect evidence, wrapper lifecycle,
+current/action-set update transactions, and retail spell semantics remain
+evidence-gated.
+
+Supplemental update: 2026-06-08 F-026 / audit F-033 item-manager
+item/item-slot partial-table guard implemented; `ItemManager` now treats a
+missing `Item` table like an empty static-item cache and a missing `ItemSlot`
+table like an empty equipped-slot index. `GetItemInfo()` continues to return
+null for unavailable item rows, and `GetEquippedBagIndexes()` continues to
+return an empty sequence for unavailable slot rows. `ItemManagerPartialTableTests`
+pin missing-table, empty-table, and table-backed equipped-slot indexing
+boundaries. Focused item-manager verification passed 5/5 and broader
+item/costume/marketplace-adjacent verification passed 117/117 from alternate
+output directories. Item/error aux producers, exact visual/equip update timing,
+remaining item eligibility precision, and deeper costume/unlock lifecycle parity
+remain evidence-gated.
+
+Supplemental update: 2026-06-08 F-026 / audit F-033 item display-source
+partial-table guard implemented; `AssetManager` now treats a missing
+`ItemDisplaySourceEntry` table like an empty display-source cache, and
+`ItemInfo.GetDisplayId()` treats unavailable display-source rows like an empty
+candidate set before returning the existing zero-display fallback. Table-backed
+single-row and power-level fallback visual selection remain unchanged.
+`ItemInfoDisplaySourceTests` pin missing-table, empty-table, single-row, and
+multi-row fallback boundaries. Focused item-display-source verification passed
+6/6 and broader item/costume/marketplace display-adjacent verification passed
+104/104 from alternate output directories. Item/error aux producers, exact
+visual update timing, remaining item eligibility precision, and deeper costume
+or unlock lifecycle parity remain evidence-gated.
+
+Supplemental update: 2026-06-08 F-022 / audit F-026 quest target-group
+cache partial-table guard implemented; `AssetManager` now treats a missing
+`TargetGroup` table like an empty creature-target-group cache and like missing
+target-group rows during quest-objective target expansion, and treats a missing
+`QuestObjective` table like an empty quest-objective target cache.
+`TargetGroupCriteriaEvaluator` now preserves the existing missing nested-row
+pass-through behavior when recursive target-group criteria are evaluated without
+the `TargetGroup` table. `AssetManagerTargetGroupTests` and
+`TargetGroupCriteriaEvaluatorTests` pin missing-table, empty-table, and
+table-backed cache/recursive boundaries. Focused target-group verification
+passed 49/49 and broader quest/target-group-adjacent verification passed
+371/371 from alternate output directories. Exact objective guidance UI,
+receiver/visibility content smoke, public-event producer timing, path target
+semantics, and broader quest/path content parity remain evidence-gated.
+
+Supplemental update: 2026-06-08 F-007 / audit F-009 reward-property
+modifier-source partial-table guard implemented; `AssetManager` now treats a
+missing `RewardPropertyPremiumModifier` table like an empty premium modifier
+source while preserving table-backed Hybrid filtering and tier fall-through
+behavior. `AssetManagerRewardPropertyTests` pin missing-table, empty-table, and
+table-backed modifier grouping boundaries. Focused reward-property verification
+passed 8/8 and broader Reward verification passed 172/172 from alternate output
+directories. Reward-rotation claim item/currency/property delivery, `0x07CD`
+apply/flag/throttle semantics, exact schedule selection, and reward/content
+context producer semantics remain evidence-gated.
+
+Supplemental update: 2026-06-08 F-035 / audit F-042 achievement
+checklist metadata partial-table guard implemented; `AchievementInfo` now treats
+a missing `AchievementChecklist` table like an empty checklist source when
+materializing achievement metadata. Missing/empty checklist tables no longer
+null-ref during achievement startup/materialization, and table-backed rows still
+filter by `AchievementId`. `AchievementInfoTests` pin missing-table,
+empty-table, and table-backed filtering boundaries. Focused achievement metadata
+verification passed 13/13 and broader achievement verification passed 29/29
+from alternate output directories. Steam payload grammar, achievement-id
+correlation, data-only/unowned achievement families, exact realm-first UI/timing,
+and broader achievement UI edge cases remain evidence-gated.
+
+Supplemental update: 2026-06-08 F-004 housing residence visual
+partial-table guard implemented; `Residence` visual setters now treat missing
+`HousingWallpaperInfo` and `HousingDecorInfo` tables like missing rows,
+preserving the existing `ArgumentOutOfRangeException` before visual mutation
+or dirty-state changes. Persisted residence decor load now treats unavailable
+wallpaper/decor static tables like missing decor rows and preserves
+`DatabaseDataException` instead of null-refing. `ResidenceTests` pin
+missing-table, empty-table, table-backed visual setter, and persisted decor
+load boundaries. Focused residence verification passed 15/15 and broader
+residence/interior-wallpaper/vendor-list/decor item-use verification passed
+27/27 from alternate output directories. Housing edit-mode ack/broadcast,
+neighborhood list producer fields, decor ownership/unlock/refund precision,
+residence visual UI timing, and broader community/session semantics remain
+evidence-gated.
+
+Supplemental update: 2026-06-08 F-006/F-026 entitlement-manager
+partial-table guard implemented; account and character entitlement persisted
+loads now treat a missing `Entitlement` table like missing entitlement rows and
+throw the existing `DatabaseDataException` instead of null-refing. Shared
+entitlement updates now resolve `Entitlement` through a nullable lookup, so
+missing tables and empty tables reach the existing invalid entitlement
+`ArgumentException` before mutation or entitlement packet emission.
+`EntitlementManagerTests` pin account persisted-load, character persisted-load,
+and direct update missing/empty-table boundaries. Focused entitlement
+verification passed 4/4, entitlement-adjacent verification passed 20/20, and
+broader account verification passed 140/140 from the alternate output
+directory.
+
+Supplemental update: 2026-06-08 F-006 account-currency
+partial-table guard implemented; `AccountCurrency` load/materialization and
+`AccountCurrencyManager` creation now treat a missing `AccountCurrencyType`
+table like missing account-currency rows. Persisted balances still load and
+serialize for wallet readback, while new balance creation for add/subtract
+reaches the existing invalid static-currency exception before mutation or wallet
+packet emission. `AccountCurrencyManagerTests` pin persisted readback plus
+missing-table and empty-table creation boundaries. Focused account-currency
+verification passed 4/4, loot-bag/account-currency verification passed 16/16,
+and broader account verification passed 136/136 from the alternate output
+directory.
+
+Supplemental update: 2026-06-08 F-006 account-item entitlement-table
+partial-table guard implemented; entitlement-backed account-item grant planning
+now treats a missing `Entitlement` table like missing entitlement rows,
+returning the existing `InvalidAccountItem` result before entitlement, currency,
+delete, or cooldown side effects. `AccountItemHandlerTests` pin both immediate
+account entitlement and mixed grant-plan missing-table boundaries. Focused
+account-item verification passed 19/19 and broader account-inventory
+verification passed 100/100 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-006 account-item table
+partial-table guard implemented; `AccountInventoryManager.CanAddItem()` and
+`AccountInventoryItem` construction now treat a missing `AccountItem` table like
+missing account-item rows, returning false for grant eligibility and preserving
+the existing invalid account-item exception for persisted/create item materialization.
+`AccountItemHandlerTests` pin both request-path and persisted-load boundaries.
+Focused account-item verification passed 17/17 and broader account-inventory
+verification passed 98/98 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-006 account-item cooldown-group
+partial-table guard implemented; `AccountInventoryManager` now treats a missing
+`AccountItemCooldownGroup` table like an empty configured cooldown-group list
+while still preserving and emitting persisted account cooldown rows.
+`AccountItemCooldownTests` pin missing-table persisted cooldown readback.
+Focused cooldown verification passed 8/8 and broader account-inventory
+verification passed 96/96 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-006 daily-login reward-table
+partial-table guard implemented; `DailyLoginRewardManager` now treats a missing
+`DailyLoginReward` table like an empty reward schedule for login-update refresh
+and claim evaluation, preserving packet emission with zero available rewards and
+returning the existing no-reward result before inventory checks or item grants.
+`DailyLoginRewardManagerTests` pin both missing-table update and claim
+boundaries. Focused daily-login verification passed 7/7 and broader
+account-inventory verification passed 95/95 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-024 map-instance pending-removal
+formula-table guard implemented; `MapInstance.EnqueuePendingRemoval()` now
+treats a missing `GameFormula` table like the already-documented missing row
+case for formula `1123`, preserving the 30-second client-default pending
+world-removal timer and still sending `ServerPendingWorldRemoval`.
+`MapInstancePendingRemovalTests` pin both the missing-table fallback and a
+table-backed override. Focused verification passed 2/2 and the broader map
+bucket passed 459/459 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-007 / audit F-009 reward-property
+partial-table guard implemented; `RewardPropertyManager` now skips premium
+modifier rows when `RewardProperty` or entitlement static data is unavailable,
+and spell reward-property modifier resolution now treats a missing
+`RewardProperty` table like an unknown reward property. Focused
+`RewardPropertyManagerTests` passed 5/5 and the broader reward/spell bucket
+passed 375/375 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-014 / audit F-019 generated loot
+reward-table guard implemented; `GlobalLootManager` generated-loot validation
+now treats missing `AccountCurrencyType`, `AccountItem`, and `VirtualItem`
+static tables like missing reward rows, returning the existing
+`invalid-loot-item` preflight result before loot-bag source consumption or
+generated reward delivery. Focused GlobalLootManager / loot-bag verification
+passed 32/32 and broader loot verification passed 91/91 from the alternate
+output directory.
+
+Supplemental update: 2026-06-08 F-005 / audit F-005 marketplace auction
+search selector-table guard implemented; `GlobalMarketplaceManager` now resolves
+auction search family/category/type selectors through nullable
+`Item2Family`/`Item2Category`/`Item2Type` lookups, so unavailable selector
+static tables follow the existing invalid-packet boundary instead of crashing
+before search. Focused marketplace auction verification passed 54/54 and the
+marketplace / mail bucket passed 89/89 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-022 / audit F-027 path reward scanbot
+profile guard implemented; `PathManager.GrantPathReward()` now resolves
+`PathReward.PathScientistScanBotProfileId` through a nullable
+`PathScientistScanBotProfile` lookup before delegating to pet customisation, so
+unavailable scanbot-profile static data skips only the scanbot reward portion
+while supported sibling rewards still grant. Focused path manager verification
+passed 67/67, the path / title / spell / pet bucket passed 373/373, and the
+broader path / generic-unlock / pet / title / spell collection bucket passed
+410/410 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-022 / audit F-027 path reward Spell4
+table guard implemented; `PathManager.GrantPathReward()` now resolves
+`PathReward.Spell4Id` through a nullable `Spell4` table lookup, so missing
+`Spell4` tables behave like missing spell rows and skip only the spell reward
+portion while still granting supported sibling rewards. Focused path manager
+verification passed 66/66, the path / title / spell collection bucket passed
+81/81, and the broader path / generic-unlock / pet / title / spell collection
+bucket passed 409/409 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-022 / audit F-027 path reward title
+partial-table guard implemented; `PathManager.GrantPathReward()` now resolves
+`PathReward.CharacterTitleId` through a nullable `CharacterTitle` lookup before
+delegating to `TitleManager`, so a reward row with unavailable title static data
+skips only the title portion and still grants supported sibling rewards.
+Focused path manager verification passed 65/65, the path / title / spell
+collection bucket passed 80/80, and the broader path / generic-unlock / pet /
+title / spell collection bucket passed 408/408 from the alternate output
+directory.
+
+Supplemental update: 2026-06-08 F-026 title manager persisted-title
+partial-table guard implemented; `TitleManager` now skips persisted
+`CharacterTitle` rows whose static data is unavailable, clears an active title
+that is no longer owned after partial-load filtering, resolves `AddTitle` and
+`RevokeTitle` through nullable `CharacterTitle` lookups before mutation, and
+treats missing `CharacterTitle` tables as an empty source for `AddAllTitles`.
+Focused title manager verification passed 6/6, the title / spell collection
+bucket passed 33/33, and the broader generic-unlock / pet / title / spell
+collection bucket passed 343/343 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-026 pet customisation persisted-flair
+partial-table guard implemented; `PetCustomisationManager` now skips persisted
+pet-flair rows whose `PetFlair` static data is unavailable, saved
+customisation slots with unavailable flair rows resolve to empty slots, and
+zero-flair slot clears no longer require `PetFlair` table availability. Focused
+pet customisation manager verification passed 3/3 and broader pet verification
+passed 293/293 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-026 title spell effect partial-table guard
+implemented; `HandleEffectTitleGrant` and `HandleEffectTitleRevoke` now resolve
+`CharacterTitle` through nullable table lookups, so a missing title table
+follows the existing unknown-title diagnostic path before `HasTitle`,
+`AddTitle`, or `RevokeTitle`. Focused spell collection verification passed 9/9
+and broader spell / generic-unlock / pet / title verification passed 334/334
+from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-026 pet-flair spell effect partial-table
+guard implemented; `HandleEffectUnlockPetFlair` now resolves `PetFlair`
+through a nullable table lookup, so a missing `PetFlair` table follows the
+existing unknown-pet-flair diagnostic path before `HasFlair` or `UnlockFlair`.
+Focused spell collection verification passed 5/5 and broader spell /
+generic-unlock / pet verification passed 312/312 from the alternate output
+directory.
+
+Supplemental update: 2026-06-08 F-026 collection-spell Spell4
+partial-table guard implemented; `TryLearnCollectionSpell` now resolves
+`Spell4` through a nullable table lookup, so mount and vanity-pet collection
+spell effects treat a missing `Spell4` table like an unknown spell before
+`AddSpell` or unlock-packet emission. Focused spell collection verification
+passed 3/3 and broader spell / generic-unlock verification passed 27/27 from
+the alternate output directory.
+
+Supplemental update: 2026-06-08 F-026 learn-dye-color generic-unlock
+partial-table guard implemented; `HandleEffectLearnDyeColor` now resolves
+`GenericUnlockEntry` through a nullable table lookup before the existing
+unknown-generic-unlock diagnostic and invalid unlock path, so partial table
+loads no longer throw before `GenericUnlockManager.Unlock()` can return the
+mapped invalid result. Focused spell collection verification passed 1/1 and
+broader spell / generic-unlock verification passed 25/25 from the alternate
+output directory.
+
+Supplemental update: 2026-06-08 F-026 account-item generic-unlock
+partial-table guard implemented; account inventory generic-unlock claim grants
+now resolve `GenericUnlockSet` and `GenericUnlockEntry` through nullable table
+lookups, returning the existing `InvalidAccountItem` result before grant
+application or account-item deletion when either static table is unavailable.
+Focused account-item verification passed 15/15 and broader account-item /
+generic-unlock verification passed 67/67 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-026 persisted generic-unlock
+partial-table guard implemented; account generic-unlock manager startup now
+resolves persisted `AccountGenericUnlock` rows through nullable
+`GenericUnlockEntry` lookups, skips missing table/row entries from transient
+runtime readback without deleting database state, and loads table-backed rows as
+non-dirty. Focused manager verification passed 6/6 and broader generic-unlock
+verification passed 22/22 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-026 normal item-use partial-table guards
+implemented; activated item-use now treats missing `ItemSpecial` tables like
+missing rows before spell cast or item consume, and currency-treasure item-use
+now treats missing `CurrencyType` tables like missing rows before item consume
+or currency grant. Focused item-use verification passed 9/9 and broader
+item-use verification passed 20/20 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-008 tradeskill request partial-table guards
+implemented; tradeskill learn/drop, pick-talent, and reset validation now treat
+missing `Tradeskill`, `TradeskillBonus`, and `TradeskillTalentTier` tables like
+missing rows through the existing invalid-packet boundary. Focused tradeskill
+request verification passed 5/5 and broader crafting verification passed 90/90
+from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-008 additive modifier materialization
+partial-table guards implemented; queued additive/catalyst modifiers now treat
+missing `Item`, `TradeskillAdditive`, and `TradeskillCatalyst` tables like
+missing rows during fixed-recipe materialization, returning the existing
+invalid-modifier reasons before inventory checks or item debits. Focused
+additive/rune verification passed 63/63 and broader crafting verification passed
+85/85 from the alternate output directory.
+
+Supplemental update: 2026-06-08 F-021 stance/action-set/AMP/non-spell
+partial-table guards expanded; direct and persisted `ActionSet.AddAmp` paths
+now treat missing `EldanAugmentation` tables like missing AMP rows, throwing
+the existing invalid-AMP exception before owner-save or AMP-list mutation.
+Non-spell bag-item shortcuts still reject a missing `Item` table before
+action-set save while known `Item2` rows commit. Focused AMP/action-set
+verification passed 28/28 and broader Spell verification passed 221/221 from
+alternate output directories; earlier stance/action-set guard coverage passed
+2/2, 21/21, and 633/633.
+
+Supplemental update: 2026-06-08 F-008/F-011 rune/additive partial-table guards
+implemented; rune install and additive/catalyst validation now treat missing
+`Item`, `Item2Category`, `TradeskillAdditive`, `TradeskillCatalyst`, and
+`ItemSpecial` tables like missing rows through existing invalid-result paths.
+Focused rune verification passed 57/57 and broader crafting verification passed
+82/82 from the alternate output directory.
 
 Maintained from `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, focused trackers
 (`MATCHING_IMPLEMENTATION_STATUS.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`), and
@@ -15,11 +523,21 @@ of truth for feature-area completion.
 |--------|-------|
 | Total feature areas | 36 (`F-001`..`F-036`; matrix rows `F-016`..`F-020` are five spell-runtime rows) |
 | Implementation-complete | 13 (sections marked **COMPLETE** below; not a retail-parity claim) |
-| Partial (real handlers/state exist; retail parity incomplete) | 20 (`F-016`..`F-020` count as five spell-runtime rows) |
-| Blocked / diagnostic / structural-only | 3 (`F-001` blocked, `F-002` diagnostic, `F-003` structurally closed) |
+| Partial (real handlers/state exist; retail parity incomplete) | 21 (`F-016`..`F-020` count as five spell-runtime rows; includes F-031 retail-weight parity blocked) |
+| Blocked / diagnostic / structural-only | 2 (`F-002` diagnostic, `F-003` structurally closed; `F-001` is partial with token-crypto blocked) |
 | Consolidated runtime gaps (emit/producer proof) | 5 rows in **Remaining Blocked Items** |
 | Related trackers | `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`, `MATCHING_IMPLEMENTATION_STATUS.md`, `ENTITY_AUX_DECODE_ROADMAP.md`, `BLOCKER_EVIDENCE_PLAN.md` |
-| Placeholder inventory (2026-06-05) | 12 `Client0xNNNN`, 1 `Server0xNNNN` (`Server0x0015`), 16 client diagnostic log-only surfaces, 24 `PrerequisiteType.UnknownNNN`, and 2 quest objective unknowns (`Unknown27`, `Unknown29`); the audit-prompt ghost literal names are absent; pass 158 keeps `Client0x07E3` registration-only at `1400a8282` through `ClientUInt32_ReadPayload` (`14007d000`) / `ClientTradeskillResetTalents_WritePayload` (`14007d010`), with MCP still returning `Transport closed`, live-plugin helper xrefs shared, selected send-helper scans finding no `0x07E3` sender, and message-name slot `140c27018` unxrefed; pass 155 keeps `Client0x062A`/`Client0x0634` registration-only at `1400a82b6`/`1400a872c`; pass 154 keeps `Client0x00C8` registration-only; pass 153 keeps `Client0x0701` registration-only; pass 152 keeps `Client0x0928` shared `uint32+5-bit` registration-only |
+| Placeholder inventory (2026-06-05) | 12 `Client0xNNNN`, 1 `Server0xNNNN` (`Server0x0015`), 16 client diagnostic log-only surfaces, 24 `PrerequisiteType.UnknownNNN`, and 2 quest objective unknowns (`Unknown27`, `Unknown29`); the audit-prompt ghost literal names are absent; pass 158 keeps `Client0x07E3` registration-only at `1400a8282` through `ClientUInt32_ReadPayload` (`14007d000`) / `ClientTradeskillResetTalents_WritePayload` (`14007d010`), with MCP still returning `Transport closed`, live-plugin helper xrefs shared, selected send-helper scans finding no `0x07E3` sender, and message-name slot `140c27018` unxrefed; pass 155 keeps `Client0x062A`/`Client0x0634` registration-only at `1400a82b6`/`1400a872c`; pass 154 keeps `Client0x00C8` registration-only; the 2026-06-09 cached recheck keeps `Client0x0701` registration/writer-only at `selected_decompiled.c:13899` / `1400a69d0` with no selected sender or `140dd0a74` owner; pass 152 keeps `Client0x0928` shared `uint32+5-bit` registration-only |
+| Diagnostic `Client0x00C8` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `Network_RegisterServerOpcode_0351` (`14006c290`) still registers decimal `200` (`0x00C8`) size `4` with `LAB_14008a140` / `ClientMatchType_ReadPayload` and `LAB_14008a150` / `ClientMatchType_WritePayload`, the same shared helper pair used by `0x05B5` `ClientMatchingQueueLeave` and `0x05B6` `ClientMatchingQueueLeaveAsGroup`. The reader advances 5 bits and the writer masks/writes one `0x1f` value, proving only the `MatchType` wire shape. Selected xrefs for `14008a150` are label-only, selected call edges are writer-local, and selected send-helper scans found no `0x00C8` sender or consumer. Challenge-choice positive controls send `0x00C5` through `ClientChallengeChoice_SendActivate` (`140710c10`), `ClientChallengeChoice_SendAbandon` (`140710d60`), `ClientChallengeChoice_SendAcceptShared` (`140711ea0`), and `ClientChallengeChoice_SendDeclineShared` (`140711f10`); matching queue dispatch `14076c830` sends `0x05EF`/`0x05F3`/`0x05F8`/`0x05F9`, not `0x00C8`. Current source keeps `Client0x00C8.MatchType` neutral and log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x00C8` capture before any semantic rename or runtime mutation. |
+| Diagnostic `Client0x012D` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `Network_RegisterServerOpcode_0351` (`14006c290`) still registers `0x012D` size `8` with `LAB_14007ae30` and shared `ClientSuggest_WritePayload` (`14007ae80`). The writer only calls `NetworkBitWriter_WriteWideString` (`140336040`), proving one wide-string field and no request semantics. The same writer is reused by support/account/status siblings including `0x0833`, `0x0233`, `0x07C6`, `0x063E`, `0x03E0`, `0x03AC`, and `0x039B`; selected xrefs for `14007ae80` are label-only and selected call edges only show the wide-string write. Positive controls stay separate: `Support_SendClientSuggest` (`14063b9f0`) sends `0x0833`, `AccountItem_SendClientClaimPendingItemGroup` (`140006ba0`) sends `0x0233`, `AccountItem_SendClientReturnPendingItemGroup` (`140006c50`) sends `0x07C6`, and `ClientRealmTransfer_SendFromLuaDispatch` (`140027d80`) sends separate `0x0142` plus `0x0244` follow-up traffic. Exact `0x012D` cache/export scans found only the registration row plus unrelated struct-offset/switch-helper hits, not a send-helper owner. Current source keeps `Client0x012D.Text` neutral and log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x012D` capture before any semantic rename or runtime mutation. |
+| Diagnostic `Client0x063E` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) registers `0x063E` size `8` with `LAB_14007ae30`, shared `ClientSuggest_WritePayload` (`14007ae80`), and `LAB_140080d20`. The writer only calls `NetworkBitWriter_WriteWideString` (`140336040`), proving one wide-string field; `LAB_140080d20` has no selected standalone body/label and is reused by `0x0724`, `0x058C`, and `0x00CE`, while nearby `140080d30` and `140080d70` are different server readers. Exact `0x063E` cache/export scans found only the registration row and shared-slot references, not an opcode-specific sender or consumer. Positive controls stay separate: `Support_SendClientSuggest` (`14063b9f0`) sends `0x0833`, account-item claim/return (`140006ba0`/`140006c50`) send `0x0233`/`0x07C6`, `ClientSupportTicket_WritePayload` (`14007cc20`) belongs to `0x06D1`, `Marketplace_RequestCommodityInfo_WritePayload` (`140085420`) belongs to `0x03E6`, and `Marketplace_AuctionsByFilterRequest_WritePayload` (`14009a7d0`) belongs to `0x07DC`. Current source keeps `Client0x063E.Text` neutral and log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x063E` capture before any semantic rename or runtime mutation. |
+| Diagnostic `Client0x0550` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) registers `0x0550` size `4` at `1400a824e` with `ClientUInt32_ReadPayload` (`14007d000`), shared `ClientTradeskillResetTalents_WritePayload` (`14007d010`), and `ServerUInt32_ReadPayload` (`14007ab50`). The read helper advances 32 bits and the writer serialises one raw `uint32`; selected call edges for `14007d010` are writer-local plus `ClientCompoundTradeskillUInt32_WriteCluster` (`14007dc80`), not a `0x0550` owner. Exact selected scans found `0x0550`/`0x550` only at the registration row and writer-label comments, and no `Network_SendOpcodePayloadHelper(...0x0550...)` path; the static message-name rail has no selected `140c247e0` evidence. Positive controls stay separate: ICComm writers `1400877a0`/`1400875e0` belong to `0x0546`/`0x054B`, `ServerSpellList_ReadPayload` (`140096060`) belongs to `0x0551`, `MatchingReplacement_SendStartLookingForReplacements` (`14076aa30`) sends `0x05D5`, `TargetSelection_SendClientMovementControlAck` (`14057a630`) sends `0x0635`, `Tradeskill_SendClientTradeskillResetTalents` (`14059acb0`) sends `0x0858`, `Trade_SendClientP2PTradingInitiateTrade` (`1403a6a40`) sends `0x0192`, and ability-book/combat-log evidence is separate. Current source keeps `Client0x0550.Value` neutral and log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x0550` capture before any semantic rename or runtime mutation. |
+| Diagnostic `Client0x062A`/`Client0x0634` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) registers `0x062A` size `4` at `1400a82b6` and `0x0634` size `4` at `1400a872c` with `ClientUInt32_ReadPayload` (`14007d000`), shared `ClientTradeskillResetTalents_WritePayload` (`14007d010`), and `ServerUInt32_ReadPayload` (`14007ab50`). `14007d000` advances 32 bits, `14007d010` writes one raw `uint32`, and `14007ab50` reads one raw `uint32`; selected xrefs are label-only and selected call edges for `14007d010` remain writer-local plus `ClientCompoundTradeskillUInt32_WriteCluster` (`14007dc80`). Exact selected scans found `0x062A`/`0x0634` only at registration/comment evidence, found no `Network_SendOpcodePayloadHelper(...0x062A/0x0634...)`, and found no selected `140c25488`/`140c25528` static name-rail evidence. Positive controls stay separate: `MatchingReplacement_SendStartLookingForReplacements` (`14076aa30`) sends `0x05D5`, and `TargetSelection_SendClientMovementControlAck` (`14057a630`) sends `0x0635` plus possible `0x063A` follow-up. Current source keeps both `Value` fields neutral and handlers log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x062A`/`0x0634` capture before any semantic rename or queue/movement runtime mutation. |
+| Diagnostic `Client0x0701` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient for the writer and registration evidence. `Network_RegisterServerOpcode_0351` (`14006c290`) registers `0x0701` size `8` at the registration row (`selected_decompiled.c:13899`; setup literal `140079e05`) with `LAB_1400a69c0` and `ClientUInt2UInt32_WritePayload` (`1400a69d0`). The cached writer serialises one 2-bit field followed by one `uint32`; no standalone `1400a69c0` fragment is present in the selected cache. Selected xrefs for `1400a69d0` are label-only, selected call edges are writer-local plus generic bitstream helper calls, selected exact scans found `0x0701` only at registration/comment evidence, no selected `Network_SendOpcodePayloadHelper(...0x0701...)`, and no selected `140dd0a74` pointer-owner evidence. Positive controls stay separate: challenge-choice senders (`140710c10`, `140710d60`, `140711ea0`, `140711f10`) send `0x00C5`, `Matching_QueueDispatchFromUi` (`14076c830`) sends `0x05EF`/`0x05F3`/`0x05F8`/`0x05F9`, and `MatchingReplacement_SendStartLookingForReplacements` (`14076aa30`) sends `0x05D5`. Current source keeps `Client0x0701.LeadingBits` / `TrailingValue` neutral and log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x0701` capture before any semantic rename or runtime mutation. |
+| Diagnostic `Client0x07E3` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) registers `0x07E3` size `4` at `1400a8282` with `ClientUInt32_ReadPayload` (`14007d000`), shared `ClientTradeskillResetTalents_WritePayload` (`14007d010`), and `ServerUInt32_ReadPayload` (`14007ab50`). The helpers prove only one raw `uint32` in each direction; selected xrefs are label-only and selected call edges for `14007d010` remain writer-local plus `ClientCompoundTradeskillUInt32_WriteCluster` (`14007dc80`), not a `0x07E3` owner. Exact selected scans found `0x07E3` only at the registration row/comment evidence, found no `Network_SendOpcodePayloadHelper(...0x07E3...)`, and found no selected `140c27018` static name-rail evidence. Positive controls stay separate: `MatchingReplacement_SendStartLookingForReplacements` (`14076aa30`) sends `0x05D5`, `TargetSelection_SendClientMovementControlAck` (`14057a630`) sends `0x0635` plus possible `0x063A` follow-up, `ClientPlayerMovementSpeedUpdate_SendAndDispatch` (`1404dafb0`) sends `0x063B`, and `Tradeskill_SendClientTradeskillResetTalents` (`14059acb0`) sends `0x0858`. Current source keeps `Client0x07E3.Value` neutral and log-only; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x07E3` capture before any semantic rename or runtime mutation. |
+| Diagnostic `Client0x0928` recheck (2026-06-09) | Cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `ClientWorldOpcodeRegister_MovementSpline` (`1400a8190`) still registers `0x0928` size `8` at row `1400a8524` with read-advance `LAB_140089240`, writer `ClientUInt32UInt5_WritePayload` (`1400898b0`), and reader/apply helper `ServerUInt32UInt5_ReadPayload` (`14008ce80`). Those helpers prove only `uint32 + 5-bit` wire shape. The positive pet controls stay separate: `0x068E` registers the same writer in `Network_RegisterServerOpcode_0351` (`14006c290`) and has real sender `Pet_SetStance_SendClientPetSetStance` (`14050a270`), while `0x068F` registers the same reader and applies through `Pet_ApplyStanceChangedPayload` (`1403c0a80`) / `Pet_GetStance_ReadCachedStance` (`14050a130`). Selected xrefs for `1400898b0` are label-only, selected call edges are writer-local except positive pet send-helper evidence, and selected scans find `0x0928` only in registration. Current source keeps `Client0x0928.LeadingValue` / `TrailingBits` neutral, log-only, and packet-shape/test-pinned; require an opcode-specific sender, consumer, callback/table owner, indirect send rail, or accepted `0x0928` capture before any semantic rename or runtime mutation. |
+| Server placeholder recheck (2026-06-09) | `Server0x0015` remains mapped-only/test-pinned: cached-export/source recheck found no running Ghidra MCP instance, `140081f00` remains a shared 5-bit plus `uint32` reader registered for `0x0015` and `0x0628` and called as a Fortune money-reward row helper, while only `0x0628` has the positive `MatchingManager_ApplyMatchingAverageWaitTimeUpdated` (`1405c0e00`) apply path. It still needs an opcode-specific apply/producer path, post-read consumer, or live payload before semantic rename or production emit. |
+| Prerequisite/objective placeholder recheck (2026-06-07) | The inventory still has exactly 24 `PrerequisiteType.UnknownNNN` entries and 2 quest objective placeholders. `PrerequisiteTypeNamingTests` plus new `QuestObjectiveTypeNamingTests` pin these as neutral until handler/table/objective-data ownership is proven; focused naming tests passed 119/119. |
 | Build | 0 errors, 0 warnings |
 | Tests | 2817 passed, 0 failed, 0 skipped |
 | Handlers surveyed | 200+ |
@@ -143,6 +661,7 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
   - `Lua_GameItemData_GetRuneSlots` (0x14041b8d0) now maps through `ItemData_AddRuneSlotsLuaFields` (0x140673b80): live item data reads slot type bytes at `itemData+0x388`, converts compact values 1..7 through `ItemRuneSlotType_ToRuneType` (0x140514660), and reads installed rune Item2 ids at `itemData+0x518 + index*4`.
   - This closes the rune-type enum question and the durable rune item bridge: `item.runeSlots`, `ItemRuneSlotsCodec`, `ItemRuneNetworkWire`, `RandomGlyphData`/`Glyphs`, and migration `20260531224115_ItemMicrochipIdsAndRuneSlots` now preserve socket types and installed rune Item2 ids. A 2026-06-04 taxonomy cleanup rejects a distinct client microchip-install mutator: client install is mapped to `0x085B` (`RuneCrafting_SendClientRuneInstall`), while the separate `ServerItemMicrochips` (`0x056C`) / `Inventory_UpdateItemMicrochipsFromWire` patch path remains server-side and producer-blocked.
   - 2026-06-04 Ghidra MCP recheck: `ServerCraftingAuxFourUInt32FloatUInt32_ReadPayload` (0x1400a3af0) reads `0x084B` as four `uint32` values, one `float`, then one `uint32`; `ServerUInt32AndTwoFloats_ReadPayload` (0x140081df0) reads `0x0855` as one `uint32` and two `float` values. `Crafting_HandleServerCraftingFinish` (0x1405e6690) and `Crafting_HandleServerCraftingCurrentCraft` (0x1405e6830) prove finish/current-craft consumers only, so aux enqueue intent remains blocked.
+  - 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance and reconfirmed the selected `WildStar64.exe` fragments as reader/apply evidence only: `0x084B` / `0x0855` have field-shape readers, `ServerCraftingCurrentCraft` stores decoded state and dispatches `CraftingUpdateCurrent`, and `0x056C` is an item microchip patch path that applies wire data into item state and dispatches `ItemModified`. Current source still emits `ServerCraftingFinish` for fixed-recipe success while focused crafting tests guard that additive/complex-craft paths do not emit blocked `ServerCraftingCurrentCraft`, `0x084B`, or `0x0855` packets.
 
 ### Housing - Neighbor Lua Table (F-004)
 - **`Housing_BuildNeighborLuaTable`** (0x1404b4e40):
@@ -154,6 +673,16 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
   `NeighborhoodWireUInt64_AfterRealmIds` / `NeighborhoodWireUInt32_0..2` and
   rejects `HousingNeighborhoodInfo.tbl` column-name synthesis (`BaseCost`,
   `MaxPopulation`, `HousingMapInfoIdPrimary`) until row backing is proven.
+- 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance
+  and reconfirmed the selected `WildStar64.exe` fragments as reader/apply/table
+  evidence only: `0x0501` reads the single neighborhood row, `0x0506` reads a
+  realm plus counted `0x30`-byte rows, `Housing_HandleNeighborhoodList` clears
+  and rebuilds the client neighborhood cache before dispatching
+  `HousingNeighborhoodRecieved`, and `ClientDB_RegisterHousingNeighborhoodInfo`
+  only proves table-loader presence. Current source still has packet models,
+  packet-shape tests, and residence-session negative emission guards, with no
+  production `ServerHousingNeighborhoodEntry` / `ServerHousingNeighborhoodList`
+  send site.
 
 ### Map Tracked Unit / Threat Addon Follow-up
 - Map addon evidence (`GuardZoneMap`, `LUI_ZoneMap`, `RavenMap`) confirms Lua consumers for `MapTrackedUnitUpdate`, `MapTrackedUnitDisable`, and `GetMapTrackedUnitData(id)`, but the server opcodes are `0x0849`/`0x0848`; `0x0264` is the unrelated `ServerEntityCreateAuxScalarList`.
@@ -164,26 +693,44 @@ From `Decomp/Analysis/CODE_REVIEW_BACKLOG_2026-05-23.md` (43 items).
 - **Entity aux consumers** (F-025): Need `Network_RegisterServerOpcode_0351` (0x14006c290, 56KB) to map opcodes to consumer handlers.
 - **PvP cooldown/state consumer** (F-015): `ServerPvpCooldownUpdate` (`0x013E`) still only maps to shared `ServerUInt32_ReadPayload` (`14007ab50`) with no opcode-specific apply consumer found; direct Ghidra MCP plugin pass mapped adjacent `ServerUnitPvpStateChange` (`0x08BD`) reader `ServerUnitPvpStateChange_ReadPayload` (`140098160`) and apply path `Entity_ApplyUnitPvpFlagsChanged` (`1403ddc60`), which updates entity `+0x15a8` and dispatches `UnitPvpFlagsChanged`.
 - **Item context action / Pet stance** (F-026): `0x00B7` native empty reader is
-  mapped; item-context producer/consumer semantics remain unknown. Pet stance
-  request/apply flow is mapped through `Pet_SetStance_SendClientPetSetStance`
-  (`14050a270`) for `0x068E`, `Pet_GetStance_ReadCachedStance`
-  (`14050a130`) for the local cache read, and
-  `Pet_ApplyStanceChangedPayload` (`1403c0a80`) for `0x068F`, but server
-  producer timing/scope remains unknown.
+  mapped and the 2026-06-09 cached-export/source recheck found no producer,
+  post-read consumer, or source emitter beyond the registration row; item-context
+  producer/consumer semantics remain unknown. Pet stance request/apply flow is
+  mapped through `Pet_SetStance_SendClientPetSetStance` (`14050a270`) for
+  `0x068E`, `Pet_GetStance_ReadCachedStance` (`14050a130`) for the local cache
+  read, and `Pet_ApplyStanceChangedPayload` (`1403c0a80`) for `0x068F`, but
+  server producer timing/scope remains unknown.
 - **ServerRaidQueueStatus / ServerRaidInfoResponse row** (F-010): reader `ServerRaidQueueStatus_ReadPayload` @ `14008bf80` mapped; adjacent `ServerRaidInfoResponse_ReadPayload` @ `14008c010` reads `0x071A` count-plus-0x20-byte rows and `Group_DispatchRaidInfoResponse` @ `1406042b0` maps row fields to saved-instance id, world id, FILETIME expiration, days-from-now, and prime level; pass 157 retried MCP (`Transport closed`) and direct-plugin/cache xrefs still show `14008c010` as the only real code caller into `14008bf80`, exact selected send-helper scans find no `0x0718` producer, and data refs for `1406042b0` / `14008c010` are unowned metadata or PE `.pdata`-shaped runtime entries rather than opcode ownership; zero-value `0x0718` compatibility emit remains, while standalone non-zero queue timing/aliases stay blocked.
+- **ServerRaidQueueStatus cached-export/source recheck** (F-010, 2026-06-09): cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `Network_RegisterServerOpcode_0351` (`14006c290`) still registers `0x0718` size `0x20` to `ServerRaidQueueStatus_ReadPayload` (`14008bf80`) and adjacent `0x071A` size `0x10` to `ServerRaidInfoResponse_ReadPayload` (`14008c010`). The `0x0718` row still reads `uint64`, 15-bit `uint32`, `uint64`, `float`, and `uint32`; `0x071A` still allocates count * `0x20` and calls the row reader. Selected xrefs for both readers are label-only, selected call edges keep `14008c010` as the only code caller into `14008bf80`, and `Group_DispatchRaidInfoResponse` (`1406042b0`) maps the row to `RaidInfoResponse` / `strSavedInstanceId` / world fields before a `ClientEvent` dispatch. No selected `Network_SendOpcodePayloadHelper` / `Network_SerialiseBufferedMessageById` evidence ties standalone non-zero `0x0718` to a producer. Current source keeps the raid-info zero-value compatibility emit in `ClientRaidInfoRequestHandler` and has packet-shape / placeholder tests only; next evidence remains a real non-`.pdata` producer/apply table or accepted non-zero `0x0718` capture proving queue-state semantics and timing.
 - **ServerMatching0x05CF** (F-010): raw `uint32` reader `ServerUInt32_LocalReadThunk` @ `140099110` mapped; candidate apply helper `MatchingManager_ApplyManagerUInt32Field0xA0` @ `1405c41c0` remains correlated only until a real apply dispatcher/index or live `0x05CF` witness proves manager `+0xa0` semantics; the prior `140e1e66c` data ref is PE `.pdata` unwind metadata, the `WorldSocket+0x15b0` slot-11 scan found the Fortune positive control but no matching-helper route, and the 2026-06-05 MCP bridge retry still returns `Transport closed`, so the cache/direct-plugin recheck remains limited to broad manager globals plus shared `0x05CF`/`0x085D` registration refs. A 2026-06-06 solo queue live probe hit neighboring `0x05EF`, `0x05B4`, `0x05CA`, and `0x05C8` paths but did not capture `0x05CF` or hit `1405c41c0`.
+- **ServerMatching0x05CF cached-export/source recheck** (F-010, 2026-06-09): existing `WildStar64.exe` cache `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` was sufficient. `Network_RegisterServerOpcode_0351` (`14006c290`) still registers `0x05CF` size `4` to `ServerUInt32_LocalReadThunk` (`140099110`), shared with `0x085D`; selected xrefs are label-only and call edges only reach `FUN_14006c090`. `MatchingManager_ApplyManagerUInt32Field0xA0` (`1405c41c0`) still writes the payload to manager `+0xa0` / optional subobject `+0x98` and calls `FUN_1400a8020`, but no selected xref or call edge proves opcode dispatch or `ClientEvent` ownership. Current source keeps `ServerMatching0x05CF` as neutral `ServerUnresolvedUIntPayload`, packet-shape only, non-emitted. Next evidence remains a real non-`.pdata` apply dispatcher/index binding `0x05CF` to `1405c41c0`, or an accepted `0x05CF` capture near `0x05CA`/`0x05CC` queue and match-ready transitions.
 - **ServerMatchingGroupMemberRoleSelection** (F-010): `0x0600` remains a structural identity-plus-`uint32` wrapper through shared reader `ServerHousingCommunityPlotReservation_ReadPayload` @ `140086e70`; pass 159 MCP retry still returns `Transport closed`, direct-plugin xrefs show the reader is reused by eight registration rows plus `ServerLootWinner` row helpers rather than a matching apply owner, exact selected send-helper scans find no `0x0600` producer, and role-check UI/apply functions stay separate. The managed trailing field is now neutral `TrailingValue` until a real role-selection consumer or live payload proves role semantics.
+- **ServerMatchingGroupMemberRoleSelection cached-export/source recheck** (F-010, 2026-06-09): cached `WildStar64.exe` fragments under `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5` were sufficient. `Network_RegisterServerOpcode_0351` (`14006c290`) still registers `0x0600` size `0x18` to `ServerHousingCommunityPlotReservation_ReadPayload` (`140086e70`), the same identity-plus-`uint32` reader reused by seven other registration rows including `0x051F`. The selected xref is label-only; selected call edges are reader-local `FUN_14006c090` / `NetworkBitReader_ReadUInt64` calls plus two `ServerLootWinner_ReadPayload` (`1400a4e50`) row-helper calls, not matching role-selection ownership. Matching role-check/UI helpers (`14076b770`, `1405c0e90`, `1405c0760`, `1405c3d30`) remain separate and do not reference this reader. Current source keeps `ServerMatchingGroupMemberRoleSelection.TrailingValue` neutral with packet-shape-only coverage and no runtime emitter. Next evidence remains a real `0x0600` apply/consumer table, native producer, callback owner, or accepted live payload tying the trailing value to role-selection state.
 - **Client0x062A/0634** (F-010): shared `uint32` reader/writer `14007d000`/`14007d010` mapped and handlers are log-only/test-pinned; pass 155 MCP/cache recheck still finds `0x062A`/`0x0634` only in movement-spline registration (`1400a82b6`/`1400a872c`), selected send-helper scans found no sender, message-name slots `140c25488`/`140c25528` are unxrefed, and positive controls `0x05D5` and `0x0635` have separate real send helpers. Sender/intent remains blocked until a native send site or live queue UI sniff appears.
-- **Client0x07E3** (F-002): shared `uint32` reader/writer `14007d000`/`14007d010` mapped and handler remains log-only/test-pinned; pass 158 MCP retry still fails with `Transport closed`, while the live Ghidra plugin and cache show only the `ClientWorldOpcodeRegister_MovementSpline` registration row (`1400a8282`), shared helper xrefs, no selected static send-helper path for `0x07E3`, and unxrefed name-rail slot `140c27018`. Sender/intent remains blocked until a native send site, callback/table owner, indirect send rail, or live character/destination UI sniff appears.
+- **Client0x0701** (F-002): 2-bit plus `uint32` writer `ClientUInt2UInt32_WritePayload` (`1400a69d0`) remains mapped and the handler is log-only/test-pinned; the 2026-06-09 cached-export/source recheck found only the `Network_RegisterServerOpcode_0351` registration row for `0x0701` (`selected_decompiled.c:13899`, setup literal `140079e05`), label-only xrefs for the writer, writer-local call edges, no selected `Network_SendOpcodePayloadHelper(...0x0701...)`, no selected `140dd0a74` pointer-owner evidence, and no standalone `1400a69c0` fragment in the selected cache. Positive controls for challenge choice, matching queue dispatch, and matching replacement use separate opcodes. Sender/intent remains blocked until a native send site, callback/table owner, indirect send rail, or accepted public-event/queue capture appears.
+- **Client0x07E3** (F-002): shared `uint32` reader/writer `14007d000`/`14007d010` mapped and handler remains log-only/test-pinned; the 2026-06-09 cached-export/source recheck found only the `ClientWorldOpcodeRegister_MovementSpline` registration row (`1400a8282`), shared helper evidence, selected call edges for `14007d010` limited to writer-local code plus `ClientCompoundTradeskillUInt32_WriteCluster` (`14007dc80`), no selected `Network_SendOpcodePayloadHelper(...0x07E3...)`, and no selected static name-rail evidence for `140c27018`. Positive controls `0x05D5`, `0x0635`/`0x063A`, `0x063B`, and `0x0858` stay separate. Sender/intent remains blocked until a native send site, callback/table owner, indirect send rail, or accepted character/destination UI capture appears.
 - **PrerequisiteType.Unknown260** (F-022): live case `0x104` / `Prerequisite_CheckHousingPlotPlugState_Table260` maps active housing plot/plug flags `0x08`/`0x20` against state `5`; the 2026-06-05 MCP passes label the `HousingPlotInfo` / `HousingPlugItem` lookup helpers (`140205fa0`/`140206c60`), the residence plot-entry lookup (`1405aea10`), `HousingPlotEntry_DispatchBuildCompleteIfState5` (`1405a9920`), and `HousingResidence_SetBuildState5AndDispatchComplete` (`1405a9980`), proving state `5` is `HousingBuildComplete`-backed. Enum rename remains blocked because row `36343` still lacks a prerequisite use-site and the active residence state fields at the returned subrecord remain unnamed.
 - **PrerequisiteType.IsLocalPlayerEntity** (F-022): pass 140 recovered the formerly missing native function entry at `14049c7b0` as `Prerequisite_CheckIsLocalPlayerEntity`. The body is the already-implemented type 63 Equal/NotEqual identity comparison between the evaluated entity and `DAT_140c65898+0x78` local-player entity; no runtime behavior changed.
 - **PrerequisiteType.DeadState / State** (F-022): pass 141 recovered live vtable entries `Prerequisite_CheckDeadState` (`14049c800`, case `0x0c` / `+0x80`) and `Prerequisite_CheckEntityStateFlags_Table149` (`14049c840`, case `0x95` / `+0x88`). DeadState now has a native live witness but NF keeps the existing `IsAlive` proxy until entity `+0x250` / `+0x254` / type `0x17` fields are server-owned; State remains mapped-only/blocked because type-149 row ids have no direct prerequisite-column references and `entity+0x1e4` ownership is incomplete. Pass 142 rejected the strongest cached `+0x1e4` writer cluster (`PrimalMatrix_UpdateNodeVisualStateFlags` `1406e70a0` / `PrimalMatrix_HandleNodeAllocationInput` `1406e73e0`) as a PrimalMatrix node visual/allocation path, not prerequisite entity-state evidence.
   Pass 143 mapped the scene proximity-cue reader/application cluster (`SceneProximityCue_LookupConfigById` `1404cc070`, `SceneProximityCue_IsCandidateInRange` `140722d30`, `SceneProximityCue_CheckPrerequisiteGate` `1407234a0`, `SceneProximityCue_ProcessQueuedCandidate` `1404cc0d0`, `Entity_ApplySceneProximityCue` `14047a1f0`, `SceneProximityCue_SelectWorldZoneEntry` `140722ed0`): it strengthens `entity+0x2ac` as an action/cue-blocking gate and `+0x250/+0x254` as approach/movement blockers, but still gives no native writer for evaluated-entity `+0x1e4` and no type-149 use-site.
 - **Entity target relationship-code helper** (decompile-only): pass 144 labeled `Entity_GetRelationshipCodeToTargetId` (`14045a950`) and `EntityTarget_ApplyTargetedByUnitUpdate` (`14045bdc0`), correcting the old `UnitState_UpdateCachedStateFields` note so `entity+0x108` is treated as cached target entity id and `entity+0x10c` as a relationship code. Pass 145 promoted stale `EntityCriteria_GetAttr2_Unk118` (`1403b49c0`) to `EntityCriteria_GetFaction2Id` and mapped `entity+0x118` component slots `+0x18` Faction2Id, `+0x20` reputation value, and `+0x30` relationship code to Faction2Id. Pass 146 recovered the concrete Faction2 service/component vtable family: `Entity_InitBaseFaction2ComponentById` (`14045ac60`) seeds base `+0x110` from UnitCreated field `+0xd8`, `Entity_SetActiveFaction2ComponentById` (`14045ab70`) sets active `+0x118` from field `+0xd4`, and `Faction2Component_GetDispositionCodeToFaction2Id` (`140787830`) maps FactionLevel `0..2` to Hostile code `0`, `8..10` to Friendly code `2`, and all other levels to Neutral code `1`. Pass 147 tied those UnitCreated offsets back to `ServerEntityCreate_ReadPayload` (`140096fa0`) field order: `+0xd4` is the main 14-bit `Faction1` field and `+0xd8` is the main 14-bit `Faction2` field. The similarly populated entity-create aux `Value4`/`Value5` slots remain neutral because native `0x0263` reads three generic 17-bit values and no apply/consumer path proves semantic names. Pass 148 rechecked the known native `WorldSocket+0x15b0` handler families and the `0x025F`-`0x0264` reader xrefs; only diagnostic/log, console, options/addons, and Fortune nodes are mapped, with no entity-create aux apply owner. The native code categories now map to managed `Disposition` order; no runtime behavior changed.
 
-### F-001 - STS Token Crypto - BLOCKED
-Token crypto handshake, external-account edge routes, and optional envelope
-fields remain blocked until crypto/token semantics are mapped safely.
+### F-001 - STS / Token Crypto - PARTIAL (token crypto blocked)
+Core STS login/account/game-token compatibility is implemented. STS session
+dispatch now enforces non-`None` handler states, so `/Auth/LoginStart` requires
+the connected state and `/Auth/KeyData` requires login-start, while existing
+`SessionState.None` compatibility routes remain accepted for post-auth/account
+and presence requests. Token crypto handshake, external-account edge routes, and
+optional envelope fields remain blocked until crypto/token semantics are mapped
+safely.
+A 2026-06-09 cached-export/source recheck reconfirmed that the optional token
+branch is mapped but not implementation-ready: native `StsConnLib64.MT.dll`
+fragments prove `LoginTokenStart` -> server key material -> `TokenKeyData`
+field flow, but do not prove the server-side RSA/signature trust anchor,
+premaster derivation, reply fields, post-token encryption/session transition,
+or startup route ordering. NexusForever still intentionally has no
+`/Auth/LoginTokenStart`, `/Auth/TokenKeyData`, `/Auth/RequestToken`, or
+`/Auth/AssociateMyExternalAccount` route handlers.
 
 ### F-002 - Client Diagnostic Opcodes - DIAGNOSTIC
 16 client diagnostic surfaces with diagnostic handlers exist: 12 numeric
@@ -203,18 +750,50 @@ pins `Client0x00ED` as mapped `uint64 + uint32 + uint64 + 3 bits` but rejects
 duel, mail, and path names until an opcode-specific owner appears. A third
 follow-up pins `Client0x011B`/`Client0x011D` as empty/`uint32` shared-writer
 shapes and rejects loot-bind, mail, loot-vacuum, and tradeskill-reset aliases
-without a direct owner. A fourth follow-up pins `Client0x012D` as a
-one-wide-string shared-writer diagnostic and rejects `ClientSuggest`,
-account-item, realm-transfer, and pet/quest names until an opcode-specific
-sender appears. A fifth follow-up pins `Client0x063E` as the sibling
-one-wide-string shared-writer diagnostic and rejects `ClientSuggest`,
-account-item, support-ticket, marketplace/auth/status, and filter aliases until
-an opcode-specific sender appears. A sixth follow-up pins `Client0x0550` as a
-one-`uint32` shared-writer diagnostic and rejects ICComm, spell-list,
-matching-replacement, movement-ack, tradeskill-reset, ability-book, combat-log,
-and P2P-trading aliases until an opcode-specific sender appears. Client request
+without a direct owner. A 2026-06-09 cached-export/source recheck reconfirms
+`Client0x012D` as a one-wide-string shared-writer diagnostic and rejects
+`ClientSuggest`, account-item, realm-transfer, and pet/quest names until an
+opcode-specific sender appears. A 2026-06-09 cached-export/source recheck
+reconfirms `Client0x063E` as the sibling one-wide-string shared-writer
+diagnostic; `LAB_140080d20` is shared/no-owner evidence, and suggest,
+account-item, support-ticket, marketplace/auth/status, and filter aliases stay
+rejected until an opcode-specific sender appears. A 2026-06-09
+cached-export/source recheck reconfirms `Client0x0550` as a one-`uint32`
+shared-writer diagnostic; selected send-helper and static name-rail evidence
+found no `0x0550` owner, so ICComm, spell-list, matching-replacement,
+movement-ack, tradeskill-reset, ability-book, combat-log, and P2P-trading
+aliases stay rejected until an opcode-specific sender appears. A 2026-06-09
+cached-export/source recheck keeps `Client0x0701` as a 2-bit plus `uint32`
+diagnostic; selected export evidence found no sender or pointer-owner, so
+public-event, queue, and movement aliases stay rejected until an opcode-specific
+sender appears. A 2026-06-09
+cached-export/source recheck likewise keeps `Client0x07E3` as a one-`uint32`
+shared-writer diagnostic; selected send-helper and static name-rail evidence
+found no `0x07E3` owner, so destination-arrow, character, pregame,
+tradeskill, matching, and movement aliases stay rejected until an
+opcode-specific sender appears. Client request
 intent and server response behavior remain unknown. Needs Ghidra decomp of
 client writer functions by feature cluster.
+A 2026-06-09 cached-export/source recheck keeps `Client0x00ED` mapped-only and
+diagnostic: Ghidra MCP discovery found no running instances, cached
+`ClientUnresolvedDiagnosticPacket00ED_WritePayload` (`1400a6200`) still writes
+one `uint64`, one `uint32`, one `uint64`, and three trailing bits, selected
+xrefs/call edges only show the label, internal jumps, and generic bitstream
+helpers, and focused source/tests keep `Value0`..`Value5` neutral with a
+log-only/no-emit handler. Duel, mail, and path aliases remain rejected until an
+opcode-specific sender, consumer, callback/table owner, or live payload proves
+semantics.
+A 2026-06-09 cached-export/source recheck also keeps `Client0x011B` and
+`Client0x011D` mapped-only and diagnostic. Cached
+`ClientCraftingAbandon_WritePayload` (`140001ba0`) is still an empty shared
+writer; selected caller/xref evidence points at shared pointer/table contexts,
+not an `0x011B` owner. Cached `ClientTradeskillResetTalents_WritePayload`
+(`14007d010`) still writes one raw `uint32`; its selected code caller remains
+`ClientCompoundTradeskillUInt32_WriteCluster` (`14007dc80`), not an
+opcode-specific `0x011D` owner. Current source/tests keep `Client0x011B` empty,
+`Client0x011D.Value` neutral, and both handlers log-only/no-emit. Loot-bind,
+mail, loot-vacuum, and tradeskill-reset aliases remain rejected until a native
+sender/consumer, indirect send rail, or live payload proves semantics.
 
 ### F-003 - Server Unresolved Output Opcodes - STRUCTURALLY CLOSED
 All 702 server opcodes have models. One `Server0xNNNN` enum/model placeholder
@@ -222,14 +801,15 @@ remains: `Server0x0015`, whose native reader `ServerUInt5UInt32_ReadPayload`
 (`140081f00`) maps one 5-bit field plus one `uint32` but not semantic owner or
 producer behavior; the same reader is reused by matching opcode `0x0628` and
 inside `ServerFortuneRewards`, so `Server0x0015` remains neutral rather than
-being inferred as matching average-wait state. A 2026-06-05 cache/xref recheck
-found the positive `0x0628` apply control at
-`MatchingManager_ApplyMatchingAverageWaitTimeUpdated` but no equivalent
-`0x0015` apply owner or producer. Pass 151 retried MCP (`Transport closed`) and
-used the live Ghidra plugin instead: direct xrefs for `140081f00` are data ref
-`140dce380`, the `ServerFortuneRewards_ReadPayload` row-helper call
-`140082040`, and four `Network_RegisterServerOpcode_0351` registration/data
-refs for `0x0015`/`0x0628`; no opcode-specific `0x0015` apply owner surfaced.
+being inferred as matching average-wait state. A 2026-06-09 cached-export/source
+recheck found no running Ghidra MCP instance and reconfirmed the same boundary:
+`0x0015` and `0x0628` both register the shared reader in
+`Network_RegisterServerOpcode_0351`, `ServerFortuneRewards_ReadPayload`
+(`140081f60`) calls it as a row helper, and the only positive matching apply
+control remains `MatchingManager_ApplyMatchingAverageWaitTimeUpdated`
+(`1405c0e00`), which dispatches `MatchingAverageWaitTimeUpdated` for `0x0628`.
+No opcode-specific `0x0015` apply owner, producer, or post-read consumer
+surfaced.
 Of the 62 shape-mapped aux/spell
 packets with neutral fields, 12 have controlled entity-create or selected
 housing emit paths and 50 remain gated behind consumer or producer evidence
@@ -239,6 +819,22 @@ Eight native size-1 aux registrations now use empty wire models instead of
 raw byte payloads: `0x00B7`, `0x00DF`, `0x00EE`, `0x0101`, `0x0143`,
 `0x014D`, `0x0160`, and `0x0187`. Their feature-owned producer semantics
 remain blocked.
+A 2026-06-09 cached-export/source recheck keeps `ServerItemContextActionAck`
+(`0x00B7`) mapped-only: `Network_RegisterServerOpcode_0351` (`14006c290`)
+registers `0x00B7` size `1` at `selected_decompiled.c:13226` to shared
+`ServerEmpty_ReadPayload` (`14007d8e0`), whose cached fragment returns success
+without reading fields when the payload pointer is present. Exact selected
+scans found only that `0x00B7` registration, selected xrefs for `14007d8e0`
+remain label-only, selected call edges show no opcode-specific reader caller,
+and current source finds `ServerItemContextActionAck` only in the neutral packet
+model plus packet-placeholder tests. Item/friendship positive controls stay
+separate: `ItemUse_SendClientItemUse` (`140398cc0`) sends client opcode
+`0x0943`, `Friendship_SendClientFriendshipBlock` (`1405e39e0`) sends `0x00B8`,
+and `Friendship_SetAutoResponseMessagesAndSend` (`1405de2e0`) uses
+`ClientFriendshipSetAutoResponseMessage_WritePayload` (`14007e4b0`) for
+`0x03B7`. Keep `0x00B7` non-emitted until a native server producer/send site,
+post-read apply owner, callback/table owner, or accepted item-context/friendship
+capture proves intent and timing.
 Scalar aux wrappers are also tightened where the native readers are proven:
 `0x0181`, `0x01A6`, and `0x0846` now write direct `uint32` payloads, while
 `0x0186` is corrected from a raw 4-byte placeholder to a 14-bit scalar.
@@ -246,6 +842,15 @@ The adjacent reputation/path-XP aux wrappers are narrowed from raw byte arrays:
 `0x01A7` and `0x01A8` now write `uint64 + uint32`, while `0x01A9` now writes
 `uint14 + uint32`. Producer semantics for `0x01A6` through `0x01A9` remain
 blocked.
+A 2026-06-09 cached-export/source recheck keeps `ServerTimeOfDayAuxUInt32`
+(`0x0846`) mapped-only: `Network_RegisterServerOpcode_0351` (`14006c290`)
+registers `0x0846` size `4` to unlabelled reader slot `LAB_140080c60`, the
+same selected slot used by `0x01A6`; selected cache has no standalone
+`140080c60` fragment, selected scans found no `0x0846` sender/producer or
+apply owner beyond registration, and current runtime time sync still emits the
+separate `ServerTimeOfDay` (`0x0845`) packet from `Player.SendInGameTime`.
+`Prerequisite_CheckTimeOfDay` (`14049dd10`) only proves the client-side
+time-of-day prerequisite comparison path, not `0x0846` producer timing.
 The story/recruitment boundary packets are also narrowed: `0x074A` now writes
 five `uint32` fields plus one `uint16`, and `0x077E` now writes the native
 count-plus-uint32-list shape shared with `ServerFlightPathUpdate`.
@@ -262,10 +867,83 @@ the residence entrance teleport path while
 unauthorized visitors still receive `Visit_Private`. Decor create now validates
 colour shift, scale, and non-crate plot position before currency debit,
 achievement update, or `DecorCreate`; focused housing coverage passed 93/93.
+Decor move now rejects negative scale before decor mutation or broadcast; the
+focused map-instance decor/wallpaper class passed 4/4 from the alternate output
+directory. Community rename now treats a missing `GameFormula` table like the
+existing missing row `2395` path, returning `HousingResult.Failed` before
+currency checks/debits or community/residence rename; focused rename coverage
+passed 3/3 and broader housing coverage passed 104/104. Housing vendor-list
+requests now tolerate missing `HousingPlugItem` tables by sending an empty list
+and missing `HousingContributionInfo` tables by keeping plug costs at `0`;
+focused vendor-list coverage passed 3/3 and broader housing coverage passed
+107/107. Residence entrance resolution now treats missing
+`HousingPropertyInfo`, `WorldLocation2`, and `World` static data through the
+existing `HousingException` boundary before teleport helper construction;
+focused entrance coverage passed 7/7 and broader housing coverage passed
+121/121.
 A 2026-06-04 F-004 closure removed the WIP hardcoded
 `ServerHousingProperties.Residence.NeighbourhoodId` value; property rows now use
 the residence `GuildOwnerId` when present and `0` otherwise, with focused
 housing coverage passing 32/32.
+The 2026-06-09 cached-export/source recheck for the housing-basics follow-up
+pair kept `ServerHousingBasicsEmpty` (`0x010D`) and
+`ServerHousingBasicsFollowup` (`0x0110`) mapped at wire shape only.
+`Network_RegisterServerOpcode_0351` (`14006c290`) registers `0x010D` size `1`
+to shared `ServerEmpty_ReadPayload` (`14007d8e0`) and `0x0110` size `0x10` to
+`ServerHousingBasicsFollowup_ReadPayload` (`14008de70`: `uint32`, 18-bit
+scalar, `uint32`, 8-bit scalar). The positive `ServerHousingBasics` (`0x010E`)
+apply boundary is separate: `ServerHousingBasics_ReadPayload` (`14008e610`)
+feeds client state written by `1403cd6d0`, which dispatches
+`HousingBasicsUpdated` / `HousingPrivacyUpdated`. Selected xrefs for
+`14008de70` remain label-only and selected call edges are reader-local, so the
+managed `ResidenceManager.SendHousingBasics` -> `HousingAuxiliaryPacketEmitter`
+compatibility bundle keeps `0x0110` fields neutral/defaulted until a native
+producer/apply owner, callback/table owner, or accepted housing-login/return
+capture proves follow-up semantics.
+The 2026-06-09 cached-export/source recheck for
+`ServerHousingCommunityDonateUpdate` (`0x04FE`) kept the donate-update field
+semantics mapped-only. `Network_RegisterServerOpcode_0351` (`14006c290`)
+registers `0x04FE` size `0x18` at `selected_decompiled.c:13681` to
+`ServerHousingCommunityDonateUpdate_ReadPayload` (`14009e930`), whose cached
+fragment reads a `uint32` count and then two allocated parallel `uint32` arrays
+of that count. Selected xrefs for `14009e930` are label-only and selected call
+edges stay inside reader-local bit-read, allocation, and raw-copy helpers. The
+separate client positive control registers `ClientHousingCommunityDonate`
+(`0x04F5`) at `selected_decompiled.c:13648` to
+`ClientHousingCommunityDonate_WritePayload` (`14009da00`), and
+`Housing_SendClientCommunityDonate` (`1404b9ca0`) sends one selected decor row
+after resolving `HousingDecorInfo` and rejecting rows with `Flags & 0x8`.
+Current source emits `ServerHousingCommunityDonateUpdate` from
+`ClientHousingCommunityDonateHandler` after copying donated crate decor to the
+community residence and deleting the source decor, while the model and packet
+tests keep the two arrays as neutral `Value0`/`Value1`. Native evidence still
+does not prove the array meanings, resource/contribution costs, exact transfer
+semantics, or broader ownership/unlock policy.
+The 2026-06-09 cached-export/source recheck for
+`ServerHousingCommunityPlotReservation` (`0x051F`) kept the packet field-mapped
+without widening broader community semantics. `Network_RegisterServerOpcode_0351`
+(`14006c290`) registers `0x051F` size `0x18` at
+`selected_decompiled.c:13683` to `ServerHousingCommunityPlotReservation_ReadPayload`
+(`140086e70`), whose cached fragment reads target residence identity
+(14-bit realm plus 64-bit residence id) and one `uint32` plot index. Selected
+xrefs for `140086e70` are label-only; selected call edges are reader-local
+through `FUN_14006c090` / `NetworkBitReader_ReadUInt64`, with only
+`ServerLootWinner_ReadPayload` row-helper reuse. `Lua_HousingLib_GetReservedCommunityPlotIndex`
+(`140737470`) looks up the type-7 community cache through
+`Housing_FindCommunityResidenceEntryByIdentity` (`14057ff90`) and exposes
+`nPlotIndex` / `bHasReservation` only when the stored value is not
+`0xffffffff`. Client reserve/remove positive controls stay on `0x04B1` guild
+operations: `Housing_SendClientCommunityPlotReservation` (`14057fe90`) sends
+operation `0x29` with the requested plot index, while
+`Housing_SendClientCommunityPlotReservationRemoval` (`14057ff10`) sends
+operation `0x2A` with the target name. Current source emits
+`ServerHousingCommunityPlotReservation` from `CommunityOperations.SendCommunityPlotReservation`
+after plot-reservation or reservation-removal guild operations, using
+`unchecked((uint)plotIndex)` so `-1` becomes the native `uint.MaxValue`
+sentinel pinned by packet-shape tests. This does not prove retail permission
+policy, temporary/permanent plot-state timing, teleport/unload behavior,
+persistence timing, or community UI broadcast scope beyond the existing source
+path.
 
 **Branch housing script port:** The useful housing scripts from
 `LaughingWS/NexusForever` branch `Questing-and-more` are now in
@@ -290,7 +968,11 @@ consumer and ruled out adjacent community placement, plot reservation, and visit
 senders (`0x052B`, guild-operation `0x04B1`, `0x052F`) as the missing `0x0506`
 trigger. A later 2026-06-04 export pass labelled WildStar64
 `ClientDB_RegisterHousingNeighborhoodInfo` (`0x140205900`), confirming the table
-loader only; row backing and send timing remain blocked.
+loader only; row backing and send timing remain blocked. A 2026-06-09 cached
+fragment/source recheck again found no running Ghidra MCP instance, confirmed
+`14009cbe0`, `14009ebf0`, `1404ba4f0`, and `140205900` are reader/apply/table
+loader evidence only, and found no production source emitter for `0x0501` /
+`0x0506`.
 Focused tracker-cleanup verification passed 27/27 against housing packet shapes,
 residence-session non-emission, and the three residence neighborhood property
 cases; pass 119 housing/placeholder guard coverage passed 106/106 and keeps the
@@ -324,8 +1006,11 @@ corrupt rows before they can refund or deliver. Marketplace mail content type is
 now persisted in `character_mail.contentType`, preserving auction expired/return
 semantics after reload while legacy rows still fall back to sender type. Auction
 search paging now handles huge client page values by returning an empty page
-instead of overflowing. Settled auction delete persistence saves the moved item
-state instead of deleting the item row. Auction/commodity insert DB failures now
+instead of overflowing. Auction search selector validation now treats missing
+family/category/type static tables like missing selector rows and rejects the
+request through the existing invalid-packet boundary. Settled auction delete
+persistence saves the moved item state instead of deleting the item row.
+Auction/commodity insert DB failures now
 roll back transient listing/order/item/escrow state, auction bid update DB
 failure restores the prior bid and refunds the bidder, and marketplace mail save
 failures restore attached item owner state before reporting delivery failure.
@@ -365,9 +1050,19 @@ price-improvement refund across two sell orders.
 Commodity matching now uses per-item/per-side price indexes for opposite-side
 candidate selection and immediate sell preflight, preserving price-priority
 behavior while avoiding full commodity-list scans for every match attempt.
-Remaining final settlement DB transaction/save atomicity across offline auction
-or commodity rows, item state, and online/offline currency persistence remains
-open.
+Item-auction sale settlement now composes auction row deletion, moved item
+state, and offline seller credit mail in one required character DB save for
+direct winner-inventory delivery and auction-won mail delivery; no-DB
+offline-seller sale attempts stay pending rather than delivering the item and
+dropping seller proceeds. Expired offline commodity buy orders now compose order
+deletion and refund credit mail in one required character DB save, leaving the
+order active when the refund cannot persist. Commodity fills now compose
+resting order update/delete with offline seller proceeds and offline buyer
+price-improvement refunds in one required character DB save, leaving matches
+unfilled when those credits cannot persist. Remaining final settlement
+atomicity is source-local closed: auction bidder refunds now compose with bid
+updates, auction delete, or item-return mail saves, and the old marketplace
+`CreditCharacter` fallback has been removed.
 
 ### F-006 - Storefront / Account Inventory - COMPLETE
 Catalog, supported account-currency purchase, claim/return, pending item groups,
@@ -378,6 +1073,45 @@ Character-select direct account purchases now apply entitlement/currency changes
 immediately and refresh the character list; in-world account-inventory direct
 grants now handle targeted character rows and enforce character-slot cap
 prerequisites through entitlement max-count.
+Account-item take, pending group claim/return/gift, daily-login claim, and
+coupon redemption now fail closed with existing `AccountOperationResult`
+failures when an account inventory manager is unavailable; failed take requests
+skip account persistence and character-list refresh.
+Daily-login reward refresh and claim paths now also treat a missing
+`DailyLoginReward` table like an empty configured schedule, emitting zero
+available rewards and avoiding inventory checks or grants when no table-backed
+reward row exists.
+Configured account-item cooldown-group seeding now treats a missing
+`AccountItemCooldownGroup` table like an empty configured list while preserving
+persisted cooldown rows and active cooldown-list emission.
+Account-item existence checks and inventory-item materialization now also treat
+a missing `AccountItem` table like missing account-item rows: add eligibility
+returns false, while persisted/create item materialization keeps the existing
+invalid account-item exception boundary.
+Entitlement-backed account-item grant planning now also treats a missing
+`Entitlement` table like missing entitlement rows, returning the existing
+`InvalidAccountItem` result before entitlement, currency, delete, or cooldown
+side effects.
+Account and character entitlement managers now also treat a missing
+`Entitlement` table like missing entitlement rows during persisted load and
+direct updates, preserving the existing `DatabaseDataException` / invalid
+entitlement exception boundaries before mutation or entitlement packet
+emission.
+Account-currency load/materialization now also treats a missing
+`AccountCurrencyType` table like missing account-currency rows: persisted
+balances remain readable and serializable, while new balance creation for add
+or subtract reaches the existing invalid static-currency exception before
+mutation or wallet packet emission.
+Storefront catalog offer-item data construction now also treats a missing
+`AccountItem` table like missing account-item rows, preserving the existing
+invalid `ItemId` catalog-data exception before store offer item-data packet
+rows are built.
+Account-item generic-unlock claim grants now also treat missing
+`GenericUnlockSet` / `GenericUnlockEntry` tables like invalid static data,
+returning `InvalidAccountItem` before unlock grant application or item deletion.
+Storefront purchases now reject non-type-0 catalog offer-item rows before
+currency debit or account-item delivery; type-1/type-2 offer effects remain
+catalog-readable but runtime-blocked until retail purchase semantics are mapped.
 The `LaughingWS/Questing-and-more` account/storefront slice is superseded by
 the current implementation: its useful account inventory, cooldown, operation
 result, account-tier, catalog, purchase, and purchase-history surfaces are
@@ -386,8 +1120,8 @@ by current pending-item-group delete evidence and its `0x03DD` subscription
 packet remains unmapped/unemitted.
 Known retail gaps remain for the real-money/Protobucks VC request-confirm path,
 the non-empty `0x026A` owned-order tail, live `0x0986`/`0x098F` emission,
-non-zero `096A..096C` leading-field producers, and the native coupon sender for
-`0x0790`.
+non-zero `096A..096C` leading-field producers, type-1/type-2 offer-item purchase
+effects, and the native coupon sender for `0x0790`.
 
 ### F-007 - Reward Rotation - PARTIAL
 Game-table refresh emits (`0x07CA` schedule, `0x07CD`/`0x07D3` content context),
@@ -416,12 +1150,25 @@ claiming exact retail per-content selection parity. The full
 `NexusForever.Game.Tests` project now passes `2770/2770` with the corrected
 packet model, reward schedule path, and item-salvage manager contract.
 
-2026-06-04 Ghidra MCP recheck: `0x07CD` still registers only
-`ServerRewardRotationContentContext_ReadPayload` (`14008fcb0`) with no static
-apply handler; `Reward_SendRewardUpdateRequest` (`140636ba0`) sends only the
-content-type index through `0x07CC` and reads manager throttle slots at
-`+0x150/+0x158/+0x160`. This maps the request-throttle correlation but not the
-server context apply assignment.
+2026-06-08 source-local guard: premium reward-property modifiers now skip rows
+whose `RewardProperty` table/row or entitlement table/row is unavailable instead
+of crashing account reward-property setup or emitting guessed values. Type-based
+reward-property updates no-op when `RewardProperty` static data is unavailable,
+and spell reward-property modifier resolution follows the existing
+`unknown-reward-property` diagnostic boundary for a missing `RewardProperty`
+table. Focused reward-property verification passed 5/5 and the broader
+reward/spell bucket passed 375/375 from the alternate output directory.
+
+2026-06-09 cached-export/source recheck: Ghidra MCP discovery found no running
+instances, so no new labels or exports were added. Cached fragments still show
+`0x07CD` registering only `ServerRewardRotationContentContext_ReadPayload`
+(`14008fcb0`) with a null static handler; `RewardRotation_ManagerInit`
+(`140635840`) initializes seven throttle slots at
+`manager + 0x150 + index * 0x14`; `Reward_SendRewardUpdateRequest`
+(`140636ba0`) sends only the content-type index through `0x07CC` and reads
+those throttle slots; and `RewardRotation_GetLoadedScheduleForContent`
+(`140636c40`) proves refresh-by-index / loaded-schedule lookup, not server
+context apply assignment.
 `RewardRotationRuntimeEvidenceTests` now pins the generated evidence artifact's
 blocker text for the missing `0x07CD` apply helper and blocked `Flag` /
 throttle-slot assignment, so capture bundles preserve the mapped-only boundary.
@@ -524,11 +1271,55 @@ capture proved live `ClientRapidTransport` (`0x0141`) requests for taxi nodes
 `[236]`, `[124]`, `[124, 121]`, `[8, 114]`, and `[8]`; the failure root cause
 was `TaxiRoute.tbl` not being loaded. `TaxiRoute` is now `[GameData]`, the
 rapid/taxi handlers reject cleanly when `TaxiRoute`, `TaxiNode`, or
-`WorldLocation2` tables are unavailable, and focused handler tests cover
+`WorldLocation2` tables are unavailable. Rapid transport also rejects missing
+or empty rapid-transport spell formula data with `RapidTransportInvalid` before
+cooldown checks, currency debit, or spell cast, and focused handler tests cover
 captured table-backed route charging, rapid-transport spell cast context, and
-flight-path destination teleport. Service-token bypass, global route-state
-snapshots, taxi embark/completion timing, broader charge/teleport parity, and
-vehicle deployable/passenger semantics remain blocked by live/native evidence.
+flight-path destination teleport. Transport handler tests now also pin missing
+taxi-node and world-location table rejection before rapid-transport debit/cast
+or flight-path debit/teleport. A 2026-06-08 local F-009 pass captured node `88`
+(`Sylvan Glade, Celestion`) as an accepted rapid-transport route `124` / price
+`531` / spell `82922` case, repeated node `89` (`Grimhold, Celestion`) retries
+as `SpellCooldown` rejects after the one-hour `82922` cooldown was set, route
+`[120]` as an accepted `ClientFlightPathPurchase` source `88` -> destination
+`89`, and node `89` as an accepted rapid-transport route `120` after
+`!spell resetcooldown 82922`. The same pass captured node `214` (`The Pools of
+Vitara, Celestion`) as a client-visible rapid destination with UI price
+`1g 14s 23c` that the server rejects with `RapidTransportInvalid` because
+`TaxiRoute.tbl` has no routes to or from `214`; a follow-up user observation of
+node `212` (`Hijunga Village, Celestion`, UI price `1g 20s 80c`) matches the
+same no-`TaxiRoute` class while still having valid `TaxiNode`/`WorldLocation2`
+data. The fresh server log also captured Whitevale nodes `222` (`Raxen's
+Holdout`) and `223` (`Doomtide Village`) as valid `TaxiNode`/`WorldLocation2`
+rows with zero `TaxiRoute` rows and `RapidTransportInvalid` rejects. This keeps
+formula-driven rapid transport pricing/teleport parity blocked beyond captured
+table-backed route branches. The packet evidence contains only
+`ClientRapidTransport` (`0x0141`) rows for rapid requests, not
+`ClientSpellCastWithServiceToken` (`0x00C2`).
+A 2026-06-09 cached-export/source recheck for
+`ClientSpellCastWithServiceToken` (`0x00C2`) kept that sub-surface
+source-aligned but did not widen transport bypass semantics.
+`Network_RegisterServerOpcode_0351` (`14006c290`) registers `0x00C2` size
+`8` at `selected_decompiled.c:13077` with
+`ClientSpellCastWithServiceToken_WritePayload` (`140089570`), whose cached
+fragment writes an 18-bit context token followed by a 32-bit `Spell4` id.
+`ServiceToken_HandleCastResult` (`140520c10`) gates on
+`Spell4.PropertyFlags & 0x20000000` and calls
+`ServiceToken_SendClientSpellCastWithServiceToken` (`1403994f0`), which
+returns `0x014B` on insufficient funds or sends opcode `0x00C2` through
+`Network_SendOpcodePayloadHelper`. Current source already mirrors this with
+`ClientSpellCastWithServiceTokenHandler`, `SpellParameters.UseServiceTokenCost`,
+and `Spell.TryConsumeServiceTokenCost`. Remaining F-009
+transport service-token/global-route blockers still need native/live evidence
+that a transport UI branch uses this path and proves route-state, cost, and
+teleport timing.
+Focused transport verification passed 77/77.
+Vehicle handler boundary tests pin
+`ClientVehicleEmbark` as diagnostic/log-only and `ClientVehicleDisembark` as a
+guarded `Dismount()` delegate only when the player is already platformed.
+Transport service-token bypass, global route-state snapshots, taxi embark/completion
+timing, broader charge/teleport parity, seat assignment, passenger lifecycle,
+and deployable vehicle semantics remain blocked by live/native evidence.
 `ServerVehicleEmbarkAux` (`0x01B2`) now uses its mapped client-reader shape
 (`flag`, 2-bit value, `uint64`, two `uint32` fields) instead of a fixed raw
 payload. Field semantics and runtime producer timing remain blocked.
@@ -588,6 +1379,7 @@ standalone non-zero `0x0718`.
 
 **Validation/logging only (not full LFR backfill):**
 - `ClientMatchingMatchInitiateLookingForReplacementsHandler` / `ClientMatchingStopLookingForReplacementsHandler` validate in-progress match membership and native role mask `0..2`; they do not start a server replacement queue
+- Focused replacement/packet/raid-info boundary tests passed 40/40 on 2026-06-07 from the alternate output directory
 - Removed the unsupported replacement anchor queue/merge runtime; addon and sender
   evidence prove the UI/event boundary, not server producer timing or merge rules
 - `ServerRaidQueueStatus` (0x0718) emitted alongside `ServerRaidInfoResponse` as zero-value compatibility state; shared row fields are mapped through `0x071A` / `Group_DispatchRaidInfoResponse`, but standalone non-zero queue timing and queue-only aliases remain blocked. Pass 157 direct-plugin/cache recheck found no exact `0x0718` send-helper hit, no code caller into the row reader except `ServerRaidInfoResponse_ReadPayload` (`14008c010`), and no owner for the extra data refs.
@@ -648,19 +1440,69 @@ still need a native sender or live sniff before semantic rename or mutation.
 
 ### F-011 - Guild / Recruitment / War Party - PARTIAL (blocked)
 Guild handlers and recruitment output models exist. `ServerGuildBankTabInventory`
-(`0x047A`) now emits the native-mapped row count before item rows. Bank transactions, perks,
-holomarks, standards, recruitment subscriptions, boss-token inventory,
-warplot plug state incomplete. Needs decomp.
+(`0x047A`) now emits the native-mapped row count before item rows. Guild bank
+money/item transaction and tab-open handlers are test-pinned as log-only/no-emit
+request surfaces until bank economy and tab state are modeled. Bank
+transactions, perks, holomarks, standards, recruitment subscriptions,
+boss-token inventory, warplot plug state incomplete. Needs decomp.
 The 2026-06-06 live Guild smoke verified server-side guild membership setup
 (`ClientChat` command -> `ServerGuildResult`/`Join`/`Roster`/`MemberChange`,
 DB guild `Nexus`/character `Joy Ner`). The widened elevated Guild UI CDB pass
 then captured live client-owned `ClientGuildBankMoneyTransaction` (`0x04A8`)
 deposit sends and a `ClientGuildOperation` (`0x04B1`) bank-management/log send.
+Guild/community registration now fail-closes missing create-cost `GameFormula`
+tables through `GuildResult.UnableToProcess` before currency checks, currency
+debits, or guild creation; focused guild-register coverage passed 5/5 and
+broader guild coverage passed 21/21.
+Guild standard construction and validation now also treat missing
+`GuildStandardPart` and `DyeColorRamp` tables like missing rows, preserving the
+existing invalid-standard-part exception and invalid dye validation result before
+guild standard registration can proceed.
 Buy-tab proof remains blocked because current guild state advertises influence
 `0` and does not yet model/persist guild influence or bank-tab count.
 The nearby `0x077E` packet contract is now mapped as a counted uint32 list
 rather than a fixed four-field payload; recruitment/pet producer semantics
 remain blocked.
+A 2026-06-09 cached-export/source recheck kept the guild recruitment packet
+family source-aligned but producer-blocked. `Network_RegisterServerOpcode_0351`
+(`14006c290`) registers `ClientRecruitmentGuildGetDetailedGuildInfo` (`0x076E`)
+size `0x10` at `selected_decompiled.c:13324` with the shared identity
+reader/writer shape, while `RecruitmentGuild_SendClientGetDetailedGuildInfo`
+(`140584840`) is called by
+`Lua_GameRecruitmentGuild_GetDetailedGuildInfo` (`14069e5c0`) and sends
+`0x076E` through `Network_SendOpcodePayloadOrPackedHelper` (`1403f4740`) using
+the current realm id and selected recruitment guild identity. Adjacent
+recruitment server registrations at `selected_decompiled.c:13369-13377` map
+`0x049F` as identity + identity + `uint32`, `0x0767` as counted guild rows with
+recruiter names, `0x0768` as identity + 12 demand bytes, `0x0769` as identity +
+description string, `0x076A` as identity + description + age scalar + tax bit +
+minimum level + demands, `0x076B` as counted guild rows without recruiters,
+`0x076C` as identity + `uint32`, and `0x076D` as counted recruiter rows with
+name arrays plus online flags. Current source has matching packet models and
+packet-shape tests, but recruitment detail/subscribe handlers remain log-only
+and no selected native/server evidence proves list/detail population, subscribe
+timing, persistence, or availability semantics.
+A second 2026-06-09 cached-export/source recheck source-aligned the war-party
+boss-token packet boundary while keeping boss-token runtime state blocked.
+`Network_RegisterServerOpcode_0351` (`14006c290`) registers
+`ClientWarPartyBossTokensRequest` (`0x0956`) size `0x10` at
+`selected_decompiled.c:13334` with the shared guild identity shape,
+`ClientCastGuildBossToken` (`0x094F`) size `0x18` at
+`selected_decompiled.c:13336` to writer `140091a80`, and
+`ServerWarPartyBossTokens` (`0x0951`) size `0x20` at
+`selected_decompiled.c:13363` to reader `140092990`. `FUN_14057ef20` sends
+`0x0956` through `Network_SendOpcodePayloadHelper` when type-3 guild boss-token
+state is absent and otherwise dispatches `WarPartyBossTokensUpdated`;
+`140092990` consumes guild identity, row count, and 18-bit token-item /
+`uint32` count rows; `GuildBossToken_SendClientCastGuildBossToken`
+(`1403991b0`) scans type-3 boss-token entries, validates the spell target
+context, then sends `0x094F` through `Network_SendOpcodePayloadHelper` with
+guild identity, token item id, and context token. Current source now reads the
+`ClientCastGuildBossToken.Item2Id` field at the mapped 18-bit width and keeps
+war-party token list handling conservative: `ClientWarPartyBossTokensRequest`
+returns an empty token list, and boss-token casts return `BossTokenNotReady`.
+Real boss-token inventory, cast acceptance/results, match-results population,
+and warplot plug state remain blocked.
 
 ### F-012 - ICComm / Chat / Friendship - PARTIAL (blocked)
 Transient membership, offline cleanup, directed/ordered delivery. Entitlement
@@ -668,13 +1510,27 @@ checks, persistent channels, throttling, auto-response persistence incomplete.
 Needs decomp.
 Group/guild ICComm transient channels now revalidate scoped affiliation on send
 and update, removing stale senders/recipients before delivery; focused ICComm
-tests passed 8/8.
+tests plus friendship social-option and chat aux shape coverage passed 12/12 on
+2026-06-07.
 Chat aux packet contracts are now mapped and typed for `0x01B8`, `0x01C1`,
-`0x01C4`, and `0x01EF`: `0x01B8` writes the 4-bit variant chat row from
-`140085ca0`, `0x01C1`/`0x01C4` write the wide-string plus 5-bit counted-row
-envelopes from `140086410`/`140085fe0`, and `0x01EF` writes the counted
-notification rows from `1400a0890`. Chat/cinematic producer semantics and
-runtime emit conditions remain blocked.
+`0x01C4`, and `0x01EF`. A 2026-06-09 cached-export/source recheck kept this
+cluster mapped-only: cached `WildStar64.exe` fragments under
+`Decomp/Analysis/exports/WildStar64.exe/selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`
+reconfirm `Network_RegisterServerOpcode_0351` (`14006c290`) binding `0x01B8`
+to row writer/reader `140085af0`/`140085ca0`, `0x01C4` to envelope
+writer/reader `140085e30`/`140085fe0`, `0x01C1` to `1400861b0`/`140086410`,
+and `0x01EF` to reader-only `1400a0890`. Selected non-row callers
+`140086520` and `140086600` are local wrapper helpers and do not prove runtime
+ownership. Source still contains these packets only in
+`ServerClusterAuxPackets.cs` and packet-shape tests. Chat/cinematic producer
+semantics and runtime emit conditions remain blocked pending a native
+producer/apply path, callback/table owner, dynamic dispatch proof, or accepted
+packet capture.
+Chat item/quest link construction now treats missing `Item` and `Quest2`
+tables like missing rows, throwing the existing invalid link exception before
+appending chat text or format rows. Focused `ChatMessageBuilderTests` passed
+6/6, and the broader chat bucket passed 11/11 from the alternate output
+directory on 2026-06-08.
 
 ### F-013 - Mail - COMPLETE
 Cash collection, return, attachment deletion, delayed pending-mail promotion,
@@ -723,7 +1579,19 @@ generated crafting loot can carry the crafting station as a distinct
 `ParentUnitId` visual source, and runtime tests cover distinct parent propagation
 plus quality-preserving granted static, virtual, and account-item drop
 presentation; loot inspect/capture diagnostics now include the table-backed loot
-visual effect id for the resolved quality. Imported direct `creature_loot` rows
+visual effect id for the resolved quality. Single-stack no-charge loot bags now
+catch source-item delete failures and return `item-delete-failed` before
+generated reward delivery. Generated loot preflight now treats missing
+`AccountCurrencyType`, `AccountItem`, and `VirtualItem` static tables like
+missing reward rows, returning `invalid-loot-item` before source-item
+consumption or generated reward delivery. Direct character-currency manager
+requests now also treat missing `CurrencyType` static tables like missing
+currency rows, throwing the existing invalid static-currency exception before
+affordability success, character-currency mutation, or currency update packets.
+Creature DropLoot now treats unavailable `Creature2` static data like a missing
+creature row, returning false before recipient selection, loot-instance
+creation, or loot notify emission.
+Imported direct `creature_loot` rows
 now coexist with old-table quest-only loot groups such as the LaughingWS
 `LaughingWS quest loot:` overlay; direct imports are skipped only when a
 DataMapping flat `DataMapping creature_loot` group already represents the same
@@ -755,7 +1623,13 @@ live UI evidence.
 Open-world player-vs-player attackability remains deliberately active-duel-only
 through `Player.CanAttack` and `DuelManager.AreDueling`; instanced PvP match
 combat is a separate content-map/match path. Broader non-duel open-world PvP
-rules remain blocked pending retail proof.
+rules remain blocked pending retail proof. The 2026-06-07 source recheck kept
+this row mapped-only outside the implemented duel/cooldown core: focused
+`DuelManagerTests`, `PvpPacketShapeTests`, `PvpFlagCooldownTests`,
+`PvpCombatBoundaryTests`, and `PvpAdventureBranchScriptTests` passed 29/29 from
+the alternate output directory, while observer broadcasts, forced-map PvP,
+arena/battleground scoring, stat, and reward parity still require native/live
+producer proof or completed queue/match smoke bundles.
 
 **Cryo-Plex branch harvest:** arena map/event/sub-event IDs from the
 LaughingWS branch are now wired using the existing Slaughterdome arena runtime
@@ -781,6 +1655,23 @@ now names its leading `uint32` `SpellWrapperId`, matching dispatcher
 SpellWrapper_ApplyEntityVariantTierEntryAndBroadcast`. Wire shape is unchanged;
 production emission remains blocked pending wrapper lifecycle sniff evidence
 and selector-tail semantic correlation.
+The 2026-06-09 cached-export/source recheck keeps the paired wrapper follow-ups
+mapped at client-consumer scope only. `Network_RegisterServerOpcode_0351`
+(`14006c290`) registers `0x0819` size `8` at `selected_decompiled.c:13429` to
+shared `ServerTwoUInt32_ReadPayload` (`14007a040`) and `0x0818` size `0x20` at
+`selected_decompiled.c:13430` to
+`ServerOpcode0818_ReadSpellWrapperIdAndTierEntry` (`140095e60`). The `0x0818`
+reader consumes `SpellWrapperId` then the shared tier-entry helper, while
+tracked dispatcher labels map `0x0818` case `1403ee403` through
+`SpellService_LookupSpellWrapperByWrapperId` (`140561c30`) into
+`SpellWrapper_ApplyEntityVariantTierEntryAndBroadcast` (`14053f710`) and map
+`0x0819` case `1403ee3af` into `SpellWrapperNode_PruneChildrenAndRefresh`
+(`140718af0`) with payload field zero as the wrapper-node entity id and field
+one as the spell-wrapper id. Selected xrefs for the readers/apply helpers remain
+label-only or reader/apply-local, and current source finds both packets only in
+models, packet-shape tests, and negative tutorial guards, so production emission
+remains blocked pending a wrapper lifecycle capture, native producer timing
+proof, or selector-tail semantic correlation.
 **Branch trap/spell ports:** Bramble trap (`27768`) now follows the useful
 branch behavior: failed activation casts penalty spell `46051`; successful
 activation removes tracked state from that spell and destroys the trap.
@@ -796,6 +1687,37 @@ Pulse Blast tooltip and hidden `+15 Volatility` effect. The supporting
 `OnFinish`); generic branch `SpellParameters.CompleteAction`,
 `currentPhase`/phase callbacks, and broad spell-script semantics remain blocked
 pending stronger runtime evidence.
+**2026-06-08 F-017 Pulse Blast live proof:** bundle
+`artifacts\blocker_evidence\20260608-225224-F016-spell-proc-loot-live`
+closes the player-originated Pulse Blast damage fixture for emulator parity.
+The structured `!spell capture4 37302` artifact
+`artifacts\verify\spell-evidence\20260608-205817660-spell4-37302...json`
+shows spell `37302` / base `22522`, `CastResult=Ok`, three selected targets,
+three damage dispatches, six effect results, shield deltas, and
+`ServerSpellGo` combat-log output. The later real client action-bar proof in
+`NexusForever.WorldServer_20260608_57172.log` shows
+`ClientCastSpellContinuous(0x4DB)` driving `42276` / base `26468` into proxy
+`37302`, selecting hostile target `179`, dispatching effects `79090`, `79092`,
+and `79093`, and emitting `spell-go` combat-log rows. No new structured JSON
+was exported for the client cast because `ClientCastSpellContinuousHandler`
+bypasses `ClientSpellEvidenceCaptureHelper`; that is evidence-tooling debt, not
+a Pulse Blast runtime blocker. Proc post-registration triggers, uncaptured
+effect families, and broader retail spell parity remain family-by-family
+blocked.
+**2026-06-09 F-016 Brutal proc live proof:** the same evidence bundle now has
+server-log proof for post-registration proc dispatch. `!spell capture4 4046`
+registered Brutal on holder/source `334` with trigger event `12`
+(`deal-damage`), trigger spell `4047`, chance `0.15`, targetData `4`, and route
+`counterpart`. Real tutorial combat from Creature2 `73464` holder/source `334`
+into player `294` produced matching `proc-probe` rows for `damage-dealt` and
+`deal-damage`, expected `chance-roll-failed` controls, reentrant guards during
+triggered spell recursion, and successful `proc-dispatch ...
+action=cast-trigger-spell` rows for `4047`. The fresh `procreport` JSON exports
+for holders `1` and `294` are empty because the selected/invoker holder was not
+proc holder `334`; that is an artifact-selection caveat, not a runtime proc
+blocker. Broader unsupported trigger events, targetData tails, exact retail
+chance/cooldown ordering, and school-specific proc semantics remain
+family-by-family partial.
 **AI movement this pass:** Rider's Reef `CombatAI` now resolves spell/range
 profiles through `ICombatProfileProvider` with a layered combat-kit catalog:
 `AI/CombatProfiles.json` carries only the default/manual overrides, while the
@@ -852,10 +1774,47 @@ registration/data-only for spell-aux use. NexusForever has models/tests but no
 runtime producers for these spell-aux packets, so `Value*` field names and emit
 paths remain blocked pending an apply owner or live correlated rows.
 
+**Spell aux cached-export/source recheck (2026-06-09):** existing cached
+`WildStar64.exe` fragments under
+`Decomp/Analysis/exports/WildStar64.exe/selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`
+were sufficient, so no Ghidra refresh or label change was needed.
+`Network_RegisterServerOpcode_0351` (`14006c290`) still registers `0x07FC`
+size `0x0c` to `ServerSpellCastResult_ReadPayload` (`140094fb0`: `uint32`,
+18-bit `Spell4Id`, 9-bit `CastResult`), `0x080F`/`0x0810` size `0x10` to
+`ServerSpellUInt32TripletList_ReadPayload` (`140095da0`: `uint32` count plus
+`ServerSpellUInt32TripletListRow_ReadPayload` `140080bf0` triplet rows), and
+`0x0812` size `0x10` to `ServerSpellFourUInt32_ReadPayload` (`14007fef0`:
+four `uint32` fields). Selected xrefs remain label-only and selected call edges
+only show bit-reader/allocation/row-reader calls; the row reader is also shared
+by `0x07F5`, `0x07F7`, `0x0889`, `0x0908`, and `0x090A`, while the four-uint
+reader is shared with housing/community `0x078C`. Current source still has
+mixed `ServerSpellCastResult` emitters but no proof for renaming `Unknown0`,
+and source search finds `ServerSpellUInt32TripletList`,
+`ServerSpellUInt32TripletListVariant`, and `ServerSpellFourUInt32` only in
+models/tests. Keep this cluster mapped-only pending a native apply/producer
+path, callback/table owner, dynamic dispatch proof, or accepted spell packet
+capture.
+
 ### F-021 - Action Set / LAS / AMP / Attributes - PARTIAL (blocked)
 LAS size/spec/tier/AMP preflight checks exist. `UpdateSpellInProgress`,
 async spell update transaction, authoritative attribute allocation,
 action-bar lock state incomplete. Needs decomp.
+`ClientSetStanceHandler` now treats a missing `Class` table like a missing class
+row, throwing before player innate-state mutation or `ServerStanceChanged`
+emission while preserving the table-backed stance-change path.
+`ClientRequestActionSetChangesHandler` now treats missing `Spell4` and
+`EldanAugmentation` tables like missing rows, returning the existing
+`UnknownSpellId` or `EldanAugmentationInvalidId` result before save/cache or
+AMP mutation.
+`ClientCommitAmpSpecHandler` now uses injected game-table data for AMP
+validation, treats a missing `EldanAugmentation` table like an invalid AMP id,
+and commits validated AMP entries without a second singleton lookup.
+`ClientRespecAmpsHandler` now treats missing `EldanAugmentationCategory` and
+`EldanAugmentation` tables like missing rows, returning the existing invalid
+category/id results before AMP mutation or refresh emits.
+Direct and persisted `ActionSet.AddAmp` materialization now also treats a
+missing `EldanAugmentation` table like a missing AMP row, preserving the
+existing invalid-AMP exception before owner-save or AMP-list mutation.
 
 ### F-022 - Quests / Path Missions / Public Events - PARTIAL
 **Coverage audit:** see `Decomp/Analysis/QUEST_IMPLEMENTATION_STATUS.md`
@@ -890,6 +1849,22 @@ MapZone.Id` mapping. Explorer power-map progress reports now
 complete only active Explorer type-`0x12` missions whose `ObjectId` has a
 matching `PathExplorerPowerMap` row; ready/active timers, failure packets,
 server-owned progress cadence, and durable completion state remain blocked.
+Path mission completion now treats missing `PathMission` static data like
+missing mission rows: direct completion can still complete and grant configured
+mission rewards without achievement/XP metadata, while Explorer vista and
+power-map helpers return no-progress. Explorer vista completion also treats a
+missing `PathExplorerNode` table like no matching node rows, and power-map
+completion treats a missing `PathExplorerPowerMap` table like a missing
+power-map row. Focused PathManager coverage passed 72/72 and broader path
+coverage passed 163/163.
+Active path helper paths now also treat missing `PathMission`,
+`PathSoldierTowerDefense`, `PathSoldierAssassinate`,
+`PathSettlerImprovementGroup`, and `PathSettlerHub` static data like missing
+rows. Explorer explore-zone completion, active object-id completion, Soldier
+tower/assassinate progress, Settler hub improvement progress, and Settler hub
+progress percent helpers return no-progress/zero-progress instead of throwing
+when those tables are unavailable. Focused PathManager coverage passed 81/81
+and broader path coverage passed 172/172.
 Soldier_Assassinate missions now progress from creature kill rewards when the
 killed Creature2 id or associated target group matches `PathSoldierAssassinate`;
 decompile proof maps Soldier_Assassinate current progress to the first mission
@@ -949,8 +1924,14 @@ the mission id and `AchievementType.PathMissionType` with the mission row's
 `PathMissionTypeEnum`; total/count-style mission achievement semantics remain
 blocked. Known active-path mission completions with no stronger configured XP now
 use client-mapped `GameFormula` `0x017a` (`378`) `Dataint0`, with the client
-fallback `50` if the row is unavailable; exact per-mission path reward precision
-remains blocked. Mismatched
+fallback `50` if the row is unavailable; missing `PathLevel` rows now skip XP
+and level-reward mutation without aborting mission completion or supported
+mission rewards, and missing target level rows make `AddLevels` fail closed.
+Path unlock/change requests now also guard missing `GameFormula` rows `2365`
+and `2366`: the handlers send `GenericError.ItemBadStaticData` through the
+existing path result packet and return before service-token checks/debits,
+unlock mutation, or path activation.
+Exact per-mission path reward precision remains blocked. Mismatched
 mission/path rows do not receive the fallback, and object-id mission completion
 is now limited to active-path mission rows. Unflagged
 `PathRewardType.Mission` rows keyed by completed mission id now grant the same
@@ -1333,7 +2314,9 @@ checklist objective credit from table-backed creature/checklist data.
   covers Northern Wilds `103`/`105`; `ChallengeRequirement` prerequisites now
   compare challenge completion count instead of logging unhandled.
 - The 13 Northern Wilds path missions activate for the player's active path
-  episode with Jabbithole XP `25`; Explorer progress reports now complete only
+  episode with Jabbithole XP `25`; path reward rows with missing `Spell4`
+  references now skip the spell grant instead of aborting the rest of the
+  reward row; Explorer progress reports now complete only
   active Explorer Vista missions with a matching `PathExplorerNode` table row
   instead of creating runtime mission state or completing unrelated active
   missions from a client report, ExploreZone missions can complete on zone
@@ -1457,6 +2440,12 @@ combat scaffolds. The branch-derived trigger, teleport, communicator, cinematic,
 and encounter assumptions are now explicitly marked WIP-guessed in code.
 Focused Evil from the Ether event/trigger regressions pass `12/12`, and the
 focused instance/public-event slice passes `436/436` with isolated output.
+Map-instance pending-removal runtime now resolves formula `1123` through a
+nullable `GameFormula` lookup, so unavailable static data uses the existing
+30-second client-default fallback instead of throwing before
+`ServerPendingWorldRemoval`; focused pending-removal verification passed `2/2`
+and the broader map bucket passed `459/459` from the alternate output
+directory.
 
 **Blocked:** manual expedition playthrough, exact retail trigger rows and
 coordinates, direct medbay transition proof, cinematic ids and completion timing,
@@ -1470,7 +2459,14 @@ blocked before this can be called retail-complete.
 (0x025F-0x0264) emitted via `EntityCreateAuxiliaryPacketBuilder.BuildPreCreatePackets()`
 before `ServerEntityCreate` with entity GUID, type, faction, prop ID, controller GUID,
 socket ID. Busy target and interaction gates partial. `ShowRealmBank` (interaction 67)
-loads realm bank items. CSI objective crediting covered by focused regression tests.
+loads realm bank items and no longer marks an account/realm as loaded when the
+character database is unavailable, so a later successful DB connection can still
+hydrate the realm bank. CSI objective crediting covered by focused regression tests.
+The 2026-06-09 live follow-up verified eligible Realm Bank item movement after
+wire-location normalization: an item round-tripped `Inventory -> RealmBank ->
+Inventory` with `ClientItemMove(0x0182)`/`ServerItemMove(0x0569)` and Realm Bank
+encoded as wire location `0x0A`; remaining red-cross cases are client-side item
+eligibility filtering.
 Threat list via `ThreatManager.BroadcastThreatList()`.
 
 **Emitted:** entity-create auxiliary opcodes `0x025F`..`0x0264` via
@@ -1488,6 +2484,16 @@ runtime sends, not `ServerEntityStat*` aux constructors outside tests/models.
 Pass 117 adds a packet-placeholder guard for the six neutral aux field sets
 (`Value*` / shared `Value` / `Text`) and passed focused placeholder/entity aux
 coverage `91/91`.
+2026-06-09 cached-export/source recheck found no running Ghidra MCP instance and
+reconfirmed the selected `WildStar64.exe` fragments as reader evidence only:
+`0x0889` uses the shared three-`uint32` triplet reader (`140080bf0`), `0x08CC`
+uses the shared `uint32` plus wide-string reader (`1400980f0`), `0x08F4`
+uses `140097620`, `0x0939` uses `140097ee0`, `0x093D` uses `140097690`, and
+`0x093E` uses `140097f70`. Current source still finds the six
+`ServerEntityStat*` aux models only in packet models, packet-shape tests,
+placeholder naming guards, and negative entity-create emission guards; runtime
+stat sends remain the regular `ServerEntityStatUpdateFloat` /
+`ServerEntityStatUpdateInteger` paths.
 The stale native label `FUN_140939650` is now rejected as an aux consumer
 candidate because the cached fragment is zero-argument viewport/grid global
 math with label-only xrefs, not a socket/opcode/payload apply handler.
@@ -1504,20 +2510,83 @@ producer or reverse selector.
 
 ### F-026 - Items / Unlocks / Costumes / Pets / Titles - PARTIAL
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock
-lifecycle tested. Costume forget/unlock parity exists.
+lifecycle tested, including invalid set/entry, already-unlocked, partial
+multi-entry unlocks, and consume-failure invalid result without granting locked
+entries. The generic unlock manager now treats a missing `GenericUnlockEntry`
+table like an empty/invalid static-data surface: direct unlocks send the existing
+`Invalid` result, and `UnlockAll` no-ops without emits.
+Persisted account generic-unlock rows now resolve `GenericUnlockEntry` during
+manager startup; missing table/row entries are skipped from transient runtime
+state and readback without database mutation, while table-backed rows load
+non-dirty. Focused manager coverage passed 6/6 and broader generic-unlock
+verification passed 22/22.
+Account-item generic-unlock claim grants now resolve `GenericUnlockSet` and
+`GenericUnlockEntry` through nullable table lookups and return the existing
+`InvalidAccountItem` account-operation result before unlock grants or item
+deletion when partial static tables are unavailable.
+Learn-dye-color spell effects now also treat a missing `GenericUnlockEntry`
+table like an unknown generic-unlock row, preserving diagnostics and delegating
+to the existing invalid generic-unlock result path; focused spell collection
+coverage passed 1/1 and broader spell / generic-unlock verification passed
+25/25.
+Collection spell unlock effects now also treat a missing `Spell4` table like an
+unknown spell, returning before `SpellManager.AddSpell` or mount/vanity-pet
+unlock packet emission; focused spell collection coverage passed 3/3 and the
+broader spell / generic-unlock bucket passed 27/27.
+Pet-flair spell effects now treat a missing `PetFlair` table like an unknown
+pet-flair row, returning before `HasFlair` or `UnlockFlair`; focused spell
+collection coverage passed 5/5 and the broader spell / generic-unlock / pet
+bucket passed 312/312.
+Title grant/revoke spell effects now treat a missing `CharacterTitle` table
+like an unknown-title row, returning before `HasTitle`, `AddTitle`, or
+`RevokeTitle`; focused spell collection coverage passed 9/9 and the broader
+spell / generic-unlock / pet / title bucket passed 334/334.
+Title manager load now skips persisted title rows whose `CharacterTitle`
+static data is unavailable, clears an active title that is filtered out by the
+partial load, and guards `AddTitle`, `RevokeTitle`, and `AddAllTitles` through
+nullable `CharacterTitle` table lookups; focused title manager coverage passed
+6/6, title / spell collection coverage passed 33/33, and the broader
+generic-unlock / pet / title / spell collection bucket passed 343/343.
+Pet customisation manager load now skips persisted pet-flair rows whose
+`PetFlair` static data is unavailable, saved customisation slots with
+unavailable flair rows resolve to empty slots, and zero-flair slot clears no
+longer require `PetFlair` table availability; focused pet customisation
+manager coverage passed 3/3 and broader pet coverage passed 293/293.
+Costume forget/unlock parity exists, and costume unlock now rejects
+non-equippable inventory items before creating an account unlock, soulbinding
+the item, or sending success. Account costume unlock/forget now also tolerates
+partial costume static-table loads: missing `GameFormula` row/table `1203` uses
+the documented client default unlock limit, and missing `Item` tables return the
+existing `InvalidItem` forget result without deleting the known unlock.
+Costume save now treats missing `ItemDisplay` tables as unavailable dye metadata
+and missing `DyeColorRamp` tables/rows as invalid nonzero dyes, returning
+`CostumeSaveResult.InvalidDye` before costume mutation or success packets.
+`CostumeItem.GenerateDyeMask()` now rejects unknown nonzero dye ramps instead of
+null-refing; focused costume save coverage passed 9/9 and broader costume /
+packet-shape coverage passed 18/18.
 Normal `ClientItemUse` spell activation now preflights empty stack/charges and
 consumes only after `TryCastSpell` returns `CastResult.Ok`; failed/dead/disabled
 casts are covered by `ClientItemUseHandlerTests` and no longer delete the
-activated consumable. Decor item-use now preflights empty stack/charges and
+activated consumable. Activated item-use now also treats missing `ItemSpecial`
+tables like missing rows before casts or consumption; focused item-use
+verification passed 9/9. Decor item-use now preflights empty stack/charges and
 residence access before consuming, catches housing access failures before
 mutation, and creates decor only after `Inventory.ItemUse` succeeds; this is
-covered by `ClientItemUseDecorHandlerTests`.
-Treasure item use now consumes category/type `94/200` items with table-backed
-character currency payloads before granting currency, covering `Cache of
-Corroded Coins` (`50806`) from both `ClientItemUse` and item context-action
-paths. Stackable charged consumables now repair zero stored charges before item
-packets are built and before cast/consume, covering `Basic Medishot` (`14838`)
-without making non-stackable charge items free to use. Starter loot-bag seed
+covered by `ClientItemUseDecorHandlerTests`. Missing `HousingDecorInfo` tables
+now follow the same invalid-decor boundary before residence lookup, item
+consumption, or decor creation.
+Repair-vendor item requests now treat missing repair-cost `GameFormula`
+table/row `0x022F` like zero computable repair cost, returning before
+affordability checks, credit debit, or durability mutation; focused vendor
+repair coverage passed 10/10.
+Treasure item use now treats missing `CurrencyType` tables like missing rows
+before consumption or currency grants, and otherwise consumes category/type
+`94/200` items with table-backed character currency payloads before granting
+currency, covering `Cache of Corroded Coins` (`50806`) from both
+`ClientItemUse` and item context-action paths. Broader item-use verification
+passed 20/20. Stackable charged consumables now repair zero stored charges
+before item packets are built and before cast/consume, covering `Basic Medishot`
+(`14838`) without making non-stackable charge items free to use. Starter loot-bag seed
 coverage now includes `Nexus Survival Kit` (`83615`) with the retail-evidence
 starter supply set and `Protostar's Revolutionary Rucksack 1-10`
 (`80875`-`80884`) as consumable loot bags. Rucksack 1 keeps the
@@ -1537,13 +2606,72 @@ DataMapping import promotes `item_salvage_map.csv` exact rows as `purpose = 0`
 and `client_source_salvage_map.csv` client type/level rows as `purpose = 1`, so
 salvage no longer depends on high-range `item_loot`/`loot_group` fallback rows.
 Per-instance dynamic `NotSalvageable` flag parity remains unmapped.
+`SupplySatchelManager` now resolves `TradeskillMatStackLimit` defensively: a
+missing, invalid, or non-positive reward property falls back to the default
+100-material cap, oversized caps clamp to the packet-safe `ushort.MaxValue`,
+and saved over-cap material counts reject additional material without mutation
+or a misleading stack update. The login packet builder also ignores material ids
+outside the fixed 512-slot payload. Material conversion now fails closed when an
+inventory item or material id cannot be mapped to a `TradeskillMaterial` row,
+returning the full remainder or reporting the item as full before inventory
+mutation. Moving a cached material back to inventory also no-ops when the saved
+material has no live material entry. `SupplySatchelManagerTests` cover the
+fallback, over-cap, clamp, packet-capacity, mapped-item, unmapped-item,
+unmapped-material, and stale-conversion cases.
 `ServerSupplySatchelAux` (`0x019A`) now uses the shared mapped reader shape
 (`6-bit value`, `uint32`) and `ServerCostumeItemAux` (`0x037F`) now uses its
 direct mapped reader shape (`14-bit value`, three `uint32` fields, two flags)
-instead of fixed raw payloads. Nearby option/keybind aux packets `0x056B`,
+instead of fixed raw payloads. Nearby item-data aux packets `0x056B`,
 `0x056C`, and `0x056D` now use direct reader-backed field shapes instead of
 fixed raw payloads. Producer/consumer semantics for those aux packets remain
 blocked.
+The 2026-06-09 cached-export/source recheck kept `ServerSupplySatchelAux`
+(`0x019A`) mapped-only. `Network_RegisterServerOpcode_0351` (`14006c290`)
+registers `0x019A` size `8` at `selected_decompiled.c:12829` to shared
+`MatchingQueueResultWaitTime_ReadPayload` (`14007fcf0`), whose cached fragment
+reads one 6-bit field and one `uint32`. Selected xrefs for `14007fcf0` are
+label-only and selected call edges stay reader-local through `FUN_14006c090`.
+The same reader is reused by `ServerCharacterDeleteResult` (`0x00E6`),
+`ServerMatchingMatchKickCooldownUpdate` (`0x0616`), and
+`ServerMatchingMatchOperationResult` (`0x0623`), whose managed emitters are
+separate positive controls and do not prove supply-satchel semantics. Current
+source still emits `ServerSupplySatchelUpdate` (`0x0199`) for stack updates and
+finds `ServerSupplySatchelAux` only in the model/opcode enum and
+packet-placeholder tests.
+The 2026-06-09 cached-export/source recheck kept `ServerCostumeItemAux`
+mapped-only: `Network_RegisterServerOpcode_0351` (`14006c290`) registers
+`0x037F` size `0x18` to `ServerCostumeItemAux_ReadPayload` (`1400874a0`),
+whose cached fragment reads one 14-bit value, three `uint32` fields, and two
+trailing 1-bit flags. Selected xrefs for `1400874a0` are label-only and
+selected call edges stay reader-local through `FUN_14006c090`. Adjacent
+`ClientEmote` (`0x037E`) has a separate writer (`140087270`), and costume
+unlock/forget/save positive controls dispatch named result events rather than
+proving a `0x037F` producer. Source still finds `ServerCostumeItemAux` only in
+`ServerClusterAuxPackets.cs`, `GameMessageOpcode.cs`, and packet-placeholder
+tests.
+The 2026-06-09 cached-export/source recheck kept this item-data aux band
+mapped-only. Cached `WildStar64.exe` fragments under
+`Decomp/Analysis/exports/WildStar64.exe/selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`
+reconfirm `Network_RegisterServerOpcode_0351` (`14006c290`) registering
+`0x056B` size `0x20` to `ServerItemModdableData_ReadPayload` (`1400a3ce0`:
+item guid, threshold data, random glyph data, random circuit data), `0x056C`
+size `0x28` to `ServerItemMicrochips_ReadPayload` (`1400a3d50`: item guid,
+maker character id, random circuit data, 18-bit power-core item id, 3-bit
+count, counted microchip item ids), and `0x056D` size `0x18` to
+`ServerItemGlyphs_ReadPayload` (`1400a3e40`: item guid, random glyph data,
+4-bit count, counted glyph item ids). Selected xrefs for all three readers are
+label-only and selected call edges stay inside bit readers, allocation, and raw
+array copy helpers. The known client apply helpers
+`Inventory_UpdateItemMicrochipsFromWire` (`1403b8540`),
+`InventoryItem_ApplyMicrochipsFromWire` (`14056aa20`),
+`Inventory_UpdateItemSocketBitsFromWire` (`1403b85a0`), and
+`InventoryItem_ApplyGlyphsFromWire` (`14056aba0`) prove item-state patch
+application and `ItemModified` dispatch on the client, but not server send-site
+ownership or emit timing. Source still finds `ServerItemModdableData`,
+`ServerItemMicrochips`, and `ServerItemGlyphs` only in packet models and
+packet-shape tests. Keep all three packets non-emitted pending a native server
+producer path, apply-table classification, callback/table owner, or accepted
+item-replication capture.
 
 **Blocked:** `ClientItemContextActionHandler` still keeps `SelectedBranch`
 diagnostic-only for non-use item actions until right-click branch semantics are
@@ -1552,20 +2680,54 @@ mapped. Pet stance packet shape and client apply are mapped through
 `ServerUInt32UInt5_ReadPayload` (`14008ce80`),
 `Pet_GetStance_ReadCachedStance` (`14050a130`), and
 `Pet_ApplyStanceChangedPayload` (`1403c0a80`) for `ServerPetStanceChanged`
-(`0x068F`), but server producer timing/scope remains unmapped.
+(`0x068F`). `ClientPetSetStanceHandlerTests` now pin the current
+server-state-only boundary: owned pet requests update `IPetEntity.Stance`,
+invalid/foreign requests do not mutate pet state, and the handler emits no
+blocked `ServerPetStanceChanged` response. Server producer timing/scope remains
+unmapped.
+`ClientPetCustomisation` now rejects unsupported pet types and flair slot
+indexes outside the four-slot customisation payload before calling
+`IPetCustomisationManager.AddCustomisation`. The handler sends
+`ServerPetCustomisationFailed` with `PetTypeNotSupported` or `InvalidSlot`,
+and `ClientPetCustomisationHandlerTests` pin valid delegation plus both failure
+packets. Flair ownership, object validity, name validation, and broader pet
+lifecycle producer timing remain evidence-gated. `ClientSummonVanityPet` now
+resolves the learned spell tier and requires that tier to contain a
+`SummonVanityPet` effect before calling `CastSpell`, so other learned spell
+families cannot be cast through the vanity-pet request path.
+`ClientPathScientistSetScannerName` now requires `PetType.ScanBot` and an
+existing scanbot customisation before calling `RenamePet`, so non-scanbot or
+locked-profile rename requests fail before row creation/mutation. Focused Pet
+verification passed 287/287.
 
 ### F-027 - Options / Keybindings - COMPLETE
 6 handlers, account+character keybinding split, casting options, combat
-log preferences. Zero stubs. Nearby server aux packet contracts `0x056B`,
-`0x056C`, and `0x056D` are packet-covered, but exact client-facing option
-readback/initialisation semantics remain blocked.
+log preferences. Zero stubs. Keybinding updates now materialize stale binding
+ids before removing pending-created rows, so clearing newly-created bindings
+before save no longer invalidates dictionary enumeration. Character-scoped
+keybinding request/update packets now reject character ids that do not match the
+logged-in player before readback, mutation, or response enqueue.
+`ClientCombatLogDisableOthers` now preserves the raw `uint` payload and rejects
+values greater than `1` before updating player combat-log preferences. Focused
+option verification passed 36/36. Nearby server aux packet contracts `0x056B`,
+`0x056C`, and `0x056D` are packet-covered, but additional option types, broader
+option readback/initialisation semantics, and aux producers remain blocked.
 
 ### F-028 - Support / Reports / Surveys / Stuck - COMPLETE
 5 support handlers + stuck handler. Stuck cooldowns are RecallBind 30m,
-RecallHouse 20m, and Death/Suicide 10m via `RetailStuckCooldownTracker`. JSONL
-submission store. Survey parsing. Durable database-backed case lifecycle,
-support-case readback, stuck-result signaling precision, and report/survey admin
-tooling remain incomplete.
+RecallHouse 20m, and Death/Suicide 10m via `RetailStuckCooldownTracker`;
+cooldowns are recorded only after the server validates the selected stuck
+destination/action, so missing transmat or residence data returns a prerequisite
+failure without poisoning the next valid attempt; a missing `WorldLocation2`
+table now follows the same prerequisite-failure path instead of throwing during
+setup or partial game-table loads. JSONL submission store. Survey parsing.
+2026-06-08 source/protocol recheck found no modeled client support-case
+list/read request and no server support-case readback payload beyond the current
+submit result and mapped aux packet shapes, so durable case workflow/readback is
+blocked pending protocol/backend evidence. Focused Support verification passed
+126/126.
+Durable database-backed case lifecycle, support-case readback, stuck-result
+signaling precision, and report/survey admin tooling remain incomplete.
 
 ### F-029 - Client DB / Data Mapping - COMPLETE
 Table registration pattern mapped, DataMapping exists. Field renames
@@ -1827,8 +2989,11 @@ curated Halon city/transport crumbs are covered by the city-content seed.
 `Tools/DataMapping/test_laughingws_worlddb_classifications.py` now guards these
 WorldDB decisions with the actual analyzer recommendation logic: broad new-zone
 sources remain blocked, all `23` test-zone files remain sandbox-only,
-Dominion/Exile Arkship stay historical-only, and Rider's Reef `New Tutorial.sql`
-stays skipped rather than additive.
+Dominion/Exile Arkship stay historical-only, Rider's Reef `New Tutorial.sql`
+stays skipped rather than additive, the reviewed Algoroc/Celestion/Galeras/
+Thayd/Whitevale/Deradune/Ellevar residual files stay blocked or rejected, and
+the partial small-world seed sources keep their residual blocker/rejection
+labels instead of regressing into additive import candidates.
 Algoroc's row-level review retained `5` official-only rows and blocked `64`
 branch-only queue rows as `blocked_laughingws_algoroc_residual_rows`.
 Celestion's row-level review retained `19` official-only queue rows, rejected
@@ -1885,20 +3050,56 @@ metrics for every promoted LaughingWS overlay slice, not only the largest WIP
 entity seeds.
 
 ### F-030 - Realm / Character Select/List/Transfer - PARTIAL
-Character list/select works. Realm transfer returns compatibility list.
-Current-realm select ignored for client safety. Offline target returns
-ServerDown; online transfer returns conservative `Internal` until handoff is
-implemented. `ClientInitiatePTRCharacterCopy` (`0x06E7`) carries selected
+Character list/select works. Realm transfer returns an empty compatibility
+destination list. Current-realm select is ignored for client safety. Unknown
+transfer target returns `InvalidRealm`, offline target returns ServerDown, and
+online transfer returns conservative `Internal` until handoff is implemented.
+When the session has a logged-in player or loaded character list, realm-transfer
+requests for a different character now return `InvalidCharacter` before target
+realm status is considered; sessions without loaded character data retain the
+existing compatibility fallback.
+`ClientInitiatePTRCharacterCopy` (`0x06E7`) carries selected
 character id, `ClientPtrCopy` (`0x06E8`) is a mapped native size-1 empty
 payload, and `ServerPtrCharacterCopyQueued` (`0x06EA`) is a mapped empty
 payload whose native consumer `140020ea0` fires Lua `PTRCharacterCopyQueued`.
 `ServerRealmTransferDestinationsAux` (`0x03EF`) now uses its mapped reader
 envelope (`uint32` plus counted raw bytes) instead of a fixed raw 0x10 payload.
-Focused PTR packet tests pin both empty shapes and verify `ClientPtrCopyHandler`
-does not emit queue notices until handoff timing is mapped. Real transfer
-destinations/results, `TransferFlag` semantics, `0x03EF` payload contents,
-PTR queue producer timing, copy mutation, new realm notices, and optional
-realm-message/admin packets remain incomplete.
+The 2026-06-09 cached-export/source recheck kept `0x03EF` mapped-only: cached
+`WildStar64.exe` fragment
+`Decomp/Analysis/exports/WildStar64.exe/selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5/14007d790.fragment.c`
+reconfirms `ServerRealmTransferDestinationsAux_ReadPayload` (`14007d790`)
+reads one `uint32`, one `uint32` byte count, allocates that many bytes, and
+copies raw bytes into the pointer-backed buffer. `Network_RegisterServerOpcode_0351`
+(`14006c290`) registers `0x03EF` size `0x10` with null write/handler slots and
+the same reader is also registered for `0x01B4`; selected xrefs are label-only
+and selected call edges show only bit-read, allocation, and raw-copy helpers.
+Current source still emits the structured `ServerTransferDestinationRealmList`
+empty compatibility response for `ClientGetRealmTransferDestinations`, not
+`ServerRealmTransferDestinationsAux`. Payload semantics and producer timing
+remain blocked pending a native producer/apply path, callback/table owner,
+dynamic dispatch proof, accepted realm-transfer packet capture, or server
+catalog/realm-list artifact that explains the raw byte payload.
+The 2026-06-09 PTR queue/copy handoff cached-export/source recheck kept
+`0x06EA` mapped-only: cached `WildStar64.exe` fragments under
+`Decomp/Analysis/exports/WildStar64.exe/selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`
+reconfirm `ClientInitiatePTRCharacterCopy_SendFromLuaDispatch` (`140022270`)
+as the character-select `0x06E7` sender followed by `ClientEncrypted` `0x0244`,
+`ClientPtrCopy_SendFromLuaDispatch` (`14063f540`) and
+`ClientPtrCopy_SendFromLuaDispatch2` (`140707d80`) as separate zero-byte
+`0x06E8` senders, and `ServerPtrCharacterCopyQueued_DispatchLuaEvent`
+(`140020ea0`) as the client consumer that dispatches Lua
+`PTRCharacterCopyQueued`. `Network_RegisterServerOpcode_0351` (`14006c290`)
+registers `0x06EA` size `1` to `ServerEmpty_ReadPayload`; adjacent
+`ServerPtrCharacterCopyQueued_WritePayloadCluster` (`14007dd40`) is registered
+for `0x0592`, not `0x06EA`. Selected xrefs/call edges show `0x06E8` send-helper
+calls and `0x06EA` client event dispatch only; no native producer, queue state
+mutation, copy mutation, or accepted payload proves when NexusForever should
+emit `ServerPtrCharacterCopyQueued`.
+Focused PTR packet tests pin both empty shapes and verify PTR-copy handlers do
+not emit queue notices until handoff timing is mapped. Real transfer
+destinations/success results, `TransferFlag` semantics, `0x03EF` payload
+contents, PTR queue producer timing, copy mutation, new realm notices, and
+optional realm-message/admin packets remain incomplete.
 
 ### F-031 - Fortune Minigame - EMULATOR IMPLEMENTED / RETAIL WEIGHTS BLOCKED
 4 handlers functional, session persistence code path via `account_fortune_session`,
@@ -1914,6 +3115,9 @@ Focused Fortune session tests now guard that runtime flip updates preserve
 when the leading bool is false. Payout coverage now also pins that flipped-card
 account-item grants carry the current character target identity and explicitly
 set the account-inventory `hasTargetPlayerIdentity` flag.
+Flip requests now fail closed with the mapped click-empty reset when account
+inventory delivery is unavailable, before marking a card flipped or emitting a
+card update.
 2026-06-04 live local UI logs showed storefront/reward-rotation refreshes but no
 Fortune notify/start packets before a chest drag onto the pedestal; reward
 rotation index `0` now keeps the existing storefront-catalog ordering and sends
@@ -1923,7 +3127,10 @@ Follow-up live logs showed `ClientFortuneStart` reached the server, then reset
 because account `1` had no spendable Fortune Coin (`AccountCurrencyType=5`) row
 and only claimable Fortune Coin account-item bundles. `FortuneSessionManager.Start`
 now auto-claims a matching `CanClaim` Fortune Coin account item before
-re-checking and debiting the one-coin start cost.
+re-checking and debiting the one-coin start cost. The 2026-06-07 follow-up pins
+the character-target boundary: a Fortune Coin bundle targeted at another
+character is not auto-claimed, no currency is added or debited, the account
+inventory row remains, and the client receives the mapped click-empty reset.
 A subsequent live client crash after the deal persisted cards `3215`, `166`,
 and `26`; local `wildstar_client.accountitem` data showed `166` and `26` are
 entitlement-only rows with `item2Id=0`. The crash address maps to
@@ -1941,6 +3148,17 @@ server-provided item/money probability arrays into UI state; it does not expose
 an active rotation source. The same pass maps `Fortune_ApplyReset` value `3` to
 the click-empty reset path, so `ServerFortuneReset.Unknown` is now
 `ResetCode`.
+2026-06-09 cached-export/source recheck found no running Ghidra MCP instance and
+reconfirmed the selected `WildStar64.exe` fragments as transport/consumer
+evidence only: `ServerFortuneRewards_ReadPayload` (`140081f60`) reads item2 ids,
+money rows, and parallel item/money probability arrays; `Fortune_ApplyRewards`
+(`1407292a0`) copies those server-provided arrays into Fortune UI state;
+`FortunesLib_GetFortunesLootList` (`140766370`) exposes cached item2 rows and
+shows `fProbability = serverFloat * 100`; `FortuneNode_ApplyServerFortunePackets`
+(`1404d60f0`) dispatches `0x03CF`-`0x03D2`; `ServerFortuneCards_ReadPayload`
+(`1400a0b10`) remains the card-state reader. Current source still emits
+`ServerFortuneRewards` from the emulator rarity-tier `FortuneRewardPool`, and no
+retail active-rotation or per-item weight source surfaced.
 F-007 `RewardRotation*` table/packet labels are now explicitly rejected as
 Madame Fay active-rotation evidence: they explain the separate
 reward-rotation/storefront schedule surface and bootstrap ordering, while
@@ -1960,50 +3178,132 @@ and verifies the manifest, worksheet, helper files, and negative-case scaffold;
 exact weights still require a real retail/catalog evidence bundle. Focused
 `FortuneRewardPoolTests` now exercise the real pool with synthetic
 `AccountItem.tbl`/`Item2.tbl` rows so the mapped item2 probability catalog stays
-separate from Fortune Coin/non-item account rewards and current picker-only
-account rewards remain guarded without promoting retail rotation parity.
+separate from Fortune Coin/non-item account rewards and dealt cards stay
+item-backed without promoting retail rotation parity.
+The real pool now also treats a missing `AccountItem` table as an empty
+catalog/card source and a missing `Item2` table like a missing item row with
+Normal rarity fallback, preserving item-backed card-only behavior without
+changing weights or rotation.
 Focused Fortune/reward-rotation boundary coverage passed 32/32 after the
-false-source cleanup.
+false-source cleanup; focused `FortuneRewardPoolTests` passed 6/6 and the
+focused Fortune suite passed 27/27 after the reward-pool partial-table guard.
 
 ### F-032 - Leaderboards - COMPLETE
 Real database-backed pipeline (NOT empty stub). `DatabaseLeaderboardStore`
-with MySQL, 800 rows per table, caching, ranking, personal placement,
-score ingestion. `LeaderboardAggregation` for wire encoding.
-Known retail gaps remain for season/filter semantics, map or prime-level
-category rules, and broader live score-ingestion coverage.
+with MySQL, per-scope/category cache limiting, ranking, personal placement,
+and score ingestion. `LeaderboardAggregation` keeps 50 visible rows while
+preserving the viewer's personal placement row, and request handling scopes PvE
+by type/map/prime level and PvP by arena/team or battleground class category.
+Duplicate persisted scores for the same character now dedupe to the best
+score before per-scope/category row caps and visible response ranking.
+If the character database is unavailable during a request, the database store
+now returns an empty response without caching that empty state, so later
+requests can hydrate once the DB is available. Focused leaderboard verification
+passed 17/17. A 2026-06-08 source/protocol recheck keeps season and
+medal-filter semantics blocked: `ClientLeaderboardPveRequest` only reads
+type/map/prime selectors, `ClientLeaderboardPvpRequest` only reads type, and
+the provider/store currently scope only by those mapped selectors. Response
+rows still carry `RewardedTier`, but no mapped request field proves
+bronze/silver/gold or season filtering.
+Known retail gaps remain for exact retail row caps/refresh cadence and broader
+live score-ingestion coverage.
 
 ### F-033 - Challenges - COMPLETE
 609-line `ChallengeManager`. 4 choice types: Activate, Abandon, AcceptShared,
-DeclineShared. Full lifecycle: activation, tier advancement (3 tiers),
-completion, sharing (30s timeout). DB persistence.
-Known retail gaps remain for `Client0x00C8` decode, share-init opcode ownership,
-combat objective/result hooks, reward tiers/medal win-chance, and
-quest/objective integration.
+DeclineShared. Full lifecycle: activation, overflow-safe tier progress clamping,
+tier advancement (3 tiers),
+completion, sharing (30s timeout), retail two-active-challenge cap through
+`RetailCertainRules.MaxConcurrentActiveChallenges`, combat kill progress through
+direct/nested target groups, and `QuestObjectiveType.CompleteChallenge` hook. DB
+persistence. Missing `Challenge` data now returns `GenericFail`, and missing
+`ChallengeTier` data resolves tier goals to zero rather than crashing during
+partial game-table loads. Large progress deltas now clamp at the current tier
+goal without `uint` wrap; focused challenge-manager verification passed 12/12.
+A 2026-06-08 source/protocol recheck keeps reward tracks, medal win-chance, and
+share-init ownership blocked: `ChallengeEntry.RewardTrackId` and
+`RewardTrack*` tables exist, but no challenge reward-track runtime/packet
+surface is mapped; `ServerChallengeUpdate` only carries tier/count/timer fields
+and `ServerChallengeResult.Data` only carries the mapped tier/localized-string
+value; `ShareWithTarget()` is source-local with no mapped client share-init
+request. Focused challenge verification passed 45/45.
+Known retail gaps remain for `Client0x00C8` decode and full result/reward
+parity beyond the mapped tier/result packets.
 
 ### F-034 - Datacubes / Journals / Galactic Archive - COMPLETE
-298-line `GalacticArchiveManager`. Unlock, view, rule-based auto-unlock
-(achievement/path/quest rules with ALL/ANY flag). DB persistence.
+`GalacticArchiveManager` handles unlock, view, rule-based auto-unlock
+(achievement/path/quest rules with ALL/ANY flag), archive-link child unlock
+authorization through `ArchiveLink.tbl`, and DB persistence. Partial game-table
+loads now fail closed: missing `ArchiveArticle` data skips persisted archive
+state and rejects unlock/view requests, missing `ArchiveEntryUnlockRule` data
+sends login refresh without rule auto-unlocks, and missing `ArchiveEntry` data
+skips entry-title rewards without losing article unlock state.
+Persisted duplicate datacube rows for the same id/type now merge progress
+instead of throwing during character load; missing `Datacube` and
+`DatacubeVolume` tables now reject new datacube/journal additions through the
+existing invalid-row path before state mutation or packet emission. Focused
+archive/datacube verification passed 18/18, and broader PathManager coverage
+passed 64/64.
 `ServerGalacticArchiveRefresh` + `ServerGalacticArchiveUpdate`.
-Known retail gaps remain for broader content hookups, archive-link parent/child
-authorization, full journal/datacube progression semantics, path-mission rule
-parity, and wider Codex UX coverage.
+Known retail gaps remain blocked for broader content hookups, full
+journal/datacube progression semantics, path-mission rule parity, and wider
+Codex UX coverage until a pickup-chain/live-client or native rule evidence
+bundle proves the missing semantics.
 
 ### F-035 - Achievements - COMPLETE
 Generic base manager with checklist/value progress tracking, prerequisite
-checks, completion marking. Realm-first tracking (character + guild).
-Guild achievement forwarding. Title grants on completion.
-Known retail gaps remain for full trigger coverage, Steam achievement payload
-grammar/ingest mapping, exact realm-first broadcast semantics, remaining updater
-parity, and achievement UI edge cases.
+checks, completion marking, and clamped scalar progress. Realm-first tracking
+loads existing character/guild completions, claims each realm-first achievement
+once per realm process, and broadcasts the mapped achievement/guild/name packet
+on first completion. Guild achievement forwarding and title grants on completion
+are implemented. Runtime trigger callsites exist for kills/kill groups,
+quests/contracts, zone entry/map completion, activation/discovery/secret stash,
+crafting/tradeskills, costume/costume-set unlocks, reputation, level/path level,
+path mission/type, currency/account currency/primal essence, items/titles,
+duels, critical deathblows, guild/circle/group/friend joins, housing plug/decor
+actions, public-event objectives, and targeted emotes.
+Checklist bit indexes outside the 32-bit progress mask now fail closed instead
+of aliasing to bit 0; focused achievement verification passed 25/25.
+Achievement startup now also treats a missing `Achievement` primary table as an
+empty cache and missing character DB registration as no persisted realm-first
+preload; focused global achievement verification passed 3/3 and broader
+achievement verification passed 32/32.
+`ClientSteamAchievements` remains diagnostic-only: a 2026-06-08 recheck pins the
+current packet grammar to `SteamGameId`, byte length, and ASCII payload, and the
+handler logs without emitting packets or mutating achievement state. Focused
+Steam achievement verification passed 2/2. Known retail gaps remain for
+data-only/unowned achievement type families, Steam achievement payload grammar
+and achievement-id correlation beyond the raw ASCII payload, exact realm-first
+UI/timing semantics, and achievement UI edge cases.
 
 ### F-036 - Zone Maps / Zone Completion - COMPLETE
 Hex group discovery, movement-based rate limiting (10 unit^2 threshold),
 `WorldZone` parent chain + `MapZoneWorldJoin` fallback. Zone completion
 with `AchievementType.MapComplete`, `ZoneCompletionRewardResolver`,
-faction-aware. DB persistence.
-Known retail gaps remain for full zone-completion semantics, non-title rewards,
-faction/path-specific completion rows, and quest/challenge/datacube/journal
-total integration from `ZoneCompletion`.
+faction-aware `ZoneCompletionFactionEnum` row selection, and
+quest/challenge/datacube/tale/journal threshold gating through
+`ZoneCompletionProgressTracker`. DB persistence. Partial game-table loads now
+fail closed: missing persisted `MapZone` rows are skipped, missing hex-group
+tables leave maps incomplete with zero explored percent, and missing
+quest/datacube/volume/world-zone progress tables resolve as no completion
+progress rather than crashing or granting titles. `ZoneCompletionProgressTracker`
+now recomputes `EpisodeQuest` and `MapZone`/`WorldZone` progress inputs from
+the current `GameTableManager` on each lookup, so an earlier partial table load
+cannot cache an empty result across a later complete provider refresh, and
+world-zone parent traversal is cycle guarded.
+Generic-map node request/choice handlers also fail closed during setup or
+partial game-table loads: missing `GenericMapNode` tables are ignored like
+unknown rows, and missing `WorldLocation2` tables prevent destination teleports
+without emitting node state.
+A 2026-06-08 source/table recheck keeps non-title rewards and path-specific
+completion rewards blocked: `ZoneCompletionEntry` exposes only
+`CharacterTitleIdReward`, and `ZoneMapManager.TryGrantZoneCompletionRewards()`
+only awards titles through `ZoneCompletionRewardResolver.TryGetTitleReward()`.
+Focused zone-completion verification passed 12/12 and broader map verification
+passed 457/457.
+Known retail gaps remain for full zone-completion UX/timing semantics,
+path-specific completion semantics, and live-client validation of category
+totals. Generic-map content-context producer semantics remain blocked
+separately from the conservative request/choice handler path.
 
 ---
 
@@ -2029,11 +3329,11 @@ and others) stay in their `F-00x` sections and in
 
 | # | Feature | Gap | Evidence status (latest) | Blocker |
 |---|---------|-----|------------------------------|---------|
-| 1 | F-025 | Entity-stat aux: 0x0889, 0x08CC, 0x08F4, 0x0939, 0x093D, 0x093E | **Mapped** (wire + XML); no production emit; 2026-06-04 immediate scans added durable registration anchors for `0x0939`/`0x093D`/`0x093E` and still found registration/reader evidence only; 2026-06-04 source audit found no `ServerEntityStat*` aux constructors outside tests/models; stale candidate `FUN_140939650` rejected as viewport/grid global math rather than a packet consumer; focused aux/visual/tracking slice passed `28/28`; pass 117 placeholder guard keeps neutral aux field names until semantic proof and passed `91/91` | Per-opcode `vtable+0x58` apply handler, apply-table classification, or sniff order |
-| 2 | F-025 | Map-tracked-unit producer timing and TrackingSlot selection | **Mapped** consumer chain (`TrackingSlot.tbl`); **Implemented** lookup/selection guard tests; **Blocked** producer; Ghidra MCP recheck 2026-06-04 found client cache update/remove only and duplicate objective groups reject objective-only slot selection; pass 118 guard coverage passed `97/97` | Native server send site or public-event marker sniff for `0x0849`/`0x0848`; `TrackingSlotHelper` remains one-way table lookup only |
-| 3 | F-004 | NeighborhoodEntry/List (0x0501/0x0506) | **Mapped** row fields (`NeighborhoodWireUInt*`); **Blocked** NF emit; Ghidra MCP recheck 2026-06-04 confirmed consumer-only cache apply and rejected adjacent community/visit senders; 2026-06-04 runtime cleanup removed the unrelated hardcoded `ServerHousingProperties.Residence.NeighbourhoodId` placeholder; pass 119 rejects `HousingNeighborhoodInfo.tbl` column-name synthesis and focused guard coverage passed `106/106` | Live housing UI/realm-login sniff or native server-push path before `Housing_HandleNeighborhoodList` @ `1404ba4f0`; no `Housing_SendClient*` label for `0x0506` trigger yet |
-| 4 | F-008 | Discovery/station/complex-craft semantics and 0x084B/0x0855 emit intent | **Mapped** aux wire; 2026-06-04 Ghidra MCP recheck found registration/readers and finish/current-craft consumers only; discovery mutations disabled; service keys `0x2C`/`0x4F`/`0x57` diagnostic; durable rune bridge implemented; distinct C2S microchip-install mutator rejected because client install is `0x085B` while `0x056C` is a server item patch | Native aux/current-craft producer path or live crafting capture for enqueue/timing, discovery unlock/hot-cold proof, non-success sigil rules, and `ServerItemMicrochips` (`0x056C`) producer timing |
-| 5 | F-031 | Per-item retail Madame Fay weights and active rotation | **Mapped** catalog transport; emulator `RewardRarity` tiers audited; 2026-06-04 Ghidra MCP recheck found no active-rotation source, renamed `ServerFortuneReset.ResetCode`, and payout grants now target the current character identity; F-007 `RewardRotation*` labels rejected as Fortune active-rotation evidence | Retail `ServerFortuneRewards` capture or storefront-server catalog dump (`FORTUNE_WEIGHT_AUDIT.md`) |
+| 1 | F-025 | Entity-stat aux: 0x0889, 0x08CC, 0x08F4, 0x0939, 0x093D, 0x093E | **Mapped** (wire + XML); no production emit; 2026-06-04 immediate scans added durable registration anchors for `0x0939`/`0x093D`/`0x093E` and still found registration/reader evidence only; 2026-06-04 source audit found no `ServerEntityStat*` aux constructors outside tests/models; 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance, reconfirmed `140080bf0`, `1400980f0`, `140097620`, `140097ee0`, `140097690`, and `140097f70` as reader-only fragments, and again found no production source emitter outside models/tests/negative guards; stale candidate `FUN_140939650` rejected as viewport/grid global math rather than a packet consumer; focused aux/visual/tracking slice passed `28/28`; pass 117 placeholder guard keeps neutral aux field names until semantic proof and passed `91/91` | Per-opcode `vtable+0x58` apply handler, apply-table classification, or sniff order |
+| 2 | F-025 | Map-tracked-unit producer timing and TrackingSlot selection | **Mapped** consumer chain (`TrackingSlot.tbl`); **Implemented** lookup/selection guard tests; **Blocked** producer; Ghidra MCP recheck 2026-06-04 found client cache update/remove only and duplicate objective groups reject objective-only slot selection; 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance, reconfirmed selected `WildStar64.exe` fragments as read/apply/Lua consumer-only, and found no production `ServerMapTrackedUnitUpdate` / `ServerMapTrackedUnitDisable` emitter in source; pass 118 guard coverage passed `97/97` | Native server send site or public-event marker sniff for `0x0849`/`0x0848`; `TrackingSlotHelper` remains one-way table lookup only |
+| 3 | F-004 | NeighborhoodEntry/List (0x0501/0x0506) | **Mapped** row fields (`NeighborhoodWireUInt*`); **Blocked** NF emit; Ghidra MCP recheck 2026-06-04 confirmed consumer-only cache apply and rejected adjacent community/visit senders; 2026-06-04 runtime cleanup removed the unrelated hardcoded `ServerHousingProperties.Residence.NeighbourhoodId` placeholder; 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance, reconfirmed `14009cbe0` / `14009ebf0` reader shapes, `1404ba4f0` cache apply plus `HousingNeighborhoodRecieved`, and `140205900` table-loader-only evidence, and found no production source emitter; pass 119 rejects `HousingNeighborhoodInfo.tbl` column-name synthesis and focused guard coverage passed `106/106` | Live housing UI/realm-login sniff or native server-push path before `Housing_HandleNeighborhoodList` @ `1404ba4f0`; no `Housing_SendClient*` label for `0x0506` trigger yet |
+| 4 | F-008 | Discovery/station/complex-craft semantics and 0x084B/0x0855 emit intent | **Mapped** aux wire; 2026-06-04 Ghidra MCP recheck found registration/readers and finish/current-craft consumers only; 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance, reconfirmed `0x084B` / `0x0855` reader-only evidence, `ServerCraftingCurrentCraft` client-state apply plus `CraftingUpdateCurrent` dispatch, and `0x056C` item microchip patch/apply evidence only; discovery mutations disabled; service keys `0x2C`/`0x4F`/`0x57` diagnostic; durable rune bridge implemented; distinct C2S microchip-install mutator rejected because client install is `0x085B` while `0x056C` is a server item patch | Native aux/current-craft producer path or live crafting capture for enqueue/timing, discovery unlock/hot-cold proof, non-success sigil rules, and `ServerItemMicrochips` (`0x056C`) producer timing |
+| 5 | F-031 | Per-item retail Madame Fay weights and active rotation | **Mapped** catalog transport; emulator `RewardRarity` tiers audited; 2026-06-04 Ghidra MCP recheck found no active-rotation source, renamed `ServerFortuneReset.ResetCode`, and payout grants now target the current character identity; 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance, reconfirmed `140081f60`, `1407292a0`, `140766370`, `1404d60f0`, and `1400a0b10` as transport/consumer evidence only, and found current source still emitting `ServerFortuneRewards` from emulator rarity-tier `FortuneRewardPool` without a retail active-rotation or per-item weight source; F-007 `RewardRotation*` labels rejected as Fortune active-rotation evidence | Retail `ServerFortuneRewards` capture or storefront-server catalog dump (`FORTUNE_WEIGHT_AUDIT.md`) |
 
 ---
 

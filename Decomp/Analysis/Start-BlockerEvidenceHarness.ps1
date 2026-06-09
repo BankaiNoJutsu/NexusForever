@@ -1442,7 +1442,32 @@ concrete runtime surface.
     $raidEventTargets | Set-Content -Path (Join-Path $bundleDirectory 'lws-110-117-raid-event-targets.md') -Encoding UTF8
 }
 
-$clientLogRoot = if (![string]::IsNullOrWhiteSpace($ClientDirectory)) { Split-Path -Parent $ClientDirectory } else { '' }
+function Resolve-ClientLogRoot {
+    param(
+        [string] $Path
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return ''
+    }
+
+    $resolvedPath = $Path
+    if (Test-Path -LiteralPath $Path) {
+        $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
+    }
+
+    if ((Split-Path -Leaf $resolvedPath) -ieq 'Client64') {
+        return (Split-Path -Parent $resolvedPath)
+    }
+
+    if (Test-Path -LiteralPath (Join-Path $resolvedPath 'Client64')) {
+        return $resolvedPath
+    }
+
+    return (Split-Path -Parent $resolvedPath)
+}
+
+$clientLogRoot = Resolve-ClientLogRoot -Path $ClientDirectory
 $tailScript = @"
 `$RepoRoot = '$RepoRoot'
 `$ClientLogRoot = '$clientLogRoot'

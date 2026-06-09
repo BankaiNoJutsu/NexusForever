@@ -5669,17 +5669,21 @@ One-hundred-fifth mapped small client request pass:
   `0x0167` is retained under its historical model name but now sells all
   backpack stacks in client item category `94` (junk), matching the stock
   `Vendor.lua` `SellJunkToVendor()` path. Resource conversion validates that
-  the conversion id exists before logging the unsupported path.
+  the conversion id and referenced static item/currency rows exist before
+  applying the bounded item/currency/reputation mutation paths.
   `ClientGenericMapNodeRequest` now
   parses a 14-bit node id and responds with `ServerGenericMapNode` for known
-  nodes, while unknown ids are logged and ignored. `ClientGenericMapNodeChosen`
-  now has a conservative unsupported handler so the already-modeled client
-  choice packet is no longer silently unhandled.
+  nodes, while unknown ids or missing `GenericMapNode` tables are logged and
+  ignored. `ClientGenericMapNodeChosen` now has a conservative handler so the
+  already-modeled client choice packet is no longer silently unhandled; missing
+  destination data, including a missing `WorldLocation2` table, blocks teleport
+  without emitting node state.
 - Still blocked:
-  item repair, resource conversion, and dash-cast server mutation remain
-  blocked. The selected client evidence maps the payloads, but safe server-side
-  repair cost application, conversion inventory/currency changes, and dash
-  state authority need dedicated runtime validation before mutation.
+  item repair and dash-cast server mutation remain blocked. The selected
+  client evidence maps the payloads, but safe server-side repair cost
+  application, exact resource-conversion selection/resource-field semantics,
+  and dash state authority need dedicated runtime validation before widening
+  behavior.
 - Coverage and verification:
   `Get-DecompCoverageSnapshot.ps1` now reports client opcode coverage as
   `243` implemented, `71` partial, and `12` missing. The six rows touched in
@@ -5816,9 +5820,11 @@ One-hundred-eighth instance settings and AbilityBook mapping pass:
 - Still blocked:
   the trailing packed setting bits in `ClientSetInstanceSettings` remain only
   partially named from the Lua side, so server mutation should stay
-  conservative. `ClientCommitAmpSpec` remains a separate follow-up, and the full
-  return-table shapes for `GetAbilitiesList` / `GetAbilityInfo` are still wider
-  than the immediate packet-mapping need.
+  conservative. `ClientCommitAmpSpec` was left for a later handler pass here;
+  the 2026-06-08 F-021 partial-table guard now covers its injected-table
+  validation and resolved-entry commit boundary. The full return-table shapes
+  for `GetAbilitiesList` / `GetAbilityInfo` are still wider than the immediate
+  packet-mapping need.
 - Coverage and verification:
   `run_ghidra_analysis.ps1 -ExportOnly -Targets WildStar64.exe -ProjectLayout
   PerTarget -DecompileMode Auto` now applies `594` WildStar64 labels with `0`
@@ -6321,6 +6327,27 @@ One-hundred-fourteenth generic unlock item pass:
   succeeds with only the existing `Spline.formation` warning. A focused marker
   scan of the generic unlock, vendor sell, and buyback handlers now returns no
   matches.
+
+Generic unlock consume-failure result follow-up (2026-06-07):
+
+- Source-local correction only; no new client/native labels were needed.
+  `ClientItemGenericUnlockHandler` already returned `Invalid` for missing or
+  invalid item/set/table data and `AlreadyUnlocked` before consuming fully known
+  sets, but a valid locked set whose `Inventory.ItemUse(item)` failed only
+  logged `item-consume-failed`. The handler now also sends
+  `GenericUnlockResult.Invalid` and grants no entries on that failed consume.
+- Focused regression coverage pins the valid-set/consume-failure branch:
+  `Inventory.ItemUse` is attempted, no `Unlock` call is made, and exactly one
+  invalid result is sent through the generic unlock manager.
+- Account/character unlock-list delta timing, generic unlock persistence
+  precision, and nearby account/item aux producer semantics remain blocked on
+  stronger packet/producer evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~AccountItemHandlerTests|FullyQualifiedName~ClientItemGenericUnlockHandlerTests|FullyQualifiedName~AccountUnlockPacketShapeTests"
+  -v minimal --nologo` passed (`25/25`).
 
 One-hundred-fifteenth activate/cast variant handler pass:
 
@@ -11372,7 +11399,8 @@ Galactic Archive interact-unlock follow-up:
   `ClientGalacticArchiveUnlock` trust boundary, so creature interaction can
   reveal article state without speculatively awarding titles or broader archive
   rewards.
-- ArchiveLink parent/child authorization, full journal/datacube progression,
+- Follow-up F-034 source work now covers client `ArchiveLink` parent/child
+  authorization through `UnlockLinkedArticle`; full journal/datacube progression,
   path-mission-backed rule unlock parity, and wider Codex UX behavior remain
   blocked until stronger client-reader, table-chain, or runtime evidence maps
   those semantics.
@@ -11489,24 +11517,36 @@ Option persistence follow-up:
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\option-persistence-all-tests\`
   run passed `365/365` tests.
 
+Option/keybinding mutation follow-up (2026-06-07):
+
+- `KeybindingSet.Update` now materializes stale `InputActionId` keys before
+  removing pending-created bindings. This fixes the source-local clear-before-save
+  path where deleting a newly-added binding during `bindings.Keys.Except(...)`
+  could invalidate dictionary enumeration.
+- `KeybindingSetTests` pin both pending-create removal and persisted binding
+  deletion visibility. No new option types, readback packets, or aux producers
+  were enabled.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Option" -v minimal --nologo`
+  passed 33/33.
+
 Zone completion exploration-only reward follow-up:
 
 - No new native labels were added. This pass implements a narrow `F-036`
   reward boundary using the existing `ZoneCompletion` table model, the existing
   `ZoneMapManager` map-complete detection, and the already wired
   `AchievementType.MapComplete` call.
-- `ZoneCompletionRewardResolver` now resolves title rewards only for
-  exploration-only rows: episode quest, task quest, challenge, datacube, tale,
-  and journal counts must all be zero, the reward title id must fit in
-  `ushort`, and all matching rows for the map zone must collapse to one
-  distinct title id. Distinct title conflicts are treated as blocked because
-  `ZoneCompletionFactionEnum` and path/faction/category semantics are not yet
-  mapped.
+- `ZoneCompletionRewardResolver` originally resolved title rewards only for
+  unambiguous exploration-only rows. A later source-backed pass now selects the
+  `ZoneCompletionFactionEnum` row for Dominion/Exile players and gates title
+  grants through the row's episode quest, task quest, challenge, datacube, tale,
+  and journal thresholds via `ZoneCompletionProgressTracker`.
 - When a zone map becomes fully explored, `ZoneMapManager` still grants
-  `AchievementType.MapComplete` and now grants only those unambiguous
-  exploration-only title rewards. Full zone-completion payout, non-title
-  rewards, faction/path-specific rows, and quest/challenge/datacube/journal
-  total integration remain blocked.
+  `AchievementType.MapComplete` and grants the mapped `CharacterTitleIdReward`
+  only after the faction/category gate passes. The `ZoneCompletion` table model
+  exposes no non-title reward payload beyond `CharacterTitleIdReward`, so
+  non-title rewards, path-specific semantics, and live client UX/timing remain
+  blocked pending stronger table/native/live evidence.
 - Verification: `dotnet test
   Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore
   --filter ZoneCompletionRewardResolverTests -m:1 -v minimal --nologo
@@ -12448,9 +12488,10 @@ ZoneCompletion default-load follow-up:
   instead of leaving the resolver inert outside tests.
 - Focused contract coverage now includes `ZoneCompletion.tbl` beside other
   runtime-required tables, and existing resolver tests still pass.
-- Non-title rewards, faction/path/category-specific completion rows, and
-  quest/challenge/datacube/journal objective-total sources remain blocked until
-  those row semantics are decoded.
+- Non-title rewards, path-specific completion semantics, and live client
+  UX/timing remain blocked. Faction row selection and
+  quest/challenge/datacube/tale/journal threshold gating are now source-backed
+  through `ZoneCompletionRewardResolver` and `ZoneCompletionProgressTracker`.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
   --no-restore --filter
@@ -12481,10 +12522,11 @@ SimpleEntity archive/datacube activation coverage follow-up:
   `OnActivateCast` for `ArchiveArticleIdInteractUnlock` with
   `grantRewards: false`, plus SimpleEntity datacube and journal activation
   calls through `IDatacubeManager`.
-- This pins the existing activation boundary only. Full journal/datacube
-  progression semantics, archive-link parent/child authorization, path-mission
-  rule parity, and broader content hookups remain blocked until their row and
-  trigger semantics are mapped.
+- This pins the existing activation boundary only. Follow-up F-034 source work
+  now covers client `ArchiveLink` parent/child authorization; full
+  journal/datacube progression semantics, path-mission rule parity, and broader
+  content hookups remain blocked until their row and trigger semantics are
+  mapped.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
   --no-restore --filter "FullyQualifiedName~SimpleEntityArchiveUnlockTests"
@@ -12664,6 +12706,28 @@ Support stuck branch coverage follow-up:
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-support-stuck\
   --filter "FullyQualifiedName~SupportTicketHandlerTests|FullyQualifiedName~SupportStuckHandlerTests|FullyQualifiedName~CustomerSurveyProtocolTests"`
   passed (`20/20`).
+
+Support stuck cooldown validation follow-up (2026-06-07):
+
+- `ClientStuckHandler` now records `RetailStuckCooldownTracker` use only after
+  the selected action's local server prerequisites are valid. Recall-transmat
+  validates the exit `WorldLocation2` row before starting cooldown; recall-house
+  resolves the residence, entrance, and map lock before starting cooldown; free
+  suicide keeps its alive-player validation before cooldown. Missing server
+  destination data therefore returns the existing prerequisite result without
+  blocking the next valid stuck request.
+- Focused regressions pin both sides: a second successful transmat request
+  returns `CastResult.SpellCooldown`, while a failed transmat destination lookup
+  does not start cooldown and a later valid destination can still teleport.
+- Support-case result/readback semantics, remaining cooldown display precision,
+  database-backed case lifecycle, moderation workflow, and report/survey admin
+  tooling remain blocked on stronger client/server evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~Option|FullyQualifiedName~Support" -v minimal
+  --nologo` passed (`154/154`).
 
 Crafting LootId output coverage follow-up:
 
@@ -12858,15 +12922,36 @@ Datacube and Galactic Archive packet-boundary follow-up:
   update packets (`ServerDatacubeUpdateList`, `ServerDatacubeUpdate`,
   `ServerDatacubeVolumeUpdate`) plus galactic archive unlock/view client
   requests, archive update flags, and zero-byte archive refresh.
-- Broader content hookups, archive-link parent/child authorization, full
-  journal/datacube progression semantics, path-mission rule parity, and wider
-  Codex UX behavior remain blocked on content-flow and reader evidence.
+- Broader content hookups, full journal/datacube progression semantics,
+  path-mission rule parity, and wider Codex UX behavior remain blocked on
+  content-flow and reader evidence. Follow-up F-034 source work now covers the
+  client `ArchiveLink` parent/child authorization path.
 - Verification:
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
   --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-archive\
   --filter "FullyQualifiedName~ArchivePacketShapeTests|FullyQualifiedName~GalacticArchiveUnlockRuleTests|FullyQualifiedName~SimpleEntityArchiveUnlockTests"`
   passed (`14/14`).
+
+Galactic Archive partial-table guard follow-up (2026-06-08):
+
+- No new native labels were added. This pass closes a source-local F-034 setup
+  hardening gap in `GalacticArchiveManager`: missing `ArchiveArticle` data now
+  skips persisted rows and rejects unlock/view requests, missing
+  `ArchiveEntryUnlockRule` data suppresses rule auto-unlocks during login
+  refresh, and missing `ArchiveEntry` data skips entry-title rewards without
+  dropping article unlock flags.
+- Focused tests added to `GalacticArchiveManagerTests` pin missing article,
+  rule, and entry table behavior. Broader datacube/journal pickup chains,
+  path-mission rule parity, and Codex UI/progression semantics remain blocked
+  on content-flow, reader, or live-client evidence.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~Archive|FullyQualifiedName~GameTableManagerGameDataContractTests"
+  -v minimal --nologo`
+  passed (`91/91`).
 
 Zone-map packet-boundary follow-up:
 
@@ -12884,6 +12969,31 @@ Zone-map packet-boundary follow-up:
   --filter "FullyQualifiedName~ZoneMapPacketShapeTests|FullyQualifiedName~ZoneCompletionRewardResolverTests"`
   passed (`5/5`).
 
+Zone-map partial-table guard follow-up (2026-06-08):
+
+- No new native labels were added. This pass closes a source-local F-036 setup
+  hardening gap: `ZoneMapManager` skips persisted hex rows whose `MapZone`
+  data is unavailable, `ZoneMap` treats missing hex-group tables as incomplete
+  with 0% explored instead of accidentally complete, and
+  `ZoneCompletionProgressTracker` resolves missing quest/datacube/volume or
+  world-zone progress tables as no progress.
+- The behavior remains title-only and evidence-gated. Non-title rewards,
+  path-specific completion semantics, live UX/timing, and category-total
+  validation still need a non-title reward source, client reader evidence, or
+  live-client smoke before widening grants.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~ZoneCompletionRewardResolverTests|FullyQualifiedName~ZoneMapPacketShapeTests"
+  -v minimal --nologo`
+  passed (`13/13`), and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~Map" -v minimal --nologo`
+  passed (`441/441`).
+
 Achievement packet-boundary follow-up:
 
 - No runtime behavior changed. Focused coverage now pins `ServerAchievementInit`
@@ -12897,6 +13007,32 @@ Achievement packet-boundary follow-up:
   --no-restore -m:1 -v minimal --nologo -p:UseSharedCompilation=false
   -p:BaseOutputPath=I:\GIT\NexusForever\.nexusforever-runtime\build\game-tests-achievements\
   --filter "FullyQualifiedName~Achievement"` passed (`15/15`).
+
+Achievement trigger and Steam boundary reconciliation (2026-06-07):
+
+- No runtime behavior changed. A source pass confirmed the achievement row is a
+  core-manager/packet implementation with evidence-gated parity edges, not a
+  missing foundational manager. `BaseAchievementManager` owns checklist/value
+  progress, prerequisite checks, scalar clamping, zero-value single-event rows,
+  completion marking, title grants through the character manager, and
+  character/guild realm-first claim/broadcast routing.
+- `GlobalAchievementManager` loads existing character and guild realm-first ids
+  from the character database and `TryClaimRealmFirstAchievement` claims each
+  mapped realm-first achievement id once per process under a lock. The exact
+  retail UI/timing semantics beyond the mapped `ServerRealmFirstAchievement`
+  payload remain blocked.
+- Server-owned trigger callsites are already wired for kills/kill groups,
+  quests/contracts, zone entry/map completion, activation/discovery/secret
+  stash, crafting/tradeskills, costume/costume-set unlocks, reputation,
+  level/path level, path mission/type, currency/account currency/primal
+  essence, items/titles, duels, critical deathblows,
+  guild/circle/group/friend joins, housing plug/decor actions, public-event
+  objectives, and targeted emotes. Remaining type families must be audited
+  against a server-owned event source before adding triggers.
+- `ClientSteamAchievementsHandler` remains the correct diagnostic boundary:
+  parsed Steam game id and ASCII payload are logged only, and tests assert no
+  achievement packets or manager mutation. Do not ingest client Steam data until
+  payload grammar and achievement-id correlation are mapped.
 
 Housing early-cluster opcode naming (`0x00CB..0x00D1`, `0x010D`, `0x0110`, 2026-05-23):
 
@@ -12965,16 +13101,16 @@ Spell runtime, entities, content, progression workstream (`F-016`..`F-036`, 2026
 | F-018 CC/stacks/movement | Partial | `CCStateSet`/`CCStateBreak`, timed removal, cast/movement coupling; packet models; witness `Spell4=57355` maps `DataBits00=20` to `CCState.Tether` in `CCStateSetFixtureWitnessTests` | `CrowdControlPacketShapeTests`, `CCStateSetFixtureWitnessTests` | `Spell4StackGroup` arbitration; DR/stun breakout; tether/additional-data; forced-move/facing physics parity |
 | F-019 Summons/traps/vehicles | Partial | `SummonCreature`, `SummonTrap`, `SummonVehicle`, `NpcExecutionDelay` conservative create/hold paths; `SummonTrapEvidenceBoundary` centralizes create gating for witness `Spell4=34094` | `SummonTrapEvidenceBoundaryTests`; summon families still covered indirectly elsewhere | Ownership/AI controller; trap trigger spells; formation/service payloads; turret/deployable seat modes |
 | F-020 RavelSignal | Partial | `RavelSignalReceiverEvidenceBoundary` maps mode `1` to `EntityScriptOnSignal` (witness `Spell4=76797`, signal `27096`); other modes stay diagnostics-only; `HandleEffectRavelSignalCore` gates `SendSignal` through the boundary | `RavelSignalReceiverEvidenceBoundaryTests` | Additional mode receivers, payload-driven script state, `SpellRouteEvent_*` producer timing |
-| F-021 LAS/action-set/AMP | Partial | `ClientRequestActionSetChangesHandler`, LAS tier/AMP persistence (`ActionSetAmp.Save`), `LimitedActionSetResult.UpdateSpellInProgress` enum | `ActionSetAmpTests`, new `ActionSetPacketShapeTests` | `Server0x00B0`, `016B/016D/016E/019C/01A4` async spell-update cluster; authoritative attribute refund; bonus AMP unlock persistence |
+| F-021 LAS/action-set/AMP | Partial | `ClientRequestActionSetChangesHandler`, `ClientCommitAmpSpecHandler`, LAS tier/AMP persistence (`ActionSetAmp.Save`), `LimitedActionSetResult.UpdateSpellInProgress` enum | `ActionSetAmpTests`, `ActionSetSaveRequestTests`, `ActionSetPacketShapeTests` | `Server0x00B0`, `016B/016D/016E/019C/01A4` async spell-update cluster; authoritative attribute refund; bonus AMP unlock persistence |
 | F-022 Quests/path/public events | Partial | `QuestManager`, `PublicEvent` scripts/objectives, path manager surfaces | `QuestTests`, `QuestObjectiveTests`, `PublicEventFlowTests`, `PublicEventObjectiveTests`, `PathManagerTests` | Path mission edge types; PE votes/scoreboards; `Server0x0139/06F7`; quest-share precision |
 | F-023 NPE / Rider's Reef | Mapped-only | Tutorial scripts under `Script.Main/Tutorial`; recent reef/departure fixes per matrix | Manual client smoke required (`I:\WildStar`); login-world smoke reported working | Quest acceptance/kill loops, rewards, respawn, CSI, hoverboard/projector, final terminal - no automated pass in CI |
 | F-024 World 3404 | Partial | `Script.Instance/Expedition/EvilFromTheEther`, staged map/import | `EvilFromTheEtherEventScriptTests`, `EvilFromTheEtherTriggerScriptTests` | Manual expedition smoke; PE `781`; doors/interactables/teleports/phases; unsupported spell blockers in live play |
 | F-025 Entity create/update/phasing/CSI | Partial | `ServerEntityCreate` world-placement path, busy/interaction gates | `EntityCreatePacketTests` | Remaining create/update substructures `025F..0264`; deferred action queues; CSI/current-target; phase visibility; `0889/08CC/08F4/0939/093D/093E` |
 | F-026 Items/unlocks/costumes/pets | Partial | Inventory, generic unlock handler, normal `ClientItemUse` consume-after-success guard, decor item-use residence/consume guard, costume/pet/title managers (parts) | `AccountItemHandlerTests` (generic unlock lifecycle), `ClientItemUseHandlerTests`, `ClientItemUseDecorHandlerTests` | Item swap/error aux `00B7/0183/019A/037F/0567`; satchel precision; costume forget; unlock list deltas |
 | F-029 Client DB / DataMapping | Partial | `GameTableManager` default init includes `ZoneCompletion.tbl` and archive tables; DataMapping tooling | `GameTableManagerGameDataContractTests` | Case-by-case staging promotion; EF placeholder renames; migration proof per table |
-| F-034 Datacubes/archive | Partial | `DatacubeManager`, `GalacticArchiveManager`, login init packets; `ArchiveArticleIdInteractUnlock` on `SimpleEntity` | `SimpleEntityArchiveUnlockTests`, `GalacticArchiveUnlockRuleTests`, `PlayerTradeskillArchiveTests` | Archive-link parent/child auth; full journal/datacube progression; path-mission rule parity |
+| F-034 Datacubes/archive | Partial | `DatacubeManager`, `GalacticArchiveManager`, login init packets; `ArchiveArticleIdInteractUnlock` on `SimpleEntity`; `ClientGalacticArchiveUnlock` child authorization through unlocked `ArchiveLink` parent articles | `SimpleEntityArchiveUnlockTests`, `GalacticArchiveUnlockRuleTests`, `GalacticArchiveManagerTests`, `PlayerTradeskillArchiveTests` | Full journal/datacube progression; path-mission rule parity; broader Codex UX/link semantics |
 | F-035 Achievements / realm-firsts | Partial | Character/guild/global managers, init/update packets, many updaters | `AchievementProgressTests`, `GuildAchievementManagerTests`, `RealmFirstAchievementPacketTests`, `ClientSteamAchievementsTests` (diagnostic-only ingest) | Full trigger coverage; Steam payload grammar ? achievement-id map; exact realm-first broadcast semantics |
-| F-036 Zone maps / completion | Partial | Hex discovery, `ServerZoneMap`, `ZoneCompletion.tbl` loaded; exploration-only title rewards via `ZoneCompletionRewardResolver` | `ZoneCompletionRewardResolverTests` | Non-title rewards; faction/path-specific rows; quest/challenge/datacube/journal totals integration |
+| F-036 Zone maps / completion | Partial | Hex discovery, `ServerZoneMap`, `ZoneCompletion.tbl` loaded; faction-aware title rewards and quest/challenge/datacube/tale/journal threshold gating via `ZoneCompletionRewardResolver` / `ZoneCompletionProgressTracker` | `ZoneCompletionRewardResolverTests` | Non-title rewards; path-specific semantics; live client UX/timing |
 
 - Verification (workstream-filtered): `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
   --no-restore -p:UseSharedCompilation=false -m:1 -v minimal --nologo
@@ -13831,6 +13967,13 @@ F-025 realm-bank and phase-visibility follow-up (implemented guard slice):
   character `item` row; items moved out of realm bank upsert `item` and remove
   the matching `realm_bank_item` row. Realm-bank stack-count updates, same-bank
   moves/swaps, and cross-boundary swaps now call the same persistence boundary.
+- **Implemented**: `RealmBankManager.EnsureLoaded()` now resolves
+  `CharacterDatabase` before adding the `(AccountId, RealmId)` loaded key. A
+  missing character DB during setup/startup therefore does not mark the realm
+  bank as hydrated or block a later successful load attempt. Regression
+  `RealmBankInventoryTests.EnsureLoaded_WithoutDatabase_DoesNotMarkAccountRealmLoaded`
+  passed with the focused realm-bank suite (`8/8`) from the alternate output
+  directory on 2026-06-08.
 - **Mapped-only / blocked**: native evidence around `ItemMove_ValidateAndMaybeConfirmBindOnEquip`
   @ `1403c17d0`, interaction case `0x43` (`ShowRealmBank`), entitlement enum
   registration @ `1404e7f60`, and UI drag/drop paths supports generic item moves
@@ -17091,6 +17234,20 @@ Full missing-system restoration pass (2026-06-02 - F-030 realm-transfer destinat
 - Payload contents and producer semantics remain blocked, so no
   realm-transfer/account-gift runtime emit path was enabled.
 
+Full missing-system restoration pass (2026-06-07 - F-030 realm-transfer invalid target result):
+
+- `ClientRealmTransferHandler` now returns the mapped
+  `RealmTransferFailed_InvalidRealm` result for an unknown target realm instead
+  of throwing, while offline realms still return `ServerDown` and online realms
+  still return conservative `Internal` until transfer handoff semantics are
+  recovered.
+- Focused tests now pin unknown/offline/online transfer compatibility results
+  and both PTR-copy request handlers as non-emitting/diagnostic-only until
+  `ServerPtrCharacterCopyQueued` producer timing and copy mutation are mapped.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo`
+  passed 12/12.
+
 Full missing-system restoration pass (2026-06-02 - F-009 vehicle embark aux packet contract):
 
 - Re-aligned current source with pass 30 evidence for `ServerVehicleEmbarkAux`
@@ -17237,6 +17394,30 @@ Full missing-system restoration pass (2026-06-03 - F-005/F-013 marketplace settl
   passed 21/21, and full
   `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj -v minimal --nologo`
   passed 2502/2502.
+
+Marketplace offline-currency atomicity recheck (2026-06-08):
+
+- No runtime behavior changed. Source recheck confirmed the remaining
+  F-005/F-013 settlement blocker is specifically offline currency persistence,
+  not the already-hardened item/mail delivery paths.
+- `GlobalMarketplaceManager.CreditCharacter()` credits online players directly,
+  but for offline characters it first tries
+  `MarketplaceMailDelivery.TrySendMarketplaceCreditMail()` and can then fall
+  back to `CharacterDatabase.CreditCharacterCurrency()`. That fallback creates a
+  fresh `CharacterContext` and calls `SaveChanges()` outside the composed
+  marketplace/mail `SaveBlocking` action used by item-auction, commodity-return,
+  and commodity-fill mail settlement.
+- Closing this safely needs a composable offline currency-credit transaction
+  path that can participate in the same character DB save as marketplace row
+  update/delete and item/mail persistence. Do not claim final settlement
+  atomicity by adding another local post-mutation credit call.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests|FullyQualifiedName~MarketplaceMailSettlementTests|FullyQualifiedName~Mail"
+  -v minimal --nologo`
+  passed (`72/72`).
 
 Full missing-system restoration pass (2026-06-03 - F-005 marketplace persisted microchip overflow guard / #13):
 
@@ -19528,6 +19709,47 @@ Intermittent Thayd path refresh crash follow-up (2026-06-05):
   in the current runtime call. Persisted rows remain loaded and saved, but are
   not reintroduced to the client as fresh activation packets.
 
+Path reward missing-Spell4 guard (2026-06-07):
+
+- **Target question**: Can a table-backed path reward row safely grant its other
+  rewards when `PathReward.Spell4Id` points at a spell row missing from the
+  currently loaded `Spell4` table?
+- **Implemented / verified**: `PathManager.GrantPathReward()` now treats a
+  missing `Spell4` entry as a skipped spell grant instead of dereferencing the
+  missing row. Item/title/money/currency reward paths remain unchanged, and no
+  new reward semantics are invented for missing or unknown client data.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~PathManagerTests|FullyQualifiedName~PathRewardGrantTests|FullyQualifiedName~ClientPathExplorer"
+  -v minimal --nologo`
+  passed `89/89`.
+- **Still blocked**: exact path reward presentation, overflow behavior, flag
+  semantics, full per-mission reward precision, and broader `Spell4` reward-row
+  coverage still need table/client/live evidence before claiming retail parity.
+
+Path level partial-table guard (2026-06-08):
+
+- **Target question**: Can supported path mission completion and mission reward
+  grants survive partial setup/game-table loads where `PathLevel` rows are
+  unavailable or missing the requested target level?
+- **Implemented / verified**: `PathManager` now resolves current and target path
+  levels through guarded lookups. Missing current-level rows skip XP and
+  level-reward mutation without aborting already-supported mission completion or
+  mission reward grants; missing target-level rows make `AddLevels` return after
+  any known outstanding reward check.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~PathManager" -v minimal --nologo`
+  passed `68/68`.
+- **Still blocked**: exact path reward presentation, overflow/flag semantics,
+  reward-history persistence, generic Soldier holdout wave simulation, generic
+  Scientist scan-result/minigame packet semantics, Settler built-group/resource/
+  avenue state, exact unlock sequencing, and broader content smoke evidence.
+
 F-010 ServerMatching0x05CF tracker reconciliation (2026-06-04):
 
 - **Target question**: Does `ServerMatching0x05CF` have enough evidence to
@@ -20818,6 +21040,110 @@ F-026 pet stance request/cache mapping (2026-06-05 pass 138):
   producer evidence tying `ClientPetSetStance` (`0x068E`) to exactly scoped
   `ServerPetStanceChanged` (`0x068F`) emission.
 
+F-026 pet stance handler boundary test pass (2026-06-07):
+
+- **Target question**: Can the currently implemented `ClientPetSetStance`
+  handler be safely widened to emit `ServerPetStanceChanged`, or should the
+  server-side stance mutation stay test-pinned while producer evidence is
+  missing?
+- **Disposition**: mapped-only / test-pinned. The handler updates
+  `IPetEntity.Stance` only for the player's owned pet, supports `PetUnitId=0`
+  by resolving the active `VanityPetGuid`, ignores foreign/missing pets without
+  mutation, and rejects undefined stance values. It still emits no
+  `ServerPetStanceChanged` because pass 138 did not prove server producer
+  timing, owner-only versus visible broadcast scope, or spawn/despawn relation.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~ClientPetSetStanceHandlerTests|FullyQualifiedName~PacketPlaceholderNamingTests.ClientPetSetStance"
+  -v minimal --nologo`
+  passed `5/5`.
+- **Next evidence source**: live/client-log capture or server-side native
+  producer proof tying `ClientPetSetStance` (`0x068E`) to the exact
+  `ServerPetStanceChanged` (`0x068F`) response scope/timing before any emit is
+  added.
+
+F-009 vehicle embark/disembark handler boundary test pass (2026-06-07):
+
+- **Target question**: Can `ClientVehicleEmbark` safely mutate passenger/seat
+  state or emit vehicle responses, or should the current handler remain
+  diagnostic-only while producer evidence is missing?
+- **Disposition**: mapped-only / test-pinned. `ClientVehicleEmbarkHandler`
+  logs the decoded player/vehicle request only; it now has focused regression
+  coverage asserting no encrypted response, no generic error, no `Dismount`,
+  no control change, and no platform/passenger mutation. `ClientVehicleDisembark`
+  is pinned as a guarded delegate: it ignores unplatformed players and calls
+  the existing `IPlayer.Dismount()` path only when `PlatformGuid` is present.
+- **Evidence context**: packet/model coverage already pins vehicle embark input,
+  `ServerVehicleEmbarkAux` (`0x01B2`), `ServerVehiclePassengerSelf`,
+  `ServerVehiclePassengerAdd`, `ServerVehiclePassengerRemove`, and shared
+  passenger rows. This pass does not prove embark acceptance, seat assignment,
+  passenger lifecycle, deployable-vehicle behavior, or `ServerClusterAuxPackets`
+  producer semantics.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~TransportHandlerTests|FullyQualifiedName~TransportPacketShapeTests|FullyQualifiedName~PacketPlaceholderNamingTests.ServerVehicleEmbarkAux"
+  -v minimal --nologo`
+  passed `20/20`.
+- **Next evidence source**: native/live producer proof for vehicle embark
+  acceptance, seat assignment, passenger add/remove timing, deployable vehicle
+  semantics, and cluster-aux vehicle/passenger rows before widening runtime
+  vehicle behavior.
+
+F-008 crafting material availability overflow guard (2026-06-07):
+
+- **Target question**: Can fixed-recipe material availability reject a valid
+  represented inventory state before debit when inventory item counts saturate?
+- **Implemented**: `CraftingCraftRequestHelper.TryBuildMaterialDebit` now
+  widens the satchel-plus-inventory count sum before comparing it with the
+  required material count. This preserves the existing satchel-first debit
+  policy while avoiding `uint` wraparound in the preflight.
+- **Regression**: `CraftingSimpleCraftHandlerTests` now cover a craft requiring
+  two units where one unit is in the satchel and the inventory scan reports a
+  saturated `uint.MaxValue` material stack. The craft succeeds, debits one
+  satchel unit, debits one inventory unit, and sends `ServerCraftingFinish`
+  success.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~CraftingSimpleCraftHandlerTests|FullyQualifiedName~CraftingAdditiveHandlerTests|FullyQualifiedName~CraftingPacketShapeTests"
+  -v minimal --nologo`
+  passed `40/40`.
+- **Still blocked**: discovery roll/unlock mutation, station service-key names,
+  current-craft cadence, `0x084B`/`0x0855` aux producer intent,
+  non-success sigil rules, and `ServerItemMicrochips` (`0x056C`) producer
+  timing.
+
+F-001 STS non-`None` transaction ordering (2026-06-07):
+
+- **Target question**: Can the commented STS session-state gate be restored
+  without breaking the current compatibility routes that deliberately register
+  as `SessionState.None`?
+- **Implemented**: `StsSession.HandlePacket` now enforces handler states only
+  when the registered required state is not `SessionState.None`. This restores
+  strict ordering for `/Auth/LoginStart` (`Connected`) and `/Auth/KeyData`
+  (`LoginStart`) while preserving the known post-auth/account/presence
+  compatibility routes that are currently registered as `None`.
+- **Regression**: `StsSessionStateTests` use a fake STS message manager and
+  synthetic packets to pin all three dispatch cases: non-`None` mismatch is
+  rejected before XML read/handler invocation, non-`None` match invokes the
+  handler, and `None` handlers remain compatible from an already-progressed
+  session state.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj
+  --no-restore -p:UseAppHost=false
+  -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\
+  --filter "FullyQualifiedName~StsSessionStateTests|FullyQualifiedName~StsResponseSerializationTests"
+  -v minimal --nologo`
+  passed `6/6`.
+- **Still blocked**: token/RSA optional flows, external-account routes,
+  optional envelope fields, and exact retail state transitions for optional
+  auth paths require startup STS captures or native crypto/token semantics.
+
 F-022 `PrerequisiteType.Unknown260` lookup-chain MCP pass (2026-06-05 pass 139):
 
 - **Target question**: Can the active-residence lookup chain or row-use evidence
@@ -22054,3 +22380,2688 @@ F-014 `ServerLootWinner` reader label closure (2026-06-05 pass 160):
 - **Next evidence source**: continue with higher-value open loot blockers:
   `ServerLootCanLoot` producer/consumer timing or bind-on-pickup
   acknowledgement behavior.
+
+F-002 `Client0x0701` diagnostic false-rename guard recheck (2026-06-07):
+
+- **Target question**: Does the current source/test surface leave any safe
+  implementation work for `Client0x0701`, or must it remain mapped-only?
+- **Source/test state**: `Client0x0701` reads the mapped 2-bit
+  `LeadingBits` plus `uint32` `TrailingValue` payload, stays numeric through
+  `PacketPlaceholderNamingTests`, and is handled by
+  `Client0x0701Handler` as a log-only diagnostic with no plaintext or
+  encrypted server emit.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ClientUnresolvedDiagnosticHandlerTests|FullyQualifiedName~ClientDiagnosticPacketShapeTests|FullyQualifiedName~PacketPlaceholderNamingTests" -v minimal --nologo`
+  passed 106/106.
+- **Disposition**: mapped-only / test-pinned. No runtime behavior change is
+  evidence-safe because pass 153 still found only registration evidence for
+  `0x0701`: no native sender, post-read consumer, callback/table owner,
+  indirect send rail, or live capture.
+- **Next evidence source**: capture or map an opcode-specific `0x0701` owner
+  before renaming `LeadingBits`/`TrailingValue` or aliasing the packet to
+  public-event, queue, or movement behavior.
+
+F-003 `Server0x0015` shared-reader false-rename guard recheck (2026-06-07):
+
+- **Target question**: Does the current `Server0x0015` source/test surface
+  leave a safe implementation path, or should it remain a structural
+  placeholder?
+- **Source/test state**: `Server0x0015` writes the mapped 5-bit `Value0` plus
+  `uint32` `Value1` payload and remains a numeric placeholder. The guard test
+  rejects inheriting `ServerMatchingAverageWaitTimeUpdate.Type` /
+  `AverageWaitTime` from the shared `ServerUInt5UInt32_ReadPayload` reader.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~PacketPlaceholderNamingTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~MatchingAverageWaitTimeTests" -v minimal --nologo`
+  passed 116/116.
+- **Disposition**: mapped-only / test-pinned. No runtime emit or semantic
+  rename is evidence-safe because pass 151 still found no opcode-specific
+  `0x0015` apply owner or producer beyond shared reader, registration, and
+  Fortune row-helper evidence.
+- **Next evidence source**: recover a native `0x0015` apply/producer path,
+  client post-read consumer, or live `0x0015` payload capture before renaming
+  `Value0`/`Value1` or emitting the packet.
+
+Placeholder prerequisite/objective enum guard recheck (2026-06-07):
+
+- **Target question**: Is the quick-stat placeholder inventory current and
+  protected by tests, or are some unknown enum names merely comment-only?
+- **Source/test state**: `PrerequisiteType.cs` still contains exactly 24
+  `UnknownNNN` members. `PrerequisiteTypeNamingTests` already groups them by
+  evidence blocker class: duplicate-body aliases, orphan helper candidates,
+  skipped dispatcher candidates, no-op slot candidates, and one diagnostic
+  field-owner candidate. `QuestObjectiveType.Unknown27` and `Unknown29` were
+  comment-only placeholders, so `QuestObjectiveTypeNamingTests` now pins their
+  numeric names until objective data ownership is proven.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~PrerequisiteTypeNamingTests|FullyQualifiedName~QuestObjectiveTypeNamingTests" -v minimal --nologo`
+  passed 119/119.
+- **Disposition**: mapped-only / test-pinned. No enum rename or runtime
+  behavior change is evidence-safe for the remaining placeholder inventory.
+- **Next evidence source**: native handler ownership, table row references,
+  objective text/data semantics, or live script/update evidence for a specific
+  prerequisite/objective id.
+
+F-010 matching replacement boundary recheck (2026-06-07):
+
+- **Target question**: Is the replacement LFR surface safe to widen from
+  validation/logging into server backfill/merge, or should it remain
+  mapped-only?
+- **Source/test state**:
+  `ClientMatchingMatchInitiateLookingForReplacementsHandler` and
+  `ClientMatchingStopLookingForReplacementsHandler` validate in-progress match
+  membership, accept only native role bits `0..2`, and do not start a server
+  replacement queue or emit blocked replacement/status packets.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~MatchingLookingForReplacementsValidationTests|FullyQualifiedName~MatchingPacketShapeTests|FullyQualifiedName~ClientRaidInfoRequestHandlerTests" -v minimal --nologo`
+  passed 40/40.
+- **Disposition**: mapped-only at the replacement-fill boundary. Request
+  validation remains implemented, but server backfill/merge behavior is still
+  blocked.
+- **Next evidence source**: retail/live replacement queue anchor timing,
+  accepted replacement merge, teleport into the running instance, and
+  multi-slot fill sequencing, or native producer/apply proof for those steps.
+
+F-011 guild bank request boundary test pass (2026-06-07):
+
+- **Target question**: Can live-observed guild bank money/item requests safely
+  mutate server bank state, or should they remain request diagnostics?
+- **Source/test state**:
+  `ClientGuildBankMoneyTransactionHandler`, `ClientGuildBankTransactionHandler`,
+  `ClientGuildBankTransaction2Handler`, and `ClientGuildBankTabOpenHandler`
+  currently log decoded request fields only. `ServerGuildBankTabInventory`
+  remains a mapped packet shape, but no guild influence, bank-tab count/state,
+  bank item-slot persistence, permission/limit, or money transaction semantics
+  are server-owned yet.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~GuildBankHandlerBoundaryTests|FullyQualifiedName~GuildPacketShapeTests" -v minimal --nologo`
+  passed 7/7.
+- **Disposition**: mapped-only / test-pinned. Client request parsing/logging is
+  accepted; guild bank money/item mutation and tab inventory response emission
+  remain blocked.
+- **Next evidence source**: model/persist guild influence, bank tab count/state,
+  item slots, permissions/limits, and money transaction semantics before
+  mutating bank state or emitting tab inventory from these requests.
+
+F-012 ICComm / friendship social option / chat aux boundary recheck (2026-06-07):
+
+- **Target question**: Which social/chat behavior is currently implemented, and
+  which parts must remain blocked?
+- **Source/test state**: ICComm transient global/group/guild channels prune
+  offline or stale scoped members before delivery, preserve ordered echoes and
+  directed recipient messages, and filter named recipients by current online
+  membership. Friendship auto-response messages and ignore-strangers are
+  transient player/session behavior. Chat aux `0x01B8`, `0x01C1`, `0x01C4`,
+  and `0x01EF` have typed packet-shape coverage but no proven runtime producer.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ICCommManagerTests|FullyQualifiedName~FriendshipSocialOptionTests|FullyQualifiedName~PacketPlaceholderNamingTests.ServerChatAux" -v minimal --nologo`
+  passed 12/12.
+- **Disposition**: implemented for transient ICComm delivery/social-option echo,
+  mapped-only for durable social persistence and chat aux production.
+- **Next evidence source**: two-client social smoke, backend friendship workflow
+  proof, native/live chat aux producers, and social-option persistence/readback
+  evidence before adding persistent channels or durable auto-response state.
+
+F-015 PvP duel, cooldown, and open-world boundary recheck (2026-06-07):
+
+- **Target question**: Does the current PvP/duel source surface leave safe
+  source-local behavior to implement, or is the remaining work evidence-gated?
+- **Source/test state**: `DuelManager` owns challenge, accept, decline,
+  forfeit, countdown, active defeat, disconnect cancellation, duel achievements,
+  and leash left-area/cancel-warning behavior. `Player` owns durable PvP
+  toggle-off cooldown state via `pvpFlagDisableUntilUtc` and sends
+  `ServerPvpCooldownUpdate` / `ServerPvpCooldownClear`; `SetPvPFlag` emits the
+  mapped `ServerUnitPvpStateChange`. `Player.CanAttack` keeps open-world
+  player-vs-player attackability active-duel-only through
+  `DuelManager.AreDueling`.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~DuelManagerTests|FullyQualifiedName~PvpPacketShapeTests|FullyQualifiedName~PvpFlagCooldownTests|FullyQualifiedName~PvpCombatBoundaryTests|FullyQualifiedName~PvpAdventureBranchScriptTests" -v minimal --nologo`
+  passed 29/29.
+- **Disposition**: mapped-only beyond the implemented duel/cooldown core. No
+  observer broadcast, forced-map/open-world PvP widening, arena/battleground
+  scoring, stat, or reward mutation is evidence-safe from current source.
+- **Next evidence source**: native/live producer proof for observer/stat/reward
+  paths, broader PvP state rules, or completed PvP queue/match smoke bundles
+  before widening PvP behavior.
+
+F-031 Fortune target-scoped coin auto-claim guard (2026-06-07):
+
+- **Target question**: Can `ClientFortuneStart` safely auto-claim any Fortune
+  Coin account item, or only one whose target identity matches the current
+  player?
+- **Source/test state**: `FortuneSessionManager.Start()` auto-claims a
+  matching `CanClaim` Fortune Coin account-item bundle before re-checking and
+  debiting the one-coin start cost. The new regression covers a bundle targeted
+  at another character: no currency is added, no currency is debited, the
+  inventory row remains, and the client receives the mapped click-empty
+  `ServerFortuneReset.ResetCode == 3`.
+- **Verification**:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Fortune" -v minimal --nologo`
+  passed 24/24.
+- **Disposition**: implemented for the target-scoped Fortune Coin auto-claim
+  boundary; mapped-only/blocked for exact retail weights and active rotations.
+- **Next evidence source**: retail `ServerFortuneRewards`, storefront catalog,
+  or native/server producer evidence before changing per-item probabilities,
+  money reward arrays, non-item dealt cards, or active rotation selection.
+
+Storefront purchase offer-item type guard (2026-06-08):
+
+- Source boundary: `StorefrontPurchaseService.TryBuildAccountItemList()` now
+  accepts only catalog offer-item type `0` for runtime account-item delivery.
+  Type `1` and type `2` rows remain catalog-readable through the mapped
+  `ServerStoreOffers` reader/writer shape, but the server does not treat their
+  `ItemId` payload as a grantable account item until retail effect semantics are
+  mapped.
+- Regression:
+  `StorefrontPurchaseHandlerTests.AccountPurchase_WithUnsupportedOfferItemType_ReturnsCannotUseOfferAndDoesNotCharge`
+  verifies that an account purchase containing a type-1 offer-item row returns
+  `StoreError.CannotUseOffer` before currency debit, success result, or
+  account-inventory delivery.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~StorefrontPurchaseHandlerTests|FullyQualifiedName~StorefrontCatalogDatabaseWireTests|FullyQualifiedName~ClientStorefrontRequestCatalogHandlerTests|FullyQualifiedName~StorefrontRequestPurchaseHistoryHandlerTests|FullyQualifiedName~StorePurchaseHistoryManagerTests|FullyQualifiedName~StorePurchaseVelocityLimiterTests|FullyQualifiedName~CREDDExchangeHandlerTests" -v minimal --nologo`
+  passed 27/27.
+- Remaining blocker: map retail type-1/type-2 offer-item purchase effects, the
+  Protobucks/VC request-confirm path, coupon native sender, `0x026A` owned-order
+  tail, and blocked account/storefront producer rows before widening purchase
+  behavior.
+
+F-026 supply satchel stack-limit precision guard (2026-06-08):
+
+- Source boundary: `SupplySatchelManager` now keeps the default 100-material
+  stack cap when `TradeskillMatStackLimit` is missing, invalid, or non-positive,
+  and clamps oversized account reward-property caps to the packet-safe
+  `ushort.MaxValue`.
+- Regression: additions to a saved material count already at or above the
+  resolved cap now return the full remainder without mutating the count or
+  sending a misleading `ServerSupplySatchelUpdate`.
+- Packet guard: `BuildNetworkPacket()` skips material ids outside the fixed
+  512-slot login payload instead of indexing past the packet array.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~SupplySatchelManagerTests" -v minimal --nologo`
+  passed 4/4.
+- Remaining blocker: `ServerSupplySatchelAux` producer semantics and broader
+  item/material eligibility precision still need native/live evidence before
+  claiming full retail satchel parity.
+
+F-028 support stuck missing-table guard (2026-06-08):
+
+- Source boundary: `ClientStuckHandler.RecallToZoneExit()` now treats a missing
+  `WorldLocation2` table as missing destination data instead of throwing during
+  setup or partial game-table loads.
+- Regression:
+  `SupportStuckHandlerTests.RecallTransmat_WhenWorldLocationTableMissingSendsSpellPreRequisitesResult`
+  pins that the player is not teleported and receives `ServerSpellCastResult`
+  with `CastResult.SpellPreRequisites`.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Support" -v minimal --nologo`
+  passed 125/125.
+- Remaining blocker: durable support case workflow, ticket/readback lifecycle,
+  moderation tooling, and exact remaining cooldown UI precision remain
+  evidence/design gated.
+
+F-032 leaderboard database-unavailable cache guard (2026-06-08):
+
+- Source boundary: `DatabaseLeaderboardStore` now returns empty PVE/PVP views
+  when `CharacterDatabase` is unavailable without assigning `cachedPve` or
+  `cachedPvp`, so setup/startup requests can retry hydration after the database
+  becomes available.
+- Regression:
+  `LeaderboardProviderTests.DatabaseStore_WhenDatabaseUnavailable_ReturnsEmptyWithoutCaching`
+  pins that unavailable DB responses are empty but not cached.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Leaderboard" -v minimal --nologo`
+  passed 13/13.
+- Remaining blocker: season rules, medal filters, exact retail row caps/refresh
+  cadence, and broader live score-ingestion hooks remain evidence-gated.
+
+F-033 challenge missing-table guards (2026-06-08):
+
+- Source boundary: `ChallengeManager` now treats a missing `Challenge` table as
+  unknown challenge data and returns `ChallengeResult.GenericFail` instead of
+  throwing during activation; missing `ChallengeTier` data resolves tier goals
+  to zero while still sending the mapped update shape.
+- Regressions:
+  `ChallengeManagerTests.Activate_WhenChallengeTableMissing_SendsGenericFail`
+  and `Activate_WhenChallengeTierTableMissing_SendsUpdateWithZeroGoal` pin the
+  partial-game-table setup boundary.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Challenge" -v minimal --nologo`
+  passed 44/44.
+- Remaining blocker: `Client0x00C8`, share-init ownership,
+  reward-tier/medal win-chance payloads, and broader live objective/reward
+  sequencing remain evidence-gated.
+
+F-029 / audit F-036 DataMapping residual-classification guard (2026-06-08):
+
+- Source boundary: `analyze_laughingws_worlddb.py` already classifies broad
+  new-zone, sandbox/test-zone, tutorial replacement, open-world residual, and
+  partial small-world seed sources so raw LaughingWS replacement SQL cannot be
+  mistaken for safe runtime import data.
+- Regression: `test_laughingws_worlddb_classifications.py` now pins the
+  row-level residual buckets for Algoroc, Celestion, Galeras, Thayd,
+  Whitevale, Deradune, Ellevar, Illium, Everstar Grove, Northern Wilds,
+  Auroria, Crimson Isle, Levian Bay, Wilderrun, and Northern Wilds duplicate
+  vendor rows. Each must stay blocked/rejected or partial-seed-covered without
+  `extract_additive_world_overlay`.
+- Verification:
+  `python -m py_compile Tools\DataMapping\analyze_laughingws_worlddb.py Tools\DataMapping\build_laughingws_row_review_queue.py Tools\DataMapping\test_laughingws_worlddb_classifications.py`
+  passed, and
+  `python Tools\DataMapping\test_laughingws_worlddb_classifications.py`
+  passed 6/6 against the local external snapshot.
+- Disposition: implemented as tooling regression coverage. No runtime data
+  overlay, generated seed, setup import, or gameplay behavior was widened.
+- Remaining blocker: row-level client/runtime smoke, asset proof, placement
+  proof, or script/mechanics evidence is still required before any blocked
+  residual or WIP/GUESSED overlay can move beyond mapped-only/rejected state.
+
+F-004 housing decor-move scale guard (2026-06-08):
+
+- Source boundary: `ResidenceMapInstance.DecorMove()` now rejects negative
+  scale after plot validation succeeds but before copying decor fields,
+  invoking `IDecor.Move()`, or broadcasting a residence-decor update.
+- Regression:
+  `ResidenceMapInstanceInteriorWallpaperTests.DecorMove_NegativeScale_ThrowsBeforeMutatingDecor`
+  pins the handler-facing mutation guard.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ResidenceMapInstanceInteriorWallpaperTests" -v minimal --nologo`
+  passed 4/4.
+- Remaining blocker: edit-mode ack/broadcast packet semantics, neighborhood
+  `0x0501`/`0x0506` producers/fields, community/session precision, and decor
+  ownership/unlock/refund behavior remain evidence-gated.
+
+F-014 loot-bag single-stack delete-failure guard (2026-06-08):
+
+- Source boundary: `GlobalLootManager.TryUseLootBag()` now catches
+  `InvalidPacketValueException` and `ArgumentException` from the extra
+  `ItemDelete(..., ItemUpdateReason.ConsumeCharge)` used by single-stack
+  no-charge loot bags.
+- Regression:
+  `LootBagUsageTests.TryUseLootBag_SingleStackDeleteFailureDoesNotGrantLoot`
+  pins `item-delete-failed`, no account-currency grant, and no granted-loot
+  notification/remove packets when the source item delete fails.
+- Verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~LootBagUsageTests" -v minimal --nologo`
+  passed 11/11, and
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Loot" -v minimal --nologo`
+  passed 87/87.
+- Remaining blocker: standalone `ServerLootCanLoot`, exact parent/source
+  selection, bind-on-pickup confirmation, roll/master UI parity, and loot aux
+  producer timing remain evidence-gated.
+
+F-007 / audit F-009 reward-property partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local static-table guard on
+  existing reward-property setup and spell reward-property modifier resolution.
+- `RewardPropertyManager` now resolves premium modifier reward-property and
+  entitlement rows through nullable `RewardProperty` / `Entitlement` table
+  lookups. Missing static data skips only the unsafe modifier row instead of
+  crashing account reward-property setup or emitting guessed values.
+- Type-based `UpdateRewardProperty(RewardPropertyType, ...)` now no-ops when
+  `RewardProperty` static data is unavailable, preserving callers that update
+  reward properties from account/character entitlement deltas during partial
+  table loads.
+- `SpellHandler.TryResolveRewardPropertyModifier()` now treats a missing
+  `RewardProperty` table like a missing row and returns the existing
+  `unknown-reward-property` diagnostic boundary before account reward-property
+  mutation.
+- `RewardPropertyManagerTests` pin missing reward-property table, missing
+  entitlement table, table-backed entitlement modifier value, no-packet
+  type-based update, and spell-resolver missing-table behavior.
+- Focused reward-property verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~RewardPropertyManagerTests" -v minimal --nologo`
+  passed 5/5.
+- Broader reward/spell verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~RewardProperty|FullyQualifiedName~RewardRotation|FullyQualifiedName~Spell" -v minimal --nologo`
+  passed 375/375.
+- Remaining blockers: reward-rotation claim item/currency/property delivery,
+  `0x07CD` apply/flag/throttle semantics, exact schedule selection, and
+  reward/content-context producer semantics remain evidence-gated.
+
+F-007 / audit F-009 reward-property modifier-source partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on reward-property premium modifier cache construction.
+- `AssetManager` now resolves `RewardPropertyPremiumModifier` through a nullable
+  table lookup and treats an unavailable modifier table like an empty premium
+  modifier source instead of null-refing during startup/cache build.
+- Table-backed behavior is preserved: only Hybrid premium-system rows are cached,
+  exact-tier rows remain exact-tier rows, and lower-tier rows still fall through
+  only when `RewardPropertyPremiumModiferFlags.FallThrough` is set.
+- `AssetManagerRewardPropertyTests` pin missing-table, empty-table, and
+  table-backed Hybrid/fall-through grouping boundaries.
+- Focused reward-property verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-asset-reward-property-focused\ --filter "FullyQualifiedName~AssetManagerRewardPropertyTests|FullyQualifiedName~RewardPropertyManagerTests" -v minimal --nologo`
+  passed 8/8.
+- Broader Reward verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-asset-reward-property-broad2\ --filter "FullyQualifiedName~Reward" -v minimal --nologo`
+  passed 172/172.
+- Verification note: the first focused/broad test attempt was run in parallel and
+  hit transient `CS2012` compiler output locks; sequential reruns above passed.
+- Remaining blockers: reward-rotation claim item/currency/property delivery,
+  `0x07CD` apply/flag/throttle semantics, exact schedule selection, and
+  reward/content-context producer semantics remain evidence-gated.
+
+F-022 / audit F-026 global quest-manager cache partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on global quest startup cache construction.
+- `GlobalQuestManager` now resolves `Quest2` through a nullable table lookup
+  when building quest info, so unavailable quest static data behaves like an
+  empty quest-info cache and `GetQuestInfo()` keeps returning `null` for
+  unknown quest ids.
+- `GlobalQuestManager` now resolves `Creature2` through a nullable table lookup
+  when building quest giver/receiver relation caches, so unavailable creature
+  static data behaves like empty relation caches and relation getters keep
+  returning empty sequences.
+- `GlobalQuestManager` now resolves `CommunicatorMessages` through nullable
+  table lookups when building communicator, quest-delivery, and quest-state
+  trigger caches. Missing communicator data behaves like empty caches, unknown
+  communicator ids return `null`, and quest communicator getters return empty
+  sequences.
+- Null quest/communicator id arrays are treated like empty arrays while building
+  relation and trigger caches, preserving table-backed rows without widening
+  communicator delivery semantics.
+- `GlobalQuestManagerPartialTableTests` pin missing-table, empty-table,
+  table-backed quest relation, delivered communicator, and state-trigger
+  boundaries.
+- Focused global quest-manager verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-global-quest-manager-partial-focused\ --filter "FullyQualifiedName~GlobalQuestManagerPartialTableTests" -v minimal --nologo`
+  passed 3/3.
+- Broader quest/communicator-adjacent verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-global-quest-manager-partial-broad\ --filter "FullyQualifiedName~GlobalQuestManagerPartialTableTests|FullyQualifiedName~Quest|FullyQualifiedName~Quests|FullyQualifiedName~Communicator" -v minimal --nologo`
+  passed 322/322.
+- Remaining blockers: exact objective guidance UI, receiver/visibility content
+  smoke, public-event producer timing, path target semantics, and broader
+  quest/path content parity remain evidence-gated.
+
+F-022 / audit F-026 quest target-group cache partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on existing quest target-group cache construction and target-group recursive
+  criteria evaluation.
+- `AssetManager` now resolves `TargetGroup` through nullable table lookups when
+  building the creature-to-target-group cache and when expanding quest-objective
+  target groups, so an unavailable target-group table behaves like an empty
+  source or missing target-group row instead of null-refing.
+- `AssetManager` now resolves `QuestObjective` through a nullable table lookup
+  when building quest-objective target caches, so an unavailable quest-objective
+  table behaves like an empty target cache.
+- Table-backed behavior is preserved: creature target-group indexing only caches
+  `CreatureIdGroup` rows, nested quest-objective target groups still expand
+  through `OtherTargetGroup` / `OtherTargetGroupCreatures`, and duplicate target
+  ids still collapse into sorted unique ids.
+- `TargetGroupCriteriaEvaluator` now resolves recursive subgroups through a
+  nullable `TargetGroup` lookup, preserving the existing missing nested-row
+  pass-through behavior when the target-group table itself is unavailable.
+- `AssetManagerTargetGroupTests` and `TargetGroupCriteriaEvaluatorTests` pin
+  missing-table, empty-table, table-backed cache, nested quest-objective, and
+  recursive criteria boundaries.
+- Focused target-group verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-asset-target-group-focused\ --filter "FullyQualifiedName~AssetManagerTargetGroupTests|FullyQualifiedName~TargetGroupCriteriaEvaluatorTests" -v minimal --nologo`
+  passed 49/49.
+- Broader quest/target-group-adjacent verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-asset-target-group-broad\ --filter "FullyQualifiedName~Quest|FullyQualifiedName~TargetGroupCriteriaEvaluatorTests|FullyQualifiedName~InteractionObjectiveUpdaterTests|FullyQualifiedName~StarterTutorialActivateEffectTests|FullyQualifiedName~ChallengeCombatHooksTests" -v minimal --nologo`
+  passed 371/371.
+- Remaining blockers: exact objective guidance UI, receiver/visibility content
+  smoke, public-event producer timing, path target semantics, and broader
+  quest/path content parity remain evidence-gated.
+
+F-016/F-021 spell metadata cache partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on spell metadata cache construction and spell info materialization.
+- `GlobalSpellManager` now resolves `Spell4`, `Spell4Effects`,
+  `Spell4Telegraph`, `TelegraphDamage`, and `Spell4Thresholds` through nullable
+  table lookups when building spell caches, so unavailable primary tables behave
+  like empty caches.
+- `GlobalSpellManager` now resolves `Spell4Base` through a nullable table
+  lookup when building spell-base metadata and when serving `GetSpellBaseInfo()`.
+  Missing table or row data uses the existing invalid-spell
+  `ArgumentOutOfRangeException` boundary.
+- `SpellBaseInfo` and `SpellInfo` now resolve secondary spell metadata tables
+  through nullable lookups. Missing dependency tables behave like missing rows,
+  preserving nullable metadata, zero prerequisite flags, empty effect/telegraph/
+  threshold collections, and existing missing runner-prerequisite behavior.
+- `SpellBaseInfo.GetSpellInfo()` now returns `null` when no `Spell4` tier data
+  exists for a known base spell or when the requested tier is outside the
+  materialized cache, preserving the existing invalid-spell/no-spell-info
+  boundary for action-set and cast validation call sites.
+- `GlobalSpellManagerPartialTableTests` pin missing-table, empty-table,
+  table-backed cache ordering, missing dependency-table materialization, and
+  sparse/out-of-range tier lookup boundaries.
+- Focused spell-manager verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-spell-tier-partial-focused\ --filter "FullyQualifiedName~GlobalSpellManagerPartialTableTests" -v minimal --nologo`
+  passed 8/8.
+- Broader spell/action-set/pet-adjacent verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-spell-tier-partial-broad\ --filter "FullyQualifiedName~GlobalSpellManagerPartialTableTests|FullyQualifiedName~Spell|FullyQualifiedName~ActionSet|FullyQualifiedName~Pet" -v minimal --nologo`
+  passed 597/597.
+- Remaining blockers: spell aux producer timing, proc tails,
+  immunity/effect evidence, wrapper lifecycle, current/action-set update
+  transactions, and retail spell semantics remain evidence-gated.
+
+F-026 / audit F-033 item display-source partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on item display-source cache construction and item display id resolution.
+- `AssetManager` now resolves `ItemDisplaySourceEntry` through a nullable table
+  lookup and treats an unavailable display-source table like an empty
+  display-source cache instead of null-refing during startup/cache build.
+- `ItemInfo.GetDisplayId()` now treats unavailable display-source rows like an
+  empty candidate set before returning the existing zero-display fallback.
+- Table-backed behavior is preserved: a single matching display-source row still
+  returns its `ItemDisplayId`, and multi-row display-source selection still uses
+  the existing explicit display id / power-level fallback behavior.
+- `ItemInfoDisplaySourceTests` pin missing-table, empty-table, single-row, and
+  multi-row fallback boundaries.
+- Focused item-display-source verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-item-display-source-focused\ --filter "FullyQualifiedName~ItemInfoDisplaySourceTests" -v minimal --nologo`
+  passed 6/6.
+- Broader item/costume/marketplace display-adjacent verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-item-display-source-broad\ --filter "FullyQualifiedName~ItemInfoDisplaySourceTests|FullyQualifiedName~Costume|FullyQualifiedName~ItemUse|FullyQualifiedName~MarketplaceAuctionHandlerTests|FullyQualifiedName~MarketplaceMailSettlementTests" -v minimal --nologo`
+  passed 104/104.
+- Remaining blockers: item/error aux producers, exact visual update timing,
+  remaining item eligibility precision, and deeper costume/unlock lifecycle
+  parity remain evidence-gated.
+
+F-026 / audit F-033 item-manager item/item-slot partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on `ItemManager` static item and equipped-slot cache construction.
+- `ItemManager` now resolves `Item` through a nullable table lookup when building
+  the static item cache. An unavailable `Item` table behaves like an empty item
+  source, so `GetItemInfo()` continues to return null for unavailable item rows.
+- `ItemManager` now resolves `ItemSlot` through a nullable table lookup when
+  building equipped-slot indexes. An unavailable `ItemSlot` table behaves like an
+  empty equipped-slot source, so `GetEquippedBagIndexes()` continues to return an
+  empty sequence for unavailable slot rows.
+- Table-backed behavior is preserved: `ItemSlot.EquippedSlotFlags` rows still
+  index the corresponding `EquippedItem` bag positions.
+- `ItemManagerPartialTableTests` pin missing-table, empty-table, and table-backed
+  equipped-slot indexing boundaries.
+- Focused item-manager verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-item-manager-partial-focused\ --filter "FullyQualifiedName~ItemManagerPartialTableTests" -v minimal --nologo`
+  passed 5/5.
+- Broader item/costume/marketplace-adjacent verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-item-manager-partial-broad\ --filter "FullyQualifiedName~ItemManagerPartialTableTests|FullyQualifiedName~ItemInfoDisplaySourceTests|FullyQualifiedName~ItemUse|FullyQualifiedName~RealmBankInventoryTests|FullyQualifiedName~MarketplaceAuctionHandlerTests|FullyQualifiedName~MarketplaceMailSettlementTests|FullyQualifiedName~Costume" -v minimal --nologo`
+  passed 117/117.
+- Remaining blockers: item/error aux producers, exact visual/equip update timing,
+  remaining item eligibility precision, and deeper costume/unlock lifecycle
+  parity remain evidence-gated.
+
+F-014 / audit F-019 creature DropLoot Creature2 partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local guard on the existing
+  creature loot no-drop boundary.
+- `GlobalLootManager.DropLoot(IPlayer, IWorldEntity)` now resolves the
+  `Creature2` table through a nullable lookup. A missing `Creature2` table now
+  behaves like a missing creature row and returns false before recipient
+  selection, loot-instance creation, or loot notify emission.
+- Empty `Creature2` tables preserve the same no-drop behavior.
+- `GlobalLootManagerTests.DropLoot_WithUnavailableCreatureTableReturnsFalseWithoutLoot`
+  pins missing-table and empty-table behavior, including no active loot instance,
+  no owner/looter index entry, and no encrypted loot notify.
+- Focused creature DropLoot verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-loot-creature2-focused\ --filter "FullyQualifiedName~GlobalLootManagerTests.DropLoot_WithUnavailableCreatureTableReturnsFalseWithoutLoot" -v minimal --nologo`
+  passed 2/2.
+- Broader loot verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-loot-creature2-broad\ --filter "FullyQualifiedName~Loot" -v minimal --nologo`
+  passed 93/93.
+- Remaining blockers: standalone `ServerLootCanLoot`, exact parent/source
+  selection, bind-on-pickup confirmation policy, roll/master UI parity,
+  static-item/currency chat precision, and loot aux producer timing remain
+  evidence-gated.
+
+F-014 / audit F-019 generated loot reward-table guard (2026-06-08):
+- No new native labels were added. This is a source-local validation guard on
+  existing generated loot preflight.
+- `GlobalLootManager` now resolves account-currency, account-item, and
+  virtual-item generated rewards through nullable `AccountCurrencyType`,
+  `AccountItem`, and `VirtualItem` table lookups.
+- Missing reward static tables now behave like missing reward rows and return
+  the existing `invalid-loot-item` preflight reason before loot-bag source item
+  consumption or generated reward delivery.
+- `GlobalLootManagerTests.CanDeliverGeneratedLoot_WithMissingRewardTable_ReturnsInvalidLootItem`
+  pins the account-currency, account-item, and virtual-item missing-table
+  preflight boundary.
+- `LootBagUsageTests.TryUseLootBag_AccountCurrencyMissingGameTable_DoesNotConsumeItem`
+  pins that a loot-bag account-currency reward with no `AccountCurrencyType`
+  table does not consume the source item, grant currency, or emit loot packets.
+- Focused GlobalLootManager / loot-bag verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~GlobalLootManagerTests|FullyQualifiedName~LootBagUsageTests" -v minimal --nologo`
+  passed 32/32.
+- Broader loot verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Loot" -v minimal --nologo`
+  passed 91/91.
+- Remaining blockers: standalone `ServerLootCanLoot`, exact parent/source
+  selection, bind-on-pickup confirmation policy, roll/master UI parity, and
+  loot aux producer timing remain evidence-gated.
+
+F-014/F-026 character-currency CurrencyType partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local guard on the existing
+  character-currency manager invalid static-currency boundary.
+- `CurrencyManager.CanAfford()`, `CurrencyAddAmount()`, and
+  `CurrencySubtractAmount()` now resolve the injected `CurrencyType` table
+  through nullable lookups, preserving the existing `ArgumentNullException` when
+  the table or row is unavailable.
+- This stops direct character-currency requests before affordability success,
+  currency-state mutation, `ServerChannelUpdateLoot`, or `ServerCombatReward`
+  emission without changing loot preflight, item-use, or retail currency
+  presentation semantics.
+- `CurrencyManagerTests` pin missing-table, empty-table, and table-backed
+  zero-affordability boundaries.
+- Focused character-currency verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-currency-exact\ --filter "FullyQualifiedName~NexusForever.Game.Tests.Entity.CurrencyManagerTests" -v minimal --nologo`
+  passed 7/7.
+- Broader character-currency / loot-adjacent verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-currency\ --filter "FullyQualifiedName~NexusForever.Game.Tests.Entity.CurrencyManagerTests|FullyQualifiedName~LootInstanceDeliveryTests|FullyQualifiedName~GlobalLootManagerTests" -v minimal --nologo`
+  passed 32/32.
+- Note: an earlier exact-class run was discarded after it overlapped a broader
+  test process on shared `obj` outputs; the sequential rerun above passed.
+- Remaining blockers: exact retail currency chat/floater policy, item/error aux
+  producers, standalone `ServerLootCanLoot`, exact parent/source selection,
+  bind-on-pickup confirmation policy, roll/master UI parity, and loot aux
+  producer timing remain evidence-gated.
+
+F-027 keybinding character-scope guard (2026-06-08):
+- No new native labels were added. Source-local scope validation now keeps the
+  account/character keybinding split from accepting arbitrary non-zero character
+  ids in world-session packets.
+- `ClientRequestInputKeySet` and `BiInputKeySet` now require any non-zero
+  `CharacterId` to match `session.Player.CharacterId` before character
+  keybinding readback/update. Mismatches throw `InvalidPacketValueException`
+  before `Build`, `Update`, or response enqueue.
+- `OptionHandlerTests.RequestInputKeySet_WithDifferentCharacterIdThrowsBeforeReadback`
+  and `UpdateInputKeySet_WithDifferentCharacterIdThrowsBeforeMutatingManagers`
+  pin the boundary.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Option" -v minimal --nologo`
+  passed 35/35.
+- Combined F-027/F-028 bucket verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Option|FullyQualifiedName~Support" -v minimal --nologo`
+  passed 160/160.
+- Remaining blockers: additional option types, broader account-vs-character
+  option ownership/readback, and item/options aux `0x056B..0x056D` producer
+  semantics remain evidence-gated.
+
+F-026 costume unlock non-equippable guard (2026-06-08):
+- No new native labels were added. This is a source-local eligibility guard that
+  aligns costume unlock with the existing costume-save requirement that saved
+  costume item ids be equippable.
+- `AccountCostumeManager.UnlockItem()` now treats a missing or non-equippable
+  inventory item as `CostumeUnlockResult.InvalidItem` before account unlock
+  creation, item soulbind, achievement update, or success result.
+- `AccountCostumeManagerTests.UnlockItem_WithNonEquippableItemSendsInvalidWithoutUnlockingOrSoulbinding`
+  pins invalid result/no unlock/no soulbind for a non-equippable item.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~AccountCostumeManagerTests|FullyQualifiedName~ClientItemGenericUnlockHandlerTests|FullyQualifiedName~AccountUnlockPacketShapeTests|FullyQualifiedName~ClientPetSetStanceHandlerTests|FullyQualifiedName~SupplySatchelManagerTests|FullyQualifiedName~ClientItemUseHandlerTests|FullyQualifiedName~ClientItemUseDecorHandlerTests" -v minimal --nologo`
+  passed 34/34.
+- Remaining blockers: item/error aux producers, supply-satchel/costume aux
+  producer semantics, pet lifecycle response timing, generic unlock deltas, and
+  deeper costume lifecycle parity remain evidence-gated.
+
+F-005/F-013 item-auction offline seller settlement guard (2026-06-08):
+- No new native labels were added. This is a source-local persistence
+  atomicity guard for item-auction sale settlement.
+- `GlobalMarketplaceManager` now uses a seller-credit-aware auction delete path
+  for direct winner-inventory delivery and auction-won mail delivery. When the
+  seller is offline, auction row deletion, moved item state, and seller credit
+  mail are written in one required character DB save; without a character DB,
+  the sale stays pending instead of delivering the item and dropping seller
+  proceeds.
+- `MarketplaceMailDelivery.SaveMarketplaceCreditMail()` exposes same-context
+  credit-mail persistence for composed marketplace saves.
+- `MarketplaceAuctionHandlerTests.AuctionBuyout_WithOfflineSellerAndNoCharacterDatabase_DoesNotDeliverDebitOrRemoveAuction`
+  and
+  `AuctionExpire_WithOnlineWinnerOfflineSellerAndNoCharacterDatabase_DoesNotDeliverCreditNotifyOrRemoveAuction`
+  pin the no-DB offline-seller boundary.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests" -v minimal --nologo`
+  passed 47/47.
+- Marketplace/mail bucket verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Marketplace|FullyQualifiedName~Mail" -v minimal --nologo`
+  passed 82/82.
+- Remaining blockers: commodity seller-credit, buy-order refund, outbid refund,
+  and other `CreditCharacter` fallback paths still need composed offline
+  currency-credit transaction handling before final settlement atomicity can be
+  claimed.
+
+F-005/F-013 commodity buy-order offline expiration refund guard (2026-06-08):
+- No new native labels were added. This is a source-local persistence
+  atomicity guard for expired commodity buy-order escrow refunds.
+- `GlobalMarketplaceManager.ExpireCommodityOrder()` now uses a composed
+  offline-credit delete path for expired offline buy orders. When the owner is
+  offline, commodity-order deletion and refund credit mail are written in one
+  required character DB save; without a character DB, the order stays active
+  instead of deleting the order and dropping escrow.
+- `MarketplaceAuctionHandlerTests.CommodityBuyOrderExpire_WithOfflineOwnerAndNoCharacterDatabase_DoesNotRefundOrRemoveOrder`
+  pins the no-DB offline-owner boundary.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests" -v minimal --nologo`
+  passed 48/48.
+- Marketplace/mail bucket verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Marketplace|FullyQualifiedName~Mail" -v minimal --nologo`
+  passed 83/83.
+- Remaining blockers: outbid refunds and other `CreditCharacter` fallback paths
+  still need composed offline currency-credit transaction handling before final
+  settlement atomicity can be claimed.
+
+F-005/F-013 commodity-fill offline-credit guard (2026-06-08):
+- No new native labels were added. This is a source-local persistence
+  atomicity guard for commodity fill settlement credits.
+- Commodity fills now calculate seller proceeds and buyer price-improvement
+  refunds before delivery. Offline portions are saved through
+  `PersistCommodityFillOrderChangesWithOfflineCredits()` in the same required
+  character DB save as the resting buy/sell order update/delete; online players
+  still receive live `CurrencyAddAmount` updates after the composed save.
+- `MarketplaceAuctionHandlerTests.CommodityForceImmediateBuy_WithOfflineSellerAndNoCharacterDatabase_LeavesSellOrderUnfilled`
+  pins the no-DB offline-seller boundary: the buyer escrow is refunded, no item
+  is delivered, no fill notifications are emitted, and the resting sell order
+  remains active.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests" -v minimal --nologo`
+  passed 49/49.
+- Marketplace/mail bucket verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Marketplace|FullyQualifiedName~Mail" -v minimal --nologo`
+  passed 84/84.
+
+F-005/F-013 auction bidder-refund offline-credit guard (2026-06-08):
+- No new native labels were added. This is a source-local persistence
+  atomicity guard for auction bidder refunds.
+- Auction previous-bidder and top-bidder refunds now compose with the owning
+  marketplace save: bid updates use `PersistAuctionUpdateWithOfflineCredit()`,
+  buyout/cancel/delete paths use `PersistAuctionDeleteWithCredits()` or
+  `PersistAuctionDeleteWithBidderRefund()`, and mail-return paths include the
+  bidder refund in the same `MarketplaceMailDelivery` save action. The old
+  marketplace `CreditCharacter()` fallback was removed.
+- `MarketplaceAuctionHandlerTests.AuctionBid_WithOfflinePreviousBidderAndNoCharacterDatabase_RestoresNewBidAndRefundsBidder`
+  pins outbid rollback when the previous offline bidder refund cannot persist.
+- `MarketplaceAuctionHandlerTests.AuctionCancel_WithOfflineTopBidderAndNoCharacterDatabase_DoesNotRefundReturnOrRemoveAuction`
+  pins cancel rollback when the offline top-bidder refund cannot persist.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests" -v minimal --nologo`
+  passed 51/51.
+- Marketplace/mail bucket verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Marketplace|FullyQualifiedName~Mail" -v minimal --nologo`
+  passed 86/86.
+- Source-local marketplace offline settlement-credit atomicity is now closed.
+  Remaining F-005 gates are live DB/order-book validation, retail
+  property/rune/equippable filters, CREDD owned-order tails, commodity
+  partial-stack precision, and marketplace aux producer semantics.
+
+F-033 / audit F-040 challenge progress overflow guard (2026-06-08):
+- No new native labels were added. This is a source-local arithmetic guard for
+  challenge progress accumulation.
+- `ChallengeManager.TryAdvanceProgress()` now widens `CurrentCount + progress`
+  before clamping to the active tier goal, preventing large `uint` progress
+  deltas from wrapping below the goal.
+- `ChallengeManagerTests.TryAdvanceProgress_LargeProgressClampsAtGoalWithoutWrapping`
+  pins a near-`uint.MaxValue` progress path that completes cleanly and still
+  emits the `QuestObjectiveType.CompleteChallenge` hook.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ChallengeManagerTests" -v minimal --nologo`
+  passed 12/12.
+- Remaining blockers: `Client0x00C8`, share-init ownership, reward-tier/medal
+  win-chance payloads, and live objective/reward sequencing remain
+  evidence-gated.
+
+F-035 / audit F-042 achievement checklist-bit mask guard (2026-06-08):
+- No new native labels were added. This is a source-local guard for persisted
+  and table-driven achievement checklist masks.
+- `AchievementProgressRules.TryBuildChecklistBit()` now rejects bit indexes
+  outside the 32-bit progress mask. `Achievement.IsComplete()`,
+  `GrantAchievement()`, checklist completion, and checklist-count crediting no
+  longer allow C# shift-count wrapping to alias bit 32+ to bit 0.
+- `AchievementProgressTests.IsComplete_DoesNotAliasChecklistBit32ToBit0` and
+  `QuestCompleteChecklistCount_IgnoresChecklistBitsOutsideMask` pin the
+  fail-closed boundary.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Achievement" -v minimal --nologo`
+  passed 25/25.
+- Remaining blockers: Steam payload grammar, achievement-id correlation,
+  data-only/unowned achievement families, exact realm-first UI/timing, and
+  broader achievement UI edge cases remain evidence-gated.
+
+F-035 / audit F-042 achievement checklist metadata partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on achievement metadata materialization.
+- `AchievementInfo` now resolves `AchievementChecklist` through a nullable table
+  lookup and treats an unavailable table like an empty checklist source instead
+  of null-refing during achievement startup/materialization.
+- Table-backed behavior is preserved: checklist rows still filter by
+  `AchievementId`.
+- `AchievementInfoTests` pin missing-table, empty-table, and table-backed
+  checklist filtering boundaries.
+- Focused achievement metadata verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-achievement-info\ --filter "FullyQualifiedName~AchievementInfoTests|FullyQualifiedName~AchievementProgressTests|FullyQualifiedName~GuildAchievementManagerTests" -v minimal --nologo`
+  passed 13/13.
+- Broader achievement verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-achievement-info-broad\ --filter "FullyQualifiedName~Achievement" -v minimal --nologo`
+  passed 29/29.
+- Remaining blockers: Steam payload grammar, achievement-id correlation,
+  data-only/unowned achievement families, exact realm-first UI/timing, and
+  broader achievement UI edge cases remain evidence-gated.
+
+F-035 / audit F-042 achievement primary-table startup guard (2026-06-08):
+- No new native labels were added. This is a source-local startup guard on the
+  global achievement metadata cache.
+- `GlobalAchievementManager.Initialise()` now resolves `Achievement` through a
+  nullable table lookup, treating unavailable primary achievement static data
+  like an empty achievement cache.
+- `LoadCompletedRealmFirstAchievements()` now treats missing character DB
+  registration like no persisted realm-first preload. Table-backed player/guild
+  achievement indexing and public missing-data behavior are preserved.
+- `GlobalAchievementManagerPartialTableTests` pin missing-table, empty-table,
+  and table-backed character/guild cache boundaries.
+- Focused global achievement verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-achievement-global-focused\ --filter "FullyQualifiedName~GlobalAchievementManagerPartialTableTests" -v minimal --nologo`
+  passed 3/3.
+- Broader achievement verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-achievement-global-broad\ --filter "FullyQualifiedName~Achievement" -v minimal --nologo`
+  passed 32/32.
+- Remaining blockers: Steam payload grammar, achievement-id correlation,
+  data-only/unowned achievement families, exact realm-first UI/timing, and
+  broader achievement UI edge cases remain evidence-gated.
+
+F-032 / audit F-039 leaderboard duplicate-score dedupe guard (2026-06-08):
+- No new native labels were added. This is a source-local leaderboard
+  consistency guard for persisted duplicate score rows.
+- `DatabaseLeaderboardStore` now keeps the best PvE/PvP row per character
+  before per-scope/category caps, preventing duplicate historical scores from
+  hiding other characters inside the capped cache.
+- `LeaderboardAggregation` also dedupes arbitrary store rows before visible
+  response ranking, so the rank index remains one row per character.
+- `LeaderboardProviderTests` pin best-row retention in store caps, and
+  `LeaderboardAggregationTests` pin best-row retention in PvE/PvP responses.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Leaderboard" -v minimal --nologo`
+  passed 17/17.
+- Remaining blockers: season rules, medal-filter semantics, exact retail row
+  caps/refresh cadence, and broader live score-ingestion hooks remain
+  evidence-gated.
+
+F-034 / audit F-041 persisted datacube duplicate-row merge guard (2026-06-08):
+- No new native labels were added. This is a source-local character-load guard
+  for persisted datacube state.
+- `DatacubeManager` now merges duplicate persisted rows for the same datacube
+  id/type by OR-ing progress masks instead of throwing when the dictionary key
+  already exists.
+- `PathManagerTests.DatacubeManager_Constructor_MergesDuplicatePersistedRows`
+  pins duplicate persisted datacube rows restoring as one merged datacube.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~DatacubeManager" -v minimal --nologo`
+  passed 3/3.
+- Archive/datacube verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~GalacticArchive|FullyQualifiedName~Datacube|FullyQualifiedName~ArchiveUnlock" -v minimal --nologo`
+  passed 28/28.
+- Remaining blockers: datacube/journal pickup-chain smoke, Codex
+  progression/link UX semantics, and path-mission archive rule parity remain
+  evidence-gated.
+
+F-021 / audit F-025 action-set partial-table guards (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  for existing action-set and player stance request handlers.
+- `ClientSetStanceHandler` now resolves `gameTableManager.Class` through a
+  nullable table lookup and treats a missing table like a missing class row,
+  throwing `InvalidPacketValueException` before mutating `IPlayer.InnateIndex`
+  or emitting `ServerStanceChanged`.
+- The table-backed path is unchanged: valid class rows with a non-zero active
+  innate spell id still update `InnateIndex` and send `ServerStanceChanged`.
+- `ClientRequestActionSetChangesHandler` now resolves `Spell4` and
+  `EldanAugmentation` through nullable table lookups, treating missing tables
+  like missing rows. Unknown spell ids still return `LimitedActionSetResult.UnknownSpellId`,
+  and unknown AMP ids still return `LimitedActionSetResult.EldanAugmentationInvalidId`
+  before save/cache updates, selected ability refreshes, or AMP mutation.
+- `ClientCommitAmpSpecHandler` now receives `IGameTableManager` through
+  dependency injection, resolves `EldanAugmentation` rows through nullable table
+  lookups, and returns `LimitedActionSetResult.EldanAugmentationInvalidId`
+  before AMP mutation or `ServerAmpList` emission when the table is missing.
+- `ActionSet.AddAmp(EldanAugmentationEntry)` lets validated handlers commit the
+  resolved AMP entry directly, avoiding a second singleton lookup after
+  validation succeeds.
+- Follow-up source-local guard: `ActionSet.AddAmp(ushort)` and
+  `ActionSet.AddAmp(CharacterActionSetAmpModel)` now resolve the singleton
+  `EldanAugmentation` table through nullable lookups, treating missing tables
+  like missing AMP rows and preserving the existing invalid-AMP
+  `ArgumentException` before owner-save or AMP-list mutation.
+- `ClientRespecAmpsHandler` now resolves `EldanAugmentationCategory` and
+  `EldanAugmentation` through nullable table lookups. Missing tables return the
+  existing `LimitedActionSetResult.EldanAugmentationInvalidCategoryId` or
+  `LimitedActionSetResult.EldanAugmentationInvalidId` before `RemoveAmp`,
+  `ServerAmpRespecResult.Ok`, or `ServerAmpList` emission.
+- `ClientNonSpellActionSetChangesHandler` now treats a missing `Item` table like
+  a missing bag-item row, throwing `InvalidPacketValueException` before
+  `ActionSet.AddShortcut` / owner save. Known `Item2` rows still commit
+  bag-item shortcuts normally.
+- `ClientSetStanceHandlerTests` pin missing-table rejection without mutation or
+  emit, and a known Warrior stance response path.
+- `ActionSetSaveRequestTests` pin missing `Spell4` and `EldanAugmentation`
+  table rejection through real `ClientRequestActionSetChanges` packets, plus
+  missing-table rejection and table-backed success for `ClientCommitAmpSpec`
+  and `ClientRespecAmps`, and missing `Item` table rejection plus table-backed
+  bag-item success for `ClientNonSpellActionSetChanges`.
+- `ActionSetAmpTests` pin missing-table, empty-table, and table-backed direct
+  and persisted AMP materialization, including owner-save behavior.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ClientSetStanceHandlerTests" -v minimal --nologo`
+  passed 2/2.
+- Focused action-set request verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ActionSetSaveRequestTests" -v minimal --nologo`
+  passed 21/21.
+- Broader action-set/stance verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ActionSet|FullyQualifiedName~Stance" -v minimal --nologo`
+  passed 633/633.
+- Follow-up focused AMP/action-set verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-actionset-amp-rerun\ --filter "FullyQualifiedName~ActionSetAmpTests|FullyQualifiedName~ActionSetSaveRequestTests" -v minimal --nologo`
+  passed 28/28.
+- Follow-up broader Spell verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-spell-actionset-amp-rerun\ --filter "FullyQualifiedName~NexusForever.Game.Tests.Spell" -v minimal --nologo`
+  passed 221/221.
+- Remaining blockers: `UpdateSpellInProgress`, async spell-update transaction,
+  exact lock/spec sequencing, authoritative attribute allocation/refund, bonus
+  ability/AMP unlock persistence, and ability-book activation edge cases remain
+  evidence-gated.
+
+F-036 / audit F-043 generic-map partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local setup/partial-table
+  guard for the existing conservative generic-map node request/choice handlers.
+- `ClientGenericMapNodeRequestHandler` now treats a missing `GenericMapNode`
+  table the same as an unknown node id and emits nothing.
+- `ClientGenericMapNodeChosenHandler` now treats a missing `GenericMapNode`
+  table as an unknown node and a missing `WorldLocation2` table as missing
+  destination data, returning before node-state emits or player teleport.
+- `GenericMapHandlerTests` pin missing-table request/choice no-ops, a
+  table-backed node-state response, no-destination acknowledgement, missing
+  destination no-teleport, and known-destination teleport.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~GenericMap" -v minimal --nologo`
+  passed 6/6.
+- Broader map verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Map" -v minimal --nologo`
+  passed 452/452.
+- Remaining blockers: generic-map content-context producer semantics, broader
+  map UI timing, non-title zone-completion rewards, path-specific completion,
+  and live category-total validation remain evidence-gated.
+
+F-012 / audit F-017 chat-link item/quest partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard on
+  chat item/quest link construction.
+- `ChatMessageBuilder.AppendItem()` now resolves `Item` through a nullable
+  table lookup, so a missing `Item` table follows the same invalid item-link
+  exception path as a missing `Item2` row before appending text or adding a
+  `ChatFormatItemId` row.
+- `ChatMessageBuilder.AppendQuest()` now resolves `Quest2` through a nullable
+  table lookup, so a missing quest table follows the same invalid quest-link
+  exception path as a missing quest row before appending text or adding a
+  `ChatFormatQuestId` row.
+- `ChatMessageBuilderTests` pin missing-table, empty-table, and table-backed
+  item/quest boundaries, including no text or format mutation on invalid static
+  data.
+- Focused chat-link verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ChatMessageBuilderTests" -v minimal --nologo`
+  passed 6/6.
+- Broader chat verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~NexusForever.Game.Tests.Chat" -v minimal --nologo`
+  passed 11/11.
+- Remaining blockers: chat aux producer/runtime semantics, exact retail
+  item/quest chat text policy, ICComm persistence and entitlement gates, exact
+  leave/logout signaling, durable social-option readback, and two-client social
+  smoke remain evidence-gated.
+
+F-012 / audit F-017 emote partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local setup/partial-table
+  guard for the existing client emote handler.
+- `ClientEmoteHandler` now treats a missing `Emotes` table like an invalid
+  emote id, throwing `InvalidPacketValueException` before `ServerEmote`
+  broadcast or targeted-emote achievement checks.
+- `ClientEmoteHandlerTests` pin the missing-table rejection and table-backed
+  stand-state broadcast path.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ClientEmoteHandlerTests" -v minimal --nologo`
+  passed 2/2.
+- Broader chat verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Chat" -v minimal --nologo`
+  passed 6/6.
+- Remaining blockers: chat aux producer/runtime semantics, ICComm persistence
+  and entitlement gates, exact leave/logout signaling, durable social-option
+  readback, and two-client social smoke remain evidence-gated.
+
+Mapped small client request partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local setup/partial-table
+  guard for already mapped small client request handlers.
+- `ClientConvertResourceHandler` now treats missing `ResourceConversion`,
+  `Item`, and `CurrencyType` tables like missing rows, returning through the
+  existing rejection path before inventory, currency, or reputation mutation.
+- `ClientSpline2RequestHandler` now treats a missing `Spline2` table like an
+  unknown spline in its log-only diagnostic path.
+- `MappedRequestHandlerTests` pin missing conversion table, missing target item
+  table, missing currency table, table-backed currency conversion, and missing
+  spline table boundaries.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~MappedRequestHandlerTests" -v minimal --nologo`
+  passed 5/5.
+- Remaining blockers: exact resource-conversion selection/resource-field
+  semantics, repair cost application, dash-cast state authority, and remaining
+  small-request producer/consumer timing remain evidence-gated.
+
+F-036 / audit F-043 zone-completion stale table-cache guard (2026-06-08):
+- No new native labels were added. This is a source-local setup/provider-refresh
+  guard for zone-completion progress.
+- `ZoneCompletionProgressTracker` now recomputes `EpisodeQuest` and
+  `MapZone`/`WorldZone` progress inputs from the current `GameTableManager` for
+  each lookup instead of caching table-derived sets statically. Missing or
+  partial table state still fails closed, but an earlier empty lookup can no
+  longer suppress later progress after a complete provider/table refresh.
+- `IsWorldZoneInTree()` now guards visited `WorldZone` ids so malformed or
+  partial parent chains cannot loop indefinitely while resolving a map-zone
+  world-zone tree.
+- `ZoneCompletionRewardResolverTests.TryGetTitleReward_RechecksMapZoneTablesAfterPreviousMissingLookup`
+  pins the provider-refresh regression by first resolving a datacube-gated
+  title with missing map/world-zone tables, then swapping in complete
+  `ZoneCompletion`, `MapZone`, `WorldZone`, and `Datacube` tables and granting
+  the title.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ZoneCompletionRewardResolverTests" -v minimal --nologo`
+  passed 12/12.
+- Broader map verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Map" -v minimal --nologo`
+  passed 443/443.
+- Remaining blockers: non-title reward sources, path-specific completion
+  semantics, live UX/timing, and category-total validation remain
+  evidence-gated.
+
+F-030 / audit F-037 realm-transfer known-character guard (2026-06-08):
+- No new native labels were added. This is a source-local authorization guard
+  for the already mapped `ClientRealmTransfer.CharacterId` request field and
+  `RealmTransferFailed_InvalidCharacter` result code.
+- `ClientRealmTransferHandler` now checks a requested transfer character against
+  the logged-in `IWorldSession.Player.CharacterId` when a player is present, or
+  against the loaded `IWorldSession.Characters` list during character-screen
+  compatibility flows. If the session can prove the character id is not known,
+  the handler returns `InvalidCharacter` before considering target realm status.
+- Sessions without loaded character data retain the previous compatibility
+  fallback, so existing unknown/offline/online target realm responses remain
+  pinned while real transfer mutation stays blocked.
+- `RealmTransferProtocolTests.ClientRealmTransferHandler_KnownCharacterListMismatchSendsInvalidCharacter`
+  and
+  `ClientRealmTransferHandler_PlayerCharacterMismatchSendsInvalidCharacter` pin
+  both known-session boundaries.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~RealmTransferProtocolTests" -v minimal --nologo`
+  passed 14/14.
+- Broader pregame/realm verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Pregame|FullyQualifiedName~Realm" -v minimal --nologo`
+  passed 44/44.
+- Remaining blockers: real destination eligibility/success results,
+  `TransferFlag` semantics, online handoff/session mutation, `0x06EA` producer
+  timing, PTR copy mutation, and `0x03EF` payload semantics remain
+  evidence-gated.
+
+F-031 / audit F-038 Fortune flip missing-inventory guard (2026-06-08):
+- No new native labels were added. This is a source-local runtime dependency
+  guard for the existing item-backed Fortune payout path.
+- `FortuneSessionManager.FlipCard()` now verifies the selected card can grant
+  its account-item reward before mutating card state. If the account inventory
+  manager is unavailable and the card still needs a grant, the handler sends
+  the mapped click-empty reset and returns before setting `Flipped`, persisting
+  card state, or emitting `ServerFortuneCardUpdate`.
+- `GrantCardReward()` also uses a resolved inventory manager local so the grant
+  path remains null-safe if the dependency changes between the preflight and
+  grant call.
+- `FortuneSessionManagerTests.FlipCard_WithoutInventoryManagerSendsResetWithoutFlipping`
+  pins that a valid started session with no inventory manager resets on flip,
+  emits no card update, and still reports all cards unflipped on status.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~FortuneSessionManagerTests" -v minimal --nologo`
+  passed 14/14.
+- Broader Fortune verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Fortune" -v minimal --nologo`
+  passed 25/25.
+- Remaining blockers: exact per-item retail weights, money/probability arrays,
+  active rotation catalog, and card-safe non-item reward payloads remain blocked
+  until retail `ServerFortuneRewards`, storefront-server catalog, or
+  native/server producer evidence exists.
+
+F-006 / audit F-007 storefront offer-item AccountItem partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local catalog item-data
+  partial-table guard.
+- `OfferItemData` now resolves `AccountItem` through a nullable table lookup,
+  preserving the existing invalid `ItemId` `ArgumentException` when the table or
+  row is unavailable.
+- This keeps unsupported/missing catalog item data out of
+  `ServerStoreOffers.OfferGroup.Offer.OfferItemData` rows without inventing
+  type-1/type-2 offer semantics.
+- `OfferItemDataTests` pin missing-table, empty-table, and table-backed build
+  behavior.
+- Focused offer-item verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~OfferItemDataTests" -v minimal --nologo`
+  passed 3/3.
+- Broader Storefront verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~NexusForever.Game.Tests.Storefront" -v minimal --nologo`
+  passed 45/45.
+- Remaining blockers: Protobucks/VC request-confirm, non-empty `0x026A`
+  owned-order tails, live `0x0986`/`0x098F` emits, non-zero `096A..096C`
+  producers, type-1/type-2 offer-item effects, coupon native sender proof, exact
+  catalog/dirty producer timing, offline transfer persistence, TTL/mail
+  fallback, and coupon-aware routing remain evidence-gated.
+
+F-006 / audit F-008 account-currency partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard on
+  account-currency materialization and direct wallet balance creation.
+- `AccountCurrency` now resolves persisted/create `AccountCurrencyType` rows
+  through a nullable table lookup, matching the existing missing-row behavior
+  where `Entry` can be unavailable while persisted balances remain readable.
+- `AccountCurrencyManager.CreateAccountCurrency()` now resolves
+  `AccountCurrencyType` through a nullable lookup, so missing tables and empty
+  tables reach the existing invalid static-currency `ArgumentNullException`
+  boundary before any balance mutation or `ServerAccountCurrencyGrant` /
+  `ServerWalletUpdate` emission.
+- `AccountCurrencyManagerTests` pin persisted balance readback/character-list
+  serialization with no `AccountCurrencyType` table, direct add failure with no
+  table or an empty table, and direct subtract failure with no table.
+- Focused account-currency verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~AccountCurrencyManagerTests" -v minimal --nologo`
+  passed 4/4.
+- Loot-bag/account-currency verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~AccountCurrencyManagerTests|FullyQualifiedName~LootBagUsageTests" -v minimal --nologo`
+  passed 16/16.
+- Broader account verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~NexusForever.Game.Tests.Account" -v minimal --nologo`
+  passed 136/136.
+- Remaining blockers: Protobucks/VC request-confirm, non-empty `0x026A`
+  owned-order tails, live `0x0986`/`0x098F` emits, non-zero `096A..096C`
+  producers, type-1/type-2 offer-item effects, coupon native sender proof,
+  offline transfer persistence, TTL/mail fallback, and coupon-aware routing
+  remain evidence-gated.
+
+F-006/F-026 entitlement-manager partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard on
+  existing entitlement persisted-load and update boundaries.
+- `AccountEntitlementManager` and `CharacterEntitlementManager` now resolve
+  persisted `Entitlement` rows through nullable table lookups, preserving the
+  existing invalid stored entitlement `DatabaseDataException` when the table or
+  row is unavailable.
+- Shared `EntitlementManager.UpdateEntitlement()` now resolves `Entitlement`
+  through a nullable lookup, so missing tables and empty tables reach the
+  existing invalid entitlement `ArgumentException` before creating/updating
+  entitlement state or sending entitlement packets.
+- `EntitlementManagerTests` pin account persisted-load, character
+  persisted-load, direct update missing-table, and direct update empty-table
+  boundaries.
+- Focused entitlement verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~EntitlementManagerTests" -v minimal --nologo`
+  passed 4/4.
+- Entitlement-adjacent verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-entity\ --filter "FullyQualifiedName~EntitlementManagerTests|FullyQualifiedName~RealmBankInventoryTests|FullyQualifiedName~MarketplaceAccountLimitsTests|FullyQualifiedName~AccountCostumeManagerTests" -v minimal --nologo`
+  passed 20/20.
+- Broader account verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~NexusForever.Game.Tests.Account" -v minimal --nologo`
+  passed 140/140.
+- Note: an earlier parallel account-bucket run was discarded after colliding
+  with the simultaneous test process on a shared `obj` file; the sequential
+  rerun passed.
+- Remaining blockers: Protobucks/VC request-confirm, non-empty `0x026A`
+  owned-order tails, live `0x0986`/`0x098F` emits, non-zero `096A..096C`
+  producers, type-1/type-2 offer-item effects, coupon native sender proof,
+  entitlement/update producer timing, character unlock-list deltas, offline
+  transfer persistence, TTL/mail fallback, and coupon-aware routing remain
+  evidence-gated.
+
+F-006 / audit F-008 daily-login reward-table guard (2026-06-08):
+- Labels: no new binary labels; this was a source-local partial-table guard.
+- Evidence: `DailyLoginRewardManager` already treats an empty configured reward
+  schedule as no claimable rewards. The unsafe boundary was only the direct
+  `GameTableManager.Instance.DailyLoginReward.Entries` dereference during daily
+  login refresh/claim evaluation.
+- Implementation: `Source/NexusForever.Game/Account/Inventory/DailyLoginRewardManager.cs`
+  now resolves `DailyLoginReward` through a nullable table lookup and returns an
+  empty entry sequence when the table is unavailable. This preserves update
+  packet emission with zero available rewards and makes claim evaluation return
+  the existing no-reward result before inventory checks or item grants.
+- Tests: `Source/NexusForever.Game.Tests/Account/Inventory/DailyLoginRewardManagerTests.cs`
+  pins missing-table login update refresh and missing-table claim behavior,
+  including no `CanAddItem` or `AddItem` calls when no table-backed reward row
+  exists.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~DailyLoginRewardManagerTests" -v minimal --nologo`
+  passed 7/7; `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Account.Inventory" -v minimal --nologo`
+  passed 95/95.
+- Remaining blockers: Protobucks/VC request-confirm flow, non-empty `0x026A`
+  owned-order tails, live `0x0986`/`0x098F` emits, non-zero `096A..096C`
+  producers, type-1/type-2 offer-item effects, coupon native sender proof,
+  offline transfer persistence, TTL/mail fallback, and coupon-aware routing
+  remain evidence-gated.
+
+F-006 / audit F-008 account-item entitlement-table guard (2026-06-08):
+- Labels: no new binary labels; this was a source-local partial-table guard.
+- Evidence: entitlement-backed account-item grants already fail closed with
+  `GenericError.ItemBadStaticData` / `AccountOperationResult.InvalidAccountItem`
+  when an `Entitlement` row is missing. The unsafe boundary was only direct
+  access to `GameTableManager.Instance.Entitlement` when the table itself is
+  unavailable.
+- Implementation: `Source/NexusForever.Game/Account/Inventory/AccountInventoryManager.cs`
+  now resolves `Entitlement` through nullable table lookups in both
+  `TryAddEntitlementGrant()` and `TryAddImmediateAccountEntitlementGrant()`.
+  Missing table data now follows the existing missing-row path before
+  entitlement update, currency grant, item delete, or cooldown mutation.
+- Tests: `Source/NexusForever.Game.Tests/Account/Inventory/AccountItemHandlerTests.cs`
+  pins immediate account-entitlement and mixed account-item grant-plan
+  missing-table boundaries.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~AccountItemHandlerTests" -v minimal --nologo`
+  passed 19/19; `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Account.Inventory" -v minimal --nologo`
+  passed 100/100.
+- Remaining blockers: Protobucks/VC request-confirm flow, non-empty `0x026A`
+  owned-order tails, live `0x0986`/`0x098F` emits, non-zero `096A..096C`
+  producers, type-1/type-2 offer-item effects, coupon native sender proof,
+  offline transfer persistence, TTL/mail fallback, and coupon-aware routing
+  remain evidence-gated.
+
+F-006 / audit F-008 account-item table guard (2026-06-08):
+- Labels: no new binary labels; this was a source-local partial-table guard.
+- Evidence: `AccountInventoryManager.CanAddItem()` already returns false for
+  unknown `AccountItem` rows, and `AccountInventoryItem` construction already
+  throws the invalid account-item exception when materializing an unknown
+  persisted/create row. The unsafe boundary was only direct access to
+  `GameTableManager.Instance.AccountItem` when the static table itself is
+  unavailable.
+- Implementation: `Source/NexusForever.Game/Account/Inventory/AccountInventoryManager.cs`
+  now resolves `AccountItem` through a nullable table lookup for
+  `CanAddItem()`, and `Source/NexusForever.Game/Account/Inventory/AccountInventoryItem.cs`
+  does the same for persisted/create item materialization. Missing table data
+  now follows the missing-row behavior rather than throwing `NullReferenceException`.
+- Tests: `Source/NexusForever.Game.Tests/Account/Inventory/AccountItemHandlerTests.cs`
+  pins `CanAddItem()` returning false when `AccountItem` is unavailable and
+  persisted inventory load preserving the invalid account-item exception.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~AccountItemHandlerTests" -v minimal --nologo`
+  passed 17/17; `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Account.Inventory" -v minimal --nologo`
+  passed 98/98.
+- Remaining blockers: Protobucks/VC request-confirm flow, non-empty `0x026A`
+  owned-order tails, live `0x0986`/`0x098F` emits, non-zero `096A..096C`
+  producers, type-1/type-2 offer-item effects, coupon native sender proof,
+  offline transfer persistence, TTL/mail fallback, and coupon-aware routing
+  remain evidence-gated.
+
+F-006 / audit F-008 account-item cooldown-group guard (2026-06-08):
+- Labels: no new binary labels; this was a source-local partial-table guard.
+- Evidence: `AccountInventoryManager` already loads persisted account cooldown
+  rows before seeding configured cooldown placeholders from
+  `AccountItemCooldownGroup.tbl`. Empty configured cooldown-group data is safe
+  because persisted rows remain the authoritative active cooldown source for
+  `ServerAccountItemCooldowns` readback.
+- Implementation: `Source/NexusForever.Game/Account/Inventory/AccountInventoryManager.cs`
+  now resolves `AccountItemCooldownGroup` through a nullable table lookup and
+  treats unavailable static data like an empty configured cooldown-group list.
+  Persisted cooldown rows still load first and active persisted cooldowns still
+  emit.
+- Tests: `Source/NexusForever.Game.Tests/Account/Inventory/AccountItemCooldownTests.cs`
+  pins missing-table persisted cooldown readback through
+  `SendCooldowns_WithMissingCooldownGroupTable_EmitsPersistedCooldowns`.
+- Verification: `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~AccountItemCooldownTests" -v minimal --nologo`
+  passed 8/8; `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Account.Inventory" -v minimal --nologo`
+  passed 96/96.
+- Remaining blockers: Protobucks/VC request-confirm flow, non-empty `0x026A`
+  owned-order tails, live `0x0986`/`0x098F` emits, non-zero `096A..096C`
+  producers, type-1/type-2 offer-item effects, coupon native sender proof,
+  offline transfer persistence, TTL/mail fallback, and coupon-aware routing
+  remain evidence-gated.
+
+F-024 / audit F-030 map-instance pending-removal formula-table guard (2026-06-08):
+- No new native labels were added. This is a source-local runtime guard on the
+  existing pending world-removal path used by instance maps.
+- `MapInstance.EnqueuePendingRemoval()` now resolves `GameFormula` row `1123`
+  through a nullable table lookup, so a missing `GameFormula` table uses the
+  same 30-second client-default fallback as a missing row instead of throwing
+  before the pending-removal packet is queued.
+- `MapInstancePendingRemovalTests` pin both the missing-table fallback and a
+  table-backed override, keeping `ServerPendingWorldRemoval` emission intact.
+- Focused pending-removal verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~MapInstancePendingRemovalTests" -v minimal --nologo`
+  passed 2/2.
+- Broader map verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Map" -v minimal --nologo`
+  passed 459/459.
+- Remaining blockers: this does not prove Evil from the Ether or broader
+  instance-script parity; manual expedition/content smoke, exact trigger rows,
+  door/interactable cleanup, cinematic payloads, encounter mechanics, rewards,
+  and choreography remain evidence-gated.
+
+F-005 / audit F-005 marketplace auction search selector-table guard (2026-06-08):
+- No new native labels were added. This is a source-local validation guard on
+  the existing auction search request path.
+- `GlobalMarketplaceManager.ValidateAuctionSearch()` now resolves nonzero
+  family, category, and type selectors through nullable
+  `Item2Family`/`Item2Category`/`Item2Type` table lookups.
+- Missing selector tables now behave like missing selector rows and throw the
+  existing `InvalidPacketValueException` before search, response emission, or
+  any state mutation.
+- `MarketplaceAuctionHandlerTests` pins missing family, category, and type
+  table rejection through
+  `ValidateAuctionSearch_WithMissingSelectorTable_RejectsBeforeSearch`.
+- Focused marketplace auction verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~MarketplaceAuctionHandlerTests" -v minimal --nologo`
+  passed 54/54.
+- Broader marketplace/mail verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Marketplace|FullyQualifiedName~Mail" -v minimal --nologo`
+  passed 89/89.
+- Remaining blockers: retail property/rune/equippable auction filter semantics,
+  exact row caps/refresh cadence, live DB/order-book validation, CREDD
+  owned-order tails, and marketplace aux `0x06DF`/`0x07D5` producer semantics
+  remain evidence-gated.
+
+F-026 / audit F-033 scanbot rename and vanity-pet summon guards (2026-06-08):
+- No new native labels were added. These are source-local request-boundary
+  guards on the existing pet request handlers.
+- `ClientSummonVanityPet` now resolves the player's learned spell tier and
+  requires the resulting `ISpellInfo.Effects` to contain
+  `SpellEffectType.SummonVanityPet` before calling `IPlayer.CastSpell`.
+- Non-pet learned spells and missing tier/effect data now throw
+  `InvalidPacketValueException` before any spell cast can start through the
+  vanity-pet request path.
+- `ClientSummonVanityPetHandlerTests` pin accepted summon-effect casts and
+  rejected non-pet effect no-cast behavior.
+- `ClientPathScientistSetScannerName` follows the packet model's scanbot-only
+  comment: non-`ScanBot` pet types now throw before manager calls, and scanbot
+  profile ids without an existing customisation throw before `RenamePet` can
+  create or mutate a row.
+- `ClientPathScientistSetScannerNameHandlerTests` pin unlocked scanbot rename,
+  non-scanbot rejection, and locked-profile rejection.
+- Focused pet verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Pet" -v minimal --nologo`
+  passed 287/287.
+- Remaining blockers: pet lifecycle producer timing/scope, broader
+  flair/object/name validation, item/error aux producers, and deeper
+  costume/generic unlock delta/readback semantics remain evidence-gated.
+
+F-027 / audit F-034 combat-log disable-others boolean guard (2026-06-08):
+- No new native labels were added. This is a source-local validation guard on
+  the already-mapped `ClientCombatLogDisableOthers` request.
+- `ClientCombatLogDisableOthers` now retains the raw `uint` payload in
+  `DisableOtherPlayersValue` while keeping the existing `DisableOtherPlayers`
+  bool surface for handler call sites.
+- `ClientCombatLogDisableOthersHandler` rejects raw values greater than `1`
+  with `InvalidPacketValueException` before updating
+  `Player.DisableOtherPlayersCombatLogs`.
+- `OptionHandlerTests.CombatLogDisableOthers_WithInvalidBooleanValueThrowsBeforeUpdatingPlayer`
+  pins the invalid-boolean no-mutation boundary.
+- Focused option verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Option" -v minimal --nologo`
+  passed 36/36.
+- Remaining blockers: additional option types, broader account-vs-character
+  option readback/init, exact combat-log preference breadth, and nearby
+  item/options aux producer semantics remain evidence-gated.
+
+F-034 / audit F-041 datacube table-unavailable guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on the existing datacube/journal add path.
+- `GalacticArchiveManager` already covers archive unlock/view, linked child
+  authorization, rule refresh, partial `ArchiveArticle` /
+  `ArchiveEntryUnlockRule` / `ArchiveEntry` table guards, title rewards, and
+  persistence. `DatacubeManager` already merges duplicate persisted datacube
+  rows for the same id/type by OR-ing progress.
+- `DatacubeManager.AddDatacube()` now treats a missing `Datacube` table like a
+  missing datacube row, rejecting through the existing `ArgumentException`
+  path before adding state or sending `ServerDatacubeUpdate`.
+- `DatacubeManager.AddDatacubeVolume()` now treats a missing `DatacubeVolume`
+  table like a missing journal row, rejecting before adding state or sending
+  `ServerDatacubeVolumeUpdate`.
+- `PathManagerTests` pin both table-unavailable boundaries and assert no
+  session packet is emitted on reject.
+- Focused archive/datacube verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~GalacticArchive|FullyQualifiedName~DatacubeManager" -v minimal --nologo`
+  passed 18/18.
+- Broader path/datacube verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+  passed 64/64.
+- Remaining blockers: datacube/journal pickup chains, Codex progression/link UX
+  semantics, and path-mission archive rule parity remain blocked until a
+  pickup-chain/live-client or native rule evidence bundle proves the missing
+  semantics.
+
+F-032 / audit F-039 leaderboard medal/season filter blocker recheck (2026-06-08):
+- No new native labels were added. This is a source/protocol recheck of the
+  existing leaderboard request/response boundary.
+- `ClientLeaderboardPveRequest` reads only a 4-bit `LeaderboardType`, a
+  `MatchingGameMapdId`, and a `PrimeLevel`; `ClientLeaderboardPvpRequest` reads
+  only a 4-bit `LeaderboardType`.
+- `LeaderboardCategoryRules`, `LeaderboardAggregation`, and
+  `DatabaseLeaderboardStore` scope PvE rows by type/map/prime and PvP rows by
+  arena/team or battleground class category. No season or medal selector is
+  modeled in the current provider/store boundary.
+- `LeaderboardPlayerPve.RewardedTier` is still written on response rows, but it
+  is not evidence of a bronze/silver/gold request filter and was left
+  diagnostic/output-only for filtering purposes.
+- Focused leaderboard verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Leaderboard" -v minimal --nologo`
+  passed 17/17.
+- Remaining blockers: decode or capture a season/medal selector before adding
+  filters; exact row caps/refresh cadence and broader live score-ingestion
+  hooks remain evidence-gated.
+
+F-033 / audit F-040 challenge reward-track, medal, and share-init blocker recheck (2026-06-08):
+- No new native labels were added. This is a source/protocol recheck of the
+  existing challenge reward/share boundary.
+- `ChallengeEntry.RewardTrackId`, `RewardTrack`, and `RewardTrackRewards`
+  tables exist, and retail evidence says challenge medal performance affects
+  reward win chance, but the current runtime has no mapped challenge
+  reward-track manager, account/character reward-track persistence, or
+  challenge reward packet surface.
+- `ServerChallengeUpdate` writes challenge id, type, reward-pane target group,
+  qualify/quality/current/goal/objective counts, current tier, last reward tier,
+  completion count, lifecycle bits, timers, and three tier goals. It does not
+  carry a reward-track selection or win-chance payload.
+- `ServerChallengeResult.Data` remains the mapped tier/localized-string value.
+  It is not sufficient evidence to roll reward-track prizes or medal chance.
+- `ShareWithTarget()` can send `ServerChallengeShared` from source-local state,
+  but no mapped client share-init request reaches it. Accept/decline remain
+  covered by `ClientChallengeChoice` choices `14`/`15`.
+- The branch `RewardTrackManager`/`ServerRewardTracksLoaded` source remains
+  rejected for this slice because it names opcodes now mapped and tested as
+  reward-rotation content-context traffic.
+- Focused challenge verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Challenge" -v minimal --nologo`
+  passed 45/45.
+- Remaining blockers: decode or capture challenge reward-track/medal transport
+  and a client share-init request before adding reward rolls or exposing share
+  initiation; keep `Client0x00C8` and full result/reward sequence
+  evidence-gated.
+
+F-036 / audit F-043 zone-completion non-title reward blocker recheck (2026-06-08):
+- No new native labels were added. This is a source/table recheck of the
+  existing zone-completion reward boundary.
+- `ZoneCompletionEntry` exposes `MapZoneId`, faction, category thresholds, and
+  `CharacterTitleIdReward`; there is no current model field for item, currency,
+  spell, reward-track, or other non-title reward payloads.
+- `ZoneMapManager.TryGrantZoneCompletionRewards()` delegates to
+  `ZoneCompletionRewardResolver.TryGetTitleReward()` and only calls
+  `TitleManager.AddTitle(titleId)`. The resolver intentionally filters to
+  title ids in `ushort` range and fails closed when category progress is
+  missing.
+- Non-title rewards and path-specific completion rewards were left blocked
+  rather than inferred from unrelated reward-rotation, path, or quest reward
+  tables.
+- Focused zone-completion verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ZoneCompletionRewardResolverTests" -v minimal --nologo`
+  passed 12/12.
+- Broader map verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Map" -v minimal --nologo`
+  passed 457/457.
+- Remaining blockers: decode non-title reward sources, path-specific completion
+  semantics, live UX/timing, category-total validation, and generic-map
+  content-context producer semantics before awarding broader zone-completion
+  rewards.
+
+F-035 / audit F-042 Steam achievement ingest blocker recheck (2026-06-08):
+- No new native labels were added. This is a source/protocol recheck of the
+  existing Steam achievement diagnostic boundary.
+- `ClientSteamAchievements` currently reads a `uint32` Steam game id, a
+  `uint32` byte length, and that many ASCII bytes into `AchievementData`.
+- `ClientSteamAchievementsHandler` logs the player, Steam game id, and payload
+  length only. It does not emit achievement packets and does not call
+  `CheckAchievements()` or `SetAchievementProgress()`.
+- `ClientSteamAchievementsTests` pin both the raw packet grammar and the
+  no-mutation handler boundary. This is the correct safe state until the ASCII
+  payload grammar and a trustworthy Steam-achievement-to-game-achievement id
+  map are proven.
+- Focused Steam achievement verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ClientSteamAchievementsTests" -v minimal --nologo`
+  passed 2/2.
+- Focused achievement verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Achievement" -v minimal --nologo`
+  passed 25/25.
+- Remaining blockers: Steam payload grammar, achievement-id correlation,
+  data-only/unowned achievement families, exact realm-first UI/timing, and
+  broader achievement UI edge cases remain evidence-gated.
+
+F-028 / audit F-035 support-case readback blocker recheck (2026-06-08):
+- No new native labels were added, and no support behavior was widened.
+- Source/protocol inventory shows submit-side support client packets only:
+  `ClientIncidentReport`, `ClientSupportTicket`, `ClientReportBug`,
+  `ClientStuck`, `ClientSuggest`, and `ClientCustomerSurveySubmit`.
+- The current server-side response/readback model surface is limited to
+  `ServerSupportTicketResult`, `ServerCustomerSurveyRequest`, and the mapped
+  support aux packet shapes `0x0347..0x0351`.
+- No modeled client support-case list/read request, server support-case
+  readback payload, database case lifecycle, or moderation workflow backend is
+  present in the current source inventory.
+- Disposition: blocked for support-case readback and durable moderation
+  workflow; do not add guessed case-list/readback responses until protocol and
+  backend semantics are proven.
+- Focused Support verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Support" -v minimal --nologo`
+  passed 126/126.
+
+F-006 / audit F-008 account-item terminal missing-inventory guard (2026-06-08):
+- No new native labels were added. This is a source-local runtime dependency
+  guard for the already mapped account terminal result paths.
+- `ClientAccountItemHandlers` now resolve `IAccountInventoryManager` before
+  account-item take, pending claim/return/gift, and the reserved-zero gift
+  refresh path. If account inventory is unavailable, the handler sends the
+  existing `ServerAccountOperationResult` for the matching `AccountOperation`
+  with `GenericFail` and returns before manager mutation, account persistence,
+  pending-list refresh, or character-list refresh.
+- `ClientDailyLoginClaimRewardHandler` uses the same guard for the
+  `RequestDailyLoginRewards` result path, and `CouponRedemptionService` returns
+  `GenericFail` before coupon item validation or grant when the account lacks
+  an inventory manager.
+- `AccountItemHandlerTests.ClaimPendingItemGroup_WithoutInventoryManagerSendsGenericFail`
+  and
+  `TakeHandler_WithoutInventoryManagerSendsGenericFailWithoutPersisting` pin
+  pending and take boundaries.
+- `AccountTerminalHandlerTests.DailyLoginClaim_WithoutInventoryManagerReturnsGenericFail`
+  and `RedeemCoupon_WithoutInventoryManagerReturnsGenericFail` pin daily-login
+  and coupon boundaries.
+- Focused handler verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~AccountItemHandlerTests|FullyQualifiedName~AccountTerminalHandlerTests" -v minimal --nologo`
+  passed 20/20.
+- Broader account-inventory verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Account.Inventory" -v minimal --nologo`
+  passed 83/83.
+- Remaining blockers: Protobucks/VC request-confirm flow, non-empty `0x026A`
+  owned-order tails, live `0x0986`/`0x098F` emits, non-zero `096A..096C`
+  producers, type-1/type-2 offer-item effects, and coupon native sender proof
+  remain evidence-gated.
+
+F-026 / audit F-033 pet customisation invalid type/slot guard (2026-06-08):
+- No new native labels were added. This is a source-local guard for the existing
+  `ClientPetCustomisation` request and `ServerPetCustomisationFailed` response
+  path.
+- `ClientPetCustomisationHandler` now rejects unsupported pet type enum values
+  with `PetCustomizeResult.PetTypeNotSupported` and flair slot indexes outside
+  `PetCustomisationManager.MaxCustomisationFlairs` with
+  `PetCustomizeResult.InvalidSlot` before calling
+  `IPetCustomisationManager.AddCustomisation`.
+- `ServerPetCustomisationFailed` echoes the request pet type, object id, flair
+  slot, and flair id so the client gets the same scoped failure context that
+  the manager path would have received.
+- `ClientPetCustomisationHandlerTests` pin valid-slot delegation,
+  invalid-slot failure without manager mutation, and unsupported-type failure
+  without manager mutation.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Pet" -v minimal --nologo`
+  passed 282/282.
+- Remaining blockers: flair ownership, pet object validity, name validation,
+  pet spawn/despawn/stance producer timing, and blocked `ServerPetStanceChanged`
+  response scope remain evidence-gated.
+
+F-009 / audit F-012 rapid-transport and flight-path partial-table guards (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard on
+  the existing `ClientRapidTransport` route-validation path.
+- `ClientRapidTransportHandler` now treats a missing `GameFormula` table/row or
+  a rapid-transport formula with `Dataint0 == 0` as
+  `CastResult.RapidTransportInvalid`.
+- The handler returns before spell cooldown lookup, currency debit, spell
+  evidence capture, or `IPlayer.CastSpell`, matching the existing fail-closed
+  treatment for missing `TaxiRoute`, `TaxiNode`, and `WorldLocation2` data.
+- `TransportHandlerTests.RapidTransport_RejectsWhenSpellFormulaUnavailable` and
+  `RapidTransport_RejectsWhenSpellFormulaHasNoSpell` pin both formula
+  dependency failures and assert no debit/cast side effects.
+- Existing rapid-transport and flight-path missing-table fail-closed paths are
+  now pinned for missing `TaxiNode` and `WorldLocation2` tables, asserting no
+  rapid debit/cast and no flight-path debit/teleport.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~TransportHandlerTests" -v minimal --nologo`
+  passed 17/17.
+- Broader transport verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Transport" -v minimal --nologo`
+  passed 77/77.
+- Remaining blockers: service-token bypass, global route-state snapshots, taxi
+  embark/completion timing, broader charge/teleport parity, passenger/seat
+  modes, deployable vehicle semantics, and `Server0x077E` producer semantics
+  remain evidence-gated.
+
+F-026 / audit F-033 supply-satchel unmapped-material guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  for supply-satchel material conversion paths.
+- `SupplySatchelManager.AddAmount(IItem, uint)` now returns the full remainder
+  when the item cannot be mapped to a `TradeskillMaterial` row, and
+  `IsFull(IItem)` reports unmapped items as full so
+  `Inventory.ItemMoveToSupplySatchel` stops before inventory mutation.
+- `SupplySatchelManager.AddAmount(ushort, uint)` returns the full remainder
+  when the material id is missing or maps to no item, and
+  `MoveToInventory(ushort, uint)` no-ops for zero amounts, missing cached
+  materials, stale cached entries, or over-removal requests before sending a
+  satchel update or creating an inventory item.
+- `SupplySatchelManagerTests` pin mapped item conversion, unmapped item and
+  material remainders, stale material conversion, and the existing stack-limit
+  fallback/over-cap/clamp/packet-capacity boundaries.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~SupplySatchelManagerTests" -v minimal --nologo`
+  passed 8/8.
+- Remaining blockers: item/error aux producer semantics, remaining item
+  eligibility precision, `ServerSupplySatchelAux` producer semantics, unlock
+  deltas, pet flair/object/name validation, and pet lifecycle timing remain
+  evidence-gated.
+
+F-022 / audit F-027 path unlock/change formula guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  for the existing path unlock/change request handlers.
+- `ClientPathUnlockHandler` now checks `GameFormula` row `2365` before reading
+  the service-token unlock cost. Missing data sends
+  `GenericError.ItemBadStaticData` through `ServerPathUnlockResult` and returns
+  before token affordability checks, token debit, or `IPathManager.UnlockPath`.
+- `ClientPathChangeRequestHandler` now checks `GameFormula` row `2366` before
+  reading the cooldown and bypass cost. Missing data sends
+  `GenericError.ItemBadStaticData` through `ServerPathChangeResult` and returns
+  before cooldown/funds checks, token debit, or `IPathManager.ActivatePath`.
+- `PathSelectionHandlerTests` pin both fail-closed boundaries and the existing
+  successful unlock/change paths.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~PathSelectionHandlerTests" -v minimal --nologo`
+  passed 4/4.
+- Remaining blockers: exact path unlock sequencing, cooldown UI cadence, path
+  reward presentation, reward-history persistence, generic Soldier wave
+  simulation, generic Scientist scan-result/minigame packets, Settler built
+  group/resource/avenue state, and broader content smoke remain evidence-gated.
+
+F-022 / character-XP partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  for character XP and rested-XP span calculations.
+- `XpManager.CalculateLevelForXp` now tolerates a missing `XpPerLevel` table
+  and returns the level-1 fallback instead of hard-dereferencing table rows.
+- `XpManager.GrantXp` still records earned XP when the next-level row is
+  missing, but stops level mutation before unsupported progression rewards.
+- `XpManager.SetLevel` returns before sending XP packets or mutating level/XP
+  when the requested target-level row is missing.
+- Rested-XP login/modifier span lookups now no-op when current or next
+  `XpPerLevel` rows are unavailable.
+- `XpManagerTests` pin missing-table level resolution, missing next-level
+  earned-XP behavior, and missing target-level `SetLevel` fail-closed behavior.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Xp" -v minimal --nologo`
+  passed 237/237.
+- Remaining blockers: exact quest/path reward presentation, spell-derived XP
+  effect precision, rest-XP persistence/login edge semantics, level-up
+  unlock/LAS/AMP side effects, and broader content smoke remain evidence-gated.
+
+F-022 / audit F-026 quest-info reward partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  for quest reference/reward construction and calculated reward fallbacks.
+- `QuestInfo` now tolerates missing `Quest2Difficulty`, `Quest2`,
+  `QuestObjective`, and `Quest2Reward` tables or rows during construction.
+  Missing prerequisite/objective/reward tables produce empty collections rather
+  than null entries or constructor crashes.
+- `QuestInfo.GetRewardExperience()` returns explicit `RewardXpOverride` values
+  without table dependencies, and otherwise returns zero when difficulty or
+  `XpPerLevel` rows are unavailable.
+- `QuestInfo.GetRewardMoney()` returns explicit `RewardCashOverride` values
+  without table dependencies, and otherwise returns zero when difficulty or
+  reward-money `GameFormula` row `530` is unavailable.
+- `QuestInfoTests` pin missing-table construction, complete table-backed XP and
+  cash calculations, missing computed reward dependencies, missing difficulty,
+  and explicit override behavior.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Quest" -v minimal --nologo`
+  passed 281/281.
+- Remaining blockers: exact quest reward presentation, reward pane timing,
+  receiver/visibility content smoke, virtual-loot cadence/probability, and wider
+  quest/path/public-event content parity remain evidence-gated.
+
+F-022 / audit F-026 quest guidance partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  for the existing quest objective world-location guidance resolver.
+- `Quest.TryResolveSingleDirectionLocation()` now treats a missing
+  `QuestDirection` table like a missing row: unresolved guidance, not a quest
+  sync crash.
+- `Quest.TryResolveSingleDirectionEntryLocation()` now treats a missing
+  `QuestDirectionEntry` table like a missing row: unresolved guidance, not a
+  quest sync crash.
+- Table-backed single-direction resolution remains unchanged and still sends the
+  resolved `WorldLocation2Id`.
+- `QuestTests` pin missing direction table, missing direction-entry table, and
+  single direction-entry success cases through `SendObjectiveWorldLocationUpdates()`.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Quest" -v minimal --nologo`
+  passed 284/284.
+- Remaining blockers: exact objective guidance UI behavior, direction ambiguity
+  semantics, receiver/visibility content smoke, virtual-loot cadence/probability,
+  and wider quest/path/public-event content parity remain evidence-gated.
+
+F-026 / audit F-033 account-costume partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  for account costume unlock/forget static-data lookups.
+- `AccountCostumeManager.GetMaxUnlockItemCount()` now treats a missing
+  `GameFormula` table like missing row `1203` and uses the documented client
+  default unlock limit of `1000`.
+- `AccountCostumeManager.ForgetItem()` now treats a missing `Item` table like a
+  missing item row, sending `CostumeUnlockResult.InvalidItem` without deleting a
+  known account costume unlock.
+- `AccountCostumeManagerTests` pin non-equippable unlock rejection, missing
+  formula-table unlock success/default-limit behavior, and missing item-table
+  forget rejection.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Costume" -v minimal --nologo`
+  passed 7/7.
+- Remaining blockers: costume aux producer semantics, exact unlock/forget UI
+  timing, deeper costume lifecycle parity, item/error aux producers, generic
+  unlock deltas, and pet lifecycle timing remain evidence-gated.
+
+F-026 / audit F-033 costume-save dye partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  for costume save dye validation and dye mask materialization.
+- `CostumeManager.SaveCostume()` now resolves `ItemDisplay` and `DyeColorRamp`
+  through nullable table lookups. Unavailable nonzero dye static data returns
+  the existing `CostumeSaveResult.InvalidDye` before costume mutation,
+  `ServerCostume`, or `Saved` result emission.
+- `CostumeItem.GenerateDyeMask()` now rejects unknown nonzero dye ramps with an
+  invalid static-data exception instead of null-refing on a missing table/row.
+- `CostumeManagerTests` pin missing-table, empty-table, no-dye missing-display,
+  and table-backed costume-save and direct dye-mask boundaries.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-costume-dye\ --filter "FullyQualifiedName~CostumeManagerTests" -v minimal --nologo`
+  passed 9/9.
+- Broader costume / packet-shape verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-costume-dye-broad\ --filter "FullyQualifiedName~Costume|FullyQualifiedName~AccountUnlockPacketShapeTests" -v minimal --nologo`
+  passed 18/18.
+- Remaining blockers: costume aux producer semantics, exact save/unlock UI
+  timing, deeper costume lifecycle parity, item/error aux producers, generic
+  unlock deltas, and pet lifecycle timing remain evidence-gated.
+
+F-022 / audit F-027 path reward scanbot profile guard (2026-06-08):
+
+- **Target question**: Can a mixed path reward safely grant its supported sibling
+  rewards when `PathReward.PathScientistScanBotProfileId` is set but the loaded
+  static data has no `PathScientistScanBotProfile` table or row?
+- **Implemented / verified**: `PathManager.GrantPathReward()` now resolves
+  `PathScientistScanBotProfile` through a nullable table lookup before calling
+  `PetCustomisationManager.UnlockScanBotProfile()`. Unavailable scanbot-profile
+  static data skips only the scanbot reward portion while item, spell, and title
+  reward handling remains eligible.
+- `PathManagerTests.CompleteMission_WithSupportedMissionRewards_GrantsUnflaggedRewardRows`
+  now supplies a table-backed scanbot profile row, and
+  `CompleteMission_WithMissingScanBotProfileRewardTable_SkipsScanBotProfileRewardWithoutThrowing`
+  pins that a mixed item+missing-scanbot-table reward still creates the item and
+  does not call `IPetCustomisationManager.UnlockScanBotProfile()`.
+- Focused path manager verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+  passed 67/67.
+- Path / title / spell / pet verification passed 373/373, and the broader path /
+  generic-unlock / pet / title / spell collection bucket passed 410/410 from the
+  alternate output directory.
+- Remaining blockers: exact path reward presentation, overflow/flag semantics,
+  reward-history persistence, unlock sequencing, scanbot profile UI/timing
+  semantics, generic Soldier/Scientist/Settler semantics, and broader content
+  smoke remain evidence-gated.
+
+F-022 / audit F-027 path reward Spell4 table guard (2026-06-08):
+
+- **Target question**: Can a mixed path reward safely grant its supported sibling
+  rewards when `PathReward.Spell4Id` is set but the loaded static data has no
+  `Spell4` table at all?
+- **Implemented / verified**: `PathManager.GrantPathReward()` now resolves
+  `Spell4` through a nullable table lookup before calling
+  `SpellManager.AddSpell()`. Missing `Spell4` tables behave like missing spell
+  rows, skipping only the spell reward portion while item/title/scanbot reward
+  handling remains eligible.
+- `PathManagerTests.CompleteMission_WithMissingSpellRewardTable_SkipsSpellRewardWithoutThrowing`
+  pins that a mixed item+missing-spell-table reward still creates the item and
+  does not call `ISpellManager.AddSpell()`. The existing missing-row test still
+  covers an empty/table-backed `Spell4` lookup.
+- Focused path manager verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+  passed 66/66.
+- Path / title / spell collection verification passed 81/81, and the broader
+  path / generic-unlock / pet / title / spell collection bucket passed 409/409
+  from the alternate output directory.
+- Remaining blockers: exact path reward presentation, overflow/flag semantics,
+  reward-history persistence, unlock sequencing, broader `Spell4` reward
+  semantics, generic Soldier/Scientist/Settler semantics, and broader content
+  smoke remain evidence-gated.
+
+F-022 / audit F-027 path reward title partial-table guard (2026-06-08):
+
+- **Target question**: Can a mixed path reward safely grant its supported sibling
+  rewards when `PathReward.CharacterTitleId` references a `CharacterTitle` row
+  unavailable in the loaded static data?
+- **Implemented / verified**: `PathManager.GrantPathReward()` now resolves
+  `CharacterTitle` through a nullable table lookup before calling
+  `TitleManager.AddTitle()`. Missing title static data skips only the title
+  portion and leaves item, spell, and scanbot profile reward handling eligible.
+- `PathManagerTests.CompleteMission_WithSupportedMissionRewards_GrantsUnflaggedRewardRows`
+  now supplies a table-backed title row, and
+  `CompleteMission_WithMissingTitleRewardEntry_SkipsTitleRewardWithoutThrowing`
+  pins that a mixed item+missing-title reward still creates the item and does
+  not call `ITitleManager.AddTitle()`.
+- Focused path manager verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+  passed 65/65.
+- Path / title / spell collection verification passed 80/80, and the broader
+  path / generic-unlock / pet / title / spell collection bucket passed 408/408
+  from the alternate output directory.
+- Remaining blockers: exact path reward presentation, overflow/flag semantics,
+  reward-history persistence, unlock sequencing, generic Soldier/Scientist/
+  Settler semantics, and broader content smoke remain evidence-gated.
+
+F-026 / audit F-033 title manager persisted-title partial-table guard (2026-06-08):
+
+- `TitleManager` and `Title` persisted-load paths previously dereferenced
+  `CharacterTitle` static rows while materialising `CharacterTitleModel`
+  records. Partial table loads could throw during character initialisation or
+  leave the active title pointing at a row that could not be materialised.
+- `Title` now resolves persisted `CharacterTitle` rows through nullable table
+  lookups, and `TitleManager` skips persisted rows whose static data is
+  unavailable. `EnsureActiveTitleIsOwned()` then clears an active title filtered
+  out by that partial-load pass through the existing `ActiveTitleId = 0` path.
+- `AddTitle()` and `RevokeTitle()` now resolve `CharacterTitle` through nullable
+  lookups before achievement checks, packets, or title mutation, preserving the
+  existing `InvalidPacketValueException` boundary for missing table/row data.
+- `AddAllTitles()` treats a missing `CharacterTitle` table like an empty source
+  and sends the current title list instead of throwing in the debug/command path.
+- `TitleManagerTests` pin table-backed persisted load, missing-table persisted
+  skip/active-title clear, missing-table add/revoke fail-closed behavior,
+  table-backed add/update, and missing-table bulk-add empty-list output.
+- `TitleManagerTests` and `PetCustomisationManagerTests` are in the existing
+  `LegacyServiceProviderCollection` so their `LegacyServiceProvider.Provider`
+  setup cannot interleave under xUnit parallel execution.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~TitleManagerTests" -v minimal --nologo`
+  passed 6/6.
+- Neighbor verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Title|FullyQualifiedName~SpellCollectionEffectTests" -v minimal --nologo`
+  passed 33/33.
+- Broader verification initially exposed the global-provider collection gap by
+  interleaving title and pet customisation providers; after adding the collection
+  annotations, rerunning:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~GenericUnlock|FullyQualifiedName~Pet|FullyQualifiedName~Title|FullyQualifiedName~SpellCollectionEffectTests" -v minimal --nologo`
+  passed 343/343.
+- Remaining title lifecycle UI timing, account/character unlock-list deltas,
+  item/error aux producers, and broader title reward/ownership parity stay
+  evidence-gated.
+
+F-026 / audit F-033 pet customisation persisted-flair partial-table guard (2026-06-08):
+
+- `PetCustomisationManager` persisted load previously dereferenced
+  `PetFlair` static data while materialising saved unlocked flairs and saved
+  customisation slot masks. Partial table loads could throw before login
+  readback reached the already-safe empty/unknown runtime state.
+- Persisted pet-flair rows now resolve through nullable `PetFlair` lookups and
+  rows with unavailable static data are skipped from transient unlock state
+  without database mutation. Saved customisation slot ids also resolve through
+  nullable lookups and unavailable flair rows become empty slots.
+- `AddCustomisation()` now treats `flairId == 0` as a table-independent slot
+  clear, while non-zero flair ids still require an owned flair and a live
+  `PetFlair` row before mutation.
+- `UnlockFlair()` and `UnlockScanBotProfile()` now resolve their static rows
+  through nullable table lookups and preserve the existing out-of-range
+  exception boundary for missing table/row data.
+- `PetCustomisationManagerTests` pin table-backed persisted load,
+  missing-table persisted skip/zero behavior, and zero-flair clear behavior.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~PetCustomisationManagerTests" -v minimal --nologo`
+  passed 3/3.
+- Broader verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Pet" -v minimal --nologo`
+  passed 293/293.
+- Remaining pet flair ownership/object/name validation, lifecycle producer
+  timing/scope, and broader pet UI sequencing stay evidence-gated.
+
+F-026 / audit F-033 title spell effect partial-table guard (2026-06-08):
+
+- `HandleEffectTitleGrant` and `HandleEffectTitleRevoke` already had
+  `unknown-title` branches for missing `CharacterTitle` rows, but a missing
+  `CharacterTitle` table threw before those branches could run.
+- Both handlers now resolve `CharacterTitle` through nullable table lookups.
+  Missing tables follow the same diagnostic/no-mutation path as missing rows,
+  returning before `TitleManager.HasTitle()`, `AddTitle()`, or `RevokeTitle()`.
+- `SpellCollectionEffectTests` now pin missing-table no-op behavior for title
+  grant and revoke, plus table-backed happy paths that still call `AddTitle(21)`
+  and `RevokeTitle(21)` when title data exists.
+- Focused spell collection verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~SpellCollectionEffectTests" -v minimal --nologo`
+  passed 9/9.
+- Broader spell / generic-unlock / pet / title verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~SpellCollectionEffectTests|FullyQualifiedName~GenericUnlock|FullyQualifiedName~Pet|FullyQualifiedName~Title" -v minimal --nologo`
+  passed 334/334.
+- Remaining blockers: title lifecycle UI timing, account/character unlock
+  deltas, item/error aux producers, and broader title reward/ownership parity
+  still need producer, consumer, or live-client evidence.
+
+F-026 / audit F-033 pet-flair spell effect partial-table guard (2026-06-08):
+
+- `HandleEffectUnlockPetFlair` already had an `unknown-pet-flair` branch for
+  missing `PetFlair` rows, but a missing `PetFlair` table threw before the
+  branch could run.
+- The handler now resolves `PetFlair` through a nullable table lookup. Missing
+  tables follow the same diagnostic/no-mutation path as missing rows, returning
+  before `PetCustomisationManager.HasFlair()` or `UnlockFlair()`.
+- `SpellCollectionEffectTests` now pin missing-table no-op behavior for
+  `UnlockPetFlair` and a table-backed happy path that still calls
+  `HasFlair(12)` and `UnlockFlair(12)`.
+- Focused spell collection verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~SpellCollectionEffectTests" -v minimal --nologo`
+  passed 5/5.
+- Broader spell / generic-unlock / pet verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~SpellCollectionEffectTests|FullyQualifiedName~GenericUnlock|FullyQualifiedName~Pet" -v minimal --nologo`
+  passed 312/312.
+- Remaining blockers: pet flair ownership/object validation, pet lifecycle
+  timing, item/error aux producers, account/character unlock deltas, and
+  broader pet-flair UI sequencing still need producer, consumer, or live-client
+  evidence.
+
+F-026 / audit F-033 collection-spell Spell4 partial-table guard (2026-06-08):
+
+- After the learn-dye-color generic-unlock table guard, the same collection
+  spell helper still dereferenced `GameTableManager.Instance.Spell4` directly.
+  The helper already had an `unknown-spell4` branch for missing rows, so the
+  safe behavior was to make missing `Spell4` tables follow that existing branch
+  rather than invent new mount or vanity-pet semantics.
+- `TryLearnCollectionSpell` now resolves `Spell4` through a nullable table
+  lookup. Missing `Spell4` tables return before `SpellManager.GetSpell`,
+  `SpellManager.AddSpell`, or `ServerUnlockMount` / `ServerUnlockVanityPet`
+  packet emission.
+- `SpellCollectionEffectTests` now pin missing-table no-op behavior for
+  `UnlockMount` and a table-backed happy path that still adds the base spell and
+  emits `ServerUnlockMount`.
+- Focused spell collection verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~SpellCollectionEffectTests" -v minimal --nologo`
+  passed 3/3.
+- Broader spell / generic-unlock verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~SpellCollectionEffectTests|FullyQualifiedName~GenericUnlock" -v minimal --nologo`
+  passed 27/27.
+- Remaining blockers: account/character unlock-list delta timing, broader
+  collection-spell retail parity, item/error aux producers, pet lifecycle
+  timing, and mount/vanity-pet UI sequencing still need producer, consumer, or
+  live-client evidence.
+
+F-026 / audit F-033 learn-dye-color generic-unlock partial-table guard (2026-06-08):
+
+- Rechecked remaining direct `GenericUnlockEntry.GetEntry` callsites after the
+  account-item and generic-unlock manager guards; the only remaining unsafe
+  table dereference was the `LearnDyeColor` spell effect.
+- `HandleEffectLearnDyeColor` now resolves `GenericUnlockEntry` through a
+  nullable table lookup. Missing tables follow the same path as missing rows:
+  diagnostics report `unknown-generic-unlock`, `IsUnlocked` is not queried, and
+  `GenericUnlockManager.Unlock()` receives the generic unlock id so the mapped
+  invalid result path can answer the client.
+- `SpellCollectionEffectTests` pins the missing-table handoff with a minimal
+  spell/player/account test double.
+- Focused spell collection verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~SpellCollectionEffectTests" -v minimal --nologo`
+  passed 1/1.
+- Broader spell / generic-unlock verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~SpellCollectionEffectTests|FullyQualifiedName~GenericUnlock" -v minimal --nologo`
+  passed 25/25.
+- Remaining blockers: account/character unlock-list delta timing,
+  generic-unlock readback precision, item/error aux producers, unsupported
+  account-item payload effects, and broader collection-spell parity still need
+  producer, consumer, or live-client evidence.
+
+F-026 / audit F-033 account-item generic-unlock partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  for account inventory generic-unlock grant planning.
+- `AccountInventoryManager.TryAddGenericUnlockGrants()` now resolves
+  `GenericUnlockSet` and `GenericUnlockEntry` through nullable table lookups.
+  Missing set/entry tables follow the existing invalid generic-unlock boundary,
+  returning `AccountOperationResult.InvalidAccountItem` before unlock grant
+  application or account-item deletion.
+- `AccountItemHandlerTests` pin missing `GenericUnlockSet` table and missing
+  `GenericUnlockEntry` table no-delete boundaries for `TakeItem`.
+- Focused account-item verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~AccountItemHandlerTests" -v minimal --nologo`
+  passed 15/15.
+- Broader account-item / generic-unlock verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~AccountItem|FullyQualifiedName~GenericUnlock" -v minimal --nologo`
+  passed 67/67.
+- Remaining blockers: account/character unlock-list delta timing, item/error aux
+  producers, unsupported account-item payload effects, and deeper generic-unlock
+  readback precision remain evidence-gated.
+
+F-026 / audit F-033 generic-unlock manager partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  for account generic-unlock manager table lookups.
+- `GenericUnlockManager.Unlock()` now treats a missing `GenericUnlockEntry`
+  table like a missing row and sends the existing `GenericUnlockResult.Invalid`
+  response before creating unlock state.
+- `GenericUnlockManager.UnlockAll()` now treats a missing `GenericUnlockEntry`
+  table like an empty table and emits no unlock packets.
+- `GenericUnlockManager` startup now resolves persisted `AccountGenericUnlock`
+  rows through a nullable table lookup. Missing table/row entries are skipped
+  from transient runtime unlock state and readback without deleting database
+  state, while table-backed persisted rows load through a non-dirty
+  `GenericUnlock` instance so later saves do not duplicate existing rows.
+- `GenericUnlockManagerTests` pin missing-table persisted skip, table-backed
+  persisted load, non-dirty persisted save, missing-table direct unlock,
+  missing-table unlock-all no-op, and a table-backed granted path.
+- Focused manager verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~GenericUnlockManagerTests" -v minimal --nologo`
+  passed 6/6.
+- Broader generic-unlock verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~GenericUnlock" -v minimal --nologo`
+  passed 22/22.
+- Remaining blockers: account/character unlock-list delta timing, generic unlock
+  persistence/readback precision beyond this fail-closed setup case,
+  item/error aux producers, and nearby
+  account/item aux semantics remain evidence-gated.
+
+F-026 / audit F-033 normal item-use table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on the existing normal item-use and currency-treasure item-use paths.
+- `ItemUseHelper.TryUseItem()` now resolves `ItemSpecial` through a nullable
+  table lookup and treats a missing table like a missing row, throwing
+  `InvalidPacketValueException` before activated item casts or stack/charge
+  consumption.
+- `ItemUseHelper.TryGetCurrencyGrants()` now resolves `CurrencyType` through a
+  nullable table lookup and treats a missing table like a missing row, throwing
+  before currency-treasure consumption or currency grants.
+- `ClientItemUseHandlerTests.HandleMessage_WhenItemSpecialTableMissingThrowsWithoutCastOrConsume`
+  and `HandleMessage_CurrencyTreasureWhenCurrencyTypeTableMissingThrowsWithoutConsumeOrGrant`
+  pin both no-side-effect boundaries.
+- Focused item-use verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ClientItemUseHandlerTests" -v minimal --nologo`
+  passed 9/9.
+- Broader item-use verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ClientItemUse" -v minimal --nologo`
+  passed 20/20.
+- Remaining blockers: item/error aux producers, broader item eligibility
+  precision, supply-satchel/costume aux timing, pet lifecycle timing, and unlock
+  delta readback remain evidence-gated.
+
+F-026 / audit F-033 decor item-use partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on the existing decor item-use invalid-static-data path.
+- `ClientItemUseDecorHandler` now resolves `HousingDecorInfo` through a
+  nullable table lookup and treats a missing table like a missing decor row,
+  throwing `InvalidPacketValueException` before residence resolution,
+  `Inventory.ItemUse`, or `DecorCreate`.
+- `ClientItemUseDecorHandlerTests.HandleMessage_MissingDecorInfoTable_ThrowsBeforeResidenceOrConsume`
+  pins the missing-table no-side-effect boundary.
+- Focused decor item-use verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ClientItemUseDecorHandlerTests" -v minimal --nologo`
+  passed 5/5.
+- Nearby item-use verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ClientItemUse" -v minimal --nologo`
+  passed 18/18.
+- Focused F-026 item/unlock/costume/pet bucket:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~AccountCostumeManagerTests|FullyQualifiedName~ClientItemGenericUnlockHandlerTests|FullyQualifiedName~AccountUnlockPacketShapeTests|FullyQualifiedName~ClientPetSetStanceHandlerTests|FullyQualifiedName~SupplySatchelManagerTests|FullyQualifiedName~ClientItemUseHandlerTests|FullyQualifiedName~ClientItemUseDecorHandlerTests" -v minimal --nologo`
+  passed 41/41.
+- Remaining blockers: item/error aux producers, item eligibility precision,
+  costume/supply-satchel aux timing, pet lifecycle timing, and unlock delta
+  readback remain evidence-gated.
+
+F-004 housing community-rename formula-table guard (2026-06-08):
+- No new native labels were added. This is a source-local fail-closed guard on
+  the existing community rename cost lookup.
+- `ClientHousingCommunityRenameHandler` now resolves `GameFormula` row `2395`
+  through a nullable table lookup and reuses the resolved entry for the
+  success-side currency debit.
+- Missing `GameFormula` tables now follow the existing missing-row failure path:
+  `HousingResult.Failed` is sent before `ICurrencyManager.CanAfford`,
+  `CurrencySubtractAmount`, `ICommunity.RenameGuild`, or residence-map rename.
+- `ClientHousingCommunityRenameHandlerTests` pin the missing-table no-side-effect
+  boundary and a table-backed credit-cost success path.
+- Focused rename verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ClientHousingCommunityRenameHandlerTests" -v minimal --nologo`
+  passed 3/3.
+- Broader housing verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Housing" -v minimal --nologo`
+  passed 104/104.
+- Remaining blockers: neighborhood `0x0501`/`0x0506` producer triggers/fields,
+  edit-mode ack/broadcast, community/session precision, decor
+  ownership/unlock/refund semantics, and exact community rename persistence/UI
+  timing remain evidence-gated.
+
+F-004 housing vendor-list partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on the existing housing vendor-list response path.
+- `ClientHousingVendorListHandler` now treats a missing `HousingPlugItem` table
+  like an empty vendor source and still sends `ServerHousingVendorList` with no
+  plug rows.
+- Missing `HousingContributionInfo` tables now follow the existing missing-row
+  behavior for contribution lookups, keeping plug costs at `0` instead of
+  throwing.
+- `ClientHousingVendorListHandlerTests` pin missing plug-table empty-list,
+  missing contribution-table zero-cost, and table-backed first-positive
+  contribution cost behavior.
+- Focused vendor-list verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ClientHousingVendorListHandlerTests" -v minimal --nologo`
+  passed 3/3.
+- Broader housing verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Housing" -v minimal --nologo`
+  passed 107/107.
+- Remaining blockers: plug ownership/entitlement/pricing precision,
+  neighborhood `0x0501`/`0x0506` producer triggers/fields, edit-mode
+  ack/broadcast, community/session precision, and exact vendor UI timing remain
+  evidence-gated.
+
+F-004 / audit F-004 residence visual static-data partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on the existing residence visual/decor static-data validation paths.
+- `Residence` visual setters now resolve `HousingWallpaperInfo` and
+  `HousingDecorInfo` through nullable table lookups. Missing and empty tables
+  follow the existing invalid-row boundary, throwing
+  `ArgumentOutOfRangeException` before visual value mutation or `NeedsSave`.
+- Persisted residence decor load now treats missing `HousingWallpaperInfo` and
+  `HousingDecorInfo` tables like missing decor rows, preserving the existing
+  `DatabaseDataException` instead of null-refing during construction.
+- `ResidenceTests` pin missing-table, empty-table, table-backed visual setter,
+  and persisted decor load boundaries.
+- Focused residence verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-residence-static\ --filter "FullyQualifiedName~ResidenceTests" -v minimal --nologo`
+  passed 15/15.
+- Broader residence/interior-wallpaper/vendor-list/decor item-use verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-residence-static-broad\ --filter "FullyQualifiedName~ResidenceTests|FullyQualifiedName~ResidenceMapInstanceInteriorWallpaperTests|FullyQualifiedName~ClientHousingVendorListHandlerTests|FullyQualifiedName~ClientItemUseDecorHandlerTests" -v minimal --nologo`
+  passed 27/27.
+- Remaining blockers: housing edit-mode ack/broadcast, neighborhood
+  `0x0501`/`0x0506` producer triggers/fields, community/session precision,
+  decor ownership/unlock/refund semantics, and exact residence visual UI timing
+  remain evidence-gated.
+
+F-011 / audit F-016 guild create-cost formula-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on the existing guild/community registration cost lookup.
+- `ClientGuildRegisterHandler` now resolves guild/community create-cost
+  `GameFormula` rows `764` and `1159` through a nullable table lookup.
+- Missing create-cost tables/rows now send `GuildResult.UnableToProcess` before
+  character/account affordability checks, currency debits, or
+  `IGuildManager.RegisterGuild`.
+- Post-success cost deduction also uses the guarded lookup so a late missing
+  table does not throw after registration.
+- `ClientGuildRegisterHandlerTests` pin missing-table no-side-effect behavior
+  across guild-credit, community-credit, and community-service-token branches,
+  plus table-backed guild-credit and community-service-token success.
+- Focused guild-register verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~ClientGuildRegisterHandlerTests" -v minimal --nologo`
+  passed 5/5.
+- Broader guild verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Guild" -v minimal --nologo`
+  passed 21/21.
+- Remaining blockers: guild bank economy, influence/tab state, perks,
+  holomarks, standards, recruitment subscriptions/details, war-party/warplot
+  behavior, boss-token inventory, and exact create UI timing remain
+  evidence-gated.
+
+F-011 / audit F-016 guild-standard partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard on
+  the existing guild standard part/dye validation paths.
+- `GuildStandard.GuildStandardPart` now resolves `GuildStandardPart` through a
+  nullable lookup, preserving the existing invalid-standard-part
+  `ArgumentException` when the table or row is unavailable.
+- `GuildStandardPart.Validate()` now resolves `DyeColorRamp` through a nullable
+  lookup, so unavailable dye static data returns the existing invalid standard
+  validation result instead of crashing.
+- `GuildStandardTests` pin missing-table, empty-table, and table-backed
+  standard/dye boundaries.
+- Focused guild-standard verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-guild-standard\ --filter "FullyQualifiedName~GuildStandardTests" -v minimal --nologo`
+  passed 5/5.
+- Broader guild verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-guild\ --filter "FullyQualifiedName~NexusForever.Game.Tests.Guild" -v minimal --nologo`
+  passed 13/13.
+- Remaining blockers: guild bank economy, influence/tab state,
+  permissions/limits, perks, holomark producer precision, recruitment
+  subscriptions/details, war-party/warplot behavior, boss-token inventory, and
+  exact standard UI timing remain evidence-gated.
+
+F-026 / audit F-033 repair-vendor formula-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on the existing mapped repair-vendor cost path.
+- `ClientRepairItemVendor` now resolves repair-cost `GameFormula` row `0x022F`
+  through a nullable table lookup. Missing repair-cost tables/rows now behave
+  like zero computable repair cost and return before affordability checks,
+  credit debit, or durability mutation.
+- `ClientVendorRepairHandlerTests` pin missing-table no-mutation behavior and
+  a table-backed debit/repair path using the existing server-side cost formula.
+- Focused vendor verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Vendor" -v minimal --nologo`
+  passed 10/10.
+- Remaining blockers: repair durability-update producer timing, item/error aux
+  producers, broader item eligibility precision, and exact vendor UI timing
+  remain evidence-gated.
+
+F-008 / audit F-010 crafting fixed-recipe partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on the existing fixed-recipe crafting path.
+- `CraftingCraftRequestHelper.GetSchematic()` now treats a missing
+  `TradeskillSchematic2` table like a missing schematic row and throws
+  `InvalidPacketValueException` before station validation, material debit,
+  output creation, achievements, XP, or finish-packet emission.
+- `ValidateItem()` now treats a missing `Item` table like a missing catalyst or
+  power-core row and throws before craft-item/complex-craft side effects.
+- `GrantCraftingXp()` now treats a missing `TradeskillTier` table like no
+  matching tier row: table-backed crafts still complete, but earned XP is zero.
+- `TryBuildMaterialDebit()` now treats a missing `TradeskillMaterial` table like
+  no material row, so fixed-recipe material availability and debit fall back to
+  inventory-only counts instead of throwing while the supply satchel material
+  id is unknowable.
+- `CraftingSimpleCraftHandlerTests` pin missing schematic table no-mutation,
+  missing item table no-mutation for catalyst validation, missing tier table
+  zero-XP completion, and missing material table inventory-only debit behavior.
+- Focused partial-table verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~CraftingSimpleCraftHandlerTests" -v minimal --nologo`
+  passed 12/12.
+- Broader crafting verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Crafting" -v minimal --nologo`
+  passed 78/78.
+- Remaining blockers: discovery roll/unlock producer semantics, station
+  service-key names, `ServerCraftingCurrentCraft` cadence, `0x084B`/`0x0855`
+  aux producer intent, non-success sigil rules, and `0x056C` microchip patch
+  timing remain evidence-gated.
+
+F-008/F-011 rune/additive partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local setup/partial-table
+  guard on the existing rune install and additive/catalyst validation paths.
+- `ItemRuneInstallValidator.ValidateRuneMatchesSocket()` now treats a missing
+  `Item` table like a missing rune item (`TradeskillResult.MissingRune`) and
+  a missing `Item2Category` table like an invalid rune/socket match
+  (`TradeskillResult.InvalidSlot`).
+- `ItemRuneSocketMaskBuilder.BuildAllowedSocketMask()` now treats a missing
+  `ItemSpecial` table like a missing row and returns no extra socket mask
+  instead of throwing.
+- `CraftingRuneRequestHelper.ValidateItem2()`, `ValidateCraftingAdditive()`,
+  and `ValidateCraftingCatalyst()` now reject missing `Item`,
+  `TradeskillAdditive`, and `TradeskillCatalyst` tables through the existing
+  `InvalidPacketValueException` request boundary.
+- `ItemRuneSocketTests` and `CraftingRuneHandlerTests` pin all five
+  partial-table boundaries while preserving existing `MissingRune`,
+  `InvalidSlot`, and invalid-packet semantics.
+- Focused rune verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~CraftingRuneHandlerTests|FullyQualifiedName~ItemRuneSocketTests" -v minimal --nologo`
+  passed 57/57.
+- Broader crafting verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Crafting" -v minimal --nologo`
+  passed 82/82.
+- Remaining blockers: discovery roll/unlock producer semantics, station
+  service-key names, `ServerCraftingCurrentCraft` cadence, `0x084B`/`0x0855`
+  aux producer intent, non-success sigil rules, `0x056C` microchip patch
+  timing, and full retail rune-socket eligibility/error semantics remain
+  evidence-gated.
+
+F-008 additive modifier materialization partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard on
+  queued additive/catalyst modifier item-count materialization.
+- `CraftingModifierSessionStore.TryBuildModifierItemCounts()` now treats a
+  missing `Item` table like a missing additive/catalyst item row and returns the
+  existing `invalid-additive-item:{item2Id}` or
+  `invalid-catalyst-item:{item2Id}` reason before inventory checks or item
+  debits.
+- Missing `TradeskillAdditive` and `TradeskillCatalyst` tables now behave like
+  missing additive/catalyst rows and return the existing
+  `invalid-additive:{id}` or `invalid-catalyst:{id}` reasons.
+- `CraftingAdditiveHandlerTests` pins the missing `Item`,
+  `TradeskillAdditive`, and `TradeskillCatalyst` table boundaries while
+  preserving the existing valid modifier state and abandon behavior.
+- Focused additive/rune verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~CraftingAdditiveHandlerTests|FullyQualifiedName~CraftingRuneHandlerTests|FullyQualifiedName~ItemRuneSocketTests" -v minimal --nologo`
+  passed 63/63.
+- Broader crafting verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Crafting" -v minimal --nologo`
+  passed 85/85.
+- Remaining blockers: discovery roll/unlock producer semantics, station
+  service-key names, `ServerCraftingCurrentCraft` cadence, `0x084B`/`0x0855`
+  aux producer intent, non-success sigil rules, `0x056C` microchip patch
+  timing, and full retail additive/rune eligibility semantics remain
+  evidence-gated.
+
+F-008 tradeskill request partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard on
+  existing tradeskill learn/drop, pick-talent, and reset validation.
+- `TradeskillRequestHelper.ValidateTradeskill()` now treats a missing
+  `Tradeskill` table like a missing row and throws the existing
+  `InvalidPacketValueException`, while preserving the allowed zero-drop path
+  when `allowNone` is true.
+- `TradeskillRequestHelper.ValidateBonusForTradeskill()` now treats missing
+  `TradeskillBonus` and `TradeskillTalentTier` tables like missing rows before
+  player talent mutation.
+- `TradeskillRequestHelperTests` pin missing tradeskill, bonus, and talent-tier
+  tables plus an allowed zero-drop request and a valid table-backed talent row.
+- Focused tradeskill request verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~TradeskillRequestHelperTests" -v minimal --nologo`
+  passed 5/5.
+- Broader crafting verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Crafting" -v minimal --nologo`
+  passed 90/90.
+- Remaining blockers: discovery roll/unlock producer semantics, station
+  service-key names, `ServerCraftingCurrentCraft` cadence, `0x084B`/`0x0855`
+  aux producer intent, non-success sigil rules, and `0x056C` microchip patch
+  timing remain evidence-gated.
+
+F-031 / audit F-038 Fortune reward-pool partial-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard
+  on the existing item-backed Madame Fay reward pool.
+- `FortuneRewardPool.BuildPool()` now treats a missing `AccountItem` table like
+  no reward candidates, returning an empty display catalog and no dealt cards
+  instead of throwing.
+- `FortuneRewardPool.MapRarity()` now treats a missing `Item2` table like a
+  missing item row and uses `RewardRarity.Normal` for otherwise item-backed
+  account rewards.
+- This does not add non-item rewards, alter rarity-tier weights, infer money
+  reward arrays, or change active rotation/catalog selection.
+- `FortuneRewardPoolTests` pin missing `AccountItem` and missing `Item2` table
+  behavior alongside the existing item-backed/non-item reward boundary.
+- Focused reward-pool verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~FortuneRewardPoolTests" -v minimal --nologo`
+  passed 6/6.
+- Broader Fortune verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin\ --filter "FullyQualifiedName~Fortune" -v minimal --nologo`
+  passed 27/27.
+- Remaining blockers: exact per-item retail weights, money/probability arrays,
+  active rotation catalog, and card-safe non-item reward payloads remain blocked
+  until retail `ServerFortuneRewards`, storefront-server catalog, or
+  native/server producer evidence exists.
+
+F-004 / audit F-004 residence entrance static-data guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard on
+  the existing residence entrance lookup and teleport helper boundary.
+- `GlobalResidenceManager.GetResidenceEntrance()` now resolves
+  `HousingPropertyInfo` and `WorldLocation2` through nullable lookups and throws
+  the existing `HousingException` when the property or entrance location static
+  table/row is unavailable.
+- `ResidenceEntrance` now resolves `World` through a nullable lookup and throws
+  the same `HousingException` when the target world static table/row is
+  unavailable.
+- `GlobalResidenceManagerTests` pin missing `HousingPropertyInfo`,
+  `WorldLocation2`, and `World` tables, empty versions of each table, and a
+  table-backed entrance build with expected world id, position, and rotation.
+- Focused housing entrance verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-housing-entrance-focused\ --filter "FullyQualifiedName~GlobalResidenceManagerTests" -v minimal --nologo`
+  passed 7/7.
+- Broader housing verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-housing-entrance-broad\ --filter "FullyQualifiedName~Housing" -v minimal --nologo`
+  passed 121/121.
+- Remaining blockers: neighborhood `0x0501`/`0x0506` producer triggers/fields,
+  edit-mode ack/broadcast semantics, community/session precision, decor
+  ownership/unlock/refund semantics, and exact residence entrance UI/timing
+  remain evidence-gated.
+
+F-022 / audit F-027 path mission static-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard on
+  existing path mission completion helpers.
+- `PathManager.CompleteMission()` now resolves `PathMission` through a nullable
+  lookup and treats missing `PathMission` static data like missing mission
+  metadata: direct completion still completes and grants configured mission
+  rewards, but achievement/type checks and fallback XP metadata are skipped.
+- `CompleteExplorerProgressMission()` now treats missing `PathMission` static
+  data like a missing mission row and missing `PathExplorerNode` static data
+  like no matching node rows, returning no-progress instead of throwing.
+- `CompleteExplorerPowerMapMission()` now treats missing `PathExplorerPowerMap`
+  static data like a missing power-map row and missing `PathMission` static data
+  like no matching active mission rows, returning no-progress instead of
+  throwing.
+- `GetOrCreateMissionState()` now preserves the same missing-mission metadata
+  behavior when creating runtime state.
+- `PathManagerTests` pin direct missing-table completion, Explorer vista
+  missing-table no-completion, and Explorer power-map missing-table
+  no-completion boundaries.
+- Focused PathManager verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-path-mission-static-focused\ --filter "FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+  passed 72/72.
+- Broader path verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-path-mission-static-broad\ --filter "FullyQualifiedName~Path" -v minimal --nologo`
+  passed 163/163.
+- Remaining blockers: path reward presentation, unlock sequencing,
+  current-zone activation proof, per-mission producer timing, exact Explorer
+  node/power-map retail semantics, and broader quest/path/content smoke remain
+  evidence-gated.
+
+F-022 / audit F-027 active path helper static-table guard (2026-06-08):
+- No new native labels were added. This is a source-local partial-table guard on
+  existing active path helper methods.
+- `CompleteCurrentExplorerExploreZoneMission()` and `CompleteMissionByObjectId()`
+  now resolve `PathMission` through nullable lookups and treat unavailable
+  mission static data like no matching active mission rows.
+- `CompleteMissionBySoldierTowerDefenseId()` now treats unavailable
+  `PathSoldierTowerDefense` data like a missing tower-defense row.
+- `ProgressSoldierAssassinateMissionForCreatureKill()` now treats unavailable
+  `PathMission` and `PathSoldierAssassinate` data like missing mission or
+  assassinate rows, returning no-progress before mission mutation or update
+  packets.
+- `CompleteMissionBySettlerImprovementGroupId()` now treats unavailable
+  `PathSettlerImprovementGroup`, `PathSettlerHub`, and `PathMission` data like
+  missing rows before hub-progress mutation.
+- Settler hub progress helpers now resolve `PathSettlerImprovementGroup`,
+  `PathSettlerHub`, and `PathMission` through nullable lookups and return
+  zero-progress when static ownership cannot be resolved.
+- `PathManagerTests` pin missing-table no-completion boundaries for Explorer
+  explore-zone, active object-id, Soldier tower-defense, Soldier assassinate,
+  and Settler improvement-group helper paths.
+- Focused PathManager verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-path-active-static-focused\ --filter "FullyQualifiedName~PathManagerTests" -v minimal --nologo`
+  passed 81/81.
+- Broader path verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore -m:1 -p:UseSharedCompilation=false -p:UseAppHost=false -p:OutDir=I:\GIT\NexusForever\artifacts\codex-test-bin-path-active-static-broad\ --filter "FullyQualifiedName~Path" -v minimal --nologo`
+  passed 172/172.
+- Remaining blockers: path reward presentation, unlock sequencing,
+  current-zone activation proof, per-mission producer timing, exact
+  Soldier/Settler retail semantics, and broader quest/path/content smoke remain
+  evidence-gated.
+
+F-017 social / Who window split (2026-06-08):
+- Stock `UI\Who\Who.lua` fills Search Results from `WhoResponse`, but fills
+  Nearby Players from `UnitCreated`/`UnitDestroyed` events. Nearby Players is
+  therefore not backed by `ClientWhoRequest`/`ServerWhoResponse`.
+- Unit Lua method table evidence near `140c5b0d0`: `IsInYourGroup`
+  string `140b2b528` maps to function `140660d00`; `GetPlayerPathType`
+  maps to `140658f70`; `IsThePlayer` maps to `140653700`.
+- Decompile of `140660d00` shows `IsInYourGroup()` returning true when the
+  current group context at `DAT_140c65898 + 0x6c50` exists and its `+0x48`
+  association equals target entity field `+0x18a0`.
+- NexusForever now emits a stable non-zero client group association for
+  ungrouped players in player entity creation and group-association updates,
+  avoiding client-side zero-equality filtering of unrelated nearby players.
+- Focused verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~PlayerClientGroupAssociationTests|FullyQualifiedName~ClientWhoRequestHandlerTests" -v minimal --nologo -p:OutputPath=I:\GIT\NexusForever\artifacts\build\who-output6\`
+  passed 8/8.
+- Follow-up Nearby evidence used cached fragments under
+  `Decomp\Analysis\exports\WildStar64.exe\selected_decompiled_cache\functions`.
+  `140456960.fragment.c` dispatches named event `UnitCreated` from the
+  entity-create apply path, with visibility/relation gating around entity state
+  `+0x54`; `14047dcf0.fragment.c` dispatches `UnitCreated`/`UnitDestroyed` when
+  unit visibility state changes.
+- NexusForever now refreshes already-visible remote player entity creates after
+  `ServerPlayerEnteredWorld`, causing stock `Who.lua` to receive a fresh
+  `UnitCreated` event after loading. Player creates also emit
+  `ServerSetUnitPathType` and explicit `ServerEntityGroupAssociation` metadata
+  so Nearby row path/class/group filters have live unit data.
+- Follow-up retest showed the refresh destroy must use the normal
+  visibility-removal bit (`Flag=true`): cached `140456960.fragment.c` returns
+  `0x80004005` before `UnitCreated` when `Entity_ResolveById` already finds the
+  GUID, so a non-removing destroy followed by create is ignored by the client.
+  `Player.RefreshVisiblePlayersForNearbyList()` now sends a true destroy before
+  replaying the remote player create.
+- Follow-up verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~PlayerWorldEntryOrderingTests|FullyQualifiedName~PlayerClientGroupAssociationTests|FullyQualifiedName~ClientWhoRequestHandlerTests" -v minimal --nologo -p:OutputPath=I:\GIT\NexusForever\artifacts\build\who-output8\`
+  passed 10/10.
+- Owning project build:
+  `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo -p:OutputPath=I:\GIT\NexusForever\artifacts\build\who-world-output2\`
+  succeeded with 0 warnings and 0 errors.
+- Corrected refresh verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~PlayerVisibilityPacketTests|FullyQualifiedName~PlayerWorldEntryOrderingTests" -v minimal --nologo -p:OutputPath=I:\GIT\NexusForever\artifacts\build\who-output10\`
+  passed 6/6; `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~PlayerWorldEntryOrderingTests|FullyQualifiedName~PlayerClientGroupAssociationTests|FullyQualifiedName~ClientWhoRequestHandlerTests" -v minimal --nologo -p:OutputPath=I:\GIT\NexusForever\artifacts\build\who-output11\`
+  passed 10/10; `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo -p:OutputPath=I:\GIT\NexusForever\artifacts\build\who-world-output3\`
+  succeeded with 0 warnings and 0 errors.
+- Live-client retest showed one-way player visibility could still occur until
+  the missing client re-entered world. `Player.AddVisible()` now self-heals
+  player-to-player reciprocity: if the remote player is missing the local
+  player from its visible set, the reciprocal add is applied through a
+  non-recursing path; if the remote server set already contains the local
+  player, a true destroy/create refresh is replayed to force a fresh
+  `UnitCreated` for stock Nearby Players.
+- Reciprocal live-visibility verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~PlayerVisibilityPacketTests|FullyQualifiedName~PlayerWorldEntryOrderingTests|FullyQualifiedName~PlayerClientGroupAssociationTests|FullyQualifiedName~ClientWhoRequestHandlerTests" -v minimal --nologo -p:OutputPath=I:\GIT\NexusForever\artifacts\build\who-output14\`
+  passed 17/17; `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo -p:OutputPath=I:\GIT\NexusForever\artifacts\build\who-world-output4\`
+  succeeded with 0 warnings and 0 errors.
+- Follow-up live-client retest showed Nearby rows and interaction working, but
+  one observer could render the refreshed remote player at a stale far-away
+  coordinate while distance drifted down. The replayed player create now
+  replaces/adds a `SetPosition` command using the remote player's current
+  server map position before sending `ServerEntityCreate`, so the client's
+  `UnitCreated` baseline starts at the same position used by server-side
+  visibility and interaction checks.
+- Position-baseline refresh verification:
+  `dotnet test Source\NexusForever.Game.Tests\NexusForever.Game.Tests.csproj --no-restore --filter "FullyQualifiedName~PlayerVisibilityPacketTests|FullyQualifiedName~PlayerWorldEntryOrderingTests|FullyQualifiedName~PlayerClientGroupAssociationTests|FullyQualifiedName~ClientWhoRequestHandlerTests" -v minimal --nologo -p:OutputPath=I:\GIT\NexusForever\artifacts\build\who-output17\`
+  passed 18/18; `dotnet build Source\NexusForever.WorldServer\NexusForever.WorldServer.csproj --no-restore -v minimal --nologo -p:OutputPath=I:\GIT\NexusForever\artifacts\build\who-world-output5\`
+  succeeded with 0 warnings and 0 errors.
+
+F-025 map-tracked-unit producer cached-export recheck (2026-06-09):
+- Target question: does current durable evidence prove a NexusForever producer
+  for `ServerMapTrackedUnitUpdate` (`0x0849`) or
+  `ServerMapTrackedUnitDisable` (`0x0848`)?
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It used the tracked labels plus cached
+  `WildStar64.exe` fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `1400a6c10`, `1403f4170`, `1403f4200`, `140430f80`, `140511c80`,
+  `14068adb0`, and `140690500` still map read/apply/Lua consumer behavior
+  only: update reads tracked-unit id, XYZ, and 15-bit `TrackingSlotId`; update
+  and disable mutate client cache and dispatch Lua events; Lua getters enumerate
+  cached tracked-unit state and resolve marker data through `TrackingSlot.tbl`.
+- Source search still finds the map-tracked packets only in packet models,
+  packet-shape tests, and the negative entity-create emission guard. There is
+  still no production `ServerMapTrackedUnitUpdate` /
+  `ServerMapTrackedUnitDisable` emitter.
+- Disposition: **Mapped only / Blocked producer**. No runtime behavior changed.
+  Next evidence source remains native server send-site evidence or an accepted
+  live public-event marker capture proving tracked-unit id allocation, update
+  cadence, disable lifetime, and `TrackingSlotId` selection.
+
+F-008 crafting current-craft / aux producer cached-export recheck (2026-06-09):
+- Target question: does current durable evidence prove NexusForever should emit
+  `ServerCraftingCurrentCraft`, `0x084B`, `0x0855`, or `ServerItemMicrochips`
+  (`0x056C`) from the current crafting paths?
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It used tracked labels plus cached
+  `WildStar64.exe` fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `1400a3af0` and `140081df0` still show reader-only aux shapes for
+  `0x084B` and crafting-adjacent `0x0855`; `1400a46b0` and `1405e6830` read
+  and apply `ServerCraftingCurrentCraft` into client crafting state before
+  dispatching `CraftingUpdateCurrent`; `1400a3d50`, `1403b8540`, and
+  `14056aa20` read/apply `0x056C` item microchip patch state and dispatch
+  `ItemModified`.
+- Source search still finds production crafting emits limited to
+  `ServerCraftingFinish` for the current fixed-recipe success paths. The
+  current-craft and aux packet models remain covered by shape tests and
+  negative emission guards only.
+- Disposition: **Mapped only / Blocked producer**. No runtime behavior changed.
+  Next evidence source remains native producer timing or accepted live
+  crafting/item-replication capture proving current-craft cadence,
+  `0x084B`/`0x0855` enqueue intent, discovery/hot-cold/result boundaries, and
+  `0x056C` patch timing.
+
+F-004 housing neighborhood producer cached-export recheck (2026-06-09):
+- Target question: does current durable evidence prove NexusForever should emit
+  `ServerHousingNeighborhoodEntry` (`0x0501`) or
+  `ServerHousingNeighborhoodList` (`0x0506`) from residence/session state?
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It used tracked labels plus cached
+  `WildStar64.exe` fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `14009cbe0` and `14009ebf0` still show reader-only evidence for the
+  single neighborhood row and realm-scoped counted list. Cached `1404ba4f0`
+  clears/rebuilds the client neighborhood cache and dispatches
+  `HousingNeighborhoodRecieved`. Cached `140205900` proves
+  `HousingNeighborhoodInfo.tbl` loader presence only.
+- Source search still finds the neighborhood packets only in packet models,
+  packet-shape tests, placeholder naming guards, and
+  `HousingAuxiliaryPacketEmitterTests.BuildResidenceSessionPackets_DoesNotEmitBlockedNeighborhoodListPackets`.
+- Disposition: **Mapped only / Blocked producer**. No runtime behavior changed.
+  Next evidence source remains a native server-push path or accepted live
+  housing UI/realm-login capture proving trigger timing, row backing, row-tail
+  field population, and realm/session scope.
+
+F-025 entity-stat aux producer cached-export recheck (2026-06-09):
+- Target question: does current durable evidence prove NexusForever should emit
+  or semantically rename `ServerEntityStat*` aux packets for `0x0889`,
+  `0x08CC`, `0x08F4`, `0x0939`, `0x093D`, or `0x093E`?
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It used tracked labels plus cached
+  `WildStar64.exe` fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `140080bf0` still shows only the shared three-`uint32` triplet reader
+  used by `0x0889`; cached `1400980f0` still shows only the shared `uint32`
+  plus wide-string reader used by `0x08CC`.
+- Cached `140097620`, `140097ee0`, `140097690`, and `140097f70` still show
+  reader-only evidence for `0x08F4`, `0x0939`, `0x093D`, and `0x093E`.
+- Source search still finds the six aux packets only in packet models,
+  packet-shape tests, placeholder naming guards, and negative entity-create
+  emission guards. Runtime stat sends remain the ordinary
+  `ServerEntityStatUpdateFloat` / `ServerEntityStatUpdateInteger` paths in
+  `WorldEntity`.
+- Disposition: **Mapped only / Blocked producer**. No runtime behavior changed.
+  Next evidence source remains a per-opcode `WorldSocket+0x15b0`
+  `vtable+0x58` apply handler, apply-table classification, or live sniff/order
+  witness proving field semantics and emit timing.
+
+F-031 Fortune retail weights / active rotation cached-export recheck (2026-06-09):
+- Target question: does current durable evidence prove exact Madame Fay
+  per-item weights or an active rotation source beyond the emulator
+  rarity-tier `FortuneRewardPool`?
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It used tracked labels plus cached
+  `WildStar64.exe` fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `ServerFortuneRewards_ReadPayload` (`140081f60`) still maps only the
+  transport shape: item2 id list, money-reward rows, and parallel item/money
+  probability float arrays. Cached `Fortune_ApplyRewards` (`1407292a0`) copies
+  those server-provided arrays into Fortune UI state.
+- Cached `FortunesLib_GetFortunesLootList` (`140766370`) exposes cached item2
+  rows and shows `fProbability = serverFloat * 100`; cached
+  `FortuneNode_ApplyServerFortunePackets` (`1404d60f0`) dispatches
+  `0x03CF`-`0x03D2`; cached `ServerFortuneCards_ReadPayload` (`1400a0b10`)
+  remains card-state reader evidence.
+- Source search still shows `ServerFortuneRewards` emitted from the emulator
+  rarity-tier `FortuneRewardPool`. No retail active-rotation source,
+  per-item weight table, or storefront-server catalog proof surfaced.
+- Disposition: **Mapped only / Blocked retail weights**. No runtime behavior
+  changed. Next evidence source remains a retail `ServerFortuneRewards` capture,
+  storefront-server catalog dump, or native/server producer artifact proving
+  item ids and probabilities.
+
+F-007 reward rotation `0x07CD` apply/flag/throttle cached-export recheck (2026-06-09):
+- Target question: does current durable evidence prove `0x07CD`
+  `ServerRewardRotationContentContext` field semantics, `Flag` meaning, or
+  dynamic throttle-slot assignment strongly enough to rename fields or mutate
+  runtime behavior?
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It used tracked labels plus cached
+  `WildStar64.exe` fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `ServerRewardRotationContentContext_ReadPayload` (`14008fcb0`) still
+  maps only the `0x07CD` wire shape: 14-bit reward-rotation index, four
+  32-bit fields, counted `uint32` content-id array, and a trailing one-bit
+  flag. The registrar cluster still passes the reader with a null static
+  handler for `0x07CD`.
+- Cached `RewardRotation_ManagerInit` (`140635840`) still initializes seven
+  request-throttle slots at `manager + 0x150 + index * 0x14`, and cached
+  `Reward_SendRewardUpdateRequest` (`140636ba0`) still sends only the
+  content-type index through `0x07CC`.
+- Cached `RewardRotation_GetLoadedScheduleForContent` (`140636c40`) proves
+  refresh-by-index and loaded-schedule lookup for a `RewardRotationContent`
+  id, but not assignment or consumer semantics for the `0x07CD` fields.
+- Source search confirmed the packet model already keeps
+  `UInt0`/`UInt1`/`UInt3` neutral and documents the missing apply-helper /
+  `Flag` / throttle-slot blocker; no runtime behavior was changed.
+- Disposition: **Mapped only / Blocked apply semantics**. Next evidence source
+  remains a retail `0x07CD` capture, accepted live Content Finder/storefront
+  reward-rotation bundle, or dynamic breakpoint on the runtime apply dispatch
+  proving slot assignment and `Flag` meaning.
+
+F-003 `Server0x0015` shared-reader cached-export/source recheck (2026-06-09):
+- Target question: does current durable evidence prove an opcode-specific
+  `Server0x0015` apply owner, producer, post-read consumer, or semantic field
+  names beyond the shared 5-bit plus `uint32` reader shape?
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It used tracked labels plus cached
+  `WildStar64.exe` fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `ServerUInt5UInt32_ReadPayload` (`140081f00`) still maps only one
+  5-bit field followed by one `uint32` in an 8-byte payload object.
+  `Network_RegisterServerOpcode_0351` registers that reader for both
+  unresolved server opcode `0x0015` and matching opcode `0x0628`.
+- Cached `ServerFortuneRewards_ReadPayload` (`140081f60`) calls
+  `140081f00` only as a money-reward row helper inside `0x03D2`, confirming
+  that the shared reader shape alone is not semantic ownership for `0x0015`.
+- Cached `MatchingManager_ApplyMatchingAverageWaitTimeUpdated` (`1405c0e00`)
+  remains the positive `0x0628` apply witness: it looks up the matching row by
+  the first field, writes the second field as average wait time, and dispatches
+  `MatchingAverageWaitTimeUpdated`. No equivalent `0x0015` apply owner,
+  producer, or post-read consumer surfaced in current cached fragments,
+  selected xrefs, or selected call edges.
+- Source and tests already preserve the safe boundary:
+  `Server0x0015.Value0`/`Value1` remain neutral, the placeholder is distinct
+  from `ServerMatchingAverageWaitTimeUpdate`, and no production path emits
+  `Server0x0015`.
+- Disposition: **Mapped only / Blocked semantics and producer**. Keep
+  `Server0x0015` neutral and non-emitted until a native `0x0015`
+  apply/producer path, client post-read consumer, or live payload capture
+  proves field names and timing.
+
+F-001 STS token/optional auth cached-export/source recheck (2026-06-09):
+- Target question: does current durable evidence prove the optional
+  token/RSA auth route semantics strongly enough to add
+  `/Auth/LoginTokenStart`, `/Auth/TokenKeyData`, `/Auth/RequestToken`, or
+  `/Auth/AssociateMyExternalAccount` server handlers?
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It used tracked `StsConnLib64.MT.dll` labels plus
+  cached fragments under
+  `selected_decompiled_cache/functions/sha256_aa0ef5888d17eb65da28b1cbef178d1650a837303c10a6fafc9f3c646c2f3fd1`.
+- Cached `StsConn_SendLoginTokenStart` (`180003d70`) sends `ClientRand` for
+  transaction `0x61` / `LoginTokenStart`.
+- Cached `StsConn_SendTokenKeyData` (`18000a730`) reads `ServerRand`,
+  `ServerPublicKey`, and `ServerSignature`, validates them through
+  `StsConn_ValidateTokenServerKeyMaterial` (`180012de0`), creates an RSA
+  client through `StsCrypt_CreateRsaClient` (`180037cb0`), and sends
+  `PremasterSecret`, `AuthnToken`, optional `AuthProviderCode`, and `AppId` for
+  transaction `0x3b` / `TokenKeyData`.
+- Cached `StsConn_SendRequestToken` (`180004c40`) writes `UserId` and `AppId`;
+  `StsConn_SendAssociateMyExternalAccount` (`1800067d0`) writes `UserId`,
+  `AuthProviderCode`, `AuthnToken`, and `AppId`; and
+  `StsConn_OnAuthnTokenResponse` (`180008230`) reads reply `AuthnToken`.
+- Source search confirms NexusForever currently implements SRP login/key-data,
+  login finish, request/consume game token, user-info, verified-IP,
+  game-account, and presence compatibility routes, but no optional token-auth
+  route handlers.
+- Disposition: **Mapped only / Blocked safe crypto semantics**. Exact RSA key
+  format, signature/trust anchor, premaster derivation, `TokenKeyData` server
+  reply fields, post-token session/crypto transition, and live startup route
+  ordering remain unproven. Do not implement the optional token/RSA routes
+  until native crypto proof or accepted startup STS captures prove safe server
+  behavior.
+
+F-002 `Client0x00ED` diagnostic ownership cached-export/source recheck (2026-06-09):
+- Target question: does current durable evidence prove a sender, consumer, or
+  semantic owner for `Client0x00ED` beyond the mapped
+  `uint64 + uint32 + uint64 + 3 bits` packet shape?
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It used tracked `WildStar64.exe` labels plus the
+  cached `1400a6200` fragment under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `ClientUnresolvedDiagnosticPacket00ED_WritePayload` (`1400a6200`)
+  still writes one `uint64`, one `uint32`, one `uint64`, and three trailing
+  bits. Selected xrefs/call edges show the label, internal jumps, and generic
+  bitstream helper calls, but no opcode-specific gameplay sender or consumer.
+- Current source/tests preserve the safe boundary: `Client0x00ED.Value0`..
+  `Value5` stay neutral, false-name tests reject duel/mail/path aliases, and
+  `Client0x00EDHandler` is log-only with no plaintext or encrypted server emit.
+- Disposition: **Mapped only / Diagnostic-only**. Keep `Client0x00ED`
+  non-mutating until a native sender, consumer, callback/table owner, indirect
+  send rail, or live payload proves request intent and field semantics.
+
+F-002 `Client0x011B`/`Client0x011D` diagnostic ownership cached-export/source recheck (2026-06-09):
+- Target question: does current durable evidence prove a sender, consumer, or
+  semantic owner for `Client0x011B` or `Client0x011D` beyond their mapped
+  empty / one-`uint32` packet shapes?
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It used tracked `WildStar64.exe` labels plus
+  cached fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `ClientCraftingAbandon_WritePayload` (`140001ba0`) is still a
+  no-payload writer (`return 0`) shared by many named zero-payload client
+  requests. Selected caller/xref evidence for this pass remained shared
+  pointer/table context and did not identify an opcode-specific `0x011B`
+  gameplay sender or consumer.
+- Cached `ClientTradeskillResetTalents_WritePayload` (`14007d010`) still writes
+  one raw `uint32`. Its selected code caller remains
+  `ClientCompoundTradeskillUInt32_WriteCluster` (`14007dc80`), a compound
+  serializer that also calls other crafting serializers; it does not prove
+  `0x011D` semantics.
+- Current source/tests preserve the safe boundary: `Client0x011B` remains empty,
+  `Client0x011D.Value` remains neutral, false-name tests reject loot-bind,
+  mail, loot-vacuum, and tradeskill-reset aliases, and both handlers are
+  log-only with no plaintext or encrypted server emit.
+- Disposition: **Mapped only / Diagnostic-only**. Keep both packets
+  non-mutating until a native sender, consumer, callback/table owner, indirect
+  send rail, or live payload proves request intent and field semantics.
+
+F-002 structural realm/addon diagnostic cached-export/source recheck (2026-06-09):
+- Target question: do `ClientAccountRealmData`, `ClientRealmListRealmRow`,
+  `ClientRealmListMessageRow`, or `ClientAddonModuleList` have enough current
+  evidence for runtime mutation or response behavior beyond structural
+  diagnostic handling?
+- Ghidra MCP discovery returned no running instances, so this pass did not add
+  labels or refresh exports. It used tracked `WildStar64.exe` labels plus
+  cached fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `ClientAccountRealmData_WritePayload` (`1400aba70`) still serializes
+  one account-realm row: 14-bit realm id, `uint32` character count, wide-string
+  last-played character, and trailing `uint64` time. Selected call edges still
+  show the row nested under `Client0x0760_WritePayload` (`1400abd30`), not a
+  standalone send owner.
+- Cached `Client0x0760_WritePayload` (`1400abd30`) and
+  `Client0x0762_WritePayload` (`1400ac410`) still mirror the realm and message
+  row serializers used by `ServerRealmList_WritePayload` (`1400ac770`).
+  `0x0760` also has the row-plus-trailing-bit wrapper `1400ac2c0`, but no
+  standalone client send or consumer event surfaced.
+- Cached `ClientUnresolvedDiagnosticPacket07B6_WritePayload` (`140080220`)
+  still writes four `uint32` header fields, a `uint32` row count, and rows via
+  `ClientUnresolvedDiagnosticPacket07B6Row_WritePayload` (`14007ff70`) as
+  `{ 4-bit value, bit, byte, wide string }`.
+- Cached `Client0x07B6_SendFromModuleList` (`1403f42e0`) still walks loaded
+  modules from `DAT_140c65898 + 0x7340`, skips `OptionsScreen`,
+  `FrontEndScreen`, and `ExternalTool`, and sends opcode `0x07B6`; cached
+  `Lua_GetAddons` (`140043370`) mirrors the same module-list filter for Lua.
+- Current source/tests preserve the safe boundary: the four managed packet
+  models keep structural names and mapped shapes, and their handlers log only
+  without gameplay mutation or server emits.
+- Disposition: **Mapped only / Diagnostic-only**. Keep the realm/addon
+  structural packets non-mutating until a standalone sender/consumer,
+  callback/table owner, indirect send rail, or live payload proves event
+  semantics and any server response behavior.

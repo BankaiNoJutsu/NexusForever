@@ -22,6 +22,20 @@ shell waiting, emits threshold start/update/clear, and casts the table-selected
 threshold child damage spell on release. Other spell follow-up packets in this
 roadmap remain blocked until they reach the same evidence bar.
 
+Status update (2026-06-09): a cached-export/source recheck reconfirmed the
+`0x0818`/`0x0819` wrapper follow-up boundary without widening runtime behavior.
+`Network_RegisterServerOpcode_0351` (`14006c290`) registers `0x0819` size `8`
+at `selected_decompiled.c:13429` to `ServerTwoUInt32_ReadPayload` (`14007a040`)
+and `0x0818` size `0x20` at `selected_decompiled.c:13430` to
+`ServerOpcode0818_ReadSpellWrapperIdAndTierEntry` (`140095e60`). Durable
+dispatcher labels still map `0x0818` case `1403ee403` to wrapper-id lookup
+(`140561c30`) and `SpellWrapper_ApplyEntityVariantTierEntryAndBroadcast`
+(`14053f710`), and map `0x0819` case `1403ee3af` to
+`SpellWrapperNode_PruneChildrenAndRefresh` (`140718af0`). Source still has no
+runtime producer for either packet, so keep them non-emitted until a wrapper
+lifecycle capture, producer timing proof, or selector-tail semantic correlation
+appears.
+
 ## Latest Hard Evidence
 
 - `Entity_ExecuteSpellEffectHighRange` now gives the direct post-decode edges for this follow-up cluster: `0x0814 -> 1403ef384 -> 1403bee40`, `0x0815 -> 1403ef372 -> SpellThreshold_HandleClear`, `0x0816 -> 1403ef34e -> SpellThreshold_HandleStartWrapper`, `0x0817 -> 1403ef360 -> SpellThreshold_HandleUpdate`, `0x0818 -> 1403ee403`, and `0x0819 -> 1403ee3af`.
@@ -36,6 +50,13 @@ roadmap remain blocked until they reach the same evidence bar.
 
 - `Decomp/Analysis/function_labels.csv` now contains durable labels for the direct client readers currently wired to `0x0814`, `0x0816`, `0x0817`, and `0x0818`, plus the shared `0x0815` Spell4-id stub and the spell-list helper family.
 - The full WildStar64 registration-block decompile at `FUN_14006c290` now gives direct opcode wiring for this cluster: `0x0814 -> 140096000`, `0x0815 -> 140080d30`, `0x0816 -> 140095f30`, `0x0817 -> 140095fb0`, `0x0818 -> 140095e60`, and the previously conflicted `ServerSpellList_ReadPayload` actually sits at `0x0551 -> 140096060`.
+- The 2026-06-09 selected-export recheck pins the wrapper pair at
+  `selected_decompiled.c:13429` (`0x0819`, size `8`, shared two-uint reader
+  `14007a040`) and `selected_decompiled.c:13430` (`0x0818`, size `0x20`,
+  reader `140095e60`). Selected xrefs for `14007a040`, `140095e60`,
+  `14053f710`, and `140718af0` remain label-only or reader/apply-local, and no
+  current NexusForever emitter exists outside packet-shape tests and negative
+  tutorial guards.
 - `0x0815` now has stronger hard evidence than a single registration row: the same shared `ServerUInt18_ReadPayload` stub is also registered for `0x00B0`, `0x0129` `ServerUnlockMount`, and `0x01AE` `ServerUnlockVanityPet`, which confirms that this reader family is a generic one-field `18-bit` payload shape rather than a spell-specific trigger packet.
 - `TraceFunctionCallers` on `ServerSpellList_ReadTierEntry` (`140094aa0`) shows `ServerOpcode0818_ReadSpellWrapperIdAndTierEntry` as a direct caller alongside spell-list readers, which ties `0x0818` into the spell-list tier-entry helper family instead of the current `TargetInfo` helper assumption.
 - `ServerSpellList_ReadTierEntry` now has a field-level consumer overlap as well: its first 12 bytes are `Spell4Id @ +0`, a tier byte `@ +4`, a spec or action-set byte `@ +5`, and a 4-bit field stored at `@ +8`, which exactly matches the compact record consumed by `AbilityBook_ApplySingleTierEntryDelta` (`1403b9410`). That handler drives `SpellBook_MarkSpellLearned`, `SpellBook_MarkSpellUnlearned`, and `SpellBook_SetCurrentTierRank`, refreshes cached wrapper ids, and dispatches `AbilityBookChange`. `ServerSpellList_ReadVariantEntry` also now has two selector-specific tails behind its shared prefix, so the source-side spell-list placeholder should no longer stop at the selector. No direct `0x0818 -> 1403b9410` edge has been recovered yet, so treat this as the strongest current-client overlap rather than final proof.

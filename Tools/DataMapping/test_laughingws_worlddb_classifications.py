@@ -58,6 +58,49 @@ class LaughingWsWorldDbClassificationTests(unittest.TestCase):
                 self.assertIn(recommendation, recommendations)
                 self.assertNotIn("extract_additive_world_overlay", recommendations)
 
+    def test_open_world_residual_reviews_remain_blocked_or_rejected(self) -> None:
+        expectations = {
+            "Map/Open World/Alizar/Algoroc.sql": "blocked_laughingws_algoroc_residual_rows",
+            "Map/Open World/Alizar/Celestion.sql": "blocked_laughingws_celestion_residual_rows",
+            "Map/Open World/Alizar/Galeras.sql": "blocked_laughingws_galeras_residual_rows",
+            "Map/Open World/Alizar/Thayd.sql": "blocked_laughingws_thayd_residual_rows",
+            "Map/Open World/Alizar/Whitevale.sql": "blocked_laughingws_whitevale_residual_rows",
+            "Map/Open World/Olyssia/Deradune.sql": "blocked_laughingws_deradune_residual_rows",
+            "Map/Open World/Olyssia/Ellevar.sql": "blocked_laughingws_ellevar_residual_rows",
+            "Map/Open World/Olyssia/Illium.sql": "rejected_laughingws_illium_orphan_vendor_stubs",
+        }
+
+        for relative_path, recommendation in expectations.items():
+            with self.subTest(relative_path=relative_path):
+                recommendations = self._recommendations(relative_path)
+
+                self.assertIn(recommendation, recommendations)
+                self.assertNotIn("extract_additive_world_overlay", recommendations)
+
+    def test_small_world_partial_seed_sources_keep_residual_boundaries(self) -> None:
+        expectations = {
+            "Map/Open World/Alizar/Everstargrove.sql": "blocked_laughingws_everstar_grove_residual_rows",
+            "Map/Open World/Alizar/Northern Wilds.sql": "blocked_laughingws_northern_wilds_residual_rows",
+            "Map/Open World/Olyssia/Auroria.sql": "blocked_laughingws_auroria_residual_rows",
+            "Map/Open World/Olyssia/Crimson Isle.sql": "blocked_laughingws_crimson_isle_residual_rows",
+            "Map/Open World/Olyssia/Levian Bay.sql": "blocked_laughingws_levian_bay_residual_rows",
+            "Map/Open World/Olyssia/Wilderrun.sql": "blocked_laughingws_wilderrun_dorian_rows",
+        }
+
+        for relative_path, recommendation in expectations.items():
+            with self.subTest(relative_path=relative_path):
+                recommendations = self._recommendations(relative_path)
+
+                self.assertIn("covered_by_laughingws_small_world_wip_seed", recommendations)
+                self.assertIn(recommendation, recommendations)
+                self.assertNotIn("extract_additive_world_overlay", recommendations)
+
+    def test_northern_wilds_duplicate_vendor_rows_stay_rejected(self) -> None:
+        recommendations = self._recommendations("Map/Open World/Alizar/Northern Wilds.sql")
+
+        self.assertIn("rejected_laughingws_northern_wilds_vendor_duplicate_rows", recommendations)
+        self.assertNotIn("extract_additive_world_overlay", recommendations)
+
     def _recommendations(self, relative_path: str) -> list[str]:
         key = relative_path.replace("\\", "/").lower()
         info = self.files_by_path[key]

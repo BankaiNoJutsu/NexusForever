@@ -397,6 +397,26 @@ Use `Decomp/Analysis/ENTITY_AUX_DECODE_ROADMAP.md` as the pass tracker.
 
 ## Progress Log
 
+2026-06-09 - F-007 reward rotation `0x07CD` cached-export/source recheck:
+
+- Result: `Mapped only / Blocked apply semantics` for
+  `ServerRewardRotationContentContext` field meaning, `Flag`, and dynamic
+  throttle-slot assignment; no runtime behavior changed.
+- Ghidra MCP discovery found no running instances, so no labels or exports were
+  refreshed. The pass used cached `WildStar64.exe` fragments under
+  `selected_decompiled_cache/functions/sha256_231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+- Cached `ServerRewardRotationContentContext_ReadPayload` (`14008fcb0`) still
+  proves the `0x07CD` wire shape only. Cached `RewardRotation_ManagerInit`
+  (`140635840`) initializes seven request-throttle slots, cached
+  `Reward_SendRewardUpdateRequest` (`140636ba0`) sends only the content-type
+  index through `0x07CC`, and cached
+  `RewardRotation_GetLoadedScheduleForContent` (`140636c40`) proves
+  refresh-by-index / loaded-schedule lookup rather than `0x07CD` apply.
+- Keep `ServerRewardRotationContentContext.UInt0`/`UInt1`/`UInt3`/`Flag`
+  neutral until a retail `0x07CD` capture, accepted live reward-rotation
+  bundle, or dynamic runtime apply-dispatch breakpoint proves assignment and
+  consumer semantics.
+
 2026-06-04 - F-007 reward rotation `0x07CD` mapped-only recheck:
 
 - Result: `Mapped only / Blocked` for `ServerRewardRotationContentContext`
